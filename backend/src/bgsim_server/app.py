@@ -1,23 +1,27 @@
 """The FastAPI application (plan sections 3.7 and 6).
 
-M0.4 exposes ``GET /api/health`` and serves the built web app (``web/dist``) at
-``/`` when it exists, with an SPA fallback; when there is no build, ``/`` answers a
-small JSON document. The lifespan hook starts and stops the worker supervisor.
+The app exposes ``GET /api/health``, includes the three API routers (``proxy`` with
+the catalog and check endpoints, and the ``projects``/``runs`` skeleton routers that
+P1.1 and P1.2 fill in) and serves the built web app (``web/dist``) at ``/`` when it
+exists, with an SPA fallback; when there is no build, ``/`` answers a small JSON
+document. The lifespan hook starts and stops the worker supervisor.
 """
 
 from __future__ import annotations
 
 import platform
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 
+from . import projects, proxy, runs
 from .config import BACKEND_VERSION, Settings
-from .worker import WorkerSupervisor
+from .proxy import CatalogCache, WorkerRpcFailure
+from .worker import WorkerLauncher, WorkerSupervisor
 
 # API prefixes that must never fall through to the SPA fallback.
 _API_PREFIXES = ("api/", "ws/")
@@ -34,10 +38,18 @@ def _resolve_web_file(dist: Path, relative: str) -> Path | None:
     return candidate if candidate.is_file() else None
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    """Build the application; ``settings`` defaults to :meth:`Settings.from_env`."""
+def create_app(
+    settings: Settings | None = None,
+    worker_factory: Callable[[int], WorkerLauncher] | None = None,
+) -> FastAPI:
+    """Build the application.
+
+    ``settings`` defaults to :meth:`Settings.from_env`; ``worker_factory`` replaces
+    the worker launcher (tests use it to script the worker, ``BGSIM_FAKE_WORKER``
+    does the same from the environment).
+    """
     resolved = settings or Settings.from_env()
-    supervisor = WorkerSupervisor(resolved)
+    supervisor = WorkerSupervisor(resolved, worker_factory)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -50,6 +62,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="bg-sim backend", version=BACKEND_VERSION, lifespan=lifespan)
     app.state.settings = resolved
     app.state.worker = supervisor
+    app.state.catalog_cache = CatalogCache()
+
+    @app.exception_handler(WorkerRpcFailure)
+    async def worker_rpc_failure(_request: Request, exc: WorkerRpcFailure) -> JSONResponse:
+        """Plan 3.6: a worker error response becomes 422 with its error object."""
+        return JSONResponse(
+            status_code=422,
+            content={"message": exc.message, "diagnostics": exc.diagnostics},
+        )
 
     @app.get("/api/health")
     async def health() -> dict[str, Any]:
@@ -63,6 +84,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "julia": supervisor.julia_version,
             },
         }
+
+    # The routers that own their endpoints; P1.1 and P1.2 add routes to the last two
+    # without touching this file. The SPA catch-all below must stay registered last.
+    app.include_router(proxy.router, prefix="/api", tags=["proxy"])
+    app.include_router(projects.router, prefix="/api", tags=["projects"])
+    app.include_router(runs.router, prefix="/api", tags=["runs"])
 
     @app.get("/{path:path}", include_in_schema=False)
     async def spa(path: str) -> Response:
