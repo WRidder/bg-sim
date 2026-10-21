@@ -19,7 +19,7 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | J1.4 | J | M1 | J1.1, J1.2, J1.3 | todo | Flatten, connect, junctions, domains |
 | J1.5 | J | M1 | J1.4 | todo | Lowering and simulation (continuous) |
 | J1.6 | J | M1 | J1.5, M0.4 | todo | Worker protocol |
-| P1.1 | P | M1 | M0.4 | todo | Projects API |
+| P1.1 | P | M1 | M0.4 | done | `ProjectStore` + projects/models/library CRUD via its own router (app.py untouched). Model/project documents validated against the pydantic models **and** the JSON Schemas (pydantic alone accepts nulls the contracts reject). Atomic writes (`mkstemp` + fsync + `os.replace`, LF), path-traversal rejection, create-from-example with name rewrite, catalog-cache invalidation on library writes. 57 new tests; 219 pytest total, ruff clean. Live: create 201, model PUT 200, traversal 404, invalid model 422. |
 | P1.2 | P | M1 | M0.4 | todo | Runs, decimation, CSV |
 | W1.1 | W | M1 | M0.5 | todo | Library and canvas |
 | W1.2 | W | M1 | W1.1 | todo | Inspector |
