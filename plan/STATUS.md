@@ -7,9 +7,9 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 
 | WP | Lane | Milestone | Depends | State | Note |
 | --- | --- | --- | --- | --- | --- |
-| M0.1 | X | M0 | — | running | Repo scaffold, git, check.py, STATUS |
+| M0.1 | X | M0 | — | done | git init, .gitignore, .gitattributes, tools/check.py (j/p/w/x/all), STATUS table. `uv run tools/check.py --lane all` reports "no tests yet" for all four lanes, exit 0. |
 | M0.2 | C | M0 | M0.1 | todo | Contracts v1 |
-| M0.3 | J | M0 | M0.1 | todo | Julia package and toolchain proof |
+| M0.3 | J | M0 | M0.1 | done | Julia 1.13.2 (no 1.12 fallback needed). MTK 11.45.5, Symbolics 7.47.0, SII 0.3.55, OrdinaryDiffEq{Rosenbrock 2.7.5, Tsit5 2.1.5, BDF 2.4.13, Verner 2.4.2}, JSON3 1.14.3, JuliaSyntax 1.0.2, StaticArrays 1.9.24, PrecompileTools 1.3.4, RuntimeGeneratedFunctions 0.5.27, Sockets 1.11.0. `Pkg.test()` 71/71 pass. Cold `Pkg.add`+precompile 893 s; BGSim first precompile 27–30 s; cold chain ~960 s. NOTES.md is the J-lane API authority. |
 | M0.4 | P | M0 | M0.2 | todo | Backend skeleton |
 | M0.5 | W | M0 | M0.2 | todo | Web skeleton |
 | J1.1 | J | M1 | M0.3 | todo | Parser and whitelist core |
@@ -70,7 +70,7 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 
 | Item | Target | Measured |
 | --- | --- | --- |
-| Julia first precompile (M0.3) | measure | |
+| Julia first precompile (M0.3) | measure | 27.3 s (BGSim, workload incl.); cold depot → first green `Pkg.test()` ≈ 960 s |
 | Worker cold start to ready | < 60 s | |
 | block.check 40-line block | < 150 ms | |
 | model.check 60-element model | < 1.5 s | |
