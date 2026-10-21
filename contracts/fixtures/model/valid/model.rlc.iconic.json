@@ -1,0 +1,150 @@
+{
+  "$comment": "Plan 9.3 iconic half: a series RLC driven by a 1 V step (Step -> VoltageSource input u, V = 1). R = 10 Ohm, L = 10 mH, C = 100 uF, so w0 = 1000 rad/s and zeta = 0.5, which gives a 16.3 % capacitor-voltage overshoot. Added by CONTRACT-1 for J1.4.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "RLCSeriesIconic",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Step1",
+        "block": { "ref": "stdlib:sources/Step" },
+        "position": { "x": 40, "y": 120 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "t_step": "0.0", "initial": "0.0", "final": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "V1",
+        "block": { "ref": "stdlib:electrical/VoltageSource" },
+        "position": { "x": 240, "y": 120 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "V": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n3",
+        "name": "R1",
+        "block": { "ref": "stdlib:electrical/Resistor" },
+        "position": { "x": 420, "y": 60 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "R": "10.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n4",
+        "name": "L1",
+        "block": { "ref": "stdlib:electrical/Inductor" },
+        "position": { "x": 600, "y": 60 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "L": "10e-3" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n5",
+        "name": "C1",
+        "block": { "ref": "stdlib:electrical/Capacitor" },
+        "position": { "x": 780, "y": 60 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "C": "100e-6" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n6",
+        "name": "Ground1",
+        "block": { "ref": "stdlib:electrical/Ground" },
+        "position": { "x": 600, "y": 300 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "signal",
+        "from": { "node": "n1", "port": "y" },
+        "to": { "node": "n2", "port": "u" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "wire",
+        "from": { "node": "n2", "port": "p" },
+        "to": { "node": "n3", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "wire",
+        "from": { "node": "n3", "port": "n" },
+        "to": { "node": "n4", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "wire",
+        "from": { "node": "n4", "port": "n" },
+        "to": { "node": "n5", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c5",
+        "kind": "wire",
+        "from": { "node": "n5", "port": "n" },
+        "to": { "node": "n6", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c6",
+        "kind": "wire",
+        "from": { "node": "n2", "port": "n" },
+        "to": { "node": "n6", "port": "p" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.01,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": { "mode": "points", "points": 2000 },
+    "event_limit": 10000
+  },
+  "plots": [
+    { "id": "p1", "title": "Capacitor voltage", "signals": ["C1/v"] },
+    { "id": "p2", "title": "Inductor current", "signals": ["L1/i"] }
+  ],
+  "scene": null,
+  "bindings": []
+}

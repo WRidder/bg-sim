@@ -1,0 +1,122 @@
+{
+  "$comment": "Plan 9.3 bond graph half: Se(1 V) -> 1-junction with R, I and C. R = 10 Ohm, L = 10 mH, C = 100 uF. Every power connection touches a Generic port or a junction, so all of them are bonds (plan 5.5). SCAP must give integral causality on both storage elements with no W201. Added by CONTRACT-1 for J1.4.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "RLCSeriesBondGraph",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Se1",
+        "block": { "ref": "stdlib:bondgraph/Se" },
+        "position": { "x": 60, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "e": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "J1",
+        "block": { "junction": "1" },
+        "position": { "x": 280, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n3",
+        "name": "R1",
+        "block": { "ref": "stdlib:bondgraph/R" },
+        "position": { "x": 500, "y": 60 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "r": "10.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n4",
+        "name": "IL",
+        "block": { "ref": "stdlib:bondgraph/I" },
+        "position": { "x": 500, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "i": "10e-3" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n5",
+        "name": "C1",
+        "block": { "ref": "stdlib:bondgraph/C" },
+        "position": { "x": 500, "y": 340 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "c": "100e-6" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n3", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n4", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n5", "port": "p" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.01,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": { "mode": "points", "points": 2000 },
+    "event_limit": 10000
+  },
+  "plots": [
+    { "id": "p1", "title": "Capacitor voltage", "signals": ["C1/p.e"] },
+    { "id": "p2", "title": "Inductor flow", "signals": ["IL/p.f"] }
+  ],
+  "scene": null,
+  "bindings": []
+}
