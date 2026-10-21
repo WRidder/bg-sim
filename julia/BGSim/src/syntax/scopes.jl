@@ -1,0 +1,1334 @@
+# Block-level checks (plan 4.4): E000 to E006, W204 and the E103 balance precheck.
+#
+# `check_block(pb)` is the fast pass that runs as the user types. It is total: it never
+# throws on bad input, it returns a (possibly empty) `Vector{Diagnostic}`. Parse-stage
+# diagnostics already collected in `pb` are included first, so a caller needs only
+# `check_block(parse_block(text))`.
+#
+# Checks, in order:
+#   1. declaration names (duplicates, `t`, shadowing a whitelisted function) — E003
+#   2. declaration types (Bool state, Int outside discrete, array sizes) — E004/E005
+#   3. defaults (constant expressions, type) — E004
+#   4. equations (names, types, indices, `for` bounds, `if` branch counts) — E001..E005
+#   5. `@causality` port names — E003
+#   6. units, via `BGSim.Units.check_units` when J1.2 has landed — E006
+#   7. unused declarations — W204
+#   8. balance: #equations == #variables + #outputs + #powerports — E103 (a warning here)
+
+# ---------------------------------------------------------------------------------------
+# Types
+# ---------------------------------------------------------------------------------------
+
+"""    assignable(target, value) -> Bool
+
+Whether a value of type `value` may be used where `target` is declared. `Int` widens to
+`Real`; nothing else converts implicitly (spec: "Real to Int never happens implicitly")."""
+function assignable(target::TypeSpec, value::TypeSpec)
+    target.kind == value.kind && target.args == value.args && return true
+    target.kind == :Real && value.kind == :Int && return true
+    return false
+end
+
+_numeric(t::TypeSpec) = t.kind == :Real || t.kind == :Int
+_scalar_numeric(t::TypeSpec) = t.kind == :Real || t.kind == :Int
+
+# ---------------------------------------------------------------------------------------
+# The checker
+# ---------------------------------------------------------------------------------------
+
+mutable struct Checker
+    pb::ParsedBlock
+    decls::Dict{Symbol,Decl}
+    consts::Dict{Symbol,Any}
+    diags::Vector{Diagnostic}
+    scope::Symbol          # source scope of the construct being checked
+    context::Symbol        # :equation | :default
+    allow_cond::Bool
+    used::Set{Symbol}
+    loopvars::Dict{Symbol,TypeSpec}
+    stdlib::Bool
+    failed::Bool           # an error was reported; suppress cascading E103
+end
+
+function Checker(pb::ParsedBlock)
+    decls = Dict{Symbol,Decl}()
+    for scope in DECLARATION_SCOPES
+        for d in get(pb.declaration_map, scope, Decl[])
+            haskey(decls, d.name) || (decls[d.name] = d)
+        end
+    end
+    return Checker(
+        pb,
+        decls,
+        constant_env(pb),
+        copy(pb.diagnostics),
+        :equations,
+        :equation,
+        false,
+        Set{Symbol}(),
+        Dict{Symbol,TypeSpec}(),
+        startswith(pb.ref, "stdlib:"),
+        any(d -> d.severity == "error", pb.diagnostics),
+    )
+end
+
+function _report!(ck::Checker, code, message, node; hint = nothing, severity = nothing, scope = nothing)
+    code[1] == 'E' && (ck.failed = true)
+    push!(
+        ck.diags,
+        diag(
+            code,
+            message,
+            ck.pb,
+            node;
+            hint = hint,
+            severity = severity,
+            scope = scope === nothing ? scope_string(ck.scope) : scope,
+        ),
+    )
+    return nothing
+end
+
+"""    check_block(pb::ParsedBlock) -> Vector{Diagnostic}
+
+Run the block-level checks (plan 4.4). Includes the parse-stage diagnostics carried by `pb`.
+"""
+function check_block(pb::ParsedBlock)
+    ck = Checker(pb)
+    _check_declaration_names!(ck)
+    _check_declaration_types!(ck)
+    _check_defaults!(ck)
+    for item in pb.equation_items
+        _check_eq_item!(ck, item)
+    end
+    _check_causality!(ck)
+    _check_units!(ck)
+    _check_unused!(ck)
+    _check_balance!(ck)
+    return ck.diags
+end
+
+# ---------------------------------------------------------------------------------------
+# Declarations
+# ---------------------------------------------------------------------------------------
+
+function _check_declaration_names!(ck::Checker)
+    seen = Dict{Symbol,SourceRange}()
+    for scope in DECLARATION_SCOPES
+        for d in get(ck.pb.declaration_map, scope, Decl[])
+            ck.scope = scope
+            n = d.name
+            if n === :t || n === :Ts
+                _report!(
+                    ck,
+                    "E003",
+                    "`$n` is predefined and cannot be declared",
+                    d;
+                    hint = "`t` is the simulation time; choose another name",
+                )
+            elseif function_rule(n) !== nothing || n === :ifelse
+                _report!(
+                    ck,
+                    "E003",
+                    "`$n` shadows built-in function `$n`",
+                    d;
+                    hint = "rename the declaration; built-in functions cannot be shadowed",
+                )
+            end
+            if haskey(seen, n)
+                _report!(
+                    ck,
+                    "E003",
+                    "`$n` is already declared on line $(seen[n].line)",
+                    d;
+                    hint = "a name may be declared once per block",
+                )
+            else
+                seen[n] = d.range
+            end
+        end
+    end
+    ck.scope = :equations
+    return nothing
+end
+
+function _check_declaration_types!(ck::Checker)
+    for scope in DECLARATION_SCOPES
+        for d in get(ck.pb.declaration_map, scope, Decl[])
+            ck.scope = scope
+            t = d.type
+            if scope == :ports
+                if t.kind != :Power
+                    _report!(
+                        ck,
+                        "E004",
+                        "a port must be `Power{Domain}`, found `$(type_name(t))`",
+                        d;
+                        hint = "write `p::Power{Generic}` or `p::Power{Electrical}`",
+                    )
+                end
+                continue
+            end
+            if t.kind == :Power
+                _report!(
+                    ck,
+                    "E004",
+                    "`$(type_name(t))` is only allowed in @ports",
+                    d;
+                    hint = "power ports are declared in @ports",
+                )
+                continue
+            end
+            if t.kind == :Bool && scope == :variables
+                _report!(
+                    ck,
+                    "E004",
+                    "`Bool` is not allowed as a continuous state",
+                    d;
+                    hint = "Bool values belong in discrete code or in an output",
+                )
+            end
+            if t.kind == :Int && scope in (:variables, :inputs, :outputs)
+                _report!(
+                    ck,
+                    "E004",
+                    "`Int` is only allowed in discrete code, indices and constants",
+                    d;
+                    hint = "use `Real` here, or move the counter into a `@discrete` scope (J2.1)",
+                )
+            end
+            if scope == :constants && d.default === nothing
+                _report!(
+                    ck,
+                    "E004",
+                    "`$(d.name)` is a constant and needs a value",
+                    d;
+                    hint = "write `$(d.name)::$(type_name(t)) = ...`",
+                )
+            end
+            if t.kind == :Vec || t.kind == :Mat
+                for a in t.args
+                    a isa Symbol && haskey(ck.decls, a) && push!(ck.used, a)
+                end
+                if type_size(t, ck.consts) === nothing
+                    _report!(
+                        ck,
+                        "E005",
+                        "array size of `$(d.name)` is not static: `$(type_name(t))`",
+                        d;
+                        hint = "declare the size in `@constants`, e.g. `@constants N::Int = 3`",
+                    )
+                end
+            end
+        end
+    end
+    ck.scope = :equations
+    return nothing
+end
+
+function _check_defaults!(ck::Checker)
+    for scope in DECLARATION_SCOPES
+        for d in get(ck.pb.declaration_map, scope, Decl[])
+            d.default === nothing && continue
+            ck.scope = scope
+            ck.context = :default
+            t = _check_expr!(ck, d.default)
+            ck.context = :equation
+            if t !== nothing && !assignable(resolve_type(d.type, ck.consts), t)
+                _report!(
+                    ck,
+                    "E004",
+                    "default of `$(d.name)` is `$(type_name(t))` but the declaration is `$(type_name(d.type))`",
+                    d.default;
+                )
+            end
+            if scope == :constants
+                ok, value = try_eval_const(d.default, ck.consts)
+                if !ok
+                    _report!(
+                        ck,
+                        "E004",
+                        "`$(d.name)` is not a constant expression: $value",
+                        d.default;
+                        hint = "constants may use literals, other constants and pure functions",
+                    )
+                end
+            end
+        end
+    end
+    ck.scope = :equations
+    ck.context = :equation
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Equations
+# ---------------------------------------------------------------------------------------
+
+function _check_eq_item!(ck::Checker, item)
+    if item isa Equation
+        _check_equation!(ck, item)
+    elseif item isa IfEquation
+        _check_if_equation!(ck, item)
+    elseif item isa ForEquation
+        _check_for_equation!(ck, item)
+    end
+    return nothing
+end
+
+function _check_equation!(ck::Checker, eq::Equation)
+    ck.scope = eq.scope
+    lhs = _check_expr!(ck, eq.lhs)
+    rhs = _check_expr!(ck, eq.rhs)
+    if eq.lhs isa Name && haskey(ck.decls, eq.lhs.name)
+        d = ck.decls[eq.lhs.name]
+        if d.scope in (:parameters, :constants, :inputs)
+            what = d.scope == :inputs ? "an input" :
+                   d.scope == :parameters ? "a parameter" : "a constant"
+            _report!(
+                ck,
+                "E004",
+                "`$(eq.lhs.name)` is $what and cannot be the left side of an equation",
+                eq.lhs;
+                hint = "put the unknown on the left: `unknown ~ expression`",
+            )
+        end
+    end
+    if lhs !== nothing && rhs !== nothing && !assignable(lhs, rhs) && !assignable(rhs, lhs)
+        _report!(
+            ck,
+            "E004",
+            "type mismatch: `$(type_name(lhs))` ~ `$(type_name(rhs))`",
+            eq;
+        )
+    end
+    return nothing
+end
+
+function _check_if_equation!(ck::Checker, ifeq::IfEquation)
+    has_else = any(b -> b.cond === nothing, ifeq.branches)
+    if !has_else
+        _report!(
+            ck,
+            "E001",
+            "an `if` in $(scope_string(ifeq.scope)) needs an `else` branch",
+            hint = "every branch must leave the same number of equations",
+        )
+    end
+    for b in ifeq.branches
+        if b.cond !== nothing
+            t = _check_cond!(ck, b.cond)
+            if t !== nothing && t.kind != :Bool
+                _report!(
+                    ck,
+                    "E004",
+                    "`if` condition must be Bool, got `$(type_name(t))`",
+                    b.cond,
+                )
+            end
+        end
+        for item in b.body
+            _check_eq_item!(ck, item)
+        end
+    end
+    counts = [length(b.body) for b in ifeq.branches]
+    if length(unique(counts)) > 1
+        _report!(
+            ck,
+            "E001",
+            "the branches of an `if` must have the same number of equations, got $(join(counts, ", "))",
+            ifeq;
+            hint = "move the branch-varying part into an `ifelse` expression",
+        )
+    end
+    return nothing
+end
+
+function _check_for_equation!(ck::Checker, fe::ForEquation)
+    for e in (fe.lo, fe.hi, fe.step)
+        e === nothing && continue
+        ok, value = try_eval_const(e, ck.consts)
+        if !ok
+            _report!(
+                ck,
+                "E005",
+                "the `for` range must be constant: $value",
+                e;
+                hint = "N in `for i in 1:N` must be a `@constants` value",
+            )
+        elseif !(value isa Integer)
+            _report!(
+                ck,
+                "E005",
+                "the `for` range must be integral, got `$value`",
+                e;
+            )
+        end
+    end
+    ck.loopvars[fe.var] = INT
+    for item in fe.body
+        _check_eq_item!(ck, item)
+    end
+    delete!(ck.loopvars, fe.var)
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Causality
+# ---------------------------------------------------------------------------------------
+
+function _check_causality!(ck::Checker)
+    ck.scope = :causality
+    for c in ck.pb.causality_items
+        for p in c.ports
+            if !haskey(ck.decls, p) || ck.decls[p].scope != :ports
+                _report!(
+                    ck,
+                    "E003",
+                    "`$p` is not a port of this block",
+                    c;
+                    hint = "declare it in @ports first",
+                )
+            else
+                push!(ck.used, p)
+            end
+        end
+    end
+    ck.scope = :equations
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Units (J1.2 hook)
+# ---------------------------------------------------------------------------------------
+
+# J1.2 owns `src/units/` and adds `Units.check_units(pb)::Vector{Diagnostic}`. Until that
+# module exists this is a no-op. This `isdefined` guard is the only one in the front end and
+# J1.2 may remove it once `Units` is always loaded.
+function _check_units!(ck::Checker)
+    isdefined(@__MODULE__, :Units) || return nothing
+    units = getfield(@__MODULE__, :Units)
+    isdefined(units, :check_units) || return nothing
+    extra = getfield(units, :check_units)(ck.pb)
+    for d in extra
+        push!(ck.diags, d isa Diagnostic ? d : from_dict(Dict(d)))
+    end
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Unused declarations (W204)
+# ---------------------------------------------------------------------------------------
+
+function _check_unused!(ck::Checker)
+    for scope in DECLARATION_SCOPES
+        for d in get(ck.pb.declaration_map, scope, Decl[])
+            d.name in ck.used && continue
+            ck.scope = scope
+            _report!(
+                ck,
+                "W204",
+                "`$(d.name)` is declared but never used",
+                d;
+                hint = "remove the declaration, or use it in an equation",
+            )
+        end
+    end
+    ck.scope = :equations
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Balance (plan 4.4)
+# ---------------------------------------------------------------------------------------
+
+"""    block_balance(pb) -> (unknowns, equations)
+
+The scalar counts behind the block-level balance precheck: unknowns are
+`#variables + #outputs + #powerports` (scalars, with `Vec`/`Mat` expanded), equations are the
+scalar equations after unrolling `for` and taking one branch of an `if`.
+"""
+function block_balance(pb::ParsedBlock)
+    decls = Dict{Symbol,Decl}()
+    for scope in DECLARATION_SCOPES
+        for d in get(pb.declaration_map, scope, Decl[])
+            haskey(decls, d.name) || (decls[d.name] = d)
+        end
+    end
+    consts = constant_env(pb)
+    unknowns = 0
+    for scope in (:variables, :outputs, :ports)
+        for d in get(pb.declaration_map, scope, Decl[])
+            unknowns += type_scalar_count(resolve_type(d.type, consts), consts)
+        end
+    end
+    eqs = _count_items(pb.equation_items, decls, consts)
+    return (unknowns = unknowns, equations = eqs)
+end
+
+function _scalar_size(e, decls::Dict{Symbol,Decl}, consts::AbstractDict)::Int
+    if e isa Name && haskey(decls, e.name)
+        d = decls[e.name]
+        return type_scalar_count(resolve_type(d.type, consts), consts)
+    elseif e isa Call && e.fn.name === :ddt && length(e.args) == 1
+        return _scalar_size(e.args[1], decls, consts)
+    end
+    return 1
+end
+
+function _count_items(items, decls::Dict{Symbol,Decl}, consts::AbstractDict)::Int
+    total = 0
+    for item in items
+        if item isa Equation
+            total += _scalar_size(item.lhs, decls, consts)
+        elseif item isa IfEquation
+            isempty(item.branches) && continue
+            total += _count_items(item.branches[1].body, decls, consts)
+        elseif item isa ForEquation
+            total += _for_iterations(item, consts) * _count_items(item.body, decls, consts)
+        end
+    end
+    return total
+end
+
+function _for_iterations(fe::ForEquation, consts::AbstractDict)::Int
+    ok1, lo = try_eval_const(fe.lo, consts)
+    ok2, hi = try_eval_const(fe.hi, consts)
+    step = 1
+    if fe.step !== nothing
+        ok3, s = try_eval_const(fe.step, consts)
+        ok3 || return 1
+        s isa Integer || return 1
+        step = Int(s)
+    end
+    (ok1 && ok2 && lo isa Integer && hi isa Integer && step != 0) || return 1
+    return step > 0 ? max(0, fld(Int(hi) - Int(lo), step) + 1) :
+           max(0, fld(Int(lo) - Int(hi), -step) + 1)
+end
+
+_plural(n::Int, one::String, many::String) = n == 1 ? one : many
+
+function _check_balance!(ck::Checker)
+    ck.failed && return nothing
+    n_vars = length(get(ck.pb.declaration_map, :variables, Decl[]))
+    n_outs = length(get(ck.pb.declaration_map, :outputs, Decl[]))
+    n_ports = length(get(ck.pb.declaration_map, :ports, Decl[]))
+    bal = block_balance(ck.pb)
+    bal.unknowns == bal.equations && return nothing
+    n_vars == 0 && n_outs == 0 && n_ports == 0 && return nothing
+    # Plan 4.4: E103 at block level is reported as a *warning* (the plan section 5
+    # model-level check keeps it an error). This is the one explicit severity override.
+    push!(
+        ck.diags,
+        diag(
+            "E103",
+            "unbalanced block: $(bal.unknowns) $(_plural(bal.unknowns, "unknown", "unknowns")), " *
+            "$(bal.equations) $(_plural(bal.equations, "equation", "equations"))",
+            ck.pb,
+            ck.pb.range;
+            hint = "`$(block_name(ck.pb))` declares $n_vars $(_plural(n_vars, "variable", "variables")), " *
+                   "$n_outs $(_plural(n_outs, "output", "outputs")) and " *
+                   "$n_ports $(_plural(n_ports, "power port", "power ports")), so it needs $(bal.unknowns) equations",
+            severity = "warning",
+            scope = nothing,
+        ),
+    )
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Expression checking
+# ---------------------------------------------------------------------------------------
+
+function _check_cond!(ck::Checker, e)
+    old = ck.allow_cond
+    old_scope = ck.scope
+    ck.allow_cond = true
+    t = _check_expr!(ck, e)
+    ck.allow_cond = old
+    ck.scope = old_scope
+    return t
+end
+
+function _check_expr!(ck::Checker, e)::Union{TypeSpec,Nothing}
+    if e isa Lit
+        v = e.value
+        v isa Bool && return BOOL
+        v isa Integer && return INT
+        v isa AbstractFloat && return REAL
+        if v isa AbstractString
+            _report!(
+                ck,
+                "E001",
+                "string literals are only allowed in `description` and `unit` attributes",
+                e;
+            )
+        end
+        return nothing
+    elseif e isa Name
+        return _check_name!(ck, e)
+    elseif e isa Field
+        return _check_field!(ck, e)
+    elseif e isa Call
+        return _check_call!(ck, e)
+    elseif e isa BinOp
+        return _check_binop!(ck, e)
+    elseif e isa UnOp
+        return _check_unop!(ck, e)
+    elseif e isa Index
+        return _check_index!(ck, e)
+    elseif e isa VectorLit
+        return _check_vector!(ck, e)
+    elseif e isa MatrixLit
+        return _check_matrix!(ck, e)
+    elseif e isa IfElse
+        return _check_ifelse!(ck, e)
+    elseif e isa Comparison
+        return _check_comparison!(ck, e)
+    elseif e isa BoolOp
+        return _check_boolop!(ck, e)
+    end
+    return nothing
+end
+
+function _check_name!(ck::Checker, e::Name)::Union{TypeSpec,Nothing}
+    n = e.name
+    if haskey(ck.loopvars, n)
+        return ck.loopvars[n]
+    end
+    if n === :t
+        if ck.context == :default
+            _report!(
+                ck,
+                "E004",
+                "`t` is not a constant expression",
+                e;
+                hint = "a default may use `@constants` and `@parameters`, not `t`",
+            )
+            return nothing
+        end
+        return REAL
+    elseif n === :Ts
+        _report!(
+            ck,
+            "E001",
+            "`Ts` is only available in @discrete",
+            e;
+            hint = "`Ts` is the clock period of a discrete scope",
+        )
+        return nothing
+    end
+    if haskey(ck.decls, n)
+        d = ck.decls[n]
+        push!(ck.used, n)
+        if d.scope == :ports
+            _report!(
+                ck,
+                "E003",
+                "`$n` is a port; use `$n.e` or `$n.f`",
+                e;
+                hint = "a power port carries two variables, effort and flow",
+            )
+            return nothing
+        end
+        if ck.context == :default && d.scope in (:variables, :inputs, :outputs)
+            _report!(
+                ck,
+                "E004",
+                "`$n` is not a constant expression",
+                e;
+                hint = "defaults may use literals, `@constants`, `@parameters` and pure functions",
+            )
+            return nothing
+        end
+        return resolve_type(d.type, ck.consts)
+    end
+    _report!(
+        ck,
+        "E003",
+        "`$n` is used but not declared",
+        e;
+        hint = "declare it in @parameters, or fix the spelling",
+    )
+    return nothing
+end
+
+function _check_field!(ck::Checker, e::Field)::Union{TypeSpec,Nothing}
+    if e.base isa Name
+        n = e.base.name
+        if haskey(ck.decls, n)
+            d = ck.decls[n]
+            push!(ck.used, n)
+            if d.scope == :ports
+                if e.field === :e || e.field === :f
+                    sz = domain_size(type_domain(d.type))
+                    return sz == 1 ? REAL : TypeSpec(:Vec, (sz,))
+                end
+                _report!(
+                    ck,
+                    "E003",
+                    "port `$n` has fields `e` and `f`, not `$(e.field)`",
+                    e;
+                    hint = "write `$n.e` for the effort or `$n.f` for the flow",
+                )
+                return nothing
+            end
+            _report!(
+                ck,
+                "E003",
+                "`$n` is not a port, so it has no `$(e.field)` field",
+                e;
+                hint = "only a power port has `e` and `f`",
+            )
+            return nothing
+        end
+    end
+    _check_expr!(ck, e.base)
+    return nothing
+end
+
+function _arity_message(name::Symbol, rule)::String
+    if rule.max_args < 0
+        return "`$name` takes at least $(rule.min_args) arguments, got this many"
+    elseif rule.min_args == rule.max_args
+        n = rule.min_args
+        return "`$name` takes $n $(_plural(n, "argument", "arguments"))"
+    end
+    return "`$name` takes $(rule.min_args) to $(rule.max_args) arguments"
+end
+
+function _call_scope_name(rule)
+    isempty(rule.contexts) && return "no scope"
+    names = String[]
+    for c in rule.contexts
+        push!(
+            names,
+            c == :equation ? "@equations" :
+            c == :discrete ? "@discrete" : c == :events ? "@events" : "defaults",
+        )
+    end
+    return join(names, " or ")
+end
+
+function _check_call!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
+    name = e.fn.name
+    rule = function_rule(name)
+    if rule === nothing
+        hint = if name === :rand || name === :randn
+            "use the `noise_normal(seed, k)` intrinsic for seeded noise"
+        else
+            "see the built-in function whitelist in the language spec"
+        end
+        _report!(ck, "E002", "`$name` is not a built-in function", e.fn; hint = hint)
+        return nothing
+    end
+    if !(ck.context in rule.contexts)
+        _report!(
+            ck,
+            "E001",
+            "`$name` is not allowed in $(ck.context == :default ? "a default" : "@equations")",
+            e.fn;
+            hint = "it is available in $(_call_scope_name(rule))",
+        )
+        return nothing
+    end
+    if rule.stdlib_only && !ck.stdlib
+        _report!(
+            ck,
+            "E002",
+            "`$name` is only available in stdlib blocks",
+            e.fn;
+            hint = "`$name` is an intrinsic; user blocks cannot call it",
+        )
+        return nothing
+    end
+    nargs = length(e.args)
+    max_args = rule.max_args < 0 ? typemax(Int) : rule.max_args
+    if !(rule.min_args <= nargs <= max_args)
+        _report!(
+            ck,
+            "E001",
+            "$(_arity_message(name, rule)), got $nargs",
+            e;
+            hint = "see the built-in function whitelist in the language spec",
+        )
+        return nothing
+    end
+    if name === :ddt
+        return _check_ddt!(ck, e)
+    end
+    tys = Union{TypeSpec,Nothing}[_check_expr!(ck, a) for a in e.args]
+    any(t -> t === nothing, tys) && return nothing
+    st = TypeSpec[t for t in tys if t !== nothing]
+
+    if name === :int
+        for (i, t) in enumerate(st)
+            if !_numeric(t)
+                _report!(ck, "E004", "`int` needs numeric arguments, got `$(type_name(t))`", e.args[i])
+                return nothing
+            end
+        end
+        return REAL
+    elseif name === :delay
+        ok, _ = try_eval_const(e.args[2], ck.consts)
+        if !ok
+            _report!(
+                ck,
+                "E004",
+                "`delay` needs a constant delay time",
+                e.args[2];
+                hint = "the delay (in seconds) must be a `@constants` value",
+            )
+        end
+        return st[1]
+    elseif name === :dot
+        if length(st) == 2 && st[1].kind == :Vec && st[2].kind == :Vec
+            if st[1].args != st[2].args
+                _report!(
+                    ck,
+                    "E005",
+                    "`dot` needs vectors of the same size, got `$(type_name(st[1]))` and `$(type_name(st[2]))`",
+                    e;
+                )
+                return nothing
+            end
+            return REAL
+        elseif length(st) == 2 && st[1].kind == :Mat && st[2].kind == :Mat
+            return REAL
+        end
+        _report!(ck, "E004", "`dot` needs two arrays, got `$(type_name(st[1]))` and `$(type_name(st[2]))`", e)
+        return nothing
+    elseif name === :norm
+        _numeric(st[1]) && (_report!(ck, "E004", "`norm` needs an array, got `$(type_name(st[1]))`", e); return nothing)
+        return REAL
+    elseif name === :cross
+        if length(st) == 2 && st[1].kind == :Vec && st[2].kind == :Vec &&
+           st[1].args == (3,) && st[2].args == (3,)
+            return TypeSpec(:Vec, (3,))
+        end
+        _report!(ck, "E004", "`cross` needs two `Vec{3}` values", e)
+        return nothing
+    elseif name === :transpose
+        if st[1].kind == :Mat
+            return TypeSpec(:Mat, (st[1].args[2], st[1].args[1]))
+        end
+        return st[1]
+    elseif name === :deadzone || name === :saturate
+        for (i, t) in enumerate(st)
+            if !_numeric(t)
+                _report!(ck, "E004", "`$name` needs numeric arguments, got `$(type_name(t))`", e.args[i])
+                return nothing
+            end
+        end
+        return REAL
+    elseif name === :interp1 || name === :interp2
+        return REAL
+    elseif name === :previous || name === :hold
+        return st[1]
+    end
+
+    for (i, t) in enumerate(st)
+        if !_numeric(t)
+            _report!(
+                ck,
+                "E004",
+                "`Bool` value passed to `$name`",
+                e.args[i];
+                hint = "convert it first, or use it in `ifelse`",
+            )
+            return nothing
+        end
+    end
+    # Preserve Int when every argument is Int and the function stays integral.
+    integral = name in (:abs, :sign, :min, :max, :clamp, :floor, :ceil, :round, :mod, :rem, :hypot)
+    if integral && all(t -> t.kind == :Int, st)
+        return INT
+    end
+    return REAL
+end
+
+function _check_ddt!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
+    arg = e.args[1]
+    if arg isa Name
+        n = arg.name
+        if haskey(ck.decls, n)
+            d = ck.decls[n]
+            push!(ck.used, n)
+            if d.scope == :variables
+                return resolve_type(d.type, ck.consts)
+            end
+            what = d.scope == :parameters ? "a parameter" :
+                   d.scope == :constants ? "a constant" :
+                   "declared in " * scope_string(d.scope)
+            _report!(
+                ck,
+                "E004",
+                "`ddt` needs a variable, but `$n` is $what",
+                arg;
+                hint = "declare the integrated quantity in @variables",
+            )
+            return nothing
+        end
+    elseif arg isa Field
+        _report!(
+            ck,
+            "E004",
+            "`ddt` needs a variable, not a port field",
+            arg;
+            hint = "declare the state in @variables and integrate that",
+        )
+        return nothing
+    end
+    t = _check_expr!(ck, arg)
+    t === nothing && return nothing
+    _report!(
+        ck,
+        "E004",
+        "`ddt` needs a declared variable",
+        arg;
+        hint = "declare it in @variables",
+    )
+    return nothing
+end
+
+function _check_binop!(ck::Checker, e::BinOp)::Union{TypeSpec,Nothing}
+    op = e.op
+    is_integer_power = op === :^ && e.rhs isa Lit && e.rhs.value isa Integer
+    key = op === :^ ? (is_integer_power ? :pow_int : :pow_real) : operator_rule_key(op)
+    if key === nothing
+        hint = op === Symbol("%") ? "use `mod(a, b)` or `rem(a, b)`" :
+               op === Symbol("÷") ? "use `floor(a / b)` or `div(a, b)`" : nothing
+        _report!(ck, "E002", "operator `$op` is not on the whitelist", e; hint = hint)
+        return nothing
+    end
+    if !syntax_allowed(key, ck.context)
+        _report!(
+            ck,
+            "E001",
+            "operator `$op` is not allowed in $(ck.context == :default ? "a default" : "@equations")",
+            e;
+            hint = "see the operator table in the language spec",
+        )
+        return nothing
+    end
+    a = _check_expr!(ck, e.lhs)
+    b = _check_expr!(ck, e.rhs)
+    (a === nothing || b === nothing) && return nothing
+    for (t, node) in ((a, e.lhs), (b, e.rhs))
+        if t.kind == :Bool
+            _report!(
+                ck,
+                "E004",
+                "Bool value used in arithmetic",
+                node;
+                hint = "convert it first with a Type conversion block (Real)",
+            )
+            return nothing
+        elseif t.kind == :Power
+            _report!(ck, "E004", "a power port cannot be used in arithmetic", node)
+            return nothing
+        end
+    end
+    if op === :^
+        # An integer literal exponent expands to multiplication (a negative one to division);
+        # a real exponent maps to `pow`. Both are whitelisted in every expression scope.
+    end
+    return _arith_result!(ck, op, a, b, e)
+end
+
+function _arith_result!(ck::Checker, op::Symbol, a::TypeSpec, b::TypeSpec, e::BinOp)
+    if _scalar_numeric(a) && _scalar_numeric(b)
+        op === :/ && return REAL
+        return a.kind == :Int && b.kind == :Int ? INT : REAL
+    end
+    if op === :+ || op === :-
+        if a.kind == b.kind && a.args == b.args
+            return a
+        end
+        _report!(
+            ck,
+            "E004",
+            "cannot `$op` `$(type_name(a))` and `$(type_name(b))`",
+            e;
+            hint = "both sides must have the same type and size",
+        )
+        return nothing
+    end
+    if op === :*
+        a.kind == :Mat && b.kind == :Vec && a.args[2] == b.args[1] &&
+            return TypeSpec(:Vec, (a.args[1],))
+        a.kind == :Mat && b.kind == :Mat && a.args[2] == b.args[1] &&
+            return TypeSpec(:Mat, (a.args[1], b.args[2]))
+        if a.kind == :Vec && b.kind == :Vec
+            _report!(
+                ck,
+                "E004",
+                "`*` on two vectors is not the dot product",
+                e;
+                hint = "use `dot(a, b)`",
+            )
+            return nothing
+        end
+        _scalar_numeric(a) && is_array_type(b) && return b
+        is_array_type(a) && _scalar_numeric(b) && return a
+        _report!(ck, "E004", "cannot multiply `$(type_name(a))` and `$(type_name(b))`", e)
+        return nothing
+    end
+    if op === :/
+        is_array_type(a) && _scalar_numeric(b) && return a
+        _report!(ck, "E004", "cannot divide `$(type_name(a))` by `$(type_name(b))`", e; hint = "divide by a scalar, or use `\\` for a linear solve")
+        return nothing
+    end
+    if op === Symbol("\\")
+        a.kind == :Mat && b.kind == :Vec && return TypeSpec(:Vec, (a.args[2],))
+        a.kind == :Mat && b.kind == :Mat && return TypeSpec(:Mat, (a.args[2], b.args[2]))
+        _scalar_numeric(a) && _scalar_numeric(b) && return REAL
+        _report!(ck, "E004", "cannot solve `$(type_name(a))` \\ `$(type_name(b))`", e)
+        return nothing
+    end
+    _report!(ck, "E004", "operator `$op` is not defined for `$(type_name(a))` and `$(type_name(b))`", e)
+    return nothing
+end
+
+function _check_unop!(ck::Checker, e::UnOp)::Union{TypeSpec,Nothing}
+    t = _check_expr!(ck, e.operand)
+    if e.op === Symbol("!")
+        if !ck.allow_cond
+            _report!(
+                ck,
+                "E001",
+                "`!` is only allowed inside `ifelse`",
+                e;
+                hint = "write `ifelse(!flag, a, b)`",
+            )
+            return nothing
+        end
+        if t !== nothing && t.kind != :Bool
+            _report!(ck, "E004", "`!` needs a Bool, got `$(type_name(t))`", e)
+            return nothing
+        end
+        return BOOL
+    end
+    t === nothing && return nothing
+    if t.kind == :Bool
+        _report!(ck, "E004", "Bool value used in arithmetic"; e.operand)
+        return nothing
+    end
+    _scalar_numeric(t) || is_array_type(t) || return nothing
+    return t
+end
+
+function _check_index!(ck::Checker, e::Index)::Union{TypeSpec,Nothing}
+    base = _check_expr!(ck, e.base)
+    for i in e.indices
+        it = _check_expr!(ck, i)
+        if it !== nothing && it.kind != :Int && !(i isa Lit && i.value isa Integer)
+            _report!(ck, "E004", "an index must be `Int`, got `$(type_name(it))`", i)
+        end
+    end
+    base === nothing && return nothing
+    if base.kind == :Vec
+        if length(e.indices) != 1
+            _report!(
+                ck,
+                "E005",
+                "a vector takes one index, got $(length(e.indices))",
+                e;
+            )
+            return nothing
+        end
+        if e.indices[1] isa Lit && e.indices[1].value isa Integer
+            idx = Int(e.indices[1].value)
+            n = base.args[1]
+            if n isa Integer && !(1 <= idx <= n)
+                _report!(
+                    ck,
+                    "E005",
+                    "index out of range: `$(_show(e))` but `$(_show(e.base))` is `$(type_name(base))`",
+                    e;
+                    hint = "use an index between 1 and $n, or raise the structural constant N",
+                )
+                return nothing
+            end
+        end
+        return REAL
+    elseif base.kind == :Mat
+        if length(e.indices) != 2
+            _report!(ck, "E005", "a matrix takes two indices, got $(length(e.indices))", e)
+            return nothing
+        end
+        if length(base.args) == 2 && base.args[1] isa Integer && base.args[2] isa Integer
+            for (k, node) in enumerate(e.indices)
+                node isa Lit && node.value isa Integer || continue
+                idx = Int(node.value)
+                n = base.args[k]
+                if !(1 <= idx <= n)
+                    _report!(
+                        ck,
+                        "E005",
+                        "index out of range: `$(_show(e))` but `$(_show(e.base))` is `$(type_name(base))`",
+                        e;
+                        hint = "index $k must be between 1 and $n",
+                    )
+                    return nothing
+                end
+            end
+        end
+        return REAL
+    end
+    _report!(
+        ck,
+        "E005",
+        "`$(_show(e.base))` is not an array, so it cannot be indexed",
+        e;
+        hint = "only `Vec` and `Mat` values have indices",
+    )
+    return nothing
+end
+
+_show(e::Expr) = sprint(show, e)
+
+function _check_vector!(ck::Checker, e::VectorLit)::Union{TypeSpec,Nothing}
+    for el in e.elements
+        t = _check_expr!(ck, el)
+        t === nothing && return nothing
+        if is_array_type(t)
+            _report!(ck, "E004", "a vector element cannot be an array", el)
+            return nothing
+        elseif t.kind == :Bool
+            _report!(ck, "E004", "a `Vec` holds Real values; Bool is not allowed", el)
+            return nothing
+        end
+    end
+    return TypeSpec(:Vec, (length(e.elements),))
+end
+
+function _check_matrix!(ck::Checker, e::MatrixLit)::Union{TypeSpec,Nothing}
+    for row in e.rows, el in row
+        t = _check_expr!(ck, el)
+        t === nothing && return nothing
+        if is_array_type(t)
+            _report!(ck, "E004", "a matrix element cannot be an array", el)
+            return nothing
+        elseif t.kind == :Bool
+            _report!(ck, "E004", "a `Mat` holds Real values; Bool is not allowed", el)
+            return nothing
+        end
+    end
+    return TypeSpec(:Mat, (length(e.rows), length(e.rows[1])))
+end
+
+function _check_ifelse!(ck::Checker, e::IfElse)::Union{TypeSpec,Nothing}
+    c = _check_cond!(ck, e.cond)
+    if c !== nothing && c.kind != :Bool
+        _report!(
+            ck,
+            "E004",
+            "`ifelse` condition must be Bool, got `$(type_name(c))`",
+            e.cond;
+            hint = "write a comparison, e.g. `ifelse(x > 0, a, b)`",
+        )
+    end
+    a = _check_expr!(ck, e.then)
+    b = _check_expr!(ck, e.otherwise)
+    (a === nothing || b === nothing) && return nothing
+    if assignable(a, b)
+        return a
+    elseif assignable(b, a)
+        return b
+    end
+    _report!(
+        ck,
+        "E004",
+        "`ifelse` branches have different types: `$(type_name(a))` and `$(type_name(b))`",
+        e;
+    )
+    return nothing
+end
+
+function _check_comparison!(ck::Checker, e::Comparison)::Union{TypeSpec,Nothing}
+    a = _check_expr!(ck, e.lhs)
+    b = _check_expr!(ck, e.rhs)
+    if !ck.allow_cond
+        _report!(
+            ck,
+            "E001",
+            "comparisons are only allowed inside `ifelse` in @equations",
+            e;
+            hint = "write `ifelse(a < b, x, y)`",
+        )
+    end
+    if a !== nothing && b !== nothing
+        if a.kind == :Bool && b.kind == :Bool
+            if e.op === Symbol("==") || e.op === Symbol("!=")
+                return BOOL
+            end
+            _report!(ck, "E004", "order comparisons need numbers, not Bool"; e)
+            return BOOL
+        end
+        if !_numeric(a) || !_numeric(b)
+            _report!(
+                ck,
+                "E004",
+                "cannot compare `$(type_name(a))` and `$(type_name(b))`",
+                e;
+            )
+            return nothing
+        end
+        if !(a.kind == b.kind || (a.kind == :Int && b.kind == :Real) ||
+             (a.kind == :Real && b.kind == :Int))
+            _report!(
+                ck,
+                "E004",
+                "cannot compare `$(type_name(a))` and `$(type_name(b))`",
+                e;
+            )
+        end
+    end
+    return BOOL
+end
+
+function _check_boolop!(ck::Checker, e::BoolOp)::Union{TypeSpec,Nothing}
+    if !ck.allow_cond
+        _report!(
+            ck,
+            "E001",
+            "`$(e.op)` is only allowed inside `ifelse` in @equations",
+            e;
+            hint = "write `ifelse(cond1 && cond2, a, b)`",
+        )
+    end
+    for operand in e.operands
+        t = _check_expr!(ck, operand)
+        if t !== nothing && t.kind != :Bool
+            _report!(
+                ck,
+                "E004",
+                "`$(e.op)` needs Bool operands, got `$(type_name(t))`",
+                operand,
+            )
+        end
+    end
+    return BOOL
+end
+
+# ---------------------------------------------------------------------------------------
+# block_interface (plan 3.2)
+# ---------------------------------------------------------------------------------------
+
+function _const_value(d::Decl, consts::AbstractDict)
+    if d.default !== nothing
+        ok, value = try_eval_const(d.default, consts)
+        ok && (value isa Number || value isa Bool || value isa AbstractArray) && return value
+    end
+    return something(d.default_text, "")
+end
+
+_type_string(t::TypeSpec) = String(type_element(t))
+
+function _size_of(t::TypeSpec, consts::AbstractDict)
+    sz = type_size(t, consts)
+    return sz === nothing ? Int[] : sz
+end
+
+"""
+    block_interface(pb::ParsedBlock) -> NamedTuple
+
+The catalog interface of plan 3.2 and `contracts/schemas/catalog.schema.json`:
+`constants, parameters, inputs, outputs, ports, variables, causality`. Each entry is a
+`Vector` of `NamedTuple`s with exactly the schema fields, so J1.3 can put it straight into
+`catalog.get`.
+
+Sizes are the default expansion of the block's structural constants (`Vec{N}` with `N = 2`
+gives `[2]`); an unresolvable size gives `[]` here and E005 from `check_block`.
+`type` is the scalar element type (`Real` for `Vec`/`Mat`, per the schema).
+"""
+function block_interface(pb::ParsedBlock)
+    consts = constant_env(pb)
+
+    constants = [
+        (
+            name = String(d.name),
+            type = _type_string(d.type),
+            default = _const_value(d, consts),
+            structural = get(d.attrs, :structural, false) === true,
+        ) for d in get(pb.declaration_map, :constants, Decl[])
+    ]
+
+    parameters = [
+        (
+            name = String(d.name),
+            type = _type_string(d.type),
+            default = something(d.default_text, ""),
+            unit = get(d.attrs, :unit, nothing),
+            min = get(d.attrs, :min, nothing),
+            max = get(d.attrs, :max, nothing),
+            tunable = get(d.attrs, :tunable, false) === true,
+            description = something(get(d.attrs, :description, nothing), ""),
+            options = get(d.attrs, :options, nothing),
+        ) for d in get(pb.declaration_map, :parameters, Decl[])
+    ]
+
+    io_entries(scope) = [
+        (
+            name = String(d.name),
+            type = _type_string(d.type),
+            size = _size_of(d.type, consts),
+            unit = get(d.attrs, :unit, nothing),
+        ) for d in get(pb.declaration_map, scope, Decl[])
+    ]
+
+    port_entries = [
+        (
+            name = String(d.name),
+            domain = String(something(type_domain(d.type), :Generic)),
+            size = domain_size(type_domain(d.type)) == 1 ? Int[] :
+                   Int[domain_size(type_domain(d.type))],
+        ) for d in get(pb.declaration_map, :ports, Decl[])
+    ]
+
+    variables = [
+        let st = get(d.attrs, :state, nothing)
+            (
+                name = String(d.name),
+                type = _type_string(d.type),
+                size = _size_of(d.type, consts),
+                unit = get(d.attrs, :unit, nothing),
+                start = something(d.default_text, ""),
+                state = st === nothing ? nothing : String(st),
+            )
+        end for d in get(pb.declaration_map, :variables, Decl[])
+    ]
+
+    causality_entries = [
+        (
+            ports = String[String(p) for p in c.ports],
+            kind = String(c.kind),
+            value = c.value === nothing ? nothing : String(c.value),
+        ) for c in pb.causality_items
+    ]
+
+    return (
+        constants = constants,
+        parameters = parameters,
+        inputs = io_entries(:inputs),
+        outputs = io_entries(:outputs),
+        ports = port_entries,
+        variables = variables,
+        causality = causality_entries,
+    )
+end
+
+"""
+    block_equations(pb::ParsedBlock) -> Vector{Any}
+
+The checked equation AST: the `@equations` items (`Equation`, `IfEquation`, `ForEquation`)
+when `check_block` reports no error, and an empty vector otherwise. Warnings (W204, and the
+block-level E103) do not suppress the equations.
+"""
+function block_equations(pb::ParsedBlock)
+    for d in check_block(pb)
+        d.severity == "error" && return Any[]
+    end
+    return Any[pb.equation_items...]
+end

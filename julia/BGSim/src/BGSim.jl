@@ -4,9 +4,11 @@
 Modeling and simulation library for bg-sim: the language front end, the lowering to
 ModelingToolkit, and the simulation worker.
 
-This module is the package skeleton (milestone M0.3). It provides the verified
-ModelingToolkit interop helpers that the lowering stage (plan section 5.8) is built on,
-plus a `PrecompileTools` workload that warms the MTK compile and codegen path.
+Milestone M0.3 provides the verified ModelingToolkit interop helpers that the lowering stage
+(plan section 5.8) is built on, plus a `PrecompileTools` workload that warms the MTK compile
+and codegen path. Work package J1.1 adds the language front end: `src/diagnostics.jl` (the
+plan 3.4 diagnostic contract) and `src/syntax/` (the parser, the AST, the whitelist and the
+block-level checks).
 """
 module BGSim
 
@@ -16,11 +18,41 @@ using Symbolics: Num
 using SymbolicIndexingInterface: getname, getu, setp
 using OrdinaryDiffEqRosenbrock
 using PrecompileTools: @setup_workload, @compile_workload
+using JuliaSyntax
 
 export mtk_variable, mtk_parameter, mtk_discrete, signal_name
+
+# The diagnostics contract (plan 3.4).
+include("diagnostics.jl")
+
+# The language front end (plan section 4).
+include("syntax/ast.jl")
+include("syntax/constfold.jl")
+include("syntax/whitelist.jl")
+include("syntax/parse.jl")
+include("syntax/scopes.jl")
 
 include("lower/mtk.jl")
 include("precompile.jl")
 include("worker/server.jl")
+
+# Public front-end API. Do not rename these: J1.2/J1.3/J1.4 are written against them.
+export parse_block, parse_blocks, check_block, block_interface, block_equations
+
+# AST accessors (never read the fields directly).
+export block_name, block_ref, block_source, block_filename, block_range, block_diagnostics
+export scopes, declarations, equations, causality, ports
+export decl_name, decl_type, decl_default, decl_attrs, decl_scope, decl_range,
+    decl_default_text
+export expr_range
+export block_balance, constant_env
+export type_kind, type_args, type_name, type_size, type_element, type_domain, resolve_type,
+    domain_size
+export causality_ports, causality_kind, causality_value
+export ParsedBlock, Decl, TypeSpec, CausalityDecl
+
+# Diagnostics.
+export Diagnostic, SourceRange, SourceRef, Related, severity_of, diag, to_namedtuple,
+    to_dict, from_dict, sort_diagnostics, source_kind, scope_string
 
 end # module BGSim

@@ -228,3 +228,6 @@ using SymbolicIndexingInterface: getu, setu, getp, setp
         @test isapprox(sol(2.0, idxs = x), 0.5 - 2.0 * 1.5; rtol = 1e-6)
     end
 end
+
+# Work package J1.1: the language front end (parser, whitelist, block-level checks).
+include("test_syntax.jl")
