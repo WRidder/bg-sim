@@ -20,7 +20,7 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | J1.5 | J | M1 | J1.4 | todo | Lowering and simulation (continuous) |
 | J1.6 | J | M1 | J1.5, M0.4 | todo | Worker protocol |
 | P1.1 | P | M1 | M0.4 | done | `ProjectStore` + projects/models/library CRUD via its own router (app.py untouched). Model/project documents validated against the pydantic models **and** the JSON Schemas (pydantic alone accepts nulls the contracts reject). Atomic writes (`mkstemp` + fsync + `os.replace`, LF), path-traversal rejection, create-from-example with name rewrite, catalog-cache invalidation on library writes. 57 new tests; 219 pytest total, ruff clean. Live: create 201, model PUT 200, traversal 404, invalid model 422. |
-| P1.2 | P | M1 | M0.4 | todo | Runs, decimation, CSV |
+| P1.2 | P | M1 | M0.4 | done | `runs.py` (start, cancel, manifest, `/data`, CSV, run WS at both `/ws/runs/{id}` and `/api/ws/runs/{id}`, live decimated tails, history pruning) and a pure `decimate.py`. Deviation: equal-count reshape + per-row min/max instead of `np.minimum.reduceat` — reduceat measured 145 ms, reshape path **27–30 ms** for 1e7 × 10, target < 50 ms. Event rows are kept in addition to the `2*px` budget. Live smoke: run → manifest `done`, 4 signals, n=1001, `/data` 16 024 bytes, CSV 1003 lines. |
 | W1.1 | W | M1 | M0.5 | todo | Library and canvas |
 | W1.2 | W | M1 | W1.1 | todo | Inspector |
 | W1.3 | W | M1 | W1.1 | todo | Diagnostics panel and canvas markers |
@@ -94,7 +94,9 @@ Julia worker answers only `ping`/`cache.clear` (M0.4 scope; J1.6 completes the p
 | CONTRACT-1 | fixtures added | `model.rlc.iconic.json` and `model.rlc.bondgraph.json` added to `contracts/fixtures/model/valid/` (plan 9.3, R = 10 Ω, L = 10 mH, C = 100 µF) because J1.4's acceptance names RLC fixtures that M0.2 did not create. No schema change, so no binding change was needed; pytest 105 and vitest 54 pass with them. |
 | DEC-1 | ordering | J1.2 is run **after** J1.1, although its plan `Depends` is only M0.3. J1.2's `check_units` consumes J1.1's AST and `Diagnostic` type, so running them concurrently would race on the same interface. The orchestrator's J1.1 brief pins the AST and diagnostic API as a contract so J1.2 can rely on it. |
 | DEC-2 | tooling | `tools/check.py` needed a Windows fix (npm/npx are `.cmd` shims; `CreateProcess` cannot launch them) and now only runs npm scripts that exist. It also gained the plan-6 requirement that `--lane x` runs the `pytest -m julia` integration test. |
-| DEC-3 | layout | `uv run bgsim` from the repo root failed (uv project discovery stopped at the root, which had no `pyproject.toml`). Added a root `pyproject.toml` as a **uv workspace root** (`members = ["backend"]`, project `bg-sim` exposing the same `bgsim` script) and a root `.python-version` pinned to 3.13. `uv run bgsim`, `uv run --directory backend bgsim` and `uv run docs/tools/check.py` all work now; both environments run Python 3.13.2. |
+| DEC-3 | layout | `uv run bgsim` from the repo root failed (uv project discovery stopped at the root, which had no `pyproject.toml`). Added a root `pyproject.toml` as a **uv workspace root** (`members = ["backend"]`, project `bg-sim` exposing the same `bgsim` script) and a root `.python-version` pinned to 3.13. `uv run bgsim`, `uv run --directory backend bgsim` and `uv run tools/check.py` all work now; both environments run Python 3.13.2. |
+| DEC-4 | deviation | P1.2 decimates with equal-count reshape + per-row min/max instead of plan 6's `np.minimum.reduceat`/`np.maximum.reduceat` (145 ms → 27–30 ms at 1e7 × 10, so 2× inside the 50 ms target). Buckets are equal-count, identical to equal-time on the uniform solver grid; event rows are kept on top of the `2*px` budget. |
+| REQ-1 | requirement | The backend's live run tail needs the run manifest's `signals` while a run is still executing. J1.5/J1.6 must therefore write a `status: "running"` manifest with the full signal list at run start and update it at the end (the fake worker already does this). |
 | P1.3 | WP added | The plan's WP list leaves `GET /api/catalog`, `POST /api/check/block` and `POST /api/check/model` (plan 3.7) unowned, and the web lane needs all three in M1. Added **P1.3 Catalog and check proxies**; it also creates the empty `projects.py`/`runs.py` router skeletons so P1.1 and P1.2 never edit `app.py` concurrently. |
 
 ## Measured numbers
@@ -107,4 +109,4 @@ Julia worker answers only `ping`/`cache.clear` (M0.4 scope; J1.6 completes the p
 | model.check 60-element model | < 1.5 s | |
 | DC motor first run | < 10 s | |
 | Parameter-only re-run | < 300 ms | |
-| Decimation 1e7 × 10 | < 50 ms | |
+| Decimation 1e7 × 10 | < 50 ms | 27–30 ms (P1.2) |
