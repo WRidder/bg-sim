@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/run-manifest.schema.json",
+  "title": "RunManifest",
+  "description": "Run manifest (plan 3.5), stored as <project>/runs/<run-id>/manifest.json next to columns.f64 and stream.f64.",
+  "type": "object",
+  "required": [
+    "id",
+    "model",
+    "modelHash",
+    "created",
+    "status",
+    "settings",
+    "signals",
+    "time",
+    "diagnostics",
+    "layout"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Run id; the name of the run folder."
+    },
+    "model": {
+      "type": "string",
+      "description": "Model name."
+    },
+    "modelHash": {
+      "type": "string",
+      "pattern": "^(sha256:)?[0-9a-f]{64}$",
+      "description": "Hash of the model document this run was made from."
+    },
+    "created": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 creation time."
+    },
+    "status": { "title": "RunStatus", "enum": ["running", "done", "failed", "cancelled"] },
+    "settings": {
+      "$ref": "https://bgsim.local/schemas/model.schema.json#/$defs/settings"
+    },
+    "stats": { "$ref": "#/$defs/stats" },
+    "signals": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/signal" },
+      "description": "The recorded signals, in column order of columns.f64."
+    },
+    "time": { "$ref": "#/$defs/time" },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+      }
+    },
+    "layout": { "const": "columnar-f64-v1" },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "stats": {
+      "title": "RunStats",
+      "type": "object",
+      "required": ["compile_s", "sim_s", "steps", "events", "states", "equations"],
+      "properties": {
+        "compile_s": { "type": "number", "minimum": 0 },
+        "sim_s": { "type": "number", "minimum": 0 },
+        "steps": { "type": "integer", "minimum": 0 },
+        "events": { "type": "integer", "minimum": 0 },
+        "states": { "type": "integer", "minimum": 0 },
+        "equations": { "type": "integer", "minimum": 0 },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "signal": {
+      "title": "RunSignal",
+      "type": "object",
+      "required": ["id", "kind", "path", "type"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?(?:\\.[A-Za-z_][A-Za-z0-9_]*)?$",
+          "description": "Signal id (plan 3.1)."
+        },
+        "unit": { "type": ["string", "null"] },
+        "kind": {
+          "title": "RunSignalKind",
+          "enum": [
+            "state",
+            "algebraic",
+            "observed",
+            "port",
+            "power",
+            "discrete",
+            "input",
+            "output"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^([A-Za-z_][A-Za-z0-9_]*/)*[A-Za-z_][A-Za-z0-9_]*$",
+          "description": "Instance path of the owning block."
+        },
+        "type": {
+          "title": "ValueType",
+          "enum": ["Real", "Int", "Bool"],
+          "description": "Bool and Int signals are stored as Float64 in the data files."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "time": {
+      "title": "RunTime",
+      "type": "object",
+      "required": ["n", "t0", "t1"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 0 },
+        "t0": { "type": "number" },
+        "t1": { "type": "number" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

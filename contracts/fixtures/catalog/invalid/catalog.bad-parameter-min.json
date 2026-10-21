@@ -1,0 +1,30 @@
+{
+  "$comment": "Invalid: parameter R carries `min` as the string \"unknown\" instead of a number or null (plan 3.2).",
+  "language": "0.1.0",
+  "blocks": [
+    {
+      "ref": "stdlib:electrical/Resistor",
+      "name": "Resistor",
+      "group": "Electrical",
+      "release": "0.1",
+      "description": "Electrical resistor between p and n.",
+      "icon": "elec-resistor",
+      "constants": [],
+      "parameters": [
+        { "name": "R", "type": "Real", "default": "1000.0", "unit": "Ohm", "min": "unknown", "max": null, "tunable": false, "description": "Resistance", "options": null }
+      ],
+      "inputs": [],
+      "outputs": [],
+      "ports": [
+        { "name": "p", "domain": "Electrical", "size": [] },
+        { "name": "n", "domain": "Electrical", "size": [] }
+      ],
+      "variables": [],
+      "causality": [],
+      "source": "@block Resistor begin\n    @ports begin\n        p::Power{Electrical}\n        n::Power{Electrical}\n    end\n    @parameters R::Real = 1000.0, [unit = \"Ohm\", min = 0, description = \"Resistance\"]\n    @equations begin\n        p.f + n.f ~ 0.0\n        p.e - n.e ~ R * p.f\n    end\nend",
+      "path": "stdlib/electrical/Resistor.jl"
+    }
+  ],
+  "junctions": [],
+  "domains": []
+}

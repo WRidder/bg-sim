@@ -1,0 +1,372 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/catalog.schema.json",
+  "title": "Catalog",
+  "description": "The library catalog (plan 3.2), produced by the worker and consumed by the editor: the available blocks with their full interface, the junction types and the power domains.",
+  "type": "object",
+  "required": ["language", "blocks", "junctions", "domains"],
+  "properties": {
+    "language": {
+      "type": "string",
+      "description": "Language version stamp, written into every saved model and block."
+    },
+    "blocks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/catalogBlock" }
+    },
+    "junctions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/junction" }
+    },
+    "domains": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/domain" }
+    },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "catalogBlock": {
+      "title": "CatalogBlock",
+      "description": "One library block: metadata, the interface of its declarations and its full source text.",
+      "type": "object",
+      "required": [
+        "ref",
+        "name",
+        "group",
+        "release",
+        "description",
+        "icon",
+        "constants",
+        "parameters",
+        "inputs",
+        "outputs",
+        "ports",
+        "variables",
+        "causality",
+        "source",
+        "path"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "pattern": "^(stdlib:[A-Za-z0-9_]+(/[A-Za-z0-9_]+)*|project:[A-Za-z_][A-Za-z0-9_]*|inline:[A-Za-z0-9_.-]+)$",
+          "description": "Block reference, plan 3.1."
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "group": {
+          "type": "string",
+          "description": "Human-readable group, e.g. \"Bond graph\"."
+        },
+        "release": {
+          "type": "string",
+          "description": "Library release this block ships in, e.g. \"0.1\"."
+        },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "constants": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/constantDecl" }
+        },
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/parameterDecl" }
+        },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ioDecl" }
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ioDecl" }
+        },
+        "ports": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/portDecl" }
+        },
+        "variables": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/variableDecl" }
+        },
+        "causality": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/causalityDecl" }
+        },
+        "source": {
+          "type": "string",
+          "description": "Full @block source text, for \"open source\" and \"copy to project\"."
+        },
+        "path": {
+          "type": "string",
+          "description": "Source path relative to the repository root, e.g. stdlib/bondgraph/C.jl."
+        }
+      },
+      "additionalProperties": false
+    },
+    "blockInterface": {
+      "title": "BlockInterface",
+      "description": "The declarations of a block, without its metadata. Returned by block.check so the editor can refresh ports, inputs and parameters while the user types.",
+      "type": "object",
+      "required": [
+        "constants",
+        "parameters",
+        "inputs",
+        "outputs",
+        "ports",
+        "variables",
+        "causality"
+      ],
+      "properties": {
+        "constants": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/constantDecl" }
+        },
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/parameterDecl" }
+        },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ioDecl" }
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ioDecl" }
+        },
+        "ports": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/portDecl" }
+        },
+        "variables": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/variableDecl" }
+        },
+        "causality": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/causalityDecl" }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "constantDecl": {
+      "title": "ConstantDecl",
+      "type": "object",
+      "required": ["name", "type", "default", "structural"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "type": { "title": "ValueType", "enum": ["Real", "Int", "Bool"] },
+        "default": {
+          "description": "Constant value: number, boolean, expression string or array (vector, matrix).",
+          "oneOf": [
+            { "type": "number" },
+            { "type": "boolean" },
+            { "type": "string" },
+            {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  { "type": "number" },
+                  { "type": "array", "items": { "type": "number" } }
+                ]
+              }
+            }
+          ]
+        },
+        "structural": {
+          "type": "boolean",
+          "description": "True when the constant sets an array size or otherwise changes the structure."
+        }
+      },
+      "additionalProperties": false
+    },
+    "parameterDecl": {
+      "title": "ParameterDecl",
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "default",
+        "unit",
+        "min",
+        "max",
+        "tunable",
+        "description",
+        "options"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "type": { "title": "ValueType", "enum": ["Real", "Int", "Bool"] },
+        "default": {
+          "type": "string",
+          "description": "Default value as a constant expression string, plan 5.2.4."
+        },
+        "unit": {
+          "type": ["string", "null"],
+          "description": "Unit string, or null when the parameter is dimensionless. Generic blocks may use the pseudo-dimensions effort and flow (D9)."
+        },
+        "min": { "type": ["number", "null"] },
+        "max": { "type": ["number", "null"] },
+        "tunable": {
+          "type": "boolean",
+          "description": "True when the parameter stays adjustable at runtime."
+        },
+        "description": { "type": "string" },
+        "options": {
+          "type": ["array", "null"],
+          "items": { "type": "string" },
+          "description": "Allowed labels for an Int enumeration parameter (D11), or null."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ioDecl": {
+      "title": "IoDecl",
+      "type": "object",
+      "required": ["name", "type", "size", "unit"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "type": { "title": "ValueType", "enum": ["Real", "Int", "Bool"] },
+        "size": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 },
+          "description": "Array shape; empty for a scalar. Sizes are the default expansion of the block's structural constants."
+        },
+        "unit": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "portDecl": {
+      "title": "PortDecl",
+      "type": "object",
+      "required": ["name", "domain", "size"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "domain": {
+          "title": "DomainName",
+          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+        },
+        "size": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "variableDecl": {
+      "title": "VariableDecl",
+      "type": "object",
+      "required": ["name", "type", "size", "unit", "start", "state"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "type": { "title": "ValueType", "enum": ["Real", "Int", "Bool"] },
+        "size": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "unit": { "type": ["string", "null"] },
+        "start": {
+          "type": "string",
+          "description": "Start value as a constant expression string."
+        },
+        "state": {
+          "title": "VariableState",
+          "type": ["string", "null"],
+          "enum": ["prefer", "avoid", null],
+          "description": "State-selection hint (spec: state = :prefer / :avoid), or null."
+        }
+      },
+      "additionalProperties": false
+    },
+    "causalityDecl": {
+      "title": "CausalityDecl",
+      "type": "object",
+      "required": ["ports", "kind", "value"],
+      "properties": {
+        "ports": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "kind": {
+          "title": "CausalityKind",
+          "enum": ["preferred", "fixed", "transformer", "gyrator"],
+          "description": "Causality kind, D6."
+        },
+        "value": {
+          "title": "CausalityValue",
+          "type": ["string", "null"],
+          "enum": ["effort_out", "flow_out", null],
+          "description": "effort_out or flow_out for preferred and fixed causality; null for transformer and gyrator."
+        }
+      },
+      "additionalProperties": false
+    },
+    "junction": {
+      "title": "CatalogJunction",
+      "type": "object",
+      "required": ["ref"],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "pattern": "^junction:(0|1)$"
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "domain": {
+      "title": "CatalogDomain",
+      "type": "object",
+      "required": ["name", "effort", "flow", "across", "size"],
+      "properties": {
+        "name": {
+          "title": "DomainName",
+          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+        },
+        "effort": { "$ref": "#/$defs/domainVariable" },
+        "flow": { "$ref": "#/$defs/domainVariable" },
+        "across": {
+          "title": "AcrossField",
+          "type": ["string", "null"],
+          "enum": ["e", "f", null],
+          "description": "Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted."
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Port size: 1 for scalar domains."
+        }
+      },
+      "additionalProperties": false
+    },
+    "domainVariable": {
+      "title": "DomainVariable",
+      "type": "object",
+      "required": ["name", "unit"],
+      "properties": {
+        "name": { "type": "string" },
+        "unit": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    }
+  }
+}

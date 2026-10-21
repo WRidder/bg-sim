@@ -1,0 +1,6 @@
+{
+  "$comment": "A request with an empty params object (plan 3.6).",
+  "id": 1,
+  "method": "ping",
+  "params": {}
+}

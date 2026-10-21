@@ -1,0 +1,7 @@
+{
+  "$comment": "Invalid: the error object has no `message` (plan 3.6).",
+  "id": 19,
+  "error": {
+    "diagnostics": []
+  }
+}

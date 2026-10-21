@@ -1,0 +1,350 @@
+[
+  {
+    "code": "E000",
+    "severity": "error",
+    "message": "unexpected end of input: the `@block` opened on line 3 is never closed",
+    "hint": "add `end` to close the block",
+    "path": "Plant/Filter1",
+    "block": null,
+    "scope": null,
+    "source": {
+      "kind": "inline",
+      "ref": "inline:n7",
+      "range": { "line": 9, "col": 1, "endLine": 9, "endCol": 1 }
+    },
+    "node": "n7",
+    "connection": null
+  },
+  {
+    "code": "E001",
+    "severity": "error",
+    "message": "`while` is not allowed in @discrete",
+    "hint": "use a bounded `for i in 1:N` loop; N must be a constant",
+    "path": "Ctrl/PI1",
+    "block": "project:MyController",
+    "scope": "@discrete",
+    "source": {
+      "kind": "project",
+      "ref": "project:MyController",
+      "range": { "line": 12, "col": 5, "endLine": 12, "endCol": 24 }
+    },
+    "node": "n12",
+    "connection": null
+  },
+  {
+    "code": "E002",
+    "severity": "error",
+    "message": "`rand` is not a built-in function",
+    "hint": "use the `noise_normal(seed, k)` intrinsic for seeded noise",
+    "path": "Plant/Sensor1",
+    "block": null,
+    "scope": "@equations",
+    "source": {
+      "kind": "inline",
+      "ref": "inline:n4",
+      "range": { "line": 6, "col": 13, "endLine": 6, "endCol": 17 }
+    },
+    "node": "n4",
+    "connection": null
+  },
+  {
+    "code": "E003",
+    "severity": "error",
+    "message": "`Kp` is used but not declared",
+    "hint": "declare it in @parameters, or fix the spelling",
+    "path": "Ctrl/PI1",
+    "block": "project:MyController",
+    "scope": "@equations",
+    "source": {
+      "kind": "project",
+      "ref": "project:MyController",
+      "range": { "line": 18, "col": 9, "endLine": 18, "endCol": 11 }
+    },
+    "node": "n12",
+    "connection": null
+  },
+  {
+    "code": "E004",
+    "severity": "error",
+    "message": "Bool value used in arithmetic",
+    "hint": "convert it first with a Type conversion block (Real)",
+    "path": "Ctrl/Compare1",
+    "block": null,
+    "scope": "@equations",
+    "source": {
+      "kind": "inline",
+      "ref": "inline:n21",
+      "range": { "line": 4, "col": 9, "endLine": 4, "endCol": 27 }
+    },
+    "node": "n21",
+    "connection": null
+  },
+  {
+    "code": "E005",
+    "severity": "error",
+    "message": "index out of range: `v[4]` but `v` is `Vec{3}`",
+    "hint": "use an index between 1 and 3, or raise the structural constant N",
+    "path": "Plant/LUT1",
+    "block": null,
+    "scope": "@equations",
+    "source": {
+      "kind": "inline",
+      "ref": "inline:n9",
+      "range": { "line": 5, "col": 15, "endLine": 5, "endCol": 18 }
+    },
+    "node": "n9",
+    "connection": null
+  },
+  {
+    "code": "E006",
+    "severity": "error",
+    "message": "unit inconsistency: cannot add [N] and [m/s]",
+    "hint": "check the units of `F` and `v`; both sides of `~` must have the same dimension",
+    "path": "Plant/Sum1",
+    "block": null,
+    "scope": "@equations",
+    "source": {
+      "kind": "inline",
+      "ref": "inline:n14",
+      "range": { "line": 7, "col": 9, "endLine": 7, "endCol": 25 }
+    },
+    "node": "n14",
+    "connection": null
+  },
+  {
+    "code": "E101",
+    "severity": "error",
+    "message": "input `e` of `PI1` is not connected",
+    "hint": "connect it or add a source (Se/Sf, Fixed, Ground)",
+    "path": "Ctrl/PI1",
+    "block": "project:MyController",
+    "scope": null,
+    "source": null,
+    "node": "n12",
+    "connection": null
+  },
+  {
+    "code": "E102",
+    "severity": "error",
+    "message": "domain mismatch: Electrical port `p` of `V1` is wired to Rotation port `a` of `Gear1`",
+    "hint": "cross domains only through a converter (DCMotor, IdealGear, Rack and pinion)",
+    "path": "Plant/Gear1",
+    "block": "stdlib:rotation/IdealGear",
+    "scope": null,
+    "source": null,
+    "node": "n22",
+    "connection": "c9"
+  },
+  {
+    "code": "E103",
+    "severity": "error",
+    "message": "unbalanced system: 14 unknowns, 13 equations",
+    "hint": "Motor1 declares 3 variables but has 2 equations",
+    "path": "Plant/Motor1",
+    "block": "stdlib:converters/DCMotor",
+    "scope": null,
+    "source": null,
+    "node": "n3",
+    "connection": null,
+    "related": [
+      { "path": "Plant/Motor1", "message": "1 extra unknown here" },
+      { "path": "Plant/Gear1", "message": "balanced" }
+    ]
+  },
+  {
+    "code": "E104",
+    "severity": "error",
+    "message": "discrete clock is not a multiple of the base tick: Ts = 0.0015 with dt = 0.001",
+    "hint": "use a period that is a whole number of nanoseconds",
+    "path": "Ctrl/PI1",
+    "block": "project:MyController",
+    "scope": "@discrete",
+    "source": {
+      "kind": "project",
+      "ref": "project:MyController",
+      "range": { "line": 3, "col": 5, "endLine": 3, "endCol": 18 }
+    },
+    "node": "n12",
+    "connection": null
+  },
+  {
+    "code": "E105",
+    "severity": "error",
+    "message": "cycle between discrete blocks: Counter1 -> Compare1 -> Counter1",
+    "hint": "add `previous()` on one link to break the cycle",
+    "path": "Ctrl/Counter1",
+    "block": "project:Counter",
+    "scope": null,
+    "source": null,
+    "node": "n31",
+    "connection": "c22"
+  },
+  {
+    "code": "E106",
+    "severity": "error",
+    "message": "causal conflict: Se1 and Se2 both impose the effort on the 0-junction",
+    "hint": "remove one source, or insert an R between them",
+    "path": "Plant/Se2",
+    "block": "stdlib:bondgraph/Se",
+    "scope": null,
+    "source": null,
+    "node": "n6",
+    "connection": "c14"
+  },
+  {
+    "code": "E301",
+    "severity": "error",
+    "message": "binding target `joint:shoulder` does not exist in the scene",
+    "hint": "pick a joint from the scene tree",
+    "path": "joint:shoulder",
+    "block": null,
+    "scope": null,
+    "source": null,
+    "node": null,
+    "connection": null
+  },
+  {
+    "code": "E302",
+    "severity": "error",
+    "message": "binding signal `Plant/Arm/phi1` is not in the model's signal list",
+    "hint": "pick a recorded signal; the list comes from model.check",
+    "path": "Plant/Arm/phi1",
+    "block": null,
+    "scope": null,
+    "source": null,
+    "node": null,
+    "connection": null
+  },
+  {
+    "code": "E303",
+    "severity": "error",
+    "message": "unit mismatch: a revolute joint position expects rad, but `Plant/Cart/x` is in m",
+    "hint": "bind a rotation signal, or use a prismatic joint",
+    "path": "joint:cart",
+    "block": null,
+    "scope": null,
+    "source": null,
+    "node": null,
+    "connection": null
+  },
+  {
+    "code": "E304",
+    "severity": "error",
+    "message": "wrong signal count: `pose` needs 7 signals (position and unit quaternion), the binding lists 3",
+    "hint": "add the missing position or quaternion signals",
+    "path": "link:cart",
+    "block": null,
+    "scope": null,
+    "source": null,
+    "node": null,
+    "connection": null
+  },
+  {
+    "code": "E900",
+    "severity": "error",
+    "message": "internal compiler error while lowering Plant/Motor1",
+    "hint": "ExtraVariablesSystemException: missing variables Plant/Motor1/shaft.e",
+    "path": "Plant/Motor1",
+    "block": "stdlib:converters/DCMotor",
+    "scope": null,
+    "source": null,
+    "node": "n3",
+    "connection": null
+  },
+  {
+    "code": "E901",
+    "severity": "error",
+    "message": "solver failed at t = 0.412 s",
+    "hint": "the largest states were Plant/Ball/y = 1.2e6 and Plant/Ball/v = -3.4e4",
+    "path": "Plant/Ball",
+    "block": "inline:n8",
+    "scope": null,
+    "source": {
+      "kind": "inline",
+      "ref": "inline:n8",
+      "range": { "line": 1, "col": 1, "endLine": 24, "endCol": 3 }
+    },
+    "node": "n8",
+    "connection": null
+  },
+  {
+    "code": "W201",
+    "severity": "warning",
+    "message": "I2 is in derivative causality; the DAE index is raised",
+    "hint": "split the inertia or add a compliance between the dependent bodies",
+    "path": "Plant/I2",
+    "block": "stdlib:bondgraph/I",
+    "scope": null,
+    "source": null,
+    "node": "n16",
+    "connection": "c17"
+  },
+  {
+    "code": "W202",
+    "severity": "warning",
+    "message": "algebraic loop torn: loop through R1, R3 is solved iteratively",
+    "hint": "insert a C or I element to break the loop",
+    "path": "Plant/R1",
+    "block": "stdlib:bondgraph/R",
+    "scope": null,
+    "source": null,
+    "node": "n7",
+    "connection": "c18"
+  },
+  {
+    "code": "W203",
+    "severity": "warning",
+    "message": "event not located in the fixed-step export: `abs` in Friction1 switches between steps",
+    "hint": "reduce dt, or use the smoothed friction with v_eps > 0",
+    "path": "Plant/Friction1",
+    "block": null,
+    "scope": "@equations",
+    "source": {
+      "kind": "inline",
+      "ref": "inline:n9",
+      "range": { "line": 8, "col": 9, "endLine": 8, "endCol": 21 }
+    },
+    "node": "n9",
+    "connection": null
+  },
+  {
+    "code": "W204",
+    "severity": "warning",
+    "message": "`x` is declared but never used",
+    "hint": "remove the declaration, or use it in an equation",
+    "path": "Plant/Filter1",
+    "block": "project:MyFilter",
+    "scope": "@variables",
+    "source": {
+      "kind": "project",
+      "ref": "project:MyFilter",
+      "range": { "line": 9, "col": 5, "endLine": 9, "endCol": 30 }
+    },
+    "node": "n10",
+    "connection": null
+  },
+  {
+    "code": "W205",
+    "severity": "warning",
+    "message": "bond island has no concrete domain; it is treated as dimensionless",
+    "hint": "connect the island to an Electrical, Translation, Rotation or Hydraulic port",
+    "path": "Plant/Graph1",
+    "block": null,
+    "scope": null,
+    "source": null,
+    "node": "n2",
+    "connection": "c20"
+  },
+  {
+    "code": "W206",
+    "severity": "warning",
+    "message": "event limit of 10000 reached at t = 4.063 s",
+    "hint": "raise event_limit, or stop before the Zeno point",
+    "path": "Plant/Ball",
+    "block": "inline:n8",
+    "scope": null,
+    "source": null,
+    "node": "n8",
+    "connection": null
+  }
+]

@@ -1,0 +1,181 @@
+{
+  "$comment": "The plan 9.1 bond graph DC motor: Se(12 V) -> 1-junction (R, I_L) -> GY(k) -> 1-junction (I_J, R_d). Every power connection touches a Generic port or a junction, so all of them are bonds (plan 5.5).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "DCMotorBondGraph",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Se1",
+        "block": { "ref": "stdlib:bondgraph/Se" },
+        "position": { "x": 60, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "e": "12.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "J1",
+        "block": { "junction": "1" },
+        "position": { "x": 260, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n3",
+        "name": "R1",
+        "block": { "ref": "stdlib:bondgraph/R" },
+        "position": { "x": 260, "y": 40 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "r": "2.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n4",
+        "name": "IL",
+        "block": { "ref": "stdlib:bondgraph/I" },
+        "position": { "x": 260, "y": 360 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "i": "5e-4" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n5",
+        "name": "GY1",
+        "block": { "ref": "stdlib:bondgraph/GY" },
+        "position": { "x": 480, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "r": "0.05" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n6",
+        "name": "J2",
+        "block": { "junction": "1" },
+        "position": { "x": 700, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n7",
+        "name": "IJ",
+        "block": { "ref": "stdlib:bondgraph/I" },
+        "position": { "x": 700, "y": 40 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "i": "1e-5" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n8",
+        "name": "Rd",
+        "block": { "ref": "stdlib:bondgraph/R" },
+        "position": { "x": 700, "y": 360 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "r": "1e-6" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n3", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n4", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n5", "port": "p1" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c5",
+        "kind": "bond",
+        "from": { "node": "n5", "port": "p2" },
+        "to": { "node": "n6" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c6",
+        "kind": "bond",
+        "from": { "node": "n6" },
+        "to": { "node": "n7", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c7",
+        "kind": "bond",
+        "from": { "node": "n6" },
+        "to": { "node": "n8", "port": "p" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 5000 },
+    "event_limit": 10000
+  },
+  "plots": [
+    { "id": "p1", "title": "Rotor speed", "signals": ["IJ/p.f", "Rd/p.f"] }
+  ],
+  "scene": null,
+  "bindings": []
+}

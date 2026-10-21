@@ -1,0 +1,8 @@
+{
+  "$comment": "Invalid: the required `format` stamp is missing (plan 3.3).",
+  "language": "0.1.0",
+  "name": "dc-motor",
+  "models": ["iconic"],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

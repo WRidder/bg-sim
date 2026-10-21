@@ -1,0 +1,11 @@
+{
+  "$comment": "The handshake of a live run of the DC motor model (spec: \"Stream format\").",
+  "signals": [
+    { "id": "Motor1/shaft.f", "unit": "rad/s" },
+    { "id": "Motor1/shaft.e", "unit": "N*m" },
+    { "id": "Motor1/shaft.P", "unit": "W" },
+    { "id": "Motor1/i", "unit": "A" }
+  ],
+  "rate": 60.0,
+  "mode": "live"
+}

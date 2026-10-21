@@ -1,0 +1,5 @@
+{
+  "$comment": "Invalid: the required `rate` is missing; the server must say how fast it will send frames (spec: \"Stream format\").",
+  "signals": [{ "id": "Motor1/shaft.f", "unit": "rad/s" }],
+  "mode": "live"
+}

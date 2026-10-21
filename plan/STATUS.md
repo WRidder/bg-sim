@@ -8,7 +8,7 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | WP | Lane | Milestone | Depends | State | Note |
 | --- | --- | --- | --- | --- | --- |
 | M0.1 | X | M0 | — | done | git init, .gitignore, .gitattributes, tools/check.py (j/p/w/x/all), STATUS table. `uv run tools/check.py --lane all` reports "no tests yet" for all four lanes, exit 0. |
-| M0.2 | C | M0 | M0.1 | todo | Contracts v1 |
+| M0.2 | C | M0 | M0.1 | done | 8 schemas (catalog, model, project, diagnostic, run-manifest, worker-rpc, stream-handshake, bindings) + 44 valid / 22 invalid fixtures; catalog covers all 36 M1 blocks, diagnostic sample covers all 25 codes. `gen_contracts.py` generates pydantic v2 + TS, idempotent (10/10 files byte-identical on re-run). pytest 101 passed, vitest 52 passed, ruff + tsc clean. Also created the minimal `backend/` and `web/` harnesses for M0.4/M0.5 to extend. |
 | M0.3 | J | M0 | M0.1 | done | Julia 1.13.2 (no 1.12 fallback needed). MTK 11.45.5, Symbolics 7.47.0, SII 0.3.55, OrdinaryDiffEq{Rosenbrock 2.7.5, Tsit5 2.1.5, BDF 2.4.13, Verner 2.4.2}, JSON3 1.14.3, JuliaSyntax 1.0.2, StaticArrays 1.9.24, PrecompileTools 1.3.4, RuntimeGeneratedFunctions 0.5.27, Sockets 1.11.0. `Pkg.test()` 71/71 pass. Cold `Pkg.add`+precompile 893 s; BGSim first precompile 27–30 s; cold chain ~960 s. NOTES.md is the J-lane API authority. |
 | M0.4 | P | M0 | M0.2 | todo | Backend skeleton |
 | M0.5 | W | M0 | M0.2 | todo | Web skeleton |

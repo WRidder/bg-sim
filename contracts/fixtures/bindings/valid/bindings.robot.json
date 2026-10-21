@@ -1,0 +1,43 @@
+{
+  "$comment": "The four bindings of the spec's \"Visualization and bindings\" example, plus a Bool `visible` binding.",
+  "bindings": [
+    {
+      "target": "joint:shoulder",
+      "property": "position",
+      "signal": "Plant/Arm/phi1",
+      "gain": 1.0,
+      "offset": 0.0
+    },
+    {
+      "target": "link:cart",
+      "property": "pose",
+      "signal": [
+        "Plant/Cart/x",
+        "Plant/Cart/y",
+        "Plant/Cart/z",
+        "Plant/Cart/qw",
+        "Plant/Cart/qx",
+        "Plant/Cart/qy",
+        "Plant/Cart/qz"
+      ]
+    },
+    {
+      "target": "visual:force_arrow",
+      "property": "scale.z",
+      "signal": "Plant/Gripper/F",
+      "gain": 0.01
+    },
+    {
+      "target": "visual:motor_body",
+      "property": "color",
+      "signal": "Plant/Motor1/T_winding",
+      "colormap": "heat",
+      "range": [20, 120]
+    },
+    {
+      "target": "visual:flag",
+      "property": "visible",
+      "signal": "Plant/Motor1/fault"
+    }
+  ]
+}

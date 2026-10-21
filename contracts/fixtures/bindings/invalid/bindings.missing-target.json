@@ -1,0 +1,9 @@
+{
+  "$comment": "Invalid: the first binding has no `target` (spec: \"Binding schema\").",
+  "bindings": [
+    {
+      "property": "position",
+      "signal": "Plant/Arm/phi1"
+    }
+  ]
+}

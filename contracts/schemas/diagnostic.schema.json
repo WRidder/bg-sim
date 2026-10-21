@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/diagnostic.schema.json",
+  "title": "Diagnostics",
+  "description": "A list of diagnostics (plan 3.4). Every validation pass, the worker and the viewer report in this shape; the editor panel, the canvas markers and the code view all consume it.",
+  "type": "array",
+  "items": { "$ref": "#/$defs/diagnostic" },
+  "$defs": {
+    "diagnostic": {
+      "title": "Diagnostic",
+      "type": "object",
+      "required": ["code", "severity", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[EW][0-9]{3}$",
+          "description": "Diagnostic code: E0xx block checks, E1xx model checks, E3xx bindings, E9xx internal and solver, W2xx warnings."
+        },
+        "severity": { "title": "DiagnosticSeverity", "enum": ["error", "warning", "info"] },
+        "message": { "type": "string" },
+        "hint": {
+          "type": ["string", "null"],
+          "description": "What to do about it, when there is something to say."
+        },
+        "path": {
+          "type": ["string", "null"],
+          "pattern": "^([A-Za-z_][A-Za-z0-9_]*/)*[A-Za-z_][A-Za-z0-9_]*$|^(joint|link|frame|visual):[A-Za-z0-9_.-]+$",
+          "description": "Instance path (plan 3.1), a scene target for binding diagnostics, or null for a model-wide diagnostic."
+        },
+        "block": {
+          "type": ["string", "null"],
+          "pattern": "^(stdlib:[A-Za-z0-9_]+(/[A-Za-z0-9_]+)*|project:[A-Za-z_][A-Za-z0-9_]*|inline:[A-Za-z0-9_.-]+)$",
+          "description": "Block reference, when the diagnostic points at a library or project block."
+        },
+        "scope": {
+          "type": ["string", "null"],
+          "description": "Source scope, e.g. @equations, when the diagnostic is source-level."
+        },
+        "source": {
+          "anyOf": [{ "$ref": "#/$defs/source" }, { "type": "null" }],
+          "description": "The source location, when the diagnostic is source-level."
+        },
+        "node": {
+          "type": ["string", "null"],
+          "description": "Editor node id, for canvas highlighting."
+        },
+        "connection": {
+          "type": ["string", "null"],
+          "description": "Editor connection id, for canvas highlighting."
+        },
+        "related": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/related" }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "title": "DiagnosticSource",
+      "type": "object",
+      "required": ["kind", "ref", "range"],
+      "properties": {
+        "kind": { "title": "SourceKind", "enum": ["stdlib", "project", "inline"] },
+        "ref": {
+          "type": "string",
+          "description": "Block ref or file path of the source."
+        },
+        "range": { "$ref": "#/$defs/range" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "range": {
+      "title": "SourceRange",
+      "type": "object",
+      "required": ["line", "col", "endLine", "endCol"],
+      "properties": {
+        "line": { "type": "integer", "minimum": 1 },
+        "col": { "type": "integer", "minimum": 1 },
+        "endLine": { "type": "integer", "minimum": 1 },
+        "endCol": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "related": {
+      "title": "RelatedDiagnostic",
+      "type": "object",
+      "required": ["path", "message"],
+      "properties": {
+        "path": { "type": ["string", "null"] },
+        "message": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

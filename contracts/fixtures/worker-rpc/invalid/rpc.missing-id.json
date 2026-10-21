@@ -1,0 +1,5 @@
+{
+  "$comment": "Invalid: a request without an id is not a request; notifications are the only messages without one, and \"ping\" is not a notification method (plan 3.6).",
+  "method": "ping",
+  "params": {}
+}

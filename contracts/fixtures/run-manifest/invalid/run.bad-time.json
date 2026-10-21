@@ -1,0 +1,22 @@
+{
+  "$comment": "Invalid: `time` has no `t1`, and `n` is negative (plan 3.5).",
+  "id": "run-20261021-101512",
+  "model": "DCMotorSpeed",
+  "modelHash": "sha256:1c9f7c1a5f0f4a2b6d3e8c4b9a7f2e5d0c3b6a9e8f7d4c1b2a5e8f7d4c1b2a5e",
+  "created": "2026-10-21T10:15:12Z",
+  "status": "done",
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 5000 },
+    "event_limit": 10000
+  },
+  "signals": [],
+  "time": { "n": -1, "t0": 0.0 },
+  "diagnostics": [],
+  "layout": "columnar-f64-v1"
+}

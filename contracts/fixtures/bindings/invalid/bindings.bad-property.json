@@ -1,0 +1,10 @@
+{
+  "$comment": "Invalid: property \"rotation\" is not one of position, pose, scale.x|y|z, color or visible (spec: \"Binding schema\").",
+  "bindings": [
+    {
+      "target": "joint:shoulder",
+      "property": "rotation",
+      "signal": "Plant/Arm/phi1"
+    }
+  ]
+}

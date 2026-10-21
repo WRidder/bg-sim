@@ -1,0 +1,9 @@
+{
+  "$comment": "Invalid: `models` is a single string; it must be an array of model names (plan 3.3).",
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "dc-motor",
+  "models": "iconic",
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

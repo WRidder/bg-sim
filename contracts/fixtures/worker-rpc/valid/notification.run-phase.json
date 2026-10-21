@@ -1,0 +1,9 @@
+{
+  "$comment": "A phase notification (plan 3.6). Notifications carry no id.",
+  "method": "run.phase",
+  "params": {
+    "runId": "run-20261021-093050",
+    "phase": "mtkcompile",
+    "t_s": 0.0
+  }
+}

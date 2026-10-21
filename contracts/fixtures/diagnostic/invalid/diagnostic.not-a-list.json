@@ -1,0 +1,6 @@
+{
+  "$comment": "Invalid: the diagnostic schema is a list; this fixture is a single diagnostic object.",
+  "code": "E103",
+  "severity": "error",
+  "message": "unbalanced system: 14 unknowns, 13 equations"
+}

@@ -1,0 +1,5 @@
+{
+  "$comment": "Invalid: `signals` must hold signal objects with an id and a unit, not bare strings (spec: \"Stream format\").",
+  "signals": ["Motor1/shaft.f"],
+  "rate": 60.0
+}

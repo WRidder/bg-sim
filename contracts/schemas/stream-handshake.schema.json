@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/stream-handshake.schema.json",
+  "title": "StreamHandshake",
+  "description": "The viewer stream handshake (spec: \"Stream format\"): the ordered signal list and the sample rate, sent once per session before the binary frames.",
+  "type": "object",
+  "required": ["signals", "rate"],
+  "properties": {
+    "signals": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/signal" },
+      "description": "The signals, in frame order: every frame is [t, v1 ... vn]."
+    },
+    "rate": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Samples per second the server will send; 60 by default."
+    },
+    "mode": {
+      "title": "StreamMode",
+      "enum": ["live", "playback"],
+      "description": "live follows a running simulation, playback replays a finished run."
+    },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "signal": {
+      "title": "StreamSignal",
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?(?:\\.[A-Za-z_][A-Za-z0-9_]*)?$"
+        },
+        "unit": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

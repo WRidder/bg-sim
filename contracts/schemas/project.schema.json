@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/project.schema.json",
+  "title": "Project",
+  "description": "Project file bgsim.project.json (plan 3.3). A project holds several models, a project library and scenes.",
+  "type": "object",
+  "required": ["format", "language", "name", "models", "libraryDir", "scenesDir"],
+  "properties": {
+    "format": { "const": "bgsim.project" },
+    "language": { "type": "string" },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+$"
+    },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_.-]+$",
+        "description": "Model name; the file is models/<name>.bgmodel.json."
+      },
+      "description": "The models of this project, in tab order."
+    },
+    "libraryDir": {
+      "type": "string",
+      "description": "Directory holding the project library, one @block per <BlockName>.jl file."
+    },
+    "scenesDir": {
+      "type": "string",
+      "description": "Directory holding the SDF scenes."
+    },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false
+}

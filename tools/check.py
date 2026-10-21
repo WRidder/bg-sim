@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -87,14 +88,23 @@ def python_steps() -> list[Step] | None:
 
 def web_steps() -> list[Step] | None:
     web = ROOT / "web"
-    if not (web / "package.json").exists():
+    pkg = web / "package.json"
+    if not pkg.exists():
         return None
-    return [
-        Step("typecheck", ["npm", "--prefix", str(web), "run", "typecheck"], cwd=ROOT),
-        Step("lint", ["npm", "--prefix", str(web), "run", "lint"], cwd=ROOT),
-        Step("vitest", ["npm", "--prefix", str(web), "run", "test", "--", "--run"], cwd=ROOT),
-        Step("build", ["npm", "--prefix", str(web), "run", "build"], cwd=ROOT),
-    ]
+    import json
+
+    try:
+        scripts = json.loads(pkg.read_text(encoding="utf-8")).get("scripts", {})
+    except Exception:
+        scripts = {}
+    steps: list[Step] = []
+    order = [("typecheck", []), ("lint", []), ("test", ["--", "--run"]), ("build", [])]
+    for name, extra in order:
+        if name in scripts:
+            steps.append(
+                Step(name, ["npm", "--prefix", str(web), "run", name, *extra], cwd=ROOT)
+            )
+    return steps or None
 
 
 def example_steps() -> list[Step] | None:
@@ -121,13 +131,23 @@ def example_steps() -> list[Step] | None:
 BUILDERS = {"j": julia_steps, "p": python_steps, "w": web_steps, "x": example_steps}
 
 
+def _resolve(args: list[str]) -> list[str]:
+    """Windows: npm/npx are .cmd shims that CreateProcess cannot launch directly."""
+    if not args:
+        return args
+    exe = shutil.which(args[0])
+    if exe is None and sys.platform == "win32":
+        exe = shutil.which(args[0] + ".cmd") or shutil.which(args[0] + ".exe")
+    return [exe or args[0], *args[1:]]
+
+
 def run_step(step: Step) -> Result:
     _print(f"\n=== {step.name}: {' '.join(step.args)}")
     env = os.environ.copy()
     env.update(step.env)
     t0 = time.perf_counter()
     try:
-        proc = subprocess.run(step.args, cwd=str(step.cwd or ROOT), env=env)
+        proc = subprocess.run(_resolve(step.args), cwd=str(step.cwd or ROOT), env=env)
         dt = time.perf_counter() - t0
         status = "pass" if proc.returncode == 0 else "fail"
         detail = "" if proc.returncode == 0 else f"exit {proc.returncode}"

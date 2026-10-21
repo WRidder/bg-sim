@@ -1,0 +1,25 @@
+{
+  "$comment": "An error response with the diagnostics that caused it (plan 3.6, 3.4).",
+  "id": 7,
+  "error": {
+    "message": "block.check failed: the source does not parse",
+    "diagnostics": [
+      {
+        "code": "E000",
+        "severity": "error",
+        "message": "unexpected end of input: the `@block` opened on line 1 is never closed",
+        "hint": "add `end` to close the block",
+        "path": null,
+        "block": "inline:n7",
+        "scope": null,
+        "source": {
+          "kind": "inline",
+          "ref": "inline:n7",
+          "range": { "line": 4, "col": 1, "endLine": 4, "endCol": 1 }
+        },
+        "node": "n7",
+        "connection": null
+      }
+    ]
+  }
+}

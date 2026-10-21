@@ -58,6 +58,7 @@ def main() -> None:
     ap.add_argument("--more", default="", help="extra section headings, comma separated")
     ap.add_argument("--spec", action="store_true", help="point at the spec as mandatory reading")
     ap.add_argument("--notes", default="", help="extra guidance inserted before the rules")
+    ap.add_argument("--notes-file", default="", help="file with extra guidance")
     args = ap.parse_args()
 
     plan = load_lines(PLAN)
@@ -109,9 +110,12 @@ def main() -> None:
         parts.append("## MTK / Julia API notes from M0.3 (authoritative for the J lane)\n")
         parts.append(notes_path.read_text(encoding="utf-8").strip() + "\n")
 
-    if args.notes:
+    if args.notes or args.notes_file:
         parts.append("## Orchestrator notes\n")
-        parts.append(args.notes.strip() + "\n")
+        if args.notes_file:
+            parts.append(Path(args.notes_file).read_text(encoding="utf-8").strip() + "\n")
+        if args.notes:
+            parts.append(args.notes.strip() + "\n")
 
     parts.append(
         """## Hard rules for this session

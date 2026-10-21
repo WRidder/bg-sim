@@ -1,0 +1,54 @@
+{
+  "$comment": "Invalid: connection c1 has kind \"cable\"; the three kinds are bond, wire and signal (D7).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "BadConnectionKind",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Step1",
+        "block": { "ref": "stdlib:sources/Step" },
+        "position": { "x": 60, "y": 100 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "t_step": "0.5" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "Gain1",
+        "block": { "ref": "stdlib:continuous/Gain" },
+        "position": { "x": 260, "y": 100 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "k": "2.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "cable",
+        "from": { "node": "n1", "port": "y" },
+        "to": { "node": "n2", "port": "u" },
+        "route": [],
+        "label": null
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 1000 },
+    "event_limit": 10000
+  }
+}

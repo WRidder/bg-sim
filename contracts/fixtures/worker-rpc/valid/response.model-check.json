@@ -1,0 +1,36 @@
+{
+  "$comment": "A model.check response (plan 3.6): diagnostics, the adopted domain and causal stroke per connection, unit factors, the signal list and the balance stats.",
+  "id": 42,
+  "result": {
+    "diagnostics": [],
+    "domains": {
+      "c2": "Electrical",
+      "c3": "Electrical",
+      "c4": "Electrical",
+      "c5": "Electrical"
+    },
+    "causality": {
+      "c2": { "strokeAt": "to" },
+      "c3": { "strokeAt": "to" },
+      "c4": { "strokeAt": "from" },
+      "c5": { "strokeAt": "from" }
+    },
+    "unitFactors": {
+      "c2": 1.0,
+      "c3": 1.0,
+      "c4": 1.0,
+      "c5": 1.0
+    },
+    "signals": [
+      { "id": "V1/y", "unit": null, "kind": "output", "path": "V1", "type": "Real" },
+      { "id": "Src1/p.e", "unit": "V", "kind": "port", "path": "Src1", "type": "Real" },
+      { "id": "Src1/p.f", "unit": "A", "kind": "port", "path": "Src1", "type": "Real" },
+      { "id": "Src1/p.P", "unit": "W", "kind": "power", "path": "Src1", "type": "Real" },
+      { "id": "C1/v", "unit": "V", "kind": "state", "path": "C1", "type": "Real" }
+    ],
+    "stats": {
+      "states": 1,
+      "equations": 6
+    }
+  }
+}

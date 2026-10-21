@@ -1,0 +1,8 @@
+{
+  "$comment": "A log notification; stdout and stderr are only logs and are never protocol (plan 3.6).",
+  "method": "log",
+  "params": {
+    "level": "info",
+    "message": "worker ready: Julia 1.13.2, 2 threads, warm-up done in 4.6 s"
+  }
+}

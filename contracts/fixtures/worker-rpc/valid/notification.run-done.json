@@ -1,0 +1,17 @@
+{
+  "$comment": "The final notification of a run (plan 3.6).",
+  "method": "run.done",
+  "params": {
+    "runId": "run-20261021-093050",
+    "status": "done",
+    "stats": {
+      "compile_s": 1.87,
+      "sim_s": 0.24,
+      "steps": 5124,
+      "events": 1,
+      "states": 3,
+      "equations": 9
+    },
+    "diagnostics": []
+  }
+}

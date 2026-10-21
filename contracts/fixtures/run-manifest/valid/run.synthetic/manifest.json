@@ -1,0 +1,35 @@
+{
+  "$comment": "A finished synthetic run (plan 3.5). The signals are exactly the columns written by generate.py, in that order; columns.f64 holds 1 + 4 columns of 1001 little-endian Float64 values.",
+  "id": "run-synthetic-0001",
+  "model": "SyntheticSignals",
+  "modelHash": "5a4372915ad94a9f5ff65c8804f02914bcb0f7a58f326271cde01764f2d66f7b",
+  "created": "2026-10-21T09:14:03Z",
+  "status": "done",
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 1001 },
+    "event_limit": 10000
+  },
+  "stats": {
+    "compile_s": 0.42,
+    "sim_s": 0.073,
+    "steps": 1187,
+    "events": 2,
+    "states": 2,
+    "equations": 7
+  },
+  "signals": [
+    { "id": "Synthetic/sine", "unit": "V", "kind": "output", "path": "Synthetic", "type": "Real" },
+    { "id": "Synthetic/step", "unit": "V", "kind": "output", "path": "Synthetic", "type": "Real" },
+    { "id": "Synthetic/counter", "unit": null, "kind": "state", "path": "Synthetic", "type": "Int" },
+    { "id": "Synthetic/flag", "unit": null, "kind": "algebraic", "path": "Synthetic", "type": "Bool" }
+  ],
+  "time": { "n": 1001, "t0": 0.0, "t1": 1.0 },
+  "diagnostics": [],
+  "layout": "columnar-f64-v1"
+}

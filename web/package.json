@@ -1,0 +1,19 @@
+{
+  "name": "bgsim-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "bg-sim web application (contracts harness for M0.2; the app itself arrives in M0.5)",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "json-schema-to-typescript": "16.0.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

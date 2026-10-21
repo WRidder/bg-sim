@@ -1,0 +1,10 @@
+{
+  "$comment": "Invalid: the required `settings` object is missing (plan 3.3).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "Minimal",
+  "diagram": {
+    "nodes": [],
+    "connections": []
+  }
+}

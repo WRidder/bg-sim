@@ -1,0 +1,10 @@
+[
+  {
+    "$comment": "Invalid: severity \"fatal\" is not one of error, warning or info (plan 3.4).",
+    "code": "E103",
+    "severity": "fatal",
+    "message": "unbalanced system: 14 unknowns, 13 equations",
+    "hint": "Motor1 declares 3 variables but has 2 equations",
+    "path": "Plant/Motor1"
+  }
+]

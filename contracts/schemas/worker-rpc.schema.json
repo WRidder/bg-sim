@@ -1,0 +1,526 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/worker-rpc.schema.json",
+  "title": "WorkerRpc",
+  "description": "Worker protocol messages (plan 3.6). Each JSON frame is one of these: a request, a response, an error response or a notification. The transport framing (u32 LE length, u8 kind, payload) is not part of this schema.",
+  "anyOf": [
+    { "$ref": "#/$defs/pingRequest" },
+    { "$ref": "#/$defs/catalogGetRequest" },
+    { "$ref": "#/$defs/blockCheckRequest" },
+    { "$ref": "#/$defs/modelCheckRequest" },
+    { "$ref": "#/$defs/runStartRequest" },
+    { "$ref": "#/$defs/runCancelRequest" },
+    { "$ref": "#/$defs/cacheClearRequest" },
+    { "$ref": "#/$defs/pingResponse" },
+    { "$ref": "#/$defs/catalogGetResponse" },
+    { "$ref": "#/$defs/blockCheckResponse" },
+    { "$ref": "#/$defs/modelCheckResponse" },
+    { "$ref": "#/$defs/runStartResponse" },
+    { "$ref": "#/$defs/runCancelResponse" },
+    { "$ref": "#/$defs/cacheClearResponse" },
+    { "$ref": "#/$defs/errorResponse" },
+    { "$ref": "#/$defs/runPhaseNotification" },
+    { "$ref": "#/$defs/runProgressNotification" },
+    { "$ref": "#/$defs/runDoneNotification" },
+    { "$ref": "#/$defs/logNotification" }
+  ],
+  "$defs": {
+    "pingRequest": {
+      "title": "PingRequest",
+      "type": "object",
+      "required": ["id", "method", "params"],
+      "properties": {
+        "id": { "type": "integer" },
+        "method": { "const": "ping" },
+        "params": { "$ref": "#/$defs/emptyParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "catalogGetRequest": {
+      "title": "CatalogGetRequest",
+      "type": "object",
+      "required": ["id", "method", "params"],
+      "properties": {
+        "id": { "type": "integer" },
+        "method": { "const": "catalog.get" },
+        "params": { "$ref": "#/$defs/catalogGetParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "blockCheckRequest": {
+      "title": "BlockCheckRequest",
+      "type": "object",
+      "required": ["id", "method", "params"],
+      "properties": {
+        "id": { "type": "integer" },
+        "method": { "const": "block.check" },
+        "params": { "$ref": "#/$defs/blockCheckParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "modelCheckRequest": {
+      "title": "ModelCheckRequest",
+      "type": "object",
+      "required": ["id", "method", "params"],
+      "properties": {
+        "id": { "type": "integer" },
+        "method": { "const": "model.check" },
+        "params": { "$ref": "#/$defs/modelCheckParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runStartRequest": {
+      "title": "RunStartRequest",
+      "type": "object",
+      "required": ["id", "method", "params"],
+      "properties": {
+        "id": { "type": "integer" },
+        "method": { "const": "run.start" },
+        "params": { "$ref": "#/$defs/runStartParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runCancelRequest": {
+      "title": "RunCancelRequest",
+      "type": "object",
+      "required": ["id", "method", "params"],
+      "properties": {
+        "id": { "type": "integer" },
+        "method": { "const": "run.cancel" },
+        "params": { "$ref": "#/$defs/runCancelParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "cacheClearRequest": {
+      "title": "CacheClearRequest",
+      "type": "object",
+      "required": ["id", "method", "params"],
+      "properties": {
+        "id": { "type": "integer" },
+        "method": { "const": "cache.clear" },
+        "params": { "$ref": "#/$defs/emptyParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "emptyParams": {
+      "title": "EmptyParams",
+      "type": "object",
+      "properties": {
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "catalogGetParams": {
+      "title": "CatalogGetParams",
+      "type": "object",
+      "required": ["projectLibraryDir"],
+      "properties": {
+        "projectLibraryDir": {
+          "type": ["string", "null"],
+          "description": "Project library directory to include, or null for the standard library only."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "blockCheckParams": {
+      "title": "BlockCheckParams",
+      "type": "object",
+      "required": ["source", "ref"],
+      "properties": {
+        "source": { "type": "string" },
+        "ref": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "modelCheckParams": {
+      "title": "ModelCheckParams",
+      "type": "object",
+      "required": ["model", "projectDir"],
+      "properties": {
+        "model": { "$ref": "https://bgsim.local/schemas/model.schema.json" },
+        "projectDir": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runStartParams": {
+      "title": "RunStartParams",
+      "type": "object",
+      "required": ["runId", "model", "projectDir", "runDir"],
+      "properties": {
+        "runId": { "type": "string" },
+        "model": { "$ref": "https://bgsim.local/schemas/model.schema.json" },
+        "projectDir": { "type": "string" },
+        "runDir": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runCancelParams": {
+      "title": "RunCancelParams",
+      "type": "object",
+      "required": ["runId"],
+      "properties": {
+        "runId": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "pingResponse": {
+      "title": "PingResponse",
+      "type": "object",
+      "required": ["id", "result"],
+      "properties": {
+        "id": { "type": "integer" },
+        "result": { "$ref": "#/$defs/pingResult" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "catalogGetResponse": {
+      "title": "CatalogGetResponse",
+      "type": "object",
+      "required": ["id", "result"],
+      "properties": {
+        "id": { "type": "integer" },
+        "result": { "$ref": "https://bgsim.local/schemas/catalog.schema.json" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "blockCheckResponse": {
+      "title": "BlockCheckResponse",
+      "type": "object",
+      "required": ["id", "result"],
+      "properties": {
+        "id": { "type": "integer" },
+        "result": { "$ref": "#/$defs/blockCheckResult" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "modelCheckResponse": {
+      "title": "ModelCheckResponse",
+      "type": "object",
+      "required": ["id", "result"],
+      "properties": {
+        "id": { "type": "integer" },
+        "result": { "$ref": "#/$defs/modelCheckResult" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runStartResponse": {
+      "title": "RunStartResponse",
+      "type": "object",
+      "required": ["id", "result"],
+      "properties": {
+        "id": { "type": "integer" },
+        "result": { "$ref": "#/$defs/runStartResult" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runCancelResponse": {
+      "title": "RunCancelResponse",
+      "type": "object",
+      "required": ["id", "result"],
+      "properties": {
+        "id": { "type": "integer" },
+        "result": { "$ref": "#/$defs/okResult" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "cacheClearResponse": {
+      "title": "CacheClearResponse",
+      "type": "object",
+      "required": ["id", "result"],
+      "properties": {
+        "id": { "type": "integer" },
+        "result": { "$ref": "#/$defs/okResult" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "errorResponse": {
+      "title": "ErrorResponse",
+      "type": "object",
+      "required": ["id", "error"],
+      "properties": {
+        "id": { "type": "integer" },
+        "error": { "$ref": "#/$defs/rpcError" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "rpcError": {
+      "title": "RpcError",
+      "type": "object",
+      "required": ["message"],
+      "properties": {
+        "message": { "type": "string" },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+          }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runPhaseNotification": {
+      "title": "RunPhaseNotification",
+      "type": "object",
+      "required": ["method", "params"],
+      "properties": {
+        "method": { "const": "run.phase" },
+        "params": { "$ref": "#/$defs/runPhaseParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runProgressNotification": {
+      "title": "RunProgressNotification",
+      "type": "object",
+      "required": ["method", "params"],
+      "properties": {
+        "method": { "const": "run.progress" },
+        "params": { "$ref": "#/$defs/runProgressParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runDoneNotification": {
+      "title": "RunDoneNotification",
+      "type": "object",
+      "required": ["method", "params"],
+      "properties": {
+        "method": { "const": "run.done" },
+        "params": { "$ref": "#/$defs/runDoneParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "logNotification": {
+      "title": "LogNotification",
+      "type": "object",
+      "required": ["method", "params"],
+      "properties": {
+        "method": { "const": "log" },
+        "params": { "$ref": "#/$defs/logParams" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "pingResult": {
+      "title": "PingResult",
+      "type": "object",
+      "required": ["version", "julia", "warm"],
+      "properties": {
+        "version": { "type": "string" },
+        "julia": { "type": "string" },
+        "warm": {
+          "type": "boolean",
+          "description": "False while the start-up warm-up workload is still running."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "blockCheckResult": {
+      "title": "BlockCheckResult",
+      "type": "object",
+      "required": ["diagnostics"],
+      "properties": {
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+          }
+        },
+        "interface": {
+          "anyOf": [
+            { "$ref": "https://bgsim.local/schemas/catalog.schema.json#/$defs/blockInterface" },
+            { "type": "null" }
+          ],
+          "description": "The block interface, or null when the source has errors."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "modelCheckResult": {
+      "title": "ModelCheckResult",
+      "type": "object",
+      "required": [
+        "diagnostics",
+        "domains",
+        "causality",
+        "unitFactors",
+        "signals",
+        "stats"
+      ],
+      "properties": {
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+          }
+        },
+        "domains": {
+          "type": "object",
+          "additionalProperties": {
+            "title": "DomainName",
+            "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"],
+            "description": "Adopted domain per connection id."
+          },
+          "description": "Connection id -> adopted domain, for colouring the bonds."
+        },
+        "causality": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/causalityStroke" },
+          "description": "Connection id -> causal stroke, for drawing the bond strokes."
+        },
+        "unitFactors": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "description": "Constant factor the compiler inserts on a unit conversion."
+          },
+          "description": "Connection id -> unit conversion factor."
+        },
+        "signals": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/run-manifest.schema.json#/$defs/signal"
+          },
+          "description": "The signals this model will record, in recording order."
+        },
+        "stats": { "$ref": "#/$defs/modelCheckStats" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "causalityStroke": {
+      "title": "CausalityStroke",
+      "type": "object",
+      "required": ["strokeAt"],
+      "properties": {
+        "strokeAt": {
+          "title": "CausalityStrokeAt",
+          "enum": ["from", "to"],
+          "description": "The end of the connection where effort is the input (plan 5.7)."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "modelCheckStats": {
+      "title": "ModelCheckStats",
+      "type": "object",
+      "required": ["states", "equations"],
+      "properties": {
+        "states": { "type": "integer", "minimum": 0 },
+        "equations": { "type": "integer", "minimum": 0 },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runStartResult": {
+      "title": "RunStartResult",
+      "type": "object",
+      "required": ["accepted"],
+      "properties": {
+        "accepted": { "const": true },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "okResult": {
+      "title": "OkResult",
+      "type": "object",
+      "required": ["ok"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runPhaseParams": {
+      "title": "RunPhaseParams",
+      "type": "object",
+      "required": ["runId", "phase", "t_s"],
+      "properties": {
+        "runId": { "type": "string" },
+        "phase": {
+          "title": "RunPhase",
+          "enum": ["parse", "flatten", "causality", "mtkcompile", "init", "simulate", "write"]
+        },
+        "t_s": {
+          "type": "number",
+          "description": "Simulation time reached, 0 before simulate."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runProgressParams": {
+      "title": "RunProgressParams",
+      "type": "object",
+      "required": ["runId", "t", "rows"],
+      "properties": {
+        "runId": { "type": "string" },
+        "t": { "type": "number" },
+        "rows": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Rows written to stream.f64 so far."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "runDoneParams": {
+      "title": "RunDoneParams",
+      "type": "object",
+      "required": ["runId", "status", "stats", "diagnostics"],
+      "properties": {
+        "runId": { "type": "string" },
+        "status": { "title": "RunStatus", "enum": ["running", "done", "failed", "cancelled"] },
+        "stats": {
+          "$ref": "https://bgsim.local/schemas/run-manifest.schema.json#/$defs/stats"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+          }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "logParams": {
+      "title": "LogParams",
+      "type": "object",
+      "required": ["level", "message"],
+      "properties": {
+        "level": { "title": "LogLevel", "enum": ["debug", "info", "warning", "error"] },
+        "message": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

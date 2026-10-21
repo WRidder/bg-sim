@@ -1,0 +1,33 @@
+{
+  "$comment": "Invalid: node name \"Motor 1\" contains a space; instance names match [A-Za-z_][A-Za-z0-9_]* (plan 3.1).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "BadNodeName",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Motor 1",
+        "block": { "ref": "stdlib:converters/DCMotor" },
+        "position": { "x": 100, "y": 100 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 1000 },
+    "event_limit": 10000
+  }
+}

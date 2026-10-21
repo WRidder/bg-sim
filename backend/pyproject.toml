@@ -1,0 +1,29 @@
+[project]
+name = "bgsim-server"
+version = "0.1.0"
+description = "bg-sim Python backend: contracts harness (M0.2); the FastAPI app and worker supervisor arrive in M0.4"
+readme = "README.md"
+authors = [
+    { name = "Wilbert van de Ridder", email = "w.vanderidder@awl.nl" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "jsonschema>=4.26.0",
+    "pydantic>=2.14.1",
+]
+
+[project.scripts]
+bgsim-server = "bgsim_server:main"
+
+[build-system]
+requires = ["uv_build>=0.13.4,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "datamodel-code-generator>=0.86.0",
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.17.1",
+]

@@ -1,0 +1,9 @@
+{
+  "$comment": "A progress notification: at most 20 per second (plan 3.6).",
+  "method": "run.progress",
+  "params": {
+    "runId": "run-20261021-093050",
+    "t": 0.35,
+    "rows": 421
+  }
+}

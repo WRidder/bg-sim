@@ -1,0 +1,9 @@
+[
+  {
+    "$comment": "Invalid: code \"X123\" does not match [EW]ddd (plan 3.4, D14).",
+    "code": "X123",
+    "severity": "error",
+    "message": "something went wrong",
+    "path": "Plant/Motor1"
+  }
+]

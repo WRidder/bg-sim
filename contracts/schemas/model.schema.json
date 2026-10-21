@@ -1,0 +1,432 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/model.schema.json",
+  "title": "Model",
+  "description": "Model document (plan 3.3): what the editor saves as models/<name>.bgmodel.json. A subsystem nests the same diagram shape.",
+  "type": "object",
+  "required": ["format", "language", "name", "diagram", "settings"],
+  "properties": {
+    "format": { "const": "bgsim.model" },
+    "language": { "type": "string" },
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]+$"
+    },
+    "diagram": { "$ref": "#/$defs/diagram" },
+    "settings": { "$ref": "#/$defs/settings" },
+    "plots": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/plot" }
+    },
+    "scene": { "$ref": "#/$defs/scene" },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bgsim.local/schemas/bindings.schema.json#/$defs/binding"
+      }
+    },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "diagram": {
+      "title": "ModelDiagram",
+      "description": "One diagram: the nodes, their connections and the annotations. A subsystem block nests the same shape.",
+      "type": "object",
+      "required": ["nodes", "connections"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/node" }
+        },
+        "connections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/connection" }
+        },
+        "subsystemPorts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/subsystemPort" },
+          "description": "Exposed ports; only used inside a subsystem."
+        },
+        "annotations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/annotation" }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "node": {
+      "title": "ModelNode",
+      "type": "object",
+      "required": ["id", "name", "block", "position"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$",
+          "description": "Stable editor id, never shown."
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "description": "Instance name; the path segment of every signal id of this node."
+        },
+        "block": { "$ref": "#/$defs/block" },
+        "position": { "$ref": "#/$defs/point" },
+        "rotation": {
+          "type": "number",
+          "description": "Clockwise rotation of the glyph, in degrees."
+        },
+        "flipX": { "type": "boolean" },
+        "params": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Parameter values as constant expression strings, keyed by parameter name."
+        },
+        "constants": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/constantValue" },
+          "description": "Constant overrides, keyed by constant name."
+        },
+        "starts": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Start-value overrides as expression strings, keyed by variable name."
+        },
+        "ui": { "$ref": "#/$defs/nodeUi" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "block": {
+      "title": "ModelBlock",
+      "description": "Where a node's behaviour comes from: a library reference, a junction, an inline block or a nested subsystem.",
+      "anyOf": [
+        { "$ref": "#/$defs/blockRef" },
+        { "$ref": "#/$defs/blockJunction" },
+        { "$ref": "#/$defs/blockInline" },
+        { "$ref": "#/$defs/blockSubsystem" }
+      ]
+    },
+    "blockRef": {
+      "title": "ModelBlockRef",
+      "type": "object",
+      "required": ["ref"],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "pattern": "^(stdlib:[A-Za-z0-9_]+(/[A-Za-z0-9_]+)*|project:[A-Za-z_][A-Za-z0-9_]*|inline:[A-Za-z0-9_.-]+)$"
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "blockJunction": {
+      "title": "ModelBlockJunction",
+      "type": "object",
+      "required": ["junction"],
+      "properties": {
+        "junction": { "title": "JunctionType", "enum": ["0", "1"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "blockInline": {
+      "title": "ModelBlockInline",
+      "type": "object",
+      "required": ["inline"],
+      "properties": {
+        "inline": {
+          "type": "object",
+          "required": ["source"],
+          "properties": {
+            "source": { "type": "string" },
+            "$comment": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "blockSubsystem": {
+      "title": "ModelBlockSubsystem",
+      "type": "object",
+      "required": ["subsystem"],
+      "properties": {
+        "subsystem": {
+          "type": "object",
+          "required": ["ports", "diagram"],
+          "properties": {
+            "ports": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/subsystemPort" }
+            },
+            "diagram": { "$ref": "#/$defs/diagram" },
+            "$comment": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "subsystemPort": {
+      "title": "ModelSubsystemPort",
+      "description": "A port exposed by a subsystem: the outside face plus the internal node and port it attaches to.",
+      "anyOf": [
+        { "$ref": "#/$defs/subsystemSignalPort" },
+        { "$ref": "#/$defs/subsystemPowerPort" }
+      ]
+    },
+    "subsystemSignalPort": {
+      "title": "ModelSubsystemSignalPort",
+      "type": "object",
+      "required": [
+        "name",
+        "kind",
+        "direction",
+        "type",
+        "size",
+        "unit",
+        "node",
+        "port"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "kind": { "const": "signal" },
+        "direction": { "title": "SignalDirection", "enum": ["input", "output"] },
+        "type": { "title": "ValueType", "enum": ["Real", "Int", "Bool"] },
+        "size": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "unit": { "type": ["string", "null"] },
+        "node": { "type": "string" },
+        "port": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "subsystemPowerPort": {
+      "title": "ModelSubsystemPowerPort",
+      "type": "object",
+      "required": ["name", "kind", "domain", "size", "node", "port"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "kind": { "const": "power" },
+        "domain": {
+          "title": "DomainName",
+          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+        },
+        "size": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1 }
+        },
+        "node": { "type": "string" },
+        "port": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "connection": {
+      "title": "ModelConnection",
+      "type": "object",
+      "required": ["id", "kind", "from", "to"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$"
+        },
+        "kind": {
+          "title": "ConnectionKind",
+          "enum": ["bond", "wire", "signal"],
+          "description": "Connection kind (D7): bond (half arrow at \"to\", power from -> to), wire (node of concrete-domain power ports) or signal (one output to many inputs)."
+        },
+        "from": { "$ref": "#/$defs/endpoint" },
+        "to": { "$ref": "#/$defs/endpoint" },
+        "route": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/point" },
+          "description": "Optional waypoints."
+        },
+        "label": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "endpoint": {
+      "title": "ModelEndpoint",
+      "type": "object",
+      "required": ["node"],
+      "properties": {
+        "node": {
+          "type": "string",
+          "description": "Node id."
+        },
+        "port": {
+          "type": "string",
+          "description": "Port, input or output name; omitted for junction nodes."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "point": {
+      "title": "ModelPoint",
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "annotation": {
+      "title": "ModelAnnotation",
+      "type": "object",
+      "required": ["id", "kind", "text", "x", "y", "w", "h"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$"
+        },
+        "kind": { "title": "AnnotationKind", "enum": ["text"] },
+        "text": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number" },
+        "h": { "type": "number" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "nodeUi": {
+      "title": "ModelNodeUi",
+      "type": "object",
+      "required": ["showLabel"],
+      "properties": {
+        "showLabel": { "type": "boolean" },
+        "color": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "constantValue": {
+      "title": "ModelConstantValue",
+      "description": "A constant override: number, boolean, expression string or array (vector, matrix).",
+      "oneOf": [
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "number" },
+              { "type": "array", "items": { "type": "number" } }
+            ]
+          }
+        }
+      ]
+    },
+    "settings": {
+      "title": "ModelSettings",
+      "type": "object",
+      "required": [
+        "t_start",
+        "t_end",
+        "solver",
+        "reltol",
+        "abstol",
+        "max_step",
+        "output",
+        "event_limit"
+      ],
+      "properties": {
+        "t_start": { "type": "number" },
+        "t_end": { "type": "number" },
+        "solver": {
+          "type": "string",
+          "description": "\"auto\" or a solver name."
+        },
+        "reltol": { "type": "number", "exclusiveMinimum": 0 },
+        "abstol": { "type": "number", "exclusiveMinimum": 0 },
+        "max_step": { "type": ["number", "null"] },
+        "output": { "$ref": "#/$defs/output" },
+        "event_limit": { "type": "integer", "minimum": 0 },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "output": {
+      "title": "ModelOutput",
+      "description": "The recording grid: a fixed number of points over [t_start, t_end], or a fixed interval.",
+      "oneOf": [
+        {
+          "title": "ModelOutputPoints",
+          "type": "object",
+          "required": ["mode", "points"],
+          "properties": {
+            "mode": { "const": "points" },
+            "points": { "type": "integer", "minimum": 2 },
+            "$comment": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "title": "ModelOutputInterval",
+          "type": "object",
+          "required": ["mode", "interval"],
+          "properties": {
+            "mode": { "const": "interval" },
+            "interval": { "type": "number", "exclusiveMinimum": 0 },
+            "$comment": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "plot": {
+      "title": "ModelPlot",
+      "type": "object",
+      "required": ["id", "title", "signals"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$"
+        },
+        "title": { "type": "string" },
+        "signals": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?(?:\\.[A-Za-z_][A-Za-z0-9_]*)?$"
+          }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "scene": {
+      "title": "ModelScene",
+      "type": ["object", "null"],
+      "required": ["file"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Scene file relative to the project directory, e.g. scenes/drivetrain.sdf."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

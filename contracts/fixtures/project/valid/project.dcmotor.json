@@ -1,0 +1,9 @@
+{
+  "$comment": "The dc-motor example project (plan 9.1): the iconic and the bond graph model, a project library and scenes.",
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "dc-motor",
+  "models": ["iconic", "bondgraph"],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

@@ -1,0 +1,6 @@
+{
+  "$comment": "Invalid: method \"catalog.frobnicate\" is not one of the seven request methods or the four notification methods (plan 3.6).",
+  "id": 18,
+  "method": "catalog.frobnicate",
+  "params": {}
+}

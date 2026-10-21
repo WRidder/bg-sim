@@ -1,0 +1,28 @@
+{
+  "$comment": "Invalid: port p declares domain \"Electric\", which is not one of the five domain names (plan 3.2).",
+  "language": "0.1.0",
+  "blocks": [
+    {
+      "ref": "stdlib:electrical/Resistor",
+      "name": "Resistor",
+      "group": "Electrical",
+      "release": "0.1",
+      "description": "Electrical resistor between p and n.",
+      "icon": "elec-resistor",
+      "constants": [],
+      "parameters": [],
+      "inputs": [],
+      "outputs": [],
+      "ports": [
+        { "name": "p", "domain": "Electric", "size": [] },
+        { "name": "n", "domain": "Electrical", "size": [] }
+      ],
+      "variables": [],
+      "causality": [],
+      "source": "@block Resistor begin\n    @ports begin\n        p::Power{Electrical}\n        n::Power{Electrical}\n    end\n    @equations begin\n        p.f + n.f ~ 0.0\n        p.e - n.e ~ R * p.f\n    end\nend",
+      "path": "stdlib/electrical/Resistor.jl"
+    }
+  ],
+  "junctions": [],
+  "domains": []
+}

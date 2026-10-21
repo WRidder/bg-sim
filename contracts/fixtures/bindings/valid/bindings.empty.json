@@ -1,0 +1,4 @@
+{
+  "$comment": "A model with no bindings is valid; the editor shows an empty binding table.",
+  "bindings": []
+}

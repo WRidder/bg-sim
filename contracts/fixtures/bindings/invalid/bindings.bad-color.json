@@ -1,0 +1,10 @@
+{
+  "$comment": "Invalid: a color binding needs both `colormap` and `range`; this one has neither (spec: \"Binding schema\").",
+  "bindings": [
+    {
+      "target": "visual:motor_body",
+      "property": "color",
+      "signal": "Plant/Motor1/T_winding"
+    }
+  ]
+}

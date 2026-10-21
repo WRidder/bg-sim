@@ -1,0 +1,14 @@
+{
+  "$comment": "Invalid: the required top-level `blocks` array is missing (plan 3.2).",
+  "language": "0.1.0",
+  "junctions": [{ "ref": "junction:0" }, { "ref": "junction:1" }],
+  "domains": [
+    {
+      "name": "Electrical",
+      "effort": { "name": "voltage", "unit": "V" },
+      "flow": { "name": "current", "unit": "A" },
+      "across": "e",
+      "size": 1
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "$comment": "A playback handshake for a 3D scene: the seven pose signals travel as separate columns.",
+  "signals": [
+    { "id": "Plant/Cart/x", "unit": "m" },
+    { "id": "Plant/Cart/y", "unit": "m" },
+    { "id": "Plant/Cart/z", "unit": "m" },
+    { "id": "Plant/Cart/qw", "unit": null },
+    { "id": "Plant/Cart/qx", "unit": null },
+    { "id": "Plant/Cart/qy", "unit": null },
+    { "id": "Plant/Cart/qz", "unit": null },
+    { "id": "Plant/Gripper/F", "unit": "N" }
+  ],
+  "rate": 60.0,
+  "mode": "playback"
+}
