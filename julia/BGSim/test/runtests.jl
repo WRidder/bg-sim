@@ -231,3 +231,11 @@ end
 
 # Work package J1.1: the language front end (parser, whitelist, block-level checks).
 include("test_syntax.jl")
+
+# Later work packages add one test file each. The `isfile` guard is temporary scaffolding so
+# parallel WPs cannot break each other's runs; the M1 gate replaces it with plain includes.
+for entry in ("test_units.jl", "test_library.jl", "test_flatten.jl", "test_simulate.jl",
+              "test_worker.jl")
+    path = joinpath(@__DIR__, entry)
+    isfile(path) && include(path)
+end

@@ -32,6 +32,14 @@ include("syntax/whitelist.jl")
 include("syntax/parse.jl")
 include("syntax/scopes.jl")
 
+# Module entry points that later WPs add. The `isfile` guard only exists so that two WPs
+# adding a module in parallel cannot break each other's test run; the M1 gate replaces it
+# with plain `include` calls (DEC-5 in plan/STATUS.md).
+for entry in ("units/units.jl", "library/library.jl")
+    path = joinpath(@__DIR__, entry)
+    isfile(path) && include(path)
+end
+
 include("lower/mtk.jl")
 include("precompile.jl")
 include("worker/server.jl")
