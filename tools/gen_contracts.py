@@ -282,6 +282,17 @@ console.log(`  wrote ${outPath}`);
 """
 
 
+def normalize_newlines(paths) -> None:
+    """datamodel-code-generator writes CRLF on Windows; the repo is LF (see .gitattributes)."""
+    for path in paths:
+        if not path.exists():
+            continue
+        data = path.read_bytes()
+        fixed = data.replace(b"\r\n", b"\n")
+        if fixed != data:
+            path.write_bytes(fixed)
+
+
 def main() -> int:
     schemas = load_schemas()
     names = type_names(schemas)
@@ -292,6 +303,7 @@ def main() -> int:
         generate_python(schemas, names, stage)
         print("TypeScript ->", TS_OUT_DIR.relative_to(REPO))
         generate_typescript(schemas, names, stage)
+    normalize_newlines([PY_OUT, *(TS_OUT_DIR.glob("*.ts"))])
     print(
         f"generated {len(roots)} schemas ({', '.join(roots)}) into "
         f"{PY_OUT.relative_to(REPO)} and {TS_OUT_DIR.relative_to(REPO)}"
