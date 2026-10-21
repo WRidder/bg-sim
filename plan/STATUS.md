@@ -66,6 +66,14 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 
 (added when a milestone gate is run)
 
+## Contract changes and orchestrator decisions
+
+| ID | Kind | Note |
+| --- | --- | --- |
+| CONTRACT-1 | fixtures added | `model.rlc.iconic.json` and `model.rlc.bondgraph.json` added to `contracts/fixtures/model/valid/` (plan 9.3, R = 10 Ω, L = 10 mH, C = 100 µF) because J1.4's acceptance names RLC fixtures that M0.2 did not create. No schema change, so no binding change was needed; pytest 105 and vitest 54 pass with them. |
+| DEC-1 | ordering | J1.2 is run **after** J1.1, although its plan `Depends` is only M0.3. J1.2's `check_units` consumes J1.1's AST and `Diagnostic` type, so running them concurrently would race on the same interface. The orchestrator's J1.1 brief pins the AST and diagnostic API as a contract so J1.2 can rely on it. |
+| DEC-2 | tooling | `tools/check.py` needed a Windows fix (npm/npx are `.cmd` shims; `CreateProcess` cannot launch them) and now only runs npm scripts that exist. |
+
 ## Measured numbers
 
 | Item | Target | Measured |
