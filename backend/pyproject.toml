@@ -1,19 +1,24 @@
 [project]
 name = "bgsim-server"
 version = "0.1.0"
-description = "bg-sim Python backend: contracts harness (M0.2); the FastAPI app and worker supervisor arrive in M0.4"
+description = "bg-sim Python backend: FastAPI app, worker supervisor and contracts harness"
 readme = "README.md"
 authors = [
     { name = "Wilbert van de Ridder", email = "w.vanderidder@awl.nl" }
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "fastapi>=0.159.1",
     "jsonschema>=4.26.0",
+    "numpy>=2.5.4",
     "pydantic>=2.14.1",
+    "uvicorn[standard]>=0.54.0",
+    "watchfiles>=1.3.0",
 ]
 
 [project.scripts]
-bgsim-server = "bgsim_server:main"
+bgsim = "bgsim_server.__main__:main"
+bgsim-server = "bgsim_server.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.13.4,<0.14.0"]
@@ -27,3 +32,15 @@ dev = [
     "pytest-asyncio>=1.4.0",
     "ruff>=0.17.1",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = '-m "not julia"'
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "julia: integration test that runs the real Julia worker (tools/check.py --lane x)",
+]
+
+[tool.ruff]
+line-length = 100

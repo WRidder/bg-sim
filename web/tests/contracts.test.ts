@@ -60,7 +60,7 @@ function fixtureFiles(kind: "valid" | "invalid"): { name: SchemaName; file: stri
   const cases: { name: SchemaName; file: string; label: string }[] = [];
   for (const name of schemaNames) {
     const base = path.join(fixtureDir, name, kind);
-    let entries: string[] = [];
+    let entries: string[];
     try {
       entries = readdirSync(base, { recursive: true }) as string[];
     } catch {

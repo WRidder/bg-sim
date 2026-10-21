@@ -108,10 +108,18 @@ def web_steps() -> list[Step] | None:
 
 
 def example_steps() -> list[Step] | None:
-    examples = ROOT / "examples"
-    if not examples.is_dir() or not any(examples.iterdir()):
-        return None
+    """The examples lane: the real-worker integration tests, the example checks and e2e."""
     steps: list[Step] = []
+    backend = ROOT / "backend"
+    if (backend / "pyproject.toml").exists() and (backend / "tests").exists():
+        steps.append(
+            Step(
+                "julia-marked pytest",
+                ["uv", "run", "--directory", str(backend), "pytest", "-q", "-m", "julia"],
+                cwd=ROOT,
+            )
+        )
+    examples = ROOT / "examples"
     runner = examples / "run_checks.py"
     if runner.exists():
         steps.append(Step("examples", ["uv", "run", str(runner)], cwd=ROOT))
@@ -122,7 +130,7 @@ def example_steps() -> list[Step] | None:
                 "playwright",
                 ["npx", "playwright", "test"],
                 cwd=ROOT / "web",
-                env={"BGSIM_FAKE_WORKER": "1"},
+                env={"BGSIM_E2E_REAL": "1"},
             )
         )
     return steps or None

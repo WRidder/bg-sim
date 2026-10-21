@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "types": ["node"],
+    "types": ["vite/client", "node"],
+    "jsx": "react-jsx",
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
@@ -15,7 +16,8 @@
     "verbatimModuleSyntax": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "tests", "vitest.config.ts"]
+  "include": ["src", "tests", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"]
 }

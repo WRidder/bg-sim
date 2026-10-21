@@ -1,0 +1,18 @@
+[project]
+name = "bg-sim"
+version = "0.1.0"
+description = "bg-sim: bond graph, block diagram and equation modeling and simulation"
+requires-python = ">=3.13"
+dependencies = ["bgsim-server"]
+
+[project.scripts]
+bgsim = "bgsim_server.__main__:main"
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["backend"]
+
+[tool.uv.sources]
+bgsim-server = { workspace = true }

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="bg-sim: bond-graph, block-diagram and equation modeling and simulation" />
+    <title>bg-sim</title>
+    <script>
+      /* Applies the stored theme before the first paint so a light-theme user
+       * does not see a dark flash. The same key is read by src/theme/theme.ts;
+       * storage can be unavailable, so this must not throw. */
+      try {
+        var stored = localStorage.getItem("bgsim.theme");
+        if (stored === "light" || stored === "dark") {
+          document.documentElement.dataset.theme = stored;
+        }
+      } catch (error) {
+        /* keep the default (dark) theme */
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

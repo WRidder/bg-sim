@@ -21,5 +21,6 @@ export mtk_variable, mtk_parameter, mtk_discrete, signal_name
 
 include("lower/mtk.jl")
 include("precompile.jl")
+include("worker/server.jl")
 
 end # module BGSim

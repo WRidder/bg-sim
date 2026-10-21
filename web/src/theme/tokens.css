@@ -1,0 +1,139 @@
+/*
+ * bg-sim design tokens (plan 7.3 visual language, plan 7.8 design quality bar).
+ *
+ * Dark is the default theme: `:root` carries it and `[data-theme="light"]`
+ * overrides it. The theme is switched with the `data-theme` attribute on
+ * <html> (src/theme/theme.ts) and persisted in localStorage.
+ *
+ * Colour is never the only cue (plan 7.3): the canvas repeats every domain as
+ * a letter (E/T/R/H/P/G) and every signal type as a glyph or stroke pattern.
+ */
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Spacing: one 4 px scale for the whole app (plan 7.8). */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Typography: Inter for the UI, JetBrains Mono for code and values. */
+  --font-ui: "Inter Variable", "Inter", system-ui, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 15px;
+  --font-size-xl: 20px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.45;
+  --letter-spacing-label: 0.06em;
+
+  /* Shape. */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --border-width: 1px;
+
+  /* Dark palette. */
+  --color-bg: #12161c;
+  --color-surface: #171c24;
+  --color-surface-raised: #1e242e;
+  --color-surface-sunken: #0e1217;
+  --color-border: #2a323e;
+  --color-border-strong: #3b4655;
+  --color-text: #e6ebf2;
+  --color-text-muted: #9aa5b4;
+  --color-text-faint: #6b7280;
+  --color-accent: #4d8bf0;
+  --color-accent-hover: #6b9ff5;
+  --color-focus: #8fb4f7;
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 45%);
+
+  /* Domain colours (plan 7.3). Dark variants are the plan hues lightened for
+   * contrast on dark panels; light theme uses the plan values unchanged. */
+  --domain-electrical: #6c9bf5; /* plan: #2F6FDE */
+  --domain-translation: #5fc08a; /* plan: #2E9E5B */
+  --domain-rotation: #a08cf8; /* plan: #7A5AF8 */
+  --domain-hydraulic: #45c4de; /* plan: #0EA5C6 */
+  --domain-planar: #b5988d; /* plan: #8D6E63 */
+  --domain-generic: #9aa5b4; /* plan: #6B7280, drawn dashed */
+  --domain-generic-dash: 4 3;
+
+  /* Signal strokes (plan 7.3): Real ink 1.25 px with an arrowhead, Bool
+   * dashed, Int dotted. */
+  --signal-real: var(--color-text);
+  --signal-real-width: 1.25px;
+  --signal-bool: var(--color-text-muted);
+  --signal-bool-dash: 5 3;
+  --signal-int: var(--color-text-muted);
+  --signal-int-dash: 1.5 3;
+
+  /* Reserved: never used for a domain (plan 7.3). */
+  --color-error: #f26d63; /* plan: #D92D20 */
+  --color-warning: #f5a83c; /* plan: #F79009 */
+  --color-ok: #4fb477;
+
+  /* Worker health states (top bar indicator). */
+  --status-starting: #9aa5b4;
+  --status-warming: #f5a83c;
+  --status-ready: #4fb477;
+  --status-crashed: #f26d63;
+
+  /* Shell metrics. */
+  --topbar-height: 40px;
+  --tab-height: 30px;
+  --panel-title-height: 28px;
+  --splitter-size: 5px;
+  --control-height: 24px;
+
+  --transition-fast: 120ms ease;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-bg: #eef1f5;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f4f6f9;
+  --color-surface-sunken: #e7ebf0;
+  --color-border: #d3d9e0;
+  --color-border-strong: #b3bcc7;
+  --color-text: #1b2129;
+  --color-text-muted: #5a6675;
+  --color-text-faint: #8a95a3;
+  --color-accent: #2f6fde;
+  --color-accent-hover: #245cc0;
+  --color-focus: #2f6fde;
+  --shadow-panel: 0 1px 2px rgb(27 33 41 / 12%);
+
+  /* Plan 7.3 domain colours, unchanged in the light theme. */
+  --domain-electrical: #2f6fde;
+  --domain-translation: #2e9e5b;
+  --domain-rotation: #7a5af8;
+  --domain-hydraulic: #0ea5c6;
+  --domain-planar: #8d6e63;
+  --domain-generic: #6b7280;
+
+  --signal-real: var(--color-text);
+
+  --color-error: #d92d20;
+  --color-warning: #f79009;
+  --color-ok: #2e9e5b;
+
+  --status-starting: #8a95a3;
+  --status-warming: #f79009;
+  --status-ready: #2e9e5b;
+  --status-crashed: #d92d20;
+}
