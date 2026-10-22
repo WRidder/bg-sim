@@ -26,6 +26,7 @@ import type {
   JunctionType,
   Model,
   ModelConnection,
+  ModelConstantValue,
   ModelNode,
   ModelPoint,
 } from "../contracts/model";
@@ -73,6 +74,37 @@ export interface ConnectResult {
   kind?: ConnectionKind;
 }
 
+/** Result of an inspector edit command; the message is user-facing. */
+export interface EditResult {
+  ok: boolean;
+  error?: string;
+}
+
+/** Instance names are path segments (plan 3.1); the schema is the source. */
+export const NODE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/**
+ * Why `name` cannot be an instance name for `nodeId`, or null when it can.
+ * Names must be identifiers and unique within their diagram (plan 3.1).
+ */
+export function nodeNameIssue(
+  nodes: readonly ModelNode[],
+  nodeId: string,
+  name: string,
+): string | null {
+  if (name.length === 0) {
+    return "Enter a name.";
+  }
+  if (!NODE_NAME_PATTERN.test(name)) {
+    return "Names start with a letter or underscore and use only letters, digits and underscores.";
+  }
+  const clash = nodes.find((node) => node.id !== nodeId && node.name === name);
+  if (clash !== undefined) {
+    return `The diagram already has a block named "${name}".`;
+  }
+  return null;
+}
+
 export interface DocumentActions {
   openDocument: (
     project: string,
@@ -101,6 +133,21 @@ export interface DocumentActions {
   reverseConnection: (id: string) => void;
 
   connect: (a: PortDescriptor, b: PortDescriptor) => ConnectResult;
+
+  /** Rename a node; refuses invalid identifiers and sibling name clashes. */
+  renameNode: (nodeId: string, name: string) => EditResult;
+  /** Set one parameter expression string (plan 3.3 `params`). */
+  setNodeParam: (nodeId: string, name: string, value: string) => EditResult;
+  /** Set one constant override, or remove it with null (plan 3.3 `constants`). */
+  setNodeConstant: (
+    nodeId: string,
+    name: string,
+    value: ModelConstantValue | null,
+  ) => EditResult;
+  /** Set one start-value override, or remove it with null (plan 3.3 `starts`). */
+  setNodeStart: (nodeId: string, name: string, value: string | null) => EditResult;
+  /** Re-point a library instance, used by "Copy to project library" (plan 7.4). */
+  setNodeBlockRef: (nodeId: string, ref: string) => EditResult;
 
   undo: () => void;
   redo: () => void;
@@ -536,6 +583,130 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         draft.diagram.connections.push(connection);
       });
       return { ok: true, id, kind: result.kind };
+    },
+
+    renameNode: (nodeId, name) => {
+      const doc = get().doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const node = doc.diagram.nodes.find((entry) => entry.id === nodeId);
+      if (node === undefined) {
+        return { ok: false, error: "That block is no longer in the diagram." };
+      }
+      const next = name.trim();
+      const issue = nodeNameIssue(doc.diagram.nodes, nodeId, next);
+      if (issue !== null) {
+        return { ok: false, error: issue };
+      }
+      if (next === node.name) {
+        return { ok: true };
+      }
+      commit((draft) => {
+        const target = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+        if (target !== undefined) {
+          target.name = next;
+        }
+      });
+      return { ok: true };
+    },
+
+    setNodeParam: (nodeId, name, value) => {
+      const doc = get().doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      if (!doc.diagram.nodes.some((entry) => entry.id === nodeId)) {
+        return { ok: false, error: "That block is no longer in the diagram." };
+      }
+      const text = value.trim();
+      if (text.length === 0) {
+        return { ok: false, error: "Enter a value." };
+      }
+      commit((draft) => {
+        const node = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+        if (node !== undefined) {
+          node.params = { ...(node.params ?? {}), [name]: text };
+        }
+      });
+      return { ok: true };
+    },
+
+    setNodeConstant: (nodeId, name, value) => {
+      const doc = get().doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      if (!doc.diagram.nodes.some((entry) => entry.id === nodeId)) {
+        return { ok: false, error: "That block is no longer in the diagram." };
+      }
+      commit((draft) => {
+        const node = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+        if (node === undefined) {
+          return;
+        }
+        if (value === null) {
+          if (node.constants !== undefined) {
+            delete node.constants[name];
+          }
+        } else {
+          node.constants = { ...(node.constants ?? {}), [name]: value };
+        }
+      });
+      return { ok: true };
+    },
+
+    setNodeStart: (nodeId, name, value) => {
+      const doc = get().doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      if (!doc.diagram.nodes.some((entry) => entry.id === nodeId)) {
+        return { ok: false, error: "That block is no longer in the diagram." };
+      }
+      const text = value?.trim() ?? "";
+      commit((draft) => {
+        const node = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+        if (node === undefined) {
+          return;
+        }
+        if (text.length === 0) {
+          if (node.starts !== undefined) {
+            delete node.starts[name];
+          }
+        } else {
+          node.starts = { ...(node.starts ?? {}), [name]: text };
+        }
+      });
+      return { ok: true };
+    },
+
+    setNodeBlockRef: (nodeId, ref) => {
+      const doc = get().doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const node = doc.diagram.nodes.find((entry) => entry.id === nodeId);
+      if (node === undefined) {
+        return { ok: false, error: "That block is no longer in the diagram." };
+      }
+      if (!("ref" in node.block)) {
+        return { ok: false, error: "Only library blocks can be re-pointed." };
+      }
+      const next = ref.trim();
+      if (next.length === 0) {
+        return { ok: false, error: "Enter a block reference." };
+      }
+      if (node.block.ref === next) {
+        return { ok: true };
+      }
+      commit((draft) => {
+        const target = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+        if (target !== undefined) {
+          target.block = { ref: next };
+        }
+      });
+      return { ok: true };
     },
 
     undo: () => {

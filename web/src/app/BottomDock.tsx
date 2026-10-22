@@ -1,4 +1,5 @@
 import { DiagnosticsPanel } from "../diagnostics/DiagnosticsPanel";
+import { useDiagnosticBadges } from "../diagnostics/useDiagnostics";
 import { PlotPanel } from "../plot/PlotPanel";
 import { SignalBrowser } from "../plot/SignalBrowser";
 import { EmptyState } from "./EmptyState";
@@ -45,6 +46,13 @@ export interface BottomDockProps {
 
 /** The bottom dock of plan 7.2: Plots, 3D View, Diagnostics, Signals, Log. */
 export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: BottomDockProps) {
+  // W1.3: the live counts come from the diagnostics store; the prop stays for
+  // callers that already have a count (the two are merged, never doubled).
+  const live = useDiagnosticBadges();
+  const counts: DiagnosticCounts = {
+    error: Math.max(diagnostics.error, live.error),
+    warning: Math.max(diagnostics.warning, live.warning),
+  };
   const tabs: readonly TabDefinition<DockTabId>[] = [
     { id: "plots", label: "Plots" },
     { id: "viewer", label: "3D View" },
@@ -52,8 +60,8 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
       id: "diagnostics",
       label: "Diagnostics",
       badges: [
-        { count: diagnostics.error, tone: "error" },
-        { count: diagnostics.warning, tone: "warning" },
+        { count: counts.error, tone: "error" },
+        { count: counts.warning, tone: "warning" },
       ],
     },
     { id: "signals", label: "Signals" },

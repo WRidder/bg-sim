@@ -1,0 +1,61 @@
+/* Run bar additions (plan 7.2). Shared control sizing comes from app.css. */
+
+.run-bar__status {
+  flex: none;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.run-bar__status[data-status="done"] {
+  color: var(--color-ok);
+}
+
+.run-bar__status[data-status="failed"] {
+  color: var(--color-error);
+}
+
+.run-bar__status[data-status="cancelled"] {
+  color: var(--color-warning);
+}
+
+.run-bar__progress {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.run-bar__progress progress {
+  width: 56px;
+  height: 4px;
+  accent-color: var(--color-accent);
+  border: none;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.setting__value--solver {
+  width: 90px;
+  cursor: pointer;
+}
+
+.setting__value.is-invalid,
+.setting__value.is-invalid:focus-visible {
+  border-color: var(--color-error);
+  outline-color: var(--color-error);
+}
+
+.setting__value:enabled {
+  color: var(--color-text);
+}
