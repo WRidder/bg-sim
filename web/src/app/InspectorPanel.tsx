@@ -1,9 +1,9 @@
-import { EmptyState } from "./EmptyState";
+import { Inspector } from "../inspector/Inspector";
 
 /**
  * The Inspector of plan 7.2: name, block, parameters (units, min/max,
  * description), ports, start values, "Open source" and "Copy to project
- * library" for the selected element. Nothing is selectable until M1/M2.
+ * library" for the selected element.
  */
 export function InspectorPanel() {
   return (
@@ -13,10 +13,7 @@ export function InspectorPanel() {
           Inspector
         </h2>
         <div className="panel-section__body">
-          <EmptyState
-            title="Nothing selected"
-            hint="Select a block on the diagram to edit its name, parameters, ports and start values here."
-          />
+          <Inspector />
         </div>
       </section>
     </div>

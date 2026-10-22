@@ -1,3 +1,6 @@
+import { DiagnosticsPanel } from "../diagnostics/DiagnosticsPanel";
+import { PlotPanel } from "../plot/PlotPanel";
+import { SignalBrowser } from "../plot/SignalBrowser";
 import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
 
@@ -58,6 +61,21 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
   ];
   const empty = DOCK_EMPTY_STATES[active];
 
+  // The Plots, Signals and Diagnostics tabs are mounted components owned by
+  // W1.4 and W1.3; the rest keep the shell's empty state until their WP lands.
+  function panel() {
+    switch (active) {
+      case "plots":
+        return <PlotPanel />;
+      case "signals":
+        return <SignalBrowser />;
+      case "diagnostics":
+        return <DiagnosticsPanel />;
+      default:
+        return <EmptyState title={empty.title} hint={empty.hint} />;
+    }
+  }
+
   return (
     <div className="dock" data-testid="bottom-dock">
       <TabStrip tabs={tabs} active={active} onSelect={onSelect} ariaLabel="Dock" idPrefix="dock" />
@@ -68,7 +86,7 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
         aria-labelledby={`dock-tab-${active}`}
         tabIndex={0}
       >
-        <EmptyState title={empty.title} hint={empty.hint} />
+        {panel()}
       </div>
     </div>
   );
