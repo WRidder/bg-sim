@@ -1,0 +1,8 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "dc-motor",
+  "models": ["iconic", "bondgraph"],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

@@ -1,0 +1,312 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "iconic",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Step1",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 60,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.01",
+          "initial": "0.0",
+          "final": "12.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n2",
+        "name": "V1",
+        "block": {
+          "ref": "stdlib:electrical/VoltageSource"
+        },
+        "position": {
+          "x": 260,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "V": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n3",
+        "name": "Motor1",
+        "block": {
+          "ref": "stdlib:converters/DCMotor"
+        },
+        "position": {
+          "x": 480,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R": "2.0",
+          "L": "5e-4",
+          "k_t": "0.05",
+          "J": "1e-5",
+          "d": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n4",
+        "name": "Ground1",
+        "block": {
+          "ref": "stdlib:electrical/Ground"
+        },
+        "position": {
+          "x": 480,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n5",
+        "name": "FixHousing",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 480,
+          "y": 20
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n6",
+        "name": "Damp1",
+        "block": {
+          "ref": "stdlib:rotation/RotationalDamper"
+        },
+        "position": {
+          "x": 700,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "1e-6"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n7",
+        "name": "FixShaft",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 900,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "signal",
+        "from": {
+          "node": "n1",
+          "port": "y"
+        },
+        "to": {
+          "node": "n2",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 160,
+            "y": 200
+          }
+        ],
+        "label": "12 V step"
+      },
+      {
+        "id": "c2",
+        "kind": "wire",
+        "from": {
+          "node": "n2",
+          "port": "p"
+        },
+        "to": {
+          "node": "n3",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "wire",
+        "from": {
+          "node": "n3",
+          "port": "n"
+        },
+        "to": {
+          "node": "n4",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "wire",
+        "from": {
+          "node": "n3",
+          "port": "housing"
+        },
+        "to": {
+          "node": "n5",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c5",
+        "kind": "wire",
+        "from": {
+          "node": "n3",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "n6",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c6",
+        "kind": "wire",
+        "from": {
+          "node": "n6",
+          "port": "b"
+        },
+        "to": {
+          "node": "n7",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c7",
+        "kind": "wire",
+        "from": {
+          "node": "n2",
+          "port": "n"
+        },
+        "to": {
+          "node": "n4",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "DC motor plant",
+        "x": 420,
+        "y": 380,
+        "w": 240,
+        "h": 80
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 5000
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Rotor speed",
+      "signals": [
+        "Motor1/shaft.f",
+        "Damp1/a.f"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Winding current",
+      "signals": [
+        "Motor1/i"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

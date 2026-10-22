@@ -1,0 +1,55 @@
+{
+  "project": "dc-motor",
+  "description": "Plan 9.1 acceptance. Signals use the plan 3.1 signal IDs. `final_value` and `cursor_value` read columns.f64 through the manifest's signal order; `compare` subtracts two models over a settled window.",
+  "models": {
+    "iconic": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "Motor1/shaft.f",
+          "t": 1.0,
+          "value": 239.80815347721824,
+          "rtol": 1e-4,
+          "note": "k*V/(k^2 + R*d) with k=0.05, V=12, R=2, d=1e-6"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Motor1/shaft.f",
+          "t": 0.2,
+          "value": 239.8,
+          "abs": 0.1,
+          "note": "the readout the M1 Playwright test asserts"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Motor1/i",
+          "t": 1.0,
+          "value": 0.004796163069544365,
+          "rtol": 1e-4,
+          "note": "steady winding current, torque balance k*i = d*omega"
+        }
+      ]
+    },
+    "bondgraph": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "IJ/p.f",
+          "t": 1.0,
+          "value": 239.80815347721824,
+          "rtol": 1e-4,
+          "note": "same steady state as the iconic model"
+        }
+      ]
+    },
+    "compare": {
+      "a": "iconic",
+      "b": "bondgraph",
+      "signal_a": "Motor1/shaft.f",
+      "signal_b": "IJ/p.f",
+      "from_t": 0.5,
+      "max_abs": 1e-6,
+      "note": "the bond-graph Se is a constant 12 V, so only the settled part is comparable"
+    }
+  }
+}
