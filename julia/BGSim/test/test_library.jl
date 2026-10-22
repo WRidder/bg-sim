@@ -1,0 +1,481 @@
+# Work package J1.3: the library loader, the catalog and the M1 standard library.
+#
+# Three kinds of test:
+#   * the M1 stdlib on disk: 36 files, one `@block` each, the file name equals the block
+#     name, every parameter described, every block checking clean and balanced;
+#   * the catalog contract: the structural fields of `contracts/schemas/catalog.schema.json`
+#     (every object's property set, exactly) and a field-for-field comparison with
+#     `contracts/fixtures/catalog/valid/catalog.min.json` — no field is skipped;
+#   * the loader itself: the source-hash cache, diagnostics that point at the block ref, the
+#     project library (refs, ordering, file-name and duplicate-name errors) and the D12
+#     intrinsic table.
+using BGSim
+using BGSim.Library: BlockDef, load_block, load_source, load_stdlib, load_project_library,
+    catalog, intrinsics, stdlib_dir, has_errors, source_hash, clear_cache, cached_blocks,
+    group_info, BLOCK_METADATA, GROUPS
+using Test
+using JSON3
+
+# The contract fixtures live at the repository root; `Pkg.test()` runs from
+# `julia/BGSim/test`, so walk up until `contracts/` is found.
+function _repo_root()
+    dir = normpath(@__DIR__)
+    for _ in 1:10
+        isdir(joinpath(dir, "contracts", "schemas")) && return dir
+        parent = dirname(dir)
+        parent == dir && break
+        dir = parent
+    end
+    error("could not find the repository root (a directory with contracts/schemas) above $(@__DIR__)")
+end
+
+const REPO_ROOT = _repo_root()
+const CATALOG_SCHEMA_PATH = joinpath(REPO_ROOT, "contracts", "schemas", "catalog.schema.json")
+const CATALOG_FIXTURE_PATH =
+    joinpath(REPO_ROOT, "contracts", "fixtures", "catalog", "valid", "catalog.min.json")
+
+# The M1 library of plan section 8, by group, as sorted refs. This list is the plan's, not
+# the fixture's: the fixture test below compares against the fixture, and this list makes
+# sure the fixture and the plan agree.
+const M1_REFS = [
+    "stdlib:bondgraph/C",
+    "stdlib:bondgraph/De",
+    "stdlib:bondgraph/Df",
+    "stdlib:bondgraph/GY",
+    "stdlib:bondgraph/I",
+    "stdlib:bondgraph/MSe",
+    "stdlib:bondgraph/R",
+    "stdlib:bondgraph/Se",
+    "stdlib:bondgraph/Sf",
+    "stdlib:bondgraph/TF",
+    "stdlib:continuous/Gain",
+    "stdlib:continuous/Integrator",
+    "stdlib:continuous/PIController",
+    "stdlib:continuous/Sum",
+    "stdlib:converters/AngleSensor",
+    "stdlib:converters/DCMotor",
+    "stdlib:converters/SpeedSensor",
+    "stdlib:electrical/Capacitor",
+    "stdlib:electrical/Ground",
+    "stdlib:electrical/Inductor",
+    "stdlib:electrical/Resistor",
+    "stdlib:electrical/VoltageSource",
+    "stdlib:rotation/FixedShaft",
+    "stdlib:rotation/IdealGear",
+    "stdlib:rotation/Inertia",
+    "stdlib:rotation/RotationalDamper",
+    "stdlib:rotation/TorqueSource",
+    "stdlib:rotation/TorsionSpring",
+    "stdlib:sources/Constant",
+    "stdlib:sources/Sine",
+    "stdlib:sources/Step",
+    "stdlib:translation/Damper",
+    "stdlib:translation/Fixed",
+    "stdlib:translation/ForceSource",
+    "stdlib:translation/Mass",
+    "stdlib:translation/Spring",
+]
+
+# ---------------------------------------------------------------------------------------
+# Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
+# compares data rather than JSON3 wrappers.
+# ---------------------------------------------------------------------------------------
+
+_plain(v::JSON3.Object) =
+    Dict{String,Any}(String(k) => _plain(v[k]) for k in keys(v))
+_plain(v::JSON3.Array) = [_plain(x) for x in v]
+_plain(v::NamedTuple) =
+    Dict{String,Any}(String(k) => _plain(getfield(v, k)) for k in keys(v))
+_plain(v::AbstractVector) = [_plain(x) for x in v]
+_plain(v::AbstractDict) = Dict{String,Any}(String(k) => _plain(v[k]) for k in keys(v))
+_plain(v::Symbol) = String(v)
+_plain(v) = v
+
+# The data properties of a schema object: `$comment` is an annotation the schema itself
+# allows, never data the worker emits, so it is not part of the key set we assert.
+_schema_keys(props) = Set(String(k) for k in keys(props) if String(k) != raw"$comment")
+_schema_required(def) = Set(String.(def.required))
+
+function _check_object_keys(entry, def)
+    e = _plain(entry)
+    @test Set(keys(e)) == _schema_keys(def.properties)
+    @test _schema_required(def) ⊆ Set(keys(e))
+    return nothing
+end
+
+_field(obj, name) = obj[Symbol(name)]
+
+const INTERFACE_FIELDS = [
+    ("constants", "constantDecl"),
+    ("parameters", "parameterDecl"),
+    ("inputs", "ioDecl"),
+    ("outputs", "ioDecl"),
+    ("ports", "portDecl"),
+    ("variables", "variableDecl"),
+    ("causality", "causalityDecl"),
+]
+
+@testset "library" begin
+    @testset "the M1 stdlib on disk" begin
+        @test isdir(stdlib_dir())
+        blocks = load_stdlib()
+        @test length(blocks) == 36
+        @test [b.ref for b in blocks] == sort(M1_REFS)
+        @test [b.ref for b in blocks] == sort([b.ref for b in blocks])
+
+        for b in blocks
+            group, name = split(b.ref[length("stdlib:")+1:end], '/')
+            path = joinpath(stdlib_dir(), group, name * ".jl")
+            @test b isa BlockDef
+            @test isfile(path)
+            @test String(b.name) == name           # plan 3.3: file name == block name
+            @test read(path, String) == b.source * "\n"  # the catalog's source is verbatim
+            @test b.path == "stdlib/$group/$name.jl"
+            @test b.release == "0.1"
+            @test b.group == group_info(group).name
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+        end
+
+        # Every stdlib directory is a catalog group, and every block has its metadata.
+        dirs = sort([basename(d) for d in readdir(stdlib_dir(); join = true) if isdir(d)])
+        @test dirs == sort([g.dir for g in GROUPS])
+        @test Set(keys(BLOCK_METADATA)) == Set([b.ref for b in blocks])
+    end
+
+    @testset "every M1 block checks clean and balanced" begin
+        for b in load_stdlib()
+            errors = [d for d in b.diagnostics if d.severity == "error"]
+            @test isempty(errors)
+            @test !has_errors(b)
+            # No unused declarations, and the block-level balance precheck (E103) is silent.
+            @test isempty([d for d in b.diagnostics if d.code == "W204"])
+            @test isempty([d for d in b.diagnostics if d.code == "E103"])
+            bal = block_balance(b.ast)
+            @test bal.unknowns == bal.equations
+            # Plan section 8: every parameter needs a description.
+            for p in b.interface.parameters
+                @test !isempty(p.description)
+            end
+            # `block_equations` returns the checked AST for a clean block.
+            @test length(block_equations(b.ast)) == length(equations(b.ast))
+        end
+    end
+
+    @testset "catalog structure against catalog.schema.json" begin
+        schema = JSON3.read(read(CATALOG_SCHEMA_PATH, String))
+        defs = schema[raw"$defs"]
+        cat = catalog()
+
+        # Root object: exactly the schema's data properties, and the required ones present.
+        root = _plain(cat)
+        @test Set(keys(root)) == _schema_keys(schema.properties)
+        @test _schema_required(schema) ⊆ Set(keys(root))
+        @test cat.language == "0.1.0"
+
+        for block in cat.blocks
+            _check_object_keys(block, defs["catalogBlock"])
+            for (field, defname) in INTERFACE_FIELDS
+                for entry in _field(block, field)
+                    _check_object_keys(entry, defs[defname])
+                end
+            end
+        end
+
+        for junction in cat.junctions
+            _check_object_keys(junction, defs["junction"])
+        end
+        for domain in cat.domains
+            _check_object_keys(domain, defs["domain"])
+            for field in ("effort", "flow")
+                _check_object_keys(_field(domain, field), defs["domainVariable"])
+            end
+        end
+
+        # The shared `blockInterface` definition exists and covers the same seven arrays the
+        # catalog block embeds; that is what keeps `block.check` and `catalog.get` aligned.
+        iface = _schema_keys(defs["blockInterface"].properties)
+        @test iface == Set([field for (field, _) in INTERFACE_FIELDS])
+        first_interface = _plain(block_interface(load_stdlib()[1].ast))
+        @test _schema_required(defs["blockInterface"]) ⊆ Set(keys(first_interface))
+    end
+
+    @testset "catalog against the contract fixture, field for field" begin
+        fixture = JSON3.read(read(CATALOG_FIXTURE_PATH, String))
+        cat = catalog()
+
+        @test cat.language == String(fixture.language)
+        @test length(cat.blocks) == length(fixture.blocks)
+
+        ours = Dict(b.ref => _plain(b) for b in cat.blocks)
+        theirs = Dict(String(b.ref) => _plain(b) for b in fixture.blocks)
+        @test sort(collect(keys(ours))) == sort(collect(keys(theirs)))
+        @test sort(collect(keys(theirs))) == sort(M1_REFS)
+
+        for ref in sort(collect(keys(theirs)))
+            a, b = ours[ref], theirs[ref]
+            # No skipped fields: the key sets must be equal and every value must match.
+            @test Set(keys(a)) == Set(keys(b))
+            for field in sort(collect(keys(b)))
+                @test a[field] == b[field]
+            end
+            # The name lists the plan's contract calls out explicitly.
+            for field in ("constants", "parameters", "inputs", "outputs", "ports", "variables")
+                @test [entry["name"] for entry in a[field]] ==
+                      [entry["name"] for entry in b[field]]
+            end
+        end
+
+        @test _plain(cat.junctions) == _plain(fixture.junctions)
+        @test _plain(cat.domains) == _plain(fixture.domains)
+
+        # The two junctions and the five domains, explicitly (plan 3.2 and decision D8).
+        @test [j.ref for j in cat.junctions] == ["junction:0", "junction:1"]
+        @test [d.name for d in cat.domains] ==
+              ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+        domains = Dict(d.name => d for d in cat.domains)
+        @test domains["Electrical"].effort == (name = "voltage", unit = "V")
+        @test domains["Electrical"].flow == (name = "current", unit = "A")
+        @test domains["Electrical"].across == "e"
+        @test domains["Translation"].effort == (name = "force", unit = "N")
+        @test domains["Translation"].flow == (name = "velocity", unit = "m/s")
+        @test domains["Translation"].across == "f"
+        @test domains["Rotation"].effort == (name = "torque", unit = "N*m")
+        @test domains["Rotation"].flow == (name = "angular_velocity", unit = "rad/s")
+        @test domains["Rotation"].across == "f"
+        @test domains["Hydraulic"].effort == (name = "pressure", unit = "Pa")
+        @test domains["Hydraulic"].flow == (name = "volume_flow", unit = "m^3/s")
+        @test domains["Hydraulic"].across == "e"
+        @test domains["Generic"].effort == (name = "effort", unit = nothing)
+        @test domains["Generic"].flow == (name = "flow", unit = nothing)
+        @test domains["Generic"].across === nothing
+        @test all(d -> d.size == 1, cat.domains)
+
+        # Deterministic: a second call returns the same catalog (and exercises the cache).
+        @test _plain(catalog()) == _plain(cat)
+    end
+
+    @testset "the parse cache is keyed on the source text" begin
+        clear_cache()
+        @test cached_blocks() == 0
+        text = read(joinpath(stdlib_dir(), "bondgraph", "C.jl"), String)
+        b1 = load_block(text; ref = "stdlib:bondgraph/C")
+        b2 = load_block(text; ref = "stdlib:bondgraph/C")
+        @test b1 === b2                         # cached: the identical object
+        @test cached_blocks() == 1
+
+        # `load_source` returns the same ParsedBlock the cache holds.
+        @test load_source(text; ref = "stdlib:bondgraph/C") === b1.ast
+        @test cached_blocks() == 1
+
+        # The hash is stable and content sensitive.
+        @test source_hash(text) == source_hash(String(codeunits(text)))
+        @test source_hash(text) != source_hash(text * " ")
+
+        # The ref is part of the key (it changes the group and the stdlib-only rule).
+        other = load_block(text; ref = "project:C")
+        @test other !== b1
+        @test other.group == "Project"
+        @test b1.group == "Bond graph"
+        @test cached_blocks() == 2
+
+        # An edited source is a new entry and does not disturb the cached one.
+        edited = replace(text, "c::Real = 1.0" => "c::Real = 2.0")
+        b3 = load_block(edited; ref = "stdlib:bondgraph/C")
+        @test b3 !== b1
+        @test b3.interface.parameters[1].default == "2.0"
+        @test b1.interface.parameters[1].default == "1.0"
+
+        clear_cache()
+        @test cached_blocks() == 0
+    end
+
+    @testset "a bad block reports diagnostics against its ref" begin
+        bad = """
+        @block Bad begin
+            @ports p::Power{Generic}
+            @parameters k::Real = 1.0, [description = "Gain"]
+            @equations p.e ~ k * missing_name
+        end
+        """
+        b = load_block(bad; ref = "project:Bad")
+        @test has_errors(b)
+        errors = [d for d in b.diagnostics if d.code == "E003"]
+        @test length(errors) == 1
+        d = only(errors)
+        @test d.severity == "error"
+        @test d.block == "project:Bad"
+        @test d.source !== nothing
+        @test d.source.kind == "project"
+        @test d.source.ref == "project:Bad"
+        @test d.source.range !== nothing
+        @test d.source.range.line == 4
+        @test d.scope == "@equations"
+
+        # A warning (unused declaration) does not make the block unusable.
+        unused = """
+        @block Unused begin
+            @ports p::Power{Generic}
+            @parameters k::Real = 1.0, [description = "Never used"]
+            @equations p.e ~ 0.0
+        end
+        """
+        w = load_block(unused; ref = "project:Unused")
+        @test !has_errors(w)
+        @test any(d -> d.code == "W204" && d.severity == "warning", w.diagnostics)
+
+        # A syntax error is carried through as E000, not thrown.
+        broken = load_block(
+            "@block Broken begin\n    @ports p::Power{Generic}\n"; ref = "project:Broken"
+        )
+        @test has_errors(broken)
+        @test any(d -> d.code == "E000", broken.diagnostics)
+    end
+
+    @testset "project library" begin
+        mktempdir() do dir
+            lib = joinpath(dir, "library")
+            mkpath(lib)
+            write(
+                joinpath(lib, "Adder.jl"),
+                """
+                @block Adder begin
+                    @inputs u::Real
+                    @outputs y::Real
+                    @parameters offset::Real = 0.0, [description = "Offset"]
+                    @equations y ~ u + offset
+                end
+                """,
+            )
+            write(
+                joinpath(lib, "Doubler.jl"),
+                """
+                @block Doubler begin
+                    @inputs u::Real
+                    @outputs y::Real
+                    @parameters k::Real = 2.0, [description = "Gain"]
+                    @equations y ~ k * u
+                end
+                """,
+            )
+
+            blocks = load_project_library(lib)
+            @test [b.ref for b in blocks] == ["project:Adder", "project:Doubler"]
+            @test all(b -> b.group == "Project", blocks)
+            @test all(b -> !has_errors(b), blocks)
+            @test blocks[1].path == "library/Adder.jl"
+            @test blocks[1].release == "0.1"
+            @test isempty(blocks[1].description)   # no metadata entry for a project block
+
+            # The catalog merges them at their project refs, sorted, from either the project
+            # root or the library directory itself.
+            c_lib = catalog(lib)
+            c_root = catalog(dir)
+            @test length(c_lib.blocks) == 38
+            @test [b.ref for b in c_lib.blocks] == [b.ref for b in c_root.blocks]
+            @test issorted([b.ref for b in c_lib.blocks])
+            @test c_lib.blocks[1].ref == "project:Adder"
+            @test c_lib.blocks[2].ref == "project:Doubler"
+            @test c_lib.blocks[2].path == "library/Doubler.jl"
+            @test c_lib.blocks[2].name == "Doubler"
+            @test length(c_lib.blocks[2].parameters) == 1
+            @test c_lib.blocks[2].parameters[1].default == "2.0"
+
+            # A file name that does not match the block name is an E001 on that block.
+            write(
+                joinpath(lib, "Wrong.jl"),
+                """
+                @block NotWrong begin
+                    @outputs y::Real
+                    @equations y ~ 0.0
+                end
+                """,
+            )
+            blocks = load_project_library(lib)
+            wrong = only(filter(b -> b.ref == "project:Wrong", blocks))
+            name_errors = [d for d in wrong.diagnostics if d.code == "E001"]
+            @test length(name_errors) == 1
+            d = only(name_errors)
+            @test occursin("does not match the block name", d.message)
+            @test d.block == "project:Wrong"
+            @test d.source.ref == "project:Wrong"
+            @test d.source.range !== nothing
+            rm(joinpath(lib, "Wrong.jl"))
+
+            # A block name declared by two files is ambiguous; the second gets an E001.
+            write(
+                joinpath(lib, "Clash1.jl"),
+                """
+                @block Clash begin
+                    @outputs y::Real
+                    @equations y ~ 0.0
+                end
+                """,
+            )
+            write(
+                joinpath(lib, "Clash2.jl"),
+                """
+                @block Clash begin
+                    @outputs y::Real
+                    @equations y ~ 1.0
+                end
+                """,
+            )
+            blocks = load_project_library(lib)
+            first_clash = only(filter(b -> b.ref == "project:Clash1", blocks))
+            second_clash = only(filter(b -> b.ref == "project:Clash2", blocks))
+            @test !any(d -> occursin("already declared", d.message), first_clash.diagnostics)
+            @test any(d -> d.code == "E001" && occursin("already declared", d.message),
+                second_clash.diagnostics)
+
+            # A project without a library directory is not an error.
+            @test isempty(load_project_library(joinpath(dir, "missing")))
+            @test length(catalog(dir).blocks) == 40  # re-read; the two clash files are included
+        end
+    end
+
+    @testset "intrinsics (D12)" begin
+        rows = intrinsics()
+        @test [r.name for r in rows] == ["delay", "interp1", "interp2", "noise_normal"]
+        by = Dict(r.name => r for r in rows)
+        @test by["interp1"].arity == 3
+        @test by["interp2"].arity == 4
+        @test by["noise_normal"].arity == 2
+        @test by["delay"].arity == 2
+        @test by["interp1"].stdlib_only == false
+        @test by["interp2"].stdlib_only == false
+        @test by["noise_normal"].stdlib_only == true
+        @test by["delay"].stdlib_only == true
+        @test by["delay"].lowering == :delay
+        @test all(
+            r -> r.lowering == :intrinsic,
+            [by["interp1"], by["interp2"], by["noise_normal"]],
+        )
+        @test all(r -> !isempty(r.description), rows)
+
+        # The table is derived from the one whitelist table, so it cannot drift from it.
+        for row in rows
+            rule = BGSim.function_rule(Symbol(row.name))
+            @test rule !== nothing
+            @test rule.stdlib_only == row.stdlib_only
+            @test rule.min_args == row.arity == rule.max_args
+        end
+    end
+
+    @testset "blocks serialise to JSON" begin
+        blocks = load_stdlib()
+        b = only(filter(b -> b.ref == "stdlib:converters/DCMotor", blocks))
+        d = BGSim.Library.to_dict(b)
+        @test d isa Dict{String,Any}
+        @test Set(keys(d)) == Set(keys(_plain(BGSim.Library.to_namedtuple(b))))
+
+        back = JSON3.read(JSON3.write(d))
+        @test _plain(back) == _plain(BGSim.Library.to_namedtuple(b))
+
+        # The whole catalog round-trips through JSON unchanged.
+        cat = catalog()
+        fresh = JSON3.read(JSON3.write(cat))
+        @test _plain(fresh) == _plain(cat)
+        @test length(fresh["blocks"]) == 36
+    end
+end
