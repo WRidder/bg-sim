@@ -40,7 +40,7 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | J2.7f | J | M2 | J2.1, J2.3 | todo | Stdlib: translation |
 | J2.7g | J | M2 | J2.1, J2.3 | todo | Stdlib: rotation, hydraulic, converters |
 | J2.8 | J | M2 | J1.5 | todo | Compile cache and remake |
-| P2.1 | P | M2 | M1 | todo | Live tails and check fast path |
+| P2.1 | P | M2 | M1 | done | `/api/check/block` coalescing (one in-flight + one pending per `(client, ref)`, all waiters get the newest answer, stale results discarded): 5 rapid requests → 2 worker calls; per-client isolation verified; newest-error path returns 422. Live tails proven at **16.1 msg/s** (cap 20) over a 2.17 s synthetic run; late subscriber gets the backlog up to its subscribe time; history pruning keeps 19 old + the new run (configurable, `BGSIM_RUN_HISTORY`). Also fixed a P1.2 bug: a live manifest reported `time.n = 0` because it read the wrong notification field. pytest 226, ruff clean. |
 | W2.1 | W | M2 | M1 | todo | Code editor and inline blocks |
 | W2.2 | W | M2 | M1 | todo | Subsystems |
 | W2.3 | W | M2 | J2.4, J2.5, W1.3 | todo | Domain visual language complete |
@@ -111,6 +111,7 @@ Julia worker answers only `ping`/`cache.clear` (M0.4 scope; J1.6 completes the p
 | DEC-4 | deviation | P1.2 decimates with equal-count reshape + per-row min/max instead of plan 6's `np.minimum.reduceat`/`np.maximum.reduceat` (145 ms → 27–30 ms at 1e7 × 10, so 2× inside the 50 ms target). Buckets are equal-count, identical to equal-time on the uniform solver grid; event rows are kept on top of the `2*px` budget. |
 | REQ-1 | requirement | The backend's live run tail needs the run manifest's `signals` while a run is still executing. J1.5/J1.6 must therefore write a `status: "running"` manifest with the full signal list at run start and update it at the end (the fake worker already does this). |
 | DEC-5 | scaffolding | `src/BGSim.jl` and `test/runtests.jl` include the later modules/test files through an `isfile` guard (`units/units.jl`, `library/library.jl`, `test_{units,library,flatten,simulate,worker}.jl`) so that two Julia WPs adding a module in parallel cannot break each other's test run. **The M1 gate replaces the guards with plain `include` calls** (FIX-M1-n if anything is missing). |
+| DEC-6 | plan v1.1 | The user added **M5 (live debugging)** to the plan as v1.1 with decisions D20–D27 and sections 3.8/5.13/7.9, and the ten M5 WP rows in this table. Milestone order is now **M0 → M1 → M2 → M3 → M5**, with M4 (planar) still the stretch goal. M5 builds on J2.2, J2.3, J2.8, W2.1, W2.4 and W3.3, so nothing in M1/M2 changes; the M3 gate now also opens C5.0. |
 | P1.3 | WP added | The plan's WP list leaves `GET /api/catalog`, `POST /api/check/block` and `POST /api/check/model` (plan 3.7) unowned, and the web lane needs all three in M1. Added **P1.3 Catalog and check proxies**; it also creates the empty `projects.py`/`runs.py` router skeletons so P1.1 and P1.2 never edit `app.py` concurrently. |
 
 ## Measured numbers
