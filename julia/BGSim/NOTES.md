@@ -475,7 +475,7 @@ follows the source, which is normative:
 # J1.5 — lowering and simulation (verified 2026-10-22)
 
 Everything below was run on the installed packages. The acceptance is
-`test/test_simulate.jl` (166 assertions), run by `Pkg.test()`; the full suite is green.
+`test/test_simulate.jl` (169 assertions), run by `Pkg.test()`; the full suite is green.
 
 ## The lowering contract
 
