@@ -63,6 +63,33 @@
   font-variant-numeric: tabular-nums;
 }
 
+.plot-toolbar__inspect {
+  flex: none;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.plot-live {
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+
+.plot-live[data-following="false"] {
+  color: var(--color-warning);
+}
+
+.plot-toolbar .button.is-disabled,
+.plot-toolbar .button[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: auto;
+}
+
 .plot-toolbar__spacer,
 .plot-chart__spacer {
   flex: 1 1 auto;

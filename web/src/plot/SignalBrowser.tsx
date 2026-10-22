@@ -69,6 +69,7 @@ export function SignalBrowser() {
   const activePanelId = useRunStore((state) => state.activePanelId);
   const notice = useRunStore((state) => state.notice);
   const addSignal = useRunStore((state) => state.addSignal);
+  const addSignals = useRunStore((state) => state.addSignals);
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
 
@@ -222,6 +223,18 @@ export function SignalBrowser() {
         <span className="signal-browser__count" data-testid="signal-count">
           {filtered.length}/{allSignals.length}
         </span>
+        <button
+          type="button"
+          className="button"
+          onClick={() => {
+            addSignals(filtered.map((signal) => signal.id));
+          }}
+          disabled={filtered.length === 0}
+          data-testid="plot-all-signals"
+          title="Add every listed signal to the plots (unit groups still split across panels)"
+        >
+          Plot all
+        </button>
       </div>
 
       {notice !== null ? (

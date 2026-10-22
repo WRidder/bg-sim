@@ -51,6 +51,8 @@ export const PASTE_OFFSET = 24;
 
 export type DocumentStatus = "idle" | "loading" | "ready" | "error";
 export type SaveState = "idle" | "dirty" | "saving" | "saved" | "error";
+/** The two inline code node flavours of plan 7.7. */
+export type InlineBlockKind = "equation" | "discrete";
 
 export interface Selection {
   nodes: string[];
@@ -119,6 +121,15 @@ export interface DocumentActions {
 
   addBlock: (block: CatalogBlock, position: ModelPoint) => string | null;
   addJunction: (junction: JunctionType, position: ModelPoint) => string | null;
+  /**
+   * Add an inline Equation or Discrete-code node (plan 7.4/7.7). The caller
+   * supplies the source template; `position` defaults to a free grid slot.
+   */
+  addInlineBlock: (
+    kind: InlineBlockKind,
+    source: string,
+    position?: ModelPoint,
+  ) => string | null;
 
   beginGesture: (key: string) => void;
   endGesture: () => void;
@@ -148,6 +159,16 @@ export interface DocumentActions {
   setNodeStart: (nodeId: string, name: string, value: string | null) => EditResult;
   /** Re-point a library instance, used by "Copy to project library" (plan 7.4). */
   setNodeBlockRef: (nodeId: string, ref: string) => EditResult;
+  /**
+   * Replace the embedded source of an inline code node (plan 7.7). Pass
+   * `coalesce` while the editor has a typing gesture open so one editing
+   * session is one undo step.
+   */
+  setInlineSource: (
+    nodeId: string,
+    source: string,
+    options?: { coalesce?: boolean },
+  ) => EditResult;
 
   undo: () => void;
   redo: () => void;
@@ -226,6 +247,16 @@ function pruneSelection(doc: Model, selection: Selection): Selection {
 
 function isJunction(node: ModelNode): boolean {
   return "junction" in node.block;
+}
+
+/** A free grid slot for a new code node when the caller does not give one. */
+function inlineNodePosition(nodes: readonly ModelNode[]): ModelPoint {
+  const columns = 3;
+  const index = nodes.length;
+  return {
+    x: 80 + (index % columns) * 260,
+    y: 80 + Math.floor(index / columns) * 180,
+  };
 }
 
 export const useDocumentStore = create<DocumentStore>()((set, get) => {
@@ -373,6 +404,34 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         doc.diagram.nodes.map((node) => node.name),
       );
       const node = createJunctionNode(junction, roundPosition(position), id, name);
+      return addNode(node);
+    },
+
+    addInlineBlock: (kind, source, position) => {
+      const doc = get().doc;
+      if (doc === null) {
+        return null;
+      }
+      const id = nextId(
+        "n",
+        doc.diagram.nodes.map((node) => node.id),
+      );
+      const name = uniqueName(
+        kind === "equation" ? "Equation" : "DiscreteCode",
+        doc.diagram.nodes.map((node) => node.name),
+      );
+      const node: ModelNode = {
+        id,
+        name,
+        block: { inline: { source } },
+        position: roundPosition(position ?? inlineNodePosition(doc.diagram.nodes)),
+        rotation: 0,
+        flipX: false,
+        params: {},
+        constants: {},
+        starts: {},
+        ui: { showLabel: true, color: null },
+      };
       return addNode(node);
     },
 
@@ -706,6 +765,36 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
           target.block = { ref: next };
         }
       });
+      return { ok: true };
+    },
+
+    setInlineSource: (nodeId, source, options = {}) => {
+      const doc = get().doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const node = doc.diagram.nodes.find((entry) => entry.id === nodeId);
+      if (node === undefined) {
+        return { ok: false, error: "That block is no longer in the diagram." };
+      }
+      if (!("inline" in node.block)) {
+        return { ok: false, error: "Only inline code nodes have editable embedded source." };
+      }
+      if (node.block.inline.source === source) {
+        return { ok: true };
+      }
+      const next = commit(
+        (draft) => {
+          const target = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+          if (target !== undefined && "inline" in target.block) {
+            target.block.inline.source = source;
+          }
+        },
+        options.coalesce === true ? { coalesce: `inline-source:${nodeId}` } : {},
+      );
+      if (next === null) {
+        return { ok: false, error: "No model is open." };
+      }
       return { ok: true };
     },
 

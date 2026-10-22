@@ -23,7 +23,7 @@ import {
   type BlockNodeData,
   type JunctionNodeData,
 } from "./nodes/BlockNode";
-import { interfaceForNode } from "./nodeInterface";
+import { interfaceForNode, missingPortFor } from "./nodeInterface";
 import type { EditorEdge, EditorEdgeData } from "./edges/EditorEdges";
 import { BondEdge, SignalEdge, WireEdge } from "./edges/EditorEdges";
 
@@ -89,6 +89,15 @@ export function buildDiagram(
   const dragStates = dragCompatibility(doc, index, dragOrigin);
   const selectedNodes = new Set(selection.nodes);
   const selectedConnections = new Set(selection.connections);
+  const nodeById = new Map(doc.diagram.nodes.map((node) => [node.id, node]));
+
+  const missingPort = (endpoint: { node: string; port?: string }): string | null => {
+    const node = nodeById.get(endpoint.node);
+    if (node === undefined) {
+      return null;
+    }
+    return missingPortFor(node, interfaceForNode(node, index), endpoint.port);
+  };
 
   const nodes: DiagramNode[] = doc.diagram.nodes.map((node) => {
     const iface = interfaceForNode(node, index);
@@ -145,6 +154,9 @@ export function buildDiagram(
   const edges: EditorEdge[] = doc.diagram.connections.map((connection) => {
     const anchors = connectionAnchors(doc, index, connection);
     const visual = analysis.connections.get(connection.id);
+    const missingPorts = [missingPort(connection.from), missingPort(connection.to)].filter(
+      (name): name is string => name !== null,
+    );
     const data: EditorEdgeData = {
       kind: connection.kind,
       domain: visual?.domain ?? "Generic",
@@ -156,6 +168,7 @@ export function buildDiagram(
       label: connection.label ?? null,
       unitFactor: null,
       causalStroke: null,
+      missingPorts,
     };
     return {
       id: connection.id,

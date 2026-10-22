@@ -658,3 +658,27 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
+
+/* A bond/signal whose endpoint port disappeared from an inline source (plan 7.7). */
+
+.editor-edge__missing {
+  fill: none;
+  stroke: var(--color-error);
+  stroke-width: 5;
+  stroke-dasharray: 3 4;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.editor-edge__missing-label {
+  position: absolute;
+  padding: 1px 6px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-error);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-error);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  white-space: nowrap;
+}

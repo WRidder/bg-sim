@@ -1,0 +1,309 @@
+/*
+ * Code tab (plan 7.7): toolbar, source banner, CodeMirror host and the
+ * diagnostics list. Colours are design tokens so both themes work.
+ */
+
+.code-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.code-toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.code-toolbar__label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.code-toolbar__select {
+  min-width: 220px;
+  max-width: 44%;
+  height: 24px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.code-toolbar__spacer {
+  flex: 1 1 auto;
+}
+
+.code-toolbar__button {
+  height: 24px;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.code-notice {
+  flex: none;
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.code-notice--error {
+  background: color-mix(in srgb, var(--color-error) 14%, var(--color-surface));
+  border-bottom-color: var(--color-error);
+}
+
+.code-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.code-empty__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.code-state {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.code-state p {
+  margin: 0;
+}
+
+.code-state__title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-error);
+}
+
+.code-state__text {
+  max-width: 60ch;
+  font-size: var(--font-size-sm);
+}
+
+.code-source-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-surface-sunken);
+}
+
+.code-source-head__name {
+  font-weight: var(--font-weight-semibold);
+}
+
+.code-source-head__ref {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.code-source-head__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.code-save {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.code-save[data-state="saved"] {
+  color: var(--color-success, #2e9e5b);
+}
+
+.code-save[data-state="error"] {
+  color: var(--color-error);
+}
+
+.code-banner {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+}
+
+.code-banner--readonly {
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface));
+  border-bottom: var(--border-width) solid color-mix(in srgb, var(--color-warning) 50%, var(--color-border));
+}
+
+.code-banner--project {
+  background: var(--color-surface-sunken);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.code-banner__title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.code-banner__text {
+  color: var(--color-text-muted);
+}
+
+.code-banner__button {
+  height: 24px;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.code-banner__message {
+  flex-basis: 100%;
+  font-size: var(--font-size-xs);
+}
+
+.code-banner__message--error {
+  color: var(--color-error);
+}
+
+.code-banner__message--done {
+  color: var(--color-text-muted);
+}
+
+.code-editor-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.code-editor {
+  height: 100%;
+  min-height: 0;
+}
+
+.code-editor .cm-editor {
+  height: 100%;
+}
+
+.code-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.code-editor[data-read-only="true"] .cm-content {
+  cursor: default;
+}
+
+.code-diagnostics {
+  flex: none;
+  max-height: 30%;
+  overflow: auto;
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface-sunken);
+  font-size: var(--font-size-xs);
+}
+
+.code-diagnostic {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 2px var(--space-3);
+  border-bottom: var(--border-width) solid color-mix(in srgb, var(--color-border) 55%, transparent);
+}
+
+.code-diagnostic--ok {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.code-diagnostic--request {
+  color: var(--color-error);
+  margin: 0;
+}
+
+.code-diagnostic__code {
+  flex: none;
+  min-width: 4ch;
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-semibold);
+}
+
+.code-diagnostic--error .code-diagnostic__code {
+  color: var(--color-error);
+}
+
+.code-diagnostic--warning .code-diagnostic__code {
+  color: var(--color-warning);
+}
+
+.code-diagnostic--info .code-diagnostic__code {
+  color: var(--color-accent);
+}
+
+.code-diagnostic__message {
+  flex: 1 1 auto;
+}
+
+.code-diagnostic__hint {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.code-diagnostic__where {
+  flex: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+}
+
+.code-lint {
+  max-width: 42ch;
+}
+
+.code-lint__head {
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+}
+
+.code-lint__code {
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-error);
+}
+
+.code-lint__message {
+  color: var(--color-text);
+}
+
+.code-lint__hint {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+}
+
+.code-lint__scope {
+  margin: 2px 0 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}

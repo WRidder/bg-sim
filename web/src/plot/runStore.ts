@@ -19,6 +19,7 @@ import { create } from "zustand";
 import type {
   Diagnostic,
   RunManifest,
+  RunSignal,
   RunStatus,
   RunStats,
 } from "../contracts/run-manifest";
@@ -31,7 +32,11 @@ import {
   runSocketUrl,
 } from "./runApi";
 import { runDataCache, type SeriesWindow } from "./runCache";
-import { canAddSignalToPanel, groupSignalsByUnit } from "./units";
+import {
+  assignPanelAxes,
+  canAddSignalToPanel,
+  groupSignalsByUnit,
+} from "./units";
 
 /** `idle` and `starting` extend the contract's run statuses. */
 export type RunUiStatus = "idle" | "starting" | RunStatus;
@@ -106,12 +111,22 @@ export interface RunStoreState {
 
   startRun: () => Promise<void>;
   stopRun: () => Promise<void>;
-  addSignal: (signalId: string, panelId?: string) => void;
+  addSignal: (
+    signalId: string,
+    panelId?: string,
+    options?: { force?: boolean },
+  ) => void;
+  /** Add several signals with one data refresh (canvas "Plot all outputs"). */
+  addSignals: (signalIds: readonly string[], panelId?: string) => number;
   removeSignal: (panelId: string, signalId: string) => void;
+  /** Move a panel's overflow unit groups (third and later) to a new panel. */
+  splitPanel: (panelId: string) => boolean;
   addPanel: () => string;
   removePanel: (panelId: string) => void;
   setActivePanel: (panelId: string) => void;
   setView: (view: SeriesWindow | null, px?: number) => void;
+  /** Return to the live tail after a zoom (plan 7.5: autoscroll unless zoomed). */
+  followLive: () => void;
   ensureData: (px?: number, force?: boolean) => Promise<void>;
   ensureCompareData: (px?: number, force?: boolean) => Promise<void>;
   syncSocketSubscription: () => void;
@@ -153,6 +168,91 @@ export function plottedSignalIds(panels: readonly PlotPanelState[]): string[] {
     }
   }
   return ids;
+}
+
+/** The manifest entries of a panel's signal ids, in panel order. */
+export function panelSignals(
+  panel: PlotPanelState,
+  manifest: RunManifest | null,
+): RunSignal[] {
+  if (manifest === null) {
+    return [];
+  }
+  const byId = new Map(manifest.signals.map((signal) => [signal.id, signal]));
+  return panel.signals
+    .map((id) => byId.get(id))
+    .filter((signal): signal is RunSignal => signal !== undefined);
+}
+
+/** The result of placing one signal into the panel layout. */
+interface Placement {
+  panels: PlotPanelState[];
+  activePanelId: string;
+  /** 1-based number of the panel that received (or would receive) the signal. */
+  panelNumber: number;
+  /** True when the signal could not join the target and started a new panel. */
+  createdPanel: boolean;
+  /** How many unit groups the receiving panel has after the placement. */
+  groups: number;
+}
+
+/**
+ * Put one signal into `targetPanelId` (or the active panel). A third unit
+ * group starts a new panel unless `force` is set; the drag-and-drop path can
+ * deliberately target a panel, and the header then offers "Split panel".
+ */
+function placeSignal(
+  panels: readonly PlotPanelState[],
+  activePanelId: string,
+  manifest: RunManifest,
+  signal: RunSignal,
+  targetPanelId: string | null,
+  force: boolean,
+): Placement | null {
+  const target =
+    panels.find((panel) => panel.id === (targetPanelId ?? activePanelId)) ??
+    panels[0];
+  if (target === undefined) {
+    return null;
+  }
+  const panelIndex = panels.findIndex((panel) => panel.id === target.id);
+  const panelNumber = panelIndex + 1;
+  if (target.signals.includes(signal.id)) {
+    return {
+      panels: [...panels],
+      activePanelId: target.id,
+      panelNumber,
+      createdPanel: false,
+      groups: groupSignalsByUnit(panelSignals(target, manifest)).length,
+    };
+  }
+  const existing = panelSignals(target, manifest);
+  const groups = groupSignalsByUnit([...existing, signal]).length;
+  if (force || canAddSignalToPanel(existing, signal)) {
+    return {
+      panels: panels.map((panel) =>
+        panel.id === target.id
+          ? { ...panel, signals: [...panel.signals, signal.id] }
+          : panel,
+      ),
+      activePanelId: target.id,
+      panelNumber,
+      createdPanel: false,
+      groups,
+    };
+  }
+  const created = makePanel([signal.id]);
+  return {
+    panels: [
+      ...panels.slice(0, panelIndex + 1),
+      created,
+      ...panels.slice(panelIndex + 1),
+    ],
+    activePanelId: created.id,
+    panelNumber: panelIndex + 2,
+    createdPanel: true,
+    groups: 1,
+  };
 }
 
 function requestWidth(view: SeriesWindow | null, width: number): number {
@@ -720,10 +820,11 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     }
   },
 
-  addSignal: (signalId, panelId) => {
+  addSignal: (signalId, panelId, options) => {
     const state = get();
-    const signal = state.manifest?.signals.find((entry) => entry.id === signalId);
-    if (signal === undefined) {
+    const manifest = state.manifest;
+    const signal = manifest?.signals.find((entry) => entry.id === signalId);
+    if (signal === undefined || manifest === null) {
       showNotice(
         state.manifest === null
           ? "Run the model before adding a signal."
@@ -734,49 +835,148 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     const target =
       state.panels.find((panel) => panel.id === (panelId ?? state.activePanelId)) ??
       state.panels[0];
-    if (target === undefined) {
+    const targetSignals = target === undefined ? [] : panelSignals(target, manifest);
+    const placement = placeSignal(
+      state.panels,
+      state.activePanelId,
+      manifest,
+      signal,
+      panelId ?? null,
+      options?.force === true,
+    );
+    if (placement === null) {
       const panel = makePanel([signalId]);
       set({ panels: [panel], activePanelId: panel.id });
       return;
     }
-    if (target.signals.includes(signalId)) {
+    if (target !== undefined && target.signals.includes(signalId)) {
       set({ activePanelId: target.id });
       showNotice(`${signalId} is already in this panel.`);
       return;
     }
-    const existing = target.signals
-      .map((id) => state.manifest?.signals.find((entry) => entry.id === id))
-      .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined);
-    const panelNumber = state.panels.findIndex((panel) => panel.id === target.id) + 1;
-
-    if (canAddSignalToPanel(existing, signal)) {
-      set({
-        panels: state.panels.map((panel) =>
-          panel.id === target.id
-            ? { ...panel, signals: [...panel.signals, signalId] }
-            : panel,
-        ),
-        activePanelId: target.id,
-      });
-      showNotice(`Added ${signalId} to Panel ${panelNumber}.`);
-    } else {
-      const groups = groupSignalsByUnit([...existing, signal]);
-      const panel = makePanel([signalId]);
-      set({
-        panels: [...state.panels, panel],
-        activePanelId: panel.id,
-      });
+    set({
+      panels: placement.panels,
+      activePanelId: placement.activePanelId,
+    });
+    if (placement.createdPanel) {
+      const groups = groupSignalsByUnit([...targetSignals, signal]);
       showNotice(
-        `Panel ${panelNumber} already shows two unit groups; ` +
+        `Panel ${placement.panelNumber - 1} already shows two unit groups; ` +
           `${signalId} (${groups[groups.length - 1]?.label ?? "its unit"}) ` +
-          `started Panel ${state.panels.length + 1}.`,
+          `started Panel ${placement.panelNumber}.`,
       );
+    } else if (placement.groups > 2) {
+      showNotice(
+        `Added ${signalId} to Panel ${placement.panelNumber}; ` +
+          `${placement.groups} unit groups now share it — use Split panel.`,
+      );
+    } else {
+      showNotice(`Added ${signalId} to Panel ${placement.panelNumber}.`);
     }
     const updated = get();
     updated.syncSocketSubscription();
     void updated.ensureData();
     void updated.ensureCompareData();
   },
+
+  addSignals: (signalIds, panelId) => {
+    const state = get();
+    const manifest = state.manifest;
+    if (manifest === null) {
+      showNotice("Run the model before adding signals.");
+      return 0;
+    }
+    const byId = new Map(manifest.signals.map((signal) => [signal.id, signal]));
+    const seen = new Set(plottedSignalIds(state.panels));
+    const panelCount = state.panels.length;
+    let panels = state.panels;
+    let active = panelId ?? state.activePanelId;
+    let added = 0;
+    let unknown = 0;
+    let already = 0;
+    for (const id of signalIds) {
+      const signal = byId.get(id);
+      if (signal === undefined) {
+        unknown += 1;
+        continue;
+      }
+      if (seen.has(id)) {
+        already += 1;
+        continue;
+      }
+      const placement = placeSignal(panels, active, manifest, signal, active, false);
+      if (placement === null) {
+        break;
+      }
+      panels = placement.panels;
+      active = placement.activePanelId;
+      added += 1;
+      seen.add(id);
+    }
+    if (added === 0) {
+      showNotice(
+        unknown > 0 && already === 0
+          ? "This run has none of those signals."
+          : "Those signals are already plotted.",
+      );
+      return 0;
+    }
+    set({ panels, activePanelId: active });
+    const updated = get();
+    updated.syncSocketSubscription();
+    void updated.ensureData();
+    void updated.ensureCompareData();
+    const newPanels = panels.length - panelCount;
+    const parts = [`Plotted ${added} signal${added === 1 ? "" : "s"}`];
+    if (newPanels > 0) {
+      parts.push(`in ${newPanels + 1} panels`);
+    }
+    if (already > 0) {
+      parts.push(`${already} already plotted`);
+    }
+    if (unknown > 0) {
+      parts.push(`${unknown} not in this run`);
+    }
+    showNotice(`${parts.join("; ")}.`);
+    return added;
+  },
+
+  splitPanel: (panelId) => {
+    const state = get();
+    const index = state.panels.findIndex((panel) => panel.id === panelId);
+    const panel = state.panels[index];
+    if (panel === undefined) {
+      return false;
+    }
+    const axes = assignPanelAxes(panelSignals(panel, state.manifest));
+    if (axes.overflow.length === 0) {
+      showNotice(
+        `Panel ${index + 1} has at most two unit groups; there is nothing to split.`,
+      );
+      return false;
+    }
+    const moved = new Set(
+      axes.overflow.flatMap((group) => group.signals.map((signal) => signal.id)),
+    );
+    const created = makePanel([...moved]);
+    const panels = [...state.panels];
+    panels[index] = {
+      ...panel,
+      signals: panel.signals.filter((id) => !moved.has(id)),
+    };
+    panels.splice(index + 1, 0, created);
+    set({ panels, activePanelId: created.id });
+    const updated = get();
+    updated.syncSocketSubscription();
+    void updated.ensureData();
+    void updated.ensureCompareData();
+    showNotice(
+      `Moved ${moved.size} signal${moved.size === 1 ? "" : "s"} from ` +
+        `Panel ${index + 1} to Panel ${index + 2}.`,
+    );
+    return true;
+  },
+
 
   removeSignal: (panelId, signalId) => {
     const state = get();
@@ -842,6 +1042,13 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     });
     void get().ensureData(px, true);
     void get().ensureCompareData(px, true);
+  },
+
+  followLive: () => {
+    if (get().status !== "running") {
+      return;
+    }
+    get().setView(null);
   },
 
   ensureData: async (px, force = false) => {
@@ -1153,3 +1360,47 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
 export function resetRunStore(): void {
   useRunStore.getState().reset();
 }
+
+// ------------------------------------------------------- global inspect time
+
+/**
+ * The plot cursor as the global inspect time (plan 7.5), in seconds. The 3D
+ * viewer playback head and the bond hover values read this instead of keeping
+ * their own cursor, and `setCursorTime` is the single writer.
+ */
+export function getInspectTime(): number | null {
+  return useRunStore.getState().cursorTime;
+}
+
+/** React hook form of {@link getInspectTime}. */
+export function useInspectTime(): number | null {
+  return useRunStore((state) => state.cursorTime);
+}
+
+/**
+ * Observe changes of the global inspect time outside React (viewer, hover
+ * values). Returns an unsubscribe function. The listener also fires for
+ * `null` (no cursor yet).
+ */
+export function subscribeInspectTime(
+  listener: (time: number | null) => void,
+): () => void {
+  return useRunStore.subscribe((state, previous) => {
+    if (state.cursorTime !== previous.cursorTime) {
+      listener(state.cursorTime);
+    }
+  });
+}
+
+/** True while live tails are being followed (running and not zoomed). */
+export function isLiveFollowing(
+  state: Pick<RunStoreState, "status" | "view"> = useRunStore.getState(),
+): boolean {
+  return state.status === "running" && state.view === null;
+}
+
+/** Points currently buffered from the live tail (0 when no tail is active). */
+export function livePointCount(): number {
+  return live?.time.length ?? 0;
+}
+

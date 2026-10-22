@@ -8,6 +8,8 @@
 
 import type { DomainName, ValueType } from "../contracts/catalog";
 import type { ModelNode } from "../contracts/model";
+import type { BlockInterface } from "../contracts/worker-rpc";
+import { inlineInterfaceFor, hasInlineInterface } from "../code/inlineInterfaces";
 import type { CatalogIndex } from "../library/catalogIndex";
 import type { PortDescriptor } from "./connectionRules";
 
@@ -46,8 +48,24 @@ export function interfaceForBlock(block: {
   inputs: { name: string; type: ValueType; size: number[]; unit: string | null }[];
   outputs: { name: string; type: ValueType; size: number[]; unit: string | null }[];
 }): NodeInterface {
+  const ports = portSpecs(block.ports, block.inputs, block.outputs);
+  return {
+    title: block.name,
+    icon: block.icon,
+    ports,
+    isJunction: false,
+    ref: block.ref,
+    junction: null,
+  };
+}
+
+function portSpecs(
+  power: { name: string; domain: DomainName; size: number[] }[],
+  inputs: { name: string; type: ValueType; size: number[]; unit: string | null }[],
+  outputs: { name: string; type: ValueType; size: number[]; unit: string | null }[],
+): PortSpec[] {
   const ports: PortSpec[] = [];
-  for (const port of block.ports) {
+  for (const port of power) {
     ports.push({
       name: port.name,
       kind: "power",
@@ -57,7 +75,7 @@ export function interfaceForBlock(block: {
       unit: null,
     });
   }
-  for (const input of block.inputs) {
+  for (const input of inputs) {
     ports.push({
       name: input.name,
       kind: "input",
@@ -67,7 +85,7 @@ export function interfaceForBlock(block: {
       unit: input.unit,
     });
   }
-  for (const output of block.outputs) {
+  for (const output of outputs) {
     ports.push({
       name: output.name,
       kind: "output",
@@ -77,12 +95,20 @@ export function interfaceForBlock(block: {
       unit: output.unit,
     });
   }
+  return ports;
+}
+
+/**
+ * The canvas view of a `block.check` interface (plan 7.7): an inline code node
+ * gains and loses its ports as its source changes.
+ */
+export function interfaceFromBlockCheck(block: BlockInterface, title: string): NodeInterface {
   return {
-    title: block.name,
-    icon: block.icon,
-    ports,
+    title,
+    icon: INLINE_ICON,
+    ports: portSpecs(block.ports, block.inputs, block.outputs),
     isJunction: false,
-    ref: block.ref,
+    ref: null,
     junction: null,
   };
 }
@@ -142,6 +168,10 @@ export function interfaceForNode(node: ModelNode, index: CatalogIndex): NodeInte
       junction: null,
     };
   }
+  const inline = inlineInterfaceFor(node.id);
+  if (inline !== null) {
+    return inline;
+  }
   return {
     title: "Inline block",
     icon: INLINE_ICON,
@@ -150,6 +180,28 @@ export function interfaceForNode(node: ModelNode, index: CatalogIndex): NodeInte
     ref: null,
     junction: null,
   };
+}
+
+/**
+ * A port name that an endpoint of `node` no longer exposes, or null. An inline
+ * node whose interface has not been checked yet is not reported: until the
+ * first `block.check` its port list is unknown, not empty.
+ */
+export function missingPortFor(
+  node: ModelNode,
+  iface: NodeInterface,
+  portName: string | null | undefined,
+): string | null {
+  if (portName === undefined || portName === null || portName.length === 0) {
+    return null;
+  }
+  if (iface.isJunction) {
+    return null;
+  }
+  if ("inline" in node.block && !hasInlineInterface(node.id)) {
+    return null;
+  }
+  return iface.ports.some((port) => port.name === portName) ? null : portName;
 }
 
 /** The descriptor the connection rules compare for one node port. */

@@ -8,6 +8,7 @@ import { useCatalogStore } from "../library/catalogStore";
 import { useDocumentStore } from "../state/documentStore";
 import { useModelAutosave } from "../state/persistence";
 import { useProjectSession } from "../state/session";
+import { useInlineInterfaceSync } from "../code/inlineSync";
 import { Canvas } from "./Canvas";
 
 export function DiagramTab() {
@@ -18,6 +19,7 @@ export function DiagramTab() {
   const index = useCatalogStore((state) => state.index);
 
   useModelAutosave();
+  useInlineInterfaceSync();
 
   if (status === "idle" || status === "loading" || (status === "ready" && (doc === null || index === null))) {
     return (

@@ -41,6 +41,8 @@ export interface EditorEdgeData extends Record<string, unknown> {
   unitFactor: string | null;
   /** Where the causal stroke sits, when a model check provides it. */
   causalStroke: "from" | "to" | null;
+  /** Endpoint port names the node no longer exposes (plan 7.7, E101). */
+  missingPorts: string[];
 }
 
 export type EditorEdgeType = "bond" | "wire" | "signal";
@@ -89,6 +91,39 @@ function Halo({ path }: { path: string }) {
   return <path className="editor-edge__halo" d={path} />;
 }
 
+/**
+ * A connection whose endpoint port disappeared from an inline block's
+ * interface. It turns red immediately, before the next `model.check` reports
+ * E101, and names the missing port on hover.
+ */
+function MissingPorts({
+  id,
+  path,
+  names,
+  point,
+}: {
+  id: string;
+  path: string;
+  names: string[];
+  point: Point;
+}) {
+  return (
+    <>
+      <path className="editor-edge__missing" d={path} />
+      <EdgeLabelRenderer>
+        <div
+          className="editor-edge__missing-label"
+          data-testid={`edge-missing-${id}`}
+          style={{ transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y - 14}px)` }}
+          title={`Port ${names.map((name) => `\`${name}\``).join(", ")} no longer exists in the block source`}
+        >
+          missing {names.join(", ")}
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+}
+
 export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
   if (data === undefined) {
     return null;
@@ -102,6 +137,7 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
   const tail = route.length > 0 ? route[route.length - 1] ?? a.point : a.point;
   const colour = domainColor(data.domain);
   const dashed = data.domain === "Generic";
+  const broken = data.missingPorts.length > 0;
   const strokePoint = (anchorPoint: Point, towards: Point): Point => {
     const dx = towards.x - anchorPoint.x;
     const dy = towards.y - anchorPoint.y;
@@ -111,12 +147,14 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
 
   return (
     <g
-      className={`editor-edge editor-edge--bond${selected ? " is-selected" : ""}`}
+      className={`editor-edge editor-edge--bond${selected ? " is-selected" : ""}${broken ? " is-port-missing" : ""}`}
       data-testid={`edge-${id}`}
       data-kind="bond"
       data-domain={data.domain}
+      data-port-missing={data.missingPorts.join(",")}
     >
       {selected ? <Halo path={path} /> : null}
+      {broken ? <MissingPorts id={id} path={path} names={data.missingPorts} point={midpoint(a.point, b.point)} /> : null}
       <BaseEdge
         id={id}
         path={path}
@@ -171,15 +209,18 @@ export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
       : hubPath(a.point, hub, b.point);
   const colour = domainColor(data.domain);
   const dashed = data.domain === "Generic";
+  const broken = data.missingPorts.length > 0;
 
   return (
     <g
-      className={`editor-edge editor-edge--wire${selected ? " is-selected" : ""}`}
+      className={`editor-edge editor-edge--wire${selected ? " is-selected" : ""}${broken ? " is-port-missing" : ""}`}
       data-testid={`edge-${id}`}
       data-kind="wire"
       data-domain={data.domain}
+      data-port-missing={data.missingPorts.join(",")}
     >
       {selected ? <Halo path={path} /> : null}
+      {broken ? <MissingPorts id={id} path={path} names={data.missingPorts} point={midpoint(a.point, b.point)} /> : null}
       <BaseEdge
         id={id}
         path={path}
@@ -218,15 +259,18 @@ export function SignalEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
   // The arrow points into the target: start just outside the target's side.
   const from = offsetPoint(b.point, b.side, 14);
   const dash = signalDash(data.signalType);
+  const broken = data.missingPorts.length > 0;
 
   return (
     <g
-      className={`editor-edge editor-edge--signal${selected ? " is-selected" : ""}`}
+      className={`editor-edge editor-edge--signal${selected ? " is-selected" : ""}${broken ? " is-port-missing" : ""}`}
       data-testid={`edge-${id}`}
       data-kind="signal"
       data-signal-type={data.signalType ?? ""}
+      data-port-missing={data.missingPorts.join(",")}
     >
       {selected ? <Halo path={path} /> : null}
+      {broken ? <MissingPorts id={id} path={path} names={data.missingPorts} point={midpoint(a.point, b.point)} /> : null}
       <BaseEdge
         id={id}
         path={path}

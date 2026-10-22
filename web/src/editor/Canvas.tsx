@@ -35,6 +35,14 @@ import { useDocumentStore } from "../state/documentStore";
 import { saveCurrentModel } from "../state/persistence";
 import { useCatalogStore } from "../library/catalogStore";
 import { readDragPayload } from "../library/dnd";
+import { useOpenSourceEvents, requestSource } from "../code/codeSession";
+import { useInlineInterfaceStore } from "../code/inlineInterfaces";
+import {
+  connectionPlotTargets,
+  nodeForMenu,
+  nodeOutputIds,
+} from "../plot/plotTargets";
+import { useRunStore } from "../plot/runStore";
 import { buildDiagram, EDGE_TYPES, NODE_TYPES } from "./buildFlow";
 import { checkConnection } from "./connectionRules";
 import { descriptorForPort } from "./nodeInterface";
@@ -110,6 +118,9 @@ function CanvasInner() {
   const saveState = useDocumentStore((state) => state.saveState);
   const saveError = useDocumentStore((state) => state.saveError);
   const index = useCatalogStore((state) => state.index);
+  const inlineRevision = useInlineInterfaceStore((state) => state.revision);
+
+  useOpenSourceEvents();
 
   const [dragOrigin, setDragOrigin] = useState<ReturnType<typeof descriptorForPort>>(null);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
@@ -122,7 +133,7 @@ function CanvasInner() {
       doc === null || index === null
         ? { nodes: [], edges: [], analysis: null }
         : buildDiagram(doc, index, selection, dragOrigin),
-    [doc, index, selection, dragOrigin],
+    [doc, index, selection, dragOrigin, inlineRevision],
   );
 
   const dirty = revision !== savedRevision;
@@ -310,6 +321,15 @@ function CanvasInner() {
   // --------------------------------------------------------------- xyflow
   const onSelectionChange: OnSelectionChangeFunc = useCallback(
     ({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
+      // React Flow can emit an empty selection while it adopts a replaced
+      // `nodes` prop (for example when the Code tab hands the canvas a new
+      // inline interface). That is not a user action: clearing on every pane
+      // click is done by `onPaneClick`, and a box selection that ends empty
+      // also goes through the pane. Ignoring the transient keeps the document
+      // selection from oscillating with the canvas's internal one.
+      if (nodes.length === 0 && edges.length === 0) {
+        return;
+      }
       useDocumentStore
         .getState()
         .setSelection(
@@ -354,6 +374,19 @@ function CanvasInner() {
     store.setSelection([], next);
   }, []);
 
+  /**
+   * Plan 7.4/7.7: a double-click opens the code of an inline node. Library
+   * and subsystem blocks keep the inspector behaviour (W1.2); only inline
+   * nodes have source that belongs in the Code tab.
+   */
+  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    const doc = useDocumentStore.getState().doc;
+    const target = doc?.diagram.nodes.find((entry) => entry.id === node.id);
+    if (target !== undefined && "inline" in target.block) {
+      requestSource({ kind: "inline", ref: target.id, line: 1, col: 1 }, { reveal: true });
+    }
+  }, []);
+
   const onEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();
     useDocumentStore.getState().setSelection([], [edge.id]);
@@ -375,6 +408,26 @@ function CanvasInner() {
         ? doc?.diagram.connections.find((connection) => connection.id === menu.id) ?? null
         : null,
     [doc, menu],
+  );
+
+  // Plotting from the canvas (plan 7.5): a bond offers the port's effort/flow/
+  // power, an instance offers its recorded outputs. The signal ids come from
+  // the current run manifest, so the store can reject an id the run lacks.
+  const runSignals = useRunStore((state) => state.manifest?.signals ?? null);
+  const menuNode = useMemo(
+    () => (menu?.kind === "node" && doc !== null ? nodeForMenu(doc, menu.id) : undefined),
+    [doc, menu],
+  );
+  const menuPlotTargets = useMemo(
+    () =>
+      doc !== null && menuConnection !== null
+        ? connectionPlotTargets(doc, menuConnection)
+        : [],
+    [doc, menuConnection],
+  );
+  const menuOutputIds = useMemo(
+    () => (menuNode === undefined ? [] : nodeOutputIds(runSignals ?? [], menuNode)),
+    [menuNode, runSignals],
   );
 
   const runMenuAction = (action: () => void): void => {
@@ -493,6 +546,7 @@ function CanvasInner() {
           onNodeDragStop={() => useDocumentStore.getState().endGesture()}
           onSelectionChange={onSelectionChange}
           onNodeClick={onNodeClick}
+          onNodeDoubleClick={onNodeDoubleClick}
           onEdgeClick={onEdgeClick}
           onEdgeContextMenu={onEdgeContextMenu}
           onNodeContextMenu={onNodeContextMenu}
@@ -579,6 +633,23 @@ function CanvasInner() {
                   Reverse bond direction
                 </button>
               ) : null}
+              {menuPlotTargets.map((target) => (
+                <button
+                  type="button"
+                  role="menuitem"
+                  key={target.testId}
+                  data-testid={target.testId}
+                  data-signal-id={target.signalId}
+                  title={`Plot ${target.detail} from the current run`}
+                  onClick={() =>
+                    runMenuAction(() =>
+                      useRunStore.getState().addSignal(target.signalId),
+                    )
+                  }
+                >
+                  {target.label}
+                </button>
+              ))}
               <button
                 type="button"
                 role="menuitem"
@@ -611,6 +682,28 @@ function CanvasInner() {
                 onClick={() => runMenuAction(() => useDocumentStore.getState().flipSelection())}
               >
                 Flip horizontally (F)
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="plot-all-outputs"
+                data-output-count={menuOutputIds.length}
+                disabled={runSignals !== null && menuOutputIds.length === 0}
+                title={
+                  runSignals === null
+                    ? "Run the model first; its recorded outputs are plotted"
+                    : menuOutputIds.length === 0
+                      ? "This run recorded no output signals for this instance"
+                      : `Plot ${menuOutputIds.join(", ")}`
+                }
+                onClick={() =>
+                  runMenuAction(() => {
+                    useRunStore.getState().addSignals(menuOutputIds);
+                  })
+                }
+              >
+                Plot all outputs
+                {menuOutputIds.length > 0 ? ` (${menuOutputIds.length})` : ""}
               </button>
               <button
                 type="button"

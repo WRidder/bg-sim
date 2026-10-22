@@ -60,6 +60,8 @@ export interface UPlotChartProps {
   fullRange: SeriesWindow;
   /** The uPlot sync key shared by every chart in the dock. */
   syncKey: string;
+  /** The global inspect time (seconds); null before the first pointer move. */
+  cursorTime: number | null;
   onZoom: (view: SeriesWindow | null, px: number) => void;
   onReset: () => void;
   onCursorTime: (time: number | null) => void;
@@ -155,6 +157,7 @@ export function UPlotChart({
   view,
   fullRange,
   syncKey,
+  cursorTime,
   onZoom,
   onReset,
   onCursorTime,
@@ -172,6 +175,9 @@ export function UPlotChart({
   const onZoomRef = useRef(onZoom);
   const onResetRef = useRef(onReset);
   const onCursorTimeRef = useRef(onCursorTime);
+  const cursorTimeRef = useRef(cursorTime);
+  const localCursorRef = useRef<number | null>(null);
+  const renderSeqRef = useRef(0);
 
   const [chartEpoch, setChartEpoch] = useState(0);
   const [legendIndex, setLegendIndex] = useState<number | null>(null);
@@ -182,6 +188,7 @@ export function UPlotChart({
   onZoomRef.current = onZoom;
   onResetRef.current = onReset;
   onCursorTimeRef.current = onCursorTime;
+  cursorTimeRef.current = cursorTime;
 
   const allSignals = [...signals, ...compareSignals];
   const chartSeriesKey = seriesKey(allSignals);
@@ -335,7 +342,10 @@ export function UPlotChart({
             }
             const time = self.data[0]?.[index];
             if (typeof time === "number" && Number.isFinite(time)) {
-              onCursorTimeRef.current(time);
+              // Only a user move updates the store (see the mousemove listener
+              // below). A synced or programmatic cursor must not echo back, or
+              // panels would chase each other's rounded indices forever.
+              localCursorRef.current = time;
             }
             if (index !== legendIndexRef.current) {
               legendIndexRef.current = index;
@@ -427,8 +437,37 @@ export function UPlotChart({
       }
     };
 
+    // The pointer is the only writer of the global inspect time. uPlot's own
+    // mousemove handler runs first and sets `cursor.idx`; a rAF throttle keeps
+    // a fast mouse from re-rendering every panel more than once per frame.
+    let cursorFrame: number | null = null;
+    const reportCursor = (): void => {
+      cursorFrame = null;
+      const current = chartRef.current;
+      if (current === null) {
+        return;
+      }
+      const index = current.cursor.idx;
+      if (index === null || index === undefined) {
+        return;
+      }
+      const time = current.data[0]?.[index];
+      if (typeof time !== "number" || !Number.isFinite(time)) {
+        return;
+      }
+      localCursorRef.current = time;
+      onCursorTimeRef.current(time);
+    };
+    const onMouseMove = (): void => {
+      if (cursorFrame !== null) {
+        return;
+      }
+      cursorFrame = requestAnimationFrame(reportCursor);
+    };
+
     chart.over.addEventListener("wheel", onWheel, { passive: false });
     chart.over.addEventListener("dblclick", onDoubleClick);
+    chart.over.addEventListener("mousemove", onMouseMove);
     window.addEventListener("keydown", onKeyDown);
 
     const observer = new ResizeObserver(() => {
@@ -446,6 +485,11 @@ export function UPlotChart({
       window.removeEventListener("keydown", onKeyDown);
       chart.over.removeEventListener("wheel", onWheel);
       chart.over.removeEventListener("dblclick", onDoubleClick);
+      chart.over.removeEventListener("mousemove", onMouseMove);
+      if (cursorFrame !== null) {
+        cancelAnimationFrame(cursorFrame);
+        cursorFrame = null;
+      }
       observer.disconnect();
       if (wheelTimerRef.current !== null) {
         clearTimeout(wheelTimerRef.current);
@@ -472,15 +516,51 @@ export function UPlotChart({
     const table = buildChartData(signals, compareSignals, data, compare);
     dataRef.current = table;
     suppressUntilRef.current = Date.now() + 120;
+    const seq = renderSeqRef.current + 1;
+    renderSeqRef.current = seq;
+    const started =
+      typeof performance === "undefined" ? 0 : performance.now();
     chart.setData(table, view === null);
     if (view !== null) {
       chart.setScale("x", { min: view.t0, max: view.t1 });
     }
     const points = (table[0] as ArrayLike<number> | undefined)?.length ?? 0;
-    const nextIndex = points === 0 ? null : points - 1;
+    // While the pointer is on the plot, keep its index (clamped) so a live
+    // tail does not yank the legend away; otherwise follow the newest point.
+    const previous = legendIndexRef.current;
+    const nextIndex =
+      points === 0
+        ? null
+        : cursorTimeRef.current !== null && previous !== null
+          ? Math.min(previous, points - 1)
+          : points - 1;
     legendIndexRef.current = nextIndex;
     setLegendIndex(nextIndex);
     setLegendTick((tick) => tick + 1);
+
+    // uPlot's setData defers its draw to a microtask; this one is queued after
+    // it, so the measured time covers scale calculation, path building and the
+    // canvas draw. The result is the plot performance contract of plan 7.5 and
+    // the Playwright perf test reads it back from data-render-ms.
+    const host = hostRef.current;
+    queueMicrotask(() => {
+      if (host === null || renderSeqRef.current !== seq) {
+        return;
+      }
+      const finished =
+        typeof performance === "undefined" ? started : performance.now();
+      host.dataset.renderMs = (finished - started).toFixed(2);
+      host.dataset.renderSeq = String(seq);
+      host.dataset.renderAt = finished.toFixed(2);
+      host.dataset.points = String(points);
+      const xScale = chart.scales.x;
+      if (typeof xScale.min === "number") {
+        host.dataset.xMin = String(xScale.min);
+      }
+      if (typeof xScale.max === "number") {
+        host.dataset.xMax = String(xScale.max);
+      }
+    });
   }, [
     data,
     compare,
@@ -488,6 +568,38 @@ export function UPlotChart({
     view,
     chartEpoch,
   ]);
+
+  // --------------------------------------------------- global inspect cursor
+  // Any module can set the inspect time; every panel then shows the cursor at
+  // that time. Applying it programmatically does not call onCursorTime (only a
+  // real pointer move does), so synced panels cannot feed back into the store.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (chart === null || cursorTime === null) {
+      return;
+    }
+    const apply = (): void => {
+      const current = chartRef.current;
+      if (current === null) {
+        return;
+      }
+      const times = current.data[0] as ArrayLike<number> | undefined;
+      if (times === undefined || times.length === 0) {
+        return;
+      }
+      const left = current.valToPos(cursorTime, "x");
+      if (
+        !Number.isFinite(left) ||
+        left < 0 ||
+        left > current.over.clientWidth
+      ) {
+        return;
+      }
+      current.setCursor({ left, top: 0 });
+    };
+    queueMicrotask(apply);
+  }, [cursorTime, data, view, chartEpoch]);
+
 
   const legendTime = valueAt(dataRef.current, 0, legendIndex ?? -1);
 
@@ -498,6 +610,9 @@ export function UPlotChart({
         ref={hostRef}
         data-testid="plot-chart"
         data-series-count={allSignals.length}
+        data-compare-count={compareSignals.length}
+        data-points={data?.time.length ?? 0}
+        data-autoscroll={view === null ? "true" : "false"}
         data-legend-tick={legendTick}
       />
       <div className="plot-legend" data-testid="plot-legend">

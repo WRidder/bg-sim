@@ -24,7 +24,12 @@ import {
 import { EmptyState } from "../app/EmptyState";
 import type { RunManifest, RunSignal } from "../contracts/run-manifest";
 import { signalColor } from "./colors";
-import { formatDuration, formatNumber, formatProgress } from "./format";
+import {
+  formatCursorTime,
+  formatDuration,
+  formatNumber,
+  formatProgress,
+} from "./format";
 import { runExportUrl } from "./runApi";
 import { useRunStore, liveSeriesFor, plottedSignalIds } from "./runStore";
 import { readSignalDrag } from "./signalDnd";
@@ -131,12 +136,15 @@ export function PlotPanel() {
   const panels = useRunStore((state) => state.panels);
   const activePanelId = useRunStore((state) => state.activePanelId);
   const view = useRunStore((state) => state.view);
+  const cursorTime = useRunStore((state) => state.cursorTime);
   const liveVersion = useRunStore((state) => state.liveVersion);
   const storedPixelWidth = useRunStore((state) => state.pixelWidth);
   const addSignal = useRunStore((state) => state.addSignal);
   const addPanel = useRunStore((state) => state.addPanel);
   const removePanel = useRunStore((state) => state.removePanel);
+  const splitPanel = useRunStore((state) => state.splitPanel);
   const setActivePanel = useRunStore((state) => state.setActivePanel);
+  const followLive = useRunStore((state) => state.followLive);
   const pinRun = useRunStore((state) => state.pinRun);
   const unpinRun = useRunStore((state) => state.unpinRun);
 
@@ -175,17 +183,29 @@ export function PlotPanel() {
     return { t0, t1 };
   }, [manifest?.time.t0, manifest?.time.t1, status, progress?.t]);
 
-  const live = useMemo(
-    () =>
-      status === "running" && view === null
-        ? liveSeriesFor(manifest?.id)
-        : null,
-    [status, view, manifest?.id, liveVersion],
-  );
+  const live = useMemo(() => {
+    if (view !== null) {
+      return null;
+    }
+    if (status === "running") {
+      return liveSeriesFor(manifest?.id);
+    }
+    if (status !== "done" && status !== "cancelled" && status !== "failed") {
+      return null;
+    }
+    // After run.done the final `/data` refresh may still be in flight; keep the
+    // last live tail on screen instead of flashing an empty chart.
+    if (data === null || data.time.length === 0) {
+      return liveSeriesFor(manifest?.id);
+    }
+    return null;
+  }, [status, view, manifest?.id, liveVersion, data]);
 
   // The live tail replaces the fetched window while running at "show all";
   // a zoomed view reads `/data` from the stream instead.
   const chartData = live ?? data;
+  const following = status === "running" && view === null;
+  const livePoints = live?.time.length ?? 0;
 
   // Measure the charts area once it exists (a run with at least one signal).
   useEffect(() => {
@@ -273,7 +293,9 @@ export function PlotPanel() {
       "[data-panel-id]",
     );
     const panelId = panelElement?.getAttribute("data-panel-id") ?? undefined;
-    addSignal(signalId, panelId);
+    // An explicit drop on a panel is a deliberate choice: keep the signal
+    // there even when it is a third unit group, and offer "Split panel".
+    addSignal(signalId, panelId, { force: panelId !== undefined });
   };
 
   if (manifest === null) {
@@ -307,7 +329,8 @@ export function PlotPanel() {
     );
   }
 
-  const exportUrl = runExportUrl(manifest.id, plottedIds);
+  const exportIds = plottedIds.filter((id) => signalsById.has(id));
+  const exportUrl = runExportUrl(manifest.id, exportIds);
   const statusText = statusLine(
     status,
     phase,
@@ -337,6 +360,29 @@ export function PlotPanel() {
         <span className="plot-toolbar__range" title="Recorded time range">
           t {formatNumber(fullRange.t0)}–{formatNumber(fullRange.t1)} s
         </span>
+        <span
+          className="plot-toolbar__inspect"
+          data-testid="plot-inspect-time"
+          title="Global inspect time (plan 7.5): every panel cursor and, later, the 3D playback head"
+        >
+          inspect t ={" "}
+          {cursorTime === null ? "—" : formatCursorTime(cursorTime)}
+        </span>
+        {status === "running" ? (
+          <span
+            className="plot-live"
+            data-testid="live-badge"
+            data-following={following ? "true" : "false"}
+            data-points={livePoints}
+            title={
+              following
+                ? "Live: new tail points are appended and the plots autoscroll"
+                : "Live: autoscroll is paused because the view is zoomed"
+            }
+          >
+            ● live {following ? "· following" : "· paused"}
+          </span>
+        ) : null}
         {dataLoading ? (
           <span className="plot-toolbar__loading" role="status">
             loading…
@@ -362,6 +408,17 @@ export function PlotPanel() {
         >
           Reset zoom
         </button>
+        {status === "running" && view !== null ? (
+          <button
+            type="button"
+            className="button"
+            onClick={followLive}
+            data-testid="follow-live"
+            title="Resume the live tail and autoscroll"
+          >
+            Follow live
+          </button>
+        ) : null}
         {pinned === null ? (
           <button
             type="button"
@@ -385,11 +442,23 @@ export function PlotPanel() {
           </button>
         )}
         <a
-          className="button"
+          className={`button${exportIds.length === 0 ? " is-disabled" : ""}`}
           href={exportUrl}
           download={`${manifest.id}.csv`}
           data-testid="export-csv"
-          title="Download the plotted signals as CSV"
+          aria-disabled={exportIds.length === 0}
+          title={
+            exportIds.length === 0
+              ? "Plot at least one signal to export it as CSV"
+              : `Download the ${exportIds.length} plotted signal${
+                  exportIds.length === 1 ? "" : "s"
+                } as CSV`
+          }
+          onClick={(event) => {
+            if (exportIds.length === 0) {
+              event.preventDefault();
+            }
+          }}
         >
           CSV
         </a>
@@ -461,12 +530,23 @@ export function PlotPanel() {
                     {panelUnitSummary(configuration.signals)}
                   </span>
                   {configuration.groups > 2 ? (
-                    <span
-                      className="plot-chart__warning"
-                      title="A panel shows at most two y axes; the extra unit group shares the right axis. Add another panel to separate it."
-                    >
-                      {configuration.groups} unit groups
-                    </span>
+                    <>
+                      <span
+                        className="plot-chart__warning"
+                        title="A panel shows at most two y axes; the extra unit group shares the right axis. Split the panel to separate it."
+                      >
+                        {configuration.groups} unit groups
+                      </span>
+                      <button
+                        type="button"
+                        className="button"
+                        onClick={() => splitPanel(panel.id)}
+                        data-testid="split-panel"
+                        title="Move the third and later unit groups to a new panel"
+                      >
+                        Split panel
+                      </button>
+                    </>
                   ) : null}
                   <span className="plot-chart__spacer" />
                   <button
@@ -491,6 +571,7 @@ export function PlotPanel() {
                   view={view}
                   fullRange={fullRange}
                   syncKey={PLOT_SYNC_KEY}
+                  cursorTime={cursorTime}
                   onZoom={handleZoom}
                   onReset={handleReset}
                   onCursorTime={handleCursor}
