@@ -26,8 +26,17 @@ The router owns the run lifecycle on the backend side:
       {"method": "run.tail", "params": {"runId", "ids", "t0", "t1",
                                         "time": [...], "values": [[...], ...]}}
 
-``values`` is in ``ids`` order. ``run.error`` carries a user-facing message for
-an unknown run or signal id.
+  A subscriber that joins mid-run first receives the data recorded so far for
+  its ids (the backlog is sent on ``subscribe``, not on the next progress
+  notification), then follows the tail. ``values`` is in ``ids`` order.
+  ``run.error`` carries a user-facing message for an unknown run or signal id.
+
+This module also owns the latest-wins coalescing of ``POST /api/check/block``
+(P2.1). The endpoint itself lives in :mod:`bgsim_server.proxy`; because this
+work package may only touch ``runs.py``/``stream.py``, the application lifespan
+installs the coalesced route ahead of the plain proxy one (the same lifespan
+hook that adds the unprefixed WebSocket alias). See
+:class:`BlockCheckCoalescer`.
 
 The signal list of a running run comes from the worker's manifest, which the
 plan says is written next to the data. The fixture-driven fake writes it only
@@ -49,7 +58,7 @@ import secrets
 import shutil
 import struct
 import time
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -59,13 +68,16 @@ from typing import Annotated, Any
 import numpy as np
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response, StreamingResponse
+from fastapi.routing import APIRoute
 from pydantic import BaseModel, BeforeValidator, ConfigDict, ValidationError
 from starlette.routing import WebSocketRoute
 
 from .config import Settings
 from .contracts import Model, RunManifest
 from .decimate import DEFAULT_POINTS, decimate, open_columns, open_stream
-from .proxy import WorkerRpcFailure
+from .proxy import BlockCheckBody, WorkerRpcFailure
+from .proxy import check_block as proxy_check_block
+from .proxy import router as proxy_router
 from .worker import (
     _SYNTHETIC_SIGNALS,
     WorkerError,
@@ -271,10 +283,13 @@ class _RunState:
         elif document.get("status") == "running":
             document["status"] = self.status
             if self.last_progress is not None:
+                # ``last_progress`` is the notification, not its params; reading
+                # the rows from the envelope left a live manifest at n=0 (P2.1).
+                progress = self.last_progress.get("params") or {}
                 document["time"] = {
-                    "n": int(self.last_progress.get("rows") or 0),
+                    "n": int(progress.get("rows") or 0),
                     "t0": document["time"]["t0"],
-                    "t1": float(self.last_progress.get("t", document["time"]["t0"])),
+                    "t1": float(progress.get("t", document["time"]["t0"])),
                 }
         _validate_manifest(document, path)
         return document
@@ -387,6 +402,220 @@ async def _worker_call(request: Request, method: str, params: dict[str, Any]) ->
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except WorkerError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+# --------------------------------------------------------------------------- block check
+
+
+@dataclass
+class _BlockCheckJob:
+    """One ``block.check`` call and the HTTP callers waiting for its answer."""
+
+    call: Callable[[], Awaitable[Any]]
+    waiters: list[asyncio.Future] = field(default_factory=list)
+
+
+@dataclass
+class _BlockCheckKey:
+    """The in-flight call of one key and, at most, one queued replacement."""
+
+    running: _BlockCheckJob | None = None
+    task: asyncio.Task | None = None
+    pending: _BlockCheckJob | None = None
+
+
+class BlockCheckCoalescer:
+    """Latest-wins request coalescing for ``POST /api/check/block`` (P2.1).
+
+    The editor checks a block on every (debounced) keystroke. When a request
+    arrives for a key that already has a call in flight, the newer source
+    replaces the *queue*: there is at most one running worker call and one
+    pending call per key. Every caller waiting for the key is resolved with the
+    newest answer, so no older answer is ever returned and five rapid requests
+    cause at most two ``block.check`` calls (the abandoned one and the newest).
+
+    The worker protocol has no request cancellation, so an abandoned call is not
+    stopped on the wire: the backend stops waiting for it and discards its
+    result (and its error). The key is ``(client host, ref scope, ref)``; ``ref``
+    already carries the project/stdlib scope, for example ``project:Foo`` or
+    ``stdlib:bondgraph/C``.
+    """
+
+    def __init__(self) -> None:
+        self._keys: dict[tuple[str, str, str], _BlockCheckKey] = {}
+
+    def stats(self) -> dict[str, int]:
+        """Counts for diagnostics and tests: live keys, calls and waiters."""
+        return {
+            "keys": len(self._keys),
+            "running": sum(1 for state in self._keys.values() if state.running is not None),
+            "pending": sum(1 for state in self._keys.values() if state.pending is not None),
+            "waiters": sum(
+                len(job.waiters)
+                for state in self._keys.values()
+                for job in (state.running, state.pending)
+                if job is not None
+            ),
+        }
+
+    async def check(
+        self, key: tuple[str, str, str], call: Callable[[], Awaitable[Any]]
+    ) -> Any:
+        """Coalesce ``call`` under ``key`` and return the newest answer."""
+        waiter: asyncio.Future = asyncio.get_running_loop().create_future()
+        state = self._keys.get(key)
+        if state is None:
+            state = _BlockCheckKey()
+            self._keys[key] = state
+            state.running = _BlockCheckJob(call, [waiter])
+            state.task = asyncio.create_task(
+                self._run(key, state, state.running), name=f"block-check-{key[2] or 'unnamed'}"
+            )
+        elif state.pending is None:
+            assert state.running is not None
+            state.pending = _BlockCheckJob(call, [*state.running.waiters, waiter])
+            state.running.waiters.clear()
+        else:
+            state.pending.call = call
+            state.pending.waiters.append(waiter)
+        return await waiter
+
+    async def _run(
+        self,
+        key: tuple[str, str, str],
+        state: _BlockCheckKey,
+        job: _BlockCheckJob,
+    ) -> None:
+        result: Any = None
+        error: Exception | None = None
+        try:
+            result = await job.call()
+        except asyncio.CancelledError:
+            self._abandon(key, state, job)
+            raise
+        except Exception as exc:  # noqa: BLE001 - the newest caller renders this failure
+            error = exc
+        if state.pending is not None:
+            # This answer is stale: a newer source arrived while it ran. Hand the
+            # accumulated callers to the newest call instead of answering them.
+            pending, state.pending = state.pending, None
+            pending.waiters = [*job.waiters, *pending.waiters]
+            state.running = pending
+            state.task = asyncio.create_task(
+                self._run(key, state, pending), name=f"block-check-{key[2] or 'unnamed'}"
+            )
+            return
+        state.running = None
+        state.task = None
+        if self._keys.get(key) is state:
+            self._keys.pop(key, None)
+        for waiter in job.waiters:
+            if waiter.done():
+                continue  # the HTTP client went away while the call ran
+            if error is None:
+                waiter.set_result(result)
+            else:
+                waiter.set_exception(error)
+
+    def _abandon(
+        self,
+        key: tuple[str, str, str],
+        state: _BlockCheckKey,
+        job: _BlockCheckJob,
+    ) -> None:
+        """Cancel the callers of a task that is itself being cancelled."""
+        for waiter in job.waiters:
+            if not waiter.done():
+                waiter.cancel()
+        pending, state.pending = state.pending, None
+        if pending is not None:
+            for waiter in pending.waiters:
+                if not waiter.done():
+                    waiter.cancel()
+        state.running = None
+        state.task = None
+        if self._keys.get(key) is state:
+            self._keys.pop(key, None)
+
+    async def aclose(self) -> None:
+        """Cancel every in-flight call (application shutdown)."""
+        tasks = [state.task for state in self._keys.values() if state.task is not None]
+        for task in tasks:
+            task.cancel()
+        for task in tasks:
+            with suppress(asyncio.CancelledError, Exception):
+                await task
+        self._keys.clear()
+
+
+#: The path of the coalesced block-check route (the proxy registers it too).
+BLOCK_CHECK_PATH = "/api/check/block"
+
+
+def _coalescer_for(app: Any) -> BlockCheckCoalescer:
+    coalescer = getattr(app.state, "block_check_coalescer", None)
+    if coalescer is None:
+        coalescer = BlockCheckCoalescer()
+        app.state.block_check_coalescer = coalescer
+    return coalescer
+
+
+def block_check_key(request: Request, ref: str | None) -> tuple[str, str, str]:
+    """The coalescing key of a block check: client host, ref scope and ref."""
+    host = request.client.host if request.client is not None else "local"
+    value = ref or ""
+    scope = value.split(":", 1)[0] if ":" in value else value
+    return host, scope, value
+
+
+async def check_block_coalesced(body: BlockCheckBody, request: Request) -> Any:
+    """``POST /api/check/block`` with latest-wins coalescing (installed at startup)."""
+    coalescer = _coalescer_for(request.app)
+    key = block_check_key(request, body.ref)
+    return await coalescer.check(key, lambda: proxy_check_block(body, request))
+
+
+def _install_block_check_coalescing(app: Any) -> None:
+    """Put the coalesced block check ahead of the plain proxy route at startup.
+
+    P2.1 refines ``proxy.check_block`` but owns only ``runs.py``/``stream.py``,
+    so the application lifespan -- the extension point P1.2 already uses for the
+    unprefixed run-socket alias -- installs the route. The body contract and the
+    HTTP error mapping stay those of the proxy function, which the coalesced
+    endpoint calls; only the waiting and cancellation policy differs.
+
+    FastAPI 0.159 includes routers lazily (``_IncludedRouter``), so the proxy's
+    routes are not individual entries in ``app.router.routes``. A direct route is
+    inserted ahead of the proxy include; older FastAPI versions, whose routes are
+    flattened, get the coalesced route in place of the plain one.
+    """
+    _coalescer_for(app)
+    routes = app.router.routes
+    for index, route in enumerate(routes):
+        if isinstance(route, APIRoute) and getattr(route, "path", None) == BLOCK_CHECK_PATH:
+            if route.endpoint is check_block_coalesced:
+                return
+            routes[index] = _block_check_route(app)
+            return
+        if getattr(route, "original_router", None) is proxy_router:
+            if any(
+                isinstance(entry, APIRoute) and entry.endpoint is check_block_coalesced
+                for entry in routes
+            ):
+                return
+            routes.insert(index, _block_check_route(app))
+            return
+
+
+def _block_check_route(app: Any) -> APIRoute:
+    return APIRoute(
+        BLOCK_CHECK_PATH,
+        endpoint=check_block_coalesced,
+        methods=["POST"],
+        name="check-block-coalesced",
+        tags=["proxy"],
+        dependency_overrides_provider=app,
+    )
 
 
 # --------------------------------------------------------------------------- data access
@@ -621,9 +850,18 @@ def _format_csv_block(matrix: np.ndarray) -> str:
 # --------------------------------------------------------------------------- websocket
 
 
-async def _safe_send(websocket: WebSocket, message: dict[str, Any]) -> bool:
+async def _safe_send(
+    websocket: WebSocket,
+    message: dict[str, Any],
+    lock: asyncio.Lock | None = None,
+) -> bool:
+    """Send one JSON message; ``lock`` serialises sends from the two socket tasks."""
     try:
-        await websocket.send_json(message)
+        if lock is None:
+            await websocket.send_json(message)
+        else:
+            async with lock:
+                await websocket.send_json(message)
     except (WebSocketDisconnect, RuntimeError):
         return False
     return True
@@ -708,6 +946,9 @@ class _Subscription:
     names: list[str] = field(default_factory=list)
     rows_sent: int = 0
     last_tail: float = 0.0
+    #: Serialises the progress-driven tail and the backlog send of a (re)subscribe,
+    #: so the row cursor and the 20/s budget have one owner at a time.
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
 async def _serve_run_socket(websocket: WebSocket, run_id: str) -> None:
@@ -755,13 +996,14 @@ async def _serve_run_socket(websocket: WebSocket, run_id: str) -> None:
     assert state is not None
     queue = _store_for(websocket.app).subscribe(state)
     subscription = _Subscription()
+    send_lock = asyncio.Lock()
     try:
         sender = asyncio.create_task(
-            _send_loop(websocket, state, run_dir, signals, queue, subscription),
+            _send_loop(websocket, state, run_dir, signals, queue, subscription, send_lock),
             name=f"run-ws-send-{run_id}",
         )
         receiver = asyncio.create_task(
-            _receive_loop(websocket, signals, subscription),
+            _receive_loop(websocket, state, run_dir, signals, subscription, send_lock),
             name=f"run-ws-receive-{run_id}",
         )
         _done, pending = await asyncio.wait(
@@ -786,32 +1028,42 @@ async def _send_tail(
     end_row: int | None,
     *,
     throttle: bool,
+    send_lock: asyncio.Lock,
 ) -> None:
+    """Send the next decimated tail, at most 20 times per second.
+
+    The budget is shared by the progress-driven tail and the backlog of a
+    (re)subscribe, so even a client that resubscribes in a loop cannot exceed
+    20 tail messages per second. The final tail at ``run.done`` is the one
+    exception (``throttle=False``): it closes the run.
+    """
     if not subscription.ids:
         return
-    now = time.monotonic()
-    if throttle and now - subscription.last_tail < TAIL_MIN_INTERVAL:
-        return
-    subscription.last_tail = now
-    ids = subscription.ids
-    names = subscription.names
-    tail = await asyncio.to_thread(
-        _tail_payload,
-        run_dir,
-        signals,
-        ids,
-        names,
-        subscription.rows_sent,
-        end_row,
-    )
-    if tail is None:
-        return
-    payload, reached = tail
-    if subscription.ids is ids:
-        # A subscription that arrived while the tail was being built resets the
-        # cursor; do not overwrite it with the old cursor's position.
+    async with subscription.lock:
+        now = time.monotonic()
+        if throttle and now - subscription.last_tail < TAIL_MIN_INTERVAL:
+            return
+        ids = list(subscription.ids)
+        names = list(subscription.names)
+        tail = await asyncio.to_thread(
+            _tail_payload,
+            run_dir,
+            signals,
+            ids,
+            names,
+            subscription.rows_sent,
+            end_row,
+        )
+        if tail is None:
+            return
+        payload, reached = tail
         subscription.rows_sent = reached
-    await _safe_send(websocket, {"method": "run.tail", "params": payload})
+        # Count the message when it actually leaves; an empty read must not
+        # consume part of the 20/s budget.
+        subscription.last_tail = time.monotonic()
+        await _safe_send(
+            websocket, {"method": "run.tail", "params": payload}, send_lock
+        )
 
 
 async def _send_loop(
@@ -821,6 +1073,7 @@ async def _send_loop(
     signals: list[dict[str, Any]],
     queue: asyncio.Queue,
     subscription: _Subscription,
+    send_lock: asyncio.Lock,
 ) -> None:
     while True:
         message = await queue.get()
@@ -829,19 +1082,38 @@ async def _send_loop(
             # The final tail reads to the end of the file, not just the last
             # progress row: the last notification may lag the last flush. It
             # goes out before run.done so a client may stop at run.done.
-            await _send_tail(websocket, run_dir, signals, subscription, None, throttle=False)
-            await _safe_send(websocket, message)
+            await _send_tail(
+                websocket,
+                run_dir,
+                signals,
+                subscription,
+                None,
+                throttle=False,
+                send_lock=send_lock,
+            )
+            await _safe_send(websocket, message, send_lock)
             return
-        if not await _safe_send(websocket, message):
+        if not await _safe_send(websocket, message, send_lock):
             return
         if method == "run.progress":
-            await _send_tail(websocket, run_dir, signals, subscription, state.rows, throttle=True)
+            await _send_tail(
+                websocket,
+                run_dir,
+                signals,
+                subscription,
+                state.rows,
+                throttle=True,
+                send_lock=send_lock,
+            )
 
 
 async def _receive_loop(
     websocket: WebSocket,
+    state: _RunState,
+    run_dir: Path,
     signals: list[dict[str, Any]],
     subscription: _Subscription,
+    send_lock: asyncio.Lock,
 ) -> None:
     while True:
         try:
@@ -860,11 +1132,22 @@ async def _receive_loop(
             await _safe_send(websocket, _error_message(f"unknown signal id {missing[0]!r}"))
             continue
         # A (re)subscription starts with the history so far, then follows the
-        # live tail. Reset the cursor so the next progress sends that history.
-        subscription.ids = [lookup[name] for name in wanted]
-        subscription.names = list(wanted)
-        subscription.rows_sent = 0
-        subscription.last_tail = 0.0
+        # live tail. Reset the cursor and send that backlog now, not on the next
+        # progress notification (the run may be paused between progress events).
+        # ``last_tail`` is kept so a resubscribe loop cannot exceed the 20/s cap.
+        async with subscription.lock:
+            subscription.ids = [lookup[name] for name in wanted]
+            subscription.names = list(wanted)
+            subscription.rows_sent = 0
+        await _send_tail(
+            websocket,
+            run_dir,
+            signals,
+            subscription,
+            state.rows,
+            throttle=True,
+            send_lock=send_lock,
+        )
 
 
 @router.websocket("/ws/runs/{run_id}")
@@ -875,13 +1158,15 @@ async def run_socket(websocket: WebSocket, run_id: str) -> None:
 
 # app.py includes this router under /api, so the plan's /ws/runs/{id} path needs
 # an alias outside that prefix. The router's lifespan adds it to the app once,
-# before the app starts serving, without touching app.py.
+# before the app starts serving, without touching app.py. The same lifespan swaps
+# the plain /api/check/block proxy route for the coalesced one (P2.1).
 async def _run_socket_alias(websocket: WebSocket) -> None:
     await _serve_run_socket(websocket, str(websocket.path_params["run_id"]))
 
 
 @asynccontextmanager
 async def _router_lifespan(app: Any) -> AsyncIterator[None]:
+    _install_block_check_coalescing(app)
     alias = "/ws/runs/{run_id}"
     if not any(getattr(route, "path", None) == alias for route in app.router.routes):
         app.router.routes.append(
@@ -890,6 +1175,9 @@ async def _router_lifespan(app: Any) -> AsyncIterator[None]:
     try:
         yield
     finally:
+        coalescer = getattr(app.state, "block_check_coalescer", None)
+        if coalescer is not None:
+            await coalescer.aclose()
         store = getattr(app.state, "run_store", None)
         if store is not None:
             await store.aclose()

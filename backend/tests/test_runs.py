@@ -26,6 +26,12 @@ from starlette.testclient import WebSocketDisconnect
 
 from bgsim_server.app import create_app
 from bgsim_server.decimate import DEFAULT_POINTS
+from bgsim_server.runs import (
+    DEFAULT_RUN_HISTORY,
+    RUN_HISTORY_ENV,
+    _prune_runs,
+    run_history_limit,
+)
 
 TESTS_DIR = Path(__file__).resolve().parent
 REPO = TESTS_DIR.parents[1]
@@ -457,6 +463,60 @@ def test_run_history_keeps_the_last_n_per_model(fake_settings, monkeypatch) -> N
         assert "run-other" in remaining, "another model's history is untouched"
         assert client.delete(f"/api/runs/{run_id}").json() == {"ok": True}
         _wait_status(client, run_id)
+
+
+def _write_history_entry(
+    project: Path,
+    run_id: str,
+    *,
+    model: str = "DCMotorSpeed",
+    status: str = "done",
+    created: str = "2026-01-01T00:00:00Z",
+    raw: str | None = None,
+) -> None:
+    run_dir = project / "runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    text = raw or json.dumps(
+        {"id": run_id, "model": model, "status": status, "created": created}
+    )
+    (run_dir / "manifest.json").write_text(text, encoding="utf-8")
+
+
+def test_run_history_limit_is_twenty_by_default_and_reads_the_environment(monkeypatch) -> None:
+    monkeypatch.delenv(RUN_HISTORY_ENV, raising=False)
+    assert DEFAULT_RUN_HISTORY == 20
+    assert run_history_limit() == 20
+    for raw, expected in (("7", 7), ("1", 1), ("0", 1), ("-3", 1), ("", 20), ("nope", 20)):
+        monkeypatch.setenv(RUN_HISTORY_ENV, raw)
+        assert run_history_limit() == expected, f"BGSIM_RUN_HISTORY={raw!r}"
+
+
+def test_default_pruning_keeps_nineteen_old_runs_and_spares_active_or_foreign_runs(
+    fake_settings,
+) -> None:
+    project = _make_project(fake_settings, "manual")
+    for index in range(25):
+        _write_history_entry(
+            project,
+            f"run-old-{index:02d}",
+            created=f"2026-10-{index + 1:02d}T09:00:00Z",
+        )
+    # These must never be pruned: a live run, another model, a bare directory and
+    # an unreadable manifest, plus the oldest run while it is active in memory.
+    _write_history_entry(project, "run-live", status="running", created="2020-01-01T00:00:00Z")
+    _write_history_entry(project, "run-other", model="OtherModel")
+    (project / "runs" / "run-bare").mkdir()
+    _write_history_entry(project, "run-bad", raw="{not json")
+
+    # The new run is the twentieth: the nineteen newest old ones survive.
+    _prune_runs(project, "DCMotorSpeed", DEFAULT_RUN_HISTORY, {"run-old-00"})
+
+    remaining = {path.name for path in (project / "runs").iterdir()}
+    assert remaining & {f"run-old-{index:02d}" for index in range(25)} == {
+        f"run-old-{index:02d}" for index in [0, *range(6, 25)]
+    }
+    for kept in ("run-live", "run-other", "run-bare", "run-bad"):
+        assert kept in remaining, f"{kept} must survive pruning"
 
 
 def test_starting_a_run_without_a_worker_cleans_up(fake_settings) -> None:
