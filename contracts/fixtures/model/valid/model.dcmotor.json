@@ -138,6 +138,14 @@
         "to": { "node": "n7", "port": "a" },
         "route": [],
         "label": null
+      },
+      {
+        "id": "c7",
+        "kind": "wire",
+        "from": { "node": "n2", "port": "n" },
+        "to": { "node": "n4", "port": "p" },
+        "route": [],
+        "label": null
       }
     ],
     "subsystemPorts": [],
