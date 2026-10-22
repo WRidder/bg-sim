@@ -1,3 +1,4 @@
+import { useDocumentStore } from "../state/documentStore";
 import type { Theme } from "../theme/theme";
 import { WorkerStatus } from "./WorkerStatus";
 
@@ -20,14 +21,20 @@ export interface TopBarProps {
  */
 export function TopBar({ theme, onToggleTheme }: TopBarProps) {
   const nextTheme = theme === "dark" ? "light" : "dark";
+  const project = useDocumentStore((state) => state.project);
+  const modelName = useDocumentStore((state) => state.modelName);
 
   return (
     <header className="top-bar" data-testid="top-bar">
       <div className="top-bar__brand">bg-sim</div>
 
       <div className="top-bar__project" data-testid="project-tabs">
-        <span className="top-bar__project-name">No project</span>
-        <span className="top-bar__hint">model tabs appear here once a project is open</span>
+        <span className="top-bar__project-name">{project ?? "No project"}</span>
+        <span className="top-bar__hint">
+          {project === null
+            ? "model tabs appear here once a project is open"
+            : (modelName ?? "No model")}
+        </span>
       </div>
 
       <div className="top-bar__run" role="group" aria-label="Simulation controls">

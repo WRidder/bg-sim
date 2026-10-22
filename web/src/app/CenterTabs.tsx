@@ -1,3 +1,4 @@
+import { DiagramTab } from "../editor/DiagramTab";
 import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
 
@@ -8,15 +9,9 @@ const CENTER_TABS: readonly TabDefinition<CenterTabId>[] = [
   { id: "code", label: "Code" },
 ];
 
-const CENTER_EMPTY_STATES: Record<CenterTabId, { title: string; hint: string }> = {
-  diagram: {
-    title: "No diagram open",
-    hint: "Select a model to see its block diagram here, then drag blocks from the library onto the canvas.",
-  },
-  code: {
-    title: "No source open",
-    hint: "Select a block and choose “Open source” to read and edit its code here.",
-  },
+const CODE_EMPTY_STATE = {
+  title: "No source open",
+  hint: "Select a block and choose “Open source” to read and edit its code here.",
 };
 
 export interface CenterTabsProps {
@@ -24,10 +19,11 @@ export interface CenterTabsProps {
   onSelect: (id: CenterTabId) => void;
 }
 
-/** The centre tab area of plan 7.2: Diagram and Code, empty until M1. */
+/**
+ * The centre tab area of plan 7.2: the diagram canvas (W1.1) and the Code tab,
+ * which stays empty until W2.1 adds the block editor.
+ */
 export function CenterTabs({ active, onSelect }: CenterTabsProps) {
-  const empty = CENTER_EMPTY_STATES[active];
-
   return (
     <div className="center-tabs" data-testid="center-tabs">
       <TabStrip
@@ -38,13 +34,17 @@ export function CenterTabs({ active, onSelect }: CenterTabsProps) {
         idPrefix="center"
       />
       <div
-        className="tab-panel"
+        className={`tab-panel${active === "diagram" ? " tab-panel--diagram" : ""}`}
         role="tabpanel"
         id={`center-panel-${active}`}
         aria-labelledby={`center-tab-${active}`}
         tabIndex={0}
       >
-        <EmptyState title={empty.title} hint={empty.hint} />
+        {active === "diagram" ? (
+          <DiagramTab />
+        ) : (
+          <EmptyState title={CODE_EMPTY_STATE.title} hint={CODE_EMPTY_STATE.hint} />
+        )}
       </div>
     </div>
   );

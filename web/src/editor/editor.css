@@ -1,0 +1,660 @@
+/*
+ * Diagram editor: canvas chrome, block and junction nodes, port glyphs, the
+ * three edge kinds, the legend, the refusal tooltip and the context menu.
+ * Every colour is a design token from src/theme/tokens.css.
+ */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface-sunken);
+}
+
+.diagram {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.tab-panel--diagram {
+  overflow: hidden;
+}
+
+.diagram__banner {
+  flex: none;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-error) 20%, var(--color-surface));
+  border-bottom: var(--border-width) solid var(--color-error);
+}
+
+.diagram-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+}
+
+.diagram-state p {
+  margin: 0;
+}
+
+.diagram-state--error {
+  border-top: 2px solid var(--color-error);
+}
+
+.diagram-state__title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-error);
+}
+
+.diagram-state__detail {
+  max-width: 60ch;
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------- toolbar */
+
+.editor__toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 30px;
+  padding: 0 var(--space-2);
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.editor__session {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.editor__project {
+  color: var(--color-text-muted);
+}
+
+.editor__breadcrumb {
+  color: var(--color-text-faint);
+}
+
+.editor__model {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: var(--font-weight-medium);
+}
+
+.editor__toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.editor__save {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-right: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.editor__save[data-state="saving"] {
+  color: var(--color-warning);
+}
+
+.editor__save[data-state="error"] {
+  color: var(--color-error);
+}
+
+.editor__dirty {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-warning);
+}
+
+/* ----------------------------------------------------------------- canvas */
+
+.editor__canvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.editor__canvas .react-flow {
+  background: var(--color-surface-sunken);
+}
+
+.editor__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-6);
+  pointer-events: none;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+}
+
+.editor__empty p {
+  margin: 0;
+}
+
+.editor__empty-hint {
+  max-width: 46ch;
+  color: var(--color-text-faint);
+  font-size: var(--font-size-sm);
+}
+
+/* -------------------------------------------------------------- block node */
+
+.block-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.block-node:hover {
+  border-color: var(--color-focus);
+}
+
+.block-node.is-selected {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.react-flow__node-subsystem .block-node {
+  border-style: double;
+  border-width: 3px;
+}
+
+.block-node__header {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 3px var(--space-2) 2px;
+  border-bottom: var(--border-width) solid var(--color-border);
+  min-height: 30px;
+}
+
+.block-node__name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-node__kind {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-node__body {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  color: var(--color-text);
+  transform-origin: center;
+  transition: transform var(--transition-fast);
+}
+
+.bond-letter {
+  display: block;
+  font-family: Georgia, "Times New Roman", "Nimbus Roman", serif;
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0.02em;
+  text-align: center;
+  user-select: none;
+}
+
+/* ------------------------------------------------------------ junction node */
+
+.junction-node {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  border: 1.5px solid var(--color-border-strong);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text);
+}
+
+.junction-node:hover,
+.junction-node.is-selected {
+  border-color: var(--color-accent);
+}
+
+.junction-node.is-selected {
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.junction-node__label {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 17px;
+  line-height: 1;
+  user-select: none;
+}
+
+.junction-handle {
+  width: 9px;
+  height: 9px;
+  background: transparent;
+  border: var(--border-width) solid transparent;
+  border-radius: 50%;
+}
+
+.junction-handle:hover,
+.junction-node:hover .junction-handle {
+  border-color: var(--color-accent);
+  background: var(--color-surface);
+}
+
+/* ------------------------------------------------------------------ ports */
+
+.react-flow__handle.port-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
+  min-height: 15px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.react-flow__handle.port-handle.connectionindicator {
+  pointer-events: all;
+  cursor: crosshair;
+}
+
+.port-glyph {
+  display: block;
+  flex: none;
+}
+
+.port-glyph--power {
+  width: 9px;
+  height: 9px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.port-handle.is-generic .port-glyph--power {
+  background: transparent;
+  border: 1.5px dashed currentColor;
+}
+
+.port-handle.is-vector .port-glyph--power {
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+}
+
+.port-glyph--signal {
+  overflow: visible;
+}
+
+.port-handle--input .port-glyph--signal {
+  transform: translateX(-1px);
+}
+
+.port-handle--output .port-glyph--signal {
+  transform: translateX(1px);
+}
+
+.port-letter,
+.port-name {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  z-index: 3;
+}
+
+.port-letter {
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  color: currentColor;
+  background: var(--color-surface);
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
+.port-handle--left .port-letter {
+  right: 15px;
+}
+
+.port-handle--right .port-letter {
+  left: 15px;
+}
+
+.port-name {
+  padding: 0 3px;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border-radius: 2px;
+}
+
+.port-handle--left .port-name {
+  left: 15px;
+}
+
+.port-handle--right .port-name {
+  right: 15px;
+}
+
+.port-handle:hover .port-letter,
+.port-handle:hover .port-name,
+.port-handle.is-compatible .port-letter,
+.port-handle.is-origin .port-letter {
+  opacity: 1;
+}
+
+.port-handle.is-compatible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 30%, transparent);
+  border-radius: 50%;
+}
+
+.port-handle.is-origin {
+  box-shadow: 0 0 0 3px var(--color-accent);
+  border-radius: 50%;
+}
+
+.port-handle.is-incompatible {
+  opacity: 0.22;
+  filter: grayscale(0.7);
+}
+
+/* ------------------------------------------------------------------ edges */
+
+.editor-edge {
+  cursor: pointer;
+}
+
+.editor-edge__halo {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 7px;
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.editor-edge__label {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 1px var(--space-1);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.editor-edge__factor {
+  font-family: var(--font-mono);
+  color: var(--color-text);
+}
+
+.editor-edge__node-dot {
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------- legend */
+
+.editor-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  max-width: min(520px, 70%);
+  padding: var(--space-1) var(--space-2);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+
+.editor-legend__title {
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.editor-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.editor-legend__swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+}
+
+.editor-legend__swatch.is-generic {
+  background: transparent !important;
+  border: 1.5px dashed var(--domain-generic);
+}
+
+.editor-legend__separator {
+  width: 1px;
+  height: 12px;
+  background: var(--color-border);
+}
+
+.editor-legend__glyph {
+  display: inline-block;
+  width: 0;
+  height: 0;
+}
+
+.editor-legend__glyph--power {
+  width: 8px;
+  height: 8px;
+  background: var(--color-text);
+  border-radius: 1px;
+}
+
+.editor-legend__glyph--input {
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 7px solid var(--color-text-muted);
+}
+
+.editor-legend__glyph--output {
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 7px solid var(--color-text);
+}
+
+/* ------------------------------------------------------- tooltip and menu */
+
+.editor-tooltip {
+  position: fixed;
+  z-index: 60;
+  max-width: 360px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-warning);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-panel);
+  pointer-events: none;
+  transform: translate(12px, 12px);
+}
+
+.editor-menu {
+  position: fixed;
+  z-index: 70;
+  min-width: 190px;
+  padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+}
+
+.editor-menu button {
+  padding: var(--space-1) var(--space-2);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.editor-menu button:hover {
+  background: var(--color-surface);
+  color: var(--color-accent-hover);
+}
+
+/* -------------------------------------------------------------- model tree */
+
+.model-tree {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.model-tree__summary {
+  flex: none;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.model-tree__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  list-style: none;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+}
+
+.model-tree__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 2px var(--space-1);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  color: var(--color-text);
+  background: transparent;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.model-tree__item:hover {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border);
+}
+
+.model-tree__item[aria-selected="true"] {
+  background: var(--color-surface-raised);
+  border-color: var(--color-accent);
+}
+
+.model-tree__glyph {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  color: var(--color-text-muted);
+}
+
+.model-tree__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.model-tree__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-tree__kind {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.model-tree__empty {
+  margin: 0;
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

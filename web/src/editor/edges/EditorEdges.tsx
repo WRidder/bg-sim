@@ -1,0 +1,250 @@
+/**
+ * Custom edge renderers for the three connection kinds of plan 5.5:
+ *
+ * * **bond** — straight/polyline with the half arrow at `to`, the adopted
+ *   domain colour and an optional causal stroke;
+ * * **wire** — orthogonal, one dot at the shared node when 3+ ports join;
+ * * **signal** — orthogonal with an arrowhead, ink 1.25 px, dashed for Bool,
+ *   dotted for Int, and an optional unit-factor badge.
+ */
+
+import { BaseEdge, EdgeLabelRenderer, type Edge, type EdgeProps } from "@xyflow/react";
+
+import type { DomainName, ValueType } from "../../contracts/catalog";
+import type { ConnectionKind } from "../../contracts/model";
+import {
+  arrowHeadPath,
+  causalStrokePath,
+  domainColor,
+  halfArrowPath,
+  hubPath,
+  midpoint,
+  offsetPoint,
+  orthogonalPath,
+  routedPath,
+  signalColor,
+  signalDash,
+  type Anchor,
+  type Point,
+  type Side,
+} from "../geometry";
+
+export interface EditorEdgeData extends Record<string, unknown> {
+  kind: ConnectionKind;
+  domain: DomainName;
+  signalType: ValueType | null;
+  route: Point[];
+  sourceAnchor: { point: Point; side: Side };
+  targetAnchor: { point: Point; side: Side };
+  wireHub: Point | null;
+  label: string | null;
+  unitFactor: string | null;
+  /** Where the causal stroke sits, when a model check provides it. */
+  causalStroke: "from" | "to" | null;
+}
+
+export type EditorEdgeType = "bond" | "wire" | "signal";
+export type EditorEdge = Edge<EditorEdgeData, EditorEdgeType>;
+
+function anchors(data: EditorEdgeData): { a: Anchor; b: Anchor } {
+  return { a: data.sourceAnchor, b: data.targetAnchor };
+}
+
+function labelPosition(data: EditorEdgeData): Point {
+  const { a, b } = anchors(data);
+  if (data.wireHub !== null) {
+    return data.wireHub;
+  }
+  const middle = midpoint(a.point, b.point);
+  return { x: middle.x, y: middle.y - 10 };
+}
+
+function EdgeLabel({ data }: { data: EditorEdgeData }) {
+  const point = labelPosition(data);
+  const badge =
+    data.unitFactor === null
+      ? null
+      : data.unitFactor.startsWith("\u00d7")
+        ? data.unitFactor
+        : `\u00d7${data.unitFactor}`;
+  if (data.label === null && badge === null) {
+    return null;
+  }
+  return (
+    <EdgeLabelRenderer>
+      <div
+        className="editor-edge__label"
+        style={{
+          transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y}px)`,
+        }}
+      >
+        {data.label !== null ? <span>{data.label}</span> : null}
+        {badge !== null ? <span className="editor-edge__factor">{badge}</span> : null}
+      </div>
+    </EdgeLabelRenderer>
+  );
+}
+
+function Halo({ path }: { path: string }) {
+  return <path className="editor-edge__halo" d={path} />;
+}
+
+export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
+  if (data === undefined) {
+    return null;
+  }
+  const { a, b } = anchors(data);
+  const route = data.route;
+  const path =
+    route.length > 0
+      ? routedPath(a.point, route, b.point)
+      : `M ${a.point.x} ${a.point.y} L ${b.point.x} ${b.point.y}`;
+  const tail = route.length > 0 ? route[route.length - 1] ?? a.point : a.point;
+  const colour = domainColor(data.domain);
+  const dashed = data.domain === "Generic";
+  const strokePoint = (anchorPoint: Point, towards: Point): Point => {
+    const dx = towards.x - anchorPoint.x;
+    const dy = towards.y - anchorPoint.y;
+    const length = Math.hypot(dx, dy) || 1;
+    return { x: anchorPoint.x + (dx / length) * 2, y: anchorPoint.y + (dy / length) * 2 };
+  };
+
+  return (
+    <g
+      className={`editor-edge editor-edge--bond${selected ? " is-selected" : ""}`}
+      data-testid={`edge-${id}`}
+      data-kind="bond"
+      data-domain={data.domain}
+    >
+      {selected ? <Halo path={path} /> : null}
+      <BaseEdge
+        id={id}
+        path={path}
+        interactionWidth={18}
+        style={{
+          stroke: colour,
+          strokeWidth: 2.2,
+          strokeDasharray: dashed ? "4 3" : undefined,
+          fill: "none",
+        }}
+      />
+      <path
+        className="editor-edge__half-arrow"
+        d={halfArrowPath(tail, b.point)}
+        stroke={colour}
+        strokeWidth={2.2}
+        fill="none"
+        strokeLinecap="round"
+      />
+      {data.causalStroke === "to" ? (
+        <path
+          d={causalStrokePath(strokePoint(b.point, tail), tail)}
+          stroke={colour}
+          strokeWidth={2}
+          fill="none"
+        />
+      ) : null}
+      {data.causalStroke === "from" ? (
+        <path
+          d={causalStrokePath(strokePoint(a.point, b.point), b.point)}
+          stroke={colour}
+          strokeWidth={2}
+          fill="none"
+        />
+      ) : null}
+      <EdgeLabel data={data} />
+    </g>
+  );
+}
+
+export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
+  if (data === undefined) {
+    return null;
+  }
+  const { a, b } = anchors(data);
+  const hub = data.wireHub;
+  const path =
+    hub === null
+      ? data.route.length > 0
+        ? routedPath(a.point, data.route, b.point)
+        : orthogonalPath(a, b)
+      : hubPath(a.point, hub, b.point);
+  const colour = domainColor(data.domain);
+  const dashed = data.domain === "Generic";
+
+  return (
+    <g
+      className={`editor-edge editor-edge--wire${selected ? " is-selected" : ""}`}
+      data-testid={`edge-${id}`}
+      data-kind="wire"
+      data-domain={data.domain}
+    >
+      {selected ? <Halo path={path} /> : null}
+      <BaseEdge
+        id={id}
+        path={path}
+        interactionWidth={18}
+        style={{
+          stroke: colour,
+          strokeWidth: 2.2,
+          strokeDasharray: dashed ? "4 3" : undefined,
+          fill: "none",
+        }}
+      />
+      {hub !== null ? (
+        <circle
+          className="editor-edge__node-dot"
+          cx={hub.x}
+          cy={hub.y}
+          r={3.6}
+          fill={colour}
+          stroke="var(--color-surface)"
+          strokeWidth={1}
+        />
+      ) : null}
+      <EdgeLabel data={data} />
+    </g>
+  );
+}
+
+export function SignalEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
+  if (data === undefined) {
+    return null;
+  }
+  const { a, b } = anchors(data);
+  const path =
+    data.route.length > 0 ? routedPath(a.point, data.route, b.point) : orthogonalPath(a, b);
+  const colour = signalColor(data.signalType);
+  // The arrow points into the target: start just outside the target's side.
+  const from = offsetPoint(b.point, b.side, 14);
+  const dash = signalDash(data.signalType);
+
+  return (
+    <g
+      className={`editor-edge editor-edge--signal${selected ? " is-selected" : ""}`}
+      data-testid={`edge-${id}`}
+      data-kind="signal"
+      data-signal-type={data.signalType ?? ""}
+    >
+      {selected ? <Halo path={path} /> : null}
+      <BaseEdge
+        id={id}
+        path={path}
+        interactionWidth={18}
+        style={{
+          stroke: colour,
+          strokeWidth: "var(--signal-real-width)",
+          strokeDasharray: dash,
+          fill: "none",
+        }}
+      />
+      <path
+        className="editor-edge__arrow"
+        d={arrowHeadPath(from, b.point)}
+        fill={colour}
+        stroke="none"
+      />
+      <EdgeLabel data={data} />
+    </g>
+  );
+}

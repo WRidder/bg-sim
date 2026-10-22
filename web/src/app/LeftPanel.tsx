@@ -1,12 +1,13 @@
 import { Group, Panel, Separator } from "react-resizable-panels";
 
+import { LibraryBrowser } from "../library/LibraryBrowser";
+import { ModelTree } from "../editor/ModelTree";
 import { usePersistedPanelSizes } from "../state/layout";
-import { EmptyState } from "./EmptyState";
 
 /**
- * The left column of plan 7.2: the block library on top, the model tree
- * below, with a resizable split between them. Both are empty until a project
- * and its catalog are loaded (M1/M2).
+ * The left column of plan 7.2: the block library on top, the model tree below,
+ * with a resizable split between them. Both are filled by the editor module:
+ * the catalog browser (W1.1) and the diagram outline.
  */
 export function LeftPanel() {
   const sections = usePersistedPanelSizes("left-column", { library: 55, tree: 45 });
@@ -25,10 +26,7 @@ export function LeftPanel() {
               Library
             </h2>
             <div className="panel-section__body">
-              <EmptyState
-                title="Library is empty"
-                hint="Open a project to load its catalog of blocks. Drag a block from here onto the diagram to add it."
-              />
+              <LibraryBrowser />
             </div>
           </section>
         </Panel>
@@ -41,10 +39,7 @@ export function LeftPanel() {
               Model tree
             </h2>
             <div className="panel-section__body">
-              <EmptyState
-                title="No models open"
-                hint="Open a project, then pick a model to see its blocks and subsystems in this outline."
-              />
+              <ModelTree />
             </div>
           </section>
         </Panel>

@@ -7,9 +7,24 @@
  */
 
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "../src/app/App";
+import { resetCatalogStore } from "../src/library/catalogStore";
+import { resetDocumentStore } from "../src/state/documentStore";
+import { resetSessionCache } from "../src/state/session";
+
+/**
+ * The shell now mounts the W1.1 diagram tab and library, which start a session
+ * request. Keep that request pending: these tests assert the shell's chrome and
+ * loading states, not the network.
+ */
+beforeEach(() => {
+  resetDocumentStore();
+  resetCatalogStore();
+  resetSessionCache();
+  vi.stubGlobal("fetch", () => new Promise(() => {}));
+});
 
 describe("layout shell", () => {
   it("renders the top bar, the three columns and the bottom dock", () => {
@@ -35,13 +50,13 @@ describe("layout shell", () => {
     expect(container.querySelectorAll(".splitter")).toHaveLength(4);
   });
 
-  it("shows guidance in every empty panel (plan 7.8)", () => {
+  it("shows guidance in every panel before a project is open (plan 7.8)", () => {
     render(<App />);
 
     for (const title of [
-      "Library is empty",
-      "No models open",
-      "No diagram open",
+      "Loading the library…",
+      "No model open. Open a project to see its blocks and subsystems here.",
+      "Opening the model…",
       "Nothing selected",
       "No run data",
     ]) {
@@ -75,7 +90,7 @@ describe("layout shell", () => {
 
     fireEvent.keyDown(code, { key: "ArrowLeft" });
     expect(diagram.getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByText("No diagram open")).toBeTruthy();
+    expect(screen.getByText("Opening the model…")).toBeTruthy();
   });
 
   it("renders every dock tab and shows the Plots panel first", () => {
