@@ -235,7 +235,10 @@ include("test_syntax.jl")
 # Later work packages add one test file each. The `isfile` guard is temporary scaffolding so
 # parallel WPs cannot break each other's runs; the M1 gate replaces it with plain includes.
 for entry in ("test_units.jl", "test_library.jl", "test_flatten.jl", "test_simulate.jl",
-              "test_worker.jl")
+              "test_worker.jl", "test_language.jl", "test_discrete.jl", "test_events.jl",
+              "test_causality.jl", "test_units_model.jl", "test_components.jl",
+              "test_cache.jl", "test_debug.jl", "test_hooks.jl", "test_watch.jl",
+              "test_edits.jl")
     path = joinpath(@__DIR__, entry)
     isfile(path) && include(path)
 end
