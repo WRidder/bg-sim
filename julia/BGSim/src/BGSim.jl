@@ -13,10 +13,12 @@ block-level checks).
 module BGSim
 
 using ModelingToolkit
-using ModelingToolkit: t_nounits as t, D_nounits as D
+using ModelingToolkit: t_nounits as t, D_nounits as D, SymbolicContinuousCallback
 using Symbolics: Num
-using SymbolicIndexingInterface: getname, getu, setp
+import Symbolics
+using SymbolicIndexingInterface: getname, getu, getp, setp
 using OrdinaryDiffEqRosenbrock
+import OrdinaryDiffEqTsit5, OrdinaryDiffEqBDF, OrdinaryDiffEqVerner
 using PrecompileTools: @setup_workload, @compile_workload
 using JuliaSyntax
 
@@ -43,7 +45,13 @@ end
 # Work package J1.4: the IR and the flattening pipeline (plan 5.2, 5.4, 5.5, 5.6).
 include("compile/pipeline.jl")
 
+# Work package J1.5: expression lowering, the compiled-system cache, the run loop and the
+# recorder (plan 5.8 without events/discrete, 5.10 and 5.11).
+include("lower/fnmap.jl")
 include("lower/mtk.jl")
+include("sim/recorder.jl")
+include("sim/simulate.jl")
+
 include("precompile.jl")
 include("worker/server.jl")
 
@@ -65,5 +73,10 @@ export ParsedBlock, Decl, TypeSpec, CausalityDecl
 # Diagnostics.
 export Diagnostic, SourceRange, SourceRef, Related, severity_of, diag, to_namedtuple,
     to_dict, from_dict, sort_diagnostics, source_kind, scope_string
+
+# Work package J1.5: lowering and simulation.
+export LowerError, CompiledModel, nonsmooth_conditions, compile_key, lower_model,
+    set_parameter_values, set_start_values, clear_compile_cache!, cache_size,
+    RunSettings, SimResult, simulate, output_grid
 
 end # module BGSim

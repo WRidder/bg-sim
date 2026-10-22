@@ -21,7 +21,10 @@
         p.f + n.f ~ 0.0
         p.e - n.e ~ R * i + L * ddt(i) + k_t * w_rel
         w_rel ~ shaft.f - housing.f
-        shaft.e ~ k_t * i + J * ddt(w_rel) + d * w_rel
+        # The shaft port is power-positive into the motor, so the electromagnetic torque
+        # k_t*i leaves through it and enters the equation with a minus sign: at steady state
+        # (with an external damper d_ext) shaft.e = -d_ext*w_rel = -k_t*i.
+        shaft.e ~ -k_t * i + J * ddt(w_rel) + d * w_rel
         housing.e ~ -shaft.e
     end
 end

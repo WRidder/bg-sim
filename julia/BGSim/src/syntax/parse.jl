@@ -27,22 +27,23 @@ const SCOPE_MACROS = Dict{Symbol,Symbol}(
     Symbol("@outputs") => :outputs,
     Symbol("@ports") => :ports,
     Symbol("@variables") => :variables,
+    Symbol("@initial") => :initial,
     Symbol("@equations") => :equations,
+    Symbol("@discrete") => :discrete,
+    Symbol("@events") => :events,
     Symbol("@causality") => :causality,
 )
 
 # Scopes that exist in the spec but belong to a later work package. They must be *rejected*
 # with a clear E001 that names the scope, never silently ignored.
 const UNSUPPORTED_SCOPES = Dict{Symbol,String}(
-    Symbol("@initial") => "initial equations (J2.1)",
-    Symbol("@discrete") => "discrete code (J2.1)",
-    Symbol("@events") => "events (J2.1)",
     Symbol("@components") => "textual subsystems (J2.6)",
     Symbol("@connections") => "textual subsystems (J2.6)",
 )
 
 const ALL_SCOPE_NAMES =
-    "@constants @parameters @inputs @outputs @ports @variables @equations @causality"
+    "@constants @parameters @inputs @outputs @ports @variables @initial @equations " *
+    "@discrete @events @causality"
 
 const POWER_DOMAINS = Set{Symbol}(
     [:Electrical, :Translation, :Rotation, :Hydraulic, :Generic, :Planar, :Spatial]
@@ -181,6 +182,9 @@ mutable struct BlockBuilder
     scope_list::Vector{Symbol}
     declaration_map::Dict{Symbol,Vector{Decl}}
     equation_items::Vector{Any}
+    initial_items::Vector{Any}
+    discrete_items::Vector{Any}
+    event_items::Vector{Any}
     causality_items::Vector{CausalityDecl}
     diagnostics::Vector{Diagnostic}
     range::SourceRange
@@ -195,6 +199,9 @@ function BlockBuilder(name, ref, text, filename, range)
         String(filename),
         Symbol[],
         Dict{Symbol,Vector{Decl}}(s => Decl[] for s in DECLARATION_SCOPES),
+        Any[],
+        Any[],
+        Any[],
         Any[],
         CausalityDecl[],
         Diagnostic[],
@@ -221,6 +228,9 @@ function _as_parsed_stub(b::BlockBuilder)
         b.scope_list,
         b.declaration_map,
         b.equation_items,
+        b.initial_items,
+        b.discrete_items,
+        b.event_items,
         b.causality_items,
         b.diagnostics,
         b.range,
@@ -236,6 +246,9 @@ function _finish(b::BlockBuilder)
         b.scope_list,
         b.declaration_map,
         b.equation_items,
+        b.initial_items,
+        b.discrete_items,
+        b.event_items,
         b.causality_items,
         b.diagnostics,
         b.range,
@@ -401,6 +414,9 @@ function _syntax_error_block(src::String, filename::String, ref::String, err)
         Symbol[],
         Dict{Symbol,Vector{Decl}}(s => Decl[] for s in DECLARATION_SCOPES),
         Any[],
+        Any[],
+        Any[],
+        Any[],
         CausalityDecl[],
         diags,
         r,
@@ -480,6 +496,13 @@ function _parse_scope_stmt!(b::BlockBuilder, stmt)
     end
     push!(b.scope_list, scope)
     args = _children(stmt)[2:end]
+    if scope == :discrete
+        _parse_discrete_scope!(b, args, stmt)
+        return nothing
+    elseif scope == :events
+        _parse_events_scope!(b, args, stmt)
+        return nothing
+    end
     if isempty(args)
         _error!(
             b,
@@ -514,6 +537,11 @@ function _parse_scope_stmt!(b::BlockBuilder, stmt)
         for item in items
             eq = _parse_equation_item!(b, item, scope)
             eq === nothing || push!(b.equation_items, eq)
+        end
+    elseif scope == :initial
+        for item in items
+            eq = _parse_equation_item!(b, item, scope)
+            eq === nothing || push!(b.initial_items, eq)
         end
     elseif scope == :causality
         for item in items
@@ -703,11 +731,18 @@ function _size_arg!(b::BlockBuilder, node)
     elseif k == K"Identifier"
         push!(b.size_refs, node.val)
         return node.val
+    elseif k == K"call" && !isempty(_children(node)) && _leaf_symbol(_children(node)[1]) === :ifelse
+        # The spec allows `ifelse` in sizes; fold it once the constants are known
+        # (`resolve_type` does that with `try_eval_const`).
+        e = _to_expr!(b, node, :default)
+        e === nothing && return nothing
+        _collect_expr_refs!(b.size_refs, e)
+        return e
     end
     _error!(
         b,
         "E005",
-        "array size must be an integer literal or a `@constants` value, found $(_label(node))";
+        "array size must be an integer literal, a `@constants` value or an `ifelse` of them, found $(_label(node))";
         hint = "declare the size in `@constants`, e.g. `@constants N::Int = 3`",
     )
     return nothing
@@ -1033,6 +1068,15 @@ function _parse_for!(b::BlockBuilder, node, scope::Symbol)
     end
     clause = _children(iter)[1]
     cch = _children(clause)
+    if length(cch) < 2
+        _error!(
+            b,
+            "E001",
+            "`for` needs a range `1:N`";
+            hint = "`N` must be a `@constants` value",
+        )
+        return nothing
+    end
     var = kind(clause) == K"in" && !isempty(cch) ? _leaf_symbol(cch[1]) : nothing
     if var === nothing
         _error!(b, "E001", "`for` needs a loop variable, as in `for i in 1:N`", clause)
@@ -1064,6 +1108,467 @@ function _range_parts(node)
     _is_operator_node(ch[2]) || return nothing
     _operator_symbol(ch[2]) === Symbol(":") || return nothing
     return length(ch) == 3 ? (ch[1], ch[3], nothing) : (ch[1], ch[4], ch[3])
+end
+
+# ---------------------------------------------------------------------------------------
+# @initial
+# ---------------------------------------------------------------------------------------
+#
+# `@initial` reuses the equation walker with `scope = :initial`; `check_block` gives it the
+# initial semantics (no `ddt`) and keeps it out of the balance count. Nothing extra is
+# needed in the parser beyond the dispatch in `_parse_scope_stmt!`.
+
+# ---------------------------------------------------------------------------------------
+# @discrete and @events (J2.1, decisions D18 and D19)
+# ---------------------------------------------------------------------------------------
+
+"""
+Parse one `@discrete Ts = <period> begin ... end` scope. The header accepts the spec's
+`Ts = 1e-3` form, the bare form `@discrete 1e-3`, and an `offset` attribute in either
+spelling (`Ts = 1e-3, [offset = 1e-4]` or `Ts = 1e-3 [offset = 1e-4]`). The body is a
+statement list; the period and offset are folded in `_finalize_block!`.
+"""
+function _parse_discrete_scope!(b::BlockBuilder, args, stmt)
+    rng = _range(stmt, b.filename)
+    if length(args) == 1 && kind(args[1]) == K"block"
+        _error!(
+            b,
+            "E001",
+            "`@discrete` needs a clock period, as in `@discrete Ts = 1e-3 begin ... end`",
+            stmt;
+            scope = :discrete,
+            hint = "write `Ts = <period>` before the body; `Ts` is readable inside the body",
+        )
+        return nothing
+    end
+    header, attrs_node, body_node = _split_discrete_args(b, args, stmt)
+    header === nothing && return nothing
+    parsed = _parse_discrete_header!(b, header)
+    parsed === nothing && return nothing
+    period, embedded_attrs = parsed
+    if attrs_node !== nothing && embedded_attrs !== nothing
+        _error!(
+            b,
+            "E001",
+            "write the `@discrete` attributes once",
+            stmt;
+            scope = :discrete,
+            hint = "use either `Ts = 1e-3, [offset = ...]` or `Ts = 1e-3 [offset = ...]`",
+        )
+        return nothing
+    end
+    offset = _parse_discrete_attrs!(
+        b, attrs_node === nothing ? embedded_attrs : attrs_node
+    )
+    body = _parse_stmt_list!(b, body_node, :discrete)
+    if isempty(body)
+        _error!(
+            b,
+            "E001",
+            "the `@discrete` scope is empty",
+            body_node;
+            scope = :discrete,
+            hint = "assign something inside the body, or remove the scope",
+        )
+        return nothing
+    end
+    push!(b.discrete_items, DiscreteScope(period, offset, body, rng, nothing, nothing))
+    return nothing
+end
+
+"""Split the macrocall arguments of `@discrete`. The period is one argument and the body a
+`begin ... end`; the plan also writes `Ts = 1e-3 [offset = 1e-4] begin ... end`, which
+JuliaSyntax parses as three arguments (the attribute vector is separate)."""
+function _split_discrete_args(b::BlockBuilder, args, stmt)
+    if length(args) == 3 && kind(args[2]) == K"vect" && kind(args[3]) == K"block"
+        return (args[1], args[2], args[3])
+    elseif length(args) == 2 && kind(args[2]) == K"block"
+        return (args[1], nothing, args[2])
+    end
+    _error!(
+        b,
+        "E001",
+        "`@discrete` takes one clock period and one `begin ... end` body",
+        stmt;
+        scope = :discrete,
+        hint = "write `@discrete Ts = 1e-3 begin ... end`",
+    )
+    return (nothing, nothing, nothing)
+end
+
+function _parse_discrete_header!(b::BlockBuilder, header)
+    if kind(header) == K"="
+        ch = _children(header)
+        if length(ch) != 2
+            _error!(b, "E001", "the `@discrete` period is `Ts = <period>`", header; scope = :discrete)
+            return nothing
+        end
+        name = _leaf_symbol(ch[1])
+        if name !== :Ts
+            _error!(
+                b,
+                "E001",
+                "the `@discrete` period is written `Ts = <period>`",
+                ch[1];
+                scope = :discrete,
+                hint = "`Ts` names the clock period inside the body",
+            )
+            return nothing
+        end
+        value_node = ch[2]
+        attrs_node = nothing
+        if kind(value_node) == K"tuple" && length(_children(value_node)) == 2 &&
+           kind(_children(value_node)[2]) == K"vect"
+            attrs_node = _children(value_node)[2]
+            value_node = _children(value_node)[1]
+        end
+        period = _to_expr!(b, value_node, :discrete)
+        period === nothing && return nothing
+        return (period, attrs_node)
+    end
+    period = _to_expr!(b, header, :discrete)
+    period === nothing && return nothing
+    return (period, nothing)
+end
+
+function _parse_discrete_attrs!(b::BlockBuilder, attrs_node)
+    attrs_node === nothing && return nothing
+    offset = nothing
+    for item in _children(attrs_node)
+        if kind(item) != K"="
+            _error!(b, "E001", "a `@discrete` attribute is `name = value`", item; scope = :discrete)
+            continue
+        end
+        ich = _children(item)
+        key = length(ich) == 2 ? _leaf_symbol(ich[1]) : nothing
+        if key !== :offset
+            _error!(
+                b,
+                "E001",
+                "`$(something(key, Symbol("")))` is not an `@discrete` attribute",
+                isempty(ich) ? item : ich[1];
+                scope = :discrete,
+                hint = "the only `@discrete` attribute is `offset`",
+            )
+            continue
+        end
+        offset === nothing ||
+            _error!(b, "E001", "`offset` is given more than once", ich[1]; scope = :discrete)
+        offset = _to_expr!(b, ich[2], :discrete)
+    end
+    return offset
+end
+
+"""
+Parse one `@events` scope. Every entry is `cond => begin ... end`; `cond` may be a real
+expression or a `<` / `>` comparison (D19). Entries may be separated by newlines or `;`.
+"""
+function _parse_events_scope!(b::BlockBuilder, args, stmt)
+    if length(args) != 1
+        _error!(
+            b,
+            "E001",
+            "`@events` takes one `begin ... end` body of `cond => begin ... end` entries";
+            scope = :events,
+            hint = "write `@events begin cond => begin ... end end`",
+        )
+        return nothing
+    end
+    arg = args[1]
+    items = _flatten_blocks(kind(arg) == K"block" ? _children(arg) : [arg])
+    if isempty(items)
+        _error!(
+            b,
+            "E001",
+            "the `@events` scope is empty",
+            arg;
+            scope = :events,
+            hint = "add an entry `cond => begin ... end`, or remove the scope",
+        )
+        return nothing
+    end
+    for item in items
+        _parse_event!(b, item)
+    end
+    return nothing
+end
+
+function _parse_event!(b::BlockBuilder, node)
+    rng = _range(node, b.filename)
+    ch = _children(node)
+    if !(kind(node) == K"call" && length(ch) == 3 && _is_operator_node(ch[2]) &&
+         _operator_symbol(ch[2]) === Symbol("=>"))
+        _error!(
+            b,
+            "E001",
+            "an `@events` entry is `cond => begin ... end`",
+            node;
+            scope = :events,
+            hint = "write the trigger on the left of `=>` and the statements in a `begin ... end` body",
+        )
+        return nothing
+    end
+    cond = _to_expr!(b, ch[1], :events)
+    cond === nothing && return nothing
+    body = _parse_stmt_list!(b, ch[3], :events)
+    push!(b.event_items, EventDecl(cond, body, rng))
+    return nothing
+end
+
+# --- statements ------------------------------------------------------------------------
+
+function _parse_stmt_list!(b::BlockBuilder, node, scope::Symbol)
+    items = _flatten_blocks(kind(node) == K"block" ? _children(node) : [node])
+    out = Any[]
+    for item in items
+        s = _parse_stmt!(b, item, scope)
+        s === nothing || push!(out, s)
+    end
+    return out
+end
+
+function _parse_stmt!(b::BlockBuilder, node, scope::Symbol)
+    k = kind(node)
+    rng = _range(node, b.filename)
+    if k == K"="
+        ch = _children(node)
+        length(ch) == 2 || (_error!(b, "E001", "an assignment is `target = value`", node; scope = scope); return nothing)
+        target = _to_expr!(b, ch[1], scope)
+        value = _to_expr!(b, ch[2], scope)
+        (target === nothing || value === nothing) && return nothing
+        return Assign(target, value, :assign, rng, scope)
+    elseif k == K"op="
+        ch = _children(node)
+        length(ch) == 3 ||
+            (_error!(b, "E001", "a compound assignment is `target += value`", node; scope = scope); return nothing)
+        op = _operator_symbol(ch[2])
+        if !(op in (:+, :-, :*, :/))
+            _error!(
+                b,
+                "E001",
+                "`$(something(op, Symbol(""))) =` is not an allowed compound assignment",
+                node;
+                scope = scope,
+                hint = "use `=`, `+=`, `-=`, `*=` or `/=`",
+            )
+            return nothing
+        end
+        target = _to_expr!(b, ch[1], scope)
+        value = _to_expr!(b, ch[3], scope)
+        (target === nothing || value === nothing) && return nothing
+        return Assign(target, value, op, rng, scope)
+    elseif k == K"if"
+        return _parse_if_stmt!(b, node, scope)
+    elseif k == K"for"
+        return _parse_for_stmt!(b, node, scope)
+    elseif k == K"while"
+        _error!(
+            b,
+            "E001",
+            "`while` loops are not allowed in $(scope_string(scope))",
+            node;
+            scope = scope,
+            hint = "use a bounded `for i in 1:N` loop; N must be a constant",
+        )
+        return nothing
+    elseif k == K"break" || k == K"continue"
+        _error!(
+            b,
+            "E001",
+            "`$(kind(node))` is not allowed in $(scope_string(scope))",
+            node;
+            scope = scope,
+            hint = "loops are unrolled at compile time, so there is nothing to break out of",
+        )
+        return nothing
+    elseif k == K"call"
+        ch = _children(node)
+        if length(ch) == 3 && _is_operator_node(ch[2])
+            op = _operator_symbol(ch[2])
+            if op === :~
+                _error!(
+                    b,
+                    "E001",
+                    "`~` is not allowed in $(scope_string(scope))",
+                    node;
+                    scope = scope,
+                    hint = "use `=` to assign in discrete code",
+                )
+                return nothing
+            elseif op === Symbol("=>")
+                _error!(
+                    b,
+                    "E001",
+                    "`=>` is only allowed in `@causality` and as an `@events` entry",
+                    node;
+                    scope = scope,
+                )
+                return nothing
+            end
+        end
+        expr = _to_expr!(b, node, scope)
+        expr === nothing && return nothing
+        if expr isa Call
+            return CallStatement(expr, rng, scope)
+        end
+        _error!(
+            b,
+            "E001",
+            "a bare expression is not a statement in $(scope_string(scope))",
+            node;
+            scope = scope,
+            hint = "only `reinit(x, value)` is a call statement, and only in `@events`",
+        )
+        return nothing
+    elseif k == K"function" || k == K"do"
+        _error!(
+            b,
+            "E001",
+            "function definitions and `do` blocks are not allowed in $(scope_string(scope))",
+            node;
+            scope = scope,
+        )
+        return nothing
+    elseif k == K"macrocall"
+        _error!(b, "E001", "macros are not allowed in $(scope_string(scope))", node; scope = scope)
+        return nothing
+    elseif k == K"::"
+        _error!(
+            b,
+            "E001",
+            "a typed local declaration is not allowed in $(scope_string(scope))",
+            node;
+            scope = scope,
+            hint = "assign a value to an undeclared name to create a temporary (D18)",
+        )
+        return nothing
+    elseif k == K"block"
+        _error!(
+            b,
+            "E001",
+            "a nested `begin ... end` is not allowed in $(scope_string(scope))",
+            node;
+            scope = scope,
+        )
+        return nothing
+    end
+    _error!(
+        b,
+        "E001",
+        "$(_label(node)) is not a statement in $(scope_string(scope))";
+        scope = scope,
+        hint = "allowed statements: assignment, `if`, `for`, and `reinit` in `@events`",
+    )
+    return nothing
+end
+
+function _parse_if_stmt!(b::BlockBuilder, node, scope::Symbol)
+    ch = _children(node)
+    rng = _range(node, b.filename)
+    if length(ch) < 2
+        _error!(
+            b,
+            "E001",
+            "`if` needs a condition and a body",
+            node;
+            scope = scope,
+            hint = "write `if cond ... else ... end`",
+        )
+        return nothing
+    end
+    branches = StmtBranch[]
+    cond = _to_expr!(b, ch[1], scope)
+    cond === nothing && (cond = Lit(false, rng))
+    push!(branches, StmtBranch(cond, _parse_stmt_list!(b, ch[2], scope), rng))
+    _if_stmt_rest!(b, branches, ch[3:end], scope)
+    return IfStatement(branches, rng, scope)
+end
+
+function _if_stmt_rest!(b::BlockBuilder, branches::Vector{StmtBranch}, rest, scope::Symbol)
+    for node in rest
+        k = kind(node)
+        if k == K"elseif"
+            ch = _children(node)
+            rng = _range(node, b.filename)
+            cond = _to_expr!(b, ch[1], scope)
+            cond === nothing && (cond = Lit(false, rng))
+            push!(branches, StmtBranch(cond, _parse_stmt_list!(b, ch[2], scope), rng))
+            _if_stmt_rest!(b, branches, ch[3:end], scope)
+        elseif k == K"block"
+            push!(
+                branches,
+                StmtBranch(nothing, _parse_stmt_list!(b, node, scope), _range(node, b.filename)),
+            )
+        elseif k == K"else"
+            ch = _children(node)
+            rng = _range(node, b.filename)
+            body = isempty(ch) ? Any[] : _parse_stmt_list!(b, ch[1], scope)
+            push!(branches, StmtBranch(nothing, body, rng))
+        end
+    end
+    return nothing
+end
+
+function _parse_for_stmt!(b::BlockBuilder, node, scope::Symbol)
+    ch = _children(node)
+    rng = _range(node, b.filename)
+    if length(ch) < 2
+        _error!(
+            b,
+            "E001",
+            "`for` needs a range and a body",
+            node;
+            scope = scope,
+            hint = "write `for i in 1:N ... end`",
+        )
+        return nothing
+    end
+    iter = ch[1]
+    if kind(iter) != K"iteration" || length(_children(iter)) != 1
+        _error!(
+            b,
+            "E001",
+            "`for` is only allowed with one range, as in `for i in 1:N`";
+            scope = scope,
+            hint = "use one `for i in 1:N` per loop",
+        )
+        return nothing
+    end
+    clause = _children(iter)[1]
+    cch = _children(clause)
+    if length(cch) < 2
+        _error!(
+            b,
+            "E001",
+            "`for` needs a range `1:N`";
+            scope = scope,
+            hint = "`N` must be a `@constants` value",
+        )
+        return nothing
+    end
+    var = kind(clause) == K"in" && !isempty(cch) ? _leaf_symbol(cch[1]) : nothing
+    if var === nothing
+        _error!(b, "E001", "`for` needs a loop variable, as in `for i in 1:N`", clause; scope = scope)
+        return nothing
+    end
+    parts = _range_parts(cch[2])
+    if parts === nothing
+        _error!(
+            b,
+            "E001",
+            "`for` needs a range `1:N`, found `$(_slice(b.text, cch[2]))`";
+            scope = scope,
+            hint = "`N` must be a `@constants` value",
+        )
+        return nothing
+    end
+    lo = _to_expr!(b, parts[1], scope)
+    hi = _to_expr!(b, parts[2], scope)
+    step = parts[3] === nothing ? nothing : _to_expr!(b, parts[3], scope)
+    (lo === nothing || hi === nothing || (parts[3] !== nothing && step === nothing)) &&
+        return nothing
+    body = _parse_stmt_list!(b, ch[2], scope)
+    return ForStatement(var, lo, hi, step, body, rng, scope)
 end
 
 # ---------------------------------------------------------------------------------------
@@ -1468,6 +1973,7 @@ end
 
 function _finalize_block!(b::BlockBuilder)
     env = _constant_env(b.declaration_map)
+    _collect_structural_refs!(b)
     for scope in DECLARATION_SCOPES
         for decl in b.declaration_map[scope]
             for key in (:min, :max, :nominal)
@@ -1496,7 +2002,190 @@ function _finalize_block!(b::BlockBuilder)
             end
         end
     end
+    _fold_discrete_clocks!(b, env)
     return nothing
+end
+
+# A constant used in a `for` bound or a `@discrete` clock is structural too: overriding it
+# changes the unrolled code, so the catalog must mark it (decision D13). Add those names to
+# `size_refs`, which is what the `:structural` inference below consults.
+# A constant used in a `for` bound or a `@discrete` clock is structural: overriding it
+# changes the unrolled code, so the catalog must mark it (decision D13). Add those names to
+# `size_refs`, which is what the `:structural` inference below consults.
+function _collect_structural_refs!(b::BlockBuilder)
+    found = Set{Symbol}()
+    for item in b.equation_items
+        _collect_for_bounds!(found, item)
+    end
+    for item in b.initial_items
+        _collect_for_bounds!(found, item)
+    end
+    for ds in b.discrete_items
+        _collect_expr_refs!(found, ds.period)
+        ds.offset === nothing || _collect_expr_refs!(found, ds.offset)
+        for stmt in ds.body
+            _collect_for_bounds!(found, stmt)
+        end
+    end
+    for ev in b.event_items
+        for stmt in ev.body
+            _collect_for_bounds!(found, stmt)
+        end
+    end
+    constant_names = Set(decl.name for decl in get(b.declaration_map, :constants, Decl[]))
+    for name in intersect(found, constant_names)
+        push!(b.size_refs, name)
+    end
+    return nothing
+end
+
+function _collect_for_bounds!(found::Set{Symbol}, item)
+    if item isa IfEquation
+        for branch in item.branches, sub in branch.body
+            _collect_for_bounds!(found, sub)
+        end
+    elseif item isa ForEquation
+        for e in (item.lo, item.hi, item.step)
+            e === nothing || _collect_expr_refs!(found, e)
+        end
+        for sub in item.body
+            _collect_for_bounds!(found, sub)
+        end
+    elseif item isa IfStatement
+        for branch in item.branches, sub in branch.body
+            _collect_for_bounds!(found, sub)
+        end
+    elseif item isa ForStatement
+        for e in (item.lo, item.hi, item.step)
+            e === nothing || _collect_expr_refs!(found, e)
+        end
+        for sub in item.body
+            _collect_for_bounds!(found, sub)
+        end
+    end
+    return nothing
+end
+
+_collect_expr_refs!(found::Set{Symbol}, e::Name) = (push!(found, e.name); nothing)
+_collect_expr_refs!(::Set{Symbol}, ::Lit) = nothing
+function _collect_expr_refs!(found::Set{Symbol}, e::Field)
+    _collect_expr_refs!(found, e.base)
+end
+function _collect_expr_refs!(found::Set{Symbol}, e::Call)
+    for a in e.args
+        _collect_expr_refs!(found, a)
+    end
+end
+function _collect_expr_refs!(found::Set{Symbol}, e::BinOp)
+    _collect_expr_refs!(found, e.lhs)
+    _collect_expr_refs!(found, e.rhs)
+end
+function _collect_expr_refs!(found::Set{Symbol}, e::UnOp)
+    _collect_expr_refs!(found, e.operand)
+end
+function _collect_expr_refs!(found::Set{Symbol}, e::Index)
+    _collect_expr_refs!(found, e.base)
+    for i in e.indices
+        _collect_expr_refs!(found, i)
+    end
+end
+function _collect_expr_refs!(found::Set{Symbol}, e::VectorLit)
+    for a in e.elements
+        _collect_expr_refs!(found, a)
+    end
+end
+function _collect_expr_refs!(found::Set{Symbol}, e::MatrixLit)
+    for row in e.rows, a in row
+        _collect_expr_refs!(found, a)
+    end
+end
+function _collect_expr_refs!(found::Set{Symbol}, e::IfElse)
+    _collect_expr_refs!(found, e.cond)
+    _collect_expr_refs!(found, e.then)
+    _collect_expr_refs!(found, e.otherwise)
+end
+function _collect_expr_refs!(found::Set{Symbol}, e::Comparison)
+    _collect_expr_refs!(found, e.lhs)
+    _collect_expr_refs!(found, e.rhs)
+end
+function _collect_expr_refs!(found::Set{Symbol}, e::BoolOp)
+    for a in e.operands
+        _collect_expr_refs!(found, a)
+    end
+end
+
+"""Fold every `@discrete` period and offset once all constants are known (plan 5.9: the
+period is a constant expression). A period that does not fold, is not a number or is not
+positive is E004; an offset outside `0 <= offset < Ts` is E004 too."""
+function _fold_discrete_clocks!(b::BlockBuilder, env::AbstractDict)
+    for (i, ds) in enumerate(b.discrete_items)
+        period = _fold_clock!(b, ds.period, "period", env; positive = true)
+        offset = nothing
+        if ds.offset !== nothing
+            offset = _fold_clock!(b, ds.offset, "offset", env; positive = false)
+            if offset !== nothing && period !== nothing && !(offset < period)
+                _error!(
+                    b,
+                    "E004",
+                    "the `@discrete` offset ($offset) must be smaller than its period ($period)",
+                    ds.offset;
+                    scope = :discrete,
+                    hint = "write an offset in `0 <= offset < Ts`",
+                )
+                offset = nothing
+            end
+        end
+        b.discrete_items[i] = DiscreteScope(
+            ds.period, ds.offset, ds.body, ds.range, period, offset
+        )
+    end
+    return nothing
+end
+
+function _fold_clock!(b::BlockBuilder, e, what::String, env::AbstractDict; positive::Bool)
+    ok, value = try_eval_const(e, env)
+    if !ok
+        _error!(
+            b,
+            "E004",
+            "the `@discrete` $what must be a constant expression: $value",
+            e;
+            scope = :discrete,
+            hint = "use a real literal or a `@constants` value",
+        )
+        return nothing
+    end
+    if !(value isa Real) || value isa Bool
+        _error!(
+            b,
+            "E004",
+            "the `@discrete` $what must be a real number",
+            e;
+            scope = :discrete,
+        )
+        return nothing
+    end
+    if positive && !(value > 0)
+        _error!(
+            b,
+            "E004",
+            "the `@discrete` period must be positive, got $value",
+            e;
+            scope = :discrete,
+        )
+        return nothing
+    end
+    if !positive && value < 0
+        _error!(
+            b,
+            "E004",
+            "the `@discrete` offset must not be negative, got $value",
+            e;
+            scope = :discrete,
+        )
+        return nothing
+    end
+    return Float64(value)
 end
 
 """

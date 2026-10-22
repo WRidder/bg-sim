@@ -50,6 +50,10 @@ using ..BGSim:
     declarations,
     ports,
     equations,
+    initial_equations,
+    discrete_scopes,
+    discrete_body,
+    events,
     type_domain,
     Lit,
     Name,
@@ -65,7 +69,12 @@ using ..BGSim:
     BoolOp,
     Equation,
     IfEquation,
-    ForEquation
+    ForEquation,
+    Assign,
+    IfStatement,
+    ForStatement,
+    CallStatement,
+    EventDecl
 
 """The declaration scopes that may carry a `unit` attribute (plan 4.3)."""
 const UNIT_SCOPES = (:constants, :parameters, :inputs, :outputs, :variables)
@@ -765,6 +774,51 @@ function _check_item!(ctx::_Ctx, item)
         for sub in item.body
             _check_item!(ctx, sub)
         end
+    elseif item isa Assign
+        _check_assign!(ctx, item)
+    elseif item isa IfStatement
+        for branch in item.branches
+            branch.cond === nothing || _dims!(ctx, branch.cond)
+            for sub in branch.body
+                _check_item!(ctx, sub)
+            end
+        end
+    elseif item isa ForStatement
+        for sub in item.body
+            _check_item!(ctx, sub)
+        end
+    elseif item isa CallStatement
+        _dims!(ctx, item.call)
+    end
+    return nothing
+end
+
+"""A discrete assignment needs equal units on both sides. The held value's own `unit`
+attribute is the reference; a numeric literal on the right is legal in any unit."""
+function _check_assign!(ctx::_Ctx, a::Assign)
+    ctx.scope = a.scope
+    ld = _dims!(ctx, a.target)
+    if a.op === :assign
+        rd = _dims!(ctx, a.value)
+        result = rd
+    else
+        result = _dims!(ctx, BinOp(a.op, a.target, a.value, a.range))
+    end
+    if ld !== nothing && result !== nothing
+        if ld.exps != result.exps
+            _report!(
+                ctx,
+                "E006",
+                "cannot assign [" * _label(ctx, a.value, result) * "] to [" *
+                _label(ctx, a.target, ld) * "]" * _in_equation(ctx),
+                a.value;
+                hint = "`" * _term_text(ctx, a.target) * "` is [" *
+                       _label(ctx, a.target, ld) * "] but `" * _term_text(ctx, a.value) *
+                       "` is [" * _label(ctx, a.value, result) * "]",
+            )
+        else
+            _scale_hint!(ctx, a.value, result, a.target, ld)
+        end
     end
     return nothing
 end
@@ -819,6 +873,21 @@ function check_units(pb::ParsedBlock)::Vector{Diagnostic}
     ctx = _Ctx(env, pb, diags, true, :equations, "")
     for item in equations(pb)
         _check_item!(ctx, item)
+    end
+    ctx.scope = :initial
+    for item in initial_equations(pb)
+        _check_item!(ctx, item)
+    end
+    ctx.scope = :discrete
+    for ds in discrete_scopes(pb), item in discrete_body(ds)
+        _check_item!(ctx, item)
+    end
+    ctx.scope = :events
+    for ev in events(pb)
+        _dims!(ctx, ev.cond)
+        for item in ev.body
+            _check_item!(ctx, item)
+        end
     end
     ctx.text = ""
     return ctx.diags

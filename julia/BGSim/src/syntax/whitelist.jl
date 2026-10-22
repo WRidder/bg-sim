@@ -36,14 +36,48 @@ FunctionRule(names, contexts, min_args, max_args, lowering; stdlib_only = false)
     )
 
 """
-The built-in function whitelist (spec table "Built-in function whitelist"), including the
-D12 intrinsics. `stdlib_only` restricts a call to blocks whose ref starts with `stdlib:`.
+    IntrinsicRule(name, contexts, min_args, max_args, stdlib_only, lowering)
 
-Rows, in spec order: trig, inverse trig, hyperbolic, exp/log/sqrt, abs/sign, min/max/clamp,
-floor/ceil/round, mod/rem, hypot, dot/norm/cross, transpose, ddt, int, deadzone/saturate,
-delay, previous, hold, then the D12 intrinsics and `reinit`.
+The D12 intrinsics table. Intrinsics are opaque registered functions: `interp1` and
+`interp2` are callable from user code, `noise_normal` and `delay` only from blocks under
+`stdlib/` (`stdlib_only = true`). The rows are the single source: `FUNCTION_RULES` includes
+one `FunctionRule` built from each of them, so `function_rule` sees exactly one table.
+
+| intrinsic | scopes | user-callable |
+| --- | --- | --- |
+| `interp1(u, xs, ys)` | all | yes |
+| `interp2(u, v, xs, ys)` | all | yes |
+| `noise_normal(seed, k)` | discrete | no |
+| `delay(x, T)` | equations | no |
 """
-const FUNCTION_RULES = FunctionRule[
+struct IntrinsicRule
+    name::Symbol
+    contexts::Vector{Symbol}
+    min_args::Int
+    max_args::Int
+    stdlib_only::Bool
+    lowering::Symbol
+end
+
+const INTRINSIC_RULES = IntrinsicRule[
+    IntrinsicRule(:interp1, ALL_CONTEXTS, 3, 3, false, :intrinsic),
+    IntrinsicRule(:interp2, ALL_CONTEXTS, 4, 4, false, :intrinsic),
+    IntrinsicRule(:noise_normal, [:discrete], 2, 2, true, :intrinsic),
+    IntrinsicRule(:delay, [:equation], 2, 2, true, :delay),
+]
+
+"""    intrinsic_rule(name::Symbol) -> Union{IntrinsicRule,Nothing}
+
+The D12 row for an intrinsic name, or `nothing` for an ordinary whitelisted function."""
+function intrinsic_rule(name::Symbol)
+    for rule in INTRINSIC_RULES
+        rule.name === name && return rule
+    end
+    return nothing
+end
+
+"""The non-intrinsic rows of the spec's built-in function table."""
+const BASE_FUNCTION_RULES = FunctionRule[
     FunctionRule([:sin, :cos, :tan], ALL_CONTEXTS, 1, 1, :math),
     FunctionRule([:asin, :acos, :atan], ALL_CONTEXTS, 1, 2, :math),
     FunctionRule([:sinh, :cosh, :tanh], ALL_CONTEXTS, 1, 1, :math),
@@ -60,14 +94,30 @@ const FUNCTION_RULES = FunctionRule[
     FunctionRule([:ddt], [:equation], 1, 1, :derivative),
     FunctionRule([:int], [:equation], 2, 2, :integral),
     FunctionRule([:deadzone, :saturate], ALL_CONTEXTS, 2, 3, :library),
-    FunctionRule([:delay], [:equation], 2, 2, :delay; stdlib_only = true),
     FunctionRule([:previous], [:discrete], 1, 1, :sample_previous),
     FunctionRule([:hold], [:discrete], 1, 1, :sample_hold),
-    FunctionRule([:interp1], ALL_CONTEXTS, 3, 3, :intrinsic),
-    FunctionRule([:interp2], ALL_CONTEXTS, 4, 4, :intrinsic),
-    FunctionRule([:noise_normal], [:discrete], 2, 2, :intrinsic; stdlib_only = true),
     FunctionRule([:reinit], [:events], 2, 2, :reset),
 ]
+
+"""
+The built-in function whitelist (spec table "Built-in function whitelist"), including the
+D12 intrinsics from [`INTRINSIC_RULES`](@ref). `stdlib_only` restricts a call to blocks whose
+ref starts with `stdlib:`.
+
+Rows, in spec order: trig, inverse trig, hyperbolic, exp/log/sqrt, abs/sign, min/max/clamp,
+floor/ceil/round, mod/rem, hypot, dot/norm/cross, transpose, ddt, int, deadzone/saturate,
+previous, hold, reinit (the operator table's reset), then the D12 intrinsics (`interp1`,
+`interp2`, `noise_normal`, `delay`).
+"""
+const FUNCTION_RULES = vcat(
+    BASE_FUNCTION_RULES,
+    FunctionRule[
+        FunctionRule(
+            [r.name], r.contexts, r.min_args, r.max_args, r.lowering;
+            stdlib_only = r.stdlib_only,
+        ) for r in INTRINSIC_RULES
+    ],
+)
 
 const FUNCTION_LOOKUP = Dict{Symbol,FunctionRule}(name => rule
                                                   for rule in FUNCTION_RULES
@@ -140,8 +190,10 @@ spec's "Inside `ifelse` only" cells for comparisons and boolean operators.
 """
 function syntax_allowed(key::Symbol, context::Symbol; in_ifelse::Bool = false)
     rule = syntax_rule(key)
-    context in rule.contexts && return true
-    return rule.only_in_ifelse && in_ifelse && context in (:equation, :default)
+    # `@events` bodies are discrete code for the purposes of the operator table (D19).
+    ctx = context === :events ? :discrete : context
+    ctx in rule.contexts && return true
+    return rule.only_in_ifelse && in_ifelse && ctx in (:equation, :default)
 end
 
 """

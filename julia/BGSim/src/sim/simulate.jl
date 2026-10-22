@@ -1,0 +1,495 @@
+# The continuous run loop (plan sections 5.8, 5.9 without discrete parts, and 5.10/5.11).
+#
+# `simulate` owns one run end to end:
+#
+#   1. refuse a flat model that already has an error diagnostic (the worker reports it);
+#   2. lower and compile it, through the structural cache (a parameter-only re-run only
+#      remakes the problem — decision D4);
+#   3. open the run folder: the running manifest with the full signal list (REQ-1), then the
+#      stream;
+#   4. step the integrator exactly to every output-grid time, record one row and flush at the
+#      plan 5.10 cadence;
+#   5. finish with `columns.f64` and the final manifest.
+#
+# Cancellation is an atomic flag checked before every integrator step and after every one.
+# Progress is a callback `(t, rows)` throttled to 100 ms; phase notifications are `(name,
+# t_s)` with the plan 3.6 phase names. Solver failures become E901 with the time, the retcode
+# and the five largest states (plan 5.11); MTK's balance exceptions become E103 and anything
+# else E900.
+
+"""
+    SimResult
+
+The outcome of one run: the contract status (`done`, `failed` or `cancelled`), the run's
+diagnostics, the manifest stats/time, and the run folder. `first_data_s` is the wall time
+from entering `simulate` to the first recorded row — the plan 5.12 "to first data" metric.
+`cache_hit` says whether the structural cache was reused.
+"""
+struct SimResult
+    status::String
+    diagnostics::Vector{Diagnostic}
+    stats::NamedTuple
+    signals::Vector{NamedTuple}
+    time::NamedTuple
+    manifest::Any
+    run_dir::String
+    first_data_s::Float64
+    cache_hit::Bool
+end
+
+# ---------------------------------------------------------------------------------------
+# Cancellation and notifications
+# ---------------------------------------------------------------------------------------
+
+_cancelled(::Nothing) = false
+_cancelled(flag::Threads.Atomic{Bool}) = flag[]
+_cancelled(flag::Base.RefValue{Bool}) = flag[]
+_cancelled(callback::Function) = callback() === true
+
+function _progress(callback, t::Float64, rows::Integer)
+    callback === nothing && return nothing
+    try
+        callback(t, Int(rows))
+    catch
+        # A progress sink must never take the simulation down.
+    end
+    return nothing
+end
+
+function _phase(callback, name::AbstractString, t_s::Real)
+    callback === nothing && return nothing
+    try
+        callback(String(name), Float64(t_s))
+    catch
+    end
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Solver selection (plan 5.8)
+# ---------------------------------------------------------------------------------------
+
+"""
+    solver_algorithm(name, model) -> OrdinaryDiffEq algorithm
+
+`"auto"` picks `Rodas5P()` when the compiled problem has a non-identity mass matrix and
+`Tsit5()` otherwise. The user may name `Rodas5P`, `Tsit5`, `FBDF` or `Vern7`; any other name
+is rejected and becomes E901 in `simulate`.
+"""
+function solver_algorithm(name::AbstractString, model::CompiledModel)
+    key = lowercase(strip(name))
+    key == "auto" && return model.algebraic ? Rodas5P() : OrdinaryDiffEqTsit5.Tsit5()
+    key == "rodas5p" && return Rodas5P()
+    key == "tsit5" && return OrdinaryDiffEqTsit5.Tsit5()
+    key == "fbdf" && return OrdinaryDiffEqBDF.FBDF()
+    key == "vern7" && return OrdinaryDiffEqVerner.Vern7()
+    throw(ArgumentError(
+        "unknown solver `$name`; use auto, Rodas5P, Tsit5, FBDF or Vern7"
+    ))
+end
+
+# ---------------------------------------------------------------------------------------
+# Diagnostics
+# ---------------------------------------------------------------------------------------
+
+_last_path(flat::Flat.FlatModel) =
+    isempty(flat.instances) ? nothing : flat.instances[end].path
+
+function _origin_source(origin::Flat.Origin)
+    origin.block === nothing && return nothing
+    origin.range === nothing && return nothing
+    return SourceRef(source_kind(origin.block), origin.block, origin.range)
+end
+
+_safe_signal_name(x) = _var_name(x)
+
+function _largest_states(integ, model::CompiledModel)
+    unknowns = ModelingToolkit.unknowns(model.system)
+    u = collect(integ.u)
+    n = min(5, length(u))
+    n == 0 && return ""
+    order = sortperm(abs.(u); rev = true)[1:n]
+    parts = String[]
+    for i in order
+        name = i <= length(unknowns) ? _safe_signal_name(unknowns[i]) : "state[$i]"
+        push!(parts, string(name, " = ", u[i]))
+    end
+    return join(parts, ", ")
+end
+
+function _state_origin(flat::Flat.FlatModel, name::AbstractString)
+    for v in flat.variables
+        v.id == name && return v.origin
+    end
+    return nothing
+end
+
+function _solver_diagnostic(integ, model::CompiledModel, flat::Flat.FlatModel)
+    retcode = integ.sol.retcode
+    t = integ.t
+    largest = _largest_states(integ, model)
+    first_name = isempty(largest) ? nothing : first(split(first(split(largest, ", ")), " = "))
+    origin = first_name === nothing ? nothing : _state_origin(flat, first_name)
+    return diag(
+        "E901",
+        "the solver failed at t = $(t) (retcode = $(retcode))";
+        hint = isempty(largest) ? "no states were available" : "largest states: " * largest,
+        path = origin === nothing ? nothing : origin.path,
+        block = origin === nothing ? nothing : origin.block,
+        source = origin === nothing ? nothing : _origin_source(origin),
+    )
+end
+
+function _compile_diagnostic(err, flat::Flat.FlatModel)
+    if err isa ModelingToolkit.ExtraEquationsSystemException ||
+       err isa ModelingToolkit.ExtraVariablesSystemException
+        return diag(
+            "E103",
+            "the equation system could not be balanced";
+            hint = sprint(showerror, err),
+            path = _last_path(flat),
+        )
+    elseif err isa LowerError
+        return diag(
+            "E900",
+            "internal compiler error while lowering `$(flat.name)`";
+            hint = err.message,
+            path = err.path === nothing ? _last_path(flat) : err.path,
+            block = err.block,
+            source = err.block === nothing || err.range === nothing ? nothing :
+                     SourceRef(source_kind(err.block), err.block, err.range),
+        )
+    elseif err isa ArgumentError
+        return diag("E901", err.msg; path = _last_path(flat))
+    end
+    return diag(
+        "E900",
+        "internal compiler error while lowering `$(flat.name)`";
+        hint = sprint(showerror, err),
+        path = _last_path(flat),
+    )
+end
+
+function _initialization_diagnostic(err, flat::Flat.FlatModel)
+    text = sprint(showerror, err)
+    lowered = lowercase(text)
+    if occursin("singular", lowered) || occursin("initial condition", lowered) ||
+       occursin("initialization", lowered)
+        return diag(
+            "E103", "initial conditions are inconsistent"; hint = text,
+            path = _last_path(flat),
+        )
+    end
+    return diag(
+        "E900", "internal compiler error while initializing `$(flat.name)`";
+        hint = text, path = _last_path(flat),
+    )
+end
+
+# ---------------------------------------------------------------------------------------
+# Failing before the run loop
+# ---------------------------------------------------------------------------------------
+
+function _write_failed_manifest(flat, settings, run_dir, run_id, model_hash, diagnostics;
+    states = flat.stats.states, equations = flat.stats.equations)
+    mkpath(run_dir)
+    manifest = _manifest(
+        id = run_id,
+        model = flat.name,
+        model_hash = model_hash,
+        status = "failed",
+        settings = to_namedtuple(settings),
+        stats = _zero_stats(states, equations),
+        signals = signal_entries(flat.signals),
+        time = (n = 0, t0 = settings.t_start, t1 = settings.t_end),
+        diagnostics = _diag_entries(diagnostics),
+    )
+    write_manifest_atomic(joinpath(run_dir, "manifest.json"), manifest)
+    return manifest
+end
+
+# ---------------------------------------------------------------------------------------
+# The public entry point
+# ---------------------------------------------------------------------------------------
+
+"""
+    simulate(flat; run_dir, run_id, model_hash, settings, cancel, progress, phase) -> SimResult
+
+Run the continuous model `flat` and write its run folder. See the file header for the run
+loop and the plan sections it implements.
+"""
+function simulate(flat::Flat.FlatModel;
+    run_dir::Union{AbstractString,Nothing} = nothing,
+    run_id::Union{AbstractString,Nothing} = nothing,
+    model_hash::Union{AbstractString,Nothing} = nothing,
+    settings = RunSettings(),
+    cancel = nothing,
+    progress = nothing,
+    phase = nothing,
+)
+    start_ns = time_ns()
+    run_settings = settings isa RunSettings ? settings : RunSettings(settings)
+    dir = run_dir === nothing ? mktempdir() : String(run_dir)
+    mkpath(dir)
+    id = run_id === nothing ? basename(dir) : String(run_id)
+    hash = model_hash === nothing ? compile_key(flat) : String(model_hash)
+
+    flat_diagnostics = collect(Diagnostic, flat.diagnostics)
+    errors = [d for d in flat_diagnostics if d.severity == "error"]
+    if !isempty(errors)
+        manifest = _write_failed_manifest(
+            flat, run_settings, dir, id, hash, flat_diagnostics
+        )
+        elapsed = (time_ns() - start_ns) / 1.0e9
+        return SimResult(
+            "failed", flat_diagnostics, manifest.stats, flat.signals, manifest.time,
+            manifest, dir, elapsed, false,
+        )
+    end
+
+    # REQ-1: the live run tail must see the full signal list while the run is still
+    # compiling, not only once the integrator starts. Write the running manifest before the
+    # CPU-heavy lowering; `open_recorder` rewrites it (still "running") with the exact state
+    # and equation counts, and the final rewrite carries the outcome.
+    running_manifest = _manifest(
+        id = id,
+        model = flat.name,
+        model_hash = hash,
+        status = "running",
+        settings = to_namedtuple(run_settings),
+        stats = _zero_stats(flat.stats.states, flat.stats.equations),
+        signals = signal_entries(flat.signals),
+        time = (n = 0, t0 = run_settings.t_start, t1 = run_settings.t_end),
+        diagnostics = _diag_entries(flat_diagnostics),
+    )
+    write_manifest_atomic(joinpath(dir, "manifest.json"), running_manifest)
+    _phase(phase, "mtkcompile", 0.0)
+
+    compile_ns = time_ns()
+    lowered = try
+        lower_model(flat; t_start = run_settings.t_start, t_end = run_settings.t_end)
+    catch err
+        diagnostic = _compile_diagnostic(err, flat)
+        diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+        manifest = _write_failed_manifest(
+            flat, run_settings, dir, id, hash, diagnostics
+        )
+        elapsed = (time_ns() - start_ns) / 1.0e9
+        return SimResult(
+            "failed", diagnostics, manifest.stats, flat.signals, manifest.time, manifest,
+            dir, elapsed, false,
+        )
+    end
+    compile_s = (time_ns() - compile_ns) / 1.0e9
+
+    extra_states = length(lowered.model.int_states)
+    states = Int(flat.stats.states) + extra_states
+    equations = Int(flat.stats.equations) + extra_states
+
+    alg = try
+        solver_algorithm(run_settings.solver, lowered.model)
+    catch err
+        diagnostic = _compile_diagnostic(err, flat)
+        diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+        manifest = _write_failed_manifest(
+            flat, run_settings, dir, id, hash, diagnostics;
+            states = states, equations = equations,
+        )
+        elapsed = (time_ns() - start_ns) / 1.0e9
+        return SimResult(
+            "failed", diagnostics, manifest.stats, flat.signals, manifest.time, manifest,
+            dir, elapsed, lowered.cache_hit,
+        )
+    end
+
+    grid = output_grid(run_settings)
+    _phase(phase, "init", 0.0)
+    rec = open_recorder(
+        dir, id, flat.name, hash, run_settings, flat.signals, flat_diagnostics;
+        capacity = length(grid), states = states, equations = equations,
+        created = running_manifest.created,
+    )
+
+    solver_kwargs = (; abstol = run_settings.abstol, reltol = run_settings.reltol)
+    if run_settings.max_step !== nothing
+        solver_kwargs = merge(solver_kwargs, (; dtmax = run_settings.max_step))
+    end
+    integ = try
+        init(
+            lowered.problem, alg;
+            solver_kwargs...,
+            save_everystep = false,
+            save_start = false,
+            save_end = false,
+        )
+    catch err
+        diagnostic = _initialization_diagnostic(err, flat)
+        diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+        stats = (
+            compile_s = compile_s, sim_s = 0.0, steps = 0, events = 0,
+            states = states, equations = equations,
+        )
+        manifest = finish_recorder!(rec, "failed", stats, diagnostics)
+        elapsed = (time_ns() - start_ns) / 1.0e9
+        return SimResult(
+            "failed", diagnostics, stats, flat.signals, manifest.time, manifest, dir,
+            elapsed, lowered.cache_hit,
+        )
+    end
+
+    retcode = integ.sol.retcode
+    if retcode == ReturnCode.InitialFailure
+        diagnostic = diag(
+            "E103", "initial conditions are inconsistent";
+            hint = "the initialization returned $(retcode)", path = _last_path(flat),
+        )
+        diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+        stats = (
+            compile_s = compile_s, sim_s = 0.0, steps = 0, events = 0,
+            states = states, equations = equations,
+        )
+        manifest = finish_recorder!(rec, "failed", stats, diagnostics)
+        elapsed = (time_ns() - start_ns) / 1.0e9
+        return SimResult(
+            "failed", diagnostics, stats, flat.signals, manifest.time, manifest, dir,
+            elapsed, lowered.cache_hit,
+        )
+    end
+
+    # One getter per recorded signal. Parameters (discrete values in J2) are read with
+    # `getp`, everything else with `getu`; `getu` returns a callable whose argument is the
+    # integrator (NOTES.md, section "Observed values with getu").
+    symbols = Num[]
+    for s in flat.signals
+        x = get(lowered.model.vars, String(s.id), nothing)
+        x === nothing && begin
+            diagnostic = diag(
+                "E900", "the recorded signal `$(s.id)` has no lowered variable";
+                path = s.path === nothing ? nothing : String(s.path),
+            )
+            diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+            stats = (
+                compile_s = compile_s, sim_s = 0.0, steps = 0, events = 0,
+                states = states, equations = equations,
+            )
+            manifest = finish_recorder!(rec, "failed", stats, diagnostics)
+            elapsed = (time_ns() - start_ns) / 1.0e9
+            return SimResult(
+                "failed", diagnostics, stats, flat.signals, manifest.time, manifest, dir,
+                elapsed, lowered.cache_hit,
+            )
+        end
+        push!(symbols, x)
+    end
+    getters = [
+        ModelingToolkit.isparameter(sym) ? getp(integ, sym) : getu(integ, sym) for
+        sym in symbols
+    ]
+    values = () -> [Float64(getter(integ)) for getter in getters]
+
+    # Row zero. `init` has run the initialization, so the state at t_start is valid.
+    record_row!(rec, run_settings.t_start, values())
+    flush_recorder!(rec)
+    first_data_s = (time_ns() - start_ns) / 1.0e9
+    _phase(phase, "simulate", 0.0)
+    _progress(progress, run_settings.t_start, rec.nrows)
+
+    status = "done"
+    diagnostic = nothing
+    loop_ns = time_ns()
+    last_progress_ns = time_ns()
+    last_flush_ns = time_ns()
+    next_index = 2
+    while next_index <= length(grid)
+        if _cancelled(cancel)
+            status = "cancelled"
+            break
+        end
+        target = grid[next_index]
+        tolerance = 1.0e-12 * max(1.0, abs(target))
+        if integ.t >= target - tolerance
+            record_row!(rec, target, values())
+            next_index += 1
+            now = time_ns()
+            if now - last_progress_ns >= 100_000_000
+                _progress(progress, target, rec.nrows)
+                last_progress_ns = now
+            end
+            if now - last_flush_ns >= 100_000_000
+                flush_recorder!(rec)
+                last_flush_ns = now
+            end
+            continue
+        end
+        dt = target - integ.t
+        if dt <= 0
+            record_row!(rec, target, values())
+            next_index += 1
+            continue
+        end
+        before = integ.t
+        step_ok = try
+            step!(integ, dt, true)
+            true
+        catch err
+            false
+        end
+        if !step_ok || !_ok_retcode(integ.sol.retcode)
+            diagnostic = _solver_diagnostic(integ, lowered.model, flat)
+            status = "failed"
+            break
+        end
+        if integ.t <= before && next_index <= length(grid)
+            diagnostic = diag(
+                "E901", "the solver made no progress at t = $(integ.t)";
+                hint = "retcode = $(integ.sol.retcode)", path = _last_path(flat),
+            )
+            status = "failed"
+            break
+        end
+        if _cancelled(cancel)
+            status = "cancelled"
+            break
+        end
+    end
+    sim_s = (time_ns() - loop_ns) / 1.0e9
+
+    steps = try
+        Int(integ.stats.naccept)
+    catch
+        0
+    end
+    stats = (
+        compile_s = compile_s,
+        sim_s = sim_s,
+        steps = steps,
+        events = 0,
+        states = states,
+        equations = equations,
+    )
+    diagnostics = diagnostic === nothing ? flat_diagnostics :
+                  sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+    _phase(phase, "write", integ.t)
+    manifest = finish_recorder!(rec, status, stats, diagnostics)
+    elapsed = (time_ns() - start_ns) / 1.0e9
+    return SimResult(
+        status, diagnostics, stats, flat.signals, manifest.time, manifest, dir,
+        first_data_s, lowered.cache_hit,
+    )
+end
+
+_ok_retcode(retcode) =
+    retcode == ReturnCode.Success || retcode == ReturnCode.Default
+
+"""
+    simulate(model; project_dir = nothing, kwargs...) -> SimResult
+
+Convenience entry point: parse and flatten a model document (a path, JSON text or a Dict)
+and run it. The worker calls the `FlatModel` method after its own check pass, so it can
+report the flatten diagnostics before starting a run.
+"""
+function simulate(model::Union{AbstractString,AbstractDict};
+    project_dir = nothing, kwargs...)
+    flat = Compile.flatten(IR.parse_model(model); project_dir = project_dir)
+    return simulate(flat; kwargs...)
+end

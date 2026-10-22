@@ -141,9 +141,15 @@ describe("name and function completion", () => {
     for (const match of source.matchAll(/FunctionRule\(\s*\[([^\]]*)\]/g)) {
       for (const name of (match[1] ?? "").split(",")) {
         const symbol = name.trim().replace(/^:/, "");
-        if (symbol.length > 0) {
+        if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(symbol)) {
           julia.add(symbol);
         }
+      }
+    }
+    // D12 intrinsics live in their own table (J2.1) and are still callable names.
+    for (const match of source.matchAll(/IntrinsicRule\(\s*:([A-Za-z_][A-Za-z0-9_]*)/g)) {
+      if (match[1] !== undefined) {
+        julia.add(match[1]);
       }
     }
     const ours = new Set(WHITELIST_FUNCTIONS.filter((name) => name !== "ifelse"));

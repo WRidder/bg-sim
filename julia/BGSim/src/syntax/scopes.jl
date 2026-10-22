@@ -42,10 +42,12 @@ mutable struct Checker
     consts::Dict{Symbol,Any}
     diags::Vector{Diagnostic}
     scope::Symbol          # source scope of the construct being checked
-    context::Symbol        # :equation | :default
+    context::Symbol        # :equation | :default | :discrete | :events
     allow_cond::Bool
     used::Set{Symbol}
     loopvars::Dict{Symbol,TypeSpec}
+    loop_ranges::Dict{Symbol,Tuple{Int,Int}}
+    locals::Dict{Symbol,TypeSpec}   # D18 temporaries of the current discrete/event body
     stdlib::Bool
     failed::Bool           # an error was reported; suppress cascading E103
 end
@@ -66,6 +68,8 @@ function Checker(pb::ParsedBlock)
         :equation,
         false,
         Set{Symbol}(),
+        Dict{Symbol,TypeSpec}(),
+        Dict{Symbol,Tuple{Int,Int}}(),
         Dict{Symbol,TypeSpec}(),
         startswith(pb.ref, "stdlib:"),
         any(d -> d.severity == "error", pb.diagnostics),
@@ -101,6 +105,9 @@ function check_block(pb::ParsedBlock)
     for item in pb.equation_items
         _check_eq_item!(ck, item)
     end
+    _check_initial_items!(ck)
+    _check_discrete_scopes!(ck)
+    _check_events!(ck)
     _check_causality!(ck)
     _check_units!(ck)
     _check_unused!(ck)
@@ -153,6 +160,7 @@ function _check_declaration_names!(ck::Checker)
 end
 
 function _check_declaration_types!(ck::Checker)
+    discrete_names = _discrete_assigned_names(ck.pb)
     for scope in DECLARATION_SCOPES
         for d in get(ck.pb.declaration_map, scope, Decl[])
             ck.scope = scope
@@ -179,7 +187,7 @@ function _check_declaration_types!(ck::Checker)
                 )
                 continue
             end
-            if t.kind == :Bool && scope == :variables
+            if t.kind == :Bool && scope == :variables && !(d.name in discrete_names)
                 _report!(
                     ck,
                     "E004",
@@ -189,13 +197,18 @@ function _check_declaration_types!(ck::Checker)
                 )
             end
             if t.kind == :Int && scope in (:variables, :inputs, :outputs)
-                _report!(
-                    ck,
-                    "E004",
-                    "`Int` is only allowed in discrete code, indices and constants",
-                    d;
-                    hint = "use `Real` here, or move the counter into a `@discrete` scope (J2.1)",
-                )
+                if scope in (:variables, :outputs) && d.name in discrete_names
+                    # A held discrete counter: Int is allowed because it lives in discrete
+                    # code only (plan 4.3: "Int only in discrete code, indices and constants").
+                else
+                    _report!(
+                        ck,
+                        "E004",
+                        "`Int` is only allowed in discrete code, indices and constants",
+                        d;
+                        hint = "use `Real` here, or assign the counter in a `@discrete` scope",
+                    )
+                end
             end
             if scope == :constants && d.default === nothing
                 _report!(
@@ -209,6 +222,13 @@ function _check_declaration_types!(ck::Checker)
             if t.kind == :Vec || t.kind == :Mat
                 for a in t.args
                     a isa Symbol && haskey(ck.decls, a) && push!(ck.used, a)
+                    if a isa Expr
+                        size_names = Set{Symbol}()
+                        _collect_expr_refs!(size_names, a)
+                        for n in size_names
+                            haskey(ck.decls, n) && push!(ck.used, n)
+                        end
+                    end
                 end
                 if type_size(t, ck.consts) === nothing
                     _report!(
@@ -278,6 +298,7 @@ end
 
 function _check_equation!(ck::Checker, eq::Equation)
     ck.scope = eq.scope
+    ck.context = :equation
     lhs = _check_expr!(ck, eq.lhs)
     rhs = _check_expr!(ck, eq.rhs)
     if eq.lhs isa Name && haskey(ck.decls, eq.lhs.name)
@@ -311,7 +332,8 @@ function _check_if_equation!(ck::Checker, ifeq::IfEquation)
         _report!(
             ck,
             "E001",
-            "an `if` in $(scope_string(ifeq.scope)) needs an `else` branch",
+            "an `if` in $(scope_string(ck.scope)) needs an `else` branch",
+            ifeq;
             hint = "every branch must leave the same number of equations",
         )
     end
@@ -331,7 +353,9 @@ function _check_if_equation!(ck::Checker, ifeq::IfEquation)
             _check_eq_item!(ck, item)
         end
     end
-    counts = [length(b.body) for b in ifeq.branches]
+    # Plan 4.4: an `if` counts one branch, with `for` loops unrolled and Vec/Mat expanded, so
+    # the branch count is the scalar equation count.
+    counts = [_count_items(b.body, ck.decls, ck.consts) for b in ifeq.branches]
     if length(unique(counts)) > 1
         _report!(
             ck,
@@ -345,31 +369,375 @@ function _check_if_equation!(ck::Checker, ifeq::IfEquation)
 end
 
 function _check_for_equation!(ck::Checker, fe::ForEquation)
-    for e in (fe.lo, fe.hi, fe.step)
-        e === nothing && continue
-        ok, value = try_eval_const(e, ck.consts)
-        if !ok
-            _report!(
-                ck,
-                "E005",
-                "the `for` range must be constant: $value",
-                e;
-                hint = "N in `for i in 1:N` must be a `@constants` value",
-            )
-        elseif !(value isa Integer)
-            _report!(
-                ck,
-                "E005",
-                "the `for` range must be integral, got `$value`",
-                e;
-            )
-        end
-    end
+    range = _check_for_bounds!(ck, fe.lo, fe.hi, fe.step)
+    _check_local_name!(ck, fe.var, fe)
     ck.loopvars[fe.var] = INT
+    range === nothing || (ck.loop_ranges[fe.var] = range)
     for item in fe.body
         _check_eq_item!(ck, item)
     end
     delete!(ck.loopvars, fe.var)
+    delete!(ck.loop_ranges, fe.var)
+    return nothing
+end
+
+"""Fold and check a `for` range, return the inclusive `(first, last)` iteration values when
+they are static, else `nothing`. Reports E005 for a bound that is not an integer constant."""
+function _check_for_bounds!(ck::Checker, lo, hi, step)
+    values = Any[nothing, nothing, 1]
+    ok = true
+    for (i, e) in enumerate((lo, hi, step))
+        e === nothing && continue
+        _check_expr!(ck, e)   # marks constants used and reports bad names
+        good, value = try_eval_const(e, ck.consts)
+        if !good
+            ok = false
+            _report!(
+                ck,
+                "E005",
+                (i == 3 ? "the `for` step must be constant: " : "the `for` range must be constant: ") *
+                value,
+                e;
+                hint = "N in `for i in 1:N` must be a `@constants` value",
+            )
+        elseif !(value isa Integer)
+            ok = false
+            _report!(ck, "E005", "the `for` range must be integral, got `$value`", e)
+        else
+            values[i] = Int(value)
+        end
+    end
+    ok || return nothing
+    from, to = values[1], values[2]
+    (from === nothing || to === nothing) && return nothing
+    s = values[3]
+    s == 0 && return nothing
+    n = s > 0 ? fld(to - from, s) + 1 : fld(from - to, -s) + 1
+    n <= 0 && return (from, from - 1)   # an empty loop: no index is ever in range
+    last = from + (n - 1) * s
+    return minmax(from, last)
+end
+
+# ---------------------------------------------------------------------------------------
+# @initial (J2.1)
+# ---------------------------------------------------------------------------------------
+
+"""`@initial` is checked like `@equations`; only the semantics differ (no `ddt`, and the
+equations are solved once and are not part of the balance count)."""
+function _check_initial_items!(ck::Checker)
+    for item in ck.pb.initial_items
+        old_scope, old_context = ck.scope, ck.context
+        ck.scope = :initial
+        ck.context = :equation
+        _check_eq_item!(ck, item)
+        ck.scope, ck.context = old_scope, old_context
+    end
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# @discrete and @events (J2.1, D18 and D19)
+# ---------------------------------------------------------------------------------------
+
+function _check_discrete_scopes!(ck::Checker)
+    for ds in ck.pb.discrete_items
+        ck.scope = :discrete
+        ck.context = :discrete
+        empty!(ck.locals)
+        empty!(ck.loopvars)
+        empty!(ck.loop_ranges)
+        # Walk the period and offset so constants used only there are marked used (W204).
+        _check_expr!(ck, ds.period)
+        ds.offset === nothing || _check_expr!(ck, ds.offset)
+        for stmt in ds.body
+            _check_stmt!(ck, stmt)
+        end
+    end
+    empty!(ck.locals)
+    ck.scope = :equations
+    ck.context = :equation
+    return nothing
+end
+
+function _check_events!(ck::Checker)
+    for ev in ck.pb.event_items
+        old_scope, old_context = ck.scope, ck.context
+        ck.scope = :events
+        ck.context = :events
+        empty!(ck.locals)
+        empty!(ck.loopvars)
+        empty!(ck.loop_ranges)
+        _check_event_condition!(ck, ev)
+        for stmt in ev.body
+            _check_stmt!(ck, stmt)
+        end
+        empty!(ck.locals)
+        ck.scope, ck.context = old_scope, old_context
+    end
+    return nothing
+end
+
+"""D19: an event trigger is a real expression (an upward zero crossing) or a `<` / `>`
+comparison. Any other comparison is rejected, because "becomes true" has no upward zero
+crossing for `<=`, `>=`, `==` or `!=`."""
+function _check_event_condition!(ck::Checker, ev::EventDecl)
+    cond = ev.cond
+    if cond isa Comparison
+        if !(cond.op === :< || cond.op === :>)
+            _report!(
+                ck,
+                "E001",
+                "an `@events` condition is `a < b`, `a > b` or a real expression, not `$(cond.op)`",
+                cond;
+                hint = "write `a < b` or `a > b`; the body fires when the comparison becomes true",
+            )
+        end
+        for node in (cond.lhs, cond.rhs)
+            t = _check_expr!(ck, node)
+            if t !== nothing && !_numeric(t)
+                _report!(
+                    ck,
+                    "E004",
+                    "an `@events` condition compares numbers, got `$(type_name(t))`",
+                    node;
+                    hint = "use a real expression or a comparison of two numbers",
+                )
+            end
+        end
+        return nothing
+    end
+    t = _check_expr!(ck, cond)
+    if t !== nothing && t.kind !== :Real
+        _report!(
+            ck,
+            "E004",
+            "an `@events` condition must be a real expression or a comparison, got `$(type_name(t))`",
+            cond;
+            hint = "write `x - x0` for an upward zero crossing, or `x < x0`",
+        )
+    end
+    return nothing
+end
+
+function _check_stmt!(ck::Checker, stmt)
+    if stmt isa Assign
+        _check_assign!(ck, stmt)
+    elseif stmt isa IfStatement
+        _check_if_statement!(ck, stmt)
+    elseif stmt isa ForStatement
+        _check_for_statement!(ck, stmt)
+    elseif stmt isa CallStatement
+        _check_call_statement!(ck, stmt)
+    end
+    return nothing
+end
+
+function _check_if_statement!(ck::Checker, stmt::IfStatement)
+    old_scope = ck.scope
+    ck.scope = stmt.scope
+    for b in stmt.branches
+        if b.cond !== nothing
+            t = _check_cond!(ck, b.cond)
+            if t !== nothing && t.kind !== :Bool
+                _report!(
+                    ck,
+                    "E004",
+                    "`if` condition must be Bool, got `$(type_name(t))`",
+                    b.cond,
+                )
+            end
+        end
+        for item in b.body
+            _check_stmt!(ck, item)
+        end
+    end
+    ck.scope = old_scope
+    return nothing
+end
+
+function _check_for_statement!(ck::Checker, stmt::ForStatement)
+    old_scope = ck.scope
+    ck.scope = stmt.scope
+    range = _check_for_bounds!(ck, stmt.lo, stmt.hi, stmt.step)
+    _check_local_name!(ck, stmt.var, stmt)
+    ck.loopvars[stmt.var] = INT
+    range === nothing || (ck.loop_ranges[stmt.var] = range)
+    for item in stmt.body
+        _check_stmt!(ck, item)
+    end
+    delete!(ck.loopvars, stmt.var)
+    delete!(ck.loop_ranges, stmt.var)
+    ck.scope = old_scope
+    return nothing
+end
+
+function _check_call_statement!(ck::Checker, stmt::CallStatement)
+    old_scope = ck.scope
+    ck.scope = stmt.scope
+    name = stmt.call.fn.name
+    if name !== :reinit
+        _report!(
+            ck,
+            "E001",
+            "`$name` is not a statement",
+            stmt.call.fn;
+            hint = "only `reinit(x, value)` is a call statement, and only in `@events`",
+        )
+        ck.scope = old_scope
+        return nothing
+    end
+    _check_expr!(ck, stmt.call)
+    ck.scope = old_scope
+    return nothing
+end
+
+"""
+    _check_local_name!(ck, name, node) -> Bool
+
+A D18 temporary or a loop variable may not shadow a predefined name or a built-in
+function (spec: "Shadowing a whitelisted function name is an error"). Reports E003 and
+returns `false` when `name` is not usable as a local.
+"""
+function _check_local_name!(ck::Checker, n::Symbol, node)
+    if n === :t || n === :Ts
+        _report!(
+            ck,
+            "E003",
+            "`$n` is predefined and cannot be assigned",
+            node;
+            hint = "choose another name; `t` is the simulation time and `Ts` the clock period",
+        )
+        return false
+    elseif function_rule(n) !== nothing || n === :ifelse
+        _report!(
+            ck,
+            "E003",
+            "`$n` shadows built-in function `$n`",
+            node;
+            hint = "rename the temporary; built-in functions cannot be shadowed",
+        )
+        return false
+    end
+    return true
+end
+
+"""
+Check one assignment (D18). A declared `@variables`/`@outputs` name is a held value; an
+undeclared name in `@discrete`/`@events` becomes a block-local temporary whose type and size
+come from the assigned value. Assigning to an input, parameter, constant or port is E004.
+"""
+function _check_assign!(ck::Checker, a::Assign)
+    old_scope = ck.scope
+    ck.scope = a.scope
+    target = a.target
+    if target isa Name
+        n = target.name
+        if haskey(ck.locals, n) && !haskey(ck.decls, n)
+            tt = ck.locals[n]
+            _check_assign_value!(ck, a, tt)
+        elseif haskey(ck.decls, n)
+            d = ck.decls[n]
+            push!(ck.used, n)
+            if !(d.scope in (:variables, :outputs))
+                what = d.scope == :inputs ? "an input" :
+                       d.scope == :parameters ? "a parameter" :
+                       d.scope == :constants ? "a constant" :
+                       d.scope == :ports ? "a port" : "declared in " * scope_string(d.scope)
+                _report!(
+                    ck,
+                    "E004",
+                    "`$n` is $what and cannot be assigned",
+                    target;
+                    hint = "assign a `@variables` or `@outputs` value, or a new temporary (D18)",
+                )
+                _check_expr!(ck, a.value)
+            else
+                _check_assign_value!(ck, a, resolve_type(d.type, ck.consts))
+            end
+        else
+            name_ok = _check_local_name!(ck, n, target)
+            if a.op !== :assign
+                name_ok && _report!(
+                    ck,
+                    "E003",
+                    "`$n` is used but not declared",
+                    target;
+                    hint = "write `$n = ...` first to create a temporary (D18)",
+                )
+                _check_expr!(ck, a.value)
+            else
+                vt = _check_expr!(ck, a.value)
+                name_ok && vt !== nothing && (ck.locals[n] = vt)
+            end
+        end
+    elseif target isa Index
+        _check_assign_index!(ck, target)
+        tt = _check_index!(ck, target)
+        if tt === nothing
+            _check_expr!(ck, a.value)
+        else
+            _check_assign_value!(ck, a, tt)
+        end
+    else
+        _report!(
+            ck,
+            "E001",
+            "the left side of an assignment must be a name or an index",
+            target;
+            hint = "write `x = value`, `x[i] = value`, `x += value` or `x[i] += value`",
+        )
+        _check_expr!(ck, a.value)
+    end
+    ck.scope = old_scope
+    return nothing
+end
+
+function _check_assign_value!(ck::Checker, a::Assign, target_type::TypeSpec)
+    vt = _check_expr!(ck, a.value)
+    vt === nothing && return nothing
+    result = vt
+    if a.op !== :assign
+        result = _arith_result!(ck, a.op, target_type, vt, a)
+        result === nothing && return nothing
+    end
+    if !assignable(target_type, result)
+        _report!(
+            ck,
+            "E004",
+            "cannot assign `$(type_name(result))` to `$(type_name(target_type))`",
+            a.value;
+            hint = "types never convert implicitly; `Real` to `Int` in particular",
+        )
+    end
+    return nothing
+end
+
+function _check_assign_index!(ck::Checker, target::Index)
+    base = target.base
+    if !(base isa Name)
+        _report!(
+            ck,
+            "E001",
+            "an indexed assignment needs a declared name as its base",
+            target;
+            hint = "write `x[i] = value`, where `x` is a `Vec`/`Mat` or a D18 temporary",
+        )
+        return nothing
+    end
+    n = base.name
+    if haskey(ck.decls, n)
+        d = ck.decls[n]
+        push!(ck.used, n)
+        if !(d.scope in (:variables, :outputs))
+            _report!(
+                ck,
+                "E004",
+                "`$n` is not a held value and cannot be assigned",
+                base;
+                hint = "assign a `@variables` or `@outputs` array, or a new temporary (D18)",
+            )
+        end
+    end
     return nothing
 end
 
@@ -447,6 +815,10 @@ end
 The scalar counts behind the block-level balance precheck: unknowns are
 `#variables + #outputs + #powerports` (scalars, with `Vec`/`Mat` expanded), equations are the
 scalar equations after unrolling `for` and taking one branch of an `if`.
+
+Names assigned in `@discrete` or `@events` are *held discrete values*, not continuous
+unknowns (plan 4.4: "discrete-scope variables are excluded"), so they are left out of the
+unknown count. `@initial` equations are not counted either: they are solved once.
 """
 function block_balance(pb::ParsedBlock)
     decls = Dict{Symbol,Decl}()
@@ -456,15 +828,50 @@ function block_balance(pb::ParsedBlock)
         end
     end
     consts = constant_env(pb)
+    discrete_names = _discrete_assigned_names(pb)
     unknowns = 0
     for scope in (:variables, :outputs, :ports)
         for d in get(pb.declaration_map, scope, Decl[])
+            d.name in discrete_names && continue
             unknowns += type_scalar_count(resolve_type(d.type, consts), consts)
         end
     end
     eqs = _count_items(pb.equation_items, decls, consts)
     return (unknowns = unknowns, equations = eqs)
 end
+
+"""The names assigned anywhere in `@discrete` or `@events` (an indexed assignment counts its
+base name). They are held discrete values, excluded from the balance count."""
+function _discrete_assigned_names(pb::ParsedBlock)
+    out = Set{Symbol}()
+    for ds in pb.discrete_items, stmt in ds.body
+        _collect_assigned!(out, stmt)
+    end
+    for ev in pb.event_items, stmt in ev.body
+        _collect_assigned!(out, stmt)
+    end
+    return out
+end
+
+function _collect_assigned!(out::Set{Symbol}, stmt)
+    if stmt isa Assign
+        n = _assign_base_name(stmt.target)
+        n === nothing || push!(out, n)
+    elseif stmt isa IfStatement
+        for b in stmt.branches, s in b.body
+            _collect_assigned!(out, s)
+        end
+    elseif stmt isa ForStatement
+        for s in stmt.body
+            _collect_assigned!(out, s)
+        end
+    end
+    return nothing
+end
+
+_assign_base_name(e::Name) = e.name
+_assign_base_name(e::Index) = _assign_base_name(e.base)
+_assign_base_name(::Any) = nothing
 
 function _scalar_size(e, decls::Dict{Symbol,Decl}, consts::AbstractDict)::Int
     if e isa Name && haskey(decls, e.name)
@@ -510,12 +917,15 @@ _plural(n::Int, one::String, many::String) = n == 1 ? one : many
 
 function _check_balance!(ck::Checker)
     ck.failed && return nothing
-    n_vars = length(get(ck.pb.declaration_map, :variables, Decl[]))
-    n_outs = length(get(ck.pb.declaration_map, :outputs, Decl[]))
-    n_ports = length(get(ck.pb.declaration_map, :ports, Decl[]))
+    discrete_names = _discrete_assigned_names(ck.pb)
+    continuous(scope) = count(
+        d -> !(d.name in discrete_names), get(ck.pb.declaration_map, scope, Decl[])
+    )
+    n_vars = continuous(:variables)
+    n_outs = continuous(:outputs)
+    n_ports = continuous(:ports)
     bal = block_balance(ck.pb)
     bal.unknowns == bal.equations && return nothing
-    n_vars == 0 && n_outs == 0 && n_ports == 0 && return nothing
     # Plan 4.4: E103 at block level is reported as a *warning* (the plan section 5
     # model-level check keeps it an error). This is the one explicit severity override.
     push!(
@@ -596,6 +1006,9 @@ function _check_name!(ck::Checker, e::Name)::Union{TypeSpec,Nothing}
     if haskey(ck.loopvars, n)
         return ck.loopvars[n]
     end
+    if haskey(ck.locals, n)
+        return ck.locals[n]
+    end
     if n === :t
         if ck.context == :default
             _report!(
@@ -609,12 +1022,15 @@ function _check_name!(ck::Checker, e::Name)::Union{TypeSpec,Nothing}
         end
         return REAL
     elseif n === :Ts
+        if ck.context === :discrete
+            return REAL
+        end
         _report!(
             ck,
             "E001",
             "`Ts` is only available in @discrete",
             e;
-            hint = "`Ts` is the clock period of a discrete scope",
+            hint = "`Ts` is the clock period of a `@discrete` scope; `@events` fires on a condition, not on a clock",
         )
         return nothing
     end
@@ -643,13 +1059,23 @@ function _check_name!(ck::Checker, e::Name)::Union{TypeSpec,Nothing}
         end
         return resolve_type(d.type, ck.consts)
     end
-    _report!(
-        ck,
-        "E003",
-        "`$n` is used but not declared",
-        e;
-        hint = "declare it in @parameters, or fix the spelling",
-    )
+    if ck.context in (:discrete, :events)
+        _report!(
+            ck,
+            "E003",
+            "`$n` is used but not declared",
+            e;
+            hint = "assign a value to it first to create a temporary (D18), or declare it in the block",
+        )
+    else
+        _report!(
+            ck,
+            "E003",
+            "`$n` is used but not declared",
+            e;
+            hint = "declare it in @parameters, or fix the spelling",
+        )
+    end
     return nothing
 end
 
@@ -710,6 +1136,21 @@ function _call_scope_name(rule)
     return join(names, " or ")
 end
 
+function _context_name(context::Symbol)::String
+    context === :equation && return "@equations"
+    context === :default && return "a default"
+    context === :discrete && return "@discrete"
+    context === :events && return "@events"
+    return "@" * String(context)
+end
+
+"""Whether a function rule accepts a context. `@events` shares the `@discrete` column of the
+spec tables (plan D19 bodies are discrete code); `reinit` is the one events-only row."""
+function _rule_allows(rule, context::Symbol)
+    context in rule.contexts && return true
+    return context === :events && (:discrete in rule.contexts)
+end
+
 function _check_call!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
     name = e.fn.name
     rule = function_rule(name)
@@ -722,11 +1163,11 @@ function _check_call!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
         _report!(ck, "E002", "`$name` is not a built-in function", e.fn; hint = hint)
         return nothing
     end
-    if !(ck.context in rule.contexts)
+    if !_rule_allows(rule, ck.context)
         _report!(
             ck,
             "E001",
-            "`$name` is not allowed in $(ck.context == :default ? "a default" : "@equations")",
+            "`$name` is not allowed in $(_context_name(ck.context))",
             e.fn;
             hint = "it is available in $(_call_scope_name(rule))",
         )
@@ -756,6 +1197,8 @@ function _check_call!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
     end
     if name === :ddt
         return _check_ddt!(ck, e)
+    elseif name === :reinit
+        return _check_reinit!(ck, e)
     end
     tys = Union{TypeSpec,Nothing}[_check_expr!(ck, a) for a in e.args]
     any(t -> t === nothing, tys) && return nothing
@@ -823,6 +1266,19 @@ function _check_call!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
         return REAL
     elseif name === :interp1 || name === :interp2
         return REAL
+    elseif name === :noise_normal
+        for (i, t) in enumerate(st)
+            if t.kind !== :Int
+                _report!(
+                    ck,
+                    "E004",
+                    "`noise_normal` needs integer `seed, k` arguments, got `$(type_name(t))`",
+                    e.args[i];
+                )
+                return nothing
+            end
+        end
+        return REAL
     elseif name === :previous || name === :hold
         return st[1]
     end
@@ -848,6 +1304,15 @@ function _check_call!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
 end
 
 function _check_ddt!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
+    if ck.scope === :initial
+        _report!(
+            ck,
+            "E001",
+            "`ddt` is not allowed in @initial",
+            e.fn;
+            hint = "initial equations are algebraic; write the derivative in @equations",
+        )
+    end
     arg = e.args[1]
     if arg isa Name
         n = arg.name
@@ -891,6 +1356,63 @@ function _check_ddt!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
     return nothing
 end
 
+"""`reinit(x, value)` in `@events` (plan D19): `x` must be a continuous state declared in
+`@variables`, and `value` must have its type and size. The lowering turns it into the
+affect equation `x ~ value` evaluated with pre-event values."""
+function _check_reinit!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
+    arg = e.args[1]
+    vt = _check_expr!(ck, e.args[2])
+    if arg isa Name
+        n = arg.name
+        if haskey(ck.locals, n) && !haskey(ck.decls, n)
+            _report!(
+                ck,
+                "E004",
+                "`reinit` needs a state declared in @variables, but `$n` is a temporary",
+                arg;
+                hint = "reinit resets a continuous state; a D18 temporary is not stored between ticks",
+            )
+            return nothing
+        elseif haskey(ck.decls, n)
+            d = ck.decls[n]
+            push!(ck.used, n)
+            if d.scope !== :variables
+                what = d.scope == :outputs ? "an output" :
+                       d.scope == :inputs ? "an input" :
+                       d.scope == :parameters ? "a parameter" :
+                       d.scope == :constants ? "a constant" : "not a variable"
+                _report!(
+                    ck,
+                    "E004",
+                    "`reinit` needs a state declared in @variables, but `$n` is $what",
+                    arg;
+                    hint = "declare the reset state in @variables",
+                )
+                return nothing
+            end
+            tt = resolve_type(d.type, ck.consts)
+            if vt !== nothing && !assignable(tt, vt) && !assignable(vt, tt)
+                _report!(
+                    ck,
+                    "E004",
+                    "`reinit` assigns `$(type_name(vt))` to `$n`, which is `$(type_name(tt))`",
+                    e.args[2];
+                )
+            end
+            return nothing
+        end
+    end
+    _check_expr!(ck, arg)
+    _report!(
+        ck,
+        "E004",
+        "`reinit` needs a state declared in @variables",
+        arg;
+        hint = "write `reinit(x, value)` with `x` from @variables",
+    )
+    return nothing
+end
+
 function _check_binop!(ck::Checker, e::BinOp)::Union{TypeSpec,Nothing}
     op = e.op
     is_integer_power = op === :^ && e.rhs isa Lit && e.rhs.value isa Integer
@@ -905,7 +1427,7 @@ function _check_binop!(ck::Checker, e::BinOp)::Union{TypeSpec,Nothing}
         _report!(
             ck,
             "E001",
-            "operator `$op` is not allowed in $(ck.context == :default ? "a default" : "@equations")",
+            "operator `$op` is not allowed in $(_context_name(ck.context))",
             e;
             hint = "see the operator table in the language spec",
         )
@@ -936,7 +1458,7 @@ function _check_binop!(ck::Checker, e::BinOp)::Union{TypeSpec,Nothing}
     return _arith_result!(ck, op, a, b, e)
 end
 
-function _arith_result!(ck::Checker, op::Symbol, a::TypeSpec, b::TypeSpec, e::BinOp)
+function _arith_result!(ck::Checker, op::Symbol, a::TypeSpec, b::TypeSpec, e)
     if _scalar_numeric(a) && _scalar_numeric(b)
         op === :/ && return REAL
         return a.kind == :Int && b.kind == :Int ? INT : REAL
@@ -993,13 +1515,13 @@ end
 function _check_unop!(ck::Checker, e::UnOp)::Union{TypeSpec,Nothing}
     t = _check_expr!(ck, e.operand)
     if e.op === Symbol("!")
-        if !ck.allow_cond
+        if !_cond_ok(ck)
             _report!(
                 ck,
                 "E001",
-                "`!` is only allowed inside `ifelse`",
+                "`!` is only allowed inside `ifelse`, in `@discrete` and in `@events`",
                 e;
-                hint = "write `ifelse(!flag, a, b)`",
+                hint = "write `ifelse(!flag, a, b)`, or use `!` in discrete code",
             )
             return nothing
         end
@@ -1017,6 +1539,10 @@ function _check_unop!(ck::Checker, e::UnOp)::Union{TypeSpec,Nothing}
     _scalar_numeric(t) || is_array_type(t) || return nothing
     return t
 end
+
+"""Comparisons and `&& || !` are legal in `ifelse` conditions in equations and defaults, and
+everywhere in discrete code (the spec's "@discrete / @events" column)."""
+_cond_ok(ck::Checker) = ck.allow_cond || ck.context in (:discrete, :events)
 
 function _check_index!(ck::Checker, e::Index)::Union{TypeSpec,Nothing}
     base = _check_expr!(ck, e.base)
@@ -1037,20 +1563,8 @@ function _check_index!(ck::Checker, e::Index)::Union{TypeSpec,Nothing}
             )
             return nothing
         end
-        if e.indices[1] isa Lit && e.indices[1].value isa Integer
-            idx = Int(e.indices[1].value)
-            n = base.args[1]
-            if n isa Integer && !(1 <= idx <= n)
-                _report!(
-                    ck,
-                    "E005",
-                    "index out of range: `$(_show(e))` but `$(_show(e.base))` is `$(type_name(base))`",
-                    e;
-                    hint = "use an index between 1 and $n, or raise the structural constant N",
-                )
-                return nothing
-            end
-        end
+        n = base.args[1]
+        n isa Integer && _check_one_index!(ck, e, e.indices[1], Int(n), 1, base)
         return REAL
     elseif base.kind == :Mat
         if length(e.indices) != 2
@@ -1058,20 +1572,8 @@ function _check_index!(ck::Checker, e::Index)::Union{TypeSpec,Nothing}
             return nothing
         end
         if length(base.args) == 2 && base.args[1] isa Integer && base.args[2] isa Integer
-            for (k, node) in enumerate(e.indices)
-                node isa Lit && node.value isa Integer || continue
-                idx = Int(node.value)
-                n = base.args[k]
-                if !(1 <= idx <= n)
-                    _report!(
-                        ck,
-                        "E005",
-                        "index out of range: `$(_show(e))` but `$(_show(e.base))` is `$(type_name(base))`",
-                        e;
-                        hint = "index $k must be between 1 and $n",
-                    )
-                    return nothing
-                end
+            for k in 1:2
+                _check_one_index!(ck, e, e.indices[k], Int(base.args[k]), k, base)
             end
         end
         return REAL
@@ -1083,6 +1585,56 @@ function _check_index!(ck::Checker, e::Index)::Union{TypeSpec,Nothing}
         e;
         hint = "only `Vec` and `Mat` values have indices",
     )
+    return nothing
+end
+
+"""
+Range-check one index of `e` against `n` (E005). The index is checked when it is static:
+a literal, a `@constants` value, or a `for` loop variable whose range is known. A loop
+variable that runs outside the array is exactly the J2.1 "unrolled index check" case.
+"""
+function _check_one_index!(ck::Checker, e::Index, node, n::Int, k::Int, base::TypeSpec)
+    where = length(e.indices) == 1 ? "" : " (index $k)"
+    if node isa Name && haskey(ck.loopvars, node.name)
+        r = get(ck.loop_ranges, node.name, nothing)
+        r === nothing && return nothing
+        if r[1] < 1 || r[2] > n
+            _report!(
+                ck,
+                "E005",
+                "loop index `$(node.name)` runs $(r[1]):$(r[2])$where but `$(_show(e.base))` is `$(type_name(base))`",
+                e;
+                hint = "make the loop range fit the array: 1:$(n)",
+            )
+        end
+        return nothing
+    end
+    ok, value = try_eval_const(node, ck.consts)
+    if !ok
+        # Equations need static indices (spec table: "Yes, static indices"); discrete code
+        # may use a runtime index and J2.3 emits the bounds check.
+        if ck.context === :equation
+            _report!(
+                ck,
+                "E005",
+                "the index of `$(_show(e))` is not static",
+                node;
+                hint = "use an integer literal, a `@constants` value or a `for` loop variable",
+            )
+        end
+        return nothing
+    end
+    value isa Integer || return nothing
+    idx = Int(value)
+    if !(1 <= idx <= n)
+        _report!(
+            ck,
+            "E005",
+            "index out of range: `$(_show(e))` but `$(_show(e.base))` is `$(type_name(base))`$where",
+            e;
+            hint = "use an index between 1 and $n, or raise the structural constant",
+        )
+    end
     return nothing
 end
 
@@ -1149,13 +1701,13 @@ end
 function _check_comparison!(ck::Checker, e::Comparison)::Union{TypeSpec,Nothing}
     a = _check_expr!(ck, e.lhs)
     b = _check_expr!(ck, e.rhs)
-    if !ck.allow_cond
+    if !_cond_ok(ck)
         _report!(
             ck,
             "E001",
             "comparisons are only allowed inside `ifelse` in @equations",
             e;
-            hint = "write `ifelse(a < b, x, y)`",
+            hint = "write `ifelse(a < b, x, y)`, or use the comparison in `@discrete`",
         )
     end
     if a !== nothing && b !== nothing
@@ -1189,13 +1741,13 @@ function _check_comparison!(ck::Checker, e::Comparison)::Union{TypeSpec,Nothing}
 end
 
 function _check_boolop!(ck::Checker, e::BoolOp)::Union{TypeSpec,Nothing}
-    if !ck.allow_cond
+    if !_cond_ok(ck)
         _report!(
             ck,
             "E001",
             "`$(e.op)` is only allowed inside `ifelse` in @equations",
             e;
-            hint = "write `ifelse(cond1 && cond2, a, b)`",
+            hint = "write `ifelse(cond1 && cond2, a, b)`, or use logic in `@discrete`",
         )
     end
     for operand in e.operands
@@ -1331,4 +1883,19 @@ function block_equations(pb::ParsedBlock)
         d.severity == "error" && return Any[]
     end
     return Any[pb.equation_items...]
+end
+
+"""
+    block_initial_equations(pb::ParsedBlock) -> Vector{Any}
+
+The checked `@initial` AST: the `@initial` items when `check_block` reports no error, and an
+empty vector otherwise. Warnings do not suppress them. Kept separate from
+[`block_equations`](@ref) because initial equations are solved once before `t = 0` and do not
+take part in the balance count.
+"""
+function block_initial_equations(pb::ParsedBlock)
+    for d in check_block(pb)
+        d.severity == "error" && return Any[]
+    end
+    return Any[pb.initial_items...]
 end

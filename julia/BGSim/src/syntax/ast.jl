@@ -22,8 +22,10 @@
 #   * Nothing here is produced by `eval`: `parse.jl` walks JuliaSyntax nodes and builds
 #     these values; `constfold.jl` folds the constant expressions.
 #
-# Statement-level items in `@equations` are `Equation`, `IfEquation` or `ForEquation`.
-# Declarations are `Decl`; `@causality` entries are `CausalityDecl`.
+# Statement-level items in `@equations` / `@initial` are `Equation`, `IfEquation` or
+# `ForEquation`. `@discrete` bodies hold `Assign`, `IfStatement`, `ForStatement` and
+# `CallStatement` nodes; an `@events` entry is one `EventDecl`, and a `@discrete` scope is one
+# `DiscreteScope`. Declarations are `Decl`; `@causality` entries are `CausalityDecl`.
 
 """    Expr
 
@@ -233,7 +235,14 @@ Unresolved symbols stay symbols; the checker reports E005 for those.
 function resolve_type(t::TypeSpec, env::AbstractDict)::TypeSpec
     isempty(t.args) && return t
     resolved = map(t.args) do a
-        a isa Symbol && haskey(env, a) && env[a] isa Integer ? Int(env[a]) : a
+        if a isa Symbol && haskey(env, a) && env[a] isa Integer
+            return Int(env[a])
+        elseif a isa Expr
+            # A size written as `ifelse(cond, a, b)` (the spec allows it in sizes).
+            ok, value = try_eval_const(a, env)
+            return ok && value isa Integer ? Int(value) : a
+        end
+        return a
     end
     return TypeSpec(t.kind, Tuple(resolved))
 end
@@ -378,6 +387,146 @@ end
 source_range(e::ForEquation) = e.range
 
 # ---------------------------------------------------------------------------------------
+# Discrete statements, event entries and the @discrete scope (J2.1)
+# ---------------------------------------------------------------------------------------
+#
+# `@discrete` and `@events` are imperative: their bodies are *statement* lists, not
+# equations. The nodes below mirror the equation nodes, but a statement is executed in
+# order (plan D18, D19, D21).
+
+"""    Assign(target, value, op, range, scope)
+
+One assignment in `@discrete` or `@events`: `target = value`, or the compound form
+`target += value` with `op = :+` (`:assign` marks plain `=`). `target` is a `Name` or an
+`Index`; the checker decides whether it names a declared held value (a `@variables` or
+`@outputs` entry) or a D18 block-local temporary. `scope` is `:discrete` or `:events`."""
+struct Assign
+    target::Expr
+    value::Expr
+    op::Symbol
+    range::SourceRange
+    scope::Symbol
+end
+
+source_range(a::Assign) = a.range
+assign_target(a::Assign) = a.target
+assign_value(a::Assign) = a.value
+assign_op(a::Assign) = a.op
+
+"""    is_compound_assign(a) -> Bool
+
+True for `+=`, `-=`, `*=` and `/=`."""
+is_compound_assign(a::Assign) = a.op !== :assign
+
+"""    StmtBranch(cond, body, range)
+
+One branch of an `if` statement in discrete code. `cond` is `nothing` for the `else`
+branch; `body` is a `Vector{Any}` of statement nodes."""
+struct StmtBranch
+    cond::Union{Expr,Nothing}
+    body::Vector{Any}
+    range::SourceRange
+end
+
+source_range(b::StmtBranch) = b.range
+
+"""    IfStatement(branches, range, scope)
+
+`if / elseif / else` inside `@discrete` or `@events`. Unlike `IfEquation` the branches may
+hold different numbers of statements: discrete code is imperative."""
+struct IfStatement
+    branches::Vector{StmtBranch}
+    range::SourceRange
+    scope::Symbol
+end
+
+source_range(s::IfStatement) = s.range
+
+"""    ForStatement(var, lo, hi, step, body, range, scope)
+
+`for var in lo:hi` inside `@discrete` or `@events`. `lo`, `hi` and `step` must fold to
+integers (E005 otherwise); the body is a statement list."""
+struct ForStatement
+    var::Symbol
+    lo::Expr
+    hi::Expr
+    step::Union{Expr,Nothing}
+    body::Vector{Any}
+    range::SourceRange
+    scope::Symbol
+end
+
+source_range(s::ForStatement) = s.range
+
+"""    CallStatement(call, range, scope)
+
+A call used as a statement. Only `reinit(x, value)` is meaningful (and only in `@events`);
+the checker rejects every other bare call."""
+struct CallStatement
+    call::Call
+    range::SourceRange
+    scope::Symbol
+end
+
+source_range(s::CallStatement) = s.range
+stmt_call(s::CallStatement) = s.call
+
+"""    EventDecl(cond, body, range)
+
+One `cond => begin ... end` entry of `@events` (plan D19). `cond` is either a real
+expression (an upward zero crossing) or a `Comparison` with `<` / `>`; `body` is a
+statement list. Events are order-free across entries but ordered inside one body."""
+struct EventDecl
+    cond::Expr
+    body::Vector{Any}
+    range::SourceRange
+end
+
+source_range(e::EventDecl) = e.range
+event_condition(e::EventDecl) = e.cond
+event_body(e::EventDecl) = copy(e.body)
+
+"""
+    event_zero_crossing(e::EventDecl) -> Expr
+
+The real expression whose **upward zero crossing** fires `e` (plan D19): the condition
+itself, or for a comparison the normalized difference — `a < b` becomes `b - a` and
+`a > b` becomes `a - b`. J2.3 lowers this expression; `event_condition` keeps the source
+form for diagnostics and editor display.
+"""
+function event_zero_crossing(e::EventDecl)
+    c = e.cond
+    if c isa Comparison
+        if c.op === :<
+            return BinOp(:-, c.rhs, c.lhs, c.range)
+        elseif c.op === :>
+            return BinOp(:-, c.lhs, c.rhs, c.range)
+        end
+    end
+    return c
+end
+
+"""    DiscreteScope(period, offset, body, range, period_value, offset_value)
+
+One `@discrete Ts = <period> begin ... end` scope. `period` and `offset` are the parsed
+constant expressions; `period_value` / `offset_value` are their folded values (`nothing`
+when the expression does not fold, which `check_block` reports as E004). `Ts` names
+`period_value` inside the body."""
+struct DiscreteScope
+    period::Expr
+    offset::Union{Expr,Nothing}
+    body::Vector{Any}
+    range::SourceRange
+    period_value::Union{Float64,Nothing}
+    offset_value::Union{Float64,Nothing}
+end
+
+source_range(d::DiscreteScope) = d.range
+discrete_period(d::DiscreteScope) = d.period_value
+discrete_offset(d::DiscreteScope) = d.offset_value
+discrete_body(d::DiscreteScope) = copy(d.body)
+
+# ---------------------------------------------------------------------------------------
 # Causality
 # ---------------------------------------------------------------------------------------
 
@@ -414,12 +563,14 @@ source_range(c::CausalityDecl) = c.range
     ParsedBlock
 
 The result of [`parse_block`](@ref): the block's name, its reference and source text, its
-declarations per scope, its equations, its causality declarations, and the diagnostics the
-parser itself produced (E000 and structural E001). `check_block` adds the semantic checks.
+declarations per scope, its equations (continuous and initial), its `@discrete` scopes and
+`@events` entries, its causality declarations, and the diagnostics the parser itself
+produced (E000 and structural E001). `check_block` adds the semantic checks.
 
 Accessors (do not read the fields directly):
 [`block_name`](@ref), [`block_ref`](@ref), [`block_source`](@ref), [`scopes`](@ref),
-[`declarations`](@ref), [`equations`](@ref), [`causality`](@ref), [`ports`](@ref),
+[`declarations`](@ref), [`equations`](@ref), [`initial_equations`](@ref),
+[`discrete_scopes`](@ref), [`events`](@ref), [`causality`](@ref), [`ports`](@ref),
 [`block_range`](@ref), [`block_filename`](@ref), [`block_diagnostics`](@ref).
 """
 struct ParsedBlock
@@ -430,6 +581,9 @@ struct ParsedBlock
     scope_list::Vector{Symbol}
     declaration_map::Dict{Symbol,Vector{Decl}}
     equation_items::Vector{Any}
+    initial_items::Vector{Any}
+    discrete_items::Vector{Any}
+    event_items::Vector{Any}
     causality_items::Vector{CausalityDecl}
     diagnostics::Vector{Diagnostic}
     range::SourceRange
@@ -461,6 +615,23 @@ end
 The top-level `@equations` items: `Equation`, `IfEquation` and `ForEquation` nodes. This is
 the unchecked AST; use [`block_equations`](@ref) for the checked list."""
 equations(pb::ParsedBlock) = copy(pb.equation_items)
+
+"""    initial_equations(pb) -> Vector{Any}
+
+The top-level `@initial` items: `Equation`, `IfEquation` and `ForEquation` nodes with
+`scope == :initial`. Like [`equations`](@ref) this is the unchecked AST."""
+initial_equations(pb::ParsedBlock) = copy(pb.initial_items)
+
+"""    discrete_scopes(pb) -> Vector{DiscreteScope}
+
+Every `@discrete` scope in source order. A block may have more than one (multi-rate
+discrete code); each carries its folded period and optional offset."""
+discrete_scopes(pb::ParsedBlock) = copy(pb.discrete_items)
+
+"""    events(pb) -> Vector{EventDecl}
+
+Every `cond => begin ... end` entry of every `@events` scope, in source order."""
+events(pb::ParsedBlock) = copy(pb.event_items)
 
 """    causality(pb) -> Vector{CausalityDecl}
 
@@ -626,4 +797,8 @@ _scope_kw(::Nothing) = nothing
 
 _node_scope(node::Decl) = scope_string(node.scope)
 _node_scope(node::Equation) = scope_string(node.scope)
+_node_scope(node::Assign) = scope_string(node.scope)
+_node_scope(node::IfStatement) = scope_string(node.scope)
+_node_scope(node::ForStatement) = scope_string(node.scope)
+_node_scope(node::CallStatement) = scope_string(node.scope)
 _node_scope(::Any) = nothing

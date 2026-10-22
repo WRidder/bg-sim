@@ -470,3 +470,107 @@ follows the source, which is normative:
   `stdlib:rotation/TorqueSource`: the fixture lists a `fixed` causality entry that the
   source text does not declare (no `@causality` line).
 
+---
+
+# J1.5 — lowering and simulation (verified 2026-10-22)
+
+Everything below was run on the installed packages. The acceptance is
+`test/test_simulate.jl` (166 assertions), run by `Pkg.test()`; the full suite is green.
+
+## The lowering contract
+
+* `BGSim.compile_key(flat)` hashes the structure as 64 lowercase hex: variables,
+  parameters, equations, `initial`, `events`, `discrete`, derived power signals and the
+  recording order. Parameter values and start values are **not** in the key (D4), so a
+  parameter-only or start-only change hits the cache.
+* `BGSim.lower_model(flat; t_start, t_end)` returns `(model, problem, cache_hit)`. A miss
+  builds `System(eqs, t, vars, pars; name)` → `mtkcompile` → `ODEProblem`. A hit rebuilds
+  only the problem through `remake(prob; u0, p, tspan)`.
+* The **operating point must contain only `ModelingToolkit.unknowns(csys)`**. Passing every
+  flat variable (including observed and algebraic ones) made MTK treat 24 start guesses as
+  initialization equations, warn "overdetermined initialization" and spend 7 s in `init`;
+  with the unknowns only, the DC motor's `init` is milliseconds. `_u0_pairs` filters by the
+  compiled unknowns and looks the start up by signal id.
+* Derived port power (`e*f`, D15) is added as an extra variable and equation. `mtkcompile`
+  turns it into an observed value, so the recorder reads it with the same `getu` getter as
+  every other signal. The flat `stats.states`/`stats.equations` do not count it; the run
+  manifest reports the model counts.
+* `int(x, x0)` becomes a hidden state `__bgint/<path>/<n>` with `D(state) ~ x`. `x0` is kept
+  as an AST and evaluated with the current parameter values on every run, so a parameter
+  change that feeds an integral's start value is honoured by `remake`. The manifest's
+  `stats.states` and `stats.equations` add one per `int`.
+* `nonsmooth_conditions(flat)` is the J2.3 seam. It returns real expressions whose upward
+  zero crossing is the switch; `lower_flat` turns each into
+  `SymbolicContinuousCallback(c ~ 0)` and passes `continuous_events` only when the collector
+  is non-empty. The continuous M1 collector is empty.
+* Nonsmooth functions are lowered to explicit `ifelse`: `abs`, `sign`, `min`, `max`, `clamp`,
+  `saturate`, `deadzone`, and `round` (as `ifelse(x >= 0, floor(x + 0.5), ceil(x - 0.5))`).
+  `floor`, `ceil`, `mod`, `rem`, `hypot` and two-argument `atan` are native Symbolics heads.
+  `&&`/`||` lower to `&`/`|`; `==`/`!=` build comparison expressions that `ifelse` accepts.
+* `"auto"` chooses `Rodas5P()` when `prob.f.mass_matrix` is not the identity (a real DAE),
+  `Tsit5()` otherwise. The explicit choices are `Rodas5P`, `Tsit5`, `FBDF` and `Vern7`, all
+  from the split sub-packages. An unknown name is E901.
+
+## The run loop and recorder
+
+* The output grid is `points` equally spaced values including both ends, or `interval` steps
+  including `t_end`. The loop calls `step!(integ, dt, true)` so the integrator lands **exactly
+  on each grid time**, then reads every signal with the current state. This matters:
+  `integ(t, idxs = y)` for a time in the past was 4e-6 off (it uses the current step's
+  interpolant), while `integ.sol(t, idxs = y)` was accurate but needs saved points. Stepping
+  to the grid point avoids interpolation completely.
+* Getters are built once: `getu(integ, sym)(integ)` for variables/observed values,
+  `getp(integ, sym)(integ)` for parameters (the future discrete signals).
+* `stream.f64` is row-major `[t, v1 … vn]` little-endian Float64 (`htol` on the bit pattern,
+  so it is independent of the host). `columns.f64` is the time column followed by one
+  contiguous column per signal. Duplicate `t` rows are supported and tested (J2.3 records
+  the two sides of an event at the same instant).
+* The manifest is written **before the first row** with `status: "running"` and the full
+  signal list (REQ-1), then rewritten atomically (temp file + rename) with the final status,
+  stats, `n`/`t0`/`t1` and diagnostics. A run that cannot start (flatten error) writes only
+  the failed manifest. The document validates against `run-manifest.schema.json` (checked
+  with the backend's `jsonschema` registry) and numpy `memmap` reads `columns.f64` correctly.
+* Cancellation is an atomic flag checked before and after every `step!`; the status becomes
+  `cancelled` and the files hold the rows written so far. Progress is a `(t, rows)` callback
+  throttled to 100 ms (the first row is reported immediately); phases are `("mtkcompile" |
+  "init" | "simulate" | "write", t_s)`.
+* Solver failures are E901 with `t`, the retcode and the five largest states; MTK's
+  `ExtraEquationsSystemException`/`ExtraVariablesSystemException` are E103; a failed
+  initialization is E103 "initial conditions are inconsistent"; anything else is E900 with
+  the exception text in the hint and the last-touched instance path.
+
+## Physics fixes made by J1.5 (CONTRACT-5)
+
+The 9.1 comparison found two sign errors that CONTRACT-4's power-conservation fix did not
+cover. Both are fixed in the stdlib and in the catalog fixture's normative `source` text:
+
+1. `stdlib/converters/DCMotor.jl`: the shaft port is power-positive into the motor, so the
+   electromagnetic torque leaves through it:
+   `shaft.e ~ -k_t*i + J*ddt(w_rel) + d*w_rel` (was `+k_t*i`). The old sign made the iconic
+   model unstable (`omega` reached 1e107 at t = 2 s); the correct model settles at
+   `k*V/(R*d + k^2)`.
+2. `stdlib/bondgraph/GY.jl`: with `p1` on the electrical side and `p2` on the mechanical side
+   (the 9.1 bond graph), the motor orientation is `p1.e ~ -r*p2.f`, `p2.e ~ r*p1.f` (was the
+   opposite). Power is conserved either way; the old choice made a generator, so the bond
+   graph settled at −239.81 rad/s.
+
+The RLC models did not need a fix: they agree to 7.6e-13 V and their peak matches the analytic
+16.3 % overshoot.
+
+## Measured numbers (this machine, 2026-10-22)
+
+| item | measured |
+| --- | --- |
+| DC motor steady state (plan 9.1, rtol 1e-4) | **239.80815347721813 rad/s** (target 239.80815347721824) |
+| iconic vs bond graph, settled (`t ≥ 0.5 s`) | **max abs difference 5.68e-14 rad/s**, max current difference 2.02e-15 A |
+| RLC iconic vs bond graph | **max abs difference 7.64e-13 V**; peak 1.161862 V vs analytic 1.163034 V (grid sampling) |
+| first run, fresh process, 5000 points | compile 1.2–1.7 s + init/getters ≈ 3.5 s + sim 1.2–1.3 s; **first data 5.1–6.4 s**; total 9.9–11.3 s (the spread is one-time JSON3/column-writer JIT; a warm worker does the whole run in milliseconds) |
+| first run, warm process after `clear_compile_cache!` | **50–360 ms** (whole `simulate`, cache miss) |
+| parameter-only re-run, after one warm-up re-run | **16–101 ms to first data** (target < 300 ms) |
+
+The fresh-process total includes the first JSON3 manifest write and the first
+`columns.f64` write; the worker's start-up warm-up should include one tiny `simulate`, which
+removes that tail. The 300 ms target is measured after one warm-up re-run, exactly as the
+NOTES section 8 requires.
+
+

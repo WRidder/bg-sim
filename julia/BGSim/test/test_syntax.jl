@@ -764,9 +764,6 @@ const ROW_OVERRIDES = Dict{Symbol,NamedTuple}(
 
     @testset "negative: unsupported scopes are named" begin
         for (scope, line) in (
-            ("@discrete Ts = 1e-3 begin\n        y = 1.0\n    end", 2),
-            ("@initial y ~ 0.0", 2),
-            ("@events y ~ 0.0", 2),
             ("@components g = LossyGear()", 2),
             ("@connections connect(a, b)", 2),
         )
@@ -775,6 +772,15 @@ const ROW_OVERRIDES = Dict{Symbol,NamedTuple}(
             d = expect_at(pb, "E001", line, 5)
             @test d !== nothing && occursin("not supported yet", d.message)
             @test d !== nothing && occursin(scope[1:findfirst(' ', scope) - 1], d.message)
+        end
+    end
+
+    @testset "the J2.1 scopes are no longer rejected" begin
+        for scope in ("@initial x ~ 0.0", "@discrete Ts = 1e-3 begin y = 1.0 end",
+                      "@events x > 0.0 => begin y = 1.0 end")
+            src = "@block A begin\n    @variables x::Real = 0.0\n    @outputs y::Real = 0.0\n    $scope\nend\n"
+            pb = parse_block(src)
+            @test !any(d -> occursin("not supported yet", d.message), check_block(pb))
         end
     end
 
