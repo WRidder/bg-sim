@@ -1,5 +1,5 @@
+import { CodeTab } from "../code/CodeTab";
 import { DiagramTab } from "../editor/DiagramTab";
-import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
 
 export type CenterTabId = "diagram" | "code";
@@ -9,19 +9,15 @@ const CENTER_TABS: readonly TabDefinition<CenterTabId>[] = [
   { id: "code", label: "Code" },
 ];
 
-const CODE_EMPTY_STATE = {
-  title: "No source open",
-  hint: "Select a block and choose “Open source” to read and edit its code here.",
-};
-
 export interface CenterTabsProps {
   active: CenterTabId;
   onSelect: (id: CenterTabId) => void;
 }
 
 /**
- * The centre tab area of plan 7.2: the diagram canvas (W1.1) and the Code tab,
- * which stays empty until W2.1 adds the block editor.
+ * The centre tab area of plan 7.2: the diagram canvas (W1.1) and the Code tab
+ * (W2.1, mounted as `CodeTab` so the editor and the canvas can be developed
+ * independently).
  */
 export function CenterTabs({ active, onSelect }: CenterTabsProps) {
   return (
@@ -40,11 +36,7 @@ export function CenterTabs({ active, onSelect }: CenterTabsProps) {
         aria-labelledby={`center-tab-${active}`}
         tabIndex={0}
       >
-        {active === "diagram" ? (
-          <DiagramTab />
-        ) : (
-          <EmptyState title={CODE_EMPTY_STATE.title} hint={CODE_EMPTY_STATE.hint} />
-        )}
+        {active === "diagram" ? <DiagramTab /> : <CodeTab />}
       </div>
     </div>
   );
