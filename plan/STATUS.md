@@ -26,7 +26,7 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | W1.3 | W | M1 | W1.1 | done | Diagnostics panel (filter by severity, group by path, click-to-navigate, related list) + debounced 400 ms `model.check` loop with generation guard, stale discard, 503 pause and ready gating; canvas markers (red/amber outlines + badges), adopted-domain colouring and `unitFactors` badges via a diagnostics-owned DOM decorator (deviation: `src/editor/` was outside W1.3's paths; W2.3 folds it into `EditorEdgeData`). 20 vitest + 2 Playwright (all 21 node diagnostics navigate and pan). |
 | W1.4 | W | M1 | W1.1 | done | Run bar (run/stop/settings/progress, Ctrl+Enter), signal browser (tree by path, search, kind icons, drag/double-click to plot), uPlot panels with linked cursors, unit-group axis assignment (2 max, overflow suggests a panel), LRU series cache keyed `(run,id,t0,t1,px)`, zoom re-fetch, CSV export, pin-run. 4 vitest files + 4 Playwright. Verified by the orchestrator after the agent hit its usage limit mid-report: typecheck/lint/262 vitest/11 e2e all pass; the plot e2e asserts a real mouse-drag zoom produces a request with finite `t0`/`t1` and `px > 0` after the raw `px=0` request. |
 | X1.1 | X | M1 | J1.6, P1.1, P1.2, W1.1–W1.4 | todo | DC motor example, M1 e2e |
-| J2.1 | J | M2 | M1 | todo | Language completion |
+| J2.1 | J | M2 | M1 | done | Vec/Mat literals/sizes/indexing, `for` unrolling, `if` equations with equal branch counts, `ifelse`, the complete function whitelist (19 spec rows + 19 operator/statement rows, each with an allowed and a rejected test) and the D12 intrinsics table (`interp1`, `interp2`, `noise_normal`, `delay` with `stdlib_only`), plus parsing/checking of `@initial`, `@discrete` (Ts/offset folding, D18 locals) and `@events` (D19 normalization). Golden checks for `SpeedMonitor`, `LQGController` and `Ball`. 363 assertions; suite **5330** green. The obsolete "scopes not supported" J1.1 testset was replaced by the real feature. |
 | J2.2 | J | M2 | J2.1 | todo | Discrete scheduler |
 | J2.3 | J | M2 | J2.1 | todo | Events and nonsmooth |
 | J2.4 | J | M2 | M1 | todo | Causality (SCAP) |
@@ -127,3 +127,5 @@ Julia worker answers only `ping`/`cache.clear` (M0.4 scope; J1.6 completes the p
 | DC motor first run | < 10 s | |
 | Parameter-only re-run | < 300 ms | |
 | Decimation 1e7 × 10 | < 50 ms | 27–30 ms (P1.2) |
+| Plot zoom/pan re-render, 20 signals × 1e6 | < 50 ms | **7.0 ms zoom, 6.2–6.8 ms pan** (W2.4) |
+| Live streaming, 10 signals | 60 fps | **60.1–60.7 fps** at 20 tails/s (W2.4) |
