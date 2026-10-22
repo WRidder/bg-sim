@@ -1,0 +1,25 @@
+{
+  "$comment": "NEGATIVE fixture for J1.4: V1.u has no signal source. Expected E101 on node n1 (V1) because the input is unconnected. The two power ports are wired, so no other model error is raised.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "NegUnconnectedInput",
+  "diagram": {
+    "nodes": [
+      { "id": "n1", "name": "V1", "block": { "ref": "stdlib:electrical/VoltageSource" },
+        "position": { "x": 100, "y": 100 }, "params": { "V": "1.0" }, "constants": {}, "starts": {} },
+      { "id": "n2", "name": "R1", "block": { "ref": "stdlib:electrical/Resistor" },
+        "position": { "x": 300, "y": 100 }, "params": { "R": "10.0" }, "constants": {}, "starts": {} }
+    ],
+    "connections": [
+      { "id": "c1", "kind": "wire", "from": { "node": "n1", "port": "p" }, "to": { "node": "n2", "port": "p" } },
+      { "id": "c2", "kind": "wire", "from": { "node": "n1", "port": "n" }, "to": { "node": "n2", "port": "n" } }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": { "t_start": 0.0, "t_end": 1.0, "solver": "auto", "reltol": 1e-6, "abstol": 1e-8,
+                "max_step": null, "output": { "mode": "points", "points": 1000 }, "event_limit": 10000 },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

@@ -1,0 +1,27 @@
+{
+  "$comment": "NEGATIVE fixture for J1.4: a bond island with no concrete domain (Se -> 1-junction -> R, every port Generic). Plan 5.6: accepted as dimensionless Generic with W205. Expected W205 on node n1 (Se1) and connection c1; domains c1 and c2 are Generic.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "NegGenericIsland",
+  "diagram": {
+    "nodes": [
+      { "id": "n1", "name": "Se1", "block": { "ref": "stdlib:bondgraph/Se" },
+        "position": { "x": 60, "y": 160 }, "params": { "e": "1.0" }, "constants": {}, "starts": {} },
+      { "id": "n2", "name": "J1", "block": { "junction": "1" },
+        "position": { "x": 240, "y": 160 }, "params": {}, "constants": {}, "starts": {} },
+      { "id": "n3", "name": "R1", "block": { "ref": "stdlib:bondgraph/R" },
+        "position": { "x": 420, "y": 160 }, "params": { "r": "10.0" }, "constants": {}, "starts": {} }
+    ],
+    "connections": [
+      { "id": "c1", "kind": "bond", "from": { "node": "n1", "port": "p" }, "to": { "node": "n2" } },
+      { "id": "c2", "kind": "bond", "from": { "node": "n2" }, "to": { "node": "n3", "port": "p" } }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": { "t_start": 0.0, "t_end": 1.0, "solver": "auto", "reltol": 1e-6, "abstol": 1e-8,
+                "max_step": null, "output": { "mode": "points", "points": 1000 }, "event_limit": 10000 },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

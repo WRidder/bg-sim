@@ -5,8 +5,9 @@
     end
     @parameters n::Real = 1.0, [min = 0, description = "Transformer modulus"]
     @equations begin
+        # Power-positive-into-each-port (spec): e1*f1 + e2*f2 = 0, so one flow is negative.
         p1.e ~ n * p2.e
-        p2.f ~ n * p1.f
+        p2.f ~ -n * p1.f
     end
     @causality (p1, p2) => :transformer
 end

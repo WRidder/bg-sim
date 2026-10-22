@@ -1,0 +1,20 @@
+{
+  "$comment": "NEGATIVE fixture for J1.4: the node's block reference does not exist in the catalog. Decided code: E101 on node n1, because E101 is the model-assembly code (the spec reserves E102 for a mismatch on a connection). With no connections, the unknown node is the only diagnostic; E103 is suppressed.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "NegUnknownBlock",
+  "diagram": {
+    "nodes": [
+      { "id": "n1", "name": "Mystery1", "block": { "ref": "stdlib:electrical/NoSuchBlock" },
+        "position": { "x": 100, "y": 100 }, "params": {}, "constants": {}, "starts": {} }
+    ],
+    "connections": [],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": { "t_start": 0.0, "t_end": 1.0, "solver": "auto", "reltol": 1e-6, "abstol": 1e-8,
+                "max_step": null, "output": { "mode": "points", "points": 1000 }, "event_limit": 10000 },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

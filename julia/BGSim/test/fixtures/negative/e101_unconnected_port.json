@@ -1,0 +1,34 @@
+{
+  "$comment": "NEGATIVE fixture for J1.4: Motor1.shaft has no bond or wire. Expected E101 on node n3 (Motor1) with the 'connect it or add a source' hint (plan 5.2.6). Every other port is connected.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "NegUnconnectedPort",
+  "diagram": {
+    "nodes": [
+      { "id": "n1", "name": "Step1", "block": { "ref": "stdlib:sources/Step" },
+        "position": { "x": 40, "y": 120 }, "params": { "t_step": "0.01", "initial": "0.0", "final": "12.0" }, "constants": {}, "starts": {} },
+      { "id": "n2", "name": "V1", "block": { "ref": "stdlib:electrical/VoltageSource" },
+        "position": { "x": 220, "y": 120 }, "params": { "V": "1.0" }, "constants": {}, "starts": {} },
+      { "id": "n3", "name": "Motor1", "block": { "ref": "stdlib:converters/DCMotor" },
+        "position": { "x": 420, "y": 120 }, "params": { "R": "2.0", "L": "5e-4", "k_t": "0.05", "J": "1e-5", "d": "0.0" }, "constants": {}, "starts": {} },
+      { "id": "n4", "name": "Ground1", "block": { "ref": "stdlib:electrical/Ground" },
+        "position": { "x": 420, "y": 300 }, "params": {}, "constants": {}, "starts": {} },
+      { "id": "n5", "name": "FixHousing", "block": { "ref": "stdlib:rotation/FixedShaft" },
+        "position": { "x": 420, "y": 20 }, "params": {}, "constants": {}, "starts": {} }
+    ],
+    "connections": [
+      { "id": "c1", "kind": "signal", "from": { "node": "n1", "port": "y" }, "to": { "node": "n2", "port": "u" } },
+      { "id": "c2", "kind": "wire", "from": { "node": "n2", "port": "p" }, "to": { "node": "n3", "port": "p" } },
+      { "id": "c3", "kind": "wire", "from": { "node": "n3", "port": "n" }, "to": { "node": "n4", "port": "p" } },
+      { "id": "c4", "kind": "wire", "from": { "node": "n3", "port": "housing" }, "to": { "node": "n5", "port": "a" } },
+      { "id": "c5", "kind": "wire", "from": { "node": "n2", "port": "n" }, "to": { "node": "n4", "port": "p" } }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": { "t_start": 0.0, "t_end": 1.0, "solver": "auto", "reltol": 1e-6, "abstol": 1e-8,
+                "max_step": null, "output": { "mode": "points", "points": 1000 }, "event_limit": 10000 },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

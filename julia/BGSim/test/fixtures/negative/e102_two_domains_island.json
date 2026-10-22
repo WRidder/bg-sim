@@ -1,0 +1,30 @@
+{
+  "$comment": "NEGATIVE fixture for J1.4: one bond island touches two concrete domains. The 1-junction J1 is bonded to a Generic Se, an Electrical Ground and a Rotation FixedShaft, so the island has both Electrical and Rotation. Expected E102 on the connection that brings the second concrete domain in (c3), at node n4 (FixShaft).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "NegTwoDomainsIsland",
+  "diagram": {
+    "nodes": [
+      { "id": "n1", "name": "Se1", "block": { "ref": "stdlib:bondgraph/Se" },
+        "position": { "x": 60, "y": 160 }, "params": { "e": "1.0" }, "constants": {}, "starts": {} },
+      { "id": "n2", "name": "J1", "block": { "junction": "1" },
+        "position": { "x": 240, "y": 160 }, "params": {}, "constants": {}, "starts": {} },
+      { "id": "n3", "name": "Ground1", "block": { "ref": "stdlib:electrical/Ground" },
+        "position": { "x": 420, "y": 60 }, "params": {}, "constants": {}, "starts": {} },
+      { "id": "n4", "name": "FixShaft", "block": { "ref": "stdlib:rotation/FixedShaft" },
+        "position": { "x": 420, "y": 260 }, "params": {}, "constants": {}, "starts": {} }
+    ],
+    "connections": [
+      { "id": "c1", "kind": "bond", "from": { "node": "n1", "port": "p" }, "to": { "node": "n2" } },
+      { "id": "c2", "kind": "bond", "from": { "node": "n2" }, "to": { "node": "n3", "port": "p" } },
+      { "id": "c3", "kind": "bond", "from": { "node": "n2" }, "to": { "node": "n4", "port": "a" } }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": { "t_start": 0.0, "t_end": 1.0, "solver": "auto", "reltol": 1e-6, "abstol": 1e-8,
+                "max_step": null, "output": { "mode": "points", "points": 1000 }, "event_limit": 10000 },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

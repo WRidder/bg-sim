@@ -1,0 +1,25 @@
+{
+  "$comment": "NEGATIVE fixture for J1.4: the inline block declares a variable and an output but supplies one equation. Expected E103 on node n1 (the model is unbalanced: 3 unknowns, 2 equations), naming Unbalanced1 as the worst instance; the Step on n2 is balanced and its output is deliberately unconnected (an unconnected output is legal).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "NegUnbalanced",
+  "diagram": {
+    "nodes": [
+      { "id": "n1", "name": "Unbalanced1",
+        "block": { "inline": { "source": "@block Unbalanced begin\n    @variables x::Real = 0.0\n    @outputs y::Real = 0.0\n    @equations ddt(x) ~ 0.0\nend\n" } },
+        "position": { "x": 100, "y": 100 },
+        "params": {}, "constants": {}, "starts": {} },
+      { "id": "n2", "name": "Step1", "block": { "ref": "stdlib:sources/Step" },
+        "position": { "x": 300, "y": 100 },
+        "params": { "t_step": "0.1", "initial": "0.0", "final": "1.0" }, "constants": {}, "starts": {} }
+    ],
+    "connections": [],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": { "t_start": 0.0, "t_end": 1.0, "solver": "auto", "reltol": 1e-6, "abstol": 1e-8,
+                "max_step": null, "output": { "mode": "points", "points": 1000 }, "event_limit": 10000 },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

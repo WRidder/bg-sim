@@ -40,6 +40,9 @@ for entry in ("units/units.jl", "library/library.jl")
     isfile(path) && include(path)
 end
 
+# Work package J1.4: the IR and the flattening pipeline (plan 5.2, 5.4, 5.5, 5.6).
+include("compile/pipeline.jl")
+
 include("lower/mtk.jl")
 include("precompile.jl")
 include("worker/server.jl")
