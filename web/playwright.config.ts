@@ -12,7 +12,7 @@ const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const BASE_URL = "http://127.0.0.1:8765";
 
 export default defineConfig({
-  testDir: "tests/e2e",
+  testDir: "tests",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
@@ -21,7 +21,25 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      // Only the browser end-to-end specs; tests/*.test.ts belong to Vitest.
+      testMatch: /e2e[\\/].*\.spec\.ts/,
+      // tests/perf holds the plan 7.5 budgets; it runs as its own project so
+      // `npx playwright test tests/perf` selects exactly those files.
+      testIgnore: /perf[\\/]/,
+    },
+    {
+      name: "perf",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /perf[\\/].*\.spec\.ts/,
+      // A frame-rate measurement must not compete with a second worker.
+      fullyParallel: false,
+      workers: 1,
+    },
+  ],
   webServer: {
     command: "uv run bgsim",
     cwd: repoRoot,

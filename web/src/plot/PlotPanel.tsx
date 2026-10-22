@@ -1,15 +1,18 @@
 /**
  * The plot area of plan 7.5, mounted in the bottom dock's Plots tab.
  *
- * Layout: a toolbar (run status, add panel, reset, pin, CSV), an optional
- * pinned-run banner, and one or more stacked uPlot panels. A panel has at most
- * two y axes; adding a signal with a third unit group starts a new panel
- * (the store enforces it, the header explains it).
+ * Layout: a toolbar (run status, range, global inspect time, live badge, add
+ * panel, reset, follow-live, pin, CSV), an optional pinned-run banner, and one
+ * or more stacked uPlot panels. A panel has at most two y axes; a signal with a
+ * third unit group starts a new panel. A panel that was deliberately given a
+ * third group (drag-and-drop) offers "Split panel" in its header.
  *
  * Every zoom reports its window and the canvas width in device pixels, and the
  * store re-requests `/data`. "Show all" is a raw request (`px=0`); a zoom is
  * min/max decimated (`px = canvas width × devicePixelRatio`). A pinned run is
- * fetched through the same cache and overlaid as dashed lines.
+ * fetched through the same cache and overlaid as dashed lines. While a run is
+ * streaming, the toolbar shows whether the live tail is following or paused;
+ * "Follow live" returns to autoscroll.
  */
 
 import {
@@ -31,7 +34,12 @@ import {
   formatProgress,
 } from "./format";
 import { runExportUrl } from "./runApi";
-import { useRunStore, liveSeriesFor, plottedSignalIds } from "./runStore";
+import {
+  useRunStore,
+  livePointCount,
+  liveSeriesFor,
+  plottedSignalIds,
+} from "./runStore";
 import { readSignalDrag } from "./signalDnd";
 import { assignPanelAxes, groupSignalsByUnit, panelUnitSummary } from "./units";
 import { UPlotChart, type ChartSeriesConfig } from "./UPlotChart";
@@ -205,7 +213,7 @@ export function PlotPanel() {
   // a zoomed view reads `/data` from the stream instead.
   const chartData = live ?? data;
   const following = status === "running" && view === null;
-  const livePoints = live?.time.length ?? 0;
+  const livePoints = status === "running" ? livePointCount() : 0;
 
   // Measure the charts area once it exists (a run with at least one signal).
   useEffect(() => {

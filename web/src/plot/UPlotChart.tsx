@@ -168,7 +168,8 @@ export function UPlotChart({
   const legendIndexRef = useRef<number | null>(null);
   const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const suppressUntilRef = useRef(0);
+  const programmaticScaleRef = useRef(false);
+  const scaleTokenRef = useRef(0);
   const readyRef = useRef(false);
   const fullRangeRef = useRef(fullRange);
   const viewRef = useRef(view);
@@ -176,7 +177,6 @@ export function UPlotChart({
   const onResetRef = useRef(onReset);
   const onCursorTimeRef = useRef(onCursorTime);
   const cursorTimeRef = useRef(cursorTime);
-  const localCursorRef = useRef<number | null>(null);
   const renderSeqRef = useRef(0);
 
   const [chartEpoch, setChartEpoch] = useState(0);
@@ -323,7 +323,7 @@ export function UPlotChart({
             if (key !== "x" || !readyRef.current) {
               return;
             }
-            if (Date.now() < suppressUntilRef.current) {
+            if (programmaticScaleRef.current) {
               return;
             }
             const min = self.scales.x.min;
@@ -340,13 +340,8 @@ export function UPlotChart({
             if (index === null || index === undefined) {
               return;
             }
-            const time = self.data[0]?.[index];
-            if (typeof time === "number" && Number.isFinite(time)) {
-              // Only a user move updates the store (see the mousemove listener
-              // below). A synced or programmatic cursor must not echo back, or
-              // panels would chase each other's rounded indices forever.
-              localCursorRef.current = time;
-            }
+            // A synced or programmatic cursor must not write the store; the
+            // mousemove listener below is the only writer of inspect time.
             if (index !== legendIndexRef.current) {
               legendIndexRef.current = index;
               setLegendIndex(index);
@@ -395,8 +390,12 @@ export function UPlotChart({
       if (!(max > min)) {
         return;
       }
-      suppressUntilRef.current = Date.now() + 120;
+      const token = ++scaleTokenRef.current;
+      programmaticScaleRef.current = true;
       current.batch(() => current.setScale("x", { min, max }));
+      if (scaleTokenRef.current === token) {
+        programmaticScaleRef.current = false;
+      }
       reportZoom(min, max, 120, wheelTimerRef);
     };
 
@@ -428,13 +427,19 @@ export function UPlotChart({
         dragTimerRef.current = null;
       }
       chart.setSelect({ left: 0, top: 0, width: 0, height: 0 }, false);
-      suppressUntilRef.current = Date.now() + 120;
+      const token = ++scaleTokenRef.current;
+      programmaticScaleRef.current = true;
       const active = viewRef.current;
       if (active === null) {
         chart.setData(chart.data, true);
       } else {
         chart.setScale("x", { min: active.t0, max: active.t1 });
       }
+      queueMicrotask(() => {
+        if (scaleTokenRef.current === token) {
+          programmaticScaleRef.current = false;
+        }
+      });
     };
 
     // The pointer is the only writer of the global inspect time. uPlot's own
@@ -455,9 +460,7 @@ export function UPlotChart({
       if (typeof time !== "number" || !Number.isFinite(time)) {
         return;
       }
-      localCursorRef.current = time;
-      onCursorTimeRef.current(time);
-    };
+      onCursorTimeRef.current(time);    };
     const onMouseMove = (): void => {
       if (cursorFrame !== null) {
         return;
@@ -515,7 +518,8 @@ export function UPlotChart({
     }
     const table = buildChartData(signals, compareSignals, data, compare);
     dataRef.current = table;
-    suppressUntilRef.current = Date.now() + 120;
+    const scaleToken = ++scaleTokenRef.current;
+    programmaticScaleRef.current = true;
     const seq = renderSeqRef.current + 1;
     renderSeqRef.current = seq;
     const started =
@@ -544,6 +548,9 @@ export function UPlotChart({
     // the Playwright perf test reads it back from data-render-ms.
     const host = hostRef.current;
     queueMicrotask(() => {
+      if (scaleTokenRef.current === scaleToken) {
+        programmaticScaleRef.current = false;
+      }
       if (host === null || renderSeqRef.current !== seq) {
         return;
       }

@@ -7,6 +7,11 @@
  * zoom in all of them and a signal added in the browser appears in the active
  * panel without a second source of truth.
  *
+ * `cursorTime` is the global inspect time in seconds (the 3D viewer and the
+ * bond hover values read it through `getInspectTime`/`subscribeInspectTime`).
+ * `addSignals` plots a whole context-menu selection in one pass, and
+ * `splitPanel` moves a forced third unit group to its own panel.
+ *
  * Live data arrives through `WS /ws/runs/{id}`. Tails are kept outside React
  * (they can be large) and exposed through `liveSeriesFor` plus a `liveVersion`
  * counter; a finished run replaces them with a fresh `/data` answer. A poll of
@@ -414,6 +419,11 @@ function mergeTail(params: Record<string, unknown>): void {
   }
   const state = useRunStore.getState();
   if (state.runId !== runId) {
+    return;
+  }
+  if (state.status !== "running" && state.status !== "starting") {
+    // A message already in flight when run.done closed the socket must not
+    // extend the series after the final `/data` refresh.
     return;
   }
   const validColumns: number[][] = [];
@@ -1048,7 +1058,9 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     if (get().status !== "running") {
       return;
     }
-    get().setView(null);
+    // The live series is already in memory; a `/data` round trip for the whole
+    // partial stream would fetch far more than the tail that is already here.
+    set({ view: null });
   },
 
   ensureData: async (px, force = false) => {
