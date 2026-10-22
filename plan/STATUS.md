@@ -62,6 +62,17 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | J4.1 | J | M4 | M3 | todo | Planar domain |
 | J4.2 | J | M4 | J4.1 | todo | Planar components |
 | X4.1 | X | M4 | J4.2 | todo | Planar examples and cross-checks |
+| C5.0 | C | M5 | M3 | todo | Debug contracts (added in plan v1.1) |
+| J5.1 | J | M5 | C5.0 | todo | Debug run engine |
+| J5.2 | J | M5 | J5.1 | todo | Statement hooks and line breakpoints |
+| J5.3 | J | M5 | J5.1, J2.8 | todo | Watch pool, evaluate and explain |
+| J5.4 | J | M5 | J5.1 | todo | Edits, replay and branch |
+| J5.5 | J | M5 | J5.2, J5.3, J5.4 | todo | Worker debug methods |
+| P5.1 | P | M5 | C5.0 | todo | Debug API and fake debugger |
+| W5.1 | W | M5 | P5.1, W2.1 | todo | Debug controls and gutter breakpoints |
+| W5.2 | W | M5 | W5.1 | todo | Debug panels, watches and explain |
+| W5.3 | W | M5 | W5.1, W2.4, W3.3 | todo | Pause-aware plots and live inspector |
+| X5.1 | X | M5 | J5.5, P5.1, W5.1–W5.3 | todo | Debugging walkthrough e2e |
 
 ## Milestone summaries
 

@@ -11,7 +11,7 @@ You do not write most of the code yourself. You plan, delegate work packages (WP
 3. `D:\bg-sim\spec\Modeling Language Spec v0.1.md` is the normative language spec. The plan's decision table (section 1.2) resolves its gaps and open questions; where they differ, the plan wins.
 
 ## Goal for this session
-Complete milestones **M0 → M1 → M2 → M3** of the plan, each passing its integration gate (section 10.3). Then attempt **M4** (planar mechanics) if you have time and budget left. Do not start work that is out of scope (plan section 12). In particular: no juliac or export build, no spatial mechanics, no thermal domain, no auth.
+Complete milestones **M0 → M1 → M2 → M3 → M5** of the plan, each passing its integration gate (section 10.3). M5 (debugging) was added in plan v1.1 and runs after M3. Then attempt **M4** (planar mechanics) if you have time and budget left. Do not start work that is out of scope (plan section 12). In particular: no juliac or export build, no spatial mechanics, no thermal domain, no auth.
 
 ## How to work
 - Follow the orchestrator protocol in plan section 0.1 exactly:
