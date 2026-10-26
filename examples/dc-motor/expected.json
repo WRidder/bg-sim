@@ -41,15 +41,15 @@
           "note": "same steady state as the iconic model"
         }
       ]
-    },
-    "compare": {
-      "a": "iconic",
-      "b": "bondgraph",
-      "signal_a": "Motor1/shaft.f",
-      "signal_b": "IJ/p.f",
-      "from_t": 0.5,
-      "max_abs": 1e-6,
-      "note": "the bond-graph Se is a constant 12 V, so only the settled part is comparable"
     }
+  },
+  "compare": {
+    "a": "iconic",
+    "b": "bondgraph",
+    "signal_a": "Motor1/shaft.f",
+    "signal_b": "IJ/p.f",
+    "from_t": 0.5,
+    "max_abs": 1e-6,
+    "note": "the bond-graph Se is a constant 12 V, so only the settled part is comparable"
   }
 }

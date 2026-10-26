@@ -21,7 +21,7 @@ The walking skeleton: one physical model, built twice — once from iconic compo
 1. Open **iconic**, press **Run** (Ctrl+Enter), and add `Motor1/shaft.f` to a plot. It settles
    at `k·V / (k² + R·d) = 239.808 rad/s`.
 2. Open **bondgraph** and run it. The `Se` is a constant 12 V (no step), so compare the settled
-   part: from t = 0.5 s the two models agree to about 1e-13 rad/s.
+   part: from t = 0.5 s the two models agree to better than 1e-12 rad/s.
 3. Inspect the motor: change `R` and run again — the parameter-only re-run reuses the compiled
    system (a few tens of milliseconds), so it is a good place to feel the edit/run loop.
 4. Drag the damper's `d` up and watch the steady-state speed drop: `ω = k·V/(k² + R·d)`.
@@ -36,3 +36,14 @@ through the real Julia worker:
 - cursor readout at t = 0.2 s: `239.8 ± 0.1 rad/s` (the same number the Playwright test
   asserts);
 - iconic vs bond graph from t = 0.5 s: max |Δω| < 1e-6 rad/s.
+
+The file is read by `examples/run_checks.py` and uses three machine-readable check kinds:
+
+- `final_value` — the named signal at `t`, compared with `rtol` (relative to `value`);
+- `cursor_value` — the same interpolation, with an absolute `abs` tolerance;
+- `compare` — model `a`'s `signal_a` against model `b`'s `signal_b` on the union of
+  their time grids from `from_t`, with a maximum absolute difference `max_abs`.
+
+The signal ids are the plan 3.1 ids in the run manifest. The runner reads `columns.f64`
+in manifest order, behind the time column. The legend shows the rotation unit as `1/s`
+(radians are dimensionless in plan 5.3); the plan quotes the same quantity as rad/s.
