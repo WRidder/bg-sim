@@ -1142,6 +1142,34 @@ a `step_response` check kind (rise time, overshoot, settling) and a ripple measu
 
 **3D (M3):** a motor can, shaft and a load plate; bind the motor angle to the shaft.
 
+### 9.6c `inverted-pendulum-cart`, milestone M2 (requested addition)
+
+The classic cart–pendulum stabilizer, as a controller-design sample (nonlinear plant, linear
+controller):
+- **Plant** — an equation block with a cart force input `u` and states
+  `x, dx, theta, dtheta` (`theta` measured from upright):
+  ```
+  Mt = M + m
+  ddx = (u + m*l*sin(theta)*dtheta^2 - m*g*sin(theta)*cos(theta)) / (Mt - m*cos(theta)^2)
+  ddtheta = (g*sin(theta)*Mt - cos(theta)*(u + m*l*dtheta^2*sin(theta))) /
+            (l*(Mt - m*cos(theta)^2))
+  ddt(x) ~ dx;  ddt(dx) ~ ddx;  ddt(theta) ~ dtheta;  ddt(dtheta) ~ ddtheta
+  ```
+  with `M = 1 kg`, `m = 0.2 kg`, `l = 0.5 m`, `g = 9.81 m/s²`, cart friction `b = 0.1 N·s/m`
+  (added as `-b*dx` in `ddx`), initial tilt `theta = 0.1 rad`.
+- **Controller** — a discrete LQR at `Ts = 1 ms` on `[x, dx, theta, dtheta]` with a cart
+  position reference (a 0.2 m step at t = 1.5 s) and a force limit of ±20 N. The gains come
+  from a `design.py` (uv script with `numpy`/`scipy`) that linearizes the plant at upright,
+  solves the Riccati equation and writes `K` into the model JSON; the committed model uses
+  the resulting literals.
+- **Checks** — from the 0.1 rad tilt the angle settles to |theta| < 0.5° and the cart to
+  |x| < 1 cm by t = 3 s; after the 0.2 m reference step it settles within 2 s; |u| ≤ 20 N at
+  every sample; no solver failure. A `step_response`/settling check kind is reused.
+- **Playwright** — import the sample, open it, run, plot `Pendulum1/theta` and the force,
+  and read the legend at t = 3 s.
+- **3D (M3):** a cart box, two wheels and a pendulum rod; bind the cart to `x` and the rod
+  to `theta`.
+
 ### 9.7 `reaction-wheel-1d`, milestone M3 (1D cube-on-edge balancer, iconic Rotation)
 - **Model:**
   - an `InvertedPendulumBody` equation block, copied from Inertia, with:
@@ -1436,6 +1464,9 @@ Each WP is described by these fields:
 
 **X2.6 Example `industrial-servo` (requested addition)** · Depends: J2.2, J2.7c, J2.7e · Owns: `examples/industrial-servo/`, `web/tests/e2e/industrial-servo.spec.ts`
 - The variants of section 9.6b: `baseline` (averaged inverter, dq PMSM, rigid inertia, cascaded discrete loops), `two-mass` (compliance + notch), `switching` (PWM/dead time), `encoder` (24-bit quantization + speed estimate), `full` (all of them together). Each has its own expected checks; the runner gains a `step_response` check kind (rise/overshoot/settling) and a ripple measure. Acceptance: every variant's `expected.json` passes and Playwright opens, runs and switches between the variants.
+
+**X2.7 Example `inverted-pendulum-cart` (requested addition)** · Depends: J2.2, J2.7c · Owns: `examples/inverted-pendulum-cart/`, `web/tests/e2e/inverted-pendulum-cart.spec.ts`
+- Section 9.6c: a nonlinear cart–pendulum equation block, a discrete LQR at 1 ms (gains from a committed `design.py`), cart-position reference step, ±20 N force limit. Checks: 0.1 rad tilt settles to |theta| < 0.5° and |x| < 1 cm by 3 s, the 0.2 m reference settles within 2 s, |u| ≤ 20 N, no solver failure. Playwright opens, runs and plots angle + force.
 
 **M2 gate.**
 
