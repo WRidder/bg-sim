@@ -13,8 +13,9 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
   with ``{"name", "example"}``);
 * starts each model's run through ``POST /api/projects/{p}/runs``, waits for
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
-* evaluates every ``final_value``, ``cursor_value``, ``max_abs`` and ``ratio`` check,
-  prints one line per check and exits non-zero when any check fails.
+* evaluates every ``final_value``, ``cursor_value``, ``max_abs``, ``ratio``,
+  ``compare_signals`` and ``no_diagnostics`` check, prints one line per check and
+  exits non-zero when any check fails.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
 (``n`` Float64 values), then one contiguous column per manifest signal, in
@@ -45,6 +46,17 @@ runs' time grids over ``[from_t, t1]``, so a different sample grid cannot hide
 a peak. ``max_abs`` takes the largest absolute value over ``[from_t, to_t]``
 (default the whole run); ``ratio`` evaluates ``signal / signal_b`` at ``t``
 (default the final time), which checks a gear ratio or two speeds agreeing.
+
+``compare_signals`` is the same-run form (two signals of one model, e.g. the two
+RLC subsystems): it interpolates both onto the union of the run's own time grid
+over ``[from_t, to_t]`` and checks the maximum absolute difference against
+``max_abs``. ``no_diagnostics`` takes ``codes`` and fails when any of them
+appears in the run manifest; other codes (such as the expected W205 of a pure
+bond-graph island) are printed but ignored::
+
+    {"kind": "compare_signals", "signal": "Iconic/C1/p.e",
+     "signal_b": "Bondgraph/C1/p.e", "from_t": 0.0, "max_abs": 1e-8},
+    {"kind": "no_diagnostics", "codes": ["W201", "W202", "E106"]}
 """
 
 from __future__ import annotations
@@ -373,6 +385,80 @@ def _ratio_check(
     report.check(abs(measured - expected) <= total, label, detail)
 
 
+def _compare_signals_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """Two signals of the same run, on the union grid over a time window."""
+    signal = str(check.get("signal", ""))
+    signal_b = str(check.get("signal_b", ""))
+    label = f"{project}/{model} {signal} vs {signal_b}"
+    if "max_abs" not in check:
+        report.check(False, label, "the check needs 'max_abs'")
+        return
+    for name in (signal, signal_b):
+        if name not in run.signals:
+            report.check(False, label, f"unknown signal {name!r}")
+            return
+    try:
+        limit = float(check["max_abs"])
+    except (TypeError, ValueError):
+        report.check(False, label, "'max_abs' must be a number")
+        return
+    first = float(run.time[0])
+    last = float(run.time[-1])
+    from_t = float(check.get("from_t", first))
+    to_t = float(check.get("to_t", last))
+    lower = max(from_t, first)
+    upper = min(to_t, last)
+    if not upper > lower:
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    window = (run.time >= lower) & (run.time <= upper)
+    times = run.time[window]
+    times_b = run.time[window]
+    grid = np.union1d(times, times_b)
+    values = np.interp(grid, run.time, run.signals[signal])
+    values_b = np.interp(grid, run.time, run.signals[signal_b])
+    difference = float(np.max(np.abs(values - values_b)))
+    detail = (
+        f"over [{lower:g}, {upper:g}] max|delta| {difference:.3g} "
+        f"(limit {limit:g} over {grid.size} points)"
+    )
+    report.check(difference <= limit, label, detail)
+
+
+def _no_diagnostics_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The forbidden diagnostic codes are absent from the run manifest."""
+    codes = check.get("codes")
+    if not isinstance(codes, list) or not all(isinstance(code, str) for code in codes):
+        report.check(False, f"{project}/{model} no_diagnostics", "'codes' must be a list of strings")
+        return
+    label = f"{project}/{model} no {'/'.join(codes)}"
+    diagnostics = run.manifest.get("diagnostics") or []
+    found = sorted(
+        {
+            str(entry.get("code"))
+            for entry in diagnostics
+            if isinstance(entry, dict) and entry.get("code") in codes
+        }
+    )
+    present = sorted(
+        {
+            str(entry.get("code"))
+            for entry in diagnostics
+            if isinstance(entry, dict) and entry.get("code") is not None
+        }
+    )
+    detail = (
+        "forbidden code(s) reported: " + ", ".join(found)
+        if found
+        else "none reported (run diagnostics: " + (", ".join(present) or "none") + ")"
+    )
+    report.check(not found, label, detail)
+
+
 def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Run]) -> None:
     if isinstance(specs, dict):
         specs = [specs]
@@ -436,6 +522,10 @@ def _check_model_checks(
             _max_abs_check(report, project, model, run, check)
         elif kind == "ratio":
             _ratio_check(report, project, model, run, check)
+        elif kind == "compare_signals":
+            _compare_signals_check(report, project, model, run, check)
+        elif kind == "no_diagnostics":
+            _no_diagnostics_check(report, project, model, run, check)
         else:
             label = f"{project}/{model} {check.get('signal', '?')} {kind!r}"
             report.check(False, label, "unknown check kind")

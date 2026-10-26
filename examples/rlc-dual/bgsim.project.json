@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "rlc-dual",
+  "models": [
+    "rlc-dual"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

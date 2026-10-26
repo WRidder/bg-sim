@@ -1,0 +1,316 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "rlc-dual",
+  "$comment": "Plan 9.3 (X2.2): one model, two independent subsystems. Iconic is the series RLC (Step -> VoltageSource -> R -> L -> C -> Ground); Bondgraph is Se -> 1-junction with R, I and C. R = 10 Ohm, L = 10 mH, C = 100 uF give w0 = 1000 rad/s and zeta = 0.5. No subsystem ports are exposed because the two circuits do not touch.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "iconic",
+        "name": "Iconic",
+        "block": {
+          "subsystem": {
+            "ports": [],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "i1",
+                  "name": "Step1",
+                  "block": { "ref": "stdlib:sources/Step" },
+                  "position": { "x": 40, "y": 120 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "t_step": "0.0", "initial": "0.0", "final": "1.0" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "i2",
+                  "name": "V1",
+                  "block": { "ref": "stdlib:electrical/VoltageSource" },
+                  "position": { "x": 240, "y": 120 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "V": "1.0" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "i3",
+                  "name": "R1",
+                  "block": { "ref": "stdlib:electrical/Resistor" },
+                  "position": { "x": 420, "y": 40 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "R": "10.0" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "i4",
+                  "name": "L1",
+                  "block": { "ref": "stdlib:electrical/Inductor" },
+                  "position": { "x": 600, "y": 40 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "L": "10e-3" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "i5",
+                  "name": "C1",
+                  "block": { "ref": "stdlib:electrical/Capacitor" },
+                  "position": { "x": 780, "y": 40 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "C": "100e-6" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "i6",
+                  "name": "Ground1",
+                  "block": { "ref": "stdlib:electrical/Ground" },
+                  "position": { "x": 600, "y": 300 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "ic1",
+                  "kind": "signal",
+                  "from": { "node": "i1", "port": "y" },
+                  "to": { "node": "i2", "port": "u" },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "ic2",
+                  "kind": "wire",
+                  "from": { "node": "i2", "port": "p" },
+                  "to": { "node": "i3", "port": "p" },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "ic3",
+                  "kind": "wire",
+                  "from": { "node": "i3", "port": "n" },
+                  "to": { "node": "i4", "port": "p" },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "ic4",
+                  "kind": "wire",
+                  "from": { "node": "i4", "port": "n" },
+                  "to": { "node": "i5", "port": "p" },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "ic5",
+                  "kind": "wire",
+                  "from": { "node": "i5", "port": "n" },
+                  "to": { "node": "i6", "port": "p" },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "ic6",
+                  "kind": "wire",
+                  "from": { "node": "i2", "port": "n" },
+                  "to": { "node": "i6", "port": "p" },
+                  "route": [],
+                  "label": null
+                }
+              ],
+              "subsystemPorts": [],
+              "annotations": []
+            }
+          }
+        },
+        "position": { "x": 80, "y": 100 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "bondgraph",
+        "name": "Bondgraph",
+        "block": {
+          "subsystem": {
+            "ports": [],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "b1",
+                  "name": "Se1",
+                  "block": { "ref": "stdlib:bondgraph/Se" },
+                  "position": { "x": 40, "y": 180 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "e": "1.0" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "b2",
+                  "name": "J1",
+                  "block": { "junction": "1" },
+                  "position": { "x": 260, "y": 180 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "b3",
+                  "name": "R1",
+                  "block": { "ref": "stdlib:bondgraph/R" },
+                  "position": { "x": 480, "y": 40 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "r": "10.0" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "b4",
+                  "name": "IL",
+                  "block": { "ref": "stdlib:bondgraph/I" },
+                  "position": { "x": 480, "y": 180 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "i": "10e-3" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "b5",
+                  "name": "C1",
+                  "block": { "ref": "stdlib:bondgraph/C" },
+                  "position": { "x": 480, "y": 320 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "c": "100e-6" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "bc1",
+                  "kind": "bond",
+                  "from": { "node": "b1", "port": "p" },
+                  "to": { "node": "b2" },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "bc2",
+                  "kind": "bond",
+                  "from": { "node": "b2" },
+                  "to": { "node": "b3", "port": "p" },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "bc3",
+                  "kind": "bond",
+                  "from": { "node": "b2" },
+                  "to": { "node": "b4", "port": "p" },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "bc4",
+                  "kind": "bond",
+                  "from": { "node": "b2" },
+                  "to": { "node": "b5", "port": "p" },
+                  "route": [],
+                  "label": null
+                }
+              ],
+              "subsystemPorts": [],
+              "annotations": []
+            }
+          }
+        },
+        "position": { "x": 560, "y": 100 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Iconic: series RLC (Electrical)",
+        "x": 80,
+        "y": 40,
+        "w": 320,
+        "h": 40
+      },
+      {
+        "id": "a2",
+        "kind": "text",
+        "text": "Bond graph: Se -> 1-junction (Generic)",
+        "x": 560,
+        "y": 40,
+        "w": 380,
+        "h": 40
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.01,
+    "solver": "auto",
+    "reltol": 1e-10,
+    "abstol": 1e-12,
+    "max_step": null,
+    "output": { "mode": "points", "points": 20000 },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Capacitor voltages (iconic vs bond graph)",
+      "signals": ["Iconic/C1/p.e", "Bondgraph/C1/p.e"]
+    },
+    {
+      "id": "p2",
+      "title": "Inductor current / flow",
+      "signals": ["Iconic/L1/i", "Bondgraph/IL/p.f"]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}
