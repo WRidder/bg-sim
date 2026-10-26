@@ -597,11 +597,13 @@ function _scalar_values(value, shape::Tuple{Vararg{Int}})
     end
     if value isa AbstractMatrix
         size(value) == (shape[1], shape[2]) || return nothing
-        return Any[value[i, j] for i in 1:shape[1], j in 1:shape[2]][:]
+        # Row-major, the order `_element_ids` names (`x[1,1], x[1,2], ...`) and the order
+        # `QValue.elems` uses. `value[i, j]` is column-major, so iterate explicitly.
+        return Any[value[i, j] for i in 1:shape[1] for j in 1:shape[2]]
     end
     if value isa AbstractVector && length(value) == shape[1] &&
        all(v -> v isa AbstractVector && length(v) == shape[2], value)
-        return Any[value[i][j] for i in 1:shape[1], j in 1:shape[2]][:]
+        return Any[value[i][j] for i in 1:shape[1] for j in 1:shape[2]]
     end
     return nothing
 end
@@ -1006,6 +1008,23 @@ end
 
 _qsame_shape(a::QValue, b::QValue) = a.shape == b.shape
 
+"""
+    _qarray_arg(q, range) -> Expr
+
+One qualified argument as a single AST node again: the scalar itself, a `VectorLit` for a
+vector, or a `MatrixLit` for a matrix. The D12 table intrinsics (`interp1`, `interp2`) are
+the one place where an array argument stays whole instead of being unrolled to scalars.
+"""
+function _qarray_arg(q::QValue, r::BGSim.SourceRange)
+    isempty(q.shape) && return q.elems[1]
+    if length(q.shape) == 1
+        return VectorLit(copy(q.elems), r)
+    end
+    n, m = q.shape
+    rows = [BGSim.Expr[q.elems[(i - 1) * m + j] for j in 1:m] for i in 1:n]
+    return MatrixLit(rows, r)
+end
+
 function _qmap1(q::QValue, f)
     return QValue(q.shape, BGSim.Expr[f(e) for e in q.elems])
 end
@@ -1367,6 +1386,27 @@ function _qualify_node(q::QCtx, e::BinOp)
             return _qmap1(rhs, y -> BinOp(op, lhs.elems[1], y, r))
         elseif isempty(rhs.shape)
             return _qmap1(lhs, x -> BinOp(op, x, rhs.elems[1], r))
+        elseif length(lhs.shape) == 2 && length(rhs.shape) == 1
+            # `A * x`, the matrix-vector product the spec's function table lists next to
+            # `transpose` and `A \ b`. One scalar equation per row: `sum_j A[i,j]*x[j]`.
+            n, m = lhs.shape
+            if m != rhs.shape[1]
+                _qreport!(
+                    q;
+                    code = "E004",
+                    message = "a matrix-vector product needs a $(n)x$(m) matrix and a $m-vector, got $(lhs.shape) and $(rhs.shape)",
+                    range = r,
+                )
+                return nothing
+            end
+            elems = BGSim.Expr[]
+            for i in 1:n
+                terms = BGSim.Expr[
+                    BinOp(:*, _qpick(lhs, i, j), rhs.elems[j], r) for j in 1:m
+                ]
+                push!(elems, _sum_exprs(terms, r))
+            end
+            return QValue((n,), elems)
         end
         _qreport!(
             q;
@@ -1451,6 +1491,13 @@ function _qualify_node(q::QCtx, e::Call)
             range = r,
         )
         return out
+    elseif fn === :interp1 || fn === :interp2
+        # The D12 table intrinsics take the table as array arguments: keep the whole Vec/Mat
+        # instead of lifting the call element-wise (which would make one 1-point lookup per
+        # table entry). `lower_call` registers them as opaque functions.
+        return _qscalar(
+            Call(Name(fn, e.fn.range), BGSim.Expr[_qarray_arg(a, r) for a in args], r)
+        )
     elseif fn === :ifelse || fn === :max || fn === :min || fn === :clamp ||
            fn === :abs || fn === :sign || fn === :sqrt || fn === :exp ||
            fn === :log || fn === :log10 || fn === :sin || fn === :cos ||
@@ -1459,8 +1506,7 @@ function _qualify_node(q::QCtx, e::Call)
            fn === :ceil || fn === :round || fn === :hypot || fn === :mod ||
            fn === :rem || fn === :deadzone || fn === :saturate ||
            fn === :previous || fn === :hold || fn === :delay ||
-           fn === :interp1 || fn === :interp2 || fn === :noise_normal ||
-           fn === :reinit
+           fn === :noise_normal || fn === :reinit
         # A scalar function: every argument must be scalar. `min`/`max`/`clamp`/`abs` also
         # work on the same-shaped arrays in the language, so lift them element-wise when all
         # arguments have one common array shape.

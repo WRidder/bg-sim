@@ -24,6 +24,87 @@
 #   `previous`, `hold`, `reinit`) are not part of the continuous M1 lowering. They raise a
 #   `LowerError` that `simulate` reports as E900 with the block path; the work packages that
 #   add them (J2.2, J2.3, J2.7b) extend this table. Nothing here silently returns zero.
+# * `interp1`/`interp2` are **opaque registered functions** (plan D12): the numeric
+#   implementations live below, `Symbolics.@register_symbolic` makes the lowering emit one
+#   `bg_interp1(...)` term instead of an unrolled table search, and the generated RHS calls
+#   the numeric method at run time. `delay` and `noise_normal` still raise a `LowerError`
+#   (see `lower_call`).
+
+"""
+    bg_interp1(u, xs, ys)
+
+The D12 piecewise-linear 1-D table lookup, as an opaque Symbolics function. `xs` are the
+strictly increasing breakpoints and `ys` the value at each breakpoint; outside the table the
+first/last value is held. `interp1` calls it through
+[`lower_call`](@ref); the plain-Julia method below is what the compiled right-hand side runs.
+"""
+function bg_interp1(u::Real, xs::AbstractVector, ys::AbstractVector)
+    n = length(xs)
+    length(ys) == n ||
+        throw(ArgumentError("interp1: the abscissa and ordinate need the same length"))
+    n == 0 && throw(ArgumentError("interp1: the table is empty"))
+    u <= xs[1] && return ys[1]
+    u >= xs[n] && return ys[n]
+    k = 1
+    while k < n - 1 && u > xs[k + 1]
+        k += 1
+    end
+    x0, x1 = xs[k], xs[k + 1]
+    x1 == x0 && return ys[k]
+    w = (u - x0) / (x1 - x0)
+    # Arithmetic stays generic: the adaptive solver calls this with `ForwardDiff.Dual`
+    # numbers for its time gradient, so nothing may convert to `Float64`.
+    return (one(w) - w) * ys[k] + w * ys[k + 1]
+end
+
+"""
+    bg_interp2(u, v, breaks, table)
+
+The D12 bilinear 2-D table lookup, as an opaque Symbolics function. Row 1 of `breaks` holds
+the x breakpoints and row 2 the y breakpoints; `table[i,j]` is the value at
+`(x = breaks[1,j], y = breaks[2,i])`, so `table` is `length(x-axis) × length(y-axis)` and the
+two axes have the same number of points (a square grid, `Lookup2D` declares it with one
+structural constant `N`). Outside the grid the edge value is held. `interp2` calls it through
+[`lower_call`](@ref); the method below is what the compiled right-hand side runs.
+"""
+function bg_interp2(u::Real, v::Real, breaks::AbstractMatrix, table::AbstractMatrix)
+    size(breaks, 1) == 2 ||
+        throw(ArgumentError("interp2: `breaks` needs two rows (x, then y)"))
+    nx = size(breaks, 2)
+    size(table, 1) == nx && size(table, 2) == nx || throw(ArgumentError(
+        "interp2: a $(nx)x$(nx) grid needs a $(nx)x$(nx) table, got $(size(table))"
+    ))
+    nx == 0 && throw(ArgumentError("interp2: the table is empty"))
+    ux = u
+    vx = v
+    ux <= breaks[1, 1] && (ux = breaks[1, 1])
+    ux >= breaks[1, nx] && (ux = breaks[1, nx])
+    vx <= breaks[2, 1] && (vx = breaks[2, 1])
+    vx >= breaks[2, nx] && (vx = breaks[2, nx])
+    j = 1
+    while j < nx - 1 && ux > breaks[1, j + 1]
+        j += 1
+    end
+    i = 1
+    while i < nx - 1 && vx > breaks[2, i + 1]
+        i += 1
+    end
+    x0, x1 = breaks[1, j], breaks[1, j + 1]
+    y0, y1 = breaks[2, i], breaks[2, i + 1]
+    fx = x1 == x0 ? zero(ux) : (ux - x0) / (x1 - x0)
+    fy = y1 == y0 ? zero(vx) : (vx - y0) / (y1 - y0)
+    # Generic arithmetic again: no `Float64` conversion, so ForwardDiff duals pass through.
+    low = (one(fx) - fx) * table[i, j] + fx * table[i, j + 1]
+    high = (one(fx) - fx) * table[i + 1, j] + fx * table[i + 1, j + 1]
+    return (one(fy) - fy) * low + fy * high
+end
+
+Symbolics.@register_symbolic bg_interp1(
+    u::Real, xs::AbstractVector, ys::AbstractVector
+)
+Symbolics.@register_symbolic bg_interp2(
+    u::Real, v::Real, breaks::AbstractMatrix, table::AbstractMatrix
+)
 
 """
     LowerError(message, path, block, range)
@@ -335,8 +416,15 @@ function lower_call(fn::Symbol, args, ctx::LowerCtx, node)
     fn in (:previous, :hold, :reinit) && return _lower_error(
         "`$fn` is only lowered for discrete/event code (J2.2/J2.3)", ctx
     )
-    fn in (:delay, :interp1, :interp2, :noise_normal) && return _lower_error(
-        "`$fn` is an intrinsic that this continuous build does not lower yet (J2.7b)", ctx
+    if fn === :interp1 || fn === :interp2
+        values = lower_args(args, ctx)
+        (fn === :interp1 ? 3 : 4) == length(values) || return _lower_error(
+            "`$fn` takes $(fn === :interp1 ? 3 : 4) arguments", ctx
+        )
+        return fn === :interp1 ? bg_interp1(values...) : bg_interp2(values...)
+    end
+    fn in (:delay, :noise_normal) && return _lower_error(
+        "`$fn` is an intrinsic that this build does not lower yet", ctx
     )
     return _lower_error("function `$fn` cannot be lowered", ctx)
 end

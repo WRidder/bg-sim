@@ -101,6 +101,26 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:bondgraph/TF" => (
         description = "Transformer; power conserving, with the modulus n.", icon = "bg-tf",
     ),
+    "stdlib:continuous/Abs" => (
+        description = "Absolute value of the input; the kink at zero is a switching event.",
+        icon = "cont-abs",
+    ),
+    "stdlib:continuous/DeadZone" => (
+        description = "Dead zone: zero output inside the zone and u - edge outside it.",
+        icon = "cont-dead-zone",
+    ),
+    "stdlib:continuous/Divide" => (
+        description = "Divides u1 by u2.",
+        icon = "cont-divide",
+    ),
+    "stdlib:continuous/FilteredDerivative" => (
+        description = "Derivative with a first-order filter; Tf is the filter time constant.",
+        icon = "cont-filtered-derivative",
+    ),
+    "stdlib:continuous/FirstOrder" => (
+        description = "First-order lag k/(tau*s + 1).",
+        icon = "cont-first-order",
+    ),
     "stdlib:continuous/Gain" => (
         description = "Multiplies the input by a constant gain.", icon = "cont-gain",
     ),
@@ -108,13 +128,71 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Integrates the input; the start value comes from the variable's start override.",
         icon = "cont-integrator",
     ),
+    "stdlib:continuous/LeadLag" => (
+        description = "Lead-lag filter k*(1 + T_lead*s)/(1 + T_lag*s).",
+        icon = "cont-lead-lag",
+    ),
+    "stdlib:continuous/Lookup1D" => (
+        description = "Piecewise-linear 1-D lookup table over N breakpoints (interp1, D12).",
+        icon = "cont-lookup-1d",
+    ),
+    "stdlib:continuous/Lookup2D" => (
+        description = "Bilinear 2-D lookup table on an N-by-N grid (interp2, D12); row 1 of breaks is the x axis, row 2 the y axis.",
+        icon = "cont-lookup-2d",
+    ),
+    "stdlib:continuous/MathFunction" => (
+        description = "One whitelisted scalar function, selected structurally by the constant fn (0 sin, 1 cos, 2 tan, 3 asin, 4 acos, 5 atan, 6 sinh, 7 cosh, 8 tanh, 9 exp, 10 log, 11 log10, 12 sqrt, 13 abs, 14 sign, 15 floor, 16 ceil).",
+        icon = "cont-math-function",
+    ),
+    "stdlib:continuous/Max" => (
+        description = "Larger of two inputs.", icon = "cont-max",
+    ),
+    "stdlib:continuous/Min" => (
+        description = "Smaller of two inputs.", icon = "cont-min",
+    ),
     "stdlib:continuous/PIController" => (
         description = "Parallel-form PI controller with a tunable gain and integral time.",
         icon = "cont-pi",
     ),
+    "stdlib:continuous/PID" => (
+        description = "PID controller with a filtered derivative, output limits and back-calculation anti-windup.",
+        icon = "cont-pid",
+    ),
+    "stdlib:continuous/Product" => (
+        description = "Product of two inputs; chain instances for more factors.",
+        icon = "cont-product",
+    ),
+    "stdlib:continuous/RateLimiter" => (
+        description = "Limits the rate of change of the output to the rising and falling rates.",
+        icon = "cont-rate-limiter",
+    ),
+    "stdlib:continuous/Relay" => (
+        description = "Relay with hysteresis: on (rising) and off (falling) thresholds and the two output values; the held state starts at the start value of s.",
+        icon = "cont-relay",
+    ),
+    "stdlib:continuous/Saturation" => (
+        description = "Clamps the input between lower and upper.",
+        icon = "cont-saturation",
+    ),
+    "stdlib:continuous/SecondOrder" => (
+        description = "Second-order lag k*w0^2/(s^2 + 2*zeta*w0*s + w0^2).",
+        icon = "cont-second-order",
+    ),
+    "stdlib:continuous/Sign" => (
+        description = "Sign of the input: -1, 0 or 1.",
+        icon = "cont-sign",
+    ),
+    "stdlib:continuous/StateSpace" => (
+        description = "SISO state-space model x' = A*x + B*u, y = C*x + D*u with N states.",
+        icon = "cont-state-space",
+    ),
     "stdlib:continuous/Sum" => (
         description = "Signed sum of a vector of inputs; N is a structural constant (D10).",
         icon = "cont-sum",
+    ),
+    "stdlib:continuous/Switch" => (
+        description = "Selects u1 while ctrl is above threshold, u2 otherwise.",
+        icon = "cont-switch",
     ),
     "stdlib:converters/AngleSensor" => (
         description = "Rotational angle sensor; integrates the angular velocity of its port.",

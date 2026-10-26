@@ -95,6 +95,27 @@ const M2_REFS = [
     "stdlib:sources/Scope",
     "stdlib:sources/Time",
     "stdlib:sources/TimeTable",
+    # J2.7c: continuous blocks.
+    "stdlib:continuous/Abs",
+    "stdlib:continuous/DeadZone",
+    "stdlib:continuous/Divide",
+    "stdlib:continuous/FilteredDerivative",
+    "stdlib:continuous/FirstOrder",
+    "stdlib:continuous/LeadLag",
+    "stdlib:continuous/Lookup1D",
+    "stdlib:continuous/Lookup2D",
+    "stdlib:continuous/MathFunction",
+    "stdlib:continuous/Max",
+    "stdlib:continuous/Min",
+    "stdlib:continuous/PID",
+    "stdlib:continuous/Product",
+    "stdlib:continuous/RateLimiter",
+    "stdlib:continuous/Relay",
+    "stdlib:continuous/Saturation",
+    "stdlib:continuous/SecondOrder",
+    "stdlib:continuous/Sign",
+    "stdlib:continuous/StateSpace",
+    "stdlib:continuous/Switch",
 ]
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
@@ -324,6 +345,141 @@ const INTERFACE_FIELDS = [
         @test [p.name for p in recorder.interface.parameters] == ["decimation"]
         @test recorder.interface.parameters[1].type == "Int"
         @test recorder.interface.parameters[1].min == 1
+    end
+
+    @testset "the M2 continuous rows (J2.7c)" begin
+        # Plan section 8, M2 row "Continuous": every block of the spec's continuous table that
+        # this work package adds. The golden tests check the equations; this pins the
+        # interface the editor and the spec see.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        refs = [
+            "stdlib:continuous/Abs",
+            "stdlib:continuous/DeadZone",
+            "stdlib:continuous/Divide",
+            "stdlib:continuous/FilteredDerivative",
+            "stdlib:continuous/FirstOrder",
+            "stdlib:continuous/LeadLag",
+            "stdlib:continuous/Lookup1D",
+            "stdlib:continuous/Lookup2D",
+            "stdlib:continuous/MathFunction",
+            "stdlib:continuous/Max",
+            "stdlib:continuous/Min",
+            "stdlib:continuous/PID",
+            "stdlib:continuous/Product",
+            "stdlib:continuous/RateLimiter",
+            "stdlib:continuous/Relay",
+            "stdlib:continuous/Saturation",
+            "stdlib:continuous/SecondOrder",
+            "stdlib:continuous/Sign",
+            "stdlib:continuous/StateSpace",
+            "stdlib:continuous/Switch",
+        ]
+        for ref in refs
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test isempty(b.interface.ports)         # signal blocks have no power ports
+            @test isempty(b.interface.causality)
+            @test [(o.name, o.type) for o in b.interface.outputs] == [("y", "Real")]
+        end
+
+        # Product / divide and min / max take two scalar inputs; the language has no N-ary
+        # product or extremum reducer, so these are chainable two-input blocks.
+        for name in ("Product", "Divide", "Min", "Max")
+            b = blocks["stdlib:continuous/" * name]
+            @test [(i.name, i.type) for i in b.interface.inputs] ==
+                  [("u1", "Real"), ("u2", "Real")]
+            @test isempty(b.interface.parameters)
+            @test isempty(b.interface.constants)
+        end
+
+        # The scalar one-input blocks.
+        @test [(i.name, i.type) for i in blocks["stdlib:continuous/Abs"].interface.inputs] ==
+              [("u", "Real")]
+        @test isempty(blocks["stdlib:continuous/Abs"].interface.parameters)
+        @test isempty(blocks["stdlib:continuous/Sign"].interface.parameters)
+
+        # Saturation and dead zone: the two limits, never a string.
+        for name in ("Saturation", "DeadZone")
+            b = blocks["stdlib:continuous/" * name]
+            @test [p.name for p in b.interface.parameters] == ["lower", "upper"]
+            @test all(p -> p.type == "Real", b.interface.parameters)
+        end
+        @test [p.name for p in blocks["stdlib:continuous/RateLimiter"].interface.parameters] ==
+              ["rising", "falling"]
+
+        # The first-order family: time constants in seconds.
+        fd = blocks["stdlib:continuous/FilteredDerivative"]
+        @test [p.name for p in fd.interface.parameters] == ["Tf"]
+        @test fd.interface.parameters[1].unit == "s"
+        @test [(v.name, v.type) for v in fd.interface.variables] == [("x", "Real")]
+
+        fo = blocks["stdlib:continuous/FirstOrder"]
+        @test [p.name for p in fo.interface.parameters] == ["k", "tau"]
+        @test fo.interface.parameters[2].unit == "s"
+
+        so = blocks["stdlib:continuous/SecondOrder"]
+        @test [p.name for p in so.interface.parameters] == ["k", "w0", "zeta"]
+        @test so.interface.parameters[2].unit == "rad/s"
+        @test [v.name for v in so.interface.variables] == ["x1", "x2"]
+
+        ll = blocks["stdlib:continuous/LeadLag"]
+        @test [p.name for p in ll.interface.parameters] == ["k", "T_lead", "T_lag"]
+        @test [p.unit for p in ll.interface.parameters] == [nothing, "s", "s"]
+
+        pid = blocks["stdlib:continuous/PID"]
+        @test [p.name for p in pid.interface.parameters] ==
+              ["Kp", "Ti", "Td", "N", "lower", "upper"]
+        @test [p.unit for p in pid.interface.parameters] ==
+              [nothing, "s", "s", nothing, nothing, nothing]
+        @test pid.interface.parameters[1].tunable
+        @test [v.name for v in pid.interface.variables] == ["xi", "xd", "v"]
+
+        # The state-space block: N is structural, the matrices are Vec/Mat. A parameter decl
+        # carries its type and default text (the array size lives in the `Vec`/`Mat` type and
+        # in the source), while a variable decl also carries the resolved `size` array.
+        ss = blocks["stdlib:continuous/StateSpace"]
+        @test [(c.name, c.type, c.default) for c in ss.interface.constants] ==
+              [("N", "Int", 2)]
+        @test [p.name for p in ss.interface.parameters] == ["A", "B", "C", "D"]
+        @test all(p -> p.type == "Real", ss.interface.parameters)
+        @test ss.interface.parameters[1].default == "[0.0 1.0; -1.0 -2.0]"
+        @test ss.interface.parameters[2].default == "[0.0, 1.0]"
+        @test ss.interface.variables[1].size == [2]
+
+        # The relay keeps a held state and declares its two thresholds and two values.
+        relay = blocks["stdlib:continuous/Relay"]
+        @test [p.name for p in relay.interface.parameters] ==
+              ["hi", "lo", "on_value", "off_value", "leak"]
+        @test [(v.name, v.type) for v in relay.interface.variables] == [("s", "Real")]
+
+        # Lookup 1D/2D: the table sizes are structural (D13) and the intrinsic is the lookup.
+        l1 = blocks["stdlib:continuous/Lookup1D"]
+        @test [(c.name, c.default) for c in l1.interface.constants] == [("N", 3)]
+        @test [p.name for p in l1.interface.parameters] == ["x", "table"]
+        @test l1.interface.parameters[1].default == "[0.0, 1.0, 2.0]"
+        @test occursin("interp1", l1.source)
+
+        l2 = blocks["stdlib:continuous/Lookup2D"]
+        @test [(c.name, c.default) for c in l2.interface.constants] == [("N", 3)]
+        @test [(i.name, i.type) for i in l2.interface.inputs] ==
+              [("u", "Real"), ("v", "Real")]
+        @test l2.interface.parameters[1].default == "[0.0 1.0 2.0; 0.0 1.0 2.0]"
+        @test l2.interface.parameters[2].default ==
+              "[0.0 1.0 2.0; 1.0 2.0 3.0; 2.0 3.0 4.0]"
+        @test occursin("interp2", l2.source)
+
+        # The math function selector is structural (a @constants Int, D11).
+        mf = blocks["stdlib:continuous/MathFunction"]
+        @test [(c.name, c.type, c.default) for c in mf.interface.constants] ==
+              [("fn", "Int", 0)]
+        @test isempty(mf.interface.parameters)
+        @test occursin("sin(u)", mf.source)
+
+        sw = blocks["stdlib:continuous/Switch"]
+        @test [(i.name, i.type) for i in sw.interface.inputs] ==
+              [("u1", "Real"), ("u2", "Real"), ("ctrl", "Real")]
+        @test [p.name for p in sw.interface.parameters] == ["threshold"]
     end
 
     @testset "catalog structure against catalog.schema.json" begin
