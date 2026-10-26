@@ -10,6 +10,9 @@ import { defineConfig, devices } from "@playwright/test";
  */
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const BASE_URL = "http://127.0.0.1:8765";
+// The X1.1 acceptance spec needs the real Julia worker; the other UI specs use
+// the fixture-driven fake worker (plan 2.3). Lane x runs both passes.
+const realWorker = process.env.BGSIM_E2E_REAL === "1";
 
 export default defineConfig({
   testDir: "tests",
@@ -29,7 +32,10 @@ export default defineConfig({
       testMatch: /e2e[\\/].*\.spec\.ts/,
       // tests/perf holds the plan 7.5 budgets; it runs as its own project so
       // `npx playwright test tests/perf` selects exactly those files.
-      testIgnore: /perf[\\/]/,
+      // The real-worker acceptance spec is skipped in the fake-worker pass.
+      testIgnore: realWorker
+        ? /perf[\\/]/
+        : [/perf[\\/]/, /dcmotor\.spec\.ts/],
     },
     {
       name: "perf",

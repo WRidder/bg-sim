@@ -34,13 +34,10 @@ include("syntax/whitelist.jl")
 include("syntax/parse.jl")
 include("syntax/scopes.jl")
 
-# Module entry points that later WPs add. The `isfile` guard only exists so that two WPs
-# adding a module in parallel cannot break each other's test run; the M1 gate replaces it
-# with plain `include` calls (DEC-5 in plan/STATUS.md).
-for entry in ("units/units.jl", "library/library.jl")
-    path = joinpath(@__DIR__, entry)
-    isfile(path) && include(path)
-end
+# Work packages J1.2 (units) and J1.3 (library loader, catalog, M1 stdlib). The M1 gate
+# replaces the temporary `isfile` guard of DEC-5 with these plain includes.
+include("units/units.jl")
+include("library/library.jl")
 
 # Work package J1.4: the IR and the flattening pipeline (plan 5.2, 5.4, 5.5, 5.6).
 include("compile/pipeline.jl")

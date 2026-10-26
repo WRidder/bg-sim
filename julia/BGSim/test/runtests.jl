@@ -232,13 +232,12 @@ end
 # Work package J1.1: the language front end (parser, whitelist, block-level checks).
 include("test_syntax.jl")
 
-# Later work packages add one test file each. The `isfile` guard is temporary scaffolding so
-# parallel WPs cannot break each other's runs; the M1 gate replaces it with plain includes.
-for entry in ("test_units.jl", "test_library.jl", "test_flatten.jl", "test_simulate.jl",
-              "test_worker.jl", "test_language.jl", "test_discrete.jl", "test_events.jl",
-              "test_causality.jl", "test_units_model.jl", "test_components.jl",
-              "test_cache.jl", "test_debug.jl", "test_hooks.jl", "test_watch.jl",
-              "test_edits.jl")
-    path = joinpath(@__DIR__, entry)
-    isfile(path) && include(path)
-end
+# The M1 test files (DEC-5: plain includes now, so a missing file fails the gate).
+include("test_units.jl")
+include("test_library.jl")
+include("test_flatten.jl")
+include("test_simulate.jl")
+include("test_worker.jl")
+include("test_language.jl")
+
+# Milestone M2 and later add their own test file here when their work package lands.

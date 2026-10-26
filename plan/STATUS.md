@@ -25,7 +25,7 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | W1.2 | W | M1 | W1.1 | done | Inspector in `web/src/inspector/` (mounted in InspectorPanel): parameters/constants/starts edited as expression strings with unit, min/max, description, options; rename with uniqueness + identifier checks; inline validation; "Open source" (read-only panel, CodeMirror tab is W2.1) and "Copy to project library". Store gained `renameNode`/`setNodeParam`/`setNodeConstant`/`setNodeStart`/`setNodeBlockRef`/`nodeNameIssue`, all undoable. 27 new vitest + 2 Playwright. |
 | W1.3 | W | M1 | W1.1 | done | Diagnostics panel (filter by severity, group by path, click-to-navigate, related list) + debounced 400 ms `model.check` loop with generation guard, stale discard, 503 pause and ready gating; canvas markers (red/amber outlines + badges), adopted-domain colouring and `unitFactors` badges via a diagnostics-owned DOM decorator (deviation: `src/editor/` was outside W1.3's paths; W2.3 folds it into `EditorEdgeData`). 20 vitest + 2 Playwright (all 21 node diagnostics navigate and pan). |
 | W1.4 | W | M1 | W1.1 | done | Run bar (run/stop/settings/progress, Ctrl+Enter), signal browser (tree by path, search, kind icons, drag/double-click to plot), uPlot panels with linked cursors, unit-group axis assignment (2 max, overflow suggests a panel), LRU series cache keyed `(run,id,t0,t1,px)`, zoom re-fetch, CSV export, pin-run. 4 vitest files + 4 Playwright. Verified by the orchestrator after the agent hit its usage limit mid-report: typecheck/lint/262 vitest/11 e2e all pass; the plot e2e asserts a real mouse-drag zoom produces a request with finite `t0`/`t1` and `px > 0` after the raw `px=0` request. |
-| X1.1 | X | M1 | J1.6, P1.1, P1.2, W1.1–W1.4 | todo | DC motor example, M1 e2e |
+| X1.1 | X | M1 | J1.6, P1.1, P1.2, W1.1–W1.4 | done | `examples/dc-motor/` (project file, iconic and bond-graph models, README, `expected.json`) plus a general **`examples/run_checks.py`**: it discovers every `examples/*/expected.json`, starts one real-worker backend on a free port with a temporary projects root, creates each project through the API, runs each model, reads the columnar `columns.f64` in manifest order with numpy, evaluates `final_value`/`cursor_value`/`compare` (union of the two time grids) and prints one line per check. **5/5 checks, 24.7–27.2 s warm.** `web/tests/e2e/dcmotor.spec.ts` runs against the **real** worker (rejects the fake, waits for `ready`), runs `iconic`, plots `Motor1/shaft.f` and asserts the legend at t = 0.2 s is **239.8 ± 0.1**; 21 s. Measured steady state **239.808153477 rad/s**, `Motor1/i` 0.00479616306954 A, iconic-vs-bond-graph **max \|Δω\| 2.27e-13 rad/s** (limit 1e-6). Deviation: `compare` moved out of `models` in `expected.json` so the runner does not treat it as a model name. |
 | J2.1 | J | M2 | M1 | done | Vec/Mat literals/sizes/indexing, `for` unrolling, `if` equations with equal branch counts, `ifelse`, the complete function whitelist (19 spec rows + 19 operator/statement rows, each with an allowed and a rejected test) and the D12 intrinsics table (`interp1`, `interp2`, `noise_normal`, `delay` with `stdlib_only`), plus parsing/checking of `@initial`, `@discrete` (Ts/offset folding, D18 locals) and `@events` (D19 normalization). Golden checks for `SpeedMonitor`, `LQGController` and `Ball`. 363 assertions; suite **5330** green. The obsolete "scopes not supported" J1.1 testset was replaced by the real feature. |
 | J2.2 | J | M2 | J2.1 | todo | Discrete scheduler |
 | J2.3 | J | M2 | J2.1 | todo | Events and nonsmooth |
@@ -97,6 +97,45 @@ Julia worker answers only `ping`/`cache.clear` (M0.4 scope; J1.6 completes the p
 **Deviations.** DEC-3 (root uv workspace so `uv run bgsim` works as the plan states), DEC-2
 (check.py Windows fix + julia-marked step in lane x), P1.3 (a WP the plan was missing).
 
+### M1 — Language, library and the walking skeleton (gate: green, 2026-10-26)
+
+**Works.** The whole M1 path is joined up. The Julia front end parses and checks the language
+(J1.1), the unit checker (J1.2), the 36-block M1 stdlib and catalog (J1.3), flattening with
+wires/bonds/junctions/domain adoption (J1.4), lowering to ModelingToolkit with the recorder,
+cancellation and the run files (J1.5), and the real worker protocol over the backend's socket
+(J1.6). The Python backend serves projects, models, runs, CSV, live tails and the catalog/check
+proxies (P1.1–P1.3, P2.1). The web editor has the library, canvas, inspector, diagnostics loop,
+run bar and plots (W1.1–W1.4), plus the Code tab (W2.1) and the multi-panel/compare/live plots
+(W2.4) that were built ahead of M2. The DC-motor example runs iconic and bond-graph models
+through the real worker and the real-worker Playwright acceptance reads **239.8 ± 0.1 rad/s at
+t = 0.2 s** from the plot cursor (X1.1). The user-requested diagram styling (letter-only
+bond-graph elements, direction-aware ports, Ctrl quick-connect, grid + snap) landed during the
+gate (U1).
+
+**Gate.** `uv run tools/check.py --lane all` → **11 passed, 0 failed, 0 skipped**: Julia
+`Pkg.test()` **5468 tests** (233 s), pytest **226** (4 julia-marked deselected), ruff, tsc,
+ESLint, Vitest **334**, Vite build, the real-worker examples **5/5**, Playwright **22** editor
+specs against the fake worker and **1** real-worker DC-motor spec. Playwright also still passes
+against `uv run bgsim` serving `web/dist`, with the real worker, in the dcmotor pass.
+
+**Measured.** DC motor steady state **239.808153477 rad/s** (target 239.80815347721824); iconic
+vs bond graph **5.68e-14 rad/s** in Julia and **2.27e-13 rad/s** through the example runner;
+RLC capacitor peak 1.161862 V vs analytic 1.163034 V and 7.64e-13 V between the two forms.
+Worker cold start to ready **17.0–17.3 s**, `block.check` **0.9 ms** warm, `model.check`
+**310–340 ms** first / 7–12 ms warm, first DC-motor run 5.1–6.4 s to first data, parameter-only
+re-run **23–26 ms**, 1e7 × 10 decimation **27–30 ms**, plot zoom/pan draw **7–11 ms** at 20
+signals × 1e6, live **59.9–60.7 fps** at 20 tails/s. Bundle **1.07 MB** (341 kB gzip).
+
+**Known gaps.** `causality` is still empty until J2.4 (SCAP); pure bond islands report
+`Generic` + W205 (NOTE-1, expected). `@discrete`/`@events` are parsed and checked (J2.1) but
+have no runtime yet (J2.2/J2.3). The editor e2e specs exercise the fake worker's synthetic
+signals by design (plan 2.3); only the M1 acceptance spec runs the real worker (DEC-7). There
+is no example gallery yet (W3.4). The bundle needs code splitting before the W3.4 perf gate.
+
+**Deviations.** DEC-5's temporary `isfile` guards are replaced with plain includes (M1 gate).
+DEC-7 splits lane x into a fake-worker editor pass and a real-worker dcmotor pass. U1 is the
+user's diagram-styling request. No contract change was needed during the gate.
+
 
 ## Contract changes and orchestrator decisions
 
@@ -115,7 +154,9 @@ Julia worker answers only `ping`/`cache.clear` (M0.4 scope; J1.6 completes the p
 | REQ-1 | requirement | The backend's live run tail needs the run manifest's `signals` while a run is still executing. J1.5/J1.6 must therefore write a `status: "running"` manifest with the full signal list at run start and update it at the end (the fake worker already does this). |
 | DEC-5 | scaffolding | `src/BGSim.jl` and `test/runtests.jl` include the later modules/test files through an `isfile` guard (`units/units.jl`, `library/library.jl`, `test_{units,library,flatten,simulate,worker}.jl`) so that two Julia WPs adding a module in parallel cannot break each other's test run. **The M1 gate replaces the guards with plain `include` calls** (FIX-M1-n if anything is missing). |
 | DEC-6 | plan v1.1 | The user added **M5 (live debugging)** to the plan as v1.1 with decisions D20–D27 and sections 3.8/5.13/7.9, and the ten M5 WP rows in this table. Milestone order is now **M0 → M1 → M2 → M3 → M5**, with M4 (planar) still the stretch goal. M5 builds on J2.2, J2.3, J2.8, W2.1, W2.4 and W3.3, so nothing in M1/M2 changes; the M3 gate now also opens C5.0. |
+| DEC-7 | lane x | Plan 10.3's gate says Playwright passes with the real worker, but the W1.x editor specs plot the fake worker's `Synthetic/*` signals (plan 2.3 deliberately lets the web lane develop against the fake). `tools/check.py --lane x` therefore runs **two** Playwright passes: every editor spec with the fake worker, then `dcmotor.spec.ts` with `BGSIM_E2E_REAL=1` and the real worker. `playwright.config.ts` ignores the real-only spec when the variable is unset. The M1 acceptance e2e is the real-worker pass. |
 | P1.3 | WP added | The plan's WP list leaves `GET /api/catalog`, `POST /api/check/block` and `POST /api/check/model` (plan 3.7) unowned, and the web lane needs all three in M1. Added **P1.3 Catalog and check proxies**; it also creates the empty `projects.py`/`runs.py` router skeletons so P1.1 and P1.2 never edit `app.py` concurrently. |
+| U1 | user request | Diagram styling follow-up (during the M1 gate): bond-graph blocks render as their **letter only** (no card/header), with the instance name outside the letter on the first free side (below first, then top/left/right, avoiding other elements and the port side). Every port with **exactly one** connection moves to the side facing that connection, so a bond or wire leaves in the direction of its arrow (cards too; a fan-out keeps the classic left/right split). Holding **Ctrl** turns a drag on an element into a connection from its **nearest source port** (power/output); a plain Ctrl+click still multi-selects. The toolbar has **grid** and **snap-to-grid (20 px)** toggles, persisted in `localStorage`; a snapped drop also rounds the new node position. `web/src/editor/` only, plus `canvas-style.spec.ts`; 15 geometry tests, 333 web tests green. |
 
 ## Measured numbers
 
@@ -130,3 +171,7 @@ Julia worker answers only `ping`/`cache.clear` (M0.4 scope; J1.6 completes the p
 | Decimation 1e7 × 10 | < 50 ms | 27–30 ms (P1.2) |
 | Plot zoom/pan re-render, 20 signals × 1e6 | < 50 ms | **7.0 ms zoom, 6.2–6.8 ms pan** (W2.4) |
 | Live streaming, 10 signals | 60 fps | **60.1–60.7 fps** at 20 tails/s (W2.4) |
+| DC motor steady state (9.1) | 239.81 rad/s | **239.808153477218** rad/s (J1.5, X1.1) |
+| Iconic vs bond-graph DC motor | < 1e-6 rad/s | **5.68e-14** (Julia J1.5), **2.27e-13** (example runner, union grid) |
+| Example acceptance checks | all pass | **5/5** in 24.7–27.2 s (X1.1) |
+| Playwright, M1 gate | pass | **22** editor specs (fake) + **1** real-worker dcmotor (DEC-7) |

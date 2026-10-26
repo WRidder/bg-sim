@@ -125,10 +125,19 @@ def example_steps() -> list[Step] | None:
         steps.append(Step("examples", ["uv", "run", str(runner)], cwd=ROOT))
     e2e = ROOT / "web" / "tests" / "e2e"
     if (ROOT / "web" / "playwright.config.ts").exists() and e2e.exists():
+        # The editor/UI specs run against the fake worker (plan 2.3); the X1.1
+        # acceptance spec needs the real Julia worker and runs separately.
         steps.append(
             Step(
-                "playwright",
+                "playwright (fake worker)",
                 ["npx", "playwright", "test"],
+                cwd=ROOT / "web",
+            )
+        )
+        steps.append(
+            Step(
+                "playwright real (dcmotor)",
+                ["npx", "playwright", "test", "tests/e2e/dcmotor.spec.ts"],
                 cwd=ROOT / "web",
                 env={"BGSIM_E2E_REAL": "1"},
             )
