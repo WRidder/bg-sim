@@ -69,9 +69,25 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:bondgraph/I" => (
         description = "Inertial storage; integral causality by preference.", icon = "bg-i",
     ),
+    "stdlib:bondgraph/MGY" => (
+        description = "Modulated gyrator; the modulus comes from a signal input.",
+        icon = "bg-mgy",
+    ),
+    "stdlib:bondgraph/MR" => (
+        description = "Modulated resistor; the resistance is gain*u from a signal input.",
+        icon = "bg-mr",
+    ),
     "stdlib:bondgraph/MSe" => (
         description = "Modulated effort source; the effort comes from a signal input.",
         icon = "bg-mse",
+    ),
+    "stdlib:bondgraph/MSf" => (
+        description = "Modulated flow source; the flow comes from a signal input.",
+        icon = "bg-msf",
+    ),
+    "stdlib:bondgraph/MTF" => (
+        description = "Modulated transformer; the modulus comes from a signal input.",
+        icon = "bg-mtf",
     ),
     "stdlib:bondgraph/R" => (
         description = "Resistive element; free causality.", icon = "bg-r",

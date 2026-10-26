@@ -1,8 +1,9 @@
-# Work package J1.3: the library loader, the catalog and the M1 standard library.
+# Work package J1.3: the library loader, the catalog and the standard library.
 #
 # Three kinds of test:
-#   * the M1 stdlib on disk: 36 files, one `@block` each, the file name equals the block
-#     name, every parameter described, every block checking clean and balanced;
+#   * the stdlib on disk: every plan ref (the M1 set plus the M2 rows that have landed), one
+#     file each, the file name equals the block name, every parameter described, every block
+#     checking clean and balanced;
 #   * the catalog contract: the structural fields of `contracts/schemas/catalog.schema.json`
 #     (every object's property set, exactly) and a field-for-field comparison with
 #     `contracts/fixtures/catalog/valid/catalog.min.json` — no field is skipped;
@@ -76,6 +77,21 @@ const M1_REFS = [
     "stdlib:translation/Spring",
 ]
 
+# The M2 blocks of plan section 8, added by the J2.7 work packages. Every M1 ref above stays
+# covered; this list is what the catalog must hold in addition, and `ALL_REFS` is the set the
+# on-disk and catalog tests below check against.
+const M2_REFS = [
+    # J2.7a: the rest of the bond-graph catalog.
+    "stdlib:bondgraph/MGY",
+    "stdlib:bondgraph/MR",
+    "stdlib:bondgraph/MSf",
+    "stdlib:bondgraph/MTF",
+]
+
+# Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
+# Sorted, because `load_stdlib` sorts its blocks by ref.
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS))
+
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
 # compares data rather than JSON3 wrappers.
@@ -116,11 +132,11 @@ const INTERFACE_FIELDS = [
 ]
 
 @testset "library" begin
-    @testset "the M1 stdlib on disk" begin
+    @testset "the stdlib on disk" begin
         @test isdir(stdlib_dir())
         blocks = load_stdlib()
-        @test length(blocks) == 36
-        @test [b.ref for b in blocks] == sort(M1_REFS)
+        @test length(blocks) == length(ALL_REFS)
+        @test [b.ref for b in blocks] == ALL_REFS
         @test [b.ref for b in blocks] == sort([b.ref for b in blocks])
 
         for b in blocks
@@ -143,7 +159,7 @@ const INTERFACE_FIELDS = [
         @test Set(keys(BLOCK_METADATA)) == Set([b.ref for b in blocks])
     end
 
-    @testset "every M1 block checks clean and balanced" begin
+    @testset "every stdlib block checks clean and balanced" begin
         for b in load_stdlib()
             errors = [d for d in b.diagnostics if d.severity == "error"]
             @test isempty(errors)
@@ -159,6 +175,51 @@ const INTERFACE_FIELDS = [
             end
             # `block_equations` returns the checked AST for a clean block.
             @test length(block_equations(b.ast)) == length(equations(b.ast))
+        end
+    end
+
+    @testset "the M2 bond-graph rows (J2.7a)" begin
+        # Plan section 8, M2 row "Bond graph": MSf, MR, MTF, MGY. The spec's component
+        # catalog gives their ports and key parameters, so those are asserted here: the
+        # golden tests then check the equations.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+
+        # MSf/Sf-style: one Generic power port plus a signal input and the flow `gain`. The
+        # modulated flow is fixed flow causality, exactly like Sf.
+        msf = blocks["stdlib:bondgraph/MSf"]
+        @test [(p.name, p.domain, p.size) for p in msf.interface.ports] ==
+              [("p", "Generic", Int[])]
+        @test [(i.name, i.type, i.size) for i in msf.interface.inputs] ==
+              [("u", "Real", Int[])]
+        @test [p.name for p in msf.interface.parameters] == ["gain"]
+        @test msf.interface.parameters[1].unit == "flow"
+        @test msf.interface.causality == [(ports = ["p"], kind = "fixed", value = "flow_out")]
+        @test isempty(msf.interface.variables)
+
+        # MR: the same single port and input, with the resistance gain (free causality, like
+        # R: no `@causality` declaration).
+        mr = blocks["stdlib:bondgraph/MR"]
+        @test [(p.name, p.domain, p.size) for p in mr.interface.ports] ==
+              [("p", "Generic", Int[])]
+        @test [(i.name, i.type, i.size) for i in mr.interface.inputs] ==
+              [("u", "Real", Int[])]
+        @test [p.name for p in mr.interface.parameters] == ["gain"]
+        @test mr.interface.parameters[1].unit == "effort/flow"
+        @test isempty(mr.interface.causality)
+
+        # MTF/MGY: two Generic power ports, the signal input as the modulus and no
+        # parameters (the spec's "none"), with the two-port causal relation of TF/GY.
+        for (ref, kind) in (("stdlib:bondgraph/MTF", "transformer"),
+            ("stdlib:bondgraph/MGY", "gyrator"))
+            b = blocks[ref]
+            @test [(p.name, p.domain, p.size) for p in b.interface.ports] ==
+                  [("p1", "Generic", Int[]), ("p2", "Generic", Int[])]
+            @test [(i.name, i.type, i.size) for i in b.interface.inputs] ==
+                  [("u", "Real", Int[])]
+            @test isempty(b.interface.parameters)
+            @test isempty(b.interface.variables)
+            @test b.interface.causality ==
+                  [(ports = ["p1", "p2"], kind = kind, value = nothing)]
         end
     end
 
@@ -205,12 +266,17 @@ const INTERFACE_FIELDS = [
         cat = catalog()
 
         @test cat.language == String(fixture.language)
-        @test length(cat.blocks) == length(fixture.blocks)
+        # The fixture is the contract for the M1 catalog and is not edited by the M2 work
+        # packages, so it is compared field for field rather than for coverage: every
+        # fixture block must still be in the catalog unchanged, and the catalog holds the
+        # M2 rows on top of it (checked against `ALL_REFS` below and by the schema test).
+        @test length(cat.blocks) == length(ALL_REFS)
 
         ours = Dict(b.ref => _plain(b) for b in cat.blocks)
         theirs = Dict(String(b.ref) => _plain(b) for b in fixture.blocks)
-        @test sort(collect(keys(ours))) == sort(collect(keys(theirs)))
         @test sort(collect(keys(theirs))) == sort(M1_REFS)
+        @test sort(collect(keys(ours))) == ALL_REFS
+        @test all(haskey(ours, ref) for ref in keys(theirs))
 
         for ref in sort(collect(keys(theirs)))
             a, b = ours[ref], theirs[ref]
@@ -371,7 +437,7 @@ const INTERFACE_FIELDS = [
             # root or the library directory itself.
             c_lib = catalog(lib)
             c_root = catalog(dir)
-            @test length(c_lib.blocks) == 38
+            @test length(c_lib.blocks) == length(ALL_REFS) + 2
             @test [b.ref for b in c_lib.blocks] == [b.ref for b in c_root.blocks]
             @test issorted([b.ref for b in c_lib.blocks])
             @test c_lib.blocks[1].ref == "project:Adder"
@@ -430,7 +496,7 @@ const INTERFACE_FIELDS = [
 
             # A project without a library directory is not an error.
             @test isempty(load_project_library(joinpath(dir, "missing")))
-            @test length(catalog(dir).blocks) == 40  # re-read; the two clash files are included
+            @test length(catalog(dir).blocks) == length(ALL_REFS) + 4  # re-read; the two clash files are included
         end
     end
 
@@ -476,6 +542,6 @@ const INTERFACE_FIELDS = [
         cat = catalog()
         fresh = JSON3.read(JSON3.write(cat))
         @test _plain(fresh) == _plain(cat)
-        @test length(fresh["blocks"]) == 36
+        @test length(fresh["blocks"]) == length(ALL_REFS)
     end
 end

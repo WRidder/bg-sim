@@ -232,7 +232,9 @@ end
 
             catalog = result_of(client, 2, "catalog.get", (; projectLibraryDir = nothing))
             @test catalog.language == "0.1.0"
-            @test length(catalog.blocks) == 36
+            # The worker answers with exactly the library on disk, whatever the M2 work
+            # packages have added to it (J2.7 grows this count).
+            @test length(catalog.blocks) == length(Library.load_stdlib())
             @test length(catalog.junctions) == 2
             @test length(catalog.domains) == 5
             dc = only(filter(b -> b.ref == "stdlib:converters/DCMotor", catalog.blocks))
@@ -245,7 +247,7 @@ end
                 write(joinpath(lib, "MyGain.jl"), MY_GAIN_SOURCE)
                 with_project = result_of(client, 3, "catalog.get",
                     (; projectLibraryDir = lib))
-                @test length(with_project.blocks) == 37
+                @test length(with_project.blocks) == length(Library.load_stdlib()) + 1
                 mine = only(filter(b -> b.ref == "project:MyGain", with_project.blocks))
                 @test mine.group == "Project"
                 @test mine.path == "library/MyGain.jl"
