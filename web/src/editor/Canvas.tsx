@@ -43,17 +43,16 @@ import {
   nodeOutputIds,
 } from "../plot/plotTargets";
 import { useRunStore } from "../plot/runStore";
+import { useDiagnosticsStore } from "../diagnostics/store";
 import { buildDiagram, EDGE_TYPES, NODE_TYPES } from "./buildFlow";
 import { checkConnection, type PortDescriptor } from "./connectionRules";
 import { descriptorForPort, interfaceForNode } from "./nodeInterface";
-import {
-  DOMAIN_LEGEND,
-  domainColor,
-  nearestSourcePort,
-  nodeLayout,
-} from "./geometry";
+import { nearestSourcePort, nodeLayout } from "./geometry";
+import { decorateFlow } from "./edges/decorateFlow";
+import { CanvasLegend } from "./legend";
+import { HoverReadout } from "./ports/HoverReadout";
+import { activeModel, subsystemPathCrumbs } from "./subsystemPath";
 import { QuickConnectContext } from "./quickConnect";
-import { activeModel } from "./subsystemPath";
 import { SubsystemBreadcrumbs } from "./SubsystemBreadcrumbs";
 import "./editor.css";
 
@@ -155,6 +154,9 @@ function CanvasInner() {
   const saveError = useDocumentStore((state) => state.saveError);
   const index = useCatalogStore((state) => state.index);
   const inlineRevision = useInlineInterfaceStore((state) => state.revision);
+  const checkedDomains = useDiagnosticsStore((state) => state.domains);
+  const checkedCausality = useDiagnosticsStore((state) => state.causality);
+  const checkedUnitFactors = useDiagnosticsStore((state) => state.unitFactors);
 
   useOpenSourceEvents();
 
@@ -182,8 +184,31 @@ function CanvasInner() {
     () =>
       view === null || index === null
         ? { nodes: [], edges: [], analysis: null }
-        : buildDiagram(view, index, selection, dragOrigin),
-    [view, index, selection, dragOrigin, inlineRevision],
+        : decorateFlow(buildDiagram(view, index, selection, dragOrigin), {
+            domains: checkedDomains,
+            causality: checkedCausality,
+            unitFactors: checkedUnitFactors,
+          }),
+    [
+      view,
+      index,
+      selection,
+      dragOrigin,
+      inlineRevision,
+      checkedDomains,
+      checkedCausality,
+      checkedUnitFactors,
+    ],
+  );
+
+  const pathPrefix = useMemo(
+    () =>
+      doc === null
+        ? ""
+        : subsystemPathCrumbs(doc, activePath)
+            .map((crumb) => crumb.name)
+            .join("/"),
+    [doc, activePath],
   );
 
   const dirty = revision !== savedRevision;
@@ -872,31 +897,8 @@ function CanvasInner() {
                 color="var(--color-border)"
               />
             ) : null}
-            <Panel position="bottom-left" className="editor-legend" data-testid="canvas-legend">
-              <span className="editor-legend__title">Domains</span>
-              {DOMAIN_LEGEND.map((entry) => (
-                <span className="editor-legend__item" key={entry.domain}>
-                  <span
-                    className={`editor-legend__swatch${entry.domain === "Generic" ? " is-generic" : ""}`}
-                    style={{ background: domainColor(entry.domain) }}
-                    aria-hidden="true"
-                  />
-                  {entry.label}
-                </span>
-              ))}
-              <span className="editor-legend__separator" aria-hidden="true" />
-              <span className="editor-legend__item">
-                <span className="editor-legend__glyph editor-legend__glyph--power" aria-hidden="true" />
-                power
-              </span>
-              <span className="editor-legend__item">
-                <span className="editor-legend__glyph editor-legend__glyph--input" aria-hidden="true" />
-                in
-              </span>
-              <span className="editor-legend__item">
-                <span className="editor-legend__glyph editor-legend__glyph--output" aria-hidden="true" />
-                out
-              </span>
+            <Panel position="bottom-left">
+              <CanvasLegend />
             </Panel>
           </ReactFlow>
         </QuickConnectContext.Provider>
@@ -920,6 +922,8 @@ function CanvasInner() {
           </div>
         ) : null}
       </div>
+
+      <HoverReadout canvasRef={canvasRef} model={view} pathPrefix={pathPrefix} />
 
       {tooltip !== null ? (
         <div

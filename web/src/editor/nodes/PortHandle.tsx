@@ -93,6 +93,7 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
       data-state={state}
       data-side={side}
       title={title}
+      aria-label={title}
     >
       {isPower ? (
         <span className="port-glyph port-glyph--power" aria-hidden="true" />

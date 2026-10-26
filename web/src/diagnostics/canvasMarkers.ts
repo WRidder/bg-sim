@@ -8,9 +8,12 @@
  *   red/amber outline and the count badge, and the `title` lists the messages;
  * * power edges get the domain the worker adopted (`domains`), falling back to
  *   W1.1's client-side analysis when the worker has no entry yet;
- * * unit factors and edge diagnostics are HTML/SVG badges in a fixed overlay
- *   positioned from the edge's on-screen midpoint;
- * * causal strokes are drawn when `causality` arrives (empty until J2.4).
+ * * edge diagnostics are HTML badges in a fixed overlay positioned from the
+ *   edge's on-screen midpoint;
+ * * the check's causal strokes and unit factors are summarised here so the
+ *   canvas decorator and the tests share one reading of the worker maps, but
+ *   they are drawn by the edge components themselves (`editor/edges/`), which
+ *   is where their data-testid hooks live.
  *
  * All worker maps are read defensively: an absent `causality` or `unitFactors`
  * object never breaks a render.
@@ -342,6 +345,10 @@ export function decorateCanvas(
     if (!edges.has(connectionId) || typeof factor !== "number" || !Number.isFinite(factor)) {
       continue;
     }
+    // A factor of exactly 1 is not drawn: the signal is already in its unit.
+    if (factor === 1) {
+      continue;
+    }
     factors.push({ connectionId, label: formatUnitFactor(factor) });
   }
 
@@ -428,41 +435,6 @@ export function edgeMidpoint(edge: Element): { x: number; y: number } | null {
   }
 }
 
-/** The two screen points of a causal stroke at one end of an edge. */
-export function causalStrokeScreen(
-  edge: Element,
-  strokeAt: "from" | "to",
-): { x1: number; y1: number; x2: number; y2: number } | null {
-  const path = edge.querySelector<SVGPathElement>(".react-flow__edge-path");
-  if (path === null || typeof path.getTotalLength !== "function" || typeof path.getScreenCTM !== "function") {
-    return null;
-  }
-  try {
-    const length = path.getTotalLength();
-    const end = strokeAt === "to" ? length : 0;
-    const inward = strokeAt === "to" ? Math.max(0, length - 6) : Math.min(length, 6);
-    const tip = path.getPointAtLength(end);
-    const inner = path.getPointAtLength(inward);
-    const dx = tip.x - inner.x;
-    const dy = tip.y - inner.y;
-    const magnitude = Math.hypot(dx, dy) || 1;
-    const normal = { x: -dy / magnitude, y: dx / magnitude };
-    const matrix = path.getScreenCTM();
-    if (matrix === null) {
-      return null;
-    }
-    const project = (point: { x: number; y: number }): { x: number; y: number } => ({
-      x: matrix.a * point.x + matrix.c * point.y + matrix.e,
-      y: matrix.b * point.x + matrix.d * point.y + matrix.f,
-    });
-    const first = project({ x: tip.x + normal.x * 6, y: tip.y + normal.y * 6 });
-    const second = project({ x: tip.x - normal.x * 6, y: tip.y - normal.y * 6 });
-    return { x1: first.x, y1: first.y, x2: second.x, y2: second.y };
-  } catch {
-    return null;
-  }
-}
-
 const OVERLAY_CLASS = "canvas-diagnostics__overlay";
 
 function setText(element: HTMLElement, text: string): void {
@@ -504,10 +476,7 @@ export class CanvasDiagnosticsController {
   private frame: number | null = null;
   private frameIsTimeout = false;
   private overlay: HTMLDivElement | null = null;
-  private causalSvg: SVGSVGElement | null = null;
-  private factorBadges = new Map<string, HTMLElement>();
   private edgeBadges = new Map<string, HTMLElement>();
-  private causalBars = new Map<string, SVGLineElement>();
   private pendingFocus: string | null = null;
   private lastFocusNonce: number;
 
@@ -568,16 +537,9 @@ export class CanvasDiagnosticsController {
     const overlay = document.createElement("div");
     overlay.className = OVERLAY_CLASS;
     overlay.setAttribute("data-testid", "canvas-diagnostics-overlay");
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("class", "canvas-diagnostics__causal-layer");
-    svg.setAttribute("aria-hidden", "true");
-    overlay.appendChild(svg);
     document.body.appendChild(overlay);
     this.overlay = overlay;
-    this.causalSvg = svg;
-    this.factorBadges.clear();
     this.edgeBadges.clear();
-    this.causalBars.clear();
     return overlay;
   }
 
@@ -586,10 +548,7 @@ export class CanvasDiagnosticsController {
       this.overlay.remove();
     }
     this.overlay = null;
-    this.causalSvg = null;
-    this.factorBadges.clear();
     this.edgeBadges.clear();
-    this.causalBars.clear();
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.observedCanvas = null;
@@ -615,9 +574,7 @@ export class CanvasDiagnosticsController {
     });
 
     this.ensureOverlay();
-    this.renderFactors(canvas, summary.factors);
     this.renderEdgeBadges(canvas, summary.edgeMarkers);
-    this.renderCausalStrokes(canvas, summary.causalStrokes);
 
     if (this.pendingFocus !== null && this.focusNode(canvas, this.pendingFocus)) {
       this.pendingFocus = null;
@@ -633,10 +590,6 @@ export class CanvasDiagnosticsController {
     this.resizeObserver = new ResizeObserver(() => this.schedule());
     this.resizeObserver.observe(canvas);
     this.observedCanvas = canvas;
-  }
-
-  private renderFactors(canvas: HTMLElement, entries: UnitFactorBadge[]): void {
-    this.renderBadges(canvas, entries, this.factorBadges, "edge-factor-", (entry) => entry.label, 12);
   }
 
   private renderEdgeBadges(canvas: HTMLElement, entries: EdgeMarkerBadge[]): void {
@@ -702,41 +655,6 @@ export class CanvasDiagnosticsController {
       if (!seen.has(id)) {
         badge.remove();
         store.delete(id);
-      }
-    }
-  }
-
-  private renderCausalStrokes(canvas: HTMLElement, entries: CausalStrokeBadge[]): void {
-    if (this.causalSvg === null) {
-      return;
-    }
-    const seen = new Set<string>();
-    for (const entry of entries) {
-      const edge = canvas.querySelector<Element>(
-        `[data-testid="edge-${cssEscape(entry.connectionId)}"]`,
-      );
-      const points = edge === null ? null : causalStrokeScreen(edge, entry.strokeAt);
-      if (points === null) {
-        continue;
-      }
-      seen.add(entry.connectionId);
-      let line = this.causalBars.get(entry.connectionId);
-      if (line === undefined) {
-        line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("data-testid", `causal-stroke-${entry.connectionId}`);
-        line.setAttribute("class", "canvas-diagnostics__causal");
-        this.causalSvg.appendChild(line);
-        this.causalBars.set(entry.connectionId, line);
-      }
-      line.setAttribute("x1", String(points.x1));
-      line.setAttribute("y1", String(points.y1));
-      line.setAttribute("x2", String(points.x2));
-      line.setAttribute("y2", String(points.y2));
-    }
-    for (const [id, line] of this.causalBars) {
-      if (!seen.has(id)) {
-        line.remove();
-        this.causalBars.delete(id);
       }
     }
   }

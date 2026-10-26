@@ -1,0 +1,78 @@
+/*
+ * Hover values at the cursor (plan 7.3): a compact read-out pinned to the
+ * pointer. Surface and text use the theme tokens so it is readable in both
+ * themes; it never intercepts the pointer.
+ */
+
+.editor-hover {
+  position: fixed;
+  z-index: 70;
+  min-width: 170px;
+  max-width: 300px;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-panel);
+  pointer-events: none;
+}
+
+.editor-hover[hidden] {
+  display: none;
+}
+
+.editor-hover__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 2px;
+}
+
+.editor-hover__title {
+  overflow: hidden;
+  max-width: 190px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.editor-hover__time {
+  flex: none;
+  font-family: var(--font-mono);
+  color: var(--color-text-faint);
+}
+
+.editor-hover__rows {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.editor-hover__rows th {
+  padding: 0 var(--space-2) 0 0;
+  font-weight: var(--font-weight-normal);
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+.editor-hover__rows td {
+  padding: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--color-text);
+}
+
+.editor-hover__unit {
+  padding-left: var(--space-1) !important;
+  color: var(--color-text-faint) !important;
+}
+
+.editor-hover__message {
+  margin: 0;
+  color: var(--color-text-muted);
+}

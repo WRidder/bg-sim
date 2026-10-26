@@ -14,7 +14,6 @@ import type { DomainName, ValueType } from "../../contracts/catalog";
 import type { ConnectionKind } from "../../contracts/model";
 import {
   arrowHeadPath,
-  causalStrokePath,
   domainColor,
   halfArrowPath,
   hubPath,
@@ -28,6 +27,8 @@ import {
   type Point,
   type Side,
 } from "../geometry";
+import { causalStrokeBar } from "./causalStroke";
+import "./edges.css";
 
 export interface EditorEdgeData extends Record<string, unknown> {
   kind: ConnectionKind;
@@ -61,7 +62,7 @@ function labelPosition(data: EditorEdgeData): Point {
   return { x: middle.x, y: middle.y - 10 };
 }
 
-function EdgeLabel({ data }: { data: EditorEdgeData }) {
+function EdgeLabel({ id, data }: { id: string; data: EditorEdgeData }) {
   const point = labelPosition(data);
   const badge =
     data.unitFactor === null
@@ -81,7 +82,15 @@ function EdgeLabel({ data }: { data: EditorEdgeData }) {
         }}
       >
         {data.label !== null ? <span>{data.label}</span> : null}
-        {badge !== null ? <span className="editor-edge__factor">{badge}</span> : null}
+        {badge !== null ? (
+          <span
+            className="editor-edge__factor"
+            data-testid={`unit-badge-${id}`}
+            title={`Unit conversion ${badge}; the compiler scales this signal`}
+          >
+            {badge}
+          </span>
+        ) : null}
       </div>
     </EdgeLabelRenderer>
   );
@@ -138,12 +147,7 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
   const colour = domainColor(data.domain);
   const dashed = data.domain === "Generic";
   const broken = data.missingPorts.length > 0;
-  const strokePoint = (anchorPoint: Point, towards: Point): Point => {
-    const dx = towards.x - anchorPoint.x;
-    const dy = towards.y - anchorPoint.y;
-    const length = Math.hypot(dx, dy) || 1;
-    return { x: anchorPoint.x + (dx / length) * 2, y: anchorPoint.y + (dy / length) * 2 };
-  };
+  const causalBar = causalStrokeBar(a.point, b.point, data.causalStroke);
 
   return (
     <g
@@ -174,23 +178,22 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         fill="none"
         strokeLinecap="round"
       />
-      {data.causalStroke === "to" ? (
-        <path
-          d={causalStrokePath(strokePoint(b.point, tail), tail)}
+      {causalBar !== null ? (
+        <line
+          className="editor-edge__causal"
+          data-testid={`causal-stroke-${id}`}
+          data-stroke-at={causalBar.strokeAt}
+          x1={causalBar.x1}
+          y1={causalBar.y1}
+          x2={causalBar.x2}
+          y2={causalBar.y2}
           stroke={colour}
-          strokeWidth={2}
-          fill="none"
+          strokeWidth={2.6}
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
         />
       ) : null}
-      {data.causalStroke === "from" ? (
-        <path
-          d={causalStrokePath(strokePoint(a.point, b.point), b.point)}
-          stroke={colour}
-          strokeWidth={2}
-          fill="none"
-        />
-      ) : null}
-      <EdgeLabel data={data} />
+      <EdgeLabel id={id} data={data} />
     </g>
   );
 }
@@ -243,7 +246,7 @@ export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
           strokeWidth={1}
         />
       ) : null}
-      <EdgeLabel data={data} />
+      <EdgeLabel id={id} data={data} />
     </g>
   );
 }
@@ -288,7 +291,7 @@ export function SignalEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         fill={colour}
         stroke="none"
       />
-      <EdgeLabel data={data} />
+      <EdgeLabel id={id} data={data} />
     </g>
   );
 }

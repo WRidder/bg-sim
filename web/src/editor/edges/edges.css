@@ -1,0 +1,22 @@
+/*
+ * Bond and signal edge details that belong to the edge layer itself
+ * (plan 7.3): the causal bar is a crisp, non-scaling perpendicular stroke; the
+ * unit-factor badge is a readable chip in both themes.
+ */
+
+.editor-edge__causal {
+  pointer-events: none;
+}
+
+.editor-edge__factor {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 15px;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: 999px;
+}

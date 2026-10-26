@@ -35,7 +35,7 @@ export default defineConfig({
       // The real-worker acceptance specs are skipped in the fake-worker pass.
       testIgnore: realWorker
         ? /perf[\\/]/
-        : [/perf[\\/]/, /dcmotor\.spec\.ts/, /subsystems\.spec\.ts/, /rlc-dual\.spec\.ts/],
+        : [/perf[\\/]/, /dcmotor\.spec\.ts/, /subsystems\.spec\.ts/, /rlc-dual\.spec\.ts/, /domain-visual\.spec\.ts/],
     },
     {
       name: "perf",
