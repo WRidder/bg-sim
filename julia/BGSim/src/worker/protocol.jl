@@ -29,15 +29,14 @@ function read_frame(io::IO)
     header = Vector{UInt8}(undef, 4)
     nread = readbytes!(io, header, 4)
     nread == 0 && return nothing
-    nread == 4 || throw(EOFError("truncated frame header: $nread of 4 bytes"))
+    nread == 4 || throw(EOFError())
     length_field = UInt32(header[1]) |
                    (UInt32(header[2]) << 8) |
                    (UInt32(header[3]) << 16) |
                    (UInt32(header[4]) << 24)
     length_field >= 1 || throw(ArgumentError("invalid frame length $length_field"))
     body = Vector{UInt8}(undef, Int(length_field))
-    readbytes!(io, body, length(body)) == length(body) ||
-        throw(EOFError("truncated frame payload"))
+    readbytes!(io, body, length(body)) == length(body) || throw(EOFError())
     return Frame(body[1], body[2:end])
 end
 

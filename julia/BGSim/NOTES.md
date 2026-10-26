@@ -573,4 +573,59 @@ The fresh-process total includes the first JSON3 manifest write and the first
 removes that tail. The 300 ms target is measured after one warm-up re-run, exactly as the
 NOTES section 8 requires.
 
+---
+
+# J1.6 — the worker protocol (verified 2026-10-22)
+
+Everything below was probed on this machine (Julia 1.13.2) and is asserted by
+`test/test_worker.jl` (138 tests) or measured through the real backend supervisor.
+
+## APIs the worker relies on
+
+* **JSON3 and the wire.** `JSON3.Object <: AbstractDict` is `true`, so `IR.parse_model` and
+  the param helpers accept a decoded frame directly. `JSON3.write` accepts nested
+  `NamedTuple`s, `Dict`s, `Symbol` values (as strings) and `nothing` (as `null`).
+  **`JSON3.write` specialises on the concrete response-envelope type**: serialising a result
+  alone is not enough. Before the workload serialised `(; id, result)`, the *first* wire
+  answer of `model.check` paid **1.2–2.1 s** of codegen and a `block.check` **0.2–0.4 s**.
+  Warm the envelope (`result_message`, `error_message`, `notification_message`) too.
+* **The JSON3.Object input type.** `IR.parse_model(::JSON3.Object)` is a different method
+  specialisation from `IR.parse_model(::Dict)`; the worker always gets the former, so the
+  warm-up must parse `JSON3.read(JSON3.write(dict))`, not only the `Dict`.
+* **Listening on a random port.** `server = Sockets.listen(ip"127.0.0.1", 0)` and
+  `Sockets.getsockname(server)` returns `(ip"127.0.0.1", port::UInt16)`; the port is
+  `Int(getsockname(server)[2])`. `Sockets.accept(server)` blocks until the worker connects.
+* **`EOFError` has no message.** `EOFError("text")` is a `MethodError` on 1.13; use
+  `throw(EOFError())`. This was a latent bug in the M0.4 `protocol.jl`, found by the
+  truncation tests.
+* **Concurrency.** With the backend's `--threads=2`, `Threads.@spawn` request handlers run
+  alongside a run. Independently of the thread count, the run task yields by making its
+  cancellation callback `() -> (yield(); flag[])`; `simulate` calls it before and after every
+  `step!`, so a `block.check` is served while the loop is stepping even on one thread.
+  Socket writes are serialised by one `ReentrantLock`, so frames never interleave.
+* **`run.start` and REQ-1.** `simulate` writes its running manifest only when the run task
+  starts, which is one task hop after the response. The worker therefore flattens the model
+  in `run.start`, writes the same manifest itself (`BGSim._manifest` +
+  `BGSim.write_manifest_atomic`, the same document shape as `open_recorder`), and only then
+  answers `accepted`; the run task starts *after* the answer is on the wire (`Deferred`).
+* **`Threads.Atomic{Bool}`** is the cancellation flag (`flag[] = true`); `simulate` already
+  accepts `Threads.Atomic{Bool}`, `Base.RefValue{Bool}` or a predicate.
+* **PrecompileTools.** Two `@setup_workload` blocks in one package are fine (the M0.3 one in
+  `precompile.jl` and the worker one). The workload runs at precompile time with the
+  interpreter disabled, so file reads (`Library.catalog`, `mktempdir`) execute normally and
+  no result is retained except compiled code; `Library._CACHE` is serialised into the image,
+  which is why the first `catalog.get` after start is ~8–12 ms.
+
+## Measured (this machine, 2026-10-22)
+
+| item | measured |
+| --- | --- |
+| worker cold start to `ready`, precompiled package | **19.5 / 23.0 s** in two fresh processes (median **21.2 s**); `using BGSim` dominates, the warm-up itself is ~3 s. A *first-ever* start also precompiles BGSim: **129.6 s** once. |
+| `block.check` on a 40-line block, over the wire | **1.6 ms median** (1.5–2.0 ms warm), first call **60 ms**; target < 150 ms |
+| `model.check` DC motor (37 signals) | first **305–371 ms**, warm **7–12 ms**; target < 1.5 s |
+| `catalog.get` (36 blocks, 35 KiB JSON) | first **31–46 ms**, warm **6–12 ms** |
+| `run.start` to `accepted` (RLC, 2000 points) | **53–59 ms**, manifest already `running` with 31 signals |
+| first run of the RLC fixture in a fresh worker (cache miss) | **compile 2.3 s + sim 1.2 s**, well under the 10 s target |
+| warm-up workload | **~3 s** in-process (catalog + block/model check + two RC runs, the second with a changed parameter) |
+
 
