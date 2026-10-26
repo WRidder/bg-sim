@@ -66,10 +66,11 @@ mutable struct LowerCtx
     int_equations::Vector{Any}
     counter::Base.RefValue{Int}
     origin::Union{Flat.Origin,Nothing}
+    event_values::Union{Dict{String,Any},Nothing}
 end
 
 LowerCtx(vars::Dict{String,Num}, params::Dict{String,Num}) =
-    LowerCtx(vars, params, Pair{Num,Any}[], Any[], Ref(0), nothing)
+    LowerCtx(vars, params, Pair{Num,Any}[], Any[], Ref(0), nothing, nothing)
 
 _lower_error(message::AbstractString, ctx::LowerCtx) =
     throw(LowerError(message, ctx.origin))
@@ -91,14 +92,22 @@ end
 function lower_expression(e::Name, ctx::LowerCtx)
     e.name === :t && return t
     key = String(e.name)
-    haskey(ctx.vars, key) && return ctx.vars[key]
+    if ctx.event_values !== nothing && haskey(ctx.event_values, key)
+        return ctx.event_values[key]
+    end
+    haskey(ctx.vars, key) && return ctx.event_values === nothing ? ctx.vars[key] :
+                                ModelingToolkit.Pre(ctx.vars[key])
     haskey(ctx.params, key) && return ctx.params[key]
     return _lower_error("unknown name `$key` in a lowered expression", ctx)
 end
 
 function lower_expression(e::Field, ctx::LowerCtx)
     key = Flat.flat_id(e)
-    haskey(ctx.vars, key) && return ctx.vars[key]
+    if ctx.event_values !== nothing && haskey(ctx.event_values, key)
+        return ctx.event_values[key]
+    end
+    haskey(ctx.vars, key) && return ctx.event_values === nothing ? ctx.vars[key] :
+                                ModelingToolkit.Pre(ctx.vars[key])
     haskey(ctx.params, key) && return ctx.params[key]
     return _lower_error("unknown port field `$key` in a lowered expression", ctx)
 end

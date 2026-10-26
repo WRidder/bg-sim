@@ -491,6 +491,14 @@ Everything below was run on the installed packages. The acceptance is
   initialization equations, warn "overdetermined initialization" and spend 7 s in `init`;
   with the unknowns only, the DC motor's `init` is milliseconds. `_u0_pairs` filters by the
   compiled unknowns and looks the start up by signal id.
+* **States vs algebraic (FIX-M2-1).** `u0` may contain only the compiled unknowns that
+  appear under `Differential`; `collect_differential_variables(csys)` gives exactly that set.
+  A value in `u0` is an initial **condition**, so a start for an algebraic unknown becomes an
+  extra initialization equation (one equation, no unknowns) and fails whenever the true value
+  differs. The `tf_chain` fixture is the regression: its TF second-port effort is 0.5 at
+  t = 0. Algebraic starts are passed to `ODEProblem(...; guesses = ...)` instead; the
+  compile-cache `remake` keeps the guesses of the cached problem (it takes `u0`, `p` and
+  `tspan`; start guesses do not change the structure, D4).
 * Derived port power (`e*f`, D15) is added as an extra variable and equation. `mtkcompile`
   turns it into an observed value, so the recorder reads it with the same `getu` getter as
   every other signal. The flat `stats.states`/`stats.equations` do not count it; the run
@@ -629,3 +637,33 @@ Everything below was probed on this machine (Julia 1.13.2) and is asserted by
 | warm-up workload | **~3 s** in-process (catalog + block/model check + two RC runs, the second with a changed parameter) |
 
 
+
+---
+
+# J2.3 � events and nonsmooth (verified 2026-10-26)
+
+* **`SymbolicContinuousCallback` takes the positive-edge affect positionally in MTK 11.45.5**:
+  `SymbolicContinuousCallback(cond, affect; affect_neg = nothing)`. The signature is
+  `(conditions, affect = nothing; affect_neg = affect, ...)`, so passing `affect = ...` as a
+  keyword is silently ignored and `affect_neg` defaults to the positive affect. The earlier
+  M0.3 note ("`affect` is the rising edge and `affect_neg` the falling edge, both default
+  `nothing`") does not hold for this version: a rising-edge-only `@events` entry must pass
+  the equations positionally **and** set `affect_neg = nothing`.
+* The event affect equations use explicit `Pre(...)`; the `Pair` form is not used because its
+  auto-wrap would also wrap the right-hand side of a sequentially substituted body. A
+  `Vector{Equation}` (not `Vector{Any}`) is what the constructor recognises.
+* `@events` is compiled to `Compile.FlatEvent` (condition normalised to the upward zero
+  crossing, final `target => value` map); `Compile.event_callbacks(flat, ctx)` lowers it.
+  Nonsmooth `ifelse`/`abs`/`sign`/`min`/`max`/`clamp`/`saturate`/`deadzone`/`floor`/`ceil`/
+  `round` kinks become condition-only callbacks.
+* Event instants are detected from the pairs of equal times in `Integrator.sol.t` (the MTK
+  callbacks save left/right even with `save_everystep = false`). `simulate` records both
+  through the `record_event(t, side, values)` seam; `side` is `:left` or `:right`.
+* **W206** counts callback firings by wrapping the compiled affect with
+  `remake(prob; callback = wrapped)` (an `init` callback kwarg is merged, not substituted)
+  and calls `SciMLBase.terminate!` after `event_limit + 1` firings. The run ends with status
+  `done`, stats.events = the count, and a W206 warning in the manifest. A condition-only
+  callback counts every crossing; a one-directional `@events` callback counts only its
+  non-empty edge (a falling zero crossing is still saved by the solver but is not a firing).
+* The plan 9.2 ball reproduces 0.45152364098572856 s / 1.173961466562895 s and a 0.6399973 m
+  peak; the relay switches at 1/12, 7/12, 13/12 s with a maximum error of 3.35e-13 s.

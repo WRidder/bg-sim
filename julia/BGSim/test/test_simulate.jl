@@ -238,9 +238,14 @@ _sim_ramp_model() = _sim_model(
         @test isempty(_sim_errors(flat))
         @test flat.stats.states == 0          # no declared state; `int` adds one
         @test flat.stats.equations == 4
-        # J2.3's seam: the continuous collector is empty for this milestone.
-        @test isempty(BGSim.nonsmooth_conditions(flat))
-        @test BGSim.nonsmooth_conditions(flat) isa Vector{BGSim.Expr}
+        # J2.3: every kink of the nonsmooth functions becomes a condition-only event. The
+        # collector is a structural walk over the flat equations, in first-seen order and
+        # without duplicates (the exact conditions are covered by `test_events.jl`).
+        conditions = BGSim.nonsmooth_conditions(flat)
+        @test conditions isa Vector{BGSim.Expr}
+        @test !isempty(conditions)
+        @test sprint(show, conditions) == sprint(show, BGSim.nonsmooth_conditions(flat))
+        @test length(unique(sprint(show, c) for c in conditions)) == length(conditions)
 
         settings = BGSim.RunSettings(
             t_start = 0.0, t_end = 1.0, solver = "Tsit5", reltol = 1.0e-9,
@@ -500,20 +505,51 @@ _sim_ramp_model() = _sim_model(
         @test rt_i.status == "done" && rt_b.status == "done"
         ci = _sim_columns(iconic_tight)
         cb = _sim_columns(bond_tight)
-        settled = ci["time"] .>= 0.5
-        speed_diff = maximum(abs.(ci["Motor1/shaft.f"][settled] .-
-                                   cb["IJ/p.f"][settled]))
-        current_diff = maximum(abs.(ci["Motor1/i"][settled] .- cb["IL/p.f"][settled]))
+        # J2.3 records a condition-only row pair at the Step kink, so the two runs need not
+        # have the same number of rows even though they share the whole output grid. Compare
+        # on the times both files contain (the duplicate event rows collapse to one time).
+        common = sort!(collect(intersect(Set(ci["time"]), Set(cb["time"]))))
+        ci_at = [findfirst(==(t), ci["time"]) for t in common]
+        cb_at = [findfirst(==(t), cb["time"]) for t in common]
+        settled = common .>= 0.5
+        speed_diff = maximum(abs.(
+            ci["Motor1/shaft.f"][ci_at][settled] .- cb["IJ/p.f"][cb_at][settled]
+        ))
+        current_diff = maximum(abs.(
+            ci["Motor1/i"][ci_at][settled] .- cb["IL/p.f"][cb_at][settled]
+        ))
         @test speed_diff < 1.0e-6
         @test current_diff < 1.0e-8
         # The whole settled trajectory, not only the final value, is in steady state.
-        @test maximum(abs.(ci["Motor1/shaft.f"][settled] .- target)) < 1.0e-6
-        @test maximum(abs.(cb["IJ/p.f"][settled] .- target)) < 1.0e-6
+        @test maximum(abs.(ci["Motor1/shaft.f"][ci_at][settled] .- target)) < 1.0e-6
+        @test maximum(abs.(cb["IJ/p.f"][cb_at][settled] .- target)) < 1.0e-6
         println(
             "J1.5 DC motor: omega(1 s) = ", ci["Motor1/shaft.f"][end],
             " rad/s (target ", target, "), iconic-vs-bondgraph max |domega| = ",
             speed_diff, " rad/s, max |di| = ", current_diff, " A",
         )
+    end
+
+    @testset "algebraic starts are guesses, not equations (FIX-M2-1)" begin
+        # Se -> 1-junction -> TF(n=2) -> R(3). At t = 0 the transformer's second-port
+        # effort is 0.5 and the resistor flow is 1/6, both algebraic and non-zero. Passing
+        # a start for them made MTK add an overdetermined initialisation equation; they are
+        # now guesses, so the values are solved from the equations.
+        fixture = joinpath(@__DIR__, "fixtures", "causality", "tf_chain.json")
+        flat = Compile.flatten(IR.parse_model(read(fixture, String)))
+        settings = BGSim.RunSettings(
+            t_start = 0.0, t_end = 0.001, solver = "Rodas5P",
+            reltol = 1.0e-10, abstol = 1.0e-12,
+            output = Dict{String,Any}("mode" => "points", "points" => 3),
+        )
+        dir = mktempdir()
+        result = simulate(flat; run_dir = dir, run_id = "tf-chain", settings = settings)
+        @test result.status == "done"
+        @test !any(d -> d.code in ("E103", "E900", "E901"), result.diagnostics)
+        data = _sim_columns(dir)
+        @test all(data["TF1/p2.e"] .== 0.5)
+        @test all(isapprox.(data["R1/p.f"], 1 / 6; atol = 1.0e-12))
+        @test all(isapprox.(data["TF1/p1.f"], 1 / 12; atol = 1.0e-12))
     end
 
     @testset "RLC: analytic overshoot and iconic vs bond graph" begin
@@ -534,7 +570,14 @@ _sim_ramp_model() = _sim_model(
         @test simulate(bond; run_dir = bond_dir, settings = settings).status == "done"
         ci = _sim_columns(iconic_dir)
         cb = _sim_columns(bond_dir)
-        difference = maximum(abs.(ci["C1/p.e"] .- cb["C1/p.e"]))
+        # The iconic half has a Step kink (recorded as a condition-only event pair); align
+        # the two runs by time before comparing their trajectories.
+        common = sort!(collect(intersect(Set(ci["time"]), Set(cb["time"]))))
+        ci_at = [findfirst(==(t), ci["time"]) for t in common]
+        cb_at = [findfirst(==(t), cb["time"]) for t in common]
+        difference = maximum(abs.(
+            ci["C1/p.e"][ci_at] .- cb["C1/p.e"][cb_at]
+        ))
         @test difference < 1.0e-6
         zeta = 0.5
         exact = 1 + exp(-pi * zeta / sqrt(1 - zeta^2))

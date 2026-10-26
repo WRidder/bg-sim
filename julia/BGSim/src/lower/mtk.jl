@@ -85,10 +85,10 @@ The switching conditions that must become condition-only continuous events (plan
 upward zero crossing is the switching instant; `lower_flat` turns each into a
 `SymbolicContinuousCallback(c ~ 0)` with no affect.
 
-This is the J2.3 seam. The continuous M1 lowering does not add nonsmooth events yet, so the
-collector returns an empty vector; filling it is the only change J2.3 needs at this level.
+This is the J2.3 seam: the structural walk lives in `src/compile/events.jl`, and this method
+is the BGSim-level name the J1.5 seam and the export use.
 """
-nonsmooth_conditions(::Flat.FlatModel) = Expr[]
+nonsmooth_conditions(flat::Flat.FlatModel) = Compile.nonsmooth_conditions(flat)
 
 """    CompiledModel
 
@@ -254,11 +254,13 @@ function lower_flat(flat::Flat.FlatModel)
         push!(initial, lhs ~ rhs)
     end
 
-    # The J2.3 seam: condition-only continuous events. `nonsmooth_conditions` is empty for
-    # the continuous M1 models, so this loop is quiet until J2.3 fills the collector.
+    # `@events` (plan D19, section 5.8): rising-edge zero crossings with the final
+    # assignment map as the affect; then one condition-only callback per nonsmooth kink.
     events = Any[]
+    append!(events, Compile.event_callbacks(flat, ctx))
     for c in nonsmooth_conditions(flat)
         ctx.origin = nothing
+        ctx.event_values = nothing
         push!(events, SymbolicContinuousCallback(lower_expression(c, ctx) ~ 0))
     end
 
@@ -290,26 +292,55 @@ function _int_start(expr, flat::Flat.FlatModel)
     return _number(value, "the start value of `int`")
 end
 
-# The operating point must contain exactly the compiled unknowns (states plus, for a DAE,
-# algebraic unknowns). Passing every flat variable would make MTK treat the algebraic and
-# observed start guesses as initialization equations, which is both wrong and very slow
-# (observed: 7 s and an "overdetermined initialization" warning on the DC motor).
+# The operating point must contain exactly the compiled **differential** unknowns. An
+# algebraic unknown is not a state: MTK solves it from the equations at t0, and passing a
+# value for it turns that value into an initialization equation (one equation, no unknowns),
+# which is overdetermined and fails whenever the true algebraic value is not that start
+# (NOTE-2 in plan/STATUS.md). Algebraic starts are passed as `guesses` instead below.
+function _state_keys(system)
+    return Set(_var_name(x) for x in ModelingToolkit.collect_differential_variables(system))
+end
+
 function _u0_pairs(flat::Flat.FlatModel, system, int_states::Vector{Pair{Num,Any}})
     by_id = Dict{String,Flat.FlatVar}(v.id => v for v in flat.variables)
     int_start = Dict{String,Any}(_var_name(p.first) => p.second for p in int_states)
+    states = _state_keys(system)
     out = Pair{Num,Any}[]
     for x in ModelingToolkit.unknowns(system)
         key = _var_name(x)
         if haskey(int_start, key)
             push!(out, x => _int_start(int_start[key], flat))
-        elseif haskey(by_id, key)
-            v = by_id[key]
-            start = v.start === nothing ? 0.0 : _number(v.start, "the start of `$(v.id)`")
-            push!(out, x => start)
-        else
-            # A generated algebraic unknown (tearing): 0.0 is the initial guess.
-            push!(out, x => 0.0)
+        elseif key in states
+            if haskey(by_id, key)
+                v = by_id[key]
+                start = v.start === nothing ? 0.0 : _number(v.start, "the start of `$(v.id)`")
+                push!(out, x => start)
+            else
+                # A generated tearing state: 0.0 is the initial value.
+                push!(out, x => 0.0)
+            end
         end
+    end
+    return out
+end
+
+# A start value of an algebraic variable is an initialisation *guess*, not a constraint.
+function _guess_pairs(flat::Flat.FlatModel, system)
+    by_id = Dict{String,Flat.FlatVar}(v.id => v for v in flat.variables)
+    states = _state_keys(system)
+    out = Pair{Num,Any}[]
+    for x in ModelingToolkit.unknowns(system)
+        key = _var_name(x)
+        key in states && continue
+        v = get(by_id, key, nothing)
+        v === nothing && continue
+        v.start === nothing && continue
+        start = try
+            _number(v.start, "the start of `$(v.id)`")
+        catch
+            continue
+        end
+        push!(out, x => start)
     end
     return out
 end
@@ -372,7 +403,8 @@ function _build_compiled(flat::Flat.FlatModel, key::String, tspan::Tuple{Float64
     op = Pair{Num,Any}[]
     append!(op, _u0_pairs(flat, csys, lowered.int_states))
     append!(op, _p_pairs(flat, lowered.params))
-    prob = ODEProblem(csys, op, tspan)
+    guesses = _guess_pairs(flat, csys)
+    prob = ODEProblem(csys, op, tspan; guesses = guesses)
     return CompiledModel(key, csys, prob, lowered.vars, lowered.params,
         lowered.int_states, _has_algebraic(prob))
 end

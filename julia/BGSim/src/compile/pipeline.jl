@@ -57,6 +57,7 @@ include("domains.jl")
 include("junctions.jl")
 include("balance.jl")
 include("causality.jl")
+include("events.jl")
 
 # ---------------------------------------------------------------------------------------
 # The recording list (plan 3.5, D15)
@@ -128,6 +129,7 @@ carry (J2.4 keeps the plan 5.1 shape)."""
 function _flatten(md::IR.ModelDoc; project_dir = nothing)
     b = Builder(md, project_dir === nothing ? nothing : String(project_dir))
     instantiate!(b)
+    events = collect_events!(b)
     plan = classify_connections!(b)
     domains = resolve_domains!(b, plan)
     unit_factors = apply_domains!(b, plan)
@@ -157,7 +159,7 @@ function _flatten(md::IR.ModelDoc; project_dir = nothing)
         b.params,
         b.equations,
         Flat.FlatEq[],
-        Any[],
+        events,
         Any[],
         b.junctions,
         connection_infos(plan),

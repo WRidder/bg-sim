@@ -89,6 +89,189 @@ function solver_algorithm(name::AbstractString, model::CompiledModel)
 end
 
 # ---------------------------------------------------------------------------------------
+# Events, W206 and the `record_event` seam (plan 3.5, 5.8 and D14)
+# ---------------------------------------------------------------------------------------
+
+# A callback firing is counted by wrapping the compiled MTK affect. `terminate!` after the
+# limit makes the integrator return `Terminated` from the `step!` that crossed it, so a Zeno
+# chatter cannot run to `MaxIters`. The wrapper is installed with `remake(prob; callback=...)`
+# because `init` merges callbacks instead of replacing the problem's callback.
+#
+# Only real affects are counted when a callback has one; a one-directional `@events` entry
+# still detects its falling zero crossing but has an empty negative affect, which is not a
+# firing (D19). A condition-only callback (both edges empty, the nonsmooth kinks) counts every
+# crossing, because landing on the kink is exactly its purpose.
+_is_empty_affect(a) = a === nothing || a === ModelingToolkit.ModelingToolkitBase.EMPTY_AFFECT
+
+function _counted_affect!(affect, counter::Base.RefValue{Int}, limit::Int, count::Bool)
+    count || return affect
+    return function (integ)
+        counter[] += 1
+        affect(integ)
+        counter[] > limit && ModelingToolkit.SciMLBase.terminate!(integ)
+        return nothing
+    end
+end
+
+function _counted_affect!(affect, counter::Base.RefValue{Int}, limit::Int, ::Val{:vector},
+    count::Bool)
+    count || return affect
+    return function (integ, idx)
+        counter[] += 1
+        affect(integ, idx)
+        counter[] > limit && ModelingToolkit.SciMLBase.terminate!(integ)
+        return nothing
+    end
+end
+
+function _with_event_limit(
+    cb::ModelingToolkit.SciMLBase.ContinuousCallback,
+    counter::Base.RefValue{Int},
+    limit::Int,
+)
+    real = !_is_empty_affect(cb.affect!) || !_is_empty_affect(cb.affect_neg!)
+    count_pos = real ? !_is_empty_affect(cb.affect!) : true
+    count_neg = real ? !_is_empty_affect(cb.affect_neg!) : true
+    return ModelingToolkit.SciMLBase.ContinuousCallback(
+        cb.condition,
+        _counted_affect!(cb.affect!, counter, limit, count_pos),
+        _counted_affect!(cb.affect_neg!, counter, limit, count_neg);
+        initialize = cb.initialize,
+        finalize = cb.finalize,
+        idxs = cb.idxs,
+        rootfind = cb.rootfind,
+        interp_points = cb.interp_points,
+        save_positions = cb.save_positions,
+        dtrelax = cb.dtrelax,
+        abstol = cb.abstol,
+        reltol = cb.reltol,
+        repeat_nudge = cb.repeat_nudge,
+        initializealg = cb.initializealg,
+        saved_clock_partitions = cb.saved_clock_partitions,
+        maybe_discontinuity = cb.maybe_discontinuity,
+        initialize_save_discretes = cb.initialize_save_discretes,
+    )
+end
+
+function _with_event_limit(
+    cb::ModelingToolkit.SciMLBase.VectorContinuousCallback,
+    counter::Base.RefValue{Int},
+    limit::Int,
+)
+    va = cb.affect!
+    real = any(!_is_empty_affect(a) for a in va.affects) ||
+           any(!_is_empty_affect(a) for a in va.affect_negs)
+    affects = Any[
+        _counted_affect!(a, counter, limit, real ? !_is_empty_affect(a) : true) for
+        a in va.affects
+    ]
+    affect_negs = Any[
+        _counted_affect!(a, counter, limit, real ? !_is_empty_affect(a) : true) for
+        a in va.affect_negs
+    ]
+    wrapped_affect = ModelingToolkit.ModelingToolkitBase.VectorAffect(
+        va.eq2affect, affects, affect_negs
+    )
+    return ModelingToolkit.SciMLBase.VectorContinuousCallback(
+        cb.condition,
+        wrapped_affect,
+        cb.len;
+        initialize = cb.initialize,
+        finalize = cb.finalize,
+        idxs = cb.idxs,
+        rootfind = cb.rootfind,
+        interp_points = cb.interp_points,
+        save_positions = cb.save_positions,
+        dtrelax = cb.dtrelax,
+        abstol = cb.abstol,
+        reltol = cb.reltol,
+        repeat_nudge = cb.repeat_nudge,
+        initializealg = cb.initializealg,
+        saved_clock_partitions = cb.saved_clock_partitions,
+        maybe_discontinuity = cb.maybe_discontinuity,
+        initialize_save_discretes = cb.initialize_save_discretes,
+    )
+end
+
+function _with_event_limit(
+    cb::ModelingToolkit.SciMLBase.CallbackSet,
+    counter::Base.RefValue{Int},
+    limit::Int,
+)
+    continuous = [
+        _with_event_limit(c, counter, limit) for c in cb.continuous_callbacks
+    ]
+    return ModelingToolkit.SciMLBase.CallbackSet(continuous, collect(cb.discrete_callbacks))
+end
+
+_with_event_limit(cb, ::Base.RefValue{Int}, ::Int) = cb
+
+_event_limit_reached(counter::Base.RefValue{Int}, limit::Int) = counter[] > limit
+
+function _event_limit_diagnostic(flat::Flat.FlatModel, t, count::Int, limit::Int)
+    return diag(
+        "W206",
+        "the event limit of $limit was reached at t = $t ($count firings)";
+        hint = "the model may chatter (a Zeno event); check the event conditions or raise `event_limit`",
+        path = _last_path(flat),
+    )
+end
+
+# The event-record seam for J2.2: the scheduler's run loop may pass its own record_event
+# callback; the default writes the row through J1.5's recorder. The callback signature is
+# `record_event(t::Float64, side::Symbol, values::Vector{Float64})` with side `:left`/`:right`.
+_record_event!(::Nothing, rec::Recorder, t, side::Symbol, values) =
+    record_row!(rec, t, values)
+_record_event!(record_event, ::Recorder, t, side::Symbol, values) =
+    record_event(t, side, values)
+
+# Evaluate every recorded signal at the saved left/right state of an event instant. The
+# saved `sol.u` vector holds the unknowns only; observed values are recomputed from it and
+# the current parameters, exactly as the recorder reads them during the grid rows.
+function _values_at_state!(integ, getters, state, t::Float64)
+    saved_u = copy(integ.u)
+    saved_t = integ.t
+    try
+        copyto!(integ.u, state)
+        integ.t = t
+        return Float64[Float64(getter(integ)) for getter in getters]
+    finally
+        copyto!(integ.u, saved_u)
+        integ.t = saved_t
+    end
+end
+
+"""    _record_new_events!(integ, rec, record_event, cursor, getters) -> new cursor
+
+Every event instant is saved twice by the solver (`save_positions = [true, true]`), so each
+new group of equal times in `sol.t` is one event: the first saved state is the left limit,
+the last the right limit. Both rows are written at the same `t` (plan 3.5)."""
+function _record_new_events!(integ, rec, record_event, cursor::Int, getters)
+    times = integ.sol.t
+    states = integ.sol.u
+    n = length(times)
+    n <= cursor && return cursor
+    i = cursor + 1
+    while i <= n
+        j = i
+        while j < n && times[j + 1] == times[i]
+            j += 1
+        end
+        t = Float64(times[i])
+        _record_event!(
+            record_event, rec, t, :left,
+            _values_at_state!(integ, getters, states[i], t),
+        )
+        _record_event!(
+            record_event, rec, t, :right,
+            _values_at_state!(integ, getters, states[j], t),
+        )
+        i = j + 1
+    end
+    return n
+end
+
+# ---------------------------------------------------------------------------------------
 # Diagnostics
 # ---------------------------------------------------------------------------------------
 
@@ -213,10 +396,16 @@ end
 # ---------------------------------------------------------------------------------------
 
 """
-    simulate(flat; run_dir, run_id, model_hash, settings, cancel, progress, phase) -> SimResult
+    simulate(flat; run_dir, run_id, model_hash, settings, cancel, progress, phase,
+             record_event) -> SimResult
 
 Run the continuous model `flat` and write its run folder. See the file header for the run
 loop and the plan sections it implements.
+
+`record_event` is the J2.2 seam: when the discrete scheduler owns the run loop, it can pass
+`record_event(t, side, values)` to receive each event instant twice (`side` is `:left` or
+`:right`, both at the same `t`). The default is `nothing`, which writes both rows through the
+recorder directly.
 """
 function simulate(flat::Flat.FlatModel;
     run_dir::Union{AbstractString,Nothing} = nothing,
@@ -226,6 +415,7 @@ function simulate(flat::Flat.FlatModel;
     cancel = nothing,
     progress = nothing,
     phase = nothing,
+    record_event = nothing,
 )
     start_ns = time_ns()
     run_settings = settings isa RunSettings ? settings : RunSettings(settings)
@@ -291,6 +481,18 @@ function simulate(flat::Flat.FlatModel;
         flat_diagnostics = sort_diagnostics(vcat(flat_diagnostics, post_compile))
     end
 
+    # Plan 5.8 / W206: count every callback firing and stop a Zeno chatter at `event_limit`.
+    # The wrapped callback is installed by remaking the problem, because `init` merges a
+    # callback kwarg with the problem's own callbacks instead of replacing them.
+    event_counter = Ref(0)
+    solver_problem = lowered.problem
+    if haskey(lowered.problem.kwargs, :callback)
+        limited = _with_event_limit(
+            lowered.problem.kwargs[:callback], event_counter, run_settings.event_limit
+        )
+        solver_problem = remake(lowered.problem; callback = limited)
+    end
+
     extra_states = length(lowered.model.int_states)
     states = Int(flat.stats.states) + extra_states
     equations = Int(flat.stats.equations) + extra_states
@@ -325,7 +527,7 @@ function simulate(flat::Flat.FlatModel;
     end
     integ = try
         init(
-            lowered.problem, alg;
+            solver_problem, alg;
             solver_kwargs...,
             save_everystep = false,
             save_start = false,
@@ -409,6 +611,7 @@ function simulate(flat::Flat.FlatModel;
     last_progress_ns = time_ns()
     last_flush_ns = time_ns()
     next_index = 2
+    event_cursor = 0
     while next_index <= length(grid)
         if _cancelled(cancel)
             status = "cancelled"
@@ -443,6 +646,18 @@ function simulate(flat::Flat.FlatModel;
         catch err
             false
         end
+        # Record every event instant that this step crossed, twice (left and right limits)
+        # before the grid row for `target` is written.
+        event_cursor = _record_new_events!(
+            integ, rec, record_event, event_cursor, getters
+        )
+        if _event_limit_reached(event_counter, run_settings.event_limit)
+            diagnostic = _event_limit_diagnostic(
+                flat, integ.t, event_counter[], run_settings.event_limit
+            )
+            status = "done"
+            break
+        end
         if !step_ok || !_ok_retcode(integ.sol.retcode)
             diagnostic = _solver_diagnostic(integ, lowered.model, flat)
             status = "failed"
@@ -472,7 +687,7 @@ function simulate(flat::Flat.FlatModel;
         compile_s = compile_s,
         sim_s = sim_s,
         steps = steps,
-        events = 0,
+        events = event_counter[],
         states = states,
         equations = equations,
     )
