@@ -141,6 +141,7 @@ def example_steps() -> list[Step] | None:
                     "npx",
                     "playwright",
                     "test",
+                    "--workers=1",
                     "tests/e2e/dcmotor.spec.ts",
                     "tests/e2e/subsystems.spec.ts",
                     "tests/e2e/rlc-dual.spec.ts",
