@@ -29,6 +29,7 @@ from bgsim_server.decimate import DEFAULT_POINTS
 from bgsim_server.runs import (
     DEFAULT_RUN_HISTORY,
     RUN_HISTORY_ENV,
+    _load_manifest,
     _prune_runs,
     run_history_limit,
 )
@@ -141,6 +142,14 @@ def _write_run(
         "created": "2026-10-21T09:14:03Z",
         "status": status,
         "settings": _settings(),
+        "stats": {
+            "compile_s": 0.0,
+            "sim_s": 0.0,
+            "steps": max(int(t.size) - 1, 0),
+            "events": 0,
+            "states": 0,
+            "equations": 0,
+        },
         "signals": signals,
         "time": {"n": int(t.size), "t0": float(t[0]), "t1": float(t[-1])},
         "diagnostics": [],
@@ -151,6 +160,26 @@ def _write_run(
 
 
 # --------------------------------------------------------------------------- manifest
+
+
+def test_manifest_read_retries_a_windows_sharing_violation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_dir = _write_run(tmp_path, "run-lock", np.linspace(0.0, 1.0, 3), ["run/x"],
+                         np.zeros((1, 3)))
+    original = Path.read_text
+    attempts = {"count": 0}
+
+    def flaky(self: Path, *args: Any, **kwargs: Any) -> str:
+        if self.name == "manifest.json" and attempts["count"] == 0:
+            attempts["count"] += 1
+            raise PermissionError(13, "the file is in use by another process")
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", flaky)
+    document = _load_manifest(run_dir)
+    assert document["id"] == "run-lock"
+    assert attempts["count"] == 1
 
 
 def test_start_run_returns_the_id_and_a_valid_manifest(fake_settings, schema_validate) -> None:

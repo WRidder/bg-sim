@@ -172,12 +172,25 @@ def run_history_limit() -> int:
 
 def _load_manifest(run_dir: Path) -> dict[str, Any]:
     path = run_dir / "manifest.json"
-    try:
-        document = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:
-        raise HTTPException(
-            status_code=500, detail=f"the manifest of run {path.parent.name!r} is unreadable: {exc}"
-        ) from None
+    # The worker rewrites the manifest through a temp file + os.replace, and Windows can
+    # report a brief sharing violation while the rename lands. Retry that window instead
+    # of turning a live poll into a 500.
+    deadline = time.monotonic() + 0.5
+    while True:
+        try:
+            document = json.loads(path.read_text(encoding="utf-8"))
+            break
+        except PermissionError:
+            if time.monotonic() >= deadline:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"the manifest of run {path.parent.name!r} is locked by another process",
+                ) from None
+            time.sleep(0.01)
+        except (OSError, ValueError) as exc:
+            raise HTTPException(
+                status_code=500, detail=f"the manifest of run {path.parent.name!r} is unreadable: {exc}"
+            ) from None
     _validate_manifest(document, path)
     return document
 
