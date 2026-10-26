@@ -240,4 +240,24 @@ include("test_simulate.jl")
 include("test_worker.jl")
 include("test_language.jl")
 
-# Milestone M2 and later add their own test file here when their work package lands.
+# Milestone M2 scaffolding: each WP creates exactly one of these files, and the M2 gate
+# replaces these guards with plain includes (the same pattern DEC-5 used for M1).
+for entry in ("test_events.jl", "test_discrete.jl", "test_units_model.jl",
+              "test_components.jl", "test_cache.jl")
+    path = joinpath(@__DIR__, entry)
+    isfile(path) && include(path)
+end
+
+# Golden tests of the stdlib work packages: test/golden/<group>/test_<Name>.jl. The directory
+# is walked so J2.7a–g do not all edit this file while they run in parallel.
+let golden = joinpath(@__DIR__, "golden")
+    if isdir(golden)
+        for (root, _, files) in walkdir(golden)
+            for file in sort(files)
+                startswith(file, "test_") && endswith(file, ".jl") &&
+                    include(joinpath(root, file))
+            end
+        end
+    end
+end
+include("test_causality.jl")

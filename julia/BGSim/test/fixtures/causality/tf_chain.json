@@ -1,0 +1,99 @@
+{
+  "$comment": "J2.4 causality fixture: Se -> 1-junction -> TF, with the transformer's second port bonded to R. The Se fixes the stroke at the 1-junction, the junction forces the TF bond's stroke away from it, and the transformer relation forces the R bond's stroke at the R port (effort out on the second side). No W201. The 1-junction supplies two equations, the TF two and the TF-R bond two, so the model balances (8 unknowns, 8 equations).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "TFChain",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Se1",
+        "block": { "ref": "stdlib:bondgraph/Se" },
+        "position": { "x": 60, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "e": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "J1",
+        "block": { "junction": "1" },
+        "position": { "x": 240, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n3",
+        "name": "TF1",
+        "block": { "ref": "stdlib:bondgraph/TF" },
+        "position": { "x": 420, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "n": "2.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n4",
+        "name": "R1",
+        "block": { "ref": "stdlib:bondgraph/R" },
+        "position": { "x": 620, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "r": "3.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n3", "port": "p1" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "bond",
+        "from": { "node": "n3", "port": "p2" },
+        "to": { "node": "n4", "port": "p" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.01,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": { "mode": "points", "points": 100 },
+    "event_limit": 10000
+  },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

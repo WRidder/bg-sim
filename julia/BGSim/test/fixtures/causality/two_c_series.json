@@ -1,0 +1,79 @@
+{
+  "$comment": "J2.4 causality fixture: two compliances (springs) in series with no inertia between them. Two C elements share a 0-junction, so the junction imposes one common effort (force); only one of the two can have integral causality, the other is forced into derivative causality (W201). No source is needed: the 0-junction supplies two equations and the two C blocks four, so the model balances (6 unknowns, 6 equations).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "TwoSpringsInSeries",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "C1",
+        "block": { "ref": "stdlib:bondgraph/C" },
+        "position": { "x": 120, "y": 80 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "c": "1e-3" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "J0",
+        "block": { "junction": "0" },
+        "position": { "x": 320, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n3",
+        "name": "C2",
+        "block": { "ref": "stdlib:bondgraph/C" },
+        "position": { "x": 120, "y": 320 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "c": "2e-3" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": { "node": "n3", "port": "p" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.01,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": { "mode": "points", "points": 100 },
+    "event_limit": 10000
+  },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

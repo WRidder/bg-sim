@@ -591,7 +591,10 @@ end
         ])
         fm0 = flat(zero_model)
         @test _counts(fm0) == (4, 4)
-        @test isempty(_errors(fm0))
+        # J2.4: two ideal effort sources on one 0-junction is exactly the causal conflict of
+        # plan 5.7 (E106 on the second source). The junction equations are still emitted.
+        @test length(_errors(fm0)) == 1
+        @test _has_code(fm0, "E106"; node = "n3", connection = "c2")
         @test length([d for d in fm0.diagnostics if d.code == "W205"]) == 1
         @test any(e -> Flat.flat_id(e.lhs) == "Se2/p.e" && Flat.flat_id(e.rhs) == "Se1/p.e",
             fm0.equations)
@@ -762,7 +765,7 @@ end
         result = Compile.model_check(IR.parse_model(_fixture("model.dcmotor.json")))
         @test Set(keys(result)) ==
               Set([:diagnostics, :domains, :causality, :unitFactors, :signals, :stats])
-        @test isempty(result.causality)          # J2.4 fills this
+        @test isempty(result.causality)          # an iconic model has no bonds to stroke
         @test result.stats == (states = 2, equations = 26)
         @test result.signals == fm.signals
         @test result.domains == fm.domains

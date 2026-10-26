@@ -12,12 +12,13 @@
 #   5. connections   emit the wire, bond and signal equations (5.5);
 #   6. junctions     emit the 0/1-junction constraints (5.4);
 #   7. unconnected   E101 for a port, input or junction with no connection (5.2.6);
-#   8. balance       E103, ranking the instances by local imbalance (5.2.7).
+#   8. balance       E103, ranking the instances by local imbalance (5.2.7);
+#   9. causality     SCAP, the causal strokes and W201/W202/E106 (5.7).
 #
-# `model_check` returns exactly the plan 3.6 `model.check` result. `causality` is empty until
-# J2.4 (SCAP) fills it. `stats` carries all counts on the `FlatModel`, while the contract
-# result keeps only the two fields `contracts/schemas/worker-rpc.schema.json` allows
-# (`states`, `equations`).
+# `model_check` returns exactly the plan 3.6 `model.check` result, including the causal
+# strokes the causality pass returns. `stats` carries all counts on the `FlatModel`, while
+# the contract result keeps only the two fields `contracts/schemas/worker-rpc.schema.json`
+# allows (`states`, `equations`).
 
 include(joinpath(@__DIR__, "..", "ir", "blockdef.jl"))
 include(joinpath(@__DIR__, "..", "ir", "flat.jl"))
@@ -55,6 +56,7 @@ include("connect.jl")
 include("domains.jl")
 include("junctions.jl")
 include("balance.jl")
+include("causality.jl")
 
 # ---------------------------------------------------------------------------------------
 # The recording list (plan 3.5, D15)
@@ -115,6 +117,15 @@ partial model is still returned, so the editor can colour what it can). A bug in
 throws; `model_check` turns that into E900 with the exception message in the hint.
 """
 function flatten(md::IR.ModelDoc; project_dir = nothing)
+    return first(_flatten(md; project_dir = project_dir))
+end
+
+"""    _flatten(md; project_dir) -> (FlatModel, CausalityMap)
+
+The one flattening run. It returns the flat model *and* the causal strokes, because the
+strokes are editor metadata that `model_check` returns and `FlatModel` deliberately does not
+carry (J2.4 keeps the plan 5.1 shape)."""
+function _flatten(md::IR.ModelDoc; project_dir = nothing)
     b = Builder(md, project_dir === nothing ? nothing : String(project_dir))
     instantiate!(b)
     plan = classify_connections!(b)
@@ -125,6 +136,7 @@ function flatten(md::IR.ModelDoc; project_dir = nothing)
     check_unconnected!(b, plan)
     instances = build_instances!(b, plan)
     check_balance!(b, instances)
+    causality = analyze_causality!(b, plan)
     signals, derived = model_signals(b)
     diagnostics = sort_diagnostics(b.diagnostics)
     states = count(v -> v.kind === :state, b.vars)
@@ -139,7 +151,7 @@ function flatten(md::IR.ModelDoc; project_dir = nothing)
         parameters = length(b.params),
         signals = length(signals),
     )
-    return Flat.FlatModel(
+    model = Flat.FlatModel(
         md.name,
         b.vars,
         b.params,
@@ -157,6 +169,7 @@ function flatten(md::IR.ModelDoc; project_dir = nothing)
         diagnostics,
         stats,
     )
+    return model, causality
 end
 
 flatten(source::AbstractString; project_dir = nothing) =
@@ -172,24 +185,28 @@ The plan 3.6 `model.check` result:
 
 `domains` maps a power connection id to the adopted domain name (plan 5.6), `unitFactors`
 maps a connection id to the factor the compiler inserts (plan 5.3), and `signals` is the plan
-3.5 recording list. `causality` is empty until the SCAP pass of J2.4; it is present now so
-the JSON shape and the editor's reader do not change when it lands.
+3.5 recording list. `causality` maps a bond connection id to `(strokeAt = "from" | "to",)`,
+the end where effort is the input to the element there (plan 5.7); it is empty for a model
+with no bonds.
 
 `stats` contains exactly the two fields the worker contract allows (`states`, `equations`);
 the full counts are on `flatmodel.stats`.
 """
 function model_check(md::IR.ModelDoc; project_dir = nothing)
-    fm = try
-        flatten(md; project_dir = project_dir)
+    fm, causality = try
+        _flatten(md; project_dir = project_dir)
     catch err
         message = "internal compiler error while flattening `$(md.name)`"
         d = diag("E900", message; hint = sprint(showerror, err))
-        Flat.empty_model(md.name; diagnostics = [d], stats = (states = 0, equations = 0))
+        (
+            Flat.empty_model(md.name; diagnostics = [d], stats = (states = 0, equations = 0)),
+            CausalityMap(),
+        )
     end
     return (
         diagnostics = fm.diagnostics,
         domains = fm.domains,
-        causality = Dict{String,Any}(),   # J2.4 (SCAP) fills this; empty until then.
+        causality = causality,
         unitFactors = fm.unit_factors,
         signals = fm.signals,
         stats = (states = fm.stats.states, equations = fm.stats.equations),

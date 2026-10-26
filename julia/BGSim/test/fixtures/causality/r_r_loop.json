@@ -1,0 +1,59 @@
+{
+  "$comment": "J2.4 causality fixture: two free resistors joined by one bond. No source, storage or junction can fix the causality, so SCAP has to choose arbitrarily and the equations around the bond are an algebraic loop (W202 naming both R instances). The bond contributes two equations and each R one, so the model balances (4 unknowns, 4 equations).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "RRLoop",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "R1",
+        "block": { "ref": "stdlib:bondgraph/R" },
+        "position": { "x": 120, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "r": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "R2",
+        "block": { "ref": "stdlib:bondgraph/R" },
+        "position": { "x": 420, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "r": "2.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2", "port": "p" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.01,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": { "mode": "points", "points": 100 },
+    "event_limit": 10000
+  },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

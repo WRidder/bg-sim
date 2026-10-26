@@ -282,6 +282,15 @@ function simulate(flat::Flat.FlatModel;
     end
     compile_s = (time_ns() - compile_ns) / 1.0e9
 
+    # Plan 5.7 (second paragraph): after `mtkcompile`, a variable that appeared under `ddt`
+    # but was not kept as a differential state is in derivative causality too. This is the
+    # iconic-model counterpart of SCAP's W201, so it goes into the run's diagnostics before
+    # the recorder opens (the live tail and the final manifest both show it).
+    post_compile = Compile.post_compile_warnings(flat, lowered.model.system)
+    if !isempty(post_compile)
+        flat_diagnostics = sort_diagnostics(vcat(flat_diagnostics, post_compile))
+    end
+
     extra_states = length(lowered.model.int_states)
     states = Int(flat.stats.states) + extra_states
     equations = Int(flat.stats.equations) + extra_states
