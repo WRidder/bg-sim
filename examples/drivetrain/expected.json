@@ -72,6 +72,98 @@
           "note": "the 12 V step excites the ~29 Hz two-inertia mode; the rod twists to ~0.186 rad"
         }
       ]
+    },
+    "bondgraph": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "IJm/p.f",
+          "t": 2.0,
+          "value": 113.86311499566987,
+          "rtol": 1e-3,
+          "note": "motor speed from the rotor inertia's flow"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IW1/p.f",
+          "t": 2.0,
+          "value": 11.386311499566988,
+          "rtol": 1e-3,
+          "note": "near wheel speed"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IW2/p.f",
+          "t": 2.0,
+          "value": 11.388161502151661,
+          "rtol": 1e-3,
+          "note": "far wheel speed"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Crod/q",
+          "t": 2.0,
+          "value": 0.09996294068301954,
+          "rtol": 1e-3,
+          "note": "the rod compliance stores the load twist"
+        },
+        {
+          "kind": "ratio",
+          "signal": "IJm/p.f",
+          "signal_b": "IW1/p.f",
+          "t": 2.0,
+          "value": 10.0,
+          "rtol": 1e-4,
+          "note": "the two transformers give the same 10:1 ratio and the same sign as the iconic model"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Crod/q",
+          "from_t": 0.01,
+          "to_t": 1.0,
+          "value": 0.18648149316411403,
+          "rtol": 1e-3,
+          "note": "same transient twist as the iconic model"
+        }
+      ]
     }
-  }
+  },
+  "compare": [
+    {
+      "a": "drivetrain",
+      "b": "bondgraph",
+      "signal_a": "Motor1/shaft.f",
+      "signal_b": "IJm/p.f",
+      "from_t": 0.01,
+      "max_abs": 5e-5,
+      "note": "the pure bond graph reproduces the iconic motor speed over the whole run (1e-7 relative; the rigid gear puts IW1 in derivative causality, so the DAE solve differs slightly)"
+    },
+    {
+      "a": "drivetrain",
+      "b": "bondgraph",
+      "signal_a": "Wheel1/a.f",
+      "signal_b": "IW1/p.f",
+      "from_t": 0.01,
+      "max_abs": 1e-6,
+      "note": "near wheel speed"
+    },
+    {
+      "a": "drivetrain",
+      "b": "bondgraph",
+      "signal_a": "Wheel2/a.f",
+      "signal_b": "IW2/p.f",
+      "from_t": 0.01,
+      "max_abs": 5e-5,
+      "note": "far wheel speed (same numerical band as the motor)"
+    },
+    {
+      "a": "drivetrain",
+      "b": "bondgraph",
+      "signal_a": "Rod/phi",
+      "signal_b": "Crod/q",
+      "from_t": 0.01,
+      "max_abs": 1e-6,
+      "note": "rod twist"
+    }
+  ]
 }

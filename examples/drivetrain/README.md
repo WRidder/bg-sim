@@ -1,10 +1,15 @@
 # drivetrain — motor, gearbox and a flexible rod between two inertias
 
-A read-only **sample** of the classic two-inertia drivetrain: a DC motor drives a
-10:1 gearbox, which drives the near wheel inertia; the far wheel inertia is
-connected to it by a flexible rod (a torsion spring with a parallel damper). A
-load-torque step is applied at t = 1 s. Only M1 stdlib blocks are used, so it is
-the natural follow-up to the `dc-motor` sample.
+A read-only **sample** of the classic two-inertia drivetrain, in two forms:
+- `drivetrain` — the iconic model: `DCMotor` → `IdealGear` → `Inertia` → `TorsionSpring`
+  + `RotationalDamper` → `Inertia`;
+- `bondgraph` — the same plant in **pure bond graph**: `MSe` → 1-junction (`R`, `I`) →
+  `GY` → 1-junction (`I`, `R`) → two `TF`s → 1-junction (`I`) → rod (0/1-junctions with
+  `C` and `R`) → 1-junction (`I`, load `MSe`).
+
+Both run for 2 s and produce the same numbers to ~1e-8. A 12 V step starts the motor at
+t = 0.01 s and a 0.5 N·m load step arrives at t = 1 s. Only M1 stdlib blocks are used, so
+this is the natural follow-up to the `dc-motor` sample.
 
 ```
 Step1(12 V) → V1 → Motor1 → Gear1(n=10) → Wheel1(1e-3)
@@ -12,6 +17,27 @@ Step1(12 V) → V1 → Motor1 → Gear1(n=10) → Wheel1(1e-3)
                                             └── RodDamper
 LoadStep(0.5 N·m at 1 s) → Load → Wheel2 node
 ```
+
+The pure bond-graph model:
+
+```
+Step → MSe → 1-junction( R=1, I_L=1e-3 ) → GY(k=0.1)
+     → 1-junction( I_J=5e-5, R_d=1e-4 ) → TF(1) → TF(0.1) → J3( 1-junction, I_1=1e-3 )
+     → 0-junction ── J4( 1-junction, I_2=2e-3, MSe(load) )
+          │
+       1-junction( C=0.2, R=0.02 )      # the rod: spring and damper in parallel
+```
+
+The two transformers are 1:1 and 10:1: a TF reverses the flow
+(`p2.f = -n·p1.f`), so a single 10:1 TF would make the wheels turn against the
+motor. The 1:1 stage first reverses, the 0.1 stage reverses again and gives the
+10:1 reduction — the same ratio and the same sign as the iconic `IdealGear`.
+The rod is a `C` (compliance `c = 1/k = 0.2`) and an `R` (0.02) in parallel on a
+1-junction, fed by a 0-junction that forms the relative speed between the two
+inertia junctions. That is the bond-graph form of a torsion spring with a
+parallel damper. The load `MSe` has effort −0.5 N·m on its port; with the
+power-positive-into-each-port convention that is the +0.5 N·m load seen by the
+wheel.
 
 ## What it shows
 
@@ -27,6 +53,13 @@ LoadStep(0.5 N·m at 1 s) → Load → Wheel2 node
   **113.86 rad/s**, and both wheel speeds agree again.
 - The motor current follows the torque balance `k·i = d·ω + reflected load`
   (**0.614 A** after the step).
+
+The pure bond-graph model reproduces all of these: `IJm/p.f` = 113.863,
+`IW1/p.f` = 11.386, `IW2/p.f` = 11.388, `Crod/q` = 0.09996, and the `compare`
+checks against the iconic model are below 1e-6 over the whole run. Its manifest
+reports **W201** on `IW1` (the wheel-side inertia is in derivative causality
+because the two transformers make the gear rigid). The run and values are
+unaffected; the warning is the honest bond-graph causality of a rigid gear.
 
 ## Parameters
 

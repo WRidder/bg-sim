@@ -3,7 +3,8 @@
   "language": "0.1.0",
   "name": "drivetrain",
   "models": [
-    "drivetrain"
+    "drivetrain",
+    "bondgraph"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"
