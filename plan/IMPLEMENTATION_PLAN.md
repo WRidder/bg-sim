@@ -1100,6 +1100,46 @@ end
   - no solver failure.
 - **3D:** the cylinder body plus a prismatic rod bound to the position.
 
+### 9.6b `industrial-servo`, milestone M2 (requested addition: PMSM servo drive with variants)
+
+A Delta ASDA-A3-style industrial servo (the structure applies to Yaskawa/Panasonic/Siemens
+servo drives too; an induction-motor VFD would add slip and flux estimation): a
+permanent-magnet synchronous motor with a high-resolution encoder, a sampled cascaded
+controller and an inverter. One project, several **variants of the same case** so each
+fidelity step can be compared against the baseline:
+- **`baseline`** — averaged inverter (ideal voltage source saturated at `V_dc/√3`), PMSM in
+  the **dq frame**, rigid inertia, cascaded discrete loops: current PI on `i_d`/`i_q` with
+  cross-coupling decoupling and back-EMF feedforward at 8 kHz, speed PI at 1 kHz, position P
+  with trajectory feedforward at 200 Hz, one-sample computation delay, ideal encoder.
+- **`two-mass`** — baseline plus a flexible coupling (spring/damper) and load inertia, the
+  usual mechanical resonance; a speed-loop notch filter and/or low-pass is added to show the
+  suppression.
+- **`switching`** — baseline with a two-level switching inverter (PWM carrier, dead time and
+  device voltage drops) instead of the averaged source; shows current/torque ripple.
+- **`encoder`** — baseline with a 24-bit absolute encoder (quantization) and a differenced
+  speed estimate (with a low-pass or observer), for low-speed smoothness.
+- optionally **`full`** — all of the above together.
+
+**Plant (continuous):** `v_d = R·i_d + L_d·di_d/dt − ω_e·L_q·i_q`, `v_q = R·i_q +
+L_q·di_q/dt + ω_e·(L_d·i_d + ψ_m)`, `ω_e = p·ω_m`, `T_e = 1.5·p·(ψ_m·i_q + (L_d−L_q)·i_d·i_q)`,
+`J·dω/dt = T_e − B·ω − T_load`; surface-mount PMSM so `L_d ≈ L_q` and `T_e ≈ 1.5·p·ψ_m·i_q`.
+The PMSM is a project-library equation block with signal inputs `v_d`/`v_q` and a Rotation
+shaft port; the mechanical plant of the two-mass variant is a bond graph (I–C–R) so the
+sample exercises both modeling styles.
+
+**Controller (discrete):** the drive firmware as explicit `@discrete` blocks with their own
+`Ts` and a one-sample delay; the cascade is tuned inner-to-outer (current ≫ speed ≫
+position), current PI by pole-zero cancellation (`K_i/K_p = R/L`). Add the averaged
+inverter limit and, in the variants, the switching/dead-time and encoder quantization.
+
+**Checks (per variant):** current-loop step response (rise/overshoot/settling), speed-loop
+step (bandwidth/overshoot/steady error), position step settling, the `V_dc/√3` saturation,
+two-mass resonance peak and its notch suppression, switching ripple, encoder quantization
+and low-speed smoothness, and a baseline-vs-variant `compare_signals`. The runner will need
+a `step_response` check kind (rise time, overshoot, settling) and a ripple measure.
+
+**3D (M3):** a motor can, shaft and a load plate; bind the motor angle to the shaft.
+
 ### 9.7 `reaction-wheel-1d`, milestone M3 (1D cube-on-edge balancer, iconic Rotation)
 - **Model:**
   - an `InvertedPendulumBody` equation block, copied from Inertia, with:
@@ -1391,6 +1431,9 @@ Each WP is described by these fields:
 **X2.1 to X2.5 Examples** (parallel once the blocks they need exist) · Owns: `examples/<name>/`
 - `bouncing-ball`, `rlc-dual`, `quarter-car`, `drivetrain-kalman` (plus `design.py`), `hydraulic-servo`, and `dc-motor/speed-control`.
 - Acceptance: each `expected.json` passes through `tools/check.py --lane x`, and each example opens and runs in Playwright.
+
+**X2.6 Example `industrial-servo` (requested addition)** · Depends: J2.2, J2.7c, J2.7e · Owns: `examples/industrial-servo/`, `web/tests/e2e/industrial-servo.spec.ts`
+- The variants of section 9.6b: `baseline` (averaged inverter, dq PMSM, rigid inertia, cascaded discrete loops), `two-mass` (compliance + notch), `switching` (PWM/dead time), `encoder` (24-bit quantization + speed estimate), optional `full`. Each has its own expected checks; the runner gains a `step_response` check kind (rise/overshoot/settling) and a ripple measure. Acceptance: every variant's `expected.json` passes and Playwright opens, runs and switches between the variants.
 
 **M2 gate.**
 
