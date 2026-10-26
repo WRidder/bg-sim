@@ -216,6 +216,12 @@ body {
   border-color: var(--color-border);
 }
 
+.icon-button.is-active {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: var(--color-accent);
+}
+
 /* ---------------------------------------------------------- worker status */
 
 .worker-status {

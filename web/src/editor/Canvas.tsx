@@ -44,12 +44,45 @@ import {
 } from "../plot/plotTargets";
 import { useRunStore } from "../plot/runStore";
 import { buildDiagram, EDGE_TYPES, NODE_TYPES } from "./buildFlow";
-import { checkConnection } from "./connectionRules";
-import { descriptorForPort } from "./nodeInterface";
-import { DOMAIN_LEGEND, domainColor } from "./geometry";
+import { checkConnection, type PortDescriptor } from "./connectionRules";
+import { descriptorForPort, interfaceForNode } from "./nodeInterface";
+import {
+  DOMAIN_LEGEND,
+  domainColor,
+  nearestSourcePort,
+  nodeLayout,
+} from "./geometry";
+import { QuickConnectContext } from "./quickConnect";
 import "./editor.css";
 
 const ZOOM = 0.85;
+const GRID_SIZE = 20;
+const GRID_KEY = "bgsim.canvas.grid";
+const SNAP_KEY = "bgsim.canvas.snap";
+
+function readPreference(key: string, fallback: boolean): boolean {
+  try {
+    const value = window.localStorage.getItem(key);
+    return value === null ? fallback : value === "1";
+  } catch {
+    return fallback;
+  }
+}
+
+function writePreference(key: string, value: boolean): void {
+  try {
+    window.localStorage.setItem(key, value ? "1" : "0");
+  } catch {
+    // A private-mode browser has no storage; the toggle still works for this session.
+  }
+}
+
+interface QuickGesture {
+  origin: PortDescriptor;
+  startClient: { x: number; y: number };
+  startLocal: { x: number; y: number };
+  active: boolean;
+}
 
 interface Tooltip {
   x: number;
@@ -125,7 +158,14 @@ function CanvasInner() {
   const [dragOrigin, setDragOrigin] = useState<ReturnType<typeof descriptorForPort>>(null);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
+  const [quickMode, setQuickMode] = useState(false);
+  const [quickLine, setQuickLine] = useState<{ from: { x: number; y: number }; to: { x: number; y: number } } | null>(null);
+  const [showGrid, setShowGrid] = useState(() => readPreference(GRID_KEY, true));
+  const [snap, setSnap] = useState(() => readPreference(SNAP_KEY, false));
   const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const quickGesture = useRef<QuickGesture | null>(null);
+  const suppressClick = useRef(false);
   const { fitView, screenToFlowPosition } = useReactFlow();
 
   const flow = useMemo(
@@ -153,6 +193,169 @@ function CanvasInner() {
       }
     },
     [],
+  );
+
+  // Holding Ctrl (or Cmd) turns element drags into connections: the element
+  // does not move, and a drag from it starts at its nearest source port.
+  useEffect(() => {
+    const isModifier = (event: KeyboardEvent): boolean =>
+      event.key === "Control" || event.key === "Meta";
+    const down = (event: KeyboardEvent): void => {
+      if (isModifier(event)) {
+        setQuickMode(true);
+      }
+    };
+    const up = (event: KeyboardEvent): void => {
+      if (isModifier(event)) {
+        setQuickMode(false);
+      }
+    };
+    const blur = (): void => setQuickMode(false);
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
+    };
+  }, []);
+
+  /**
+   * Ctrl-drag from an element: pick the source port nearest the press and
+   * track the pointer with a preview line. A plain Ctrl+click (no movement)
+   * falls through to the normal selection click. Port handles keep React
+   * Flow's own connection drag.
+   */
+  const startQuickConnect = useCallback(
+    (event: React.PointerEvent, nodeId: string) => {
+      if (!quickMode || event.button !== 0) {
+        return;
+      }
+      if ((event.target as HTMLElement | null)?.closest("[data-port]")) {
+        return;
+      }
+      const current = useDocumentStore.getState().doc;
+      const catalogIndex = useCatalogStore.getState().index;
+      if (current === null || catalogIndex === null) {
+        return;
+      }
+      const node = current.diagram.nodes.find((entry) => entry.id === nodeId);
+      if (node === undefined) {
+        return;
+      }
+      const iface = interfaceForNode(node, catalogIndex);
+      let origin: PortDescriptor | null;
+      if (iface.isJunction) {
+        origin = descriptorForPort(current.diagram.nodes, catalogIndex, nodeId, null);
+      } else {
+        const layout = nodeLayout(node, catalogIndex, current);
+        const flowPoint = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+        const portName = nearestSourcePort(iface, layout, node.position, flowPoint);
+        origin =
+          portName === null
+            ? null
+            : descriptorForPort(current.diagram.nodes, catalogIndex, nodeId, portName);
+      }
+      if (origin === null) {
+        return;
+      }
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (rect === undefined) {
+        return;
+      }
+      quickGesture.current = {
+        origin,
+        startClient: { x: event.clientX, y: event.clientY },
+        startLocal: { x: event.clientX - rect.left, y: event.clientY - rect.top },
+        active: false,
+      };
+
+      const move = (moveEvent: PointerEvent): void => {
+        const gesture = quickGesture.current;
+        if (gesture === null) {
+          return;
+        }
+        const distance = Math.hypot(
+          moveEvent.clientX - gesture.startClient.x,
+          moveEvent.clientY - gesture.startClient.y,
+        );
+        if (!gesture.active && distance < 4) {
+          return;
+        }
+        gesture.active = true;
+        const bounds = canvasRef.current?.getBoundingClientRect();
+        if (bounds === undefined) {
+          return;
+        }
+        setQuickLine({
+          from: gesture.startLocal,
+          to: { x: moveEvent.clientX - bounds.left, y: moveEvent.clientY - bounds.top },
+        });
+        setDragOrigin(gesture.origin);
+        moveEvent.preventDefault();
+      };
+
+      const finish = (upEvent: PointerEvent): void => {
+        window.removeEventListener("pointermove", move, true);
+        window.removeEventListener("pointerup", finish, true);
+        window.removeEventListener("pointercancel", finish, true);
+        const gesture = quickGesture.current;
+        quickGesture.current = null;
+        setQuickLine(null);
+        setDragOrigin(null);
+        if (gesture === null || !gesture.active) {
+          return;
+        }
+        // A click still follows the pointerup; it must not add to the selection.
+        suppressClick.current = true;
+        window.setTimeout(() => {
+          suppressClick.current = false;
+        }, 0);
+        if (upEvent.type === "pointercancel") {
+          return;
+        }
+
+        const element = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        let targetNodeId: string | null = null;
+        let targetPort: string | null = null;
+        if (element instanceof Element) {
+          const portElement = element.closest<HTMLElement>("[data-port]");
+          if (portElement !== null) {
+            targetNodeId = portElement.getAttribute("data-node-id");
+            const port = portElement.getAttribute("data-port");
+            targetPort = port === null || port.length === 0 ? null : port;
+          } else {
+            const nodeElement = element.closest<HTMLElement>('[data-testid="diagram-node"]');
+            if (nodeElement !== null && nodeElement.hasAttribute("data-node-junction")) {
+              targetNodeId = nodeElement.getAttribute("data-node-id");
+            }
+          }
+        }
+        if (targetNodeId === null) {
+          return;
+        }
+        const state = useDocumentStore.getState();
+        const docNow = state.doc;
+        const indexNow = useCatalogStore.getState().index;
+        if (docNow === null || indexNow === null) {
+          return;
+        }
+        const target = descriptorForPort(docNow.diagram.nodes, indexNow, targetNodeId, targetPort);
+        if (target === null) {
+          return;
+        }
+        const result = state.connect(gesture.origin, target);
+        if (!result.ok && result.reason !== undefined) {
+          showTooltip({ x: upEvent.clientX, y: upEvent.clientY }, result.reason);
+        }
+      };
+
+      window.addEventListener("pointermove", move, true);
+      window.addEventListener("pointerup", finish, true);
+      window.addEventListener("pointercancel", finish, true);
+    },
+    [quickMode, screenToFlowPosition, showTooltip],
   );
 
   // --------------------------------------------------------------- shortcuts
@@ -300,17 +503,23 @@ function CanvasInner() {
         return;
       }
       const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+      const placement = snap
+        ? {
+            x: Math.round(position.x / GRID_SIZE) * GRID_SIZE,
+            y: Math.round(position.y / GRID_SIZE) * GRID_SIZE,
+          }
+        : position;
       const store = useDocumentStore.getState();
       if (payload.kind === "junction") {
-        store.addJunction(payload.junction, position);
+        store.addJunction(payload.junction, placement);
         return;
       }
       const block = index.blocksByRef.get(payload.ref);
       if (block !== undefined) {
-        store.addBlock(block, position);
+        store.addBlock(block, placement);
       }
     },
-    [index, screenToFlowPosition],
+    [index, screenToFlowPosition, snap],
   );
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
@@ -347,6 +556,10 @@ function CanvasInner() {
    * selection.
    */
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+    if (suppressClick.current) {
+      suppressClick.current = false;
+      return;
+    }
     const store = useDocumentStore.getState();
     const additive = event.ctrlKey || event.metaKey;
     if (!additive) {
@@ -489,6 +702,36 @@ function CanvasInner() {
         </button>
         <button
           type="button"
+          className={`icon-button${showGrid ? " is-active" : ""}`}
+          data-testid="toggle-grid"
+          aria-pressed={showGrid}
+          onClick={() => {
+            const next = !showGrid;
+            setShowGrid(next);
+            writePreference(GRID_KEY, next);
+          }}
+          aria-label="Show grid"
+          title="Show or hide the grid"
+        >
+          ▦
+        </button>
+        <button
+          type="button"
+          className={`icon-button${snap ? " is-active" : ""}`}
+          data-testid="toggle-snap"
+          aria-pressed={snap}
+          onClick={() => {
+            const next = !snap;
+            setSnap(next);
+            writePreference(SNAP_KEY, next);
+          }}
+          aria-label="Snap to grid"
+          title={`Snap to grid (${GRID_SIZE} px)`}
+        >
+          ⌗
+        </button>
+        <button
+          type="button"
           className="icon-button"
           data-testid="save-now"
           onClick={() => void saveCurrentModel()}
@@ -502,93 +745,120 @@ function CanvasInner() {
       <div
         className="editor__canvas"
         data-testid="canvas-surface"
+        ref={canvasRef}
         onDrop={onDrop}
         onDragOver={onDragOver}
       >
-        <ReactFlow
-          nodes={flow.nodes}
-          edges={flow.edges}
-          nodeTypes={NODE_TYPES}
-          edgeTypes={EDGE_TYPES}
-          connectionMode={ConnectionMode.Loose}
-          connectionLineType={ConnectionLineType.SmoothStep}
-          connectionLineStyle={{ stroke: "var(--color-accent)", strokeWidth: 1.6 }}
-          connectionRadius={20}
-          defaultViewport={{ x: 0, y: 0, zoom: ZOOM }}
-          minZoom={0.2}
-          maxZoom={2}
-          deleteKeyCode={null}
-          selectionKeyCode="Shift"
-          multiSelectionKeyCode={["Meta", "Control"]}
-          onConnect={onConnect}
-          onConnectStart={onConnectStart}
-          onConnectEnd={onConnectEnd}
-          isValidConnection={isValidConnection}
-          onNodeDragStart={(event, _node, nodes) => {
-            const store = useDocumentStore.getState();
-            const ids = nodes.map((dragged) => dragged.id);
-            if (!ids.every((id) => store.selection.nodes.includes(id))) {
-              if (event.ctrlKey || event.metaKey) {
-                store.setSelection([...new Set([...store.selection.nodes, ...ids])], []);
-              } else {
-                store.setSelection(ids, []);
-              }
-            }
-            store.beginGesture("node-drag");
-          }}
-          onNodeDrag={(_event, _node, nodes) => {
-            const positions: Record<string, { x: number; y: number }> = {};
-            for (const dragged of nodes) {
-              positions[dragged.id] = { x: dragged.position.x, y: dragged.position.y };
-            }
-            useDocumentStore.getState().setNodePositions(positions, true);
-          }}
-          onNodeDragStop={() => useDocumentStore.getState().endGesture()}
-          onSelectionChange={onSelectionChange}
-          onNodeClick={onNodeClick}
-          onNodeDoubleClick={onNodeDoubleClick}
-          onEdgeClick={onEdgeClick}
-          onEdgeContextMenu={onEdgeContextMenu}
-          onNodeContextMenu={onNodeContextMenu}
-          onPaneClick={() => {
-            setMenu(null);
-            setTooltip(null);
-            useDocumentStore.getState().setSelection([], []);
-          }}
-          onPaneContextMenu={(event) => {
-            event.preventDefault();
-            setMenu(null);
-          }}
-          proOptions={{ hideAttribution: true }}
+        <QuickConnectContext.Provider
+          value={{ enabled: quickMode, start: startQuickConnect }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="var(--color-border)" />
-          <Panel position="bottom-left" className="editor-legend" data-testid="canvas-legend">
-            <span className="editor-legend__title">Domains</span>
-            {DOMAIN_LEGEND.map((entry) => (
-              <span className="editor-legend__item" key={entry.domain}>
-                <span
-                  className={`editor-legend__swatch${entry.domain === "Generic" ? " is-generic" : ""}`}
-                  style={{ background: domainColor(entry.domain) }}
-                  aria-hidden="true"
-                />
-                {entry.label}
+          <ReactFlow
+            className={quickMode ? "is-quick-connect" : undefined}
+            nodes={flow.nodes}
+            edges={flow.edges}
+            nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
+            connectionMode={ConnectionMode.Loose}
+            connectionLineType={ConnectionLineType.SmoothStep}
+            connectionLineStyle={{ stroke: "var(--color-accent)", strokeWidth: 1.6 }}
+            connectionRadius={20}
+            defaultViewport={{ x: 0, y: 0, zoom: ZOOM }}
+            minZoom={0.2}
+            maxZoom={2}
+            nodesDraggable={!quickMode}
+            snapToGrid={snap}
+            snapGrid={[GRID_SIZE, GRID_SIZE]}
+            deleteKeyCode={null}
+            selectionKeyCode="Shift"
+            multiSelectionKeyCode={["Meta", "Control"]}
+            onConnect={onConnect}
+            onConnectStart={onConnectStart}
+            onConnectEnd={onConnectEnd}
+            isValidConnection={isValidConnection}
+            onNodeDragStart={(event, _node, nodes) => {
+              const store = useDocumentStore.getState();
+              const ids = nodes.map((dragged) => dragged.id);
+              if (!ids.every((id) => store.selection.nodes.includes(id))) {
+                if (event.ctrlKey || event.metaKey) {
+                  store.setSelection([...new Set([...store.selection.nodes, ...ids])], []);
+                } else {
+                  store.setSelection(ids, []);
+                }
+              }
+              store.beginGesture("node-drag");
+            }}
+            onNodeDrag={(_event, _node, nodes) => {
+              const positions: Record<string, { x: number; y: number }> = {};
+              for (const dragged of nodes) {
+                positions[dragged.id] = { x: dragged.position.x, y: dragged.position.y };
+              }
+              useDocumentStore.getState().setNodePositions(positions, true);
+            }}
+            onNodeDragStop={() => useDocumentStore.getState().endGesture()}
+            onSelectionChange={onSelectionChange}
+            onNodeClick={onNodeClick}
+            onNodeDoubleClick={onNodeDoubleClick}
+            onEdgeClick={onEdgeClick}
+            onEdgeContextMenu={onEdgeContextMenu}
+            onNodeContextMenu={onNodeContextMenu}
+            onPaneClick={() => {
+              setMenu(null);
+              setTooltip(null);
+              useDocumentStore.getState().setSelection([], []);
+            }}
+            onPaneContextMenu={(event) => {
+              event.preventDefault();
+              setMenu(null);
+            }}
+            proOptions={{ hideAttribution: true }}
+          >
+            {showGrid ? (
+              <Background
+                variant={BackgroundVariant.Lines}
+                gap={GRID_SIZE}
+                size={1}
+                color="var(--color-border)"
+              />
+            ) : null}
+            <Panel position="bottom-left" className="editor-legend" data-testid="canvas-legend">
+              <span className="editor-legend__title">Domains</span>
+              {DOMAIN_LEGEND.map((entry) => (
+                <span className="editor-legend__item" key={entry.domain}>
+                  <span
+                    className={`editor-legend__swatch${entry.domain === "Generic" ? " is-generic" : ""}`}
+                    style={{ background: domainColor(entry.domain) }}
+                    aria-hidden="true"
+                  />
+                  {entry.label}
+                </span>
+              ))}
+              <span className="editor-legend__separator" aria-hidden="true" />
+              <span className="editor-legend__item">
+                <span className="editor-legend__glyph editor-legend__glyph--power" aria-hidden="true" />
+                power
               </span>
-            ))}
-            <span className="editor-legend__separator" aria-hidden="true" />
-            <span className="editor-legend__item">
-              <span className="editor-legend__glyph editor-legend__glyph--power" aria-hidden="true" />
-              power
-            </span>
-            <span className="editor-legend__item">
-              <span className="editor-legend__glyph editor-legend__glyph--input" aria-hidden="true" />
-              in
-            </span>
-            <span className="editor-legend__item">
-              <span className="editor-legend__glyph editor-legend__glyph--output" aria-hidden="true" />
-              out
-            </span>
-          </Panel>
-        </ReactFlow>
+              <span className="editor-legend__item">
+                <span className="editor-legend__glyph editor-legend__glyph--input" aria-hidden="true" />
+                in
+              </span>
+              <span className="editor-legend__item">
+                <span className="editor-legend__glyph editor-legend__glyph--output" aria-hidden="true" />
+                out
+              </span>
+            </Panel>
+          </ReactFlow>
+        </QuickConnectContext.Provider>
+        {quickLine !== null ? (
+          <svg className="editor-quick-line" data-testid="quick-connect-line" aria-hidden="true">
+            <line
+              x1={quickLine.from.x}
+              y1={quickLine.from.y}
+              x2={quickLine.to.x}
+              y2={quickLine.to.y}
+            />
+            <circle cx={quickLine.from.x} cy={quickLine.from.y} r={3} />
+          </svg>
+        ) : null}
         {flow.nodes.length === 0 ? (
           <div className="editor__empty" data-testid="canvas-empty">
             <p>Drag a block from the library onto the canvas.</p>

@@ -382,17 +382,25 @@
 /* ------------------------------------------------------- canvas node markers */
 
 .block-node[data-diagnostic-severity],
+.bond-node[data-diagnostic-severity],
 .junction-node[data-diagnostic-severity] {
   outline: 2px solid var(--color-error);
   outline-offset: 1px;
 }
 
+.bond-node[data-diagnostic-severity] {
+  border-radius: 8px;
+  outline-offset: 2px;
+}
+
 .block-node[data-diagnostic-severity="warning"],
+.bond-node[data-diagnostic-severity="warning"],
 .junction-node[data-diagnostic-severity="warning"] {
   outline-color: var(--color-warning);
 }
 
 .block-node[data-diagnostic-severity]::after,
+.bond-node[data-diagnostic-severity]::after,
 .junction-node[data-diagnostic-severity]::after {
   content: attr(data-diagnostic-count);
   position: absolute;
@@ -416,6 +424,7 @@
 }
 
 .block-node[data-diagnostic-severity="warning"]::after,
+.bond-node[data-diagnostic-severity="warning"]::after,
 .junction-node[data-diagnostic-severity="warning"]::after {
   color: #1b2129;
   background: var(--color-warning);
@@ -423,6 +432,7 @@
 
 /* Hovering a marked card lists every message (plan 7.3). */
 .block-node[data-diagnostic-severity]::before,
+.bond-node[data-diagnostic-severity]::before,
 .junction-node[data-diagnostic-severity]::before {
   content: attr(data-diagnostic-messages);
   position: absolute;
@@ -449,11 +459,13 @@
 }
 
 .block-node[data-diagnostic-severity="warning"]::before,
+.bond-node[data-diagnostic-severity="warning"]::before,
 .junction-node[data-diagnostic-severity="warning"]::before {
   border-color: var(--color-warning);
 }
 
 .block-node[data-diagnostic-severity]:hover::before,
+.bond-node[data-diagnostic-severity]:hover::before,
 .junction-node[data-diagnostic-severity]:hover::before {
   display: block;
 }

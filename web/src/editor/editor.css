@@ -241,6 +241,118 @@
   user-select: none;
 }
 
+/* ---------------------------------------------------------- bond-graph node */
+
+/*
+ * A bond-graph element is its letter (plan 7.3), not a card: no box, no header.
+ * The ports sit on the perimeter facing the bonds, and the instance name hangs
+ * outside the letter on a side that is free.
+ */
+
+.bond-node {
+  position: relative;
+  display: grid;
+  place-items: center;
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.bond-node__glyph {
+  font-size: 26px;
+  line-height: 1;
+  font-weight: var(--font-weight-medium);
+  transition: color var(--transition-fast);
+}
+
+.bond-node:hover .bond-node__glyph {
+  color: var(--color-accent-hover);
+}
+
+.bond-node.is-selected {
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.bond-node.is-selected .bond-node__glyph {
+  color: var(--color-accent);
+}
+
+.bond-node__label {
+  position: absolute;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1.15;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.bond-node.is-selected .bond-node__label {
+  color: var(--color-text);
+}
+
+.bond-node__label--bottom {
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 4px);
+}
+
+.bond-node__label--top {
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, -4px);
+}
+
+.bond-node__label--right {
+  left: 100%;
+  top: 50%;
+  transform: translate(6px, -50%);
+}
+
+.bond-node__label--left {
+  right: 100%;
+  top: 50%;
+  transform: translate(-6px, -50%);
+}
+
+/* Ctrl held: the next drag on an element starts a connection from it. */
+.editor__canvas .react-flow.is-quick-connect .block-node,
+.editor__canvas .react-flow.is-quick-connect .bond-node,
+.editor__canvas .react-flow.is-quick-connect .junction-node {
+  cursor: crosshair;
+}
+
+.editor__canvas .react-flow.is-quick-connect .block-node:hover,
+.editor__canvas .react-flow.is-quick-connect .bond-node:hover,
+.editor__canvas .react-flow.is-quick-connect .junction-node:hover {
+  outline: 1px dashed var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.editor-quick-line {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.editor-quick-line line {
+  stroke: var(--color-accent);
+  stroke-width: 1.6;
+  stroke-dasharray: 5 3;
+}
+
+.editor-quick-line circle {
+  fill: var(--color-accent);
+}
+
 /* ------------------------------------------------------------ junction node */
 
 .junction-node {
@@ -387,6 +499,36 @@
 
 .port-handle--right .port-name {
   right: 15px;
+}
+
+/* Ports that moved to a top or bottom edge follow the bond direction. */
+
+.port-handle--top .port-letter,
+.port-handle--bottom .port-letter,
+.port-handle--top .port-name,
+.port-handle--bottom .port-name {
+  top: auto;
+  transform: translateX(-50%);
+}
+
+.port-handle--top .port-letter {
+  top: 15px;
+  left: 50%;
+}
+
+.port-handle--top .port-name {
+  bottom: 15px;
+  left: 50%;
+}
+
+.port-handle--bottom .port-letter {
+  bottom: 15px;
+  left: 50%;
+}
+
+.port-handle--bottom .port-name {
+  top: 15px;
+  left: 50%;
 }
 
 .port-handle:hover .port-letter,

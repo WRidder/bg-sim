@@ -152,7 +152,7 @@ export function analyseDiagram(doc: Model, index: CatalogIndex): DiagramAnalysis
 
   // Every power port's drawn domain; Generic ports inherit the island.
   for (const node of doc.diagram.nodes) {
-    const layout = nodeLayout(node, index);
+    const layout = nodeLayout(node, index, doc);
     for (const [portName] of layout.ports) {
       const port = getDescriptor(node.id, portName);
       if (port === null || port.kind !== "power") {
@@ -202,7 +202,7 @@ export function analyseDiagram(doc: Model, index: CatalogIndex): DiagramAnalysis
       if (node === undefined) {
         continue;
       }
-      const layout = nodeLayout(node, index);
+      const layout = nodeLayout(node, index, doc);
       const anchor = layout.ports.get(portName ?? "");
       if (anchor !== undefined) {
         points.push({
@@ -272,7 +272,7 @@ export function dragCompatibility(
 ): Map<string, PortDragState> {
   const states = new Map<string, PortDragState>();
   for (const node of doc.diagram.nodes) {
-    const layout = nodeLayout(node, index);
+    const layout = nodeLayout(node, index, doc);
     const names: (string | null)[] =
       layout.ports.size === 0
         ? [null]

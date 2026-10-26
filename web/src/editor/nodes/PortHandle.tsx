@@ -52,11 +52,20 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
     ? `${port.name} · power · ${domain}${vector ? ` · ${port.size.join("x")}` : ""}`
     : `${port.name} · ${direction} · ${port.type}${vector ? ` · ${port.size.join("x")}` : ""} · ${SIGNAL_TYPE_LABEL[port.type] ?? ""}`;
 
+  const handlePosition =
+    side === "left"
+      ? Position.Left
+      : side === "right"
+        ? Position.Right
+        : side === "top"
+          ? Position.Top
+          : Position.Bottom;
+
   return (
     <Handle
       id={port.name}
       type={port.kind === "input" ? "target" : "source"}
-      position={side === "left" ? Position.Left : Position.Right}
+      position={handlePosition}
       className={[
         "port-handle",
         `port-handle--${side}`,
@@ -69,7 +78,11 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
       ]
         .filter(Boolean)
         .join(" ")}
-      style={{ top: position.y, color: colour }}
+      style={
+        side === "top" || side === "bottom"
+          ? { left: position.x, color: colour }
+          : { top: position.y, color: colour }
+      }
       data-testid={`port-${nodeId}-${port.name}`}
       data-node-id={nodeId}
       data-port={port.name}

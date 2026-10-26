@@ -16,7 +16,7 @@ import {
   type PortDragState,
 } from "./connectionAnalysis";
 import type { PortDescriptor } from "./connectionRules";
-import { connectionAnchors, nodeLayout, type Side } from "./geometry";
+import { connectionAnchors, isBondGraph, layoutNode, nodeLayouts, type NodeLayout, type Side } from "./geometry";
 import {
   BlockNode,
   JunctionNode,
@@ -75,6 +75,91 @@ function portStateMap(
   return { portStates, portDomains };
 }
 
+interface LabelRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function labelRect(
+  node: { name: string; position: ModelPoint },
+  layout: NodeLayout,
+  side: Side,
+): LabelRect {
+  const w = Math.max(28, node.name.length * 6.8 + 8);
+  const h = 15;
+  const gap = 5;
+  switch (side) {
+    case "top":
+      return {
+        x: node.position.x + layout.width / 2 - w / 2,
+        y: node.position.y - gap - h,
+        w,
+        h,
+      };
+    case "right":
+      return {
+        x: node.position.x + layout.width + gap,
+        y: node.position.y + layout.height / 2 - h / 2,
+        w,
+        h,
+      };
+    case "left":
+      return {
+        x: node.position.x - gap - w,
+        y: node.position.y + layout.height / 2 - h / 2,
+        w,
+        h,
+      };
+    case "bottom":
+    default:
+      return {
+        x: node.position.x + layout.width / 2 - w / 2,
+        y: node.position.y + layout.height + gap,
+        w,
+        h,
+      };
+  }
+}
+
+function overlaps(a: LabelRect, b: LabelRect): boolean {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+/**
+ * Where a bond-graph element's instance name hangs: below by default, but it
+ * moves outward when another element is there or when the bond itself leaves
+ * through that edge.
+ */
+export function bondLabelSide(
+  node: { name: string; position: ModelPoint },
+  layout: NodeLayout,
+  others: readonly LabelRect[],
+): Side {
+  const portSides = new Set([...layout.ports.values()].map((port) => port.side));
+  const order: Side[] = ["bottom", "top", "right", "left"];
+  const free = order.filter((side) => !portSides.has(side));
+  const candidates = [...free, ...order.filter((side) => portSides.has(side))];
+  let best: Side = candidates[0] ?? "bottom";
+  let bestOverlap = Infinity;
+  for (const side of candidates) {
+    const rect = labelRect(node, layout, side);
+    const overlap = others.reduce(
+      (total, other) => total + (overlaps(rect, other) ? 1 : 0),
+      0,
+    );
+    if (overlap === 0) {
+      return side;
+    }
+    if (overlap < bestOverlap) {
+      bestOverlap = overlap;
+      best = side;
+    }
+  }
+  return best;
+}
+
 /**
  * Build the xyflow nodes and edges. `dragOrigin` is the port a connection drag
  * started from, if any; it drives the compatible/incompatible glyph states.
@@ -90,6 +175,19 @@ export function buildDiagram(
   const selectedNodes = new Set(selection.nodes);
   const selectedConnections = new Set(selection.connections);
   const nodeById = new Map(doc.diagram.nodes.map((node) => [node.id, node]));
+  const layouts = nodeLayouts(doc, index);
+  const nodeRects = doc.diagram.nodes.map((node) => {
+    const layout = layouts.get(node.id);
+    const width = layout?.width ?? 0;
+    const height = layout?.height ?? 0;
+    return {
+      id: node.id,
+      x: node.position.x - 4,
+      y: node.position.y - 4,
+      w: width + 8,
+      h: height + 8,
+    };
+  });
 
   const missingPort = (endpoint: { node: string; port?: string }): string | null => {
     const node = nodeById.get(endpoint.node);
@@ -101,7 +199,7 @@ export function buildDiagram(
 
   const nodes: DiagramNode[] = doc.diagram.nodes.map((node) => {
     const iface = interfaceForNode(node, index);
-    const layout = nodeLayout(node, index);
+    const layout = layouts.get(node.id) ?? layoutNode(iface);
     const position: ModelPoint = { x: node.position.x, y: node.position.y };
     if (iface.isJunction) {
       const data: JunctionNodeData = {
@@ -116,7 +214,6 @@ export function buildDiagram(
         position,
         data,
         selected: selectedNodes.has(node.id),
-        draggable: true,
         connectable: true,
         deletable: false,
       };
@@ -127,6 +224,7 @@ export function buildDiagram(
       analysis.portDomains,
       node.id,
     );
+    const bond = isBondGraph(iface);
     const data: BlockNodeData = {
       nodeId: node.id,
       name: node.name,
@@ -137,6 +235,14 @@ export function buildDiagram(
       flipX: node.flipX ?? false,
       portStates,
       portDomains,
+      bond,
+      labelSide: bond
+        ? bondLabelSide(
+            node,
+            layout,
+            nodeRects.filter((rect) => rect.id !== node.id),
+          )
+        : "bottom",
     };
     const type: "block" | "subsystem" = "subsystem" in node.block ? "subsystem" : "block";
     return {
@@ -145,7 +251,6 @@ export function buildDiagram(
       position,
       data,
       selected: selectedNodes.has(node.id),
-      draggable: true,
       connectable: true,
       deletable: false,
     };

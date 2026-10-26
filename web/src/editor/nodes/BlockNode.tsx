@@ -12,9 +12,10 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import type { DomainName } from "../../contracts/catalog";
 import type { ModelPoint } from "../../contracts/model";
 import type { PortDragState } from "../connectionAnalysis";
-import { JUNCTION_NODE_SIZE, type NodeLayout } from "../geometry";
+import { JUNCTION_NODE_SIZE, type NodeLayout, type Side } from "../geometry";
 import { BlockIcon } from "../icons";
 import type { NodeInterface } from "../nodeInterface";
+import { useQuickConnect } from "../quickConnect";
 import { PortHandle } from "./PortHandle";
 
 export interface BlockNodeData extends Record<string, unknown> {
@@ -27,6 +28,10 @@ export interface BlockNodeData extends Record<string, unknown> {
   flipX: boolean;
   portStates: Record<string, PortDragState>;
   portDomains: Record<string, DomainName>;
+  /** A bond-graph element draws as its letter, without a card. */
+  bond: boolean;
+  /** Which side of the letter the instance name hangs on. */
+  labelSide: Side;
 }
 
 export type BlockNodeType = Node<BlockNodeData, "block" | "subsystem">;
@@ -63,6 +68,7 @@ export function nodeState(
 
 export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
   const { interface: iface, layout } = data;
+  const quick = useQuickConnect();
   const state = nodeState(
     data.nodeId,
     data.name,
@@ -72,6 +78,58 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
     data.rotation,
     data.flipX,
   );
+
+  const portHandles = iface.ports.map((port) => {
+    const position = layout.ports.get(port.name);
+    if (position === undefined) {
+      return null;
+    }
+    return (
+      <PortHandle
+        key={port.name}
+        nodeId={data.nodeId}
+        port={port}
+        position={position}
+        domain={data.portDomains[port.name] ?? port.domain}
+        state={data.portStates[port.name] ?? "idle"}
+      />
+    );
+  });
+
+  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
+    if (quick.enabled) {
+      quick.start(event, data.nodeId);
+    }
+  };
+
+  if (data.bond) {
+    return (
+      <div
+        className={`bond-node${selected ? " is-selected" : ""}`}
+        style={{ width: layout.width, height: layout.height }}
+        data-testid="diagram-node"
+        data-node-id={data.nodeId}
+        data-node-name={data.name}
+        data-node-ref={iface.ref ?? ""}
+        data-node-bond="true"
+        data-label-side={data.labelSide}
+        data-state={state}
+        title={`${data.name} (${iface.title})`}
+        onPointerDown={onPointerDown}
+      >
+        <span className="bond-node__glyph bond-letter" data-icon={iface.icon}>
+          {iface.title}
+        </span>
+        <span
+          className={`bond-node__label bond-node__label--${data.labelSide}`}
+          data-testid={`node-label-${data.nodeId}`}
+        >
+          {data.name}
+        </span>
+        {portHandles}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -83,6 +141,7 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
       data-node-ref={iface.ref ?? ""}
       data-state={state}
       title={`${data.name} (${iface.title})`}
+      onPointerDown={onPointerDown}
     >
       <div className="block-node__header">
         <span className="block-node__name">{data.name}</span>
@@ -96,22 +155,7 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
       >
         <BlockIcon icon={iface.icon} name={iface.title} size={38} />
       </div>
-      {iface.ports.map((port) => {
-        const position = layout.ports.get(port.name);
-        if (position === undefined) {
-          return null;
-        }
-        return (
-          <PortHandle
-            key={port.name}
-            nodeId={data.nodeId}
-            port={port}
-            position={position}
-            domain={data.portDomains[port.name] ?? port.domain}
-            state={data.portStates[port.name] ?? "idle"}
-          />
-        );
-      })}
+      {portHandles}
     </div>
   );
 }
@@ -127,6 +171,7 @@ const JUNCTION_HANDLES: readonly {
 ];
 
 export function JunctionNode({ data, selected }: NodeProps<JunctionNodeType>) {
+  const quick = useQuickConnect();
   const state = nodeState(data.nodeId, data.name, null, data.junction, data.position, 0, false);
   return (
     <div
@@ -138,6 +183,11 @@ export function JunctionNode({ data, selected }: NodeProps<JunctionNodeType>) {
       data-node-junction={data.junction}
       data-state={state}
       title={`${data.junction} junction (${data.name})`}
+      onPointerDown={(event) => {
+        if (quick.enabled) {
+          quick.start(event, data.nodeId);
+        }
+      }}
     >
       <span className="junction-node__label">{data.junction}</span>
       {JUNCTION_HANDLES.map((handle) => (

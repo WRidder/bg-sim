@@ -11,16 +11,19 @@ import modelJson from "../../contracts/fixtures/model/valid/model.dcmotor.json";
 import type { Catalog } from "../src/contracts/catalog";
 import type { Model } from "../src/contracts/model";
 import { analyseDiagram, dragCompatibility } from "../src/editor/connectionAnalysis";
-import { buildDiagram } from "../src/editor/buildFlow";
+import { buildDiagram, bondLabelSide } from "../src/editor/buildFlow";
 import { portKey } from "../src/editor/connectionRules";
 import {
+  BOND_NODE_SIZE,
   arrowHeadPath,
   causalStrokePath,
   connectionAnchors,
   halfArrowPath,
   hubPath,
   layoutNode,
+  nearestSourcePort,
   nodeLayout,
+  nodeLayouts,
   orthogonalPath,
   splitPorts,
 } from "../src/editor/geometry";
@@ -82,6 +85,74 @@ describe("port layout", () => {
     expect(layout.height).toBe(40);
     expect(layout.ports.size).toBe(0);
     expect(interfaceForNode(junction, index).isJunction).toBe(true);
+  });
+
+  it("faces a bond-graph port toward the bond and hangs the name off the letter", () => {
+    const source = createNodeFromBlock(block("Se"), { x: 0, y: 0 }, "n1", "Se1");
+    const inertia = createNodeFromBlock(block("I"), { x: 300, y: 0 }, "n2", "I1");
+    const model = createEmptyModel("BondGraphLook");
+    model.diagram.nodes = [source, inertia];
+    model.diagram.connections = [
+      createConnection("c1", "bond", { node: "n1", port: "p" }, { node: "n2", port: "p" }),
+    ];
+
+    const layouts = nodeLayouts(model, index);
+    const se = layouts.get("n1");
+    expect(se?.width).toBe(BOND_NODE_SIZE);
+    expect(se?.height).toBe(BOND_NODE_SIZE);
+    expect(se?.ports.get("p")).toEqual({
+      side: "right",
+      x: BOND_NODE_SIZE,
+      y: BOND_NODE_SIZE / 2,
+    });
+    expect(layouts.get("n2")?.ports.get("p")?.side).toBe("left");
+
+    const flow = buildDiagram(model, index, { nodes: [], connections: [] });
+    const data = flow.nodes[0]?.data as { bond: boolean; labelSide: string };
+    expect(data.bond).toBe(true);
+    expect(data.labelSide).not.toBe("right");
+    expect(nodeLayout(source, index, model).ports.get("p")?.side).toBe("right");
+  });
+
+  it("moves the letter's name away from a port that leaves through the bottom", () => {
+    const source = createNodeFromBlock(block("Se"), { x: 0, y: 0 }, "n1", "Se1");
+    const inertia = createNodeFromBlock(block("I"), { x: 0, y: 220 }, "n2", "I1");
+    const model = createEmptyModel("VerticalBond");
+    model.diagram.nodes = [source, inertia];
+    model.diagram.connections = [
+      createConnection("c1", "bond", { node: "n1", port: "p" }, { node: "n2", port: "p" }),
+    ];
+    const flow = buildDiagram(model, index, { nodes: [], connections: [] });
+    const data = flow.nodes[0]?.data as { labelSide: string };
+    expect(nodeLayouts(model, index).get("n1")?.ports.get("p")?.side).toBe("bottom");
+    expect(data.labelSide).toBe("top");
+  });
+
+  it("picks the source port nearest the Ctrl press", () => {
+    const motor = interfaceForBlock(block("DCMotor"));
+    const layout = layoutNode(motor);
+    const shaft = layout.ports.get("shaft");
+    if (shaft === undefined) {
+      throw new Error("no shaft port");
+    }
+    expect(
+      nearestSourcePort(motor, layout, { x: 0, y: 0 }, { x: shaft.x, y: shaft.y }),
+    ).toBe("shaft");
+
+    const gain = interfaceForBlock(block("Gain"));
+    const gainLayout = layoutNode(gain);
+    expect(
+      nearestSourcePort(gain, gainLayout, { x: 0, y: 0 }, { x: 0, y: 0 }),
+    ).toBe("y");
+  });
+
+  it("moves the letter's name out of the way of a neighbouring element", () => {
+    const se = interfaceForBlock(block("Se"));
+    const layout = layoutNode(se, new Map([["p", "right"]]));
+    const anchor = { name: "Se1", position: { x: 0, y: 0 } };
+    expect(bondLabelSide(anchor, layout, [])).toBe("bottom");
+    const below = { x: -30, y: 56, w: 120, h: 90 };
+    expect(bondLabelSide(anchor, layout, [below])).not.toBe("bottom");
   });
 });
 

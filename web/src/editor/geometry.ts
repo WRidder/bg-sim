@@ -8,7 +8,7 @@
  */
 
 import type { DomainName, ValueType } from "../contracts/catalog";
-import type { Model, ModelConnection, ModelNode } from "../contracts/model";
+import type { Model, ModelConnection, ModelNode, ModelPoint } from "../contracts/model";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { interfaceForNode, type NodeInterface, type PortSpec } from "./nodeInterface";
 
@@ -18,6 +18,12 @@ export const PORT_ROW_HEIGHT = 26;
 export const JUNCTION_NODE_SIZE = 40;
 export const JUNCTION_RADIUS = JUNCTION_NODE_SIZE / 2;
 
+/**
+ * The footprint of a bond-graph element: just its letter, with the ports on the
+ * perimeter facing the bonds that leave it. The instance name hangs outside it.
+ */
+export const BOND_NODE_SIZE = 46;
+
 export interface Point {
   x: number;
   y: number;
@@ -26,7 +32,7 @@ export interface Point {
 export type Side = "left" | "right" | "top" | "bottom";
 
 export interface PortPosition {
-  side: Extract<Side, "left" | "right">;
+  side: Side;
   x: number;
   y: number;
 }
@@ -35,6 +41,11 @@ export interface NodeLayout {
   width: number;
   height: number;
   ports: Map<string, PortPosition>;
+}
+
+/** Bond-graph elements render as their letter, not as a block card (plan 7.3). */
+export function isBondGraph(iface: NodeInterface): boolean {
+  return iface.icon.startsWith("bg-");
 }
 
 export interface Anchor {
@@ -57,8 +68,36 @@ export function splitPorts(ports: readonly PortSpec[]): {
   };
 }
 
-/** The card size and every port's anchor for a block interface. */
-export function layoutNode(iface: NodeInterface): NodeLayout {
+function distribute(index: number, count: number, start: number, end: number): number {
+  if (count <= 0) {
+    return (start + end) / 2;
+  }
+  return start + ((end - start) * (index + 1)) / (count + 1);
+}
+
+function groupBySide(ports: readonly PortSpec[], sides: ReadonlyMap<string, Side> | undefined) {
+  const groups: Record<Side, PortSpec[]> = { left: [], right: [], top: [], bottom: [] };
+  for (const port of ports) {
+    const side = sides?.get(port.name);
+    if (side !== undefined) {
+      groups[side].push(port);
+    }
+  }
+  return groups;
+}
+
+/**
+ * The card (or bond-graph letter) size and every port's anchor.
+ *
+ * Without `sides` the classic split is used (signal inputs and the first half
+ * of the power ports on the left, outputs and the rest on the right). With
+ * `sides` a port moves to whichever edge faces its bond, so an output always
+ * leaves in the direction the arrow goes.
+ */
+export function layoutNode(
+  iface: NodeInterface,
+  sides?: ReadonlyMap<string, Side>,
+): NodeLayout {
   if (iface.isJunction) {
     return {
       width: JUNCTION_NODE_SIZE,
@@ -66,40 +105,179 @@ export function layoutNode(iface: NodeInterface): NodeLayout {
       ports: new Map(),
     };
   }
-  const { left, right } = splitPorts(iface.ports);
-  const rows = Math.max(left.length, right.length);
+
+  const split = splitPorts(iface.ports);
+  const sideOf = new Map<string, Side>();
+  for (const port of split.left) {
+    sideOf.set(port.name, "left");
+  }
+  for (const port of split.right) {
+    sideOf.set(port.name, "right");
+  }
+  for (const [name, side] of sides ?? []) {
+    sideOf.set(name, side);
+  }
+  const groups = groupBySide(iface.ports, sideOf);
+
+  const positions = new Map<string, PortPosition>();
+
+  if (isBondGraph(iface)) {
+    const size = BOND_NODE_SIZE;
+    for (const [side, ports] of Object.entries(groups) as [Side, PortSpec[]][]) {
+      ports.forEach((port, index) => {
+        const offset = distribute(index, ports.length, 6, size - 6);
+        if (side === "left") {
+          positions.set(port.name, { side, x: 0, y: offset });
+        } else if (side === "right") {
+          positions.set(port.name, { side, x: size, y: offset });
+        } else if (side === "top") {
+          positions.set(port.name, { side, x: offset, y: 0 });
+        } else {
+          positions.set(port.name, { side, x: offset, y: size });
+        }
+      });
+    }
+    return { width: size, height: size, ports: positions };
+  }
+
+  // The card height is computed from the default split, so moving a port to
+  // another edge (which depends on the connections) never resizes the card.
+  const rows = Math.max(split.left.length, split.right.length);
   const bodyTop = 34;
   const bottom = 18;
   const height = Math.max(
     BLOCK_NODE_MIN_HEIGHT,
     bodyTop + Math.max(rows, 1) * PORT_ROW_HEIGHT + bottom,
   );
-  const bodyHeight = height - bodyTop - bottom;
-  const yFor = (index: number, count: number): number =>
-    count === 0
-      ? bodyTop + bodyHeight / 2
-      : Math.round((bodyTop + (bodyHeight * (index + 1)) / (count + 1)) * 10) / 10;
+  const bodyBottom = height - bottom;
 
-  const positions = new Map<string, PortPosition>();
-  left.forEach((port, index) => {
-    positions.set(port.name, {
-      side: "left",
-      x: 0,
-      y: yFor(index, left.length),
+  for (const [side, ports] of Object.entries(groups) as [Side, PortSpec[]][]) {
+    ports.forEach((port, index) => {
+      if (side === "left" || side === "right") {
+        positions.set(port.name, {
+          side,
+          x: side === "left" ? 0 : BLOCK_NODE_WIDTH,
+          y: Math.round(distribute(index, ports.length, bodyTop, bodyBottom) * 10) / 10,
+        });
+      } else {
+        positions.set(port.name, {
+          side,
+          x: Math.round(distribute(index, ports.length, 22, BLOCK_NODE_WIDTH - 22) * 10) / 10,
+          y: side === "top" ? 0 : height,
+        });
+      }
     });
-  });
-  right.forEach((port, index) => {
-    positions.set(port.name, {
-      side: "right",
-      x: BLOCK_NODE_WIDTH,
-      y: yFor(index, right.length),
-    });
-  });
+  }
   return { width: BLOCK_NODE_WIDTH, height, ports: positions };
 }
 
-export function nodeLayout(node: ModelNode, index: CatalogIndex): NodeLayout {
-  return layoutNode(interfaceForNode(node, index));
+/**
+ * Which edge of a node each port should sit on, given the connections.
+ *
+ * A port with exactly one connection faces the other endpoint, so the port (and
+ * the bond leaving it) always points along the arrow. A port with no
+ * connection, or a fan-out with several, keeps the classic left/right split.
+ */
+export function connectionSides(doc: Model, index: CatalogIndex): Map<string, Map<string, Side>> {
+  const centres = new Map<string, Point>();
+  const layouts = new Map<string, NodeLayout>();
+  for (const node of doc.diagram.nodes) {
+    const layout = layoutNode(interfaceForNode(node, index));
+    layouts.set(node.id, layout);
+    centres.set(node.id, {
+      x: node.position.x + layout.width / 2,
+      y: node.position.y + layout.height / 2,
+    });
+  }
+
+  const peers = new Map<string, Point[]>();
+  const addPeer = (nodeId: string, portName: string | null | undefined, peer: string | undefined) => {
+    if (portName === null || portName === undefined || peer === undefined) {
+      return;
+    }
+    const centre = centres.get(peer);
+    if (centre === undefined) {
+      return;
+    }
+    const key = `${nodeId}\u0000${portName}`;
+    const list = peers.get(key) ?? [];
+    list.push(centre);
+    peers.set(key, list);
+  };
+  for (const connection of doc.diagram.connections) {
+    addPeer(connection.from.node, connection.from.port, connection.to.node);
+    addPeer(connection.to.node, connection.to.port, connection.from.node);
+  }
+
+  const result = new Map<string, Map<string, Side>>();
+  for (const [key, points] of peers) {
+    if (points.length !== 1) {
+      continue;
+    }
+    const [nodeId, portName] = key.split("\u0000");
+    const centre = centres.get(nodeId);
+    const other = points[0];
+    if (centre === undefined || portName === undefined || other === undefined) {
+      continue;
+    }
+    const sides = result.get(nodeId) ?? new Map<string, Side>();
+    sides.set(portName, sideToward(centre, other));
+    result.set(nodeId, sides);
+  }
+  return result;
+}
+
+
+export function nodeLayout(node: ModelNode, index: CatalogIndex, doc?: Model): NodeLayout {
+  const iface = interfaceForNode(node, index);
+  if (doc === undefined) {
+    return layoutNode(iface);
+  }
+  return layoutNode(iface, connectionSides(doc, index).get(node.id));
+}
+
+/** Every node's connection-aware layout, with `connectionSides` computed once. */
+export function nodeLayouts(doc: Model, index: CatalogIndex): Map<string, NodeLayout> {
+  const sides = connectionSides(doc, index);
+  const layouts = new Map<string, NodeLayout>();
+  for (const node of doc.diagram.nodes) {
+    layouts.set(node.id, layoutNode(interfaceForNode(node, index), sides.get(node.id)));
+  }
+  return layouts;
+}
+
+/** The ports a Ctrl-drag may start from: outputs and power ports. */
+export function sourcePortNames(iface: NodeInterface): string[] {
+  return iface.ports.filter((port) => port.kind !== "input").map((port) => port.name);
+}
+
+/**
+ * The source port nearest to a point in flow coordinates, or null when the
+ * node has no source-capable port. This is what a Ctrl-drag on the element
+ * itself uses to pick its outgoing port.
+ */
+export function nearestSourcePort(
+  iface: NodeInterface,
+  layout: NodeLayout,
+  origin: ModelPoint,
+  point: Point,
+): string | null {
+  let best: string | null = null;
+  let bestDistance = Infinity;
+  for (const name of sourcePortNames(iface)) {
+    const position = layout.ports.get(name);
+    if (position === undefined) {
+      continue;
+    }
+    const dx = origin.x + position.x - point.x;
+    const dy = origin.y + position.y - point.y;
+    const distance = dx * dx + dy * dy;
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = name;
+    }
+  }
+  return best;
 }
 
 export function nodeCentre(node: ModelNode, layout: NodeLayout): Point {
@@ -185,8 +363,9 @@ function anchorFor(
   index: CatalogIndex,
   portName: string | null,
   towards: Point,
+  doc?: Model,
 ): Anchor {
-  const layout = nodeLayout(node, index);
+  const layout = nodeLayout(node, index, doc);
   if (isJunction(node)) {
     const centre = nodeCentre(node, layout);
     return {
@@ -218,32 +397,32 @@ export function connectionAnchors(
       target: { point: { x: 0, y: 0 }, side: "left" },
     };
   }
-  const sourceCentre = nodeCentre(sourceNode, nodeLayout(sourceNode, index));
-  const targetCentre = nodeCentre(targetNode, nodeLayout(targetNode, index));
+  const sourceCentre = nodeCentre(sourceNode, nodeLayout(sourceNode, index, doc));
+  const targetCentre = nodeCentre(targetNode, nodeLayout(targetNode, index, doc));
 
   if (isJunction(sourceNode) && isJunction(targetNode)) {
     return {
-      source: anchorFor(sourceNode, index, null, targetCentre),
-      target: anchorFor(targetNode, index, null, sourceCentre),
+      source: anchorFor(sourceNode, index, null, targetCentre, doc),
+      target: anchorFor(targetNode, index, null, sourceCentre, doc),
     };
   }
   if (isJunction(sourceNode)) {
-    const target = anchorFor(targetNode, index, connection.to.port ?? null, sourceCentre);
+    const target = anchorFor(targetNode, index, connection.to.port ?? null, sourceCentre, doc);
     return {
-      source: anchorFor(sourceNode, index, null, target.point),
+      source: anchorFor(sourceNode, index, null, target.point, doc),
       target,
     };
   }
   if (isJunction(targetNode)) {
-    const source = anchorFor(sourceNode, index, connection.from.port ?? null, targetCentre);
+    const source = anchorFor(sourceNode, index, connection.from.port ?? null, targetCentre, doc);
     return {
       source,
-      target: anchorFor(targetNode, index, null, source.point),
+      target: anchorFor(targetNode, index, null, source.point, doc),
     };
   }
   return {
-    source: anchorFor(sourceNode, index, connection.from.port ?? null, targetCentre),
-    target: anchorFor(targetNode, index, connection.to.port ?? null, sourceCentre),
+    source: anchorFor(sourceNode, index, connection.from.port ?? null, targetCentre, doc),
+    target: anchorFor(targetNode, index, connection.to.port ?? null, sourceCentre, doc),
   };
 }
 
