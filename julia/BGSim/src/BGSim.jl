@@ -48,6 +48,7 @@ include("lower/fnmap.jl")
 include("lower/mtk.jl")
 include("sim/recorder.jl")
 include("sim/simulate.jl")
+include("sim/scheduler.jl")
 
 include("precompile.jl")
 include("worker/server.jl")

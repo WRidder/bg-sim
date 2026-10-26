@@ -15,6 +15,10 @@
 #   8. balance       E103, ranking the instances by local imbalance (5.2.7);
 #   9. causality     SCAP, the causal strokes and W201/W202/E106 (5.7).
 #
+# The discrete pass (`collect_discrete!`, plan 5.9) runs right after `collect_events!`: it
+# qualifies the `@discrete` scopes, moves the held outputs to the parameter list (D4), reports
+# E104/E105 and fixes the topological tick order.
+#
 # `model_check` returns exactly the plan 3.6 `model.check` result, including the causal
 # strokes the causality pass returns. `stats` carries all counts on the `FlatModel`, while
 # the contract result keeps only the two fields `contracts/schemas/worker-rpc.schema.json`
@@ -58,6 +62,7 @@ include("junctions.jl")
 include("balance.jl")
 include("causality.jl")
 include("events.jl")
+include("discrete.jl")
 
 # ---------------------------------------------------------------------------------------
 # The recording list (plan 3.5, D15)
@@ -65,8 +70,15 @@ include("events.jl")
 
 function _push_var_signal!(out::Vector{NamedTuple}, b::Builder, id::String)
     v = var_by_id(b, id)
-    v === nothing && return nothing
-    push!(out, Flat.signal_namedtuple(v))
+    if v !== nothing
+        push!(out, Flat.signal_namedtuple(v))
+        return nothing
+    end
+    # A held discrete output is an MTK parameter (D4), not an unknown; it is still recorded,
+    # with the plan 3.5 kind `"discrete"`.
+    if haskey(b.param_index, id)
+        push!(out, discrete_signal_namedtuple(b.params[b.param_index[id]]))
+    end
     return nothing
 end
 
@@ -130,6 +142,7 @@ function _flatten(md::IR.ModelDoc; project_dir = nothing)
     b = Builder(md, project_dir === nothing ? nothing : String(project_dir))
     instantiate!(b)
     events = collect_events!(b)
+    discrete = collect_discrete!(b)
     plan = classify_connections!(b)
     domains = resolve_domains!(b, plan)
     unit_factors = apply_domains!(b, plan)
@@ -160,7 +173,7 @@ function _flatten(md::IR.ModelDoc; project_dir = nothing)
         b.equations,
         Flat.FlatEq[],
         events,
-        Any[],
+        discrete,
         b.junctions,
         connection_infos(plan),
         instances,

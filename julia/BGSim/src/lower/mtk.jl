@@ -229,7 +229,10 @@ function lower_flat(flat::Flat.FlatModel)
     end
     params = Dict{String,Num}()
     for p in flat.parameters
-        params[p.id] = mtk_parameter(p.id)
+        # A held discrete output is an MTK *discrete* (a time-dependent parameter, D4); every
+        # other parameter stays a plain runtime parameter.
+        params[p.id] = get(p.attrs, :kind, nothing) === :discrete ?
+                       mtk_discrete(p.id) : mtk_parameter(p.id)
     end
 
     ctx = LowerCtx(vars, params)

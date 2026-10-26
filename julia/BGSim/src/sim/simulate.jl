@@ -1,4 +1,4 @@
-# The continuous run loop (plan sections 5.8, 5.9 without discrete parts, and 5.10/5.11).
+# The run loop (plan sections 5.8, 5.9 with the discrete scheduler, and 5.10/5.11).
 #
 # `simulate` owns one run end to end:
 #
@@ -7,8 +7,8 @@
 #      remakes the problem — decision D4);
 #   3. open the run folder: the running manifest with the full signal list (REQ-1), then the
 #      stream;
-#   4. step the integrator exactly to every output-grid time, record one row and flush at the
-#      plan 5.10 cadence;
+#   4. step the integrator exactly to every output-grid time and every discrete tick, record a
+#      row (or the left/right pair of a changed tick) and flush at the plan 5.10 cadence;
 #   5. finish with `columns.f64` and the final manifest.
 #
 # Cancellation is an atomic flag checked before every integrator step and after every one.
@@ -405,7 +405,8 @@ loop and the plan sections it implements.
 `record_event` is the J2.2 seam: when the discrete scheduler owns the run loop, it can pass
 `record_event(t, side, values)` to receive each event instant twice (`side` is `:left` or
 `:right`, both at the same `t`). The default is `nothing`, which writes both rows through the
-recorder directly.
+recorder directly. A discrete tick that changes a held output uses the same seam, so a step
+in a held value renders as a vertical edge too.
 """
 function simulate(flat::Flat.FlatModel;
     run_dir::Union{AbstractString,Nothing} = nothing,
@@ -514,6 +515,29 @@ function simulate(flat::Flat.FlatModel;
     end
 
     grid = output_grid(run_settings)
+    # Plan 5.9: compile the discrete partitions (generated step functions) and their exact
+    # nanosecond tick grid before the integrator is initialised, so the tick times can be
+    # passed as `tstops`. E104/E105 are compile-time diagnostics, so `flat` is already clean.
+    schedule = nothing
+    if !isempty(flat.discrete)
+        schedule = try
+            discrete_schedule(
+                flat; t_start = run_settings.t_start, t_end = run_settings.t_end
+            )
+        catch err
+            diagnostic = _compile_diagnostic(err, flat)
+            diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+            manifest = _write_failed_manifest(
+                flat, run_settings, dir, id, hash, diagnostics;
+                states = states, equations = equations,
+            )
+            elapsed = (time_ns() - start_ns) / 1.0e9
+            return SimResult(
+                "failed", diagnostics, manifest.stats, flat.signals, manifest.time,
+                manifest, dir, elapsed, lowered.cache_hit,
+            )
+        end
+    end
     _phase(phase, "init", 0.0)
     rec = open_recorder(
         dir, id, flat.name, hash, run_settings, flat.signals, flat_diagnostics;
@@ -525,14 +549,14 @@ function simulate(flat::Flat.FlatModel;
     if run_settings.max_step !== nothing
         solver_kwargs = merge(solver_kwargs, (; dtmax = run_settings.max_step))
     end
+    init_kwargs = (;
+        solver_kwargs..., save_everystep = false, save_start = false, save_end = false
+    )
+    if schedule !== nothing && !isempty(schedule.tick_times)
+        init_kwargs = merge(init_kwargs, (; tstops = schedule.tick_times))
+    end
     integ = try
-        init(
-            solver_problem, alg;
-            solver_kwargs...,
-            save_everystep = false,
-            save_start = false,
-            save_end = false,
-        )
+        init(solver_problem, alg; init_kwargs...)
     catch err
         diagnostic = _initialization_diagnostic(err, flat)
         diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
@@ -573,6 +597,10 @@ function simulate(flat::Flat.FlatModel;
     symbols = Num[]
     for s in flat.signals
         x = get(lowered.model.vars, String(s.id), nothing)
+        if x === nothing
+            # A held discrete output is an MTK parameter (D4), not an unknown.
+            x = get(lowered.model.params, String(s.id), nothing)
+        end
         x === nothing && begin
             diagnostic = diag(
                 "E900", "the recorded signal `$(s.id)` has no lowered variable";
@@ -598,7 +626,31 @@ function simulate(flat::Flat.FlatModel;
     ]
     values = () -> [Float64(getter(integ)) for getter in getters]
 
-    # Row zero. `init` has run the initialization, so the state at t_start is valid.
+    # Plan 5.9: the discrete runtime (getters, held-value setter, generated steps). Built
+    # before the first row so a failure leaves a failed manifest rather than a half run.
+    run = nothing
+    if schedule !== nothing
+        run = try
+            prepare_discrete!(schedule, lowered.model, integ, run_settings.t_start)
+        catch err
+            diagnostic = _compile_diagnostic(err, flat)
+            diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+            stats = (
+                compile_s = compile_s, sim_s = 0.0, steps = 0, events = 0,
+                states = states, equations = equations,
+            )
+            manifest = finish_recorder!(rec, "failed", stats, diagnostics)
+            elapsed = (time_ns() - start_ns) / 1.0e9
+            return SimResult(
+                "failed", diagnostics, stats, flat.signals, manifest.time, manifest, dir,
+                elapsed, lowered.cache_hit,
+            )
+        end
+    end
+    targets = discrete_targets(grid, run)
+
+    # Row zero. `init` has run the initialization, so the state at t_start is valid. A tick at
+    # exactly `t_start` is the initial state, not an execution (the loop steps, then ticks).
     record_row!(rec, run_settings.t_start, values())
     flush_recorder!(rec)
     first_data_s = (time_ns() - start_ns) / 1.0e9
@@ -610,21 +662,35 @@ function simulate(flat::Flat.FlatModel;
     loop_ns = time_ns()
     last_progress_ns = time_ns()
     last_flush_ns = time_ns()
-    next_index = 2
+    next_index = 1
     event_cursor = 0
-    while next_index <= length(grid)
+    while next_index <= length(targets)
         if _cancelled(cancel)
             status = "cancelled"
             break
         end
-        target = grid[next_index]
-        tolerance = 1.0e-12 * max(1.0, abs(target))
-        if integ.t >= target - tolerance
-            record_row!(rec, target, values())
+        target = targets[next_index]
+        tt = target.t
+        tolerance = 1.0e-12 * max(1.0, abs(tt))
+        if integ.t >= tt - tolerance
+            # A discrete tick runs before the row for this instant is recorded, so the row
+            # carries the state the continuous solver has at `tt` plus the new held outputs.
+            changed = false
+            before = nothing
+            if target.tick && run !== nothing
+                before = values()
+                changed = run_tick!(run, integ, tt, target.tick_index)
+            end
+            if changed
+                _record_event!(record_event, rec, tt, :left, before)
+                _record_event!(record_event, rec, tt, :right, values())
+            elseif target.grid
+                record_row!(rec, tt, values())
+            end
             next_index += 1
             now = time_ns()
             if now - last_progress_ns >= 100_000_000
-                _progress(progress, target, rec.nrows)
+                _progress(progress, tt, rec.nrows)
                 last_progress_ns = now
             end
             if now - last_flush_ns >= 100_000_000
@@ -633,9 +699,11 @@ function simulate(flat::Flat.FlatModel;
             end
             continue
         end
-        dt = target - integ.t
+        dt = tt - integ.t
         if dt <= 0
-            record_row!(rec, target, values())
+            if target.grid
+                record_row!(rec, tt, values())
+            end
             next_index += 1
             continue
         end
@@ -647,7 +715,7 @@ function simulate(flat::Flat.FlatModel;
             false
         end
         # Record every event instant that this step crossed, twice (left and right limits)
-        # before the grid row for `target` is written.
+        # before the row for `tt` is written.
         event_cursor = _record_new_events!(
             integ, rec, record_event, event_cursor, getters
         )
@@ -663,7 +731,7 @@ function simulate(flat::Flat.FlatModel;
             status = "failed"
             break
         end
-        if integ.t <= before && next_index <= length(grid)
+        if integ.t <= before && next_index <= length(targets)
             diagnostic = diag(
                 "E901", "the solver made no progress at t = $(integ.t)";
                 hint = "retcode = $(integ.sol.retcode)", path = _last_path(flat),
