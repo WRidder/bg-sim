@@ -1118,7 +1118,9 @@ fidelity step can be compared against the baseline:
   device voltage drops) instead of the averaged source; shows current/torque ripple.
 - **`encoder`** — baseline with a 24-bit absolute encoder (quantization) and a differenced
   speed estimate (with a low-pass or observer), for low-speed smoothness.
-- optionally **`full`** — all of the above together.
+- **`full`** — all of the above together: switching inverter, two-mass mechanics with notch
+  filter, and 24-bit encoder quantization with the estimated speed. This is the realistic
+  drive model and the one to use for a real bandwidth/ripple/quantization study.
 
 **Plant (continuous):** `v_d = R·i_d + L_d·di_d/dt − ω_e·L_q·i_q`, `v_q = R·i_q +
 L_q·di_q/dt + ω_e·(L_d·i_d + ψ_m)`, `ω_e = p·ω_m`, `T_e = 1.5·p·(ψ_m·i_q + (L_d−L_q)·i_d·i_q)`,
@@ -1433,7 +1435,7 @@ Each WP is described by these fields:
 - Acceptance: each `expected.json` passes through `tools/check.py --lane x`, and each example opens and runs in Playwright.
 
 **X2.6 Example `industrial-servo` (requested addition)** · Depends: J2.2, J2.7c, J2.7e · Owns: `examples/industrial-servo/`, `web/tests/e2e/industrial-servo.spec.ts`
-- The variants of section 9.6b: `baseline` (averaged inverter, dq PMSM, rigid inertia, cascaded discrete loops), `two-mass` (compliance + notch), `switching` (PWM/dead time), `encoder` (24-bit quantization + speed estimate), optional `full`. Each has its own expected checks; the runner gains a `step_response` check kind (rise/overshoot/settling) and a ripple measure. Acceptance: every variant's `expected.json` passes and Playwright opens, runs and switches between the variants.
+- The variants of section 9.6b: `baseline` (averaged inverter, dq PMSM, rigid inertia, cascaded discrete loops), `two-mass` (compliance + notch), `switching` (PWM/dead time), `encoder` (24-bit quantization + speed estimate), `full` (all of them together). Each has its own expected checks; the runner gains a `step_response` check kind (rise/overshoot/settling) and a ripple measure. Acceptance: every variant's `expected.json` passes and Playwright opens, runs and switches between the variants.
 
 **M2 gate.**
 
