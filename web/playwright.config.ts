@@ -32,10 +32,10 @@ export default defineConfig({
       testMatch: /e2e[\\/].*\.spec\.ts/,
       // tests/perf holds the plan 7.5 budgets; it runs as its own project so
       // `npx playwright test tests/perf` selects exactly those files.
-      // The real-worker acceptance spec is skipped in the fake-worker pass.
+      // The real-worker acceptance specs are skipped in the fake-worker pass.
       testIgnore: realWorker
         ? /perf[\\/]/
-        : [/perf[\\/]/, /dcmotor\.spec\.ts/],
+        : [/perf[\\/]/, /dcmotor\.spec\.ts/, /subsystems\.spec\.ts/],
     },
     {
       name: "perf",

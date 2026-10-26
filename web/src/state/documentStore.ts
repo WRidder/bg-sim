@@ -27,6 +27,7 @@ import type {
   Model,
   ModelConnection,
   ModelConstantValue,
+  ModelDiagram,
   ModelNode,
   ModelPoint,
 } from "../contracts/model";
@@ -35,6 +36,15 @@ import {
   type ConnectionCheck,
   type PortDescriptor,
 } from "../editor/connectionRules";
+import {
+  activeDiagram,
+  activeModel,
+  allConnectionIds,
+  allNodeIds,
+  clampPath,
+} from "../editor/subsystemPath";
+import { groupSelectionIntoSubsystem } from "../editor/subsystemGroup";
+import type { CatalogIndex } from "../library/catalogIndex";
 import {
   createConnection,
   createEmptyModel,
@@ -136,6 +146,16 @@ export interface DocumentActions {
   setNodePositions: (positions: Record<string, ModelPoint>, coalesce?: boolean) => void;
 
   setSelection: (nodes: readonly string[], connections: readonly string[]) => void;
+  /** Enter a subsystem node of the active diagram (plan 7.4). */
+  enterSubsystem: (nodeId: string) => boolean;
+  /** Leave one subsystem level; Esc uses this (plan 7.5/7.8). */
+  leaveSubsystem: () => void;
+  /** Move to a path of subsystem node ids from the root; invalid tails drop. */
+  navigateToPath: (path: readonly string[]) => void;
+  /** Open the diagram at `path` and select `nodeId` there (model tree). */
+  selectNodeAt: (path: readonly string[], nodeId: string) => boolean;
+  /** Group the selection into a new subsystem (plan 7.4, W2.2). */
+  createSubsystem: (index: CatalogIndex) => EditResult;
   deleteSelection: () => void;
   rotateSelection: () => void;
   flipSelection: () => void;
@@ -189,6 +209,8 @@ export interface DocumentState {
   past: HistoryEntry[];
   future: HistoryEntry[];
   selection: Selection;
+  /** Subsystem node ids from the root to the diagram being edited. */
+  activePath: string[];
   clipboard: Clipboard;
   /** The key of the gesture currently in progress, or null. */
   gestureKey: string | null;
@@ -213,6 +235,7 @@ const INITIAL_STATE: DocumentState = {
   past: [],
   future: [],
   selection: EMPTY_SELECTION,
+  activePath: [],
   clipboard: EMPTY_CLIPBOARD,
   gestureKey: null,
   lastHistKey: null,
@@ -233,10 +256,14 @@ function sameIds(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((id, index) => id === b[index]);
 }
 
-/** Drop ids that a deletion or undo removed from the document. */
-function pruneSelection(doc: Model, selection: Selection): Selection {
-  const nodeIds = new Set(doc.diagram.nodes.map((node) => node.id));
-  const connectionIds = new Set(doc.diagram.connections.map((connection) => connection.id));
+/** Drop ids that a deletion or undo removed from the active diagram. */
+function pruneSelection(doc: Model, path: readonly string[], selection: Selection): Selection {
+  const diagram = activeDiagram(doc, path);
+  if (diagram === null) {
+    return EMPTY_SELECTION;
+  }
+  const nodeIds = new Set(diagram.nodes.map((node) => node.id));
+  const connectionIds = new Set(diagram.connections.map((connection) => connection.id));
   const nodes = selection.nodes.filter((id) => nodeIds.has(id));
   const connections = selection.connections.filter((id) => connectionIds.has(id));
   if (sameIds(nodes, selection.nodes) && sameIds(connections, selection.connections)) {
@@ -308,6 +335,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       }
     }
 
+    const activePath = clampPath(next, state.activePath);
     set({
       doc: next,
       revision: state.revision + 1,
@@ -316,18 +344,39 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       saveState: "dirty",
       saveError: null,
       lastHistKey: key,
-      selection: pruneSelection(next, state.selection),
+      activePath,
+      selection: pruneSelection(next, activePath, state.selection),
     });
     return next;
   };
 
+  /** The diagram open in the editor, or null when the path no longer resolves. */
+  const currentDiagram = (): ModelDiagram | null => {
+    const state = get();
+    return state.doc === null ? null : activeDiagram(state.doc, state.activePath);
+  };
+
+  /** Run a recipe against the active diagram; the single path-aware shape. */
+  const commitActive = (
+    recipe: (diagram: ModelDiagram) => void,
+    options: { coalesce?: string } = {},
+  ): Model | null => {
+    const path = [...get().activePath];
+    return commit((draft) => {
+      const diagram = activeDiagram(draft, path);
+      if (diagram !== null) {
+        recipe(diagram);
+      }
+    }, options);
+  };
+
   const addNode = (node: ModelNode): string | null => {
     const state = get();
-    if (state.doc === null) {
+    if (state.doc === null || currentDiagram() === null) {
       return null;
     }
-    const next = commit((draft) => {
-      draft.diagram.nodes.push(node);
+    const next = commitActive((diagram) => {
+      diagram.nodes.push(node);
     });
     if (next === null) {
       return null;
@@ -355,6 +404,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         past: [],
         future: [],
         selection: EMPTY_SELECTION,
+        activePath: [],
         clipboard: EMPTY_CLIPBOARD,
         gestureKey: null,
         lastHistKey: null,
@@ -375,16 +425,14 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
 
     addBlock: (block, position) => {
       const doc = get().doc;
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (doc === null || diagram === null) {
         return null;
       }
-      const id = nextId(
-        "n",
-        doc.diagram.nodes.map((node) => node.id),
-      );
+      const id = nextId("n", allNodeIds(doc));
       const name = uniqueName(
         block.name,
-        doc.diagram.nodes.map((node) => node.name),
+        diagram.nodes.map((node) => node.name),
       );
       const node = createNodeFromBlock(block, roundPosition(position), id, name);
       return addNode(node);
@@ -392,16 +440,14 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
 
     addJunction: (junction, position) => {
       const doc = get().doc;
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (doc === null || diagram === null) {
         return null;
       }
-      const id = nextId(
-        "n",
-        doc.diagram.nodes.map((node) => node.id),
-      );
+      const id = nextId("n", allNodeIds(doc));
       const name = uniqueName(
         `Junction${junction}`,
-        doc.diagram.nodes.map((node) => node.name),
+        diagram.nodes.map((node) => node.name),
       );
       const node = createJunctionNode(junction, roundPosition(position), id, name);
       return addNode(node);
@@ -409,22 +455,20 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
 
     addInlineBlock: (kind, source, position) => {
       const doc = get().doc;
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (doc === null || diagram === null) {
         return null;
       }
-      const id = nextId(
-        "n",
-        doc.diagram.nodes.map((node) => node.id),
-      );
+      const id = nextId("n", allNodeIds(doc));
       const name = uniqueName(
         kind === "equation" ? "Equation" : "DiscreteCode",
-        doc.diagram.nodes.map((node) => node.name),
+        diagram.nodes.map((node) => node.name),
       );
       const node: ModelNode = {
         id,
         name,
         block: { inline: { source } },
-        position: roundPosition(position ?? inlineNodePosition(doc.diagram.nodes)),
+        position: roundPosition(position ?? inlineNodePosition(diagram.nodes)),
         rotation: 0,
         flipX: false,
         params: {},
@@ -444,10 +488,10 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       if (entries.length === 0) {
         return;
       }
-      commit(
-        (draft) => {
+      commitActive(
+        (diagram) => {
           for (const [id, position] of entries) {
-            const node = draft.diagram.nodes.find((entry) => entry.id === id);
+            const node = diagram.nodes.find((entry) => entry.id === id);
             if (node !== undefined) {
               node.position = roundPosition(position);
             }
@@ -465,7 +509,10 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       const selection =
         doc === null
           ? { nodes: nodeList, connections: connectionList }
-          : pruneSelection(doc, { nodes: nodeList, connections: connectionList });
+          : pruneSelection(doc, state.activePath, {
+              nodes: nodeList,
+              connections: connectionList,
+            });
       if (
         sameIds(selection.nodes, state.selection.nodes) &&
         sameIds(selection.connections, state.selection.connections)
@@ -475,9 +522,120 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       set({ selection });
     },
 
-    deleteSelection: () => {
-      const { doc, selection } = get();
+    enterSubsystem: (nodeId) => {
+      const state = get();
+      const doc = state.doc;
+      const diagram = currentDiagram();
+      if (doc === null || diagram === null) {
+        return false;
+      }
+      const node = diagram.nodes.find((entry) => entry.id === nodeId);
+      if (node === undefined || !("subsystem" in node.block)) {
+        return false;
+      }
+      set({
+        activePath: [...state.activePath, nodeId],
+        selection: EMPTY_SELECTION,
+        gestureKey: null,
+        lastHistKey: null,
+      });
+      return true;
+    },
+
+    leaveSubsystem: () => {
+      const state = get();
+      if (state.activePath.length === 0) {
+        return;
+      }
+      set({
+        activePath: state.activePath.slice(0, -1),
+        selection: EMPTY_SELECTION,
+        gestureKey: null,
+        lastHistKey: null,
+      });
+    },
+
+    navigateToPath: (path) => {
+      const state = get();
+      if (state.doc === null) {
+        return;
+      }
+      const activePath = clampPath(state.doc, path);
+      if (
+        sameIds(activePath, state.activePath) &&
+        state.selection.nodes.length === 0 &&
+        state.selection.connections.length === 0
+      ) {
+        return;
+      }
+      set({
+        activePath,
+        selection: EMPTY_SELECTION,
+        gestureKey: null,
+        lastHistKey: null,
+      });
+    },
+
+    selectNodeAt: (path, nodeId) => {
+      const state = get();
+      const doc = state.doc;
       if (doc === null) {
+        return false;
+      }
+      const activePath = clampPath(doc, path);
+      const diagram = activeDiagram(doc, activePath);
+      if (diagram === null || !diagram.nodes.some((node) => node.id === nodeId)) {
+        return false;
+      }
+      set({
+        activePath,
+        selection: { nodes: [nodeId], connections: [] },
+        gestureKey: null,
+        lastHistKey: null,
+      });
+      return true;
+    },
+
+    createSubsystem: (index) => {
+      const state = get();
+      const doc = state.doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const view = activeModel(doc, state.activePath);
+      if (view === null) {
+        return { ok: false, error: "The open diagram no longer exists." };
+      }
+      if (state.selection.nodes.length === 0) {
+        return { ok: false, error: "Select the blocks to group first." };
+      }
+      const id = nextId("n", allNodeIds(doc));
+      const name = uniqueName(
+        "Subsystem1",
+        view.diagram.nodes.map((node) => node.name),
+      );
+      const grouped = groupSelectionIntoSubsystem({
+        doc: view,
+        index,
+        nodeIds: state.selection.nodes,
+        id,
+        name,
+      });
+      if (grouped === null) {
+        return { ok: false, error: "The selection has no blocks to group." };
+      }
+      commitActive((diagram) => {
+        diagram.nodes = grouped.diagram.nodes;
+        diagram.connections = grouped.diagram.connections;
+      });
+      set({ selection: { nodes: [id], connections: [] } });
+      return { ok: true };
+    },
+
+    deleteSelection: () => {
+      const diagram = currentDiagram();
+      const { selection } = get();
+      if (diagram === null) {
         return;
       }
       const nodes = new Set(selection.nodes);
@@ -485,9 +643,9 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       if (nodes.size === 0 && connections.size === 0) {
         return;
       }
-      commit((draft) => {
-        draft.diagram.nodes = draft.diagram.nodes.filter((node) => !nodes.has(node.id));
-        draft.diagram.connections = draft.diagram.connections.filter(
+      commitActive((draft) => {
+        draft.nodes = draft.nodes.filter((node) => !nodes.has(node.id));
+        draft.connections = draft.connections.filter(
           (connection) =>
             !connections.has(connection.id) &&
             !nodes.has(connection.from.node) &&
@@ -498,13 +656,13 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     rotateSelection: () => {
-      const { doc, selection } = get();
-      if (doc === null || selection.nodes.length === 0) {
+      const { selection } = get();
+      if (selection.nodes.length === 0) {
         return;
       }
       const nodes = new Set(selection.nodes);
-      commit((draft) => {
-        for (const node of draft.diagram.nodes) {
+      commitActive((diagram) => {
+        for (const node of diagram.nodes) {
           if (nodes.has(node.id) && !isJunction(node)) {
             node.rotation = ((node.rotation ?? 0) + 90) % 360;
           }
@@ -513,13 +671,13 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     flipSelection: () => {
-      const { doc, selection } = get();
-      if (doc === null || selection.nodes.length === 0) {
+      const { selection } = get();
+      if (selection.nodes.length === 0) {
         return;
       }
       const nodes = new Set(selection.nodes);
-      commit((draft) => {
-        for (const node of draft.diagram.nodes) {
+      commitActive((diagram) => {
+        for (const node of diagram.nodes) {
           if (nodes.has(node.id) && !isJunction(node)) {
             node.flipX = !(node.flipX ?? false);
           }
@@ -528,16 +686,17 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     copySelection: () => {
-      const { doc, selection } = get();
-      if (doc === null || selection.nodes.length === 0) {
+      const diagram = currentDiagram();
+      const { selection } = get();
+      if (diagram === null || selection.nodes.length === 0) {
         return;
       }
       const selected = new Set(selection.nodes);
-      const nodes = doc.diagram.nodes
+      const nodes = diagram.nodes
         .filter((node) => selected.has(node.id))
         .map((node) => clone(node));
       const nodeIds = new Set(nodes.map((node) => node.id));
-      const connections = doc.diagram.connections
+      const connections = diagram.connections
         .filter(
           (connection) =>
             nodeIds.has(connection.from.node) && nodeIds.has(connection.to.node),
@@ -547,15 +706,15 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     paste: () => {
-      const { doc, clipboard } = get();
-      if (doc === null || clipboard.nodes.length === 0) {
+      const doc = get().doc;
+      const diagram = currentDiagram();
+      const { clipboard } = get();
+      if (doc === null || diagram === null || clipboard.nodes.length === 0) {
         return;
       }
-      const existingNodeIds = new Set(doc.diagram.nodes.map((node) => node.id));
-      const existingConnectionIds = new Set(
-        doc.diagram.connections.map((connection) => connection.id),
-      );
-      const existingNames = new Set(doc.diagram.nodes.map((node) => node.name));
+      const existingNodeIds = new Set(allNodeIds(doc));
+      const existingConnectionIds = new Set(allConnectionIds(doc));
+      const existingNames = new Set(diagram.nodes.map((node) => node.name));
       const idMap = new Map<string, string>();
       const pastedNodes: ModelNode[] = [];
 
@@ -593,9 +752,9 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         });
       }
 
-      commit((draft) => {
-        draft.diagram.nodes.push(...pastedNodes);
-        draft.diagram.connections.push(...pastedConnections);
+      commitActive((draft) => {
+        draft.nodes.push(...pastedNodes);
+        draft.connections.push(...pastedConnections);
       });
       set({
         selection: { nodes: pastedNodes.map((node) => node.id), connections: [] },
@@ -603,12 +762,12 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     reverseConnection: (id) => {
-      const { doc } = get();
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (diagram === null) {
         return;
       }
-      commit((draft) => {
-        const connection = draft.diagram.connections.find((entry) => entry.id === id);
+      commitActive((draft) => {
+        const connection = draft.connections.find((entry) => entry.id === id);
         if (connection === undefined) {
           return;
         }
@@ -620,49 +779,53 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     connect: (a, b) => {
-      const doc = get().doc;
+      const state = get();
+      const doc = state.doc;
       if (doc === null) {
         return { ok: false, reason: "No model is open" };
       }
-      const result: ConnectionCheck = checkConnection(doc, a, b);
+      const view = activeModel(doc, state.activePath);
+      const diagram = currentDiagram();
+      if (view === null || diagram === null) {
+        return { ok: false, reason: "The open diagram no longer exists" };
+      }
+      const result: ConnectionCheck = checkConnection(view, a, b);
       if (!result.ok) {
         return { ok: false, reason: result.reason };
       }
-      const id = nextId(
-        "c",
-        doc.diagram.connections.map((connection) => connection.id),
-      );
+      const id = nextId("c", allConnectionIds(doc));
       const connection = createConnection(
         id,
         result.kind,
         endpoint(result.from.nodeId, result.from.portName),
         endpoint(result.to.nodeId, result.to.portName),
       );
-      commit((draft) => {
-        draft.diagram.connections.push(connection);
+      commitActive((draft) => {
+        draft.connections.push(connection);
       });
       return { ok: true, id, kind: result.kind };
     },
 
     renameNode: (nodeId, name) => {
       const doc = get().doc;
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (doc === null || diagram === null) {
         return { ok: false, error: "No model is open." };
       }
-      const node = doc.diagram.nodes.find((entry) => entry.id === nodeId);
+      const node = diagram.nodes.find((entry) => entry.id === nodeId);
       if (node === undefined) {
         return { ok: false, error: "That block is no longer in the diagram." };
       }
       const next = name.trim();
-      const issue = nodeNameIssue(doc.diagram.nodes, nodeId, next);
+      const issue = nodeNameIssue(diagram.nodes, nodeId, next);
       if (issue !== null) {
         return { ok: false, error: issue };
       }
       if (next === node.name) {
         return { ok: true };
       }
-      commit((draft) => {
-        const target = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+      commitActive((draft) => {
+        const target = draft.nodes.find((entry) => entry.id === nodeId);
         if (target !== undefined) {
           target.name = next;
         }
@@ -671,19 +834,19 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     setNodeParam: (nodeId, name, value) => {
-      const doc = get().doc;
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (diagram === null) {
         return { ok: false, error: "No model is open." };
       }
-      if (!doc.diagram.nodes.some((entry) => entry.id === nodeId)) {
+      if (!diagram.nodes.some((entry) => entry.id === nodeId)) {
         return { ok: false, error: "That block is no longer in the diagram." };
       }
       const text = value.trim();
       if (text.length === 0) {
         return { ok: false, error: "Enter a value." };
       }
-      commit((draft) => {
-        const node = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+      commitActive((draft) => {
+        const node = draft.nodes.find((entry) => entry.id === nodeId);
         if (node !== undefined) {
           node.params = { ...(node.params ?? {}), [name]: text };
         }
@@ -692,15 +855,15 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     setNodeConstant: (nodeId, name, value) => {
-      const doc = get().doc;
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (diagram === null) {
         return { ok: false, error: "No model is open." };
       }
-      if (!doc.diagram.nodes.some((entry) => entry.id === nodeId)) {
+      if (!diagram.nodes.some((entry) => entry.id === nodeId)) {
         return { ok: false, error: "That block is no longer in the diagram." };
       }
-      commit((draft) => {
-        const node = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+      commitActive((draft) => {
+        const node = draft.nodes.find((entry) => entry.id === nodeId);
         if (node === undefined) {
           return;
         }
@@ -716,16 +879,16 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     setNodeStart: (nodeId, name, value) => {
-      const doc = get().doc;
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (diagram === null) {
         return { ok: false, error: "No model is open." };
       }
-      if (!doc.diagram.nodes.some((entry) => entry.id === nodeId)) {
+      if (!diagram.nodes.some((entry) => entry.id === nodeId)) {
         return { ok: false, error: "That block is no longer in the diagram." };
       }
       const text = value?.trim() ?? "";
-      commit((draft) => {
-        const node = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+      commitActive((draft) => {
+        const node = draft.nodes.find((entry) => entry.id === nodeId);
         if (node === undefined) {
           return;
         }
@@ -741,11 +904,11 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     setNodeBlockRef: (nodeId, ref) => {
-      const doc = get().doc;
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (diagram === null) {
         return { ok: false, error: "No model is open." };
       }
-      const node = doc.diagram.nodes.find((entry) => entry.id === nodeId);
+      const node = diagram.nodes.find((entry) => entry.id === nodeId);
       if (node === undefined) {
         return { ok: false, error: "That block is no longer in the diagram." };
       }
@@ -759,8 +922,8 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       if (node.block.ref === next) {
         return { ok: true };
       }
-      commit((draft) => {
-        const target = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+      commitActive((draft) => {
+        const target = draft.nodes.find((entry) => entry.id === nodeId);
         if (target !== undefined) {
           target.block = { ref: next };
         }
@@ -769,11 +932,11 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     setInlineSource: (nodeId, source, options = {}) => {
-      const doc = get().doc;
-      if (doc === null) {
+      const diagram = currentDiagram();
+      if (diagram === null) {
         return { ok: false, error: "No model is open." };
       }
-      const node = doc.diagram.nodes.find((entry) => entry.id === nodeId);
+      const node = diagram.nodes.find((entry) => entry.id === nodeId);
       if (node === undefined) {
         return { ok: false, error: "That block is no longer in the diagram." };
       }
@@ -783,9 +946,9 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       if (node.block.inline.source === source) {
         return { ok: true };
       }
-      const next = commit(
+      const next = commitActive(
         (draft) => {
-          const target = draft.diagram.nodes.find((entry) => entry.id === nodeId);
+          const target = draft.nodes.find((entry) => entry.id === nodeId);
           if (target !== undefined && "inline" in target.block) {
             target.block.inline.source = source;
           }
@@ -806,6 +969,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         return;
       }
       const next = applyPatches(doc, entry.inversePatches);
+      const activePath = clampPath(next, state.activePath);
       set({
         doc: next,
         past: state.past.slice(0, -1),
@@ -813,7 +977,8 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         revision: state.revision + 1,
         saveState: "dirty",
         saveError: null,
-        selection: pruneSelection(next, state.selection),
+        selection: pruneSelection(next, activePath, state.selection),
+        activePath,
         gestureKey: null,
         lastHistKey: null,
       });
@@ -827,6 +992,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         return;
       }
       const next = applyPatches(doc, entry.patches);
+      const activePath = clampPath(next, state.activePath);
       set({
         doc: next,
         past: [...state.past, entry],
@@ -834,7 +1000,8 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         revision: state.revision + 1,
         saveState: "dirty",
         saveError: null,
-        selection: pruneSelection(next, state.selection),
+        selection: pruneSelection(next, activePath, state.selection),
+        activePath,
         gestureKey: null,
         lastHistKey: null,
       });

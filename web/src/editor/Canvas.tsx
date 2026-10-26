@@ -53,6 +53,8 @@ import {
   nodeLayout,
 } from "./geometry";
 import { QuickConnectContext } from "./quickConnect";
+import { activeModel } from "./subsystemPath";
+import { SubsystemBreadcrumbs } from "./SubsystemBreadcrumbs";
 import "./editor.css";
 
 const ZOOM = 0.85;
@@ -141,6 +143,7 @@ export function Canvas() {
 
 function CanvasInner() {
   const doc = useDocumentStore((state) => state.doc);
+  const activePath = useDocumentStore((state) => state.activePath);
   const project = useDocumentStore((state) => state.project);
   const modelName = useDocumentStore((state) => state.modelName);
   const selection = useDocumentStore((state) => state.selection);
@@ -168,12 +171,19 @@ function CanvasInner() {
   const suppressClick = useRef(false);
   const { fitView, screenToFlowPosition } = useReactFlow();
 
+  // Commands mutate the active diagram; rendering reads the same document
+  // view, so entering a subsystem shows its nested diagram.
+  const view = useMemo(
+    () => (doc === null ? null : activeModel(doc, activePath)),
+    [doc, activePath],
+  );
+
   const flow = useMemo(
     () =>
-      doc === null || index === null
+      view === null || index === null
         ? { nodes: [], edges: [], analysis: null }
-        : buildDiagram(doc, index, selection, dragOrigin),
-    [doc, index, selection, dragOrigin, inlineRevision],
+        : buildDiagram(view, index, selection, dragOrigin),
+    [view, index, selection, dragOrigin, inlineRevision],
   );
 
   const dirty = revision !== savedRevision;
@@ -235,27 +245,29 @@ function CanvasInner() {
       if ((event.target as HTMLElement | null)?.closest("[data-port]")) {
         return;
       }
-      const current = useDocumentStore.getState().doc;
+      const current = useDocumentStore.getState();
       const catalogIndex = useCatalogStore.getState().index;
-      if (current === null || catalogIndex === null) {
+      const docNow =
+        current.doc === null ? null : activeModel(current.doc, current.activePath);
+      if (docNow === null || catalogIndex === null) {
         return;
       }
-      const node = current.diagram.nodes.find((entry) => entry.id === nodeId);
+      const node = docNow.diagram.nodes.find((entry) => entry.id === nodeId);
       if (node === undefined) {
         return;
       }
       const iface = interfaceForNode(node, catalogIndex);
       let origin: PortDescriptor | null;
       if (iface.isJunction) {
-        origin = descriptorForPort(current.diagram.nodes, catalogIndex, nodeId, null);
+        origin = descriptorForPort(docNow.diagram.nodes, catalogIndex, nodeId, null);
       } else {
-        const layout = nodeLayout(node, catalogIndex, current);
+        const layout = nodeLayout(node, catalogIndex, docNow);
         const flowPoint = screenToFlowPosition({ x: event.clientX, y: event.clientY });
         const portName = nearestSourcePort(iface, layout, node.position, flowPoint);
         origin =
           portName === null
             ? null
-            : descriptorForPort(current.diagram.nodes, catalogIndex, nodeId, portName);
+            : descriptorForPort(docNow.diagram.nodes, catalogIndex, nodeId, portName);
       }
       if (origin === null) {
         return;
@@ -336,8 +348,10 @@ function CanvasInner() {
           return;
         }
         const state = useDocumentStore.getState();
-        const docNow = state.doc;
+        const rootDoc = state.doc;
         const indexNow = useCatalogStore.getState().index;
+        const docNow =
+          rootDoc === null ? null : activeModel(rootDoc, state.activePath);
         if (docNow === null || indexNow === null) {
           return;
         }
@@ -370,6 +384,10 @@ function CanvasInner() {
       if (key === "escape") {
         setMenu(null);
         setTooltip(null);
+        // Plan 7.5/7.8: Esc cancels a drag or leaves a subsystem.
+        if (store.activePath.length > 0) {
+          store.leaveSubsystem();
+        }
         return;
       }
       if (mod && key === "z") {
@@ -422,10 +440,10 @@ function CanvasInner() {
   // --------------------------------------------------------------- connect
   const descriptorFor = useCallback(
     (nodeId: string | null | undefined, handleId: string | null | undefined) =>
-      doc === null || index === null || nodeId === null || nodeId === undefined
+      view === null || index === null || nodeId === null || nodeId === undefined
         ? null
-        : descriptorForPort(doc.diagram.nodes, index, nodeId, handleId ?? null),
-    [doc, index],
+        : descriptorForPort(view.diagram.nodes, index, nodeId, handleId ?? null),
+    [view, index],
   );
 
   const onConnect: OnConnect = useCallback(
@@ -467,11 +485,13 @@ function CanvasInner() {
       const nodeId = state.toHandle?.nodeId ?? state.toNode?.id ?? null;
       const portId = state.toHandle?.id ?? null;
       const target = descriptorFor(nodeId, portId);
-      const current = useDocumentStore.getState().doc;
-      if (target === null || current === null) {
+      const current = useDocumentStore.getState();
+      const viewNow =
+        current.doc === null ? null : activeModel(current.doc, current.activePath);
+      if (target === null || viewNow === null) {
         return;
       }
-      const result = checkConnection(current, origin, target);
+      const result = checkConnection(viewNow, origin, target);
       if (!result.ok) {
         showTooltip(eventPoint(event), result.reason);
       }
@@ -481,7 +501,7 @@ function CanvasInner() {
 
   const isValidConnection = useCallback(
     (connection: Connection | Edge) => {
-      if (doc === null) {
+      if (view === null) {
         return false;
       }
       const from = descriptorFor(connection.source, connection.sourceHandle ?? null);
@@ -489,9 +509,9 @@ function CanvasInner() {
       if (from === null || to === null) {
         return false;
       }
-      return checkConnection(doc, from, to).ok;
+      return checkConnection(view, from, to).ok;
     },
-    [descriptorFor, doc],
+    [descriptorFor, view],
   );
 
   // ------------------------------------------------------------------- drop
@@ -588,14 +608,22 @@ function CanvasInner() {
   }, []);
 
   /**
-   * Plan 7.4/7.7: a double-click opens the code of an inline node. Library
-   * and subsystem blocks keep the inspector behaviour (W1.2); only inline
-   * nodes have source that belongs in the Code tab.
+   * Plan 7.4/7.7: a double-click on a subsystem enters its nested diagram; a
+   * double-click on an inline node opens its source in the Code tab.
    */
   const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
     const doc = useDocumentStore.getState().doc;
-    const target = doc?.diagram.nodes.find((entry) => entry.id === node.id);
-    if (target !== undefined && "inline" in target.block) {
+    const path = useDocumentStore.getState().activePath;
+    const view = doc === null ? null : activeModel(doc, path);
+    const target = view?.diagram.nodes.find((entry) => entry.id === node.id);
+    if (target === undefined) {
+      return;
+    }
+    if ("subsystem" in target.block) {
+      useDocumentStore.getState().enterSubsystem(target.id);
+      return;
+    }
+    if ("inline" in target.block) {
       requestSource({ kind: "inline", ref: target.id, line: 1, col: 1 }, { reveal: true });
     }
   }, []);
@@ -618,9 +646,9 @@ function CanvasInner() {
   const menuConnection = useMemo(
     () =>
       menu?.kind === "edge"
-        ? doc?.diagram.connections.find((connection) => connection.id === menu.id) ?? null
+        ? view?.diagram.connections.find((connection) => connection.id === menu.id) ?? null
         : null,
-    [doc, menu],
+    [view, menu],
   );
 
   // Plotting from the canvas (plan 7.5): a bond offers the port's effort/flow/
@@ -628,15 +656,15 @@ function CanvasInner() {
   // the current run manifest, so the store can reject an id the run lacks.
   const runSignals = useRunStore((state) => state.manifest?.signals ?? null);
   const menuNode = useMemo(
-    () => (menu?.kind === "node" && doc !== null ? nodeForMenu(doc, menu.id) : undefined),
-    [doc, menu],
+    () => (menu?.kind === "node" && view !== null ? nodeForMenu(view, menu.id) : undefined),
+    [view, menu],
   );
   const menuPlotTargets = useMemo(
     () =>
-      doc !== null && menuConnection !== null
-        ? connectionPlotTargets(doc, menuConnection)
+      view !== null && menuConnection !== null
+        ? connectionPlotTargets(view, menuConnection)
         : [],
-    [doc, menuConnection],
+    [view, menuConnection],
   );
   const menuOutputIds = useMemo(
     () => (menuNode === undefined ? [] : nodeOutputIds(runSignals ?? [], menuNode)),
@@ -668,6 +696,28 @@ function CanvasInner() {
           {dirty ? <span className="editor__dirty" data-testid="dirty-marker" aria-hidden="true" /> : null}
           {saveLabel(saveState, dirty)}
         </span>
+        <button
+          type="button"
+          className="button button--compact"
+          data-testid="create-subsystem"
+          onClick={() => {
+            if (index !== null) {
+              const result = useDocumentStore.getState().createSubsystem(index);
+              if (!result.ok && result.error !== undefined) {
+                showTooltip({ x: window.innerWidth / 2, y: 120 }, result.error);
+              }
+            }
+          }}
+          disabled={selection.nodes.length === 0 || index === null}
+          aria-label="Create subsystem from selection"
+          title={
+            selection.nodes.length === 0
+              ? "Select blocks to group into a subsystem"
+              : "Group the selected blocks and the connections inside them into a subsystem"
+          }
+        >
+          ⧉ Subsystem
+        </button>
         <button
           type="button"
           className="icon-button"
@@ -741,6 +791,8 @@ function CanvasInner() {
           ⌘
         </button>
       </div>
+
+      <SubsystemBreadcrumbs />
 
       <div
         className="editor__canvas"
