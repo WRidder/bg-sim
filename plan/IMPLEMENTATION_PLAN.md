@@ -104,6 +104,7 @@ Audience: an orchestrator agent that delegates the work packages (WPs) below to 
 | D25 | Reproducibility (M5) | Every change made while paused is appended to the run's `debug.edits` as `(t, target, value)`. **Replay** runs the model as a normal run that applies the edits at those times. **Rewind** to time t starts a new run (`parentRun`, `branchAt = t`) that replays the parent up to t and pauses there. There are no in-memory checkpoints in M5. | Runs are deterministic, so a re-run is an exact rewind, and every debug session can be reproduced from its manifest. |
 | D26 | Breakpoint storage (M5) | Breakpoints are editor state, saved per model in `localStorage` (wrapped in try/catch), not in the model document. A run's manifest records the breakpoints that were active. | Breakpoints must not change the model hash or the compile cache. |
 | D27 | Evaluating expressions while paused (M5) | `debug.evaluate` uses the constant-folding interpreter (4.3), extended with signal lookups and, at a statement pause, the frame's locals. It is read-only and never uses `eval`. Errors are E001 to E006 with `scope = "watch"`. New codes: **E401** (no statement on that line), **E402** (state change refused) and **W401** (the breakpoint's block is not used in this model, so it stays unverified). | The same safety rule as all user code. |
+| D28 | Example modeling style (user request) | **Bond graph first for the continuous plant.** The examples assemble their continuous physics from bond-graph elements (`I`, `C`, `R`, `Se`, `Sf`, `MSe`, `MSf`, `TF`, `GY`, `MTF`, `MGY`, 0/1-junctions) rather than from dedicated equation blocks. A block/code node is reserved for (a) the sampled firmware (discrete control), (b) genuinely non-bond-graph frames (the dq current controller), (c) state resets and events (`reinit`), and (d) the user extension points (`Equation block`, `Subsystem`); kinematic integrators used only to reconstruct a position/angle for moduli or a controller are sensors, not plant physics. Where physics crosses domains, use `GY`/`TF`/modulated elements; if an element or modulus source is missing, add it to the stdlib or express the modulus as a signal (`MTF`/`MGY`/`MSe`) rather than hiding the equations in a block. The existing samples already have bond-graph counterparts (dc-motor, drivetrain, rlc-dual); the new industrial-servo and inverted-pendulum-cart plants must be built this way, and bouncing-ball is the documented exception (its `reinit` needs the event scope). **Spatial (3D) mechanics** stays hand-derived equation blocks (out of scope per section 12); this rule covers the planar/1D plants until the M4 planar components exist. | Keeps the library honest and exercises the bond-graph path on real examples. |
 
 ### 1.3 Assumptions (change them here if wrong)
 - There is a single model per editor tab, and a project holds several models plus a project library.
@@ -936,6 +937,7 @@ Each example lives at `examples/<name>/` and holds:
 - a project file and models;
 - any scene (`scenes/*.sdf`) and bindings;
 - a `README.md` (what it shows and what to try);
+- the continuous plant assembled from **bond-graph elements** (D28), not a dedicated equation block; a block/code node is only for sampled firmware, `reinit`/events, or a genuinely non-bond-graph frame (with a one-line reason in the README);
 - an `expected.json` with the acceptance checks, which `tools/check.py --lane x` runs through the real worker.
 
 Design scripts are uv scripts with inline dependencies (`# /// script` with `numpy`, `scipy`), run with `uv run examples/<name>/design/design.py`. They write their gains into the model JSON parameters. Their outputs are committed.
@@ -953,7 +955,7 @@ Design scripts are uv scripts with inline dependencies (`# /// script` with `num
 - **3D (M3):** a motor can (cylinder) with a rotating shaft and flag, bound to the rotor angle.
 
 ### 9.2 `bouncing-ball`, milestone M2 (events)
-- **Model:** an equation block written as follows. `t_end = 3.5 s` stays before the Zeno point at about 4.06 s, and `event_limit` gives W206 when it is exceeded.
+- **Model:** a block with the events and state resets (the documented D28 exception; the `reinit` needs the event scope) written as follows. `t_end = 3.5 s` stays before the Zeno point at about 4.06 s, and `event_limit` gives W206 when it is exceeded.
   ```julia
   @block Ball begin
       @parameters begin
@@ -1125,9 +1127,14 @@ fidelity step can be compared against the baseline:
 **Plant (continuous):** `v_d = R·i_d + L_d·di_d/dt − ω_e·L_q·i_q`, `v_q = R·i_q +
 L_q·di_q/dt + ω_e·(L_d·i_d + ψ_m)`, `ω_e = p·ω_m`, `T_e = 1.5·p·(ψ_m·i_q + (L_d−L_q)·i_d·i_q)`,
 `J·dω/dt = T_e − B·ω − T_load`; surface-mount PMSM so `L_d ≈ L_q` and `T_e ≈ 1.5·p·ψ_m·i_q`.
-The PMSM is a project-library equation block with signal inputs `v_d`/`v_q` and a Rotation
-shaft port; the mechanical plant of the two-mass variant is a bond graph (I–C–R) so the
-sample exercises both modeling styles.
+The PMSM is a **bond-graph plant** (D28): the d- and q-axis electrical 1-junctions carry `R_d`/`R_q`
+and `I_d`/`I_q` (`L`), the `ω_e·L_q` and `ω_e·L_d` cross-couplings are **MGY** elements whose
+moduli come from a signal `ω_e = p·ω_m`, the `ω_e·ψ_m` back-EMF is an **MSe**, and the
+electromechanical conversion is a **GY** with modulus `1.5·p·ψ_m` into the mechanical
+1-junction. The rotor and the two-mass load are I–C–R bond graphs; the abc↔dq transforms and
+the three sampled loops live in the discrete firmware blocks. The only code nodes in the
+sample are that firmware and the switching-inverter logic (a discrete PWM comparator), never
+the plant equations.
 
 **Controller (discrete):** the drive firmware as explicit `@discrete` blocks with their own
 `Ts` and a one-sample delay; the cascade is tuned inner-to-outer (current ≫ speed ≫
@@ -1146,17 +1153,23 @@ a `step_response` check kind (rise time, overshoot, settling) and a ripple measu
 
 The classic cart–pendulum stabilizer, as a controller-design sample (nonlinear plant, linear
 controller):
-- **Plant** — an equation block with a cart force input `u` and states
-  `x, dx, theta, dtheta` (`theta` measured from upright):
+- **Plant** — a **bond graph** (D28), not an equation block: a cart 1-junction with the cart
+  inertia `I(M)`, friction `R(b)` and a force `MSe(u)`; the pendulum is a point mass at the
+  rod tip (two translational `I(m)` elements for the horizontal and vertical CoM velocity)
+  plus a rotational `I(J)` for the rod, coupled by `MTF` elements whose moduli are the signal
+  expressions `l*cos(theta)` and `l*sin(theta)`; gravity is an `MSe(m*g)` on the vertical
+  mass. Two kinematic `Integrator` blocks turn the bond-graph flows into `theta` and `x` for
+  the MTF moduli and the controller (they are sensors/kinematics, not plant physics). The
+  equivalent equations below are the design reference for `design.py` and the README; the
+  bond graph must reproduce them:
   ```
   Mt = M + m
   ddx = (u + m*l*sin(theta)*dtheta^2 - m*g*sin(theta)*cos(theta)) / (Mt - m*cos(theta)^2)
   ddtheta = (g*sin(theta)*Mt - cos(theta)*(u + m*l*dtheta^2*sin(theta))) /
             (l*(Mt - m*cos(theta)^2))
-  ddt(x) ~ dx;  ddt(dx) ~ ddx;  ddt(theta) ~ dtheta;  ddt(dtheta) ~ ddtheta
   ```
-  with `M = 1 kg`, `m = 0.2 kg`, `l = 0.5 m`, `g = 9.81 m/s²`, cart friction `b = 0.1 N·s/m`
-  (added as `-b*dx` in `ddx`), initial tilt `theta = 0.1 rad`.
+  with `M = 1 kg`, `m = 0.2 kg`, `l = 0.5 m`, `g = 9.81 m/s²`, cart friction `b = 0.1 N·s/m`,
+  initial tilt `theta = 0.1 rad`.
 - **Controller** — a discrete LQR at `Ts = 1 ms` on `[x, dx, theta, dtheta]` with a cart
   position reference (a 0.2 m step at t = 1.5 s) and a force limit of ±20 N. The gains come
   from a `design.py` (uv script with `numpy`/`scipy`) that linearizes the plant at upright,
@@ -1165,7 +1178,7 @@ controller):
 - **Checks** — from the 0.1 rad tilt the angle settles to |theta| < 0.5° and the cart to
   |x| < 1 cm by t = 3 s; after the 0.2 m reference step it settles within 2 s; |u| ≤ 20 N at
   every sample; no solver failure. A `step_response`/settling check kind is reused.
-- **Playwright** — import the sample, open it, run, plot `Pendulum1/theta` and the force,
+- **Playwright** — import the sample, open it, run, plot `ThetaInt/y` and the force (`MSe1/p.e`),
   and read the legend at t = 3 s.
 - **3D (M3):** a cart box, two wheels and a pendulum rod; bind the cart to `x` and the rod
   to `theta`.
