@@ -1568,3 +1568,28 @@ Design choices that keep these open:
 - Discrete partitions are already generated functions with explicit state (D3).
 - `@constants` folding is isolated in one pass.
 - Signal IDs are the stable interface names that a later export will use.
+
+### 12.1 Post-session roadmap (requested additions)
+
+These are explicitly **not** part of M0–M5; they are recorded so the architecture keeps the
+door open.
+
+- **Transfer function between two points.** Select two signals in the same physical domain
+  (for example `Motor1/shaft.f` → `Wheel2/a.f`, both rotational speed; or `V1/p.e` →
+  `Motor1/i`, both electrical) and compute the small-signal transfer function from the
+  first (input) to the second (output): linearize the compiled system at an operating
+  point (the global inspect time or the settled steady state), keep that SISO pair, reduce
+  it to a rational function, and show gain/phase (Bode) plus poles and zeros. **Same-domain
+  restriction (the user's rule):** the two signals must have the same dimension vector;
+  a cross-domain pair is refused with a diagnostic naming both units, because the gain
+  would mix physical quantities. A same-domain pair such as torque → speed is still a
+  meaningful mechanical impedance. Sketch of the seams: J
+  `src/compile/transfer.jl` (MTK `linearize` around the operating point, SISO reduction;
+  an own polynomial path or ControlSystemsBase for num/den), P
+  `POST /api/transfer {model, projectDir, input, output, at}` (or a run-scoped variant
+  that reuses the run's operating point), W a "Transfer function" action in the canvas /
+  plot context menu and a Bode + pole-zero panel, X an example check (drivetrain motor
+  torque → far-wheel speed, analytic two-inertia TF). Deferred because it needs a stable
+  operating-point definition, the linearization API, and a rational-function dependency;
+  the existing `compile_key`/linearization seam and the recorded signal IDs are the
+  pieces that make it a later addition rather than a redesign.
