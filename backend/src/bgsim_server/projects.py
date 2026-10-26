@@ -16,6 +16,7 @@ Endpoint summary (all under ``/api``)::
 
     GET    /projects                              list project summaries
     POST   /projects                              {name, example?} -> open payload, 201
+    GET    /examples                              the examples POST /projects can copy
     GET    /projects/{p}                          the project file plus listings
     PUT    /projects/{p}                          replace the project file
     DELETE /projects/{p}                          remove the project directory
@@ -811,6 +812,12 @@ def _invalidate(request: Request, project: str) -> None:
 def list_projects(store: Store) -> dict[str, Any]:
     """Plan 3.7: list the projects below the configured projects root."""
     return {"root": str(store.root), "projects": store.list_projects()}
+
+
+@router.get("/examples")
+def list_examples(store: Store) -> dict[str, Any]:
+    """The example names ``POST /api/projects {name, example}`` can copy."""
+    return {"examples": store.available_examples()}
 
 
 @router.post("/projects", status_code=status.HTTP_201_CREATED)

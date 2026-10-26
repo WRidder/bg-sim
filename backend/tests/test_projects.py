@@ -136,6 +136,20 @@ def test_list_projects_without_a_root_returns_empty(
     assert not store.projects_root.exists(), "listing must not create the root"
 
 
+def test_list_examples_lists_copyable_directories(
+    client: TestClient, store: ProjectStore
+) -> None:
+    assert client.get("/api/examples").json() == {"examples": []}
+    assert store.examples_root is not None
+    _make_example(store.examples_root)
+    (store.examples_root / "notes.txt").write_text("not an example\n", encoding="utf-8")
+    (store.examples_root / "empty").mkdir()
+
+    response = client.get("/api/examples")
+    assert response.status_code == 200
+    assert response.json() == {"examples": ["dc-motor", "empty"]}
+
+
 def test_create_rejects_duplicates_and_unsafe_names(client: TestClient) -> None:
     assert _create(client).status_code == 201
     duplicate = _create(client)

@@ -191,3 +191,125 @@ export async function putModel(
   }
   return isModelDocument(answer.body) ? answer.body : document;
 }
+
+// --------------------------------------------------------------- project browser
+
+/** One row of `GET /api/projects` (plan 3.7). */
+export interface ProjectSummary {
+  name: string;
+  path: string;
+  language: string | null;
+  /** The model names in the project file's tab order. */
+  models: string[];
+  modified: string | null;
+  valid: boolean;
+  error: string | null;
+}
+
+/** One model entry of the `GET /api/projects/{p}` payload. */
+export interface ProjectModelEntry {
+  name: string;
+  modified: string | null;
+  inProject: boolean;
+}
+
+/** The open-project payload (`GET /projects/{p}` and `POST /projects`). */
+export interface OpenedProject {
+  name: string;
+  path: string;
+  models: ProjectModelEntry[];
+}
+
+function stringList(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+function openedProject(body: unknown): OpenedProject {
+  if (!isRecord(body) || typeof body.name !== "string") {
+    throw new ProjectApiError("The backend returned an invalid project payload.", 0, body);
+  }
+  const models = Array.isArray(body.models)
+    ? body.models.filter(isRecord).flatMap((entry) => {
+        if (typeof entry.name !== "string") {
+          return [];
+        }
+        return [
+          {
+            name: entry.name,
+            modified: typeof entry.modified === "string" ? entry.modified : null,
+            inProject: entry.inProject === true,
+          },
+        ];
+      })
+    : [];
+  return {
+    name: body.name,
+    path: typeof body.path === "string" ? body.path : "",
+    models,
+  };
+}
+
+/** Every project below the backend's projects root. */
+export async function listProjects(signal?: AbortSignal): Promise<ProjectSummary[]> {
+  const answer = await call("/api/projects", { method: "GET", signal });
+  if (answer.status !== 200) {
+    throw new ProjectApiError(detailMessage(answer.body, answer.status), answer.status, answer.body);
+  }
+  const entries = isRecord(answer.body) ? answer.body.projects : undefined;
+  if (!Array.isArray(entries)) {
+    throw new ProjectApiError("The backend returned an invalid project list.", 0, answer.body);
+  }
+  return entries.filter(isRecord).flatMap((entry) => {
+    if (typeof entry.name !== "string" || entry.name.length === 0) {
+      return [];
+    }
+    return [
+      {
+        name: entry.name,
+        path: typeof entry.path === "string" ? entry.path : "",
+        language: typeof entry.language === "string" ? entry.language : null,
+        models: stringList(entry.models),
+        modified: typeof entry.modified === "string" ? entry.modified : null,
+        valid: entry.valid === true,
+        error: typeof entry.error === "string" ? entry.error : null,
+      },
+    ];
+  });
+}
+
+/** The examples the backend can copy into a new project. */
+export async function listExamples(signal?: AbortSignal): Promise<string[]> {
+  const answer = await call("/api/examples", { method: "GET", signal });
+  if (answer.status !== 200) {
+    throw new ProjectApiError(detailMessage(answer.body, answer.status), answer.status, answer.body);
+  }
+  return stringList(isRecord(answer.body) ? answer.body.examples : undefined);
+}
+
+/** Create an empty project, or copy one from `examples/<example>`. */
+export async function createProject(
+  name: string,
+  example?: string,
+  signal?: AbortSignal,
+): Promise<OpenedProject> {
+  const answer = await call("/api/projects", {
+    method: "POST",
+    body: example === undefined ? { name } : { name, example },
+    signal,
+  });
+  if (answer.status !== 201 && answer.status !== 200) {
+    throw new ProjectApiError(detailMessage(answer.body, answer.status), answer.status, answer.body);
+  }
+  return openedProject(answer.body);
+}
+
+/** The project file plus its model and library listings. */
+export async function openProject(name: string, signal?: AbortSignal): Promise<OpenedProject> {
+  const answer = await call(projectPath(name), { method: "GET", signal });
+  if (answer.status !== 200) {
+    throw new ProjectApiError(detailMessage(answer.body, answer.status), answer.status, answer.body);
+  }
+  return openedProject(answer.body);
+}
