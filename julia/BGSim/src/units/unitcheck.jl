@@ -132,26 +132,36 @@ function block_domain(pb::ParsedBlock)::Symbol
     return :Generic
 end
 
-"""    unit_env(pb::ParsedBlock) -> UnitEnv
+"""    unit_env(pb::ParsedBlock[, domain::Symbol]) -> UnitEnv
 
 Build the unit environment of a block: every `unit` attribute of `@constants`,
 `@parameters`, `@inputs`, `@outputs` and `@variables`, the `e`/`f` fields of every power
 port, and `t` (seconds). Units that do not parse are left out of the environment (see
 [`check_units`](@ref) for the E006); `effort`/`flow` are substituted when the block has a
-concrete domain."""
-function unit_env(pb::ParsedBlock)::UnitEnv
-    return _build_env(pb, nothing)
+concrete domain.
+
+`domain` is the domain the block's ports actually adopted (plan 5.6, J2.5). It defaults to
+[`block_domain`](@ref)`(pb)`. When it is concrete and the block itself is `Generic`, the
+pseudo-dimensions of the declarations and of the `Generic` port fields are substituted with
+that domain's units, and the declaration labels become the concrete unit text (`c` written
+as `flow*s/effort` is labelled `F` on an Electrical island). This is the per-instance
+environment the flattener passes to [`check_units`](@ref) after adoption."""
+function unit_env(pb::ParsedBlock, domain::Symbol = block_domain(pb))::UnitEnv
+    return _build_env(pb, nothing, domain)
 end
 
 function _build_env(
     pb::ParsedBlock,
     diags::Union{Vector{Diagnostic},Nothing},
+    domain::Symbol = block_domain(pb),
 )::UnitEnv
     names = Dict{Symbol,Dims}()
     labels = Dict{Symbol,String}()
     names[:t] = UNIT_S
     labels[:t] = "s"
-    domain = block_domain(pb)
+    # `adopted` means a Generic block is being checked under the domain its islands gave it;
+    # a block with its own concrete port domain keeps its own domain (and its written labels).
+    adopted = domain !== block_domain(pb)
     for scope in UNIT_SCOPES
         for d in declarations(pb, scope)
             text = get(decl_attrs(d), :unit, nothing)
@@ -176,13 +186,20 @@ function _build_env(
                 continue
             end
             name = decl_name(d)
-            names[name] = substitute_domain(dims, domain)
-            labels[name] = String(text)
+            substituted = substitute_domain(dims, domain)
+            names[name] = substituted
+            # A Generic block that became concrete reports the concrete unit text, so a
+            # model-level E006 names the units the user sees after adoption.
+            labels[name] = (adopted && has_pseudo_dimensions(dims)) ?
+                           unit_string(substituted) : String(text)
         end
     end
     for p in ports(pb)
         name = decl_name(p)
         port_domain = something(type_domain(decl_type(p)), :Generic)
+        if adopted && port_domain === :Generic
+            port_domain = domain
+        end
         names[Symbol(name, ".e")] = effort_dims(port_domain)
         names[Symbol(name, ".f")] = flow_dims(port_domain)
         unit_labels = get(DOMAIN_UNIT_LABELS, port_domain, DOMAIN_UNIT_LABELS[:Generic])
@@ -852,7 +869,7 @@ end
 # Entry point
 # ---------------------------------------------------------------------------------------
 
-"""    check_units(pb::ParsedBlock) -> Vector{Diagnostic}
+"""    check_units(pb::ParsedBlock[, domain::Symbol]) -> Vector{Diagnostic}
 
 The unit pass of `check_block` (plan 4.4, check 6): parse every `unit` attribute, then
 check every `@equations` item. Returns E006 for an inconsistency, an unparseable unit, or a
@@ -862,14 +879,23 @@ string) and messages name both units, e.g.
 
     cannot add [m/s] to [N] in "F ~ k*x + v"
 
+`domain` is the adopted domain of the instance (plan 5.6). The flattener calls
+`check_units(pb, adopted)` for a `Generic` block once its bond island has adopted a concrete
+domain (D9), so the check runs against the substituted units and a message quotes the
+concrete text (`[F]`, `[m/N]`) rather than `[flow*s/effort]`. It defaults to
+[`block_domain`](@ref)`(pb)`, which is what the block-level check passes.
+
 The function is total: bad input produces diagnostics, never an exception. There is
 deliberately no `(block_interface, equations)` overload — without a `ParsedBlock` there is
 no `SourceRange`, and a diagnostic that cannot point at user code would break spec
 principle 6.
 """
-function check_units(pb::ParsedBlock)::Vector{Diagnostic}
+function check_units(
+    pb::ParsedBlock,
+    domain::Symbol = block_domain(pb),
+)::Vector{Diagnostic}
     diags = Diagnostic[]
-    env = _build_env(pb, diags)
+    env = _build_env(pb, diags, domain)
     ctx = _Ctx(env, pb, diags, true, :equations, "")
     for item in equations(pb)
         _check_item!(ctx, item)

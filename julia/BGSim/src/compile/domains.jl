@@ -347,13 +347,20 @@ function _set_param_unit!(b::Builder, id::String, unit)
     return nothing
 end
 
+function _check_adopted_units!(b::Builder, st::BlockState)
+    for d in BGSim.Units.check_units(st.pb, st.adopted)
+        push!(b.diagnostics, _retarget(d, st.path, st.ref, st.node))
+    end
+    return nothing
+end
+
 """    apply_domains!(b, plan) -> Dict{String,Float64}
 
 Second half of adoption: give every Generic instance the domain its islands adopted,
-substitute `effort`/`flow` in its declaration units (D9), set every port field's unit to
-the effort/flow dimension of its adopted domain, build the derived power signal `e*f` of
-every port (D15), and compute the unit conversion factor of every connection. A mismatch is
-E102 and invalidates the connection."""
+substitute `effort`/`flow` in its declaration units and re-run its unit check (D9), set
+every port field's unit to the effort/flow dimension of its adopted domain, build the
+derived power signal `e*f` of every port (D15), and compute the unit conversion factor of
+every connection. A mismatch is E102 and invalidates the connection."""
 function apply_domains!(b::Builder, plan::ConnPlan)
     _apply_instance_domains!(b, plan)
     _build_power_signals!(b, plan)
@@ -393,11 +400,15 @@ function _apply_instance_domains!(b::Builder, plan::ConnPlan)
                 unit === nothing && continue
                 BGSim.Units.has_pseudo_dimensions(unit) || continue
                 substituted = BGSim.Units.substitute_domain(unit, st.adopted)
+                st.units[name] = substituted
                 for id in ids
                     _set_var_unit!(b, id, substituted)
                     _set_param_unit!(b, id, substituted)
                 end
             end
+            # D9/J2.5: re-run the block's unit check against the substituted units, so the
+            # model-level E006 quotes the concrete text (`[F]`, `[m/N]`).
+            _check_adopted_units!(b, st)
         end
         # Port fields take the effort/flow dimension of their adopted (or declared) domain.
         for (name, port) in st.ports
@@ -529,7 +540,7 @@ function _compute_unit_factors!(b::Builder, plan::ConnPlan)
                     state.to;
                     code = "E102",
                     message = "unit mismatch: output `$(state.from.port)` of `$(_owner(state.from.path))` is $(_unit_label(out_var.unit)) but input `$(state.to.port)` of `$(_owner(state.to.path))` is $(_unit_label(in_var.unit))",
-                    hint = "connect signals of one dimension, or insert a conversion block",
+                    hint = "the output is $(_unit_label(out_var.unit)) and the input is $(_unit_label(in_var.unit)); connect signals of one dimension, or insert a conversion block",
                     connection = state.conn.id,
                 )
                 state.valid = false
