@@ -86,6 +86,15 @@ const M2_REFS = [
     "stdlib:bondgraph/MR",
     "stdlib:bondgraph/MSf",
     "stdlib:bondgraph/MTF",
+    # J2.7b: sources and sinks.
+    "stdlib:sources/Chirp",
+    "stdlib:sources/Noise",
+    "stdlib:sources/Pulse",
+    "stdlib:sources/Ramp",
+    "stdlib:sources/Recorder",
+    "stdlib:sources/Scope",
+    "stdlib:sources/Time",
+    "stdlib:sources/TimeTable",
 ]
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
@@ -221,6 +230,100 @@ const INTERFACE_FIELDS = [
             @test b.interface.causality ==
                   [(ports = ["p1", "p2"], kind = kind, value = nothing)]
         end
+    end
+
+    @testset "the M2 sources and sinks rows (J2.7b)" begin
+        # Plan section 8, M2 row "Sources and sinks": Ramp, Pulse, Chirp, Time, TimeTable,
+        # Noise, Scope (editor-only) and Recorder (no-op, decimation ignored). The golden
+        # tests check the equations; this pins the interface the editor and the spec see.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        refs = [
+            "stdlib:sources/Chirp",
+            "stdlib:sources/Noise",
+            "stdlib:sources/Pulse",
+            "stdlib:sources/Ramp",
+            "stdlib:sources/Recorder",
+            "stdlib:sources/Scope",
+            "stdlib:sources/Time",
+            "stdlib:sources/TimeTable",
+        ]
+        for ref in refs
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test isempty(b.interface.ports)         # signal blocks have no power ports
+            @test isempty(b.interface.causality)
+        end
+
+        # The four scalar sources plus Time and Noise have one real output `y`.
+        for name in ("Ramp", "Pulse", "Chirp", "Time", "Noise")
+            b = blocks["stdlib:sources/" * name]
+            @test [(o.name, o.type, o.size) for o in b.interface.outputs] ==
+                  [("y", "Real", Int[])]
+        end
+
+        ramp = blocks["stdlib:sources/Ramp"]
+        @test [p.name for p in ramp.interface.parameters] ==
+              ["t_start", "slope", "initial"]
+        @test [p.unit for p in ramp.interface.parameters] == ["s", "1/s", nothing]
+        @test isempty(ramp.interface.constants)
+        @test isempty(ramp.interface.inputs)
+
+        pulse = blocks["stdlib:sources/Pulse"]
+        @test [p.name for p in pulse.interface.parameters] ==
+              ["amplitude", "period", "duty", "t_start"]
+        @test pulse.interface.parameters[2].unit == "s"
+        @test pulse.interface.parameters[3].min == 0
+        @test pulse.interface.parameters[3].max == 1
+        @test pulse.interface.parameters[4].unit == "s"
+
+        chirp = blocks["stdlib:sources/Chirp"]
+        @test [p.name for p in chirp.interface.parameters] ==
+              ["f_start", "f_end", "duration"]
+        @test [p.unit for p in chirp.interface.parameters] == ["Hz", "Hz", "s"]
+
+        time = blocks["stdlib:sources/Time"]
+        @test time.interface.outputs[1].unit == "s"
+        @test isempty(time.interface.parameters)
+        @test isempty(time.interface.constants)
+
+        noise = blocks["stdlib:sources/Noise"]
+        @test [p.name for p in noise.interface.parameters] ==
+              ["mean", "std", "seed", "sample_time"]
+        @test noise.interface.parameters[3].type == "Int"
+        @test noise.interface.parameters[4].unit == "s"
+        @test noise.interface.parameters[2].min == 0
+
+        # The time table: N is a structural constant; the method is D11's Int enumeration
+        # (0 = hold, 1 = linear), never a string.
+        table = blocks["stdlib:sources/TimeTable"]
+        @test [(c.name, c.type, c.default, c.structural) for c in table.interface.constants] ==
+              [("N", "Int", 8, true)]
+        @test [p.name for p in table.interface.parameters] ==
+              ["t_start", "sample_time", "values", "method"]
+        @test table.interface.parameters[1].unit == "s"
+        @test table.interface.parameters[2].unit == "s"
+        @test table.interface.parameters[3].type == "Real"   # Vec{N} elements are Real
+        @test table.interface.parameters[4].type == "Int"
+        @test table.interface.parameters[4].options == ["hold", "linear"]
+
+        # The editor-only scope: a vector input, no output, no effect on the run.
+        scope = blocks["stdlib:sources/Scope"]
+        @test [(c.name, c.default) for c in scope.interface.constants] == [("N", 1)]
+        @test [(i.name, i.type, i.size) for i in scope.interface.inputs] ==
+              [("u", "Real", [1])]
+        @test isempty(scope.interface.outputs)
+        @test isempty(scope.interface.parameters)
+
+        # The recorder: the same vector input, plus a decimation Int that is ignored.
+        recorder = blocks["stdlib:sources/Recorder"]
+        @test [(c.name, c.default) for c in recorder.interface.constants] == [("N", 1)]
+        @test [(i.name, i.type, i.size) for i in recorder.interface.inputs] ==
+              [("u", "Real", [1])]
+        @test isempty(recorder.interface.outputs)
+        @test [p.name for p in recorder.interface.parameters] == ["decimation"]
+        @test recorder.interface.parameters[1].type == "Int"
+        @test recorder.interface.parameters[1].min == 1
     end
 
     @testset "catalog structure against catalog.schema.json" begin

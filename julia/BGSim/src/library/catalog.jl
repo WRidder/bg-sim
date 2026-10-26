@@ -170,13 +170,44 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Linear torsional spring between two rotation ports.",
         icon = "rot-torsion-spring",
     ),
+    "stdlib:sources/Chirp" => (
+        description = "Linear frequency sweep from f_start to f_end over duration; frequency in Hz.",
+        icon = "src-chirp",
+    ),
     "stdlib:sources/Constant" => (
         description = "Constant signal source.", icon = "src-constant",
+    ),
+    "stdlib:sources/Noise" => (
+        description = "Seeded normal noise on a fixed sample clock; the same seed repeats the run.",
+        icon = "src-noise",
+    ),
+    "stdlib:sources/Pulse" => (
+        description = "Pulse / square signal source with amplitude, period, duty and t_start.",
+        icon = "src-pulse",
+    ),
+    "stdlib:sources/Ramp" => (
+        description = "Ramp signal source; starts at t_start with slope and initial value.",
+        icon = "src-ramp",
+    ),
+    "stdlib:sources/Recorder" => (
+        description = "Recorder sink; every signal is always recorded, so decimation is ignored (D15).",
+        icon = "src-recorder",
+    ),
+    "stdlib:sources/Scope" => (
+        description = "Editor-only scope; opens a plot panel for its inputs and has no effect on the simulation.",
+        icon = "src-scope",
     ),
     "stdlib:sources/Sine" => (
         description = "Sine signal source; frequency in rad/s.", icon = "src-sine",
     ),
     "stdlib:sources/Step" => (description = "Step signal source.", icon = "src-step"),
+    "stdlib:sources/Time" => (
+        description = "Simulation time as an output signal.", icon = "src-time",
+    ),
+    "stdlib:sources/TimeTable" => (
+        description = "Uniformly sampled time table with hold or linear interpolation (method 0 or 1).",
+        icon = "src-time-table",
+    ),
     "stdlib:translation/Damper" => (
         description = "Linear viscous damper between two translation ports.",
         icon = "mech-damper",
