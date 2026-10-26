@@ -84,6 +84,8 @@ test("imports a sample as a copy and never writes to the sample", async ({ page,
   await expect(page.getByTestId("open-project")).toBeVisible({ timeout: 30_000 });
 
   await page.getByTestId("open-project").click();
+  await expect(page.getByTestId("sample-option-dc-motor")).toBeVisible();
+  await expect(page.getByTestId("sample-option-drivetrain")).toBeVisible();
   const sample = page.getByTestId("sample-option-dc-motor");
   await expect(sample).toBeVisible();
   await sample.click();

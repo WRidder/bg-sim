@@ -1,0 +1,77 @@
+{
+  "project": "drivetrain",
+  "description": "Open-loop two-inertia drivetrain: 12 V motor → 10:1 gearbox → wheel inertia 1 → flexible rod (spring + damper) → wheel inertia 2, with a 0.5 N·m load step at t = 1 s. Built only from M1 stdlib blocks. The runner reads columns.f64 in manifest order; `ratio` checks algebraic relations and `max_abs` the rod's transient twist.",
+  "models": {
+    "drivetrain": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "Motor1/shaft.f",
+          "t": 2.0,
+          "value": 113.86311499086523,
+          "rtol": 1e-3,
+          "note": "k*V/(R*d + k^2) with the reflected 0.5 N·m load: (1.2 - 0.05)/(0.0101)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Gear1/b.f",
+          "t": 2.0,
+          "value": 11.386311499086522,
+          "rtol": 1e-3,
+          "note": "motor speed / 10"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Wheel2/a.f",
+          "t": 2.0,
+          "value": 11.388161507683192,
+          "rtol": 1e-3,
+          "note": "the far wheel has caught up with the rod settled"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Motor1/i",
+          "t": 2.0,
+          "value": 0.6136987112051235,
+          "rtol": 1e-3,
+          "note": "k*i = d*omega + reflected load torque"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Rod/phi",
+          "t": 2.0,
+          "value": 0.09996294077514448,
+          "rtol": 1e-3,
+          "note": "steady twist carries the load: 0.5 N·m / 5 N·m/rad"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Motor1/shaft.f",
+          "signal_b": "Gear1/b.f",
+          "t": 2.0,
+          "value": 10.0,
+          "rtol": 1e-6,
+          "note": "the gearbox ratio is algebraic at every t"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Wheel1/a.f",
+          "signal_b": "Wheel2/a.f",
+          "t": 2.0,
+          "value": 1.0,
+          "rtol": 1e-3,
+          "note": "with the rod settled, both wheel speeds agree"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rod/phi",
+          "from_t": 0.01,
+          "to_t": 1.0,
+          "value": 0.18648149316390142,
+          "rtol": 1e-3,
+          "note": "the 12 V step excites the ~29 Hz two-inertia mode; the rod twists to ~0.186 rad"
+        }
+      ]
+    }
+  }
+}

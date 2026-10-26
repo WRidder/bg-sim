@@ -1,0 +1,591 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "Drivetrain",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Step1",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.01",
+          "initial": "0.0",
+          "final": "12.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n2",
+        "name": "V1",
+        "block": {
+          "ref": "stdlib:electrical/VoltageSource"
+        },
+        "position": {
+          "x": 240,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "V": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n3",
+        "name": "Motor1",
+        "block": {
+          "ref": "stdlib:converters/DCMotor"
+        },
+        "position": {
+          "x": 440,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R": "1.0",
+          "L": "1e-3",
+          "k_t": "0.1",
+          "J": "5e-5",
+          "d": "1e-4"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n4",
+        "name": "Ground1",
+        "block": {
+          "ref": "stdlib:electrical/Ground"
+        },
+        "position": {
+          "x": 440,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n5",
+        "name": "FixHousing",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 440,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n6",
+        "name": "Gear1",
+        "block": {
+          "ref": "stdlib:rotation/IdealGear"
+        },
+        "position": {
+          "x": 660,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "10.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n7",
+        "name": "Wheel1",
+        "block": {
+          "ref": "stdlib:rotation/Inertia"
+        },
+        "position": {
+          "x": 860,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "J": "1e-3"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n8",
+        "name": "Rod",
+        "block": {
+          "ref": "stdlib:rotation/TorsionSpring"
+        },
+        "position": {
+          "x": 1060,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "5.0",
+          "phi_free": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n9",
+        "name": "RodDamper",
+        "block": {
+          "ref": "stdlib:rotation/RotationalDamper"
+        },
+        "position": {
+          "x": 1060,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "0.02"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Wheel2",
+        "block": {
+          "ref": "stdlib:rotation/Inertia"
+        },
+        "position": {
+          "x": 1260,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "J": "2e-3"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "FixWheel1",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 860,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "FixWheel2",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 1260,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "LoadStep",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 1460,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "1.0",
+          "initial": "0.0",
+          "final": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Load",
+        "block": {
+          "ref": "stdlib:rotation/TorqueSource"
+        },
+        "position": {
+          "x": 1460,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "signal",
+        "from": {
+          "node": "n1",
+          "port": "y"
+        },
+        "to": {
+          "node": "n2",
+          "port": "u"
+        },
+        "route": [],
+        "label": "12 V step"
+      },
+      {
+        "id": "c2",
+        "kind": "wire",
+        "from": {
+          "node": "n2",
+          "port": "p"
+        },
+        "to": {
+          "node": "n3",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "wire",
+        "from": {
+          "node": "n3",
+          "port": "n"
+        },
+        "to": {
+          "node": "n4",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "wire",
+        "from": {
+          "node": "n2",
+          "port": "n"
+        },
+        "to": {
+          "node": "n4",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c5",
+        "kind": "wire",
+        "from": {
+          "node": "n3",
+          "port": "housing"
+        },
+        "to": {
+          "node": "n5",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c6",
+        "kind": "wire",
+        "from": {
+          "node": "n3",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "n6",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c7",
+        "kind": "wire",
+        "from": {
+          "node": "n6",
+          "port": "b"
+        },
+        "to": {
+          "node": "n7",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c8",
+        "kind": "wire",
+        "from": {
+          "node": "n7",
+          "port": "a"
+        },
+        "to": {
+          "node": "n8",
+          "port": "a"
+        },
+        "route": [],
+        "label": "flexible rod"
+      },
+      {
+        "id": "c9",
+        "kind": "wire",
+        "from": {
+          "node": "n8",
+          "port": "b"
+        },
+        "to": {
+          "node": "n10",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c10",
+        "kind": "wire",
+        "from": {
+          "node": "n7",
+          "port": "a"
+        },
+        "to": {
+          "node": "n9",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c11",
+        "kind": "wire",
+        "from": {
+          "node": "n9",
+          "port": "b"
+        },
+        "to": {
+          "node": "n10",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c12",
+        "kind": "wire",
+        "from": {
+          "node": "n10",
+          "port": "b"
+        },
+        "to": {
+          "node": "n11",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c13",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "y"
+        },
+        "to": {
+          "node": "n13",
+          "port": "u"
+        },
+        "route": [],
+        "label": "0.5 N·m load step"
+      },
+      {
+        "id": "c14",
+        "kind": "wire",
+        "from": {
+          "node": "n13",
+          "port": "a"
+        },
+        "to": {
+          "node": "n10",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c15",
+        "kind": "wire",
+        "from": {
+          "node": "n13",
+          "port": "b"
+        },
+        "to": {
+          "node": "n11",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c16",
+        "kind": "wire",
+        "from": {
+          "node": "n7",
+          "port": "b"
+        },
+        "to": {
+          "node": "n14",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Motor → gearbox → two inertias with a flexible rod",
+        "x": 420,
+        "y": 540,
+        "w": 520,
+        "h": 80
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 2.0,
+    "solver": "auto",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 5000
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Speeds",
+      "signals": [
+        "Motor1/shaft.f",
+        "Gear1/b.f",
+        "Wheel2/a.f"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Flexible rod",
+      "signals": [
+        "Rod/phi",
+        "Rod/a.f",
+        "Rod/b.f"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "drivetrain",
+  "models": [
+    "drivetrain"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
