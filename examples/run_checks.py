@@ -13,7 +13,7 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
   with ``{"name", "example"}``);
 * starts each model's run through ``POST /api/projects/{p}/runs``, waits for
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
-* evaluates every ``final_value``, ``cursor_value`` and ``compare`` check,
+* evaluates every ``final_value``, ``cursor_value``, ``max_abs`` and ``ratio`` check,
   prints one line per check and exits non-zero when any check fails.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
@@ -29,7 +29,11 @@ manifest order. The manifest is the source of the signal order and of
          {"kind": "final_value", "signal": "Motor1/shaft.f", "t": 1.0,
           "value": 239.80815347721824, "rtol": 1e-4},
          {"kind": "cursor_value", "signal": "Motor1/shaft.f", "t": 0.2,
-          "value": 239.8, "abs": 0.1}]}},
+          "value": 239.8, "abs": 0.1},
+         {"kind": "max_abs", "signal": "Rod/phi", "from_t": 0.01,
+          "to_t": 1.0, "value": 0.186, "rtol": 1e-3},
+         {"kind": "ratio", "signal": "Motor1/shaft.f", "signal_b": "Gear1/b.f",
+          "t": 2.0, "value": 10.0, "rtol": 1e-4}]}},
      "compare": {"a": "iconic", "b": "bondgraph",
                  "signal_a": "Motor1/shaft.f", "signal_b": "IJ/p.f",
                  "from_t": 0.5, "max_abs": 1e-6}}
@@ -38,7 +42,9 @@ A model entry may also be a bare list of checks. ``compare`` may be a list of
 such objects. ``rtol`` is relative to the expected value; ``abs`` is an extra
 absolute tolerance. ``compare`` evaluates both signals on the union of the two
 runs' time grids over ``[from_t, t1]``, so a different sample grid cannot hide
-a peak.
+a peak. ``max_abs`` takes the largest absolute value over ``[from_t, to_t]``
+(default the whole run); ``ratio`` evaluates ``signal / signal_b`` at ``t``
+(default the final time), which checks a gear ratio or two speeds agreeing.
 """
 
 from __future__ import annotations
@@ -290,6 +296,83 @@ def _value_check(
     report.check(difference <= total, label, detail)
 
 
+def _max_abs_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The largest absolute value of a signal over a time window."""
+    signal = str(check.get("signal", ""))
+    label = f"{project}/{model} {signal} max_abs"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value'")
+        return
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    expected = abs(float(check["value"]))
+    tolerance = _tolerance(check, expected)
+    if tolerance is None:
+        report.check(False, label, "the check needs 'rtol' or 'abs'")
+        return
+    total, tolerance_text = tolerance
+    from_t = float(check.get("from_t", float(run.time[0])))
+    to_t = float(check.get("to_t", float(run.time[-1])))
+    mask = (run.time >= from_t) & (run.time <= to_t)
+    if not mask.any():
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    values = run.signals[signal][mask]
+    times = run.time[mask]
+    index = int(np.argmax(np.abs(values)))
+    measured = float(abs(values[index]))
+    detail = (
+        f"max|{signal}| over [{from_t:g}, {to_t:g}] measured {measured:.12g} "
+        f"at t={times[index]:.6g}, expected {expected:.12g} "
+        f"({tolerance_text}; |delta| {abs(measured - expected):.3g})"
+    )
+    report.check(abs(measured - expected) <= total, label, detail)
+
+
+def _ratio_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """`signal / signal_b` at one time (a gear ratio, or two speeds agreeing)."""
+    signal = str(check.get("signal", ""))
+    signal_b = str(check.get("signal_b", ""))
+    label = f"{project}/{model} {signal} / {signal_b}"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value'")
+        return
+    for name in (signal, signal_b):
+        if name not in run.signals:
+            report.check(False, label, f"unknown signal {name!r}")
+            return
+    expected = float(check["value"])
+    if expected == 0.0:
+        report.check(False, label, "the expected ratio must not be zero")
+        return
+    tolerance = _tolerance(check, expected)
+    if tolerance is None:
+        report.check(False, label, "the check needs 'rtol' or 'abs'")
+        return
+    total, tolerance_text = tolerance
+    t = float(check.get("t", float(run.time[-1])))
+    if not (float(run.time[0]) <= t <= float(run.time[-1])):
+        report.check(False, label, f"t={t:g} is outside the run")
+        return
+    value_a = float(np.interp(t, run.time, run.signals[signal]))
+    value_b = float(np.interp(t, run.time, run.signals[signal_b]))
+    if value_b == 0.0:
+        report.check(False, label, f"{signal_b} is zero at t={t:g}")
+        return
+    measured = value_a / value_b
+    detail = (
+        f"t={t:g} {signal}={value_a:.12g}, {signal_b}={value_b:.12g} "
+        f"ratio {measured:.12g}, expected {expected:.12g} "
+        f"({tolerance_text}; |delta| {abs(measured - expected):.3g})"
+    )
+    report.check(abs(measured - expected) <= total, label, detail)
+
+
 def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Run]) -> None:
     if isinstance(specs, dict):
         specs = [specs]
@@ -349,6 +432,10 @@ def _check_model_checks(
         kind = check.get("kind")
         if kind in {"final_value", "cursor_value"}:
             _value_check(report, project, model, run, check, str(kind))
+        elif kind == "max_abs":
+            _max_abs_check(report, project, model, run, check)
+        elif kind == "ratio":
+            _ratio_check(report, project, model, run, check)
         else:
             label = f"{project}/{model} {check.get('signal', '?')} {kind!r}"
             report.check(False, label, "unknown check kind")
