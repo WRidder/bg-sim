@@ -14,8 +14,8 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
 * starts each model's run through ``POST /api/projects/{p}/runs``, waits for
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
 * evaluates every ``final_value``, ``cursor_value``, ``max_abs``, ``ratio``,
-  ``compare_signals`` and ``no_diagnostics`` check, prints one line per check and
-  exits non-zero when any check fails.
+  ``zero_crossing``, ``compare_signals`` and ``no_diagnostics`` check, prints one
+  line per check and exits non-zero when any check fails.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
 (``n`` Float64 values), then one contiguous column per manifest signal, in
@@ -46,6 +46,20 @@ runs' time grids over ``[from_t, t1]``, so a different sample grid cannot hide
 a peak. ``max_abs`` takes the largest absolute value over ``[from_t, to_t]``
 (default the whole run); ``ratio`` evaluates ``signal / signal_b`` at ``t``
 (default the final time), which checks a gear ratio or two speeds agreeing.
+
+``zero_crossing`` finds the ``n``-th crossing of ``signal`` through ``level``
+(default 0) in the given ``direction`` (``"down"`` by default, or ``"up"``) and
+compares the crossing time against ``value``. Event instants are recorded twice
+at the same ``t`` (left and right limits, plan 3.5), so equal consecutive times
+are collapsed first and the last value of each group is used; the crossing time
+is then linearly interpolated between the two samples that straddle the level. A
+contact is accepted within ``1e-9`` of the signal scale, because the root finder
+stops on the level with a residual of its tolerance (a bouncing height sits at
+about ``+1e-16``, not at a negative value); a sample still on the near side only
+counts when the next sample turns around::
+
+    {"kind": "zero_crossing", "signal": "Ball1/h", "n": 1,
+     "direction": "down", "value": 0.45152, "abs": 1e-6}
 
 ``compare_signals`` is the same-run form (two signals of one model, e.g. the two
 RLC subsystems): it interpolates both onto the union of the run's own time grid
@@ -385,6 +399,102 @@ def _ratio_check(
     report.check(abs(measured - expected) <= total, label, detail)
 
 
+def _collapsed(times: np.ndarray, values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Collapse equal consecutive times to one row, keeping the last value.
+
+    The recorder writes every event instant twice at the same ``t`` (left and
+    right limits, plan 3.5). Keeping the *last* value of each group uses the
+    post-event limit, so a crossing that ends exactly on the level is still one
+    sample rather than two.
+    """
+    out_t: list[float] = []
+    out_v: list[float] = []
+    for t, value in zip(times.tolist(), values.tolist()):
+        if out_t and t == out_t[-1]:
+            out_v[-1] = value
+        else:
+            out_t.append(t)
+            out_v.append(value)
+    return np.asarray(out_t, dtype=float), np.asarray(out_v, dtype=float)
+
+
+def _zero_crossing_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The ``n``-th upward or downward crossing of a signal through a level."""
+    signal = str(check.get("signal", ""))
+    direction = str(check.get("direction", "down"))
+    label = f"{project}/{model} {signal} zero_crossing {direction}"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value'")
+        return
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    if direction not in {"down", "up"}:
+        report.check(False, label, "'direction' must be 'down' or 'up'")
+        return
+    try:
+        n = int(check.get("n", 1))
+        level = float(check.get("level", 0.0))
+    except (TypeError, ValueError):
+        report.check(False, label, "'n' must be an integer and 'level' a number")
+        return
+    if n < 1:
+        report.check(False, label, "'n' must be at least 1")
+        return
+    expected = float(check["value"])
+    tolerance = _tolerance(check, expected)
+    if tolerance is None:
+        report.check(False, label, "the check needs 'rtol' or 'abs'")
+        return
+    total, tolerance_text = tolerance
+
+    times, values = _collapsed(run.time, run.signals[signal])
+    # An event stops the solver on the level, but root finding leaves a tiny residual of
+    # the order of its tolerance: the bouncing ball's h at an impact is ~1e-16, not <= 0.
+    # A band relative to the signal scale lets the contact count as reaching the level;
+    # when the sample is still on the near side, a turn-around at the next sample is
+    # required so that a slow approach still descending is not counted early.
+    band = 1e-9 * max(1.0, float(np.max(np.abs(values))) if values.size else 0.0)
+    crossings: list[float] = []
+    for i in range(times.size - 1):
+        before = float(values[i])
+        after = float(values[i + 1])
+        if direction == "down":
+            reached = before > level and after <= level + band
+            turned = after <= level or (
+                i + 2 < times.size and float(values[i + 2]) > after
+            )
+        else:
+            reached = before < level and after >= level - band
+            turned = after >= level or (
+                i + 2 < times.size and float(values[i + 2]) < after
+            )
+        if not reached or not turned:
+            continue
+        span = after - before
+        if span == 0.0:
+            continue
+        fraction = (level - before) / span
+        crossings.append(float(times[i] + fraction * (times[i + 1] - times[i])))
+    if len(crossings) < n:
+        report.check(
+            False,
+            label,
+            f"found {len(crossings)} {direction} crossing(s) of {level:g}, "
+            f"the check needs #{n}",
+        )
+        return
+    measured = crossings[n - 1]
+    detail = (
+        f"#{n} {direction} crossing of {level:g} at t={measured:.12g}, "
+        f"expected {expected:.12g} ({tolerance_text}; |delta| {abs(measured - expected):.3g}; "
+        f"{len(crossings)} crossing(s))"
+    )
+    report.check(abs(measured - expected) <= total, label, detail)
+
+
 def _compare_signals_check(
     report: Report, project: str, model: str, run: Run, check: dict[str, Any]
 ) -> None:
@@ -522,6 +632,8 @@ def _check_model_checks(
             _max_abs_check(report, project, model, run, check)
         elif kind == "ratio":
             _ratio_check(report, project, model, run, check)
+        elif kind == "zero_crossing":
+            _zero_crossing_check(report, project, model, run, check)
         elif kind == "compare_signals":
             _compare_signals_check(report, project, model, run, check)
         elif kind == "no_diagnostics":

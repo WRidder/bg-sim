@@ -1,0 +1,65 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "bouncing-ball",
+  "$comment": "Plan 9.2 (X2.1): one equation block from the project library (library/Ball.jl). A ball starts at h = 1 m, falls under gravity and loses 20 % of its speed at each impact (e = 0.8). The run stops at t_end = 3.5 s, before the Zeno point at about 4.06 s.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "ball",
+        "name": "Ball1",
+        "block": { "ref": "project:Ball" },
+        "position": { "x": 320, "y": 180 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "g": "9.81",
+          "e": "0.8"
+        },
+        "constants": {},
+        "starts": {
+          "h": "1.0",
+          "v": "0.0"
+        },
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Ball1: h(0) = 1 m, e = 0.8",
+        "x": 320,
+        "y": 100,
+        "w": 280,
+        "h": 40
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 3.5,
+    "solver": "auto",
+    "reltol": 1e-10,
+    "abstol": 1e-12,
+    "max_step": null,
+    "output": { "mode": "points", "points": 3500 },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Height",
+      "signals": ["Ball1/h"]
+    },
+    {
+      "id": "p2",
+      "title": "Velocity",
+      "signals": ["Ball1/v"]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

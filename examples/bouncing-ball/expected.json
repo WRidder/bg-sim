@@ -1,0 +1,44 @@
+{
+  "project": "bouncing-ball",
+  "description": "Plan 9.2 acceptance (X2.1): one project-library equation block (`library/Ball.jl`) with a continuous `@events` reinit. h(0) = 1 m, g = 9.81 m/s^2, restitution e = 0.8. The first impact is at sqrt(2/9.81) = 0.45152 s and the second at t1 + 2*e*sqrt(2*9.81)/9.81 = 1.17396 s; the peak after the first bounce is e^2 * h0 = 0.64 m. t_end = 3.5 s stops before the Zeno point at about 4.06 s.",
+  "models": {
+    "bouncing-ball": {
+      "checks": [
+        {
+          "kind": "zero_crossing",
+          "signal": "Ball1/h",
+          "n": 1,
+          "direction": "down",
+          "level": 0.0,
+          "value": 0.4515236409857309,
+          "abs": 1e-6,
+          "note": "first impact: sqrt(2 * h0 / g) = sqrt(2 / 9.81) s = 0.4515236409857309 s (the plan writes it rounded as 0.45152 s; comparing against the rounded literal would already consume 3.6e-6 s of the 1e-6 s band). The event row is recorded twice at the same t; the runner collapses equal times before finding the crossing."
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Ball1/h",
+          "n": 2,
+          "direction": "down",
+          "level": 0.0,
+          "value": 1.1739614665629003,
+          "abs": 1e-5,
+          "note": "second impact: t1 + 2 * e * sqrt(2 * g * h0) / g = 0.4515236409857309 + 0.7224378255771694 s (the plan writes it rounded as 1.17396 s)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ball1/h",
+          "from_t": 0.5,
+          "to_t": 1.1,
+          "value": 0.64,
+          "rtol": 1e-4,
+          "note": "peak after the first bounce: e^2 * h0 = 0.64 m. The window lies strictly between the first and the second impact, so the release height cannot win."
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["W206", "E101", "E901"],
+          "note": "no Zeno warning (event_limit is 10000, the run stops at 3.5 s before the Zeno point), no unresolved block and no solver failure"
+        }
+      ]
+    }
+  }
+}
