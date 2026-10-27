@@ -254,8 +254,8 @@ test("a selected connection can be routed with draggable vertices", async ({ pag
     point: { x: number; y: number },
     target: { x: number; y: number },
   ): number => Math.hypot(point.x - target.x, point.y - target.y);
-  const isCellCentre = (point: { x: number; y: number }): boolean =>
-    (point.x - 10) % 20 === 0 && (point.y - 10) % 20 === 0;
+  const isRouteGrid = (point: { x: number; y: number }): boolean =>
+    point.x % 10 === 0 && point.y % 10 === 0;
 
   const firstClick = await openEdgeMenu(0.3);
   await page.getByTestId("add-vertex").click();
@@ -267,7 +267,7 @@ test("a selected connection can be routed with draggable vertices", async ({ pag
   if (firstPoint === undefined) {
     throw new Error("the first vertex is missing");
   }
-  expect(isCellCentre(firstPoint), JSON.stringify(firstPoint)).toBe(true);
+  expect(isRouteGrid(firstPoint), JSON.stringify(firstPoint)).toBe(true);
   const firstBox = await vertex.boundingBox();
   if (firstBox === null) {
     throw new Error("the first vertex is not visible");
@@ -290,7 +290,7 @@ test("a selected connection can be routed with draggable vertices", async ({ pag
   if (secondPoint === undefined) {
     throw new Error("the second vertex is missing");
   }
-  expect(isCellCentre(secondPoint)).toBe(true);
+  expect(isRouteGrid(secondPoint), JSON.stringify(secondPoint)).toBe(true);
   const secondBox = await page.getByTestId(`connection-vertex-${edgeId}-1`).boundingBox();
   if (secondBox === null) {
     throw new Error("the second vertex is not visible");
@@ -313,6 +313,8 @@ test("a selected connection can be routed with draggable vertices", async ({ pag
     throw new Error("the routing vertex is not visible");
   }
   const before = (await route())[0];
+  const edgePath = edge.locator(".react-flow__edge-path").first();
+  const pathBefore = await edgePath.getAttribute("d");
   await page.mouse.move(
     vertexBox.x + vertexBox.width / 2,
     vertexBox.y + vertexBox.height / 2,
@@ -323,6 +325,10 @@ test("a selected connection can be routed with draggable vertices", async ({ pag
     vertexBox.y + vertexBox.height / 2 + 40,
     { steps: 6 },
   );
+  // The routed line follows the handle before the mouse is released.
+  await expect.poll(async () => edgePath.getAttribute("d")).not.toBe(pathBefore);
+  const live = (await route())[0];
+  expect(live).not.toEqual(before);
   await page.mouse.up();
   await expect
     .poll(async () => {
@@ -334,7 +340,13 @@ test("a selected connection can be routed with draggable vertices", async ({ pag
     .toBeGreaterThan(20);
   const dragged = (await route())[0];
   expect(dragged).toBeDefined();
-  expect(isCellCentre(dragged ?? { x: 0, y: 0 })).toBe(true);
+  expect(isRouteGrid(dragged ?? { x: 0, y: 0 })).toBe(true);
+
+  // The live updates are one coalesced drag gesture, not dozens of undo steps.
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await route())[0]).toEqual(before);
+  await page.keyboard.press("Control+Shift+z");
+  await expect.poll(async () => (await route())[0]).toEqual(dragged);
 
   await vertex.dblclick();
   await expect.poll(async () => (await route()).length).toBe(1);

@@ -29,9 +29,11 @@ export const JUNCTION_BOND_GAP = 6;
 /** 2x2 elements are centred in the 3x3 grid: shift their visual origin by half a cell. */
 export const NODE_HALF_SHIFT = 10;
 
-/** Editor grid size. Node origins sit on grid lines; node centres and routing
- * vertices sit at cell centres, half a cell off the lines. */
+/** Editor grid size. Node origins sit on grid lines; routing vertices use a
+ * double-resolution grid: corners (grid lines) and cell centres (half a cell
+ * off the lines), so they can sit at every 10 px. */
 export const GRID_SIZE = 20;
+export const ROUTE_GRID_SIZE = GRID_SIZE / 2;
 
 /** Signal arrow glyph size, shared by the port renderer and the edge trim. */
 export const SIGNAL_ARROW_SIZE = 11;
@@ -59,13 +61,13 @@ export interface Point {
   y: number;
 }
 
-/** Snap a routing vertex to the centre of the grid cell containing it. */
-export function snapToCellCentre(point: Point): Point {
-  const half = GRID_SIZE / 2;
-  return {
-    x: Math.round((point.x - half) / GRID_SIZE) * GRID_SIZE + half,
-    y: Math.round((point.y - half) / GRID_SIZE) * GRID_SIZE + half,
+/** Snap a routing vertex to the double-resolution grid: corners and centres. */
+export function snapRouteVertex(point: Point): Point {
+  const snap = (value: number): number => {
+    const snapped = Math.round(value / ROUTE_GRID_SIZE) * ROUTE_GRID_SIZE;
+    return snapped === 0 ? 0 : snapped;
   };
+  return { x: snap(point.x), y: snap(point.y) };
 }
 
 export type Side = "left" | "right" | "top" | "bottom";
@@ -150,6 +152,7 @@ export function layoutNode(
   iface: NodeInterface,
   sides?: ReadonlyMap<string, Side>,
   peerPoints?: ReadonlyMap<string, Point>,
+  connectedPorts?: ReadonlySet<string>,
 ): NodeLayout {
   if (iface.isJunction) {
     return {
@@ -202,21 +205,117 @@ export function layoutNode(
       .map((entry) => entry.port);
   };
 
+  /**
+   * Place ports along one edge. Connected ports keep the even spacing they
+   * would have on their own, so one connection can stay on the exact centre
+   * line; free ports park in the remaining gaps at the ends. Without a
+   * connected-port set (legacy callers) every port is distributed normally.
+   */
+  const offsetsFor = (
+    side: Side,
+    ports: readonly PortSpec[],
+    start: number,
+    end: number,
+  ): Map<string, number> => {
+    const result = new Map<string, number>();
+    const arranged = ordered(side, ports);
+    if (connectedPorts === undefined) {
+      arranged.forEach((port, index) => {
+        result.set(port.name, distribute(index, ports.length, start, end));
+      });
+      return result;
+    }
+    const connected = arranged.filter((port) => connectedPorts.has(port.name));
+    const free = arranged.filter((port) => !connectedPorts.has(port.name));
+    const connectedOffsets = connected.map((port, index) => {
+      const offset = distribute(index, connected.length, start, end);
+      result.set(port.name, offset);
+      return offset;
+    });
+    if (free.length === 0) {
+      return result;
+    }
+    if (connected.length === 0) {
+      free.forEach((port, index) => {
+        result.set(port.name, distribute(index, free.length, start, end));
+      });
+      return result;
+    }
+
+    const span = end - start;
+    const slots = connected.length + free.length + 2;
+    const candidates = [start, end];
+    for (let index = 1; index < slots; index += 1) {
+      candidates.push(start + (span * index) / slots);
+    }
+    const minGap = Math.max(5, span / (connected.length + free.length + 1) / 2);
+    const available = candidates.filter((candidate) =>
+      connectedOffsets.every((offset) => Math.abs(offset - candidate) >= minGap),
+    );
+    const chosen: number[] = [];
+    for (let index = 0; index < free.length; index += 1) {
+      let best: number | undefined;
+      let bestScore = -1;
+      let bestIndex = -1;
+      available.forEach((candidate, candidateIndex) => {
+        if (chosen.some((offset) => Math.abs(offset - candidate) < 0.5)) {
+          return;
+        }
+        const score = Math.min(
+          ...connectedOffsets.map((offset) => Math.abs(offset - candidate)),
+        );
+        if (score > bestScore) {
+          bestScore = score;
+          best = candidate;
+          bestIndex = candidateIndex;
+        }
+      });
+      if (best === undefined) {
+        break;
+      }
+      chosen.push(best);
+      available.splice(bestIndex, 1);
+    }
+    chosen.sort((left, right) => left - right);
+    free.forEach((port, index) => {
+      result.set(
+        port.name,
+        chosen[index] ?? distribute(index, free.length, start, end),
+      );
+    });
+    return result;
+  };
+
+  const place = (
+    side: Side,
+    ports: readonly PortSpec[],
+    start: number,
+    end: number,
+    width: number,
+    height: number,
+  ): void => {
+    for (const [name, raw] of offsetsFor(side, ports, start, end)) {
+      const offset = Math.round(raw * 10) / 10;
+      if (side === "left" || side === "right") {
+        positions.set(name, {
+          side,
+          x: side === "left" ? 0 : width,
+          y: offset,
+        });
+      } else {
+        positions.set(name, {
+          side,
+          x: offset,
+          y: side === "top" ? 0 : height,
+        });
+      }
+    }
+  };
+
   if (isBondGraph(iface)) {
     const size = BOND_NODE_SIZE;
     for (const [side, ports] of Object.entries(groups) as [Side, PortSpec[]][]) {
-      ordered(side, ports).forEach((port, index) => {
-        const offset = distribute(index, ports.length, 6, size - 6);
-        if (side === "left") {
-          positions.set(port.name, { side, x: 0, y: offset });
-        } else if (side === "right") {
-          positions.set(port.name, { side, x: size, y: offset });
-        } else if (side === "top") {
-          positions.set(port.name, { side, x: offset, y: 0 });
-        } else {
-          positions.set(port.name, { side, x: offset, y: size });
-        }
-      });
+      place(side, ports, 6, size - 6, size, size);
     }
     return { width: size, height: size, ports: positions };
   }
@@ -225,19 +324,7 @@ export function layoutNode(
     const size = COMPACT_NODE_SIZE;
     const inset = 10;
     for (const [side, ports] of Object.entries(groups) as [Side, PortSpec[]][]) {
-      ordered(side, ports).forEach((port, index) => {
-        const offset =
-          Math.round(distribute(index, ports.length, inset, size - inset) * 10) / 10;
-        if (side === "left") {
-          positions.set(port.name, { side, x: 0, y: offset });
-        } else if (side === "right") {
-          positions.set(port.name, { side, x: size, y: offset });
-        } else if (side === "top") {
-          positions.set(port.name, { side, x: offset, y: 0 });
-        } else {
-          positions.set(port.name, { side, x: offset, y: size });
-        }
-      });
+      place(side, ports, inset, size - inset, size, size);
     }
     return { width: size, height: size, ports: positions };
   }
@@ -254,21 +341,11 @@ export function layoutNode(
   const bodyBottom = height - bottom;
 
   for (const [side, ports] of Object.entries(groups) as [Side, PortSpec[]][]) {
-    ordered(side, ports).forEach((port, index) => {
-      if (side === "left" || side === "right") {
-        positions.set(port.name, {
-          side,
-          x: side === "left" ? 0 : BLOCK_NODE_WIDTH,
-          y: Math.round(distribute(index, ports.length, bodyTop, bodyBottom) * 10) / 10,
-        });
-      } else {
-        positions.set(port.name, {
-          side,
-          x: Math.round(distribute(index, ports.length, 22, BLOCK_NODE_WIDTH - 22) * 10) / 10,
-          y: side === "top" ? 0 : height,
-        });
-      }
-    });
+    if (side === "left" || side === "right") {
+      place(side, ports, bodyTop, bodyBottom, BLOCK_NODE_WIDTH, height);
+    } else {
+      place(side, ports, 22, BLOCK_NODE_WIDTH - 22, BLOCK_NODE_WIDTH, height);
+    }
   }
   return { width: BLOCK_NODE_WIDTH, height, ports: positions };
 }
@@ -278,6 +355,8 @@ export interface ConnectionHints {
   sides: Map<string, Map<string, Side>>;
   /** The peer centre that decides a port's order along that edge. */
   peerPoints: Map<string, Map<string, Point>>;
+  /** Every port name that has at least one circuit connection. */
+  connected: Map<string, Set<string>>;
 }
 
 /**
@@ -300,6 +379,15 @@ export function connectionHints(doc: Model, index: CatalogIndex): ConnectionHint
   }
 
   const peers = new Map<string, Point[]>();
+  const connected = new Map<string, Set<string>>();
+  const addConnected = (nodeId: string, portName: string | null | undefined) => {
+    if (portName === null || portName === undefined) {
+      return;
+    }
+    const ports = connected.get(nodeId) ?? new Set<string>();
+    ports.add(portName);
+    connected.set(nodeId, ports);
+  };
   const addPeer = (nodeId: string, portName: string | null | undefined, peer: Point | undefined) => {
     if (portName === null || portName === undefined || peer === undefined) {
       return;
@@ -317,6 +405,8 @@ export function connectionHints(doc: Model, index: CatalogIndex): ConnectionHint
     // or enters, so a manually routed connection moves its ports to that edge.
     const sourcePeer = route[0] ?? toCentre;
     const targetPeer = route[route.length - 1] ?? fromCentre;
+    addConnected(connection.from.node, connection.from.port);
+    addConnected(connection.to.node, connection.to.port);
     addPeer(connection.from.node, connection.from.port, sourcePeer);
     addPeer(connection.to.node, connection.to.port, targetPeer);
   }
@@ -340,7 +430,7 @@ export function connectionHints(doc: Model, index: CatalogIndex): ConnectionHint
     nodePeers.set(portName, other);
     peerPoints.set(nodeId, nodePeers);
   }
-  return { sides, peerPoints };
+  return { sides, peerPoints, connected };
 }
 
 export function connectionSides(doc: Model, index: CatalogIndex): Map<string, Map<string, Side>> {
@@ -354,7 +444,12 @@ export function nodeLayout(node: ModelNode, index: CatalogIndex, doc?: Model): N
     return layoutNode(iface);
   }
   const hints = connectionHints(doc, index);
-  return layoutNode(iface, hints.sides.get(node.id), hints.peerPoints.get(node.id));
+  return layoutNode(
+    iface,
+    hints.sides.get(node.id),
+    hints.peerPoints.get(node.id),
+    hints.connected.get(node.id),
+  );
 }
 
 /** Every node's connection-aware layout, with `connectionHints` computed once. */
@@ -364,7 +459,12 @@ export function nodeLayouts(doc: Model, index: CatalogIndex): Map<string, NodeLa
   for (const node of doc.diagram.nodes) {
     layouts.set(
       node.id,
-      layoutNode(interfaceForNode(node, index), hints.sides.get(node.id), hints.peerPoints.get(node.id)),
+      layoutNode(
+        interfaceForNode(node, index),
+        hints.sides.get(node.id),
+        hints.peerPoints.get(node.id),
+        hints.connected.get(node.id),
+      ),
     );
   }
   return layouts;

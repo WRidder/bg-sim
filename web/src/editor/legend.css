@@ -37,11 +37,6 @@
   border-radius: 1px;
 }
 
-.editor-legend__swatch.is-generic {
-  background: transparent !important;
-  border: 1.5px dashed var(--domain-generic);
-}
-
 .editor-legend__separator {
   width: 1px;
   height: 12px;

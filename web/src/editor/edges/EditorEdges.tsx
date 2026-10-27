@@ -9,7 +9,7 @@
  */
 
 import { BaseEdge, EdgeLabelRenderer, useReactFlow, type Edge, type EdgeProps } from "@xyflow/react";
-import { useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useRef, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 
 import type { DomainName, ValueType } from "../../contracts/catalog";
 import type { ConnectionKind } from "../../contracts/model";
@@ -27,7 +27,7 @@ import {
   signalDash,
   SIGNAL_ARROW_SIZE,
   SIGNAL_DOT_RADIUS,
-  snapToCellCentre,
+  snapRouteVertex,
   type Anchor,
   type Point,
   type Side,
@@ -141,9 +141,10 @@ function MissingPorts({
 }
 
 /**
- * Draggable waypoints of a selected connection. A pointer drag updates a local
- * draft, and one store write on release keeps the whole move in one undo step.
- * Double-click removes a waypoint.
+ * Draggable waypoints of a selected connection. Each pointer move writes the
+ * snapped position to the document, so the routed line follows the handle
+ * immediately; the whole drag coalesces into one undo step. Double-click
+ * removes a waypoint.
  */
 function RouteHandles({
   id,
@@ -155,14 +156,14 @@ function RouteHandles({
   selected: boolean | undefined;
 }) {
   const { screenToFlowPosition } = useReactFlow();
-  const [draft, setDraft] = useState<{ index: number; point: Point } | null>(null);
   const routeRef = useRef(route);
   routeRef.current = route;
   const lastClickRef = useRef<{ index: number; time: number } | null>(null);
   if (!selected || route.length === 0) {
     return null;
   }
-  const commit = (index: number, point: Point): void => {
+  const commit = (index: number, raw: Point): void => {
+    const point = snapRouteVertex(raw);
     const next = routeRef.current.map((entry, entryIndex) =>
       entryIndex === index ? point : entry,
     );
@@ -187,58 +188,63 @@ function RouteHandles({
   };
   const startDrag = (event: ReactPointerEvent<SVGCircleElement>, index: number): void => {
     event.stopPropagation();
+    useDocumentStore.getState().beginGesture("route-drag");
     let moved = false;
+    const cleanup = (): void => {
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerup", finish, true);
+      window.removeEventListener("pointercancel", cancel, true);
+    };
     const move = (moveEvent: PointerEvent): void => {
       moved = true;
-      const point = snapToCellCentre(
+      commit(
+        index,
         screenToFlowPosition({
           x: moveEvent.clientX,
           y: moveEvent.clientY,
         }),
       );
-      setDraft({ index, point });
     };
     const finish = (upEvent: PointerEvent): void => {
-      window.removeEventListener("pointermove", move, true);
-      window.removeEventListener("pointerup", finish, true);
-      window.removeEventListener("pointercancel", finish, true);
-      const point = snapToCellCentre(
-        screenToFlowPosition({
-          x: upEvent.clientX,
-          y: upEvent.clientY,
-        }),
-      );
-      setDraft(null);
+      cleanup();
       if (moved) {
         lastClickRef.current = null;
-        commit(index, point);
+        commit(
+          index,
+          screenToFlowPosition({
+            x: upEvent.clientX,
+            y: upEvent.clientY,
+          }),
+        );
       }
+      useDocumentStore.getState().endGesture();
+    };
+    const cancel = (): void => {
+      cleanup();
+      useDocumentStore.getState().endGesture();
     };
     window.addEventListener("pointermove", move, true);
     window.addEventListener("pointerup", finish, true);
-    window.addEventListener("pointercancel", finish, true);
+    window.addEventListener("pointercancel", cancel, true);
   };
   return (
     <g className="editor-edge__vertices" data-testid={`connection-vertices-${id}`}>
-      {route.map((point, index) => {
-        const shown = draft?.index === index ? draft.point : point;
-        return (
-          <g key={`${id}-vertex-${index}`}>
-            <circle
-              cx={shown.x}
-              cy={shown.y}
-              r={10}
-              className="editor-edge__vertex-hit"
-              data-testid={`connection-vertex-${id}-${index}`}
-              onPointerDown={(event) => startDrag(event, index)}
-              onClick={(event) => clickVertex(event, index)}
-            >
-              <title>Drag to route; double-click to remove</title>
-            </circle>
-            <circle cx={shown.x} cy={shown.y} r={4.5} className="editor-edge__vertex" />
-          </g>
-        );
-      })}
+      {route.map((point, index) => (
+        <g key={`${id}-vertex-${index}`}>
+          <circle
+            cx={point.x}
+            cy={point.y}
+            r={10}
+            className="editor-edge__vertex-hit"
+            data-testid={`connection-vertex-${id}-${index}`}
+            onPointerDown={(event) => startDrag(event, index)}
+            onClick={(event) => clickVertex(event, index)}
+          >
+            <title>Drag to route; double-click to remove</title>
+          </circle>
+          <circle cx={point.x} cy={point.y} r={4.5} className="editor-edge__vertex" />
+        </g>
+      ))}
     </g>
   );
 }
@@ -255,7 +261,6 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
       : `M ${a.point.x} ${a.point.y} L ${b.point.x} ${b.point.y}`;
   const tail = route.length > 0 ? route[route.length - 1] ?? a.point : a.point;
   const colour = domainColor(data.domain);
-  const dashed = data.domain === "Generic";
   const broken = data.missingPorts.length > 0;
   const causalBar = causalStrokeBar(a.point, b.point, data.causalStroke);
 
@@ -277,7 +282,6 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         style={{
           stroke: colour,
           strokeWidth: 2.2,
-          strokeDasharray: dashed ? "4 3" : undefined,
           fill: "none",
         }}
       />
@@ -323,7 +327,6 @@ export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         ? orthogonalPath(a, b)
         : hubPath(a.point, hub, b.point);
   const colour = domainColor(data.domain);
-  const dashed = data.domain === "Generic";
   const broken = data.missingPorts.length > 0;
 
   return (
@@ -344,7 +347,6 @@ export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         style={{
           stroke: colour,
           strokeWidth: 2.2,
-          strokeDasharray: dashed ? "4 3" : undefined,
           fill: "none",
         }}
       />

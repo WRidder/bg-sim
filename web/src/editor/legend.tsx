@@ -4,8 +4,8 @@
  *
  * The legend is data-driven so the unit test can assert the content without a
  * browser, and every entry carries a description for screen readers. Colours
- * are the theme tokens; Generic is drawn dashed and grey, and the error and
- * warning colours never appear here.
+ * are the theme tokens; Generic is grey, and the error and warning colours
+ * never appear here.
  */
 
 import { DOMAIN_LEGEND } from "./geometry";
@@ -16,7 +16,6 @@ export interface LegendDomain {
   label: string;
   /** A CSS custom property value, so the legend follows the theme. */
   token: string;
-  dashed: boolean;
 }
 
 export interface LegendKey {
@@ -40,9 +39,8 @@ export const LEGEND_DOMAINS: readonly LegendDomain[] = [
             : entry.domain === "Hydraulic"
               ? "var(--domain-hydraulic)"
               : "var(--domain-generic)",
-    dashed: entry.domain === "Generic",
   })),
-  { id: "Planar", label: "Planar", token: "var(--domain-planar)", dashed: false },
+  { id: "Planar", label: "Planar", token: "var(--domain-planar)" },
 ];
 
 export const LEGEND_KEYS: readonly LegendKey[] = [
@@ -122,10 +120,10 @@ export function CanvasLegend() {
           className="editor-legend__item"
           key={entry.id}
           data-testid={`legend-domain-${entry.id}`}
-          title={`${entry.label} domain${entry.dashed ? " (unresolved, dashed)" : ""}`}
+          title={`${entry.label} domain`}
         >
           <span
-            className={`editor-legend__swatch${entry.dashed ? " is-generic" : ""}`}
+            className="editor-legend__swatch"
             style={{ background: entry.token }}
             aria-hidden="true"
           />

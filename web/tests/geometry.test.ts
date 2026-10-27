@@ -30,7 +30,7 @@ import {
   nodeLayout,
   nodeLayouts,
   orthogonalPath,
-  snapToCellCentre,
+  snapRouteVertex,
   splitPorts,
 } from "../src/editor/geometry";
 import { INLINE_ICON, interfaceForBlock, interfaceForNode, portDescriptor } from "../src/editor/nodeInterface";
@@ -187,11 +187,36 @@ describe("port layout", () => {
     expect(n.y).toBeLessThan(p.y);
   });
 
-  it("snaps routing vertices to cell centres", () => {
-    expect(snapToCellCentre({ x: 11, y: 29 })).toEqual({ x: 10, y: 30 });
-    expect(snapToCellCentre({ x: 31, y: 49 })).toEqual({ x: 30, y: 50 });
-    expect(snapToCellCentre({ x: 10, y: 30 })).toEqual({ x: 10, y: 30 });
-    expect(snapToCellCentre({ x: 0, y: 0 })).toEqual({ x: 10, y: 10 });
+  it("parks free ports at the ends so a single connected port stays centred", () => {
+    const motor = createNodeFromBlock(block("DCMotor"), { x: 400, y: 200 }, "n2", "Motor");
+    const source = createNodeFromBlock(block("Se"), { x: 0, y: 200 }, "n1", "Source");
+    const model = createEmptyModel("FreePorts");
+    model.diagram.nodes = [source, motor];
+    model.diagram.connections = [
+      createConnection("c1", "bond", { node: "n1", port: "p" }, { node: "n2", port: "p" }),
+    ];
+
+    const layout = nodeLayouts(model, index).get("n2");
+    const p = layout?.ports.get("p");
+    const n = layout?.ports.get("n");
+    expect(p).toBeDefined();
+    expect(n).toBeDefined();
+    if (p === undefined || n === undefined) {
+      return;
+    }
+    // One connection on this edge stays at the exact midpoint; the free `n`
+    // port vacates that slot and parks near the top.
+    expect(p.y).toBe(COMPACT_NODE_SIZE / 2);
+    expect(n.y).not.toBe(p.y);
+    expect(n.y).toBeLessThan(p.y);
+  });
+
+  it("snaps routing vertices to the double-resolution route grid", () => {
+    expect(snapRouteVertex({ x: 11, y: 29 })).toEqual({ x: 10, y: 30 });
+    expect(snapRouteVertex({ x: 31, y: 49 })).toEqual({ x: 30, y: 50 });
+    expect(snapRouteVertex({ x: 21, y: 19 })).toEqual({ x: 20, y: 20 });
+    expect(snapRouteVertex({ x: 10, y: 30 })).toEqual({ x: 10, y: 30 });
+    expect(snapRouteVertex({ x: 0, y: 0 })).toEqual({ x: 0, y: 0 });
   });
 
   it("picks the source port nearest the Ctrl press", () => {

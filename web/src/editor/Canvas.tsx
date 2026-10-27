@@ -55,7 +55,7 @@ import {
   nodeLayout,
   nodeVisualOffset,
   connectionAnchors,
-  snapToCellCentre,
+  snapRouteVertex,
 } from "./geometry";
 import { decorateFlow } from "./edges/decorateFlow";
 import { CanvasLegend } from "./legend";
@@ -769,9 +769,9 @@ function CanvasInner() {
 
   /**
    * Routing aids for long connections: insert a waypoint at the clicked point
-   * (on the closest segment), or clear all waypoints. The new point snaps to a
-   * grid cell centre, like the node centres. Dragging the resulting handles
-   * (rendered by the selected edge) does the fine adjustment.
+   * (on the closest segment), or clear all waypoints. The new point snaps to the
+   * double-resolution route grid (grid corners and cell centres). Dragging the
+   * resulting handles (rendered by the selected edge) does the fine adjustment.
    */
   const addRouteVertex = (): void => {
     if (view === null || index === null || menuConnection === null) {
@@ -814,7 +814,7 @@ function CanvasInner() {
     const end = points[bestIndex + 1]!;
     const raw =
       click ?? { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-    route.splice(bestIndex, 0, snapToCellCentre(raw));
+    route.splice(bestIndex, 0, snapRouteVertex(raw));
     useDocumentStore.getState().setConnectionRoute(menuConnection.id, route);
   };
 

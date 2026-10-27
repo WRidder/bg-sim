@@ -794,7 +794,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         if (connection !== undefined) {
           connection.route = points;
         }
-      });
+      }, { coalesce: "route-drag" });
     },
 
     connect: (a, b) => {

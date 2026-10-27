@@ -250,7 +250,7 @@ describe("hover values", () => {
 });
 
 describe("canvas legend", () => {
-  it("lists every domain, including Planar, with Generic dashed", () => {
+  it("lists every domain, including Planar, with a solid Generic swatch", () => {
     expect(LEGEND_DOMAINS.map((entry) => entry.label)).toEqual([
       "Electrical",
       "Translation",
@@ -259,7 +259,13 @@ describe("canvas legend", () => {
       "Generic",
       "Planar",
     ]);
-    expect(LEGEND_DOMAINS.find((entry) => entry.id === "Generic")?.dashed).toBe(true);
+    const generic = LEGEND_DOMAINS.find((entry) => entry.id === "Generic");
+    expect(generic).toBeDefined();
+    if (generic === undefined) {
+      return;
+    }
+    expect(generic.token).toBe("var(--domain-generic)");
+    expect("dashed" in generic).toBe(false);
     expect(LEGEND_DOMAINS.find((entry) => entry.id === "Electrical")?.token).toBe(
       "var(--domain-electrical)",
     );
