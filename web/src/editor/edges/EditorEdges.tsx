@@ -313,7 +313,11 @@ function RouteHandles({
           data-angle={cornerAngle.angle}
         >
           <path className="editor-edge__angle-arc" d={cornerAngle.arc} />
-          <text className="editor-edge__angle-label" x={cornerAngle.label.x} y={cornerAngle.label.y}>
+          <text
+            className="editor-edge__angle-label"
+            x={cornerAngle.label.x}
+            y={cornerAngle.label.y}
+          >
             {cornerAngle.text}
           </text>
         </g>

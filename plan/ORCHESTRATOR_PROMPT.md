@@ -8,10 +8,11 @@ You do not write most of the code yourself. You plan, delegate work packages (WP
 ## Read first, in this order
 1. `D:\bg-sim\CLAUDE.md` covers the toolchain rules: Julia 1.13.2 through juliaup, **uv for all Python**, and no system Python.
 2. `D:\bg-sim\plan\IMPLEMENTATION_PLAN.md` is **the plan, and it is binding**. Read all of it. Sections 0, 1, 2, 3 and 10 govern how you work.
-3. `D:\bg-sim\spec\Modeling Language Spec v0.1.md` is the normative language spec. The plan's decision table (section 1.2) resolves its gaps and open questions; where they differ, the plan wins.
+3. `D:\bg-sim\plan\MULTIBOND_PLAN.md` is the detailed M3 plan (26 WPs, phases, gates and the 2-stroke/3-stroke visual contract). Read it before starting M3.
+4. `D:\bg-sim\spec\Modeling Language Spec v0.1.md` is the normative language spec. The plan's decision table (section 1.2) resolves its gaps and open questions; where they differ, the plan wins.
 
 ## Goal for this session
-Complete milestones **M0 → M1 → M2 → M3 → M5** of the plan, each passing its integration gate (section 10.3). M5 (debugging) was added in plan v1.1 and runs after M3. Then attempt **M4** (planar mechanics) if you have time and budget left. Do not start work that is out of scope (plan section 12). In particular: no juliac or export build, no spatial mechanics, no thermal domain, no auth.
+Complete milestones **M0 → M1 → M2 → M3 (multibond mechanics) → M4 (debugging) → M5 (3D visualization)** of the plan, each passing its integration gate (section 10.3). Do not start work that is out of scope (plan section 12). In particular: no juliac or export build, no articulated-body/fixed-step backend, no thermal domain, no auth.
 
 ## How to work
 - Follow the orchestrator protocol in plan section 0.1 exactly:

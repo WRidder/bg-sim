@@ -548,11 +548,25 @@ test("a dragged vertex marks right, 45 and 135 degree corners", async ({ page })
   };
   const angle45 = page.getByTestId(`connection-angle-45-${edgeId}`);
   const angle135 = page.getByTestId(`connection-angle-135-${edgeId}`);
+  // Read the canvas scale so the diagonal cases stay exact at any zoom: the
+  // 45 degree corners need the vertical leg to match the horizontal one.
+  const zoom = await page.evaluate(() => {
+    const viewport = document.querySelector(".react-flow__viewport");
+    return viewport === null
+      ? 1
+      : new DOMMatrixReadOnly(getComputedStyle(viewport).transform).a;
+  });
+  const cornerPoint = (await route())[0];
+  const peerPoint = (await route())[1];
+  if (cornerPoint === undefined || peerPoint === undefined) {
+    throw new Error("the route lost a vertex");
+  }
+  const leg = peerPoint.x - cornerPoint.x;
 
   // Lift the second vertex above the corner: the port segment stays vertical
   // and the other segment runs up-right at 45 degrees.
   const peerBox = await boxOf(lower);
-  await drag(centre(peerBox), { x: centre(peerBox).x, y: centre(peerBox).y - 100 });
+  await drag(centre(peerBox), { x: centre(peerBox).x, y: centre(peerBox).y - leg * zoom });
   await dragInPlace(upper);
   await expect(angle45).toHaveCount(1);
   await expect(marker).toHaveCount(0);
@@ -561,7 +575,7 @@ test("a dragged vertex marks right, 45 and 135 degree corners", async ({ page })
 
   // Drop it below the corner instead: the same corner opens to 135 degrees.
   const peerBox2 = await boxOf(lower);
-  await drag(centre(peerBox2), { x: centre(peerBox2).x, y: centre(peerBox2).y + 200 });
+  await drag(centre(peerBox2), { x: centre(peerBox2).x, y: centre(peerBox2).y + 2 * leg * zoom });
   await dragInPlace(upper);
   await expect(angle135).toHaveCount(1);
   await expect(angle45).toHaveCount(0);

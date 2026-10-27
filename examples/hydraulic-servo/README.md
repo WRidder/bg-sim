@@ -144,4 +144,4 @@ tank through that sensor, and the DAE solves without an iteration failure.
   warning) because a JSON subsystem cannot expose a junction as a power port.
 * The initial pressures and the preloaded integrator are set as described above; the
   plan does not specify them.
-* The 3D cylinder/rod binding is the M3 part of plan 9.6 and is not included here.
+* The 3D cylinder/rod binding is the M5 part of plan 9.6 and is not included here.

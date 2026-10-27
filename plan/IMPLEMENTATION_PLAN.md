@@ -1,22 +1,23 @@
 # bg-sim: design and implementation plan
 
-Status: v1.1, 2026-10-22 (adds milestone M5, live debugging: decisions D20 to D27, sections 3.8, 5.13 and 7.9). v1: 2026-10-21. Source spec: `spec/Modeling Language Spec v0.1.md` (called "the spec" below).
-Audience: an orchestrator agent that delegates the work packages (WPs) below to sub-agents and runs them in one session through milestone M3 and then M5 (debugging), with M4 as a stretch goal.
+Status: 2026-10-27. Source spec: `spec/Modeling Language Spec v0.1.md` (called "the spec" below).
+Audience: an orchestrator agent that delegates the work packages (WPs) below to sub-agents and runs them in one session through milestones M3, M4 and M5.
 
 > **Version naming.** The milestones of this plan (M0 to M5) are not the spec's release tags. The spec tags components as v0.1, v0.2 or v0.3. This plan implements:
 > - the **spec v0.1 catalog**;
 > - the spec v0.2 *language* features we need (discrete clocks, events, Vec/Mat);
-> - the spec's planar mechanics as a stretch goal (M4);
-> - live debugging of simulation runs (M5). The spec does not cover debugging; section 5.13 and decisions D20 to D27 define it.
+> - **multibond mechanics (M3)**, planar first and then spatial, per `plan/MULTIBOND_PLAN.md`;
+> - live debugging of simulation runs (**M4**). The spec does not cover debugging; section 5.13 and decisions D20 to D27 define it;
+> - **3D visualization (M5)**.
 >
-> Spatial (3D) multibody mechanics, thermal, `CC`/`II`, state machines and every export target are **out of scope**. See section 12.
+> Thermal, `CC`/`II`, state machines and every export target are **out of scope**. See section 12.
 
 ---
 
 ## 0. How to run this plan (read first)
 
 ### 0.1 Orchestrator protocol
-1. Work through the milestones in this order: M0, M1, M2, M3, **M5**, then M4. (M5 was added in v1.1, after M4 was numbered; it is in scope, and M4 stays the stretch goal.) Inside a milestone, start every WP whose `Depends` are done, in parallel, one sub-agent per WP.
+1. Work through the milestones in this order: **M0, M1, M2, M3 (multibond), M4 (debugging), M5 (3D visualization)**. Inside a milestone, start every WP whose `Depends` are done, in parallel, one sub-agent per WP.
 2. Give each sub-agent:
    - the full text of its WP;
    - sections 0.2, 1 and 2 of this plan;
@@ -66,13 +67,14 @@ Audience: an orchestrator agent that delegates the work packages (WPs) below to 
 ### 1.1 Confirmed with the user
 | Topic | Decision |
 | --- | --- |
-| Scope | Plan milestones M0 to M3, with M4 (planar mechanics) as a stretch goal. Spatial mechanics is out of scope. |
+| Scope | Plan milestones M0 to M5, in the order M3 multibond mechanics, M4 live debugging, M5 3D visualization. Planar and spatial mechanics are part of M3, per `plan/MULTIBOND_PLAN.md`. |
 | Export | **Simulation only.** No juliac build, no fixed-step step function, no C ABI, no ctrlX/SIL. W203 and E104 (which concern `dt`) are deferred. |
 | Simulation engine | Our own front end (parse, validate, flatten, junctions, domains, causality, units) emits a **ModelingToolkit v10+ `System`**. It is then compiled with `mtkcompile`, built into an `ODEProblem`, and solved with OrdinaryDiffEq. |
 | Deployment | Local, single user. One command (`uv run bgsim`) starts the backend and the Julia worker on `127.0.0.1`. Projects are plain files on disk, and there is no auth. |
-| Examples | DC motor; bouncing ball; reaction-wheel cube (1D balancer, plus 3D corner balancer); robot arm (planar and 3D); drivetrain (DC motor, gearbox, wheel, flexible rod, wheel) with a Kalman filter and state-space control; RLC as iconic vs bond graph; quarter-car; hydraulic cylinder servo. |
-| Multibody | The 3D arm and the 3D cube are hand-derived equation blocks, with the equations given in section 9. Planar components arrive in M4, where they rebuild the planar arm and the 1D balancer and are cross-checked against the earlier versions. |
-| Debugging | In scope as **M5**: live debugging of simulation runs in the editor. That covers line breakpoints in discrete code, signal (watch), time and event breakpoints, stepping, inspecting values, changing parameters while paused, rewind by deterministic re-run, and "explain this signal". Triggered traces on a real controller and lockstep SIL debugging are out of scope (section 12). |
+| Examples | DC motor; bouncing ball; multibond 2D pendulum/arm and 3D arm/cube; reaction-wheel cube (1D balancer, plus 3D corner balancer); robot arm (planar and 3D); drivetrain (DC motor, gearbox, wheel, flexible rod, wheel) with a Kalman filter and state-space control; RLC as iconic vs bond graph; quarter-car; hydraulic cylinder servo. |
+| Multibody | **M3 multibond mechanics**, specified in `plan/MULTIBOND_PLAN.md` (vector power domains, frames, planar then spatial bodies/joints, drives and contact). M5 adds the hand-derived equation-block 3D arm/cube examples and compares them with the M3 multibond models. |
+| Debugging | In scope as **M4**: live debugging of simulation runs in the editor. That covers line breakpoints in discrete code, signal (watch), time and event breakpoints, stepping, inspecting values, changing parameters while paused, rewind by deterministic re-run, and "explain this signal". Triggered traces on a real controller and lockstep SIL debugging are out of scope (section 12). |
+| 3D visualization | **M5**: viewer, SDF scenes, bindings/playback, the 3D examples and polish. |
 
 ### 1.2 Decided by this plan (the spec's open questions and gaps)
 | # | Spec item | Decision | Why |
@@ -96,15 +98,15 @@ Audience: an orchestrator agent that delegates the work packages (WPs) below to 
 | D18 | Temporaries in discrete code (the spec is silent) | In `@discrete` and `@events` only, assigning to an undeclared name creates a block-local temporary of type `Real` (or of the assigned value's type and size). It is not stored between ticks. In `@equations`, an undeclared name is always E003. | Readable controller code (see `LQGController`, 9.5). |
 | D19 | Event direction | `cond => begin … end`. `cond` is a real expression `c` (fires when `c` crosses zero upward) or a comparison `a < b` / `a > b` (fires when it becomes true; normalized to `c = b - a` or `c = a - b`). | The spec says "crossing zero from negative to positive"; comparisons are friendlier. |
 | D17 | Visual style | A professional engineering-tool look of our own, in light and dark themes. The HMI's ISA-101 operator style guide does **not** apply. Only the HMI's *viewer setup* is reused. | The audience is engineers, not operators. |
-| D20 | Debug runs (M5) | A run started with `debug` set compiles its discrete partitions in a **debug variant** that has statement hooks (5.13). The MTK system, the continuous problem and the solver settings are the same as in a normal run. The debug flag is part of the cache key of the discrete partition functions only. | Debugging costs nothing when it is off, and a debug run computes the same numbers as a normal run. |
-| D21 | Where line breakpoints exist (M5) | Only on `@discrete` lines that hold a statement. `@events` bodies lower to MTK affects, so they get **event breakpoints** instead: a pause right after the event fired, located at its `cond`. A line breakpoint in `@equations`, `@initial` or a declaration gives **E401**, with the hint "equations do not execute in order; add a watch breakpoint on a signal instead". | The compiler sorts and solves acausal equations, so a line has no moment at which it runs. |
-| D22 | Watch (signal) breakpoints (M5) | A watch is an expression in a read-only `watch` scope: literals, whitelisted functions, `t`, parameters, and signals written as `s"Motor1/i"` (a non-standard string literal, so JuliaSyntax parses it; it is never evaluated). Bare names resolve relative to an optional context instance. A watch fires on the **upward crossing**, like `@events` conditions (D19). All watches live in one pool of 16 slots of a single vector continuous callback that every debug run installs, and they read values through SymbolicIndexingInterface observed functions. | The pause lands on the exact crossing, watches can change while paused without recompiling, and variables that `mtkcompile` eliminated can be watched. |
-| D23 | Pausing (M5) | A paused run is a run task blocked on its command channel at a safe point: after an integrator step, after a tick, after an event, or at a statement hook. It never pauses inside the solver. `debug.pause` sets an atomic flag that is checked where the cancel flag is checked. `run.cancel` wakes a paused run and ends it as `cancelled`. While a run is paused, the worker keeps serving other requests. | It reuses the scheduler loop of D3 as it is, with no solver support needed. |
-| D24 | Changes while paused (M5) | Parameters can always be changed, through `setp` on the integrator (D4 keeps every parameter a runtime value). States can be changed only if they are differential states and the compiled system has no algebraic equations; otherwise **E402**. Discrete locals and held outputs are read-only. Structural changes need a new run. | Changing a DAE state needs a consistent re-initialization, which M5 does not attempt. |
-| D25 | Reproducibility (M5) | Every change made while paused is appended to the run's `debug.edits` as `(t, target, value)`. **Replay** runs the model as a normal run that applies the edits at those times. **Rewind** to time t starts a new run (`parentRun`, `branchAt = t`) that replays the parent up to t and pauses there. There are no in-memory checkpoints in M5. | Runs are deterministic, so a re-run is an exact rewind, and every debug session can be reproduced from its manifest. |
-| D26 | Breakpoint storage (M5) | Breakpoints are editor state, saved per model in `localStorage` (wrapped in try/catch), not in the model document. A run's manifest records the breakpoints that were active. | Breakpoints must not change the model hash or the compile cache. |
-| D27 | Evaluating expressions while paused (M5) | `debug.evaluate` uses the constant-folding interpreter (4.3), extended with signal lookups and, at a statement pause, the frame's locals. It is read-only and never uses `eval`. Errors are E001 to E006 with `scope = "watch"`. New codes: **E401** (no statement on that line), **E402** (state change refused) and **W401** (the breakpoint's block is not used in this model, so it stays unverified). | The same safety rule as all user code. |
-| D28 | Example modeling style (user request) | **Bond graph first for the continuous plant.** The examples assemble their continuous physics from bond-graph elements (`I`, `C`, `R`, `Se`, `Sf`, `MSe`, `MSf`, `TF`, `GY`, `MTF`, `MGY`, 0/1-junctions) rather than from dedicated equation blocks. A block/code node is reserved for (a) the sampled firmware (discrete control), (b) genuinely non-bond-graph frames (the dq current controller), (c) state resets and events (`reinit`), and (d) the user extension points (`Equation block`, `Subsystem`); kinematic integrators used only to reconstruct a position/angle for moduli or a controller are sensors, not plant physics. Where physics crosses domains, use `GY`/`TF`/modulated elements; if an element or modulus source is missing, add it to the stdlib or express the modulus as a signal (`MTF`/`MGY`/`MSe`) rather than hiding the equations in a block. The existing samples already have bond-graph counterparts (dc-motor, drivetrain, rlc-dual); the new industrial-servo and inverted-pendulum-cart plants must be built this way, and bouncing-ball is the documented exception (its `reinit` needs the event scope). **Spatial (3D) mechanics** stays hand-derived equation blocks (out of scope per section 12); this rule covers the planar/1D plants until the M4 planar components exist. | Keeps the library honest and exercises the bond-graph path on real examples. |
+| D20 | Debug runs (M4) | A run started with `debug` set compiles its discrete partitions in a **debug variant** that has statement hooks (5.13). The MTK system, the continuous problem and the solver settings are the same as in a normal run. The debug flag is part of the cache key of the discrete partition functions only. | Debugging costs nothing when it is off, and a debug run computes the same numbers as a normal run. |
+| D21 | Where line breakpoints exist (M4) | Only on `@discrete` lines that hold a statement. `@events` bodies lower to MTK affects, so they get **event breakpoints** instead: a pause right after the event fired, located at its `cond`. A line breakpoint in `@equations`, `@initial` or a declaration gives **E401**, with the hint "equations do not execute in order; add a watch breakpoint on a signal instead". | The compiler sorts and solves acausal equations, so a line has no moment at which it runs. |
+| D22 | Watch (signal) breakpoints (M4) | A watch is an expression in a read-only `watch` scope: literals, whitelisted functions, `t`, parameters, and signals written as `s"Motor1/i"` (a non-standard string literal, so JuliaSyntax parses it; it is never evaluated). Bare names resolve relative to an optional context instance. A watch fires on the **upward crossing**, like `@events` conditions (D19). All watches live in one pool of 16 slots of a single vector continuous callback that every debug run installs, and they read values through SymbolicIndexingInterface observed functions. | The pause lands on the exact crossing, watches can change while paused without recompiling, and variables that `mtkcompile` eliminated can be watched. |
+| D23 | Pausing (M4) | A paused run is a run task blocked on its command channel at a safe point: after an integrator step, after a tick, after an event, or at a statement hook. It never pauses inside the solver. `debug.pause` sets an atomic flag that is checked where the cancel flag is checked. `run.cancel` wakes a paused run and ends it as `cancelled`. While a run is paused, the worker keeps serving other requests. | It reuses the scheduler loop of D3 as it is, with no solver support needed. |
+| D24 | Changes while paused (M4) | Parameters can always be changed, through `setp` on the integrator (D4 keeps every parameter a runtime value). States can be changed only if they are differential states and the compiled system has no algebraic equations; otherwise **E402**. Discrete locals and held outputs are read-only. Structural changes need a new run. | Changing a DAE state needs a consistent re-initialization, which M4 does not attempt. |
+| D25 | Reproducibility (M4) | Every change made while paused is appended to the run's `debug.edits` as `(t, target, value)`. **Replay** runs the model as a normal run that applies the edits at those times. **Rewind** to time t starts a new run (`parentRun`, `branchAt = t`) that replays the parent up to t and pauses there. There are no in-memory checkpoints in M4. | Runs are deterministic, so a re-run is an exact rewind, and every debug session can be reproduced from its manifest. |
+| D26 | Breakpoint storage (M4) | Breakpoints are editor state, saved per model in `localStorage` (wrapped in try/catch), not in the model document. A run's manifest records the breakpoints that were active. | Breakpoints must not change the model hash or the compile cache. |
+| D27 | Evaluating expressions while paused (M4) | `debug.evaluate` uses the constant-folding interpreter (4.3), extended with signal lookups and, at a statement pause, the frame's locals. It is read-only and never uses `eval`. Errors are E001 to E006 with `scope = "watch"`. New codes: **E401** (no statement on that line), **E402** (state change refused) and **W401** (the breakpoint's block is not used in this model, so it stays unverified). | The same safety rule as all user code. |
+| D28 | Example modeling style (user request) | **Bond graph first for the continuous plant.** The examples assemble their continuous physics from bond-graph elements (`I`, `C`, `R`, `Se`, `Sf`, `MSe`, `MSf`, `TF`, `GY`, `MTF`, `MGY`, 0/1-junctions) rather than from dedicated equation blocks. A block/code node is reserved for (a) the sampled firmware (discrete control), (b) genuinely non-bond-graph frames (the dq current controller), (c) state resets and events (`reinit`), and (d) the user extension points (`Equation block`, `Subsystem`); kinematic integrators used only to reconstruct a position/angle for moduli or a controller are sensors, not plant physics. Where physics crosses domains, use `GY`/`TF`/modulated elements; if an element or modulus source is missing, add it to the stdlib or express the modulus as a signal (`MTF`/`MGY`/`MSe`) rather than hiding the equations in a block. The existing samples already have bond-graph counterparts (dc-motor, drivetrain, rlc-dual); the new industrial-servo and inverted-pendulum-cart plants must be built this way, and bouncing-ball is the documented exception (its `reinit` needs the event scope). **Spatial (3D) mechanics** in the 3D arm/cube examples stays hand-derived equation blocks; M5 compares them with the M3 multibond models. This rule covers the planar/1D plants and, once they land, the multibond plants. | Keeps the library honest and exercises the bond-graph path on real examples. |
 
 ### 1.3 Assumptions (change them here if wrong)
 - There is a single model per editor tab, and a project holds several models plus a project library.
@@ -139,6 +141,7 @@ bg-sim/
   CLAUDE.md
   spec/                         # the language spec (input, read-only)
   plan/IMPLEMENTATION_PLAN.md   # this file
+  plan/MULTIBOND_PLAN.md        # M3 detail: multibond mechanics
   plan/STATUS.md                # orchestrator-maintained progress log
   contracts/
     schemas/*.schema.json       # single source of truth for data shapes
@@ -151,26 +154,28 @@ bg-sim/
     src/ir/       blockdef.jl modeldoc.jl flat.jl
     src/library/  loader.jl catalog.jl intrinsics.jl
     src/compile/  instantiate.jl connect.jl domains.jl junctions.jl balance.jl
-                  causality.jl events.jl discrete.jl pipeline.jl explain.jl (M5)
+                  causality.jl events.jl discrete.jl pipeline.jl explain.jl (M4)
     src/lower/    mtk.jl fnmap.jl
+    src/mech/     lie.jl se2.jl se3.jl quat.jl impulse.jl      # M3
     src/sim/      simulate.jl scheduler.jl recorder.jl
-                  debug.jl hooks.jl watch.jl edits.jl          # M5
+                  debug.jl hooks.jl watch.jl edits.jl          # M4
     src/worker/   protocol.jl server.jl
     src/diagnostics.jl
     stdlib/       bondgraph/ sources/ continuous/ discrete/ electrical/
-                  translation/ rotation/ hydraulic/ converters/ planar/
+                  translation/ rotation/ hydraulic/ converters/
+                  multibond/ planar/ spatial/ drives/ contact/  # M3
     test/         runtests.jl  + per-module test files, golden/ fixtures/
   backend/                      # uv project "bgsim-server"
     pyproject.toml  uv.lock  .python-version
     src/bgsim_server/  app.py config.py worker.py projects.py runs.py
                        decimate.py stream.py meshes.py contracts.py (generated)
-                       debug.py fake_debug.py (M5)
+                       debug.py fake_debug.py (M4)
     tests/
   web/                          # Vite + React + TS
     package.json  vite.config.ts  tsconfig*.json  playwright.config.ts
     src/app/ src/api/ src/state/ src/contracts/ (generated) src/theme/
         src/library/ src/editor/ src/inspector/ src/code/ src/diagnostics/
-        src/plot/ src/viewer/ src/scene/ src/examples/ src/debug/ (M5)
+        src/plot/ src/viewer/ src/scene/ src/examples/ src/debug/ (M4)
     tests/e2e/ tests/perf/
   examples/                     # example projects (copied into a user project on "open example")
     <name>/bgsim.project.json, models/, library/, scenes/, design/ (uv scripts)
@@ -297,7 +302,7 @@ Every shape below becomes `contracts/schemas/<name>.schema.json` (JSON Schema 20
 - `columns.f64`: written at the end. It holds the time column, then one column per signal in manifest order, each `n` Float64 values (this is the spec's playback file).
 - Bool and Int signals are stored as Float64.
 - Event instants are recorded twice, as left and right limits with the same `t`, so steps render as vertical edges.
-- **M5 additions** (WP C5.0): `status` gains `paused`. Optional fields: `debug: { breakpoints, edits, pauses: [{ t, reason }] }`, plus `parentRun` and `branchAt` for branch runs (3.8, 5.13).
+- **M4 additions** (WP C4.0): `status` gains `paused`. Optional fields: `debug: { breakpoints, edits, pauses: [{ t, reason }] }`, plus `parentRun` and `branchAt` for branch runs (3.8, 5.13).
 
 ### 3.6 Worker protocol (`worker-rpc.schema.json`)
 - Transport: the backend listens on a random localhost TCP port and starts Julia with `BGSIM_PORT=<port>`, and the worker connects back. Each frame is a `u32 LE length`, a `u8 kind` (0 = JSON, 1 = binary) and a payload.
@@ -321,7 +326,7 @@ Notifications:
 - `run.done` `{ runId, status, stats, diagnostics }`
 - `log` `{ level, message }`
 
-M5 adds the debug methods and notifications of section 3.8.
+M4 adds the debug methods and notifications of section 3.8.
 
 ### 3.7 HTTP and WebSocket API (backend)
 | Endpoint | Purpose |
@@ -335,14 +340,14 @@ M5 adds the debug methods and notifications of section 3.8.
 | `POST /api/projects/{p}/runs` | `{ model }` gives `{ runId }`. |
 | `DELETE /api/runs/{id}` | Cancel. |
 | `GET /api/runs/{id}` | The manifest. |
-| `GET /api/runs/{id}/data?ids=a,b&t0=&t1=&px=1600` | Binary: `u32 n_signals`, `u32 n_points`, then a time column and value columns (Float64). Min/max (M4-style) decimated to at most `2*px` points per signal over `[t0, t1]`. A `px=0` request returns raw data. |
+| `GET /api/runs/{id}/data?ids=a,b&t0=&t1=&px=1600` | Binary: `u32 n_signals`, `u32 n_points`, then a time column and value columns (Float64). Min/max decimated to at most `2*px` points per signal over `[t0, t1]`. A `px=0` request returns raw data. |
 | `GET /api/runs/{id}/export.csv?ids=` | CSV export. |
 | `WS /ws/runs/{id}` | Phases, progress, done, and a live decimated tail for subscribed signal ids (the client sends `{subscribe: [...]}`). |
 | `WS /ws/stream/{id}` | The spec's viewer stream: JSON handshake, then binary frames `[t, v...]` at no more than 60 Hz, for a live or a finished run (`?mode=live` or `playback`). |
 | `GET/PUT /api/projects/{p}/scenes/{file}`, `POST /api/projects/{p}/meshes` | SDF files, and mesh upload (STL, OBJ, DAE, GLB), which is converted to GLB with trimesh. |
 
-### 3.8 Debug protocol (M5)
-WP C5.0 adds `debug.schema.json`. It defines `Breakpoint`, `PausedInfo`, `Frame`, `Edit` and `ExplainResult`, which the worker RPC, the HTTP API and the run manifest use. Decisions D20 to D27; the simulator side is 5.13.
+### 3.8 Debug protocol (M4)
+WP C4.0 adds `debug.schema.json`. It defines `Breakpoint`, `PausedInfo`, `Frame`, `Edit` and `ExplainResult`, which the worker RPC, the HTTP API and the run manifest use. Decisions D20 to D27; the simulator side is 5.13.
 
 ```jsonc
 // Breakpoint
@@ -390,7 +395,7 @@ WP C5.0 adds `debug.schema.json`. It defines `Breakpoint`, `PausedInfo`, `Frame`
 - New notifications: `debug.paused` (a `PausedInfo`) and `debug.resumed { runId }`.
 - A debug command on a run that is not paused, or is not a debug run, returns an RPC error (`"run is not paused"`), not a diagnostic.
 
-**HTTP and WebSocket** (backend, WP P5.1):
+**HTTP and WebSocket** (backend, WP P4.1):
 
 | Endpoint | Purpose |
 | --- | --- |
@@ -420,7 +425,7 @@ The spec is normative. This section only adds implementation detail.
 - **Intrinsics** (D12) live in a separate table with a `stdlib_only` flag.
 
 ### 4.3 Declarations
-- Form: `name::Type = default, [attrs]`. `Type` is one of `Real`, `Int`, `Bool`, `Vec{N}` or `Mat{N,M}` (M4 adds `Power{Planar}`), and defaults to `Real` when omitted.
+- Form: `name::Type = default, [attrs]`. `Type` is one of `Real`, `Int`, `Bool`, `Vec{N}` or `Mat{N,M}` (M3 adds `Power{Planar}` and `Power{Spatial}`), and defaults to `Real` when omitted.
 - Port types: `Power{Domain}`.
 - Attributes:
   - `unit`, `min`, `max`, `tunable`, `description`, `nominal`, `state`, `options` (D11);
@@ -608,7 +613,7 @@ The spec is normative. This section only adds implementation detail.
 | Parameter-only re-run | < 300 ms to first data |
 | Worker cold start to `ready` | Measure it and record it in STATUS. Try to get it under 60 s using a PrecompileTools workload. |
 
-### 5.13 Debugging (`sim/debug.jl`, `sim/hooks.jl`, `sim/watch.jl`, `sim/edits.jl`, `compile/explain.jl`; M5)
+### 5.13 Debugging (`sim/debug.jl`, `sim/hooks.jl`, `sim/watch.jl`, `sim/edits.jl`, `compile/explain.jl`; M4)
 Debugging is part of the simulator, not a separate tool. A debug run is a normal run (5.8 to 5.10) with a debug context attached. Decisions D20 to D27, protocol 3.8.
 
 **Debug context.** Each debug run has a `DebugCtx`: the command channel, the atomic pause flag, the breakpoint table, the step mode, the watch pool, the edits list and the last `PausedInfo`. The scheduler loop of 5.9 gets checkpoints:
@@ -650,7 +655,7 @@ end
 - `run.replay` builds a normal run whose loop applies each edit at its `t`, through `add_tstop!` and the same calls.
 - `run.branch` replays the parent's edits before `t`, pauses at `t`, and records `parentRun` and `branchAt`.
 
-**Determinism requirements** (tested in J5.1 to J5.4):
+**Determinism requirements** (tested in J4.1 to J4.4):
 - A debug run with no breakpoints writes a `columns.f64` that is bit-identical to a normal run of the same model.
 - Pausing at line breakpoints, ticks, solver steps, events or `debug.pause` and then continuing does not change the results either.
 - A watch pause adds an integrator step at the located crossing, and a time breakpoint or `runTo` adds a tstop. Results after them match a normal run within the solver tolerances, not bit for bit.
@@ -676,7 +681,7 @@ end
 ## 6. Python backend (`backend/`)
 
 - Create it with `uv init --package bgsim-server`, then `uv python pin 3.13`.
-- Dependencies: `fastapi`, `uvicorn[standard]`, `pydantic>=2`, `numpy`, `watchfiles`; later `trimesh` (M3) and `scipy` (examples).
+- Dependencies: `fastapi`, `uvicorn[standard]`, `pydantic>=2`, `numpy`, `watchfiles`; later `trimesh` (M5) and `scipy` (examples).
 - Dev dependencies: `pytest`, `pytest-asyncio`, `httpx`, `ruff`, `datamodel-code-generator`.
 - Entry point `bgsim` (`[project.scripts]`) starts uvicorn on `127.0.0.1:8765` and serves `web/dist` at `/` when it exists.
 - `worker.py`:
@@ -691,8 +696,8 @@ end
   - Target: 1e7 points × 10 signals in under 50 ms.
 - `stream.py`: the spec stream (handshake plus 60 Hz binary frames). For live runs it follows the `stream.f64` tail.
 - `projects.py`: safe path handling (no `..`), atomic writes (temp file plus `os.replace`), validation with the generated pydantic models, and "create from example", which copies `examples/<name>`.
-- `meshes.py` (M3): trimesh loads STL, OBJ or DAE and exports GLB into `<project>/meshes/`.
-- `debug.py` and `fake_debug.py` (M5): the debug endpoints of 3.8, and debug runs in the fake worker so the web lane can develop without Julia.
+- `meshes.py` (M5): trimesh loads STL, OBJ or DAE and exports GLB into `<project>/meshes/`.
+- `debug.py` and `fake_debug.py` (M4): the debug endpoints of 3.8, and debug runs in the fake worker so the web lane can develop without Julia.
 - Tests:
   - pytest for every endpoint, using the fake worker;
   - one marked `@pytest.mark.julia` integration test that runs the real worker on the RC fixture. It is skipped by default and run by `tools/check.py --lane x`.
@@ -876,7 +881,7 @@ Don't copy anything PP-02-specific: the sidecar contract, ACS transmissions, clo
 - Keyboard: Ctrl+Enter runs, Esc cancels a drag or leaves a subsystem, `/` focuses library search.
 - Accessibility: focus rings, ARIA labels on toolbar buttons, and colour-plus-glyph encoding everywhere.
 
-### 7.9 Debugging UI (M5)
+### 7.9 Debugging UI (M4)
 - **Run bar.** A **Debug** button next to Run. F5 starts a debug run, or continues a paused one.
   - While debugging: Continue (F5), Pause (F6), Step statement (F10), Step tick (F11), Step event and Step solver step (in a menu), Run to time (a number field), Stop (Shift+F5).
   - The status reads, for example, "Paused at t = 0.4123 s: LQGController line 14 (Ctrl)".
@@ -921,7 +926,9 @@ The spec tables ("Component catalog") give ports and parameters. The release col
 | Rotation | Inertia, Torsion spring, Rotational damper, Fixed shaft, Torque source, Ideal gear | Speed source, Rotational friction, Elastic shaft, `GearBacklash`, `LossyGear` and `GearWithBacklash` from the spec (the last as a composite through `@components`) |
 | Hydraulic | none | Pressure source, Flow source, Tank, Volume, Orifice (regularized: `Q = Cd*A*sqrt(2/rho) * dp / (dp^2 + p_tr^2)^(1/4)`), plus `VariableOrifice` (area from an input) |
 | Converters and sensors | DCMotor, Speed sensor, Angle sensor | EM converter (gyrator), Rack and pinion, Ball screw, Wheel, Hydraulic cylinder (with chamber compressibility: dead volumes plus `A·x`), Position/velocity/acceleration sensor, Force/torque sensor, Voltage/current sensor, Pressure/flow sensor, Power sensor, Export input/output/parameter (the interface markers; an Export input acts as a constant or table source in simulation) |
-| Planar (M4) | none | World, RigidBody2D, Revolute2D, Prismatic2D (optional), FixedJoint2D, Gravity is part of the body, PoseSensor2D |
+
+M3 adds the multibond library: `multibond/` primitives, `planar/` and `spatial/` composites,
+`drives/` and `contact/`. The WP table and release order are in `MULTIBOND_PLAN.md` section 6.
 
 The DCMotor is a composite through `@components` once J2.6 lands. In M1 it is written flat:
 - `v = R*i + L*di/dt + k*w_rel`;
@@ -952,7 +959,7 @@ Design scripts are uv scripts with inline dependencies (`# /// script` with `num
   - steady state `ω = k·V/(R·d + k²) = 239.81 rad/s` (rtol 1e-4);
   - iconic and bond graph agree (max abs difference < 1e-6 rad/s);
   - speed-control reaches 100 ± 1 rad/s by t = 0.1 s.
-- **3D (M3):** a motor can (cylinder) with a rotating shaft and flag, bound to the rotor angle.
+- **3D (M5):** a motor can (cylinder) with a rotating shaft and flag, bound to the rotor angle.
 
 ### 9.2 `bouncing-ball`, milestone M2 (events)
 - **Model:** a block with the events and state resets (the documented D28 exception; the `reinit` needs the event scope) written as follows. `t_end = 3.5 s` stays before the Zeno point at about 4.06 s, and `event_limit` gives W206 when it is exceeded.
@@ -1147,7 +1154,7 @@ two-mass resonance peak and its notch suppression, switching ripple, encoder qua
 and low-speed smoothness, and a baseline-vs-variant `compare_signals`. The runner will need
 a `step_response` check kind (rise time, overshoot, settling) and a ripple measure.
 
-**3D (M3):** a motor can, shaft and a load plate; bind the motor angle to the shaft.
+**3D (M5):** a motor can, shaft and a load plate; bind the motor angle to the shaft.
 
 ### 9.6c `inverted-pendulum-cart`, milestone M2 (requested addition)
 
@@ -1180,10 +1187,10 @@ controller):
   every sample; no solver failure. A `step_response`/settling check kind is reused.
 - **Playwright** — import the sample, open it, run, plot `ThetaInt/y` and the force (`MSe1/p.e`),
   and read the legend at t = 3 s.
-- **3D (M3):** a cart box, two wheels and a pendulum rod; bind the cart to `x` and the rod
+- **3D (M5):** a cart box, two wheels and a pendulum rod; bind the cart to `x` and the rod
   to `theta`.
 
-### 9.7 `reaction-wheel-1d`, milestone M3 (1D cube-on-edge balancer, iconic Rotation)
+### 9.7 `reaction-wheel-1d`, milestone M5 (1D cube-on-edge balancer, iconic Rotation)
 - **Model:**
   - an `InvertedPendulumBody` equation block, copied from Inertia, with:
     ```julia
@@ -1202,7 +1209,7 @@ controller):
   - `|u| ≤ 12`.
 - **3D:** a cube rotating about one edge, with a wheel disk inside, bound to θ and to the wheel angle.
 
-### 9.8 `robot-arm-3d`, milestone M3 (RRR arm as an equation block, 3D bindings)
+### 9.8 `robot-arm-3d`, milestone M5 (RRR arm as an equation block, 3D bindings)
 - **`ArmDynamics3R`:** a hand-derived block in Hamiltonian form with point masses. It has three `Power{Rotation}` ports `j1`, `j2` and `j3`, where `port.f = q̇_i` and `port.e = τ_i` (into the arm). The geometry:
   - joint 1: base yaw about world z;
   - joint 2: shoulder pitch, where q2 is the elevation of the upper arm above horizontal;
@@ -1241,7 +1248,7 @@ controller):
   - joint2 and joint3 axis `0 -1 0` (positive q raises the arm: rotating +x toward +z is a rotation about −y);
   - each joint's `position` is bound to its q.
 
-### 9.9 `cube-3d`, milestone M3, last example (3D corner-balancing cube, equation block)
+### 9.9 `cube-3d`, milestone M5, last example (3D corner-balancing cube, equation block)
 - **Body frame:** the axes lie along the cube edges, and the pivot is the corner at the origin. Wheels spin about the body x, y and z axes.
 - **States:**
   - quaternion `qw, qx, qy, qz` (body to world), start = equilibrium tilted by 2°;
@@ -1273,12 +1280,10 @@ controller):
 - **Checks:** the tilt is below 0.5° after 3 s, the wheel speeds stay under 400 rad/s, and the quaternion norm error stays under 1e-6.
 - **3D:** the pivot corner sits at the world origin. The cube link's `pose` is bound to 7 signals: position `(0, 0, 0)` from Constant blocks, plus the quaternion. The cube's visual is offset by `(a/2, a/2, a/2)` inside the link, and the 3 wheel joints are bound to the integrated wheel angles (`int(wr[i], 0)` as outputs).
 
-### 9.10 `robot-arm-planar` and `reaction-wheel-planar`, milestone M4 (planar mechanics)
-- Rebuild the 2-link vertical arm and the 1D balancer with the M4 planar components.
-- **Cross-checks:**
-  - the planar arm matches `ArmDynamics3R` with q1 locked (Jb → ∞, done by holding q1 with a Fixed shaft) within 1e-4 rad over 3 s;
-  - the planar balancer matches 9.7 within 1e-4 rad.
-- Joint drift: the separation of the joint points stays below 1e-6 m over 5 s.
+### 9.10 `robot-arm-2d` and `reaction-wheel-2d`, milestone M3 (multibond planar)
+- Build the 2-link vertical arm (`X-MB2`) and the planar reaction-wheel/balancer variant with the M3 planar primitives and composites.
+- **Checks:** the planar arm tracks its reference and conserves energy without friction; the planar balancer balances from its initial tilt; fixed-base link poses match the integrated truth within 1e-6 rad over 5 s.
+- The cross-check against the hand-derived 3D arm and cube (9.7–9.9) is part of M5, where those examples and the viewer exist.
 
 ---
 
@@ -1483,72 +1488,41 @@ Each WP is described by these fields:
 
 **M2 gate.**
 
-### M3: v0.3, 3D visualization, the remaining examples and polish
+### M3: multibond mechanics (2D and 3D)
 
-**W3.1 Viewer core port** · Depends: M2 · Owns: `web/src/viewer/`
-- Section 7.6 table: the scheduler, engine lifecycle, scene, camera, lights, toon, fit/ortho/presets and picking.
-- NullEngine tests, plus the perf test (at most 2 fps idle, 0 fps hidden).
-- Acceptance: vitest and Playwright perf pass.
+M3 is specified in `plan/MULTIBOND_PLAN.md`. It covers vector power domains, frames,
+per-component units, the 2D/3D bond-graph visual (2 strokes for planar, 3 for spatial),
+planar then spatial bodies and joints, drives, contact and the support tooling. The work
+packages are the 26 `MB` WPs of that plan, in six phases:
 
-**W3.2 SDF parser and scene builder** · Depends: W3.1 · Owns: `web/src/scene/`
-- The SDF subset, the Z-up root, the kinematic tree, primitives and GLB meshes, and the scene tree in the outliner.
-- Acceptance: unit tests for pose composition (a two-joint chain against hand-computed world matrices, 1e-9 tolerance) and for the Z-up mapping; the fixture SDFs of all examples load.
+| Phase | Work packages | Gate |
+| --- | --- | --- |
+| A: foundations and the 2D vertical slice | C-MB1, J-MB1–J-MB4, W-MB1, X-MB1 | A |
+| B: planar mechanics | J-MB5–J-MB7, X-MB2 | B |
+| C: spatial mechanics | J-MB8–J-MB10, W-MB2, X-MB3 | C |
+| D: drives | J-MB11–J-MB12, X-MB4 | D |
+| E: contact and hybrid | J-MB13–J-MB14, X-MB5 | E |
+| F: integration and polish | J-MB15, W-MB3, X-MB6, C-MB2 | 10.3 |
 
-**W3.3 Bindings and playback** · Depends: W3.2, W2.4 · Owns: `web/src/viewer/bindings*`, `web/src/viewer/PlaybackBar*`
-- Binding validation (E301 to E304), the binding editor, the apply loop, the playback bar, and two-way sync with the plot cursor. Live mode through `/ws/stream`.
-- Acceptance: vitest for interpolation (lerp/slerp), validation and gain/offset; Playwright: scrub the plot cursor and the 3D joint angle follows.
+- The single simulation backend is the existing MTK/OrdinaryDiffEq pipeline. Compliant
+  joints are the default; rigid joints rely on MTK's DAE/index reduction. There is no
+  articulated-body backend and no fixed-step/real-time target.
+- `MULTIBOND_PLAN.md` section 7 is the visual contract; W-MB1 and W-MB2 own it.
+- `MULTIBOND_PLAN.md` section 6 gives every WP's owns/depends/acceptance.
+- **M3 gate:** the gates A–E above plus the section 10.3 integration gate.
 
-**P3.1 Stream endpoint and meshes** · Depends: M2 · Owns: `stream.py`, `meshes.py`
-- The spec stream format (live and playback), and the GLB conversion.
-- Acceptance: pytest on the handshake and frame layout; an STL upload gives a valid GLB.
+### M4: debugging
 
-**X3.1 Scenes for the M1/M2 examples** · Depends: W3.2 · Owns: `examples/*/scenes`, bindings in the models
-- Acceptance: each scene loads with zero binding diagnostics.
+M4 builds on the scheduler (J2.2), events (J2.3), the compile cache (J2.8), the code editor
+(W2.1) and Plot v2 (W2.4). The 3D playback integration is part of M5. Every M4 WP reads
+sections 3.8, 5.13 and 7.9 and decisions D20 to D27.
 
-**X3.2 `reaction-wheel-1d`**, **X3.3 `robot-arm-3d`**, **X3.4 `cube-3d`** · Depends: M2 (X3.4 last) · Owns: `examples/<name>/`
-- Acceptance: the section 9 checks.
-
-**W3.4 Polish** · Depends: W3.3 · Owns: `web/src/app/`, `web/src/examples/`
-- The start page and example gallery (thumbnails captured by Playwright), keyboard shortcuts, block help (from the descriptions), the empty states, a full dark-theme pass, and an accessibility pass.
-- Acceptance: no axe violations at serious level or above on the main screens (`@axe-core/playwright`, dev dependency).
-
-**M3 gate**, including a full manual-style e2e walkthrough script that opens each example, runs it, plots a signal and plays the 3D view.
-
-### M4: stretch, planar mechanics
-
-**J4.1 Planar domain** · Owns: `src/compile/{domains,connect}.jl`, `src/units/`
-- `Power{Planar}` with `Vec{3}` e/f in the order (τ, fx, fy) and (ω, vx, vy). These are world-frame components at the port point.
-- Component-wise wire nodes, with per-component units.
-- A frame-tag check is **not** implemented. Everything is expressed in the world frame, and spatial frame typing waits for the spec's v0.3.
-
-**J4.2 Planar components** · Owns: `stdlib/planar/`
-- `World` (twist = 0).
-- `RigidBody2D`:
-  - parameters m, J, attachment offsets `ra` and `rb` in the body frame, and g;
-  - states φ, x_c, y_c, v_c and ω;
-  - for each port i: `d_i = R(φ) r_i`, and `port.f = (ω, v_cx − ω d_iy, v_cy + ω d_ix)`;
-  - `m v̇_c = Σ F_i + m g`, and `J ω̇ = Σ (τ_i + d_i × F_i)`.
-- `Revolute2D`:
-  - `parent` and `child` Planar ports, plus a `drive` Rotation port;
-  - `ω_c = ω_p + q̇`, a coincident point velocity, and the drive torque applied to the child and reacted on the parent;
-  - outputs q and qd.
-- `FixedJoint2D`, and `PoseSensor2D`.
-- Constraints are at velocity level. The planar arm example measures drift, and the fallback if it is too large is a Baumgarte-style position correction term on the joint.
-
-**X4.1 Planar examples and cross-checks** (9.10).
-
-**M4 gate.**
-
-### M5: debugging (runs after the M3 gate, before the M4 stretch)
-
-M5 was added in plan v1.1, after M4 was numbered; section 0.1 gives the run order. It builds on the scheduler (J2.2), events (J2.3), the compile cache (J2.8), the code editor (W2.1), Plot v2 (W2.4) and bindings and playback (W3.3). Every M5 WP reads sections 3.8, 5.13 and 7.9 and decisions D20 to D27.
-
-**C5.0 Debug contracts** · Lane C · Depends: M3 · Owns: `contracts/`, `tools/gen_contracts.py`, the generated files
+**C4.0 Debug contracts** · Lane C · Depends: M3 · Owns: `contracts/`, `tools/gen_contracts.py`, the generated files
 - `debug.schema.json` (3.8), the worker methods and notifications of 3.8, and the run manifest additions of 3.5.
 - The diagnostic fixtures gain E401, E402 and W401.
 - Acceptance: as M0.2 (valid fixtures pass and invalid ones fail in pytest and vitest; the generated code is committed).
 
-**J5.1 Debug run engine** · Lane J · Depends: C5.0 · Owns: `src/sim/debug.jl`, the debug checkpoints in `src/sim/scheduler.jl`
+**J4.1 Debug run engine** · Lane J · Depends: C4.0 · Owns: `src/sim/debug.jl`, the debug checkpoints in `src/sim/scheduler.jl`
 - `DebugCtx`; pause and continue; step `tick`, `solverStep` and `event`; `runTo` and time breakpoints; pause on entry; event and exception breakpoints; cancel while paused; recorder flush and manifest status on pause.
 - Acceptance:
   - a debug run with no breakpoints is bit-identical to a normal run (dc-motor, drivetrain-kalman, bouncing-ball);
@@ -1557,7 +1531,7 @@ M5 was added in plan v1.1, after M4 was numbered; section 0.1 gives the run orde
   - cancel while paused ends the run as `cancelled`, with valid run files;
   - the pause latency, step round trip and 1.3 × overhead targets of 5.13 are met.
 
-**J5.2 Statement hooks and line breakpoints** · Lane J · Depends: J5.1 · Owns: the debug variant in `src/compile/discrete.jl`, `src/sim/hooks.jl`
+**J4.2 Statement hooks and line breakpoints** · Lane J · Depends: J4.1 · Owns: the debug variant in `src/compile/discrete.jl`, `src/sim/hooks.jl`
 - The hook table, breakpoint resolution (`verified`, E401, W401), conditions, hit counts, step `statement`, and frame capture.
 - Acceptance:
   - a breakpoint on an `LQGController` line pauses at every tick of that partition, and the frame's `xhat` equals the value recorded by a normal run at the same tick;
@@ -1565,7 +1539,7 @@ M5 was added in plan v1.1, after M4 was numbered; section 0.1 gives the run orde
   - a breakpoint on an `@equations` line gives E401, and one in a block the model does not use gives W401;
   - continuing through 100 hits leaves `columns.f64` bit-identical to a normal run.
 
-**J5.3 Watch pool, evaluate and explain** · Lane J · Depends: J5.1, J2.8 · Owns: `src/sim/watch.jl`, `src/syntax/watch.jl`, `src/compile/explain.jl`
+**J4.3 Watch pool, evaluate and explain** · Lane J · Depends: J4.1, J2.8 · Owns: `src/sim/watch.jl`, `src/syntax/watch.jl`, `src/compile/explain.jl`
 - Probe first and record in NOTES.md:
   - `observed(sys, expr)` for an eliminated variable, called inside a callback condition;
   - how `init` merges a `VectorContinuousCallback` with the problem's MTK callbacks;
@@ -1578,42 +1552,73 @@ M5 was added in plan v1.1, after M4 was numbered; section 0.1 gives the run orde
   - a 17th watch is refused;
   - `model.explain` on dc-motor reports a state, an observed signal and an alias with correct origins, within 300 ms.
 
-**J5.4 Edits, replay and branch** · Lane J · Depends: J5.1 · Owns: `src/sim/edits.jl`
+**J4.4 Edits, replay and branch** · Lane J · Depends: J4.1 · Owns: `src/sim/edits.jl`
 - `debug.setParameter`, `debug.setState` (E402), the manifest's `debug.edits`, `run.replay` and `run.branch`.
 - Acceptance:
   - pause dc-motor with `debug.runTo` at t = 0.2 s, change `R`, continue; replaying that run's manifest is bit-identical to it;
   - a branch at t = 0.1 s matches the parent's rows up to 0.1 s bit for bit, then pauses;
   - `setState` works on a drivetrain-kalman plant state, and gives E402 on a test model with a nonlinear algebraic loop that `mtkcompile` cannot eliminate (check that the compiled system really keeps an algebraic equation).
 
-**J5.5 Worker debug methods** · Lane J · Depends: J5.2, J5.3, J5.4 · Owns: `src/worker/`
+**J4.5 Worker debug methods** · Lane J · Depends: J4.2, J4.3, J4.4 · Owns: `src/worker/`
 - Wire the methods and notifications of 3.8. Debug commands keep working while `block.check` and `model.check` requests run.
-- Acceptance: the `@pytest.mark.julia` tests of P5.1 pass against the real worker.
+- Acceptance: the `@pytest.mark.julia` tests of P4.1 pass against the real worker.
 
-**P5.1 Debug API and fake debugger** · Lane P · Depends: C5.0 · Owns: `backend/src/bgsim_server/debug.py`, `backend/src/bgsim_server/fake_debug.py`, their tests
+**P4.1 Debug API and fake debugger** · Lane P · Depends: C4.0 · Owns: `backend/src/bgsim_server/debug.py`, `backend/src/bgsim_server/fake_debug.py`, their tests
 - The endpoints of 3.8, forwarding of the debug notifications on the run WebSocket, and history pruning that keeps a parent run while its branches exist.
 - The fake worker learns debug runs: a scripted run that pauses at line breakpoints on fake ticks, answers `evaluate` and `values` from the synthetic signals, and records edits. The web lane develops against it.
-- Acceptance: pytest for every endpoint with the fake; a `@pytest.mark.julia` test that starts a debug run of dc-motor, pauses on a watch, sets a parameter, continues and finishes (it needs J5.5, so the gate runs it).
+- Acceptance: pytest for every endpoint with the fake; a `@pytest.mark.julia` test that starts a debug run of dc-motor, pauses on a watch, sets a parameter, continues and finishes (it needs J4.5, so the gate runs it).
 
-**W5.1 Debug controls and gutter breakpoints** · Lane W · Depends: P5.1, W2.1 · Owns: `web/src/debug/` (controls and the breakpoint store), `web/src/code/breakpoints*`
+**W4.1 Debug controls and gutter breakpoints** · Lane W · Depends: P4.1, W2.1 · Owns: `web/src/debug/` (controls and the breakpoint store), `web/src/code/breakpoints*`
 - From 7.9: the run bar debug controls and shortcuts, gutter breakpoints with conditions and hit counts, pause location highlighting, and breakpoint persistence (D26).
 - Acceptance: vitest for the breakpoint store, including persistence without `localStorage`; Playwright against the fake: set a breakpoint, start debugging, pause at the line, step 3 statements, continue to the end.
 
-**W5.2 Debug panels, watches and explain** · Lane W · Depends: W5.1 · Owns: `web/src/debug/panels*`, `web/src/debug/explain*`
+**W4.2 Debug panels, watches and explain** · Lane W · Depends: W4.1 · Owns: `web/src/debug/panels*`, `web/src/debug/explain*`
 - The Debug dock tab (Variables, Watch expressions, Breakpoints, Edits), "Break when…" from the signal browser and canvas menus, and the Explain popover.
 - Acceptance: Playwright against the fake: create a watch from the signal browser, pause on it, see the variables, evaluate an expression, open Explain.
 
-**W5.3 Pause-aware plots and live inspector** · Lane W · Depends: W5.1, W2.4, W3.3 · Owns: `web/src/plot/pause*`, `web/src/inspector/live*`
+**W4.3 Pause-aware plots and live inspector** · Lane W · Depends: W4.1, W2.4 · Owns: `web/src/plot/pause*`, `web/src/inspector/live*`
 - The pause marker and the inspect-time jump, live parameter edits (not written to the model unless saved), and "Rewind to here".
 - Acceptance: Playwright against the fake: at a pause, the plots end at the pause time with the marker; a live parameter edit appears under Edits and the model document is unchanged; "Rewind to here" opens the branch run, paused.
 
-**X5.1 Debugging walkthrough e2e** · Lane X · Depends: J5.5, P5.1, W5.1 to W5.3 · Owns: `web/tests/e2e/debug.spec.ts`
+**X4.1 Debugging walkthrough e2e** · Lane X · Depends: J4.5, P4.1, W4.1 to W4.3 · Owns: `web/tests/e2e/debug.spec.ts`
 - Against the real worker:
   1. drivetrain-kalman: a line breakpoint in `LQGController`, inspect `xhat`, step 3 statements, continue to the end;
   2. bouncing-ball: an event breakpoint, change the restitution `e` to 0.6, continue, then Replay, and the replay's results equal the session's;
   3. dc-motor: "Break when" the motor current exceeds 5 A, "Rewind to here" at an earlier cursor time, and Explain on an eliminated signal.
 - Acceptance: the spec passes.
 
-**M5 gate** (10.3), with the 5.13 targets recorded in STATUS.
+**M4 gate** (10.3), with the 5.13 targets recorded in STATUS.
+
+### M5: 3D visualization, the remaining examples and polish
+
+**W5.1 Viewer core port** · Depends: M2 · Owns: `web/src/viewer/`
+- Section 7.6 table: the scheduler, engine lifecycle, scene, camera, lights, toon, fit/ortho/presets and picking.
+- NullEngine tests, plus the perf test (at most 2 fps idle, 0 fps hidden).
+- Acceptance: vitest and Playwright perf pass.
+
+**W5.2 SDF parser and scene builder** · Depends: W5.1 · Owns: `web/src/scene/`
+- The SDF subset, the Z-up root, the kinematic tree, primitives and GLB meshes, and the scene tree in the outliner.
+- Acceptance: unit tests for pose composition (a two-joint chain against hand-computed world matrices, 1e-9 tolerance) and for the Z-up mapping; the fixture SDFs of all examples load.
+
+**W5.3 Bindings and playback** · Depends: W5.2, W2.4, W4.3 · Owns: `web/src/viewer/bindings*`, `web/src/viewer/PlaybackBar*`
+- Binding validation (E301 to E304), the binding editor, the apply loop, the playback bar, two-way sync with the plot cursor, and the debug pause marker. Live mode through `/ws/stream`.
+- Acceptance: vitest for interpolation (lerp/slerp), validation and gain/offset; Playwright: scrub the plot cursor and the 3D joint angle follows.
+
+**P5.1 Stream endpoint and meshes** · Depends: M2 · Owns: `stream.py`, `meshes.py`
+- The spec stream format (live and playback), and the GLB conversion.
+- Acceptance: pytest on the handshake and frame layout; an STL upload gives a valid GLB.
+
+**X5.1 Scenes for the M1/M2 examples** · Depends: W5.2 · Owns: `examples/*/scenes`, bindings in the models
+- Acceptance: each scene loads with zero binding diagnostics.
+
+**X5.2 `reaction-wheel-1d`**, **X5.3 `robot-arm-3d`**, **X5.4 `cube-3d`** · Depends: M2; X5.3/X5.4 also M3 (X5.4 last) · Owns: `examples/<name>/`
+- Acceptance: the section 9 checks. X5.3 and X5.4 also compare the hand-derived 3D model with the M3 multibond arm/cube on the same trajectory.
+
+**W5.4 Polish** · Depends: W5.3 · Owns: `web/src/app/`, `web/src/examples/`
+- The start page and example gallery (thumbnails captured by Playwright), keyboard shortcuts, block help (from the descriptions), the empty states, a full dark-theme pass, and an accessibility pass.
+- Acceptance: no axe violations at serious level or above on the main screens (`@axe-core/playwright`, dev dependency).
+
+**M5 gate**, including a full manual-style e2e walkthrough script that opens each example, runs it, plots a signal and plays the 3D view.
 
 ### 10.3 Integration gate (after every milestone)
 1. `uv run tools/check.py --lane all` passes, including the Julia tests, pytest, the web typecheck, lint, vitest and build, and the example checks.
@@ -1632,13 +1637,13 @@ M5 was added in plan v1.1, after M4 was numbered; section 0.1 gives the run orde
 | Slow cold start (MTK TTFX) | More than 2 min to `ready` | Use a PrecompileTools workload; then optionally build a PackageCompiler sysimage as a separate tool `tools/build_sysimage.py`, never required. The UI shows a warming state and remains usable for editing. |
 | `mtkcompile` too slow for the large examples | Over 30 s | Keep the arrays in the arm and cube as scalar equations, and check that MTK keeps array variables unscalarized where possible. As a last resort, use a smaller example size. |
 | One-directional events or imperative affects unsupported as assumed | M0.3 probe | Lower upward-only crossing as a two-sided event with a guard in the affect (`if Pre(c_prev) < 0`). For discrete-variable updates, use the scheduler path. |
-| Velocity-level planar constraints drift | X4.1 drift check | Baumgarte position correction in `Revolute2D`, or pose-level across variables (Modelica PlanarMechanics style), recorded as a deviation from the spec. |
-| Cube LQR design fails | X3.4 | The structured hand-tuned gains in 9.9, with the check relaxed. |
+| Multibond frames/units overshoot the schedule | M3 Gate A fails | Keep the vertical slice; see `MULTIBOND_PLAN.md` section 10 for the staged fallbacks (metadata-only frames, component-wise units, diagonal inertia). |
+| Cube LQR design fails | X5.4 | The structured hand-tuned gains in 9.9, with the check relaxed. |
 | xyflow cannot draw bonds with causal strokes nicely | W1.1 | A custom edge component rendering SVG paths; xyflow still handles pan, zoom and selection. |
 | Windows process quirks (julia alias in WindowsApps, signals) | M0.4 | `BGSIM_JULIA` with an absolute path; cancel through the protocol, not through OS signals. |
-| A debug run is not bit-identical to a normal run (M5) | J5.1 acceptance | Find the cause first (an always-installed watch callback is the usual suspect). If the empty watch pool changes stepping, install it only when the run has a watch, and make adding the first watch while paused re-`init` the integrator from the current state, accepting tolerance-level differences after that point. Record the deviation. |
-| `init` does not merge an extra callback with MTK's problem callbacks (M5) | J5.3 probe | Build the `CallbackSet` explicitly from the problem's callbacks plus the watch pool, as the probe shows. |
-| Events cannot be detected after `step!` (M5) | J5.1 | Pause at the next recorder row after J2.3 records the event's left and right values; the location stays the event's `cond`. |
+| A debug run is not bit-identical to a normal run (M4) | J4.1 acceptance | Find the cause first (an always-installed watch callback is the usual suspect). If the empty watch pool changes stepping, install it only when the run has a watch, and make adding the first watch while paused re-`init` the integrator from the current state, accepting tolerance-level differences after that point. Record the deviation. |
+| `init` does not merge an extra callback with MTK's problem callbacks (M4) | J4.3 probe | Build the `CallbackSet` explicitly from the problem's callbacks plus the watch pool, as the probe shows. |
+| Events cannot be detected after `step!` (M4) | J4.1 | Pause at the next recorder row after J2.3 records the event's left and right values; the location stays the event's `cond`. |
 
 ---
 
@@ -1646,11 +1651,11 @@ M5 was added in plan v1.1, after M4 was numbered; section 0.1 gives the run orde
 
 Out of scope:
 - Target build: `juliac` trimmed library, fixed-step step function, C ABI, FMU, ctrlX Data Layer and SIL sources. Also W203 and the E104 `dt` rule.
-- Spatial (SE3) mechanics, frame typing (E007), SDF-to-model import, `pose_of` and `jacobian`.
+- Within M3 multibond: flexible bodies, non-holonomic wheels, FEM contact, general DAE index reduction, an articulated-body backend and fixed-step/real-time targets. SDF-to-model import, `pose_of` and `jacobian` remain out of scope (see `MULTIBOND_PLAN.md` section 12).
 - Thermal domain, `RS`, `CC`/`II`, state machines, the spec v0.2 hydraulic and electrical components.
 - Multi-user, auth, cloud hosting.
 - Language migrations (only the version stamp is written).
-- Debugging beyond M5: triggered traces on a real controller, lockstep SIL debugging, changing discrete locals or DAE states while paused, in-memory checkpoints for faster rewind, and debugging the BGSim compiler itself (use the standard Julia tools on the worker).
+- Debugging beyond M4: triggered traces on a real controller, lockstep SIL debugging, changing discrete locals or DAE states while paused, in-memory checkpoints for faster rewind, and debugging the BGSim compiler itself (use the standard Julia tools on the worker).
 
 Design choices that keep these open:
 - The whitelist table carries a per-row "export-ready" flag for the future target build.

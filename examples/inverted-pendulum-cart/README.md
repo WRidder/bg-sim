@@ -127,7 +127,7 @@ inside 1 cm in well under 2 s while the angle stays below 0.5°.
    still solves (derivative causality is legal bond-graph practice), but the tool has no
    **planar / vector inertia (an `I`-field, or a 2-port `Power{Planar}`)** that would hold
    the 2×2 mass matrix `[[M+m, m·l·cos θ], [m·l·cos θ, m·l²]]` in two integral stores and
-   make the plant a plain ODE. Planar components are M4 work; until then the two-mass
+   make the plant a plain ODE. Multibond planar components are M3 work; until then the two-mass
    representation is the honest bond-graph model, and it reproduces the plan's equations
    exactly (a constant-force run agrees with an independent RK4 of those equations to 1e-9).
 
