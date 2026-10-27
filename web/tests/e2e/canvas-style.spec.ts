@@ -354,6 +354,94 @@ test("a selected connection can be routed with draggable vertices", async ({ pag
   await expect.poll(async () => (await route()).length).toBe(2);
 });
 
+test("routing vertices use the half grid when snapping is on and are free when off", async ({
+  page,
+}) => {
+  await openModel(page);
+  await dropBlock(page, "Gain", 200, 160);
+  await dropBlock(page, "Gain", 200, 460);
+  const source = node(page, "Gain");
+  const target = node(page, "Gain2");
+  await connectPorts(page, source, "y", target, "u");
+
+  const edge = page.locator('[data-testid^="edge-"]').first();
+  await expect(edge).toHaveCount(1);
+  const edgeId = (await edge.getAttribute("data-testid"))?.replace("edge-", "") ?? "";
+  const pointOnEdge = async (fraction: number): Promise<{ x: number; y: number }> =>
+    edge
+      .locator(".react-flow__edge-path")
+      .first()
+      .evaluate((element, at) => {
+        const path = element as SVGPathElement;
+        const local = path.getPointAtLength(path.getTotalLength() * at);
+        const matrix = path.getScreenCTM();
+        if (matrix === null) {
+          throw new Error("the connection has no screen transform");
+        }
+        return {
+          x: matrix.a * local.x + matrix.c * local.y + matrix.e,
+          y: matrix.b * local.x + matrix.d * local.y + matrix.f,
+        };
+      }, fraction);
+  const route = async (): Promise<{ x: number; y: number }[]> => {
+    const stored = JSON.parse(
+      (await page.getByTestId("document-json").textContent()) ?? "null",
+    ) as { diagram: { connections: { route?: { x: number; y: number }[] }[] } };
+    return stored.diagram.connections[0]?.route ?? [];
+  };
+  const vertex = page.getByTestId(`connection-vertex-${edgeId}-0`);
+  const dragVertex = async (dx: number, dy: number): Promise<void> => {
+    const box = await vertex.boundingBox();
+    if (box === null) {
+      throw new Error("the routing vertex is not visible");
+    }
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(
+      box.x + box.width / 2 + dx,
+      box.y + box.height / 2 + dy,
+      { steps: 4 },
+    );
+    await page.mouse.up();
+  };
+
+  // The vertical edge is at the block centre, an odd multiple of 10. Adding a
+  // vertex there proves the route grid is not the 20 px node grid.
+  const click = await pointOnEdge(0.5);
+  await page.mouse.click(click.x, click.y, { button: "right" });
+  await expect(page.getByTestId("canvas-menu")).toBeVisible();
+  await page.getByTestId("add-vertex").click();
+  await expect.poll(async () => (await route()).length).toBe(1);
+  const centred = (await route())[0];
+  expect(centred).toBeDefined();
+  if (centred === undefined) {
+    throw new Error("the vertex is missing");
+  }
+  expect(centred.x % 20).toBe(10);
+  expect(centred.y % 10).toBe(0);
+
+  // Snap off: the vertex follows the pointer freely.
+  await page.getByTestId("toggle-snap").click();
+  await dragVertex(7, 13);
+  const free = (await route())[0];
+  expect(free).toBeDefined();
+  if (free === undefined) {
+    throw new Error("the free vertex is missing");
+  }
+  expect(free.x % 10 === 0 && free.y % 10 === 0).toBe(false);
+
+  // Snap on: the same drag lands back on the 10 px route grid.
+  await page.getByTestId("toggle-snap").click();
+  await dragVertex(7, 13);
+  const snapped = (await route())[0];
+  expect(snapped).toBeDefined();
+  if (snapped === undefined) {
+    throw new Error("the snapped vertex is missing");
+  }
+  expect(snapped.x % 10).toBe(0);
+  expect(snapped.y % 10).toBe(0);
+});
+
 test("centred ports share the block and connection centre line", async ({ page }) => {
   await openModel(page);
   await dropBlock(page, "Gain", 200, 160);

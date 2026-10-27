@@ -224,7 +224,7 @@ function CanvasInner() {
     () =>
       view === null || index === null
         ? { nodes: [], edges: [], analysis: null }
-        : decorateFlow(buildDiagram(view, index, selection, dragOrigin), {
+        : decorateFlow(buildDiagram(view, index, selection, dragOrigin, snap), {
             domains: checkedDomains,
             causality: checkedCausality,
             unitFactors: checkedUnitFactors,
@@ -234,6 +234,7 @@ function CanvasInner() {
       index,
       selection,
       dragOrigin,
+      snap,
       inlineRevision,
       checkedDomains,
       checkedCausality,
@@ -718,7 +719,10 @@ function CanvasInner() {
       y: event.clientY,
       kind: "edge",
       id: edge.id,
-      flow: screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+      flow: screenToFlowPosition(
+        { x: event.clientX, y: event.clientY },
+        { snapToGrid: false },
+      ),
     });
   }, [screenToFlowPosition]);
 
@@ -814,7 +818,7 @@ function CanvasInner() {
     const end = points[bestIndex + 1]!;
     const raw =
       click ?? { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-    route.splice(bestIndex, 0, snapRouteVertex(raw));
+    route.splice(bestIndex, 0, snap ? snapRouteVertex(raw) : raw);
     useDocumentStore.getState().setConnectionRoute(menuConnection.id, route);
   };
 

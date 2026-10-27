@@ -177,6 +177,7 @@ export function buildDiagram(
   index: CatalogIndex,
   selection: { nodes: readonly string[]; connections: readonly string[] },
   dragOrigin: PortDescriptor | null = null,
+  snap = true,
 ): DiagramFlow {
   const analysis = analyseDiagram(doc, index);
   const dragStates = dragCompatibility(doc, index, dragOrigin);
@@ -298,6 +299,7 @@ export function buildDiagram(
       unitFactor: null,
       causalStroke: null,
       missingPorts,
+      snap,
     };
     return {
       id: connection.id,

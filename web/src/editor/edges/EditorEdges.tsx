@@ -51,6 +51,8 @@ export interface EditorEdgeData extends Record<string, unknown> {
   causalStroke: "from" | "to" | null;
   /** Endpoint port names the node no longer exposes (plan 7.7, E101). */
   missingPorts: string[];
+  /** Whether routing vertices follow the canvas snap preference. */
+  snap: boolean;
 }
 
 export type EditorEdgeType = "bond" | "wire" | "signal";
@@ -150,10 +152,12 @@ function RouteHandles({
   id,
   route,
   selected,
+  snap,
 }: {
   id: string;
   route: readonly Point[];
   selected: boolean | undefined;
+  snap: boolean;
 }) {
   const { screenToFlowPosition } = useReactFlow();
   const routeRef = useRef(route);
@@ -163,7 +167,7 @@ function RouteHandles({
     return null;
   }
   const commit = (index: number, raw: Point): void => {
-    const point = snapRouteVertex(raw);
+    const point = snap ? snapRouteVertex(raw) : raw;
     const next = routeRef.current.map((entry, entryIndex) =>
       entryIndex === index ? point : entry,
     );
@@ -199,10 +203,13 @@ function RouteHandles({
       moved = true;
       commit(
         index,
-        screenToFlowPosition({
-          x: moveEvent.clientX,
-          y: moveEvent.clientY,
-        }),
+        screenToFlowPosition(
+          {
+            x: moveEvent.clientX,
+            y: moveEvent.clientY,
+          },
+          { snapToGrid: false },
+        ),
       );
     };
     const finish = (upEvent: PointerEvent): void => {
@@ -211,10 +218,13 @@ function RouteHandles({
         lastClickRef.current = null;
         commit(
           index,
-          screenToFlowPosition({
-            x: upEvent.clientX,
-            y: upEvent.clientY,
-          }),
+          screenToFlowPosition(
+            {
+              x: upEvent.clientX,
+              y: upEvent.clientY,
+            },
+            { snapToGrid: false },
+          ),
         );
       }
       useDocumentStore.getState().endGesture();
@@ -309,7 +319,7 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         />
       ) : null}
       <EdgeLabel id={id} data={data} />
-      <RouteHandles id={id} route={route} selected={selected} />
+      <RouteHandles id={id} route={route} selected={selected} snap={data.snap} />
     </g>
   );
 }
@@ -362,7 +372,7 @@ export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         />
       ) : null}
       <EdgeLabel id={id} data={data} />
-      <RouteHandles id={id} route={data.route} selected={selected} />
+      <RouteHandles id={id} route={data.route} selected={selected} snap={data.snap} />
     </g>
   );
 }
@@ -416,7 +426,7 @@ export function SignalEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         stroke="none"
       />
       <EdgeLabel id={id} data={data} />
-      <RouteHandles id={id} route={data.route} selected={selected} />
+      <RouteHandles id={id} route={data.route} selected={selected} snap={data.snap} />
     </g>
   );
 }
