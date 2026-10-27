@@ -2,9 +2,9 @@
  * Causal-stroke geometry (plan 5.7 and 7.3).
  *
  * SCAP returns `strokeAt: "from" | "to"` per bond: the end where effort is the
- * input. The editor draws a short bar perpendicular to the bond there. The bar
- * sits a little inside the endpoint so it never covers the port glyph, and the
- * `to` variant clears the bond's half arrow, which is 10 px long.
+ * input. The editor draws a short bar perpendicular to the bond *at that
+ * endpoint*, so the bond begins/ends on the strip and the half arrow never
+ * extends past it.
  *
  * Pure functions: the edge component and the unit tests share them.
  */
@@ -15,10 +15,8 @@ export type CausalStrokeAt = "from" | "to";
 
 /** Half the length of the drawn bar. */
 export const CAUSAL_STROKE_HALF = 7;
-/** How far inside the `from` endpoint the bar sits. */
-export const CAUSAL_STROKE_FROM_OFFSET = 7;
-/** How far inside the `to` endpoint the bar sits (past the half arrow). */
-export const CAUSAL_STROKE_TO_OFFSET = 15;
+/** The bar sits exactly on the endpoint (the bond starts/ends there). */
+export const CAUSAL_STROKE_OFFSET = 0;
 
 export interface CausalBar {
   strokeAt: CausalStrokeAt;
@@ -26,11 +24,6 @@ export interface CausalBar {
   y1: number;
   x2: number;
   y2: number;
-}
-
-function clampOffset(offset: number, length: number): number {
-  // A very short bond still has room for a visible bar at both ends.
-  return Math.min(offset, Math.max(1, length * 0.45));
 }
 
 /**
@@ -55,14 +48,10 @@ export function causalStrokeBar(
   }
   const ux = dx / length;
   const uy = dy / length;
-  const offset = clampOffset(
-    strokeAt === "to" ? CAUSAL_STROKE_TO_OFFSET : CAUSAL_STROKE_FROM_OFFSET,
-    length,
-  );
   const centre =
     strokeAt === "to"
-      ? { x: to.x - ux * offset, y: to.y - uy * offset }
-      : { x: from.x + ux * offset, y: from.y + uy * offset };
+      ? { x: to.x - ux * CAUSAL_STROKE_OFFSET, y: to.y - uy * CAUSAL_STROKE_OFFSET }
+      : { x: from.x + ux * CAUSAL_STROKE_OFFSET, y: from.y + uy * CAUSAL_STROKE_OFFSET };
   const nx = -uy * half;
   const ny = ux * half;
   return {

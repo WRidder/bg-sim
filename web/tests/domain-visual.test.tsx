@@ -43,15 +43,15 @@ function block(name: string) {
 }
 
 describe("causal strokes", () => {
-  it("draws one perpendicular bar at the requested end", () => {
+  it("draws one perpendicular bar on the requested endpoint", () => {
     const to = causalStrokeBar({ x: 0, y: 0 }, { x: 100, y: 0 }, "to");
     expect(to).not.toBeNull();
-    expect(causalBarMidpoint(to!)).toEqual({ x: 85, y: 0 });
+    expect(causalBarMidpoint(to!)).toEqual({ x: 100, y: 0 });
     expect(to!.x1).toBe(to!.x2);
     expect(Math.abs(to!.y1 - to!.y2)).toBe(14);
 
     const from = causalStrokeBar({ x: 0, y: 0 }, { x: 100, y: 0 }, "from");
-    expect(causalBarMidpoint(from!)).toEqual({ x: 7, y: 0 });
+    expect(causalBarMidpoint(from!)).toEqual({ x: 0, y: 0 });
 
     expect(causalStrokeBar({ x: 0, y: 0 }, { x: 100, y: 0 }, null)).toBeNull();
     expect(causalStrokeBar({ x: 2, y: 2 }, { x: 2, y: 2 }, "to")).toBeNull();

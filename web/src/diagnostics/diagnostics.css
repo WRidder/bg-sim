@@ -382,19 +382,15 @@
 /* ------------------------------------------------------- canvas node markers */
 
 .block-node[data-diagnostic-severity],
-.bond-node[data-diagnostic-severity],
 .junction-node[data-diagnostic-severity] {
   outline: 2px solid var(--color-error);
   outline-offset: 1px;
 }
 
-.bond-node[data-diagnostic-severity] {
-  border-radius: 8px;
-  outline-offset: 2px;
-}
+/* Bond-graph letters show the numbered indicator only; the outline would draw
+   a rectangle around a single letter and hide its bond-graph shape. */
 
 .block-node[data-diagnostic-severity="warning"],
-.bond-node[data-diagnostic-severity="warning"],
 .junction-node[data-diagnostic-severity="warning"] {
   outline-color: var(--color-warning);
 }
