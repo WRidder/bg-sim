@@ -147,6 +147,39 @@ const M2_REFS = [
     "stdlib:translation/VelocitySource",
     "stdlib:translation/Friction",
     "stdlib:translation/HardStop",
+    # J2.7g: rotation completion.
+    "stdlib:rotation/SpeedSource",
+    "stdlib:rotation/RotationalFriction",
+    "stdlib:rotation/ElasticShaft",
+    "stdlib:rotation/GearBacklash",
+    "stdlib:rotation/LossyGear",
+    "stdlib:rotation/GearWithBacklash",
+    # J2.7g: the hydraulic group.
+    "stdlib:hydraulic/PressureSource",
+    "stdlib:hydraulic/FlowSource",
+    "stdlib:hydraulic/Tank",
+    "stdlib:hydraulic/Volume",
+    "stdlib:hydraulic/Orifice",
+    "stdlib:hydraulic/VariableOrifice",
+    # J2.7g: converters and sensors.
+    "stdlib:converters/EMConverter",
+    "stdlib:converters/RackAndPinion",
+    "stdlib:converters/BallScrew",
+    "stdlib:converters/Wheel",
+    "stdlib:converters/HydraulicCylinder",
+    "stdlib:converters/PositionSensor",
+    "stdlib:converters/VelocitySensor",
+    "stdlib:converters/AccelerationSensor",
+    "stdlib:converters/ForceSensor",
+    "stdlib:converters/TorqueSensor",
+    "stdlib:converters/VoltageSensor",
+    "stdlib:converters/CurrentSensor",
+    "stdlib:converters/PressureSensor",
+    "stdlib:converters/FlowSensor",
+    "stdlib:converters/PowerSensor",
+    "stdlib:converters/ExportInput",
+    "stdlib:converters/ExportOutput",
+    "stdlib:converters/ExportParameter",
 ]
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
@@ -228,8 +261,12 @@ const INTERFACE_FIELDS = [
             # No unused declarations, and the block-level balance precheck (E103) is silent.
             @test isempty([d for d in b.diagnostics if d.code == "W204"])
             @test isempty([d for d in b.diagnostics if d.code == "E103"])
-            bal = block_balance(b.ast)
-            @test bal.unknowns == bal.equations
+            # A textual composite has no equations of its own; its balance is the model-level
+            # check after flattening (J2.6). Every flat block balances here.
+            if isempty(components(b.ast))
+                bal = block_balance(b.ast)
+                @test bal.unknowns == bal.equations
+            end
             # Plan section 8: every parameter needs a description.
             for p in b.interface.parameters
                 @test !isempty(p.description)
@@ -846,6 +883,394 @@ const INTERFACE_FIELDS = [
         @test occursin("x > upper", hs.source)
         @test occursin("x < lower", hs.source)
         @test occursin("b.e ~ -a.e", hs.source)
+    end
+
+    @testset "the M2 rotation completion rows (J2.7g)" begin
+        # Plan section 8, M2 row "Rotation": Speed source, Rotational friction, Elastic shaft
+        # and the spec's GearBacklash, LossyGear and GearWithBacklash (the last a composite).
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        refs = [
+            "stdlib:rotation/SpeedSource",
+            "stdlib:rotation/RotationalFriction",
+            "stdlib:rotation/ElasticShaft",
+            "stdlib:rotation/GearBacklash",
+            "stdlib:rotation/LossyGear",
+            "stdlib:rotation/GearWithBacklash",
+        ]
+        for ref in refs
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test b.group == "Rotation"
+            @test all(p -> p.domain == "Rotation", b.interface.ports)
+        end
+        # The six M1 rotation rows are untouched.
+        for name in ("FixedShaft", "IdealGear", "Inertia", "RotationalDamper",
+            "TorqueSource", "TorsionSpring")
+            @test haskey(blocks, "stdlib:rotation/" * name)
+        end
+
+        # SpeedSource: the D6 flow source of the rotation domain.
+        speed = blocks["stdlib:rotation/SpeedSource"]
+        @test [(p.name, p.domain, p.size) for p in speed.interface.ports] ==
+              [("a", "Rotation", Int[])]
+        @test [(i.name, i.type, i.size) for i in speed.interface.inputs] ==
+              [("u", "Real", Int[])]
+        @test [p.name for p in speed.interface.parameters] == ["w"]
+        @test speed.interface.parameters[1].unit == "rad/s"
+        @test speed.interface.causality ==
+              [(ports = ["a"], kind = "fixed", value = "flow_out")]
+        @test occursin("a.f ~ w * u", speed.source)
+
+        # RotationalFriction: the translational Friction law in torque and angular speed.
+        rf = blocks["stdlib:rotation/RotationalFriction"]
+        @test [(p.name, p.domain) for p in rf.interface.ports] ==
+              [("a", "Rotation"), ("b", "Rotation")]
+        @test [p.name for p in rf.interface.parameters] ==
+              ["Fs", "Fc", "Fv", "v_s", "v_eps"]
+        @test [p.unit for p in rf.interface.parameters] ==
+              ["N*m", "N*m", "N*m*s/rad", "rad/s", "rad/s"]
+        @test [(v.name, v.type, v.state) for v in rf.interface.variables] ==
+              [("s", "Real", nothing)]
+        @test isempty(rf.interface.causality)
+        @test occursin("tanh((a.f - b.f) / v_eps)", rf.source)
+        @test occursin("exp(-abs(a.f - b.f) / v_s)", rf.source)
+        @test occursin("b.e ~ -a.e", rf.source)
+
+        # ElasticShaft: the torsional C element, with phi as the state.
+        es = blocks["stdlib:rotation/ElasticShaft"]
+        @test [(p.name, p.domain) for p in es.interface.ports] ==
+              [("a", "Rotation"), ("b", "Rotation")]
+        @test [p.name for p in es.interface.parameters] == ["k", "d"]
+        @test [p.unit for p in es.interface.parameters] == ["N*m/rad", "N*m*s/rad"]
+        @test [(v.name, v.type, v.unit, v.state) for v in es.interface.variables] ==
+              [("phi", "Real", "rad", "prefer")]
+        @test isempty(es.interface.causality)
+        @test occursin("ddt(phi) ~ a.f - b.f", es.source)
+        @test occursin("a.e ~ k * phi + d * (a.f - b.f)", es.source)
+        @test occursin("b.e ~ -a.e", es.source)
+
+        # GearBacklash: the spec's dead-zone contact spring.
+        gb = blocks["stdlib:rotation/GearBacklash"]
+        @test [(p.name, p.domain) for p in gb.interface.ports] ==
+              [("a", "Rotation"), ("b", "Rotation")]
+        @test [p.name for p in gb.interface.parameters] == ["k", "d", "gap"]
+        @test [p.unit for p in gb.interface.parameters] ==
+              ["N*m/rad", "N*m*s/rad", "rad"]
+        @test [(v.name, v.unit, v.state) for v in gb.interface.variables] ==
+              [("phi", "rad", "prefer"), ("w", "rad/s", nothing), ("T", "N*m", nothing)]
+        @test isempty(gb.interface.causality)
+        @test occursin("T ~ ifelse(phi > gap / 2", gb.source)
+        @test occursin("min(k * (phi + gap / 2) + d * w, 0.0)", gb.source)
+        @test occursin("a.e ~ T", gb.source)
+        @test occursin("b.e ~ -T", gb.source)
+
+        # LossyGear: ratio and direction-dependent efficiency, a transformer.
+        lg = blocks["stdlib:rotation/LossyGear"]
+        @test [(p.name, p.domain) for p in lg.interface.ports] ==
+              [("a", "Rotation"), ("b", "Rotation")]
+        @test [p.name for p in lg.interface.parameters] == ["n", "eta"]
+        @test [p.unit for p in lg.interface.parameters] == ["1", "1"]
+        @test lg.interface.parameters[2].min == 0
+        @test lg.interface.parameters[2].max == 1
+        @test lg.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+        @test occursin("a.f ~ n * b.f", lg.source)
+        @test occursin("ifelse(a.e * a.f > 0.0, eta, 1.0 / eta)", lg.source)
+
+        # GearWithBacklash: a textual composite. It declares only its two ports and the two
+        # components; J2.6 flattens it to the same diagram a JSON subsystem would give.
+        gwb = blocks["stdlib:rotation/GearWithBacklash"]
+        @test [(p.name, p.domain) for p in gwb.interface.ports] ==
+              [("a", "Rotation"), ("b", "Rotation")]
+        @test isempty(gwb.interface.parameters)
+        @test isempty(gwb.interface.variables)
+        @test isempty(gwb.interface.causality)
+        comps = components(gwb.ast)
+        @test [component_name(c) for c in comps] == [:gear, :play]
+        @test [component_block(c) for c in comps] == [:LossyGear, :GearBacklash]
+        @test length(connections(gwb.ast)) == 3
+        @test occursin("@components", gwb.source)
+        @test occursin("connect(gear.b, play.a)", gwb.source)
+    end
+
+    @testset "the M2 hydraulic rows (J2.7g)" begin
+        # Plan section 8, M2 row "Hydraulic": Pressure source, Flow source, Tank, Volume,
+        # Orifice and VariableOrifice. D8 makes the Hydraulic across variable `e` (pressure)
+        # and the through variable `f` (volume flow); a pressure source fixes effort, a flow
+        # source fixes flow.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        refs = [
+            "stdlib:hydraulic/PressureSource",
+            "stdlib:hydraulic/FlowSource",
+            "stdlib:hydraulic/Tank",
+            "stdlib:hydraulic/Volume",
+            "stdlib:hydraulic/Orifice",
+            "stdlib:hydraulic/VariableOrifice",
+        ]
+        for ref in refs
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test b.group == "Hydraulic"
+            @test all(p -> p.domain == "Hydraulic", b.interface.ports)
+        end
+
+        # PressureSource and Tank fix the effort (pressure); the D6 entry is effort_out.
+        for name in ("PressureSource", "Tank")
+            b = blocks["stdlib:hydraulic/" * name]
+            @test [(p.name, p.domain, p.size) for p in b.interface.ports] ==
+                  [("a", "Hydraulic", Int[])]
+            @test b.interface.causality ==
+                  [(ports = ["a"], kind = "fixed", value = "effort_out")]
+        end
+        ps = blocks["stdlib:hydraulic/PressureSource"]
+        @test [(i.name, i.type) for i in ps.interface.inputs] == [("u", "Real")]
+        @test [p.name for p in ps.interface.parameters] == ["p"]
+        @test ps.interface.parameters[1].unit == "Pa"
+        @test occursin("a.e ~ p * u", ps.source)
+        tank = blocks["stdlib:hydraulic/Tank"]
+        @test [p.name for p in tank.interface.parameters] == ["p"]
+        @test tank.interface.parameters[1].unit == "Pa"
+        @test occursin("a.e ~ p", tank.source)
+
+        # FlowSource: two terminals, a signal input and the flow gain. The two-terminal
+        # fixed flow has no one-port D6 entry, so it declares no causality.
+        fs = blocks["stdlib:hydraulic/FlowSource"]
+        @test [(p.name, p.domain) for p in fs.interface.ports] ==
+              [("a", "Hydraulic"), ("b", "Hydraulic")]
+        @test [(i.name, i.type) for i in fs.interface.inputs] == [("u", "Real")]
+        @test [p.name for p in fs.interface.parameters] == ["Q"]
+        @test fs.interface.parameters[1].unit == "m^3/s"
+        @test isempty(fs.interface.causality)
+        @test occursin("a.f ~ Q * u", fs.source)
+        @test occursin("b.f ~ -Q * u", fs.source)
+
+        # Volume: the hydraulic C element, V and bulk modulus beta, pressure state p.
+        vol = blocks["stdlib:hydraulic/Volume"]
+        @test [(p.name, p.domain) for p in vol.interface.ports] ==
+              [("a", "Hydraulic")]
+        @test [p.name for p in vol.interface.parameters] == ["V", "beta"]
+        @test [p.unit for p in vol.interface.parameters] == ["m^3", "Pa"]
+        @test [(v.name, v.type, v.unit, v.state) for v in vol.interface.variables] ==
+              [("p", "Real", "Pa", "prefer")]
+        @test isempty(vol.interface.causality)
+        @test occursin("ddt(p) ~ beta * a.f / V", vol.source)
+        @test occursin("a.e ~ p", vol.source)
+
+        # Orifice and VariableOrifice: the regularized law, with dp and Q as observed
+        # algebraic helpers. Both declare no causality (a two-port R element is free).
+        for (name, has_input) in (("Orifice", false), ("VariableOrifice", true))
+            b = blocks["stdlib:hydraulic/" * name]
+            @test [(p.name, p.domain) for p in b.interface.ports] ==
+                  [("a", "Hydraulic"), ("b", "Hydraulic")]
+            @test [p.name for p in b.interface.parameters] ==
+                  ["Cd", "A", "rho", "p_tr"]
+            @test [p.unit for p in b.interface.parameters] ==
+                  ["1", "m^2", "kg/m^3", "Pa"]
+            @test [(v.name, v.unit) for v in b.interface.variables] ==
+                  [("dp", "Pa"), ("Q", "m^3/s")]
+            @test isempty(b.interface.causality)
+            @test occursin("dp ~ a.e - b.e", b.source)
+            @test occursin("p_tr * p_tr", b.source)
+            @test occursin("a.f ~ Q", b.source)
+            @test occursin("b.f ~ -Q", b.source)
+            if has_input
+                @test [(i.name, i.type) for i in b.interface.inputs] == [("u", "Real")]
+                @test occursin("(A * u) * (A * u)", b.source)
+            else
+                @test isempty(b.interface.inputs)
+                @test occursin("A * A", b.source)
+            end
+        end
+    end
+
+    @testset "the M2 converters and sensors rows (J2.7g)" begin
+        # Plan section 8, M2 row "Converters and sensors": the EM converter, the three
+        # kinematic converters, the hydraulic cylinder, the ten sensor blocks and the three
+        # export interface markers, on top of the M1 DCMotor/SpeedSensor/AngleSensor.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        refs = [
+            "stdlib:converters/EMConverter",
+            "stdlib:converters/RackAndPinion",
+            "stdlib:converters/BallScrew",
+            "stdlib:converters/Wheel",
+            "stdlib:converters/HydraulicCylinder",
+            "stdlib:converters/PositionSensor",
+            "stdlib:converters/VelocitySensor",
+            "stdlib:converters/AccelerationSensor",
+            "stdlib:converters/ForceSensor",
+            "stdlib:converters/TorqueSensor",
+            "stdlib:converters/VoltageSensor",
+            "stdlib:converters/CurrentSensor",
+            "stdlib:converters/PressureSensor",
+            "stdlib:converters/FlowSensor",
+            "stdlib:converters/PowerSensor",
+            "stdlib:converters/ExportInput",
+            "stdlib:converters/ExportOutput",
+            "stdlib:converters/ExportParameter",
+        ]
+        for ref in refs
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test b.group == "Converters and sensors"
+        end
+        for name in ("DCMotor", "SpeedSensor", "AngleSensor")
+            @test haskey(blocks, "stdlib:converters/" * name)
+        end
+
+        # EMConverter: electrical p/n plus one rotational shaft, k in N*m/A, a gyrator
+        # relation (no D6 entry: the two electrical terminals are one port).
+        em = blocks["stdlib:converters/EMConverter"]
+        @test [(p.name, p.domain, p.size) for p in em.interface.ports] ==
+              [("p", "Electrical", Int[]), ("n", "Electrical", Int[]),
+                  ("shaft", "Rotation", Int[])]
+        @test [p.name for p in em.interface.parameters] == ["k"]
+        @test em.interface.parameters[1].unit == "N*m/A"
+        @test isempty(em.interface.inputs)
+        @test isempty(em.interface.causality)
+        @test occursin("p.e - n.e ~ -k * shaft.f", em.source)
+        @test occursin("shaft.e ~ k * p.f", em.source)
+
+        # Rack and pinion and wheel: rotation a -> translation b, radius r, transformer.
+        for (name, radius) in (("RackAndPinion", "0.02"), ("Wheel", "0.3"))
+            b = blocks["stdlib:converters/" * name]
+            @test [(p.name, p.domain) for p in b.interface.ports] ==
+                  [("a", "Rotation"), ("b", "Translation")]
+            @test [p.name for p in b.interface.parameters] == ["r"]
+            @test b.interface.parameters[1].unit == "m"
+            @test b.interface.parameters[1].default == radius
+            @test b.interface.causality ==
+                  [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+            @test occursin("b.f ~ r * a.f", b.source)
+            @test occursin("b.e ~ -a.e / r", b.source)
+        end
+
+        # Ball screw: lead in m/rev and efficiency; one lead is one revolution.
+        bs = blocks["stdlib:converters/BallScrew"]
+        @test [(p.name, p.domain) for p in bs.interface.ports] ==
+              [("a", "Rotation"), ("b", "Translation")]
+        @test [p.name for p in bs.interface.parameters] == ["lead", "eta"]
+        @test [p.unit for p in bs.interface.parameters] == ["m", "1"]
+        @test bs.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+        @test occursin("6.283185307179586", bs.source)     # 2*pi, no pi predefined
+
+        # HydraulicCylinder: chambers A and B plus the translation rod, with dead volumes
+        # and the swept volumes as the compressibility states.
+        cyl = blocks["stdlib:converters/HydraulicCylinder"]
+        @test [(p.name, p.domain, p.size) for p in cyl.interface.ports] ==
+              [("A", "Hydraulic", Int[]), ("B", "Hydraulic", Int[]),
+                  ("rod", "Translation", Int[])]
+        @test [p.name for p in cyl.interface.parameters] ==
+              ["Ap", "Ar", "V0A", "V0B", "beta", "stroke"]
+        @test [p.unit for p in cyl.interface.parameters] ==
+              ["m^2", "m^2", "m^3", "m^3", "Pa", "m"]
+        @test [(v.name, v.unit, v.state) for v in cyl.interface.variables] ==
+              [("x", "m", "prefer"), ("pA", "Pa", "prefer"), ("pB", "Pa", "prefer")]
+        @test isempty(cyl.interface.causality)
+        @test occursin("V0A + Ap * x", cyl.source)
+        @test occursin("V0B + Ar * (stroke - x)", cyl.source)
+        @test occursin("rod.e ~ pB * Ar - pA * Ap", cyl.source)
+
+        # The three translational sensors share the port and the zero-effort tap.
+        for (name, unit, has_state) in (("PositionSensor", "m", true),
+            ("VelocitySensor", "m/s", false), ("AccelerationSensor", "m/s^2", true))
+            b = blocks["stdlib:converters/" * name]
+            @test [(p.name, p.domain) for p in b.interface.ports] ==
+                  [("a", "Translation")]
+            @test [(o.name, o.type, o.unit) for o in b.interface.outputs] ==
+                  [("y", "Real", unit)]
+            @test isempty(b.interface.parameters)
+            @test b.interface.causality ==
+                  [(ports = ["a"], kind = "fixed", value = "effort_out")]
+            @test occursin("a.e ~ 0.0", b.source)
+            @test has_state == !isempty(b.interface.variables)
+        end
+        @test occursin("ddt(x) ~ a.f", blocks["stdlib:converters/PositionSensor"].source)
+        @test occursin("y ~ ddt(v)",
+            blocks["stdlib:converters/AccelerationSensor"].source)
+
+        # Force and torque sensors: transparent two-ports, no parameters, no causality.
+        for (name, domain, unit) in (("ForceSensor", "Translation", "N"),
+            ("TorqueSensor", "Rotation", "N*m"))
+            b = blocks["stdlib:converters/" * name]
+            @test [(p.name, p.domain) for p in b.interface.ports] ==
+                  [("a", domain), ("b", domain)]
+            @test [(o.name, o.unit) for o in b.interface.outputs] == [("y", unit)]
+            @test isempty(b.interface.parameters)
+            @test isempty(b.interface.causality)
+            @test occursin("a.f ~ b.f", b.source)
+            @test occursin("b.e ~ -y", b.source)
+        end
+
+        # Voltage/current sensors and pressure/flow sensors.
+        for (name, unit) in (("VoltageSensor", "V"), ("CurrentSensor", "A"))
+            b = blocks["stdlib:converters/" * name]
+            @test [(p.name, p.domain) for p in b.interface.ports] ==
+                  [("p", "Electrical"), ("n", "Electrical")]
+            @test [(o.name, o.unit) for o in b.interface.outputs] == [("y", unit)]
+            @test isempty(b.interface.parameters)
+            @test isempty(b.interface.causality)
+        end
+        vs = blocks["stdlib:converters/VoltageSensor"]
+        @test occursin("p.f ~ 0.0", vs.source)
+        @test occursin("y ~ p.e - n.e", vs.source)
+        cs = blocks["stdlib:converters/CurrentSensor"]
+        @test occursin("p.e - n.e ~ 0.0", cs.source)
+        @test occursin("p.f ~ y", cs.source)
+
+        prs = blocks["stdlib:converters/PressureSensor"]
+        @test [(p.name, p.domain) for p in prs.interface.ports] ==
+              [("a", "Hydraulic")]
+        @test [(o.name, o.unit) for o in prs.interface.outputs] == [("y", "Pa")]
+        @test prs.interface.causality ==
+              [(ports = ["a"], kind = "fixed", value = "flow_out")]
+        @test occursin("a.f ~ 0.0", prs.source)
+        fls = blocks["stdlib:converters/FlowSensor"]
+        @test [(p.name, p.domain) for p in fls.interface.ports] ==
+              [("a", "Hydraulic"), ("b", "Hydraulic")]
+        @test [(o.name, o.unit) for o in fls.interface.outputs] ==
+              [("y", "m^3/s")]
+        @test isempty(fls.interface.causality)
+        @test occursin("a.e ~ b.e", fls.source)
+        @test occursin("a.f ~ y", fls.source)
+
+        # PowerSensor: a Generic two-port bond tap; the output carries the D9 symbolic
+        # power unit (it becomes W when a concrete island adopts the block).
+        pws = blocks["stdlib:converters/PowerSensor"]
+        @test [(p.name, p.domain) for p in pws.interface.ports] ==
+              [("a", "Generic"), ("b", "Generic")]
+        @test [(o.name, o.unit) for o in pws.interface.outputs] ==
+              [("y", "effort*flow")]
+        @test isempty(pws.interface.parameters)
+        @test occursin("y ~ a.e * a.f", pws.source)
+
+        # Export markers: an input is a constant source in simulation, an output holds its
+        # input, and a parameter publishes a tunable value. The spec's name/type/unit are
+        # instance metadata, which the language has no parameter type for.
+        ei = blocks["stdlib:converters/ExportInput"]
+        @test isempty(ei.interface.ports)
+        @test isempty(ei.interface.inputs)
+        @test [(o.name, o.type) for o in ei.interface.outputs] == [("y", "Real")]
+        @test [p.name for p in ei.interface.parameters] == ["value"]
+        @test occursin("y ~ value", ei.source)
+
+        eo = blocks["stdlib:converters/ExportOutput"]
+        @test isempty(eo.interface.ports)
+        @test [(i.name, i.type) for i in eo.interface.inputs] == [("u", "Real")]
+        @test isempty(eo.interface.outputs)
+        @test isempty(eo.interface.parameters)
+        @test occursin("sink ~ u", eo.source)
+
+        ep = blocks["stdlib:converters/ExportParameter"]
+        @test isempty(ep.interface.ports)
+        @test isempty(ep.interface.inputs)
+        @test isempty(ep.interface.outputs)
+        @test [p.name for p in ep.interface.parameters] == ["value"]
+        @test ep.interface.parameters[1].tunable
+        @test occursin("sink ~ value", ep.source)
     end
 
     @testset "catalog structure against catalog.schema.json" begin

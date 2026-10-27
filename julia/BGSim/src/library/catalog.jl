@@ -33,6 +33,7 @@ const GROUPS = (
     (dir = "electrical", name = "Electrical", icon_prefix = "elec"),
     (dir = "translation", name = "Translation", icon_prefix = "mech"),
     (dir = "rotation", name = "Rotation", icon_prefix = "rot"),
+    (dir = "hydraulic", name = "Hydraulic", icon_prefix = "hyd"),
     (dir = "converters", name = "Converters and sensors", icon_prefix = "conv"),
 )
 
@@ -275,17 +276,89 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Zero-order hold: samples the input on the clock and holds it until the next tick.",
         icon = "disc-zoh",
     ),
+    "stdlib:converters/AccelerationSensor" => (
+        description = "Translational acceleration sensor; differentiates the velocity of its port without drawing force.",
+        icon = "conv-acceleration-sensor",
+    ),
     "stdlib:converters/AngleSensor" => (
         description = "Rotational angle sensor; integrates the angular velocity of its port.",
         icon = "conv-angle-sensor",
+    ),
+    "stdlib:converters/BallScrew" => (
+        description = "Ball screw from rotation a to translation b; lead per revolution and direction-dependent efficiency.",
+        icon = "conv-ball-screw",
+    ),
+    "stdlib:converters/CurrentSensor" => (
+        description = "Series electrical current sensor: zero voltage drop, output y in amperes.",
+        icon = "conv-current-sensor",
     ),
     "stdlib:converters/DCMotor" => (
         description = "Permanent-magnet DC motor, written flat for M1 (plan section 8): electrical p and n, rotational shaft and housing.",
         icon = "conv-dc-motor",
     ),
+    "stdlib:converters/EMConverter" => (
+        description = "Ideal electromagnetic gyrator: back-EMF -k*shaft.f and shaft torque k*p.f, power conserving.",
+        icon = "conv-em-converter",
+    ),
+    "stdlib:converters/ExportInput" => (
+        description = "Export interface input marker; in simulation it supplies the constant parameter value.",
+        icon = "conv-export-input",
+    ),
+    "stdlib:converters/ExportOutput" => (
+        description = "Export interface output marker; in simulation it holds the input value for recording.",
+        icon = "conv-export-output",
+    ),
+    "stdlib:converters/ExportParameter" => (
+        description = "Export interface parameter marker; publishes a tunable parameter value.",
+        icon = "conv-export-parameter",
+    ),
+    "stdlib:converters/FlowSensor" => (
+        description = "Series hydraulic flow sensor: zero pressure drop, output y in m^3/s.",
+        icon = "conv-flow-sensor",
+    ),
+    "stdlib:converters/ForceSensor" => (
+        description = "Series translational force sensor: passes the velocity through and reads the force.",
+        icon = "conv-force-sensor",
+    ),
+    "stdlib:converters/HydraulicCylinder" => (
+        description = "Double-acting hydraulic cylinder with chamber compressibility: dead volumes plus the swept volumes, drive from A and B to the translation rod.",
+        icon = "conv-hydraulic-cylinder",
+    ),
+    "stdlib:converters/PositionSensor" => (
+        description = "Translational position sensor; integrates the velocity of its port without drawing force.",
+        icon = "conv-position-sensor",
+    ),
+    "stdlib:converters/PowerSensor" => (
+        description = "Transparent bond sensor; output y is the power e*f of the bond it sits on.",
+        icon = "conv-power-sensor",
+    ),
+    "stdlib:converters/PressureSensor" => (
+        description = "Hydraulic pressure sensor; reads the port pressure and draws no flow.",
+        icon = "conv-pressure-sensor",
+    ),
+    "stdlib:converters/RackAndPinion" => (
+        description = "Rack and pinion from rotation a to translation b; b.f = r*a.f and b.e = -a.e/r.",
+        icon = "conv-rack-pinion",
+    ),
     "stdlib:converters/SpeedSensor" => (
         description = "Rotational speed sensor; reads the angular velocity of its port.",
         icon = "conv-speed-sensor",
+    ),
+    "stdlib:converters/TorqueSensor" => (
+        description = "Series rotational torque sensor: passes the angular velocity through and reads the torque.",
+        icon = "conv-torque-sensor",
+    ),
+    "stdlib:converters/VelocitySensor" => (
+        description = "Translational velocity sensor; reads the velocity of its port without drawing force.",
+        icon = "conv-velocity-sensor",
+    ),
+    "stdlib:converters/VoltageSensor" => (
+        description = "Open-circuit electrical voltage sensor; draws no current and reads the terminal voltage.",
+        icon = "conv-voltage-sensor",
+    ),
+    "stdlib:converters/Wheel" => (
+        description = "Rolling wheel from rotation a to translation b; radius r, b.f = r*a.f and b.e = -a.e/r.",
+        icon = "conv-wheel",
     ),
     "stdlib:electrical/Capacitor" => (
         description = "Electrical capacitor; the initial voltage is the start value of v.",
@@ -322,9 +395,21 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Signal-controlled voltage source; feed it a Constant for a constant source.",
         icon = "elec-voltage-source",
     ),
+    "stdlib:rotation/ElasticShaft" => (
+        description = "Elastic shaft with torsional stiffness and damping; the twist angle is the state.",
+        icon = "rot-elastic-shaft",
+    ),
     "stdlib:rotation/FixedShaft" => (
         description = "Fixed shaft; holds its port at zero angular velocity.",
         icon = "rot-fixed-shaft",
+    ),
+    "stdlib:rotation/GearBacklash" => (
+        description = "Dead-zone contact spring across a gear mesh: no torque inside gap, stiff contact outside it.",
+        icon = "rot-gear-backlash",
+    ),
+    "stdlib:rotation/GearWithBacklash" => (
+        description = "Composite gear with efficiency and backlash: LossyGear followed by GearBacklash on the output side.",
+        icon = "rot-gear-with-backlash",
     ),
     "stdlib:rotation/IdealGear" => (
         description = "Lossless gear with ratio n; a is the fast shaft, a.f = n * b.f.",
@@ -334,8 +419,20 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Rotational inertia between two rotation ports; initial angle and speed come from the start values of phi and w.",
         icon = "rot-inertia",
     ),
+    "stdlib:rotation/LossyGear" => (
+        description = "Gear with ratio n and direction-dependent efficiency eta (the reciprocal when back-driven).",
+        icon = "rot-lossy-gear",
+    ),
     "stdlib:rotation/RotationalDamper" => (
         description = "Linear viscous damper between two rotation ports.", icon = "rot-damper",
+    ),
+    "stdlib:rotation/RotationalFriction" => (
+        description = "Rotational friction with Coulomb, viscous and Stribeck terms; tanh-smoothed or switched.",
+        icon = "rot-friction",
+    ),
+    "stdlib:rotation/SpeedSource" => (
+        description = "Signal-controlled angular speed source; a.f = w*u with fixed flow causality (D6).",
+        icon = "rot-speed-source",
     ),
     "stdlib:rotation/TorqueSource" => (
         description = "Signal-controlled torque source between two rotation ports.",
@@ -344,6 +441,30 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:rotation/TorsionSpring" => (
         description = "Linear torsional spring between two rotation ports.",
         icon = "rot-torsion-spring",
+    ),
+    "stdlib:hydraulic/FlowSource" => (
+        description = "Signal-controlled volume-flow source; Q*u enters a and returns through b.",
+        icon = "hyd-flow-source",
+    ),
+    "stdlib:hydraulic/Orifice" => (
+        description = "Regularized orifice: Q = Cd*A*sqrt(2/rho)*dp/(dp^2 + p_tr^2)^(1/4), smooth through dp = 0.",
+        icon = "hyd-orifice",
+    ),
+    "stdlib:hydraulic/PressureSource" => (
+        description = "Signal-controlled pressure source; a.e = p*u with fixed effort causality (D6).",
+        icon = "hyd-pressure-source",
+    ),
+    "stdlib:hydraulic/Tank" => (
+        description = "Tank at a constant pressure; holds its port at p.",
+        icon = "hyd-tank",
+    ),
+    "stdlib:hydraulic/VariableOrifice" => (
+        description = "Orifice whose area A*u comes from a signal input; the same regularized flow law.",
+        icon = "hyd-variable-orifice",
+    ),
+    "stdlib:hydraulic/Volume" => (
+        description = "Hydraulic volume with fluid compressibility; the pressure integrates the net flow with the bulk modulus.",
+        icon = "hyd-volume",
     ),
     "stdlib:sources/Chirp" => (
         description = "Linear frequency sweep from f_start to f_end over duration; frequency in Hz.",
