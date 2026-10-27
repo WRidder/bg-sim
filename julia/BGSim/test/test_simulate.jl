@@ -530,6 +530,47 @@ _sim_ramp_model() = _sim_model(
         )
     end
 
+    @testset "derivative-causal inertias still simulate" begin
+        # Se -> 1-junction -> two I elements. Both inertias share the junction
+        # velocity, so SCAP puts one in derivative causality (W201). The run must
+        # still record every row and solve the dependent momentum algebraically;
+        # this is the regression for the reported "adding an I yields no data".
+        nodes = [
+            _sim_node("n1", "Se1", _sim_ref("stdlib:bondgraph/Se");
+                params = Dict("e" => "2.0")),
+            _sim_node("n2", "J1", Dict("junction" => "1")),
+            _sim_node("n3", "I1", _sim_ref("stdlib:bondgraph/I");
+                params = Dict("i" => "2.0")),
+            _sim_node("n4", "I2", _sim_ref("stdlib:bondgraph/I");
+                params = Dict("i" => "2.0")),
+        ]
+        connections = [
+            _sim_conn("c1", "bond", "n1", "p", "n2", nothing),
+            _sim_conn("c2", "bond", "n2", nothing, "n3", "p"),
+            _sim_conn("c3", "bond", "n2", nothing, "n4", "p"),
+        ]
+        flat = _sim_flat(_sim_model("DerivativeI", nodes, connections;
+            t_end = 1.0, points = 11))
+        @test isempty(_sim_errors(flat))
+        settings = BGSim.RunSettings(
+            t_start = 0.0, t_end = 1.0,
+            output = Dict{String,Any}("mode" => "points", "points" => 11),
+        )
+        dir = mktempdir()
+        result = simulate(flat; run_dir = dir, run_id = "derivative-i", settings = settings)
+        @test result.status == "done"
+        @test any(d -> d.code == "W201", result.diagnostics)
+        @test !any(d -> d.code in ("E900", "E901"), result.diagnostics)
+        data = _sim_columns(dir)
+        @test length(data["time"]) == 11
+        @test all(isfinite, data["I1/P"])
+        @test all(isfinite, data["I2/P"])
+        @test isapprox(data["I1/p.f"][end], 0.5; rtol = 1.0e-6)
+        @test isapprox(data["I2/p.f"][end], 0.5; rtol = 1.0e-6)
+        @test isapprox(data["I1/P"][end], 1.0; rtol = 1.0e-6)
+        @test isapprox(data["I2/P"][end], 1.0; rtol = 1.0e-6)
+    end
+
     @testset "algebraic starts are guesses, not equations (FIX-M2-1)" begin
         # Se -> 1-junction -> TF(n=2) -> R(3). At t = 0 the transformer's second-port
         # effort is 0.5 and the resistor flow is 1/6, both algebraic and non-zero. Passing
