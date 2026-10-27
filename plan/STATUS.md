@@ -147,6 +147,50 @@ is no example gallery yet (W3.4). The bundle needs code splitting before the W3.
 DEC-7 splits lane x into a fake-worker editor pass and a real-worker dcmotor pass. U1 is the
 user's diagram-styling request. No contract change was needed during the gate.
 
+### M2 — v0.2, complete language, catalog and editor (gate: green, 2026-10-27)
+
+**Works.** The M2 language is complete: vectors/matrices, loops, if-equations, the full
+whitelist and intrinsics (J2.1); the multi-rate discrete scheduler with E104/E105 (J2.2 plus
+FIX-M2-2); events, nonsmooth callbacks and W206 (J2.3); SCAP causality with W201/W202/E106
+(J2.4); model-level units and unit factors (J2.5); textual composites and `@components`
+including DCMotor with symbolic parameter aliases and `@observables` (J2.6/J2.6b); the complete
+**126-block** stdlib (J2.7a–g, FIX-M2-4); and the bounded structural compile cache (J2.8).
+The editor has the code tab, subsystems, domain visual language and multi-panel plots
+(W2.1–W2.4) plus the post-M2 UI follow-up (W2.5: plot-all, detachable plots, compact blocks,
+directional ports, panel targeting/rename, grid/snap) and the automatic selection plot (W2.6).
+The live backend and worker fast paths are in P2.1.
+
+**Examples.** Nine read-only samples validate the stack through the real worker:
+bouncing-ball, rlc-dual, quarter-car, drivetrain (iconic/bond graph), drivetrain-kalman,
+inverted-pendulum-cart, hydraulic-servo, industrial-servo (baseline/two-mass/switching/
+encoder/full) and dc-motor (iconic/bond graph/speed-control). The runner gained
+`zero_crossing`, `compare_signals`, `rms_difference`, `max_abs_le`, `step_response`, `ripple`
+and `fft_peak`.
+
+**Gate.** `uv run tools/check.py --lane all` → **11 passed, 0 failed, 0 skipped**: Julia
+`Pkg.test()` **14 408 assertions** (214.5 s), pytest **234** plus **4** julia-marked, ruff,
+tsc, ESLint, Vitest **374**, Vite build, examples **195/195** (136–142 s), Playwright **28**
+fake-worker specs (including the two perf budgets) and **12** real-worker specs. The real
+pass includes dcmotor, subsystems, rlc-dual, domain-visual, inverted-pendulum, drivetrain-kalman,
+quarter-car, industrial-servo, hydraulic-servo and speed-control. A transient Windows
+`E900 unlink(manifest.json): resource busy` was fixed by retrying the atomic manifest replace
+(FIX-M2-5), and the composite-facing inspector/worker tests were updated to the new DCMotor
+contract.
+
+**Measured.** DC motor 239.808153477 rad/s; RLC 1.161862 V vs analytic 1.163034 V; quarter-car
+body/wheel peaks 7.465/5.281 cm and FFT modes 1.2238/11.8461 Hz; drivetrain-kalman 10.130 rad/s
+at 0.6 s, RMS estimator 0.181; cart-pole 0.408°/0.0422° and 17.877 N; hydraulic servo 0.10016 m
+at 1 s with 6.13–92.58 bar; industrial-servo speed rise 5.1–11.1 ms with 0.692 A p-p switching
+ripple; speed-control 99.996 rad/s at 0.1 s with the 24 V clamp; compile-cache warm rerun
+6.4 ms; perf 20×1e6 draw 222.8 ms, zoom 4.8 ms, pan 4.0 ms, live 60.2 fps.
+
+**Known gaps / deviations.** The DCMotor composite has no stator/housing reaction because
+`EMConverter` is a three-port block (NOTE-8); no example or check reads those effort/power
+signals. The legacy gear-impact DAE can hit E901 above ~0.2 rad/s (documented), pure bond
+islands report W205 by design, and X2.5's valve uses a smoothed max plus rail FlowSensors (W202).
+3D scenes are M3 work. The M2 gate is green; M3 (viewer/SDF/bindings and the three 3D examples)
+starts from this commit.
+
 
 ## Contract changes and orchestrator decisions
 
