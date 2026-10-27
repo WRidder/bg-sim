@@ -20,3 +20,30 @@
   border: var(--border-width) solid var(--color-border-strong);
   border-radius: 999px;
 }
+
+/* Waypoints of a selected, routed connection. The larger transparent hit
+ * circle keeps the grab target comfortable while the visible dot stays small. */
+.editor-edge__vertices {
+  pointer-events: none;
+}
+
+.editor-edge__vertex-hit {
+  fill: transparent;
+  pointer-events: all;
+  cursor: grab;
+}
+
+.editor-edge__vertex-hit:active {
+  cursor: grabbing;
+}
+
+.editor-edge__vertex {
+  fill: var(--color-surface-raised);
+  stroke: var(--color-accent);
+  stroke-width: 1.8;
+  pointer-events: none;
+}
+
+.editor-edge__vertex-hit:hover + .editor-edge__vertex {
+  fill: var(--color-accent);
+}

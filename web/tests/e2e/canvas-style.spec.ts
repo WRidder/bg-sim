@@ -209,6 +209,165 @@ test("Ctrl-drag onto a block body picks the first compatible input and draws its
   }
 });
 
+test("a selected connection can be routed with draggable vertices", async ({ page }) => {
+  await openModel(page);
+  await dropBlock(page, "Se", 80, 200);
+  await dropBlock(page, "I", 480, 280);
+  const source = node(page, "Se");
+  const inertia = node(page, "I");
+  await connectPorts(page, source, "p", inertia, "p");
+
+  const edge = page.locator('[data-testid^="edge-"]').first();
+  await expect(edge).toHaveCount(1);
+  const edgeId = (await edge.getAttribute("data-testid"))?.replace("edge-", "") ?? "";
+  const pointOnEdge = async (fraction: number): Promise<{ x: number; y: number }> =>
+    edge
+      .locator(".react-flow__edge-path")
+      .first()
+      .evaluate((element, at) => {
+        const path = element as SVGPathElement;
+        const local = path.getPointAtLength(path.getTotalLength() * at);
+        const matrix = path.getScreenCTM();
+        if (matrix === null) {
+          throw new Error("the connection has no screen transform");
+        }
+        return {
+          x: matrix.a * local.x + matrix.c * local.y + matrix.e,
+          y: matrix.b * local.x + matrix.d * local.y + matrix.f,
+        };
+      }, fraction);
+  const openEdgeMenu = async (
+    fraction: number,
+  ): Promise<{ x: number; y: number }> => {
+    const point = await pointOnEdge(fraction);
+    await page.mouse.click(point.x, point.y, { button: "right" });
+    await expect(page.getByTestId("canvas-menu")).toBeVisible();
+    return point;
+  };
+  const route = async (): Promise<{ x: number; y: number }[]> => {
+    const stored = JSON.parse(
+      (await page.getByTestId("document-json").textContent()) ?? "null",
+    ) as { diagram: { connections: { route?: { x: number; y: number }[] }[] } };
+    return stored.diagram.connections[0]?.route ?? [];
+  };
+  const near = (
+    point: { x: number; y: number },
+    target: { x: number; y: number },
+  ): number => Math.hypot(point.x - target.x, point.y - target.y);
+  const isCellCentre = (point: { x: number; y: number }): boolean =>
+    (point.x - 10) % 20 === 0 && (point.y - 10) % 20 === 0;
+
+  const firstClick = await openEdgeMenu(0.3);
+  await page.getByTestId("add-vertex").click();
+  const vertex = page.getByTestId(`connection-vertex-${edgeId}-0`);
+  await expect(vertex).toBeVisible();
+  await expect.poll(async () => (await route()).length).toBe(1);
+  const firstPoint = (await route())[0];
+  expect(firstPoint).toBeDefined();
+  if (firstPoint === undefined) {
+    throw new Error("the first vertex is missing");
+  }
+  expect(isCellCentre(firstPoint), JSON.stringify(firstPoint)).toBe(true);
+  const firstBox = await vertex.boundingBox();
+  if (firstBox === null) {
+    throw new Error("the first vertex is not visible");
+  }
+  // The new vertex lands at the click, snapped by at most half a cell.
+  expect(
+    near(
+      { x: firstBox.x + firstBox.width / 2, y: firstBox.y + firstBox.height / 2 },
+      firstClick,
+    ),
+  ).toBeLessThan(25);
+
+  // A second right-click on a connection that already routes adds a vertex
+  // near that click, not at the midpoint of the longest remaining segment.
+  const secondClick = await openEdgeMenu(0.7);
+  await page.getByTestId("add-vertex").click();
+  await expect.poll(async () => (await route()).length).toBe(2);
+  const secondPoint = (await route())[1];
+  expect(secondPoint).toBeDefined();
+  if (secondPoint === undefined) {
+    throw new Error("the second vertex is missing");
+  }
+  expect(isCellCentre(secondPoint)).toBe(true);
+  const secondBox = await page.getByTestId(`connection-vertex-${edgeId}-1`).boundingBox();
+  if (secondBox === null) {
+    throw new Error("the second vertex is not visible");
+  }
+  expect(
+    near(
+      { x: secondBox.x + secondBox.width / 2, y: secondBox.y + secondBox.height / 2 },
+      secondClick,
+    ),
+  ).toBeLessThan(25);
+
+  await openEdgeMenu(0.5);
+  await page.getByTestId("clear-vertices").click();
+  await expect.poll(async () => (await route()).length).toBe(0);
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await route()).length).toBe(2);
+
+  const vertexBox = await vertex.boundingBox();
+  if (vertexBox === null) {
+    throw new Error("the routing vertex is not visible");
+  }
+  const before = (await route())[0];
+  await page.mouse.move(
+    vertexBox.x + vertexBox.width / 2,
+    vertexBox.y + vertexBox.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    vertexBox.x + vertexBox.width / 2 + 60,
+    vertexBox.y + vertexBox.height / 2 + 40,
+    { steps: 6 },
+  );
+  await page.mouse.up();
+  await expect
+    .poll(async () => {
+      const after = (await route())[0];
+      return after === undefined || before === undefined
+        ? 0
+        : Math.hypot(after.x - before.x, after.y - before.y);
+    })
+    .toBeGreaterThan(20);
+  const dragged = (await route())[0];
+  expect(dragged).toBeDefined();
+  expect(isCellCentre(dragged ?? { x: 0, y: 0 })).toBe(true);
+
+  await vertex.dblclick();
+  await expect.poll(async () => (await route()).length).toBe(1);
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await route()).length).toBe(2);
+});
+
+test("centred ports share the block and connection centre line", async ({ page }) => {
+  await openModel(page);
+  await dropBlock(page, "Gain", 200, 160);
+  await dropBlock(page, "Gain", 200, 460);
+  const source = node(page, "Gain");
+  const target = node(page, "Gain2");
+  await connectPorts(page, source, "y", target, "u");
+
+  const body = await source.boundingBox();
+  const output = await source.locator('[data-port="y"] .port-glyph').boundingBox();
+  const input = await target.locator('[data-port="u"] .port-glyph').boundingBox();
+  const edgePath = await page
+    .locator('[data-testid^="edge-"] .react-flow__edge-path')
+    .first()
+    .boundingBox();
+  if (body === null || output === null || input === null || edgePath === null) {
+    throw new Error("a block, a port glyph or the connection is not visible");
+  }
+  const bodyCentre = body.x + body.width / 2;
+  // Input dots and output arrows must sit on the vertical through the block,
+  // even though the output arrow is shifted outward below the border.
+  expect(Math.abs(output.x + output.width / 2 - bodyCentre)).toBeLessThanOrEqual(0.6);
+  expect(Math.abs(input.x + input.width / 2 - bodyCentre)).toBeLessThanOrEqual(0.6);
+  expect(Math.abs(edgePath.x + edgePath.width / 2 - bodyCentre)).toBeLessThanOrEqual(0.6);
+});
+
 test("the toolbar toggles the grid and snapping", async ({ page }) => {
   await openModel(page);
   const grid = page.getByTestId("toggle-grid");

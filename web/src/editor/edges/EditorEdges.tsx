@@ -8,10 +8,12 @@
  *   dotted for Int, and an optional unit-factor badge.
  */
 
-import { BaseEdge, EdgeLabelRenderer, type Edge, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, EdgeLabelRenderer, useReactFlow, type Edge, type EdgeProps } from "@xyflow/react";
+import { useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
 
 import type { DomainName, ValueType } from "../../contracts/catalog";
 import type { ConnectionKind } from "../../contracts/model";
+import { useDocumentStore } from "../../state/documentStore";
 import {
   arrowHeadPath,
   domainColor,
@@ -25,6 +27,7 @@ import {
   signalDash,
   SIGNAL_ARROW_SIZE,
   SIGNAL_DOT_RADIUS,
+  snapToCellCentre,
   type Anchor,
   type Point,
   type Side,
@@ -137,6 +140,109 @@ function MissingPorts({
   );
 }
 
+/**
+ * Draggable waypoints of a selected connection. A pointer drag updates a local
+ * draft, and one store write on release keeps the whole move in one undo step.
+ * Double-click removes a waypoint.
+ */
+function RouteHandles({
+  id,
+  route,
+  selected,
+}: {
+  id: string;
+  route: readonly Point[];
+  selected: boolean | undefined;
+}) {
+  const { screenToFlowPosition } = useReactFlow();
+  const [draft, setDraft] = useState<{ index: number; point: Point } | null>(null);
+  const routeRef = useRef(route);
+  routeRef.current = route;
+  const lastClickRef = useRef<{ index: number; time: number } | null>(null);
+  if (!selected || route.length === 0) {
+    return null;
+  }
+  const commit = (index: number, point: Point): void => {
+    const next = routeRef.current.map((entry, entryIndex) =>
+      entryIndex === index ? point : entry,
+    );
+    useDocumentStore.getState().setConnectionRoute(id, next);
+  };
+  const remove = (index: number): void => {
+    lastClickRef.current = null;
+    const next = routeRef.current.filter((_, entryIndex) => entryIndex !== index);
+    useDocumentStore.getState().setConnectionRoute(id, next);
+  };
+  /** A double-click removes the vertex; detect it ourselves because pointer
+   * capture on the small SVG target can swallow the native dblclick. */
+  const clickVertex = (event: ReactMouseEvent<SVGCircleElement>, index: number): void => {
+    event.stopPropagation();
+    const now = Date.now();
+    const previous = lastClickRef.current;
+    if (previous !== null && previous.index === index && now - previous.time < 400) {
+      remove(index);
+      return;
+    }
+    lastClickRef.current = { index, time: now };
+  };
+  const startDrag = (event: ReactPointerEvent<SVGCircleElement>, index: number): void => {
+    event.stopPropagation();
+    let moved = false;
+    const move = (moveEvent: PointerEvent): void => {
+      moved = true;
+      const point = snapToCellCentre(
+        screenToFlowPosition({
+          x: moveEvent.clientX,
+          y: moveEvent.clientY,
+        }),
+      );
+      setDraft({ index, point });
+    };
+    const finish = (upEvent: PointerEvent): void => {
+      window.removeEventListener("pointermove", move, true);
+      window.removeEventListener("pointerup", finish, true);
+      window.removeEventListener("pointercancel", finish, true);
+      const point = snapToCellCentre(
+        screenToFlowPosition({
+          x: upEvent.clientX,
+          y: upEvent.clientY,
+        }),
+      );
+      setDraft(null);
+      if (moved) {
+        lastClickRef.current = null;
+        commit(index, point);
+      }
+    };
+    window.addEventListener("pointermove", move, true);
+    window.addEventListener("pointerup", finish, true);
+    window.addEventListener("pointercancel", finish, true);
+  };
+  return (
+    <g className="editor-edge__vertices" data-testid={`connection-vertices-${id}`}>
+      {route.map((point, index) => {
+        const shown = draft?.index === index ? draft.point : point;
+        return (
+          <g key={`${id}-vertex-${index}`}>
+            <circle
+              cx={shown.x}
+              cy={shown.y}
+              r={10}
+              className="editor-edge__vertex-hit"
+              data-testid={`connection-vertex-${id}-${index}`}
+              onPointerDown={(event) => startDrag(event, index)}
+              onClick={(event) => clickVertex(event, index)}
+            >
+              <title>Drag to route; double-click to remove</title>
+            </circle>
+            <circle cx={shown.x} cy={shown.y} r={4.5} className="editor-edge__vertex" />
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
 export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
   if (data === undefined) {
     return null;
@@ -199,6 +305,7 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         />
       ) : null}
       <EdgeLabel id={id} data={data} />
+      <RouteHandles id={id} route={route} selected={selected} />
     </g>
   );
 }
@@ -210,11 +317,11 @@ export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
   const { a, b } = anchors(data);
   const hub = data.wireHub;
   const path =
-    hub === null
-      ? data.route.length > 0
-        ? routedPath(a.point, data.route, b.point)
-        : orthogonalPath(a, b)
-      : hubPath(a.point, hub, b.point);
+    data.route.length > 0
+      ? routedPath(a.point, data.route, b.point)
+      : hub === null
+        ? orthogonalPath(a, b)
+        : hubPath(a.point, hub, b.point);
   const colour = domainColor(data.domain);
   const dashed = data.domain === "Generic";
   const broken = data.missingPorts.length > 0;
@@ -253,6 +360,7 @@ export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         />
       ) : null}
       <EdgeLabel id={id} data={data} />
+      <RouteHandles id={id} route={data.route} selected={selected} />
     </g>
   );
 }
@@ -306,6 +414,7 @@ export function SignalEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         stroke="none"
       />
       <EdgeLabel id={id} data={data} />
+      <RouteHandles id={id} route={data.route} selected={selected} />
     </g>
   );
 }

@@ -162,6 +162,8 @@ export interface DocumentActions {
   copySelection: () => void;
   paste: () => void;
   reverseConnection: (id: string) => void;
+  /** Replace a connection's ordered waypoints (one undo entry). */
+  setConnectionRoute: (id: string, route: readonly ModelPoint[]) => void;
 
   connect: (a: PortDescriptor, b: PortDescriptor) => ConnectResult;
 
@@ -775,6 +777,23 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         connection.from = { node: connection.to.node, port: connection.to.port };
         connection.to = from;
         connection.route = [...(connection.route ?? [])].reverse();
+      });
+    },
+
+    setConnectionRoute: (id, route) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return;
+      }
+      const points = route.map((point) => ({
+        x: Math.round(point.x * 10) / 10,
+        y: Math.round(point.y * 10) / 10,
+      }));
+      commitActive((draft) => {
+        const connection = draft.connections.find((entry) => entry.id === id);
+        if (connection !== undefined) {
+          connection.route = points;
+        }
       });
     },
 

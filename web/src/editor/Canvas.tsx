@@ -49,7 +49,14 @@ import { buildDiagram, EDGE_TYPES, NODE_TYPES } from "./buildFlow";
 import { checkConnection, type PortDescriptor } from "./connectionRules";
 import { descriptorForPort, interfaceForNode } from "./nodeInterface";
 import { firstCompatiblePort, noAutoTargetMessage } from "./quickConnectTarget";
-import { nearestSourcePort, nodeLayout } from "./geometry";
+import {
+  GRID_SIZE,
+  nearestSourcePort,
+  nodeLayout,
+  nodeVisualOffset,
+  connectionAnchors,
+  snapToCellCentre,
+} from "./geometry";
 import { decorateFlow } from "./edges/decorateFlow";
 import { CanvasLegend } from "./legend";
 import { HoverReadout } from "./ports/HoverReadout";
@@ -60,7 +67,6 @@ import { requestPlotsTab } from "../app/dockBus";
 import "./editor.css";
 
 const ZOOM = 0.85;
-const GRID_SIZE = 20;
 const GRID_KEY = "bgsim.canvas.grid";
 const SNAP_KEY = "bgsim.canvas.snap";
 
@@ -99,6 +105,22 @@ interface MenuState {
   y: number;
   kind: "node" | "edge";
   id: string;
+  /** The click in flow coordinates, used to place a new routing vertex. */
+  flow?: { x: number; y: number };
+}
+
+function distanceToSegment(point: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared < 1e-6) {
+    return Math.hypot(point.x - a.x, point.y - a.y);
+  }
+  const t = Math.max(
+    0,
+    Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared),
+  );
+  return Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy));
 }
 
 function eventPoint(event: MouseEvent | TouchEvent): { x: number; y: number } {
@@ -306,7 +328,12 @@ function CanvasInner() {
       } else {
         const layout = nodeLayout(node, catalogIndex, docNow);
         const flowPoint = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-        const portName = nearestSourcePort(iface, layout, node.position, flowPoint);
+        const offset = nodeVisualOffset(node, catalogIndex);
+        const originPosition = {
+          x: node.position.x + offset.x,
+          y: node.position.y + offset.y,
+        };
+        const portName = nearestSourcePort(iface, layout, originPosition, flowPoint);
         origin =
           portName === null
             ? null
@@ -686,8 +713,14 @@ function CanvasInner() {
   const onEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();
     useDocumentStore.getState().setSelection([], [edge.id]);
-    setMenu({ x: event.clientX, y: event.clientY, kind: "edge", id: edge.id });
-  }, []);
+    setMenu({
+      x: event.clientX,
+      y: event.clientY,
+      kind: "edge",
+      id: edge.id,
+      flow: screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+    });
+  }, [screenToFlowPosition]);
 
   const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
     event.preventDefault();
@@ -732,6 +765,57 @@ function CanvasInner() {
   const runMenuAction = (action: () => void): void => {
     action();
     setMenu(null);
+  };
+
+  /**
+   * Routing aids for long connections: insert a waypoint at the clicked point
+   * (on the closest segment), or clear all waypoints. The new point snaps to a
+   * grid cell centre, like the node centres. Dragging the resulting handles
+   * (rendered by the selected edge) does the fine adjustment.
+   */
+  const addRouteVertex = (): void => {
+    if (view === null || index === null || menuConnection === null) {
+      return;
+    }
+    const { source, target } = connectionAnchors(view, index, menuConnection);
+    const route = [...(menuConnection.route ?? [])];
+    const points = [source.point, ...route, target.point];
+    const click =
+      menu?.flow !== undefined &&
+      Number.isFinite(menu.flow.x) &&
+      Number.isFinite(menu.flow.y)
+        ? menu.flow
+        : undefined;
+    let bestIndex = 0;
+    let bestDistance = Infinity;
+    if (click !== undefined) {
+      for (let segment = 0; segment < points.length - 1; segment += 1) {
+        const start = points[segment]!;
+        const end = points[segment + 1]!;
+        const distance = distanceToSegment(click, start, end);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = segment;
+        }
+      }
+    } else {
+      let bestLength = -1;
+      for (let segment = 0; segment < points.length - 1; segment += 1) {
+        const start = points[segment]!;
+        const end = points[segment + 1]!;
+        const length = Math.hypot(end.x - start.x, end.y - start.y);
+        if (length > bestLength) {
+          bestLength = length;
+          bestIndex = segment;
+        }
+      }
+    }
+    const start = points[bestIndex]!;
+    const end = points[bestIndex + 1]!;
+    const raw =
+      click ?? { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+    route.splice(bestIndex, 0, snapToCellCentre(raw));
+    useDocumentStore.getState().setConnectionRoute(menuConnection.id, route);
   };
 
   return (
@@ -1011,6 +1095,28 @@ function CanvasInner() {
                   {target.label}
                 </button>
               ))}
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="add-vertex"
+                onClick={() => runMenuAction(addRouteVertex)}
+              >
+                Add routing vertex
+              </button>
+              {(menuConnection.route?.length ?? 0) > 0 ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  data-testid="clear-vertices"
+                  onClick={() =>
+                    runMenuAction(() =>
+                      useDocumentStore.getState().setConnectionRoute(menuConnection.id, []),
+                    )
+                  }
+                >
+                  Clear routing vertices
+                </button>
+              ) : null}
               <button
                 type="button"
                 role="menuitem"

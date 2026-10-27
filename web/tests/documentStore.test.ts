@@ -213,6 +213,45 @@ describe("connections", () => {
       port: "p",
     });
   });
+
+  it("sets routing vertices as one undoable step", () => {
+    const source = createNodeFromBlock(block("Se"), { x: 0, y: 0 }, "n1", "Se1");
+    const capacitor = createNodeFromBlock(block("C"), { x: 200, y: 0 }, "n2", "C1");
+    const bond = createConnection(
+      "c1",
+      "bond",
+      { node: "n1", port: "p" },
+      { node: "n2", port: "p" },
+    );
+    const model: Model = createEmptyModel("Route");
+    model.diagram.nodes = [source, capacitor];
+    model.diagram.connections = [bond];
+    useDocumentStore.getState().openDocument("demo", "Route", model);
+
+    useDocumentStore
+      .getState()
+      .setConnectionRoute("c1", [{ x: 80.123, y: 20.987 }]);
+    expect(useDocumentStore.getState().doc?.diagram.connections[0]?.route).toEqual([
+      { x: 80.1, y: 21 },
+    ]);
+
+    useDocumentStore.getState().undo();
+    expect(useDocumentStore.getState().doc?.diagram.connections[0]?.route).toEqual([]);
+
+    useDocumentStore
+      .getState()
+      .setConnectionRoute("c1", [
+        { x: 80, y: 20 },
+        { x: 140, y: 20 },
+      ]);
+    useDocumentStore.getState().setConnectionRoute("c1", []);
+    expect(useDocumentStore.getState().doc?.diagram.connections[0]?.route).toEqual([]);
+    useDocumentStore.getState().undo();
+    expect(useDocumentStore.getState().doc?.diagram.connections[0]?.route).toEqual([
+      { x: 80, y: 20 },
+      { x: 140, y: 20 },
+    ]);
+  });
 });
 
 describe("copy and paste", () => {

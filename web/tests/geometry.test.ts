@@ -18,6 +18,7 @@ import {
   COMPACT_NODE_SIZE,
   JUNCTION_BOND_GAP,
   JUNCTION_RADIUS,
+  NODE_HALF_SHIFT,
   arrowHeadPath,
   causalStrokePath,
   connectionAnchors,
@@ -29,6 +30,7 @@ import {
   nodeLayout,
   nodeLayouts,
   orthogonalPath,
+  snapToCellCentre,
   splitPorts,
 } from "../src/editor/geometry";
 import { INLINE_ICON, interfaceForBlock, interfaceForNode, portDescriptor } from "../src/editor/nodeInterface";
@@ -111,7 +113,7 @@ describe("port layout", () => {
       throw new Error("missing connection");
     }
     const { source } = connectionAnchors(model, index, connection);
-    const centre = { x: 20, y: 20 };
+    const centre = { x: 20 + NODE_HALF_SHIFT, y: 20 + NODE_HALF_SHIFT };
     expect(
       Math.hypot(source.point.x - centre.x, source.point.y - centre.y),
     ).toBeCloseTo(JUNCTION_RADIUS + JUNCTION_BOND_GAP, 6);
@@ -157,6 +159,39 @@ describe("port layout", () => {
     const data = flow.nodes[0]?.data as { labelSide: string };
     expect(nodeLayouts(model, index).get("n1")?.ports.get("p")?.side).toBe("bottom");
     expect(data.labelSide).toBe("top");
+  });
+
+  it("orders ports along an edge by where their peers sit, avoiding crossed inputs", () => {
+    const motor = createNodeFromBlock(block("DCMotor"), { x: 400, y: 200 }, "n3", "Motor");
+    const top = createNodeFromBlock(block("Se"), { x: 0, y: 0 }, "n1", "Top");
+    const bottom = createNodeFromBlock(block("Se"), { x: 0, y: 600 }, "n2", "Bottom");
+    const model = createEmptyModel("PortOrder");
+    model.diagram.nodes = [top, bottom, motor];
+    model.diagram.connections = [
+      // Deliberately connect the top source to `n` and the bottom to `p`; the
+      // layout must put `n` above `p`, not follow the interface order.
+      createConnection("c1", "bond", { node: "n1", port: "p" }, { node: "n3", port: "n" }),
+      createConnection("c2", "bond", { node: "n2", port: "p" }, { node: "n3", port: "p" }),
+    ];
+
+    const layout = nodeLayouts(model, index).get("n3");
+    const p = layout?.ports.get("p");
+    const n = layout?.ports.get("n");
+    expect(p).toBeDefined();
+    expect(n).toBeDefined();
+    if (p === undefined || n === undefined) {
+      return;
+    }
+    expect(p.side).toBe("left");
+    expect(n.side).toBe("left");
+    expect(n.y).toBeLessThan(p.y);
+  });
+
+  it("snaps routing vertices to cell centres", () => {
+    expect(snapToCellCentre({ x: 11, y: 29 })).toEqual({ x: 10, y: 30 });
+    expect(snapToCellCentre({ x: 31, y: 49 })).toEqual({ x: 30, y: 50 });
+    expect(snapToCellCentre({ x: 10, y: 30 })).toEqual({ x: 10, y: 30 });
+    expect(snapToCellCentre({ x: 0, y: 0 })).toEqual({ x: 10, y: 10 });
   });
 
   it("picks the source port nearest the Ctrl press", () => {
@@ -331,7 +366,7 @@ describe("anchors and paths", () => {
     );
     model.diagram.connections = [bond];
     const anchors = connectionAnchors(model, index, bond);
-    const centre = { x: 120, y: 120 };
+    const centre = { x: 120 + NODE_HALF_SHIFT, y: 120 + NODE_HALF_SHIFT };
     const distance = Math.hypot(
       anchors.source.point.x - centre.x,
       anchors.source.point.y - centre.y,

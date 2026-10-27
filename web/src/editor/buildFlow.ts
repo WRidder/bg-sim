@@ -22,6 +22,7 @@ import {
   isCompactBlock,
   layoutNode,
   nodeLayouts,
+  nodeVisualOffset,
   type NodeLayout,
   type Side,
 } from "./geometry";
@@ -187,10 +188,11 @@ export function buildDiagram(
     const layout = layouts.get(node.id);
     const width = layout?.width ?? 0;
     const height = layout?.height ?? 0;
+    const offset = nodeVisualOffset(node, index);
     return {
       id: node.id,
-      x: node.position.x - 4,
-      y: node.position.y - 4,
+      x: node.position.x + offset.x - 4,
+      y: node.position.y + offset.y - 4,
       w: width + 8,
       h: height + 8,
     };
@@ -234,6 +236,17 @@ export function buildDiagram(
     const bond = isBondGraph(iface);
     const compact = isCompactBlock(iface);
     const outsideLabel = bond || compact;
+    const offset = nodeVisualOffset(node, index);
+    const labelNode =
+      offset.x === 0 && offset.y === 0
+        ? node
+        : {
+            ...node,
+            position: {
+              x: node.position.x + offset.x,
+              y: node.position.y + offset.y,
+            },
+          };
     const data: BlockNodeData = {
       nodeId: node.id,
       name: node.name,
@@ -248,7 +261,7 @@ export function buildDiagram(
       compact,
       labelSide: outsideLabel
         ? bondLabelSide(
-            node,
+            labelNode,
             layout,
             nodeRects.filter((rect) => rect.id !== node.id),
           )

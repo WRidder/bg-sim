@@ -219,20 +219,28 @@
   display: flex;
   flex-direction: column;
   background: var(--color-surface-raised);
-  border: var(--border-width) solid var(--color-border-strong);
+  border: none;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-panel);
+  /* An inset stroke keeps the node's layout box exactly its diagram size, so
+   * centred port handles line up with the geometry anchors. A real border would
+   * shift them by the border width. */
+  box-shadow:
+    inset 0 0 0 var(--border-width) var(--color-border-strong),
+    var(--shadow-panel);
   color: var(--color-text);
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: box-shadow var(--transition-fast);
 }
 
 .block-node:hover {
-  border-color: var(--color-focus);
+  box-shadow:
+    inset 0 0 0 var(--border-width) var(--color-focus),
+    var(--shadow-panel);
 }
 
 .block-node.is-selected {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent);
+  box-shadow:
+    inset 0 0 0 var(--border-width) var(--color-accent),
+    0 0 0 2px var(--color-accent);
 }
 
 /* A compact library block is a square icon; the name hangs outside it. */
@@ -355,6 +363,8 @@
   border: none;
   user-select: none;
   cursor: grab;
+  /* 2x2 elements sit centred in the 3x3 grid. */
+  transform: translate(10px, 10px);
 }
 
 .bond-node__glyph {
@@ -468,6 +478,8 @@
   border: 1.5px solid var(--color-border-strong);
   box-shadow: var(--shadow-panel);
   color: var(--color-text);
+  /* 2x2 elements sit centred in the 3x3 grid. */
+  transform: translate(10px, 10px);
 }
 
 .junction-node:hover,
@@ -481,7 +493,7 @@
 
 .junction-node__label {
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 17px;
+  font-size: 19px;
   line-height: 1;
   user-select: none;
 }
