@@ -105,6 +105,7 @@ mutable struct Builder
     junction_by_path::Dict{String,Int}
     raw::Vector{RawConnection}
     boundary::Dict{String,Dict{Symbol,RawEndpoint}}
+    composite_stack::Vector{String}
     nodes_total::Int
     conns_total::Int
     power_signals::Dict{String,Flat.DerivedSignal}
@@ -129,6 +130,7 @@ function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
         Dict{String,Int}(),
         RawConnection[],
         Dict{String,Dict{Symbol,RawEndpoint}}(),
+        String[],
         0,
         0,
         Dict{String,Flat.DerivedSignal}(),
@@ -139,7 +141,7 @@ end
 # Small helpers
 # ---------------------------------------------------------------------------------------
 
-_join(prefix::String, name::AbstractString) =
+_join(prefix::String, name::Union{AbstractString,Symbol}) =
     isempty(prefix) ? String(name) : prefix * "/" * String(name)
 
 _qname(st::BlockState, name::Symbol) = st.path * "/" * String(name)
@@ -1842,6 +1844,366 @@ function _emit_if!(
 end
 
 # ---------------------------------------------------------------------------------------
+# Textual composites (@components / @connections, J2.6, decision D5)
+# ---------------------------------------------------------------------------------------
+
+"""`(block, port) -> :power | :input | :output | nothing` for a declared interface port of a
+resolved block. Used to derive the connection kind of a textual `connect(...)`."""
+function _declared_port_kind(block::IR.BlockDef, name::Symbol)
+    for scope in (:ports, :inputs, :outputs)
+        for d in BGSim.declarations(block.ast, scope)
+            BGSim.decl_name(d) == name || continue
+            return scope === :ports ? :power : scope === :inputs ? :input : :output
+        end
+    end
+    return nothing
+end
+
+"""The declared power domain of a port of a resolved block, or `nothing`."""
+function _declared_port_domain(block::IR.BlockDef, name::Symbol)
+    for d in BGSim.ports(block.ast)
+        BGSim.decl_name(d) == name || continue
+        t = BGSim.resolve_type(BGSim.decl_type(d), BGSim.constant_env(block.ast))
+        return something(BGSim.type_domain(t), :Generic)
+    end
+    return nothing
+end
+
+"""
+    _find_named_block(b, name) -> (matches, where)
+
+Resolve a component's block by name: the project library shadows the stdlib, and a name
+declared twice in the same namespace is ambiguous (E101). This is the only place a textual
+composite names a block; everything after it uses the plan 3.1 ref (`stdlib:…`/`project:…`),
+so the component is instantiated by exactly the same code as a model-JSON node.
+"""
+function _find_named_block(b::Builder, name::Symbol)
+    groups = (
+        ("project library", [v for v in values(_load_project!(b)) if v.name === name]),
+        ("standard library", [v for v in values(_load_stdlib!(b)) if v.name === name]),
+    )
+    for (where, matches) in groups
+        isempty(matches) && continue
+        return matches, where
+    end
+    return IR.BlockDef[], ""
+end
+
+_repr_value(v::Bool) = v ? "true" : "false"
+_repr_value(v::AbstractFloat) = repr(Float64(v))
+_repr_value(v::Real) = string(v)
+_repr_value(v::AbstractVector) = "[" * join((_repr_value(x) for x in v), ", ") * "]"
+_repr_value(v::AbstractMatrix) =
+    "[" * join(("[" * join((_repr_value(v[i, j]) for j in 1:size(v, 2)), ", ") * "]"
+                for i in 1:size(v, 1)), ", ") * "]"
+_repr_value(v) = string(v)
+
+"""Report a composite-expansion problem with the component's instance path (plan 3.4)."""
+function _report_component!(
+    b::Builder,
+    node::IR.ModelNode,
+    path::String,
+    ref::Union{String,Nothing};
+    code,
+    message,
+    hint = nothing,
+)
+    push!(
+        b.diagnostics,
+        diag(
+            code,
+            message;
+            hint = hint,
+            path = path,
+            block = ref,
+            node = node.id,
+        ),
+    )
+    return nothing
+end
+
+"""
+    _composite_diagram!(b, node, path, block) -> (diagram, faces)
+
+Lower a textual composite into the *same* intermediate representation a model-JSON subsystem
+has: a `ModelDiagram` of component nodes plus wire/bond/signal connections, and the exposed
+`SubsystemPort` list that maps each interface port onto the internal component port it
+exposes. `_instantiate_diagram!` then flattens it with the `<Instance>/<child>` prefix rule,
+so the textual and the JSON form share one implementation and produce the same flat model.
+
+The `connect(a, gear.a)` entries that mention an interface port are *not* emitted as
+connections: they become the boundary map. Every other entry is an ordinary connection; its
+kind follows the same rules as the editor's (plan D7): signal when a signal port is involved,
+bond when a `Generic` power port is involved, wire otherwise.
+"""
+function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block::IR.BlockDef)
+    pb = block.ast
+    comps = BGSim.components(pb)
+    conns = BGSim.connections(pb)
+    consts = BGSim.constant_env(pb)
+    diagram = IR.ModelDiagram(IR.ModelNode[], IR.ModelConnection[])
+
+    named = Dict{Symbol,IR.BlockDef}()
+    ids = Dict{Symbol,String}()
+    for comp in comps
+        name = BGSim.component_name(comp)
+        matches, where = _find_named_block(b, BGSim.component_block(comp))
+        if isempty(matches)
+            _report_component!(
+                b, node, _join(path, name), nothing;
+                code = "E101",
+                message = "unknown block `$(BGSim.component_block(comp))` on component `$name` of `$(node.name)`",
+                hint = "add `library/$(BGSim.component_block(comp)).jl` to the project library, or use a standard library block",
+            )
+            continue
+        elseif length(matches) > 1
+            _report_component!(
+                b, node, _join(path, name), nothing;
+                code = "E101",
+                message = "block name `$(BGSim.component_block(comp))` is ambiguous in the $where",
+                hint = "rename one of the blocks; a textual component refers to a block by name",
+            )
+            continue
+        end
+        component = only(matches)
+        named[name] = component
+        id = String(block.name) * "/" * String(name)
+        ids[name] = id
+        params = Dict{String,String}()
+        for (key, expr) in BGSim.component_kwargs(comp)
+            _declared_parameter(component, key) || _report_component!(
+                b, node, _join(path, name), component.ref;
+                code = "E003",
+                message = "`$(component.name)` has no parameter `$key`",
+                hint = "the keyword names a `@parameters` entry of the component block",
+            )
+            ok, value = try_eval_const(expr, consts)
+            if !ok
+                message = String(value)
+                _report_component!(
+                    b, node, _join(path, name), component.ref;
+                    code = occursin("is not a constant", message) ? "E003" : "E001",
+                    message = "parameter `$key` of component `$name` is not a constant expression: $message",
+                    hint = "a component parameter is bound when the composite is flattened",
+                )
+                continue
+            end
+            params[String(key)] = _repr_value(value)
+        end
+        push!(
+            diagram.nodes,
+            IR.ModelNode(
+                id,
+                String(name),
+                :ref,
+                component.ref,
+                nothing,
+                nothing,
+                nothing,
+                IR.SubsystemPort[],
+                params,
+                Dict{String,Any}(),
+                Dict{String,String}(),
+                nothing,
+            ),
+        )
+    end
+
+    faces = IR.SubsystemPort[]
+    partner = Dict{Symbol,BGSim.PortRef}()
+    for c in conns
+        for (ref, other) in ((BGSim.connect_from(c), BGSim.connect_to(c)),
+                             (BGSim.connect_to(c), BGSim.connect_from(c)))
+            BGSim.portref_instance(ref) === nothing || continue
+            name = BGSim.portref_port(ref)
+            haskey(partner, name) && continue
+            partner[name] = other
+        end
+    end
+
+    # The interface: every `@ports` / `@inputs` / `@outputs` entry becomes one face.
+    for (scope, kind, direction) in (
+        (:ports, :power, nothing),
+        (:inputs, :signal, :input),
+        (:outputs, :signal, :output),
+    )
+        for d in BGSim.declarations(pb, scope)
+            name = BGSim.decl_name(d)
+            target = get(partner, name, nothing)
+            if target === nothing || BGSim.portref_instance(target) === nothing
+                _report_component!(
+                    b, node, path, block.ref;
+                    code = "E003",
+                    message = "`$name` of the composite `$(node.name)` is not connected to a component port",
+                    hint = "each interface port exposes exactly one internal port",
+                )
+                continue
+            end
+            instance = BGSim.portref_instance(target)
+            component = get(named, instance, nothing)
+            if component === nothing
+                continue    # the component was reported above
+            end
+            target_port = BGSim.portref_port(target)
+            if _declared_port_kind(component, target_port) === nothing
+                _report_component!(
+                    b, node, _join(path, instance), component.ref;
+                    code = "E102",
+                    message = "`$(component.name)` has no port `$target_port`",
+                    hint = "an interface port exposes a `@ports`, `@inputs` or `@outputs` entry of the component",
+                )
+                continue
+            end
+            t = BGSim.resolve_type(BGSim.decl_type(d), consts)
+            domain = kind === :power ? something(BGSim.type_domain(t), :Generic) : nothing
+            if kind === :power
+                target_domain = _declared_port_domain(component, target_port)
+                if domain != :Generic && target_domain != :Generic &&
+                   domain != target_domain
+                    _report_component!(
+                        b, node, _join(path, instance), component.ref;
+                        code = "E102",
+                        message = "interface port `$name` declares $(domain) but `$(component.name).$target_port` is $(target_domain)",
+                        hint = "a composite port has the domain of the component port it exposes",
+                    )
+                    continue
+                end
+            end
+            push!(
+                faces,
+                IR.SubsystemPort(
+                    name,
+                    kind,
+                    direction,
+                    domain,
+                    :Real,
+                    kind === :power ? Int[] : something(BGSim.type_size(t, consts), Int[]),
+                    get(BGSim.decl_attrs(d), :unit, nothing),
+                    get(ids, instance, ""),
+                    BGSim.portref_port(target),
+                ),
+            )
+        end
+    end
+
+    # The wiring between components (interface-to-component entries are the faces above).
+    for (k, c) in enumerate(conns)
+        from = BGSim.connect_from(c)
+        to = BGSim.connect_to(c)
+        (BGSim.portref_instance(from) === nothing) && continue
+        (BGSim.portref_instance(to) === nothing) && continue
+        kind = _text_connection_kind!(
+            b, node, path, named, BGSim.connect_from(c), BGSim.connect_to(c),
+        )
+        kind === nothing && continue
+        f = IR.ModelEndpoint(get(ids, BGSim.portref_instance(from), ""), BGSim.portref_port(from))
+        t = IR.ModelEndpoint(get(ids, BGSim.portref_instance(to), ""), BGSim.portref_port(to))
+        if kind == :signal && _declared_port_kind(
+            named[BGSim.portref_instance(from)], BGSim.portref_port(from),
+        ) == :input
+            f, t = t, f
+        end
+        push!(
+            diagram.connections,
+            IR.ModelConnection(
+                _join(_join(path, String(block.name)), "c" * string(k)),
+                kind,
+                f,
+                t,
+                nothing,
+            ),
+        )
+    end
+    return diagram, faces
+end
+
+"""Whether a resolved block declares `name` in `@parameters`."""
+function _declared_parameter(block::IR.BlockDef, name::Symbol)
+    return any(
+        d -> BGSim.decl_name(d) == name, BGSim.declarations(block.ast, :parameters)
+    )
+end
+
+"""
+The plan D7 kind of one textual `connect`: a signal when either side is a signal port (from
+output to input), a bond when either power port is `Generic`, a wire for two concrete power
+ports. Missing ports are E102 on the component, which is the same code and shape the
+model-JSON flattener reports.
+"""
+function _text_connection_kind!(b, node, path, named, from, to)
+    fi = BGSim.portref_instance(from)
+    ti = BGSim.portref_instance(to)
+    fp = BGSim.portref_port(from)
+    tp = BGSim.portref_port(to)
+    fb = get(named, fi, nothing)
+    tb = get(named, ti, nothing)
+    (fb === nothing || tb === nothing) && return nothing
+    kf = _declared_port_kind(fb, fp)
+    kt = _declared_port_kind(tb, tp)
+    bad = kf === nothing ? (fi, fb, fp) : (kt === nothing ? (ti, tb, tp) : nothing)
+    if bad !== nothing
+        instance, component, port = bad
+        _report_component!(
+            b, node, _join(path, String(instance)), component.ref;
+            code = "E102",
+            message = "`$(component.name)` has no port `$port`",
+            hint = "a `connect` names a `@ports`, `@inputs` or `@outputs` entry of the component",
+        )
+        return nothing
+    end
+    if kf in (:input, :output) || kt in (:input, :output)
+        return :signal
+    end
+    df = _declared_port_domain(fb, fp)
+    dt = _declared_port_domain(tb, tp)
+    return (df === :Generic || dt === :Generic) ? :bond : :wire
+end
+
+"""Expand one textual composite at `path`: instantiate its synthetic diagram (with the same
+prefix rule a model-JSON subsystem uses) and register its boundary faces. The stack refuses a
+composite that contains itself, which would otherwise recurse without bound."""
+function _instantiate_composite!(
+    b::Builder,
+    node::IR.ModelNode,
+    path::String,
+    block::IR.BlockDef,
+)
+    if block.ref in b.composite_stack
+        _report_component!(
+            b, node, path, block.ref;
+            code = "E101",
+            message = "the textual composite `$(block.name)` contains itself",
+            hint = "a composite cannot instantiate itself, directly or through another composite",
+        )
+        return nothing
+    end
+    push!(b.composite_stack, block.ref)
+    try
+        diagram, faces = _composite_diagram!(b, node, path, block)
+        diagram === nothing && return nothing
+        _instantiate_diagram!(b, diagram, path)
+        pseudo = IR.ModelNode(
+            node.id,
+            node.name,
+            :subsystem,
+            nothing,
+            nothing,
+            nothing,
+            diagram,
+            faces,
+            Dict{String,String}(),
+            Dict{String,Any}(),
+            Dict{String,String}(),
+            node.position,
+        )
+        _bind_boundary!(b, pseudo, path)
+    finally
+        pop!(b.composite_stack)
+    end
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
 # Diagram walking
 # ---------------------------------------------------------------------------------------
 
@@ -1866,7 +2228,11 @@ function _instantiate_diagram!(
         else
             block = resolve_block(b, node, path)
             block === nothing && continue
-            _instantiate_block!(b, node, path, block)
+            if isempty(BGSim.components(block.ast))
+                _instantiate_block!(b, node, path, block)
+            else
+                _instantiate_composite!(b, node, path, block)
+            end
         end
     end
     for conn in diagram.connections
@@ -1931,10 +2297,12 @@ function _resolve_internal_port(
         return nothing
     end
     inner_path = _join(path, inner.name)
+    boundary = get(b.boundary, inner_path, nothing)
+    if boundary !== nothing
+        return get(boundary, sp.port, nothing)
+    end
     if inner.block_kind == :subsystem
-        child = get(b.boundary, inner_path, nothing)
-        child === nothing && return nothing
-        return get(child, sp.port, nothing)
+        return nothing
     elseif inner.block_kind == :junction
         return RawEndpoint(inner.id, inner_path, nothing, :junction)
     end
@@ -1963,11 +2331,16 @@ function _resolve_endpoint(
     path = _join(prefix, node.name)
     if node.block_kind == :junction
         return RawEndpoint(node.id, path, nothing, :junction)
+    end
+    boundary = get(b.boundary, path, nothing)
+    if boundary !== nothing
+        # A JSON subsystem node or a textual composite (J2.6): its face resolves to the
+        # internal instance port it exposes.
+        ep.port === nothing && return RawEndpoint(node.id, path, nothing, :unknown)
+        return get(boundary, Symbol(ep.port), RawEndpoint(node.id, path, Symbol(ep.port), :unknown))
     elseif node.block_kind == :subsystem
         ep.port === nothing && return RawEndpoint(node.id, path, nothing, :unknown)
-        boundary = get(b.boundary, path, nothing)
-        boundary === nothing && return RawEndpoint(node.id, path, Symbol(ep.port), :unknown)
-        return get(boundary, Symbol(ep.port), RawEndpoint(node.id, path, Symbol(ep.port), :unknown))
+        return RawEndpoint(node.id, path, Symbol(ep.port), :unknown)
     end
     st = get(b.state_by_path, path, nothing)
     if ep.port === nothing || st === nothing

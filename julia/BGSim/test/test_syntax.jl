@@ -762,17 +762,28 @@ const ROW_OVERRIDES = Dict{Symbol,NamedTuple}(
         expect_at(pb, "E001", 4, 21; contains = "flying")
     end
 
-    @testset "negative: unsupported scopes are named" begin
-        for (scope, line) in (
-            ("@components g = LossyGear()", 2),
-            ("@connections connect(a, b)", 2),
-        )
+    @testset "the J2.6 textual subsystem scopes are no longer rejected" begin
+        for (scope, kind) in (("@components g = LossyGear()", :components),
+                              ("@connections connect(a, b)", :connections))
             src = "@block A begin\n    $scope\nend\n"
             pb = parse_block(src)
-            d = expect_at(pb, "E001", line, 5)
-            @test d !== nothing && occursin("not supported yet", d.message)
-            @test d !== nothing && occursin(scope[1:findfirst(' ', scope) - 1], d.message)
+            @test isempty(block_diagnostics(pb))
+            @test kind in scopes(pb)
         end
+        # A malformed entry still has the usual E001 shape.
+        bad = parse_block("@block A begin\n    @components g\nend\n")
+        d = expect_at(bad, "E001", 2, 17)
+        @test d !== nothing && occursin("`name = BlockName", d.message)
+        composite = parse_block("""
+        @block Composite begin
+            @ports a::Power{Rotation}
+            @components g = LossyGear(n = 1.0)
+            @connections connect(a, g.a)
+        end
+        """)
+        @test scopes(composite) == [:ports, :components, :connections]
+        @test length(components(composite)) == 1
+        @test length(connections(composite)) == 1
     end
 
     @testset "the J2.1 scopes are no longer rejected" begin

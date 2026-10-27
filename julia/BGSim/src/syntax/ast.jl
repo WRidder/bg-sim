@@ -556,6 +556,62 @@ causality_value(c::CausalityDecl) = c.value
 source_range(c::CausalityDecl) = c.range
 
 # ---------------------------------------------------------------------------------------
+# Textual subsystems: @components / @connections (J2.6, decision D5)
+# ---------------------------------------------------------------------------------------
+
+"""
+    ComponentDecl(name, block, kwargs, range)
+
+One `name = BlockName(kw = expression, ...)` entry of `@components`. `block` is the
+referenced block *name* as written (a project or stdlib block is resolved by name at
+instantiation); `kwargs` are the parameter overrides in source order, as `(name, expr)`
+pairs in the defaults expression scope.
+"""
+struct ComponentDecl
+    name::Symbol
+    block::Symbol
+    kwargs::Vector{Pair{Symbol,Expr}}
+    range::SourceRange
+end
+
+component_name(c::ComponentDecl) = c.name
+component_block(c::ComponentDecl) = c.block
+component_kwargs(c::ComponentDecl) = copy(c.kwargs)
+source_range(c::ComponentDecl) = c.range
+
+"""
+    PortRef(instance, port, range)
+
+One side of a `connect(...)`: a port of the block itself (`instance === nothing`) or a port
+of one of its `@components` (`instance` names the component).
+"""
+struct PortRef
+    instance::Union{Symbol,Nothing}
+    port::Symbol
+    range::SourceRange
+end
+
+portref_instance(p::PortRef) = p.instance
+portref_port(p::PortRef) = p.port
+source_range(p::PortRef) = p.range
+
+"""
+    ConnectDecl(from, to, range)
+
+One `connect(a, b)` entry of `@connections`. The order is the source order; it decides which
+end is the bond's positive-power end when the connection is a bond.
+"""
+struct ConnectDecl
+    from::PortRef
+    to::PortRef
+    range::SourceRange
+end
+
+connect_from(c::ConnectDecl) = c.from
+connect_to(c::ConnectDecl) = c.to
+source_range(c::ConnectDecl) = c.range
+
+# ---------------------------------------------------------------------------------------
 # The parsed block
 # ---------------------------------------------------------------------------------------
 
@@ -564,13 +620,15 @@ source_range(c::CausalityDecl) = c.range
 
 The result of [`parse_block`](@ref): the block's name, its reference and source text, its
 declarations per scope, its equations (continuous and initial), its `@discrete` scopes and
-`@events` entries, its causality declarations, and the diagnostics the parser itself
-produced (E000 and structural E001). `check_block` adds the semantic checks.
+`@events` entries, its causality declarations, its `@components` / `@connections` textual
+subsystem (J2.6), and the diagnostics the parser itself produced (E000 and structural E001).
+`check_block` adds the semantic checks.
 
 Accessors (do not read the fields directly):
 [`block_name`](@ref), [`block_ref`](@ref), [`block_source`](@ref), [`scopes`](@ref),
 [`declarations`](@ref), [`equations`](@ref), [`initial_equations`](@ref),
 [`discrete_scopes`](@ref), [`events`](@ref), [`causality`](@ref), [`ports`](@ref),
+[`components`](@ref), [`connections`](@ref),
 [`block_range`](@ref), [`block_filename`](@ref), [`block_diagnostics`](@ref).
 """
 struct ParsedBlock
@@ -585,6 +643,8 @@ struct ParsedBlock
     discrete_items::Vector{Any}
     event_items::Vector{Any}
     causality_items::Vector{CausalityDecl}
+    component_items::Vector{ComponentDecl}
+    connection_items::Vector{ConnectDecl}
     diagnostics::Vector{Diagnostic}
     range::SourceRange
 end
@@ -642,6 +702,18 @@ causality(pb::ParsedBlock) = copy(pb.causality_items)
 
 The `@ports` declarations in source order (each has a `Power{Domain}` type)."""
 ports(pb::ParsedBlock) = declarations(pb, :ports)
+
+"""    components(pb) -> Vector{ComponentDecl}
+
+Every `@components` entry in source order; empty for a block without the scope. This is the
+textual subsystem's instance list (decision D5)."""
+components(pb::ParsedBlock) = copy(pb.component_items)
+
+"""    connections(pb) -> Vector{ConnectDecl}
+
+Every `connect(a, b)` entry of `@connections` in source order; empty for a block without the
+scope."""
+connections(pb::ParsedBlock) = copy(pb.connection_items)
 
 """    scope_string(scope::Symbol) -> String
 

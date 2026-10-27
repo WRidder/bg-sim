@@ -58,7 +58,7 @@ export parse_block, parse_blocks, check_block, block_interface, block_equations
 
 # AST accessors (never read the fields directly).
 export block_name, block_ref, block_source, block_filename, block_range, block_diagnostics
-export scopes, declarations, equations, causality, ports
+export scopes, declarations, equations, causality, ports, components, connections
 export decl_name, decl_type, decl_default, decl_attrs, decl_scope, decl_range,
     decl_default_text
 export expr_range
@@ -66,7 +66,9 @@ export block_balance, constant_env
 export type_kind, type_args, type_name, type_size, type_element, type_domain, resolve_type,
     domain_size
 export causality_ports, causality_kind, causality_value
-export ParsedBlock, Decl, TypeSpec, CausalityDecl
+export component_name, component_block, component_kwargs
+export portref_instance, portref_port, connect_from, connect_to
+export ParsedBlock, Decl, TypeSpec, CausalityDecl, ComponentDecl, PortRef, ConnectDecl
 
 # Diagnostics.
 export Diagnostic, SourceRange, SourceRef, Related, severity_of, diag, to_namedtuple,

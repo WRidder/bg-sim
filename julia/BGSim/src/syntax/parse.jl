@@ -32,18 +32,17 @@ const SCOPE_MACROS = Dict{Symbol,Symbol}(
     Symbol("@discrete") => :discrete,
     Symbol("@events") => :events,
     Symbol("@causality") => :causality,
+    Symbol("@components") => :components,
+    Symbol("@connections") => :connections,
 )
 
 # Scopes that exist in the spec but belong to a later work package. They must be *rejected*
 # with a clear E001 that names the scope, never silently ignored.
-const UNSUPPORTED_SCOPES = Dict{Symbol,String}(
-    Symbol("@components") => "textual subsystems (J2.6)",
-    Symbol("@connections") => "textual subsystems (J2.6)",
-)
+const UNSUPPORTED_SCOPES = Dict{Symbol,String}()
 
 const ALL_SCOPE_NAMES =
     "@constants @parameters @inputs @outputs @ports @variables @initial @equations " *
-    "@discrete @events @causality"
+    "@discrete @events @causality @components @connections"
 
 const POWER_DOMAINS = Set{Symbol}(
     [:Electrical, :Translation, :Rotation, :Hydraulic, :Generic, :Planar, :Spatial]
@@ -186,6 +185,8 @@ mutable struct BlockBuilder
     discrete_items::Vector{Any}
     event_items::Vector{Any}
     causality_items::Vector{CausalityDecl}
+    component_items::Vector{ComponentDecl}
+    connection_items::Vector{ConnectDecl}
     diagnostics::Vector{Diagnostic}
     range::SourceRange
     size_refs::Set{Symbol}
@@ -204,6 +205,8 @@ function BlockBuilder(name, ref, text, filename, range)
         Any[],
         Any[],
         CausalityDecl[],
+        ComponentDecl[],
+        ConnectDecl[],
         Diagnostic[],
         range,
         Set{Symbol}(),
@@ -232,6 +235,8 @@ function _as_parsed_stub(b::BlockBuilder)
         b.discrete_items,
         b.event_items,
         b.causality_items,
+        b.component_items,
+        b.connection_items,
         b.diagnostics,
         b.range,
     )
@@ -250,6 +255,8 @@ function _finish(b::BlockBuilder)
         b.discrete_items,
         b.event_items,
         b.causality_items,
+        b.component_items,
+        b.connection_items,
         b.diagnostics,
         b.range,
     )
@@ -418,6 +425,8 @@ function _syntax_error_block(src::String, filename::String, ref::String, err)
         Any[],
         Any[],
         CausalityDecl[],
+        ComponentDecl[],
+        ConnectDecl[],
         diags,
         r,
     )
@@ -501,6 +510,12 @@ function _parse_scope_stmt!(b::BlockBuilder, stmt)
         return nothing
     elseif scope == :events
         _parse_events_scope!(b, args, stmt)
+        return nothing
+    elseif scope == :components
+        _parse_components_scope!(b, args, stmt)
+        return nothing
+    elseif scope == :connections
+        _parse_connections_scope!(b, args, stmt)
         return nothing
     end
     if isempty(args)
@@ -1312,6 +1327,229 @@ function _parse_event!(b::BlockBuilder, node)
     cond === nothing && return nothing
     body = _parse_stmt_list!(b, ch[3], :events)
     push!(b.event_items, EventDecl(cond, body, rng))
+    return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# @components and @connections (J2.6, decision D5)
+# ---------------------------------------------------------------------------------------
+
+"""
+Parse one `@components begin name = BlockName(kw = expr, ...) ... end` scope. Every entry
+declares an internal instance of a block (resolved by name at instantiation); the keyword
+arguments are parameter overrides in the defaults expression scope. Positional arguments
+are refused: a component's parameters are named, so a positional argument cannot be bound.
+"""
+function _parse_components_scope!(b::BlockBuilder, args, stmt)
+    if length(args) != 1
+        _error!(
+            b,
+            "E001",
+            "`@components` takes one `begin ... end` body of `name = BlockName(...)` entries";
+            scope = :components,
+            hint = "write `@components begin gear = LossyGear(n = 10.0) end`",
+        )
+        return nothing
+    end
+    arg = args[1]
+    if kind(arg) == K"block" && isempty(_flatten_blocks(_children(arg)))
+        _error!(
+            b,
+            "E001",
+            "the `@components` scope is empty",
+            arg;
+            scope = :components,
+            hint = "declare an instance, or remove the scope",
+        )
+        return nothing
+    end
+    items = _flatten_blocks(kind(arg) == K"block" ? _children(arg) : [arg])
+    for item in items
+        _parse_component!(b, item)
+    end
+    return nothing
+end
+
+function _parse_component!(b::BlockBuilder, node)
+    rng = _range(node, b.filename)
+    if kind(node) != K"="
+        _error!(
+            b,
+            "E001",
+            "an `@components` entry is `name = BlockName(parameter = value, ...)`",
+            node;
+            scope = :components,
+            hint = "write `gear = LossyGear(n = 10.0)`",
+        )
+        return nothing
+    end
+    ch = _children(node)
+    name = length(ch) == 2 ? _leaf_symbol(ch[1]) : nothing
+    if name === nothing
+        _error!(b, "E001", "a component name must be an identifier", isempty(ch) ? node : ch[1];
+            scope = :components)
+        return nothing
+    end
+    rhs = ch[2]
+    if kind(rhs) != K"call" || isempty(_children(rhs))
+        _error!(
+            b,
+            "E001",
+            "component `$name` must be an instance of a block, as in `$name = LossyGear(n = 10.0)`",
+            rhs;
+            scope = :components,
+            hint = "a component is `name = BlockName(...)`; a junction or a subsystem uses the model JSON",
+        )
+        return nothing
+    end
+    cch = _children(rhs)
+    block = _leaf_symbol(cch[1])
+    if block === nothing
+        _error!(
+            b,
+            "E001",
+            "the block of component `$name` must be a plain block name",
+            cch[1];
+            scope = :components,
+            hint = "write the block name without a module or a path, e.g. `LossyGear`",
+        )
+        return nothing
+    end
+    kwargs = Pair{Symbol,Expr}[]
+    ok = true
+    for a in cch[2:end]
+        if kind(a) != K"="
+            _error!(
+                b,
+                "E001",
+                "component `$name` takes named parameter overrides only",
+                a;
+                scope = :components,
+                hint = "write `$(block)(parameter = value, ...)`; positional arguments have no meaning",
+            )
+            ok = false
+            continue
+        end
+        ach = _children(a)
+        key = length(ach) == 2 ? _leaf_symbol(ach[1]) : nothing
+        if key === nothing
+            _error!(b, "E001", "a component parameter override is `name = value`", a;
+                scope = :components)
+            ok = false
+            continue
+        end
+        value = _to_expr!(b, ach[2], :components)
+        value === nothing && (ok = false; continue)
+        any(k -> first(k) === key, kwargs) && (
+            _error!(
+                b,
+                "E003",
+                "parameter `$key` of component `$name` is overridden twice",
+                a;
+                scope = :components,
+                hint = "give each parameter of a component one value",
+            );
+            ok = false
+        )
+        push!(kwargs, key => value)
+    end
+    ok || return nothing
+    push!(b.component_items, ComponentDecl(name, block, kwargs, rng))
+    return nothing
+end
+
+"""
+Parse one `@connections begin connect(a, b) ... end` scope. Each side of a `connect` is a
+port of this block (`a`) or a port of one of its components (`gear.a`). Both power and
+signal ports are written the same way: the port declarations decide what the connection
+means (J2.6, plan D7).
+"""
+function _parse_connections_scope!(b::BlockBuilder, args, stmt)
+    if length(args) != 1
+        _error!(
+            b,
+            "E001",
+            "`@connections` takes one `begin ... end` body of `connect(a, b)` entries";
+            scope = :connections,
+            hint = "write `@connections begin connect(a, gear.a) end`",
+        )
+        return nothing
+    end
+    arg = args[1]
+    if kind(arg) == K"block" && isempty(_flatten_blocks(_children(arg)))
+        _error!(
+            b,
+            "E001",
+            "the `@connections` scope is empty",
+            arg;
+            scope = :connections,
+            hint = "connect two ports, or remove the scope",
+        )
+        return nothing
+    end
+    items = _flatten_blocks(kind(arg) == K"block" ? _children(arg) : [arg])
+    for item in items
+        _parse_connect!(b, item)
+    end
+    return nothing
+end
+
+function _parse_connect!(b::BlockBuilder, node)
+    rng = _range(node, b.filename)
+    ch = _children(node)
+    if !(kind(node) == K"call" && !isempty(ch) && _leaf_symbol(ch[1]) === :connect &&
+         length(ch) == 3)
+        _error!(
+            b,
+            "E001",
+            "an `@connections` entry is `connect(portA, portB)`",
+            node;
+            scope = :connections,
+            hint = "write `connect(gear.b, play.a)`, with a port of this block or `instance.port` on each side",
+        )
+        return nothing
+    end
+    from = _parse_portref!(b, ch[2])
+    to = _parse_portref!(b, ch[3])
+    (from === nothing || to === nothing) && return nothing
+    push!(b.connection_items, ConnectDecl(from, to, rng))
+    return nothing
+end
+
+function _parse_portref!(b::BlockBuilder, node)
+    rng = _range(node, b.filename)
+    k = kind(node)
+    if k == K"Identifier"
+        name = _leaf_symbol(node)
+        if name === nothing
+            _error!(b, "E001", "a port name must be an identifier", node; scope = :connections)
+            return nothing
+        end
+        return PortRef(nothing, name, rng)
+    elseif k == K"."
+        ch = _children(node)
+        instance = length(ch) == 2 ? _leaf_symbol(ch[1]) : nothing
+        port = length(ch) == 2 ? _leaf_symbol(ch[2]) : nothing
+        if instance === nothing || port === nothing
+            _error!(
+                b,
+                "E001",
+                "a component port is written `instance.port`",
+                node;
+                scope = :connections,
+            )
+            return nothing
+        end
+        return PortRef(instance, port, rng)
+    end
+    _error!(
+        b,
+        "E001",
+        "a `connect` side is a port (`a`) or a component port (`gear.a`)",
+        node;
+        scope = :connections,
+        hint = "nested component paths are not supported; connect `instance.port`",
+    )
     return nothing
 end
 

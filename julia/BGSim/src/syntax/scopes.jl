@@ -102,6 +102,7 @@ function check_block(pb::ParsedBlock)
     _check_declaration_names!(ck)
     _check_declaration_types!(ck)
     _check_defaults!(ck)
+    _check_components!(ck)
     for item in pb.equation_items
         _check_eq_item!(ck, item)
     end
@@ -279,6 +280,247 @@ function _check_defaults!(ck::Checker)
     ck.scope = :equations
     ck.context = :equation
     return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Textual subsystems (J2.6, decision D5)
+# ---------------------------------------------------------------------------------------
+
+# What a composite may declare besides its interface and its components. Everything else is
+# a flat block construct that has no meaning without `@equations` of its own.
+const _COMPOSITE_FORBIDDEN = (
+    (scope = :parameters, hint = "give the value on the component instance instead"),
+    (scope = :variables, hint = "declare it in the component that owns it"),
+    (scope = :equations, hint = "a composite is a wiring diagram; its physics lives in the components"),
+    (scope = :initial, hint = "initial equations belong to a component"),
+    (scope = :discrete, hint = "discrete code belongs to a component"),
+    (scope = :events, hint = "events belong to a component"),
+    (scope = :causality, hint = "declare causality on the component"),
+)
+
+"""Whether the parsed block declares anything in `scope` (a declaration scope or an item
+scope)."""
+function _has_scope(pb::ParsedBlock, scope::Symbol)
+    scope == :equations && return !isempty(pb.equation_items)
+    scope == :initial && return !isempty(pb.initial_items)
+    scope == :discrete && return !isempty(pb.discrete_items)
+    scope == :events && return !isempty(pb.event_items)
+    scope == :causality && return !isempty(pb.causality_items)
+    return !isempty(get(pb.declaration_map, scope, Decl[]))
+end
+
+"""
+    _check_components!(ck)
+
+The block-level checks of `@components` / `@connections` (J2.6). A block that declares
+components is the *textual form of a subsystem* (D5): its interface is `@ports`, `@inputs`
+and `@outputs`, its body is the component list and the wiring between the component ports and
+the interface ports.
+
+Checked here:
+- a composite has no `@parameters`, `@variables`, `@equations`, `@initial`, `@discrete`,
+  `@events` or `@causality` of its own;
+- component names are unique and do not collide with a declaration;
+- every `connect` side names an interface port or a declared component;
+- the parameter overrides of a component are constant expressions (the defaults scope);
+- every interface port is exposed by exactly one `connect` to a component port. The exposed
+  internal port itself is checked at instantiation, when the component's block is known.
+
+A referenced component *port* that does not exist is E102 at instantiation (the component's
+block is not loaded during the fast block check), with the component's path.
+"""
+function _check_components!(ck::Checker)
+    comps = ck.pb.component_items
+    conns = ck.pb.connection_items
+    isempty(comps) && isempty(conns) && return nothing
+    if isempty(comps)
+        _report!(
+            ck,
+            "E003",
+            "`@connections` has nothing to connect: the block declares no `@components`",
+            isempty(conns) ? ck.pb.range : conns[1];
+            scope = :connections,
+            hint = "declare the internal instances in a `@components` scope first",
+        )
+        ck.scope = :equations
+        return nothing
+    end
+    blockname = block_name(ck.pb)
+    for entry in _COMPOSITE_FORBIDDEN
+        _has_scope(ck.pb, entry.scope) || continue
+        node = _first_scope_node(ck.pb, entry.scope)
+        _report!(
+            ck,
+            "E001",
+            "a textual composite cannot declare `$(scope_string(entry.scope))`",
+            node;
+            scope = entry.scope,
+            hint = entry.hint,
+            severity = "error",
+        )
+    end
+    if ck.failed
+        ck.scope = :equations
+        return nothing
+    end
+
+    # Component names: unique, and disjoint from the declarations of the block.
+    seen = Dict{Symbol,SourceRange}()
+    for comp in comps
+        n = comp.name
+        d = get(ck.decls, n, nothing)
+        if d !== nothing
+            _report!(
+                ck,
+                "E003",
+                "component `$n` collides with the `$(scope_string(d.scope))` declaration of `$n`",
+                comp;
+                scope = :components,
+                hint = "a component name is a name inside the composite; choose another one",
+            )
+        end
+        if haskey(seen, n)
+            _report!(
+                ck,
+                "E003",
+                "component `$n` is declared twice",
+                comp;
+                scope = :components,
+                hint = "a component name is unique inside a composite",
+            )
+        else
+            seen[n] = comp.range
+        end
+        push!(ck.used, n)
+        for (key, value) in comp.kwargs
+            ck.scope = :components
+            ck.context = :default
+            t = _check_expr!(ck, value)
+            if t !== nothing && !is_scalar_type(t) && !is_array_type(t)
+                _report!(
+                    ck,
+                    "E004",
+                    "parameter `$key` of component `$n` must be a value, got `$(type_name(t))`",
+                    value;
+                    scope = :components,
+                )
+            end
+            ok, folded = try_eval_const(value, ck.consts)
+            ok && continue
+            message = String(folded)
+            code = occursin("is not a constant", message) ? "E003" : "E001"
+            _report!(
+                ck,
+                code,
+                "parameter `$key` of component `$n` is not a constant expression: $message",
+                value;
+                scope = :components,
+                hint = "a component parameter is bound at compile time; use literals and `@constants`",
+            )
+        end
+    end
+    ck.context = :equation
+
+    # Interface ports: each must be exposed by exactly one `connect`.
+    face_uses = Dict{Symbol,Int}()
+    for c in conns
+        ck.scope = :connections
+        for (ref, other) in ((c.from, c.to), (c.to, c.from))
+            if ref.instance === nothing
+                d = get(ck.decls, ref.port, nothing)
+                if d === nothing || !(d.scope in (:ports, :inputs, :outputs))
+                    _report!(
+                        ck,
+                        "E003",
+                        "`$(ref.port)` is not a port of `$blockname`",
+                        ref;
+                        scope = :connections,
+                        hint = "declare it in `@ports`, `@inputs` or `@outputs`",
+                    )
+                    continue
+                end
+                push!(ck.used, ref.port)
+                face_uses[ref.port] = get(face_uses, ref.port, 0) + 1
+                if other.instance === nothing
+                    _report!(
+                        ck,
+                        "E001",
+                        "`connect` joins two ports of `$blockname`",
+                        c;
+                        scope = :connections,
+                        hint = "connect each interface port to a component port",
+                    )
+                end
+            elseif !haskey(seen, ref.instance)
+                _report!(
+                    ck,
+                    "E003",
+                    "`connect` refers to unknown component `$(ref.instance)`",
+                    ref;
+                    scope = :connections,
+                    hint = "declare it in `@components`, or fix the spelling",
+                )
+            end
+        end
+        if c.from.instance !== nothing && c.from.instance === c.to.instance &&
+           c.from.port === c.to.port
+            _report!(
+                ck,
+                "E003",
+                "port `$(c.from.port)` of component `$(c.from.instance)` is connected to itself",
+                c;
+                scope = :connections,
+            )
+        elseif c.from.instance === nothing && c.to.instance === nothing &&
+               c.from.port === c.to.port
+            _report!(
+                ck,
+                "E003",
+                "port `$(c.from.port)` of `$blockname` is connected to itself",
+                c;
+                scope = :connections,
+            )
+        end
+    end
+    for scope in (:ports, :inputs, :outputs)
+        for d in get(ck.pb.declaration_map, scope, Decl[])
+            uses = get(face_uses, d.name, 0)
+            uses == 1 && continue
+            what = scope === :ports ? "power port" : (scope === :inputs ? "input" : "output")
+            _report!(
+                ck,
+                "E003",
+                uses == 0 ?
+                "$what `$(d.name)` of `$blockname` is not connected to a component" :
+                "$what `$(d.name)` of `$blockname` is exposed by more than one `connect`",
+                d;
+                scope = :connections,
+                hint = uses == 0 ?
+                       "connect it to one component port, as in `connect($(d.name), gear.$(d.name))`" :
+                       "an interface port exposes exactly one internal port",
+            )
+        end
+    end
+    ck.scope = :equations
+    ck.context = :equation
+    return nothing
+end
+
+"""The node a forbidden-scope diagnostic points at: the first declaration or item of that
+scope, or the block itself."""
+function _first_scope_node(pb::ParsedBlock, scope::Symbol)
+    if _has_scope(pb, scope)
+        if scope in (:equations, :initial, :discrete, :events)
+            items = getfield(pb, scope == :equations ? :equation_items :
+                scope == :initial ? :initial_items :
+                scope == :discrete ? :discrete_items : :event_items)
+            return first(items)
+        elseif scope == :causality
+            return first(pb.causality_items)
+        end
+        return first(get(pb.declaration_map, scope, Decl[]))
+    end
+    return pb.range
 end
 
 # ---------------------------------------------------------------------------------------
@@ -917,6 +1159,9 @@ _plural(n::Int, one::String, many::String) = n == 1 ? one : many
 
 function _check_balance!(ck::Checker)
     ck.failed && return nothing
+    # A textual composite (J2.6) has no equations of its own: its unknowns are the internal
+    # instances, which the model-level balance check sees after flattening.
+    isempty(ck.pb.component_items) || return nothing
     discrete_names = _discrete_assigned_names(ck.pb)
     continuous(scope) = count(
         d -> !(d.name in discrete_names), get(ck.pb.declaration_map, scope, Decl[])

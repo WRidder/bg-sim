@@ -407,13 +407,19 @@ end
         @test length(initial_equations(pb)) == 1
         @test length(discrete_scopes(pb)) == 1
         @test length(events(pb)) == 1
-        # The only remaining unsupported scopes are J2.6's textual subsystems.
-        for (scope, line) in (("@components g = LossyGear()", 2),
-                              ("@connections connect(a, b)", 2))
-            bad = parse_block("@block A begin\n    $scope\nend\n")
-            d = lang_expect(bad, "E001", line, 5; contains = "not supported yet")
-            @test d !== nothing && occursin(scope[1:findfirst(' ', scope) - 1], d.message)
+        # The textual subsystem scopes are parsed since J2.6 (decision D5).
+        composite = parse_block("""
+        @block Composite begin
+            @ports a::Power{Rotation}
+            @components g = LossyGear(n = 1.0)
+            @connections connect(a, g.a)
         end
+        """)
+        @test !any(d -> occursin("not supported yet", d.message), check_block(composite))
+        @test scopes(composite) == [:ports, :components, :connections]
+        @test length(components(composite)) == 1
+        @test only(components(composite)).block === :LossyGear
+        @test length(connections(composite)) == 1
     end
 
     # -----------------------------------------------------------------------------------
