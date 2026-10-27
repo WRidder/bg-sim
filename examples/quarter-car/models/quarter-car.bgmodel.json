@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "quarter-car",
-  "$comment": "Plan 9.4 (X2.3): the quarter car as a bond-graph plant (D28). Sprung mass IMs (I, ms = 300 kg) on the 1-junction SJ and unsprung mass IMu (I, mu = 40 kg) on UJ; the suspension is the two-port SpringDamper Susp (ks = 20 kN/m, cs = 1500 N*s/m) bonded between UJ.a and SJ.b, and the hard stop Stop (lower/upper = -/+0.08 m of travel, k = 1 MN/m, d = 2000 N*s/m) is bonded the same way. The tire is the project block OneSidedSpring (copied from stdlib Spring; F = ifelse(x > 0, kt*x, 0), kt = 200 kN/m) between the road 1-junction RJ and UJ. RJ carries the VelocitySource RoadV, driven by the project RoadProfile source (the plan's table: +0.5 m/s for 0.1 s at t = 0.5 s and -0.5 m/s for 0.1 s at t = 1.5 s, i.e. a 5 cm plateau bump), integrated by RoadInt to the road position. Gravity is the preload through the two MSe sources (2943 N and 392.4 N) and the static compression starts (Susp/x = 0.14715 m, Tire/x = 0.016677 m); the three FlowSensors plus Integrators reconstruct the two mass positions and the road position for the plots and the checks (the D28 sensor exception). TireNeg is a check monitor (min(tire force, 0)); it is not part of the plant. RoadProfile replaces stdlib:sources/TimeTable, whose hold/interpolate conditions are identically zero inside every sample interval and therefore trip W206 (see the README).",
+  "$comment": "Plan 9.4 (X2.3): the quarter car as a bond-graph plant (D28). Sprung mass IMs (I, ms = 300 kg) on the 1-junction SJ and unsprung mass IMu (I, mu = 40 kg) on UJ; the suspension is the two-port SpringDamper Susp (ks = 20 kN/m, cs = 1500 N*s/m) bonded between UJ.a and SJ.b, and the hard stop Stop (lower/upper = -/+0.08 m of travel, k = 1 MN/m, d = 2000 N*s/m) is bonded the same way. The tire is the project block OneSidedSpring (copied from stdlib Spring; F = ifelse(x > 0, kt*x, 0), kt = 200 kN/m) between the road 1-junction RJ and UJ. RJ carries the VelocitySource RoadV, driven by the stdlib TimeTable RoadProfile (plan 9.4: +0.5 m/s for 0.1 s at t = 0.5 s and -0.5 m/s for 0.1 s at t = 1.5 s, i.e. a 5 cm plateau bump). The table is a hold table at 0.1 s with 13 samples (N = 13, t_start = 0.4 s); its four breakpoints 0.5/0.6/1.5/1.6 s are exactly the plan's profile. It is integrated by RoadInt to the road position. Gravity is the preload through the two MSe sources (2943 N and 392.4 N) and the static compression starts (Susp/x = 0.14715 m, Tire/x = 0.016677 m); the three FlowSensors plus Integrators reconstruct the two mass positions and the road position for the plots and the checks (the D28 sensor exception). TireNeg is a check monitor (min(tire force, 0)); it is not part of the plant.",
   "diagram": {
     "nodes": [
       {
@@ -200,18 +200,17 @@
       {
         "id": "n17",
         "name": "RoadProfile",
-        "block": { "ref": "project:RoadProfile" },
+        "block": { "ref": "stdlib:sources/TimeTable" },
         "position": { "x": 120, "y": 760 },
         "rotation": 0,
         "flipX": false,
         "params": {
-          "t_up": "0.5",
-          "t_hold": "0.6",
-          "t_down": "1.5",
-          "t_flat": "1.6",
-          "v_rise": "0.5"
+          "t_start": "0.4",
+          "sample_time": "0.1",
+          "values": "[0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0]",
+          "method": "0"
         },
-        "constants": {},
+        "constants": { "N": "13" },
         "starts": {},
         "ui": { "showLabel": true, "color": null }
       },

@@ -18,7 +18,7 @@ by one check. The model runs for 4 s on a 1 ms output grid.
 | suspension | two-port `SpringDamper` `Susp` (`k = 20 kN/m`, `d = 1500 N·s/m`), `a` on `UJ` and `b` on `SJ` |
 | hard stop | two-port `HardStop` `Stop` (`lower = −0.08 m`, `upper = +0.08 m`, `k = 1 MN/m`, `d = 2000 N·s/m`), `a` on `UJ`, `b` on `SJ` |
 | tire | project `OneSidedSpring` `Tire` (`kt = 200 kN/m`), `a` on the road junction `RJ`, `b` on `UJ` |
-| road | 1-junction `RJ` with the `VelocitySource` `RoadV` (flow fixed, `v = 1`) driven by the `RoadProfile` table |
+| road | 1-junction `RJ` with the `VelocitySource` `RoadV` (flow fixed, `v = 1`) driven by the stdlib `TimeTable` `RoadProfile` |
 | sensors | `SFlow`/`UFlow`/`RoadFlow` (`FlowSensor`) and `SInt`/`UInt`/`RoadInt` (`Integrator`) reconstruct `zs`, `zu`, `zr` |
 
 With `zs`, `zu`, `zr` the absolute vertical positions (up positive, zero at static
@@ -97,8 +97,19 @@ Parameters and units:
 
 ## Road input
 
-`library/RoadProfile.jl` is the velocity table (a source block; it drives the plant only
-through `RoadV`'s flow port):
+`RoadProfile` is the stdlib `stdlib:sources/TimeTable`, a **hold** table (`method = 0`)
+with `N = 13`, `t_start = 0.4` s and `sample_time = 0.1` s (the table length and the two
+times are instance `constants`/parameters; a source block drives the plant only through
+`RoadV`'s flow port):
+
+```json
+"block": { "ref": "stdlib:sources/TimeTable" },
+"constants": { "N": "13" },
+"params": {
+  "t_start": "0.4", "sample_time": "0.1", "method": "0",
+  "values": "[0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.0]"
+}
+```
 
 | interval | `v_road` |
 | --- | --- |
@@ -108,19 +119,20 @@ through `RoadV`'s flow port):
 | `1.5 ≤ t < 1.6` | −0.5 m/s |
 | `t ≥ 1.6` | 0 |
 
-`RoadInt` integrates the measured road flow (`RoadFlow/y`) to `zr`; it reads 0.05 m on
-[0.6, 1.5] s and returns to 0 (within 4·10⁻⁹ m) at t = 1.6 s.
+The four breakpoints 0.5/0.6/1.5/1.6 s are exactly the plan's table; the table's own
+sample instants (every 0.1 s from 0.4 s) are where the condition-only callbacks land, so
+the run lands on 13 sample instants (79 callback firings in total, well below the 10 000
+event limit). `RoadInt` integrates the measured road flow (`RoadFlow/y`) to `zr`; it reads
+0.05 m on [0.6, 1.5] s and returns to 0 (within 3·10⁻⁹ m) at t = 1.6 s.
 
-**Deviation from plan 9.4 (documented).** The plan says `TimeTable`. In the current stdlib
-that block cannot be simulated: its hold branch contains the condition
-`floor(clamp((t−t_start)/sample_time, 0, N−1)) == i−1`, and the linear branch contains
-`max(0, 1−|…|)`, both of which are *identically zero* over every sample interval. The
-event collector therefore fires at every integrator step: a two-node probe
-`TimeTable → Integrator` reaches W206 at t = 1.2 s with 10 003 firings, for `method = 0`
-and for `method = 1`. The sample uses a project `RoadProfile` source with the same four
-breakpoints instead — the drive is still a `VelocitySource`, the profile is still the plan's
-table, and the full run has exactly **4 events** (the four breakpoints). The stdlib
-`TimeTable` needs a fix in the J lane, not in this example. The plan's 3D variant
+**NOTES-6 fix.** Earlier versions of the block wrote its conditions as a normalised table
+coordinate, `(t−t_start)/sample_time − k`. When a sample instant coincided with an output
+grid time (`0.07/0.01 = 6.999999999999999`), the condition had no representable root, the
+callback re-fired at every step and a two-node `TimeTable → Integrator` probe reached W206
+at t = 1.2 s with 10 003 firings. The block now writes every condition in `t`
+(`t >= t_start + k*sample_time`, `clamp(t − (t_start + k*sample_time), 0, sample_time)`),
+whose roots are the sample instants themselves; the same probe reports 43 firings, no
+diagnostics. This sample therefore uses the stdlib block directly. The plan's 3D variant
 (body and wheel boxes, springs as scaled cylinders) is not included: like the other M2
 samples this one is the 1D plant only.
 
@@ -143,19 +155,21 @@ uv run examples/quarter-car/design/design.py
 | hard-stop contact | none (3.67 cm of the 8 cm free travel) | none (`Stop/a.e` ≡ 0) |
 | tire force | 1673.245 … 4948.882 N | 1673.242 … 4948.880 N |
 | body mode (free decay) | 1.211 Hz (period 0.8256 s) | 1.211 Hz (crossings at 2.1506 / 2.9762 s) |
+| body mode (FFT, 1.8–4.0 s) | 1.2238 Hz | 1.2238 Hz (`fft_peak`) |
 | wheel hop | 11.853 Hz (period 0.08437 s) | 11.852 Hz (crossings at 0.6689 / 0.7532 s) |
+| wheel hop (FFT, 0.65–0.85 s) | 11.862 Hz | 11.846 Hz (`fft_peak`, 2 Hz high-pass) |
 | linearised modes | 1.257 Hz (ζ 0.268), 11.633 Hz (ζ 0.262) | — |
 
 The plan's targets are the **undamped** estimates `√(ks·kt/((ks+kt)·ms))/2π = 1.239 Hz`
 and `√((ks+kt)/mu)/2π = 11.803 Hz`; the measured damped body mode is 2.3 % below 1.24 Hz
-and the wheel hop 0.4 % above 11.8 Hz, both well inside the ±5 % bands. The tire force is
-never negative: the one-sided element makes it exactly 0 at lift-off, and on this road it
-never gets closer than 1.673 kN to zero.
+(1.3 % from the FFT) and the wheel hop 0.4 % above 11.8 Hz (0.4 % from the FFT), both well
+inside the ±5 % bands. The tire force is never negative: the one-sided element makes it
+exactly 0 at lift-off, and on this road it never gets closer than 1.673 kN to zero.
 
 ## Checks
 
-`expected.json` has **31** checks (plan 9.4 plus the requested static/travel/tire checks),
-all in the runner's existing kinds:
+`expected.json` has **33** checks (plan 9.4 plus the requested static/travel/tire checks),
+all in the runner's kinds (including the new `fft_peak`):
 
 - **Static equilibrium** (4): both masses stay within 10⁻⁶ m for t < 0.5 s; the suspension
   and tire preloads are 2943.0 N and 3335.4 N at t = 0.4 s.
@@ -168,12 +182,16 @@ all in the runner's existing kinds:
   0.08 m, a cursor on the falling edge, and `Stop/a.e ≡ 0` (no contact on this input).
 - **Tire force** (4): the 4.949 kN peak, the 4.394 kN value on the rise, the 1.673 kN
   minimum, and `max_abs_le` on `TireNeg = min(F, 0)` at 10⁻⁹ — the plan's "never negative".
-- **Mode frequencies** (4): the first two upward zero crossings of `IMu/p.f` give
-  11.85 Hz, and the first two of `SInt/y` in the free decay give 1.211 Hz. The runner has
-  no FFT kind, so the crossings pin the same periods; `design.py` prints the linearised
-  modes (1.257 Hz and 11.633 Hz undamped, 1.211 Hz and 11.85 Hz damped) independently.
+- **Mode frequencies** (6): the runner's `fft_peak` kind takes the dominant frequency of
+  the free decay `SInt/y` over [1.8, 4.0] s (1.224 Hz) and of the wheel-velocity ring-down
+  `IMu/p.f` over [0.65, 0.85] s (11.846 Hz), both against the plan's 1.24 / 11.8 Hz with a
+  ±5 % band. The four zero-crossing checks remain as an independent period measurement:
+  the first two upward crossings of `IMu/p.f` give 11.85 Hz and the first two of `SInt/y`
+  in the free decay give 1.211 Hz. `design.py` prints the same FFT values, the crossings
+  and the linearised modes (1.257 Hz and 11.633 Hz undamped) independently.
 - **`no_diagnostics`** (1): forbids `E901`, `E106`, `W201`, `W202`, `W205` and `W206`; the
-  run reports no diagnostics at all (8 states, 55 equations, 4 events, 5071 steps).
+  run reports no diagnostics at all (8 states, 68 equations, 79 condition-only firings at
+  the table's sample instants, 5058 steps).
 
 The run is read-only after copy: the whole example is a template.
 
@@ -185,8 +203,10 @@ The run is read-only after copy: the whole example is a template.
 - Lower `Stop`'s `lower`/`upper` to ±0.02 m and rerun: the stop makes contact, `Stop/x`
   reaches ±0.02 and `Stop/a.e` becomes non-zero — the guard checks in `expected.json` then
   fail, which is the intended signal to update them.
-- Raise `RoadProfile`'s `v_rise` to 2.0 m/s (a 20 cm bump) to see lift-off: `Tire/F` reaches
-  zero and `TireNeg/y` stays zero (the one-sided law), while the body response grows. A
-  1.0 m/s bump (10 cm) already drops the tire force to about 10 N without losing contact.
+- Raise `RoadProfile`'s bump: set `values` to `[0.0, 2.0, 0, …, 0, -2.0, 0.0]` (a 20 cm
+  bump) to see lift-off: `Tire/F` reaches zero and `TireNeg/y` stays zero (the one-sided
+  law), while the body response grows. A 1.0 m/s entry (a 10 cm bump) already drops the
+  tire force to about 10 N without losing contact. Set `method` to 1 for a linear
+  interpolation between the samples instead of the hold table.
 - Change `Susp`'s `k` or `d` and rerun; `design/design.py` reproduces the new reference
   response and prints the new values.

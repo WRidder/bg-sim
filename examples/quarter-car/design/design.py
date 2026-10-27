@@ -14,8 +14,9 @@ The plant in ``models/quarter-car.bgmodel.json`` is a two-degree-of-freedom bond
   road 1-junction ``RJ`` and ``UJ``;
 * gravity as the two ``MSe`` preloads (``ms*g`` and ``mu*g``) plus the static spring
   compression starts, so t = 0 is the static equilibrium;
-* the road as a ``VelocitySource`` driven by a ``RoadProfile`` table: +0.5 m/s for 0.1 s
-  at t = 0.5 s and -0.5 m/s for 0.1 s at t = 1.5 s, i.e. a 5 cm plateau bump.
+* the road as a ``VelocitySource`` driven by the stdlib ``TimeTable``: a 0.1 s hold table
+  from t = 0.4 s with +0.5 m/s for 0.1 s at t = 0.5 s and -0.5 m/s for 0.1 s at
+  t = 1.5 s, i.e. a 5 cm plateau bump.
 
 Written in absolute vertical coordinates (up positive) with the static equilibrium at
 z = 0, the equations this script integrates are
@@ -34,9 +35,10 @@ Integrators (the D28 sensor exception), so the recorded positions are these stat
 
 The script prints the values ``expected.json`` checks: the static equilibrium, the peak
 sprung/unsprung displacement and suspension travel, the tire-force bounds, the body-mode
-and wheel-hop periods from zero crossings, and the cursor values.  It also prints the
-undamped modal frequencies from the linearised system for comparison with plan 9.4's
-1.24 Hz and 11.8 Hz.
+and wheel-hop periods from zero crossings, the dominant frequencies from an FFT of the
+free decay / ring-down (the same windows as the runner's ``fft_peak`` checks), and the
+cursor values.  It also prints the undamped modal frequencies from the linearised system
+for comparison with plan 9.4's 1.24 Hz and 11.8 Hz.
 
 Run it with ``uv run examples/quarter-car/design/design.py``.
 """
@@ -160,6 +162,49 @@ def modes() -> list[tuple[float, float]]:
     return sorted(result)
 
 
+def fft_peak(t: np.ndarray, values: np.ndarray, t0: float, t1: float,
+             band: tuple[float, float] | None = None,
+             highpass_hz: float = 0.0) -> float:
+    """The dominant frequency of ``values`` over ``[t0, t1]`` (the runner's ``fft_peak``).
+
+    Removes a linear trend, optionally a centered moving-average high-pass (for the
+    decaying wheel-hop envelope), applies a Hann taper, zero-pads the FFT and fits a
+    parabola through the three samples around the peak.
+    """
+    mask = (t >= t0) & (t <= t1)
+    window_t = t[mask]
+    samples = values[mask]
+    dt = float(np.median(np.diff(window_t)))
+    positions = np.arange(samples.size, dtype=float)
+    slope, offset = np.polyfit(positions, samples, 1)
+    residual = samples - (slope * positions + offset)
+    if highpass_hz > 0.0:
+        width = max(2, int(round(1.0 / (dt * highpass_hz))))
+        pad = width // 2
+        padded = np.pad(residual, (pad, pad), mode="edge")
+        residual = residual - np.convolve(padded, np.ones(width) / width,
+                                          mode="valid")[: samples.size]
+    tapered = residual * np.hanning(samples.size)
+    size = 1 << int(np.ceil(np.log2(max(4 * samples.size, 1024))))
+    spectrum = np.abs(np.fft.rfft(tapered, n=size))
+    frequencies = np.fft.rfftfreq(size, d=dt)
+    candidates = np.ones(frequencies.size, dtype=bool)
+    candidates[0] = False
+    if band is not None:
+        candidates &= (frequencies >= band[0]) & (frequencies <= band[1])
+    peak = int(np.flatnonzero(candidates)[int(np.argmax(spectrum[candidates]))])
+    frequency = float(frequencies[peak])
+    if 0 < peak < spectrum.size - 1:
+        left, middle, right = (float(np.log(spectrum[peak + k] + 1e-300))
+                               for k in (-1, 0, 1))
+        curvature = left - 2.0 * middle + right
+        if curvature < 0.0:
+            fraction = 0.5 * (left - right) / curvature
+            if abs(fraction) <= 0.5:
+                frequency += fraction * float(frequencies[1] - frequencies[0])
+    return frequency
+
+
 def main() -> None:
     print(f"static equilibrium: qs0 = {QS0:.6f} m, qt0 = {QT0:.6f} m, "
           f"Fs0 = {KS * QS0:.3f} N, Ft0 = {KT * QT0:.3f} N")
@@ -196,6 +241,14 @@ def main() -> None:
         print(f"  body period {period:.6f} s -> {1.0 / period:.3f} Hz "
               f"(plan 1.24 Hz, {abs(1 / period - 1.24) / 1.24 * 100:.2f} % off)")
     print("suspension travel (up) crossings:", ", ".join(f"{c:.6f}" for c in travel[:4]))
+
+    body_fft = fft_peak(t, zs, 1.8, 4.0, band=(0.5, 2.5))
+    wheel_fft = fft_peak(t, data["vu"], 0.65, 0.85, band=(8.0, 16.0), highpass_hz=2.0)
+    print("\nFFT of the free decay / ring-down (plan 9.4):")
+    print(f"  body SInt [1.8, 4.0] s: {body_fft:.4f} Hz "
+          f"(plan 1.24 Hz, {abs(body_fft - 1.24) / 1.24 * 100:.2f} % off)")
+    print(f"  wheel IMu/p.f [0.65, 0.85] s: {wheel_fft:.4f} Hz "
+          f"(plan 11.8 Hz, {abs(wheel_fft - 11.8) / 11.8 * 100:.2f} % off)")
 
     print("\ncursor values:")
     for cursor in (0.0, 0.4, 0.5, 0.55, 0.6, 0.65, 0.8, 0.9, 1.0, 1.5, 1.6, 2.0, 3.0, 4.0):

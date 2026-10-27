@@ -13,9 +13,11 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
   with ``{"name", "example"}``);
 * starts each model's run through ``POST /api/projects/{p}/runs``, waits for
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
-* evaluates every ``final_value``, ``cursor_value``, ``max_abs``, ``ratio``,
-  ``zero_crossing``, ``compare_signals`` and ``no_diagnostics`` check, prints one
-  line per check and exits non-zero when any check fails.
+* evaluates every check kind (``final_value``, ``cursor_value``, ``max_abs``,
+  ``max_abs_le``, ``ratio``, ``zero_crossing``, ``compare_signals``,
+  ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak`` and
+  ``no_diagnostics``), prints one line per check and exits non-zero when any
+  check fails.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
 (``n`` Float64 values), then one contiguous column per manifest signal, in
@@ -107,6 +109,21 @@ mean) removes everything below that corner with a centered moving average of
 
     {"kind": "ripple", "signal": "Iphase/y", "from_t": 1.0, "to_t": 1.15,
      "highpass_hz": 1000.0, "measure": "rms", "value": 0.8}
+
+``fft_peak`` is the dominant frequency (Hz) of ``signal`` over ``[from_t, to_t]``
+(default the whole run), compared with ``value`` through ``rtol``/``abs`` like the
+other value checks.  It collapses equal event times, resamples the window on a
+uniform grid at the median sample spacing, removes the DC term and the trend
+(``detrend``: ``"linear"``, the default; ``"mean"`` subtracts only the mean;
+``"none"`` keeps the signal as-is), applies a Hann taper to reduce leakage, and
+searches the zero-padded FFT for the largest magnitude outside bin 0.  A parabolic
+fit through the three samples around that peak gives a sub-bin frequency.  The
+optional ``min_hz``/``max_hz`` restrict the search to a band (useful when a second
+mode or a slow drift is present), and ``highpass_hz`` (default 0) subtracts a
+centered moving average so a decaying envelope does not dominate a ring-down::
+
+    {"kind": "fft_peak", "signal": "SInt/y", "from_t": 1.8, "to_t": 4.0,
+     "min_hz": 0.5, "max_hz": 2.5, "value": 1.24, "rtol": 0.05}
 """
 
 from __future__ import annotations
@@ -846,6 +863,178 @@ def _ripple_check(
     report.check(measured <= limit, label, detail)
 
 
+def _resample_window(
+    times: np.ndarray, values: np.ndarray
+) -> tuple[np.ndarray, float] | None:
+    """Collapse event pairs and resample on the uniform grid of the median spacing.
+
+    Returns the grid and its spacing, or ``None`` when the window has fewer than
+    three distinct times or no positive spacing.  ``fft_peak`` uses this so a run's
+    non-uniform event rows cannot distort the sample rate; ``ripple`` has the same
+    steps inline.
+    """
+    times, values = _collapsed(times, values)
+    if times.size < 3:
+        return None
+    steps = np.diff(times)
+    steps = steps[steps > 0.0]
+    if steps.size == 0:
+        return None
+    dt = float(np.median(steps))
+    if not np.isfinite(dt) or dt <= 0.0:
+        return None
+    grid = np.arange(float(times[0]), float(times[-1]) + 0.5 * dt, dt)
+    if grid.size < 3:
+        return None
+    return np.interp(grid, times, values), dt
+
+
+def _fft_peak_frequency(
+    samples: np.ndarray,
+    dt: float,
+    detrend: str = "linear",
+    min_hz: float = 0.0,
+    max_hz: float | None = None,
+    highpass_hz: float = 0.0,
+) -> float | None:
+    """The dominant frequency (Hz) of a uniformly sampled window.
+
+    The DC term and the trend are removed before a Hann taper; the FFT is zero-padded
+    so the peak is well resolved, and a parabolic fit through the three log-magnitude
+    samples around the maximum gives a sub-bin estimate.  ``highpass_hz`` (> 0)
+    subtracts a centered moving average of ``round(fs / highpass_hz)`` samples, which
+    removes a slow decay envelope that would otherwise dominate the spectrum of a
+    free-decay ring-down.  Returns ``None`` when the band holds no candidate (e.g. an
+    all-zero or constant signal).
+    """
+    values = np.asarray(samples, dtype=float)
+    count = values.size
+    if count < 4 or not np.isfinite(dt) or dt <= 0.0:
+        return None
+    if not np.all(np.isfinite(values)):
+        return None
+    scale = float(np.max(np.abs(values)))
+    if not np.isfinite(scale) or scale == 0.0:
+        return None
+    if detrend == "linear":
+        positions = np.arange(count, dtype=float)
+        slope, offset = np.polyfit(positions, values, 1)
+        residual = values - (slope * positions + offset)
+    elif detrend == "mean":
+        residual = values - float(np.mean(values))
+    elif detrend == "none":
+        residual = values
+    else:
+        return None
+    if highpass_hz > 0.0:
+        width = max(2, int(round(1.0 / (dt * highpass_hz))))
+        pad = width // 2
+        padded = np.pad(residual, (pad, pad), mode="edge")
+        average = np.convolve(padded, np.ones(width) / width, mode="valid")[: count]
+        residual = residual - average
+    if float(np.max(np.abs(residual))) <= 1e-12 * scale:
+        return None                      # flat window: no spectral content at all
+    tapered = residual * np.hanning(count)
+    if not np.any(tapered):
+        return None
+    size = 1 << int(np.ceil(np.log2(max(4 * count, 1024))))
+    spectrum = np.abs(np.fft.rfft(tapered, n=size))
+    frequencies = np.fft.rfftfreq(size, d=dt)
+    mask = np.zeros(frequencies.size, dtype=bool)
+    mask[1:] = True                      # ignore the DC bin explicitly
+    if min_hz > 0.0:
+        mask &= frequencies >= min_hz
+    if max_hz is not None:
+        mask &= frequencies <= max_hz
+    if not np.any(mask):
+        return None
+    candidates = np.flatnonzero(mask)
+    peak = int(candidates[int(np.argmax(spectrum[mask]))])
+    if not spectrum[peak] > 0.0:
+        return None
+    frequency = float(frequencies[peak])
+    if 0 < peak < spectrum.size - 1:
+        left = float(np.log(spectrum[peak - 1] + 1e-300))
+        middle = float(np.log(spectrum[peak] + 1e-300))
+        right = float(np.log(spectrum[peak + 1] + 1e-300))
+        curvature = left - 2.0 * middle + right
+        if curvature < 0.0:
+            fraction = 0.5 * (left - right) / curvature
+            if abs(fraction) <= 0.5:
+                frequency += fraction * float(frequencies[1] - frequencies[0])
+    return frequency
+
+
+def _fft_peak_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The dominant frequency of a signal over a window."""
+    signal = str(check.get("signal", ""))
+    label = f"{project}/{model} {signal} fft_peak"
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value' (the expected frequency in Hz)")
+        return
+    try:
+        expected = float(check["value"])
+        detrend = str(check.get("detrend", "linear"))
+        min_hz = float(check.get("min_hz", 0.0))
+        max_hz = float(check["max_hz"]) if "max_hz" in check else None
+        highpass_hz = float(check.get("highpass_hz", 0.0))
+    except (TypeError, ValueError):
+        report.check(
+            False, label,
+            "'value', 'min_hz', 'max_hz', 'highpass_hz' and 'detrend' must be valid",
+        )
+        return
+    if detrend not in {"linear", "mean", "none"}:
+        report.check(False, label, "'detrend' must be 'linear', 'mean' or 'none'")
+        return
+    if expected <= 0.0:
+        report.check(False, label, "the expected frequency must be positive")
+        return
+    if min_hz < 0.0 or (max_hz is not None and max_hz <= min_hz):
+        report.check(False, label, "the band needs 0 <= min_hz < max_hz")
+        return
+    if highpass_hz < 0.0:
+        report.check(False, label, "'highpass_hz' must not be negative")
+        return
+    tolerance = _tolerance(check, expected)
+    if tolerance is None:
+        report.check(False, label, "the check needs 'rtol' or 'abs'")
+        return
+    total, tolerance_text = tolerance
+    first = float(run.time[0])
+    last = float(run.time[-1])
+    from_t = float(check.get("from_t", first))
+    to_t = float(check.get("to_t", last))
+    window = (run.time >= from_t) & (run.time <= to_t)
+    if not window.any():
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    resampled = _resample_window(run.time[window], run.signals[signal][window])
+    if resampled is None:
+        report.check(False, label, "the window has too few samples to transform")
+        return
+    samples, dt = resampled
+    measured = _fft_peak_frequency(
+        samples, dt, detrend, min_hz, max_hz, highpass_hz
+    )
+    if measured is None:
+        report.check(False, label, "the window has no spectral peak in the requested band")
+        return
+    band = f"[{min_hz:g}" + (", -]" if max_hz is None else f", {max_hz:g}]")
+    filter_text = f", high-pass {highpass_hz:g} Hz" if highpass_hz > 0.0 else ""
+    detail = (
+        f"over [{from_t:g}, {to_t:g}] at {1.0 / dt:.0f} Hz ({samples.size} samples, "
+        f"{detrend} detrend{filter_text}, band {band}): {measured:.6g} Hz, "
+        f"expected {expected:.12g} ({tolerance_text}; |delta| {abs(measured - expected):.3g})"
+    )
+    report.check(abs(measured - expected) <= total, label, detail)
+
+
 def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Run]) -> None:
     if isinstance(specs, dict):
         specs = [specs]
@@ -921,6 +1110,8 @@ def _check_model_checks(
             _step_response_check(report, project, model, run, check)
         elif kind == "ripple":
             _ripple_check(report, project, model, run, check)
+        elif kind == "fft_peak":
+            _fft_peak_check(report, project, model, run, check)
         elif kind == "no_diagnostics":
             _no_diagnostics_check(report, project, model, run, check)
         else:

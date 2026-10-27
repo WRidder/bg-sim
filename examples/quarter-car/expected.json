@@ -1,6 +1,6 @@
 {
   "project": "quarter-car",
-  "description": "Plan 9.4 acceptance (X2.3). The plant is a pure bond graph (D28): IMs and IMu are the two I stores on the 1-junctions SJ and UJ, the suspension is the two-port SpringDamper Susp (20 kN/m, 1500 N*s/m) between UJ.a and SJ.b, the hard stop Stop (-/+0.08 m travel, 1 MN/m, 2000 N*s/m) sits on the same pair, and the tire is the project OneSidedSpring (copied from stdlib Spring; F = ifelse(x > 0, kt*x, 0), kt = 200 kN/m) between the road 1-junction RJ and UJ. The velocity source RoadV is driven by the RoadProfile table: +0.5 m/s for 0.1 s at t = 0.5 s and -0.5 m/s for 0.1 s at t = 1.5 s, a 5 cm plateau bump. Gravity is the MSe preload (2943 N and 392.4 N) plus the static starts Susp/x = 0.14715 m and Tire/x = 0.016677 m, so t = 0 is the static equilibrium. design/design.py integrates the same equations independently (RK4, 1e-5 s) and prints every value below; the bond-graph run agrees to ~1e-6 m and ~1e-3 N. The plan's 5 cm bump peaks the suspension travel at 3.67 cm, so the hard stop never makes contact (Stop/a.e is exactly zero); the checks pin that bound and would fail if the stop were reached.",
+  "description": "Plan 9.4 acceptance (X2.3). The plant is a pure bond graph (D28): IMs and IMu are the two I stores on the 1-junctions SJ and UJ, the suspension is the two-port SpringDamper Susp (20 kN/m, 1500 N*s/m) between UJ.a and SJ.b, the hard stop Stop (-/+0.08 m travel, 1 MN/m, 2000 N*s/m) sits on the same pair, and the tire is the project OneSidedSpring (copied from stdlib Spring; F = ifelse(x > 0, kt*x, 0), kt = 200 kN/m) between the road 1-junction RJ and UJ. The velocity source RoadV is driven by the stdlib TimeTable RoadProfile: a hold table with 13 samples at 0.1 s from t = 0.4 s, whose breakpoints 0.5/0.6/1.5/1.6 s give +0.5 m/s for 0.1 s at t = 0.5 s and -0.5 m/s for 0.1 s at t = 1.5 s, a 5 cm plateau bump. Gravity is the MSe preload (2943 N and 392.4 N) plus the static starts Susp/x = 0.14715 m and Tire/x = 0.016677 m, so t = 0 is the static equilibrium. design/design.py integrates the same equations independently (RK4, 1e-5 s) and prints every value below; the bond-graph run agrees to ~1e-6 m and ~1e-3 N. The plan's 5 cm bump peaks the suspension travel at 3.67 cm, so the hard stop never makes contact (Stop/a.e is exactly zero); the checks pin that bound and would fail if the stop were reached. The two mode frequencies are measured from the FFT of the free decay / ring-down (plan 9.4) and cross-checked by the zero crossings.",
   "models": {
     "quarter-car": {
       "checks": [
@@ -256,9 +256,32 @@
           "note": "second crossing 0.8256 s later -> 1.211 Hz damped body mode, within 2.3 % of the plan's 1.24 Hz"
         },
         {
+          "kind": "fft_peak",
+          "signal": "SInt/y",
+          "from_t": 1.8,
+          "to_t": 4.0,
+          "min_hz": 0.5,
+          "max_hz": 2.5,
+          "value": 1.24,
+          "rtol": 0.05,
+          "note": "plan 9.4: the dominant body mode from an FFT of the free decay (the road is flat from 1.6 s) is 1.224 Hz, 1.3 % below the plan's 1.24 Hz, inside the +/-5 % band"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "IMu/p.f",
+          "from_t": 0.65,
+          "to_t": 0.85,
+          "min_hz": 8.0,
+          "max_hz": 16.0,
+          "highpass_hz": 2.0,
+          "value": 11.8,
+          "rtol": 0.05,
+          "note": "plan 9.4: the wheel-hop mode from an FFT of the first ring-down after the rising edge (0.65-0.85 s) is 11.846 Hz, 0.4 % above the plan's 11.8 Hz, inside the +/-5 % band; the zero-crossing checks above pin the same period"
+        },
+        {
           "kind": "no_diagnostics",
           "codes": ["E901", "E106", "W201", "W202", "W205", "W206"],
-          "note": "no solver failure, no causal conflict, no derivative causality (every I and every two-port storage is integral), no algebraic loop, no Generic bond island (the island adopts Translation through SpringDamper/HardStop/OneSidedSpring/VelocitySource) and no event-limit stop (exactly four events: the four road breakpoints)"
+          "note": "no solver failure, no causal conflict, no derivative causality (every I and every two-port storage is integral), no algebraic loop, no Generic bond island (the island adopts Translation through SpringDamper/HardStop/OneSidedSpring/VelocitySource) and no event-limit stop: the TimeTable lands on its 13 sample instants (79 condition-only firings in total), far below the 10 000 limit, and the run reports no diagnostics at all"
         }
       ]
     }
