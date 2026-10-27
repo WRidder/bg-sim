@@ -1,0 +1,1300 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "hydraulic-servo",
+  "$comment": "Plan 9.6 (X2.5): a hydraulic position servo. The plant is a pure hydraulic/translation bond graph (D28): PressureSource 100 bar and Tank 1 bar feed the 4/3 valve subsystem (four VariableOrifice elements in a Wheatstone bridge; normalized area max(+-spool, 0) + 1e-4 with A = 1e-5 m^2, so the area is A_max*max(+-spool, 0) + 1e-9 m^2; Cd = 0.62, rho = 850 kg/m^3, p_tr = 1e5 Pa); the valve's A and B ports drive a HydraulicCylinder (piston 2e-3 m^2, annulus 1e-3 m^2, dead volumes 5e-5 m^3, bulk modulus 1.4e9 Pa) whose rod is a 1-junction with a 50 kg I, a 500 N*s/m R and a PositionSensor. The only non-bond-graph parts are the sensor (a kinematic integrator, D28 sensor exception), the 1 ms discrete PID clamped to +-1, and the two small inline glue blocks: ErrorSum (reference minus position; the stdlib Sum takes one vector input) and the valve's VDrive (splits the spool into the two normalized areas). The spool-to-area max is smoothed as 0.5*(u + sqrt(u^2 + 1e-12)) so the closed-centre spool does not sit on a non-smooth kink. PSensA/PSensB are pressure taps and pAmin/pBmin are check monitors. The cylinder starts at the valve's no-load equilibrium (pA = 33.667 bar, pB = 67.333 bar) with the PID integrator preloaded at the matching spool trim, because starting at the tank pressure lets the closed-centre valve lose the 50 kg rod and chatter on the orifice sign switches (W206).",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "One",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 40,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "PS",
+        "block": {
+          "ref": "stdlib:hydraulic/PressureSource"
+        },
+        "position": {
+          "x": 260,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p": "1.0e7"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "TK",
+        "block": {
+          "ref": "stdlib:hydraulic/Tank"
+        },
+        "position": {
+          "x": 40,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p": "1.0e5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Valve",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "u",
+                "kind": "signal",
+                "direction": "input",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": null,
+                "node": "v01",
+                "port": "u"
+              },
+              {
+                "name": "P",
+                "kind": "power",
+                "domain": "Hydraulic",
+                "size": [
+                  1
+                ],
+                "node": "v06",
+                "port": "a"
+              },
+              {
+                "name": "T",
+                "kind": "power",
+                "domain": "Hydraulic",
+                "size": [
+                  1
+                ],
+                "node": "v07",
+                "port": "a"
+              },
+              {
+                "name": "A",
+                "kind": "power",
+                "domain": "Hydraulic",
+                "size": [
+                  1
+                ],
+                "node": "v08",
+                "port": "a"
+              },
+              {
+                "name": "B",
+                "kind": "power",
+                "domain": "Hydraulic",
+                "size": [
+                  1
+                ],
+                "node": "v09",
+                "port": "a"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "v01",
+                  "name": "VDrive",
+                  "block": {
+                    "inline": {
+                      "source": "@block SpoolAreas begin\n    @inputs u::Real\n    @outputs begin\n        ap::Real\n        an::Real\n    end\n    @equations begin\n        ap ~ 0.5 * (u + sqrt(u * u + 1.0e-12)) + 1.0e-4\n        an ~ 0.5 * (sqrt(u * u + 1.0e-12) - u) + 1.0e-4\n    end\nend\n"
+                    }
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v06",
+                  "name": "FSP",
+                  "block": {
+                    "ref": "stdlib:converters/FlowSensor"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 420
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v07",
+                  "name": "FST",
+                  "block": {
+                    "ref": "stdlib:converters/FlowSensor"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 620
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v08",
+                  "name": "FSA",
+                  "block": {
+                    "ref": "stdlib:converters/FlowSensor"
+                  },
+                  "position": {
+                    "x": 580,
+                    "y": 420
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v09",
+                  "name": "FSB",
+                  "block": {
+                    "ref": "stdlib:converters/FlowSensor"
+                  },
+                  "position": {
+                    "x": 580,
+                    "y": 620
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v20",
+                  "name": "JP",
+                  "block": {
+                    "junction": "0"
+                  },
+                  "position": {
+                    "x": 220,
+                    "y": 420
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v21",
+                  "name": "JT",
+                  "block": {
+                    "junction": "0"
+                  },
+                  "position": {
+                    "x": 220,
+                    "y": 620
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v22",
+                  "name": "JA",
+                  "block": {
+                    "junction": "0"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 420
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v23",
+                  "name": "JB",
+                  "block": {
+                    "junction": "0"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 620
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v30",
+                  "name": "PA",
+                  "block": {
+                    "ref": "stdlib:hydraulic/VariableOrifice"
+                  },
+                  "position": {
+                    "x": 240,
+                    "y": 520
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "Cd": "0.62",
+                    "A": "1.0e-5",
+                    "rho": "850.0",
+                    "p_tr": "1.0e5"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v31",
+                  "name": "BT",
+                  "block": {
+                    "ref": "stdlib:hydraulic/VariableOrifice"
+                  },
+                  "position": {
+                    "x": 300,
+                    "y": 560
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "Cd": "0.62",
+                    "A": "1.0e-5",
+                    "rho": "850.0",
+                    "p_tr": "1.0e5"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v32",
+                  "name": "PB",
+                  "block": {
+                    "ref": "stdlib:hydraulic/VariableOrifice"
+                  },
+                  "position": {
+                    "x": 480,
+                    "y": 520
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "Cd": "0.62",
+                    "A": "1.0e-5",
+                    "rho": "850.0",
+                    "p_tr": "1.0e5"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "v33",
+                  "name": "AT",
+                  "block": {
+                    "ref": "stdlib:hydraulic/VariableOrifice"
+                  },
+                  "position": {
+                    "x": 360,
+                    "y": 500
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "Cd": "0.62",
+                    "A": "1.0e-5",
+                    "rho": "850.0",
+                    "p_tr": "1.0e5"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "vb01",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v20"
+                  },
+                  "to": {
+                    "node": "v06",
+                    "port": "b"
+                  },
+                  "route": [],
+                  "label": "P rail -> P port"
+                },
+                {
+                  "id": "vb02",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v20"
+                  },
+                  "to": {
+                    "node": "v30",
+                    "port": "a"
+                  },
+                  "route": [],
+                  "label": "P -> A orifice"
+                },
+                {
+                  "id": "vb03",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v20"
+                  },
+                  "to": {
+                    "node": "v32",
+                    "port": "a"
+                  },
+                  "route": [],
+                  "label": "P -> B orifice"
+                },
+                {
+                  "id": "vb04",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v21"
+                  },
+                  "to": {
+                    "node": "v07",
+                    "port": "b"
+                  },
+                  "route": [],
+                  "label": "T rail -> T port"
+                },
+                {
+                  "id": "vb05",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v21"
+                  },
+                  "to": {
+                    "node": "v31",
+                    "port": "b"
+                  },
+                  "route": [],
+                  "label": "B -> T orifice"
+                },
+                {
+                  "id": "vb06",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v21"
+                  },
+                  "to": {
+                    "node": "v33",
+                    "port": "b"
+                  },
+                  "route": [],
+                  "label": "A -> T orifice"
+                },
+                {
+                  "id": "vb07",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v22"
+                  },
+                  "to": {
+                    "node": "v08",
+                    "port": "b"
+                  },
+                  "route": [],
+                  "label": "A rail -> A port"
+                },
+                {
+                  "id": "vb08",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v22"
+                  },
+                  "to": {
+                    "node": "v30",
+                    "port": "b"
+                  },
+                  "route": [],
+                  "label": "P -> A orifice outlet"
+                },
+                {
+                  "id": "vb09",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v22"
+                  },
+                  "to": {
+                    "node": "v33",
+                    "port": "a"
+                  },
+                  "route": [],
+                  "label": "A -> T orifice inlet"
+                },
+                {
+                  "id": "vb10",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v23"
+                  },
+                  "to": {
+                    "node": "v09",
+                    "port": "b"
+                  },
+                  "route": [],
+                  "label": "B rail -> B port"
+                },
+                {
+                  "id": "vb11",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v23"
+                  },
+                  "to": {
+                    "node": "v32",
+                    "port": "b"
+                  },
+                  "route": [],
+                  "label": "P -> B orifice outlet"
+                },
+                {
+                  "id": "vb12",
+                  "kind": "bond",
+                  "from": {
+                    "node": "v23"
+                  },
+                  "to": {
+                    "node": "v31",
+                    "port": "a"
+                  },
+                  "route": [],
+                  "label": "B -> T orifice inlet"
+                },
+                {
+                  "id": "vs10",
+                  "kind": "signal",
+                  "from": {
+                    "node": "v01",
+                    "port": "ap"
+                  },
+                  "to": {
+                    "node": "v30",
+                    "port": "u"
+                  },
+                  "route": [],
+                  "label": "PA area = max(spool,0)+1e-4"
+                },
+                {
+                  "id": "vs11",
+                  "kind": "signal",
+                  "from": {
+                    "node": "v01",
+                    "port": "ap"
+                  },
+                  "to": {
+                    "node": "v31",
+                    "port": "u"
+                  },
+                  "route": [],
+                  "label": "BT area"
+                },
+                {
+                  "id": "vs12",
+                  "kind": "signal",
+                  "from": {
+                    "node": "v01",
+                    "port": "an"
+                  },
+                  "to": {
+                    "node": "v32",
+                    "port": "u"
+                  },
+                  "route": [],
+                  "label": "PB area = max(-spool,0)+1e-4"
+                },
+                {
+                  "id": "vs13",
+                  "kind": "signal",
+                  "from": {
+                    "node": "v01",
+                    "port": "an"
+                  },
+                  "to": {
+                    "node": "v33",
+                    "port": "u"
+                  },
+                  "route": [],
+                  "label": "AT area"
+                }
+              ],
+              "subsystemPorts": [],
+              "annotations": [
+                {
+                  "id": "va1",
+                  "kind": "text",
+                  "text": "4/3 valve: four VariableOrifice elements (P->A, B->T, P->B, A->T) in a Wheatstone bridge around the 0-junctions JP/JT/JA/JB. The orifice input is the normalized area max(+-spool, 0) + 1e-4 with A_max = 1e-5 m^2 (the 1e-4 is the 1e-9 m^2 leakage). VDrive splits the single spool input into the two areas; the rails leave through series FlowSensors (zero pressure drop), which are the only way a JSON subsystem can expose a 0-junction as a power port.",
+                  "x": 20,
+                  "y": 700,
+                  "w": 760,
+                  "h": 70
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 520,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Cyl",
+        "block": {
+          "ref": "stdlib:converters/HydraulicCylinder"
+        },
+        "position": {
+          "x": 900,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Ap": "2.0e-3",
+          "Ar": "1.0e-3",
+          "V0A": "5.0e-5",
+          "V0B": "5.0e-5",
+          "beta": "1.4e9",
+          "stroke": "0.2"
+        },
+        "constants": {},
+        "starts": {
+          "pA": "3.3666666666666666e6",
+          "pB": "6.733333333333333e6"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "Jrod",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 900,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "IM",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1080,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "50.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "RD",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 1080,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "500.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "XS",
+        "block": {
+          "ref": "stdlib:converters/PositionSensor"
+        },
+        "position": {
+          "x": 1080,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "XRef",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.1",
+          "initial": "0.0",
+          "final": "0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Err",
+        "block": {
+          "inline": {
+            "source": "@block ErrorSum begin\n    @inputs begin\n        u1::Real\n        u2::Real\n    end\n    @outputs y::Real\n    @equations y ~ u1 - u2\nend\n"
+          }
+        },
+        "position": {
+          "x": 260,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "PID1",
+        "block": {
+          "ref": "stdlib:discrete/DiscretePID"
+        },
+        "position": {
+          "x": 480,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "method": "1",
+          "Kp": "14.0",
+          "Ti": "20.0",
+          "Td": "0.0",
+          "lower": "-1.0",
+          "upper": "1.0"
+        },
+        "constants": {
+          "sample_period": "1.0e-3"
+        },
+        "starts": {
+          "i": "-6.071428571428571e-5"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Zero",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 40,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "pAmin",
+        "block": {
+          "ref": "stdlib:continuous/Min"
+        },
+        "position": {
+          "x": 260,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "pBmin",
+        "block": {
+          "ref": "stdlib:continuous/Min"
+        },
+        "position": {
+          "x": 260,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "PSensA",
+        "block": {
+          "ref": "stdlib:converters/PressureSensor"
+        },
+        "position": {
+          "x": 900,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "PSensB",
+        "block": {
+          "ref": "stdlib:converters/PressureSensor"
+        },
+        "position": {
+          "x": 900,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n02",
+          "port": "u"
+        },
+        "route": [],
+        "label": "100 bar"
+      },
+      {
+        "id": "w01",
+        "kind": "wire",
+        "from": {
+          "node": "n02",
+          "port": "a"
+        },
+        "to": {
+          "node": "n04",
+          "port": "P"
+        },
+        "route": [],
+        "label": "supply"
+      },
+      {
+        "id": "w02",
+        "kind": "wire",
+        "from": {
+          "node": "n04",
+          "port": "T"
+        },
+        "to": {
+          "node": "n03",
+          "port": "a"
+        },
+        "route": [],
+        "label": "return"
+      },
+      {
+        "id": "w03",
+        "kind": "wire",
+        "from": {
+          "node": "n04",
+          "port": "A"
+        },
+        "to": {
+          "node": "n05",
+          "port": "A"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w04",
+        "kind": "wire",
+        "from": {
+          "node": "n04",
+          "port": "B"
+        },
+        "to": {
+          "node": "n05",
+          "port": "B"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b01",
+        "kind": "bond",
+        "from": {
+          "node": "n06"
+        },
+        "to": {
+          "node": "n05",
+          "port": "rod"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b02",
+        "kind": "bond",
+        "from": {
+          "node": "n06"
+        },
+        "to": {
+          "node": "n07",
+          "port": "p"
+        },
+        "route": [],
+        "label": "50 kg"
+      },
+      {
+        "id": "b03",
+        "kind": "bond",
+        "from": {
+          "node": "n06"
+        },
+        "to": {
+          "node": "n08",
+          "port": "p"
+        },
+        "route": [],
+        "label": "500 N s/m"
+      },
+      {
+        "id": "b04",
+        "kind": "bond",
+        "from": {
+          "node": "n06"
+        },
+        "to": {
+          "node": "n09",
+          "port": "a"
+        },
+        "route": [],
+        "label": "position"
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "y"
+        },
+        "to": {
+          "node": "n11",
+          "port": "u1"
+        },
+        "route": [],
+        "label": "0.1 m step at 0.1 s"
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n11",
+          "port": "u2"
+        },
+        "route": [],
+        "label": "x"
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n12",
+          "port": "u"
+        },
+        "route": [],
+        "label": "position error"
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "y"
+        },
+        "to": {
+          "node": "n04",
+          "port": "u"
+        },
+        "route": [],
+        "label": "spool"
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "y"
+        },
+        "to": {
+          "node": "n14",
+          "port": "u1"
+        },
+        "route": [],
+        "label": "chamber A pressure"
+      },
+      {
+        "id": "s07",
+        "kind": "signal",
+        "from": {
+          "node": "n17",
+          "port": "y"
+        },
+        "to": {
+          "node": "n15",
+          "port": "u1"
+        },
+        "route": [],
+        "label": "chamber B pressure"
+      },
+      {
+        "id": "s08",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n14",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s09",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n15",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w05",
+        "kind": "wire",
+        "from": {
+          "node": "n04",
+          "port": "A"
+        },
+        "to": {
+          "node": "n16",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w06",
+        "kind": "wire",
+        "from": {
+          "node": "n04",
+          "port": "B"
+        },
+        "to": {
+          "node": "n17",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Hydraulic position servo (plan 9.6). Plant: PS (100 bar) and TK (1 bar) -> Valve (4 VariableOrifice in a Wheatstone bridge) -> Cyl (Ap 2e-3 m^2, Ar 1e-3 m^2, V0 5e-5 m^3, beta 1.4e9 Pa) -> Jrod (I 50 kg, R 500 N s/m). Sensor: PositionSensor; control: 1 ms DiscretePID (Kp 14 spool/m, Ti 20 s, Td 0) clamped to +-1, reference 0.1 m at t = 0.1 s. The cylinder starts at the valve's no-load equilibrium (pA 33.67 bar, pB 67.33 bar) with the integrator preloaded at the matching spool trim (-4.3e-5).",
+        "x": 40,
+        "y": 880,
+        "w": 1160,
+        "h": 80
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.5,
+    "solver": "auto",
+    "reltol": 1e-07,
+    "abstol": 1e-09,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 3001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Rod position and reference",
+      "signals": [
+        "XS/y",
+        "XRef/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Chamber pressures",
+      "signals": [
+        "Cyl/pA",
+        "Cyl/pB"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Valve spool (PID output)",
+      "signals": [
+        "PID1/y"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Orifice flows",
+      "signals": [
+        "Valve/PA/Q",
+        "Valve/PB/Q",
+        "Valve/AT/Q",
+        "Valve/BT/Q"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Negative-pressure monitors (must stay at 0)",
+      "signals": [
+        "pAmin/y",
+        "pBmin/y"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Pressure sensors",
+      "signals": [
+        "PSensA/y",
+        "PSensB/y"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

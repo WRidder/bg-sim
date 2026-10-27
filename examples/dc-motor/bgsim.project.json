@@ -2,7 +2,7 @@
   "format": "bgsim.project",
   "language": "0.1.0",
   "name": "dc-motor",
-  "models": ["iconic", "bondgraph"],
+  "models": ["iconic", "bondgraph", "speed-control"],
   "libraryDir": "library",
   "scenesDir": "scenes"
 }

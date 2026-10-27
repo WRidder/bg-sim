@@ -1,0 +1,138 @@
+{
+  "project": "hydraulic-servo",
+  "description": "Plan 9.6 acceptance (X2.5). Pure hydraulic/translation bond graph (D28): PressureSource 100 bar and Tank 1 bar feed the subsystem Valve, four VariableOrifice elements in a Wheatstone bridge (area A_max*max(+-spool,0) + 1e-9 m^2, A_max = 1e-5 m^2, Cd = 0.62, rho = 850 kg/m^3, p_tr = 1e5 Pa); its A and B ports drive the HydraulicCylinder (Ap = 2e-3 m^2, Ar = 1e-3 m^2, V0A = V0B = 5e-5 m^3, beta = 1.4e9 Pa) whose rod 1-junction carries I(50 kg), R(500 N*s/m) and a PositionSensor. The only code nodes are the 1 ms DiscretePID (Kp = 14 spool/m, Ti = 20 s, Td = 0, clamped to +-1), its 2-input error node and the valve's spool-to-area node. The cylinder starts at the valve's no-load equilibrium (pA = 33.667 bar, pB = 67.333 bar) with the PID integrator preloaded at the matching spool trim (-4.25e-5): with both chambers at the 1 bar tank pressure the closed-centre valve cannot hold the 50 kg rod against the annulus/piston area difference and the run chatters on the VariableOrifice sign switches (W206). PSensA/PSensB are pressure taps; pAmin/pBmin are check monitors (min(p, 0)). W202 (an algebraic loop through the series FlowSensor that carries each valve port) is structural and expected: the compiler sees the rail pressure through the sensor as algebraic even though the tank fixes it.",
+  "models": {
+    "hydraulic-servo": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "XS/y",
+          "t": 1.0,
+          "value": 0.1,
+          "abs": 0.002,
+          "note": "plan 9.6: the rod reaches 0.1 +- 0.002 m by t = 1.0 s (0.9 s after the step; measured 0.10016 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XS/y",
+          "t": 1.5,
+          "value": 0.1,
+          "abs": 0.002,
+          "note": "it holds the reference at the end of the run (measured 0.100525 m; the peak is 0.100525 m, so no overshoot beyond 0.6 mm)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XS/y",
+          "t": 0.3,
+          "value": 0.0694475,
+          "abs": 0.002,
+          "note": "0.2 s into the move the rod is at 0.0694 m (the valve is still open, spool 0.43): the reference trace is the smooth first-order approach of the sample"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "PSensA/y",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 100.5e5,
+          "note": "plan 9.6: chamber A stays within [0, 100.5] bar (measured max 92.58 bar on the initial acceleration)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "PSensB/y",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 100.5e5,
+          "note": "plan 9.6: chamber B stays within [0, 100.5] bar (measured max 67.33 bar at the equilibrium start)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "pAmin/y",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 1.0,
+          "note": "the lower bound of [0, 100.5] bar: min(pA, 0) is exactly 0 for the whole run (measured pA min 6.13 bar), so the chamber never cavitates"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "pBmin/y",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 1.0,
+          "note": "the lower bound for chamber B (measured pB min 22.89 bar)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "PID1/y",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 1.0,
+          "abs": 1e-06,
+          "note": "the spool saturates at the +1 limit on the reference step (peak exactly 1.0), i.e. the +-1 clamp is exercised; the steady trim is -4.3e-5"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "PID1/y",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 1.0,
+          "note": "the spool never leaves the +-1 saturation band"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "IM/p.f",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 0.6,
+          "note": "flow sanity: the 50 kg rod peaks at 0.4813 m/s, below the 0.475 m/s that the full-open P->A orifice can feed through the 2e-3 m^2 piston (9.2e-4 m^3/s / Ap), so no unphysical piston speed"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "PS/a.f",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 1.0e-3,
+          "note": "flow sanity: the pump flow is at most 9.22e-4 m^3/s (at t = 0.2 s, rod velocity 0.36 m/s); the leakage-only steady flow is -1.3e-7 m^3/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Valve/PA/Q",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 1.0e-3,
+          "note": "flow sanity: the P->A orifice flow stays below 9.22e-4 m^3/s (its full-open limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Valve/BT/Q",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "value": 1.0e-3,
+          "note": "flow sanity: the B->T return flow stays below 7.75e-4 m^3/s"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "PSensA/y",
+          "signal_b": "Cyl/pA",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "max_abs": 1e-06,
+          "note": "the A-line pressure tap reads the chamber-A state exactly (the linearised index check of the sensor wiring)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "PSensB/y",
+          "signal_b": "Cyl/pB",
+          "from_t": 0.0,
+          "to_t": 1.5,
+          "max_abs": 1e-06,
+          "note": "the B-line pressure tap reads the chamber-B state exactly"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E101", "E102", "E103", "E106", "W206"],
+          "note": "no solver failure, no connection/causality error and no event-limit stop. W202 is expected: the series FlowSensor that turns each valve rail into a subsystem power port shows up as an algebraic loop (the rail pressure is nevertheless fixed by the tank through the sensor)."
+        }
+      ]
+    }
+  }
+}

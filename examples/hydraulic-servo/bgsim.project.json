@@ -1,0 +1,8 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "hydraulic-servo",
+  "models": ["hydraulic-servo"],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

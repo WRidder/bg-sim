@@ -41,6 +41,65 @@
           "note": "same steady state as the iconic model"
         }
       ]
+    },
+    "speed-control": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "WmSens/y",
+          "t": 0.1,
+          "value": 100.0,
+          "abs": 1.0,
+          "note": "plan 9.1 (M2): the 1 ms PI reaches 100 +- 1 rad/s by t = 0.1 s (measured 99.996 rad/s, 0.09 s after the step at 0.01 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WmSens/y",
+          "t": 0.15,
+          "value": 100.0,
+          "abs": 0.05,
+          "note": "it is on the reference by t = 0.15 s (measured 100.000, no overshoot)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "PID1/y",
+          "from_t": 0.0,
+          "to_t": 0.3,
+          "value": 24.0,
+          "note": "plan 9.1: |V| <= 24 V at every sample; the clamp holds the step at exactly 24.000 V"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "PID1/y",
+          "from_t": 0.0,
+          "to_t": 0.3,
+          "value": 24.0,
+          "abs": 1e-06,
+          "note": "the +-24 V saturation is exercised on the reference step (peak exactly the 24 V clamp)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "WmSens/y",
+          "from_t": 0.0,
+          "to_t": 0.3,
+          "value": 100.0,
+          "abs": 0.05,
+          "note": "no overshoot beyond the 100 rad/s reference (measured peak 100.000 rad/s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Motor1/i",
+          "from_t": 0.0,
+          "to_t": 0.3,
+          "value": 12.0,
+          "note": "the winding current peaks at 11.03 A on the step (24 V / 2 ohm minus the back-EMF) and settles at the 2.0 mA load current"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E101", "E102", "E103", "E106", "W206"],
+          "note": "no solver failure, no connection/causality error and no event-limit stop"
+        }
+      ]
     }
   },
   "compare": {

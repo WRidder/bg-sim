@@ -150,6 +150,8 @@ def example_steps() -> list[Step] | None:
                     "tests/e2e/drivetrain-kalman.spec.ts",
                     "tests/e2e/quarter-car.spec.ts",
                     "tests/e2e/industrial-servo.spec.ts",
+                    "tests/e2e/hydraulic-servo.spec.ts",
+                    "tests/e2e/speed-control.spec.ts",
                 ],
                 cwd=ROOT / "web",
                 env={"BGSIM_E2E_REAL": "1"},
