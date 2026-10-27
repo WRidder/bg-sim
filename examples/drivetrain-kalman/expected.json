@@ -1,0 +1,81 @@
+{
+  "project": "drivetrain-kalman",
+  "description": "Plan 9.5 acceptance (X2.4). The plant is a pure bond graph (D28): MSe(V) -> 1-junction (R=1 ohm, L=1 mH) -> MotorGY(k=0.1) -> 1-junction (J_m=5e-5, R_d=1e-4) -> TF(1)*TF(0.1) = 10:1 -> wheel 1 (J1=1e-3) -> three rod segments (C=1/150 F, R=0.02 each) with two 6.7e-5 intermediate inertias -> wheel 2 (J2=2e-3) -> load MSe(-0.5 N m at 1 s). The two FlowSensors (motor current and motor speed), the kinematic Theta integrator and the 2*pi/4096 Quantizer are the sensors; the 1 ms LQGController is the firmware (Ad 5x5, Bd, Cd, L, K, Ki, Kff written by design/design.py: LQR + integral action on [delta, w_m, w_L, z], 5-state Kalman filter with a load-torque random walk, +-24 V clamp and anti-windup). A 10 rad/s reference steps at 0.1 s. The backlash variant swaps the ideal gear for the project GearWithBacklash composite (gap 0.02 rad) and only has to complete.",
+  "models": {
+    "drivetrain-kalman": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "IW2/p.f",
+          "t": 0.6,
+          "value": 10.0,
+          "rtol": 0.02,
+          "note": "plan 9.5: the load speed is within 2 % of the 10 rad/s reference 0.5 s after the step at 0.1 s (measured 10.130, +1.30 %)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IW2/p.f",
+          "t": 1.3,
+          "value": 10.0,
+          "rtol": 0.02,
+          "note": "after the -0.5 N m load step at 1 s the load speed is back within 2 % by 1.3 s (measured 10.112, +1.1 %); the dip is to 9.0 rad/s at 1.05 s"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IW2/p.f",
+          "t": 2.0,
+          "value": 10.0,
+          "rtol": 0.02,
+          "note": "still within 2 % at the end of the run (measured 10.123)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "LQG/w_load_hat",
+          "t": 2.0,
+          "value": 10.0,
+          "rtol": 0.01,
+          "note": "the Kalman filter's load-speed estimate tracks the reference (measured 9.9987); no load-side sensor is used"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "LQG/w_load_hat",
+          "signal_b": "IW2/p.f",
+          "from_t": 0.5,
+          "to_t": 2.0,
+          "value": 0.2,
+          "note": "plan 9.5: RMS(w_load_hat - omega_L) over [0.5, 2] s must be below 0.2 rad/s (measured 0.181; the residual is the encoder sawtooth at the 1 ms sampling phase plus the three-segment rod's unmodelled mid inertias)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "V/p.e",
+          "from_t": 0.0,
+          "to_t": 2.0,
+          "value": 24.0,
+          "note": "plan 9.5: |u| <= 24 V; the clamp saturates on the reference step (max 24.000 V) and never exceeds it"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "W206"],
+          "note": "no solver failure, no causal conflict and no event-limit stop. W201 (IW1 and IJm in derivative causality: the ideal gear makes the two inertias one rigid body) and W205 (the dimensionless Generic bond island) are expected bond-graph causality and do not stop the run"
+        }
+      ]
+    },
+    "drivetrain-backlash": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "W206"],
+          "note": "plan 9.5: the backlash variant only has to complete without a solver failure; it runs 2 s with the 0.02 rad gap and documents the limit cycle (the load speed oscillates around 10 rad/s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "V/p.e",
+          "from_t": 0.0,
+          "to_t": 2.0,
+          "value": 24.0,
+          "note": "the same +-24 V clamp in the backlash variant"
+        }
+      ]
+    }
+  }
+}

@@ -136,7 +136,7 @@ def example_steps() -> list[Step] | None:
         )
         steps.append(
             Step(
-                "playwright real (dcmotor, subsystems, rlc-dual)",
+                "playwright real (dcmotor, subsystems, rlc-dual, domain-visual, examples)",
                 [
                     "npx",
                     "playwright",
@@ -147,6 +147,7 @@ def example_steps() -> list[Step] | None:
                     "tests/e2e/rlc-dual.spec.ts",
                     "tests/e2e/domain-visual.spec.ts",
                     "tests/e2e/inverted-pendulum-cart.spec.ts",
+                    "tests/e2e/drivetrain-kalman.spec.ts",
                 ],
                 cwd=ROOT / "web",
                 env={"BGSIM_E2E_REAL": "1"},

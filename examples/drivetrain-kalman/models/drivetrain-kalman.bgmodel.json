@@ -1,0 +1,1379 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "drivetrain-kalman",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "V",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 40,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Elec",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 240,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "R",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 240,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "IL",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 240,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "1e-3"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Current",
+        "block": {
+          "ref": "project:FlowSensor"
+        },
+        "position": {
+          "x": 420,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "GY",
+        "block": {
+          "ref": "stdlib:bondgraph/GY"
+        },
+        "position": {
+          "x": 460,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "MotorJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 640,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "IJm",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 640,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "5e-5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Rd",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 640,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "1e-4"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "MotorSpeed",
+        "block": {
+          "ref": "project:FlowSensor"
+        },
+        "position": {
+          "x": 800,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Theta",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 800,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Encoder",
+        "block": {
+          "ref": "stdlib:discrete/Quantizer"
+        },
+        "position": {
+          "x": 800,
+          "y": 580
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "resolution": "0.0015339807878856412"
+        },
+        "constants": {
+          "sample_period": "1e-3"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "TFa",
+        "block": {
+          "ref": "stdlib:bondgraph/TF"
+        },
+        "position": {
+          "x": 880,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "TFb",
+        "block": {
+          "ref": "stdlib:bondgraph/TF"
+        },
+        "position": {
+          "x": 1000,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "WheelJ1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1120,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "IW1",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1120,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "1e-3"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "S1",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 1280,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "Rod1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1280,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "C1",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 1140,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "0.006666666666666667"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "D1",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 1420,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.02"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "MidJ1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1440,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n27",
+        "name": "IM1",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1440,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "6.7e-5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n28",
+        "name": "S2",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 1600,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n29",
+        "name": "Rod2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1600,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n30",
+        "name": "C2",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 1460,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "0.006666666666666667"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n31",
+        "name": "D2",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 1740,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.02"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n32",
+        "name": "MidJ2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1760,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n33",
+        "name": "IM2",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1760,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "6.7e-5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n34",
+        "name": "S3",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 1920,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n35",
+        "name": "Rod3",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1920,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n36",
+        "name": "C3",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 1780,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "0.006666666666666667"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n37",
+        "name": "D3",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 2060,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.02"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n38",
+        "name": "WheelJ2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 2080,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n39",
+        "name": "IW2",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 2080,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "2e-3"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n40",
+        "name": "Load",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 2080,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n41",
+        "name": "LoadStep",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 2260,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "1.0",
+          "initial": "0.0",
+          "final": "-0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n42",
+        "name": "Ref",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 980,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.1",
+          "initial": "0.0",
+          "final": "10.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n43",
+        "name": "LQG",
+        "block": {
+          "ref": "project:LQGController"
+        },
+        "position": {
+          "x": 780,
+          "y": 880
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Ad": "[0.996074538028 0.000918594901071 0.0392546197172 1.85203870564e-05 -2.56166727108e-06; -7.60865654129 0.840429908809 76.0865654129 0.0493994951056 -0.00926019352821; 0.00124473510221 5.55611611693e-07 0.987552648978 0.000994185155489 -0.000249203187169; 2.48083279196 0.00148198485317 -24.8083279196 0.984244871922 -0.497092577744; 0 0 -0 0 1]",
+          "Bd": "[0.000787654061615, 1.53099150179, 2.56166727108e-07, 0.000926019352821, 0]",
+          "Cd": "[1, 0, 0, 0, 0]",
+          "L": "[0.21399196268, 25.7103850397, 0.0803319451543, 0.959584167446, -2.00209276447]",
+          "K": "[176.247062296, 0.39547275696, -1762.47062296, 11.991946502, 0]",
+          "Ki": "223.308821536",
+          "Kff": "16.9466740716",
+          "umax": "24"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b01",
+        "kind": "bond",
+        "from": {
+          "node": "n01",
+          "port": "p"
+        },
+        "to": {
+          "node": "n02"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b02",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n03",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b03",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n04",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b04",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n05",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b05",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n06",
+          "port": "p1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b06",
+        "kind": "bond",
+        "from": {
+          "node": "n06",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n07"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b07",
+        "kind": "bond",
+        "from": {
+          "node": "n07"
+        },
+        "to": {
+          "node": "n08",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b08",
+        "kind": "bond",
+        "from": {
+          "node": "n07"
+        },
+        "to": {
+          "node": "n09",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b09",
+        "kind": "bond",
+        "from": {
+          "node": "n07"
+        },
+        "to": {
+          "node": "n10",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b10",
+        "kind": "bond",
+        "from": {
+          "node": "n07"
+        },
+        "to": {
+          "node": "n18",
+          "port": "p1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b10b",
+        "kind": "bond",
+        "from": {
+          "node": "n18",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n19",
+          "port": "p1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b10c",
+        "kind": "bond",
+        "from": {
+          "node": "n19",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n20"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b11",
+        "kind": "bond",
+        "from": {
+          "node": "n20"
+        },
+        "to": {
+          "node": "n21",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b12",
+        "kind": "bond",
+        "from": {
+          "node": "n20"
+        },
+        "to": {
+          "node": "n22"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b13",
+        "kind": "bond",
+        "from": {
+          "node": "n23"
+        },
+        "to": {
+          "node": "n22"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b14",
+        "kind": "bond",
+        "from": {
+          "node": "n23"
+        },
+        "to": {
+          "node": "n24",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b15",
+        "kind": "bond",
+        "from": {
+          "node": "n23"
+        },
+        "to": {
+          "node": "n25",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b16",
+        "kind": "bond",
+        "from": {
+          "node": "n22"
+        },
+        "to": {
+          "node": "n26"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b17",
+        "kind": "bond",
+        "from": {
+          "node": "n26"
+        },
+        "to": {
+          "node": "n27",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b18",
+        "kind": "bond",
+        "from": {
+          "node": "n26"
+        },
+        "to": {
+          "node": "n28"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b19",
+        "kind": "bond",
+        "from": {
+          "node": "n29"
+        },
+        "to": {
+          "node": "n28"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b20",
+        "kind": "bond",
+        "from": {
+          "node": "n29"
+        },
+        "to": {
+          "node": "n30",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b21",
+        "kind": "bond",
+        "from": {
+          "node": "n29"
+        },
+        "to": {
+          "node": "n31",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b22",
+        "kind": "bond",
+        "from": {
+          "node": "n28"
+        },
+        "to": {
+          "node": "n32"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b23",
+        "kind": "bond",
+        "from": {
+          "node": "n32"
+        },
+        "to": {
+          "node": "n33",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b24",
+        "kind": "bond",
+        "from": {
+          "node": "n32"
+        },
+        "to": {
+          "node": "n34"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b25",
+        "kind": "bond",
+        "from": {
+          "node": "n35"
+        },
+        "to": {
+          "node": "n34"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b26",
+        "kind": "bond",
+        "from": {
+          "node": "n35"
+        },
+        "to": {
+          "node": "n36",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b27",
+        "kind": "bond",
+        "from": {
+          "node": "n35"
+        },
+        "to": {
+          "node": "n37",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b28",
+        "kind": "bond",
+        "from": {
+          "node": "n34"
+        },
+        "to": {
+          "node": "n38"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b29",
+        "kind": "bond",
+        "from": {
+          "node": "n38"
+        },
+        "to": {
+          "node": "n39",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b30",
+        "kind": "bond",
+        "from": {
+          "node": "n40",
+          "port": "p"
+        },
+        "to": {
+          "node": "n38"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "n43",
+          "port": "u"
+        },
+        "to": {
+          "node": "n01",
+          "port": "u"
+        },
+        "route": [],
+        "label": "voltage"
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": {
+          "node": "n41",
+          "port": "y"
+        },
+        "to": {
+          "node": "n40",
+          "port": "u"
+        },
+        "route": [],
+        "label": "-0.5 N m load step"
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "y"
+        },
+        "to": {
+          "node": "n11",
+          "port": "u"
+        },
+        "route": [],
+        "label": "motor speed"
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n12",
+          "port": "u"
+        },
+        "route": [],
+        "label": "motor angle"
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "y"
+        },
+        "to": {
+          "node": "n43",
+          "port": "theta_m"
+        },
+        "route": [],
+        "label": "quantized angle"
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": {
+          "node": "n42",
+          "port": "y"
+        },
+        "to": {
+          "node": "n43",
+          "port": "w_ref"
+        },
+        "route": [],
+        "label": "10 rad/s at 0.1 s"
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Plant (D28, pure bond graph): MSe(V) -> 1-junction (R=1, L=1 mH) -> GY(k=0.1) -> 1-junction (J_m=5e-5, R_d) -> TF(1)·TF(0.1) = a 10:1 ideal gear -> wheel 1 (J1=1e-3) -> three rod segments (C=1/150, R=0.02 each, two 6.7e-5 mid inertias) -> wheel 2 (J2=2e-3) -> load MSe. The two FlowSensors, the kinematic Theta integrator and the 2*pi/4096 encoder are sensors; LQGController is the 1 ms firmware.",
+        "x": 40,
+        "y": 1000,
+        "w": 2260,
+        "h": 90
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 2.0,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 4001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Load speed",
+      "signals": [
+        "IW2/p.f",
+        "LQG/w_load_hat"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Control voltage",
+      "signals": [
+        "V/p.e",
+        "LQG/u"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Rod segments",
+      "signals": [
+        "IW1/p.f",
+        "IM1/p.f",
+        "IM2/p.f",
+        "IW2/p.f"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

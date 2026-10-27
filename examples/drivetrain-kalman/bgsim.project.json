@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "drivetrain-kalman",
+  "models": [
+    "drivetrain-kalman",
+    "drivetrain-backlash"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

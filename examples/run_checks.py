@@ -64,9 +64,19 @@ counts when the next sample turns around::
 ``compare_signals`` is the same-run form (two signals of one model, e.g. the two
 RLC subsystems): it interpolates both onto the union of the run's own time grid
 over ``[from_t, to_t]`` and checks the maximum absolute difference against
-``max_abs``. ``no_diagnostics`` takes ``codes`` and fails when any of them
-appears in the run manifest; other codes (such as the expected W205 of a pure
-bond-graph island) are printed but ignored::
+``max_abs``. ``rms_difference`` is its RMS form (the drivetrain's estimator error),
+and ``max_abs_le`` is a *bound* (the voltage limit), not an equality: it passes when
+the largest absolute value over the window is at most ``value``::
+
+    {"kind": "compare_signals", "signal": "Iconic/C1/p.e",
+     "signal_b": "Bondgraph/C1/p.e", "from_t": 0.0, "max_abs": 1e-8},
+    {"kind": "max_abs_le", "signal": "V/p.e", "value": 24.0},
+    {"kind": "rms_difference", "signal": "LQG/w_load_hat",
+     "signal_b": "IW2/p.f", "from_t": 0.5, "to_t": 2.0, "value": 0.2},
+
+``no_diagnostics`` takes ``codes`` and fails when any of them appears in the run
+manifest; other codes (such as the expected W205 of a pure bond-graph island) are
+printed but ignored::
 
     {"kind": "compare_signals", "signal": "Iconic/C1/p.e",
      "signal_b": "Bondgraph/C1/p.e", "from_t": 0.0, "max_abs": 1e-8},
@@ -537,6 +547,75 @@ def _compare_signals_check(
     report.check(difference <= limit, label, detail)
 
 
+def _max_abs_le_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The largest absolute value of a signal over a time window is at most ``value``."""
+    signal = str(check.get("signal", ""))
+    label = f"{project}/{model} {signal} max_abs_le"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value'")
+        return
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    limit = abs(float(check["value"]))
+    from_t = float(check.get("from_t", float(run.time[0])))
+    to_t = float(check.get("to_t", float(run.time[-1])))
+    mask = (run.time >= from_t) & (run.time <= to_t)
+    if not mask.any():
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    values = run.signals[signal][mask]
+    times = run.time[mask]
+    index = int(np.argmax(np.abs(values)))
+    measured = float(abs(values[index]))
+    detail = (
+        f"max|{signal}| over [{from_t:g}, {to_t:g}] measured {measured:.12g} "
+        f"at t={times[index]:.6g}, limit {limit:.12g}"
+    )
+    report.check(measured <= limit, label, detail)
+
+
+def _rms_difference_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The RMS of ``signal - signal_b`` over a time window is at most ``value``."""
+    signal = str(check.get("signal", ""))
+    signal_b = str(check.get("signal_b", ""))
+    label = f"{project}/{model} rms({signal} - {signal_b})"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value'")
+        return
+    for name in (signal, signal_b):
+        if name not in run.signals:
+            report.check(False, label, f"unknown signal {name!r}")
+            return
+    try:
+        limit = float(check["value"])
+    except (TypeError, ValueError):
+        report.check(False, label, "'value' must be a number")
+        return
+    first = float(run.time[0])
+    last = float(run.time[-1])
+    from_t = float(check.get("from_t", first))
+    to_t = float(check.get("to_t", last))
+    lower = max(from_t, first)
+    upper = min(to_t, last)
+    mask = (run.time >= lower) & (run.time <= upper)
+    if not mask.any():
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    times = run.time[mask]
+    difference = run.signals[signal][mask] - run.signals[signal_b][mask]
+    measured = float(np.sqrt(np.mean(difference**2)))
+    detail = (
+        f"over [{lower:g}, {upper:g}] RMS|delta| {measured:.6g} "
+        f"(limit {limit:g} over {times.size} points)"
+    )
+    report.check(measured <= limit, label, detail)
+
+
 def _no_diagnostics_check(
     report: Report, project: str, model: str, run: Run, check: dict[str, Any]
 ) -> None:
@@ -630,6 +709,10 @@ def _check_model_checks(
             _value_check(report, project, model, run, check, str(kind))
         elif kind == "max_abs":
             _max_abs_check(report, project, model, run, check)
+        elif kind == "max_abs_le":
+            _max_abs_le_check(report, project, model, run, check)
+        elif kind == "rms_difference":
+            _rms_difference_check(report, project, model, run, check)
         elif kind == "ratio":
             _ratio_check(report, project, model, run, check)
         elif kind == "zero_crossing":
