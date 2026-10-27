@@ -74,9 +74,11 @@ export ParsedBlock, Decl, TypeSpec, CausalityDecl, ComponentDecl, PortRef, Conne
 export Diagnostic, SourceRange, SourceRef, Related, severity_of, diag, to_namedtuple,
     to_dict, from_dict, sort_diagnostics, source_kind, scope_string
 
-# Work package J1.5: lowering and simulation.
+# Work package J1.5: lowering and simulation. J2.8 adds the compile-cache introspection and
+# policy API (`compile_build_count`, `compile_cache_limit`).
 export LowerError, CompiledModel, nonsmooth_conditions, compile_key, lower_model,
     set_parameter_values, set_start_values, clear_compile_cache!, cache_size,
+    compile_build_count, compile_cache_limit,
     RunSettings, SimResult, simulate, output_grid
 
 end # module BGSim
