@@ -195,6 +195,8 @@ test("opens the bond-graph drivetrain, runs it and reads the load speed and volt
   for (const name of ["Elec", "MotorJ", "GY", "TFa", "TFb", "WheelJ1", "S1", "Rod1", "S2", "Rod2", "WheelJ2", "LQG"]) {
     await expect(node(page, name)).toBeVisible();
   }
+  // A Generic bond port on a sensor uses the bond itself as its marker.
+  await expect(node(page, "Current").locator(".port-glyph--power")).toBeHidden();
 
   await page.getByTestId("run-button").click();
   const runStatus = page.getByTestId("run-status");

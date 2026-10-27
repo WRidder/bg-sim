@@ -11,7 +11,6 @@
  */
 
 import { Handle, Position } from "@xyflow/react";
-import type { CSSProperties } from "react";
 
 import type { DomainName } from "../../contracts/catalog";
 import type { PortDragState } from "../connectionAnalysis";
@@ -72,7 +71,27 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
   const title = isPower
     ? `${port.name} · power · ${domain}${vector ? ` · ${port.size.join("x")}` : ""}`
     : `${port.name} · ${direction} · ${port.type}${vector ? ` · ${port.size.join("x")}` : ""} · ${SIGNAL_TYPE_LABEL[port.type] ?? ""}`;
+  const isSignalInput = !isPower && port.kind === "input";
   const rotation = isPower ? 0 : arrowRotation(side, direction);
+  // Put an output arrow's tip exactly on the block border, so the line starts
+  // at the tip instead of in the middle of the glyph. Inputs are solid dots.
+  const inward = 5.5;
+  const shiftX =
+    isPower || isSignalInput
+      ? 0
+      : side === "left"
+        ? inward
+        : side === "right"
+          ? -inward
+          : 0;
+  const shiftY =
+    isPower || isSignalInput
+      ? 0
+      : side === "top"
+        ? inward
+        : side === "bottom"
+          ? -inward
+          : 0;
 
   const handlePosition =
     side === "left"
@@ -114,12 +133,15 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
       data-type={port.type}
       data-state={state}
       data-side={side}
-      data-arrow-rotation={isPower ? undefined : rotation}
+      data-glyph={isPower ? "square" : isSignalInput ? "dot" : "arrow"}
+      data-arrow-rotation={isPower || isSignalInput ? undefined : rotation}
       title={title}
       aria-label={title}
     >
       {isPower ? (
         <span className="port-glyph port-glyph--power" aria-hidden="true" />
+      ) : isSignalInput ? (
+        <span className="port-glyph port-glyph--in" aria-hidden="true" />
       ) : (
         <svg
           className="port-glyph port-glyph--signal"
@@ -127,11 +149,13 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
           width="11"
           height="11"
           aria-hidden="true"
-          style={{ "--port-arrow-rotation": `${rotation}deg` } as CSSProperties}
+          style={{
+            transform: `translate(${shiftX}px, ${shiftY}px) rotate(${rotation}deg)`,
+          }}
         >
           <path
             d="M1 1 L9 5 L1 9 Z"
-            fill={port.kind === "output" ? "currentColor" : "none"}
+            fill="currentColor"
             stroke="currentColor"
             strokeWidth="1.2"
             strokeLinejoin="round"

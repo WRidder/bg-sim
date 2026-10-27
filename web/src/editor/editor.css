@@ -539,20 +539,26 @@
 
 .port-glyph--signal {
   overflow: visible;
+  transform-origin: 50% 50%;
 }
 
-.port-handle--input .port-glyph--signal {
-  transform: translateX(-1px)
-    rotate(var(--port-arrow-rotation, 0deg));
-}
-
-.port-handle--output .port-glyph--signal {
-  transform: translateX(1px)
-    rotate(var(--port-arrow-rotation, 0deg));
+/* Inputs are solid dots; the line ends on the dot. */
+.port-glyph--in {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 1px var(--color-surface);
 }
 
 /* Bond-graph letters use the bond itself as the port marker, like junctions. */
 .bond-node .port-glyph--power {
+  display: none;
+}
+
+/* A bond ending on a Generic port (sensors, converters, project blocks) also
+   uses the bond as its marker; no dashed square at the end of the bond. */
+.port-handle.is-generic .port-glyph--power {
   display: none;
 }
 

@@ -184,11 +184,25 @@ test("Ctrl-drag onto a block body picks the first compatible input and draws its
 
   const input = gain.locator('[data-port="u"]').first();
   await expect(input).toHaveAttribute("data-direction", "input");
-  await expect(input).toHaveAttribute("data-arrow-rotation", "180");
-  const glyph = input.locator(".port-glyph--signal");
+  await expect(input).toHaveAttribute("data-glyph", "dot");
+  await expect(input.locator(".port-glyph--in")).toBeVisible();
+  await expect(input.locator(".port-glyph--signal")).toHaveCount(0);
+
+  const output = source.locator('[data-port="y"]').first();
+  await expect(output).toHaveAttribute("data-glyph", "arrow");
+  await expect(output).toHaveAttribute("data-arrow-rotation", "180");
+  const glyph = output.locator(".port-glyph--signal");
   await expect
     .poll(async () => glyph.evaluate((element) => getComputedStyle(element).transform))
     .toContain("matrix(-1");
+  // The arrow tip sits on the block border, so the outgoing line starts there.
+  const glyphBox = await glyph.boundingBox();
+  const sourceBoxAfter = await source.boundingBox();
+  expect(glyphBox).not.toBeNull();
+  expect(sourceBoxAfter).not.toBeNull();
+  if (glyphBox !== null && sourceBoxAfter !== null) {
+    expect(Math.abs(glyphBox.x - sourceBoxAfter.x)).toBeLessThanOrEqual(1.5);
+  }
 });
 
 test("the toolbar toggles the grid and snapping", async ({ page }) => {
