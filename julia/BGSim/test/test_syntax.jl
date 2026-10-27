@@ -487,7 +487,9 @@ const ROW_OVERRIDES = Dict{Symbol,NamedTuple}(
             ds = check_block(pb)
             @test isempty([d for d in ds if d.severity != "info"])
             bal = block_balance(pb)
-            @test bal.unknowns == bal.equations
+            # A textual composite has no equations of its own; its balance is the sum of
+            # its components' and is checked after instantiation (J2.6/J2.6b).
+            isempty(components(pb)) && @test bal.unknowns == bal.equations
             iface = block_interface(pb)
             for field in
                 ("constants", "parameters", "inputs", "outputs", "ports", "variables")

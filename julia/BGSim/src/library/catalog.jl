@@ -293,7 +293,7 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "conv-current-sensor",
     ),
     "stdlib:converters/DCMotor" => (
-        description = "Permanent-magnet DC motor, written flat for M1 (plan section 8): electrical p and n, rotational shaft and housing.",
+        description = "Permanent-magnet DC motor as a composite (winding, gyrator, rotor): electrical p and n, rotational shaft and housing.",
         icon = "conv-dc-motor",
     ),
     "stdlib:converters/EMConverter" => (

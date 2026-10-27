@@ -34,6 +34,7 @@ const SCOPE_MACROS = Dict{Symbol,Symbol}(
     Symbol("@causality") => :causality,
     Symbol("@components") => :components,
     Symbol("@connections") => :connections,
+    Symbol("@observables") => :observables,
 )
 
 # Scopes that exist in the spec but belong to a later work package. They must be *rejected*
@@ -42,7 +43,7 @@ const UNSUPPORTED_SCOPES = Dict{Symbol,String}()
 
 const ALL_SCOPE_NAMES =
     "@constants @parameters @inputs @outputs @ports @variables @initial @equations " *
-    "@discrete @events @causality @components @connections"
+    "@discrete @events @causality @components @connections @observables"
 
 const POWER_DOMAINS = Set{Symbol}(
     [:Electrical, :Translation, :Rotation, :Hydraulic, :Generic, :Planar, :Spatial]
@@ -187,6 +188,7 @@ mutable struct BlockBuilder
     causality_items::Vector{CausalityDecl}
     component_items::Vector{ComponentDecl}
     connection_items::Vector{ConnectDecl}
+    observation_items::Vector{ObservationDecl}
     diagnostics::Vector{Diagnostic}
     range::SourceRange
     size_refs::Set{Symbol}
@@ -207,6 +209,7 @@ function BlockBuilder(name, ref, text, filename, range)
         CausalityDecl[],
         ComponentDecl[],
         ConnectDecl[],
+        ObservationDecl[],
         Diagnostic[],
         range,
         Set{Symbol}(),
@@ -237,6 +240,7 @@ function _as_parsed_stub(b::BlockBuilder)
         b.causality_items,
         b.component_items,
         b.connection_items,
+        b.observation_items,
         b.diagnostics,
         b.range,
     )
@@ -257,6 +261,7 @@ function _finish(b::BlockBuilder)
         b.causality_items,
         b.component_items,
         b.connection_items,
+        b.observation_items,
         b.diagnostics,
         b.range,
     )
@@ -427,6 +432,7 @@ function _syntax_error_block(src::String, filename::String, ref::String, err)
         CausalityDecl[],
         ComponentDecl[],
         ConnectDecl[],
+        ObservationDecl[],
         diags,
         r,
     )
@@ -516,6 +522,9 @@ function _parse_scope_stmt!(b::BlockBuilder, stmt)
         return nothing
     elseif scope == :connections
         _parse_connections_scope!(b, args, stmt)
+        return nothing
+    elseif scope == :observables
+        _parse_observables_scope!(b, args, stmt)
         return nothing
     end
     if isempty(args)
@@ -1513,6 +1522,96 @@ function _parse_connect!(b::BlockBuilder, node)
     to = _parse_portref!(b, ch[3])
     (from === nothing || to === nothing) && return nothing
     push!(b.connection_items, ConnectDecl(from, to, rng))
+    return nothing
+end
+
+"""Parse one `@observables begin name = component.signal ... end` scope (J2.6b). The left side
+names the composite's signal (`name` or `port.e`/`port.f`); the right side is a variable of a
+component (`instance.var`) or one of its port fields (`instance.port.e`/`.f`). Observed
+signals are recording aliases: they never take part in the connections and never enter the
+composite's catalog interface."""
+function _parse_observables_scope!(b::BlockBuilder, args, stmt)
+    if length(args) != 1
+        _error!(
+            b,
+            "E001",
+            "`@observables` takes one `begin ... end` body of `name = component.signal` entries";
+            scope = :observables,
+            hint = "write `@observables begin i = inductor.i end`",
+        )
+        return nothing
+    end
+    arg = args[1]
+    if kind(arg) == K"block" && isempty(_flatten_blocks(_children(arg)))
+        _error!(
+            b,
+            "E001",
+            "the `@observables` scope is empty",
+            arg;
+            scope = :observables,
+            hint = "alias a component signal, or remove the scope",
+        )
+        return nothing
+    end
+    items = _flatten_blocks(kind(arg) == K"block" ? _children(arg) : [arg])
+    for item in items
+        _parse_observation!(b, item)
+    end
+    return nothing
+end
+
+function _parse_observation!(b::BlockBuilder, node)
+    rng = _range(node, b.filename)
+    if kind(node) != K"="
+        _error!(
+            b,
+            "E001",
+            "an `@observables` entry is `name = component.signal`",
+            node;
+            scope = :observables,
+            hint = "write `i = inductor.i` or `p.e = resistor.p.e`",
+        )
+        return nothing
+    end
+    ch = _children(node)
+    name = nothing
+    field = nothing
+    if length(ch) == 2
+        lhs = ch[1]
+        if kind(lhs) == K"Identifier"
+            name = _leaf_symbol(lhs)
+        elseif kind(lhs) == K"."
+            lch = _children(lhs)
+            if length(lch) == 2 && kind(lch[2]) == K"Identifier"
+                name = _leaf_symbol(lch[1])
+                field = _leaf_symbol(lch[2])
+            end
+        end
+    end
+    if name === nothing
+        _error!(
+            b,
+            "E001",
+            "an observed signal is `name` or `port.e`/`port.f`",
+            isempty(ch) ? node : ch[1];
+            scope = :observables,
+            hint = "the left side names the signal the composite exposes",
+        )
+        return nothing
+    end
+    if field !== nothing && field !== :e && field !== :f
+        _error!(
+            b,
+            "E001",
+            "an observed port field is `e` or `f`, not `$field`",
+            ch[1];
+            scope = :observables,
+        )
+        return nothing
+    end
+    target = _to_expr!(b, ch[2], :observables)
+    target === nothing && return nothing
+    push!(b.observation_items, ObservationDecl(name, field, target, rng))
     return nothing
 end
 

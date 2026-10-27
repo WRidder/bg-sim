@@ -455,7 +455,7 @@ _sim_ramp_model() = _sim_model(
         )
         @test isempty(_sim_errors(iconic))
         @test isempty(_sim_errors(bond))
-        @test iconic.stats.states == 2 && iconic.stats.equations == 26
+        @test iconic.stats.states == 3 && iconic.stats.equations == 41
         @test bond.stats.states == 2 && bond.stats.equations == 16
         @test length([x for x in bond.diagnostics if x.code == "W205"]) == 2
 
@@ -464,7 +464,9 @@ _sim_ramp_model() = _sim_model(
         BGSim.clear_compile_cache!()
         lowered = BGSim.lower_model(iconic; t_start = 0.0, t_end = 1.0)
         @test !lowered.cache_hit
-        @test length(ModelingToolkit.unknowns(lowered.model.system)) == 2
+        # Lowering keeps exactly the three differential states (the inductor current, the
+        # rotor angle and speed); the port power and the composite observables are derived.
+        @test length(ModelingToolkit.unknowns(lowered.model.system)) == 3
         @test haskey(lowered.model.vars, "Motor1/shaft.P")
         @test haskey(lowered.model.vars, "Motor1/shaft.f")
 
@@ -725,7 +727,7 @@ _sim_ramp_model() = _sim_model(
         @test isapprox(columns["Motor1/shaft.f"][end], target; rtol = 1e-4)
 
         # Start-only changes also keep the key and really move the initial state.
-        flat3 = BGSim.set_start_values(flat, Dict("Motor1/w_rel" => 100.0))
+        flat3 = BGSim.set_start_values(flat, Dict("Motor1/rotor/w" => 100.0))
         @test BGSim.compile_key(flat3) == BGSim.compile_key(flat)
         start_dir = mktempdir()
         started_run = simulate(flat3; run_dir = start_dir, settings = settings)

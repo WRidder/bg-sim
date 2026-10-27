@@ -105,7 +105,11 @@ mutable struct Builder
     junction_by_path::Dict{String,Int}
     raw::Vector{RawConnection}
     boundary::Dict{String,Dict{Symbol,RawEndpoint}}
+    boundary_nodes::Dict{String,String}
+    boundary_ports::Dict{Tuple{String,Symbol},IR.SubsystemPort}
     composite_stack::Vector{String}
+    param_alias::Dict{Tuple{String,Symbol},String}
+    observed::Vector{Flat.DerivedSignal}
     nodes_total::Int
     conns_total::Int
     power_signals::Dict{String,Flat.DerivedSignal}
@@ -130,7 +134,11 @@ function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
         Dict{String,Int}(),
         RawConnection[],
         Dict{String,Dict{Symbol,RawEndpoint}}(),
+        Dict{String,String}(),
+        Dict{Tuple{String,Symbol},IR.SubsystemPort}(),
         String[],
+        Dict{Tuple{String,Symbol},String}(),
+        Flat.DerivedSignal[],
         0,
         0,
         Dict{String,Flat.DerivedSignal}(),
@@ -631,6 +639,27 @@ function _bind_parameters!(b::Builder, st::BlockState, node::IR.ModelNode)
             continue
         end
         text = get(node.params, String(name), nothing)
+        target = get(b.param_alias, (st.path, name), nothing)
+        if target !== nothing
+            ids = _element_ids(target, shape)
+            found = all(haskey(b.param_index, id) for id in ids)
+            if !found
+                _report!(
+                    b,
+                    st;
+                    code = "E003",
+                    message = "parameter `$name` of `$(st.path)` aliases unknown parameter `$target`",
+                    range = BGSim.decl_range(d),
+                    scope = "@parameters",
+                    hint = "a composite parameter is declared in the enclosing composite's `@parameters`",
+                )
+                continue
+            end
+            st.ids[name] = ids
+            st.shapes[name] = shape
+            st.units[name] = b.params[b.param_index[first(ids)]].unit
+            continue
+        end
         value = if text !== nothing
             _parse_value(
                 b,
@@ -1923,6 +1952,302 @@ function _report_component!(
 end
 
 """
+    _bind_composite_parameters!(b, node, path, block)
+
+Bind the `@parameters` of a textual composite at the composite's own path (`Motor1/R`), so a
+model-level override and `set_parameter_values` keep working exactly as for a flat block. A
+composite parameter that is itself aliased to an enclosing composite's parameter (nested
+composites, J2.6b) is not created again: `param_alias` already points at the outer id.
+"""
+function _bind_composite_parameters!(b::Builder, node::IR.ModelNode, path::String,
+    block::IR.BlockDef)
+    pb = block.ast
+    consts = BGSim.constant_env(pb)
+    st = BlockState(
+        path,
+        node.id,
+        block.ref,
+        block,
+        pb,
+        consts,
+        BGSim.Units.block_domain(pb),
+        :Generic,
+        Dict{Symbol,BGSim.Decl}(),
+        Dict{Symbol,Vector{String}}(),
+        Dict{Symbol,Tuple{Vararg{Int}}}(),
+        Dict{Symbol,Union{Dims,Nothing}}(),
+        Dict{Symbol,PortInfo}(),
+        0,
+        0,
+    )
+    for scope in (:constants, :parameters, :variables, :inputs, :outputs, :ports)
+        for d in BGSim.declarations(pb, scope)
+            st.decls[BGSim.decl_name(d)] = d
+        end
+    end
+    # Apply the instance's `@constants` overrides exactly like a flat block, so a composite
+    # parameter default may use them.
+    _bind_constants!(b, st, node)
+    consts = st.consts
+    for d in BGSim.declarations(pb, :parameters)
+        name = BGSim.decl_name(d)
+        t = BGSim.resolve_type(BGSim.decl_type(d), consts)
+        shape = _shape_of(t, consts)
+        if shape === nothing
+            _report!(
+                b,
+                st;
+                code = "E005",
+                message = "the size of parameter `$name` is not static",
+                range = BGSim.decl_range(d),
+                scope = "@parameters",
+            )
+            continue
+        end
+        alias = get(b.param_alias, (path, name), nothing)
+        if alias !== nothing
+            ids = _element_ids(alias, shape)
+            if !all(haskey(b.param_index, id) for id in ids)
+                _report!(
+                    b,
+                    st;
+                    code = "E003",
+                    message = "parameter `$name` of `$(path)` aliases unknown parameter `$alias`",
+                    range = BGSim.decl_range(d),
+                    scope = "@parameters",
+                )
+            end
+            continue
+        end
+        text = get(node.params, String(name), nothing)
+        value = if text !== nothing
+            _parse_value(
+                b,
+                st,
+                text,
+                t,
+                shape;
+                what = "parameter `$name`",
+                scope = "@parameters",
+            )
+        elseif BGSim.decl_default(d) !== nothing
+            ok, folded = try_eval_const(BGSim.decl_default(d), consts)
+            if ok
+                folded
+            else
+                _report!(
+                    b,
+                    st;
+                    code = "E001",
+                    message = "the default of parameter `$name` is not a constant expression",
+                    range = BGSim.decl_range(d),
+                    scope = "@parameters",
+                    hint = "write a literal or a `@constants` expression",
+                )
+                nothing
+            end
+        else
+            _report!(
+                b,
+                st;
+                code = "E004",
+                message = "parameter `$name` of `$(path)` has no value",
+                range = BGSim.decl_range(d),
+                scope = "@parameters",
+                hint = "give it a default in the composite, or set it on the instance",
+            )
+            nothing
+        end
+        value === nothing && continue
+        ok, message = _check_value(value, t, shape)
+        if !ok
+            _report!(
+                b,
+                st;
+                code = "E004",
+                message = "invalid value for parameter `$name` of `$(path)`: $message",
+                range = BGSim.decl_range(d),
+                scope = "@parameters",
+            )
+            continue
+        end
+        ids = _element_ids(_qname(st, name), shape)
+        unit = get(BGSim.Units.unit_env(pb).names, name, nothing)
+        values = _scalar_values(value, shape)
+        for (k, id) in enumerate(ids)
+            _add_param!(
+                b,
+                Flat.FlatParam(
+                    id,
+                    String(name),
+                    values[k],
+                    BGSim.type_element(t),
+                    unit,
+                    copy(BGSim.decl_attrs(d)),
+                    Flat.Origin(; path = path, block = block.ref, node = node.id,
+                        range = BGSim.decl_range(d), kind = :parameter),
+                ),
+            )
+        end
+    end
+    return st.consts
+end
+
+# Split an observation target into `(instance, port, variable, field)`. A port field is
+# `Field(Field(Name(instance), port), field)`; a variable is `Field(Name(instance), variable)`.
+function _obs_parts(e::BGSim.Field)
+    if e.base isa BGSim.Field && e.base.base isa BGSim.Name
+        return (e.base.base.name, e.base.field, nothing, e.field)
+    elseif e.base isa BGSim.Name
+        return (e.base.name, nothing, e.field, nothing)
+    end
+    return (nothing, nothing, nothing, nothing)
+end
+_obs_parts(::Any) = (nothing, nothing, nothing, nothing)
+
+"""
+    _bind_observations!(b, node, path, block)
+
+Resolve the `@observables` of a textual composite after its components are instantiated. Each
+entry becomes a [`Flat.DerivedSignal`](@ref) at the composite path, so the composite records
+the same signal id the flat block did (`Motor1/i`, `Motor1/shaft.f`). A port `e`/`f` alias
+also gets the derived power `port.P`, exactly like a real port. Observed signals are derived
+(one equation each) and never add a state.
+"""
+function _bind_observations!(b::Builder, node::IR.ModelNode, path::String,
+    block::IR.BlockDef)
+    for o in BGSim.observations(block.ast)
+        name = BGSim.observation_name(o)
+        field = BGSim.observation_field(o)
+        target = BGSim.observation_target(o)
+        instance, port_name, var_name, target_field = _obs_parts(target)
+        if instance === nothing
+            _report_component!(
+                b, node, path, block.ref;
+                code = "E003",
+                message = "observed signal `$name` needs an `instance.signal` target",
+                hint = "write `i = inductor.i` or `p.e = resistor.p.e`",
+            )
+            continue
+        end
+        tpath = _join(path, instance)
+        st = get(b.state_by_path, tpath, nothing)
+        if st === nothing
+            _report_component!(
+                b, node, tpath, nothing;
+                code = "E003",
+                message = "observed signal `$name` refers to unknown component `$instance`",
+                hint = "declare it in `@components`",
+            )
+            continue
+        end
+        if target_field === nothing
+            d = get(st.decls, var_name, nothing)
+            ids = get(st.ids, var_name, String[])
+            if d === nothing || BGSim.decl_scope(d) != :variables || isempty(ids)
+                _report_component!(
+                    b, node, tpath, st.ref;
+                    code = "E102",
+                    message = "`$(st.path)` has no variable `$var_name` to observe",
+                    hint = "observe a `@variables` quantity, or a port field `instance.port.e`",
+                )
+                continue
+            end
+            id = _join(path, String(name))
+            v = var_by_id(b, ids[1])
+            _add_observed!(
+                b, node, path, block, Flat.DerivedSignal(
+                    id, :observed, v === nothing ? nothing : v.unit, path,
+                    BGSim.type_element(BGSim.decl_type(d)),
+                    BGSim.Name(Symbol(ids[1]), BGSim.SourceRange("", 0, 0, 0, 0)),
+                ),
+            )
+        else
+            port = get(st.ports, port_name, nothing)
+            if port === nothing
+                _report_component!(
+                    b, node, tpath, st.ref;
+                    code = "E102",
+                    message = "`$(st.path)` has no port `$port_name` to observe",
+                    hint = "an observed port field names a `@ports` entry of the component",
+                )
+                continue
+            end
+            if port.size != 1
+                _report_component!(
+                    b, node, tpath, st.ref;
+                    code = "E102",
+                    message = "observed port `$port_name` of `$(st.path)` has $(port.size) components",
+                    hint = "a composite observable aliases one scalar port",
+                )
+                continue
+            end
+            if target_field !== :e && target_field !== :f
+                _report_component!(
+                    b, node, tpath, st.ref;
+                    code = "E102",
+                    message = "a port has fields `e` and `f`, not `$target_field`",
+                )
+                continue
+            end
+            ids = target_field === :e ? port.eids : port.fids
+            if isempty(ids)
+                _report_component!(
+                    b, node, tpath, st.ref;
+                    code = "E102",
+                    message = "port `$port_name` of `$(st.path)` has no `$target_field`",
+                )
+                continue
+            end
+            id = _join(path, String(name) * "." * String(field === nothing ? target_field : field))
+            v = var_by_id(b, ids[1])
+            _add_observed!(
+                b, node, path, block, Flat.DerivedSignal(
+                    id, :port, v === nothing ? nothing : v.unit, path, :Real,
+                    BGSim.Name(Symbol(ids[1]), BGSim.SourceRange("", 0, 0, 0, 0)),
+                ),
+            )
+            target_field === :e &&
+                _add_observed_power!(b, node, path, block, String(name), port)
+        end
+    end
+    return nothing
+end
+
+# Record one observed signal, refusing an id that already exists as a variable/parameter or
+# as another observed entry.
+function _add_observed!(b::Builder, node::IR.ModelNode, path::String,
+    block::IR.BlockDef, d::Flat.DerivedSignal)
+    if haskey(b.var_index, d.id) || haskey(b.param_index, d.id) ||
+       any(o -> o.id == d.id, b.observed)
+        _report_component!(
+            b, node, path, block.ref;
+            code = "E003",
+            message = "observed signal `$(d.id)` already exists",
+            hint = "choose another observed name",
+        )
+        return nothing
+    end
+    push!(b.observed, d)
+    return nothing
+end
+
+# `port.P` for an observed port, derived from the component port's own e/f.
+function _add_observed_power!(b::Builder, node::IR.ModelNode, path::String,
+    block::IR.BlockDef, portname::String, port::PortInfo)
+    id = _join(path, portname * ".P")
+    e = BGSim.Field(BGSim.Name(Symbol(port.qname), port.range), :e, port.range)
+    f = BGSim.Field(BGSim.Name(Symbol(port.qname), port.range), :f, port.range)
+    _add_observed!(
+        b, node, path, block, Flat.DerivedSignal(
+            id, :power, BGSim.Units.parse_unit("W"), path, :Real,
+            BGSim.BinOp(:*, e, f, port.range),
+        ),
+    )
+    return nothing
+end
+
+"""
     _composite_diagram!(b, node, path, block) -> (diagram, faces)
 
 Lower a textual composite into the *same* intermediate representation a model-JSON subsystem
@@ -1936,11 +2261,12 @@ connections: they become the boundary map. Every other entry is an ordinary conn
 kind follows the same rules as the editor's (plan D7): signal when a signal port is involved,
 bond when a `Generic` power port is involved, wire otherwise.
 """
-function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block::IR.BlockDef)
+function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block::IR.BlockDef,
+    consts = BGSim.constant_env(block.ast))
     pb = block.ast
     comps = BGSim.components(pb)
     conns = BGSim.connections(pb)
-    consts = BGSim.constant_env(pb)
+    param_names = Set(BGSim.decl_name(d) for d in BGSim.declarations(pb, :parameters))
     diagram = IR.ModelDiagram(IR.ModelNode[], IR.ModelConnection[])
 
     named = Dict{Symbol,IR.BlockDef}()
@@ -1977,6 +2303,14 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
                 message = "`$(component.name)` has no parameter `$key`",
                 hint = "the keyword names a `@parameters` entry of the component block",
             )
+            if expr isa BGSim.Name && expr.name in param_names
+                # `key = composite_parameter`: a symbolic alias, not a folded constant. The
+                # component's parameter ids become the composite's parameter ids, so a
+                # model-level override and `set_parameter_values("Motor1/R")` stay live.
+                target = get(b.param_alias, (path, expr.name), _join(path, expr.name))
+                b.param_alias[(_join(path, name), key)] = target
+                continue
+            end
             ok, value = try_eval_const(expr, consts)
             if !ok
                 message = String(value)
@@ -1984,7 +2318,7 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
                     b, node, _join(path, name), component.ref;
                     code = occursin("is not a constant", message) ? "E003" : "E001",
                     message = "parameter `$key` of component `$name` is not a constant expression: $message",
-                    hint = "a component parameter is bound when the composite is flattened",
+                    hint = "a component parameter is bound when the composite is flattened, or aliases one of the composite's parameters",
                 )
                 continue
             end
@@ -2179,9 +2513,11 @@ function _instantiate_composite!(
     end
     push!(b.composite_stack, block.ref)
     try
-        diagram, faces = _composite_diagram!(b, node, path, block)
+        consts = _bind_composite_parameters!(b, node, path, block)
+        diagram, faces = _composite_diagram!(b, node, path, block, consts)
         diagram === nothing && return nothing
         _instantiate_diagram!(b, diagram, path)
+        _bind_observations!(b, node, path, block)
         pseudo = IR.ModelNode(
             node.id,
             node.name,
@@ -2272,8 +2608,10 @@ function _bind_boundary!(b::Builder, node::IR.ModelNode, path::String)
             continue
         end
         boundary[sp.name] = internal
+        b.boundary_ports[(path, sp.name)] = sp
     end
     b.boundary[path] = boundary
+    b.boundary_nodes[path] = node.id
     return nothing
 end
 

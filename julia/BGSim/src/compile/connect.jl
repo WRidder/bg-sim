@@ -714,6 +714,17 @@ function connection_infos(plan::ConnPlan)
     return out
 end
 
+"""    _external_face_use(r, key, path) -> Bool
+
+Whether a raw connection is an *outside* use of the composite face whose internal port key is
+`key`. Connections emitted while expanding the composite have `r.diagram == path` (the
+composite's own prefix) or a deeper prefix; everything else is a connection of the enclosing
+diagram and therefore connects the face."""
+function _external_face_use(r::RawConnection, key::Tuple{String,Symbol}, path::String)
+    (r.diagram == path || startswith(r.diagram, path * "/")) && return false
+    return _portkey(r.from) == key || _portkey(r.to) == key
+end
+
 """    check_unconnected!(b, plan)
 
 Plan 5.2.6: an input that no signal connection drives is E101, and so is a power port that
@@ -745,6 +756,31 @@ function check_unconnected!(b::Builder, plan::ConnPlan)
                 hint = "connect it or add a source (Se/Sf, Fixed, Ground)",
                 range = BGSim.decl_range(d),
                 scope = "@inputs",
+            )
+        end
+    end
+    # A textual composite's interface port is not a variable of its own: it is a face on an
+    # internal component port. The face must still be used by a connection *outside* the
+    # composite. Internal wiring is in `r.diagram == path` (or a prefix of it), so only the
+    # remaining connections count. An output may stay unconnected, like a block output.
+    for (path, faces) in b.boundary
+        node_id = get(b.boundary_nodes, path, nothing)
+        for (name, ep) in faces
+            sp = get(b.boundary_ports, (path, name), nothing)
+            sp === nothing && continue
+            sp.kind == :signal && sp.direction == :output && continue
+            key = _portkey(ep)
+            any(r -> _external_face_use(r, key, path), b.raw) && continue
+            what = sp.kind == :power ? "power port" : "input"
+            push!(
+                b.diagnostics,
+                diag(
+                    "E101",
+                    "$what `$name` of `$path` is not connected";
+                    hint = "connect it or add a source (Se/Sf, Fixed, Ground)",
+                    path = path,
+                    node = node_id,
+                ),
             )
         end
     end

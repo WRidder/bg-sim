@@ -297,10 +297,10 @@ end
                         "model.dcmotor.json"), String)),
                     projectDir = WORKER_ROOT))
             @test isempty(result.diagnostics)
-            @test result.stats.states == 2
-            @test result.stats.equations == 26
-            @test length(result.signals) == 37
-            @test length(result.domains) == 6
+            @test result.stats.states == 3
+            @test result.stats.equations == 41
+            @test length(result.signals) == 73
+            @test length(result.domains) == 11
             @test isempty(result.causality)
             @test all(v -> v == 1.0, values(result.unitFactors))
             first_signal = result.signals[1]

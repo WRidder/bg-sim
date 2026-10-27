@@ -1120,6 +1120,23 @@ const INTERFACE_FIELDS = [
             @test haskey(blocks, "stdlib:converters/" * name)
         end
 
+        # J2.6b: the DCMotor is a composite with the flat block's interface, and no own
+        # variables (its recorded `i`/`w_rel` are observables, not interface entries).
+        dc = blocks["stdlib:converters/DCMotor"]
+        @test [(p.name, p.domain, p.size) for p in dc.interface.ports] ==
+              [("p", "Electrical", Int[]), ("n", "Electrical", Int[]),
+                  ("shaft", "Rotation", Int[]), ("housing", "Rotation", Int[])]
+        @test [p.name for p in dc.interface.parameters] == ["R", "L", "k_t", "J", "d"]
+        @test [p.unit for p in dc.interface.parameters] ==
+              ["Ohm", "H", "N*m/A", "kg*m^2", "N*m*s/rad"]
+        @test isempty(dc.interface.variables)
+        @test isempty(dc.interface.inputs)
+        @test isempty(dc.interface.outputs)
+        @test isempty(dc.interface.causality)
+        @test occursin("@components", dc.source)
+        @test dc.description ==
+              "Permanent-magnet DC motor as a composite (winding, gyrator, rotor): electrical p and n, rotational shaft and housing."
+
         # EMConverter: electrical p/n plus one rotational shaft, k in N*m/A, a gyrator
         # relation (no D6 entry: the two electrical terminals are one port).
         em = blocks["stdlib:converters/EMConverter"]

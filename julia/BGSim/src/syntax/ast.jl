@@ -611,6 +611,27 @@ connect_from(c::ConnectDecl) = c.from
 connect_to(c::ConnectDecl) = c.to
 source_range(c::ConnectDecl) = c.range
 
+"""
+    ObservationDecl(name, field, target, range)
+
+One `name = component.signal` entry of `@observables` (J2.6b). `name` is the signal id the
+composite exposes at its own path; `field` is `nothing` for an internal variable of a
+component, or `:e`/`:f` for a port field. `target` is the dotted expression on the right
+(`Field(Name(component), variable)` or `Field(Field(Name(component), port), field)`), resolved
+when the composite is instantiated. Observed signals are recorded but never enter the
+composite's catalog interface."""
+struct ObservationDecl
+    name::Symbol
+    field::Union{Symbol,Nothing}
+    target::Expr
+    range::SourceRange
+end
+
+observation_name(o::ObservationDecl) = o.name
+observation_field(o::ObservationDecl) = o.field
+observation_target(o::ObservationDecl) = o.target
+source_range(o::ObservationDecl) = o.range
+
 # ---------------------------------------------------------------------------------------
 # The parsed block
 # ---------------------------------------------------------------------------------------
@@ -645,6 +666,7 @@ struct ParsedBlock
     causality_items::Vector{CausalityDecl}
     component_items::Vector{ComponentDecl}
     connection_items::Vector{ConnectDecl}
+    observation_items::Vector{ObservationDecl}
     diagnostics::Vector{Diagnostic}
     range::SourceRange
 end
@@ -714,6 +736,12 @@ components(pb::ParsedBlock) = copy(pb.component_items)
 Every `connect(a, b)` entry of `@connections` in source order; empty for a block without the
 scope."""
 connections(pb::ParsedBlock) = copy(pb.connection_items)
+
+"""    observations(pb) -> Vector{ObservationDecl}
+
+Every `@observables` entry of a textual composite in source order; empty otherwise. An
+observed entry aliases an internal component signal to the composite's own path (J2.6b)."""
+observations(pb::ParsedBlock) = copy(pb.observation_items)
 
 """    scope_string(scope::Symbol) -> String
 

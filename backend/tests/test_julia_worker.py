@@ -128,7 +128,7 @@ async def test_block_check(worker) -> None:
     print(f"block.check warm median: {median * 1000:.2f} ms")
     assert median < BLOCK_CHECK_TARGET
 
-    broken = source.replace("p.e - n.e ~ R * i", "p.e - n.e = R * i")
+    broken = source.replace("connect(p, resistor.p)", "connect(p, resistor.p, extra)")
     failed = await supervisor.call("block.check", {"source": broken, "ref": "inline:DCMotor"})
     assert any(d["code"] == "E001" for d in failed["diagnostics"])
     first = failed["diagnostics"][0]
@@ -149,16 +149,17 @@ async def test_model_check(worker, schema_validate) -> None:
 
     errors = [d for d in result["diagnostics"] if d["severity"] == "error"]
     assert errors == [], errors
-    assert result["stats"]["states"] == 2
-    assert result["stats"]["equations"] == 26
-    assert len(result["signals"]) == 37
+    assert result["stats"]["states"] == 3
+    assert result["stats"]["equations"] == 41
+    assert len(result["signals"]) == 73
     ids = [signal["id"] for signal in result["signals"]]
     assert len(ids) == len(set(ids))
     assert "Motor1/shaft.f" in ids
     assert "Motor1/i" in ids
     assert "Motor1/p.P" in ids  # every power port also reports its power e*f (D15)
-    # `domains` has one entry per power connection (the signal connection c1 has none).
-    assert len(result["domains"]) == 6
+    # `domains` has one entry per power connection (the signal connection c1 has none); the
+    # composite's five internal wires add their own entries (J2.6b).
+    assert len(result["domains"]) == 11
     assert result["domains"]["c2"] == "Electrical"
     assert result["domains"]["c5"] == "Rotation"
     assert set(result["domains"].values()) == {"Electrical", "Rotation"}

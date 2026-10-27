@@ -103,6 +103,7 @@ function check_block(pb::ParsedBlock)
     _check_declaration_types!(ck)
     _check_defaults!(ck)
     _check_components!(ck)
+    _check_observations!(ck)
     for item in pb.equation_items
         _check_eq_item!(ck, item)
     end
@@ -286,10 +287,11 @@ end
 # Textual subsystems (J2.6, decision D5)
 # ---------------------------------------------------------------------------------------
 
-# What a composite may declare besides its interface and its components. Everything else is
-# a flat block construct that has no meaning without `@equations` of its own.
+# What a composite may declare besides its interface, its parameters and its components.
+# Everything else is a flat block construct that has no meaning without `@equations` of its
+# own. `@parameters` (J2.6b) are exposed at the composite's path and aliased symbolically
+# into the internal components' parameters, so they stay runtime-tunable.
 const _COMPOSITE_FORBIDDEN = (
-    (scope = :parameters, hint = "give the value on the component instance instead"),
     (scope = :variables, hint = "declare it in the component that owns it"),
     (scope = :equations, hint = "a composite is a wiring diagram; its physics lives in the components"),
     (scope = :initial, hint = "initial equations belong to a component"),
@@ -318,11 +320,13 @@ and `@outputs`, its body is the component list and the wiring between the compon
 the interface ports.
 
 Checked here:
-- a composite has no `@parameters`, `@variables`, `@equations`, `@initial`, `@discrete`,
-  `@events` or `@causality` of its own;
+- a composite has no `@variables`, `@equations`, `@initial`, `@discrete`, `@events` or
+  `@causality` of its own; `@parameters` are allowed and become the composite's tunable
+  parameters (J2.6b), while `@observables` alias internal signals to the composite path;
 - component names are unique and do not collide with a declaration;
 - every `connect` side names an interface port or a declared component;
-- the parameter overrides of a component are constant expressions (the defaults scope);
+- the parameter overrides of a component are constant expressions or a name of one of the
+  composite's `@parameters` (the J2.6b symbolic alias);
 - every interface port is exposed by exactly one `connect` to a component port. The exposed
   internal port itself is checked at instantiation, when the component's block is known.
 
@@ -404,6 +408,13 @@ function _check_components!(ck::Checker)
                     value;
                     scope = :components,
                 )
+            end
+            if value isa Name && haskey(ck.decls, value.name) &&
+               ck.decls[value.name].scope == :parameters
+                # J2.6b: a component parameter may be bound to one of the composite's own
+                # parameters. It is not a constant; instantiation creates the alias.
+                push!(ck.used, value.name)
+                continue
             end
             ok, folded = try_eval_const(value, ck.consts)
             ok && continue
@@ -505,6 +516,111 @@ function _check_components!(ck::Checker)
     ck.context = :equation
     return nothing
 end
+
+"""    _check_observations!(ck)
+
+Validate the `@observables` scope of a textual composite (J2.6b). An observed entry aliases
+an internal component signal to the composite's own path. The target must be a component
+variable (`instance.var`) or a port field (`instance.port.e`/`.f`); whether that variable or
+port exists is checked at instantiation, when the component's block is loaded. Names are
+unique, and an unqualified observed name must not shadow a declaration of the composite.
+"""
+function _check_observations!(ck::Checker)
+    obs = ck.pb.observation_items
+    isempty(obs) && return nothing
+    if isempty(ck.pb.component_items)
+        _report!(
+            ck,
+            "E003",
+            "`@observables` has nothing to observe: the block declares no `@components`",
+            first(obs);
+            scope = :observables,
+            hint = "declare the internal instances in a `@components` scope first",
+        )
+        return nothing
+    end
+    comps = Set(component_name(c) for c in ck.pb.component_items)
+    seen = Dict{Tuple{Symbol,Union{Symbol,Nothing}},SourceRange}()
+    for o in obs
+        ck.scope = :observables
+        name = observation_name(o)
+        key = (name, observation_field(o))
+        if haskey(seen, key)
+            _report!(
+                ck,
+                "E003",
+                "observed signal `$name` is declared twice",
+                o;
+                scope = :observables,
+                hint = "each observed signal name is unique inside a composite",
+            )
+        else
+            seen[key] = source_range(o)
+        end
+        if observation_field(o) === nothing
+            d = get(ck.decls, name, nothing)
+            if d !== nothing
+                _report!(
+                    ck,
+                    "E003",
+                    "observed signal `$name` collides with the `$(scope_string(d.scope))` declaration of `$name`",
+                    o;
+                    scope = :observables,
+                    hint = "choose another name for the observed signal",
+                )
+            end
+        else
+            d = get(ck.decls, name, nothing)
+            if d === nothing || !(d.scope in (:ports, :inputs, :outputs))
+                _report!(
+                    ck,
+                    "E003",
+                    "`$name` is not a port of `$(block_name(ck.pb))`",
+                    o;
+                    scope = :observables,
+                    hint = "an observed port field names an interface port",
+                )
+            else
+                push!(ck.used, name)
+            end
+        end
+        target = observation_target(o)
+        instance = _observation_instance(target)
+        field = _observation_field(target)
+        if instance === nothing || field === nothing
+            _report!(
+                ck,
+                "E003",
+                "an observed target is `instance.signal` or `instance.port.e`/`.f`",
+                o;
+                scope = :observables,
+                hint = "write `i = inductor.i` or `p.e = resistor.p.e`",
+            )
+        elseif !(instance in comps)
+            _report!(
+                ck,
+                "E003",
+                "`@observables` refers to unknown component `$instance`",
+                o;
+                scope = :observables,
+                hint = "declare it in `@components`, or fix the spelling",
+            )
+        end
+    end
+    ck.scope = :equations
+    return nothing
+end
+
+# The component name of an observation target, or `nothing` when the shape is wrong.
+_observation_instance(e::Name) = nothing
+_observation_instance(e::Field) = e.base isa Name ? e.base.name :
+    (e.base isa Field && e.base.base isa Name ? e.base.base.name : nothing)
+_observation_instance(::Any) = nothing
+
+# The final signal name of an observation target (the variable or the port field).
+_observation_field(e::Name) = e.name
+_observation_field(e::Field) = e.field
+_observation_field(::Any) = nothing
 
 """The node a forbidden-scope diagnostic points at: the first declaration or item of that
 scope, or the block itself."""

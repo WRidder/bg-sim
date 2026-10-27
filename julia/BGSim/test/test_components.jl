@@ -254,6 +254,17 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
         """))
         @test _comp_has(d, "E003", "unknown component `zz`")
 
+        # Unknown component in @observables.
+        d = check_block(_comp_block("""
+        @block A begin
+            @ports a::Power{Rotation}
+            @components g = Gain()
+            @connections connect(a, g.a)
+            @observables x = zz.y
+        end
+        """))
+        @test _comp_has(d, "E003", "unknown component `zz`")
+
         # A component name collides with a declaration (here a port).
         d = check_block(_comp_block("""
         @block A begin
@@ -329,7 +340,7 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
         """))
         @test _comp_has(d, "E001", "joins two ports")
 
-        # A composite has no parameters/variables/equations of its own (it is a subsystem).
+        # A composite may declare parameters (J2.6b), but no variables/equations of its own.
         d = check_block(_comp_block("""
         @block A begin
             @ports a::Power{Rotation}
@@ -340,9 +351,20 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
             @equations x ~ 0.0
         end
         """))
-        @test _comp_has(d, "E001", "cannot declare `@parameters`")
+        @test !_comp_has(d, "E001", "cannot declare `@parameters`")
         @test _comp_has(d, "E001", "cannot declare `@variables`")
         @test _comp_has(d, "E001", "cannot declare `@equations`")
+
+        # A composite parameter may be aliased into a component parameter.
+        d = check_block(_comp_block("""
+        @block A begin
+            @ports a::Power{Rotation}
+            @parameters n::Real = 2.0
+            @components g = Gain(k = n)
+            @connections connect(a, g.a)
+        end
+        """))
+        @test isempty(d)
 
         # A parameter override is a constant expression in the defaults scope.
         d = check_block(_comp_block("""
@@ -412,6 +434,30 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
             Any[],
         ))
         @test _comp_has(fm.diagnostics, "E102", "does not match the internal")
+
+        # An observable target that the component does not declare: E102 at instantiation.
+        fm = _comp_flat(_comp_model(
+            "BadObservable",
+            Any[_comp_node("n1", "C1", _comp_inline("""
+            @block C begin
+                @ports begin
+                    a::Power{Electrical}
+                    b::Power{Electrical}
+                end
+                @components r = Resistor()
+                @connections begin
+                    connect(a, r.p)
+                    connect(b, r.n)
+                end
+                @observables x = r.zzz
+            end
+            """))],
+            Any[],
+        ))
+        e = _comp_diag(fm, "E102")
+        @test e !== nothing
+        @test occursin("no variable `zzz`", fm.diagnostics[e].message)
+        @test fm.diagnostics[e].path == "C1/r"
 
         # A power face of the wrong domain than the internal port it exposes.
         fm = _comp_flat(_comp_model(

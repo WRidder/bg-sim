@@ -245,7 +245,7 @@ end
 
     @testset "fixtures: exact counts" begin
         expected = Dict(
-            "model.dcmotor.json" => (26, 26, 2, 7, 7, 7),
+            "model.dcmotor.json" => (41, 41, 3, 11, 12, 11),
             "model.dcmotor.bondgraph.json" => (16, 16, 2, 8, 7, 6),
             "model.rlc.iconic.json" => (22, 22, 2, 6, 6, 6),
             "model.rlc.bondgraph.json" => (10, 10, 2, 5, 4, 4),
@@ -267,11 +267,16 @@ end
 
     @testset "fixtures: domains, unit factors and the bond graph" begin
         dcmotor = flat_file(_fixture("model.dcmotor.json"))
-        @test dcmotor.domains == Dict(
-            "c2" => "Electrical", "c3" => "Electrical", "c7" => "Electrical",
-            "c4" => "Rotation", "c5" => "Rotation", "c6" => "Rotation",
+        # The six external connections keep their domains; the composite's internal wiring
+        # adds five more power connections (`Motor1/DCMotor/c2...`), all of one domain each.
+        @test all(
+            dcmotor.domains[string("c", i)] == d for (i, d) in
+            ((2, "Electrical"), (3, "Electrical"), (7, "Electrical"),
+                (4, "Rotation"), (5, "Rotation"), (6, "Rotation"))
         )
-        @test Set(keys(dcmotor.unit_factors)) == Set(["c2", "c3", "c4", "c5", "c6", "c7"])
+        @test length(dcmotor.domains) == 11
+        @test all(d -> d == "Electrical" || d == "Rotation", values(dcmotor.domains))
+        @test length(dcmotor.unit_factors) == 11
         @test all(f -> f == 1.0, values(dcmotor.unit_factors))
         @test isempty(_warnings(dcmotor))
 
@@ -310,10 +315,12 @@ end
 
     @testset "fixtures: generated equations" begin
         dcmotor = flat_file(_fixture("model.dcmotor.json"))
-        # A wire node equates the across variables and sums the through variables.
-        @test any(e -> Flat.flat_id(e.lhs) == "Motor1/p.e" && Flat.flat_id(e.rhs) == "V1/p.e",
-            dcmotor.equations)
-        @test any(e -> occursin("Motor1/n.f", sprint(show, e)) &&
+        # A wire node equates the across variables and sums the through variables. The
+        # composite exposes `p` through its resistor and `n` through the gyrator, so the
+        # external wires land on those internal port ids (J2.6 boundary binding).
+        @test any(e -> Flat.flat_id(e.lhs) == "Motor1/resistor/p.e" &&
+                       Flat.flat_id(e.rhs) == "V1/p.e", dcmotor.equations)
+        @test any(e -> occursin("Motor1/gyrator/p.f", sprint(show, e)) &&
                        occursin("Ground1/p.f", sprint(show, e)) &&
                        occursin("V1/n.f", sprint(show, e)), dcmotor.equations)
         # A signal connection is input = output.
@@ -738,7 +745,9 @@ end
         fm = flat_file(_fixture("model.dcmotor.json"))
         ids = [s.id for s in fm.signals]
         @test length(ids) == length(unique(ids))
-        @test length(ids) == length(fm.variables) + 11   # 11 power ports
+        # Every recorded signal is either an unknown or a derived signal (a port power or a
+        # composite observable, J2.6b).
+        @test length(ids) == length(fm.variables) + length(fm.derived)
         for port in ("Motor1/p", "Motor1/n", "Motor1/shaft", "Motor1/housing",
                      "V1/p", "V1/n", "Ground1/p", "FixHousing/a", "Damp1/a", "Damp1/b",
                      "FixShaft/a")
@@ -747,8 +756,11 @@ end
             @test _has_signal(fm, port * ".P")
             @test fm.signals[_signal(fm, port * ".P")].kind == "power"
         end
-        @test fm.signals[_signal(fm, "Motor1/i")].kind == "state"
-        @test fm.signals[_signal(fm, "Motor1/w_rel")].kind == "state"
+        # The flat block's signal names survive the composite rewrite as observables.
+        @test fm.signals[_signal(fm, "Motor1/i")].kind == "observed"
+        @test fm.signals[_signal(fm, "Motor1/w_rel")].kind == "observed"
+        @test fm.signals[_signal(fm, "Motor1/i")].unit == "A"
+        @test fm.signals[_signal(fm, "Motor1/w_rel")].unit == "1/s"
         @test fm.signals[_signal(fm, "Step1/y")].kind == "output"
         @test fm.signals[_signal(fm, "V1/u")].kind == "input"
         @test fm.signals[_signal(fm, "Motor1/shaft.e")].kind == "port"
@@ -766,7 +778,7 @@ end
         @test Set(keys(result)) ==
               Set([:diagnostics, :domains, :causality, :unitFactors, :signals, :stats])
         @test isempty(result.causality)          # an iconic model has no bonds to stroke
-        @test result.stats == (states = 2, equations = 26)
+        @test result.stats == (states = 3, equations = 41)
         @test result.signals == fm.signals
         @test result.domains == fm.domains
         @test result.unitFactors == fm.unit_factors
