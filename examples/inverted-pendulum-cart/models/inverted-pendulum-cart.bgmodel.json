@@ -1,0 +1,559 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "inverted-pendulum-cart",
+  "$comment": "Plan 9.6c (X2.7): the cart-pendulum plant as a pure bond graph (D28). Cart: 1-junction CartJ with I(M), R(b) and the MSe force u. Pendulum: point mass m at the rod tip as two translational I elements (IMx, IMv) fed by MTF moduli l*cos(theta) and l*sin(theta), with the flow sums v_x = v + l*w*cos(theta) (0-junction HS) and v_y = -l*w*sin(theta) (1-junction VJ, whose gravity MSe is -m*g). The only non-bond-graph parts are the two FlowSensors plus integrators that reconstruct x and theta (D28 sensor exception) and the LQR state-feedback firmware (library/LQR.jl; see the README for why it is integrated continuously rather than at a 1 ms sample).",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "MSe1",
+        "block": { "ref": "stdlib:bondgraph/MSe" },
+        "position": { "x": 520, "y": 120 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "gain": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n02",
+        "name": "CartJ",
+        "block": { "junction": "1" },
+        "position": { "x": 520, "y": 260 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n03",
+        "name": "RB",
+        "block": { "ref": "stdlib:bondgraph/R" },
+        "position": { "x": 700, "y": 180 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "r": "0.1" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n04",
+        "name": "IM",
+        "block": { "ref": "stdlib:bondgraph/I" },
+        "position": { "x": 700, "y": 320 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "i": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n05",
+        "name": "CartSensor",
+        "block": { "ref": "project:FlowSensor" },
+        "position": { "x": 700, "y": 440 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n06",
+        "name": "HS",
+        "block": { "junction": "0" },
+        "position": { "x": 360, "y": 260 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n07",
+        "name": "IMx",
+        "block": { "ref": "stdlib:bondgraph/I" },
+        "position": { "x": 240, "y": 160 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "i": "0.2" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n08",
+        "name": "MTFh",
+        "block": { "ref": "stdlib:bondgraph/MTF" },
+        "position": { "x": -80, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n09",
+        "name": "PendJ",
+        "block": { "junction": "1" },
+        "position": { "x": -260, "y": 300 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n10",
+        "name": "MTFv",
+        "block": { "ref": "stdlib:bondgraph/MTF" },
+        "position": { "x": -80, "y": 380 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n11",
+        "name": "VJ",
+        "block": { "junction": "1" },
+        "position": { "x": 140, "y": 420 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n12",
+        "name": "IMv",
+        "block": { "ref": "stdlib:bondgraph/I" },
+        "position": { "x": 300, "y": 520 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "i": "0.2" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n13",
+        "name": "MSeG",
+        "block": { "ref": "stdlib:bondgraph/MSe" },
+        "position": { "x": 20, "y": 540 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "gain": "-1.962" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n14",
+        "name": "PendSensor",
+        "block": { "ref": "project:FlowSensor" },
+        "position": { "x": -420, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n15",
+        "name": "SinT",
+        "block": { "ref": "stdlib:continuous/MathFunction" },
+        "position": { "x": -700, "y": 420 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": { "fn": "0" },
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n16",
+        "name": "CosT",
+        "block": { "ref": "stdlib:continuous/MathFunction" },
+        "position": { "x": -700, "y": 520 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": { "fn": "1" },
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n17",
+        "name": "LSin",
+        "block": { "ref": "stdlib:continuous/Gain" },
+        "position": { "x": -520, "y": 420 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "k": "0.5" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n18",
+        "name": "LCos",
+        "block": { "ref": "stdlib:continuous/Gain" },
+        "position": { "x": -520, "y": 520 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "k": "0.5" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n19",
+        "name": "ThetaInt",
+        "block": { "ref": "stdlib:continuous/Integrator" },
+        "position": { "x": -420, "y": 620 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": { "x": "0.1" },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n20",
+        "name": "XInt",
+        "block": { "ref": "stdlib:continuous/Integrator" },
+        "position": { "x": 700, "y": 620 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": { "x": "0.0" },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n21",
+        "name": "XRef",
+        "block": { "ref": "stdlib:sources/Step" },
+        "position": { "x": -160, "y": 700 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "t_step": "1.5", "initial": "0.0", "final": "0.2" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n22",
+        "name": "LQR1",
+        "block": { "ref": "project:LQR" },
+        "position": { "x": 120, "y": 760 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "K_x": "-89.442719",
+          "K_v": "-54.686555",
+          "K_theta": "-175.121631",
+          "K_omega": "-39.152990",
+          "u_max": "20.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n23",
+        "name": "One",
+        "block": { "ref": "stdlib:sources/Constant" },
+        "position": { "x": -160, "y": 620 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "value": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b01",
+        "kind": "bond",
+        "from": { "node": "n01", "port": "p" },
+        "to": { "node": "n02" },
+        "route": [],
+        "label": "controller force"
+      },
+      {
+        "id": "b02",
+        "kind": "bond",
+        "from": { "node": "n02" },
+        "to": { "node": "n03", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b03",
+        "kind": "bond",
+        "from": { "node": "n02" },
+        "to": { "node": "n04", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b04",
+        "kind": "bond",
+        "from": { "node": "n02" },
+        "to": { "node": "n05", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b05",
+        "kind": "bond",
+        "from": { "node": "n02" },
+        "to": { "node": "n06" },
+        "route": [],
+        "label": "v"
+      },
+      {
+        "id": "b06",
+        "kind": "bond",
+        "from": { "node": "n07", "port": "p" },
+        "to": { "node": "n06" },
+        "route": [],
+        "label": "v_x"
+      },
+      {
+        "id": "b07",
+        "kind": "bond",
+        "from": { "node": "n08", "port": "p2" },
+        "to": { "node": "n06" },
+        "route": [],
+        "label": "l*cos(theta)*w"
+      },
+      {
+        "id": "b08",
+        "kind": "bond",
+        "from": { "node": "n09" },
+        "to": { "node": "n08", "port": "p1" },
+        "route": [],
+        "label": "w"
+      },
+      {
+        "id": "b09",
+        "kind": "bond",
+        "from": { "node": "n09" },
+        "to": { "node": "n10", "port": "p1" },
+        "route": [],
+        "label": "w"
+      },
+      {
+        "id": "b10",
+        "kind": "bond",
+        "from": { "node": "n09" },
+        "to": { "node": "n14", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b11",
+        "kind": "bond",
+        "from": { "node": "n11" },
+        "to": { "node": "n10", "port": "p2" },
+        "route": [],
+        "label": "v_y"
+      },
+      {
+        "id": "b12",
+        "kind": "bond",
+        "from": { "node": "n13", "port": "p" },
+        "to": { "node": "n11" },
+        "route": [],
+        "label": "-m*g"
+      },
+      {
+        "id": "b13",
+        "kind": "bond",
+        "from": { "node": "n11" },
+        "to": { "node": "n12", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": { "node": "n05", "port": "y" },
+        "to": { "node": "n20", "port": "u" },
+        "route": [],
+        "label": "cart speed"
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": { "node": "n05", "port": "y" },
+        "to": { "node": "n22", "port": "v" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": { "node": "n20", "port": "y" },
+        "to": { "node": "n22", "port": "x" },
+        "route": [],
+        "label": "x"
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": { "node": "n14", "port": "y" },
+        "to": { "node": "n19", "port": "u" },
+        "route": [],
+        "label": "pendulum rate"
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": { "node": "n19", "port": "y" },
+        "to": { "node": "n22", "port": "theta" },
+        "route": [],
+        "label": "theta"
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": { "node": "n14", "port": "y" },
+        "to": { "node": "n22", "port": "w" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s07",
+        "kind": "signal",
+        "from": { "node": "n21", "port": "y" },
+        "to": { "node": "n22", "port": "x_ref" },
+        "route": [],
+        "label": "0.2 m step at 1.5 s"
+      },
+      {
+        "id": "s08",
+        "kind": "signal",
+        "from": { "node": "n22", "port": "u" },
+        "to": { "node": "n01", "port": "u" },
+        "route": [],
+        "label": "force"
+      },
+      {
+        "id": "s09",
+        "kind": "signal",
+        "from": { "node": "n19", "port": "y" },
+        "to": { "node": "n16", "port": "u" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s10",
+        "kind": "signal",
+        "from": { "node": "n19", "port": "y" },
+        "to": { "node": "n15", "port": "u" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s11",
+        "kind": "signal",
+        "from": { "node": "n16", "port": "y" },
+        "to": { "node": "n18", "port": "u" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s12",
+        "kind": "signal",
+        "from": { "node": "n15", "port": "y" },
+        "to": { "node": "n17", "port": "u" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s13",
+        "kind": "signal",
+        "from": { "node": "n18", "port": "y" },
+        "to": { "node": "n08", "port": "u" },
+        "route": [],
+        "label": "l*cos(theta)"
+      },
+      {
+        "id": "s14",
+        "kind": "signal",
+        "from": { "node": "n17", "port": "y" },
+        "to": { "node": "n10", "port": "u" },
+        "route": [],
+        "label": "l*sin(theta)"
+      },
+      {
+        "id": "s15",
+        "kind": "signal",
+        "from": { "node": "n23", "port": "y" },
+        "to": { "node": "n13", "port": "u" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Bond-graph plant (D28): cart 1-junction CartJ (I(M), R(b), MSe(u)) -> 0-junction HS sums v and l*cos(theta)*w into v_x -> I(m). Pendulum 1-junction PendJ (w) -> MTF l*cos(theta) and MTF l*sin(theta) -> 1-junction VJ (I(m), MSe(-m*g)) with v_y = -l*sin(theta)*w. Sensors and integrators only reconstruct x and theta.",
+        "x": -760,
+        "y": 40,
+        "w": 1760,
+        "h": 80
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 4.0,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": { "mode": "points", "points": 4001 },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Pendulum angle",
+      "signals": ["ThetaInt/y"]
+    },
+    {
+      "id": "p2",
+      "title": "Cart position",
+      "signals": ["XInt/y", "XRef/y"]
+    },
+    {
+      "id": "p3",
+      "title": "Controller force",
+      "signals": ["MSe1/p.e"]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

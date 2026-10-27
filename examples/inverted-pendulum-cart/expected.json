@@ -1,0 +1,150 @@
+{
+  "project": "inverted-pendulum-cart",
+  "description": "Plan 9.6c acceptance (X2.7). The cart-pendulum plant is a pure bond graph: a cart 1-junction (I(M), R(b), MSe(u)) plus a point mass at the rod tip split into two translational I elements (IMx, IMv = 0.2 kg) that are coupled to the cart velocity and to the pendulum rate by MTF elements whose moduli are l*cos(theta) and l*sin(theta) (l = 0.5 m). The 0-junction HS sums v and l*cos(theta)*w into v_x; the 1-junction VJ carries v_y = -l*sin(theta)*w, I(m) and the gravity MSe(-m*g). Two FlowSensors and two Integrators reconstruct x and theta (the D28 sensor exception); the LQR is the project block library/LQR.jl with the gains from design/design.py (Q = diag(8e3, 1, 100, 10), R = 1, u = clamp(-K [x - x_ref, v, theta, w], -20, 20)). The reference values below are design.py's independent RK4 integration of the plan's non-linear equations with the same continuous controller and clamp; the bond-graph run reproduces them to ~2 % during the fast 0.1 rad recovery and the 0.2 m step, and to <0.5 % once settled (the residual is the DAE's algebraic w = (v_x - v)/(l*cos(theta)), which loses a digit when v_x and v are close).",
+  "models": {
+    "inverted-pendulum-cart": {
+      "checks": [
+        {
+          "kind": "max_abs",
+          "signal": "MSe1/p.e",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 17.8647,
+          "abs": 0.02,
+          "note": "peak |u| = 17.86 N at the t = 1.5 s step, the design's force demand (design.py prints it); also proves |u| <= 20 N with a 10 % margin"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XInt/y",
+          "t": 0.2,
+          "value": 0.086922,
+          "abs": 0.003,
+          "note": "cart position 0.2 s into the 0.1 rad recovery; the bond graph agrees with the design reference to 2 %"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaInt/y",
+          "t": 0.2,
+          "value": -0.054606,
+          "abs": 0.002,
+          "note": "-3.13 deg: the tilt has crossed zero and the controller is already braking"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "XInt/y",
+          "from_t": 1.3,
+          "to_t": 1.45,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "|x| < 1 cm before the reference step: the 0.1 rad recovery has returned the cart to its origin"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaInt/y",
+          "from_t": 1.3,
+          "to_t": 1.45,
+          "value": 0.0,
+          "abs": 0.0087266,
+          "note": "|theta| < 0.5 deg before the reference step"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaInt/y",
+          "from_t": 0.0,
+          "to_t": 1.45,
+          "value": 0.1,
+          "abs": 0.0001,
+          "note": "the tilt never exceeds the initial 0.1 rad during the recovery"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XInt/y",
+          "t": 1.45,
+          "value": 0.001005,
+          "abs": 0.001,
+          "note": "0.5 mm from the origin just before the step"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaInt/y",
+          "t": 1.45,
+          "value": 0.0028751,
+          "abs": 0.0015,
+          "note": "0.16 deg just before the step"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XInt/y",
+          "t": 2.0,
+          "value": 0.096652,
+          "abs": 0.004,
+          "note": "mid-step: the cart is half way to the 0.2 m reference after 0.5 s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaInt/y",
+          "from_t": 2.9,
+          "to_t": 3.0,
+          "value": 0.0,
+          "abs": 0.0087266,
+          "note": "the plan 9.6c band |theta| < 0.5 deg around t = 3 s (measured 0.41 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XInt/y",
+          "t": 3.0,
+          "value": 0.198217,
+          "abs": 0.002,
+          "note": "cart tracking error 1.8 mm (measured 0.8 mm), i.e. |x - x_ref| < 1 cm by t = 3 s; the cart sits at the 0.2 m reference, not at the origin"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaInt/y",
+          "t": 3.0,
+          "value": -0.0055751,
+          "abs": 0.0015,
+          "note": "-0.32 deg at t = 3 s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaInt/y",
+          "from_t": 3.5,
+          "to_t": 4.0,
+          "value": 0.0,
+          "abs": 0.0017453,
+          "note": "the reference settles within 2 s of the step: |theta| < 0.1 deg from t = 3.5 s (measured 0.042 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XInt/y",
+          "t": 3.5,
+          "value": 0.199744,
+          "abs": 0.001,
+          "note": "x = 0.1997 m at t = 3.5 s (0.26 mm from the reference)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "XInt/y",
+          "t": 4.0,
+          "value": 0.199963,
+          "abs": 0.001,
+          "note": "x = 0.2000 m at the end of the run"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "XInt/y",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 0.2,
+          "abs": 0.01,
+          "note": "no cart overshoot beyond 0.21 m: the 0.2 m step is approached from below"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "W202", "W206"],
+          "note": "no solver failure, no causal conflict, no algebraic loop and no event-limit stop. W201 (IM, IMv in derivative causality) and W205 (Generic bond island) are expected: the point mass is over-parameterised by two translational stores plus the rigid kinematic constraint, so one store is algebraic."
+        }
+      ]
+    }
+  }
+}
