@@ -65,6 +65,8 @@ describe("port layout", () => {
   it("sizes a compact square for its ports and places anchors on the edges", () => {
     const motor = interfaceForBlock(block("DCMotor"));
     const layout = layoutNode(motor);
+    expect(COMPACT_NODE_SIZE).toBe(60);
+    expect(COMPACT_NODE_SIZE / 20).toBe(3); // three editor grid cells
     expect(layout.width).toBe(COMPACT_NODE_SIZE);
     expect(layout.height).toBe(COMPACT_NODE_SIZE);
     expect(layout.ports.get("p")?.side).toBe("left");

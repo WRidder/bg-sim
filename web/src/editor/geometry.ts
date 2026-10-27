@@ -34,8 +34,9 @@ export const BOND_NODE_SIZE = 46;
  * Most stdlib blocks draw as a compact square icon (Simulink-like), with the
  * instance name outside the square. Inline code nodes and subsystems keep the
  * taller card because they carry a title/kind header and many ports.
+ * 60 px is exactly three 20 px grid cells.
  */
-export const COMPACT_NODE_SIZE = 76;
+export const COMPACT_NODE_SIZE = 60;
 
 export interface Point {
   x: number;
@@ -168,7 +169,7 @@ export function layoutNode(
 
   if (isCompactBlock(iface)) {
     const size = COMPACT_NODE_SIZE;
-    const inset = 12;
+    const inset = 10;
     for (const [side, ports] of Object.entries(groups) as [Side, PortSpec[]][]) {
       ports.forEach((port, index) => {
         const offset =

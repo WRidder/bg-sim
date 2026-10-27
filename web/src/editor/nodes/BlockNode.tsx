@@ -154,7 +154,7 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
             transform: `rotate(${data.rotation}deg) scaleX(${data.flipX ? -1 : 1})`,
           }}
         >
-          <BlockIcon icon={iface.icon} name={iface.title} size={34} />
+          <BlockIcon icon={iface.icon} name={iface.title} size={28} />
         </div>
         <span
           className={`block-node__label block-node__label--${data.labelSide}`}

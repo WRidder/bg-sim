@@ -11,6 +11,7 @@
  */
 
 import { Handle, Position } from "@xyflow/react";
+import type { CSSProperties } from "react";
 
 import type { DomainName } from "../../contracts/catalog";
 import type { PortDragState } from "../connectionAnalysis";
@@ -40,6 +41,26 @@ const SIGNAL_TYPE_LABEL: Record<string, string> = {
   Int: "dotted",
 };
 
+/**
+ * The signal glyph is drawn pointing right. Rotate it so an input points into
+ * the block and an output points away, whichever edge the connection uses.
+ */
+function arrowRotation(side: PortPosition["side"], direction: string): number {
+  const input = direction === "input";
+  switch (side) {
+    case "left":
+      return input ? 0 : 180;
+    case "right":
+      return input ? 180 : 0;
+    case "top":
+      return input ? 90 : 270;
+    case "bottom":
+      return input ? 270 : 90;
+    default:
+      return 0;
+  }
+}
+
 export function PortHandle({ nodeId, port, position, domain, state }: PortHandleProps) {
   const side = position.side;
   const isPower = port.kind === "power";
@@ -51,6 +72,7 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
   const title = isPower
     ? `${port.name} · power · ${domain}${vector ? ` · ${port.size.join("x")}` : ""}`
     : `${port.name} · ${direction} · ${port.type}${vector ? ` · ${port.size.join("x")}` : ""} · ${SIGNAL_TYPE_LABEL[port.type] ?? ""}`;
+  const rotation = isPower ? 0 : arrowRotation(side, direction);
 
   const handlePosition =
     side === "left"
@@ -92,6 +114,7 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
       data-type={port.type}
       data-state={state}
       data-side={side}
+      data-arrow-rotation={isPower ? undefined : rotation}
       title={title}
       aria-label={title}
     >
@@ -104,6 +127,7 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
           width="11"
           height="11"
           aria-hidden="true"
+          style={{ "--port-arrow-rotation": `${rotation}deg` } as CSSProperties}
         >
           <path
             d="M1 1 L9 5 L1 9 Z"

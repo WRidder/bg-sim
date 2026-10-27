@@ -79,6 +79,9 @@ test("a bond-graph element is its letter with the port on the bond side", async 
   await connectPorts(page, source, "p", inertia, "p");
   await expect(page.locator('[data-testid^="edge-"]')).toHaveCount(1);
 
+  // Bond-graph letters use the bond as the port marker; no square port glyph.
+  await expect(source.locator(".port-glyph--power")).toBeHidden();
+
   const sourceId = await source.getAttribute("data-node-id");
   const targetId = await inertia.getAttribute("data-node-id");
   await expect(page.getByTestId(`port-${sourceId}-p`)).toHaveAttribute("data-side", "right");
@@ -130,6 +133,62 @@ test("Ctrl-drag connects from the nearest source port and Ctrl+click still selec
   await expect(source).toHaveClass(/is-selected/);
   await expect(resistor).toHaveClass(/is-selected/);
   await expect(page.locator('[data-testid^="edge-"]')).toHaveCount(1);
+});
+
+test("Ctrl-drag onto a block body picks the first compatible input and draws its arrow", async ({
+  page,
+}) => {
+  await openModel(page);
+  // Source on the right, target on the left: the input lands on the target's
+  // right edge, so its arrow must point left (into the block).
+  await dropBlock(page, "Step", 460, 220);
+  await dropBlock(page, "Gain", 90, 220);
+
+  const source = node(page, "Step");
+  const gain = node(page, "Gain");
+  const sourceBox = await source.boundingBox();
+  const gainBox = await gain.boundingBox();
+  if (sourceBox === null || gainBox === null) {
+    throw new Error("source or target is not visible");
+  }
+
+  await page.keyboard.down("Control");
+  await page.mouse.move(sourceBox.x + sourceBox.width / 2, sourceBox.y + sourceBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(sourceBox.x + sourceBox.width / 2 - 20, sourceBox.y + 20, {
+    steps: 4,
+  });
+  await expect(page.getByTestId("quick-connect-line")).toBeVisible();
+  // Deliberately the block body, not a port.
+  await page.mouse.move(gainBox.x + gainBox.width / 2, gainBox.y + gainBox.height / 2, {
+    steps: 12,
+  });
+  await page.mouse.up();
+  await page.keyboard.up("Control");
+
+  await expect(page.locator('[data-testid^="edge-"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid^="edge-"]').first()).toHaveAttribute(
+    "data-kind",
+    "signal",
+  );
+  const stored = JSON.parse(
+    (await page.getByTestId("document-json").textContent()) ?? "null",
+  ) as {
+    diagram: {
+      connections: { to: { node: string; port?: string } }[];
+      nodes: { id: string; name: string }[];
+    };
+  };
+  const gainId = stored.diagram.nodes.find((entry) => entry.name === "Gain")?.id;
+  expect(stored.diagram.connections[0]?.to).toEqual({ node: gainId, port: "u" });
+
+  const input = gain.locator('[data-port="u"]').first();
+  await expect(input).toHaveAttribute("data-direction", "input");
+  await expect(input).toHaveAttribute("data-arrow-rotation", "180");
+  const glyph = input.locator(".port-glyph--signal");
+  await expect
+    .poll(async () => glyph.evaluate((element) => getComputedStyle(element).transform))
+    .toContain("matrix(-1");
 });
 
 test("the toolbar toggles the grid and snapping", async ({ page }) => {

@@ -47,6 +47,7 @@ import { useDiagnosticsStore } from "../diagnostics/store";
 import { buildDiagram, EDGE_TYPES, NODE_TYPES } from "./buildFlow";
 import { checkConnection, type PortDescriptor } from "./connectionRules";
 import { descriptorForPort, interfaceForNode } from "./nodeInterface";
+import { firstCompatiblePort, noAutoTargetMessage } from "./quickConnectTarget";
 import { nearestSourcePort, nodeLayout } from "./geometry";
 import { decorateFlow } from "./edges/decorateFlow";
 import { CanvasLegend } from "./legend";
@@ -357,6 +358,7 @@ function CanvasInner() {
         const element = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
         let targetNodeId: string | null = null;
         let targetPort: string | null = null;
+        let autoTarget = false;
         if (element instanceof Element) {
           const portElement = element.closest<HTMLElement>("[data-port]");
           if (portElement !== null) {
@@ -365,8 +367,11 @@ function CanvasInner() {
             targetPort = port === null || port.length === 0 ? null : port;
           } else {
             const nodeElement = element.closest<HTMLElement>('[data-testid="diagram-node"]');
-            if (nodeElement !== null && nodeElement.hasAttribute("data-node-junction")) {
+            if (nodeElement !== null) {
               targetNodeId = nodeElement.getAttribute("data-node-id");
+              // Dropping on the body picks the first compatible port; a
+              // junction has no port and keeps its own descriptor.
+              autoTarget = !nodeElement.hasAttribute("data-node-junction");
             }
           }
         }
@@ -381,8 +386,16 @@ function CanvasInner() {
         if (docNow === null || indexNow === null) {
           return;
         }
-        const target = descriptorForPort(docNow.diagram.nodes, indexNow, targetNodeId, targetPort);
+        const target = autoTarget
+          ? firstCompatiblePort(docNow, indexNow, targetNodeId, gesture.origin)
+          : descriptorForPort(docNow.diagram.nodes, indexNow, targetNodeId, targetPort);
         if (target === null) {
+          if (autoTarget) {
+            showTooltip(
+              { x: upEvent.clientX, y: upEvent.clientY },
+              noAutoTargetMessage(gesture.origin),
+            );
+          }
           return;
         }
         const result = state.connect(gesture.origin, target);
