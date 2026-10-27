@@ -291,9 +291,25 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Electrical capacitor; the initial voltage is the start value of v.",
         icon = "elec-capacitor",
     ),
+    "stdlib:electrical/CurrentSource" => (
+        description = "Signal-controlled current source; p.f = I*u, so feed it a Constant for a constant source.",
+        icon = "elec-current-source",
+    ),
     "stdlib:electrical/Ground" => (
         description = "Electrical reference node; holds its port at zero voltage.",
         icon = "elec-ground",
+    ),
+    "stdlib:electrical/IdealDiode" => (
+        description = "Piecewise-linear diode: conducts above V_knee through R_on, leaks G_off below it.",
+        icon = "elec-diode",
+    ),
+    "stdlib:electrical/IdealSwitch" => (
+        description = "Ideal switch: closed (R_on) while the Bool control is true, open (G_off) otherwise.",
+        icon = "elec-switch",
+    ),
+    "stdlib:electrical/IdealTransformer" => (
+        description = "Lossless two-winding transformer with turns ratio n (v1 = n*v2, p1.f = -p2.f/n).",
+        icon = "elec-transformer",
     ),
     "stdlib:electrical/Inductor" => (
         description = "Electrical inductor; the initial current is the start value of i.",

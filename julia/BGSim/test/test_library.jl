@@ -137,6 +137,11 @@ const M2_REFS = [
     "stdlib:discrete/UnitDelay",
     "stdlib:discrete/Xor",
     "stdlib:discrete/ZOH",
+    # J2.7e: electrical blocks.
+    "stdlib:electrical/CurrentSource",
+    "stdlib:electrical/IdealDiode",
+    "stdlib:electrical/IdealSwitch",
+    "stdlib:electrical/IdealTransformer",
 ]
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
@@ -668,6 +673,80 @@ const INTERFACE_FIELDS = [
         @test blocks["stdlib:discrete/Quantizer"].interface.parameters[1].name == "resolution"
         @test blocks["stdlib:discrete/UnitDelay"].interface.parameters[1].name == "initial"
         @test blocks["stdlib:discrete/UnitDelay"].interface.parameters[1].tunable
+    end
+
+    @testset "the M2 electrical rows (J2.7e)" begin
+        # Plan section 8, M2 row "Electrical": CurrentSource, Ideal diode, Ideal switch and
+        # Ideal transformer, plus the M1 rows (Resistor, Capacitor, Inductor, Ground,
+        # VoltageSource) that stay green. The golden tests check the equations and the
+        # switching behaviour; this pins the interface the editor and the spec see.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        refs = [
+            "stdlib:electrical/CurrentSource",
+            "stdlib:electrical/IdealDiode",
+            "stdlib:electrical/IdealSwitch",
+            "stdlib:electrical/IdealTransformer",
+        ]
+        for ref in refs
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test b.group == "Electrical"
+            @test all(p -> p.domain == "Electrical", b.interface.ports)
+            @test isempty(b.interface.variables)
+        end
+
+        # The M1 rows are untouched: the five plan M1 electrical blocks are still there.
+        for name in ("Capacitor", "Ground", "Inductor", "Resistor", "VoltageSource")
+            @test haskey(blocks, "stdlib:electrical/" * name)
+        end
+
+        # CurrentSource: the dual of VoltageSource, with the current gain in amperes and the
+        # fixed flow causality of a flow source (D6).
+        cs = blocks["stdlib:electrical/CurrentSource"]
+        @test [(p.name, p.domain, p.size) for p in cs.interface.ports] ==
+              [("p", "Electrical", Int[]), ("n", "Electrical", Int[])]
+        @test [(i.name, i.type, i.size) for i in cs.interface.inputs] ==
+              [("u", "Real", Int[])]
+        @test [p.name for p in cs.interface.parameters] == ["I"]
+        @test cs.interface.parameters[1].unit == "A"
+        @test cs.interface.causality == [(ports = ["p"], kind = "fixed", value = "flow_out")]
+
+        # IdealDiode: R_on in ohms, G_off in inverse ohms, V_knee in volts. The piecewise
+        # linear branch is an `ifelse`, the non-smooth form J2.3 collects.
+        diode = blocks["stdlib:electrical/IdealDiode"]
+        @test [(p.name, p.domain, p.size) for p in diode.interface.ports] ==
+              [("p", "Electrical", Int[]), ("n", "Electrical", Int[])]
+        @test [p.name for p in diode.interface.parameters] ==
+              ["R_on", "G_off", "V_knee"]
+        @test [p.unit for p in diode.interface.parameters] == ["Ohm", "1/Ohm", "V"]
+        @test isempty(diode.interface.inputs)
+        @test isempty(diode.interface.causality)
+        @test occursin("ifelse(", diode.source)
+        @test occursin("V_knee", diode.source)
+
+        # IdealSwitch: the spec's Bool control, with the same two conductances.
+        switch = blocks["stdlib:electrical/IdealSwitch"]
+        @test [(p.name, p.domain, p.size) for p in switch.interface.ports] ==
+              [("p", "Electrical", Int[]), ("n", "Electrical", Int[])]
+        @test [(i.name, i.type, i.size) for i in switch.interface.inputs] ==
+              [("ctrl", "Bool", Int[])]
+        @test [p.name for p in switch.interface.parameters] == ["R_on", "G_off"]
+        @test [p.unit for p in switch.interface.parameters] == ["Ohm", "1/Ohm"]
+        @test isempty(switch.interface.causality)
+
+        # IdealTransformer: four electrical terminals (two windings) and the turns ratio,
+        # which is dimensionless.
+        transformer = blocks["stdlib:electrical/IdealTransformer"]
+        @test [(p.name, p.domain, p.size) for p in transformer.interface.ports] ==
+              [("p1", "Electrical", Int[]), ("n1", "Electrical", Int[]),
+                  ("p2", "Electrical", Int[]), ("n2", "Electrical", Int[])]
+        @test [p.name for p in transformer.interface.parameters] == ["n"]
+        @test transformer.interface.parameters[1].unit === nothing
+        @test transformer.interface.parameters[1].min == 1.0e-12
+        @test isempty(transformer.interface.inputs)
+        @test occursin("n * (p2.e - n2.e)", transformer.source)
+        @test occursin("p2.f ~ -n * p1.f", transformer.source)
     end
 
     @testset "catalog structure against catalog.schema.json" begin
