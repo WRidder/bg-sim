@@ -1,0 +1,492 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "quarter-car",
+  "$comment": "Plan 9.4 (X2.3): the quarter car as a bond-graph plant (D28). Sprung mass IMs (I, ms = 300 kg) on the 1-junction SJ and unsprung mass IMu (I, mu = 40 kg) on UJ; the suspension is the two-port SpringDamper Susp (ks = 20 kN/m, cs = 1500 N*s/m) bonded between UJ.a and SJ.b, and the hard stop Stop (lower/upper = -/+0.08 m of travel, k = 1 MN/m, d = 2000 N*s/m) is bonded the same way. The tire is the project block OneSidedSpring (copied from stdlib Spring; F = ifelse(x > 0, kt*x, 0), kt = 200 kN/m) between the road 1-junction RJ and UJ. RJ carries the VelocitySource RoadV, driven by the project RoadProfile source (the plan's table: +0.5 m/s for 0.1 s at t = 0.5 s and -0.5 m/s for 0.1 s at t = 1.5 s, i.e. a 5 cm plateau bump), integrated by RoadInt to the road position. Gravity is the preload through the two MSe sources (2943 N and 392.4 N) and the static compression starts (Susp/x = 0.14715 m, Tire/x = 0.016677 m); the three FlowSensors plus Integrators reconstruct the two mass positions and the road position for the plots and the checks (the D28 sensor exception). TireNeg is a check monitor (min(tire force, 0)); it is not part of the plant. RoadProfile replaces stdlib:sources/TimeTable, whose hold/interpolate conditions are identically zero inside every sample interval and therefore trip W206 (see the README).",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "One",
+        "block": { "ref": "stdlib:sources/Constant" },
+        "position": { "x": 300, "y": 40 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "value": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n02",
+        "name": "MSeGs",
+        "block": { "ref": "stdlib:bondgraph/MSe" },
+        "position": { "x": 480, "y": 80 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "gain": "2943.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n03",
+        "name": "MSeGu",
+        "block": { "ref": "stdlib:bondgraph/MSe" },
+        "position": { "x": 480, "y": 360 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "gain": "392.4" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n04",
+        "name": "SJ",
+        "block": { "junction": "1" },
+        "position": { "x": 700, "y": 160 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n05",
+        "name": "IMs",
+        "block": { "ref": "stdlib:bondgraph/I" },
+        "position": { "x": 900, "y": 120 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "i": "300.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n06",
+        "name": "SFlow",
+        "block": { "ref": "project:FlowSensor" },
+        "position": { "x": 480, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n07",
+        "name": "SInt",
+        "block": { "ref": "stdlib:continuous/Integrator" },
+        "position": { "x": 280, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": { "x": "0.0" },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n08",
+        "name": "UJ",
+        "block": { "junction": "1" },
+        "position": { "x": 700, "y": 440 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n09",
+        "name": "IMu",
+        "block": { "ref": "stdlib:bondgraph/I" },
+        "position": { "x": 900, "y": 400 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "i": "40.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n10",
+        "name": "UFlow",
+        "block": { "ref": "project:FlowSensor" },
+        "position": { "x": 480, "y": 480 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n11",
+        "name": "UInt",
+        "block": { "ref": "stdlib:continuous/Integrator" },
+        "position": { "x": 280, "y": 480 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": { "x": "0.0" },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n12",
+        "name": "Susp",
+        "block": { "ref": "stdlib:translation/SpringDamper" },
+        "position": { "x": 700, "y": 300 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "k": "20000.0", "d": "1500.0" },
+        "constants": {},
+        "starts": { "x": "0.14715" },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n13",
+        "name": "Stop",
+        "block": { "ref": "stdlib:translation/HardStop" },
+        "position": { "x": 980, "y": 300 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "lower": "-0.08", "upper": "0.08", "k": "1.0e6", "d": "2000.0" },
+        "constants": {},
+        "starts": { "x": "0.0" },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n14",
+        "name": "Tire",
+        "block": { "ref": "project:OneSidedSpring" },
+        "position": { "x": 700, "y": 580 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "kt": "200000.0" },
+        "constants": {},
+        "starts": { "x": "0.016677" },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n15",
+        "name": "RJ",
+        "block": { "junction": "1" },
+        "position": { "x": 700, "y": 700 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n16",
+        "name": "RoadV",
+        "block": { "ref": "stdlib:translation/VelocitySource" },
+        "position": { "x": 480, "y": 700 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "v": "1.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n17",
+        "name": "RoadProfile",
+        "block": { "ref": "project:RoadProfile" },
+        "position": { "x": 120, "y": 760 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_up": "0.5",
+          "t_hold": "0.6",
+          "t_down": "1.5",
+          "t_flat": "1.6",
+          "v_rise": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n18",
+        "name": "RoadFlow",
+        "block": { "ref": "project:FlowSensor" },
+        "position": { "x": 900, "y": 700 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n19",
+        "name": "RoadInt",
+        "block": { "ref": "stdlib:continuous/Integrator" },
+        "position": { "x": 1100, "y": 700 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": { "x": "0.0" },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n20",
+        "name": "Zero",
+        "block": { "ref": "stdlib:sources/Constant" },
+        "position": { "x": 1100, "y": 340 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "value": "0.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n21",
+        "name": "TireNeg",
+        "block": { "ref": "stdlib:continuous/Min" },
+        "position": { "x": 1100, "y": 460 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b01",
+        "kind": "bond",
+        "from": { "node": "n04" },
+        "to": { "node": "n05", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b02",
+        "kind": "bond",
+        "from": { "node": "n04" },
+        "to": { "node": "n02", "port": "p" },
+        "route": [],
+        "label": "sprung weight"
+      },
+      {
+        "id": "b03",
+        "kind": "bond",
+        "from": { "node": "n04" },
+        "to": { "node": "n06", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b04",
+        "kind": "bond",
+        "from": { "node": "n04" },
+        "to": { "node": "n12", "port": "b" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b05",
+        "kind": "bond",
+        "from": { "node": "n04" },
+        "to": { "node": "n13", "port": "b" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b06",
+        "kind": "bond",
+        "from": { "node": "n08" },
+        "to": { "node": "n09", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b07",
+        "kind": "bond",
+        "from": { "node": "n08" },
+        "to": { "node": "n03", "port": "p" },
+        "route": [],
+        "label": "unsprung weight"
+      },
+      {
+        "id": "b08",
+        "kind": "bond",
+        "from": { "node": "n08" },
+        "to": { "node": "n10", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b09",
+        "kind": "bond",
+        "from": { "node": "n08" },
+        "to": { "node": "n12", "port": "a" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b10",
+        "kind": "bond",
+        "from": { "node": "n08" },
+        "to": { "node": "n13", "port": "a" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b11",
+        "kind": "bond",
+        "from": { "node": "n08" },
+        "to": { "node": "n14", "port": "b" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b12",
+        "kind": "bond",
+        "from": { "node": "n15" },
+        "to": { "node": "n16", "port": "a" },
+        "route": [],
+        "label": "road velocity"
+      },
+      {
+        "id": "b13",
+        "kind": "bond",
+        "from": { "node": "n15" },
+        "to": { "node": "n14", "port": "a" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b14",
+        "kind": "bond",
+        "from": { "node": "n15" },
+        "to": { "node": "n18", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": { "node": "n01", "port": "y" },
+        "to": { "node": "n02", "port": "u" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": { "node": "n01", "port": "y" },
+        "to": { "node": "n03", "port": "u" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": { "node": "n06", "port": "y" },
+        "to": { "node": "n07", "port": "u" },
+        "route": [],
+        "label": "body velocity"
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": { "node": "n10", "port": "y" },
+        "to": { "node": "n11", "port": "u" },
+        "route": [],
+        "label": "wheel velocity"
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": { "node": "n17", "port": "y" },
+        "to": { "node": "n16", "port": "u" },
+        "route": [],
+        "label": "road profile"
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": { "node": "n18", "port": "y" },
+        "to": { "node": "n19", "port": "u" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s07",
+        "kind": "signal",
+        "from": { "node": "n14", "port": "F" },
+        "to": { "node": "n21", "port": "u1" },
+        "route": [],
+        "label": "tire force"
+      },
+      {
+        "id": "s08",
+        "kind": "signal",
+        "from": { "node": "n20", "port": "y" },
+        "to": { "node": "n21", "port": "u2" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Bond-graph quarter car (D28). SJ (1) = sprung mass IMs (I, 300 kg) + gravity MSeGs; UJ (1) = unsprung mass IMu (I, 40 kg) + gravity MSeGu. Suspension SpringDamper Susp (20 kN/m, 1500 N s/m) and hard stop Stop (-/+0.08 m) between UJ and SJ. Tire OneSidedSpring (200 kN/m) between the road junction RJ and UJ. The road is VelocitySource RoadV driven by the RoadProfile table: a 5 cm plateau bump (0.5 m/s for 0.1 s at 0.5 s, -0.5 m/s for 0.1 s at 1.5 s). FlowSensors and Integrators reconstruct the positions (sensor exception).",
+        "x": 60,
+        "y": 830,
+        "w": 1500,
+        "h": 100
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 4.0,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": { "mode": "points", "points": 4001 },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Sprung mass, unsprung mass and road",
+      "signals": ["SInt/y", "UInt/y", "RoadInt/y"]
+    },
+    {
+      "id": "p2",
+      "title": "Suspension travel (hard stop at -0.08 / +0.08 m)",
+      "signals": ["Stop/x"]
+    },
+    {
+      "id": "p3",
+      "title": "Tire contact force",
+      "signals": ["Tire/F"]
+    },
+    {
+      "id": "p4",
+      "title": "Body and wheel velocity",
+      "signals": ["IMs/p.f", "IMu/p.f"]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

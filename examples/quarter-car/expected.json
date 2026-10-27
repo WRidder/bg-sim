@@ -1,0 +1,266 @@
+{
+  "project": "quarter-car",
+  "description": "Plan 9.4 acceptance (X2.3). The plant is a pure bond graph (D28): IMs and IMu are the two I stores on the 1-junctions SJ and UJ, the suspension is the two-port SpringDamper Susp (20 kN/m, 1500 N*s/m) between UJ.a and SJ.b, the hard stop Stop (-/+0.08 m travel, 1 MN/m, 2000 N*s/m) sits on the same pair, and the tire is the project OneSidedSpring (copied from stdlib Spring; F = ifelse(x > 0, kt*x, 0), kt = 200 kN/m) between the road 1-junction RJ and UJ. The velocity source RoadV is driven by the RoadProfile table: +0.5 m/s for 0.1 s at t = 0.5 s and -0.5 m/s for 0.1 s at t = 1.5 s, a 5 cm plateau bump. Gravity is the MSe preload (2943 N and 392.4 N) plus the static starts Susp/x = 0.14715 m and Tire/x = 0.016677 m, so t = 0 is the static equilibrium. design/design.py integrates the same equations independently (RK4, 1e-5 s) and prints every value below; the bond-graph run agrees to ~1e-6 m and ~1e-3 N. The plan's 5 cm bump peaks the suspension travel at 3.67 cm, so the hard stop never makes contact (Stop/a.e is exactly zero); the checks pin that bound and would fail if the stop were reached.",
+  "models": {
+    "quarter-car": {
+      "checks": [
+        {
+          "kind": "max_abs",
+          "signal": "SInt/y",
+          "from_t": 0.0,
+          "to_t": 0.49,
+          "value": 0.0,
+          "abs": 1e-6,
+          "note": "static equilibrium: with the MSe preload and the static spring compressions the sprung mass does not move before the road input starts at 0.5 s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "UInt/y",
+          "from_t": 0.0,
+          "to_t": 0.49,
+          "value": 0.0,
+          "abs": 1e-6,
+          "note": "static equilibrium: the unsprung mass holds its ride height too"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Susp/a.e",
+          "t": 0.4,
+          "value": 2943.0,
+          "abs": 1e-3,
+          "note": "the suspension preload is ms*g = 300*9.81 = 2943 N: Susp/x starts at qs0 = ms*g/ks = 0.14715 m, and ks*qs0 is exactly the sprung weight"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tire/F",
+          "t": 0.4,
+          "value": 3335.4,
+          "abs": 1e-3,
+          "note": "the tire carries (ms+mu)*g = 340*9.81 = 3335.4 N: Tire/x starts at qt0 = (ms+mu)*g/kt = 0.016677 m"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RoadV/a.f",
+          "t": 0.55,
+          "value": 0.5,
+          "abs": 1e-9,
+          "note": "the rising edge of the bump: +0.5 m/s from 0.5 s to 0.6 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RoadInt/y",
+          "t": 0.55,
+          "value": 0.025,
+          "abs": 1e-4,
+          "note": "half of the 5 cm rise after 0.05 s at 0.5 m/s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RoadInt/y",
+          "t": 0.6,
+          "value": 0.05,
+          "abs": 1e-6,
+          "note": "the road reaches the 5 cm plateau at t = 0.6 s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "RoadInt/y",
+          "from_t": 0.6,
+          "to_t": 1.5,
+          "value": 0.05,
+          "abs": 1e-6,
+          "note": "the plateau holds 5 cm from 0.6 s to the falling edge at 1.5 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RoadV/a.f",
+          "t": 1.55,
+          "value": -0.5,
+          "abs": 1e-9,
+          "note": "the falling edge: -0.5 m/s from 1.5 s to 1.6 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RoadInt/y",
+          "t": 1.6,
+          "value": 0.0,
+          "abs": 1e-6,
+          "note": "the road is flat again from t = 1.6 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "SInt/y",
+          "t": 0.6,
+          "value": 0.011714083,
+          "abs": 0.0005,
+          "note": "sprung-mass response 0.1 s into the 5 cm bump: the body has started to follow"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "SInt/y",
+          "from_t": 0.5,
+          "to_t": 1.6,
+          "value": 0.074653696,
+          "abs": 0.0002,
+          "note": "the sprung mass reaches 7.465 cm at t = 0.893 s, i.e. 1.5 cm above the road plateau"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "SInt/y",
+          "t": 0.9,
+          "value": 0.074614813,
+          "abs": 0.0005,
+          "note": "just after the body peak"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "SInt/y",
+          "t": 1.5,
+          "value": 0.047489153,
+          "abs": 0.0005,
+          "note": "on the plateau just before the falling edge the body has come back to 4.75 cm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "SInt/y",
+          "t": 2.0,
+          "value": -0.018172698,
+          "abs": 0.0005,
+          "note": "the body overshoots 1.8 cm below the flat road during the rebound"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "UInt/y",
+          "t": 0.65,
+          "value": 0.050611073,
+          "abs": 0.0005,
+          "note": "the wheel is on top of the plateau 0.05 s after the road stops rising"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "UInt/y",
+          "from_t": 0.5,
+          "to_t": 1.6,
+          "value": 0.052814421,
+          "abs": 0.0002,
+          "note": "the unsprung mass peaks at 5.281 cm (t = 0.809 s), only 2.8 mm above the road: the tire follows the bump"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "UInt/y",
+          "t": 1.6,
+          "value": 0.005730805,
+          "abs": 0.0005,
+          "note": "the wheel is almost back on the flat road after the falling edge"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Stop/x",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 0.036687444,
+          "abs": 0.0002,
+          "note": "the peak suspension travel from equilibrium is 3.67 cm at t = 1.615 s (rebound), less than half of the 8 cm free travel"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Stop/x",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 0.08,
+          "note": "the suspension travel never reaches the plan's +/-0.08 m hard stop (3.67 cm of the 8 cm limit)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Stop/x",
+          "t": 1.6,
+          "value": -0.034777835,
+          "abs": 0.0005,
+          "note": "-3.48 cm: the falling edge unloads the suspension"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Stop/a.e",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 1e-9,
+          "note": "no hard-stop contact: the stop force is identically zero for this road input (the travel bound above is the guard)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Tire/F",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 4948.879649,
+          "abs": 0.5,
+          "note": "the tire force peaks at 4.949 kN at t = 0.527 s, on the rising edge (the static load is 3.335 kN)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tire/F",
+          "t": 0.6,
+          "value": 4393.555828,
+          "abs": 0.5,
+          "note": "4.39 kN while the wheel climbs the bump"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tire/F",
+          "t": 1.528,
+          "value": 1673.242288,
+          "abs": 1.0,
+          "note": "the measured minimum, on the falling edge: 1.673 kN, still 1.67 kN above lift-off"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TireNeg/y",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 1e-9,
+          "note": "the tire force is never negative: TireNeg = min(Tire/F, 0) is identically zero, as the one-sided OneSidedSpring law requires"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "IMu/p.f",
+          "n": 1,
+          "direction": "up",
+          "value": 0.668872,
+          "abs": 0.002,
+          "note": "first upward zero crossing of the wheel velocity; with the next one this gives the wheel-hop period"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "IMu/p.f",
+          "n": 2,
+          "direction": "up",
+          "value": 0.753243,
+          "abs": 0.002,
+          "note": "second crossing 0.08437 s later -> 11.85 Hz, within 0.5 % of the plan's 11.8 Hz wheel hop"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "SInt/y",
+          "n": 1,
+          "direction": "up",
+          "value": 2.15058,
+          "abs": 0.002,
+          "note": "free decay of the body after the bump (the road is flat from 1.6 s): first upward zero crossing of the sprung displacement"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "SInt/y",
+          "n": 2,
+          "direction": "up",
+          "value": 2.9762,
+          "abs": 0.002,
+          "note": "second crossing 0.8256 s later -> 1.211 Hz damped body mode, within 2.3 % of the plan's 1.24 Hz"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "W201", "W202", "W205", "W206"],
+          "note": "no solver failure, no causal conflict, no derivative causality (every I and every two-port storage is integral), no algebraic loop, no Generic bond island (the island adopts Translation through SpringDamper/HardStop/OneSidedSpring/VelocitySource) and no event-limit stop (exactly four events: the four road breakpoints)"
+        }
+      ]
+    }
+  }
+}

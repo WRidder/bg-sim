@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "quarter-car",
+  "models": [
+    "quarter-car"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
