@@ -667,3 +667,39 @@ Everything below was probed on this machine (Julia 1.13.2) and is asserted by
   non-empty edge (a falling zero crossing is still saved by the solver but is not a firing).
 * The plan 9.2 ball reproduces 0.45152364098572856 s / 1.173961466562895 s and a 0.6399973 m
   peak; the relay switches at 1/12, 7/12, 13/12 s with a maximum error of 3.35e-13 s.
+
+---
+
+# FIX-M2-2 — discrete hardening (verified 2026-10-27)
+
+* **The `@discrete` clock is folded per instance.** `parse.jl` folds `Ts`/`offset` once against
+  the block's own `@constants` defaults, which is not enough for D13: an instance may override
+  a structural constant. `Compile._collect_partition!` re-folds `ds.period`/`ds.offset`
+  against `st.consts` (which `_bind_constants!` has already patched with the instance's
+  `constants`), and `Ts` inside the generated body is that per-instance literal. So two
+  instances of `UnitDelay` can run at 1 ms and 5 ms; the gcd base tick, the tick grid, E104
+  (including an override that is not a whole nanosecond) and `previous` all use the instance
+  value. Two *different* periods change `DiscretePartition.show`, hence `compile_key`.
+* **`vec[k] = ...` on a declared Vec/Mat works inside `@discrete`.** The old code qualified the
+  target with an empty locals dict, so a `for` loop variable was E003/E005. `_disc_assign!`
+  now qualifies an indexed target through `_qualify_discrete_target`, which passes the walk's
+  locals (loop variables, `Ts`, D18 temps); a local is never a declared name, so the base
+  still resolves through `st.ids`. `hu[k] = ...` on a temporary keeps its own path.
+* **Zero-state models.** A model with no continuous state (no `ddt`, no `int`) has nothing to
+  integrate: every signal is an exact algebraic function of `t` and the parameters. MTK's
+  compiled scalar condition writes its result into `tmp[1]` of the (empty) state cache and
+  reads it back, so any continuous callback on such a model threw a `BoundsError` inside the
+  first `step!`, which surfaced as `E901` with the useless hint "no states were available"
+  (NOTE-4 gap 3). Decision: `lower_flat` **skips condition-only callbacks** for a stateless
+  model (their only purpose is landing the integrator for state interpolation), so a
+  `Step`-like `t`-dependent source runs exactly, with no extra event rows. An `@events`
+  affect *changes a value* and cannot be dropped, so `simulate` refuses a stateless model that
+  has one **up front** with `E901`: "«model» has no continuous state, so its `@events` affect
+  cannot be solved" and the hint "the solver's event root finder needs at least one state; add
+  a state (for example an Integrator) or use a `@discrete` clocked update". A model with one
+  state keeps its callbacks unchanged (the J2.3 left/right event rows still appear).
+* Regressions live in `test/test_discrete.jl` (the `FIX-M2-2` group): per-instance 1 ms/5 ms
+  sequences identical to J2.2's, `previous` across two instance clocks (14/19/24/29), the E104
+  override, `vec[k]`/`vec[1]` exact tick values (12/3/4, y = 19), the zero-state `Step`
+  (21 exact rows, `stats.events == 0`) and the clear `@events` refusal.
+

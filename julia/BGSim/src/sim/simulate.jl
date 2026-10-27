@@ -498,6 +498,35 @@ function simulate(flat::Flat.FlatModel;
     states = Int(flat.stats.states) + extra_states
     equations = Int(flat.stats.equations) + extra_states
 
+    # FIX-M2-2 (NOTE-4 gap 3): a model with no continuous state is refused *up front* when it
+    # has an `@events` affect. Condition-only callbacks are not installed for a stateless model
+    # (see `lower_flat`: its values are exact functions of `t`), but an `@events` affect
+    # changes a value and must not be dropped. MTK's compiled scalar condition reads `tmp[1]`
+    # of the (empty) state cache, so letting the run start would surface a `BoundsError` as a
+    # confusing E901("no states were available") at t = 1e-6. Name the requirement instead.
+    if states == 0 && !isempty(flat.events)
+        first_event = flat.events[1]
+        diagnostic = diag(
+            "E901",
+            "`$(flat.name)` has no continuous state, so its `@events` affect cannot be solved";
+            hint = "the solver's event root finder needs at least one state; add a state " *
+                   "(for example an Integrator) or use a `@discrete` clocked update",
+            path = first_event.origin.path,
+            block = first_event.origin.block,
+            source = _origin_source(first_event.origin),
+        )
+        diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+        manifest = _write_failed_manifest(
+            flat, run_settings, dir, id, hash, diagnostics;
+            states = states, equations = equations,
+        )
+        elapsed = (time_ns() - start_ns) / 1.0e9
+        return SimResult(
+            "failed", diagnostics, manifest.stats, flat.signals, manifest.time, manifest,
+            dir, elapsed, lowered.cache_hit,
+        )
+    end
+
     alg = try
         solver_algorithm(run_settings.solver, lowered.model)
     catch err

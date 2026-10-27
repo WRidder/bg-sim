@@ -23,6 +23,12 @@
 #   * `Ts` and `offset` become integer nanoseconds. A period or offset that is not a whole
 #     number of nanoseconds is E104 ("use a period that is a whole number of nanoseconds").
 #     The base tick is the gcd of all periods; a period that is not a multiple of it is E104.
+#   * The clock is folded **per instance**: `Ts = sample_period` with an instance override of
+#     that structural constant (D13) gives that instance its own period and its own E104
+#     check, while another instance of the same block keeps the source default.
+#   * An assignment target may be an element of a declared array (`v[k] = ...`), indexed by a
+#     `for` loop variable or a literal; the loop is unrolled, so the target is a flat scalar
+#     id like any other held value.
 #   * Partitions are ordered topologically over signal connections and over reads of held
 #     values. A read inside `previous(x)` does not create a dependency (it sees the value
 #     from before this tick), which is exactly how `previous` breaks a cycle. A cycle that
@@ -358,6 +364,16 @@ function _disc_element_index(w::DiscreteWalk, base::QValue, index)
            (indices[1] - 1) * base.shape[2] + indices[2]
 end
 
+# The assignment target of a declared array element, qualified with the discrete walk's
+# locals so a `for` loop variable can index it (`v[k] = u`, plan 4.3's unrolled loops). The
+# discrete `_assign_held!` needs the target's element ids only, so unlike an `@events` target
+# this never consults earlier writes: a declared signal is always named by its flat ids. A
+# local is never a declared name (D18 temporaries exist only for undeclared names), so
+# resolving `base` through `st.ids` is unambiguous.
+function _qualify_discrete_target(w::DiscreteWalk, target)
+    return _qualify(QCtx(w.b, w.st, w.locals), target)
+end
+
 # An assignment target created from `_qualify_target` (declared variable/output element).
 function _assign_held!(w::DiscreteWalk, target::QValue, rhs::QValue, op::Symbol, range)
     ids = String[]
@@ -413,7 +429,7 @@ function _disc_assign!(
         if base isa BGSim.Name && !haskey(w.st.decls, base.name)
             return _assign_temp_element!(w, base.name, target, rhs, op, range)
         end
-        tq = _qualify_target(QCtx(w.b, w.st, Dict{Symbol,QValue}()), w.st, target)
+        tq = _qualify_discrete_target(w, target)
         tq === nothing && return false
         return _assign_held!(w, tq, rhs, op, range)
     end
@@ -581,10 +597,28 @@ function _ns_clock(
     return Int64(rounded)
 end
 
+"""    _instance_clock(st, expr, fallback) -> Float64
+
+The clock value of one `@discrete` scope for this *instance*. The parser folds the period
+once against the block's own `@constants` defaults, but an instance may override a constant
+(D13: structural constants are per instance), and `_bind_constants!` has already applied that
+override to `st.consts`. Re-folding the clock expression here therefore gives every instance
+of the same block its own rate — `UnitDelay` at 1 ms next to `UnitDelay(constants =
+{sample_period = 5e-3})` at 5 ms. `fallback` is the block-level folded value, used when the
+expression does not fold here because a block-level E004 was already reported."""
+function _instance_clock(st::BlockState, expr, fallback::Union{Float64,Nothing})
+    ok, value = BGSim.try_eval_const(expr, st.consts)
+    if ok && value isa Real && !(value isa Bool)
+        return Float64(value)
+    end
+    return fallback
+end
+
 function _collect_partition!(b::Builder, st::BlockState, ds, k::Int, index::Int)
-    period = BGSim.discrete_period(ds)
+    period = _instance_clock(st, ds.period, BGSim.discrete_period(ds))
     period === nothing && return nothing
-    offset = something(BGSim.discrete_offset(ds), 0.0)
+    offset = ds.offset === nothing ? 0.0 :
+             something(_instance_clock(st, ds.offset, BGSim.discrete_offset(ds)), 0.0)
     period_ns = _ns_clock(b, st, ds, period, "period")
     # An invalid clock (E104) keeps its held values (so the model still balances and the
     # editor can show them) but is `period_ns == 0` and never scheduled.
@@ -596,9 +630,10 @@ function _collect_partition!(b::Builder, st::BlockState, ds, k::Int, index::Int)
         b, st, label, index, Any[], String[], String[], String[], Symbol[],
         Set{Symbol}(), Dict{Symbol,QValue}(),
     )
-    # `Ts` is the folded Float64 period inside the body (plan 5.9). Making it a literal here
-    # keeps the generated arithmetic identical to what the source wrote, e.g. `Ts * e` with
-    # Ts = 0.001 exactly the literal 0.001.
+    # `Ts` is the folded Float64 period inside the body (plan 5.9), for *this instance* after
+    # the constant override above. Making it a literal keeps the generated arithmetic
+    # identical to what the source wrote, e.g. `Ts * e` with Ts = 0.001 exactly the literal
+    # 0.001 (and 0.005 for an instance that overrode `sample_period`).
     w.locals[:Ts] = _qscalar(BGSim.Lit(period, BGSim.source_range(ds)))
     _disc_body!(w, ds.body)
 

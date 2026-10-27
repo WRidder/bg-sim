@@ -26,14 +26,14 @@ import ModelingToolkit
 # ---------------------------------------------------------------------------------------
 
 function _disc_node(id, name, block; params = Dict{String,Any}(),
-    starts = Dict{String,Any}())
+    constants = Dict{String,Any}(), starts = Dict{String,Any}())
     return Dict{String,Any}(
         "id" => id,
         "name" => name,
         "block" => block,
         "position" => Dict{String,Any}("x" => 0.0, "y" => 0.0),
         "params" => params,
-        "constants" => Dict{String,Any}(),
+        "constants" => constants,
         "starts" => starts,
     )
 end
@@ -266,6 +266,60 @@ const _DISC_DAE_SAMPLER = """
     @discrete Ts = 0.25 begin
         u = hold(ref)
     end
+end
+"""
+
+# FIX-M2-2 gap 1: a clock taken from a structural `@constants` value, so an instance may
+# override it (D13). Two instances of *this one block* at different rates.
+const _DISC_RATE_COUNTER = """
+@block RateCounter begin
+    @constants sample_period::Real = 1e-3
+    @outputs n::Real = 0.0
+    @discrete Ts = sample_period begin
+        n = n + 1
+    end
+end
+"""
+
+# FIX-M2-2 gap 1: `previous` across two instance clocks (the fast partition writes `v`).
+const _DISC_SLOW_PREVIOUS = """
+@block SlowPrevious begin
+    @constants sample_period::Real = 1e-3
+    @inputs v::Real
+    @outputs y::Real = 0.0
+    @discrete Ts = sample_period begin
+        y = previous(v) + 10.0
+    end
+end
+"""
+
+# FIX-M2-2 gap 2: `vec[k] = ...` on a *declared* Vec, indexed by a loop variable and a
+# literal (J2.7d's TEMPORARY `hu[k] = ...` workaround is not needed).
+const _DISC_VEC_ASSIGN = """
+@block VecAssign begin
+    @constants N::Int = 3
+    @inputs u::Real
+    @outputs y::Real = 0.0
+    @variables v::Vec{N} = [0.0, 0.0, 0.0]
+    @discrete Ts = 1e-3 begin
+        for k in 1:N
+            v[k] = u + k
+        end
+        v[1] = v[1] + 10.0
+        y = v[1] + v[2] + v[3]
+    end
+end
+"""
+
+# FIX-M2-2 gap 3: the other stateless shape — a held value plus an `@events` affect. The
+# value changes, so the condition cannot be dropped; `simulate` refuses it up front.
+const _DISC_ZERO_STATE_EVENT = """
+@block ZeroStateEvent begin
+    @outputs y::Real = 0.0
+    @discrete Ts = 1e-3 begin
+        y = y + 1.0
+    end
+    @events t > 0.0025 => begin y = 0.0 end
 end
 """
 
@@ -726,5 +780,239 @@ end
         targets = BGSim.discrete_targets(collect(range(0.0, 1.0; length = 11)), nothing)
         @test length(targets) == 10
         @test all(t -> t.grid && !t.tick, targets)
+    end
+
+    # -----------------------------------------------------------------------------------
+    # FIX-M2-2: the three NOTE-4 discrete-hardening gaps.
+    # -----------------------------------------------------------------------------------
+    @testset "FIX-M2-2 per-instance constants override the clock (D13)" begin
+        # One block, two instances: the default 1 ms and an override of the structural
+        # `sample_period` to 5 ms. The clock is folded per instance, not only at block load.
+        doc = _disc_model(
+            "InstanceClocks",
+            [
+                _disc_node("n1", "F1", _disc_inline(_DISC_RATE_COUNTER)),
+                _disc_node(
+                    "n2", "S1", _disc_inline(_DISC_RATE_COUNTER);
+                    constants = Dict{String,Any}("sample_period" => "5e-3"),
+                ),
+            ],
+            Any[];
+            t_end = 0.02, points = 21,
+        )
+        flat, result, dir = _disc_run(doc)
+        @test isempty(_disc_errors(flat))
+        @test result.status == "done"
+        parts = Dict(p.path => p for p in flat.discrete)
+        @test parts["F1"].period_ns == 1_000_000
+        @test parts["S1"].period_ns == 5_000_000
+        @test parts["F1"].period == 1.0e-3
+        @test parts["S1"].period == 5.0e-3
+
+        schedule = BGSim.discrete_schedule(flat; t_start = 0.0, t_end = 0.02)
+        @test schedule.base_ns == 1_000_000
+        @test length(schedule.tick_times) == 20
+        @test [schedule.partitions[i].partition.path for i in schedule.due[1]] == ["F1"]
+        @test [schedule.partitions[i].partition.path for i in schedule.due[5]] ==
+              ["F1", "S1"]
+
+        time, values = _disc_columns(dir)
+        grid = collect(range(0.0, 0.02; length = 21))
+        # The exact J2.2 multi-rate sequences, now from two instances of the same block.
+        @test _disc_sequence(time, values, "F1/n", grid) == Float64.(collect(0:20))
+        @test _disc_sequence(time, values, "S1/n", grid) ==
+              Float64[0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4]
+        # The 5 ms instance never runs on the 1 ms clock: after the first fast tick it still
+        # holds its start value, and it changes only at its own 5 ms ticks.
+        @test _disc_at(time, values, "S1/n", 0.001) == 0.0
+        @test values["S1/n"][findall(==(0.005), time)] == [0.0, 1.0]
+        @test values["S1/n"][findall(==(0.015), time)] == [2.0, 3.0]
+    end
+
+    @testset "FIX-M2-2 previous across two instance clocks" begin
+        # The 5 ms partition reads `previous(v)` of the 1 ms partition's held counter. At the
+        # 5 ms tick it must see the value from the end of the 4 ms tick (4), not the value the
+        # fast partition wrote earlier in the same tick (5).
+        doc = _disc_model(
+            "PreviousAcrossRates",
+            [
+                _disc_node("n1", "F1", _disc_inline(_DISC_RATE_COUNTER)),
+                _disc_node(
+                    "n2", "P1", _disc_inline(_DISC_SLOW_PREVIOUS);
+                    constants = Dict{String,Any}("sample_period" => "5e-3"),
+                ),
+            ],
+            [_disc_conn("c1", "n1", "n", "n2", "v")];
+            t_end = 0.02, points = 21,
+        )
+        flat, result, dir = _disc_run(doc)
+        @test isempty(_disc_errors(flat))
+        @test result.status == "done"
+        schedule = BGSim.discrete_schedule(flat; t_start = 0.0, t_end = 0.02)
+        @test [p.partition.path for p in schedule.partitions] == ["F1", "P1"]
+        time, values = _disc_columns(dir)
+        grid = collect(range(0.0, 0.02; length = 21))
+        @test _disc_sequence(time, values, "P1/y", grid) ==
+              Float64[0, 0, 0, 0, 0, 14, 14, 14, 14, 14, 19, 19, 19, 19, 19,
+                      24, 24, 24, 24, 24, 29]
+    end
+
+    @testset "FIX-M2-2 an override that is not a whole nanosecond is E104" begin
+        doc = _disc_model(
+            "InstanceClockBad",
+            [
+                _disc_node(
+                    "n1", "S1", _disc_inline(_DISC_RATE_COUNTER);
+                    constants = Dict{String,Any}("sample_period" => "1e-3 / 3.0"),
+                ),
+            ],
+            Any[];
+            t_end = 0.02, points = 3,
+        )
+        flat = _disc_flat(doc)
+        e104 = [d for d in flat.diagnostics if d.code == "E104"]
+        @test length(e104) == 1
+        @test e104[1].severity == "error"
+        @test e104[1].hint == "use a period that is a whole number of nanoseconds"
+        @test occursin("not a whole number of nanoseconds", e104[1].message)
+        @test occursin("0.0003333333333333333", e104[1].message)
+        @test e104[1].path == "S1"
+        @test e104[1].scope == "@discrete"
+        # The block's own default (1 ms) is valid: the error comes from the override alone.
+        @test isempty(check_block(parse_block(_DISC_RATE_COUNTER; ref = "inline:rate")))
+        _, result, _ = _disc_run(doc)
+        @test result.status == "failed"
+        @test any(d -> d.code == "E104", result.diagnostics)
+    end
+
+    @testset "FIX-M2-2 vec[k] assignment on a declared Vec" begin
+        @test isempty(check_block(parse_block(_DISC_VEC_ASSIGN; ref = "inline:vec")))
+        doc = _disc_model(
+            "VecAssign",
+            [
+                _disc_node(
+                    "n1", "C1", _disc_ref("stdlib:sources/Constant");
+                    params = Dict{String,Any}("value" => "1.0"),
+                ),
+                _disc_node("n2", "V1", _disc_inline(_DISC_VEC_ASSIGN)),
+            ],
+            [_disc_conn("c1", "n1", "y", "n2", "u")];
+            t_end = 0.005, points = 6,
+        )
+        flat, result, dir = _disc_run(doc)
+        @test isempty(_disc_errors(flat))
+        @test result.status == "done"
+        # The whole declared vector is written by the partition, so every element is a held
+        # discrete value (D4), exactly like a scalar output.
+        parameters = Dict(p.id => p for p in flat.parameters)
+        for id in ("V1/v[1]", "V1/v[2]", "V1/v[3]")
+            @test parameters[id].attrs[:kind] === :discrete
+        end
+        time, values = _disc_columns(dir)
+        # Tick 1 (1 ms): v[k] = u + k = [2, 3, 4], then v[1] = v[1] + 10 = 12; y = 19.
+        rows = findall(==(0.001), time)
+        @test length(rows) == 2
+        @test values["V1/v[1]"][rows] == [0.0, 12.0]
+        @test values["V1/v[2]"][rows] == [0.0, 3.0]
+        @test values["V1/v[3]"][rows] == [0.0, 4.0]
+        @test values["V1/y"][rows] == [0.0, 19.0]
+        # Later ticks recompute the same values, so nothing changes (no extra rows).
+        @test time[end] == 0.005
+        @test values["V1/v[1]"][end] === 12.0
+        @test values["V1/y"][end] === 19.0
+    end
+
+    @testset "FIX-M2-2 a zero-state t-dependent source runs (no E901)" begin
+        # NOTE-4 gap 3. A stateless model whose only time dependence is a `t`-conditional
+        # source: its observed values are exact functions of t, and MTK's condition-only
+        # callback would read `tmp[1]` of the empty state cache. `lower_flat` therefore does
+        # not install condition-only callbacks for a model with no continuous state.
+        doc = _disc_model(
+            "ZeroStateStep",
+            [
+                _disc_node(
+                    "n1", "S1", _disc_ref("stdlib:sources/Step");
+                    params = Dict{String,Any}(
+                        "t_step" => "0.005", "initial" => "0.0", "final" => "1.0",
+                    ),
+                ),
+            ],
+            Any[];
+            t_end = 0.02, points = 21,
+        )
+        flat, result, dir = _disc_run(doc)
+        @test flat.stats.states == 0
+        @test isempty(_disc_errors(flat))
+        @test result.status == "done"
+        @test !any(d -> d.code in ("E901", "E103", "E900"), result.diagnostics)
+        @test result.stats.events == 0
+        lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 0.02)
+        @test !haskey(lowered.problem.kwargs, :callback)
+        time, values = _disc_columns(dir)
+        # The grid only: no event rows, and every value is the exact step.
+        @test time == collect(range(0.0, 0.02; length = 21))
+        @test values["S1/y"] ==
+              Float64[0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    end
+
+    @testset "FIX-M2-2 a zero-state @events affect is refused clearly" begin
+        # The same stateless shape, but the update is an `@events` affect: it changes a value,
+        # so the condition cannot be dropped and the solver cannot evaluate it without a
+        # state. The refusal names the requirement up front (no E901 from `step!`).
+        doc = _disc_model(
+            "ZeroStateEvent",
+            [_disc_node("n1", "Z1", _disc_inline(_DISC_ZERO_STATE_EVENT))],
+            Any[];
+            t_end = 0.005, points = 6,
+        )
+        flat, result, _ = _disc_run(doc)
+        @test flat.stats.states == 0
+        @test isempty(_disc_errors(flat))
+        @test result.status == "failed"
+        e901 = [d for d in result.diagnostics if d.code == "E901"]
+        @test length(e901) == 1
+        @test e901[1].message ==
+              "`ZeroStateEvent` has no continuous state, so its `@events` affect cannot be solved"
+        @test occursin("needs at least one state", e901[1].hint)
+        @test occursin("@discrete", e901[1].hint)
+        @test e901[1].path == "Z1"
+        @test e901[1].block !== nothing
+        @test startswith(e901[1].block, "inline:")
+        # The run never starts: no rows and no compile.
+        manifest = JSON3.read(read(joinpath(result.run_dir, "manifest.json"), String))
+        @test Int(manifest.time.n) == 0
+        @test String(manifest.status) == "failed"
+    end
+
+    @testset "FIX-M2-2 a stateful model keeps its nonsmooth callback" begin
+        # The zero-state decision must not weaken the event path: with one state the kink is
+        # still landed exactly and recorded as a left/right pair (J2.3).
+        doc = _disc_model(
+            "StatefulStep",
+            [
+                _disc_node(
+                    "n1", "S1", _disc_ref("stdlib:sources/Step");
+                    params = Dict{String,Any}(
+                        "t_step" => "0.005", "initial" => "0.0", "final" => "1.0",
+                    ),
+                ),
+                _disc_node("n2", "I1", _disc_ref("stdlib:continuous/Integrator")),
+            ],
+            [_disc_conn("c1", "n1", "y", "n2", "u")];
+            t_end = 0.02, points = 21,
+        )
+        flat, result, dir = _disc_run(doc)
+        @test isempty(_disc_errors(flat))
+        @test result.status == "done"
+        @test flat.stats.states == 1
+        @test result.stats.events == 1
+        lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 0.02)
+        @test haskey(lowered.problem.kwargs, :callback)
+        time, values = _disc_columns(dir)
+        # Event left/right rows at the step plus the grid row at the same instant.
+        @test length(findall(==(0.005), time)) == 3
+        @test values["I1/u"] == Float64[0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                       1, 1, 1, 1, 1, 1, 1, 1]
+        @test values["I1/y"][end] ≈ 0.015 atol = 1.0e-9
     end
 end
