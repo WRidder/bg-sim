@@ -54,6 +54,7 @@ import { HoverReadout } from "./ports/HoverReadout";
 import { activeModel, subsystemPathCrumbs } from "./subsystemPath";
 import { QuickConnectContext } from "./quickConnect";
 import { SubsystemBreadcrumbs } from "./SubsystemBreadcrumbs";
+import { requestPlotsTab } from "../app/dockBus";
 import "./editor.css";
 
 const ZOOM = 0.85;
@@ -166,7 +167,7 @@ function CanvasInner() {
   const [quickMode, setQuickMode] = useState(false);
   const [quickLine, setQuickLine] = useState<{ from: { x: number; y: number }; to: { x: number; y: number } } | null>(null);
   const [showGrid, setShowGrid] = useState(() => readPreference(GRID_KEY, true));
-  const [snap, setSnap] = useState(() => readPreference(SNAP_KEY, false));
+  const [snap, setSnap] = useState(() => readPreference(SNAP_KEY, true));
   const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const quickGesture = useRef<QuickGesture | null>(null);
@@ -692,8 +693,11 @@ function CanvasInner() {
     [view, menuConnection],
   );
   const menuOutputIds = useMemo(
-    () => (menuNode === undefined ? [] : nodeOutputIds(runSignals ?? [], menuNode)),
-    [menuNode, runSignals],
+    () =>
+      menuNode === undefined
+        ? []
+        : nodeOutputIds(runSignals ?? [], menuNode, pathPrefix),
+    [menuNode, runSignals, pathPrefix],
   );
 
   const runMenuAction = (action: () => void): void => {
@@ -968,9 +972,10 @@ function CanvasInner() {
                   data-signal-id={target.signalId}
                   title={`Plot ${target.detail} from the current run`}
                   onClick={() =>
-                    runMenuAction(() =>
-                      useRunStore.getState().addSignal(target.signalId),
-                    )
+                    runMenuAction(() => {
+                      useRunStore.getState().addSignal(target.signalId);
+                      requestPlotsTab();
+                    })
                   }
                 >
                   {target.label}
@@ -1024,7 +1029,9 @@ function CanvasInner() {
                 }
                 onClick={() =>
                   runMenuAction(() => {
-                    useRunStore.getState().addSignals(menuOutputIds);
+                    if (useRunStore.getState().addSignals(menuOutputIds) > 0) {
+                      requestPlotsTab();
+                    }
                   })
                 }
               >

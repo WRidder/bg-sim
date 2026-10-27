@@ -1,5 +1,6 @@
 import { DiagnosticsPanel } from "../diagnostics/DiagnosticsPanel";
 import { useDiagnosticBadges } from "../diagnostics/useDiagnostics";
+import { useDetachStore } from "../plot/detachStore";
 import { PlotPanel } from "../plot/PlotPanel";
 import { SignalBrowser } from "../plot/SignalBrowser";
 import { EmptyState } from "./EmptyState";
@@ -49,6 +50,8 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
   // W1.3: the live counts come from the diagnostics store; the prop stays for
   // callers that already have a count (the two are merged, never doubled).
   const live = useDiagnosticBadges();
+  const detached = useDetachStore((state) => state.detached);
+  const attach = useDetachStore((state) => state.attach);
   const counts: DiagnosticCounts = {
     error: Math.max(diagnostics.error, live.error),
     warning: Math.max(diagnostics.warning, live.warning),
@@ -74,7 +77,24 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
   function panel() {
     switch (active) {
       case "plots":
-        return <PlotPanel />;
+        return detached ? (
+          <div className="dock__detached" data-testid="plots-detached">
+            <EmptyState
+              title="Plots are in a separate window"
+              hint="The detached window shares this run, its cursor and the live tail. Bring it back here whenever you like."
+            />
+            <button
+              type="button"
+              className="button"
+              onClick={attach}
+              data-testid="attach-plots"
+            >
+              Bring plots back
+            </button>
+          </div>
+        ) : (
+          <PlotPanel />
+        );
       case "signals":
         return <SignalBrowser />;
       case "diagnostics":

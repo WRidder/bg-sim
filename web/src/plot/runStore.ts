@@ -51,6 +51,14 @@ export interface PlotPanelState {
   id: string;
   /** Signal ids, in the order they were added. */
   signals: string[];
+  /** User-given name; empty means the positional "Panel N" label. */
+  name?: string;
+}
+
+/** The shown name of a panel: its custom name or "Panel <n>" (1-based). */
+export function panelLabel(panel: PlotPanelState, index: number): string {
+  const name = panel.name?.trim() ?? "";
+  return name.length > 0 ? name : `Panel ${index + 1}`;
 }
 
 export interface RunProgress {
@@ -129,6 +137,8 @@ export interface RunStoreState {
   addPanel: () => string;
   removePanel: (panelId: string) => void;
   setActivePanel: (panelId: string) => void;
+  /** Rename a panel; whitespace or an empty string restores "Panel N". */
+  renamePanel: (panelId: string, name: string) => void;
   setView: (view: SeriesWindow | null, px?: number) => void;
   /** Return to the live tail after a zoom (plan 7.5: autoscroll unless zoomed). */
   followLive: () => void;
@@ -1015,6 +1025,25 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     return panel.id;
   },
 
+  setActivePanel: (panelId) => {
+    if (get().panels.some((panel) => panel.id === panelId)) {
+      set({ activePanelId: panelId });
+    }
+  },
+
+  renamePanel: (panelId, name) => {
+    const trimmed = name.trim();
+    set((state) => ({
+      panels: state.panels.map((panel) =>
+        panel.id === panelId
+          ? trimmed.length > 0
+            ? { ...panel, name: trimmed }
+            : { ...panel, name: undefined }
+          : panel,
+      ),
+    }));
+  },
+
   removePanel: (panelId) => {
     const state = get();
     if (state.panels.length <= 1) {
@@ -1035,12 +1064,6 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     get().syncSocketSubscription();
     void get().ensureData();
     void get().ensureCompareData();
-  },
-
-  setActivePanel: (panelId) => {
-    if (get().panels.some((panel) => panel.id === panelId)) {
-      set({ activePanelId: panelId });
-    }
   },
 
   setView: (view, px) => {

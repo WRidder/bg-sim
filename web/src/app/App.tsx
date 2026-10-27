@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 
 import { usePersistedPanelSizes } from "../state/layout";
 import { useTheme } from "../theme/useTheme";
 import { BottomDock, type DiagnosticCounts, type DockTabId } from "./BottomDock";
 import { CenterTabs, type CenterTabId } from "./CenterTabs";
+import { SHOW_PLOTS_EVENT } from "./dockBus";
 import { InspectorPanel } from "./InspectorPanel";
 import { LeftPanel } from "./LeftPanel";
 import { TopBar } from "./TopBar";
+import { DetachedPlotWindow } from "../plot/DetachedPlotWindow";
 
 /**
  * Nothing has been checked yet, so the diagnostics badges start at zero; M1
@@ -28,9 +30,16 @@ export function App() {
   const [centerTab, setCenterTab] = useState<CenterTabId>("diagram");
   const [dockTab, setDockTab] = useState<DockTabId>("plots");
 
+  useEffect(() => {
+    const showPlots = (): void => setDockTab("plots");
+    window.addEventListener(SHOW_PLOTS_EVENT, showPlots);
+    return () => window.removeEventListener(SHOW_PLOTS_EVENT, showPlots);
+  }, []);
+
   return (
     <div className="app-shell" data-testid="app-shell">
       <TopBar theme={theme} onToggleTheme={toggleTheme} />
+      <DetachedPlotWindow />
 
       <Group
         id="bgsim-rows"

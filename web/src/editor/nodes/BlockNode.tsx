@@ -30,7 +30,9 @@ export interface BlockNodeData extends Record<string, unknown> {
   portDomains: Record<string, DomainName>;
   /** A bond-graph element draws as its letter, without a card. */
   bond: boolean;
-  /** Which side of the letter the instance name hangs on. */
+  /** A normal library block draws as a square icon with an outside label. */
+  compact: boolean;
+  /** Which side of the element the instance name hangs on. */
   labelSide: Side;
 }
 
@@ -122,6 +124,40 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
         </span>
         <span
           className={`bond-node__label bond-node__label--${data.labelSide}`}
+          data-testid={`node-label-${data.nodeId}`}
+        >
+          {data.name}
+        </span>
+        {portHandles}
+      </div>
+    );
+  }
+
+  if (data.compact) {
+    return (
+      <div
+        className={`block-node is-compact${selected ? " is-selected" : ""}`}
+        style={{ width: layout.width, height: layout.height }}
+        data-testid="diagram-node"
+        data-node-id={data.nodeId}
+        data-node-name={data.name}
+        data-node-ref={iface.ref ?? ""}
+        data-node-compact="true"
+        data-label-side={data.labelSide}
+        data-state={state}
+        title={`${data.name} (${iface.title})`}
+        onPointerDown={onPointerDown}
+      >
+        <div
+          className="block-node__body"
+          style={{
+            transform: `rotate(${data.rotation}deg) scaleX(${data.flipX ? -1 : 1})`,
+          }}
+        >
+          <BlockIcon icon={iface.icon} name={iface.title} size={34} />
+        </div>
+        <span
+          className={`block-node__label block-node__label--${data.labelSide}`}
           data-testid={`node-label-${data.nodeId}`}
         >
           {data.name}

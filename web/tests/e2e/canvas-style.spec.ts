@@ -144,6 +144,8 @@ test("the toolbar toggles the grid and snapping", async ({ page }) => {
   await expect(page.locator(".react-flow__background")).toHaveCount(1);
 
   const snap = page.getByTestId("toggle-snap");
+  await expect(snap).toHaveAttribute("aria-pressed", "true");
+  await snap.click();
   await expect(snap).toHaveAttribute("aria-pressed", "false");
   await snap.click();
   await expect(snap).toHaveAttribute("aria-pressed", "true");

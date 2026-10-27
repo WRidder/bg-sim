@@ -33,6 +33,8 @@ import "./edges.css";
 export interface EditorEdgeData extends Record<string, unknown> {
   kind: ConnectionKind;
   domain: DomainName;
+  /** The client analysis before a worker check overrides `domain`. */
+  baseDomain: DomainName;
   signalType: ValueType | null;
   route: Point[];
   sourceAnchor: { point: Point; side: Side };
@@ -155,6 +157,7 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
       data-testid={`edge-${id}`}
       data-kind="bond"
       data-domain={data.domain}
+      data-bgsim-client-domain={data.baseDomain}
       data-port-missing={data.missingPorts.join(",")}
     >
       {selected ? <Halo path={path} /> : null}
@@ -220,6 +223,7 @@ export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
       data-testid={`edge-${id}`}
       data-kind="wire"
       data-domain={data.domain}
+      data-bgsim-client-domain={data.baseDomain}
       data-port-missing={data.missingPorts.join(",")}
     >
       {selected ? <Halo path={path} /> : null}

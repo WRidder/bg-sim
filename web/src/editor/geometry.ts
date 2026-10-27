@@ -10,7 +10,13 @@
 import type { DomainName, ValueType } from "../contracts/catalog";
 import type { Model, ModelConnection, ModelNode, ModelPoint } from "../contracts/model";
 import type { CatalogIndex } from "../library/catalogIndex";
-import { interfaceForNode, type NodeInterface, type PortSpec } from "./nodeInterface";
+import {
+  INLINE_ICON,
+  SUBSYSTEM_ICON,
+  interfaceForNode,
+  type NodeInterface,
+  type PortSpec,
+} from "./nodeInterface";
 
 export const BLOCK_NODE_WIDTH = 164;
 export const BLOCK_NODE_MIN_HEIGHT = 86;
@@ -23,6 +29,13 @@ export const JUNCTION_RADIUS = JUNCTION_NODE_SIZE / 2;
  * perimeter facing the bonds that leave it. The instance name hangs outside it.
  */
 export const BOND_NODE_SIZE = 46;
+
+/**
+ * Most stdlib blocks draw as a compact square icon (Simulink-like), with the
+ * instance name outside the square. Inline code nodes and subsystems keep the
+ * taller card because they carry a title/kind header and many ports.
+ */
+export const COMPACT_NODE_SIZE = 76;
 
 export interface Point {
   x: number;
@@ -46,6 +59,19 @@ export interface NodeLayout {
 /** Bond-graph elements render as their letter, not as a block card (plan 7.3). */
 export function isBondGraph(iface: NodeInterface): boolean {
   return iface.icon.startsWith("bg-");
+}
+
+/**
+ * A normal library block draws as a compact icon square. Bond-graph letters,
+ * inline code nodes and subsystems have their own presentations.
+ */
+export function isCompactBlock(iface: NodeInterface): boolean {
+  return (
+    !iface.isJunction &&
+    !isBondGraph(iface) &&
+    iface.icon !== INLINE_ICON &&
+    iface.icon !== SUBSYSTEM_ICON
+  );
 }
 
 export interface Anchor {
@@ -126,6 +152,27 @@ export function layoutNode(
     for (const [side, ports] of Object.entries(groups) as [Side, PortSpec[]][]) {
       ports.forEach((port, index) => {
         const offset = distribute(index, ports.length, 6, size - 6);
+        if (side === "left") {
+          positions.set(port.name, { side, x: 0, y: offset });
+        } else if (side === "right") {
+          positions.set(port.name, { side, x: size, y: offset });
+        } else if (side === "top") {
+          positions.set(port.name, { side, x: offset, y: 0 });
+        } else {
+          positions.set(port.name, { side, x: offset, y: size });
+        }
+      });
+    }
+    return { width: size, height: size, ports: positions };
+  }
+
+  if (isCompactBlock(iface)) {
+    const size = COMPACT_NODE_SIZE;
+    const inset = 12;
+    for (const [side, ports] of Object.entries(groups) as [Side, PortSpec[]][]) {
+      ports.forEach((port, index) => {
+        const offset =
+          Math.round(distribute(index, ports.length, inset, size - inset) * 10) / 10;
         if (side === "left") {
           positions.set(port.name, { side, x: 0, y: offset });
         } else if (side === "right") {

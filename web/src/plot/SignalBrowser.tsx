@@ -13,8 +13,9 @@
 import { useMemo, useState, type DragEvent, type KeyboardEvent } from "react";
 
 import { EmptyState } from "../app/EmptyState";
+import { requestPlotsTab } from "../app/dockBus";
 import type { RunSignal, RunSignalKind } from "../contracts/run-manifest";
-import { useRunStore, plottedSignalIds } from "./runStore";
+import { panelLabel, plottedSignalIds, useRunStore } from "./runStore";
 import { writeSignalDrag } from "./signalDnd";
 import {
   buildSignalTree,
@@ -70,8 +71,11 @@ export function SignalBrowser() {
   const notice = useRunStore((state) => state.notice);
   const addSignal = useRunStore((state) => state.addSignal);
   const addSignals = useRunStore((state) => state.addSignals);
+  const addPanel = useRunStore((state) => state.addPanel);
+  const setActivePanel = useRunStore((state) => state.setActivePanel);
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const [targetPanelId, setTargetPanelId] = useState(activePanelId);
 
   const allSignals = manifest?.signals ?? [];
   const filtered = useMemo(
@@ -80,9 +84,29 @@ export function SignalBrowser() {
   );
   const tree = useMemo(() => buildSignalTree(filtered), [filtered]);
   const plotted = useMemo(() => new Set(plottedSignalIds(panels)), [panels]);
-  const activeIndex = panels.findIndex((panel) => panel.id === activePanelId);
-  const activeNumber = activeIndex >= 0 ? activeIndex + 1 : 1;
+  // A removed panel falls back to the active one instead of becoming a stale id.
+  const targetId = panels.some((panel) => panel.id === targetPanelId)
+    ? targetPanelId
+    : panels.some((panel) => panel.id === activePanelId)
+      ? activePanelId
+      : (panels[0]?.id ?? "");
+  const targetIndex = panels.findIndex((panel) => panel.id === targetId);
+  const targetNumber = targetIndex >= 0 ? targetIndex + 1 : 1;
+  const targetName =
+    targetIndex >= 0 && panels[targetIndex] !== undefined
+      ? panelLabel(panels[targetIndex], targetIndex)
+      : `Panel ${targetNumber}`;
   const searching = query.trim().length > 0;
+
+  const chooseTarget = (value: string): void => {
+    if (value === "__new__") {
+      const created = addPanel();
+      setTargetPanelId(created);
+      return;
+    }
+    setTargetPanelId(value);
+    setActivePanel(value);
+  };
 
   const toggle = (key: string): void => {
     setCollapsed((current) => {
@@ -97,7 +121,7 @@ export function SignalBrowser() {
   };
 
   const add = (signal: RunSignal): void => {
-    addSignal(signal.id);
+    addSignal(signal.id, targetId);
   };
 
   const onDragStart = (
@@ -129,7 +153,7 @@ export function SignalBrowser() {
       data-kind={signal.kind}
       aria-label={`${signal.id} (${KIND_TITLE[signal.kind]}${
         signal.unit ? `, ${signal.unit}` : ""
-      }); double-click or press Enter to add it to Panel ${activeNumber}`}
+      }); double-click or press Enter to add it to ${targetName}`}
       title={`${signal.id} — ${KIND_TITLE[signal.kind]}${
         signal.unit ? ` · ${signal.unit}` : ""
       } · ${signal.type}`}
@@ -151,8 +175,8 @@ export function SignalBrowser() {
       <button
         type="button"
         className="signal-row__add"
-        aria-label={`Add ${signal.id} to Panel ${activeNumber}`}
-        title={`Add ${signal.id} to Panel ${activeNumber}`}
+        aria-label={`Add ${signal.id} to ${targetName}`}
+        title={`Add ${signal.id} to ${targetName}`}
         onClick={(event) => {
           event.stopPropagation();
           add(signal);
@@ -223,15 +247,39 @@ export function SignalBrowser() {
         <span className="signal-browser__count" data-testid="signal-count">
           {filtered.length}/{allSignals.length}
         </span>
+        <label className="signal-browser__target">
+          <span>Add to</span>
+          <select
+            className="signal-browser__target-select"
+            data-testid="plot-target-select"
+            value={targetId}
+            onChange={(event) => chooseTarget(event.target.value)}
+            aria-label="Panel that receives the next plot"
+            title="Choose which panel receives the next signal"
+          >
+            {panels.map((panel, index) => (
+              <option key={panel.id} value={panel.id}>
+                {panelLabel(panel, index)}
+              </option>
+            ))}
+            <option value="__new__">New panel…</option>
+          </select>
+        </label>
         <button
           type="button"
           className="button"
           onClick={() => {
-            addSignals(filtered.map((signal) => signal.id));
+            const added = addSignals(
+              filtered.map((signal) => signal.id),
+              targetId,
+            );
+            if (added > 0) {
+              requestPlotsTab();
+            }
           }}
           disabled={filtered.length === 0}
           data-testid="plot-all-signals"
-          title="Add every listed signal to the plots (unit groups still split across panels)"
+          title="Add every listed signal to the chosen panel (unit groups still split across panels)"
         >
           Plot all
         </button>
@@ -260,9 +308,8 @@ export function SignalBrowser() {
       </div>
 
       <p className="signal-browser__footer" data-testid="signal-target">
-        Double-click a signal to add it to{" "}
-        <strong>Panel {activeNumber}</strong>. Drag it onto a panel to choose the
-        target.
+        Double-click a signal to add it to <strong>{targetName}</strong>. Drag it
+        onto a panel to choose the target.
       </p>
     </div>
   );

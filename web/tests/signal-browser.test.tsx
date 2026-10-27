@@ -63,6 +63,29 @@ describe("SignalBrowser", () => {
     expect(within(counter as HTMLElement).getByText("Int")).toBeTruthy();
   });
 
+  it("adds a signal to the panel chosen in the target dropdown", () => {
+    const first = useRunStore.getState().panels[0]?.id ?? "";
+    const second = useRunStore.getState().addPanel();
+    useRunStore.getState().setActivePanel(first);
+    render(<SignalBrowser />);
+
+    const select = screen.getByTestId("plot-target-select") as HTMLSelectElement;
+    expect(select.value).toBe(first);
+    fireEvent.change(select, { target: { value: second } });
+    expect(select.value).toBe(second);
+    expect(useRunStore.getState().activePanelId).toBe(second);
+
+    const sine = document.querySelector(
+      '[data-signal-id="Synthetic/sine"]',
+    ) as HTMLElement;
+    fireEvent.doubleClick(sine);
+
+    expect(useRunStore.getState().panels[1]?.signals).toEqual([
+      "Synthetic/sine",
+    ]);
+    expect(useRunStore.getState().panels[0]?.signals).toEqual([]);
+  });
+
   it("filters the tree by signal name or unit", () => {
     render(<SignalBrowser />);
     const search = screen.getByTestId("signal-search");

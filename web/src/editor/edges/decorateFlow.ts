@@ -77,8 +77,7 @@ function decoratedEdge(edge: EditorEdge, decoration: CanvasDecoration): EditorEd
   ) {
     return edge;
   }
-  return { ...edge, data: { ...data, domain, causalStroke, unitFactor } };
-}
+  return { ...edge, data: { ...data, domain, causalStroke, unitFactor } };}
 
 /** Apply the worker's visual facts to a built diagram. */
 export function decorateFlow(flow: DiagramFlow, decoration: CanvasDecoration): DiagramFlow {

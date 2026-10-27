@@ -91,6 +91,24 @@ describe("PlotPanel chrome", () => {
     expect(screen.queryByTestId("split-panel")).toBeNull();
   });
 
+  it("renames a panel in its header and restores the default on an empty name", () => {
+    render(<PlotPanel />);
+    const title = screen.getByTestId("plot-panel-title-1") as HTMLInputElement;
+    expect(title.value).toBe("Panel 1");
+
+    fireEvent.focus(title);
+    fireEvent.change(title, { target: { value: "Speed" } });
+    fireEvent.blur(title);
+    expect(useRunStore.getState().panels[0]?.name).toBe("Speed");
+    expect(title.value).toBe("Speed");
+
+    fireEvent.focus(title);
+    fireEvent.change(title, { target: { value: "   " } });
+    fireEvent.blur(title);
+    expect(useRunStore.getState().panels[0]?.name).toBeUndefined();
+    expect(title.value).toBe("Panel 1");
+  });
+
   it("exports exactly the plotted signals as CSV", () => {
     render(<PlotPanel />);
     const link = screen.getByTestId("export-csv");

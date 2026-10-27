@@ -16,7 +16,15 @@ import {
   type PortDragState,
 } from "./connectionAnalysis";
 import type { PortDescriptor } from "./connectionRules";
-import { connectionAnchors, isBondGraph, layoutNode, nodeLayouts, type NodeLayout, type Side } from "./geometry";
+import {
+  connectionAnchors,
+  isBondGraph,
+  isCompactBlock,
+  layoutNode,
+  nodeLayouts,
+  type NodeLayout,
+  type Side,
+} from "./geometry";
 import {
   BlockNode,
   JunctionNode,
@@ -128,9 +136,8 @@ function overlaps(a: LabelRect, b: LabelRect): boolean {
 }
 
 /**
- * Where a bond-graph element's instance name hangs: below by default, but it
- * moves outward when another element is there or when the bond itself leaves
- * through that edge.
+ * Where an element's instance name hangs: below by default, but it moves
+ * outward when another element is there or when a bond leaves through that edge.
  */
 export function bondLabelSide(
   node: { name: string; position: ModelPoint },
@@ -225,6 +232,8 @@ export function buildDiagram(
       node.id,
     );
     const bond = isBondGraph(iface);
+    const compact = isCompactBlock(iface);
+    const outsideLabel = bond || compact;
     const data: BlockNodeData = {
       nodeId: node.id,
       name: node.name,
@@ -236,7 +245,8 @@ export function buildDiagram(
       portStates,
       portDomains,
       bond,
-      labelSide: bond
+      compact,
+      labelSide: outsideLabel
         ? bondLabelSide(
             node,
             layout,
@@ -265,6 +275,7 @@ export function buildDiagram(
     const data: EditorEdgeData = {
       kind: connection.kind,
       domain: visual?.domain ?? "Generic",
+      baseDomain: visual?.domain ?? "Generic",
       signalType: visual?.signalType ?? null,
       route: (connection.route ?? []).map((point) => ({ x: point.x, y: point.y })),
       sourceAnchor: { point: anchors.source.point, side: anchors.source.side },

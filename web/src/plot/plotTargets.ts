@@ -106,13 +106,20 @@ export function connectionPlotTargets(
  * Every recorded output of one instance, in manifest order. The worker gives
  * flat instances the path of the node name (`Motor1/w`), so an exact path
  * match is the instance's own outputs and not those of a nested subsystem.
+ *
+ * `pathPrefix` is the active subsystem path without a trailing slash (for
+ * example `Rig/Axis`); outputs of a node inside it are recorded as
+ * `Rig/Axis/Motor1/w`.
  */
 export function nodeOutputTargets(
   signals: readonly RunSignal[],
   node: ModelNode,
+  pathPrefix = "",
 ): PlotTarget[] {
+  const prefix = pathPrefix.replace(/\/+$/, "");
+  const path = prefix.length > 0 ? `${prefix}/${node.name}` : node.name;
   return signals
-    .filter((signal) => signal.kind === "output" && signal.path === node.name)
+    .filter((signal) => signal.kind === "output" && signal.path === path)
     .map((signal) => ({
       signalId: signal.id,
       label: "Plot all outputs",
@@ -125,10 +132,11 @@ export function nodeOutputTargets(
 export function nodeOutputIds(
   signals: readonly RunSignal[],
   node: ModelNode,
+  pathPrefix = "",
 ): string[] {
   const seen = new Set<string>();
   const ids: string[] = [];
-  for (const target of nodeOutputTargets(signals, node)) {
+  for (const target of nodeOutputTargets(signals, node, pathPrefix)) {
     if (!seen.has(target.signalId)) {
       seen.add(target.signalId);
       ids.push(target.signalId);

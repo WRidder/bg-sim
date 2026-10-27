@@ -235,6 +235,57 @@
   box-shadow: 0 0 0 2px var(--color-accent);
 }
 
+/* A compact library block is a square icon; the name hangs outside it. */
+.block-node.is-compact {
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.block-node.is-compact .block-node__body {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+}
+
+.block-node__label {
+  position: absolute;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1.15;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.block-node.is-selected .block-node__label {
+  color: var(--color-text);
+}
+
+.block-node__label--bottom {
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 4px);
+}
+
+.block-node__label--top {
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, -4px);
+}
+
+.block-node__label--right {
+  left: 100%;
+  top: 50%;
+  transform: translate(6px, -50%);
+}
+
+.block-node__label--left {
+  right: 100%;
+  top: 50%;
+  transform: translate(-6px, -50%);
+}
+
 .react-flow__node-subsystem .block-node {
   border-style: double;
   border-width: 3px;

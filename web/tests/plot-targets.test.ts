@@ -123,6 +123,22 @@ describe("node outputs", () => {
     expect(nodeOutputIds([], node)).toEqual([]);
   });
 
+  it("prepends the active subsystem path for a nested instance", () => {
+    const node = nodeForMenu(MODEL, "n4");
+    if (node === undefined) {
+      throw new Error("the IL node is missing");
+    }
+    const nested = [
+      runSignal("Rig/Axis/IL/w", { kind: "output", path: "Rig/Axis/IL" }),
+      runSignal("Rig/Axis/IL/p.e", { kind: "port", path: "Rig/Axis/IL" }),
+    ];
+    expect(nodeOutputIds(nested, node, "Rig/Axis")).toEqual(["Rig/Axis/IL/w"]);
+    expect(nodeOutputTargets(nested, node, "Rig/Axis/")[0]?.signalId).toBe(
+      "Rig/Axis/IL/w",
+    );
+    expect(nodeOutputIds(nested, node, "Rig/Axis/Other")).toEqual([]);
+  });
+
   it("finds a right-clicked connection", () => {
     expect(connectionForMenu(MODEL, "c4")?.from.node).toBe("n2");
     expect(connectionForMenu(MODEL, "missing")).toBeUndefined();

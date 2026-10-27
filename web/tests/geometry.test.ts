@@ -15,11 +15,13 @@ import { buildDiagram, bondLabelSide } from "../src/editor/buildFlow";
 import { portKey } from "../src/editor/connectionRules";
 import {
   BOND_NODE_SIZE,
+  COMPACT_NODE_SIZE,
   arrowHeadPath,
   causalStrokePath,
   connectionAnchors,
   halfArrowPath,
   hubPath,
+  isCompactBlock,
   layoutNode,
   nearestSourcePort,
   nodeLayout,
@@ -27,7 +29,7 @@ import {
   orthogonalPath,
   splitPorts,
 } from "../src/editor/geometry";
-import { interfaceForBlock, interfaceForNode, portDescriptor } from "../src/editor/nodeInterface";
+import { INLINE_ICON, interfaceForBlock, interfaceForNode, portDescriptor } from "../src/editor/nodeInterface";
 import { buildCatalogIndex } from "../src/library/catalogIndex";
 import {
   createConnection,
@@ -60,17 +62,21 @@ describe("port layout", () => {
     expect(gainSplit.right.map((port) => port.name)).toEqual(["y"]);
   });
 
-  it("sizes a card for its port rows and places anchors on the edges", () => {
+  it("sizes a compact square for its ports and places anchors on the edges", () => {
     const motor = interfaceForBlock(block("DCMotor"));
     const layout = layoutNode(motor);
-    expect(layout.width).toBe(164);
-    expect(layout.height).toBeGreaterThanOrEqual(86);
+    expect(layout.width).toBe(COMPACT_NODE_SIZE);
+    expect(layout.height).toBe(COMPACT_NODE_SIZE);
     expect(layout.ports.get("p")?.side).toBe("left");
     expect(layout.ports.get("n")?.x).toBe(0);
     expect(layout.ports.get("shaft")?.side).toBe("right");
-    expect(layout.ports.get("shaft")?.x).toBe(164);
-    expect(layout.ports.get("p")?.y).toBeGreaterThan(30);
-    expect(layout.ports.get("shaft")?.y).toBeGreaterThan(30);
+    expect(layout.ports.get("shaft")?.x).toBe(COMPACT_NODE_SIZE);
+    expect(layout.ports.get("p")?.y).toBeGreaterThan(0);
+    expect(layout.ports.get("shaft")?.y).toBeGreaterThan(0);
+    expect(layout.ports.get("p")?.y).toBeLessThan(COMPACT_NODE_SIZE);
+    expect(isCompactBlock(motor)).toBe(true);
+    expect(isCompactBlock({ ...motor, icon: INLINE_ICON })).toBe(false);
+    expect(isCompactBlock({ ...motor, icon: "bg-se" })).toBe(false);
   });
 
   it("gives a junction a 40 px circle and no port map", () => {

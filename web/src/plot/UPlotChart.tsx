@@ -351,7 +351,25 @@ export function UPlotChart({
       },
     };
 
-    const chart = new uPlot(options, [[], ...allSignals.map(() => [])], host);
+    // uPlot checks `target instanceof HTMLElement` against the *main* window,
+    // so a host inside the detached window is mistaken for a callback. Pass the
+    // callback form there: uPlot builds its root in this document and the host
+    // adopts it when it is appended.
+    const detachedHost =
+      typeof document !== "undefined" && host.ownerDocument !== document;
+    const target = (
+      detachedHost
+        ? (chart: uPlot, init: () => void) => {
+            host.appendChild(chart.root);
+            init();
+          }
+        : host
+    ) as unknown as HTMLElement;
+    const chart = new uPlot(
+      options,
+      [[], ...allSignals.map(() => [])],
+      target,
+    );
     chartRef.current = chart;
     readyRef.current = false;
     chart.setSize({ width, height: CHART_HEIGHT });

@@ -102,6 +102,49 @@
   white-space: nowrap;
 }
 
+.plot-toolbar__target {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  white-space: nowrap;
+}
+
+.plot-toolbar__target select {
+  max-width: 16ch;
+  padding: 1px 3px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+/* --------------------------------------------------------- detached window */
+
+.bgsim-detached-body {
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+#bgsim-detached-root,
+#bgsim-detached-root > .plot-panel {
+  height: 100vh;
+}
+
+.dock__detached {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
 /* -------------------------------------------------------------- banners */
 
 .plot-pinned,
@@ -193,13 +236,22 @@
 }
 
 .plot-chart__title {
-  padding: 0;
+  min-width: 8ch;
+  max-width: 22ch;
+  padding: 1px 3px;
   font: inherit;
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
-  background: none;
-  border: none;
-  cursor: pointer;
+  background: transparent;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+.plot-chart__title:hover,
+.plot-chart__title:focus {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border);
+  outline: none;
 }
 
 .plot-chart__units {
@@ -360,6 +412,27 @@
   font-size: var(--font-size-xs);
   color: var(--color-text-faint);
   font-variant-numeric: tabular-nums;
+}
+
+.signal-browser__target {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.signal-browser__target-select {
+  max-width: 18ch;
+  height: var(--control-height);
+  padding: 0 var(--space-1);
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 .signal-browser__notice {

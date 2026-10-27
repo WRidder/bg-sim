@@ -104,6 +104,43 @@ test("panels share the global inspect cursor", async ({ page }) => {
   );
 });
 
+test("targets panels, renames one and detaches the plots into a window", async ({
+  page,
+}) => {
+  await openModel(page);
+  await runToDone(page);
+
+  // A second panel, then route each signal through the target dropdown.
+  await addPanel(page);
+  await page.getByRole("tab", { name: "Signals" }).click();
+  const target = page.getByTestId("plot-target-select");
+  await target.selectOption({ label: "Panel 1" });
+  await page.locator('[data-signal-id="Synthetic/sine"]').dblclick();
+  await target.selectOption({ label: "Panel 2" });
+  await page.locator('[data-signal-id="Synthetic/step"]').dblclick();
+  await page.getByRole("tab", { name: "Plots" }).click();
+
+  await expect(page.getByTestId("plot-chart-panel")).toHaveCount(2);
+  const title = page.getByTestId("plot-panel-title-1");
+  await title.fill("Speed");
+  await title.press("Enter");
+  await expect(title).toHaveValue("Speed");
+
+  const popupPromise = page.waitForEvent("popup");
+  await page.getByTestId("detach-plot").click();
+  const popup = await popupPromise;
+  await expect(popup.getByTestId("plot-panel")).toBeVisible();
+  await expect(popup.getByTestId("plot-chart-panel")).toHaveCount(2);
+  await expect(popup.getByTestId("plot-panel-title-1")).toHaveValue("Speed");
+
+  // The dock keeps the detached state and can bring the plots back.
+  await expect(page.getByTestId("plots-detached")).toBeVisible();
+  await popup.getByTestId("dock-plot").click();
+  await expect.poll(async () => popup.isClosed()).toBe(true);
+  await expect(page.getByTestId("plots-detached")).toHaveCount(0);
+  await expect(page.getByTestId("plot-panel")).toBeVisible();
+});
+
 test("pins a finished run as dashed same-colour overlays", async ({ page }) => {
   await openModel(page);
   await runToDone(page);
@@ -300,7 +337,11 @@ test("plots a bond's effort/flow/power and an instance's outputs from the canvas
   await expect(page.getByTestId("plot-all-outputs")).toBeVisible();
   await page.getByTestId("plot-all-outputs").click();
 
-  await page.getByRole("tab", { name: "Plots" }).click();
+  // The canvas action switches to the Plots tab so the new series are visible.
+  await expect(page.getByRole("tab", { name: "Plots" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   await expect(
     page.locator('[data-testid="legend-item"][data-signal-id="Se/p.e"]'),
   ).toHaveCount(1);

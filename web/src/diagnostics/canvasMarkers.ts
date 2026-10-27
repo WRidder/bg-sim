@@ -208,13 +208,24 @@ function clearNodeMarker(element: Element): void {
 export function applyEdgeDomain(edge: Element, domain: DomainName | null): DomainName {
   const kind = edge.getAttribute("data-kind");
   const current = (edge.getAttribute("data-domain") ?? "Generic") as DomainName;
+  const client = edge.getAttribute("data-bgsim-client-domain") as DomainName | null;
   const applied = edge.getAttribute("data-bgsim-applied-domain");
   const storedBase = edge.getAttribute("data-bgsim-base-domain");
 
-  if (storedBase === null || (applied !== null && current !== applied)) {
+  if (client !== null) {
+    // React owns this attribute and always renders the client-side analysis;
+    // it cannot be confused by an earlier diagnostic application. (Without it,
+    // a mutation can be observed after the decorator itself wrote the worker
+    // domain, which made the base domain equal the applied one.)
+    if (storedBase !== client) {
+      edge.setAttribute("data-bgsim-base-domain", client);
+    }
+  } else if (storedBase === null || (applied !== null && current !== applied)) {
     edge.setAttribute("data-bgsim-base-domain", current);
   }
-  const base = (edge.getAttribute("data-bgsim-base-domain") ?? "Generic") as DomainName;
+  const base: DomainName =
+    client ??
+    ((edge.getAttribute("data-bgsim-base-domain") ?? "Generic") as DomainName);
   // `domains` describes power connections; a signal keeps its type styling.
   const effective = kind === "signal" ? base : (domain ?? base);
 

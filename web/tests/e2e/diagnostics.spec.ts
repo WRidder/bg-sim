@@ -294,7 +294,7 @@ test("applies domains, unit factors, edge markers and causal strokes from model.
   );
 
   // The unit conversion badge sits on the signal wire, inside the canvas.
-  const factor = page.getByTestId("edge-factor-c2");
+  const factor = page.getByTestId("unit-badge-c2");
   await expect(factor).toBeVisible();
   await expect(factor).toHaveText("×0.001");
   const canvasBox = await page.getByTestId("canvas-surface").boundingBox();

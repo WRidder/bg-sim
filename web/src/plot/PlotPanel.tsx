@@ -38,8 +38,11 @@ import {
   useRunStore,
   livePointCount,
   liveSeriesFor,
+  panelLabel,
   plottedSignalIds,
+  type PlotPanelState,
 } from "./runStore";
+import { useDetachStore } from "./detachStore";
 import { readSignalDrag } from "./signalDnd";
 import { assignPanelAxes, groupSignalsByUnit, panelUnitSummary } from "./units";
 import { UPlotChart, type ChartSeriesConfig } from "./UPlotChart";
@@ -128,7 +131,59 @@ function panelConfiguration(
   };
 }
 
-export function PlotPanel() {
+function PanelTitle({
+  panel,
+  index,
+  onActivate,
+  onRename,
+}: {
+  panel: PlotPanelState;
+  index: number;
+  onActivate: () => void;
+  onRename: (name: string) => void;
+}) {
+  const label = panelLabel(panel, index);
+  const [draft, setDraft] = useState<string | null>(null);
+  const cancelled = useRef(false);
+  const commit = (): void => {
+    if (cancelled.current) {
+      cancelled.current = false;
+      setDraft(null);
+      return;
+    }
+    if (draft !== null) {
+      onRename(draft);
+      setDraft(null);
+    }
+  };
+  return (
+    <input
+      type="text"
+      className="plot-chart__title"
+      value={draft ?? label}
+      aria-label={`Name of ${label}`}
+      title="Rename this panel"
+      data-testid={`plot-panel-title-${index + 1}`}
+      onFocus={() => {
+        onActivate();
+        setDraft(label);
+      }}
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.currentTarget.blur();
+        } else if (event.key === "Escape") {
+          cancelled.current = true;
+          setDraft(null);
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
+export function PlotPanel({ detached = false }: { detached?: boolean }) {
   const manifest = useRunStore((state) => state.manifest);
   const status = useRunStore((state) => state.status);
   const phase = useRunStore((state) => state.phase);
@@ -152,6 +207,10 @@ export function PlotPanel() {
   const removePanel = useRunStore((state) => state.removePanel);
   const splitPanel = useRunStore((state) => state.splitPanel);
   const setActivePanel = useRunStore((state) => state.setActivePanel);
+  const renamePanel = useRunStore((state) => state.renamePanel);
+  const setNotice = useRunStore((state) => state.setNotice);
+  const detachPlots = useDetachStore((state) => state.detach);
+  const attachPlots = useDetachStore((state) => state.attach);
   const followLive = useRunStore((state) => state.followLive);
   const pinRun = useRunStore((state) => state.pinRun);
   const unpinRun = useRunStore((state) => state.unpinRun);
@@ -397,6 +456,48 @@ export function PlotPanel() {
           </span>
         ) : null}
         <span className="plot-toolbar__spacer" />
+        {panels.length > 0 ? (
+          <label className="plot-toolbar__target">
+            <span>Active</span>
+            <select
+              value={activePanelId}
+              onChange={(event) => setActivePanel(event.target.value)}
+              data-testid="active-panel-select"
+              aria-label="Active plot panel"
+              title="The panel that receives a signal from the canvas"
+            >
+              {panels.map((panel, index) => (
+                <option key={panel.id} value={panel.id}>
+                  {panelLabel(panel, index)}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <button
+          type="button"
+          className="button"
+          onClick={() => {
+            if (detached) {
+              attachPlots();
+              return;
+            }
+            if (!detachPlots()) {
+              setNotice(
+                useDetachStore.getState().error ??
+                  "The plot window could not be opened.",
+              );
+            }
+          }}
+          data-testid={detached ? "dock-plot" : "detach-plot"}
+          title={
+            detached
+              ? "Move the plots back into the bottom dock"
+              : "Open the plots in a separate browser window"
+          }
+        >
+          {detached ? "Dock" : "Detach"}
+        </button>
         <button
           type="button"
           className="button"
@@ -525,15 +626,12 @@ export function PlotPanel() {
                 onMouseDown={() => setActivePanel(panel.id)}
               >
                 <header className="plot-chart__header">
-                  <button
-                    type="button"
-                    className="plot-chart__title"
-                    onClick={() => setActivePanel(panel.id)}
-                    aria-pressed={panel.id === activePanelId}
-                    data-testid={`plot-panel-title-${index + 1}`}
-                  >
-                    Panel {index + 1}
-                  </button>
+                  <PanelTitle
+                    panel={panel}
+                    index={index}
+                    onActivate={() => setActivePanel(panel.id)}
+                    onRename={(name) => renamePanel(panel.id, name)}
+                  />
                   <span className="plot-chart__units">
                     {panelUnitSummary(configuration.signals)}
                   </span>
@@ -561,10 +659,10 @@ export function PlotPanel() {
                     type="button"
                     className="plot-chart__remove"
                     onClick={() => removePanel(panel.id)}
-                    aria-label={`Remove panel ${index + 1}`}
+                    aria-label={`Remove ${panelLabel(panel, index)}`}
                     title={
                       panels.length > 1
-                        ? `Remove panel ${index + 1}`
+                        ? `Remove ${panelLabel(panel, index)}`
                         : "Clear this panel's signals"
                     }
                   >
