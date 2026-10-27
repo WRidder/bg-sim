@@ -29,6 +29,7 @@ const GROUPS = (
     (dir = "bondgraph", name = "Bond graph", icon_prefix = "bg"),
     (dir = "sources", name = "Sources and sinks", icon_prefix = "src"),
     (dir = "continuous", name = "Continuous", icon_prefix = "cont"),
+    (dir = "discrete", name = "Discrete and logic", icon_prefix = "disc"),
     (dir = "electrical", name = "Electrical", icon_prefix = "elec"),
     (dir = "translation", name = "Translation", icon_prefix = "mech"),
     (dir = "rotation", name = "Rotation", icon_prefix = "rot"),
@@ -193,6 +194,86 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:continuous/Switch" => (
         description = "Selects u1 while ctrl is above threshold, u2 otherwise.",
         icon = "cont-switch",
+    ),
+    "stdlib:discrete/And" => (
+        description = "Logical AND of two Bool inputs; chain instances for more inputs, because a Bool vector port is not available.",
+        icon = "disc-and",
+    ),
+    "stdlib:discrete/Compare" => (
+        description = "Compares two inputs; op selects ==, !=, <, <=, > or >=, and the output is Bool.",
+        icon = "disc-compare",
+    ),
+    "stdlib:discrete/Counter" => (
+        description = "Counts rising edges of trigger between lower and upper, resets to lower while reset is high; wrap selects wrap or stop.",
+        icon = "disc-counter",
+    ),
+    "stdlib:discrete/DiscreteIntegrator" => (
+        description = "Discrete-time integrator; method selects forward, backward or trapezoidal, and the output is clamped to the limits.",
+        icon = "disc-integrator",
+    ),
+    "stdlib:discrete/DiscretePID" => (
+        description = "Discrete PID with a backward-difference derivative and clamping anti-windup; method discretizes the integral term.",
+        icon = "disc-pid",
+    ),
+    "stdlib:discrete/DiscreteSS" => (
+        description = "Discrete state-space model x[k+1] = A*x[k] + B*u[k], y[k] = C*x[k] + D*u[k] with N states.",
+        icon = "disc-state-space",
+    ),
+    "stdlib:discrete/DiscreteTF" => (
+        description = "Discrete transfer function b(z)/a(z) in powers of z^-1 with N coefficients each, evaluated directly.",
+        icon = "disc-transfer-function",
+    ),
+    "stdlib:discrete/EdgeDetect" => (
+        description = "Reports a rising, falling or both edges of a Bool input on the tick where it happens.",
+        icon = "disc-edge-detect",
+    ),
+    "stdlib:discrete/FIR" => (
+        description = "FIR filter: the weighted sum of the last N input samples, with b[1] the newest.",
+        icon = "disc-fir",
+    ),
+    "stdlib:discrete/IIR" => (
+        description = "IIR filter: N feedforward and M feedback coefficients, a[1] is the output gain.",
+        icon = "disc-iir",
+    ),
+    "stdlib:discrete/Not" => (
+        description = "Logical NOT of a Bool input.",
+        icon = "disc-not",
+    ),
+    "stdlib:discrete/OnOffDelay" => (
+        description = "On-delay and off-delay timer: the output follows the Bool input after t_on high and t_off low.",
+        icon = "disc-on-off-delay",
+    ),
+    "stdlib:discrete/Or" => (
+        description = "Logical OR of two Bool inputs; chain instances for more inputs, because a Bool vector port is not available.",
+        icon = "disc-or",
+    ),
+    "stdlib:discrete/Quantizer" => (
+        description = "Rounds the input to a multiple of the resolution; half steps round away from zero.",
+        icon = "disc-quantizer",
+    ),
+    "stdlib:discrete/RateTransition" => (
+        description = "Samples the input on the input clock and publishes the most recent sample on the output clock.",
+        icon = "disc-rate-transition",
+    ),
+    "stdlib:discrete/SRFlipFlop" => (
+        description = "Set/reset latch; dominant selects which input wins when both are high.",
+        icon = "disc-sr-flip-flop",
+    ),
+    "stdlib:discrete/TypeConversion" => (
+        description = "Converts the input to Real, Int (truncation toward zero) or Bool (0/1), selected by target.",
+        icon = "disc-type-conversion",
+    ),
+    "stdlib:discrete/UnitDelay" => (
+        description = "Delays the input by one sample; initial is the output at the first tick.",
+        icon = "disc-unit-delay",
+    ),
+    "stdlib:discrete/Xor" => (
+        description = "Exclusive OR of two Bool inputs.",
+        icon = "disc-xor",
+    ),
+    "stdlib:discrete/ZOH" => (
+        description = "Zero-order hold: samples the input on the clock and holds it until the next tick.",
+        icon = "disc-zoh",
     ),
     "stdlib:converters/AngleSensor" => (
         description = "Rotational angle sensor; integrates the angular velocity of its port.",

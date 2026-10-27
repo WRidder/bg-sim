@@ -116,6 +116,27 @@ const M2_REFS = [
     "stdlib:continuous/Sign",
     "stdlib:continuous/StateSpace",
     "stdlib:continuous/Switch",
+    # J2.7d: discrete and logic blocks.
+    "stdlib:discrete/And",
+    "stdlib:discrete/Compare",
+    "stdlib:discrete/Counter",
+    "stdlib:discrete/DiscreteIntegrator",
+    "stdlib:discrete/DiscretePID",
+    "stdlib:discrete/DiscreteSS",
+    "stdlib:discrete/DiscreteTF",
+    "stdlib:discrete/EdgeDetect",
+    "stdlib:discrete/FIR",
+    "stdlib:discrete/IIR",
+    "stdlib:discrete/Not",
+    "stdlib:discrete/OnOffDelay",
+    "stdlib:discrete/Or",
+    "stdlib:discrete/Quantizer",
+    "stdlib:discrete/RateTransition",
+    "stdlib:discrete/SRFlipFlop",
+    "stdlib:discrete/TypeConversion",
+    "stdlib:discrete/UnitDelay",
+    "stdlib:discrete/Xor",
+    "stdlib:discrete/ZOH",
 ]
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
@@ -480,6 +501,173 @@ const INTERFACE_FIELDS = [
         @test [(i.name, i.type) for i in sw.interface.inputs] ==
               [("u1", "Real"), ("u2", "Real"), ("ctrl", "Real")]
         @test [p.name for p in sw.interface.parameters] == ["threshold"]
+    end
+
+    @testset "the M2 discrete and logic rows (J2.7d)" begin
+        # Plan section 8, M2 row "Discrete and logic": every block of the spec's discrete
+        # table that this work package adds. The golden tests check the equations and the
+        # scheduler interaction; this pins the interface the editor and the spec see.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        refs = [
+            "stdlib:discrete/And",
+            "stdlib:discrete/Compare",
+            "stdlib:discrete/Counter",
+            "stdlib:discrete/DiscreteIntegrator",
+            "stdlib:discrete/DiscretePID",
+            "stdlib:discrete/DiscreteSS",
+            "stdlib:discrete/DiscreteTF",
+            "stdlib:discrete/EdgeDetect",
+            "stdlib:discrete/FIR",
+            "stdlib:discrete/IIR",
+            "stdlib:discrete/Not",
+            "stdlib:discrete/OnOffDelay",
+            "stdlib:discrete/Or",
+            "stdlib:discrete/Quantizer",
+            "stdlib:discrete/RateTransition",
+            "stdlib:discrete/SRFlipFlop",
+            "stdlib:discrete/TypeConversion",
+            "stdlib:discrete/UnitDelay",
+            "stdlib:discrete/Xor",
+            "stdlib:discrete/ZOH",
+        ]
+        for ref in refs
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test b.group == "Discrete and logic"
+            @test isempty(b.interface.ports)         # signal blocks have no power ports
+            @test isempty(b.interface.causality)
+            # Every discrete block drives a `@discrete` scope from a structural period
+            # constant; rate transition has an input and an output clock (checked below).
+            @test occursin("@discrete Ts = sample_period", b.source) || ref ==
+                  "stdlib:discrete/RateTransition"
+            @test any(c -> c.name == "sample_period", b.interface.constants) || ref ==
+                  "stdlib:discrete/RateTransition"
+        end
+
+        # The sample period is a structural constant (D13): it fixes the clock, so changing it
+        # is a structural change.
+        for ref in refs
+            ref == "stdlib:discrete/RateTransition" && continue
+            period = only(filter(c -> c.name == "sample_period", blocks[ref].interface.constants))
+            @test period.type == "Real"
+            @test period.structural
+            @test period.default == 1.0e-3
+        end
+
+        # Rate transition is the one block with an input and an output clock.
+        rt = blocks["stdlib:discrete/RateTransition"]
+        @test [(c.name, c.default) for c in rt.interface.constants] ==
+              [("sample_period_in", 5.0e-3), ("sample_period_out", 1.0e-3)]
+        @test occursin("@discrete Ts = sample_period_in", rt.source)
+        @test occursin("@discrete Ts = sample_period_out", rt.source)
+        @test [(v.name, v.type) for v in rt.interface.variables] == [("x", "Real")]
+
+        # The scalar one-input, one-output blocks with a Real signal path.
+        for name in ("UnitDelay", "ZOH", "DiscreteIntegrator", "DiscretePID", "FIR", "IIR",
+            "DiscreteTF", "DiscreteSS", "Quantizer")
+            b = blocks["stdlib:discrete/" * name]
+            @test [(i.name, i.type) for i in b.interface.inputs] == [("u", "Real")]
+            @test [(o.name, o.type) for o in b.interface.outputs] == [("y", "Real")]
+        end
+        # The on/off-delay timer is the one Bool-in, Bool-out timer.
+        delay = blocks["stdlib:discrete/OnOffDelay"]
+        @test [(i.name, i.type) for i in delay.interface.inputs] == [("u", "Bool")]
+        @test [(o.name, o.type) for o in delay.interface.outputs] == [("y", "Bool")]
+
+        # The Bool blocks: comparators and logic gates.
+        @test [(i.name, i.type) for i in blocks["stdlib:discrete/Compare"].interface.inputs] ==
+              [("u1", "Real"), ("u2", "Real")]
+        @test blocks["stdlib:discrete/Compare"].interface.outputs[1].type == "Bool"
+        for name in ("And", "Or", "Xor")
+            b = blocks["stdlib:discrete/" * name]
+            @test [(i.name, i.type) for i in b.interface.inputs] ==
+                  [("u1", "Bool"), ("u2", "Bool")]
+            @test [(o.name, o.type) for o in b.interface.outputs] == [("y", "Bool")]
+        end
+        for name in ("Not", "EdgeDetect")
+            b = blocks["stdlib:discrete/" * name]
+            @test [(i.name, i.type) for i in b.interface.inputs] == [("u", "Bool")]
+            @test [(o.name, o.type) for o in b.interface.outputs] == [("y", "Bool")]
+        end
+        sr = blocks["stdlib:discrete/SRFlipFlop"]
+        @test [(i.name, i.type) for i in sr.interface.inputs] ==
+              [("set", "Bool"), ("reset", "Bool")]
+        @test [(o.name, o.type) for o in sr.interface.outputs] == [("q", "Bool")]
+
+        # The counter: two Bool inputs and an Int output, with the limits as Int parameters.
+        counter = blocks["stdlib:discrete/Counter"]
+        @test [(i.name, i.type) for i in counter.interface.inputs] ==
+              [("trigger", "Bool"), ("reset", "Bool")]
+        @test [(o.name, o.type) for o in counter.interface.outputs] == [("y", "Int")]
+        @test [p.name for p in counter.interface.parameters] ==
+              ["lower", "upper", "step", "wrap"]
+        @test all(p -> p.type == "Int", counter.interface.parameters)
+
+        # The D11 enumerations are Int parameters with option labels, never strings.
+        enumerations = Dict(
+            "DiscreteIntegrator" => ("method", ["forward", "backward", "trapezoidal"]),
+            "DiscretePID" => ("method", ["forward", "backward", "trapezoidal"]),
+            "Counter" => ("wrap", ["stop", "wrap"]),
+            "Compare" => ("op", ["==", "!=", "<", "<=", ">", ">="]),
+            "EdgeDetect" => ("mode", ["rising", "falling", "both"]),
+            "SRFlipFlop" => ("dominant", ["set", "reset"]),
+            "TypeConversion" => ("target", ["Real", "Int", "Bool"]),
+        )
+        for (name, (parameter, options)) in enumerations
+            p = only(filter(p -> p.name == parameter,
+                blocks["stdlib:discrete/" * name].interface.parameters))
+            @test p.type == "Int"
+            @test p.options == options
+            @test p.min === nothing && p.max === nothing   # the labels carry the meaning
+        end
+
+        # The discrete controller family: the continuous PID parameter names, in seconds.
+        pid = blocks["stdlib:discrete/DiscretePID"]
+        @test [p.name for p in pid.interface.parameters] ==
+              ["method", "Kp", "Ti", "Td", "lower", "upper"]
+        @test [p.unit for p in pid.interface.parameters] ==
+              [nothing, nothing, "s", "s", nothing, nothing]
+        @test [v.name for v in pid.interface.variables] == ["i", "ep"]
+
+        # The state-space and filter sizes are structural (D13), the matrices are Vec/Mat.
+        ss = blocks["stdlib:discrete/DiscreteSS"]
+        @test [(c.name, c.type, c.default) for c in ss.interface.constants] ==
+              [("N", "Int", 2), ("sample_period", "Real", 1.0e-3)]
+        @test [p.name for p in ss.interface.parameters] == ["A", "B", "C", "D"]
+        @test ss.interface.parameters[1].default == "[0.5 0.25; 0.0 0.5]"
+        @test ss.interface.parameters[2].default == "[1.0, 0.0]"
+        @test ss.interface.variables[1].size == [2]
+
+        tf = blocks["stdlib:discrete/DiscreteTF"]
+        @test [(c.name, c.default) for c in tf.interface.constants] ==
+              [("N", 3), ("sample_period", 1.0e-3)]
+        @test [p.name for p in tf.interface.parameters] == ["b", "a"]
+        @test tf.interface.variables[1].size == [3]
+
+        fir = blocks["stdlib:discrete/FIR"]
+        @test [p.name for p in fir.interface.parameters] == ["b"]
+        @test [(c.name, c.default) for c in fir.interface.constants] ==
+              [("N", 3), ("sample_period", 1.0e-3)]
+
+        iir = blocks["stdlib:discrete/IIR"]
+        @test [p.name for p in iir.interface.parameters] == ["b", "a"]
+        @test [(c.name, c.default) for c in iir.interface.constants] ==
+              [("N", 3), ("M", 2), ("sample_period", 1.0e-3)]
+        @test [(v.name, v.size) for v in iir.interface.variables] ==
+              [("uh", [3]), ("yh", [2])]
+
+        # The timers take their delays in seconds.
+        onoff = blocks["stdlib:discrete/OnOffDelay"]
+        @test [p.name for p in onoff.interface.parameters] == ["t_on", "t_off"]
+        @test [p.unit for p in onoff.interface.parameters] == ["s", "s"]
+        @test [(v.name, v.unit) for v in onoff.interface.variables] ==
+              [("ton", "s"), ("toff", "s")]
+
+        # The quantizer resolution and the unit-delay initial value are tunable parameters.
+        @test blocks["stdlib:discrete/Quantizer"].interface.parameters[1].name == "resolution"
+        @test blocks["stdlib:discrete/UnitDelay"].interface.parameters[1].name == "initial"
+        @test blocks["stdlib:discrete/UnitDelay"].interface.parameters[1].tunable
     end
 
     @testset "catalog structure against catalog.schema.json" begin
