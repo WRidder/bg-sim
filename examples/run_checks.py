@@ -81,6 +81,32 @@ printed but ignored::
     {"kind": "compare_signals", "signal": "Iconic/C1/p.e",
      "signal_b": "Bondgraph/C1/p.e", "from_t": 0.0, "max_abs": 1e-8},
     {"kind": "no_diagnostics", "codes": ["W201", "W202", "E106"]}
+
+``step_response`` evaluates a step in one signal over ``[from_t, to_t]``.  ``value``
+is the target, ``initial`` the value before the step (default: the first sample in
+the window), and the band is ``settle_abs`` rad (or A, V, ...) when given, else
+``settle`` (default 0.02) times the step size.  It measures the 10-90 % rise time,
+the overshoot beyond the target (as a fraction of the step), the settling time (the
+last sample outside the band, measured from ``step_t``, default ``from_t``) and the
+final error at ``to_t``, then applies the optional ``max_rise_time``,
+``max_overshoot`` and ``max_settling_time`` bounds.  It is one PASS/FAIL line (the
+detail carries all four measurements)::
+
+    {"kind": "step_response", "signal": "WmSens/p.f", "from_t": 0.05,
+     "to_t": 0.29, "value": 100.0, "initial": 0.0, "settle_abs": 2.0,
+     "max_rise_time": 0.08, "max_overshoot": 0.12,
+     "max_settling_time": 0.25}
+
+``ripple`` is the RMS (``measure = "rms"``, the default) or peak-to-peak
+(``"pp"``) of the high-frequency component of ``signal`` over a steady window.  The
+time column is collapsed (event instants appear twice), resampled on a uniform grid
+at the median sample spacing, and ``highpass_hz`` (default 0: subtract the window
+mean) removes everything below that corner with a centered moving average of
+``round(fs / highpass_hz)`` samples.  It passes when the measured value is at most
+``value``.  Two such checks (an unfiltered and a filtered signal) document a notch::
+
+    {"kind": "ripple", "signal": "Iphase/y", "from_t": 1.0, "to_t": 1.15,
+     "highpass_hz": 1000.0, "measure": "rms", "value": 0.8}
 """
 
 from __future__ import annotations
@@ -648,6 +674,178 @@ def _no_diagnostics_check(
     report.check(not found, label, detail)
 
 
+def _step_response_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """Rise time, overshoot, settling and final error of a step in one signal."""
+    signal = str(check.get("signal", ""))
+    label = f"{project}/{model} {signal} step_response"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value' (the target)")
+        return
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    try:
+        target = float(check["value"])
+    except (TypeError, ValueError):
+        report.check(False, label, "'value' must be a number")
+        return
+    first = float(run.time[0])
+    last = float(run.time[-1])
+    from_t = float(check.get("from_t", first))
+    to_t = float(check.get("to_t", last))
+    window = (run.time >= from_t) & (run.time <= to_t)
+    if not window.any():
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    times, values = _collapsed(run.time[window], run.signals[signal][window])
+    if times.size < 2:
+        report.check(False, label, "the window has fewer than two samples")
+        return
+    try:
+        initial = float(check["initial"]) if "initial" in check else float(values[0])
+        step_t = float(check.get("step_t", from_t))
+        low = float(check.get("rise_low", 0.1))
+        high = float(check.get("rise_high", 0.9))
+        settle_fraction = float(check.get("settle", 0.02))
+        settle_abs = float(check["settle_abs"]) if "settle_abs" in check else None
+    except (TypeError, ValueError):
+        report.check(False, label, "the step parameters must be numbers")
+        return
+    if not 0.0 <= low < high <= 1.0:
+        report.check(False, label, "rise_low/rise_high must satisfy 0 <= low < high <= 1")
+        return
+    delta = target - initial
+    scale = abs(delta)
+    if scale == 0.0:
+        report.check(False, label, "the target equals the initial value (no step)")
+        return
+    band = settle_abs if settle_abs is not None else settle_fraction * scale
+
+    if delta > 0.0:
+        overshoot = max(0.0, (float(np.max(values)) - target) / scale)
+    else:
+        overshoot = max(0.0, (target - float(np.min(values))) / scale)
+
+    def crossing(level: float) -> float | None:
+        if values[0] == level:
+            return float(times[0])
+        for index in range(times.size - 1):
+            before = float(values[index])
+            after = float(values[index + 1])
+            if before == after:
+                continue
+            if (before - level) * (after - level) <= 0.0:
+                fraction = (level - before) / (after - before)
+                return float(times[index] + fraction * (times[index + 1] - times[index]))
+        return None
+
+    t_low = crossing(initial + low * delta)
+    t_high = crossing(initial + high * delta)
+    rise = None if t_low is None or t_high is None else max(0.0, t_high - t_low)
+
+    outside = np.abs(values - target) > band
+    if bool(np.any(outside)):
+        last_outside = int(np.nonzero(outside)[0][-1])
+        settling = max(0.0, float(times[last_outside]) - step_t)
+    else:
+        settling = 0.0
+    final_error = abs(float(values[-1]) - target)
+
+    failures: list[str] = []
+    if final_error > band:
+        failures.append(f"final error {final_error:.4g} > band {band:.4g}")
+    if rise is None:
+        failures.append("the signal never crosses the rise levels")
+    else:
+        limit = check.get("max_rise_time")
+        if limit is not None and rise > float(limit):
+            failures.append(f"rise {rise:.4g} s > {float(limit):.4g} s")
+    limit = check.get("max_overshoot")
+    if limit is not None and overshoot > float(limit):
+        failures.append(f"overshoot {100.0 * overshoot:.2f} % > {100.0 * float(limit):.2f} %")
+    limit = check.get("max_settling_time")
+    if limit is not None and settling > float(limit):
+        failures.append(f"settling {settling:.4g} s > {float(limit):.4g} s")
+
+    rise_text = "n/a" if rise is None else f"{rise:.4g} s"
+    detail = (
+        f"step {initial:.6g} -> {target:.6g} over [{from_t:g}, {to_t:g}]: "
+        f"rise {rise_text}, overshoot {100.0 * overshoot:.2f} %, "
+        f"settling {settling:.4g} s (band {band:.4g}), final error {final_error:.4g}"
+    )
+    if failures:
+        detail += "; FAIL: " + "; ".join(failures)
+    report.check(not failures, label, detail)
+
+
+def _ripple_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """RMS or peak-to-peak of the high-frequency component over a steady window."""
+    signal = str(check.get("signal", ""))
+    measure = str(check.get("measure", "rms"))
+    label = f"{project}/{model} {signal} ripple ({measure})"
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value' (the limit)")
+        return
+    if measure not in {"rms", "pp"}:
+        report.check(False, label, "'measure' must be 'rms' or 'pp'")
+        return
+    try:
+        limit = float(check["value"])
+        highpass = float(check.get("highpass_hz", 0.0))
+    except (TypeError, ValueError):
+        report.check(False, label, "'value' and 'highpass_hz' must be numbers")
+        return
+    first = float(run.time[0])
+    last = float(run.time[-1])
+    from_t = float(check.get("from_t", first))
+    to_t = float(check.get("to_t", last))
+    window = (run.time >= from_t) & (run.time <= to_t)
+    if not window.any():
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    times, values = _collapsed(run.time[window], run.signals[signal][window])
+    if times.size < 3:
+        report.check(False, label, "the window has fewer than three samples")
+        return
+    steps = np.diff(times)
+    steps = steps[steps > 0.0]
+    if steps.size == 0:
+        report.check(False, label, "the window has no positive sample spacing")
+        return
+    dt = float(np.median(steps))
+    grid = np.arange(float(times[0]), float(times[-1]) + 0.5 * dt, dt)
+    if grid.size < 3:
+        report.check(False, label, "the resampled window has fewer than three samples")
+        return
+    samples = np.interp(grid, times, values)
+    if highpass > 0.0:
+        width = max(2, int(round(1.0 / (dt * highpass))))
+        pad = width // 2
+        padded = np.pad(samples, (pad, pad), mode="edge")
+        average = np.convolve(padded, np.ones(width) / width, mode="valid")[: samples.size]
+        residual = samples - average
+        cutoff_text = f"high-pass {highpass:g} Hz (moving average {width} samples)"
+    else:
+        residual = samples - float(np.mean(samples))
+        cutoff_text = "window mean removed"
+    if measure == "rms":
+        measured = float(np.sqrt(np.mean(residual**2)))
+    else:
+        measured = float(np.max(residual) - np.min(residual))
+    detail = (
+        f"over [{from_t:g}, {to_t:g}] at {1.0 / dt:.0f} Hz, {cutoff_text}: "
+        f"{measure} {measured:.6g} (limit {limit:g}, {grid.size} samples)"
+    )
+    report.check(measured <= limit, label, detail)
+
+
 def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Run]) -> None:
     if isinstance(specs, dict):
         specs = [specs]
@@ -719,6 +917,10 @@ def _check_model_checks(
             _zero_crossing_check(report, project, model, run, check)
         elif kind == "compare_signals":
             _compare_signals_check(report, project, model, run, check)
+        elif kind == "step_response":
+            _step_response_check(report, project, model, run, check)
+        elif kind == "ripple":
+            _ripple_check(report, project, model, run, check)
         elif kind == "no_diagnostics":
             _no_diagnostics_check(report, project, model, run, check)
         else:

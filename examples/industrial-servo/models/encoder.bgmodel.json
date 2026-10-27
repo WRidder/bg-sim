@@ -1,0 +1,1436 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "encoder",
+  "$comment": "Plan 9.6b industrial-servo (X2.6). The PMSM plant is a bond graph (D28): d/q 1-junctions with R and I, an MGY cross-coupling w_e L from a Gain of the measured speed, an MSe back-EMF k_e w_m (the junction sees -k_e w_m), and a GY k_t = 1.5 p psi_m to the mechanical 1-junction (the measured i_q drives the GY through an MSf, which closes the dq 3/2 power convention). The rotor is I(J_m)+R(B_m); the load is either rigid or an I-C-R two-mass coupling. Sensors: FlowSensors, the kinematic Theta integrator and, in the encoder variants, a 24-bit Quantizer and the SpeedEstimator. The only code is the sampled firmware (ServoCurrentLoop 8 kHz, ServoSpeedLoop 1 kHz, ServoPositionLoop 200 Hz) and the switching inverter (PwmInverter). Variant: rigid inertia; averaged inverter; 24-bit encoder + estimated speed.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Vd",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 60,
+          "y": 120.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "DJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 240,
+          "y": 220.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Rd",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 240,
+          "y": 80.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Id",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 240,
+          "y": 360.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "0.006"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "IdSens",
+        "block": {
+          "ref": "project:FlowSensor"
+        },
+        "position": {
+          "x": 420,
+          "y": 360.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "MGY",
+        "block": {
+          "ref": "stdlib:bondgraph/MGY"
+        },
+        "position": {
+          "x": 420,
+          "y": 220.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Vq",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 60,
+          "y": 520.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "QJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 620,
+          "y": 420.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Rq",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 620,
+          "y": 300.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Iq",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 620,
+          "y": 540.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "0.006"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "IqSens",
+        "block": {
+          "ref": "project:FlowSensor"
+        },
+        "position": {
+          "x": 780,
+          "y": 540.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Bemf",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 620,
+          "y": 180.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "0.32"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "WmSens",
+        "block": {
+          "ref": "project:FlowSensor"
+        },
+        "position": {
+          "x": 960,
+          "y": 420.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "IqSrc",
+        "block": {
+          "ref": "stdlib:bondgraph/MSf"
+        },
+        "position": {
+          "x": 780,
+          "y": 420.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "-1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "GY",
+        "block": {
+          "ref": "stdlib:bondgraph/GY"
+        },
+        "position": {
+          "x": 960,
+          "y": 300.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.48"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "MJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1140,
+          "y": 300.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "Jm",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1140,
+          "y": 160.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "0.00044"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "Bm",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 1140,
+          "y": 440.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.0001"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "Theta",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 1320,
+          "y": 500.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "Load",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 1320,
+          "y": 300.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "LoadStep",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 1140,
+          "y": 620.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.9",
+          "initial": "0.0",
+          "final": "-2"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "Enc",
+        "block": {
+          "ref": "stdlib:discrete/Quantizer"
+        },
+        "position": {
+          "x": 1320,
+          "y": 620.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "resolution": "3.74507028292e-07"
+        },
+        "constants": {
+          "sample_period": "0.000125"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "SpeedEst",
+        "block": {
+          "ref": "project:SpeedEstimator"
+        },
+        "position": {
+          "x": 1500,
+          "y": 700.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "alpha": "0.8"
+        },
+        "constants": {
+          "sample_period": "0.001"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "EncMon",
+        "block": {
+          "ref": "project:EncoderMonitor"
+        },
+        "position": {
+          "x": 1500,
+          "y": 580.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "sample_period": "0.000125"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "PosRef",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1320,
+          "y": 820.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "RefSpeed",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 1320,
+          "y": 940.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.05",
+          "initial": "0.0",
+          "final": "100"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n27",
+        "name": "Mode",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 1500,
+          "y": 940.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.15",
+          "initial": "0.0",
+          "final": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n28",
+        "name": "PosLoop",
+        "block": {
+          "ref": "project:ServoPositionLoop"
+        },
+        "position": {
+          "x": 1700,
+          "y": 820.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Kp": "20",
+          "w_max": "200"
+        },
+        "constants": {
+          "sample_period": "0.005"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n29",
+        "name": "SpeedLoop",
+        "block": {
+          "ref": "project:ServoSpeedLoop"
+        },
+        "position": {
+          "x": 1900,
+          "y": 820.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Kp": "0.460766922527",
+          "Ki": "46.3213433224",
+          "i_max": "15"
+        },
+        "constants": {
+          "sample_period": "0.001"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n30",
+        "name": "CurLoop",
+        "block": {
+          "ref": "project:ServoCurrentLoop"
+        },
+        "position": {
+          "x": 2100,
+          "y": 820.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Ld": "0.006",
+          "Lq": "0.006",
+          "psi": "0.08",
+          "pp": "4",
+          "Kp_d": "18.8495559215",
+          "Ki_d": "1570.79632679",
+          "Kp_q": "18.8495559215",
+          "Ki_q": "1570.79632679",
+          "vmax": "173.205080757",
+          "imax": "15"
+        },
+        "constants": {
+          "sample_period": "0.000125"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n31",
+        "name": "Udd",
+        "block": {
+          "ref": "stdlib:discrete/UnitDelay"
+        },
+        "position": {
+          "x": 2280,
+          "y": 700.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "sample_period": "0.000125"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n32",
+        "name": "Udq",
+        "block": {
+          "ref": "stdlib:discrete/UnitDelay"
+        },
+        "position": {
+          "x": 2280,
+          "y": 820.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "sample_period": "0.000125"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n33",
+        "name": "WeL",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 420,
+          "y": 100.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "0.024"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n34",
+        "name": "Iphase",
+        "block": {
+          "ref": "project:PhaseCurrent"
+        },
+        "position": {
+          "x": 960,
+          "y": 620.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b01",
+        "kind": "bond",
+        "from": {
+          "node": "n01",
+          "port": "p"
+        },
+        "to": {
+          "node": "n02"
+        },
+        "route": [],
+        "label": "v_d"
+      },
+      {
+        "id": "b02",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n03",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b03",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n04",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b04",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n05",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b05",
+        "kind": "bond",
+        "from": {
+          "node": "n06",
+          "port": "p1"
+        },
+        "to": {
+          "node": "n02"
+        },
+        "route": [],
+        "label": "cross-coupling -w_e L_q i_q"
+      },
+      {
+        "id": "b06",
+        "kind": "bond",
+        "from": {
+          "node": "n07",
+          "port": "p"
+        },
+        "to": {
+          "node": "n08"
+        },
+        "route": [],
+        "label": "v_q"
+      },
+      {
+        "id": "b07",
+        "kind": "bond",
+        "from": {
+          "node": "n06",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n08"
+        },
+        "route": [],
+        "label": "cross-coupling w_e L_d i_d"
+      },
+      {
+        "id": "b08",
+        "kind": "bond",
+        "from": {
+          "node": "n08"
+        },
+        "to": {
+          "node": "n09",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b09",
+        "kind": "bond",
+        "from": {
+          "node": "n08"
+        },
+        "to": {
+          "node": "n10",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b10",
+        "kind": "bond",
+        "from": {
+          "node": "n08"
+        },
+        "to": {
+          "node": "n11",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b11",
+        "kind": "bond",
+        "from": {
+          "node": "n08"
+        },
+        "to": {
+          "node": "n12",
+          "port": "p"
+        },
+        "route": [],
+        "label": "back-EMF -w_e psi_m"
+      },
+      {
+        "id": "b12",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n12",
+          "port": "u"
+        },
+        "route": [],
+        "label": "back-EMF speed"
+      },
+      {
+        "id": "b13",
+        "kind": "bond",
+        "from": {
+          "node": "n14",
+          "port": "p"
+        },
+        "to": {
+          "node": "n15",
+          "port": "p1"
+        },
+        "route": [],
+        "label": "measured i_q"
+      },
+      {
+        "id": "b14",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n14",
+          "port": "u"
+        },
+        "route": [],
+        "label": "measured i_q"
+      },
+      {
+        "id": "b15",
+        "kind": "bond",
+        "from": {
+          "node": "n15",
+          "port": "p2"
+        },
+        "to": {
+          "node": "n16"
+        },
+        "route": [],
+        "label": "T_e = 1.5 p psi_m i_q"
+      },
+      {
+        "id": "b16",
+        "kind": "bond",
+        "from": {
+          "node": "n16"
+        },
+        "to": {
+          "node": "n17",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b17",
+        "kind": "bond",
+        "from": {
+          "node": "n16"
+        },
+        "to": {
+          "node": "n18",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b18",
+        "kind": "bond",
+        "from": {
+          "node": "n16"
+        },
+        "to": {
+          "node": "n13",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b19",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n19",
+          "port": "u"
+        },
+        "route": [],
+        "label": "motor speed"
+      },
+      {
+        "id": "b20",
+        "kind": "bond",
+        "from": {
+          "node": "n20",
+          "port": "p"
+        },
+        "to": {
+          "node": "n16"
+        },
+        "route": [],
+        "label": "load torque"
+      },
+      {
+        "id": "b21",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "n20",
+          "port": "u"
+        },
+        "route": [],
+        "label": "2 N m resisting load at 0.95 s"
+      },
+      {
+        "id": "b22",
+        "kind": "signal",
+        "from": {
+          "node": "n19",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "u"
+        },
+        "route": [],
+        "label": "true angle"
+      },
+      {
+        "id": "b23",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n23",
+          "port": "theta"
+        },
+        "route": [],
+        "label": "24-bit angle"
+      },
+      {
+        "id": "b24",
+        "kind": "signal",
+        "from": {
+          "node": "n19",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "theta"
+        },
+        "route": [],
+        "label": "true angle"
+      },
+      {
+        "id": "b25",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "theta_q"
+        },
+        "route": [],
+        "label": "quantized angle"
+      },
+      {
+        "id": "b26",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "pos_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b27",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "pos_meas"
+        },
+        "route": [],
+        "label": "position feedback"
+      },
+      {
+        "id": "b28",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "w_ref"
+        },
+        "route": [],
+        "label": "speed step"
+      },
+      {
+        "id": "b29",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "mode"
+        },
+        "route": [],
+        "label": "speed mode -> position mode at 0.4 s"
+      },
+      {
+        "id": "b30",
+        "kind": "signal",
+        "from": {
+          "node": "n28",
+          "port": "w_cmd"
+        },
+        "to": {
+          "node": "n29",
+          "port": "w_ref"
+        },
+        "route": [],
+        "label": "speed command"
+      },
+      {
+        "id": "b31",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "w"
+        },
+        "to": {
+          "node": "n29",
+          "port": "w_meas"
+        },
+        "route": [],
+        "label": "speed feedback"
+      },
+      {
+        "id": "b32",
+        "kind": "signal",
+        "from": {
+          "node": "n29",
+          "port": "iq_cmd"
+        },
+        "to": {
+          "node": "n30",
+          "port": "iq_cmd"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b33",
+        "kind": "signal",
+        "from": {
+          "node": "n29",
+          "port": "id_cmd"
+        },
+        "to": {
+          "node": "n30",
+          "port": "id_cmd"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b34",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "y"
+        },
+        "to": {
+          "node": "n30",
+          "port": "id"
+        },
+        "route": [],
+        "label": "i_d"
+      },
+      {
+        "id": "b35",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n30",
+          "port": "iq"
+        },
+        "route": [],
+        "label": "i_q"
+      },
+      {
+        "id": "b36",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "w"
+        },
+        "to": {
+          "node": "n30",
+          "port": "w_m"
+        },
+        "route": [],
+        "label": "speed for decoupling"
+      },
+      {
+        "id": "b37",
+        "kind": "signal",
+        "from": {
+          "node": "n30",
+          "port": "vd"
+        },
+        "to": {
+          "node": "n31",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b38",
+        "kind": "signal",
+        "from": {
+          "node": "n30",
+          "port": "vq"
+        },
+        "to": {
+          "node": "n32",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b39",
+        "kind": "signal",
+        "from": {
+          "node": "n31",
+          "port": "y"
+        },
+        "to": {
+          "node": "n01",
+          "port": "u"
+        },
+        "route": [],
+        "label": "v_d averaged"
+      },
+      {
+        "id": "b40",
+        "kind": "signal",
+        "from": {
+          "node": "n32",
+          "port": "y"
+        },
+        "to": {
+          "node": "n07",
+          "port": "u"
+        },
+        "route": [],
+        "label": "v_q averaged"
+      },
+      {
+        "id": "b41",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n33",
+          "port": "u"
+        },
+        "route": [],
+        "label": "w_e L_q"
+      },
+      {
+        "id": "b42",
+        "kind": "signal",
+        "from": {
+          "node": "n33",
+          "port": "y"
+        },
+        "to": {
+          "node": "n06",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b43",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "y"
+        },
+        "to": {
+          "node": "n34",
+          "port": "id"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b44",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n34",
+          "port": "iq"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Bond-graph plant (D28): Vd/Vq MSe -> d/q 1-junctions (R_s, L_d/L_q) with the MGY cross-coupling and the q-axis MSe back-EMF -> GY k_t to the mechanical 1-junction. Rigid rotor and load on MJ. Averaged inverter limited to Vdc/sqrt(3). Sensor: 24-bit encoder, 1 kHz differenced speed estimate. Loop rates 8/1/0.2 kHz; one 8 kHz computation delay.",
+        "x": 40,
+        "y": 1050,
+        "w": 2600,
+        "h": 90
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.2,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 6001
+    },
+    "event_limit": 200000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Phase current",
+      "signals": [
+        "Iphase/y",
+        "Iq/p.f"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Speed",
+      "signals": [
+        "WmSens/p.f",
+        "SpeedLoop/w_err"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Position",
+      "signals": [
+        "Theta/y",
+        "PosLoop/pos_err",
+        "Enc/y"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Voltage",
+      "signals": [
+        "Vd/p.e",
+        "Vq/p.e",
+        "CurLoop/vd",
+        "CurLoop/vq"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

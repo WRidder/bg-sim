@@ -1,0 +1,14 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "industrial-servo",
+  "models": [
+    "baseline",
+    "two-mass",
+    "switching",
+    "encoder",
+    "full"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

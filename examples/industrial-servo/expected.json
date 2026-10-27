@@ -1,0 +1,770 @@
+{
+  "project": "industrial-servo",
+  "description": "Plan 9.6b acceptance (X2.6). One PMSM servo drive in five fidelity variants. The plant is a bond graph (D28): d/q 1-junctions with R_s and L_d/L_q, an MGY cross-coupling w_e L, an MSe back-EMF -p psi_m w_m and a GY k_t = 1.5 p psi_m into the mechanical 1-junction; the measured i_q drives the GY through an MSf, which closes the dq 3/2 power convention. Rotor I(J_m)+R(B_m); the two-mass variants add an I-C-R flexible coupling through 0/1-junctions (parallel spring and damper). The firmware is three @discrete blocks (current 8 kHz, speed 1 kHz, position 200 Hz) with a one-sample delay; the switching variants add the PwmInverter (4 kHz carrier, 100 kHz comparator, 2 us dead time, 1.2 V device drop). The run is 1.2 s: a 100 rad/s speed step at 0.05 s, position mode at 0.15 s (the shaft returns from about 9.5 rad to 0), and a 2 N m load step at 0.9 s. Expected values are the measured values with margin; the README has the exact numbers.",
+  "models": {
+    "baseline": {
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "WmSens/p.f",
+          "from_t": 0.05,
+          "to_t": 0.145,
+          "value": 100.0,
+          "initial": 0.0,
+          "settle_abs": 2.0,
+          "max_rise_time": 0.02,
+          "max_overshoot": 0.06,
+          "max_settling_time": 0.05,
+          "note": "plan 9.6b speed loop: 100 rad/s step at 0.05 s; rise (10-90 %), overshoot and 2 rad/s settling for the 1 kHz PI"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Theta/y",
+          "from_t": 0.15,
+          "to_t": 0.88,
+          "value": 0.0,
+          "settle_abs": 0.005,
+          "max_rise_time": 0.15,
+          "max_overshoot": 0.002,
+          "max_settling_time": 0.8,
+          "note": "position mode at 0.15 s: the shaft returns from about 9.4-9.7 rad to 0; the 5 mrad band is checked before the 0.9 s load step"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Iq/p.f",
+          "from_t": 0.05,
+          "to_t": 0.053,
+          "value": 15.0,
+          "initial": 0.0,
+          "settle_abs": 0.8,
+          "max_rise_time": 0.002,
+          "max_overshoot": 0.08,
+          "max_settling_time": 0.004,
+          "note": "plan 9.6b current loop: the 15 A command step at 0.05 s (the speed loop is saturated); 8 kHz PI with a 500 Hz crossover"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Theta/y",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "steady position after the 2 N m load step at 0.9 s (the speed-loop integral rejects it)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "WmSens/p.f",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.2,
+          "note": "steady speed after the load step"
+        },
+        {
+          "kind": "final_value",
+          "signal": "PosLoop/pos_err",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "position-loop error at the end of the run"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "SpeedLoop/iq_cmd",
+          "value": 15.0,
+          "note": "the speed-loop output is clamped at the 15 A peak current limit (7.2 N m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Iq/p.f",
+          "value": 16.0,
+          "note": "the measured q current stays within 16 A (the 15 A reference plus the current-loop overshoot)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "GY/p2.e",
+          "value": 7.7,
+          "note": "plan 9.6b torque limit: k_t = 0.48 N m/A times the 16 A peak"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurLoop/vmag",
+          "value": 173.3,
+          "note": "plan 9.6b averaged-inverter limit V_dc/sqrt(3) = 173.205 V"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Iphase/y",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "highpass_hz": 1000.0,
+          "measure": "rms",
+          "value": 0.01,
+          "note": "phase-current high-frequency RMS in the steady window after the load step"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E900",
+            "E901",
+            "E103",
+            "E104",
+            "E105",
+            "E106",
+            "W206"
+          ]
+        }
+      ]
+    },
+    "two-mass": {
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "WmSens/p.f",
+          "from_t": 0.05,
+          "to_t": 0.145,
+          "value": 100.0,
+          "initial": 0.0,
+          "settle_abs": 2.0,
+          "max_rise_time": 0.02,
+          "max_overshoot": 0.08,
+          "max_settling_time": 0.05,
+          "note": "plan 9.6b speed loop: 100 rad/s step at 0.05 s; rise (10-90 %), overshoot and 2 rad/s settling for the 1 kHz PI"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Theta/y",
+          "from_t": 0.15,
+          "to_t": 0.88,
+          "value": 0.0,
+          "settle_abs": 0.005,
+          "max_rise_time": 0.15,
+          "max_overshoot": 0.002,
+          "max_settling_time": 0.8,
+          "note": "position mode at 0.15 s: the shaft returns from about 9.4-9.7 rad to 0; the 5 mrad band is checked before the 0.9 s load step"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Iq/p.f",
+          "from_t": 0.05,
+          "to_t": 0.053,
+          "value": 15.0,
+          "initial": 0.0,
+          "settle_abs": 0.8,
+          "max_rise_time": 0.002,
+          "max_overshoot": 0.08,
+          "max_settling_time": 0.004,
+          "note": "plan 9.6b current loop: the 15 A command step at 0.05 s (the speed loop is saturated); 8 kHz PI with a 500 Hz crossover"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Theta/y",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "steady position after the 2 N m load step at 0.9 s (the speed-loop integral rejects it)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "WmSens/p.f",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.2,
+          "note": "steady speed after the load step"
+        },
+        {
+          "kind": "final_value",
+          "signal": "PosLoop/pos_err",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "position-loop error at the end of the run"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "SpeedLoop/iq_cmd",
+          "value": 15.0,
+          "note": "the speed-loop output is clamped at the 15 A peak current limit (7.2 N m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Iq/p.f",
+          "value": 16.0,
+          "note": "the measured q current stays within 16 A (the 15 A reference plus the current-loop overshoot)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "GY/p2.e",
+          "value": 7.7,
+          "note": "plan 9.6b torque limit: k_t = 0.48 N m/A times the 16 A peak"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurLoop/vmag",
+          "value": 173.3,
+          "note": "plan 9.6b averaged-inverter limit V_dc/sqrt(3) = 173.205 V"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Iphase/y",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "highpass_hz": 1000.0,
+          "measure": "rms",
+          "value": 0.01,
+          "note": "phase-current high-frequency RMS in the steady window after the load step"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E900",
+            "E901",
+            "E103",
+            "E104",
+            "E105",
+            "E106",
+            "W206"
+          ]
+        },
+        {
+          "kind": "ripple",
+          "signal": "Notch/u",
+          "from_t": 0.05,
+          "to_t": 0.148,
+          "highpass_hz": 250.0,
+          "measure": "rms",
+          "value": 1.5,
+          "note": "speed-loop notch input: the 303.5 Hz coupling resonance excited by the speed step"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Notch/y",
+          "from_t": 0.05,
+          "to_t": 0.148,
+          "highpass_hz": 250.0,
+          "measure": "rms",
+          "value": 1.1,
+          "note": "notch output over the same window: the Q = 4 notch at 303.5 Hz leaves less high-frequency content"
+        },
+        {
+          "kind": "ripple",
+          "signal": "WlSens/p.f",
+          "from_t": 0.05,
+          "to_t": 0.148,
+          "highpass_hz": 250.0,
+          "measure": "rms",
+          "value": 1.6,
+          "note": "load-side speed ringing of the flexible coupling"
+        }
+      ]
+    },
+    "switching": {
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "WmSens/p.f",
+          "from_t": 0.05,
+          "to_t": 0.145,
+          "value": 100.0,
+          "initial": 0.0,
+          "settle_abs": 2.0,
+          "max_rise_time": 0.02,
+          "max_overshoot": 0.06,
+          "max_settling_time": 0.05,
+          "note": "plan 9.6b speed loop: 100 rad/s step at 0.05 s; rise (10-90 %), overshoot and 2 rad/s settling for the 1 kHz PI"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Theta/y",
+          "from_t": 0.15,
+          "to_t": 0.88,
+          "value": 0.0,
+          "settle_abs": 0.005,
+          "max_rise_time": 0.15,
+          "max_overshoot": 0.002,
+          "max_settling_time": 0.8,
+          "note": "position mode at 0.15 s: the shaft returns from about 9.4-9.7 rad to 0; the 5 mrad band is checked before the 0.9 s load step"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Iq/p.f",
+          "from_t": 0.05,
+          "to_t": 0.053,
+          "value": 15.0,
+          "initial": 0.0,
+          "settle_abs": 0.8,
+          "max_rise_time": 0.002,
+          "max_overshoot": 0.08,
+          "max_settling_time": 0.004,
+          "note": "plan 9.6b current loop: the 15 A command step at 0.05 s (the speed loop is saturated); 8 kHz PI with a 500 Hz crossover"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Theta/y",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "steady position after the 2 N m load step at 0.9 s (the speed-loop integral rejects it)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "WmSens/p.f",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.2,
+          "note": "steady speed after the load step"
+        },
+        {
+          "kind": "final_value",
+          "signal": "PosLoop/pos_err",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "position-loop error at the end of the run"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "SpeedLoop/iq_cmd",
+          "value": 15.0,
+          "note": "the speed-loop output is clamped at the 15 A peak current limit (7.2 N m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Iq/p.f",
+          "value": 16.0,
+          "note": "the measured q current stays within 16 A (the 15 A reference plus the current-loop overshoot)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "GY/p2.e",
+          "value": 7.7,
+          "note": "plan 9.6b torque limit: k_t = 0.48 N m/A times the 16 A peak"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurLoop/vmag",
+          "value": 173.3,
+          "note": "plan 9.6b averaged-inverter limit V_dc/sqrt(3) = 173.205 V"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Iphase/y",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "highpass_hz": 1000.0,
+          "measure": "rms",
+          "value": 0.3,
+          "note": "phase-current high-frequency RMS in the steady window after the load step"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Iphase/y",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "highpass_hz": 1000.0,
+          "measure": "pp",
+          "value": 1.0,
+          "note": "peak-to-peak switching ripple of the phase current"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E900",
+            "E901",
+            "E103",
+            "E104",
+            "E105",
+            "E106",
+            "W206"
+          ]
+        }
+      ]
+    },
+    "encoder": {
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "WmSens/p.f",
+          "from_t": 0.05,
+          "to_t": 0.145,
+          "value": 100.0,
+          "initial": 0.0,
+          "settle_abs": 2.0,
+          "max_rise_time": 0.02,
+          "max_overshoot": 0.13,
+          "max_settling_time": 0.05,
+          "note": "plan 9.6b speed loop: 100 rad/s step at 0.05 s; rise (10-90 %), overshoot and 2 rad/s settling for the 1 kHz PI"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Theta/y",
+          "from_t": 0.15,
+          "to_t": 0.88,
+          "value": 0.0,
+          "settle_abs": 0.005,
+          "max_rise_time": 0.15,
+          "max_overshoot": 0.002,
+          "max_settling_time": 0.8,
+          "note": "position mode at 0.15 s: the shaft returns from about 9.4-9.7 rad to 0; the 5 mrad band is checked before the 0.9 s load step"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Iq/p.f",
+          "from_t": 0.05,
+          "to_t": 0.053,
+          "value": 15.0,
+          "initial": 0.0,
+          "settle_abs": 0.8,
+          "max_rise_time": 0.002,
+          "max_overshoot": 0.08,
+          "max_settling_time": 0.004,
+          "note": "plan 9.6b current loop: the 15 A command step at 0.05 s (the speed loop is saturated); 8 kHz PI with a 500 Hz crossover"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Theta/y",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "steady position after the 2 N m load step at 0.9 s (the speed-loop integral rejects it)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "WmSens/p.f",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.2,
+          "note": "steady speed after the load step"
+        },
+        {
+          "kind": "final_value",
+          "signal": "PosLoop/pos_err",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "position-loop error at the end of the run"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "SpeedLoop/iq_cmd",
+          "value": 15.0,
+          "note": "the speed-loop output is clamped at the 15 A peak current limit (7.2 N m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Iq/p.f",
+          "value": 16.0,
+          "note": "the measured q current stays within 16 A (the 15 A reference plus the current-loop overshoot)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "GY/p2.e",
+          "value": 7.7,
+          "note": "plan 9.6b torque limit: k_t = 0.48 N m/A times the 16 A peak"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurLoop/vmag",
+          "value": 173.3,
+          "note": "plan 9.6b averaged-inverter limit V_dc/sqrt(3) = 173.205 V"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Iphase/y",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "highpass_hz": 1000.0,
+          "measure": "rms",
+          "value": 0.01,
+          "note": "phase-current high-frequency RMS in the steady window after the load step"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E900",
+            "E901",
+            "E103",
+            "E104",
+            "E105",
+            "E106",
+            "W206"
+          ]
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "EncMon/err",
+          "value": 2e-07,
+          "note": "24-bit encoder: |theta_q - theta| at the encoder tick is at most half an LSB (1.872e-7 rad)"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "SpeedEst/w",
+          "signal_b": "WmSens/p.f",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "value": 0.1,
+          "note": "the 1 kHz differenced + low-pass speed estimate tracks the true speed in the steady window"
+        },
+        {
+          "kind": "ripple",
+          "signal": "SpeedEst/w",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "highpass_hz": 100.0,
+          "measure": "rms",
+          "value": 0.05,
+          "note": "low-speed smoothness of the estimated speed"
+        }
+      ]
+    },
+    "full": {
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "WmSens/p.f",
+          "from_t": 0.05,
+          "to_t": 0.145,
+          "value": 100.0,
+          "initial": 0.0,
+          "settle_abs": 2.0,
+          "max_rise_time": 0.02,
+          "max_overshoot": 0.1,
+          "max_settling_time": 0.05,
+          "note": "plan 9.6b speed loop: 100 rad/s step at 0.05 s; rise (10-90 %), overshoot and 2 rad/s settling for the 1 kHz PI"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Theta/y",
+          "from_t": 0.15,
+          "to_t": 0.88,
+          "value": 0.0,
+          "settle_abs": 0.005,
+          "max_rise_time": 0.15,
+          "max_overshoot": 0.002,
+          "max_settling_time": 0.8,
+          "note": "position mode at 0.15 s: the shaft returns from about 9.4-9.7 rad to 0; the 5 mrad band is checked before the 0.9 s load step"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Iq/p.f",
+          "from_t": 0.05,
+          "to_t": 0.053,
+          "value": 15.0,
+          "initial": 0.0,
+          "settle_abs": 0.8,
+          "max_rise_time": 0.002,
+          "max_overshoot": 0.08,
+          "max_settling_time": 0.004,
+          "note": "plan 9.6b current loop: the 15 A command step at 0.05 s (the speed loop is saturated); 8 kHz PI with a 500 Hz crossover"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Theta/y",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "steady position after the 2 N m load step at 0.9 s (the speed-loop integral rejects it)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "WmSens/p.f",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.2,
+          "note": "steady speed after the load step"
+        },
+        {
+          "kind": "final_value",
+          "signal": "PosLoop/pos_err",
+          "t": 1.15,
+          "value": 0.0,
+          "abs": 0.0015,
+          "note": "position-loop error at the end of the run"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "SpeedLoop/iq_cmd",
+          "value": 15.0,
+          "note": "the speed-loop output is clamped at the 15 A peak current limit (7.2 N m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Iq/p.f",
+          "value": 16.0,
+          "note": "the measured q current stays within 16 A (the 15 A reference plus the current-loop overshoot)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "GY/p2.e",
+          "value": 7.7,
+          "note": "plan 9.6b torque limit: k_t = 0.48 N m/A times the 16 A peak"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurLoop/vmag",
+          "value": 173.3,
+          "note": "plan 9.6b averaged-inverter limit V_dc/sqrt(3) = 173.205 V"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Iphase/y",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "highpass_hz": 1000.0,
+          "measure": "rms",
+          "value": 0.3,
+          "note": "phase-current high-frequency RMS in the steady window after the load step"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Iphase/y",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "highpass_hz": 1000.0,
+          "measure": "pp",
+          "value": 1.0,
+          "note": "peak-to-peak switching ripple of the phase current"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E900",
+            "E901",
+            "E103",
+            "E104",
+            "E105",
+            "E106",
+            "W206"
+          ]
+        },
+        {
+          "kind": "ripple",
+          "signal": "Notch/u",
+          "from_t": 0.05,
+          "to_t": 0.148,
+          "highpass_hz": 250.0,
+          "measure": "rms",
+          "value": 1.5,
+          "note": "combined: the notch input still carries the 303.5 Hz resonance"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Notch/y",
+          "from_t": 0.05,
+          "to_t": 0.148,
+          "highpass_hz": 250.0,
+          "measure": "rms",
+          "value": 1.1,
+          "note": "combined: the notch output is the filtered speed used by the 1 kHz loop"
+        },
+        {
+          "kind": "ripple",
+          "signal": "WlSens/p.f",
+          "from_t": 0.05,
+          "to_t": 0.148,
+          "highpass_hz": 250.0,
+          "measure": "rms",
+          "value": 1.6,
+          "note": "combined: load-side ringing of the two-mass coupling"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "EncMon/err",
+          "value": 2e-07,
+          "note": "combined: 24-bit encoder quantization error at the encoder tick"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "SpeedEst/w",
+          "signal_b": "WmSens/p.f",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "value": 0.1,
+          "note": "combined: the estimated speed tracks the true speed in the steady window"
+        },
+        {
+          "kind": "ripple",
+          "signal": "SpeedEst/w",
+          "from_t": 1.0,
+          "to_t": 1.15,
+          "highpass_hz": 100.0,
+          "measure": "rms",
+          "value": 0.05,
+          "note": "combined: low-speed smoothness of the estimated speed"
+        }
+      ]
+    }
+  },
+  "compare": [
+    {
+      "a": "baseline",
+      "b": "two-mass",
+      "signal_a": "Theta/y",
+      "signal_b": "Theta/y",
+      "from_t": 1.0,
+      "max_abs": 0.003,
+      "note": "baseline vs two-mass: steady position agrees within 3 mrad after the load step"
+    },
+    {
+      "a": "baseline",
+      "b": "two-mass",
+      "signal_a": "WmSens/p.f",
+      "signal_b": "WmSens/p.f",
+      "from_t": 1.0,
+      "max_abs": 0.5,
+      "note": "baseline vs two-mass: steady speed agrees within 0.5 rad/s"
+    },
+    {
+      "a": "baseline",
+      "b": "switching",
+      "signal_a": "Theta/y",
+      "signal_b": "Theta/y",
+      "from_t": 1.0,
+      "max_abs": 0.003,
+      "note": "baseline vs switching: steady position agrees within 3 mrad after the load step"
+    },
+    {
+      "a": "baseline",
+      "b": "switching",
+      "signal_a": "WmSens/p.f",
+      "signal_b": "WmSens/p.f",
+      "from_t": 1.0,
+      "max_abs": 0.5,
+      "note": "baseline vs switching: steady speed agrees within 0.5 rad/s"
+    },
+    {
+      "a": "baseline",
+      "b": "encoder",
+      "signal_a": "Theta/y",
+      "signal_b": "Theta/y",
+      "from_t": 1.0,
+      "max_abs": 0.003,
+      "note": "baseline vs encoder: steady position agrees within 3 mrad after the load step"
+    },
+    {
+      "a": "baseline",
+      "b": "encoder",
+      "signal_a": "WmSens/p.f",
+      "signal_b": "WmSens/p.f",
+      "from_t": 1.0,
+      "max_abs": 0.5,
+      "note": "baseline vs encoder: steady speed agrees within 0.5 rad/s"
+    },
+    {
+      "a": "baseline",
+      "b": "full",
+      "signal_a": "Theta/y",
+      "signal_b": "Theta/y",
+      "from_t": 1.0,
+      "max_abs": 0.003,
+      "note": "baseline vs full: steady position agrees within 3 mrad after the load step"
+    },
+    {
+      "a": "baseline",
+      "b": "full",
+      "signal_a": "WmSens/p.f",
+      "signal_b": "WmSens/p.f",
+      "from_t": 1.0,
+      "max_abs": 0.5,
+      "note": "baseline vs full: steady speed agrees within 0.5 rad/s"
+    }
+  ]
+}
