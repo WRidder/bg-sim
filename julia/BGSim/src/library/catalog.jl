@@ -394,12 +394,28 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Signal-controlled force source between two translation ports.",
         icon = "mech-force-source",
     ),
+    "stdlib:translation/Friction" => (
+        description = "Stribeck friction (Coulomb, static and viscous terms) between two translation ports, smoothed by tanh(v/v_eps) when v_eps > 0 and by the exact ifelse switch otherwise.",
+        icon = "mech-friction",
+    ),
+    "stdlib:translation/HardStop" => (
+        description = "Hard stop with free travel between lower and upper; a contact spring-damper acts outside them.",
+        icon = "mech-hard-stop",
+    ),
     "stdlib:translation/Mass" => (
         description = "Point mass between two translation ports; initial position and velocity come from the start values of x and v.",
         icon = "mech-mass",
     ),
     "stdlib:translation/Spring" => (
         description = "Linear translational spring between two ports.", icon = "mech-spring",
+    ),
+    "stdlib:translation/SpringDamper" => (
+        description = "Linear spring and viscous damper in parallel between two translation ports; initial displacement comes from the start value of x.",
+        icon = "mech-spring-damper",
+    ),
+    "stdlib:translation/VelocitySource" => (
+        description = "Signal-controlled velocity source; a.f = v*u with fixed flow causality (D6).",
+        icon = "mech-velocity-source",
     ),
 )
 

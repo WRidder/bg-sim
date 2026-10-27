@@ -142,6 +142,11 @@ const M2_REFS = [
     "stdlib:electrical/IdealDiode",
     "stdlib:electrical/IdealSwitch",
     "stdlib:electrical/IdealTransformer",
+    # J2.7f: translation blocks.
+    "stdlib:translation/SpringDamper",
+    "stdlib:translation/VelocitySource",
+    "stdlib:translation/Friction",
+    "stdlib:translation/HardStop",
 ]
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
@@ -747,6 +752,100 @@ const INTERFACE_FIELDS = [
         @test isempty(transformer.interface.inputs)
         @test occursin("n * (p2.e - n2.e)", transformer.source)
         @test occursin("p2.f ~ -n * p1.f", transformer.source)
+    end
+
+    @testset "the M2 translation rows (J2.7f)" begin
+        # Plan section 8, M2 row "Translation": Spring-damper, Velocity source, Friction
+        # (Coulomb, viscous and Stribeck, tanh-smoothed or switched) and Hard stop, plus the
+        # M1 rows (Damper, Fixed, ForceSource, Mass, Spring) that stay green. D8 makes the
+        # Translation across variable `f` (velocity) and the through variable `e` (force).
+        # The golden tests check the equations; this pins the interface the editor sees.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        refs = [
+            "stdlib:translation/SpringDamper",
+            "stdlib:translation/VelocitySource",
+            "stdlib:translation/Friction",
+            "stdlib:translation/HardStop",
+        ]
+        for ref in refs
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test b.group == "Translation"
+            @test all(p -> p.domain == "Translation", b.interface.ports)
+        end
+
+        # The M1 rows are untouched: the five plan M1 translation blocks are still there.
+        for name in ("Damper", "Fixed", "ForceSource", "Mass", "Spring")
+            @test haskey(blocks, "stdlib:translation/" * name)
+        end
+
+        # SpringDamper: the spring and the viscous damper in parallel, with the relative
+        # displacement x [m] as the state and integral causality.
+        sd = blocks["stdlib:translation/SpringDamper"]
+        @test [(p.name, p.domain, p.size) for p in sd.interface.ports] ==
+              [("a", "Translation", Int[]), ("b", "Translation", Int[])]
+        @test isempty(sd.interface.inputs)
+        @test [p.name for p in sd.interface.parameters] == ["k", "d"]
+        @test [p.unit for p in sd.interface.parameters] == ["N/m", "N*s/m"]
+        @test [p.min for p in sd.interface.parameters] == [0, 0]
+        @test [(v.name, v.type, v.unit, v.state) for v in sd.interface.variables] ==
+              [("x", "Real", "m", "prefer")]
+        @test isempty(sd.interface.causality)
+        @test occursin("ddt(x) ~ a.f - b.f", sd.source)
+        @test occursin("a.e ~ k * x + d * (a.f - b.f)", sd.source)
+        @test occursin("b.e ~ -a.e", sd.source)
+
+        # VelocitySource: the flow source of D8 (a.f = v*u), with one power port, a Real
+        # input and the fixed flow-out causality of Sf/Fixed.
+        vs = blocks["stdlib:translation/VelocitySource"]
+        @test [(p.name, p.domain, p.size) for p in vs.interface.ports] ==
+              [("a", "Translation", Int[])]
+        @test [(i.name, i.type, i.size) for i in vs.interface.inputs] ==
+              [("u", "Real", Int[])]
+        @test [p.name for p in vs.interface.parameters] == ["v"]
+        @test vs.interface.parameters[1].unit == "m/s"
+        @test isempty(vs.interface.variables)
+        @test vs.interface.causality == [(ports = ["a"], kind = "fixed", value = "flow_out")]
+        @test occursin("a.f ~ v * u", vs.source)
+
+        # Friction: two power ports; the Stribeck magnitudes Fs and Fc [N], the viscous
+        # coefficient Fv [N*s/m], the Stribeck velocity v_s [m/s] and the smoothing v_eps
+        # [m/s]. The sliding direction `s` is an algebraic helper, not a state.
+        fr = blocks["stdlib:translation/Friction"]
+        @test [(p.name, p.domain, p.size) for p in fr.interface.ports] ==
+              [("a", "Translation", Int[]), ("b", "Translation", Int[])]
+        @test isempty(fr.interface.inputs)
+        @test [p.name for p in fr.interface.parameters] ==
+              ["Fs", "Fc", "Fv", "v_s", "v_eps"]
+        @test [p.unit for p in fr.interface.parameters] ==
+              ["N", "N", "N*s/m", "m/s", "m/s"]
+        @test [p.min for p in fr.interface.parameters] == [0, 0, 0, 1.0e-12, 0]
+        @test [(v.name, v.unit, v.state) for v in fr.interface.variables] ==
+              [("s", nothing, nothing)]
+        @test isempty(fr.interface.causality)
+        @test occursin("tanh((a.f - b.f) / v_eps)", fr.source)
+        @test occursin("v_eps > 0.0", fr.source)
+        @test occursin("ifelse(a.f - b.f > 0.0", fr.source)
+        @test occursin("exp(-abs(a.f - b.f) / v_s)", fr.source)
+        @test occursin("b.e ~ -a.e", fr.source)
+
+        # HardStop: two power ports, the free-travel limits lower/upper [m] and the contact
+        # spring-damper k [N/m], d [N*s/m]; the relative displacement x [m] is the state.
+        hs = blocks["stdlib:translation/HardStop"]
+        @test [(p.name, p.domain, p.size) for p in hs.interface.ports] ==
+              [("a", "Translation", Int[]), ("b", "Translation", Int[])]
+        @test isempty(hs.interface.inputs)
+        @test [p.name for p in hs.interface.parameters] == ["lower", "upper", "k", "d"]
+        @test [p.unit for p in hs.interface.parameters] == ["m", "m", "N/m", "N*s/m"]
+        @test [p.min for p in hs.interface.parameters] == [nothing, nothing, 0, 0]
+        @test [(v.name, v.type, v.unit, v.state) for v in hs.interface.variables] ==
+              [("x", "Real", "m", "prefer")]
+        @test isempty(hs.interface.causality)
+        @test occursin("ddt(x) ~ a.f - b.f", hs.source)
+        @test occursin("x > upper", hs.source)
+        @test occursin("x < lower", hs.source)
+        @test occursin("b.e ~ -a.e", hs.source)
     end
 
     @testset "catalog structure against catalog.schema.json" begin
