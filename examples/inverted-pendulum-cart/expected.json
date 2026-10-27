@@ -26,8 +26,8 @@
           "signal": "ThetaInt/y",
           "t": 0.2,
           "value": -0.054606,
-          "abs": 0.002,
-          "note": "-3.13 deg: the tilt has crossed zero and the controller is already braking"
+          "abs": 0.0025,
+          "note": "-3.13 deg: the tilt has crossed zero and the controller is already braking. The firmware samples at 1 ms (ZOH), so the fastest part of the recovery differs from the continuous design reference by ~4 %: measured -0.0566 rad"
         },
         {
           "kind": "max_abs",

@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "inverted-pendulum-cart",
-  "$comment": "Plan 9.6c (X2.7): the cart-pendulum plant as a pure bond graph (D28). Cart: 1-junction CartJ with I(M), R(b) and the MSe force u. Pendulum: point mass m at the rod tip as two translational I elements (IMx, IMv) fed by MTF moduli l*cos(theta) and l*sin(theta), with the flow sums v_x = v + l*w*cos(theta) (0-junction HS) and v_y = -l*w*sin(theta) (1-junction VJ, whose gravity MSe is -m*g). The only non-bond-graph parts are the two FlowSensors plus integrators that reconstruct x and theta (D28 sensor exception) and the LQR state-feedback firmware (library/LQR.jl; see the README for why it is integrated continuously rather than at a 1 ms sample).",
+  "$comment": "Plan 9.6c (X2.7): the cart-pendulum plant as a pure bond graph (D28). Cart: 1-junction CartJ with I(M), R(b) and the MSe force u. Pendulum: point mass m at the rod tip as two translational I elements (IMx, IMv) fed by MTF moduli l*cos(theta) and l*sin(theta), with the flow sums v_x = v + l*w*cos(theta) (0-junction HS) and v_y = -l*w*sin(theta) (1-junction VJ, whose gravity MSe is -m*g). The only non-bond-graph parts are the two FlowSensors plus integrators that reconstruct x and theta (D28 sensor exception) and the LQR state-feedback firmware (library/LQR.jl, a @discrete Ts = 1e-3 block; see the README for the 1 ms sample-and-hold and the index-2 DAE).",
   "diagram": {
     "nodes": [
       {

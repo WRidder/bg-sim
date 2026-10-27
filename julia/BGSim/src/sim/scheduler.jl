@@ -12,7 +12,9 @@
 #      runtime parameters and for the held outputs (MTK discrete parameters, D4).
 #   3. `run_tick!` samples the continuous inputs at the tick, snapshots the held values for
 #      `previous(x)`, runs the due partitions in topological order and writes a changed held
-#      output through `setp` + `derivative_discontinuity!(integ, true)`.
+#      output through `setp`, then re-solves the DAE's algebraic unknowns at the current
+#      differential state before flagging the integrator's derivative data stale (never a
+#      state write, never a re-initialization from `u0`; see `run_tick!`).
 #
 # The run loop itself stays in `src/sim/simulate.jl`; it merges the output grid with the tick
 # times and records each changed tick as a left and a right row at the same `t`, through the
@@ -23,6 +25,7 @@
 # is compiled by `RuntimeGeneratedFunctions`, not by `eval` of source text.
 
 import RuntimeGeneratedFunctions
+import OrdinaryDiffEqNonlinearSolve
 
 """
     DiscreteRuntime
@@ -227,6 +230,7 @@ mutable struct DiscreteRun
     input_getters::Vector{Any}
     param_getters::Vector{Any}
     setter::Any
+    dae::Bool
 end
 
 """    prepare_discrete!(schedule, model, integ, t_start) -> DiscreteRun
@@ -269,7 +273,8 @@ function prepare_discrete!(
     params = zeros(length(schedule.param_ids))
     setter = isempty(held_symbols) ? nothing : setp(integ, held_symbols)
     return DiscreteRun(
-        schedule, state, inputs, params, input_getters, param_getters, setter
+        schedule, state, inputs, params, input_getters, param_getters, setter,
+        model.algebraic,
     )
 end
 
@@ -278,6 +283,11 @@ end
 Execute every partition due at the tick `t` (index `tick_index` in the schedule), in
 topological order, and write the held outputs back through `setp`. Returns `true` when a held
 output changed, which is when the run loop records the left/right pair at `t`.
+
+A changed held output is a *parameter* discontinuity. On a mass-matrix DAE the algebraic
+unknowns are made consistent with the new parameter at the current differential state, and the
+integrator is told to refresh its derivative data; the continuous state is never reset (see
+the comment at the `setp` call).
 
 The operation order is the contract for bit-exactness:
   * the previous-tick snapshot (for `previous(x)`) is taken once, before any partition runs;
@@ -307,7 +317,7 @@ function run_tick!(run::DiscreteRun, integ, t::Float64, tick_index::Int)
         end
         p.step(run.state, run.inputs, run.params, t)
         # Publish this partition's held outputs before the next partition runs (D4:
-        # `setp` + `derivative_discontinuity!`, never a state write).
+        # `setp`, never a state write).
         published = false
         for k in p.writes
             if run.state.values[k] != held_before[k]
@@ -317,7 +327,38 @@ function run_tick!(run::DiscreteRun, integ, t::Float64, tick_index::Int)
         end
         if published && run.setter !== nothing
             run.setter(integ, run.state.values)
-            ModelingToolkit.SciMLBase.derivative_discontinuity!(integ, true)
+            # A held output is an MTK parameter (D4), so publishing it is a *parameter*
+            # discontinuity: neither `u` nor `t` changes, and the continuous state must
+            # continue. Two things follow.
+            #
+            # `setp` itself flags `derivative_discontinuity!`, and on a mass-matrix DAE the
+            # next `loopheader!` would then call `initialize_dae!` with the problem's
+            # default algorithm. That re-solves MTK's initialization problem from
+            # `prob.u0` (the `OverrideInit` guesses are the t = 0 operating point and its
+            # map writes every unknown), so the state jumped back to its t = 0 value at
+            # every published tick. Instead, re-solve only the *algebraic* unknowns at the
+            # current differential state with SciML's Brown full-basic initialization: it
+            # keeps the differential variables fixed and Newton-solves the algebraic rows
+            # of the mass matrix, which is exactly the consistency the new parameter
+            # needs. (`initialize_dae!` is the documented hook the solver itself calls
+            # after a modification; passing the algorithm here leaves the problem's
+            # default t = 0 initialization untouched.)
+            if run.dae
+                ModelingToolkit.SciMLBase.initialize_dae!(
+                    integ, OrdinaryDiffEqNonlinearSolve.BrownFullBasicInit()
+                )
+            end
+            # `reeval_internals_due_to_modification!` is what DiffEqBase runs after a
+            # callback affect: it marks the derivative/FSAL data stale and clears the
+            # discontinuity flag. `NoInit()` makes its DAE step a no-op, so the algebraic
+            # re-solve above is the only initialization (MTK's symbolic discrete callbacks
+            # pass `NoInit()` for the same reason: their affect has its own
+            # reinitialization). `u` and `t` are unchanged, so
+            # `continuous_modification = false`: the previous segment's interpolation,
+            # computed with the old parameter, is still the correct history.
+            ModelingToolkit.SciMLBase.reeval_internals_due_to_modification!(
+                integ, false; callback_initializealg = ModelingToolkit.SciMLBase.NoInit()
+            )
         end
     end
     # Re-sample every read input once more: `previous(x)` at the next tick must see the value

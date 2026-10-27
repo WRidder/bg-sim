@@ -240,6 +240,36 @@ const _DISC_BAD_CLOCK = """
 end
 """
 
+# FIX-M2-3: a two-unknown mass-matrix DAE. `a` is differential, `b` is a genuine algebraic
+# unknown (MTK cannot solve `b^3 + b = a + 2u` symbolically, so it stays in `u` and the mass
+# matrix has a zero row). `u` is the held output of a discrete partition.
+const _DISC_DAE_PLANT = """
+@block DaePlant begin
+    @inputs u::Real
+    @outputs x::Real = 0.0
+    @variables begin
+        a::Real = 0.0, [state = :prefer]
+        b::Real = 0.0
+    end
+    @equations begin
+        ddt(a) ~ -0.5 * a + 1.0 + u
+        b^3 + b ~ a + 2.0 * u
+        x ~ a
+    end
+end
+"""
+
+const _DISC_DAE_SAMPLER = """
+@block QuarterSampler begin
+    @inputs ref::Real
+    @outputs u::Real = 0.0
+    @discrete Ts = 0.25 begin
+        u = hold(ref)
+    end
+end
+"""
+
+
 # ---------------------------------------------------------------------------------------
 # The suite
 # ---------------------------------------------------------------------------------------
@@ -487,6 +517,68 @@ end
         time2, values2 = _disc_columns(dir2)
         @test _disc_sequence(time2, values2, "PI/u", grid) == u_seq
         @test BGSim.lower_model(flat; t_start = 0.0, t_end = 1.0).cache_hit
+    end
+
+    # -----------------------------------------------------------------------------------
+    @testset "DAE plant: a held-output change keeps the state (FIX-M2-3)" begin
+        # The plant's nonlinear algebraic row makes the mass matrix singular: `a` is
+        # differential and `b` stays a genuine algebraic unknown. A discrete partition
+        # changes its held output (0 -> 1) at the 1.0 s tick. Publishing that parameter used
+        # to re-initialise the DAE from `prob.u0` (`derivative_discontinuity!` ->
+        # `initialize_dae!`), so `a` jumped back to 0 at the tick. The scheduler now
+        # re-solves only the algebraic unknowns and keeps the differential state.
+        doc = _disc_model(
+            "DaeSampled",
+            [
+                _disc_node("n1", "P1", _disc_inline(_DISC_DAE_PLANT)),
+                _disc_node("n2", "S1", _disc_inline(_DISC_DAE_SAMPLER)),
+                _disc_node(
+                    "n3", "R1", _disc_ref("stdlib:sources/Step");
+                    params = Dict{String,Any}(
+                        "t_step" => "1.0", "initial" => "0.0", "final" => "1.0",
+                    ),
+                ),
+            ],
+            [_disc_conn("c1", "n3", "y", "n2", "ref"),
+             _disc_conn("c2", "n2", "u", "n1", "u")];
+            t_end = 2.0, points = 21,
+        )
+        flat, result, dir = _disc_run(doc)
+        @test isempty(_disc_errors(flat))
+        @test result.status == "done"
+        @test !any(d -> d.code in ("E901", "E103", "E900"), result.diagnostics)
+
+        lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 2.0)
+        @test lowered.model.algebraic
+        @test length(ModelingToolkit.unknowns(lowered.model.system)) == 2
+
+        time, values = _disc_columns(dir)
+        # `a(1) = 2(1 - e^-0.5)` for u = 0, then the forced first-order response with u = 1
+        # from the 1.0 s tick: a(t) = 4 - (4 - a(1)) e^(-0.5 (t - 1)).
+        a1 = 2.0 * (1.0 - exp(-0.5))
+        @test _disc_at(time, values, "P1/x", 0.5) ≈ 2.0 * (1.0 - exp(-0.25)) atol = 1.0e-6
+        @test _disc_at(time, values, "P1/x", 1.0) ≈ a1 atol = 1.0e-6
+        @test _disc_at(time, values, "P1/x", 1.5) ≈ 4.0 - (4.0 - a1) * exp(-0.25) atol = 1.0e-6
+        @test _disc_at(time, values, "P1/x", 2.0) ≈ 4.0 - (4.0 - a1) * exp(-0.5) atol = 1.0e-6
+
+        # The changed tick writes the left and right row at 1.0 s (the Step kink is also a
+        # condition-only event there, so the file holds its left/right pair as well). The
+        # differential state is the same on both sides of the tick (no jump to its start
+        # value); the algebraic unknown takes the new parameter immediately, so the tick's
+        # two rows differ in `b` only.
+        rows = findall(==(1.0), time)
+        @test length(rows) >= 2
+        last_two = rows[(end - 1):end]
+        @test values["P1/x"][last_two] ≈ [a1, a1] atol = 1.0e-9
+        @test values["S1/u"][last_two] == [0.0, 1.0]
+        # b^3 + b = a + 2u before and after the tick, with the same a.
+        b_before = values["P1/b"][last_two[1]]
+        b_after = values["P1/b"][last_two[2]]
+        @test b_before^3 + b_before ≈ a1 atol = 1.0e-6
+        @test b_after^3 + b_after ≈ a1 + 2.0 atol = 1.0e-6
+        @test b_after - b_before > 0.5
+        # ... and the state does not restart from the initial 0: the whole run grows.
+        @test _disc_at(time, values, "P1/x", 2.0) > 2.0 * a1
     end
 
     # -----------------------------------------------------------------------------------

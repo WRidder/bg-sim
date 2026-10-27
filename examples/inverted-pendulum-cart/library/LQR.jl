@@ -14,11 +14,11 @@
         x_ref::Real
     end
     @outputs u::Real = 0.0, [unit = "N"]
-    @equations begin
-        # u = clamp(-K * [x - x_ref, v, theta, w], -u_max, u_max); the parameters are the
-        # entries of the Riccati gain vector K (they are all negative for this plant and
-        # sign convention), so design/design.py writes them verbatim.
-        u ~ clamp(
+    # u = clamp(-K * [x - x_ref, v, theta, w], -u_max, u_max); the parameters are the
+    # entries of the Riccati gain vector K (they are all negative for this plant and sign
+    # convention), so design/design.py writes them verbatim. The firmware samples at 1 ms.
+    @discrete Ts = 1e-3 begin
+        u = clamp(
             -(K_x * (x - x_ref) + K_v * v + K_theta * theta + K_omega * w),
             -u_max,
             u_max,
