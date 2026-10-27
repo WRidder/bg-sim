@@ -350,6 +350,41 @@ test("plots a bond's effort/flow/power and an instance's outputs from the canvas
   ).toHaveCount(1);
   const href = await page.getByTestId("export-csv").getAttribute("href");
   expect(href).toContain("ids=Se%2Fp.e%2CSe%2Fout");
+
+  // The automatic tab follows the canvas selection: node Se has four signals.
+  await page.getByRole("tab", { name: "Auto Plot" }).click();
+  await expect(page.getByTestId("auto-plot-panel")).toBeVisible();
+  await expect(page.getByTestId("auto-plot-selection")).toHaveText("Se");
+  await expect(page.getByTestId("auto-chart-panel")).toHaveCount(1);
+  await expect(page.getByTestId("legend-item")).toHaveCount(4);
+
+  const layout = page.getByTestId("auto-layout-select");
+  await layout.selectOption("separate");
+  await expect(page.getByTestId("auto-chart-panel")).toHaveCount(4);
+  await layout.selectOption("unit");
+  await expect(page.getByTestId("auto-chart-panel")).toHaveCount(4);
+  await layout.selectOption("single");
+  await expect(page.getByTestId("auto-chart-panel")).toHaveCount(1);
+
+  // The automatic plot can live in its own window too.
+  const popupPromise = page.waitForEvent("popup");
+  await page.getByTestId("detach-auto-plot").click();
+  const autoPopup = await popupPromise;
+  await expect(autoPopup.getByTestId("auto-plot-panel")).toBeVisible();
+  await expect(autoPopup.getByTestId("auto-chart-panel")).toHaveCount(1);
+  await expect(autoPopup.getByTestId("legend-item")).toHaveCount(4);
+  await expect(page.getByTestId("auto-plots-detached")).toBeVisible();
+  await autoPopup.getByTestId("dock-auto-plot").click();
+  await expect.poll(async () => autoPopup.isClosed()).toBe(true);
+  await expect(page.getByTestId("auto-plot-panel")).toBeVisible();
+
+  // Selecting an item with no recorded signals clears the automatic plot.
+  await page
+    .locator('[data-testid="diagram-node"][data-node-name="R"]')
+    .click();
+  await expect(page.getByTestId("auto-plot-selection")).toHaveText("R");
+  await expect(page.getByText(/No recorded signals for R/)).toBeVisible();
+  await expect(page.getByTestId("legend-item")).toHaveCount(0);
 });
 
 test("live tails autoscroll, pause on zoom and stop on run.done", async ({

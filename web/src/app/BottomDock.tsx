@@ -1,12 +1,13 @@
 import { DiagnosticsPanel } from "../diagnostics/DiagnosticsPanel";
 import { useDiagnosticBadges } from "../diagnostics/useDiagnostics";
-import { useDetachStore } from "../plot/detachStore";
+import { AutoPlotPanel } from "../plot/AutoPlotPanel";
+import { useAutoDetachStore, useDetachStore } from "../plot/detachStore";
 import { PlotPanel } from "../plot/PlotPanel";
 import { SignalBrowser } from "../plot/SignalBrowser";
 import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
 
-export type DockTabId = "plots" | "viewer" | "diagnostics" | "signals" | "log";
+export type DockTabId = "plots" | "auto" | "viewer" | "diagnostics" | "signals" | "log";
 
 export interface DiagnosticCounts {
   error: number;
@@ -19,6 +20,10 @@ const DOCK_EMPTY_STATES: Record<DockTabId, { title: string; hint: string }> = {
   plots: {
     title: "No run data",
     hint: "Run a model to plot its signals here. Every signal is recorded by default.",
+  },
+  auto: {
+    title: "No selection",
+    hint: "Select a block, subsystem or connection and this tab plots only that item automatically.",
   },
   viewer: {
     title: "No scene",
@@ -52,12 +57,15 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
   const live = useDiagnosticBadges();
   const detached = useDetachStore((state) => state.detached);
   const attach = useDetachStore((state) => state.attach);
+  const autoDetached = useAutoDetachStore((state) => state.detached);
+  const autoAttach = useAutoDetachStore((state) => state.attach);
   const counts: DiagnosticCounts = {
     error: Math.max(diagnostics.error, live.error),
     warning: Math.max(diagnostics.warning, live.warning),
   };
   const tabs: readonly TabDefinition<DockTabId>[] = [
     { id: "plots", label: "Plots" },
+    { id: "auto", label: "Auto Plot" },
     { id: "viewer", label: "3D View" },
     {
       id: "diagnostics",
@@ -94,6 +102,25 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
           </div>
         ) : (
           <PlotPanel />
+        );
+      case "auto":
+        return autoDetached ? (
+          <div className="dock__detached" data-testid="auto-plots-detached">
+            <EmptyState
+              title="Automatic plot is in a separate window"
+              hint="The detached window follows the same canvas selection, run and cursor. Bring it back here whenever you like."
+            />
+            <button
+              type="button"
+              className="button"
+              onClick={autoAttach}
+              data-testid="attach-auto-plot"
+            >
+              Bring automatic plot back
+            </button>
+          </div>
+        ) : (
+          <AutoPlotPanel />
         );
       case "signals":
         return <SignalBrowser />;

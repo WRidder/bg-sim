@@ -10,6 +10,7 @@ import { InspectorPanel } from "./InspectorPanel";
 import { LeftPanel } from "./LeftPanel";
 import { TopBar } from "./TopBar";
 import { DetachedPlotWindow } from "../plot/DetachedPlotWindow";
+import { DetachedAutoPlotWindow } from "../plot/DetachedAutoPlotWindow";
 
 /**
  * Nothing has been checked yet, so the diagnostics badges start at zero; M1
@@ -40,6 +41,7 @@ export function App() {
     <div className="app-shell" data-testid="app-shell">
       <TopBar theme={theme} onToggleTheme={toggleTheme} />
       <DetachedPlotWindow />
+      <DetachedAutoPlotWindow />
 
       <Group
         id="bgsim-rows"

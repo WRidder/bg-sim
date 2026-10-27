@@ -14,7 +14,13 @@ import { Handle, Position } from "@xyflow/react";
 
 import type { DomainName } from "../../contracts/catalog";
 import type { PortDragState } from "../connectionAnalysis";
-import { domainColor, signalColor, type PortPosition } from "../geometry";
+import {
+  domainColor,
+  signalColor,
+  type PortPosition,
+  SIGNAL_ARROW_HALF,
+  SIGNAL_ARROW_SIZE,
+} from "../geometry";
 import type { PortSpec } from "../nodeInterface";
 
 export interface PortHandleProps {
@@ -73,24 +79,24 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
     : `${port.name} · ${direction} · ${port.type}${vector ? ` · ${port.size.join("x")}` : ""} · ${SIGNAL_TYPE_LABEL[port.type] ?? ""}`;
   const isSignalInput = !isPower && port.kind === "input";
   const rotation = isPower ? 0 : arrowRotation(side, direction);
-  // Put an output arrow's tip exactly on the block border, so the line starts
-  // at the tip instead of in the middle of the glyph. Inputs are solid dots.
-  const inward = 5.5;
+  // Place an output arrow outside the block border, with its base on the
+  // border and its tip where the outgoing line starts. Inputs are solid dots.
+  const outward = SIGNAL_ARROW_HALF;
   const shiftX =
     isPower || isSignalInput
       ? 0
       : side === "left"
-        ? inward
+        ? -outward
         : side === "right"
-          ? -inward
+          ? outward
           : 0;
   const shiftY =
     isPower || isSignalInput
       ? 0
       : side === "top"
-        ? inward
+        ? -outward
         : side === "bottom"
-          ? -inward
+          ? outward
           : 0;
 
   const handlePosition =
@@ -146,8 +152,8 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
         <svg
           className="port-glyph port-glyph--signal"
           viewBox="0 0 10 10"
-          width="11"
-          height="11"
+          width={SIGNAL_ARROW_SIZE}
+          height={SIGNAL_ARROW_SIZE}
           aria-hidden="true"
           style={{
             transform: `translate(${shiftX}px, ${shiftY}px) rotate(${rotation}deg)`,

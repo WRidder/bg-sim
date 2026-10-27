@@ -80,7 +80,7 @@ function statusLine(
   return "ready";
 }
 
-function panelConfiguration(
+export function panelConfiguration(
   panelSignalIds: readonly string[],
   signalsById: ReadonlyMap<string, RunSignal>,
   pinnedSignals: ReadonlySet<string>,

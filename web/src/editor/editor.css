@@ -364,6 +364,13 @@
   transition: color var(--transition-fast);
 }
 
+/* Three-letter bond elements (MSe, MSf, MTF, MGY) need a slightly smaller
+   face to fit inside the 2x2 grid square. */
+.bond-node__glyph[data-glyph-length="3"] {
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
 .bond-node:hover .bond-node__glyph {
   color: var(--color-accent-hover);
 }

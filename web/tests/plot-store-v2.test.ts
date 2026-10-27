@@ -177,6 +177,20 @@ describe("compare pin", () => {
   });
 });
 
+describe("automatic selection plot", () => {
+  it("keeps only ids present in the manifest and remembers the layout", () => {
+    const store = useRunStore.getState();
+    store.setAutoSignals(["A/v1", "missing", "A/speed", "A/v1"]);
+    expect(useRunStore.getState().autoSignals).toEqual(["A/v1", "A/speed"]);
+
+    store.setAutoLayout("separate");
+    expect(useRunStore.getState().autoLayout).toBe("separate");
+
+    useRunStore.getState().setAutoSignals([]);
+    expect(useRunStore.getState().autoSignals).toEqual([]);
+  });
+});
+
 describe("CSV export selection", () => {
   it("lists the plotted ids in request order", () => {
     const url = new URL(

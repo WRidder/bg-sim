@@ -417,6 +417,9 @@
   border: 1px solid var(--color-surface);
   border-radius: 999px;
   pointer-events: none;
+  /* The node scales with the canvas; keep the badge readable at every zoom. */
+  transform: scale(calc(1 / var(--bgsim-canvas-zoom, 1)));
+  transform-origin: top right;
 }
 
 .block-node[data-diagnostic-severity="warning"]::after,

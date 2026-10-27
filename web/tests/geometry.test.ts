@@ -16,6 +16,8 @@ import { portKey } from "../src/editor/connectionRules";
 import {
   BOND_NODE_SIZE,
   COMPACT_NODE_SIZE,
+  JUNCTION_BOND_GAP,
+  JUNCTION_RADIUS,
   arrowHeadPath,
   causalStrokePath,
   connectionAnchors,
@@ -34,6 +36,7 @@ import { buildCatalogIndex } from "../src/library/catalogIndex";
 import {
   createConnection,
   createEmptyModel,
+  createJunctionNode,
   createNodeFromBlock,
 } from "../src/state/modelFactory";
 
@@ -95,8 +98,26 @@ describe("port layout", () => {
     expect(interfaceForNode(junction, index).isJunction).toBe(true);
   });
 
-  it("faces a bond-graph port toward the bond and hangs the name off the letter", () => {
-    const source = createNodeFromBlock(block("Se"), { x: 0, y: 0 }, "n1", "Se1");
+  it("leaves a gap between a junction rim and its bond", () => {
+    const model = createEmptyModel("JunctionGap");
+    const junction = createJunctionNode("0", { x: 0, y: 0 }, "j1", "J1");
+    const inertia = createNodeFromBlock(block("I"), { x: 220, y: 0 }, "n2", "I1");
+    model.diagram.nodes = [junction, inertia];
+    model.diagram.connections = [
+      createConnection("c1", "bond", { node: "j1" }, { node: "n2", port: "p" }),
+    ];
+    const connection = model.diagram.connections[0];
+    if (connection === undefined) {
+      throw new Error("missing connection");
+    }
+    const { source } = connectionAnchors(model, index, connection);
+    const centre = { x: 20, y: 20 };
+    expect(
+      Math.hypot(source.point.x - centre.x, source.point.y - centre.y),
+    ).toBeCloseTo(JUNCTION_RADIUS + JUNCTION_BOND_GAP, 6);
+  });
+
+  it("faces a bond-graph port toward the bond and hangs the name off the letter", () => {    const source = createNodeFromBlock(block("Se"), { x: 0, y: 0 }, "n1", "Se1");
     const inertia = createNodeFromBlock(block("I"), { x: 300, y: 0 }, "n2", "I1");
     const model = createEmptyModel("BondGraphLook");
     model.diagram.nodes = [source, inertia];
@@ -106,6 +127,8 @@ describe("port layout", () => {
 
     const layouts = nodeLayouts(model, index);
     const se = layouts.get("n1");
+    expect(BOND_NODE_SIZE).toBe(40);
+    expect(BOND_NODE_SIZE / 20).toBe(2); // two editor grid cells
     expect(se?.width).toBe(BOND_NODE_SIZE);
     expect(se?.height).toBe(BOND_NODE_SIZE);
     expect(se?.ports.get("p")).toEqual({
@@ -294,7 +317,7 @@ describe("xyflow node types", () => {
 });
 
 describe("anchors and paths", () => {
-  it("anchors a bond at the circle edge of a junction", () => {
+  it("anchors a bond just outside the circle edge of a junction", () => {
     const model = createEmptyModel("Anchor");
     const junction = createNodeFromBlock(block("C"), { x: 100, y: 100 }, "n1", "C1");
     junction.block = { junction: "0" };
@@ -313,7 +336,7 @@ describe("anchors and paths", () => {
       anchors.source.point.x - centre.x,
       anchors.source.point.y - centre.y,
     );
-    expect(distance).toBeCloseTo(20, 5);
+    expect(distance).toBeCloseTo(JUNCTION_RADIUS + JUNCTION_BOND_GAP, 5);
     expect(anchors.source.point.x).toBeGreaterThan(centre.x);
     expect(anchors.source.side).toBe("right");
     expect(anchors.target.point.x).toBe(300);

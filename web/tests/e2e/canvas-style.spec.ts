@@ -195,13 +195,17 @@ test("Ctrl-drag onto a block body picks the first compatible input and draws its
   await expect
     .poll(async () => glyph.evaluate((element) => getComputedStyle(element).transform))
     .toContain("matrix(-1");
-  // The arrow tip sits on the block border, so the outgoing line starts there.
+  // The output arrow sits outside the block, with its base on the border and
+  // its tip at the start of the outgoing line.
   const glyphBox = await glyph.boundingBox();
   const sourceBoxAfter = await source.boundingBox();
   expect(glyphBox).not.toBeNull();
   expect(sourceBoxAfter).not.toBeNull();
   if (glyphBox !== null && sourceBoxAfter !== null) {
-    expect(Math.abs(glyphBox.x - sourceBoxAfter.x)).toBeLessThanOrEqual(1.5);
+    expect(glyphBox.x).toBeLessThan(sourceBoxAfter.x);
+    expect(
+      Math.abs(glyphBox.x + glyphBox.width - sourceBoxAfter.x),
+    ).toBeLessThanOrEqual(1.5);
   }
 });
 

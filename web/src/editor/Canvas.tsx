@@ -20,6 +20,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useViewport,
   type Connection,
   type Edge,
   type FinalConnectionState,
@@ -140,6 +141,21 @@ export function Canvas() {
       <CanvasInner />
     </ReactFlowProvider>
   );
+}
+
+/**
+ * Keep the diagnostic count badges at a constant screen size: the nodes scale
+ * with the viewport, so the badge counter-scales by 1/zoom.
+ */
+function CanvasZoomVariable(): null {
+  const { zoom } = useViewport();
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--bgsim-canvas-zoom",
+      String(zoom),
+    );
+  }, [zoom]);
+  return null;
 }
 
 function CanvasInner() {
@@ -906,6 +922,7 @@ function CanvasInner() {
             }}
             proOptions={{ hideAttribution: true }}
           >
+            <CanvasZoomVariable />
             {showGrid ? (
               <Background
                 variant={BackgroundVariant.Lines}

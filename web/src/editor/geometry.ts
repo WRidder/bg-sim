@@ -23,12 +23,21 @@ export const BLOCK_NODE_MIN_HEIGHT = 86;
 export const PORT_ROW_HEIGHT = 26;
 export const JUNCTION_NODE_SIZE = 40;
 export const JUNCTION_RADIUS = JUNCTION_NODE_SIZE / 2;
+/** Gap between a junction's rim and the end of a bond; the arrow must not touch it. */
+export const JUNCTION_BOND_GAP = 6;
+
+/** Signal arrow glyph size, shared by the port renderer and the edge trim. */
+export const SIGNAL_ARROW_SIZE = 11;
+export const SIGNAL_ARROW_HALF = SIGNAL_ARROW_SIZE / 2;
+/** Radius of the solid input dot; incoming arrows stop on its outer edge. */
+export const SIGNAL_DOT_RADIUS = 3.5;
 
 /**
  * The footprint of a bond-graph element: just its letter, with the ports on the
  * perimeter facing the bonds that leave it. The instance name hangs outside it.
+ * 40 px is exactly two 20 px grid cells.
  */
-export const BOND_NODE_SIZE = 46;
+export const BOND_NODE_SIZE = 40;
 
 /**
  * Most stdlib blocks draw as a compact square icon (Simulink-like), with the
@@ -417,7 +426,7 @@ function anchorFor(
   if (isJunction(node)) {
     const centre = nodeCentre(node, layout);
     return {
-      point: circleAnchor(centre, towards, JUNCTION_RADIUS),
+      point: circleAnchor(centre, towards, JUNCTION_RADIUS + JUNCTION_BOND_GAP),
       side: sideToward(centre, towards),
     };
   }

@@ -55,6 +55,9 @@ export interface PlotPanelState {
   name?: string;
 }
 
+/** How the automatic selection plot splits its signals across charts. */
+export type AutoPlotLayout = "single" | "separate" | "unit";
+
 /** The shown name of a panel: its custom name or "Panel <n>" (1-based). */
 export function panelLabel(panel: PlotPanelState, index: number): string {
   const name = panel.name?.trim() ?? "";
@@ -103,6 +106,10 @@ export interface RunStoreState {
   panels: PlotPanelState[];
   activePanelId: string;
 
+  /** Signals of the canvas selection, shown in the automatic plot tab. */
+  autoSignals: string[];
+  autoLayout: AutoPlotLayout;
+
   /** The shared x window; null means "show all" (raw, px=0). */
   view: SeriesWindow | null;
   /** Canvas width × devicePixelRatio, supplied by the plot panel. */
@@ -139,6 +146,9 @@ export interface RunStoreState {
   setActivePanel: (panelId: string) => void;
   /** Rename a panel; whitespace or an empty string restores "Panel N". */
   renamePanel: (panelId: string, name: string) => void;
+  /** Replace the automatic selection plot's signal set. */
+  setAutoSignals: (signalIds: readonly string[]) => void;
+  setAutoLayout: (layout: AutoPlotLayout) => void;
   setView: (view: SeriesWindow | null, px?: number) => void;
   /** Return to the live tail after a zoom (plan 7.5: autoscroll unless zoomed). */
   followLive: () => void;
@@ -180,6 +190,22 @@ export function plottedSignalIds(panels: readonly PlotPanelState[]): string[] {
         seen.add(id);
         ids.push(id);
       }
+    }
+  }
+  return ids;
+}
+
+/** Every id the plots need: the manual panels plus the auto selection plot. */
+export function activeSignalIds(
+  panels: readonly PlotPanelState[],
+  autoSignals: readonly string[],
+): string[] {
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const id of [...plottedSignalIds(panels), ...autoSignals]) {
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
     }
   }
   return ids;
@@ -392,7 +418,9 @@ function syncSubscription(force: boolean): void {
   const available = new Set(
     (state.manifest?.signals ?? []).map((signal) => signal.id),
   );
-  const ids = plottedSignalIds(state.panels).filter((id) => available.has(id));
+  const ids = activeSignalIds(state.panels, state.autoSignals).filter((id) =>
+    available.has(id),
+  );
   const key = ids.join(",");
   if (!force && key === subscribedKey) {
     return;
@@ -482,12 +510,14 @@ function ingestManifest(manifest: RunManifest): void {
     return;
   }
   let panels = state.panels;
+  let autoSignals = state.autoSignals;
   if (manifest.signals.length > 0) {
     const available = new Set(manifest.signals.map((signal) => signal.id));
     panels = panels.map((panel) => ({
       ...panel,
       signals: panel.signals.filter((id) => available.has(id)),
     }));
+    autoSignals = autoSignals.filter((id) => available.has(id));
   }
   const activePanelId = panels.some((panel) => panel.id === state.activePanelId)
     ? state.activePanelId
@@ -497,6 +527,7 @@ function ingestManifest(manifest: RunManifest): void {
     manifest,
     panels,
     activePanelId,
+    autoSignals,
     stats: manifest.stats ?? state.stats,
   });
 
@@ -743,6 +774,8 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
 
   panels: firstPanels.panels,
   activePanelId: firstPanels.activePanelId,
+  autoSignals: [],
+  autoLayout: "single",
 
   view: null,
   pixelWidth: 0,
@@ -795,6 +828,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       compareData: null,
       compareKey: null,
       cursorTime: null,
+      autoSignals: [],
     });
 
     try {
@@ -1044,6 +1078,34 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     }));
   },
 
+  setAutoSignals: (signalIds) => {
+    const state = get();
+    const available = new Set(
+      (state.manifest?.signals ?? []).map((signal) => signal.id),
+    );
+    const seen = new Set<string>();
+    const ids: string[] = [];
+    for (const id of signalIds) {
+      if (available.has(id) && !seen.has(id)) {
+        seen.add(id);
+        ids.push(id);
+      }
+    }
+    if (
+      ids.length === state.autoSignals.length &&
+      ids.every((id, index) => id === state.autoSignals[index])
+    ) {
+      return;
+    }
+    set({ autoSignals: ids });
+    const updated = get();
+    updated.syncSocketSubscription();
+    void updated.ensureData();
+    void updated.ensureCompareData();
+  },
+
+  setAutoLayout: (layout) => set({ autoLayout: layout }),
+
   removePanel: (panelId) => {
     const state = get();
     if (state.panels.length <= 1) {
@@ -1096,7 +1158,9 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       return;
     }
     const available = new Set(manifest.signals.map((signal) => signal.id));
-    const ids = plottedSignalIds(state.panels).filter((id) => available.has(id));
+    const ids = activeSignalIds(state.panels, state.autoSignals).filter((id) =>
+    available.has(id),
+  );
     if (ids.length === 0) {
       if (state.data !== null || state.dataKey !== null) {
         set({ data: null, dataKey: null, dataLoading: false, dataError: null });
@@ -1218,7 +1282,9 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     const available = new Set(
       pinned.manifest.signals.map((signal) => signal.id),
     );
-    const ids = plottedSignalIds(state.panels).filter((id) => available.has(id));
+    const ids = activeSignalIds(state.panels, state.autoSignals).filter((id) =>
+    available.has(id),
+  );
     if (ids.length === 0) {
       if (state.compareData !== null || state.compareKey !== null) {
         set({ compareData: null, compareKey: null });
@@ -1376,6 +1442,8 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       socketState: "off",
       panels: panels.panels,
       activePanelId: panels.activePanelId,
+      autoSignals: [],
+      autoLayout: "single",
       view: null,
       pixelWidth: 0,
       data: null,

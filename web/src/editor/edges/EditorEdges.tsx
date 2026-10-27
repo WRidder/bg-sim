@@ -23,6 +23,8 @@ import {
   routedPath,
   signalColor,
   signalDash,
+  SIGNAL_ARROW_SIZE,
+  SIGNAL_DOT_RADIUS,
   type Anchor,
   type Point,
   type Side,
@@ -260,11 +262,19 @@ export function SignalEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
     return null;
   }
   const { a, b } = anchors(data);
+  // A signal edge starts at the tip of the output arrow outside the source
+  // block and stops at the outer edge of the solid input dot.
+  const start = offsetPoint(a.point, a.side, SIGNAL_ARROW_SIZE);
+  const tip = offsetPoint(b.point, b.side, SIGNAL_DOT_RADIUS);
+  const startAnchor: Anchor = { ...a, point: start };
+  const targetAnchor: Anchor = { ...b, point: tip };
   const path =
-    data.route.length > 0 ? routedPath(a.point, data.route, b.point) : orthogonalPath(a, b);
+    data.route.length > 0
+      ? routedPath(start, data.route, tip)
+      : orthogonalPath(startAnchor, targetAnchor);
   const colour = signalColor(data.signalType);
-  // The arrow points into the target: start just outside the target's side.
-  const from = offsetPoint(b.point, b.side, 14);
+  // The filled arrow points into the target and ends on the dot's outer edge.
+  const from = offsetPoint(tip, b.side, 14);
   const dash = signalDash(data.signalType);
   const broken = data.missingPorts.length > 0;
 

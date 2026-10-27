@@ -119,7 +119,11 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
         title={`${data.name} (${iface.title})`}
         onPointerDown={onPointerDown}
       >
-        <span className="bond-node__glyph bond-letter" data-icon={iface.icon}>
+        <span
+          className="bond-node__glyph bond-letter"
+          data-icon={iface.icon}
+          data-glyph-length={iface.title.length}
+        >
           {iface.title}
         </span>
         <span
@@ -154,7 +158,7 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
             transform: `rotate(${data.rotation}deg) scaleX(${data.flipX ? -1 : 1})`,
           }}
         >
-          <BlockIcon icon={iface.icon} name={iface.title} size={28} />
+          <BlockIcon icon={iface.icon} name={iface.title} size={36} />
         </div>
         <span
           className={`block-node__label block-node__label--${data.labelSide}`}
