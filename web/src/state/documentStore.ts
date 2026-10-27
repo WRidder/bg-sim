@@ -951,6 +951,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
             connection: connectionId,
             signals: options.map((option) => option.id),
           });
+          target.open = true;
         }
       });
       return linkId;

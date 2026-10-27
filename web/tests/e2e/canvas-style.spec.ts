@@ -602,12 +602,13 @@ test("probe blocks and plot windows tap a connection without entering the circui
   // A probe is not a circuit connection: the diagram still has exactly one.
   expect(stored.diagram.connections).toHaveLength(1);
 
-  // A 3x3 probe opens its dedicated panel on double-click; none configured
-  // means one plot with all checked signals.
-  await probe.dblclick();
+  // A 3x3 probe opens its dedicated panel as soon as it has a lead; none
+  // configured means one plot with all checked signals.
   await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(1);
-  await probe.dblclick();
+  await page.getByTestId("probe-toggle-open").click();
   await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(0);
+  await page.getByTestId("probe-toggle-open").click();
+  await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(1);
   await page.getByTestId("probe-add-panel").click();
   const withPanel = JSON.parse(
     (await page.getByTestId("document-json").textContent()) ?? "null",
@@ -623,7 +624,7 @@ test("probe blocks and plot windows tap a connection without entering the circui
   });
   await expect(page.getByTestId("canvas-menu")).toBeVisible();
   await page.getByTestId("new-probe-window").click();
-  await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(2);
   const after = JSON.parse(
     (await page.getByTestId("document-json").textContent()) ?? "null",
   ) as { diagram: { probes?: { kind: string; links: unknown[] }[] } };
@@ -637,7 +638,7 @@ test("probe blocks and plot windows tap a connection without entering the circui
   await page.reload();
   await expect(page.getByTestId("library-item-Se")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("probe-node")).toHaveCount(1);
-  await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(1);
+  await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(2);
 });
 
 test("the toolbar toggles the grid and snapping", async ({ page }) => {
