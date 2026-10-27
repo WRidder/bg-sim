@@ -252,6 +252,64 @@ describe("connections", () => {
       { x: 140, y: 20 },
     ]);
   });
+
+  it("adds probes and links on the side without adding circuit connections", () => {
+    const source = createNodeFromBlock(block("Se"), { x: 0, y: 0 }, "n1", "Se1");
+    const capacitor = createNodeFromBlock(block("C"), { x: 200, y: 0 }, "n2", "C1");
+    const bond = createConnection(
+      "c1",
+      "bond",
+      { node: "n1", port: "p" },
+      { node: "n2", port: "p" },
+    );
+    const model: Model = createEmptyModel("Probe");
+    model.diagram.nodes = [source, capacitor];
+    model.diagram.connections = [bond];
+    useDocumentStore.getState().openDocument("demo", "Probe", model);
+
+    const blockId = useDocumentStore
+      .getState()
+      .addProbe("block", { x: 300, y: 100 }, { x: 80, y: 80 });
+    const windowId = useDocumentStore
+      .getState()
+      .addProbe("window", { x: 0, y: 0 }, { x: 120, y: 160 });
+    expect(blockId).not.toBeNull();
+    expect(windowId).not.toBeNull();
+    if (blockId === null || windowId === null) {
+      return;
+    }
+    const blockLink = useDocumentStore.getState().addProbeLink(blockId, "c1");
+    const windowLink = useDocumentStore.getState().addProbeLink(windowId, "c1");
+    expect(blockLink).not.toBeNull();
+    expect(windowLink).not.toBeNull();
+    // Many probes may watch one connection, and the circuit is untouched.
+    expect(useDocumentStore.getState().doc?.diagram.connections).toHaveLength(1);
+    const probes = useDocumentStore.getState().doc?.diagram.probes ?? [];
+    expect(probes).toHaveLength(2);
+    expect(probes[0]?.links[0]?.signals).toEqual([
+      "Se1/p.e",
+      "Se1/p.f",
+      "Se1/p.P",
+    ]);
+    expect(probes[1]?.links).toHaveLength(1);
+
+    useDocumentStore.getState().setProbeFrame(blockId, {
+      x: 40,
+      y: 50,
+      width: 420,
+      height: 260,
+    });
+    expect(useDocumentStore.getState().doc?.diagram.probes?.[0]?.size).toEqual({
+      width: 420,
+      height: 260,
+    });
+
+    useDocumentStore.getState().setSelection([], ["c1"]);
+    useDocumentStore.getState().deleteSelection();
+    expect(useDocumentStore.getState().doc?.diagram.probes?.[0]?.links).toEqual([]);
+    expect(useDocumentStore.getState().doc?.diagram.probes?.[1]?.links).toEqual([]);
+    expect(useDocumentStore.getState().doc?.diagram.probes).toHaveLength(2);
+  });
 });
 
 describe("copy and paste", () => {

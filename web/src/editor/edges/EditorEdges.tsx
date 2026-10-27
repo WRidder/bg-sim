@@ -9,7 +9,12 @@
  */
 
 import { BaseEdge, EdgeLabelRenderer, useReactFlow, type Edge, type EdgeProps } from "@xyflow/react";
-import { useRef, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useRef,
+  useSyncExternalStore,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 import type { DomainName, ValueType } from "../../contracts/catalog";
 import type { ConnectionKind } from "../../contracts/model";
@@ -22,6 +27,7 @@ import {
   midpoint,
   offsetPoint,
   orthogonalPath,
+  rightAngleMarker,
   routedPath,
   signalColor,
   signalDash,
@@ -57,6 +63,39 @@ export interface EditorEdgeData extends Record<string, unknown> {
 
 export type EditorEdgeType = "bond" | "wire" | "signal";
 export type EditorEdge = Edge<EditorEdgeData, EditorEdgeType>;
+
+/**
+ * The route vertex under the pointer, kept outside React because the flow
+ * renderer remounts an edge whenever its doc data changes. Component state
+ * would reset on the first pointer move and the corner marker would vanish.
+ */
+let draggedVertex: { edgeId: string; index: number } | null = null;
+const draggedVertexListeners = new Set<() => void>();
+
+function setDraggedVertex(next: { edgeId: string; index: number } | null): void {
+  draggedVertex = next;
+  for (const listener of draggedVertexListeners) {
+    listener();
+  }
+}
+
+function draggedVertexOf(edgeId: string): number | null {
+  return draggedVertex !== null && draggedVertex.edgeId === edgeId
+    ? draggedVertex.index
+    : null;
+}
+
+function useDraggedVertex(edgeId: string): number | null {
+  return useSyncExternalStore(
+    (listener) => {
+      draggedVertexListeners.add(listener);
+      return () => {
+        draggedVertexListeners.delete(listener);
+      };
+    },
+    () => draggedVertexOf(edgeId),
+  );
+}
 
 function anchors(data: EditorEdgeData): { a: Anchor; b: Anchor } {
   return { a: data.sourceAnchor, b: data.targetAnchor };
@@ -146,16 +185,22 @@ function MissingPorts({
  * Draggable waypoints of a selected connection. Each pointer move writes the
  * snapped position to the document, so the routed line follows the handle
  * immediately; the whole drag coalesces into one undo step. Double-click
- * removes a waypoint.
+ * removes a waypoint. While a vertex is dragged, a small square in the corner
+ * marks that its two segments meet at 90 degrees.
  */
 function RouteHandles({
   id,
   route,
+  from,
+  to,
   selected,
   snap,
 }: {
   id: string;
   route: readonly Point[];
+  /** The fixed ends of the route; they bound its first and last vertex. */
+  from: Point;
+  to: Point;
   selected: boolean | undefined;
   snap: boolean;
 }) {
@@ -163,9 +208,20 @@ function RouteHandles({
   const routeRef = useRef(route);
   routeRef.current = route;
   const lastClickRef = useRef<{ index: number; time: number } | null>(null);
+  /** The vertex the pointer is moving, so its corner can show the marker. */
+  const dragging = useDraggedVertex(id);
   if (!selected || route.length === 0) {
     return null;
   }
+  const before =
+    dragging === null ? undefined : dragging > 0 ? route[dragging - 1] : from;
+  const corner = dragging === null ? undefined : route[dragging];
+  const after =
+    dragging === null ? undefined : dragging < route.length - 1 ? route[dragging + 1] : to;
+  const marker =
+    before !== undefined && corner !== undefined && after !== undefined
+      ? rightAngleMarker(before, corner, after)
+      : null;
   const commit = (index: number, raw: Point): void => {
     const point = snap ? snapRouteVertex(raw) : raw;
     const next = routeRef.current.map((entry, entryIndex) =>
@@ -198,9 +254,13 @@ function RouteHandles({
       window.removeEventListener("pointermove", move, true);
       window.removeEventListener("pointerup", finish, true);
       window.removeEventListener("pointercancel", cancel, true);
+      setDraggedVertex(null);
     };
     const move = (moveEvent: PointerEvent): void => {
-      moved = true;
+      if (!moved) {
+        moved = true;
+        setDraggedVertex({ edgeId: id, index });
+      }
       commit(
         index,
         screenToFlowPosition(
@@ -239,6 +299,13 @@ function RouteHandles({
   };
   return (
     <g className="editor-edge__vertices" data-testid={`connection-vertices-${id}`}>
+      {marker !== null ? (
+        <path
+          className="editor-edge__right-angle"
+          data-testid={`connection-right-angle-${id}`}
+          d={marker}
+        />
+      ) : null}
       {route.map((point, index) => (
         <g key={`${id}-vertex-${index}`}>
           <circle
@@ -319,7 +386,14 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         />
       ) : null}
       <EdgeLabel id={id} data={data} />
-      <RouteHandles id={id} route={route} selected={selected} snap={data.snap} />
+      <RouteHandles
+        id={id}
+        route={route}
+        from={a.point}
+        to={b.point}
+        selected={selected}
+        snap={data.snap}
+      />
     </g>
   );
 }
@@ -372,7 +446,14 @@ export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         />
       ) : null}
       <EdgeLabel id={id} data={data} />
-      <RouteHandles id={id} route={data.route} selected={selected} snap={data.snap} />
+      <RouteHandles
+        id={id}
+        route={data.route}
+        from={a.point}
+        to={b.point}
+        selected={selected}
+        snap={data.snap}
+      />
     </g>
   );
 }
@@ -426,7 +507,14 @@ export function SignalEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         stroke="none"
       />
       <EdgeLabel id={id} data={data} />
-      <RouteHandles id={id} route={data.route} selected={selected} snap={data.snap} />
+      <RouteHandles
+        id={id}
+        route={data.route}
+        from={start}
+        to={tip}
+        selected={selected}
+        snap={data.snap}
+      />
     </g>
   );
 }

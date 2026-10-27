@@ -30,6 +30,8 @@ import type {
   ModelDiagram,
   ModelNode,
   ModelPoint,
+  ModelProbePanel,
+  ProbeKind,
 } from "../contracts/model";
 import {
   checkConnection,
@@ -45,6 +47,7 @@ import {
 } from "../editor/subsystemPath";
 import { groupSelectionIntoSubsystem } from "../editor/subsystemGroup";
 import type { CatalogIndex } from "../library/catalogIndex";
+import { probeSignalOptions } from "../probe/probeSignals";
 import {
   createConnection,
   createEmptyModel,
@@ -165,6 +168,24 @@ export interface DocumentActions {
   /** Replace a connection's ordered waypoints (one undo entry). */
   setConnectionRoute: (id: string, route: readonly ModelPoint[]) => void;
 
+  /** Add an oscilloscope probe (a 3x3 block or a floating plot window). */
+  addProbe: (
+    kind: ProbeKind,
+    position: ModelPoint,
+    panelPosition: ModelPoint,
+  ) => string | null;
+  deleteProbe: (id: string) => void;
+  setProbePosition: (id: string, position: ModelPoint, coalesce?: boolean) => void;
+  setProbeFrame: (
+    id: string,
+    frame: { x: number; y: number; width: number; height: number },
+  ) => void;
+  setProbeOpen: (id: string, open: boolean) => void;
+  addProbeLink: (probeId: string, connectionId: string) => string | null;
+  removeProbeLink: (probeId: string, linkId: string) => void;
+  setProbeLinkSignals: (probeId: string, linkId: string, signals: readonly string[]) => void;
+  setProbePanels: (probeId: string, panels: readonly ModelProbePanel[]) => void;
+
   connect: (a: PortDescriptor, b: PortDescriptor) => ConnectResult;
 
   /** Rename a node; refuses invalid identifiers and sibling name clashes. */
@@ -264,7 +285,10 @@ function pruneSelection(doc: Model, path: readonly string[], selection: Selectio
   if (diagram === null) {
     return EMPTY_SELECTION;
   }
-  const nodeIds = new Set(diagram.nodes.map((node) => node.id));
+  const nodeIds = new Set([
+    ...diagram.nodes.map((node) => node.id),
+    ...(diagram.probes ?? []).map((probe) => probe.id),
+  ]);
   const connectionIds = new Set(diagram.connections.map((connection) => connection.id));
   const nodes = selection.nodes.filter((id) => nodeIds.has(id));
   const connections = selection.connections.filter((id) => connectionIds.has(id));
@@ -653,6 +677,14 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
             !nodes.has(connection.from.node) &&
             !nodes.has(connection.to.node),
         );
+        draft.probes = (draft.probes ?? [])
+          .filter((probe) => !nodes.has(probe.id))
+          .map((probe) => ({
+            ...probe,
+            links: probe.links.filter((link) =>
+              draft.connections.some((connection) => connection.id === link.connection),
+            ),
+          }));
       });
       set({ selection: EMPTY_SELECTION });
     },
@@ -795,6 +827,179 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
           connection.route = points;
         }
       }, { coalesce: "route-drag" });
+    },
+
+    addProbe: (kind, position, panelPosition) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return null;
+      }
+      const probes = diagram.probes ?? [];
+      const id = nextId("s", probes.map((probe) => probe.id));
+      const name = uniqueName(
+        kind === "block" ? "Scope" : "Plot",
+        probes.map((probe) => probe.name),
+      );
+      const finite = (value: number, fallback: number): number =>
+        Number.isFinite(value) ? value : fallback;
+      commitActive((draft) => {
+        draft.probes ??= [];
+        draft.probes.push({
+          id,
+          name,
+          kind,
+          position: roundPosition({
+            x: finite(position.x, 80),
+            y: finite(position.y, 80),
+          }),
+          panelPosition: {
+            x: Math.round(finite(panelPosition.x, 120)),
+            y: Math.round(finite(panelPosition.y, 100)),
+          },
+          size: { width: 380, height: 240 },
+          open: kind === "window",
+          links: [],
+          panels: [],
+        });
+      });
+      return id;
+    },
+
+    deleteProbe: (id) => {
+      const diagram = currentDiagram();
+      if (diagram === null || !(diagram.probes ?? []).some((probe) => probe.id === id)) {
+        return;
+      }
+      commitActive((draft) => {
+        draft.probes = (draft.probes ?? []).filter((probe) => probe.id !== id);
+      });
+      set({ selection: EMPTY_SELECTION });
+    },
+
+    setProbePosition: (id, position, coalesce = true) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return;
+      }
+      commitActive(
+        (draft) => {
+          const probe = (draft.probes ?? []).find((entry) => entry.id === id);
+          if (probe !== undefined) {
+            probe.position = roundPosition(position);
+          }
+        },
+        coalesce ? { coalesce: "node-drag" } : {},
+      );
+    },
+
+    setProbeFrame: (id, frame) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return;
+      }
+      commitActive((draft) => {
+        const probe = (draft.probes ?? []).find((entry) => entry.id === id);
+        if (probe !== undefined) {
+          probe.panelPosition = { x: Math.round(frame.x), y: Math.round(frame.y) };
+          probe.size = {
+            width: Math.max(240, Math.round(frame.width)),
+            height: Math.max(140, Math.round(frame.height)),
+          };
+        }
+      });
+    },
+
+    setProbeOpen: (id, open) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return;
+      }
+      commitActive((draft) => {
+        const probe = (draft.probes ?? []).find((entry) => entry.id === id);
+        if (probe !== undefined) {
+          probe.open = open;
+        }
+      });
+    },
+
+    addProbeLink: (probeId, connectionId) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return null;
+      }
+      const probe = (diagram.probes ?? []).find((entry) => entry.id === probeId);
+      const connection = diagram.connections.find((entry) => entry.id === connectionId);
+      if (probe === undefined || connection === undefined) {
+        return null;
+      }
+      if (probe.links.some((link) => link.connection === connectionId)) {
+        return null;
+      }
+      const options = probeSignalOptions(diagram, connection);
+      if (options.length === 0) {
+        return null;
+      }
+      const linkId = nextId(
+        "pl",
+        (diagram.probes ?? []).flatMap((entry) => entry.links.map((link) => link.id)),
+      );
+      commitActive((draft) => {
+        const target = (draft.probes ?? []).find((entry) => entry.id === probeId);
+        if (target !== undefined) {
+          target.links.push({
+            id: linkId,
+            connection: connectionId,
+            signals: options.map((option) => option.id),
+          });
+        }
+      });
+      return linkId;
+    },
+
+    removeProbeLink: (probeId, linkId) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return;
+      }
+      commitActive((draft) => {
+        const probe = (draft.probes ?? []).find((entry) => entry.id === probeId);
+        if (probe !== undefined) {
+          probe.links = probe.links.filter((link) => link.id !== linkId);
+        }
+      });
+    },
+
+    setProbeLinkSignals: (probeId, linkId, signals) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return;
+      }
+      const unique = [...new Set(signals)];
+      commitActive((draft) => {
+        const probe = (draft.probes ?? []).find((entry) => entry.id === probeId);
+        const link = probe?.links.find((entry) => entry.id === linkId);
+        if (link !== undefined) {
+          link.signals = unique;
+        }
+      });
+    },
+
+    setProbePanels: (probeId, panels) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return;
+      }
+      const copy = panels.map((panel) => ({
+        id: panel.id,
+        title: panel.title,
+        signals: [...new Set(panel.signals)],
+      }));
+      commitActive((draft) => {
+        const probe = (draft.probes ?? []).find((entry) => entry.id === probeId);
+        if (probe !== undefined) {
+          probe.panels = copy;
+        }
+      });
     },
 
     connect: (a, b) => {

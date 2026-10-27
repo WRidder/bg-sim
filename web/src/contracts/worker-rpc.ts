@@ -45,6 +45,7 @@ export type ModelConstantValue = number | boolean | string | (number | number[])
  */
 export type ConnectionKind = "bond" | "wire" | "signal";
 export type AnnotationKind = "text";
+export type ProbeKind = "block" | "window";
 /**
  * The recording grid: a fixed number of points over [t_start, t_end], or a fixed interval.
  */
@@ -173,6 +174,10 @@ export interface ModelDiagram {
    */
   subsystemPorts?: ModelSubsystemPort[];
   annotations?: ModelAnnotation[];
+  /**
+   * Oscilloscope probes. Side-channel observers; the compiler ignores them.
+   */
+  probes?: ModelProbe[];
   $comment?: string;
 }
 export interface ModelNode {
@@ -296,6 +301,34 @@ export interface ModelAnnotation {
   y: number;
   w: number;
   h: number;
+  $comment?: string;
+}
+export interface ModelProbe {
+  id: string;
+  name: string;
+  kind: ProbeKind;
+  position: ModelPoint;
+  panelPosition?: ModelPoint;
+  size?: {
+    width: number;
+    height: number;
+    $comment?: string;
+  };
+  open?: boolean;
+  links: ModelProbeLink[];
+  panels?: ModelProbePanel[];
+  $comment?: string;
+}
+export interface ModelProbeLink {
+  id: string;
+  connection: string;
+  signals: string[];
+  $comment?: string;
+}
+export interface ModelProbePanel {
+  id: string;
+  title: string;
+  signals: string[];
   $comment?: string;
 }
 export interface ModelSettings {

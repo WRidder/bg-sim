@@ -442,6 +442,98 @@ test("routing vertices use the half grid when snapping is on and are free when o
   expect(snapped.y % 10).toBe(0);
 });
 
+test("a dragged vertex shows a right-angle symbol when its corner is square", async ({
+  page,
+}) => {
+  await openModel(page);
+  await dropBlock(page, "Gain", 200, 160);
+  await dropBlock(page, "Gain", 200, 460);
+  const source = node(page, "Gain");
+  const target = node(page, "Gain2");
+  await connectPorts(page, source, "y", target, "u");
+
+  const edge = page.locator('[data-testid^="edge-"]').first();
+  await expect(edge).toHaveCount(1);
+  const edgeId = (await edge.getAttribute("data-testid"))?.replace("edge-", "") ?? "";
+  const pointOnEdge = async (fraction: number): Promise<{ x: number; y: number }> =>
+    edge
+      .locator(".react-flow__edge-path")
+      .first()
+      .evaluate((element, at) => {
+        const path = element as SVGPathElement;
+        const local = path.getPointAtLength(path.getTotalLength() * at);
+        const matrix = path.getScreenCTM();
+        if (matrix === null) {
+          throw new Error("the connection has no screen transform");
+        }
+        return {
+          x: matrix.a * local.x + matrix.c * local.y + matrix.e,
+          y: matrix.b * local.x + matrix.d * local.y + matrix.f,
+        };
+      }, fraction);
+  const route = async (): Promise<{ x: number; y: number }[]> => {
+    const stored = JSON.parse(
+      (await page.getByTestId("document-json").textContent()) ?? "null",
+    ) as { diagram: { connections: { route?: { x: number; y: number }[] }[] } };
+    return stored.diagram.connections[0]?.route ?? [];
+  };
+  const centre = (box: { x: number; y: number; width: number; height: number }) => ({
+    x: box.x + box.width / 2,
+    y: box.y + box.height / 2,
+  });
+  const drag = async (
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+  ): Promise<void> => {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 4 });
+    await page.mouse.up();
+  };
+  const addVertex = async (fraction: number): Promise<void> => {
+    const click = await pointOnEdge(fraction);
+    await page.mouse.click(click.x, click.y, { button: "right" });
+    await expect(page.getByTestId("canvas-menu")).toBeVisible();
+    await page.getByTestId("add-vertex").click();
+  };
+
+  // Two vertices on the vertical connection; the lower one steps aside so the
+  // upper one can become the corner of the route.
+  await addVertex(0.4);
+  await expect.poll(async () => (await route()).length).toBe(1);
+  await addVertex(0.7);
+  await expect.poll(async () => (await route()).length).toBe(2);
+  const lower = page.getByTestId(`connection-vertex-${edgeId}-1`);
+  const lowerBox = await lower.boundingBox();
+  if (lowerBox === null) {
+    throw new Error("the lower vertex is not visible");
+  }
+  await drag(centre(lowerBox), { x: centre(lowerBox).x + 100, y: centre(lowerBox).y });
+
+  const marker = page.getByTestId(`connection-right-angle-${edgeId}`);
+  await expect(marker).toHaveCount(0);
+
+  // Drag the upper vertex down to the lower one's row: the segment from the
+  // port is vertical and the segment to the other vertex is horizontal, so a
+  // right-angle symbol appears in the corner until the pointer is released.
+  const upper = page.getByTestId(`connection-vertex-${edgeId}-0`);
+  const upperBox = await upper.boundingBox();
+  const lowerNow = await lower.boundingBox();
+  if (upperBox === null || lowerNow === null) {
+    throw new Error("a routing vertex is not visible");
+  }
+  const start = centre(upperBox);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x, centre(lowerNow).y, { steps: 4 });
+  await expect(marker).toHaveCount(1);
+  const corner = (await route())[0];
+  const peer = (await route())[1];
+  expect(corner?.y).toBe(peer?.y);
+  await page.mouse.up();
+  await expect(marker).toHaveCount(0);
+});
+
 test("centred ports share the block and connection centre line", async ({ page }) => {
   await openModel(page);
   await dropBlock(page, "Gain", 200, 160);
@@ -466,6 +558,86 @@ test("centred ports share the block and connection centre line", async ({ page }
   expect(Math.abs(output.x + output.width / 2 - bodyCentre)).toBeLessThanOrEqual(0.6);
   expect(Math.abs(input.x + input.width / 2 - bodyCentre)).toBeLessThanOrEqual(0.6);
   expect(Math.abs(edgePath.x + edgePath.width / 2 - bodyCentre)).toBeLessThanOrEqual(0.6);
+});
+
+test("probe blocks and plot windows tap a connection without entering the circuit", async ({
+  page,
+}) => {
+  await openModel(page);
+  await dropBlock(page, "Gain", 180, 180);
+  await dropBlock(page, "Gain", 440, 180);
+  const source = node(page, "Gain");
+  const target = node(page, "Gain2");
+  await connectPorts(page, source, "y", target, "u");
+
+  const edge = page.locator('[data-testid^="edge-"]').first();
+  await expect(edge).toHaveCount(1);
+  const edgeId = (await edge.getAttribute("data-testid"))?.replace("edge-", "") ?? "";
+  await edge.dispatchEvent("contextmenu", {
+    bubbles: true,
+    button: 2,
+    clientX: 700,
+    clientY: 400,
+  });
+  await expect(page.getByTestId("canvas-menu")).toBeVisible();
+  await page.getByTestId("new-probe-block").click();
+
+  const probe = page.getByTestId("probe-node");
+  await expect(probe).toHaveCount(1);
+  await expect(page.getByTestId("probe-inspector")).toBeVisible();
+  const lead = page.locator('[data-testid^="probe-lead-"]').first();
+  await expect(lead).toHaveCount(1);
+  await expect(page.locator('[data-testid^="probe-signal-"]').first()).toBeVisible();
+  const stored = JSON.parse(
+    (await page.getByTestId("document-json").textContent()) ?? "null",
+  ) as {
+    diagram: {
+      probes?: { id: string; kind: string; links: { connection: string }[] }[];
+      connections: { id: string }[];
+    };
+  };
+  expect(stored.diagram.probes).toHaveLength(1);
+  expect(stored.diagram.probes?.[0]?.kind).toBe("block");
+  expect(stored.diagram.probes?.[0]?.links[0]?.connection).toBe(edgeId);
+  // A probe is not a circuit connection: the diagram still has exactly one.
+  expect(stored.diagram.connections).toHaveLength(1);
+
+  // A 3x3 probe opens its dedicated panel on double-click; none configured
+  // means one plot with all checked signals.
+  await probe.dblclick();
+  await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(1);
+  await probe.dblclick();
+  await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(0);
+  await page.getByTestId("probe-add-panel").click();
+  const withPanel = JSON.parse(
+    (await page.getByTestId("document-json").textContent()) ?? "null",
+  ) as { diagram: { probes?: { panels?: { signals: string[] }[] }[] } };
+  expect(withPanel.diagram.probes?.[0]?.panels).toHaveLength(1);
+
+  // The same connection can feed a second, independent floating plot window.
+  await edge.dispatchEvent("contextmenu", {
+    bubbles: true,
+    button: 2,
+    clientX: 720,
+    clientY: 420,
+  });
+  await expect(page.getByTestId("canvas-menu")).toBeVisible();
+  await page.getByTestId("new-probe-window").click();
+  await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(1);
+  const after = JSON.parse(
+    (await page.getByTestId("document-json").textContent()) ?? "null",
+  ) as { diagram: { probes?: { kind: string; links: unknown[] }[] } };
+  expect(after.diagram.probes).toHaveLength(2);
+  expect(after.diagram.probes?.map((entry) => entry.kind)).toEqual(["block", "window"]);
+  expect(after.diagram.probes?.[1]?.links).toHaveLength(1);
+
+  // Probes are editor data, but they round-trip through the saved model.
+  await page.getByTestId("save-now").click();
+  await expect(page.getByTestId("save-status")).toHaveAttribute("data-state", "saved");
+  await page.reload();
+  await expect(page.getByTestId("library-item-Se")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("probe-node")).toHaveCount(1);
+  await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(1);
 });
 
 test("the toolbar toggles the grid and snapping", async ({ page }) => {

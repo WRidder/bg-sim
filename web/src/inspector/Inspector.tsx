@@ -12,9 +12,11 @@ import type { ModelConnection, ModelNode } from "../contracts/model";
 import { EmptyState } from "../app/EmptyState";
 import { useDiagnosticsStore } from "../diagnostics/store";
 import { interfaceForNode } from "../editor/nodeInterface";
+import { activeModel } from "../editor/subsystemPath";
 import { useCatalogStore } from "../library/catalogStore";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { useDocumentStore } from "../state/documentStore";
+import { ProbeInspector } from "../probe/ProbeInspector";
 import { NodeInspector } from "./NodeInspector";
 import "./inspector.css";
 
@@ -125,6 +127,7 @@ function ConnectionSelection({
 
 export function Inspector({ diagnostics }: InspectorProps) {
   const doc = useDocumentStore((state) => state.doc);
+  const activePath = useDocumentStore((state) => state.activePath);
   const selection = useDocumentStore((state) => state.selection);
   const project = useDocumentStore((state) => state.project);
   const revision = useDocumentStore((state) => state.revision);
@@ -146,6 +149,16 @@ export function Inspector({ diagnostics }: InspectorProps) {
   const selectedNodes = doc.diagram.nodes.filter((node) =>
     selection.nodes.includes(node.id),
   );
+  const active = activeModel(doc, activePath);
+  const selectedProbe =
+    selection.nodes.length === 1
+      ? (active?.diagram.probes ?? []).find(
+          (probe) => probe.id === selection.nodes[0],
+        )
+      : undefined;
+  if (selectedProbe !== undefined && active !== null) {
+    return <ProbeInspector model={active} probe={selectedProbe} />;
+  }
   if (selectedNodes.length > 1) {
     return (
       <MultiSelection

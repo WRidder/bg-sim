@@ -30,6 +30,7 @@ import {
   nodeLayout,
   nodeLayouts,
   orthogonalPath,
+  rightAngleMarker,
   snapRouteVertex,
   splitPorts,
 } from "../src/editor/geometry";
@@ -421,5 +422,27 @@ describe("anchors and paths", () => {
     expect(arrow.endsWith("Z")).toBe(true);
     const stroke = causalStrokePath({ x: 50, y: 0 }, { x: 100, y: 0 });
     expect(stroke).toMatch(/^M 50 (?:6|-6) L 50 (?:-6|6)$/);
+  });
+
+  it("marks a right-angle corner with a square inside the wedge", () => {
+    // An exact corner: up to the previous point, right to the next one.
+    expect(
+      rightAngleMarker({ x: 0, y: 0 }, { x: 0, y: 40 }, { x: 40, y: 40 }),
+    ).toBe("M 0 30 L 10 30 L 10 40");
+
+    // A hand-dragged corner a hair off square still counts; a shallow corner
+    // does not, and neither does a straight or degenerate one.
+    expect(
+      rightAngleMarker({ x: -100, y: 1 }, { x: 0, y: 0 }, { x: 0, y: 40 }),
+    ).not.toBeNull();
+    expect(
+      rightAngleMarker({ x: -100, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 40 }),
+    ).toBeNull();
+    expect(
+      rightAngleMarker({ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 100, y: 0 }),
+    ).toBeNull();
+    expect(
+      rightAngleMarker({ x: 10, y: 10 }, { x: 10, y: 10 }, { x: 30, y: 10 }),
+    ).toBeNull();
   });
 });

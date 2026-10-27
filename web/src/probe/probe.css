@@ -1,0 +1,227 @@
+.probe-node {
+  color: var(--color-text);
+}
+
+.probe-node .block-node__body {
+  color: var(--color-accent);
+}
+
+.probe-glyph {
+  display: block;
+}
+
+.react-flow__handle.probe-handle {
+  width: 13px;
+  height: 13px;
+  min-width: 13px;
+  min-height: 13px;
+  right: -7px;
+  border: 1.5px solid var(--color-accent);
+  background: var(--color-surface-raised);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.probe-node:hover .react-flow__handle.probe-handle,
+.react-flow__handle.probe-handle.connectingfrom {
+  opacity: 1;
+}
+
+/* The lead overlay shares the canvas coordinate system. */
+.probe-leads {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.probe-lead__line {
+  stroke: var(--color-text-muted);
+  stroke-width: 1.2;
+  fill: none;
+  pointer-events: none;
+}
+
+.probe-lead.is-active .probe-lead__line {
+  stroke: var(--color-accent);
+  stroke-dasharray: none;
+  stroke-width: 1.6;
+}
+
+.probe-lead__hit {
+  stroke: transparent;
+  stroke-width: 14;
+  fill: none;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.probe-lead .probe-glyph {
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.probe-lead.is-active .probe-glyph {
+  color: var(--color-accent);
+}
+
+/* Inspector */
+.probe-inspector__actions {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 8px;
+}
+
+.probe-inspector__section {
+  padding: 8px 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.probe-inspector__section h4 {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.probe-inspector__hint {
+  margin: 6px 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.probe-inspector__lead,
+.probe-inspector__panel {
+  margin: 8px 0;
+  padding: 7px;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.probe-inspector__lead.is-active {
+  border-color: var(--color-accent);
+}
+
+.probe-inspector__lead-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.probe-inspector__lead-head strong {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.probe-inspector__check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.probe-inspector__panel-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 2px 4px;
+  font: inherit;
+  font-size: 11px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+/* Floating plot */
+.probe-window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  min-height: 140px;
+  overflow: hidden;
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  z-index: 12;
+}
+
+.probe-window__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 6px 0 8px;
+  background: var(--color-surface);
+  border-bottom: var(--border-width) solid var(--color-border);
+  cursor: move;
+  user-select: none;
+}
+
+.probe-window__name {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.probe-window__kind {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.probe-window__close {
+  margin-left: auto;
+  padding: 0 4px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.probe-window__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.probe-window__resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  background: linear-gradient(135deg, transparent 45%, var(--color-border-strong) 46% 55%, transparent 56%);
+  cursor: nwse-resize;
+}
+
+.probe-plot {
+  padding: 4px 6px;
+}
+
+.probe-plot__panel {
+  margin-bottom: 4px;
+}
+
+.probe-plot__title {
+  padding: 2px 4px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+.probe-plot__empty {
+  padding: 12px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}

@@ -47,3 +47,14 @@
 .editor-edge__vertex-hit:hover + .editor-edge__vertex {
   fill: var(--color-accent);
 }
+
+/* While a vertex is dragged: a small square in the corner, shown only when its
+ * two segments meet at 90 degrees, so the user can see the lines are square. */
+.editor-edge__right-angle {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  pointer-events: none;
+}

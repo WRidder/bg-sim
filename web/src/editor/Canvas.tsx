@@ -47,19 +47,33 @@ import { useRunStore } from "../plot/runStore";
 import { useDiagnosticsStore } from "../diagnostics/store";
 import { buildDiagram, EDGE_TYPES, NODE_TYPES } from "./buildFlow";
 import { checkConnection, type PortDescriptor } from "./connectionRules";
-import { descriptorForPort, interfaceForNode } from "./nodeInterface";
+import {
+  descriptorForPort,
+  interfaceForBlock,
+  interfaceForNode,
+} from "./nodeInterface";
 import { firstCompatiblePort, noAutoTargetMessage } from "./quickConnectTarget";
 import {
   GRID_SIZE,
+  JUNCTION_NODE_SIZE,
+  NODE_HALF_SHIFT,
+  isBondGraph,
+  layoutNode,
   nearestSourcePort,
   nodeLayout,
   nodeVisualOffset,
   connectionAnchors,
   snapRouteVertex,
 } from "./geometry";
+import { suggestTargets, type TargetSuggestion } from "./suggestTargets";
+import { TargetSuggestions } from "./TargetSuggestions";
 import { decorateFlow } from "./edges/decorateFlow";
 import { CanvasLegend } from "./legend";
 import { HoverReadout } from "./ports/HoverReadout";
+import { ProbeLeads } from "../probe/ProbeLeads";
+import { ProbeGlyph } from "../probe/ProbeGlyph";
+import { ProbeWindow } from "../probe/ProbeWindow";
+import { probeSignalIds } from "../probe/probeSignals";
 import { activeModel, subsystemPathCrumbs } from "./subsystemPath";
 import { QuickConnectContext } from "./quickConnect";
 import { SubsystemBreadcrumbs } from "./SubsystemBreadcrumbs";
@@ -98,6 +112,21 @@ interface Tooltip {
   x: number;
   y: number;
   message: string;
+}
+
+/**
+ * What a connection drag that ended on empty canvas offers: the elements that
+ * can be added at the release point and connected to the dragged port.
+ */
+interface SuggestionState {
+  origin: PortDescriptor;
+  items: TargetSuggestion[];
+  /** Release point in flow coordinates, used to place the new element. */
+  flow: { x: number; y: number };
+  /** Release point in client coordinates, used for follow-up tooltips. */
+  client: { x: number; y: number };
+  /** Where the filter panel sits (clamped to the viewport). */
+  panel: { x: number; y: number };
 }
 
 interface MenuState {
@@ -203,8 +232,12 @@ function CanvasInner() {
   const [dragOrigin, setDragOrigin] = useState<ReturnType<typeof descriptorForPort>>(null);
   const [tooltip, setTooltip] = useState<Tooltip | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
+  const probeDragRef = useRef<string | null>(null);
   const [quickMode, setQuickMode] = useState(false);
   const [quickLine, setQuickLine] = useState<{ from: { x: number; y: number }; to: { x: number; y: number } } | null>(null);
+  const [suggestions, setSuggestions] = useState<SuggestionState | null>(null);
+  // The click that follows a connection release must not close the palette.
+  const suppressPaneClickUntil = useRef(0);
   const [showGrid, setShowGrid] = useState(() => readPreference(GRID_KEY, true));
   const [snap, setSnap] = useState(() => readPreference(SNAP_KEY, true));
   const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -252,6 +285,31 @@ function CanvasInner() {
     [doc, activePath],
   );
 
+  const scopeSignals = useMemo(() => {
+    if (view === null) {
+      return [];
+    }
+    const ids: string[] = [];
+    for (const probe of view.diagram.probes ?? []) {
+      if (!(probe.open ?? true)) {
+        continue;
+      }
+      ids.push(...probeSignalIds(view, probe));
+    }
+    return [...new Set(ids)];
+  }, [view]);
+  const scopeKey = scopeSignals.join(",");
+  const runManifestId = useRunStore((state) => state.manifest?.id ?? null);
+  useEffect(() => {
+    useRunStore.getState().setScopeSignals(scopeSignals);
+  }, [scopeKey, scopeSignals, runManifestId]);
+  useEffect(
+    () => () => {
+      useRunStore.getState().setScopeSignals([]);
+    },
+    [],
+  );
+
   const dirty = revision !== savedRevision;
 
   const showTooltip = useCallback((point: { x: number; y: number }, message: string) => {
@@ -269,6 +327,129 @@ function CanvasInner() {
       }
     },
     [],
+  );
+
+  /**
+   * Offer the compatible elements at an empty release point. The list is
+   * already ranked by `suggestTargets`; picking one adds it and connects the
+   * port the drag started from.
+   */
+  const openSuggestions = useCallback(
+    (origin: PortDescriptor, point: { x: number; y: number }) => {
+      const state = useDocumentStore.getState();
+      const indexNow = useCatalogStore.getState().index;
+      const docNow =
+        state.doc === null ? null : activeModel(state.doc, state.activePath);
+      if (docNow === null || indexNow === null) {
+        return;
+      }
+      const items = suggestTargets(docNow, indexNow, origin);
+      const width = 300;
+      const height = 380;
+      const panel = {
+        x: Math.max(8, Math.min(point.x + 14, window.innerWidth - width - 8)),
+        y: Math.max(8, Math.min(point.y + 14, window.innerHeight - height - 8)),
+      };
+      setSuggestions({
+        origin,
+        items,
+        flow: screenToFlowPosition(point, { snapToGrid: false }),
+        client: point,
+        panel,
+      });
+      // React Flow reports the release as a pane click; keep the palette open.
+      suppressPaneClickUntil.current = Date.now() + 300;
+    },
+    [screenToFlowPosition],
+  );
+
+  // Any press outside the palette dismisses it (a press on a row is inside and
+  // still reaches the row's click handler).
+  useEffect(() => {
+    if (suggestions === null) {
+      return undefined;
+    }
+    const onPointerDown = (event: PointerEvent): void => {
+      const target = event.target;
+      if (target instanceof Element && target.closest(".target-suggest") !== null) {
+        return;
+      }
+      setSuggestions(null);
+    };
+    window.addEventListener("pointerdown", onPointerDown, true);
+    return () => window.removeEventListener("pointerdown", onPointerDown, true);
+  }, [suggestions]);
+
+  const chooseSuggestion = useCallback(
+    (suggestion: TargetSuggestion) => {
+      const current = suggestions;
+      if (current === null) {
+        return;
+      }
+      const state = useDocumentStore.getState();
+      const indexNow = useCatalogStore.getState().index;
+      if (indexNow === null) {
+        return;
+      }
+
+      let width: number;
+      let height: number;
+      let offset: { x: number; y: number };
+      if (suggestion.kind === "junction") {
+        width = JUNCTION_NODE_SIZE;
+        height = JUNCTION_NODE_SIZE;
+        offset = { x: NODE_HALF_SHIFT, y: NODE_HALF_SHIFT };
+      } else {
+        const iface = interfaceForBlock(suggestion.block);
+        const layout = layoutNode(iface);
+        width = layout.width;
+        height = layout.height;
+        offset = isBondGraph(iface)
+          ? { x: NODE_HALF_SHIFT, y: NODE_HALF_SHIFT }
+          : { x: 0, y: 0 };
+      }
+      // Centre the new element on the release point; its ports stay reachable.
+      const position = {
+        x: current.flow.x - offset.x - width / 2,
+        y: current.flow.y - offset.y - height / 2,
+      };
+      const placement = snap
+        ? {
+            x: Math.round(position.x / GRID_SIZE) * GRID_SIZE,
+            y: Math.round(position.y / GRID_SIZE) * GRID_SIZE,
+          }
+        : position;
+
+      const nodeId =
+        suggestion.kind === "junction"
+          ? state.addJunction(suggestion.junction, placement)
+          : state.addBlock(suggestion.block, placement);
+      setSuggestions(null);
+      if (nodeId === null) {
+        return;
+      }
+
+      const after = useDocumentStore.getState();
+      const docAfter =
+        after.doc === null ? null : activeModel(after.doc, after.activePath);
+      if (docAfter === null) {
+        return;
+      }
+      const target = descriptorForPort(
+        docAfter.diagram.nodes,
+        indexNow,
+        nodeId,
+        suggestion.portName,
+      );
+      if (target === null) {
+        return;
+      }
+      const result = after.connect(current.origin, target);
+      if (!result.ok && result.reason !== undefined) {
+        showTooltip(current.client, result.reason);
+      }
+    },
+    [suggestions, snap, showTooltip],
   );
 
   // Holding Ctrl (or Cmd) turns element drags into connections: the element
@@ -308,6 +489,7 @@ function CanvasInner() {
       if (!quickMode || event.button !== 0) {
         return;
       }
+      setSuggestions(null);
       if ((event.target as HTMLElement | null)?.closest("[data-port]")) {
         return;
       }
@@ -420,6 +602,11 @@ function CanvasInner() {
           }
         }
         if (targetNodeId === null) {
+          // Released on empty canvas: offer what could go there.
+          openSuggestions(gesture.origin, {
+            x: upEvent.clientX,
+            y: upEvent.clientY,
+          });
           return;
         }
         const state = useDocumentStore.getState();
@@ -452,7 +639,7 @@ function CanvasInner() {
       window.addEventListener("pointerup", finish, true);
       window.addEventListener("pointercancel", finish, true);
     },
-    [quickMode, screenToFlowPosition, showTooltip],
+    [quickMode, openSuggestions, screenToFlowPosition, showTooltip],
   );
 
   // --------------------------------------------------------------- shortcuts
@@ -467,6 +654,7 @@ function CanvasInner() {
       if (key === "escape") {
         setMenu(null);
         setTooltip(null);
+        setSuggestions(null);
         // Plan 7.5/7.8: Esc cancels a drag or leaves a subsystem.
         if (store.activePath.length > 0) {
           store.leaveSubsystem();
@@ -531,6 +719,9 @@ function CanvasInner() {
 
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => {
+      if (probeDragRef.current !== null) {
+        return;
+      }
       const from = descriptorFor(connection.source, connection.sourceHandle);
       const to = descriptorFor(connection.target, connection.targetHandle);
       if (from === null || to === null) {
@@ -547,16 +738,56 @@ function CanvasInner() {
   const onConnectStart: OnConnectStart = useCallback(
     (_event, params) => {
       setMenu(null);
+      setSuggestions(null);
+      const probe = view?.diagram.probes?.find(
+        (entry) => entry.id === params.nodeId && entry.kind === "block",
+      );
+      if (probe !== undefined) {
+        probeDragRef.current = probe.id;
+        setDragOrigin(null);
+        return;
+      }
+      probeDragRef.current = null;
       setDragOrigin(descriptorFor(params.nodeId, params.handleId));
     },
-    [descriptorFor],
+    [descriptorFor, view],
   );
 
   const onConnectEnd: OnConnectEnd = useCallback(
     (event, state: FinalConnectionState) => {
+      if (probeDragRef.current !== null) {
+        const probeId = probeDragRef.current;
+        probeDragRef.current = null;
+        setDragOrigin(null);
+        const point = eventPoint(event);
+        const element = document.elementFromPoint(point.x, point.y);
+        const edgeElement = element?.closest('[data-testid^="edge-"]') ?? null;
+        const connectionId = edgeElement
+          ?.getAttribute("data-testid")
+          ?.replace(/^edge-/, "");
+        if (connectionId === undefined || connectionId.length === 0) {
+          showTooltip({ x: point.x, y: point.y }, "Drop the probe lead on a connection.");
+          return;
+        }
+        const linkId = useDocumentStore.getState().addProbeLink(probeId, connectionId);
+        if (linkId === null) {
+          showTooltip(
+            { x: point.x, y: point.y },
+            "This connection is already on the probe.",
+          );
+        }
+        return;
+      }
       const origin = dragOrigin;
       setDragOrigin(null);
       if (origin === null) {
+        return;
+      }
+      const nodeId = state.toHandle?.nodeId ?? state.toNode?.id ?? null;
+      // A release on the bare canvas is not a refusal: it offers compatible
+      // elements to add at that point.
+      if (nodeId === null) {
+        openSuggestions(origin, eventPoint(event));
         return;
       }
       // A completed connection is already in the document; re-checking it would
@@ -565,7 +796,6 @@ function CanvasInner() {
       if (state.isValid !== false) {
         return;
       }
-      const nodeId = state.toHandle?.nodeId ?? state.toNode?.id ?? null;
       const portId = state.toHandle?.id ?? null;
       const target = descriptorFor(nodeId, portId);
       const current = useDocumentStore.getState();
@@ -579,7 +809,7 @@ function CanvasInner() {
         showTooltip(eventPoint(event), result.reason);
       }
     },
-    [descriptorFor, dragOrigin, showTooltip],
+    [descriptorFor, dragOrigin, openSuggestions, showTooltip],
   );
 
   const isValidConnection = useCallback(
@@ -601,6 +831,7 @@ function CanvasInner() {
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
+      setSuggestions(null);
       const payload = readDragPayload(event.dataTransfer);
       if (payload === null || index === null) {
         return;
@@ -700,6 +931,11 @@ function CanvasInner() {
     const view = doc === null ? null : activeModel(doc, path);
     const target = view?.diagram.nodes.find((entry) => entry.id === node.id);
     if (target === undefined) {
+      const probe = view?.diagram.probes?.find((entry) => entry.id === node.id);
+      if (probe !== undefined) {
+        useDocumentStore.getState().setSelection([probe.id], []);
+        useDocumentStore.getState().setProbeOpen(probe.id, !(probe.open ?? true));
+      }
       return;
     }
     if ("subsystem" in target.block) {
@@ -765,6 +1001,36 @@ function CanvasInner() {
         : nodeOutputIds(runSignals ?? [], menuNode, pathPrefix),
     [menuNode, runSignals, pathPrefix],
   );
+
+  const createProbeOnMenu = (kind: "block" | "window"): void => {
+    if (view === null || index === null || menuConnection === null) {
+      return;
+    }
+    const { source, target } = connectionAnchors(view, index, menuConnection);
+    const tap = {
+      x: (source.point.x + target.point.x) / 2,
+      y: (source.point.y + target.point.y) / 2,
+    };
+    const rect = canvasRef.current?.getBoundingClientRect();
+    const panelPosition =
+      menu === null || rect === undefined
+        ? { x: 120, y: 100 }
+        : kind === "block"
+          ? { x: Math.max(20, rect.width - 400), y: 20 }
+          : {
+              x: Math.max(20, menu.x - rect.left + 16),
+              y: Math.max(20, menu.y - rect.top + 16),
+            };
+    const id = useDocumentStore.getState().addProbe(
+      kind,
+      kind === "block" ? { x: tap.x + 80, y: tap.y - 30 } : tap,
+      panelPosition,
+    );
+    if (id !== null) {
+      useDocumentStore.getState().addProbeLink(id, menuConnection.id);
+      useDocumentStore.getState().setSelection([id], []);
+    }
+  };
 
   const runMenuAction = (action: () => void): void => {
     action();
@@ -929,6 +1195,53 @@ function CanvasInner() {
         <button
           type="button"
           className="icon-button"
+          data-testid="add-probe-block"
+          aria-label="Add probe block"
+          title="Add a 3×3 oscilloscope probe block"
+          onClick={() => {
+            const rect = canvasRef.current?.getBoundingClientRect();
+            if (rect === undefined) {
+              return;
+            }
+            const position = screenToFlowPosition(
+              { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+              { snapToGrid: false },
+            );
+            useDocumentStore.getState().addProbe(
+              "block",
+              position,
+              { x: Math.max(20, rect.width - 400), y: 20 },
+            );
+          }}
+        >
+          <ProbeGlyph size={16} />
+        </button>
+        <button
+          type="button"
+          className="icon-button"
+          data-testid="add-probe-window"
+          aria-label="Add probe plot window"
+          title="Add a floating oscilloscope plot window"
+          onClick={() => {
+            const rect = canvasRef.current?.getBoundingClientRect();
+            if (rect === undefined) {
+              return;
+            }
+            const position = screenToFlowPosition(
+              { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 },
+              { snapToGrid: false },
+            );
+            useDocumentStore.getState().addProbe("window", position, {
+              x: Math.max(24, rect.width / 2 - 190),
+              y: Math.max(24, rect.height / 2 - 120),
+            });
+          }}
+        >
+          <span aria-hidden="true">▤</span>
+        </button>
+        <button
+          type="button"
+          className="icon-button"
           data-testid="save-now"
           onClick={() => void saveCurrentModel()}
           aria-label="Save now"
@@ -990,7 +1303,15 @@ function CanvasInner() {
               for (const dragged of nodes) {
                 positions[dragged.id] = { x: dragged.position.x, y: dragged.position.y };
               }
-              useDocumentStore.getState().setNodePositions(positions, true);
+              const store = useDocumentStore.getState();
+              store.setNodePositions(positions, true);
+              for (const dragged of nodes) {
+                store.setProbePosition(
+                  dragged.id,
+                  { x: dragged.position.x, y: dragged.position.y },
+                  true,
+                );
+              }
             }}
             onNodeDragStop={() => useDocumentStore.getState().endGesture()}
             onSelectionChange={onSelectionChange}
@@ -1000,8 +1321,14 @@ function CanvasInner() {
             onEdgeContextMenu={onEdgeContextMenu}
             onNodeContextMenu={onNodeContextMenu}
             onPaneClick={() => {
+              // The release that opened the suggestion palette also produces a
+              // pane click; it must not close the palette it just opened.
+              if (Date.now() < suppressPaneClickUntil.current) {
+                return;
+              }
               setMenu(null);
               setTooltip(null);
+              setSuggestions(null);
               useDocumentStore.getState().setSelection([], []);
             }}
             onPaneContextMenu={(event) => {
@@ -1024,6 +1351,12 @@ function CanvasInner() {
             </Panel>
           </ReactFlow>
         </QuickConnectContext.Provider>
+        {view !== null && index !== null ? (
+          <ProbeLeads model={view} index={index} />
+        ) : null}
+        {view?.diagram.probes?.map((probe) => (
+          <ProbeWindow key={probe.id} model={view} probe={probe} />
+        ))}
         {quickLine !== null ? (
           <svg className="editor-quick-line" data-testid="quick-connect-line" aria-hidden="true">
             <line
@@ -1034,6 +1367,16 @@ function CanvasInner() {
             />
             <circle cx={quickLine.from.x} cy={quickLine.from.y} r={3} />
           </svg>
+        ) : null}
+        {suggestions !== null ? (
+          <TargetSuggestions
+            suggestions={suggestions.items}
+            origin={suggestions.origin}
+            x={suggestions.panel.x}
+            y={suggestions.panel.y}
+            onPick={chooseSuggestion}
+            onClose={() => setSuggestions(null)}
+          />
         ) : null}
         {flow.nodes.length === 0 ? (
           <div className="editor__empty" data-testid="canvas-empty">
@@ -1097,6 +1440,38 @@ function CanvasInner() {
                   }
                 >
                   {target.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="new-probe-block"
+                onClick={() => runMenuAction(() => createProbeOnMenu("block"))}
+              >
+                New probe block
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="new-probe-window"
+                onClick={() => runMenuAction(() => createProbeOnMenu("window"))}
+              >
+                New probe plot window
+              </button>
+              {(view?.diagram.probes ?? []).map((probe) => (
+                <button
+                  type="button"
+                  role="menuitem"
+                  key={probe.id}
+                  data-testid={`probe-existing-${probe.id}`}
+                  onClick={() =>
+                    runMenuAction(() => {
+                      useDocumentStore.getState().addProbeLink(probe.id, menuConnection.id);
+                      useDocumentStore.getState().setSelection([probe.id], []);
+                    })
+                  }
+                >
+                  Add to {probe.name}
                 </button>
               ))}
               <button

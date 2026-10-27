@@ -35,6 +35,11 @@ export const NODE_HALF_SHIFT = 10;
 export const GRID_SIZE = 20;
 export const ROUTE_GRID_SIZE = GRID_SIZE / 2;
 
+/** How far a corner may be off a true right angle and still get the marker. */
+export const RIGHT_ANGLE_TOLERANCE_DEG = 2;
+/** Side length of the square that marks a right angle, in flow units. */
+export const RIGHT_ANGLE_MARKER_SIZE = 10;
+
 /** Signal arrow glyph size, shared by the port renderer and the edge trim. */
 export const SIGNAL_ARROW_SIZE = 11;
 export const SIGNAL_ARROW_HALF = SIGNAL_ARROW_SIZE / 2;
@@ -729,6 +734,45 @@ export function routedPath(a: Point, route: readonly Point[], b: Point): string 
   return points
     .map((point, index) => `${index === 0 ? "M" : "L"} ${round(point.x)} ${round(point.y)}`)
     .join(" ");
+}
+
+/**
+ * The right-angle marker for a corner whose two segments meet at (almost
+ * exactly) 90 degrees: an open square drawn inside the wedge, with its sides
+ * along the segments. Returns null for a straight or degenerate corner, so the
+ * caller can show the marker only when the lines really are square.
+ */
+export function rightAngleMarker(
+  previous: Point,
+  corner: Point,
+  next: Point,
+  size = RIGHT_ANGLE_MARKER_SIZE,
+  toleranceDeg = RIGHT_ANGLE_TOLERANCE_DEG,
+): string | null {
+  const ray = (to: Point): Point | null => {
+    const dx = to.x - corner.x;
+    const dy = to.y - corner.y;
+    const length = Math.hypot(dx, dy);
+    return length < 1e-6 ? null : { x: dx / length, y: dy / length };
+  };
+  const first = ray(previous);
+  const second = ray(next);
+  if (first === null || second === null) {
+    return null;
+  }
+  // Perpendicular means a vanishing dot product; the tolerance turns that into
+  // a couple of degrees so a hand-dragged corner still reports square.
+  const dot = first.x * second.x + first.y * second.y;
+  if (Math.abs(dot) > Math.sin((toleranceDeg * Math.PI) / 180)) {
+    return null;
+  }
+  const alongFirst = { x: corner.x + first.x * size, y: corner.y + first.y * size };
+  const inner = {
+    x: alongFirst.x + second.x * size,
+    y: alongFirst.y + second.y * size,
+  };
+  const alongSecond = { x: corner.x + second.x * size, y: corner.y + second.y * size };
+  return `M ${round(alongFirst.x)} ${round(alongFirst.y)} L ${round(inner.x)} ${round(inner.y)} L ${round(alongSecond.x)} ${round(alongSecond.y)}`;
 }
 
 function direction(from: Point, to: Point): Point {

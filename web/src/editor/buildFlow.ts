@@ -35,15 +35,18 @@ import {
 import { interfaceForNode, missingPortFor } from "./nodeInterface";
 import type { EditorEdge, EditorEdgeData } from "./edges/EditorEdges";
 import { BondEdge, SignalEdge, WireEdge } from "./edges/EditorEdges";
+import { ProbeNode, type ProbeNodeData } from "../probe/ProbeNode";
 
 export type DiagramNode =
   | Node<BlockNodeData, "block" | "subsystem">
-  | Node<JunctionNodeData, "junction">;
+  | Node<JunctionNodeData, "junction">
+  | Node<ProbeNodeData, "probe">;
 
 export const NODE_TYPES = {
   block: BlockNode,
   subsystem: BlockNode,
   junction: JunctionNode,
+  probe: ProbeNode,
 };
 export const EDGE_TYPES = { bond: BondEdge, wire: WireEdge, signal: SignalEdge };
 
@@ -279,6 +282,24 @@ export function buildDiagram(
       deletable: false,
     };
   });
+  for (const probe of doc.diagram.probes ?? []) {
+    if (probe.kind !== "block") {
+      continue;
+    }
+    nodes.push({
+      id: probe.id,
+      type: "probe",
+      position: { x: probe.position.x, y: probe.position.y },
+      data: {
+        probeId: probe.id,
+        name: probe.name,
+        linkCount: probe.links.length,
+      },
+      selected: selectedNodes.has(probe.id),
+      connectable: true,
+      deletable: false,
+    });
+  }
 
   const edges: EditorEdge[] = doc.diagram.connections.map((connection) => {
     const anchors = connectionAnchors(doc, index, connection);

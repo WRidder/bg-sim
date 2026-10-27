@@ -52,6 +52,80 @@
           "type": "array",
           "items": { "$ref": "#/$defs/annotation" }
         },
+        "probes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/probe" },
+          "description": "Oscilloscope probes. Side-channel observers; the compiler ignores them."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "probe": {
+      "title": "ModelProbe",
+      "type": "object",
+      "required": ["id", "name", "kind", "position", "links"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": { "title": "ProbeKind", "enum": ["block", "window"] },
+        "position": { "$ref": "#/$defs/point" },
+        "panelPosition": { "$ref": "#/$defs/point" },
+        "size": {
+          "type": "object",
+          "required": ["width", "height"],
+          "properties": {
+            "width": { "type": "number", "minimum": 240 },
+            "height": { "type": "number", "minimum": 140 },
+            "$comment": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "open": { "type": "boolean" },
+        "links": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/probeLink" }
+        },
+        "panels": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/probePanel" }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "probeLink": {
+      "title": "ModelProbeLink",
+      "type": "object",
+      "required": ["id", "connection", "signals"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+        "connection": { "type": "string" },
+        "signals": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "probePanel": {
+      "title": "ModelProbePanel",
+      "type": "object",
+      "required": ["id", "title", "signals"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+        "title": { "type": "string" },
+        "signals": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false

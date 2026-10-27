@@ -223,6 +223,40 @@ class RelatedDiagnostic(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ProbeKind(Enum):
+    block = 'block'
+    window = 'window'
+
+
+class Size(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    width: confloat(ge=240.0)
+    height: confloat(ge=140.0)
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelProbeLink(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9_.-]+$')
+    connection: str
+    signals: list[str]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelProbePanel(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9_.-]+$')
+    title: str
+    signals: list[str]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class ModelBlockRef(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -773,6 +807,22 @@ class DiagnosticSource(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ModelProbe(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9_.-]+$')
+    name: constr(min_length=1)
+    kind: ProbeKind = Field(..., title='ProbeKind')
+    position: ModelPoint
+    panelPosition: ModelPoint | None = None
+    size: Size | None = None
+    open: bool | None = None
+    links: list[ModelProbeLink]
+    panels: list[ModelProbePanel] | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class ModelSubsystemPort(RootModel[ModelSubsystemSignalPort | ModelSubsystemPowerPort]):
     root: ModelSubsystemSignalPort | ModelSubsystemPowerPort = Field(
         ...,
@@ -1188,6 +1238,10 @@ class ModelDiagram(BaseModel):
         None, description='Exposed ports; only used inside a subsystem.'
     )
     annotations: list[ModelAnnotation] | None = None
+    probes: list[ModelProbe] | None = Field(
+        None,
+        description='Oscilloscope probes. Side-channel observers; the compiler ignores them.',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
