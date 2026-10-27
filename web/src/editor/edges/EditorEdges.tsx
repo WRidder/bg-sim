@@ -27,6 +27,7 @@ import {
   midpoint,
   offsetPoint,
   orthogonalPath,
+  cornerAngleMarker,
   rightAngleMarker,
   routedPath,
   signalColor,
@@ -185,8 +186,8 @@ function MissingPorts({
  * Draggable waypoints of a selected connection. Each pointer move writes the
  * snapped position to the document, so the routed line follows the handle
  * immediately; the whole drag coalesces into one undo step. Double-click
- * removes a waypoint. While a vertex is dragged, a small square in the corner
- * marks that its two segments meet at 90 degrees.
+ * removes a waypoint. While a vertex is dragged, a square marks a 90 degree
+ * corner and an arc with a label marks a 45 or 135 degree corner.
  */
 function RouteHandles({
   id,
@@ -218,10 +219,9 @@ function RouteHandles({
   const corner = dragging === null ? undefined : route[dragging];
   const after =
     dragging === null ? undefined : dragging < route.length - 1 ? route[dragging + 1] : to;
-  const marker =
-    before !== undefined && corner !== undefined && after !== undefined
-      ? rightAngleMarker(before, corner, after)
-      : null;
+  const hasCorner = before !== undefined && corner !== undefined && after !== undefined;
+  const rightAngle = hasCorner ? rightAngleMarker(before, corner, after) : null;
+  const cornerAngle = hasCorner ? cornerAngleMarker(before, corner, after) : null;
   const commit = (index: number, raw: Point): void => {
     const point = snap ? snapRouteVertex(raw) : raw;
     const next = routeRef.current.map((entry, entryIndex) =>
@@ -299,12 +299,24 @@ function RouteHandles({
   };
   return (
     <g className="editor-edge__vertices" data-testid={`connection-vertices-${id}`}>
-      {marker !== null ? (
+      {rightAngle !== null ? (
         <path
           className="editor-edge__right-angle"
           data-testid={`connection-right-angle-${id}`}
-          d={marker}
+          d={rightAngle}
         />
+      ) : null}
+      {cornerAngle !== null ? (
+        <g
+          className="editor-edge__angle"
+          data-testid={`connection-angle-${cornerAngle.angle}-${id}`}
+          data-angle={cornerAngle.angle}
+        >
+          <path className="editor-edge__angle-arc" d={cornerAngle.arc} />
+          <text className="editor-edge__angle-label" x={cornerAngle.label.x} y={cornerAngle.label.y}>
+            {cornerAngle.text}
+          </text>
+        </g>
       ) : null}
       {route.map((point, index) => (
         <g key={`${id}-vertex-${index}`}>

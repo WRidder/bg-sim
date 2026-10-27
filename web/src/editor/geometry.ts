@@ -35,10 +35,16 @@ export const NODE_HALF_SHIFT = 10;
 export const GRID_SIZE = 20;
 export const ROUTE_GRID_SIZE = GRID_SIZE / 2;
 
-/** How far a corner may be off a true right angle and still get the marker. */
-export const RIGHT_ANGLE_TOLERANCE_DEG = 2;
+/** How far a corner may be off 45, 90 or 135 degrees and still get a marker.
+ * Deliberately tight: the marker promises an exact angle, not an approximate
+ * one, so a corner that merely looks square must not earn it. */
+export const MARKER_ANGLE_TOLERANCE_DEG = 0.1;
 /** Side length of the square that marks a right angle, in flow units. */
 export const RIGHT_ANGLE_MARKER_SIZE = 10;
+/** Radius of the arc that marks a 45 or 135 degree corner, in flow units. */
+export const ANGLE_MARKER_RADIUS = 20;
+/** Gap between that arc and its "45°"/"135°" label, in flow units. */
+export const ANGLE_LABEL_GAP = 12;
 
 /** Signal arrow glyph size, shared by the port renderer and the edge trim. */
 export const SIGNAL_ARROW_SIZE = 11;
@@ -736,19 +742,16 @@ export function routedPath(a: Point, route: readonly Point[], b: Point): string 
     .join(" ");
 }
 
-/**
- * The right-angle marker for a corner whose two segments meet at (almost
- * exactly) 90 degrees: an open square drawn inside the wedge, with its sides
- * along the segments. Returns null for a straight or degenerate corner, so the
- * caller can show the marker only when the lines really are square.
- */
-export function rightAngleMarker(
-  previous: Point,
-  corner: Point,
-  next: Point,
-  size = RIGHT_ANGLE_MARKER_SIZE,
-  toleranceDeg = RIGHT_ANGLE_TOLERANCE_DEG,
-): string | null {
+interface CornerShape {
+  /** Unit vectors from the corner along each segment. */
+  first: Point;
+  second: Point;
+  /** The angle between the two segments, 0 < angle <= 180 degrees. */
+  angleDeg: number;
+}
+
+/** The two rays of a corner and the angle between them, or null when degenerate. */
+function cornerShape(previous: Point, corner: Point, next: Point): CornerShape | null {
   const ray = (to: Point): Point | null => {
     const dx = to.x - corner.x;
     const dy = to.y - corner.y;
@@ -760,12 +763,28 @@ export function rightAngleMarker(
   if (first === null || second === null) {
     return null;
   }
-  // Perpendicular means a vanishing dot product; the tolerance turns that into
-  // a couple of degrees so a hand-dragged corner still reports square.
-  const dot = first.x * second.x + first.y * second.y;
-  if (Math.abs(dot) > Math.sin((toleranceDeg * Math.PI) / 180)) {
+  const dot = Math.max(-1, Math.min(1, first.x * second.x + first.y * second.y));
+  return { first, second, angleDeg: (Math.acos(dot) * 180) / Math.PI };
+}
+
+/**
+ * The right-angle marker for a corner whose two segments meet at 90 degrees:
+ * an open square drawn inside the wedge, with its sides along the segments.
+ * Returns null for any other angle or a degenerate corner, so the caller can
+ * show the marker only when the lines really are square.
+ */
+export function rightAngleMarker(
+  previous: Point,
+  corner: Point,
+  next: Point,
+  size = RIGHT_ANGLE_MARKER_SIZE,
+  toleranceDeg = MARKER_ANGLE_TOLERANCE_DEG,
+): string | null {
+  const shape = cornerShape(previous, corner, next);
+  if (shape === null || Math.abs(shape.angleDeg - 90) > toleranceDeg) {
     return null;
   }
+  const { first, second } = shape;
   const alongFirst = { x: corner.x + first.x * size, y: corner.y + first.y * size };
   const inner = {
     x: alongFirst.x + second.x * size,
@@ -773,6 +792,64 @@ export function rightAngleMarker(
   };
   const alongSecond = { x: corner.x + second.x * size, y: corner.y + second.y * size };
   return `M ${round(alongFirst.x)} ${round(alongFirst.y)} L ${round(inner.x)} ${round(inner.y)} L ${round(alongSecond.x)} ${round(alongSecond.y)}`;
+}
+
+export interface CornerAngleMarker {
+  /** The angle the marker reports. */
+  angle: 45 | 135;
+  /** The arc across the corner. */
+  arc: string;
+  /** The label text, e.g. "45°". */
+  text: string;
+  /** Where the centre of that label sits, on the corner's bisector. */
+  label: Point;
+}
+
+const MARKED_ANGLES = [45, 135] as const;
+
+/**
+ * The arc-and-label marker for a corner whose segments meet at 45 or 135
+ * degrees, or null for any other angle. The arc runs inside the wedge and the
+ * label names the angle, which a bare square cannot do.
+ */
+export function cornerAngleMarker(
+  previous: Point,
+  corner: Point,
+  next: Point,
+  radius = ANGLE_MARKER_RADIUS,
+  toleranceDeg = MARKER_ANGLE_TOLERANCE_DEG,
+): CornerAngleMarker | null {
+  const shape = cornerShape(previous, corner, next);
+  if (shape === null) {
+    return null;
+  }
+  const angle = MARKED_ANGLES.find(
+    (candidate) => Math.abs(shape.angleDeg - candidate) <= toleranceDeg,
+  );
+  if (angle === undefined) {
+    return null;
+  }
+  const { first, second } = shape;
+  const start = { x: corner.x + first.x * radius, y: corner.y + first.y * radius };
+  const end = { x: corner.x + second.x * radius, y: corner.y + second.y * radius };
+  // Sweep towards the second ray the short way round, so the arc stays inside
+  // the (at most 135 degree) wedge rather than bulging out of it.
+  const cross = first.x * second.y - first.y * second.x;
+  const sweep = cross >= 0 ? 1 : 0;
+  const arc = `M ${round(start.x)} ${round(start.y)} A ${radius} ${radius} 0 0 ${sweep} ${round(end.x)} ${round(end.y)}`;
+  const sum = { x: first.x + second.x, y: first.y + second.y };
+  const length = Math.hypot(sum.x, sum.y);
+  const bisector =
+    length < 1e-6 ? first : { x: sum.x / length, y: sum.y / length };
+  return {
+    angle,
+    arc,
+    text: `${angle}\u00b0`,
+    label: {
+      x: corner.x + bisector.x * (radius + ANGLE_LABEL_GAP),
+      y: corner.y + bisector.y * (radius + ANGLE_LABEL_GAP),
+    },
+  };
 }
 
 function direction(from: Point, to: Point): Point {

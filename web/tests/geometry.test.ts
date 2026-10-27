@@ -22,6 +22,7 @@ import {
   arrowHeadPath,
   causalStrokePath,
   connectionAnchors,
+  cornerAngleMarker,
   halfArrowPath,
   hubPath,
   isCompactBlock,
@@ -430,19 +431,58 @@ describe("anchors and paths", () => {
       rightAngleMarker({ x: 0, y: 0 }, { x: 0, y: 40 }, { x: 40, y: 40 }),
     ).toBe("M 0 30 L 10 30 L 10 40");
 
-    // A hand-dragged corner a hair off square still counts; a shallow corner
-    // does not, and neither does a straight or degenerate one.
+    // The check is tight: a twentieth of a degree off square still counts, but
+    // anything a hand could actually see must not.
     expect(
-      rightAngleMarker({ x: -100, y: 1 }, { x: 0, y: 0 }, { x: 0, y: 40 }),
+      rightAngleMarker({ x: -1000, y: 1 }, { x: 0, y: 0 }, { x: 0, y: 40 }),
     ).not.toBeNull();
     expect(
-      rightAngleMarker({ x: -100, y: 5 }, { x: 0, y: 0 }, { x: 0, y: 40 }),
+      rightAngleMarker({ x: -100, y: 1 }, { x: 0, y: 0 }, { x: 0, y: 40 }),
     ).toBeNull();
     expect(
       rightAngleMarker({ x: 0, y: 0 }, { x: 50, y: 0 }, { x: 100, y: 0 }),
     ).toBeNull();
     expect(
       rightAngleMarker({ x: 10, y: 10 }, { x: 10, y: 10 }, { x: 30, y: 10 }),
+    ).toBeNull();
+    // A 45 degree corner is not square.
+    expect(
+      rightAngleMarker({ x: 0, y: -10 }, { x: 0, y: 0 }, { x: 10, y: -10 }),
+    ).toBeNull();
+  });
+
+  it("marks 45 and 135 degree corners with an arc and a label", () => {
+    const half = cornerAngleMarker({ x: 0, y: -10 }, { x: 0, y: 0 }, { x: 10, y: -10 });
+    expect(half).not.toBeNull();
+    expect(half?.angle).toBe(45);
+    expect(half?.text).toBe("45\u00b0");
+    expect(half?.arc).toBe("M 0 -20 A 20 20 0 0 1 14.1 -14.1");
+    expect(half?.label.x).toBeCloseTo(12.25, 1);
+    expect(half?.label.y).toBeCloseTo(-29.56, 1);
+
+    const obtuse = cornerAngleMarker({ x: 0, y: -10 }, { x: 0, y: 0 }, { x: 10, y: 10 });
+    expect(obtuse?.angle).toBe(135);
+    expect(obtuse?.text).toBe("135\u00b0");
+    expect(obtuse?.arc).toBe("M 0 -20 A 20 20 0 0 1 14.1 14.1");
+    expect(obtuse?.label.x).toBeCloseTo(29.56, 1);
+    expect(obtuse?.label.y).toBeCloseTo(-12.25, 1);
+
+    // Only 45 and 135: square, shallow, almost-square and degenerate corners
+    // get no arc.
+    expect(
+      cornerAngleMarker({ x: 0, y: -10 }, { x: 0, y: 0 }, { x: 10, y: 0 }),
+    ).toBeNull();
+    expect(
+      cornerAngleMarker({ x: 0, y: -10 }, { x: 0, y: 0 }, { x: 17, y: -10 }),
+    ).toBeNull();
+    expect(
+      cornerAngleMarker({ x: 0, y: -10 }, { x: 0, y: 0 }, { x: 10, y: -9.9 }),
+    ).toBeNull();
+    expect(
+      cornerAngleMarker({ x: 0, y: -10 }, { x: 0, y: 0 }, { x: 10, y: -9.98 }),
+    ).not.toBeNull();
+    expect(
+      cornerAngleMarker({ x: 5, y: 5 }, { x: 5, y: 5 }, { x: 30, y: 5 }),
     ).toBeNull();
   });
 });

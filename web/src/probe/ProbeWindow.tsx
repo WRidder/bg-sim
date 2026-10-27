@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useViewport } from "@xyflow/react";
 
 import type { Model, ModelProbe } from "../contracts/model";
 import { useDocumentStore } from "../state/documentStore";
@@ -22,13 +23,36 @@ function initialFrame(probe: ModelProbe): Frame {
   };
 }
 
-export function ProbeWindow({ model, probe }: { model: Model; probe: ModelProbe }) {
+/** Plot windows live in diagram coordinates; snap their origin to the grid. */
+function snapToGrid(value: number): number {
+  return Math.round(value / 20) * 20;
+}
+
+export function ProbeWindow({
+  model,
+  probe,
+  onProbeLeadStart,
+}: {
+  model: Model;
+  probe: ModelProbe;
+  onProbeLeadStart: (probeId: string, event: React.PointerEvent<HTMLElement>) => void;
+}) {
+  const { zoom } = useViewport();
   const [frame, setFrame] = useState<Frame>(() => initialFrame(probe));
   const latestFrame = useRef(frame);
   latestFrame.current = frame;
-  const dragRef = useRef<{ mode: "move" | "resize"; startX: number; startY: number; frame: Frame } | null>(
-    null,
-  );
+  const dragRef = useRef<{
+    mode: "move" | "resize";
+    startX: number;
+    startY: number;
+    frame: Frame;
+  } | null>(null);
+
+  useEffect(() => {
+    if (dragRef.current === null) {
+      setFrame(initialFrame(probe));
+    }
+  }, [probe.panelPosition?.x, probe.panelPosition?.y, probe.size?.width, probe.size?.height]);
 
   if (!(probe.open ?? true)) {
     return null;
@@ -56,21 +80,22 @@ export function ProbeWindow({ model, probe }: { model: Model; probe: ModelProbe 
       if (drag === null) {
         return;
       }
-      const dx = moveEvent.clientX - drag.startX;
-      const dy = moveEvent.clientY - drag.startY;
-      if (drag.mode === "move") {
-        setFrame({
-          ...drag.frame,
-          x: Math.max(0, drag.frame.x + dx),
-          y: Math.max(0, drag.frame.y + dy),
-        });
-      } else {
-        setFrame({
-          ...drag.frame,
-          width: Math.max(240, drag.frame.width + dx),
-          height: Math.max(140, drag.frame.height + dy),
-        });
-      }
+      const dx = (moveEvent.clientX - drag.startX) / Math.max(0.01, zoom);
+      const dy = (moveEvent.clientY - drag.startY) / Math.max(0.01, zoom);
+      const next =
+        drag.mode === "move"
+          ? {
+              ...drag.frame,
+              x: snapToGrid(drag.frame.x + dx),
+              y: snapToGrid(drag.frame.y + dy),
+            }
+          : {
+              ...drag.frame,
+              width: Math.max(240, drag.frame.width + dx),
+              height: Math.max(140, drag.frame.height + dy),
+            };
+      latestFrame.current = next;
+      setFrame(next);
     };
     const finish = (): void => {
       window.removeEventListener("pointermove", move, true);
@@ -87,6 +112,16 @@ export function ProbeWindow({ model, probe }: { model: Model; probe: ModelProbe 
     window.addEventListener("pointercancel", finish, true);
   };
 
+  const headerPointerDown = (event: React.PointerEvent<HTMLElement>): void => {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      onProbeLeadStart(probe.id, event);
+      return;
+    }
+    start("move", event);
+  };
+
   return (
     <section
       className={`probe-window probe-window--${probe.kind}`}
@@ -101,9 +136,22 @@ export function ProbeWindow({ model, probe }: { model: Model; probe: ModelProbe 
     >
       <header
         className="probe-window__header"
-        onPointerDown={(event) => start("move", event)}
+        onPointerDown={headerPointerDown}
+        title="Drag to move; Ctrl-drag to attach another connection"
       >
-        <ProbeGlyph size={15} />
+        <button
+          type="button"
+          className="probe-window__lead"
+          aria-label="Attach this probe to another connection"
+          title="Drag onto a connection, or Ctrl-drag from the header"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onProbeLeadStart(probe.id, event);
+          }}
+        >
+          <ProbeGlyph size={15} />
+        </button>
         <span className="probe-window__name">{probe.name}</span>
         <span className="probe-window__kind">
           {probe.kind === "block" ? "scope block" : "probe plot"}

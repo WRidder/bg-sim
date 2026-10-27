@@ -852,10 +852,10 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
             x: finite(position.x, 80),
             y: finite(position.y, 80),
           }),
-          panelPosition: {
+          panelPosition: roundPosition({
             x: Math.round(finite(panelPosition.x, 120)),
             y: Math.round(finite(panelPosition.y, 100)),
-          },
+          }),
           size: { width: 380, height: 240 },
           open: kind === "window",
           links: [],
@@ -900,7 +900,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       commitActive((draft) => {
         const probe = (draft.probes ?? []).find((entry) => entry.id === id);
         if (probe !== undefined) {
-          probe.panelPosition = { x: Math.round(frame.x), y: Math.round(frame.y) };
+          probe.panelPosition = roundPosition({ x: frame.x, y: frame.y });
           probe.size = {
             width: Math.max(240, Math.round(frame.width)),
             height: Math.max(140, Math.round(frame.height)),

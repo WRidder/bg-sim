@@ -442,9 +442,7 @@ test("routing vertices use the half grid when snapping is on and are free when o
   expect(snapped.y % 10).toBe(0);
 });
 
-test("a dragged vertex shows a right-angle symbol when its corner is square", async ({
-  page,
-}) => {
+test("a dragged vertex marks right, 45 and 135 degree corners", async ({ page }) => {
   await openModel(page);
   await dropBlock(page, "Gain", 200, 160);
   await dropBlock(page, "Gain", 200, 460);
@@ -532,6 +530,44 @@ test("a dragged vertex shows a right-angle symbol when its corner is square", as
   expect(corner?.y).toBe(peer?.y);
   await page.mouse.up();
   await expect(marker).toHaveCount(0);
+
+  const boxOf = async (locator: Locator) => {
+    const box = await locator.boundingBox();
+    if (box === null) {
+      throw new Error("a routing vertex is not visible");
+    }
+    return box;
+  };
+  /** Grab a vertex, wiggle it and leave the pointer down on its own spot. */
+  const dragInPlace = async (handle: Locator): Promise<void> => {
+    const point = centre(await boxOf(handle));
+    await page.mouse.move(point.x, point.y);
+    await page.mouse.down();
+    await page.mouse.move(point.x + 20, point.y);
+    await page.mouse.move(point.x, point.y, { steps: 2 });
+  };
+  const angle45 = page.getByTestId(`connection-angle-45-${edgeId}`);
+  const angle135 = page.getByTestId(`connection-angle-135-${edgeId}`);
+
+  // Lift the second vertex above the corner: the port segment stays vertical
+  // and the other segment runs up-right at 45 degrees.
+  const peerBox = await boxOf(lower);
+  await drag(centre(peerBox), { x: centre(peerBox).x, y: centre(peerBox).y - 100 });
+  await dragInPlace(upper);
+  await expect(angle45).toHaveCount(1);
+  await expect(marker).toHaveCount(0);
+  await page.mouse.up();
+  await expect(angle45).toHaveCount(0);
+
+  // Drop it below the corner instead: the same corner opens to 135 degrees.
+  const peerBox2 = await boxOf(lower);
+  await drag(centre(peerBox2), { x: centre(peerBox2).x, y: centre(peerBox2).y + 200 });
+  await dragInPlace(upper);
+  await expect(angle135).toHaveCount(1);
+  await expect(angle45).toHaveCount(0);
+  await expect(marker).toHaveCount(0);
+  await page.mouse.up();
+  await expect(angle135).toHaveCount(0);
 });
 
 test("centred ports share the block and connection centre line", async ({ page }) => {
@@ -569,6 +605,9 @@ test("probe blocks and plot windows tap a connection without entering the circui
   const source = node(page, "Gain");
   const target = node(page, "Gain2");
   await connectPorts(page, source, "y", target, "u");
+  await dropBlock(page, "Gain", 900, 500);
+  const third = node(page, "Gain3");
+  await connectPorts(page, target, "y", third, "u");
 
   const edge = page.locator('[data-testid^="edge-"]').first();
   await expect(edge).toHaveCount(1);
@@ -599,8 +638,8 @@ test("probe blocks and plot windows tap a connection without entering the circui
   expect(stored.diagram.probes).toHaveLength(1);
   expect(stored.diagram.probes?.[0]?.kind).toBe("block");
   expect(stored.diagram.probes?.[0]?.links[0]?.connection).toBe(edgeId);
-  // A probe is not a circuit connection: the diagram still has exactly one.
-  expect(stored.diagram.connections).toHaveLength(1);
+  // Probes are not circuit connections: the two signal connections remain.
+  expect(stored.diagram.connections).toHaveLength(2);
 
   // A 3x3 probe opens its dedicated panel as soon as it has a lead; none
   // configured means one plot with all checked signals.
@@ -631,6 +670,62 @@ test("probe blocks and plot windows tap a connection without entering the circui
   expect(after.diagram.probes).toHaveLength(2);
   expect(after.diagram.probes?.map((entry) => entry.kind)).toEqual(["block", "window"]);
   expect(after.diagram.probes?.[1]?.links).toHaveLength(1);
+
+  // Ctrl-dragging from the plot window header attaches another connection.
+  const secondEdge = page.locator('[data-testid^="edge-"]').nth(1);
+  await expect(secondEdge).toHaveCount(1);
+  const dropPoint = await secondEdge.evaluate((element) => {
+    const path = element.querySelector<SVGPathElement>(".react-flow__edge-path");
+    if (path === null) {
+      throw new Error("the second connection has no path");
+    }
+    const matrix = path.getScreenCTM();
+    if (matrix === null) {
+      throw new Error("the second connection has no screen transform");
+    }
+    const id = element.getAttribute("data-testid") ?? "";
+    let fallback: { x: number; y: number } | null = null;
+    for (let fraction = 0.1; fraction <= 0.95; fraction += 0.05) {
+      const local = path.getPointAtLength(path.getTotalLength() * fraction);
+      const point = {
+        x: matrix.a * local.x + matrix.c * local.y + matrix.e,
+        y: matrix.b * local.x + matrix.d * local.y + matrix.f,
+      };
+      fallback ??= point;
+      const hit = document.elementFromPoint(point.x, point.y);
+      const edge = hit?.closest("[data-testid^=\"edge-\"]");
+      if (edge?.getAttribute("data-testid") === id) {
+        return point;
+      }
+    }
+    if (fallback === null) {
+      throw new Error("no point on the second connection is visible");
+    }
+    return fallback;
+  });
+  const windowHeader = page
+    .locator('[data-testid^="probe-window-"]')
+    .last()
+    .locator(".probe-window__lead");
+  const headerBox = await windowHeader.boundingBox();
+  if (headerBox === null) {
+    throw new Error("the probe window header is not visible");
+  }
+  await page.keyboard.down("Control");
+  await page.mouse.move(headerBox.x + 30, headerBox.y + headerBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(dropPoint.x, dropPoint.y, { steps: 10 });
+  await expect(page.getByTestId("quick-connect-line")).toBeVisible();
+  await page.mouse.up();
+  await page.keyboard.up("Control");
+  await expect
+    .poll(async () => {
+      const current = JSON.parse(
+        (await page.getByTestId("document-json").textContent()) ?? "null",
+      ) as { diagram: { probes?: { kind: string; links: unknown[] }[] } };
+      return current.diagram.probes?.find((probe) => probe.kind === "window")?.links.length ?? 0;
+    })
+    .toBe(2);
 
   // Probes are editor data, but they round-trip through the saved model.
   await page.getByTestId("save-now").click();

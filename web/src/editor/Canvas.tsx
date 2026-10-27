@@ -5,6 +5,8 @@
  * * drag a library row onto the canvas -> add a block or junction;
  * * drag between port glyphs -> bond / wire / signal, with live compatibility
  *   highlighting and the plan's refusal tooltip;
+ * * release a connection on empty canvas -> a filterable list of compatible
+ *   elements to add at that point and connect automatically;
  * * drag nodes -> move (one undo entry per drag);
  * * Del, R, F, Ctrl+C/V, Ctrl+Z/Y;
  * * right-click an edge -> reverse a bond; right-click a node -> transform.
@@ -21,6 +23,7 @@ import {
   ReactFlowProvider,
   useReactFlow,
   useViewport,
+  ViewportPortal,
   type Connection,
   type Edge,
   type FinalConnectionState,
@@ -1002,6 +1005,76 @@ function CanvasInner() {
     [menuNode, runSignals, pathPrefix],
   );
 
+  const startProbeLead = useCallback(
+    (probeId: string, event: React.PointerEvent<HTMLElement>) => {
+      if (event.button !== 0) {
+        return;
+      }
+      const bounds = canvasRef.current?.getBoundingClientRect();
+      if (bounds === undefined) {
+        return;
+      }
+      const start = { x: event.clientX, y: event.clientY };
+      let active = false;
+      const move = (moveEvent: PointerEvent): void => {
+        const distance = Math.hypot(
+          moveEvent.clientX - start.x,
+          moveEvent.clientY - start.y,
+        );
+        if (!active && distance < 4) {
+          return;
+        }
+        active = true;
+        setQuickLine({
+          from: { x: start.x - bounds.left, y: start.y - bounds.top },
+          to: {
+            x: moveEvent.clientX - bounds.left,
+            y: moveEvent.clientY - bounds.top,
+          },
+        });
+        moveEvent.preventDefault();
+      };
+      const finish = (upEvent: PointerEvent): void => {
+        window.removeEventListener("pointermove", move, true);
+        window.removeEventListener("pointerup", finish, true);
+        window.removeEventListener("pointercancel", cancel, true);
+        setQuickLine(null);
+        if (!active) {
+          return;
+        }
+        const element = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        const edgeElement = element?.closest('[data-testid^="edge-"]') ?? null;
+        const connectionId = edgeElement
+          ?.getAttribute("data-testid")
+          ?.replace(/^edge-/, "");
+        if (connectionId === undefined || connectionId.length === 0) {
+          showTooltip(
+            { x: upEvent.clientX, y: upEvent.clientY },
+            "Drop the probe lead on a connection.",
+          );
+          return;
+        }
+        const linkId = useDocumentStore.getState().addProbeLink(probeId, connectionId);
+        if (linkId === null) {
+          showTooltip(
+            { x: upEvent.clientX, y: upEvent.clientY },
+            "This connection is already on the probe.",
+          );
+        }
+      };
+      const cancel = (): void => {
+        window.removeEventListener("pointermove", move, true);
+        window.removeEventListener("pointerup", finish, true);
+        window.removeEventListener("pointercancel", cancel, true);
+        setQuickLine(null);
+      };
+      window.addEventListener("pointermove", move, true);
+      window.addEventListener("pointerup", finish, true);
+      window.addEventListener("pointercancel", cancel, true);
+    },
+    [showTooltip],
+  );
+
   const createProbeOnMenu = (kind: "block" | "window"): void => {
     if (view === null || index === null || menuConnection === null) {
       return;
@@ -1011,16 +1084,10 @@ function CanvasInner() {
       x: (source.point.x + target.point.x) / 2,
       y: (source.point.y + target.point.y) / 2,
     };
-    const rect = canvasRef.current?.getBoundingClientRect();
     const panelPosition =
-      menu === null || rect === undefined
-        ? { x: 120, y: 100 }
-        : kind === "block"
-          ? { x: Math.max(20, rect.width - 400), y: 20 }
-          : {
-              x: Math.max(20, menu.x - rect.left + 16),
-              y: Math.max(20, menu.y - rect.top + 16),
-            };
+      kind === "block"
+        ? { x: tap.x + 140, y: tap.y - 60 }
+        : { x: tap.x + 20, y: tap.y + 20 };
     const id = useDocumentStore.getState().addProbe(
       kind,
       kind === "block" ? { x: tap.x + 80, y: tap.y - 30 } : tap,
@@ -1210,7 +1277,7 @@ function CanvasInner() {
             useDocumentStore.getState().addProbe(
               "block",
               position,
-              { x: Math.max(20, rect.width - 400), y: 20 },
+              { x: position.x + 80, y: position.y - 60 },
             );
           }}
         >
@@ -1232,8 +1299,8 @@ function CanvasInner() {
               { snapToGrid: false },
             );
             useDocumentStore.getState().addProbe("window", position, {
-              x: Math.max(24, rect.width / 2 - 190),
-              y: Math.max(24, rect.height / 2 - 120),
+              x: position.x - 190,
+              y: position.y - 120,
             });
           }}
         >
@@ -1349,14 +1416,21 @@ function CanvasInner() {
             <Panel position="bottom-left">
               <CanvasLegend />
             </Panel>
+            <ViewportPortal>
+              {view?.diagram.probes?.map((probe) => (
+                <ProbeWindow
+                  key={probe.id}
+                  model={view}
+                  probe={probe}
+                  onProbeLeadStart={startProbeLead}
+                />
+              ))}
+            </ViewportPortal>
           </ReactFlow>
         </QuickConnectContext.Provider>
         {view !== null && index !== null ? (
           <ProbeLeads model={view} index={index} />
         ) : null}
-        {view?.diagram.probes?.map((probe) => (
-          <ProbeWindow key={probe.id} model={view} probe={probe} />
-        ))}
         {quickLine !== null ? (
           <svg className="editor-quick-line" data-testid="quick-connect-line" aria-hidden="true">
             <line

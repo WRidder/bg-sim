@@ -102,10 +102,10 @@ export function ProbeLeads({
               )
             : frameStart(
                 {
-                  x: probe.panelPosition?.x ?? probe.position.x,
-                  y: probe.panelPosition?.y ?? probe.position.y,
-                  width: probe.size?.width ?? 380,
-                  height: probe.size?.height ?? 240,
+                  x: toScreen(probe.panelPosition ?? probe.position).x,
+                  y: toScreen(probe.panelPosition ?? probe.position).y,
+                  width: (probe.size?.width ?? 380) * viewport.zoom,
+                  height: (probe.size?.height ?? 240) * viewport.zoom,
                 },
                 tap,
               );
