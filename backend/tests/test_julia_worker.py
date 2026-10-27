@@ -202,7 +202,11 @@ async def test_run_start_end_to_end(worker, schema_validate, julia_settings) -> 
         running = _load(manifest_path)
         assert running["status"] == "running"
         assert running["time"]["n"] == 0
-        assert len(running["signals"]) == 37
+        # J2.6b: DCMotor is a textual composite, so its internal port/observed
+        # signals are recorded alongside the old top-level ids (73 signals).
+        assert len(running["signals"]) == 73
+        running_ids = {signal["id"] for signal in running["signals"]}
+        assert {"Motor1/i", "Motor1/w_rel", "Motor1/shaft.f"} <= running_ids
         assert running["layout"] == "columnar-f64-v1"
         assert len(running["modelHash"]) == 64
 
@@ -229,8 +233,9 @@ async def test_run_start_end_to_end(worker, schema_validate, julia_settings) -> 
     assert done["runId"] == run_id
     assert done["status"] == "done", done["diagnostics"]
     assert done["diagnostics"] == []
-    assert done["stats"]["states"] == 2
-    assert done["stats"]["equations"] == 26
+    # J2.6b: the composite's winding + rotor are three differential states.
+    assert done["stats"]["states"] == 3
+    assert done["stats"]["equations"] == 41
 
     methods = [message["method"] for message in notifications]
     phases = [
@@ -246,7 +251,9 @@ async def test_run_start_end_to_end(worker, schema_validate, julia_settings) -> 
     final = _load(manifest_path)
     schema_validate("run-manifest", final)
     assert final["status"] == "done"
-    assert final["time"]["n"] == 200_000
+    # The recorder keeps the 200k-point output grid plus the two rows of an
+    # event instant (the Step edge); event rows are extra by design.
+    assert final["time"]["n"] >= 200_000
     assert final["time"]["t0"] == 0.0
     assert final["time"]["t1"] == 1.0
     signal_ids = [signal["id"] for signal in final["signals"]]

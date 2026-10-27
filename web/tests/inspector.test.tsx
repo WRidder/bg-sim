@@ -85,15 +85,11 @@ describe("inspector fields", () => {
     expect(rField.textContent).toContain("min");
     expect(rField.textContent).toContain("default");
 
-    // Five parameters on the DCMotor, two state variables with start values,
-    // and no parameter that belongs to another block.
+    // Five parameters on the DCMotor; the composite has no own variables
+    // (its dynamic signals are observed aliases), so there are no start fields.
     expect(screen.queryByTestId("inspector-param-t_step")).toBeNull();
     expect(screen.getByRole("heading", { name: /Parameters/ }).textContent).toContain("5");
-    expect(input("inspector-start-i").value).toBe("");
-    expect(input("inspector-start-i").placeholder).toBe("0.0");
-    expect(screen.getByTestId("inspector-start-i-field").textContent).toContain("A");
-    expect(screen.getByTestId("inspector-start-signal-i").textContent).toBe("Motor1/i");
-    expect(screen.getByTestId("inspector-start-w_rel")).toBeTruthy();
+    expect(screen.queryByTestId("inspector-start-i")).toBeNull();
 
     // Ports carry the domain letter and read-only signal ids.
     expect(screen.getByTestId("inspector-port-p-letter").textContent).toBe("E");
@@ -223,7 +219,9 @@ describe("inspector fields", () => {
     fireEvent.keyDown(name, { key: "Enter" });
     expect(docNode("n1")?.name).toBe("Motor2");
     expect(input("inspector-name").value).toBe("Motor2");
-    expect(screen.getByTestId("inspector-start-signal-i").textContent).toBe("Motor2/i");
+    expect(screen.getByTestId("inspector-signal-Motor2/shaft.f").textContent).toContain(
+      "Motor2/shaft.f",
+    );
     expect(useDocumentStore.getState().past).toHaveLength(1);
 
     act(() => useDocumentStore.getState().undo());
@@ -274,8 +272,8 @@ describe("inspector fields", () => {
   });
 
   it("edits a start-value override and undoes it", () => {
-    const motor = node("DCMotor", "n1", "Motor1");
-    open([motor]);
+    const inductor = node("Inductor", "n1", "L1");
+    open([inductor]);
     useDocumentStore.getState().setSelection(["n1"], []);
     render(<Inspector />);
 
@@ -284,6 +282,7 @@ describe("inspector fields", () => {
     fireEvent.blur(field);
     expect(docNode("n1")?.starts?.i).toBe("0.5");
     expect(screen.getByTestId("inspector-start-i-reset")).toBeTruthy();
+    expect(screen.getByTestId("inspector-start-signal-i").textContent).toBe("L1/i");
 
     act(() => useDocumentStore.getState().undo());
     expect(docNode("n1")?.starts?.i).toBeUndefined();

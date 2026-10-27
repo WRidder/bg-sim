@@ -210,6 +210,10 @@ end
 
 Write `manifest` to `path` through `path * ".tmp"` and rename it into place, so a live
 reader never sees a half-written JSON document (REQ-1).
+
+On Windows a reader (the backend's manifest poll or a UI request) may hold the old
+`manifest.json` open for a few milliseconds; replacing it then fails with `EBUSY`.
+Retry the rename/delete for up to about a second instead of surfacing a spurious E900.
 """
 function write_manifest_atomic(path::AbstractString, manifest)
     temp = path * ".tmp"
@@ -217,13 +221,27 @@ function write_manifest_atomic(path::AbstractString, manifest)
         JSON3.write(io, manifest)
         write(io, '\n')
     end
-    try
-        Base.Filesystem.rename(temp, path)
-    catch
-        isfile(path) && rm(path; force=true)
-        Base.Filesystem.rename(temp, path)
-    end
+    _replace_manifest(temp, path)
     return nothing
+end
+
+function _replace_manifest(temp::AbstractString, path::AbstractString)
+    last_error = nothing
+    for _ in 1:100
+        try
+            Base.Filesystem.rename(temp, path)
+            return
+        catch err
+            last_error = err
+            try
+                isfile(path) && rm(path; force=true)
+            catch
+                # The reader still has the old file open; wait and retry.
+            end
+            sleep(0.01)
+        end
+    end
+    throw(last_error)
 end
 
 # ---------------------------------------------------------------------------------------

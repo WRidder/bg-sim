@@ -48,7 +48,8 @@ describe("forked source", () => {
     const source = forkedSource(motor(), "DCMotorCopy");
     expect(source.startsWith("@block DCMotorCopy begin")).toBe(true);
     expect(source).not.toContain("@block DCMotor begin");
-    expect(source).toContain("@equations begin");
+    expect(source).toContain("@components begin");
+    expect(source).toContain("@connections begin");
   });
 
   it("refuses to fork source without the block declaration", () => {
