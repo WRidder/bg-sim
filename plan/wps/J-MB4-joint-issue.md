@@ -6,6 +6,15 @@ Related work: `plan/MULTIBOND_PLAN.md` section 6 (J-MB4, J-MB6), section 5.5, se
 Current code: `julia/BGSim/stdlib/multibond/` (13 blocks), `julia/BGSim/test/test_multibond_slice.jl`,
 `julia/BGSim/test/fixtures/multibond/pendulum.json`.
 
+**Review verdict (2026-10-28, accepted).** The index-3 diagnosis is structural. "No W201" was
+the wrong acceptance item for the rigid revolute and is the right one for the compliant pivot:
+J-MB4 is amended to require the compliant-pivot variant and zero W201; J-MB6 owns the rigid
+variant with **exactly two W201 by design**. Translational pivot compliance (not rotational) is
+the correct reading of "compliant"; `kt -> Inf` recovers the rigid joint. The gravity wrench
+(zero torque about the CoM, `R^T` on the force) and the Coriolis sign `Coriolis.e = -ad(V)^T P`
+on a 1-junction were both confirmed independently.
+
+
 ## 1. What Gate A needs
 
 Gate A is the planar vertical slice. The plan's acceptance model is
@@ -130,13 +139,20 @@ parent.e . parent.f + child.e . child.f + drive.e * qdot
 ```
 
 so the joint stores spring energy and dissipates only through `bt`. With `bt = 0` the pendulum
-is conservative. The fast translational mode is `sqrt(kt/m)` (about 1000 rad/s at
-`kt = 1e6`, `m = 1`), well inside Rodas5P's range for a 10 s run; the slow pendulum mode is
+is conservative. The fast translational mode is `sqrt(kt/m)`; the slow pendulum mode is
 `sqrt((J + mL^2)/(m g L))`.
 
-Expected state count for the pendulum: `P` (3) + `d` (2) + `q` (1) = 6, all differential, no
-W201. The body pose for gravity is still composed from `q` through `ComposePose2D`; no pose is
-integrated.
+Expected state count for the pendulum: `P` (3) + `d` (2) + `q` (1) = 6, all differential. The
+only algebraics are `qdot`, `tau = S^T child.e` and `fs`, and each is explicitly solvable from
+the equations above (`qdot` from `V_rel[1]`, `tau` from `child.e[1]`, `fs` from `d`/`V_rel`), so
+`mtkcompile` should reach index 0 with no dummy derivatives. The body pose for gravity is still
+composed from `q` through `ComposePose2D`; no pose is integrated.
+
+One deliberate simplification to document in the block: `d` is expressed in the **rotating child
+frame**, so `ddt(d) = V_rel[2:3]` integrates a frame-expressed velocity and omits the `omega x d`
+transport term. For an isotropic `kt` and `|d| ~ 1e-5 m` this is negligible, and the power
+identity above holds exactly by construction, so energy conservation is unaffected. Do not
+"fix" it later without also changing the power identity.
 
 Current implementation state: the `CoriolisPlanar` **sign bug is fixed** (the port effort is
 now `-ad(V)^T P`; a free-body integration test against an independent RK4 of
@@ -169,11 +185,30 @@ until they land.
    implemented and tested against the free-body reference. The plan's `e = ad(V)^T P` is the
    effort of the element in the opposite port convention; the sign must be chosen from the
    power direction of the enclosing junction.
-5. **The period assertion.** `2*pi*sqrt(L/g)` (1.418503353 s) and the physical rigid-body
-   period `2*pi*sqrt((J + mL^2)/(m g L))` (1.418787026 s) differ by 2.1e-4, so a 1e-3 test
-   against both is not a strong assertion. The current test is being tightened to the physical
-   period at 1e-5 (plus the plan's 1e-3 check against `2*pi*sqrt(L/g)` as reported), and the
-   energy drift is normalised by the KE/PE swing, not by `|E|`.
+5. **The period assertion.** Two effects are not in the model and both are at the 1e-5 level,
+   so a 1e-5 tolerance must either include them or be relaxed to 1e-4:
+   - **finite amplitude:** `T = T0 (1 + theta0^2/16 + ...)`; at `q0 = 0.01` this is 6.25e-6. The
+     6.3e-6 "error" measured with the old joint is almost exactly this correction, not a joint
+     error.
+   - **static pivot stretch:** `m g / kt ~ 9.8e-6 m` at `kt = 1e6`, `m = 1`, which for
+     `L ~ 0.5 m` shifts the period by about `0.5 * dL/L ~ 1e-5`. Use `kt = 1e8` (fast mode
+     1e4 rad/s, still fine for Rodas5P) or fold the correction in.
+   The test is being tightened to the **amplitude-corrected** physical period at 1e-4 (plus the
+   plan's 1e-3 check against `2*pi*sqrt(L/g)` as reported), and the energy drift is normalised
+   by the KE/PE swing, not by `|E|`.
+6. **Energy and the fast mode.** Unless `d` is initialised at its static deflection, the fast
+   `sqrt(kt/m)` mode is excited at `t = 0` with energy `1/2 kt |d0|^2`. Rodas5P damps it
+   numerically, and that loss appears as "drift" — on the order of 1e-3 of the swing energy is
+   enough to fail a swing-normalised 1e-6 check. The acceptance run must initialise `d`
+   consistently (the static deflection in the child frame at `q0`) and include `1/2 kt |d|^2` in
+   the energy budget.
+7. **A convention-independent free-body check.** The current free-body test compares the
+   implementation to `P' = ad(V)^T P`, so it shares the convention it checks. Add the invariant
+   that does not: for a free planar body with no external wrench, the world linear momentum
+   `m R(theta) [vx, vy]` and the angular momentum about the CoM are constant (to integrator
+   order). It is cheap and catches a wrong `Ad`/`ad` convention that the equation-level test
+   would reproduce.
+
 
 ## 6. Acceptance and next steps
 
@@ -183,9 +218,13 @@ until they land.
 - Full `Pkg.test()`, pytest + real-worker tests, web typecheck.
 - If the compliant pivot runs: J-MB4 is done with the deviation recorded ("the minimal revolute
   is a compliant-pivot variant; J-MB6 adds the rigid and per-axis compliant variants and the
-  composite"). If it does not initialise, the exact algebraic variable and equation set must be
-  reported before another design change; the fallback is to accept the rigid variant's two
-  W201 and amend the J-MB4 acceptance with the plan's 5.5 wording.
+  composite"). If it does not initialise, the triage order is: first the **initial `d`/`P`
+  consistency** (a non-zero static deflection or a body momentum inconsistent with the
+  constraints), then the algebraic equation count/solvability (`qdot`, `tau`, `fs`), and only
+  then the joint equations themselves. Report the exact algebraic variable and equation set
+  before another design change; the fallback is the rigid variant with its two by-design W201
+  (J-MB6 owns that variant).
+
 - J-MB6 then owns: the rigid variant for the DAE/index-reduction tests, the per-axis
   compliance, friction/limits, and the composite form. The six-axis arm (J-MB9/J-MB10) will
   face the same 6-DOF/1-DOF structure, so the decision here sets the pattern for Phase C.
@@ -197,8 +236,10 @@ until they land.
   — the slice elements.
 - `julia/BGSim/test/test_multibond_slice.jl` and
   `julia/BGSim/test/fixtures/multibond/pendulum.json` — the acceptance model.
-- Measured with the earlier (kinematically wrong) rigid joint, for reference only:
-  period 1.418795892 s vs physical 1.418787026 s (6.3e-6), energy drift 4.0e-9 relative over
-  10 s, stable equilibrium 4.0e-7 rad, 2 post-compile W201 (`Body/P[1]`, `Body/P[2]`),
-  `model.check` W201-free.
+- Measured with the earlier (kinematically wrong) rigid joint, as historical reference only:
+  period 1.418795892 s vs physical 1.418787026 s (6.3e-6). That residual is the finite-amplitude
+  correction `theta0^2/16 = 6.25e-6`, not a joint error; the model cannot be used as a
+  correctness reference. It also reported 2 post-compile W201 (`Body/P[1]`, `Body/P[2]`) with a
+  W201-free `model.check`.
 - The Coriolis free-body reference after the sign fix: max relative error 4.1e-14 over 2 s.
+
