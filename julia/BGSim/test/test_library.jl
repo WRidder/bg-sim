@@ -187,17 +187,27 @@ const M2_REFS = [
 const M3_REFS = [
     "stdlib:multibond/ComposePose2D",
     "stdlib:multibond/CoriolisPlanar",
+    "stdlib:multibond/CPlanar",
     "stdlib:multibond/DePlanar",
     "stdlib:multibond/DfPlanar",
+    "stdlib:multibond/ExternalWrenchPlanar",
     "stdlib:multibond/FixedTransform2D",
     "stdlib:multibond/GravityPlanar",
     "stdlib:multibond/GroundPlanar",
+    "stdlib:multibond/GYPlanar",
     "stdlib:multibond/IPlanar",
+    "stdlib:multibond/JointTransform2D",
+    "stdlib:multibond/MGYPlanar",
+    "stdlib:multibond/MSePlanar",
+    "stdlib:multibond/MSfPlanar",
+    "stdlib:multibond/MTFPlanar",
     "stdlib:multibond/Revolute2D",
+    "stdlib:multibond/RPlanar",
     "stdlib:multibond/ScrewTF",
     "stdlib:multibond/SePlanar",
     "stdlib:multibond/SfPlanar",
     "stdlib:multibond/TFAd",
+    "stdlib:multibond/TFPlanar",
 ]
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
@@ -1357,6 +1367,63 @@ const INTERFACE_FIELDS = [
                   ("Vrelout", [3])]
         @test [p.name for p in revolute.interface.parameters] ==
               ["rx", "ry", "kt", "bt", "q0"]
+
+        # The J-MB5 full planar set: the one-port C/R sources and the two-port transformers
+        # and gyrators. The physics tests live in `test_planar_primitives.jl`; here the
+        # interface fields (the plan 3.2 contract) are pinned.
+        c = blocks["stdlib:multibond/CPlanar"]
+        @test [(p.name, p.domain, p.size, p.frame) for p in c.interface.ports] ==
+              [("p", "Planar", [3], nothing)]
+        @test [(v.name, v.size, v.unit) for v in c.interface.variables] ==
+              [("qr", Int[], "rad"), ("qx", Int[], "m"), ("qy", Int[], "m")]
+        @test [(p.name, p.unit) for p in c.interface.parameters] ==
+              [("kr", "N*m/rad"), ("kx", "N/m"), ("ky", "N/m"), ("qr0", "rad"),
+                  ("qx0", "m"), ("qy0", "m")]
+        @test c.interface.causality ==
+              [(ports = ["p"], kind = "preferred", value = "effort_out")]
+        r = blocks["stdlib:multibond/RPlanar"]
+        @test [(p.name, p.unit) for p in r.interface.parameters] ==
+              [("br", "N*m*s/rad"), ("bx", "N*s/m"), ("by", "N*s/m")]
+        @test isempty(r.interface.causality)              # free, like the scalar R
+        mse = blocks["stdlib:multibond/MSePlanar"]
+        @test [(i.name, i.type, i.unit) for i in mse.interface.inputs] ==
+              [("ur", "Real", "N*m"), ("ux", "Real", "N"), ("uy", "Real", "N")]
+        @test mse.interface.causality ==
+              [(ports = ["p"], kind = "fixed", value = "effort_out")]
+        msf = blocks["stdlib:multibond/MSfPlanar"]
+        @test [(i.name, i.unit) for i in msf.interface.inputs] ==
+              [("vr", "rad/s"), ("vx", "m/s"), ("vy", "m/s")]
+        @test msf.interface.causality ==
+              [(ports = ["p"], kind = "fixed", value = "flow_out")]
+        ew = blocks["stdlib:multibond/ExternalWrenchPlanar"]
+        @test [(i.name, i.unit) for i in ew.interface.inputs] ==
+              [("wr", "N*m"), ("wx", "N"), ("wy", "N")]
+        tf = blocks["stdlib:multibond/TFPlanar"]
+        @test [(p.name, p.domain, p.size, p.frame) for p in tf.interface.ports] ==
+              [("a", "Planar", [3], nothing), ("b", "Planar", [3], nothing)]
+        @test [(p.name, p.unit, p.default) for p in tf.interface.parameters] ==
+              [("n", "1", "[1.0, 1.0, 1.0]")]
+        @test tf.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+        mtf = blocks["stdlib:multibond/MTFPlanar"]
+        @test [(i.name, i.size, i.unit) for i in mtf.interface.inputs] ==
+              [("u", [3], "1")]
+        @test mtf.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+        gy = blocks["stdlib:multibond/GYPlanar"]
+        @test [(p.name, p.unit) for p in gy.interface.parameters] == [("G", nothing)]
+        @test gy.interface.causality ==
+              [(ports = ["a", "b"], kind = "gyrator", value = nothing)]
+        mgy = blocks["stdlib:multibond/MGYPlanar"]
+        @test [(i.name, i.size, i.unit) for i in mgy.interface.inputs] ==
+              [("G", [3, 3], nothing)]
+        @test mgy.interface.causality ==
+              [(ports = ["a", "b"], kind = "gyrator", value = nothing)]
+        # The joint-role transform declares the two joint frames, so it is the legal bridge.
+        jt = blocks["stdlib:multibond/JointTransform2D"]
+        @test [(p.name, p.domain, p.size, p.frame) for p in jt.interface.ports] ==
+              [("a", "Planar", [3], "parent"), ("b", "Planar", [3], "child")]
+        @test [(i.name, i.size) for i in jt.interface.inputs] == [("g", [3])]
     end
 
     @testset "catalog structure against catalog.schema.json" begin

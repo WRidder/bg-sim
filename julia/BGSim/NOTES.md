@@ -1116,3 +1116,82 @@ assertions, so the subject under test is reached. Both go away with the contract
 | `test_multibond_slice.jl` | **4327 assertions, green**; period 1.418795892 s, drift 4.00e-9, equilibrium 4.00e-7 (unchanged) |
 | planar manifest units | `p.e[1]="N*m"`, `p.e[2]="N"`, `p.e[3]="N"`, `p.f[1]="rad/s"`, `p.f[2]="m/s"`, `p.f[3]="m/s"`, `p.P="W"` |
 | spatial manifest units | `p.e[1..3]="N*m"`, `p.e[4..6]="N"`, `p.f[1..3]="rad/s"`, `p.f[4..6]="m/s"`, `p.P="W"`; `P = Σ e[k]f[k] = 91t` to 1e-9 |
+---
+
+# J-MB5 — full planar vector primitives (verified 2026-10-28)
+
+The planar element set of the plan is complete. Ten blocks were added to
+`stdlib/multibond/` beside the thirteen from J-MB4, so the group holds **23** blocks and the
+catalog **149** (`test_library` derives the count from `M3_REFS`; nothing hard-codes it).
+`test/test_planar_primitives.jl` (**124 481 assertions**) is the acceptance; it is included by
+`runtests.jl`. The J-MB4 slice is unchanged: **6367** green, period 1.418796031834393 s,
+energy drift 1.776e-15 J.
+
+## The elements and the naming rule
+
+`stdlib:multibond/XPlanar` **is** the planar `X` of the plan's element list (`C`, `R`, `MSe`,
+`MSf`, `TF`, `GY`, `MTF`, `MGY`, `Se`, `Sf`, `De`, `Df`, `I`). The suffix is not decoration: a
+block *name* may not repeat in the catalog, and `C`/`R`/`TF`/`GY`/`MSe`/`MSf`/`MTF`/`MGY`/`Se`/`Sf`/
+`De`/`Df`/`I` already exist in `stdlib:bondgraph/`. `Gravity`, `Ground`, `De` and `Df` are
+therefore **not** aliased either (`Ground` exists in `stdlib:electrical`, `De`/`Df` in
+`stdlib:bondgraph`); the suffixed names `GravityPlanar`, `GroundPlanar`, `DePlanar`,
+`DfPlanar` are the plan's elements. `ComposePose2D` is the plan's `ComposePose`;
+`JointTransform2D` is its `JointTransform`.
+
+## Frozen interface decisions
+
+* **`CPlanar` stores three scalar states** (`qr`, `qx`, `qy`), not a `Vec{3}`. A vector
+  declaration carries one `unit` for the whole array, but a planar capacitance holds an
+  angular displacement (rad) beside two linear ones (m) (D-MB2/D-MB10). Parameters
+  `kr`/`kx`/`ky` (N*m/rad, N/m, N/m) plus a zero-default rest deflection `qr0`/`qx0`/`qy0`.
+  Preferred effort-out causality, exactly like the scalar `C`; `ddt(q[k]) = p.f[k]`,
+  `p.e[k] = k[k]*(q[k] - q0[k])`.
+* **`RPlanar`** is free causality (no declaration, like the scalar `R`), `p.e[k] = b[k]*p.f[k]`
+  with `br` in N*m*s/rad and `bx`/`by` in N*s/m; its port power is `sum b f^2 >= 0`.
+* **`MSePlanar`/`MSfPlanar`/`ExternalWrenchPlanar` take three scalar inputs** (`ur/ux/uy`,
+  `vr/vx/vy`, `wr/wx/wy`) with their own units, because a `Vec` signal is unit-homogeneous in
+  v1. `ExternalWrenchPlanar` is an effort source (`p.e = w`): on a 1-junction the body feels
+  **`-w`**, the same sign algebra as `GravityPlanar` (whose port effort is `-W_gravity`), so
+  injecting a physical wrench needs `w = -W_ext`.
+* **`TFPlanar`/`MTFPlanar` are diagonal** (`n::Vec{3}`, `u::Vec{3}`, both dimensionless):
+  `a.f[k] = n[k]*b.f[k]`, `b.e[k] = -n[k]*a.e[k]`. A general matrix transformer needs the
+  inverse transpose for its reverse direction (the equation layer has no `inv`), so the
+  matrix case that needs **no** inverse is the gyrator, which is where it lives.
+* **`GYPlanar`/`MGYPlanar` take a full `Mat{3,3}`** `G` (parameter / signal input):
+  `a.e = G*b.f`, `b.e = -G^T*a.f` written component-wise, power-continuous for every `G`; the
+  `G` is invertible-free (the block never inverts it). **Unit caveat:** a general planar
+  gyrator matrix is *not* unit-homogeneous (its rotational/translational entries differ by a
+  length), and a `Mat` declaration has one `unit` slot, so `G` is declared without a unit —
+  the products are unit wildcards instead of a wrong unit (D-MB10 defers vector unit
+  inference). The ports keep their own per-component units, and `TFPlanar`'s dimensionless
+  `n` keeps the component-by-component unit proof alive through a transformer.
+* **`JointTransform2D`** carries `TFAd`'s adjoint equations with the two frame roles
+  `parent`/`child`, so a joint's parent-side and child-side ports bridge legally. v1
+  limitation (D-MB5): a `frame` is a string literal, not a parameter, so a multi-joint chain
+  cannot rename the two roles per instance; typed frame objects are deferred. `ScrewTF`
+  remains the joint-coordinate TF for J-MB6.
+
+## Measured (this machine, 2026-10-28)
+
+| item | measured |
+| --- | --- |
+| catalog | **149** blocks, `multibond` group **23**, every new block `block.check` 0/0, `dimension = 2`, balanced |
+| `CPlanar` stored energy `|dE - int p.P|` | **1.99e-13 J** of 50.83 J |
+| `RPlanar` `|p.P - sum b f^2|` | **0** of 0.6225 W |
+| `TFPlanar` / `MTFPlanar` / `JointTransform2D` worst power residual | **1.1e-16 / 2.2e-16 / 2.0e-16** |
+| `GYPlanar` power residual, 4 random full matrices | **8.5e-15** worst |
+| `MGYPlanar` power residual | **2.1e-16** |
+| `CoriolisPlanar` + `CPlanar` + `RPlanar` on one 1-junction vs an independent RK4 | P **4.5e-15**, q **1.2e-15** relative; energy loss = damper integral to 1e-9 |
+| closed bond graph (source, I, C, R, TF, GY, sink; 8 001 points) | chain residuals <= **8.9e-16**, max `|junction power|` **8.9e-16 W**, ledger residual **7.7e-9 J** of 0.0375 J supplied |
+| `test_planar_primitives.jl` | **124 481 assertions, green, ~1 m 39 s** |
+| `test_multibond_slice.jl` | **6367 assertions, green**, same period/energy |
+| full `Pkg.test()` | **green** (`library` 7335, J-MB4 6367, J-MB5 124 481) |
+| `uv run pytest backend/tests -q` / `-m julia` | **269 passed, 4 deselected** + the pre-existing `test_decimate` perf gate (median 52.8 ms vs 50 ms on this loaded machine; **10/10 alone**) / **4 passed** |
+| `web` `npm run typecheck` / `npm test -- --run` | clean / **433 passed (44 files)** |
+
+**Out-of-owns edit (needed, flagged):** `src/library/catalog.jl` gained the ten
+`BLOCK_METADATA` entries (description + icon). `test_library` asserts that the metadata table
+covers *exactly* the stdlib refs and that every block has a non-empty description and icon, so
+a new block cannot ship without an entry; the edit is data only (no code path changed).
+Everything else is under `stdlib/multibond/`, the new test file, `runtests.jl` (one include),
+`test_library.jl` (the `M3_REFS` list and the new blocks' interface fields) and this file.

@@ -547,6 +547,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Eulerian junction structure (Coriolis/gyroscopic) for a planar body: p.e = ad(p.f)^T P from the momentum signal, no inertia copy (D-MB3).",
         icon = "mb-coriolis-planar",
     ),
+    "stdlib:multibond/CPlanar" => (
+        description = "Planar capacitive storage (the planar C): three scalar displacement states, one per component, with their own units and a zero rest deflection.",
+        icon = "mb-c-planar",
+    ),
     "stdlib:multibond/DePlanar" => (
         description = "Planar effort detector; reads the wrench, imposes zero twist, outputs the three wrench components.",
         icon = "mb-de-planar",
@@ -554,6 +558,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:multibond/DfPlanar" => (
         description = "Planar flow detector; reads the twist, imposes zero wrench, outputs the three twist components.",
         icon = "mb-df-planar",
+    ),
+    "stdlib:multibond/ExternalWrenchPlanar" => (
+        description = "Planar external wrench source in the port frame: three scalar inputs (N*m, N, N) impose the port effort; on a 1-junction the body feels the negative wrench.",
+        icon = "mb-external-wrench-planar",
     ),
     "stdlib:multibond/FixedTransform2D" => (
         description = "Constant planar frame transform (x, y, theta) from a parent frame to a child frame; the legal two-frame bridge (D-MB5).",
@@ -567,13 +575,41 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Planar reference node; holds its port at zero twist in the world frame.",
         icon = "mb-ground-planar",
     ),
+    "stdlib:multibond/GYPlanar" => (
+        description = "Planar matrix gyrator (the planar GY): a.e = G*b.f and b.e = -G^T*a.f, power-continuous for every G, no inverse needed.",
+        icon = "mb-gy-planar",
+    ),
     "stdlib:multibond/IPlanar" => (
         description = "Planar rigid-body inertia at the centre of mass (J, m): momentum P is the state, the twist is its output, and P is exposed as a signal for Coriolis (D-MB3).",
         icon = "mb-i-planar",
     ),
+    "stdlib:multibond/JointTransform2D" => (
+        description = "Joint-role planar adjoint transform (the plan JointTransform): component-wise Ad(g) between the joint parent and child frames, power-continuous.",
+        icon = "mb-joint-transform-2d",
+    ),
+    "stdlib:multibond/MGYPlanar" => (
+        description = "Modulated planar matrix gyrator: the 3x3 gyrator matrix is a signal input; a.e = G*b.f and b.e = -G^T*a.f.",
+        icon = "mb-mgy-planar",
+    ),
+    "stdlib:multibond/MSePlanar" => (
+        description = "Modulated planar effort source: three scalar input components (N*m, N, N) impose the wrench component-wise with fixed effort causality.",
+        icon = "mb-mse-planar",
+    ),
+    "stdlib:multibond/MSfPlanar" => (
+        description = "Modulated planar flow source: three scalar input components (rad/s, m/s, m/s) impose the twist component-wise with fixed flow causality.",
+        icon = "mb-msf-planar",
+    ),
+    "stdlib:multibond/MTFPlanar" => (
+        description = "Modulated planar transformer: a diagonal Vec{3} modulus signal scales each component, power-continuous per component.",
+        icon = "mb-mtf-planar",
+    ),
     "stdlib:multibond/Revolute2D" => (
         description = "Minimal planar revolute joint: parent and child planar bonds plus a rotational drive, with the joint pose composed from q (not integrated).",
         icon = "mb-revolute-2d",
+    ),
+    "stdlib:multibond/RPlanar" => (
+        description = "Planar resistive element (the planar R): a torsional and two translational damping coefficients, free causality.",
+        icon = "mb-r-planar",
     ),
     "stdlib:multibond/ScrewTF" => (
         description = "Planar revolute screw transformer S = [1, ry, -rx] between a planar bond and one rotational drive axis (D-MB8).",
@@ -590,6 +626,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:multibond/TFAd" => (
         description = "Planar adjoint transformer driven by a pose signal (theta, x, y); power-continuous, the general transform primitive.",
         icon = "mb-tf-ad",
+    ),
+    "stdlib:multibond/TFPlanar" => (
+        description = "Planar diagonal transformer (the planar TF): a dimensionless Vec{3} modulus per component, a.f[k] = n[k]*b.f[k] and b.e[k] = -n[k]*a.e[k].",
+        icon = "mb-tf-planar",
     ),
 )
 

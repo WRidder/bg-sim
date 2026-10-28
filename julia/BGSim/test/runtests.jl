@@ -250,6 +250,9 @@ include("test_units_multibond.jl")
 # Work package J-MB4: the minimal planar multibond vertical slice and the Gate A pendulum.
 include("test_multibond_slice.jl")
 
+# Work package J-MB5: the full planar vector primitive set.
+include("test_planar_primitives.jl")
+
 # Milestone M2 scaffolding: each WP creates exactly one of these files, and the M2 gate
 # replaces these guards with plain includes (the same pattern DEC-5 used for M1).
 for entry in ("test_events.jl", "test_discrete.jl", "test_units_model.jl",
