@@ -1,0 +1,329 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "pendulum",
+  "$comment": "Gate A vertical slice (plan 9.3, X-MB1): a 2D multibond pendulum on the compliant-pivot Revolute2D joint. Power path: GroundPlanar -> Pivot (0-junction, the common pivot wrench) -> Joint.parent; Joint.child -> Link (FixedTransform2D, pivot -> CoM, the 90 degree body frame) -> J1 (1-junction) with Body (IPlanar, J = 1e-4, m = 1), Gravity (m, g0 = 9.81) and Coriolis (P from Body.Pm). The drive is a zero-torque Se on the Rotation port. ComposePose2D builds the CoM pose from the joint pose (q, 0, 0) and the constant CoM offset (pi/2, 0, -0.5); no pose is integrated. De measures the pivot reaction wrench on the 0-junction and Df the body twist on the 1-junction (the plot taps). The static pivot deflection d = (-9.809836500817498e-10, -9.809509504087487e-8) m is the Revolute2D start, so the run starts at the static equilibrium of the fast translational mode.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Ground",
+        "block": { "ref": "stdlib:multibond/GroundPlanar" },
+        "position": { "x": 80, "y": 300 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "Pivot",
+        "block": { "junction": "0" },
+        "position": { "x": 260, "y": 300 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n3",
+        "name": "Joint",
+        "block": { "ref": "stdlib:multibond/Revolute2D" },
+        "position": { "x": 440, "y": 300 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.0",
+          "ry": "0.0",
+          "kt": "1.0e8",
+          "bt": "0.0",
+          "q0": "0.01"
+        },
+        "starts": {
+          "d": "[-9.809836500817498e-10, -9.809509504087487e-8]"
+        },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n4",
+        "name": "Drive",
+        "block": { "ref": "stdlib:bondgraph/Se" },
+        "position": { "x": 440, "y": 110 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "e": "0.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n5",
+        "name": "Link",
+        "block": { "ref": "stdlib:multibond/FixedTransform2D" },
+        "position": { "x": 620, "y": 300 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "theta": "1.5707963267948966",
+          "x": "0.0",
+          "y": "-0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n6",
+        "name": "J1",
+        "block": { "junction": "1" },
+        "position": { "x": 800, "y": 300 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n7",
+        "name": "Body",
+        "block": { "ref": "stdlib:multibond/IPlanar" },
+        "position": { "x": 980, "y": 180 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "J": "1.0e-4", "m": "1.0" },
+        "starts": { "P": "[0.0, 0.0, 0.0]" },
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n8",
+        "name": "Gravity",
+        "block": { "ref": "stdlib:multibond/GravityPlanar" },
+        "position": { "x": 980, "y": 340 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "m": "1.0", "g0": "9.81" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n9",
+        "name": "Coriolis",
+        "block": { "ref": "stdlib:multibond/CoriolisPlanar" },
+        "position": { "x": 980, "y": 500 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n10",
+        "name": "Df",
+        "block": { "ref": "stdlib:multibond/DfPlanar" },
+        "position": { "x": 980, "y": 650 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n11",
+        "name": "De",
+        "block": { "ref": "stdlib:multibond/DePlanar" },
+        "position": { "x": 260, "y": 470 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n12",
+        "name": "CoMOffset",
+        "block": {
+          "inline": {
+            "source": "@block CoMOffsetPose2D begin\n    @parameters begin\n        x::Real = 0.0, [unit = \"m\", description = \"CoM x in the joint frame\"]\n        y::Real = 0.0, [unit = \"m\", description = \"CoM y in the joint frame\"]\n        theta::Real = 0.0, [unit = \"rad\", description = \"Body frame angle in the joint frame\"]\n    end\n    @outputs g::Vec{3}\n    @equations begin\n        g[1] ~ theta\n        g[2] ~ x\n        g[3] ~ y\n    end\nend\n"
+          }
+        },
+        "position": { "x": 440, "y": 620 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "theta": "1.5707963267948966",
+          "x": "0.0",
+          "y": "-0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n13",
+        "name": "Compose",
+        "block": { "ref": "stdlib:multibond/ComposePose2D" },
+        "position": { "x": 620, "y": 620 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c01",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c02",
+        "kind": "bond",
+        "from": { "node": "n11", "port": "p" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c03",
+        "kind": "bond",
+        "from": { "node": "n3", "port": "parent" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c04",
+        "kind": "bond",
+        "from": { "node": "n3", "port": "child" },
+        "to": { "node": "n5", "port": "a" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c05",
+        "kind": "bond",
+        "from": { "node": "n5", "port": "b" },
+        "to": { "node": "n6" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c06",
+        "kind": "bond",
+        "from": { "node": "n7", "port": "p" },
+        "to": { "node": "n6" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c07",
+        "kind": "bond",
+        "from": { "node": "n8", "port": "p" },
+        "to": { "node": "n6" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c08",
+        "kind": "bond",
+        "from": { "node": "n9", "port": "p" },
+        "to": { "node": "n6" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c09",
+        "kind": "bond",
+        "from": { "node": "n10", "port": "p" },
+        "to": { "node": "n6" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c10",
+        "kind": "bond",
+        "from": { "node": "n4", "port": "p" },
+        "to": { "node": "n3", "port": "drive" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c11",
+        "kind": "signal",
+        "from": { "node": "n3", "port": "pose" },
+        "to": { "node": "n13", "port": "gp" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c12",
+        "kind": "signal",
+        "from": { "node": "n12", "port": "g" },
+        "to": { "node": "n13", "port": "gl" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c13",
+        "kind": "signal",
+        "from": { "node": "n13", "port": "g" },
+        "to": { "node": "n8", "port": "g" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c14",
+        "kind": "signal",
+        "from": { "node": "n7", "port": "Pm" },
+        "to": { "node": "n9", "port": "P" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 4.0,
+    "solver": "auto",
+    "reltol": 1e-9,
+    "abstol": 1e-11,
+    "max_step": null,
+    "output": { "mode": "points", "points": 4001 },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Joint angle (q0 = 0.01 rad) and pivot deflection",
+      "signals": ["Joint/q", "Joint/dout[1]", "Joint/dout[2]"]
+    },
+    {
+      "id": "p2",
+      "title": "Body momentum [angular; linear]",
+      "signals": ["Body/P[1]", "Body/P[2]", "Body/P[3]"]
+    },
+    {
+      "id": "p3",
+      "title": "CoM height and body twist (Df tap)",
+      "signals": ["Compose/g[3]", "Df/y[1]", "Df/y[2]", "Df/y[3]"]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

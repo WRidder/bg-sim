@@ -1,0 +1,98 @@
+{
+  "project": "multibond-pendulum-2d",
+  "description": "Gate A acceptance (plan 9.3, X-MB1). A 2D multibond pendulum: GroundPlanar -> 0-junction (pivot wrench) -> Revolute2D compliant pivot (exact rotation q, compliant translations d with kt = 1e8, bt = 0) -> FixedTransform2D (pivot -> CoM, the 90 degree body frame) -> 1-junction with IPlanar (J = 1e-4, m = 1), GravityPlanar (m, g0 = 9.81) and CoriolisPlanar (P from Body.Pm). The drive is a zero-torque Se on the Rotation port. ComposePose2D builds the CoM pose from the joint pose (q, 0, 0) and the constant offset (pi/2, 0, -0.5); no pose is integrated. The pivot starts at the static deflection d0 = (-9.8098365e-10, -9.8095095e-8) m, so the fast sqrt(kt/m) translational mode is not excited. The 4 s run (the model's own settings, what the editor runs) checks q0, the period and the diagnostics; the pendulum-10s entry re-runs the same model with a 10 s settings override for the energy budget. The period reference is the amplitude-corrected physical period T = 2*pi*sqrt((J + m*L_eff^2)/(m*g*L_eff)) * (1 + q0^2/16) with L_eff = L + m*g*cos(q0)/kt; the second period check reports the simple 2*pi*sqrt(L/g) at 1e-3. The energy check is the runner's X-MB1 kind: E = 1/2 P^T M^-1 P + m*g*(gy + sin(q)*d1 + cos(q)*d2) + 1/2 kt |d|^2, normalised by the swing m*g*L*(1 - cos(q0)).",
+  "models": {
+    "pendulum": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Joint/q",
+          "t": 0.0,
+          "value": 0.01,
+          "abs": 1e-9,
+          "note": "the joint starts at q0 = 0.01 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint/dout[1]",
+          "t": 0.0,
+          "value": -9.809836500817498e-10,
+          "abs": 1e-14,
+          "note": "the pivot x deflection starts at its static value"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint/dout[2]",
+          "t": 0.0,
+          "value": -9.809509504087487e-8,
+          "abs": 1e-14,
+          "note": "the pivot y deflection starts at -m*g*cos(q0)/kt, so the fast translational mode carries no extra energy"
+        },
+        {
+          "kind": "period",
+          "signal": "Joint/q",
+          "direction": "up",
+          "n": 1,
+          "value": 1.4187960322337063,
+          "rtol": 1e-5,
+          "note": "the amplitude-corrected physical period 1.4187960322 s (L_eff = 0.5000000981 m, q0^2/16 = 6.25e-6) over the first two upward zero crossings of q"
+        },
+        {
+          "kind": "period",
+          "signal": "Joint/q",
+          "direction": "up",
+          "n": 1,
+          "value": 1.4185033534428875,
+          "rtol": 1e-3,
+          "note": "the plan's simple reference 2*pi*sqrt(L/g) = 1.4185033534 s at 1e-3; the measured period is 2.1e-4 above it (the finite amplitude plus the body inertia)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Joint/q",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 0.01,
+          "abs": 1e-6,
+          "note": "the swing amplitude is q0: the run keeps it to 2e-9 rad (the period is the amplitude-corrected one)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["W201", "E101", "E102", "E103", "E106", "W206"],
+          "note": "the compliant pivot keeps every state integral (no W201), the model has no connection/causality/unit error and the run hits no event limit"
+        }
+      ]
+    },
+    "pendulum-10s": {
+      "model": "pendulum",
+      "settings": {
+        "t_end": 10.0,
+        "output": {
+          "mode": "points",
+          "points": 10001
+        }
+      },
+      "checks": [
+        {
+          "kind": "energy",
+          "p": ["Body/P[1]", "Body/P[2]", "Body/P[3]"],
+          "q": "Joint/q",
+          "pose": "Compose/g[3]",
+          "d": ["Joint/dout[1]", "Joint/dout[2]"],
+          "J": 1e-4,
+          "m": 1.0,
+          "L": 0.5,
+          "g0": 9.81,
+          "kt": 1e8,
+          "q0": 0.01,
+          "tol": 1e-6,
+          "note": "E = KE + m*g*h + 1/2 kt |d|^2 with h = gy + sin(q)*d1 + cos(q)*d2; max|E - E0| / (m*g*L*(1 - cos(q0))) <= 1e-6 over 10 s"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["W201", "E101", "E102", "E103", "E106", "W206"],
+          "note": "the 10 s energy run reports the same clean diagnostics"
+        }
+      ]
+    }
+  }
+}

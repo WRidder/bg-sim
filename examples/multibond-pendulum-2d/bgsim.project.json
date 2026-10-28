@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "multibond-pendulum-2d",
+  "models": [
+    "pendulum"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

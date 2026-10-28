@@ -14,10 +14,10 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
 * starts each model's run through ``POST /api/projects/{p}/runs``, waits for
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
 * evaluates every check kind (``final_value``, ``cursor_value``, ``max_abs``,
-  ``max_abs_le``, ``ratio``, ``zero_crossing``, ``compare_signals``,
-  ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak`` and
-  ``no_diagnostics``), prints one line per check and exits non-zero when any
-  check fails.
+  ``max_abs_le``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
+  ``compare_signals``, ``rms_difference``, ``step_response``, ``ripple``,
+  ``fft_peak`` and ``no_diagnostics``), prints one line per check and exits
+  non-zero when any check fails.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
 (``n`` Float64 values), then one contiguous column per manifest signal, in
@@ -124,6 +124,46 @@ centered moving average so a decaying envelope does not dominate a ring-down::
 
     {"kind": "fft_peak", "signal": "SInt/y", "from_t": 1.8, "to_t": 4.0,
      "min_hz": 0.5, "max_hz": 2.5, "value": 1.24, "rtol": 0.05}
+
+``period`` measures the period of ``signal`` from two consecutive crossings of
+``level`` (default 0) in ``direction`` (default ``"up"``).  ``n`` (default 1) is
+the first crossing of the pair, so ``n = 1`` uses the first and second crossings.
+It collapses the event rows and interpolates the crossings exactly as
+``zero_crossing`` does, then compares the difference with ``value`` through
+``rtol``/``abs`` (the M3 pendulum reads its period this way, and reports the
+simple-reference period with a second check)::
+
+    {"kind": "period", "signal": "Joint/qout", "direction": "up", "n": 1,
+     "value": 1.4187960322, "rtol": 1e-5}
+
+``energy`` is the X-MB1 planar-pendulum energy budget over a run.  It reads the
+three momentum components ``p``, the joint angle ``q``, the composed CoM pose
+(``pose`` is a component id such as ``"Compose/g[3]"``, or the base id
+``"Compose/g"`` and then its y component is used) and the two pivot deflections
+``d``, and computes, with ``J``, ``m``, ``kt`` and ``g0``::
+
+    KE = 0.5 * (P1^2/J + P2^2/m + P3^2/m)
+    h  = pose_y + sin(q)*d1 + cos(q)*d2
+    E  = KE + m*g0*h + 0.5*kt*(d1^2 + d2^2)
+
+It passes when ``max|E - E0| / swing <= tol`` (default ``tol = 1e-6``), where
+``E0`` is the first sample of the window and ``swing = m*g0*L*(1 - cos(q0))``.
+``q0`` is the given initial angle, default the first ``q`` sample of the window.
+The detail prints E0, the drift in J, the swing and the ratio::
+
+    {"kind": "energy", "p": ["Body/P[1]", "Body/P[2]", "Body/P[3]"],
+     "q": "Joint/qout", "pose": "Compose/g[3]",
+     "d": ["Joint/dout[1]", "Joint/dout[2]"],
+     "J": 1e-4, "m": 1.0, "L": 0.5, "g0": 9.81, "kt": 1e8,
+     "q0": 0.01, "tol": 1e-6}
+
+A model entry may also carry ``"model"`` (the file to run when the key is only a
+label) and ``"settings"`` (deep-merged into the model document before the run).
+The pendulum uses that to read its 10 s energy window from the same 4 s model::
+
+    {"models": {"pendulum-10s": {"model": "pendulum",
+      "settings": {"t_end": 10.0, "output": {"points": 10001}},
+      "checks": [...]}}}
 """
 
 from __future__ import annotations
@@ -280,9 +320,28 @@ def _read_columns(
     return table[0], signals
 
 
-def _run_model(client: httpx.Client, project: str, project_dir: Path, model: str) -> Run:
+def _merge_settings(target: dict[str, Any], overlay: dict[str, Any]) -> None:
+    """Deep-merge an expected.json ``settings`` overlay into a model document."""
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(target.get(key), dict):
+            _merge_settings(target[key], value)
+        else:
+            target[key] = value
+
+
+def _run_model(
+    client: httpx.Client,
+    project: str,
+    project_dir: Path,
+    model: str,
+    settings: Any = None,
+) -> Run:
     """Open the model, run it and read its columns once it is done."""
     model_document = _get_json(client, f"/api/projects/{project}/models/{model}")
+    if settings is not None:
+        if not isinstance(settings, dict):
+            raise ValueError("'settings' must be an object")
+        _merge_settings(model_document.setdefault("settings", {}), settings)
     response = client.post(f"/api/projects/{project}/runs", json={"model": model_document})
     if response.status_code != 201:
         raise RuntimeError(
@@ -471,6 +530,43 @@ def _collapsed(times: np.ndarray, values: np.ndarray) -> tuple[np.ndarray, np.nd
     return np.asarray(out_t, dtype=float), np.asarray(out_v, dtype=float)
 
 
+def _crossing_times(
+    times: np.ndarray, values: np.ndarray, level: float, direction: str
+) -> list[float]:
+    """The interpolated instants where ``values`` crosses ``level``.
+
+    Event instants appear twice, so ``times``/``values`` come from
+    :func:`_collapsed`.  An event stops the solver on the level but leaves a
+    residual of the order of its tolerance: a band relative to the signal scale
+    lets the contact count as reaching the level, and a sample still on the near
+    side only counts when the next sample turns around, so a slow approach is not
+    counted early.
+    """
+    band = 1e-9 * max(1.0, float(np.max(np.abs(values))) if values.size else 0.0)
+    crossings: list[float] = []
+    for i in range(times.size - 1):
+        before = float(values[i])
+        after = float(values[i + 1])
+        if direction == "down":
+            reached = before > level and after <= level + band
+            turned = after <= level or (
+                i + 2 < times.size and float(values[i + 2]) > after
+            )
+        else:
+            reached = before < level and after >= level - band
+            turned = after >= level or (
+                i + 2 < times.size and float(values[i + 2]) < after
+            )
+        if not reached or not turned:
+            continue
+        span = after - before
+        if span == 0.0:
+            continue
+        fraction = (level - before) / span
+        crossings.append(float(times[i] + fraction * (times[i + 1] - times[i])))
+    return crossings
+
+
 def _zero_crossing_check(
     report: Report, project: str, model: str, run: Run, check: dict[str, Any]
 ) -> None:
@@ -504,33 +600,7 @@ def _zero_crossing_check(
     total, tolerance_text = tolerance
 
     times, values = _collapsed(run.time, run.signals[signal])
-    # An event stops the solver on the level, but root finding leaves a tiny residual of
-    # the order of its tolerance: the bouncing ball's h at an impact is ~1e-16, not <= 0.
-    # A band relative to the signal scale lets the contact count as reaching the level;
-    # when the sample is still on the near side, a turn-around at the next sample is
-    # required so that a slow approach still descending is not counted early.
-    band = 1e-9 * max(1.0, float(np.max(np.abs(values))) if values.size else 0.0)
-    crossings: list[float] = []
-    for i in range(times.size - 1):
-        before = float(values[i])
-        after = float(values[i + 1])
-        if direction == "down":
-            reached = before > level and after <= level + band
-            turned = after <= level or (
-                i + 2 < times.size and float(values[i + 2]) > after
-            )
-        else:
-            reached = before < level and after >= level - band
-            turned = after >= level or (
-                i + 2 < times.size and float(values[i + 2]) < after
-            )
-        if not reached or not turned:
-            continue
-        span = after - before
-        if span == 0.0:
-            continue
-        fraction = (level - before) / span
-        crossings.append(float(times[i] + fraction * (times[i + 1] - times[i])))
+    crossings = _crossing_times(times, values, level, direction)
     if len(crossings) < n:
         report.check(
             False,
@@ -544,6 +614,66 @@ def _zero_crossing_check(
         f"#{n} {direction} crossing of {level:g} at t={measured:.12g}, "
         f"expected {expected:.12g} ({tolerance_text}; |delta| {abs(measured - expected):.3g}; "
         f"{len(crossings)} crossing(s))"
+    )
+    report.check(abs(measured - expected) <= total, label, detail)
+
+
+def _period_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The period between two consecutive crossings of a signal."""
+    signal = str(check.get("signal", ""))
+    direction = str(check.get("direction", "up"))
+    label = f"{project}/{model} {signal} period {direction}"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value'")
+        return
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    if direction not in {"down", "up"}:
+        report.check(False, label, "'direction' must be 'down' or 'up'")
+        return
+    try:
+        n = int(check.get("n", 1))
+        level = float(check.get("level", 0.0))
+    except (TypeError, ValueError):
+        report.check(False, label, "'n' must be an integer and 'level' a number")
+        return
+    if n < 1:
+        report.check(False, label, "'n' must be at least 1")
+        return
+    try:
+        expected = float(check["value"])
+    except (TypeError, ValueError):
+        report.check(False, label, "'value' must be a number")
+        return
+    if expected == 0.0:
+        report.check(False, label, "the expected period must not be zero")
+        return
+    tolerance = _tolerance(check, expected)
+    if tolerance is None:
+        report.check(False, label, "the check needs 'rtol' or 'abs'")
+        return
+    total, tolerance_text = tolerance
+
+    times, values = _collapsed(run.time, run.signals[signal])
+    crossings = _crossing_times(times, values, level, direction)
+    if len(crossings) < n + 1:
+        report.check(
+            False,
+            label,
+            f"found {len(crossings)} {direction} crossing(s) of {level:g}, "
+            f"the check needs #{n} and #{n + 1}",
+        )
+        return
+    first = crossings[n - 1]
+    second = crossings[n]
+    measured = second - first
+    detail = (
+        f"#{n} at t={first:.12g}, #{n + 1} at t={second:.12g}: period "
+        f"{measured:.12g} s, expected {expected:.12g} "
+        f"({tolerance_text}; |delta| {abs(measured - expected):.3g})"
     )
     report.check(abs(measured - expected) <= total, label, detail)
 
@@ -618,6 +748,110 @@ def _max_abs_le_check(
         f"at t={times[index]:.6g}, limit {limit:.12g}"
     )
     report.check(measured <= limit, label, detail)
+
+
+def _signal_id(value: Any) -> str:
+    """A signal id from an expected.json entry (strings only)."""
+    if not isinstance(value, str) or not value:
+        raise ValueError("signal ids must be non-empty strings")
+    return value
+
+
+def _signal_list(value: Any, length: int, what: str) -> list[str]:
+    if not isinstance(value, list) or len(value) != length:
+        raise ValueError(f"'{what}' must be a list of {length} signal ids")
+    return [_signal_id(item) for item in value]
+
+
+def _pose_y(value: Any) -> str:
+    """The Composed-pose y signal: a component id, or a base id for component 3."""
+    signal = _signal_id(value)
+    return signal if signal.endswith("]") else f"{signal}[3]"
+
+
+def _energy_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The planar-pendulum energy budget ``KE + m*g*h + 1/2 kt |d|^2``.
+
+    X-MB1's specialised kind (X-MB6 generalises it): the body momenta, the joint
+    angle, the composed CoM pose and the pivot deflection are read from the run and
+    the total mechanical energy must stay constant relative to the KE/PE swing.
+    """
+    label = f"{project}/{model} energy"
+    try:
+        momenta = _signal_list(check.get("p"), 3, "p")
+        deflection = _signal_list(check.get("d"), 2, "d")
+        q_signal = _signal_id(check.get("q"))
+        pose_signal = _pose_y(check.get("pose"))
+        inertia = float(check["J"])
+        mass = float(check["m"])
+        length = float(check["L"])
+        gravity = float(check["g0"])
+        stiffness = float(check["kt"])
+        tolerance = float(check.get("tol", 1e-6))
+    except (KeyError, TypeError, ValueError) as exc:
+        report.check(False, label, f"malformed energy check: {exc}")
+        return
+    if inertia <= 0.0 or mass <= 0.0 or length <= 0.0 or gravity <= 0.0:
+        report.check(False, label, "J, m, L and g0 must be positive")
+        return
+    if stiffness < 0.0:
+        report.check(False, label, "'kt' must not be negative")
+        return
+    if tolerance <= 0.0:
+        report.check(False, label, "'tol' must be positive")
+        return
+    for signal in [*momenta, q_signal, pose_signal, *deflection]:
+        if signal not in run.signals:
+            report.check(False, label, f"unknown signal {signal!r}")
+            return
+
+    first = float(run.time[0])
+    last = float(run.time[-1])
+    try:
+        from_t = float(check.get("from_t", first))
+        to_t = float(check.get("to_t", last))
+    except (TypeError, ValueError):
+        report.check(False, label, "'from_t' and 'to_t' must be numbers")
+        return
+    window = (run.time >= from_t) & (run.time <= to_t)
+    if int(np.count_nonzero(window)) < 2:
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+
+    angular, linear_x, linear_y = (run.signals[signal][window] for signal in momenta)
+    q = run.signals[q_signal][window]
+    pose_y = run.signals[pose_signal][window]
+    d1, d2 = (run.signals[signal][window] for signal in deflection)
+    samples = np.column_stack(
+        [angular, linear_x, linear_y, q, pose_y, d1, d2]
+    )
+    if not np.all(np.isfinite(samples)):
+        report.check(False, label, "the energy signals hold a non-finite sample")
+        return
+    try:
+        q0 = float(check["q0"]) if "q0" in check else float(q[0])
+    except (TypeError, ValueError):
+        report.check(False, label, "'q0' must be a number")
+        return
+    swing = mass * gravity * length * (1.0 - np.cos(q0))
+    if not swing > 0.0:
+        report.check(False, label, "the swing is zero (q0 = 0): no energy scale")
+        return
+
+    kinetic = 0.5 * (angular**2 / inertia + linear_x**2 / mass + linear_y**2 / mass)
+    height = pose_y + np.sin(q) * d1 + np.cos(q) * d2
+    spring = 0.5 * stiffness * (d1**2 + d2**2)
+    total_energy = kinetic + mass * gravity * height + spring
+    drift = float(np.max(np.abs(total_energy - total_energy[0])))
+    ratio = drift / swing
+    detail = (
+        f"over [{from_t:g}, {to_t:g}] E0 {total_energy[0]:.12g} J, "
+        f"max|E - E0| {drift:.6g} J, swing {swing:.6g} J, ratio {ratio:.6g} "
+        f"(tol {tolerance:g}, {int(np.count_nonzero(window))} samples)"
+    )
+    report.check(ratio <= tolerance, label, detail)
 
 
 def _rms_difference_check(
@@ -1104,6 +1338,10 @@ def _check_model_checks(
             _ratio_check(report, project, model, run, check)
         elif kind == "zero_crossing":
             _zero_crossing_check(report, project, model, run, check)
+        elif kind == "period":
+            _period_check(report, project, model, run, check)
+        elif kind == "energy":
+            _energy_check(report, project, model, run, check)
         elif kind == "compare_signals":
             _compare_signals_check(report, project, model, run, check)
         elif kind == "step_response":
@@ -1151,8 +1389,13 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
         runs: dict[str, Run] = {}
         for model, entry in models.items():
             checks = entry.get("checks", []) if isinstance(entry, dict) else entry
+            source = model
+            settings: Any = None
+            if isinstance(entry, dict):
+                source = str(entry.get("model") or model)
+                settings = entry.get("settings")
             try:
-                run = _run_model(client, project, project_dir, model)
+                run = _run_model(client, project, project_dir, source, settings)
             except (RuntimeError, httpx.HTTPError, KeyError, ValueError) as exc:
                 report.check(False, f"{project}/{model} run", str(exc))
                 continue
