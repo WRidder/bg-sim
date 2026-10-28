@@ -36,6 +36,7 @@ const GROUPS = (
     (dir = "hydraulic", name = "Hydraulic", icon_prefix = "hyd"),
     (dir = "converters", name = "Converters and sensors", icon_prefix = "conv"),
     (dir = "multibond", name = "Multibond", icon_prefix = "mb"),
+    (dir = "planar", name = "Planar mechanics", icon_prefix = "pl"),
 )
 
 """    GROUP_BY_DIR
@@ -630,6 +631,50 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:multibond/TFPlanar" => (
         description = "Planar diagonal transformer (the planar TF): a dimensionless Vec{3} modulus per component, a.f[k] = n[k]*b.f[k] and b.e[k] = -n[k]*a.e[k].",
         icon = "mb-tf-planar",
+    ),
+    "stdlib:planar/FixedJoint2D" => (
+        description = "Rigid fixed planar joint between the parent and child body frames: a constant adjoint bridge with the joint role frames, written in the parent->child causal direction (FIX-MB-2).",
+        icon = "pl-fixed-joint-2d",
+    ),
+    "stdlib:planar/Free2D" => (
+        description = "Floating planar base: a planar rigid body whose world pose is integrated from its own twist by PoseIntegrator2D (D-MB6); one port, pose output.",
+        icon = "pl-free-2d",
+    ),
+    "stdlib:planar/JointPose2D" => (
+        description = "Joint-pose chart g(q) = (q + theta0, rx, ry) for a joint coordinate, consumed by a joint transform and a fixed-base pose chain.",
+        icon = "pl-joint-pose-2d",
+    ),
+    "stdlib:planar/LocalPose2D" => (
+        description = "Constant local SE(2) pose (theta, x, y): the link mounting pose composed by ComposePose2D in a fixed-base chain.",
+        icon = "pl-local-pose-2d",
+    ),
+    "stdlib:planar/PoseIntegrator2D" => (
+        description = "Floating-base pose integrator: ddt(theta) = omega and ddt(p) = R(theta) v from a Vec{3} twist input; no exp integrator (D-MB6).",
+        icon = "pl-pose-integrator-2d",
+    ),
+    "stdlib:planar/Prismatic2D" => (
+        description = "Planar prismatic joint: exact translation along an axis (phi) with a Translation drive (D-MB8) and compliant rotation/perpendicular directions; q/qdot outputs.",
+        icon = "pl-prismatic-2d",
+    ),
+    "stdlib:planar/Revolute2DCompliant" => (
+        description = "Compliant planar revolute joint with a torsional spring-damper on the link angle (k, b, qrest) on top of the compliant pivot; k and kt -> Inf converge to the rigid joint.",
+        icon = "pl-revolute-2d-compliant",
+    ),
+    "stdlib:planar/Revolute2DFriction" => (
+        description = "Planar revolute joint with viscous plus regularised-Coulomb friction on the joint rate (stick/slip); dissipative by construction.",
+        icon = "pl-revolute-2d-friction",
+    ),
+    "stdlib:planar/Revolute2DLimit" => (
+        description = "Planar revolute joint with one-sided spring-damper limits on the joint angle (lower, upper, kL, bL).",
+        icon = "pl-revolute-2d-limit",
+    ),
+    "stdlib:planar/Revolute2DRigid" => (
+        description = "Rigid planar revolute joint as a bond-graph composite: 0-junction, adjoint and screw transforms, 1-junction with the drive, Df and integrator; index-3 with exactly two W201 by design (DEC-MB-2).",
+        icon = "pl-revolute-2d-rigid",
+    ),
+    "stdlib:planar/RigidBody2D" => (
+        description = "Planar rigid body (m, J) with one planar port: the flat graph is the 1-junction with IPlanar, CoriolisPlanar fed by IPlanar/Pm and GravityPlanar fed by the world pose (plan 5.2).",
+        icon = "pl-rigid-body-2d",
     ),
 )
 

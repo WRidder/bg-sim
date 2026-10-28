@@ -212,7 +212,21 @@ const M3_REFS = [
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
 # Sorted, because `load_stdlib` sorts its blocks by ref.
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS))
+const M3_PLANAR_REFS = [
+    "stdlib:planar/FixedJoint2D",
+    "stdlib:planar/Free2D",
+    "stdlib:planar/JointPose2D",
+    "stdlib:planar/LocalPose2D",
+    "stdlib:planar/PoseIntegrator2D",
+    "stdlib:planar/Prismatic2D",
+    "stdlib:planar/Revolute2DCompliant",
+    "stdlib:planar/Revolute2DFriction",
+    "stdlib:planar/Revolute2DLimit",
+    "stdlib:planar/Revolute2DRigid",
+    "stdlib:planar/RigidBody2D",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -1424,6 +1438,90 @@ const INTERFACE_FIELDS = [
         @test [(p.name, p.domain, p.size, p.frame) for p in jt.interface.ports] ==
               [("a", "Planar", [3], "parent"), ("b", "Planar", [3], "child")]
         @test [(i.name, i.size) for i in jt.interface.inputs] == [("g", [3])]
+    end
+
+    @testset "the planar mechanics group (J-MB6)" begin
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        for ref in M3_PLANAR_REFS
+            b = blocks[ref]
+            @test b.group == "Planar mechanics"
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test isempty(b.diagnostics)
+            planar = any(p -> p.domain == "Planar", b.interface.ports)
+            if planar
+                @test b.interface.dimension == 2
+            else
+                @test get(b.interface, :dimension, nothing) === nothing
+            end
+            for p in b.interface.ports
+                @test haskey(p, :frame)
+            end
+        end
+
+        # The body's single port is its 1-junction, in the body frame (one port, D-MB4).
+        body = blocks["stdlib:planar/RigidBody2D"]
+        @test [(p.name, p.domain, p.size, p.frame) for p in body.interface.ports] ==
+              [("p", "Planar", [3], "body")]
+        @test [(i.name, i.size) for i in body.interface.inputs] == [("g", [3])]
+        @test [o.name for o in body.interface.outputs] == ["V", "P"]
+        @test [p.name for p in body.interface.parameters] == ["m", "J", "g0"]
+        @test [BGSim.component_block(c) for c in BGSim.components(body.ast)] ==
+              [:Junction, :IPlanar, :CoriolisPlanar, :GravityPlanar, :DfPlanar]
+
+        # The fixed joint is the frame bridge into a body frame; its pose output feeds a
+        # fixed-base chain.
+        fixed = blocks["stdlib:planar/FixedJoint2D"]
+        @test [(p.name, p.frame) for p in fixed.interface.ports] ==
+              [("parent", nothing), ("child", "body")]
+        @test [o.name for o in fixed.interface.outputs] == ["pose"]
+        @test [p.name for p in fixed.interface.parameters] == ["x", "y", "theta"]
+        @test fixed.interface.causality ==
+              [(ports = ["parent", "child"], kind = "transformer", value = nothing)]
+
+        # D-MB8: the drive domain follows the screw. A prismatic drive is a Translation port.
+        @test [(p.name, p.domain, p.size) for p in
+               blocks["stdlib:planar/Prismatic2D"].interface.ports] ==
+              [("parent", "Planar", [3]), ("child", "Planar", [3]),
+                  ("drive", "Translation", Int[])]
+        @test [o.name for o in blocks["stdlib:planar/Prismatic2D"].interface.outputs] ==
+              ["qout", "qdout", "pose", "drout", "dout", "Vrelout"]
+        for ref in ("stdlib:planar/Revolute2DCompliant", "stdlib:planar/Revolute2DFriction",
+            "stdlib:planar/Revolute2DLimit", "stdlib:planar/Revolute2DRigid")
+            drive = only([p for p in blocks[ref].interface.ports if p.name == "drive"])
+            @test drive.domain == "Rotation"
+        end
+
+        # The two signal-only pose blocks and the floating-base integrator.
+        @test isempty(blocks["stdlib:planar/LocalPose2D"].interface.ports)
+        @test [o.name for o in blocks["stdlib:planar/LocalPose2D"].interface.outputs] ==
+              ["g"]
+        @test [(i.name, i.unit) for i in
+               blocks["stdlib:planar/JointPose2D"].interface.inputs] == [("q", "rad")]
+        @test [(p.name, p.unit) for p in
+               blocks["stdlib:planar/JointPose2D"].interface.parameters] ==
+              [("rx", "m"), ("ry", "m"), ("theta0", "rad")]
+        @test [(i.name, i.size) for i in
+               blocks["stdlib:planar/PoseIntegrator2D"].interface.inputs] == [("tw", [3])]
+        @test [(v.name, v.unit) for v in
+               blocks["stdlib:planar/PoseIntegrator2D"].interface.variables] ==
+              [("th", "rad"), ("xi", "m"), ("yi", "m")]
+        @test [(p.name, p.unit) for p in
+               blocks["stdlib:planar/PoseIntegrator2D"].interface.parameters] ==
+              [("theta0", "rad"), ("x0", "m"), ("y0", "m")]
+
+        # The friction and limit variants add only their own coefficients, and their effort
+        # chain keeps the pivot compliance of the base joint (D-MB9: variants, not a switch).
+        @test [p.name for p in blocks["stdlib:planar/Revolute2DFriction"].interface.parameters] ==
+              ["rx", "ry", "kt", "bt", "Fc", "Fv", "v_eps", "q0"]
+        @test [p.name for p in blocks["stdlib:planar/Revolute2DLimit"].interface.parameters] ==
+              ["rx", "ry", "kt", "bt", "lower", "upper", "kL", "bL", "delta", "q0"]
+        @test [p.name for p in
+               blocks["stdlib:planar/Revolute2DCompliant"].interface.parameters] ==
+              ["rx", "ry", "kt", "bt", "k", "b", "q0", "qrest"]
+        @test [o.name for o in
+               blocks["stdlib:planar/Revolute2DCompliant"].interface.outputs] ==
+              ["qout", "qdout", "pose", "dout", "Vrelout", "tauout"]
     end
 
     @testset "catalog structure against catalog.schema.json" begin

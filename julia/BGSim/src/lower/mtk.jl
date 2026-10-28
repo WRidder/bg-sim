@@ -411,6 +411,7 @@ end
 function _u0_pairs(flat::Flat.FlatModel, system, int_states::Vector{Pair{Num,Any}})
     by_id = Dict{String,Flat.FlatVar}(v.id => v for v in flat.variables)
     int_start = Dict{String,Any}(_var_name(p.first) => p.second for p in int_states)
+    alias = _alias_map(system)
     states = _state_keys(system)
     out = Pair{Num,Any}[]
     for x in ModelingToolkit.unknowns(system)
@@ -418,17 +419,60 @@ function _u0_pairs(flat::Flat.FlatModel, system, int_states::Vector{Pair{Num,Any
         if haskey(int_start, key)
             push!(out, x => _int_start(int_start[key], flat))
         elseif key in states
-            if haskey(by_id, key)
-                v = by_id[key]
-                start = v.start === nothing ? 0.0 : _number(v.start, "the start of `$(v.id)`")
-                push!(out, x => start)
-            else
-                # A generated tearing state: 0.0 is the initial value.
-                push!(out, x => 0.0)
-            end
+            start = _start_value(by_id, alias, key)
+            # A generated tearing state with no start anywhere is 0.0.
+            push!(out, x => start === nothing ? 0.0 : start)
         end
     end
     return out
+end
+
+"""    _alias_map(system) -> Dict{String,Vector{String}}
+
+The pure alias relations among the compiled unknowns (`u ~ v` in the observed equations, both
+directions), used to follow a start value to the variable MTK kept.
+
+A composite body wires `IPlanar/Pm` into `CoriolisPlanar/P`; MTK then eliminates the momentum
+in favour of one of the aliases (and, for a rigid joint, in favour of the twist), so the state
+a start value was written on is no longer an unknown. Without this the initial momentum of a
+composite body would be silently lost (J-MB6, `Free2D`)."""
+function _alias_map(system)
+    out = Dict{String,Vector{String}}()
+    for equation in ModelingToolkit.observed(system)
+        lhs = equation.lhs
+        lhs isa Num && (lhs = Symbolics.unwrap(lhs))
+        rhs = equation.rhs
+        rhs isa Num && (rhs = Symbolics.unwrap(rhs))
+        ModelingToolkit.isvariable(lhs) || continue
+        ModelingToolkit.isvariable(rhs) || continue
+        a = _var_name(lhs)
+        b = _var_name(rhs)
+        push!(get!(out, a, String[]), b)
+        push!(get!(out, b, String[]), a)
+    end
+    return out
+end
+
+"""    _start_value(by_id, alias, key) -> Union{Nothing,Float64}
+
+The start value of a compiled state: its own flat variable's start, or the nearest one found
+along the alias chain (breadth first, so the closest definition wins)."""
+function _start_value(by_id, alias, key::String)
+    queue = String[key]
+    seen = Set{String}([key])
+    while !isempty(queue)
+        current = popfirst!(queue)
+        v = get(by_id, current, nothing)
+        if v !== nothing && v.start !== nothing
+            return _number(v.start, "the start of `$(v.id)`")
+        end
+        for next in get(alias, current, String[])
+            next in seen && continue
+            push!(seen, next)
+            push!(queue, next)
+        end
+    end
+    return nothing
 end
 
 # A start value of an algebraic variable is an initialisation *guess*, not a constraint.

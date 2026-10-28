@@ -1195,3 +1195,117 @@ covers *exactly* the stdlib refs and that every block has a non-empty descriptio
 a new block cannot ship without an entry; the edit is data only (no code path changed).
 Everything else is under `stdlib/multibond/`, the new test file, `runtests.jl` (one include),
 `test_library.jl` (the `M3_REFS` list and the new blocks' interface fields) and this file.
+
+# J-MB6 — planar bodies, joints and pose handling (verified 2026-10-28)
+
+New group `stdlib/planar/` (**11 blocks**, catalog group **Planar mechanics**, catalog
+**160**): `RigidBody2D`, `Free2D`, `FixedJoint2D`, `JointPose2D`, `LocalPose2D`,
+`PoseIntegrator2D`, `Prismatic2D`, `Revolute2DCompliant`, `Revolute2DFriction`,
+`Revolute2DLimit`, `Revolute2DRigid`. `test/test_planar_mechanics.jl` (**407 assertions**) and
+`test/fixtures/planar/pendulum.json` are the acceptance. Every block `block.check` 0/0,
+`dimension 2` on a Planar port, per-component units from the J-MB2 table.
+
+## Textual composites can now declare a junction (language extension, flagged)
+
+`@components` gains one entry shape: **`name = Junction(1)`** (or `Junction(0)`), lowering to
+the same `IR.ModelNode(:junction)` a model-JSON diagram uses. `ComponentDecl` keeps its shape
+(`block = :Junction`, one `:kind` literal; `component_is_junction`/
+`component_junction_kind`). Touched: `src/syntax/{parse,ast,scopes}.jl`,
+`src/compile/instantiate.jl`. Without it a composite cannot contain the 1-junction of the
+plan 5.2 body or the 0-junction of the plan 5.2 joint, so this is the "composite 0-junction +
+TF" FIX-MB-2 option and the 5.2 acceptance made expressible. A **junction face** is
+supported too: the composite's power port may *be* the junction (`connect(p, node)`), which is
+how one body port carries the 1-junction; the exterior bond then joins the junction's bond
+list exactly like `port: "junction"` in the model JSON (`_bind_boundary!` accepts
+`kind :junction`, `domains.jl` seeds the island with the face's declared domain).
+
+## Composite instances can set an internal start (flagged)
+
+`node.starts` of a composite instance address the owning component as
+`"<component>/<variable>"` (`"inertia/P"`, nested `"body/inertia/P"`): `_composite_starts`
+splits them and `_composite_diagram!` forwards them to the synthetic component nodes. A rigid
+body's initial momentum has no other spelling. Unknown component names are E003.
+
+## Lowering: a start value is found through the alias chain (flagged)
+
+`src/lower/mtk.jl` `_u0_pairs` now follows the compiled pure aliases (`u ~ v` in `observed`,
+BFS) to the flat variable that carries the start. MTK aliases `IPlanar/Pm -> CoriolisPlanar/P`
+(and, for a rigid joint, the momentum to the twist), so the state it keeps is *not* the
+variable the start was written on; before this the free body started at rest no matter what
+was set. Regressions: `Free2D` screw motion, the `DCMotor` composite's rotor start.
+
+## FIX-MB-2 — the composite joint runs at any mounting angle
+
+Root cause (measured, not guessed): `FixedTransform2D` writes `a.e = Ad^-T b.e` *implicitly*;
+MTK's alias elimination solved one row for `b.e[3]` by dividing by `sin(theta)` and left
+`b.e[2]` as a tearing variable, so the J-MB4 slice only ran near +-pi/2. The new
+`FixedJoint2D`/`TFAd` effort relation is written in the chain's causal direction
+(`b.e = Ad(g)^T a.e`, no division for any angle).
+
+Measured on `test_planar_mechanics.jl` (composite body + `FixedJoint2D`):
+
+| theta | period (s) | compiled unknowns | dummy derivatives | steps (4 s) |
+| --- | --- | --- | --- | --- |
+| 0.0 | 1.4187960322911772 | 6 | 0 | 4049 |
+| 0.3 | 1.4187960322911777 | 6 | 0 | 4035 |
+| pi/2 | 1.4187960322911790 | 6 | 0 | 4037 |
+
+The three periods agree to **1.3e-15** relative; the state count is **6** (`P[1:3]`, `d[1:2]`,
+`q`), there is **no** `Link/b.e[2]`-style tearing variable and **no W201** in `model.check`,
+the compiled warnings or the run. `TFAd` keeps the same relation in the same explicit form;
+`FixedTransform2D` is **unchanged** (it is the J-MB4 slice's block, and the slice stays
+bit-identical), so the slice fixture still uses its 90-degree coordinate choice — that
+workaround is now unnecessary for any model built from the planar group.
+
+**Deviation:** the rigid variant is a composite of the plan 5.2 graph (0-junction + `TFAd` +
+`ScrewTF` + 1-junction + `Df` + `Integrator`), and MTK's index reduction parametrises the body
+by its twist, so it reports **3 momentum W201** (`Body/inertia/P[1..3]`, all aliases of the
+twist state) instead of 2, plus three dummy derivatives, of which **two** are the joint-frame
+velocity components `xform/b.f[2]`, `xform/b.f[3]` (the third is the body's zero-power Df bond) — the two constrained pivot translations, which is
+the physical two-constraint signature the test asserts. The run fails with **E103
+"initial conditions are inconsistent"** (the documented DEC-MB-2 limit: a 3-DOF body on a rigid
+1-DOF revolute is index-3). A native rigid formulation was measured too and also gives 3
+momentum W201, so this is MTK's choice, not the composite's.
+
+## Why the compliant pivot is still native, and where the taps live
+
+A compliant-pivot revolute is **not** a junction tree: its child effort is a *sum*
+(child.e = fs + S*tau) while its child flow is also a sum (child.f = Ad^-1 parent.f + Vrel),
+so no 0- or 1-junction expresses it. The rigid joint (a 0-junction with the common wrench) is a
+composite; the compliant base joint stays the J-MB4 native stdlib:multibond/Revolute2D, and
+the three variants (Revolute2DCompliant, Revolute2DFriction, Revolute2DLimit) are native
+too because each adds a torque to the drive/link effort chain. Recorded as the WP allows
+("if the signal wiring cannot express it, keep a native block and record why").
+
+Signal paths a controller reads (all recorded): Joint/qout, Joint/qdout, Joint/pose[k],
+Joint/dout[k], Joint/Vrelout[k], Joint/tauout (compliant/friction/limit);
+Body/inertia/P[k] (momentum), Body/inertia/p.f[k] and Body/flow/y[k] (twist),
+Body/gravity/g[k] (the composed pose), Body/inertia/p.P (port power), plus the composite
+output faces Body/P, Body/V, Body/g. A composite power port that *is* a junction (the
+body's own port) has no <path>/<port>.e[k] signal of its own: the flat ids are the junction's
+bond ids, and the internal per-component signals above are the stable names.
+## Solver note for phase B models
+
+The compliant pivot with the explicit transforms is an **index-0 ODE**, so `solver: "auto"`
+now picks `Tsit5` and grinds on the 1e4 rad/s pivot mode (986 k steps, `E901` MaxIters). The
+planar fixtures and tests set **`solver: "Rodas5P"`** (plan 5.5: "use Rodas5P/FBDF and a
+stiffness chosen by the model"). An `auto` that inspects the fastest eigenvalue would be a
+solver-heuristic change outside this WP.
+
+## Measured (this machine, 2026-10-28)
+
+| item | measured |
+| --- | --- |
+| pendulum period (composite body/joint) | **1.4187960322912 s** vs amplitude-corrected physical **1.4187960322337 s** (rel **4.1e-11**) and `2π√(L/g)` 1.4185033534 (rel 2.1e-4) |
+| energy drift over 10 s | **1.776e-15 J** = **7.24e-12** of the 2.4525e-4 J swing; the `1/2 kt |d|^2` term is now load-bearing (q0 = 1, kt = 1e6: 1.79e-13 with it, **7.24e-5** without) |
+| `kt` sweep 1e6 / 1e7 / 1e8 | periods 1.41880980 / 1.41879728 / 1.41879603 s; rel error vs the rigid period **9.71e-6 / 8.82e-7 / 4.05e-11** (decreasing) |
+| compliant `k` sweep 25/100/400 (locked actuator) | settles at `qrest + tau/k` = 0.180/0.120/0.105 rad (tau = 2, qrest = 0.1), `qdot -> 0`; torsional period matches `2π√(Jp/k)` to 2e-3 |
+| friction | monotone spin-up to the analytic terminal rate 15.0 rad/s (t = 20 s, 8 time constants), `tau_f*qdot <= 0`; stick creep `v_eps*atanh(tau/Fc)` = 4.4e-4 rad/s |
+| limit | one-sided stop settles at `upper + tau/kL` = 0.0400 rad, stop torque 2.0 N*m, no W206 |
+| prismatic | mass 2 kg, k = 200 N/m: period **0.62832 s** = `2π√(m/k)`, pose = (0, q, 0), perpendicular/rotational deflections < 1e-8 |
+| free body (pure rotation / pure translation) | exact screw motion, max pose error **4.3e-14 / 3.7e-14**; general case: CoM straight-line error **3.4e-15**, world momentum drift 2.8e-14 |
+| fixed-base composed vs integrated pose | max diff <= **1.0e-6** over 4 s (CoM pose, `ComposePose2D`) |
+| joint/transform/junction power identities on the run | <= 1e-9 relative at every sample |
+| `test_planar_mechanics.jl` | **407 assertions, ~60 s, green** |
+| `test_multibond_slice.jl` | **6367**, unchanged numbers |
+| `test_library.jl` | **8178** (catalog 160 blocks) |

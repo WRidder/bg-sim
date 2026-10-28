@@ -2266,6 +2266,23 @@ function _add_observed_power!(b::Builder, node::IR.ModelNode, path::String,
     return nothing
 end
 
+"""The `(component, variable)` split of a composite instance's start keys.
+
+A textual composite has no variables of its own, so a start value addresses the block that owns
+it as `"<component>/<variable>"` (nested composites repeat the component names, e.g.
+`body/inertia/P`). This is how a composite body gets an initial momentum: `IPlanar.P` lives one
+level below `RigidBody2D` and cannot be reached by any other spelling."""
+function _composite_starts(node::IR.ModelNode)
+    out = Dict{String,Dict{String,String}}()
+    for (key, text) in node.starts
+        parts = split(key, '/')
+        length(parts) >= 2 || continue
+        rest = join(parts[2:end], "/")
+        get!(out, String(parts[1]), Dict{String,String}())[rest] = text
+    end
+    return out
+end
+
 """
     _composite_diagram!(b, node, path, block) -> (diagram, faces)
 
@@ -2290,8 +2307,47 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
 
     named = Dict{Symbol,IR.BlockDef}()
     ids = Dict{Symbol,String}()
+    junction_names = Set{Symbol}()
+    starts_by_component = _composite_starts(node)
+    seen_components = Set{Symbol}()
     for comp in comps
         name = BGSim.component_name(comp)
+        push!(seen_components, name)
+        id = String(block.name) * "/" * String(name)
+        ids[name] = id
+        if BGSim.component_is_junction(comp)
+            # A junction component (`name = Junction(1)`) becomes the same node a model-JSON
+            # diagram uses; the flattener, causality pass and editor treat it identically.
+            kind = BGSim.component_junction_kind(comp)
+            if kind === nothing
+                _report_component!(
+                    b, node, _join(path, name), nothing;
+                    code = "E001",
+                    message = "junction `$name` of `$(node.name)` has no kind",
+                    hint = "write `Junction(1)` or `Junction(0)`",
+                )
+                continue
+            end
+            push!(junction_names, name)
+            push!(
+                diagram.nodes,
+                IR.ModelNode(
+                    id,
+                    String(name),
+                    :junction,
+                    nothing,
+                    kind,
+                    nothing,
+                    nothing,
+                    IR.SubsystemPort[],
+                    Dict{String,String}(),
+                    Dict{String,Any}(),
+                    Dict{String,String}(),
+                    nothing,
+                ),
+            )
+            continue
+        end
         matches, where = _find_named_block(b, BGSim.component_block(comp))
         if isempty(matches)
             _report_component!(
@@ -2312,8 +2368,6 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
         end
         component = only(matches)
         named[name] = component
-        id = String(block.name) * "/" * String(name)
-        ids[name] = id
         params = Dict{String,String}()
         for (key, expr) in BGSim.component_kwargs(comp)
             _declared_parameter(component, key) || _report_component!(
@@ -2356,9 +2410,20 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
                 IR.SubsystemPort[],
                 params,
                 Dict{String,Any}(),
-                Dict{String,String}(),
+                get(starts_by_component, String(name), Dict{String,String}()),
                 nothing,
             ),
+        )
+    end
+    # A start key that names no component of the composite is E003 on the instance (the
+    # remaining keys are still checked against the component's own `@variables`).
+    for (component_name, _) in starts_by_component
+        Symbol(component_name) in seen_components && continue
+        _report_component!(
+            b, node, path, block.ref;
+            code = "E003",
+            message = "start value of `$(node.name)` names unknown component `$component_name`",
+            hint = "a composite start is `\"<component>/<variable>\"`, for example `\"inertia/P\"`",
         )
     end
 
@@ -2369,6 +2434,7 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
                              (BGSim.connect_to(c), BGSim.connect_from(c)))
             BGSim.portref_instance(ref) === nothing || continue
             name = BGSim.portref_port(ref)
+            name in junction_names && continue   # a junction is internal wiring
             haskey(partner, name) && continue
             partner[name] = other
         end
@@ -2383,6 +2449,34 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
         for d in BGSim.declarations(pb, scope)
             name = BGSim.decl_name(d)
             target = get(partner, name, nothing)
+            if target !== nothing && BGSim.portref_instance(target) === nothing &&
+               BGSim.portref_port(target) in junction_names
+                # A junction face: the composite's power port *is* the internal junction
+                # (D-MB4: a body's 1-junction is its single port). The exterior bond then
+                # joins the junction's bond list, exactly like a model-JSON junction face
+                # (`port: "junction"`).
+                t = BGSim.resolve_type(BGSim.decl_type(d), consts)
+                domain = kind === :power ? something(BGSim.type_domain(t), :Generic) :
+                         nothing
+                push!(
+                    faces,
+                    IR.SubsystemPort(
+                        name,
+                        kind,
+                        direction,
+                        domain,
+                        :Real,
+                        kind === :power ? Int[] : something(BGSim.type_size(t, consts), Int[]),
+                        get(BGSim.decl_attrs(d), :unit, nothing),
+                        get(BGSim.decl_attrs(d), :frame, nothing),
+                        nothing,        # effortUnits
+                        nothing,        # flowUnits
+                        get(ids, BGSim.portref_port(target), ""),
+                        :junction,
+                    ),
+                )
+                continue
+            end
             if target === nothing || BGSim.portref_instance(target) === nothing
                 _report_component!(
                     b, node, path, block.ref;
@@ -2393,6 +2487,15 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
                 continue
             end
             instance = BGSim.portref_instance(target)
+            instance in junction_names && begin
+                _report_component!(
+                    b, node, path, block.ref;
+                    code = "E003",
+                    message = "`$name` of the composite `$(node.name)` is exposed by the junction `$instance`",
+                    hint = "an interface port exposes a block port; connect the junction inside the composite",
+                )
+                continue
+            end
             component = get(named, instance, nothing)
             if component === nothing
                 continue    # the component was reported above
@@ -2446,16 +2549,18 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
     for (k, c) in enumerate(conns)
         from = BGSim.connect_from(c)
         to = BGSim.connect_to(c)
-        (BGSim.portref_instance(from) === nothing) && continue
-        (BGSim.portref_instance(to) === nothing) && continue
+        from_instance = _conn_instance(from, junction_names)
+        to_instance = _conn_instance(to, junction_names)
+        (from_instance === nothing) && continue
+        (to_instance === nothing) && continue
         kind = _text_connection_kind!(
-            b, node, path, named, BGSim.connect_from(c), BGSim.connect_to(c),
+            b, node, path, named, BGSim.connect_from(c), BGSim.connect_to(c), junction_names,
         )
         kind === nothing && continue
-        f = IR.ModelEndpoint(get(ids, BGSim.portref_instance(from), ""), BGSim.portref_port(from))
-        t = IR.ModelEndpoint(get(ids, BGSim.portref_instance(to), ""), BGSim.portref_port(to))
+        f = IR.ModelEndpoint(get(ids, from_instance, ""), _conn_port(from, junction_names))
+        t = IR.ModelEndpoint(get(ids, to_instance, ""), _conn_port(to, junction_names))
         if kind == :signal && _declared_port_kind(
-            named[BGSim.portref_instance(from)], BGSim.portref_port(from),
+            named[from_instance], BGSim.portref_port(from),
         ) == :input
             f, t = t, f
         end
@@ -2473,6 +2578,24 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
     return diagram, faces
 end
 
+"""The internal instance a `connect` side names, including a bare junction component.
+
+A junction has no port, so it is written as the bare component name (`connect(node, body.p)`).
+The parser stores that as a `PortRef` with `instance === nothing`; the component-name namespace
+is disjoint from the interface declarations (`_check_components!`), so a bare name that is a
+junction component resolves unambiguously."""
+function _conn_instance(ref, junctions::Set{Symbol})
+    instance = BGSim.portref_instance(ref)
+    instance !== nothing && return instance
+    return BGSim.portref_port(ref) in junctions ? BGSim.portref_port(ref) : nothing
+end
+
+"""The port symbol of a `connect` side, or `nothing` for a junction endpoint."""
+function _conn_port(ref, junctions::Set{Symbol})
+    BGSim.portref_port(ref) in junctions || return BGSim.portref_port(ref)
+    return BGSim.portref_instance(ref) === nothing ? nothing : BGSim.portref_port(ref)
+end
+
 """Whether a resolved block declares `name` in `@parameters`."""
 function _declared_parameter(block::IR.BlockDef, name::Symbol)
     return any(
@@ -2482,15 +2605,38 @@ end
 
 """
 The plan D7 kind of one textual `connect`: a signal when either side is a signal port (from
-output to input), a bond when either power port is `Generic`, a wire for two concrete power
-ports. Missing ports are E102 on the component, which is the same code and shape the
-model-JSON flattener reports.
+output to input), a bond when either power port is `Generic` **or one side is a junction
+node**, a wire for two concrete power ports. Missing ports are E102 on the component, which
+is the same code and shape the model-JSON flattener reports.
 """
-function _text_connection_kind!(b, node, path, named, from, to)
-    fi = BGSim.portref_instance(from)
-    ti = BGSim.portref_instance(to)
+function _text_connection_kind!(
+    b, node, path, named, from, to, junctions = Set{Symbol}(),
+)
+    fi = _conn_instance(from, junctions)
+    ti = _conn_instance(to, junctions)
     fp = BGSim.portref_port(from)
     tp = BGSim.portref_port(to)
+    # A junction node is a power node: it can only be wired to power ports (or another
+    # junction), and the connection is a bond (the flattener's junction path).
+    for (own, own_port, other, other_instance, other_port) in (
+        (fi, fp, to, ti, tp), (ti, tp, from, fi, fp),
+    )
+        own in junctions || continue
+        other_instance in junctions && return :bond
+        other_instance === nothing && return nothing      # a face, not an internal bond
+        block = get(named, other_instance, nothing)
+        block === nothing && return nothing
+        if _declared_port_kind(block, other_port) !== :power
+            _report_component!(
+                b, node, _join(path, String(other_instance)), block.ref;
+                code = "E003",
+                message = "junction `$(own)` of `$(node.name)` is connected to the signal port `$(other_port)` of `$(block.name)`",
+                hint = "a junction joins power ports only",
+            )
+            return nothing
+        end
+        return :bond
+    end
     fb = get(named, fi, nothing)
     tb = get(named, ti, nothing)
     (fb === nothing || tb === nothing) && return nothing
@@ -2805,7 +2951,7 @@ function _bind_boundary!(b::Builder, node::IR.ModelNode, path::String)
         internal = _resolve_internal_port(b, local_nodes, sp, path, node)
         internal === nothing && continue
         kind_ok = if sp.kind == :power
-            internal.kind == :power
+            internal.kind == :power || internal.kind == :junction
         elseif sp.direction == :input
             internal.kind == :input
         else
@@ -2823,7 +2969,8 @@ function _bind_boundary!(b::Builder, node::IR.ModelNode, path::String)
             )
             continue
         end
-        sp.kind == :power && _check_subsystem_power_port!(b, node, path, sp, internal)
+        sp.kind == :power && internal.kind == :power &&
+            _check_subsystem_power_port!(b, node, path, sp, internal)
         boundary[sp.name] = internal
         b.boundary_ports[(path, sp.name)] = sp
     end

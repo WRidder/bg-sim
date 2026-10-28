@@ -567,6 +567,11 @@ One `name = BlockName(kw = expression, ...)` entry of `@components`. `block` is 
 referenced block *name* as written (a project or stdlib block is resolved by name at
 instantiation); `kwargs` are the parameter overrides in source order, as `(name, expr)`
 pairs in the defaults expression scope.
+
+A **junction** component is written `name = Junction(1)` (or `Junction(0)`): `block` is
+[`JUNCTION_BLOCK`](@ref) and `kwargs` holds the single literal `:kind`. It lowers to the same
+junction node a model-JSON diagram uses, so a composite (a body's 1-junction, a joint's
+0-junction) contains only standard elements.
 """
 struct ComponentDecl
     name::Symbol
@@ -575,10 +580,25 @@ struct ComponentDecl
     range::SourceRange
 end
 
+"""The reserved component block name of a junction node in `@components`."""
+const JUNCTION_BLOCK = :Junction
+
 component_name(c::ComponentDecl) = c.name
 component_block(c::ComponentDecl) = c.block
 component_kwargs(c::ComponentDecl) = copy(c.kwargs)
 source_range(c::ComponentDecl) = c.range
+
+"""Whether a `@components` entry is a junction node rather than a block instance."""
+component_is_junction(c::ComponentDecl) = c.block === JUNCTION_BLOCK
+
+"""The kind (`0` or `1`) of a junction component, or `nothing` for a block instance."""
+function component_junction_kind(c::ComponentDecl)
+    component_is_junction(c) || return nothing
+    for (key, value) in c.kwargs
+        key === :kind && value isa Lit && return Int(value.value)
+    end
+    return nothing
+end
 
 """
     PortRef(instance, port, range)

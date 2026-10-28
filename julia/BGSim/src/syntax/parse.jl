@@ -1427,6 +1427,12 @@ function _parse_component!(b::BlockBuilder, node)
         )
         return nothing
     end
+    if block === JUNCTION_BLOCK
+        # A textual composite may declare a 0- or 1-junction node: `name = Junction(1)`.
+        # A junction has only its width kind, so it takes exactly one positional literal
+        # argument `0` or `1`; the usual model-JSON node is `{"block": {"junction": "1"}}`.
+        return _parse_junction_component!(b, name, cch[2:end], rng)
+    end
     kwargs = Pair{Symbol,Expr}[]
     ok = true
     for a in cch[2:end]
@@ -1467,6 +1473,41 @@ function _parse_component!(b::BlockBuilder, node)
     end
     ok || return nothing
     push!(b.component_items, ComponentDecl(name, block, kwargs, rng))
+    return nothing
+end
+
+"""
+Parse the argument list of a junction component, `name = Junction(kind)`, where `kind` is the
+literal `0` or `1`. The kind is stored as the single `:kind` entry of the component's keyword
+list, so `ComponentDecl` stays one shape for blocks and junctions alike
+(`component_is_junction`/`component_junction_kind` in `ast.jl`).
+"""
+function _parse_junction_component!(b::BlockBuilder, name::Symbol, args, rng)
+    if length(args) != 1 || !(kind(args[1]) == K"Integer")
+        _error!(
+            b,
+            "E001",
+            "a junction component is `name = Junction(0)` or `name = Junction(1)`",
+            isempty(args) ? nothing : args[1];
+            scope = :components,
+            hint = "the argument is the junction kind, the literal 0 or 1",
+        )
+        return nothing
+    end
+    value = Int(args[1].val)
+    if !(value in (0, 1))
+        _error!(
+            b,
+            "E001",
+            "a junction kind is `0` or `1`, got `$value`",
+            args[1];
+            scope = :components,
+            hint = "write `Junction(1)` for a flow junction or `Junction(0)` for an effort one",
+        )
+        return nothing
+    end
+    push!(b.component_items,
+        ComponentDecl(name, JUNCTION_BLOCK, [:kind => Lit(Float64(value), rng)], rng))
     return nothing
 end
 

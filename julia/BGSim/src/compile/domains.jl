@@ -145,6 +145,20 @@ function _resolve_bond_islands!(
         for ep in (state.from, state.to)
             if ep.kind == :junction
                 ep.path in island.junctions || push!(island.junctions, ep.path)
+                # A composite may expose a junction as its power port (a body's 1-junction,
+                # D-MB4). The face has no flat port of its own, so its declared domain is
+                # the only authoritative domain it contributes to the island.
+                if ep.face !== nothing
+                    sp = get(b.boundary_ports, ep.face, nothing)
+                    if sp !== nothing && sp.kind == :power
+                        domain = something(sp.domain, :Generic)
+                        key = ("face:" * ep.face[1], ep.face[2])
+                        key in island.ports || push!(island.ports, key)
+                        domain in island.domain_order || push!(island.domain_order, domain)
+                        list = get!(island.by_domain, domain, Tuple{String,Symbol}[])
+                        key in list || push!(list, key)
+                    end
+                end
                 continue
             end
             port = _port_state(b, _portkey(ep))
@@ -233,23 +247,37 @@ function _report_island_conflict!(
     b_domain = concrete[2]
     a_key = island.by_domain[a_domain][1]
     b_key = island.by_domain[b_domain][1]
-    a_port = _port_state(b, a_key)
-    b_port = _port_state(b, b_key)
-    (a_port === nothing || b_port === nothing) && return nothing
+    a_label = _island_port_label(b, a_key)
+    b_label = _island_port_label(b, b_key)
+    (a_label === nothing || b_label === nothing) && return nothing
     connection = _bond_for(plan, island, b_key)
+    path = b_label[2]
+    port_key = (path, b_key[2])
     push!(
         b.diagnostics,
         diag(
             "E102",
-            "domain mismatch: $(a_domain) port `$(a_port.name)` of `$(_owner(a_key[1]))` is bonded to $(b_domain) port `$(b_port.name)` of `$(_owner(b_key[1]))`";
+            "domain mismatch: $(a_domain) port `$(a_label[1])` of `$(_owner(a_label[2]))` is bonded to $(b_domain) port `$(b_label[1])` of `$(_owner(b_label[2]))`";
             hint = "cross domains only through a converter (DCMotor, IdealGear, Rack and pinion)",
-            path = b_key[1],
-            block = _port_ref(b, b_key),
-            node = _port_node(b, b_key),
+            path = path,
+            block = _port_ref(b, port_key),
+            node = _port_node(b, port_key),
             connection = connection,
         ),
     )
     return nothing
+end
+
+"""The `(name, path)` of an island port key, including an exposed junction face (which has no
+flat port of its own but does have a declared name)."""
+function _island_port_label(b::Builder, key::Tuple{String,Symbol})
+    port = _port_state(b, key)
+    port === nothing || return (port.name, key[1])
+    startswith(key[1], "face:") || return nothing
+    path = key[1][length("face:")+1:end]
+    sp = get(b.boundary_ports, (path, key[2]), nothing)
+    sp === nothing && return nothing
+    return (sp.name, path)
 end
 
 function _bond_for(plan::ConnPlan, island::_Island, key::Tuple{String,Symbol})

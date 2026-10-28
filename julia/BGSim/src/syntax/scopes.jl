@@ -425,6 +425,11 @@ function _check_components!(ck::Checker)
             seen[n] = comp.range
         end
         push!(ck.used, n)
+        if component_is_junction(comp)
+            # A junction node has no parameters and no ports of its own; the kind was
+            # validated by the parser.
+            continue
+        end
         for (key, value) in comp.kwargs
             ck.scope = :components
             ck.context = :default
@@ -462,11 +467,17 @@ function _check_components!(ck::Checker)
     ck.context = :equation
 
     # Interface ports: each must be exposed by exactly one `connect`.
+    junction_names = Set(component_name(c) for c in comps if component_is_junction(c))
     face_uses = Dict{Symbol,Int}()
     for c in conns
         ck.scope = :connections
         for (ref, other) in ((c.from, c.to), (c.to, c.from))
-            if ref.instance === nothing
+            other_is_junction = other.instance === nothing && other.port in junction_names
+            if ref.instance === nothing && ref.port in junction_names
+                # A bare junction component reference (`connect(node, body.p)`); the other
+                # side may be an interface port (a junction face) or a component port.
+                continue
+            elseif ref.instance === nothing
                 d = get(ck.decls, ref.port, nothing)
                 if d === nothing || !(d.scope in (:ports, :inputs, :outputs))
                     _report!(
@@ -481,7 +492,7 @@ function _check_components!(ck::Checker)
                 end
                 push!(ck.used, ref.port)
                 face_uses[ref.port] = get(face_uses, ref.port, 0) + 1
-                if other.instance === nothing
+                if other.instance === nothing && !other_is_junction
                     _report!(
                         ck,
                         "E001",
