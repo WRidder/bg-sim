@@ -3,7 +3,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 import type { Model, ModelConnection, ModelNode } from "../../src/contracts/model";
 
 /**
- * W1.3 acceptance (plan 7.3): with the fake worker's 25-diagnostic fixture
+ * W1.3 acceptance (plan 7.3): with the fake worker's 28-diagnostic fixture
  * loaded, every diagnostic item navigates to its node, the canvas shows the
  * node/edge markers, filtering and grouping work, and the live check loop
  * applies `domains`, `unitFactors` and `causality` when the worker reports them.
@@ -42,6 +42,9 @@ const FIXTURE_NODES: ReadonlyArray<readonly [string, string, number, number]> = 
   ["n21", "Compare1", 1280, 220],
   ["n22", "Gear1", 80, 400],
   ["n31", "Counter1", 2600, 400],
+  // The M3 diagnostic entries E007 (frame mismatch), E108/E109 (inertia/mass).
+  ["n41", "Load1", 560, 400],
+  ["n51", "Body1", 800, 400],
 ];
 
 /** Connection ids the fixture names in `connection` (E102, E105, E106, W201, W202, W205). */
@@ -169,23 +172,23 @@ test("navigates every fixture diagnostic to its node and marks the canvas", asyn
   await openModel(page, fixtureModel());
 
   const rows = page.locator('[data-testid^="diagnostic-item-"]');
-  await expect(rows).toHaveCount(25);
-  await expect(page.getByTestId("diagnostics-count-error")).toContainText("19");
+  await expect(rows).toHaveCount(28);
+  await expect(page.getByTestId("diagnostics-count-error")).toContainText("22");
   await expect(page.getByTestId("diagnostics-count-warning")).toContainText("6");
 
-  // Grouping by instance path: 19 groups, Ctrl/PI1 holds four diagnostics.
-  await expect(page.locator('[data-testid="diagnostics-group"]')).toHaveCount(19);
+  // Grouping by instance path: 21 groups, Ctrl/PI1 holds four diagnostics.
+  await expect(page.locator('[data-testid="diagnostics-group"]')).toHaveCount(21);
   const controller = page.locator('[data-testid="diagnostics-group"][data-path="Ctrl/PI1"]');
   await expect(controller.locator('[data-testid^="diagnostic-item-"]')).toHaveCount(4);
   await expect(controller).toContainText("E001");
 
-  // Filter by severity.
+  // Filter by severity: hiding errors leaves the six warnings.
   await page.getByTestId("diagnostics-filter-error").click();
   await expect(rows).toHaveCount(6);
   await page.getByTestId("diagnostics-filter-warning").click();
   await expect(page.getByTestId("diagnostics-filter-empty")).toBeVisible();
   await page.getByTestId("diagnostics-show-all").click();
-  await expect(rows).toHaveCount(25);
+  await expect(rows).toHaveCount(28);
 
   // Canvas markers: Motor1 carries E103 and E900, and c9 carries E102.
   const motor = nodeCard(page, "n3");
@@ -207,7 +210,7 @@ test("navigates every fixture diagnostic to its node and marks the canvas", asyn
     expect(farBefore.x).toBeGreaterThan(canvasBefore.x + canvasBefore.width);
   }
 
-  const farRow = page.getByTestId("diagnostic-item-11");
+  const farRow = page.getByTestId("diagnostic-item-12");
   await farRow.scrollIntoViewIfNeeded();
   await farRow.click();
   await expect(nodeCard(page, "n31")).toHaveClass(/is-selected/);
