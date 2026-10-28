@@ -14,6 +14,12 @@
 # canonical spelling (`N*m` prints `J`, because a dimension checker cannot tell torque
 # from energy). Diagnostics therefore prefer the unit text a declaration was written with
 # (`unitcheck.jl`), and fall back to `unit_string` for computed units.
+#
+# The one deliberate exception is a **multibond port component** (J-MB2): its signal label
+# is the catalog's own spelling (`N*m`, `rad/s`, see `DOMAIN_COMPONENT_LABELS`), carried on
+# the flat variable as `attrs[:unit_label]` and preferred by `Flat.signal_namedtuple`. A
+# torque component shown as `J` and an angular rate as `1/s` would be misleading in the
+# manifest and the editor. Every other signal keeps the canonical `unit_string`.
 
 """    Dims(exps, scale)
 
@@ -446,7 +452,10 @@ end
 
 The component spellings of the effort of `domain`: the catalog's `components.effort` for a
 multibond domain, the scalar label (`"N"`, `"V"`, `"effort"`) for a scalar one. This is the
-one place the catalog and the checker take their strings from."""
+one place the catalog and the checker take their strings from, and these strings are also
+the **signal labels** of the port components (`FlatVar.attrs[:unit_label]`). They are not
+`unit_string`: that printer is dimension-based and would say `J` for `N*m` and `1/s` for
+`rad/s` (J-MB2)."""
 function domain_effort_unit_strings(domain::Symbol)::Vector{String}
     is_multibond_domain(domain) && return copy(DOMAIN_COMPONENT_LABELS[domain].effort)
     return String[get(DOMAIN_UNIT_LABELS, domain, DOMAIN_UNIT_LABELS[:Generic])[1]]

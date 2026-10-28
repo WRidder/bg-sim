@@ -44,4 +44,40 @@ include("dims.jl")
 include("unitparse.jl")
 include("unitcheck.jl")
 
+# Load-time invariant (J-MB2): every display label is the spelling of the `Dims` next to it.
+# The tables are hand-maintained and the label is what a diagnostic and a manifest record, so
+# a typo must fail here rather than silently mislabel a signal. `domain_*_unit_strings` is the
+# API the catalog copies its `domain.components` from, so this also pins the catalog.
+let
+    for (domain, labels) in DOMAIN_UNIT_LABELS
+        # The scalar label of a multibond domain is its first (angular) component.
+        e = effort_dims(domain, 1)
+        f = flow_dims(domain, 1)
+        parse_unit(labels[1]) == e || error(
+            "unit label drift: `$domain` effort label \"$(labels[1])\" does not parse to " *
+            unit_string(e))
+        parse_unit(labels[2]) == f || error(
+            "unit label drift: `$domain` flow label \"$(labels[2])\" does not parse to " *
+            unit_string(f))
+    end
+    for (domain, labels) in DOMAIN_COMPONENT_LABELS
+        effort = DOMAIN_COMPONENT_EFFORT[domain]
+        flow = DOMAIN_COMPONENT_FLOW[domain]
+        length(labels.effort) == length(effort) || error(
+            "unit label drift: `$domain` has $(length(effort)) effort components and " *
+            "$(length(labels.effort)) labels")
+        length(labels.flow) == length(flow) || error(
+            "unit label drift: `$domain` has $(length(flow)) flow components and " *
+            "$(length(labels.flow)) labels")
+        for k in eachindex(effort)
+            parse_unit(labels.effort[k]) == effort[k] || error(
+                "unit label drift: `$domain` effort[$k] label \"$(labels.effort[k])\" " *
+                "does not parse to " * unit_string(effort[k]))
+            parse_unit(labels.flow[k]) == flow[k] || error(
+                "unit label drift: `$domain` flow[$k] label \"$(labels.flow[k])\" does " *
+                "not parse to " * unit_string(flow[k]))
+        end
+    end
+end
+
 end # module Units

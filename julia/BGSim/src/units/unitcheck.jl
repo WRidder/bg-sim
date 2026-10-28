@@ -45,6 +45,7 @@ using ..BGSim:
     block_source,
     block_range,
     constant_env,
+    eval_const_number,
     decl_name,
     decl_attrs,
     decl_type,
@@ -85,7 +86,7 @@ const UNIT_SCOPES = (:constants, :parameters, :inputs, :outputs, :variables)
 # The unit environment
 # ---------------------------------------------------------------------------------------
 
-"""    UnitEnv(names, labels, constants)
+"""    UnitEnv(names, labels, constants, multibond)
 
 The names the unit checker resolves, built by [`unit_env`](@ref):
 
@@ -98,6 +99,10 @@ The names the unit checker resolves, built by [`unit_env`](@ref):
   `[mm]` and `[N*m]` instead of a canonical expansion.
 * `constants` is the folded `@constants` map: a scalar constant used as a multiplicative
   factor (`2*x`, `x^N`) keeps the other operand's unit.
+* `multibond` maps the **whole-field** key of a multibond port field (`Symbol("p.e")`) to
+  its component count. It is what makes a bare `p.e`/`p.f` a reported error instead of a
+  wildcard: a multibond port has no single unit, so the language writes `p.e[k]`
+  component-wise (plan 5.3, D-MB10).
 
 `UnitEnv(Dict(:x => parse_unit("m")))` is the short form for tests and for callers that
 only have a name-to-dimension map; a `nothing` value means wildcard and is skipped.
@@ -106,9 +111,11 @@ struct UnitEnv
     names::Dict{Symbol,Dims}
     labels::Dict{Symbol,String}
     constants::Dict{Symbol,Any}
+    multibond::Dict{Symbol,Int}
 end
 
-UnitEnv() = UnitEnv(Dict{Symbol,Dims}(), Dict{Symbol,String}(), Dict{Symbol,Any}())
+UnitEnv() = UnitEnv(Dict{Symbol,Dims}(), Dict{Symbol,String}(), Dict{Symbol,Any}(),
+    Dict{Symbol,Int}())
 
 function UnitEnv(names::AbstractDict)
     table = Dict{Symbol,Dims}()
@@ -118,7 +125,7 @@ function UnitEnv(names::AbstractDict)
         dims isa Dims || throw(ArgumentError("the unit of `$name` must be a Dims or nothing"))
         table[name] = dims
     end
-    return UnitEnv(table, Dict{Symbol,String}(), Dict{Symbol,Any}())
+    return UnitEnv(table, Dict{Symbol,String}(), Dict{Symbol,Any}(), Dict{Symbol,Int}())
 end
 
 """    block_domain(pb) -> Symbol
@@ -161,6 +168,7 @@ function _build_env(
 )::UnitEnv
     names = Dict{Symbol,Dims}()
     labels = Dict{Symbol,String}()
+    multibond = Dict{Symbol,Int}()
     names[:t] = UNIT_S
     labels[:t] = "s"
     # `adopted` means a Generic block is being checked under the domain its islands gave it;
@@ -210,18 +218,26 @@ function _build_env(
         end
         effort_labels = domain_effort_unit_strings(port_domain)
         flow_labels = domain_flow_unit_strings(port_domain)
-        for k in 1:component_count(port_domain)
-            ekey = component_key(name, "e", k, component_count(port_domain))
-            fkey = component_key(name, "f", k, component_count(port_domain))
+        n = component_count(port_domain)
+        for k in 1:n
+            ekey = component_key(name, "e", k, n)
+            fkey = component_key(name, "f", k, n)
             names[ekey] = effort_dims(port_domain, k)
             names[fkey] = flow_dims(port_domain, k)
             labels[ekey] = effort_labels[k]
             labels[fkey] = flow_labels[k]
         end
+        if n > 1
+            # The bare `p.e`/`p.f` of a multibond port has no single unit. Registering the
+            # whole-field key here is what turns it into E006 instead of a wildcard
+            # (`_dims!(::Field)` / `_dims!(::Index)`).
+            multibond[Symbol(name, ".e")] = n
+            multibond[Symbol(name, ".f")] = n
+        end
         names[Symbol(name, ".P")] = power_dims(port_domain)
         labels[Symbol(name, ".P")] = unit_string(power_dims(port_domain))
     end
-    return UnitEnv(names, labels, constant_env(pb))
+    return UnitEnv(names, labels, constant_env(pb), multibond)
 end
 
 """    component_key(port, field, k, n) -> Symbol
@@ -354,25 +370,20 @@ end
 
 """    _index_value(ctx, e) -> Union{Int,Nothing}
 
-The integer value of an index expression: a folded integer (a literal, or a `for` bound the
-parser already folded), a negated literal, or an enclosing `for` loop's variable. Anything
-else is `nothing` (the unit lookup then falls back to the field as a whole, which for a
-multibond port is a wildcard — never a single component)."""
+The integer value of an index expression, folded with the block's `@constants` and the
+enclosing `for` bindings (`ctx.loops`): a literal, `1+1`, `k+1` inside `for k in 1:2`, or a
+constant name. Anything that is not a static integer is `nothing`, which the caller reports
+as E006 (the component index must be static) rather than silently skipping the check."""
 _index_value(::_Ctx, e::Integer) = e isa Bool ? nothing : Int(e)
 
 _index_value(::_Ctx, e::Lit) =
     e.value isa Integer && !(e.value isa Bool) ? Int(e.value) : nothing
 
-_index_value(ctx::_Ctx, e::Name) = get(ctx.loops, e.name, nothing)
-
-function _index_value(ctx::_Ctx, e::UnOp)
-    (e.op === Symbol("-") || e.op === Symbol("+")) || return nothing
-    value = _index_value(ctx, e.operand)
-    value === nothing && return nothing
-    return e.op === Symbol("-") ? -value : value
+function _index_value(ctx::_Ctx, e)
+    env = merge(ctx.env.constants, ctx.loops)
+    value = eval_const_number(e, env)
+    return value isa Integer ? Int(value) : nothing
 end
-
-_index_value(::_Ctx, ::Any) = nothing
 
 """    _for_each_iteration(f, ctx, var, lo, hi, step)
 
@@ -520,7 +531,23 @@ _dims!(ctx::_Ctx, e::Name) = get(ctx.env.names, e.name, nothing)
 
 function _dims!(ctx::_Ctx, e::Field)
     key = _field_key(e)
-    return key === nothing ? nothing : get(ctx.env.names, key, nothing)
+    key === nothing && return nothing
+    n = get(ctx.env.multibond, key, 0)
+    if n > 0
+        term = _term_text(ctx, e)
+        _report!(
+            ctx,
+            "E006",
+            "`" * term * "` is a whole multibond port field: its " * string(n) *
+            " components have different units, so the field has no single unit" *
+            _in_equation(ctx),
+            e;
+            hint = "write `" * term * "[k]` component-wise (D-MB10); whole-vector unit " *
+                   "inference is deferred, and each component has its own unit",
+        )
+        return nothing
+    end
+    return get(ctx.env.names, key, nothing)
 end
 
 function _dims!(ctx::_Ctx, e::UnOp)
@@ -529,9 +556,38 @@ function _dims!(ctx::_Ctx, e::UnOp)
 end
 
 """`v[i]` keeps the element unit of `v`. For a multibond port field `p.e[k]`/`p.f[k]` the
-component's own unit is looked up first (D-MB10: a torque is not a force); a scalar port
-keeps the historical whole-field lookup."""
+index is folded (a literal, `1+1`, or `k+1` inside a `for`) and bounds-checked against the
+port's component count, then the component's own unit is looked up (D-MB10: a torque is not
+a force). A scalar port keeps the historical whole-field lookup."""
 function _dims!(ctx::_Ctx, e::Index)
+    if e.base isa Field
+        fieldkey = _field_key(e.base)
+        n = fieldkey === nothing ? 0 : get(ctx.env.multibond, fieldkey, 0)
+        if n > 0
+            term = _term_text(ctx, e)
+            k = _index_value(ctx, e.indices[1])
+            if k === nothing
+                _report!(
+                    ctx,
+                    "E006",
+                    "the component index of `" * term * "` must be a static integer" *
+                    _in_equation(ctx),
+                    e;
+                    hint = "write `" * _term_text(ctx, e.base) *
+                           "[1]` … `[k]` with a literal or a `for` loop index",
+                )
+                return nothing
+            end
+            if !(1 <= k <= n)
+                # The size check (`scopes.jl`) owns E005 for an out-of-range component: it
+                # catches a literal, a folded constant, a `for` range wider than the port and
+                # a non-static index. Returning `nothing` here keeps the unit pass from
+                # duplicating that E005 or mislabelling the lookup as a whole-field E006.
+                return nothing
+            end
+            return get(ctx.env.names, _component_key(e, k), nothing)
+        end
+    end
     key = _component_key(e, _index_value(ctx, e.indices[1]))
     if key !== nothing
         d = get(ctx.env.names, key, nothing)

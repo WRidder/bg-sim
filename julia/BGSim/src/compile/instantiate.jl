@@ -531,7 +531,15 @@ function _create_declarations!(b::Builder, st::BlockState, node::IR.ModelNode)
                String[qport * ".e[" * string(k) * "]" for k in 1:size]
         fids = size == 1 ? String[qport * ".f"] :
                String[qport * ".f[" * string(k) * "]" for k in 1:size]
+        # A multibond component carries the catalog's own spelling (`N*m`, `rad/s`) as a
+        # signal label, because `unit_string` is dimension-based and would print `J`/`1/s`
+        # (a torque is not an energy). Scalar ports keep the canonical `unit_string`.
+        labelled = BGSim.Units.is_multibond_domain(domain)
+        elabels = labelled ? BGSim.Units.domain_effort_unit_strings(domain) : String[]
+        flabels = labelled ? BGSim.Units.domain_flow_unit_strings(domain) : String[]
         for (k, id) in enumerate(eids)
+            attrs = copy(BGSim.decl_attrs(d))
+            labelled && (attrs[:unit_label] = elabels[k])
             _add_var!(
                 b,
                 Flat.FlatVar(
@@ -540,13 +548,15 @@ function _create_declarations!(b::Builder, st::BlockState, node::IR.ModelNode)
                     :Real,
                     BGSim.Units.effort_dims(domain, k),
                     nothing,
-                    copy(BGSim.decl_attrs(d)),
+                    attrs,
                     Flat.Origin(; path = st.path, block = st.ref, node = st.node,
                         range = BGSim.decl_range(d), kind = :port),
                 ),
             )
         end
         for (k, id) in enumerate(fids)
+            attrs = copy(BGSim.decl_attrs(d))
+            labelled && (attrs[:unit_label] = flabels[k])
             _add_var!(
                 b,
                 Flat.FlatVar(
@@ -555,7 +565,7 @@ function _create_declarations!(b::Builder, st::BlockState, node::IR.ModelNode)
                     :Real,
                     BGSim.Units.flow_dims(domain, k),
                     nothing,
-                    copy(BGSim.decl_attrs(d)),
+                    attrs,
                     Flat.Origin(; path = st.path, block = st.ref, node = st.node,
                         range = BGSim.decl_range(d), kind = :port),
                 ),
@@ -2695,13 +2705,64 @@ function _check_subsystem_power_port!(
             hint = "a multibond power port exposes all of its domain's components",
         )
     end
-    components = BGSim.Library.domain_components(something(sp.domain, port.domain))
+    # Per-component units are compared by parsed `Dims`, so a valid alternative spelling
+    # (`J` for `N*m`, `1/s` for `rad/s`) is accepted (J-MB2). A component array on a scalar
+    # domain is meaningless and is rejected.
+    domain = something(sp.domain, port.domain)
+    components = BGSim.Library.domain_components(domain)
     for (what, declared, expected) in (
         ("effort", sp.effort_units, components === nothing ? nothing : components.effort),
         ("flow", sp.flow_units, components === nothing ? nothing : components.flow),
     )
         declared === nothing && continue
-        if expected !== nothing && declared != expected
+        if expected === nothing
+            _report_node!(
+                b,
+                node,
+                path,
+                nothing;
+                code = "E102",
+                message = "subsystem port `$(sp.name)` of `$(node.name)` has $(what)Units $(declared), but domain `$(domain)` is scalar and has one unit",
+                hint = "remove the $(what)Units array; per-component arrays exist only for Planar (3) and Spatial (6)",
+            )
+            continue
+        end
+        if length(declared) != length(expected)
+            _report_node!(
+                b,
+                node,
+                path,
+                nothing;
+                code = "E102",
+                message = "subsystem port `$(sp.name)` of `$(node.name)` has $(length(declared)) $(what)Units, but `$(domain)` has $(length(expected)) components",
+                hint = "a multibond array is exactly 3 (Planar) or 6 (Spatial)",
+            )
+            continue
+        end
+        parsed = Vector{Union{Dims,Nothing}}(undef, length(declared))
+        bad = nothing
+        for (k, text) in enumerate(declared)
+            try
+                parsed[k] = BGSim.Units.parse_unit(text)
+            catch err
+                err isa BGSim.Units.UnitParseError || rethrow()
+                parsed[k] = nothing
+                bad === nothing && (bad = text)
+            end
+        end
+        if bad !== nothing
+            _report_node!(
+                b,
+                node,
+                path,
+                nothing;
+                code = "E102",
+                message = "subsystem port `$(sp.name)` of `$(node.name)` has an invalid $(what)Units entry \"$(bad)\"",
+                hint = "write a unit such as \"N*m\", \"N\", \"rad/s\" or \"m/s\"",
+            )
+            continue
+        end
+        if parsed != [BGSim.Units.parse_unit(u) for u in expected]
             _report_node!(
                 b,
                 node,
@@ -2710,16 +2771,6 @@ function _check_subsystem_power_port!(
                 code = "E102",
                 message = "subsystem port `$(sp.name)` of `$(node.name)` has $(what)Units $(declared), but the catalog domain's components are $(expected)",
                 hint = "derive the per-component units from the port's domain, or match its components exactly",
-            )
-        elseif expected === nothing && !(length(declared) in (3, 6))
-            _report_node!(
-                b,
-                node,
-                path,
-                nothing;
-                code = "E102",
-                message = "subsystem port `$(sp.name)` of `$(node.name)` has $(length(declared)) $(what)Units; a multibond array is exactly 3 (Planar) or 6 (Spatial)",
-                hint = "give the subsystem port a concrete domain, or list 3 or 6 component units",
             )
         end
     end

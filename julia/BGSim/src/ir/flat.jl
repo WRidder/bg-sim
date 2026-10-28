@@ -70,9 +70,11 @@ One scalar unknown. `kind` is the plan 3.5 signal kind (`:state`, `:algebraic`, 
 `:output` or `:port`), `type` the element type (`:Real`, `:Int`, `:Bool`), `unit` a
 [`Units.Dims`](@ref) or `nothing` for a wildcard, `start` the initial value (`nothing` for
 an algebraic unknown and for a state without a start), and `attrs` the declaration's
-attributes (`:min`, `:max`, `:unit`, ...). `kind` is mutable only because domain adoption
-(plan 5.6) fixes a `Generic` port's unit after the port was created; nothing else writes a
-`FlatVar`.
+attributes (`:min`, `:max`, `:unit`, ...). A multibond port component also carries its
+catalog spelling in `attrs[:unit_label]` (`N*m`, `rad/s`), which
+[`signal_namedtuple`](@ref) prefers over the dimension-based `unit_string`. `kind` is
+mutable only because domain adoption (plan 5.6) fixes a `Generic` port's unit after the
+port was created; nothing else writes a `FlatVar`.
 """
 mutable struct FlatVar
     id::String
@@ -263,11 +265,23 @@ flat_id(e::Any) = sprint(show, e)
 """    signal_namedtuple(v::FlatVar) -> NamedTuple
 
 The plan 3.5 signal entry of one flat variable: `id`, `unit` (a string or `nothing`), `kind`,
-`path`, `type`."""
+`path`, `type`.
+
+`unit` prefers `attrs[:unit_label]`, the catalog spelling a multibond port component was
+declared with (`N*m`, `rad/s`; J-MB2). `unit_string` is dimension-based and cannot tell a
+torque from an energy, so a `Planar`/`Spatial` component that fell back to it would read
+`J`/`1/s`. Every other variable, parameter and computed signal keeps the canonical
+`unit_string`, which is what the editor and the wire format already carry."""
 function signal_namedtuple(v::FlatVar)
+    label = get(v.attrs, :unit_label, nothing)
+    unit = if label isa AbstractString
+        String(label)
+    else
+        v.unit === nothing ? nothing : unit_string(v.unit)
+    end
     return (
         id = v.id,
-        unit = v.unit === nothing ? nothing : unit_string(v.unit),
+        unit = unit,
         kind = String(v.kind),
         path = v.origin.path,
         type = String(v.type),

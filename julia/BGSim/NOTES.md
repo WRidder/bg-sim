@@ -1047,3 +1047,67 @@ now. The assertion was split: scalar blocks keep the old check; a block with a P
 Spatial port must carry `dimension` 2/3 and a nullable frame. This is the same
 `catalog grew` maintenance that J2.7a did for `test_worker.jl`; nothing was weakened
 (scalar blocks still assert null frames and no dimension).
+
+---
+
+# J-MB2 review round 1 — component units, whole-field rule, labels (verified 2026-10-28)
+
+The verification of J-MB2 found two unit holes and three quality issues; all are fixed in
+`src/units/{dims,unitcheck}.jl`, `src/compile/{instantiate,domains}.jl`, `src/ir/flat.jl`
+and the J-MB2 tests. `test_multibond_slice.jl` stays at **4327 assertions, green**, with the
+same pendulum numbers (period 1.418795892 s, drift 4.00e-9, equilibrium 4.00e-7).
+
+## The component-wise rule is enforced
+
+* **A bare multibond field is E006.** `p.e`/`p.f` without an index (`p.e ~ [F,F,F]`,
+  `p.e ~ p.f`, `p.f ~ scalar`) has no single unit, so `_build_env` records the whole-field
+  key in `UnitEnv.multibond` and `_dims!(::Field)` reports E006 with the hint
+  "write `p.e[k]` component-wise (D-MB10)". It is not a wildcard and never compares or
+  silently skips. Scalar domains keep the whole-field meaning.
+* **Component indices are folded.** `_index_value` folds the index with
+  `eval_const_number` over the block's `@constants` plus `ctx.loops` (the `for` bindings),
+  so `p.e[1+1]`, `p.e[N]` and `p.e[k+1]` inside a loop resolve to the right component.
+  `p.e[1+1]` is a force and a torque variable equated to it is E006.
+* **Out of range is E005, once.** The size check (`scopes.jl`) owns E005 and already covers
+  a literal, a folded constant, a loop range wider than the port and a non-static index.
+  The unit pass therefore returns a wildcard for an out-of-range component instead of
+  duplicating E005 or mislabelling it as a whole-field E006.
+
+## Port component labels
+
+* A multibond port component carries the catalog spelling (`N*m`, `rad/s`) in
+  `FlatVar.attrs[:unit_label]`; `Flat.signal_namedtuple` prefers it, so the manifest,
+  `model.check.signals` and the editor show `N*m`/`rad/s` and `P = "W"`. Scalar ports,
+  declarations and computed signals keep the canonical `unit_string` (`J`, `1/s`).
+* `units.jl` asserts at load time that every label in `DOMAIN_UNIT_LABELS` and
+  `DOMAIN_COMPONENT_LABELS` parses back to the `Dims` in the component tables, so the
+  hand-maintained label and dimension tables cannot drift.
+* Subsystem `effortUnits`/`flowUnits` are compared **by parsed `Dims`** per component, so
+  `["J","N","N"]` is accepted for `N*m,N,N`; an unparseable entry, a wrong length or a
+  component array on a scalar domain is E102.
+
+## Contract fixtures pending C-MB1 (orchestrator-owned, not edited)
+
+Whole-field multibond equations that must become component-wise:
+
+* `contracts/fixtures/model/valid/model.planar.multibond.json:13` (`p.f ~ [0.0, 0.0, 0.0]`).
+* `contracts/fixtures/model/valid/model.frame-bridge.json:13` (same line).
+* `contracts/fixtures/model/valid/model.spatial.multibond.json:13` (six zeros) and
+  `:41` (`a.f ~ Ad(...) * b.f`, `b.e ~ transpose(Ad(...)) * a.e`; `Ad` also awaits the
+  pose-valued primitive).
+* `contracts/fixtures/model/semantic/model.e006-unit-mismatch.json:13` (same Ground) and
+  `model.e007-frame-mismatch.json` (same Ground; the E007 test patches it in memory until
+  the fixture is updated).
+
+`test_units_multibond.jl` pins the raw fixtures' pending E006; `test_frames.jl` uses the
+`_unit_valid_fixture` in-memory rewrite (component-wise Ground) for its frame/domain
+assertions, so the subject under test is reached. Both go away with the contract update.
+
+## Measured (this machine, 2026-10-28)
+
+| item | measured |
+| --- | --- |
+| `test_units_multibond.jl` | **259 assertions, green** |
+| `test_multibond_slice.jl` | **4327 assertions, green**; period 1.418795892 s, drift 4.00e-9, equilibrium 4.00e-7 (unchanged) |
+| planar manifest units | `p.e[1]="N*m"`, `p.e[2]="N"`, `p.e[3]="N"`, `p.f[1]="rad/s"`, `p.f[2]="m/s"`, `p.f[3]="m/s"`, `p.P="W"` |
+| spatial manifest units | `p.e[1..3]="N*m"`, `p.e[4..6]="N"`, `p.f[1..3]="rad/s"`, `p.f[4..6]="m/s"`, `p.P="W"`; `P = Σ e[k]f[k] = 91t` to 1e-9 |

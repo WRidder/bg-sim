@@ -113,6 +113,36 @@ _has_code(result, code) = any(d -> d.code == code, result.diagnostics)
 _diag(result, code) = first(d for d in result.diagnostics if d.code == code)
 _codes(result) = [d.code for d in result.diagnostics]
 
+"""
+    _unit_valid_fixture(path) -> Dict{String,Any}
+
+Load a contract fixture with its stale whole-field Ground equation rewritten component-wise.
+
+C-MB1 owns `contracts/`; its multibond Ground blocks still write `p.f ~ [0, 0, 0]`, which
+J-MB2's D-MB10 rule reports as E006 (each component must be written as `p.f[k]`). These
+frame/domain tests patch that one line in memory so the subject under test is reached;
+`test_units_multibond.jl` pins the raw E006 until C-MB1 updates the fixtures.
+"""
+function _unit_valid_fixture(path)
+    doc = JSON3.read(read(path, String), Dict{String,Any})
+    for node in get(doc["diagram"], "nodes", Any[])
+        block = get(node, "block", nothing)
+        block isa AbstractDict || continue
+        inline = get(block, "inline", nothing)
+        inline isa AbstractDict || continue
+        src = String(inline["source"])
+        for n in (3, 6)
+            zeros_text = join(fill("0.0", n), ", ")
+            equations = join(["p.f[$k] ~ 0.0" for k in 1:n], "\n        ")
+            src = replace(src,
+                "@equations p.f ~ [" * zeros_text * "]" =>
+                    "@equations begin\n        " * equations * "\nend")
+        end
+        inline["source"] = src
+    end
+    return doc
+end
+
 # Inline blocks used by the frame tests. `_source_block` is the system-under-test's generic
 # "hold the flow at zero" port; the causality declaration is optional so a junction model can
 # avoid a causal conflict that is not the subject of the test.
@@ -137,7 +167,11 @@ end
 function _ground_block(domain::AbstractString, frame)
     n = domain == "Planar" ? 3 : domain == "Spatial" ? 6 : 1
     frame_attr = frame === nothing ? "" : ", [frame = \"$frame\"]"
-    equation = n == 1 ? "p.f ~ 0.0" : "p.f ~ [$(join(zeros(Int, n), ", "))]"
+    equation = n == 1 ? "p.f ~ 0.0" : """
+            for k in 1:$n
+                p.f[k] ~ 0.0
+            end
+    """
     return """
     @block Ground$(domain) begin
         @ports p::Power{$domain}$frame_attr
@@ -370,7 +404,11 @@ end
         bad_value = parse_block("""
         @block BadFrame begin
             @ports p::Power{Planar}, [frame = 3]
-            @equations p.f ~ [0.0, 0.0, 0.0]
+            @equations begin
+                for k in 1:3
+                    p.f[k] ~ 0.0
+                end
+            end
         end
         """)
         @test any(d -> d.code == "E001" && occursin("frame", d.message),
@@ -379,7 +417,11 @@ end
         @block FrameOnParam begin
             @ports p::Power{Planar}
             @parameters m::Real = 1.0, [frame = "body"]
-            @equations p.f ~ [0.0, 0.0, 0.0]
+            @equations begin
+                for k in 1:3
+                    p.f[k] ~ 0.0
+                end
+            end
         end
         """)
         @test any(d -> d.code == "E001" && occursin("frame", d.message),
@@ -449,7 +491,7 @@ end
     # -----------------------------------------------------------------------------------
 
     @testset "a direct bond between different named frames is E007" begin
-        result = check(IR.parse_model(
+        result = check(_unit_valid_fixture(
             joinpath(_MODEL_SEMANTIC, "model.e007-frame-mismatch.json")))
         @test _has_code(result, "E007")
         d = _diag(result, "E007")
@@ -973,8 +1015,16 @@ end
         @test all(occursin("/", String(v)) for v in values(expected.frames))
         @test Dict(String(k) => Int(v) for (k, v) in pairs(expected.multibond)) ==
               Dict("c1" => 2, "c2" => 3)
-        # Every component signal is `<path>/<port>.e[k]` or `.f[k]` with kind "port", plus the
-        # scalar power `<path>/<port>.P` with kind "power" (units are J-MB2).
+        # Every component signal is `<path>/<port>.e[k]` or `.f[k]` with kind "port" and its
+        # own unit, plus the scalar power `<path>/<port>.P` with kind "power" in W (J-MB2).
+        fixture_units = Dict{String,Any}(String(s.id) => s.unit for s in expected.signals)
+        @test fixture_units["Plant/Arm1/p.e[1]"] == "N*m"
+        @test fixture_units["Plant/Arm1/p.e[2]"] == "N"
+        @test fixture_units["Plant/Arm1/p.e[3]"] == "N"
+        @test fixture_units["Plant/Arm1/p.f[1]"] == "rad/s"
+        @test fixture_units["Plant/Arm1/p.f[2]"] == "m/s"
+        @test fixture_units["Plant/Arm1/p.f[3]"] == "m/s"
+        @test fixture_units["Plant/Arm1/p.P"] == "W"
         for signal in expected.signals
             id = String(signal.id)
             if endswith(id, ".P")
@@ -984,21 +1034,26 @@ end
                 @test occursin(r"\.(e|f)\[\d+\]$", id)
             end
         end
-        # Our planar model emits exactly that shape for each port.
+        # Our planar model emits exactly that shape *and* those units for each port.
         result = check(_junction_model("Planar", 1))
+        unit_of = Dict(
+            "e[1]" => "N*m", "e[2]" => "N", "e[3]" => "N",
+            "f[1]" => "rad/s", "f[2]" => "m/s", "f[3]" => "m/s", "P" => "W",
+        )
         for port in ("World/p", "Load/p")
-            for field in ("e", "f"), k in 1:3
-                signal = only(filter(s -> s.id == "$port.$field[$k]", result.signals))
-                @test signal.kind == "port"
+            for (suffix, unit) in unit_of
+                signal = only(filter(s -> s.id == "$port.$suffix", result.signals))
+                @test signal.kind == (suffix == "P" ? "power" : "port")
+                @test signal.unit == unit
             end
-            @test only(filter(s -> s.id == "$port.P", result.signals)).kind == "power"
         end
     end
 
     @testset "the valid C-MB1 fixtures: frames and multibond" begin
         # `model.frame-bridge.json`: the subsystem port frames and the per-component unit
         # arrays are parsed and forwarded; the model has no frame error.
-        mdf = IR.parse_model(joinpath(_MODEL_VALID, "model.frame-bridge.json"))
+        mdf = IR.parse_model(_unit_valid_fixture(
+            joinpath(_MODEL_VALID, "model.frame-bridge.json")))
         mount = mdf.diagram.nodes[3]
         arm = mdf.diagram.nodes[4]
         @test [sp.frame for sp in mount.subsystem_ports] == ["world", "arm"]
@@ -1013,7 +1068,7 @@ end
             ("model.planar.multibond.json", "Planar", 2, 3),
             ("model.spatial.multibond.json", "Spatial", 3, 6),
         )
-            md = IR.parse_model(joinpath(_MODEL_VALID, file))
+            md = IR.parse_model(_unit_valid_fixture(joinpath(_MODEL_VALID, file)))
             result = check(md)
             @test !_has_code(result, "E007")
             @test result.domains["c1"] == domain
