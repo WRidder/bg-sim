@@ -278,7 +278,7 @@
         "frame": {
           "type": ["string", "null"],
           "minLength": 1,
-          "description": "Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them."
+          "description": "Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them; E007 reports the bond with the reported port in `path` and the other end in `related`."
         }
       },
       "additionalProperties": false

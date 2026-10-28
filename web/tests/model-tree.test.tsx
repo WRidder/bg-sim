@@ -49,7 +49,7 @@ function subsystemNode(
             name: "Ground1_p",
             kind: "power",
             domain: "Electrical",
-            size: [],
+            size: [1],
             node: "g1",
             port: "p",
           },

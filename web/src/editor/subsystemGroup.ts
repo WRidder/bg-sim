@@ -178,11 +178,15 @@ export function groupSelectionIntoSubsystem(
             ? externalDescriptor.domain
             : undefined;
       const domain = adopted ?? concrete ?? "Generic";
+      // A power port's shape is one axis (catalog `domain.size`): [1] scalar,
+      // [3] Planar, [6] Spatial. The descriptor size is the block's array shape,
+      // which is empty for a scalar port.
+      const portSize = index.domains.get(domain)?.size ?? 1;
       const port: ModelSubsystemPowerPort = {
         name: portName,
         kind: "power",
         domain,
-        size: [...(internalDescriptor?.size ?? externalDescriptor?.size ?? [])],
+        size: [portSize],
         node: internalEnd.node,
         // A junction has no named port; the worker ignores this field for a
         // junction face, and the schema still requires a string.

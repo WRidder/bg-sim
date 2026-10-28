@@ -1,5 +1,5 @@
 {
-  "$comment": "expected E109: the planar body has valid m and J, but the 6-component spatial wrench `Drive/w` drives its roll and pitch directions, which a Planar port cannot react; after assembly the mass matrix is singular (E109, not E108).",
+  "$comment": "expected E109: the inline `CoincidentAxesJoint` gives ports a and b the same z screw S = [1, 0, 0], so its joint-space mass SᵀMS = J*[[1,1],[1,1]] has rank 1: only qa+qb is determined and qa-qb has no inertia. Two independent torque sources drive a and b with J = 0.02 kg*m^2, so the parameters are valid and this is E109, not E108.",
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "SemanticE109SingularMass",
@@ -7,49 +7,49 @@
     "nodes": [
       {
         "id": "n1",
-        "name": "World",
+        "name": "DriveA",
         "block": {
           "inline": {
-            "source": "@block GroundPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @equations p.f ~ [0.0, 0.0, 0.0]\n    @causality p => (:flow_out, :fixed)\nend"
+            "source": "@block TorqueDriveA begin\n    @ports p::Power{Rotation}, [frame = \"arm\"]\n    @parameters tau::Real = 1.0, [unit = \"N*m\", description = \"Independent torque A\"]\n    @equations p.e ~ tau\n    @causality p => (:effort_out, :fixed)\nend"
           }
         },
-        "position": { "x": 40, "y": 120 }
+        "position": { "x": 40, "y": 100 }
       },
       {
         "id": "n2",
-        "name": "Body",
+        "name": "DriveB",
         "block": {
           "inline": {
-            "source": "@block PlanarBodyDriven begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @inputs w::Vec{6}\n    @parameters begin\n        m::Real = 1.0, [unit = \"kg\", min = 0, description = \"Mass\"]\n        J::Real = 0.02, [unit = \"kg*m^2\", min = 0, description = \"Yaw inertia\"]\n    end\n    @variables P::Vec{3} = [0.0, 0.0, 0.0], [state = :prefer]\n    @equations begin\n        # m and J are valid. The spatial wrench's roll/pitch components have no matching\n        # planar inertia, so the assembled mass matrix is singular (E109).\n        p.e[1] ~ w[1]\n        p.e[2] ~ w[4]\n        p.e[3] ~ w[5]\n        for k in 1:3\n            ddt(P[k]) ~ p.e[k]\n        end\n        p.f[1] ~ P[1] / J\n        p.f[2] ~ P[2] / m\n        p.f[3] ~ P[3] / m\n    end\n    @causality p => :flow_out\nend"
+            "source": "@block TorqueDriveB begin\n    @ports p::Power{Rotation}, [frame = \"arm\"]\n    @parameters tau::Real = 0.5, [unit = \"N*m\", description = \"Independent torque B\"]\n    @equations p.e ~ tau\n    @causality p => (:effort_out, :fixed)\nend"
           }
         },
-        "position": { "x": 300, "y": 120 }
+        "position": { "x": 40, "y": 260 }
       },
       {
         "id": "n3",
-        "name": "Drive",
+        "name": "Joint",
         "block": {
           "inline": {
-            "source": "@block SpatialWrenchDrive begin\n    @outputs w::Vec{6}\n    @parameters begin\n        tau::Vec{3} = [0.0, 0.0, 0.0], [unit = \"N*m\", description = \"Torque components\"]\n        f::Vec{3} = [0.0, 0.0, 0.0], [unit = \"N\", description = \"Force components\"]\n    end\n    @equations w ~ [tau[1], tau[2], tau[3], f[1], f[2], f[3]]\nend"
+            "source": "@block CoincidentAxesJoint begin\n    @ports begin\n        a::Power{Rotation}, [frame = \"arm\"]\n        b::Power{Rotation}, [frame = \"arm\"]\n    end\n    @parameters J::Real = 0.02, [unit = \"kg*m^2\", min = 0, description = \"Valid rotor inertia\"]\n    @variables begin\n        qa::Real = 0.0, [unit = \"rad\", state = :prefer]\n        qb::Real = 0.0, [unit = \"rad\", state = :prefer]\n        Pa::Real = 0.0, [unit = \"N*m*s\", state = :prefer]\n        Pb::Real = 0.0, [unit = \"N*m*s\", state = :prefer]\n    end\n    @equations begin\n        # Both axes use the same z screw S = [1, 0, 0]. With M = J, the joint-space\n        # mass Sᵀ M S = J * [1 1; 1 1] has rank 1: only qa+qb is determined and the\n        # relative coordinate qa-qb has no inertia, so its acceleration is free.\n        a.f ~ ddt(qa)\n        b.f ~ ddt(qb)\n        Pa ~ J * (ddt(qa) + ddt(qb))\n        Pb ~ J * (ddt(qa) + ddt(qb))\n        ddt(Pa) ~ a.e\n        ddt(Pb) ~ b.e\n    end\n    @causality (a, b) => :transformer\nend"
           }
         },
-        "position": { "x": 300, "y": 320 }
+        "position": { "x": 320, "y": 180 }
       }
     ],
     "connections": [
       {
         "id": "c1",
-        "kind": "bond",
+        "kind": "wire",
         "from": { "node": "n1", "port": "p" },
-        "to": { "node": "n2", "port": "p" },
+        "to": { "node": "n3", "port": "a" },
         "route": [],
         "label": null
       },
       {
         "id": "c2",
-        "kind": "signal",
-        "from": { "node": "n3", "port": "w" },
-        "to": { "node": "n2", "port": "w" },
+        "kind": "wire",
+        "from": { "node": "n2", "port": "p" },
+        "to": { "node": "n3", "port": "b" },
         "route": [],
         "label": null
       }

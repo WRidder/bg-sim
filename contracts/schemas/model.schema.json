@@ -301,12 +301,15 @@
         },
         "size": {
           "type": "array",
-          "items": { "type": "integer", "minimum": 1 }
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "enum": [1, 3, 6] },
+          "description": "Port shape; a power port has one axis: [1] for a scalar domain, [3] for Planar and [6] for Spatial. The allOf below pins it to the declared domain."
         },
         "frame": {
           "type": ["string", "null"],
           "minLength": 1,
-          "description": "Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007."
+          "description": "Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007; E007 reports the bond with the reported port in `path` and the other end in `related`."
         },
         "effortUnits": {
           "oneOf": [
@@ -326,6 +329,45 @@
         "port": { "type": "string" },
         "$comment": { "type": "string" }
       },
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": { "domain": { "const": "Planar" } },
+            "required": ["domain"]
+          },
+          "then": {
+            "type": "object",
+            "properties": { "size": { "const": [3] } }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "domain": { "const": "Spatial" } },
+            "required": ["domain"]
+          },
+          "then": {
+            "type": "object",
+            "properties": { "size": { "const": [6] } }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "domain": {
+                "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+              }
+            },
+            "required": ["domain"]
+          },
+          "then": {
+            "type": "object",
+            "properties": { "size": { "const": [1] } }
+          }
+        }
+      ],
       "additionalProperties": false
     },
     "connection": {

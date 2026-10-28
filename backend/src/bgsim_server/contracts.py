@@ -127,7 +127,7 @@ class PortDecl(BaseModel):
     size: list[conint(ge=1)]
     frame: constr(min_length=1) | None = Field(
         None,
-        description="Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them.",
+        description="Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them; E007 reports the bond with the reported port in `path` and the other end in `related`.",
     )
 
 
@@ -387,6 +387,12 @@ class DomainName2(Enum):
     Generic = 'Generic'
     Planar = 'Planar'
     Spatial = 'Spatial'
+
+
+class SizeEnum(Enum):
+    int_1 = 1
+    int_3 = 3
+    int_6 = 6
 
 
 class ConnectionKind(Enum):
@@ -960,10 +966,15 @@ class ModelSubsystemPowerPort(BaseModel):
     name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
     kind: Literal['power']
     domain: DomainName2 = Field(..., title='DomainName')
-    size: list[conint(ge=1)]
+    size: list[SizeEnum] = Field(
+        ...,
+        description='Port shape; a power port has one axis: [1] for a scalar domain, [3] for Planar and [6] for Spatial. The allOf below pins it to the declared domain.',
+        max_length=1,
+        min_length=1,
+    )
     frame: constr(min_length=1) | None = Field(
         None,
-        description="Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007.",
+        description="Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007; E007 reports the bond with the reported port in `path` and the other end in `related`.",
     )
     effortUnits: UnitArray3 | UnitArray6 | None = Field(
         None,

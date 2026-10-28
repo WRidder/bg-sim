@@ -35,6 +35,33 @@ export type JunctionType = "0" | "1";
 export type ModelSubsystemPort = ModelSubsystemSignalPort | ModelSubsystemPowerPort;
 export type SignalDirection = "input" | "output";
 export type ValueType = "Real" | "Int" | "Bool";
+export type ModelSubsystemPowerPort = {
+  name: string;
+  kind: "power";
+  domain: DomainName;
+  /**
+   * Port shape; a power port has one axis: [1] for a scalar domain, [3] for Planar and [6] for Spatial. The allOf below pins it to the declared domain.
+   *
+   * @minItems 1
+   * @maxItems 1
+   */
+  size: [1 | 3 | 6];
+  /**
+   * Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007; E007 reports the bond with the reported port in `path` and the other end in `related`.
+   */
+  frame?: string | null;
+  /**
+   * Per-component effort units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.effort for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.
+   */
+  effortUnits?: UnitArray3 | UnitArray6;
+  /**
+   * Per-component flow units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.flow for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.
+   */
+  flowUnits?: UnitArray3 | UnitArray6;
+  node: string;
+  port: string;
+  $comment?: string;
+};
 export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
 /**
  * Three unit strings, one per component (Planar).
@@ -273,27 +300,6 @@ export interface ModelSubsystemSignalPort {
   type: ValueType;
   size: number[];
   unit: string | null;
-  node: string;
-  port: string;
-  $comment?: string;
-}
-export interface ModelSubsystemPowerPort {
-  name: string;
-  kind: "power";
-  domain: DomainName;
-  size: number[];
-  /**
-   * Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007.
-   */
-  frame?: string | null;
-  /**
-   * Per-component effort units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.effort for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.
-   */
-  effortUnits?: UnitArray3 | UnitArray6;
-  /**
-   * Per-component flow units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.flow for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.
-   */
-  flowUnits?: UnitArray3 | UnitArray6;
   node: string;
   port: string;
   $comment?: string;
@@ -596,7 +602,7 @@ export interface PortDecl {
   domain: DomainName1;
   size: number[];
   /**
-   * Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them.
+   * Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them; E007 reports the bond with the reported port in `path` and the other end in `related`.
    */
   frame?: string | null;
 }

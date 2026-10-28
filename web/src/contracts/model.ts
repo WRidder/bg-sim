@@ -12,6 +12,7 @@ export type JunctionType = "0" | "1";
 export type ModelSubsystemPort = ModelSubsystemSignalPort | ModelSubsystemPowerPort;
 export type SignalDirection = "input" | "output";
 export type ValueType = "Real" | "Int" | "Bool";
+export type ModelSubsystemPowerPort = SubsystemPowerPort;
 export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
 /**
  * Three unit strings, one per component (Planar).
@@ -158,13 +159,19 @@ export interface ModelSubsystemSignalPort {
   port: string;
   $comment?: string;
 }
-export interface ModelSubsystemPowerPort {
+export interface SubsystemPowerPort {
   name: string;
   kind: "power";
   domain: DomainName;
-  size: number[];
   /**
-   * Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007.
+   * Port shape; a power port has one axis: [1] for a scalar domain, [3] for Planar and [6] for Spatial. The allOf below pins it to the declared domain.
+   *
+   * @minItems 1
+   * @maxItems 1
+   */
+  size: [1 | 3 | 6];
+  /**
+   * Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007; E007 reports the bond with the reported port in `path` and the other end in `related`.
    */
   frame?: string | null;
   /**

@@ -1,0 +1,56 @@
+{
+  "$comment": "Invalid: the subsystem Planar power port `p` declares size [4]; a Planar port has exactly three components, so size must be [3] (D-MB1).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "BadPlanarPortSize",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Arm",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "p",
+                "kind": "power",
+                "domain": "Planar",
+                "size": [4],
+                "frame": "world",
+                "node": "s1",
+                "port": "p"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "s1",
+                  "name": "Body",
+                  "block": {
+                    "inline": {
+                      "source": "@block BodyPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\nend"
+                    }
+                  },
+                  "position": { "x": 0, "y": 0 }
+                }
+              ],
+              "connections": []
+            }
+          }
+        },
+        "position": { "x": 60, "y": 100 }
+      }
+    ],
+    "connections": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 1000 },
+    "event_limit": 10000
+  }
+}
