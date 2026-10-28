@@ -51,8 +51,8 @@
                                 sin(q) * parent.f[2] + cos(q) * parent.f[3])
         qdot ~ Vrel[1]
         q ~ q0 + int(qdot, 0.0)
-        ddt(d[1]) ~ Vrel[2] + qdot * d[2]
-        ddt(d[2]) ~ Vrel[3] - qdot * d[1]
+        ddt(d[1]) ~ Vrel[2] + child.f[1] * d[2]
+        ddt(d[2]) ~ Vrel[3] - child.f[1] * d[1]
         fs[1] ~ 0.0
         fs[2] ~ kt * d[1] + bt * Vrel[2]
         fs[3] ~ kt * d[2] + bt * Vrel[3]

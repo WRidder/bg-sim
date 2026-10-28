@@ -5,9 +5,13 @@
     # through the child port keeps all three momentum components differential.
     #
     # `d` lives in the rotating child frame, so the spring state integrates the full
-    # relative displacement: ddt(d) = V_rel[2:3] + qdot * [-d2, d1] (the omega x d
-    # transport term). The term is power-neutral because d . (z_hat x d) = 0, so the
-    # fs . V_rel power identity and the 1/2 kt |d|^2 energy budget stay exact.
+    # relative displacement: ddt(d) = V_rel[2:3] + omega_child * [-d2, d1] (the omega x d
+    # transport term), with omega_child = child.f[1] = parent.f[1] + qdot the **absolute**
+    # child angular rate. Using the relative qdot here is wrong whenever the parent rotates
+    # (the double pendulum, every link after the first): V_rel already contains the lever
+    # term R(q) d, so the coordinate rate must use the full frame rotation. The term is
+    # power-neutral because d . (z_hat x d) = 0, so the fs . V_rel power identity and the
+    # 1/2 kt |d|^2 energy budget stay exact.
     #
     # The spring sign is fs = +kt*d + bt*V_rel (positive into the joint); it gives the body
     # the restoring force -fs through the child/parent effort pair under the e.f-into-
@@ -47,8 +51,8 @@
                                 sin(q) * parent.f[2] + cos(q) * parent.f[3])
         qdot ~ Vrel[1]
         q ~ q0 + int(qdot, 0.0)
-        ddt(d[1]) ~ Vrel[2] + qdot * d[2]
-        ddt(d[2]) ~ Vrel[3] - qdot * d[1]
+        ddt(d[1]) ~ Vrel[2] + child.f[1] * d[2]
+        ddt(d[2]) ~ Vrel[3] - child.f[1] * d[1]
         fs[1] ~ 0.0
         fs[2] ~ kt * d[1] + bt * Vrel[2]
         fs[3] ~ kt * d[2] + bt * Vrel[3]
