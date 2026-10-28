@@ -2422,7 +2422,7 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
                     :Real,
                     kind === :power ? Int[] : something(BGSim.type_size(t, consts), Int[]),
                     get(BGSim.decl_attrs(d), :unit, nothing),
-                    nothing,        # frame: a textual composite declares no frames
+                    get(BGSim.decl_attrs(d), :frame, nothing),
                     nothing,        # effortUnits
                     nothing,        # flowUnits
                     get(ids, instance, ""),
@@ -2592,25 +2592,53 @@ function _instantiate_diagram!(
     return nothing
 end
 
-"""    _subsystem_bridge_frames(b, path) -> Set{String}
+"""    _internal_frame_connected(b, path, start, from_frame, face_frame) -> Bool
 
-The frame names declared inside the subsystem at `path`: every port frame of a component
-whose own block declares ports in two different frames is a candidate bridge (D-MB5: a
-`FixedTransform`/`JointTransform` declares two frames). The set holds only frames that take
-part in such a pair, so it is the check "an internal transform bridges frame X and frame Y".
+Whether the exposed internal port `start` is connected, through the subsystem's own bonds and
+wire groups, to a transform instance whose two ports declare `from_frame` and `face_frame`
+(D-MB5: a `FixedTransform`/`JointTransform` is the only legal bridge). Connectivity is what
+matters: an unconnected transform anywhere in the subsystem must not justify the face.
 """
-function _subsystem_bridge_frames(b::Builder, path::String)
-    bridged = Set{String}()
-    prefix = path * "/"
-    for st in b.states
-        startswith(st.path, prefix) || continue
-        frames = String[p.frame for p in values(st.ports) if p.frame !== nothing]
-        length(unique(frames)) < 2 && continue
-        for f in unique(frames)
-            push!(bridged, f)
+function _internal_frame_connected(
+    b::Builder,
+    path::String,
+    start::RawEndpoint,
+    from_frame::String,
+    face_frame::String,
+)
+    slot(ep::RawEndpoint) = ep.kind == :junction ? _junction_key(ep.path) : _portkey(ep)
+    adjacency = Dict{Tuple{String,Symbol},Vector{Tuple{String,Symbol}}}()
+    for connection in b.raw
+        inside = connection.diagram == path || startswith(connection.diagram, path * "/")
+        inside || continue
+        connection.conn.kind in (:bond, :wire) || continue
+        for (a, z) in ((connection.from, connection.to), (connection.to, connection.from))
+            a.kind in (:power, :junction) || continue
+            z.kind in (:power, :junction) || continue
+            push!(get!(adjacency, slot(a), Tuple{String,Symbol}[]), slot(z))
         end
     end
-    return bridged
+    start_key = slot(start)
+    reachable = Set{Tuple{String,Symbol}}([start_key])
+    queue = Tuple{String,Symbol}[start_key]
+    while !isempty(queue)
+        key = popfirst!(queue)
+        for other in get(adjacency, key, Tuple{String,Symbol}[])
+            other in reachable && continue
+            push!(reachable, other)
+            push!(queue, other)
+        end
+    end
+    prefix = path * "/"
+    for key in reachable
+        startswith(key[1], "junction:") && continue
+        startswith(key[1], prefix) || continue
+        st = get(b.state_by_path, key[1], nothing)
+        st === nothing && continue
+        frames = String[p.frame for p in values(st.ports) if p.frame !== nothing]
+        from_frame in frames && face_frame in frames && return true
+    end
+    return false
 end
 
 """Check the declared domain, size, component units and frame of a subsystem power port
@@ -2628,6 +2656,23 @@ function _check_subsystem_power_port!(
 )
     port = get(b.port_at, _portkey(internal), nothing)
     port === nothing && return nothing
+    # A concrete multibond override of a Generic internal port is not supported in v1: the
+    # internal port's flat ids were created as one scalar effort/flow pair. Say so instead of
+    # reporting the raw size mismatch.
+    override_width = isempty(sp.size) ? 1 : prod(sp.size)
+    if port.domain == :Generic &&
+       (sp.domain in (:Planar, :Spatial) || override_width != 1)
+        _report_node!(
+            b,
+            node,
+            path,
+            nothing;
+            code = "E102",
+            message = "subsystem port `$(sp.name)` of `$(node.name)` overrides a Generic internal port `$(sp.port)` with a $(override_width)-component port; a Generic override must stay scalar",
+            hint = "give the internal block the multibond domain (Power{Planar}/Power{Spatial}) instead of Power{Generic}; only the scalar override is supported",
+        )
+        return nothing
+    end
     if sp.domain !== nothing && port.domain != :Generic && sp.domain != port.domain
         _report_node!(
             b,
@@ -2684,8 +2729,7 @@ function _check_subsystem_power_port!(
     sp.frame === nothing && return nothing
     port.frame === nothing && return nothing
     sp.frame == port.frame && return nothing
-    bridged = _subsystem_bridge_frames(b, path)
-    sp.frame in bridged && port.frame in bridged && return nothing
+    _internal_frame_connected(b, path, internal, port.frame, sp.frame) && return nothing
     push!(
         b.diagnostics,
         diag(

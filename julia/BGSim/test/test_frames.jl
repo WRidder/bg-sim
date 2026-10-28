@@ -102,8 +102,10 @@ function _model(name; nodes = Any[], connections = Any[], diagram = nothing, por
     )
 end
 
-check(md::IR.ModelDoc) = BGSim.Compile.model_check(md)
-check(model) = BGSim.Compile.model_check(IR.parse_model(model))
+check(md::IR.ModelDoc; project_dir = nothing) =
+    BGSim.Compile.model_check(md; project_dir = project_dir)
+check(model; project_dir = nothing) =
+    BGSim.Compile.model_check(IR.parse_model(model); project_dir = project_dir)
 flatten(md::IR.ModelDoc) = BGSim.Compile.flatten(md)
 flatten(model) = BGSim.Compile.flatten(IR.parse_model(model))
 
@@ -115,30 +117,74 @@ _codes(result) = [d.code for d in result.diagnostics]
 # "hold the flow at zero" port; the causality declaration is optional so a junction model can
 # avoid a causal conflict that is not the subject of the test.
 function _sink_block(domain::AbstractString, frame)
-    n = domain == "Planar" ? 3 : 6
+    n = domain == "Planar" ? 3 : domain == "Spatial" ? 6 : 1
     frame_attr = frame === nothing ? "" : ", [frame = \"$frame\"]"
+    equations = n == 1 ? "p.f ~ 0.0" : """
+            for k in 1:$n
+                p.f[k] ~ 0.0
+            end
+    """
     return """
     @block Sink$(domain) begin
         @ports p::Power{$domain}$frame_attr
         @equations begin
-            for k in 1:$n
-                p.f[k] ~ 0.0
-            end
+            $equations
         end
     end
     """
 end
 
 function _ground_block(domain::AbstractString, frame)
-    n = domain == "Planar" ? 3 : 6
+    n = domain == "Planar" ? 3 : domain == "Spatial" ? 6 : 1
     frame_attr = frame === nothing ? "" : ", [frame = \"$frame\"]"
+    equation = n == 1 ? "p.f ~ 0.0" : "p.f ~ [$(join(zeros(Int, n), ", "))]"
     return """
     @block Ground$(domain) begin
         @ports p::Power{$domain}$frame_attr
-        @equations p.f ~ [$(join(zeros(Int, n), ", "))]
+        @equations $equation
         @causality p => (:flow_out, :fixed)
     end
     """
+end
+
+function _generic_sink_block(frame = nothing)
+    frame_attr = frame === nothing ? "" : ", [frame = \"$frame\"]"
+    return """
+    @block GenericSink begin
+        @ports p::Power{Generic}$frame_attr
+        @equations p.f ~ 0.0
+    end
+    """
+end
+
+function _pass_block(domain::AbstractString, from_frame, to_frame)
+    n = domain == "Planar" ? 3 : 6
+    fa = from_frame === nothing ? "" : ", [frame = \"$from_frame\"]"
+    fb = to_frame === nothing ? "" : ", [frame = \"$to_frame\"]"
+    return """
+    @block Pass$(domain) begin
+        @ports begin
+            a::Power{$domain}$fa
+            b::Power{$domain}$fb
+        end
+        @equations begin
+            for k in 1:$n
+                a.f[k] ~ b.f[k]
+                b.e[k] ~ a.e[k]
+            end
+        end
+    end
+    """
+end
+
+"""Flatten a sum expression into `(sign, term)` pairs, left to right."""
+function _sum_terms(e, sign::Symbol = :+)
+    if e isa BGSim.BinOp && e.op === :+
+        return vcat(_sum_terms(e.lhs, sign), _sum_terms(e.rhs, sign))
+    elseif e isa BGSim.UnOp && e.op === :-
+        return _sum_terms(e.operand, sign === :+ ? :- : :+)
+    end
+    return [(sign, e)]
 end
 
 function _junction_model(domain::AbstractString, junction::Int; second_frame = "world",
@@ -197,6 +243,96 @@ end
             @test length(junction_eqs) == n * 2
             @test !_has_code(check(_junction_model(domain, 0)), "E007")
         end
+    end
+
+    @testset "junction width, Generic-on-multibond and per-component signs" begin
+        function junction_sign_model(name, kind)
+            return _model(
+                name;
+                nodes = Any[
+                    _node("n1", "World", _inline(_ground_block("Planar", "world"))),
+                    _node("n2", "J", _junction(kind)),
+                    _node("n3", "LoadA", _inline(_sink_block("Planar", "world"))),
+                    _node("n4", "LoadB", _inline(_sink_block("Planar", "world"))),
+                ],
+                connections = Any[
+                    _conn("c1", "bond", "n1", "p", "n2", nothing),
+                    _conn("c2", "bond", "n2", nothing, "n3", "p"),
+                    _conn("c3", "bond", "n2", nothing, "n4", "p"),
+                ],
+            )
+        end
+        for (kind, field) in ((0, :f), (1, :e))
+            fm = flatten(junction_sign_model("JSign$kind", kind))
+            sums = [
+                eq for eq in fm.equations if
+                eq.origin.kind === :junction && eq.rhs isa BGSim.Lit && eq.rhs.value == 0.0
+            ]
+            @test length(sums) == 3
+            expected_signs = kind == 0 ? [:-, :-, :-] : [:+, :-, :-]
+            for (c, eq) in enumerate(sums)
+                terms = _sum_terms(eq.lhs)
+                @test [sign for (sign, _) in terms] == expected_signs
+                names = String[]
+                for (_, term) in terms
+                    @test term isa BGSim.Name
+                    push!(names, String(term.name))
+                end
+                @test names == [
+                    "World/p.$field[$c]", "LoadA/p.$field[$c]", "LoadB/p.$field[$c]",
+                ]
+            end
+        end
+
+        # A Generic scalar port (one flat e/f pair) cannot join an adopted multibond
+        # junction: E102 names the port, the junction and the width, not a downstream E103.
+        generic = _model(
+            "GenericOnPlanarJunction";
+            nodes = Any[
+                _node("n1", "World", _inline(_ground_block("Planar", "world"))),
+                _node("n2", "J", _junction(1)),
+                _node("n3", "Load", _inline(_generic_sink_block())),
+            ],
+            connections = Any[
+                _conn("c1", "bond", "n1", "p", "n2", nothing),
+                _conn("c2", "bond", "n2", nothing, "n3", "p"),
+            ],
+        )
+        result = check(generic)
+        d = _diag(result, "E102")
+        @test d.path == "J"
+        @test d.connection == "c2"
+        @test occursin("Generic scalar port", d.message)
+        @test occursin("Planar", d.message)
+        @test occursin("3 components", d.message)
+        @test !_has_code(result, "E103")
+
+        # Two Planar junctions are connected per component by a virtual (e, f) pair of the
+        # adopted width: each 1-junction emits D*(n-1)+D = D*n equations.
+        jj = _model(
+            "PlanarJunctionToJunction";
+            nodes = Any[
+                _node("n1", "World", _inline(_ground_block("Planar", "world"))),
+                _node("n2", "J1", _junction(1)),
+                _node("n3", "J2", _junction(1)),
+                _node("n4", "Load", _inline(_sink_block("Planar", "world"))),
+            ],
+            connections = Any[
+                _conn("c1", "bond", "n1", "p", "n2", nothing),
+                _conn("c2", "bond", "n2", nothing, "n3", nothing),
+                _conn("c3", "bond", "n3", nothing, "n4", "p"),
+            ],
+        )
+        jresult = check(jj)
+        @test isempty([d for d in jresult.diagnostics if d.severity == "error"])
+        @test jresult.stats == (states = 0, equations = 18)
+        @test jresult.multibond["c2"] == 2
+        jfm = flatten(jj)
+        junction_eqs = [eq for eq in jfm.equations if eq.origin.kind === :junction]
+        @test length(junction_eqs) == 3 * 2 * 2          # D*n per junction, two junctions
+        @test count(v -> v.id == "c2.e[1]", jfm.variables) == 1
+        @test count(v -> v.id == "c2.f[3]", jfm.variables) == 1
+        @test !any(v -> v.id == "c2.e", jfm.variables)
     end
 
     @testset "@ports frame attribute, interface dimension and block metadata" begin
@@ -283,6 +419,15 @@ end
                 @test port.frame === nothing
             end
         end
+
+        # The catalog owns its unit arrays: mutating a returned catalog (or the helper's
+        # result) must not corrupt the next call.
+        cat.domains[6].components.effort[1] = "corrupted"
+        BGSim.Library.domain_components(:Planar).flow[1] = "corrupted"
+        fresh = BGSim.Library.catalog()
+        @test fresh.domains[6].components.effort[1] == "N*m"
+        @test fresh.domains[6].components.flow[1] == "rad/s"
+        @test cat.domains[6].components.effort[1] == "corrupted"   # the returned copy
     end
 
     # -----------------------------------------------------------------------------------
@@ -380,6 +525,29 @@ end
         )
         @test !_has_code(check(direct), "E007")
         @test check(direct).frames["c1"] == "World/world"
+
+        # A null-null chain inside one wire group still ends at two different named frames:
+        # the nulls adopt `world`, so the final `body` port closes the conflict.
+        chain = _model(
+            "NullNullChain";
+            nodes = Any[
+                _node("n1", "World", _inline(_sink_block("Planar", "world"))),
+                _node("n2", "N1", _inline(_sink_block("Planar", nothing))),
+                _node("n3", "N2", _inline(_sink_block("Planar", nothing))),
+                _node("n4", "Body", _inline(_sink_block("Planar", "body"))),
+            ],
+            connections = Any[
+                _conn("c1", "wire", "n1", "p", "n2", "p"),
+                _conn("c2", "wire", "n2", "p", "n3", "p"),
+                _conn("c3", "wire", "n3", "p", "n4", "p"),
+            ],
+        )
+        chain_result = check(chain)
+        cd = _diag(chain_result, "E007")
+        @test cd.path == "Body"
+        @test cd.connection == "c3"
+        @test occursin("frame `body`", cd.message)
+        @test occursin("frame `world`", cd.message)
     end
 
     # -----------------------------------------------------------------------------------
@@ -470,6 +638,71 @@ end
         @test md.diagram.nodes[2].subsystem_ports[1].frame == "arm"
     end
 
+    @testset "an unconnected transform does not justify a subsystem face" begin
+        # The verifier's counterexample: the face exposes a body port and the subsystem
+        # contains a transform that declares body/arm, but it is not wired to the exposed
+        # port (nor is the second one). Set membership is not connectivity.
+        face = Dict{String,Any}(
+            "name" => "p", "kind" => "power", "domain" => "Planar",
+            "size" => Any[3], "frame" => "arm", "node" => "s1", "port" => "p",
+        )
+        sub = Dict{String,Any}(
+            "ports" => Any[face],
+            "diagram" => _diagram(
+                Any[
+                    _node("s1", "Face", _inline(_sink_block("Planar", "body"))),
+                    _node("s2", "T1", _inline(_pass_block("Planar", "body", "arm"))),
+                    _node("s3", "T2", _inline(_pass_block("Planar", "body", "arm"))),
+                ],
+                Any[],
+            ),
+        )
+        model = _model(
+            "UnconnectedTransform";
+            nodes = Any[
+                _node("n1", "World", _inline(_ground_block("Planar", "arm"))),
+                _node("n2", "Arm", Dict{String,Any}("subsystem" => sub)),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        result = check(model)
+        d = _diag(result, "E007")
+        @test d.path == "Arm"
+        @test occursin("subsystem port `p`", d.message)
+        @test occursin("frame `arm`", d.message)
+        @test occursin("frame `body`", d.message)
+    end
+
+    @testset "a connected internal transform is accepted" begin
+        # The face exposes the transform itself; its other side is genuinely wired onward to
+        # a sink. The transform's two declared frames are what make the face frame legal.
+        face = Dict{String,Any}(
+            "name" => "p", "kind" => "power", "domain" => "Planar",
+            "size" => Any[3], "frame" => "arm", "node" => "s2", "port" => "a",
+        )
+        sub = Dict{String,Any}(
+            "ports" => Any[face],
+            "diagram" => _diagram(
+                Any[
+                    _node("s2", "Transform", _inline(_pass_block("Planar", "body", "arm"))),
+                    _node("s3", "Sink", _inline(_sink_block("Planar", "arm"))),
+                ],
+                Any[_conn("cC", "bond", "s2", "b", "s3", "p")],
+            ),
+        )
+        model = _model(
+            "ConnectedTransform";
+            nodes = Any[
+                _node("n1", "World", _inline(_ground_block("Planar", "arm"))),
+                _node("n2", "Arm", Dict{String,Any}("subsystem" => sub)),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        result = check(model)
+        @test !_has_code(result, "E007")
+        @test isempty([d for d in result.diagnostics if d.severity == "error"])
+    end
+
     @testset "an illegal direct internal bond is E007" begin
         # No transform: the subsystem's internal body port is bonded straight to an arm
         # port. The face itself is consistent, so the error is the internal bond.
@@ -529,6 +762,169 @@ end
         @test d2.path == "Arm"
         @test occursin("subsystem port `p`", d2.message)
         @test occursin("FixedTransform", d2.hint)
+    end
+
+    @testset "a null subsystem face is frame-neutral" begin
+        # The face has no frame and the internal port says `body`; the face must adopt the
+        # outside `world`, not inherit the internal catalog frame.
+        face = Dict{String,Any}(
+            "name" => "p", "kind" => "power", "domain" => "Planar",
+            "size" => Any[3], "node" => "s1", "port" => "p",
+        )
+        sub = Dict{String,Any}(
+            "ports" => Any[face],
+            "diagram" => _diagram(
+                Any[_node("s1", "Body", _inline(_sink_block("Planar", "body")))],
+                Any[],
+            ),
+        )
+        model = _model(
+            "NullFace";
+            nodes = Any[
+                _node("n1", "World", _inline(_ground_block("Planar", "world"))),
+                _node("n2", "Arm", Dict{String,Any}("subsystem" => sub)),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        result = check(model)
+        @test !_has_code(result, "E007")
+        @test result.frames["c1"] == "World/world"
+    end
+
+    @testset "a concrete override of a Generic internal port is a clear E102" begin
+        # The Generic internal port was flattened as one scalar e/f pair, so a 3-component
+        # override is not representable in v1: say that instead of a raw size mismatch.
+        face = Dict{String,Any}(
+            "name" => "p", "kind" => "power", "domain" => "Planar",
+            "size" => Any[3], "frame" => "world", "node" => "s1", "port" => "p",
+        )
+        sub = Dict{String,Any}(
+            "ports" => Any[face],
+            "diagram" => _diagram(
+                Any[_node("s1", "Load", _inline(_generic_sink_block()))],
+                Any[],
+            ),
+        )
+        model = _model(
+            "GenericOverride";
+            nodes = Any[
+                _node("n1", "World", _inline(_ground_block("Planar", "world"))),
+                _node("n2", "Arm", Dict{String,Any}("subsystem" => sub)),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        result = check(model)
+        d = _diag(result, "E102")
+        @test occursin("overrides a Generic internal port", d.message)
+        @test occursin("must stay scalar", d.message)
+        @test occursin("Power{Planar}", d.hint)
+        @test !occursin("declares size", d.message)
+
+        # The scalar override still works: a Rotation face over a Generic internal port.
+        sface = Dict{String,Any}(
+            "name" => "p", "kind" => "power", "domain" => "Rotation",
+            "size" => Any[1], "frame" => "world", "node" => "s1", "port" => "p",
+        )
+        ssub = Dict{String,Any}(
+            "ports" => Any[sface],
+            "diagram" => _diagram(
+                Any[_node("s1", "Load", _inline(_generic_sink_block()))],
+                Any[],
+            ),
+        )
+        smodel = _model(
+            "GenericScalarOverride";
+            nodes = Any[
+                _node("n1", "World", _inline(_ground_block("Rotation", "world"))),
+                _node("n2", "Arm", Dict{String,Any}("subsystem" => ssub)),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        sresult = check(smodel)
+        @test !_has_code(sresult, "E102")
+        @test !_has_code(sresult, "E007")
+        @test sresult.frames["c1"] == "Arm/world"
+    end
+
+    @testset "a textual composite carries its interface frame" begin
+        mktempdir() do dir
+            library = joinpath(dir, "library")
+            mkpath(library)
+            write(
+                joinpath(library, "CompSinkPlanar.jl"),
+                """
+                @block CompSinkPlanar begin
+                    @ports p::Power{Planar}
+                    @equations begin
+                        for k in 1:3
+                            p.f[k] ~ 0.0
+                        end
+                    end
+                end
+                """,
+            )
+            write(
+                joinpath(library, "CompSinkBody.jl"),
+                """
+                @block CompSinkBody begin
+                    @ports p::Power{Planar}, [frame = "body"]
+                    @equations begin
+                        for k in 1:3
+                            p.f[k] ~ 0.0
+                        end
+                    end
+                end
+                """,
+            )
+            composite(component) = """
+            @block ArmComposite begin
+                @ports p::Power{Planar}, [frame = "arm"]
+                @components begin
+                    sink = $component()
+                end
+                @connections begin
+                    connect(p, sink.p)
+                end
+            end
+            """
+            build(component) = _model(
+                "TextualFrame";
+                nodes = Any[
+                    _node("n1", "World", _inline(_ground_block("Planar", "arm"))),
+                    _node("n2", "Arm", _inline(composite(component))),
+                ],
+                connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+            )
+            # A null internal port lets the composite face's `arm` be authoritative.
+            result = check(build("CompSinkPlanar"); project_dir = dir)
+            @test !_has_code(result, "E007")
+            @test result.frames["c1"] == "Arm/arm"
+
+            # If the internal port declares `body`, the composite face is still `arm`; with no
+            # internal transform that is E007 (not silently ignored).
+            bad = check(build("CompSinkBody"); project_dir = dir)
+            d = _diag(bad, "E007")
+            @test d.path == "Arm"
+            @test occursin("frame `arm`", d.message)
+            @test occursin("frame `body`", d.message)
+        end
+    end
+
+    @testset "two instances with the same frame name are the same frame (v1)" begin
+        # D-MB5 v1 limitation: frames are compared by unqualified name, so two different
+        # bodies that both name their local frame `body` are accepted. Distinct names per
+        # body are the discipline until typed frame objects land.
+        model = _model(
+            "SameFrameName";
+            nodes = Any[
+                _node("n1", "Body1", _inline(_sink_block("Planar", "body"))),
+                _node("n2", "Body2", _inline(_sink_block("Planar", "body"))),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        result = check(model)
+        @test !_has_code(result, "E007")
+        @test result.frames["c1"] == "Body2/body"
     end
 
     # -----------------------------------------------------------------------------------

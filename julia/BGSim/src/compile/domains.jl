@@ -352,14 +352,14 @@ end
 
 """    _endpoint_frame(b, ep) -> Union{String,Nothing}
 
-The named frame of one endpoint. A subsystem face uses its declared frame (authoritative);
-when the face has no frame, the internal port's catalog frame is the fallback, so an old
-subsystem without frames behaves as before. A junction and a frame-neutral port give
+The named frame of one endpoint. A subsystem face uses its declared frame (authoritative); a
+null face is frame-neutral and does not fall back to the internal port's catalog frame, so it
+adopts the frame of the connection it joins. A junction and a frame-neutral port give
 `nothing`."""
 function _endpoint_frame(b::Builder, ep::RawEndpoint)
     if ep.face !== nothing
         sp = get(b.boundary_ports, ep.face, nothing)
-        sp !== nothing && sp.frame !== nothing && return sp.frame
+        return sp === nothing ? nothing : sp.frame
     end
     ep.kind == :power || return nothing
     port = get(b.port_at, _portkey(ep), nothing)
@@ -468,9 +468,11 @@ end
 The D-MB5 frame rule and the D-MB12 stroke counts. A bond or wire group unifies the frames
 of its ports; a junction's attached bonds share one frame. Two different named frames in one
 group are E007 on the connection that closes the conflict. `frames` maps every bond/wire with
-an adopted frame to `"{path}/{frame}"` (instance-qualified, so a catalog name `body` on two
-bodies is distinguishable); `multibond` maps every Planar/Spatial bond to 2/3 strokes. Frames
-are metadata, not type parameters: nothing here computes with a frame.
+an adopted frame to `"{path}/{frame}"` (display-qualified, so a catalog name `body` on two
+bodies is distinguishable in the editor; equality itself is by the unqualified frame name);
+`multibond` maps every Planar/Spatial **bond** to 2/3 strokes. Plan 7.1 makes the stroke count
+a bond property, so a Planar wire deliberately has no `multibond` entry. Frames are metadata,
+not type parameters: nothing here computes with a frame.
 """
 function _check_frames!(b::Builder, plan::ConnPlan)
     uf = UnionFind()
@@ -628,13 +630,8 @@ function _apply_instance_domains!(b::Builder, plan::ConnPlan)
             end
         end
     end
-    # A junction-to-junction bond's virtual variables belong to the junction's island.
-    for state in plan.states
-        (state.conn.kind == :bond && state.domain !== nothing) || continue
-        state.from.kind == :junction && state.to.kind == :junction || continue
-        _set_var_unit!(b, state.conn.id * ".e", BGSim.Units.effort_dims(state.domain))
-        _set_var_unit!(b, state.conn.id * ".f", BGSim.Units.flow_dims(state.domain))
-    end
+    # A junction-to-junction bond's virtual variables are created by the junction emitter
+    # once the adopted width is known, together with their units.
     return nothing
 end
 

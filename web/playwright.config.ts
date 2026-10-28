@@ -34,8 +34,8 @@ export default defineConfig({
       // `npx playwright test tests/perf` selects exactly those files.
       // The real-worker acceptance specs are skipped in the fake-worker pass.
       testIgnore: realWorker
-        ? /perf[\\/]/
-        : [/perf[\\/]/, /dcmotor\.spec\.ts/, /subsystems\.spec\.ts/, /rlc-dual\.spec\.ts/, /domain-visual\.spec\.ts/, /inverted-pendulum-cart\.spec\.ts/, /drivetrain-kalman\.spec\.ts/, /quarter-car\.spec\.ts/, /industrial-servo\.spec\.ts/, /hydraulic-servo\.spec\.ts/, /speed-control\.spec\.ts/],
+        ? [/perf[\\/]/, /multibond\.spec\.ts/]
+        : [/perf[\\/]/, /multibond\.spec\.ts/, /dcmotor\.spec\.ts/, /subsystems\.spec\.ts/, /rlc-dual\.spec\.ts/, /domain-visual\.spec\.ts/, /inverted-pendulum-cart\.spec\.ts/, /drivetrain-kalman\.spec\.ts/, /quarter-car\.spec\.ts/, /industrial-servo\.spec\.ts/, /hydraulic-servo\.spec\.ts/, /speed-control\.spec\.ts/],
     },
     {
       name: "perf",

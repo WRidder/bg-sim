@@ -432,36 +432,20 @@ function _record_junction_bonds!(b::Builder, states::Vector{ConnState})
         t = state.to
         (f.kind == :junction || t.kind == :junction) || continue
         if f.kind == :junction && t.kind == :junction
-            eid = state.conn.id * ".e"
-            fid = state.conn.id * ".f"
-            r = _placeholder_range()
-            for (id, field) in ((eid, :e), (fid, :f))
-                _add_var!(
-                    b,
-                    Flat.FlatVar(
-                        id,
-                        :port,
-                        :Real,
-                        field === :e ? BGSim.Units.effort_dims(:Generic) :
-                        BGSim.Units.flow_dims(:Generic),
-                        nothing,
-                        Dict{Symbol,Any}(),
-                        Flat.Origin(; path = f.path, node = f.node,
-                            connection = state.conn.id, kind = :bond),
-                    ),
-                )
-            end
+            # The virtual `(e, f)` pair is sized by the adopted junction domain, which is not
+            # known until domain adoption; `emit_junction_equations!` creates it per
+            # component then (so two Planar junctions are connected component-wise).
             from_j = _junction(b, f)
             to_j = _junction(b, t)
             from_j === nothing || push!(
                 from_j.bonds,
                 Flat.JunctionBond(state.conn.id, t.node, t.path, nothing, false, false,
-                    String[eid], String[fid]),
+                    String[], String[]),
             )
             to_j === nothing || push!(
                 to_j.bonds,
                 Flat.JunctionBond(state.conn.id, f.node, f.path, nothing, true, false,
-                    String[eid], String[fid]),
+                    String[], String[]),
             )
             continue
         end

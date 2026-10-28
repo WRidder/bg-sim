@@ -208,7 +208,10 @@ _schema_required(def) = Set(String.(def.required))
 
 function _check_object_keys(entry, def; optional = String[])
     e = _plain(entry)
-    @test Set(keys(e)) == setdiff(_schema_keys(def.properties), Set(optional))
+    properties = _schema_keys(def.properties)
+    # No unknown keys; every property except the explicitly optional ones is present.
+    @test Set(keys(e)) ⊆ properties
+    @test setdiff(properties, Set(optional)) ⊆ Set(keys(e))
     @test _schema_required(def) ⊆ Set(keys(e))
     return nothing
 end
@@ -1302,9 +1305,18 @@ const INTERFACE_FIELDS = [
         @test cat.language == "0.1.0"
 
         for block in cat.blocks
-            # `dimension` is optional and non-nullable (`2 | 3`), so the scalar stdlib blocks
-            # omit it; every other schema property is always present.
+            # `dimension` is optional and non-nullable (`2 | 3`): allowed when present, and
+            # its value must match the block's multibond ports.
             _check_object_keys(block, defs["catalogBlock"]; optional = ["dimension"])
+            if haskey(block, :dimension)
+                @test block.dimension in (2, 3)
+                expected = any(p -> p.domain == "Planar", block.ports) ? 2 :
+                           any(p -> p.domain == "Spatial", block.ports) ? 3 : nothing
+                @test expected !== nothing
+                @test block.dimension == expected
+            else
+                @test !any(p -> p.domain in ("Planar", "Spatial"), block.ports)
+            end
             for (field, defname) in INTERFACE_FIELDS
                 for entry in _field(block, field)
                     _check_object_keys(entry, defs[defname])
@@ -1334,7 +1346,8 @@ const INTERFACE_FIELDS = [
         iface = _schema_keys(defs["blockInterface"].properties)
         @test iface == Set([field for (field, _) in INTERFACE_FIELDS]) ∪ Set(["dimension"])
         first_interface = _plain(block_interface(load_stdlib()[1].ast))
-        @test _schema_required(defs["blockInterface"]) ⊆ Set(keys(first_interface))    end
+        @test _schema_required(defs["blockInterface"]) ⊆ Set(keys(first_interface))
+    end
 
     @testset "catalog against the contract fixture, field for field" begin
         fixture = JSON3.read(read(CATALOG_FIXTURE_PATH, String))

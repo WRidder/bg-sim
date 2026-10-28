@@ -575,9 +575,23 @@ const DOMAIN_COMPONENTS = Dict{Symbol,NamedTuple{(:effort, :flow),Tuple{Vector{S
     domain_components(domain) -> Union{NamedTuple,Nothing}
 
 The per-component unit arrays of a multibond domain (Planar or Spatial), or `nothing` for a
-scalar domain. Used by the subsystem-boundary check and by the catalog.
+scalar domain. Used by the subsystem-boundary check and by the catalog. The arrays are
+copies, so a caller can never mutate the catalog's data.
 """
-domain_components(domain::Symbol) = get(DOMAIN_COMPONENTS, domain, nothing)
+function domain_components(domain::Symbol)
+    components = get(DOMAIN_COMPONENTS, domain, nothing)
+    components === nothing && return nothing
+    return (effort = copy(components.effort), flow = copy(components.flow))
+end
+
+"""    _catalog_domain(entry) -> NamedTuple
+
+A copy of one [`DOMAINS`](@ref) entry whose mutable unit arrays are freshly allocated, so a
+consumer mutating a returned catalog cannot corrupt the module's tables."""
+function _catalog_domain(entry)
+    haskey(entry, :components) || return entry
+    return merge(entry, (components = domain_components(Symbol(entry.name)),))
+end
 
 """
     DOMAINS
@@ -689,6 +703,6 @@ function catalog(project_dir::Union{Nothing,AbstractString} = nothing)
         language = LANGUAGE_VERSION,
         blocks = [to_namedtuple(b) for b in blocks],
         junctions = copy(JUNCTIONS),
-        domains = copy(DOMAINS),
+        domains = [_catalog_domain(d) for d in DOMAINS],
     )
 end
