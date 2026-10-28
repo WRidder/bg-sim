@@ -617,16 +617,19 @@ function _apply_instance_domains!(b::Builder, plan::ConnPlan)
             # model-level E006 quotes the concrete text (`[F]`, `[m/N]`).
             _check_adopted_units!(b, st)
         end
-        # Port fields take the effort/flow dimension of their adopted (or declared) domain.
+        # Port fields take the effort/flow dimension of their adopted (or declared) domain,
+        # **per component** (J-MB2, D-MB10): a planar port's component 1 is a torque and
+        # components 2/3 are forces. A size mismatch (a Generic scalar port on a multibond
+        # island) is connect.jl's E102; the port keeps its declared units so the flat model
+        # stays well-formed instead of inventing a component.
         for (name, port) in st.ports
             adopted = get(plan.port_domains, _portkey(st.path, name), port.domain)
-            eunit = BGSim.Units.effort_dims(adopted)
-            funit = BGSim.Units.flow_dims(adopted)
-            for id in port.eids
-                _set_var_unit!(b, id, eunit)
+            port.size == BGSim.Units.component_count(adopted) || continue
+            for (k, id) in enumerate(port.eids)
+                _set_var_unit!(b, id, BGSim.Units.effort_dims(adopted, k))
             end
-            for id in port.fids
-                _set_var_unit!(b, id, funit)
+            for (k, id) in enumerate(port.fids)
+                _set_var_unit!(b, id, BGSim.Units.flow_dims(adopted, k))
             end
         end
     end
@@ -635,13 +638,23 @@ function _apply_instance_domains!(b::Builder, plan::ConnPlan)
     return nothing
 end
 
+"""    _port_power_dims(adopted, port) -> Dims
+
+The unit of a port's scalar power signal. For a well-sized port it is the domain's
+[`power_dims`](@ref) — W for every concrete domain, `effort*flow` for `Generic` — because
+`P = Σ_k e[k]*f[k]` adds the component products (`N*m*rad/s` and `N*m/s` are both watts).
+A port whose size does not match the adopted domain (already E102) keeps the unit of its
+declared domain."""
+function _port_power_dims(adopted::Symbol, port::PortInfo)
+    port.size == BGSim.Units.component_count(adopted) && return BGSim.Units.power_dims(adopted)
+    return BGSim.Units.power_dims(port.domain)
+end
+
 function _build_power_signals!(b::Builder, plan::ConnPlan)
     r = _placeholder_range()
     for st in b.states
         for (name, port) in st.ports
             adopted = get(plan.port_domains, _portkey(st.path, name), port.domain)
-            eunit = BGSim.Units.effort_dims(adopted)
-            funit = BGSim.Units.flow_dims(adopted)
             terms = BGSim.Expr[]
             for k in 1:port.size
                 e = port_field_exprs(port, :e)[k]
@@ -652,7 +665,7 @@ function _build_power_signals!(b::Builder, plan::ConnPlan)
             b.power_signals[id] = Flat.DerivedSignal(
                 id,
                 :power,
-                eunit * funit,
+                _port_power_dims(adopted, port),
                 st.path,
                 :Real,
                 _sum_exprs(terms, r),

@@ -341,7 +341,36 @@ end
         @test Units.flow_dims(:Hydraulic) == Units.parse_unit("m^3/s")
         @test Units.effort_dims(:Generic) == Units.parse_unit("effort")
         @test Units.flow_dims(:Generic) == Units.parse_unit("flow")
-        @test Units.effort_dims(:Planar) == N  # per-axis, like Translation
+        # A multibond port has no single unit: a planar component 1 is a torque, 2 and 3
+        # are forces (F9/D-MB10). The whole-port form refuses instead of claiming `N`.
+        @test_throws ArgumentError Units.effort_dims(:Planar)
+        @test_throws ArgumentError Units.flow_dims(:Planar)
+        @test_throws ArgumentError Units.effort_dims(:Spatial)
+        @test_throws ArgumentError Units.flow_dims(:Spatial)
+        @test Units.effort_dims(:Planar, 1) == Units.parse_unit("N*m")
+        @test Units.effort_dims(:Planar, 2) == N
+        @test Units.effort_dims(:Planar, 3) == N
+        @test Units.flow_dims(:Planar, 1) == Units.parse_unit("rad/s")
+        @test Units.flow_dims(:Planar, 2) == Units.parse_unit("m/s")
+        @test Units.flow_dims(:Planar, 3) == Units.parse_unit("m/s")
+        @test Units.component_count(:Planar) == 3
+        @test Units.component_count(:Spatial) == 6
+        @test Units.component_count(:Rotation) == 1
+        @test Units.effort_component_dims(:Spatial) ==
+              [Units.parse_unit("N*m"), Units.parse_unit("N*m"), Units.parse_unit("N*m"),
+                  N, N, N]
+        @test Units.flow_component_dims(:Planar) ==
+              [Units.parse_unit("rad/s"), Units.parse_unit("m/s"), Units.parse_unit("m/s")]
+        @test Units.effort_component_dims(:Rotation) == [Units.parse_unit("N*m")]
+        @test Units.power_dims(:Planar) == Units.parse_unit("W")
+        @test Units.power_dims(:Spatial) == Units.parse_unit("W")
+        @test Units.power_dims(:Rotation) == Units.parse_unit("W")
+        @test Units.power_dims(:Generic) ==
+              Units.parse_unit("effort") * Units.parse_unit("flow")
+        @test Units.domain_effort_unit_strings(:Planar) == ["N*m", "N", "N"]
+        @test Units.domain_flow_unit_strings(:Spatial) ==
+              ["rad/s", "rad/s", "rad/s", "m/s", "m/s", "m/s"]
+        @test Units.domain_effort_unit_strings(:Rotation) == ["N*m"]
         @test Units.flow_dims(:UnknownDomain) == Units.parse_unit("flow")
 
         @test_throws ArgumentError Units.substitute_domain(c, :NoSuchDomain)

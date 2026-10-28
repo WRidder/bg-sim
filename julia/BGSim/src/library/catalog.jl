@@ -558,16 +558,18 @@ group_info(dir::AbstractString) = get(GROUP_BY_DIR, String(dir), nothing)
 
 The authoritative per-component effort/flow units of a multibond domain, angular first
 (D-MB2, C-MB1). A scalar domain has no components; its scalar `effort`/`flow` descriptors
-are the whole unit story.
+are the whole unit story. The arrays come from the unit table
+(`BGSim.Units.domain_effort_unit_strings` / `domain_flow_unit_strings`), so the catalog and
+the checker cannot disagree (J-MB2, finding F9).
 """
 const DOMAIN_COMPONENTS = Dict{Symbol,NamedTuple{(:effort, :flow),Tuple{Vector{String},Vector{String}}}}(
     :Planar => (
-        effort = ["N*m", "N", "N"],
-        flow = ["rad/s", "m/s", "m/s"],
+        effort = BGSim.Units.domain_effort_unit_strings(:Planar),
+        flow = BGSim.Units.domain_flow_unit_strings(:Planar),
     ),
     :Spatial => (
-        effort = ["N*m", "N*m", "N*m", "N", "N", "N"],
-        flow = ["rad/s", "rad/s", "rad/s", "m/s", "m/s", "m/s"],
+        effort = BGSim.Units.domain_effort_unit_strings(:Spatial),
+        flow = BGSim.Units.domain_flow_unit_strings(:Spatial),
     ),
 )
 

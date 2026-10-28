@@ -64,9 +64,10 @@ function _junction_virtual_vars!(
     suffix(k) = width == 1 ? "" : "[" * string(k) * "]"
     eids = String[bond.connection * ".e" * suffix(k) for k in 1:width]
     fids = String[bond.connection * ".f" * suffix(k) for k in 1:width]
-    for (ids, unit) in ((eids, BGSim.Units.effort_dims(domain)),
-        (fids, BGSim.Units.flow_dims(domain)))
-        for id in ids
+    for (ids, field) in ((eids, :e), (fids, :f))
+        for (k, id) in enumerate(ids)
+            unit = field === :e ? BGSim.Units.effort_dims(domain, k) :
+                   BGSim.Units.flow_dims(domain, k)
             _add_var!(
                 b,
                 Flat.FlatVar(

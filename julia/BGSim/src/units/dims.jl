@@ -316,11 +316,56 @@ end
 # Domains (decision D8 and D9)
 # ---------------------------------------------------------------------------------------
 
+"""    DOMAIN_COMPONENT_EFFORT, DOMAIN_COMPONENT_FLOW -> Dict{Symbol,Vector{Dims}}
+
+The per-component effort and flow dimensions of the multibond domains, angular first
+(D-MB2, D-MB10). These are the only authoritative component units: the catalog's
+`domain.components` strings, the checker's `p.e[k]`/`p.f[k]` and the flat `FlatVar.unit` all
+derive from this table (J-MB2, finding F9).
+
+| domain | D | effort components | flow components |
+| --- | --- | --- | --- |
+| Planar | 3 | N·m, N, N | rad/s, m/s, m/s |
+| Spatial | 6 | N·m, N·m, N·m, N, N, N | rad/s, rad/s, rad/s, m/s, m/s, m/s |
+
+`rad/s` is dimensionless here (plan 5.3 drops the radian), so component 1 is the same
+`Dims` as `Hz`; the spelling used in diagnostics is kept in
+[`DOMAIN_COMPONENT_LABELS`](@ref).
+"""
+const DOMAIN_COMPONENT_EFFORT = Dict{Symbol,Vector{Dims}}(
+    :Planar => Dims[UNIT_J, UNIT_N, UNIT_N],
+    :Spatial => Dims[UNIT_J, UNIT_J, UNIT_J, UNIT_N, UNIT_N, UNIT_N],
+)
+
+const DOMAIN_COMPONENT_FLOW = Dict{Symbol,Vector{Dims}}(
+    :Planar => Dims[UNIT_HZ, UNIT_M / UNIT_S, UNIT_M / UNIT_S],
+    :Spatial => Dims[
+        UNIT_HZ, UNIT_HZ, UNIT_HZ, UNIT_M / UNIT_S, UNIT_M / UNIT_S, UNIT_M / UNIT_S,
+    ],
+)
+
+"""The spellings a diagnostic uses for the components of a multibond domain. They are
+labels only — [`DOMAIN_COMPONENT_EFFORT`](@ref) is what the checker compares — but they are
+the strings the catalog publishes as `domain.components` (C-MB1) and the user sees."""
+const DOMAIN_COMPONENT_LABELS = Dict{Symbol,NamedTuple{(:effort, :flow),Tuple{Vector{String},Vector{String}}}}(
+    :Planar => (
+        effort = ["N*m", "N", "N"],
+        flow = ["rad/s", "m/s", "m/s"],
+    ),
+    :Spatial => (
+        effort = ["N*m", "N*m", "N*m", "N", "N", "N"],
+        flow = ["rad/s", "rad/s", "rad/s", "m/s", "m/s", "m/s"],
+    ),
+)
+
 """    DOMAIN_EFFORT, DOMAIN_FLOW -> Dict{Symbol,Dims}
 
-The concrete effort and flow dimension of every power domain (decision D8). `Generic`
-keeps the symbolic pseudo-dimensions; `Planar` and `Spatial` are per-axis translations
-(force and velocity), which is what M4 builds on.
+The scalar effort and flow dimension of every power domain (decision D8). `Generic` keeps
+the symbolic pseudo-dimensions; the multibond domains contribute their **first (angular)**
+component here, which is what `substitute_domain` uses for a `Generic` declaration whose
+island adopted them — the full per-component arrays live in
+[`DOMAIN_COMPONENT_EFFORT`](@ref)/[`DOMAIN_COMPONENT_FLOW`](@ref), and the whole-port
+[`effort_dims`](@ref)`(domain)` refuses to answer for a multibond domain.
 
 | domain | effort | flow |
 | --- | --- | --- |
@@ -328,7 +373,7 @@ keeps the symbolic pseudo-dimensions; `Planar` and `Spatial` are per-axis transl
 | Translation | N | m/s |
 | Rotation | N·m | rad/s |
 | Hydraulic | Pa | m³/s |
-| Planar, Spatial | N | m/s |
+| Planar, Spatial | N·m (component 1) | rad/s (component 1) |
 | Generic | effort | flow |
 """
 const DOMAIN_EFFORT = Dict{Symbol,Dims}(
@@ -337,8 +382,8 @@ const DOMAIN_EFFORT = Dict{Symbol,Dims}(
     :Translation => UNIT_N,
     :Rotation => UNIT_N * UNIT_M,
     :Hydraulic => UNIT_PA,
-    :Planar => UNIT_N,
-    :Spatial => UNIT_N,
+    :Planar => UNIT_J,
+    :Spatial => UNIT_J,
 )
 
 const DOMAIN_FLOW = Dict{Symbol,Dims}(
@@ -347,32 +392,154 @@ const DOMAIN_FLOW = Dict{Symbol,Dims}(
     :Translation => UNIT_M / UNIT_S,
     :Rotation => UNIT_HZ,
     :Hydraulic => UNIT_M^3 / UNIT_S,
-    :Planar => UNIT_M / UNIT_S,
-    :Spatial => UNIT_M / UNIT_S,
+    :Planar => UNIT_HZ,
+    :Spatial => UNIT_HZ,
 )
 
-"""The spellings used for port fields in diagnostics, per domain."""
+"""The scalar spellings used for port fields in diagnostics, per domain. For a multibond
+domain this is the first (angular) component; [`domain_effort_unit_strings`](@ref) and
+[`domain_flow_unit_strings`](@ref) give the per-component arrays."""
 const DOMAIN_UNIT_LABELS = Dict{Symbol,NTuple{2,String}}(
     :Generic => ("effort", "flow"),
     :Electrical => ("V", "A"),
     :Translation => ("N", "m/s"),
     :Rotation => ("N*m", "rad/s"),
     :Hydraulic => ("Pa", "m^3/s"),
-    :Planar => ("N", "m/s"),
-    :Spatial => ("N", "m/s"),
+    :Planar => ("N*m", "rad/s"),
+    :Spatial => ("N*m", "rad/s"),
 )
 
-"""    effort_dims(domain::Symbol) -> Dims
+"""    is_multibond_domain(domain::Symbol) -> Bool
 
-The effort dimension of a power domain. An unknown domain symbol falls back to the
-`Generic` pseudo-dimension so that a block with a mistyped domain cannot crash the fast
-check (J1.1 owns the domain names)."""
-effort_dims(domain::Symbol) = get(DOMAIN_EFFORT, domain, UNIT_EFFORT)
+True for the multibond domains (`Planar`, `Spatial`), which carry three or six components
+with their own units."""
+is_multibond_domain(domain::Symbol) = haskey(DOMAIN_COMPONENT_EFFORT, domain)
+
+"""    component_count(domain::Symbol) -> Int
+
+The number of components of a power port in `domain`: 3 for `Planar`, 6 for `Spatial` and 1
+for every scalar domain (including `Generic` and an unknown spelling)."""
+function component_count(domain::Symbol)::Int
+    is_multibond_domain(domain) || return 1
+    return length(DOMAIN_COMPONENT_EFFORT[domain])
+end
+
+"""    effort_component_dims(domain::Symbol) -> Vector{Dims}
+
+The effort dimension of every component, in D-MB2 order. A scalar domain gives a
+one-element vector."""
+function effort_component_dims(domain::Symbol)::Vector{Dims}
+    is_multibond_domain(domain) && return copy(DOMAIN_COMPONENT_EFFORT[domain])
+    return Dims[effort_dims(domain)]
+end
+
+"""    flow_component_dims(domain::Symbol) -> Vector{Dims}
+
+The flow dimension of every component; the counterpart of
+[`effort_component_dims`](@ref)."""
+function flow_component_dims(domain::Symbol)::Vector{Dims}
+    is_multibond_domain(domain) && return copy(DOMAIN_COMPONENT_FLOW[domain])
+    return Dims[flow_dims(domain)]
+end
+
+"""    domain_effort_unit_strings(domain::Symbol) -> Vector{String}
+
+The component spellings of the effort of `domain`: the catalog's `components.effort` for a
+multibond domain, the scalar label (`"N"`, `"V"`, `"effort"`) for a scalar one. This is the
+one place the catalog and the checker take their strings from."""
+function domain_effort_unit_strings(domain::Symbol)::Vector{String}
+    is_multibond_domain(domain) && return copy(DOMAIN_COMPONENT_LABELS[domain].effort)
+    return String[get(DOMAIN_UNIT_LABELS, domain, DOMAIN_UNIT_LABELS[:Generic])[1]]
+end
+
+"""    domain_flow_unit_strings(domain::Symbol) -> Vector{String}
+
+The flow counterpart of [`domain_effort_unit_strings`](@ref)."""
+function domain_flow_unit_strings(domain::Symbol)::Vector{String}
+    is_multibond_domain(domain) && return copy(DOMAIN_COMPONENT_LABELS[domain].flow)
+    return String[get(DOMAIN_UNIT_LABELS, domain, DOMAIN_UNIT_LABELS[:Generic])[2]]
+end
+
+"""    effort_dims(domain::Symbol) -> Dims
+    effort_dims(domain::Symbol, k::Integer) -> Dims
+
+The effort dimension of a power domain. A whole multibond port has **no** single effort
+unit (component 1 is a torque and component 2 a force), so the one-argument form throws for
+`Planar`/`Spatial`: a caller that needs one component asks for `effort_dims(domain, k)`, and
+one that needs the vector uses [`effort_component_dims`](@ref). This makes the F9 bug
+("a torque component checked as a force") impossible to reintroduce at a call site.
+
+For a scalar domain the one-argument form is unchanged, and `k` must be 1. An unknown domain
+symbol falls back to the `Generic` pseudo-dimension so that a block with a mistyped domain
+cannot crash the fast check (J1.1 owns the domain names)."""
+function effort_dims(domain::Symbol)::Dims
+    if is_multibond_domain(domain)
+        throw(ArgumentError(
+            "`$domain` is a multibond domain with $(component_count(domain)) components; " *
+            "a whole port has no single effort unit — use `effort_dims(:$domain, k)` " *
+            "for component `k` or `effort_component_dims(:$domain)` for the vector",
+        ))
+    end
+    return get(DOMAIN_EFFORT, domain, UNIT_EFFORT)
+end
+
+function effort_dims(domain::Symbol, k::Integer)::Dims
+    if !is_multibond_domain(domain)
+        k == 1 || throw(ArgumentError("`$domain` has one component; got component index $k"))
+        return effort_dims(domain)
+    end
+    dims = DOMAIN_COMPONENT_EFFORT[domain]
+    1 <= k <= length(dims) ||
+        throw(ArgumentError("`$domain` has $(length(dims)) components; got component index $k"))
+    return dims[k]
+end
 
 """    flow_dims(domain::Symbol) -> Dims
+    flow_dims(domain::Symbol, k::Integer) -> Dims
 
-The flow dimension of a power domain; same fallback as [`effort_dims`](@ref)."""
-flow_dims(domain::Symbol) = get(DOMAIN_FLOW, domain, UNIT_FLOW)
+The flow dimension of a power domain; the same whole-port refusal and per-component API as
+[`effort_dims`](@ref)."""
+function flow_dims(domain::Symbol)::Dims
+    if is_multibond_domain(domain)
+        throw(ArgumentError(
+            "`$domain` is a multibond domain with $(component_count(domain)) components; " *
+            "a whole port has no single flow unit — use `flow_dims(:$domain, k)` " *
+            "for component `k` or `flow_component_dims(:$domain)` for the vector",
+        ))
+    end
+    return get(DOMAIN_FLOW, domain, UNIT_FLOW)
+end
+
+function flow_dims(domain::Symbol, k::Integer)::Dims
+    if !is_multibond_domain(domain)
+        k == 1 || throw(ArgumentError("`$domain` has one component; got component index $k"))
+        return flow_dims(domain)
+    end
+    dims = DOMAIN_COMPONENT_FLOW[domain]
+    1 <= k <= length(dims) ||
+        throw(ArgumentError("`$domain` has $(length(dims)) components; got component index $k"))
+    return dims[k]
+end
+
+"""    power_dims(domain::Symbol) -> Dims
+
+The dimension of the scalar port power `P = Σ_k e[k]*f[k]` in `domain`: `W` for every
+concrete domain (a torque times an angular rate and a force times a linear rate are both
+watts), and `effort*flow` for `Generic` (nothing has been adopted yet). The function checks
+that every component product really is the same dimension, so a wrong component table is a
+programming error, not a silently mislabelled signal."""
+function power_dims(domain::Symbol)::Dims
+    is_multibond_domain(domain) || return effort_dims(domain) * flow_dims(domain)
+    p = effort_dims(domain, 1) * flow_dims(domain, 1)
+    for k in 2:component_count(domain)
+        q = effort_dims(domain, k) * flow_dims(domain, k)
+        q == p || throw(ArgumentError(
+            "the components of `$domain` do not share one power dimension: component 1 is " *
+            "`$(unit_string(p))`, component $k is `$(unit_string(q))`",
+        ))
+    end
+    return p
+end
 
 """    substitute_domain(d::Dims, domain::Symbol) -> Dims
 

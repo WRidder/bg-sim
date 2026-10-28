@@ -32,6 +32,7 @@ exactly the stdlib blocks and that every field matches `contracts/fixtures/catal
 """
 module Library
 
+import ..BGSim   # the `BGSim.Units` module for the domain component unit strings
 using ..BGSim: ParsedBlock, Diagnostic, diag, sort_diagnostics, parse_block, check_block,
     block_interface, block_name, block_range, block_source, FUNCTION_RULES
 

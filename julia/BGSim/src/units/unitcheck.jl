@@ -26,8 +26,10 @@
 #   * `ddt(x)` is `x/s` and `int(x, x0)` is `x*s` — that is what makes the bond-graph
 #     storage elements (`q` in `flow*s`, `ddt(q) ~ p.f`) check;
 #   * `t` is `s`. Port fields `p.e`/`p.f` take the effort/flow of the port's domain; a
-#     block with a concrete port domain has its `effort`/`flow` units substituted
-#     (decision D9), a `Generic` block keeps them symbolic until a connection adopts it;
+#     multibond port exposes one unit **per component** (`p.e[1]` is a torque, `p.e[2]` a
+#     force: F9/D-MB10), `p.P` is the scalar power `Σ_k e[k]*f[k]` in W, and a block with a
+#     concrete port domain has its `effort`/`flow` units substituted (decision D9). A
+#     `Generic` block keeps them symbolic until a connection adopts it;
 #   * the connection-level E102 (different dimensions on a wire) is J2.5. The factor that
 #     wire needs is `conversion_factor` in `dims.jl`, tested here.
 #
@@ -88,10 +90,12 @@ const UNIT_SCOPES = (:constants, :parameters, :inputs, :outputs, :variables)
 The names the unit checker resolves, built by [`unit_env`](@ref):
 
 * `names` maps a declaration name to its [`Dims`](@ref); a name that is absent is a
-  wildcard. Port fields are stored under `Symbol("p.e")` / `Symbol("p.f")`.
+  wildcard. Port fields are stored under `Symbol("p.e")` / `Symbol("p.f")` for a scalar
+  port, under `Symbol("p.e[k]")` / `Symbol("p.f[k]")` for each component of a multibond
+  port (D-MB10), and the derived power under `Symbol("p.P")`.
 * `labels` maps the same names to the unit text the user wrote (or the domain spelling for
-  a port field), so a diagnostic can say `[mm]` and `[N*m]` instead of a canonical
-  expansion.
+  a port field, e.g. `"N*m"` for `p.e[1]` and `"N"` for `p.e[2]`), so a diagnostic can say
+  `[mm]` and `[N*m]` instead of a canonical expansion.
 * `constants` is the folded `@constants` map: a scalar constant used as a multiplicative
   factor (`2*x`, `x^N`) keeps the other operand's unit.
 
@@ -198,15 +202,36 @@ function _build_env(
         name = decl_name(p)
         port_domain = something(type_domain(decl_type(p)), :Generic)
         if adopted && port_domain === :Generic
-            port_domain = domain
+            # A Generic block whose island adopted a scalar domain takes that domain's
+            # units. A Generic *scalar* port cannot adopt a multibond domain (J-MB1
+            # reports E102); it keeps its pseudo-dimensions here rather than inventing a
+            # first component.
+            component_count(domain) == 1 && (port_domain = domain)
         end
-        names[Symbol(name, ".e")] = effort_dims(port_domain)
-        names[Symbol(name, ".f")] = flow_dims(port_domain)
-        unit_labels = get(DOMAIN_UNIT_LABELS, port_domain, DOMAIN_UNIT_LABELS[:Generic])
-        labels[Symbol(name, ".e")] = unit_labels[1]
-        labels[Symbol(name, ".f")] = unit_labels[2]
+        effort_labels = domain_effort_unit_strings(port_domain)
+        flow_labels = domain_flow_unit_strings(port_domain)
+        for k in 1:component_count(port_domain)
+            ekey = component_key(name, "e", k, component_count(port_domain))
+            fkey = component_key(name, "f", k, component_count(port_domain))
+            names[ekey] = effort_dims(port_domain, k)
+            names[fkey] = flow_dims(port_domain, k)
+            labels[ekey] = effort_labels[k]
+            labels[fkey] = flow_labels[k]
+        end
+        names[Symbol(name, ".P")] = power_dims(port_domain)
+        labels[Symbol(name, ".P")] = unit_string(power_dims(port_domain))
     end
     return UnitEnv(names, labels, constant_env(pb))
+end
+
+"""    component_key(port, field, k, n) -> Symbol
+
+The environment key of component `k` of a power-port field: `Symbol("p.e")` for a scalar
+port (`n == 1`) and `Symbol("p.e[k]")` for a multibond one. The scalar spelling is kept for
+every existing one-component port, so no M2 block changes behaviour."""
+function component_key(port::Symbol, field::AbstractString, k::Integer, n::Integer)
+    n == 1 && return Symbol(port, '.', field)
+    return Symbol(port, ".", field, "[", string(k), "]")
 end
 
 # ---------------------------------------------------------------------------------------
@@ -220,9 +245,10 @@ mutable struct _Ctx
     report::Bool
     scope::Symbol
     text::String
+    loops::Dict{Symbol,Int}
 end
 
-_ctx(env::UnitEnv) = _Ctx(env, nothing, Diagnostic[], false, :equations, "")
+_ctx(env::UnitEnv) = _Ctx(env, nothing, Diagnostic[], false, :equations, "", Dict{Symbol,Int}())
 
 function _report!(
     ctx::_Ctx,
@@ -285,8 +311,16 @@ end
 """The unit label to use in a message: the declaration's own spelling when the node is a
 declared name or port field, else the canonical [`unit_string`](@ref)."""
 function _label(ctx::_Ctx, node, d::Dims)::String
-    declared = _declared_label(ctx.env, node)
+    declared = _declared_label(ctx, node)
     return declared === nothing ? unit_string(d) : declared
+end
+
+_declared_label(ctx::_Ctx, node) = _declared_label(ctx.env, node)
+
+function _declared_label(ctx::_Ctx, node::Index)
+    key = _component_key(node, _index_value(ctx, node.indices[1]))
+    key === nothing || return get(ctx.env.labels, key, nothing)
+    return _declared_label(ctx.env, node.base)
 end
 
 _declared_label(env::UnitEnv, node::Name) = get(env.labels, node.name, nothing)
@@ -303,6 +337,77 @@ _declared_label(::UnitEnv, ::Any) = nothing
 
 _field_key(node::Field) =
     node.base isa Name ? Symbol(node.base.name, '.', node.field) : nothing
+
+"""    _component_key(node::Index, k) -> Union{Symbol,Nothing}
+
+The `p.e[k]` environment key of an indexed port field, or `nothing` when the expression is
+not `port.field[component]` with a statically known component. `k` is resolved through the
+enclosing `for` loop's binding by [`_index_value`](@ref), so both `p.e[1]` and the unrolled
+`for k in 1:D` form see the component's own unit."""
+function _component_key(node::Index, k::Union{Int,Nothing})
+    node.base isa Field || return nothing
+    field = node.base::Field
+    field.base isa Name || return nothing
+    k === nothing && return nothing
+    return Symbol((field.base::Name).name, '.', field.field, '[', string(k), ']')
+end
+
+"""    _index_value(ctx, e) -> Union{Int,Nothing}
+
+The integer value of an index expression: a folded integer (a literal, or a `for` bound the
+parser already folded), a negated literal, or an enclosing `for` loop's variable. Anything
+else is `nothing` (the unit lookup then falls back to the field as a whole, which for a
+multibond port is a wildcard — never a single component)."""
+_index_value(::_Ctx, e::Integer) = e isa Bool ? nothing : Int(e)
+
+_index_value(::_Ctx, e::Lit) =
+    e.value isa Integer && !(e.value isa Bool) ? Int(e.value) : nothing
+
+_index_value(ctx::_Ctx, e::Name) = get(ctx.loops, e.name, nothing)
+
+function _index_value(ctx::_Ctx, e::UnOp)
+    (e.op === Symbol("-") || e.op === Symbol("+")) || return nothing
+    value = _index_value(ctx, e.operand)
+    value === nothing && return nothing
+    return e.op === Symbol("-") ? -value : value
+end
+
+_index_value(::_Ctx, ::Any) = nothing
+
+"""    _for_each_iteration(f, ctx, var, lo, hi, step)
+
+Unroll a `for` loop for the unit pass: bind the loop variable to every value the body runs
+with, so `p.e[k]` is checked against the unit of **each** component, not only of the first.
+`lo`/`hi`/`step` are folded integers in the AST (E005 otherwise); when one is not known, the
+body is checked once with no binding, which makes a component lookup a wildcard."""
+function _for_each_iteration(f::Function, ctx::_Ctx, var::Symbol, lo, hi, step)
+    first = _index_value(ctx, lo)
+    last = _index_value(ctx, hi)
+    stride = step === nothing ? 1 : _index_value(ctx, step)
+    if first === nothing || last === nothing || stride === nothing || stride == 0
+        return _with_loop(f, ctx, var, first)
+    end
+    for k in first:stride:last
+        _with_loop(f, ctx, var, k)
+    end
+    return nothing
+end
+
+"""    _with_loop(f, ctx, var, value)
+
+Run `f()` with the `for` loop variable `var` bound to `value` (when known), restoring the
+previous binding afterwards. The unit pass unrolls the loop by binding the index here, so a
+component lookup sees the unit of the component that iteration names."""
+function _with_loop(f::Function, ctx::_Ctx, var::Symbol, value::Union{Int,Nothing})
+    previous = get(ctx.loops, var, nothing)
+    value === nothing || (ctx.loops[var] = value)
+    try
+        f()
+    finally
+        previous === nothing ? delete!(ctx.loops, var) : (ctx.loops[var] = previous)
+    end
+    return nothing
+end
 
 _same_scale(a::Dims, b::Dims) = isapprox(a.scale, b.scale; rtol = 1e-12)
 
@@ -423,8 +528,17 @@ function _dims!(ctx::_Ctx, e::UnOp)
     return e.op === Symbol("-") || e.op === Symbol("+") ? d : nothing
 end
 
-"""`v[i]` keeps the element unit of `v`."""
-_dims!(ctx::_Ctx, e::Index) = _dims!(ctx, e.base)
+"""`v[i]` keeps the element unit of `v`. For a multibond port field `p.e[k]`/`p.f[k]` the
+component's own unit is looked up first (D-MB10: a torque is not a force); a scalar port
+keeps the historical whole-field lookup."""
+function _dims!(ctx::_Ctx, e::Index)
+    key = _component_key(e, _index_value(ctx, e.indices[1]))
+    if key !== nothing
+        d = get(ctx.env.names, key, nothing)
+        d === nothing || return d
+    end
+    return _dims!(ctx, e.base)
+end
 
 function _dims!(ctx::_Ctx, e::VectorLit)
     return _common!(
@@ -788,8 +902,10 @@ function _check_item!(ctx::_Ctx, item)
             end
         end
     elseif item isa ForEquation
-        for sub in item.body
-            _check_item!(ctx, sub)
+        _for_each_iteration(ctx, item.var, item.lo, item.hi, item.step) do
+            for sub in item.body
+                _check_item!(ctx, sub)
+            end
         end
     elseif item isa Assign
         _check_assign!(ctx, item)
@@ -801,8 +917,10 @@ function _check_item!(ctx::_Ctx, item)
             end
         end
     elseif item isa ForStatement
-        for sub in item.body
-            _check_item!(ctx, sub)
+        _for_each_iteration(ctx, item.var, item.lo, item.hi, item.step) do
+            for sub in item.body
+                _check_item!(ctx, sub)
+            end
         end
     elseif item isa CallStatement
         _dims!(ctx, item.call)
@@ -896,7 +1014,7 @@ function check_units(
 )::Vector{Diagnostic}
     diags = Diagnostic[]
     env = _build_env(pb, diags, domain)
-    ctx = _Ctx(env, pb, diags, true, :equations, "")
+    ctx = _Ctx(env, pb, diags, true, :equations, "", Dict{Symbol,Int}())
     for item in equations(pb)
         _check_item!(ctx, item)
     end
@@ -930,6 +1048,13 @@ export
     substitute_domain,
     effort_dims,
     flow_dims,
+    effort_component_dims,
+    flow_component_dims,
+    power_dims,
+    component_count,
+    is_multibond_domain,
+    domain_effort_unit_strings,
+    domain_flow_unit_strings,
     Dims,
     UnitEnv,
     UnitParseError,
