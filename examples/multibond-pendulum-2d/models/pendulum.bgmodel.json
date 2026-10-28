@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "pendulum",
-  "$comment": "Gate A vertical slice (plan 9.3, X-MB1): a 2D multibond pendulum on the compliant-pivot Revolute2D joint. Power path: GroundPlanar -> Pivot (0-junction, the common pivot wrench) -> Joint.parent; Joint.child -> Link (FixedTransform2D, pivot -> CoM, the 90 degree body frame) -> J1 (1-junction) with Body (IPlanar, J = 1e-4, m = 1), Gravity (m, g0 = 9.81) and Coriolis (P from Body.Pm). The drive is a zero-torque Se on the Rotation port. ComposePose2D builds the CoM pose from the joint pose (q, 0, 0) and the constant CoM offset (pi/2, 0, -0.5); no pose is integrated. De measures the pivot reaction wrench on the 0-junction and Df the body twist on the 1-junction (the plot taps). The static pivot deflection d = (-9.809836500817498e-10, -9.809509504087487e-8) m is the Revolute2D start, so the run starts at the static equilibrium of the fast translational mode.",
+  "$comment": "Gate A vertical slice (plan 9.3, X-MB1): a 2D multibond pendulum on the compliant-pivot Revolute2D joint. Power path: GroundPlanar -> Pivot (0-junction, the common pivot wrench) -> Joint.parent; Joint.child -> Link (FixedTransform2D, pivot -> CoM, the 90 degree body frame) -> J1 (1-junction) with Body (IPlanar, J = 1e-4, m = 1), Gravity (m, g0 = 9.81) and Coriolis (P from Body.Pm). The drive is a zero-torque Se on the Rotation port. ComposePose2D builds the CoM pose from the joint pose (q, 0, 0) and the constant CoM offset (pi/2, 0, -0.5); no pose is integrated. De measures the pivot reaction wrench on the 0-junction and Df the body twist on the 1-junction (the plot taps). The released-from-rest pivot deflection d = (-3.922365654065373e-13, -9.809509504087487e-8) m (the constant-acceleration tangential reaction; the held static value would be (-9.81e-10, -9.81e-8)) is the Revolute2D start, so the fast translational mode is not excited.",
   "diagram": {
     "nodes": [
       {
@@ -44,7 +44,7 @@
           "q0": "0.01"
         },
         "starts": {
-          "d": "[-9.809836500817498e-10, -9.809509504087487e-8]"
+          "d": "[-3.922365654065373e-13, -9.809509504087487e-8]"
         },
         "ui": { "showLabel": true, "color": null }
       },

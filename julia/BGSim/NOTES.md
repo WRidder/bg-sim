@@ -1008,33 +1008,38 @@ link frame (the CoM position, period and energy are invariant), not a pivot offs
 pivot x-force `Link/b.e[2]` as an unsolvable algebraic (the exact structural triage
 variable); the 90-degree frame couples them and makes the equation set solvable without
 changing the physics. The only algebraics are `qdot`, `fs`, `Vrel` and the algebraic
-`q = q0 + int(qdot)`; the int state, `d` and `P` are the states, and `mtkcompile` reaches
-an index-0 ODE with no dummy derivatives.
+`q = q0 + int(qdot)`; the int state, `d` and `P` are the states. The block is index-0 for
+this 90-degree mounting, but the tearing workaround is **not solved**: **FIX-MB-2** keeps
+the dummy-derivative issue, and arbitrary mounting angles still fail `E901` with
+`Link/b.e[2]` as the dummy derivative.
 
-**Static initial deflection.** `d` is initialised at the translational static value
-`d = [-m g0 sin(q0) / kt, -m g0 cos(q0) / kt]` in the child frame, so the fast
-`sqrt(kt/m)` mode is not excited. At `q0 = 0.01`, `kt = 1e8`:
-`d0 = [-9.8098365e-10, -9.8095095e-8]` m. The energy includes `1/2 kt |d|^2` and the
-actual CoM height `h = Compose/g[3] + sin(q) d1 + cos(q) d2`. At `q0 = 0` the start is
-`[0, -m g0/kt] = [0, -9.81e-8]` m.
+**Released-from-rest initial deflection.** `d` is initialised at the constant-acceleration
+value `d = [-m g0 J/(J + m L^2) sin(q0)/kt, -m g0 cos(q0)/kt]` in the child frame: the
+first term is the tangential reaction that goes with
+`alpha = -m g0 L sin(q0)/(J + m L^2)`. The *held* static value
+`[-m g0 sin(q0)/kt, -m g0 cos(q0)/kt]` applies a spurious tangential force `m g sin(q0)`
+and excites the fast `sqrt(kt/m)` mode. At `q0 = 0.01`, `kt = 1e8`:
+`d0 = [-3.9223657e-13, -9.8095095e-8]` m for the released-from-rest state. The energy
+includes `1/2 kt |d|^2` and the actual CoM height `h = Compose/g[3] + sin(q) d1 +
+cos(q) d2`. At `q0 = 0` the start is `[0, -m g0/kt] = [0, -9.81e-8]` m.
 
 ## Measured (this machine, 2026-10-28)
 
 | item | measured |
 | --- | --- |
-| Gate A pendulum period, 4 s / 4001 pts | **1.4187960318309 s** (also through the worker `run.start`) |
+| Gate A pendulum period, 4 s / 4001 pts | **1.4187960318344 s** (also through the worker `run.start`) |
 | raw physical `2pi sqrt((J+mL^2)/(m g L))` | 1.4187870257492 s (measured rel **6.4e-6**) |
 | effective length `L_eff = L + m g0 cos(q0)/kt` | 0.5000000981 m; physical 1.4187871648139 s |
 | amplitude-corrected `T0 (1 + q0^2/16)` | 1.4187960322337 s (measured rel **2.8e-10**, target 1e-5) |
 | plan check `2pi sqrt(L/g)` | 1.4185033534429 s (measured rel **2.1e-4**, target 1e-3) |
-| energy drift over 10 s (KE + PE_actual + 1/2 kt|d|^2) | **4.808e-11 J**, ratio **1.96e-7** of the swing 2.4525e-4 J (target 1e-6) |
+| energy drift over 10 s (KE + PE_actual + 1/2 kt|d|^2) | **1.776e-15 J**, ratio **7.24e-12** of the swing 2.4525e-4 J (target 1e-6) |
 | `max|q|` at `q0 = 0.01` / equilibrium `q0 = 0` | **0.01** / **0.0** |
 | W201 `model.check` / run | **0 / 0** |
-| energy run steps / sim time | **290340 steps, 1.83 s** (10 s, 10001 pts, reltol 1e-9, abstol 1e-11, Rodas5P) |
+| run steps / sim time | **4072 steps, 0.44 s** (4 s); **10072 steps, 0.74 s** (10 s, 10001 pts, reltol 1e-9, abstol 1e-11, Rodas5P) |
 | fast translational mode `sqrt(kt/m)` | **1e4 rad/s** (kt = 1e8 N/m) |
 | Coriolis free-body error / world-momentum drift | **3.8e-14** / **8.0e-15** (worst 4.1e-15 / 1.8e-13) |
 | joint + transform + Coriolis power identities on the run | <= 1e-9 relative at every sample |
-| `test_multibond_slice.jl` | **6365 assertions, ~55 s, green** |
+| `test_multibond_slice.jl` | **6367 assertions, ~39 s, green** |
 | full `Pkg.test()` | **green** |
 | `uv run pytest backend/tests -q` / `-m julia` | **264 passed, 4 deselected** / **4 passed** |
 | `web npm run typecheck` | clean |

@@ -149,6 +149,18 @@ end
 _mb4_field(obj, key::Symbol, default = nothing) =
     obj isa AbstractDict ? get(obj, key, get(obj, String(key), default)) : default
 
+"""The released-from-rest initial pivot deflection in the child frame at q0."""
+function _mb4_d0(q0; kt = _MB4_KT)
+    d1 = -_MB4_M * _MB4_G * _MB4_J / (_MB4_J + _MB4_M * _MB4_L^2) * sin(q0) / kt
+    d2 = -_MB4_M * _MB4_G * cos(q0) / kt
+    return [d1, d2]
+end
+
+function _mb4_parse_vec(text)
+    nums = split(replace(String(text), "[" => "", "]" => ""), ",")
+    return [parse(Float64, strip(s)) for s in nums]
+end
+
 # ---------------------------------------------------------------------------------------
 # Element checks (plan 9.1)
 # ---------------------------------------------------------------------------------------
@@ -664,6 +676,11 @@ _mb4_field(obj, key::Symbol, default = nothing) =
 
     @testset "the pendulum model: check, SCAP and the composed pose" begin
         doc = _mb4_load()
+        # The fixture starts d at the released-from-rest value, not the held static one.
+        dstart = _mb4_parse_vec(doc["diagram"]["nodes"][2]["starts"]["d"])
+        d0 = _mb4_d0(0.01)
+        @test isapprox(dstart[1], d0[1]; rtol = 1e-12, atol = 1e-18)
+        @test isapprox(dstart[2], d0[2]; rtol = 1e-12, atol = 1e-18)
         result = _mb4_check(doc)
         @test isempty(_mb4_errors(result))
         @test !_mb4_has(result, "W201")
@@ -715,7 +732,8 @@ _mb4_field(obj, key::Symbol, default = nothing) =
         @test isapprox(xcross[2] - xcross[1], period; rtol = 1e-6)
         println("J-MB4 pendulum period = ", period, " s (raw physical ",
             _MB4_T_RAW, " s, L_eff physical ", _MB4_T_LINEAR, " s, amplitude ",
-            _MB4_T_AMP, " s, simple ", _MB4_T_SIMPLE, " s)")
+            _MB4_T_AMP, " s, simple ", _MB4_T_SIMPLE, " s; 4 s steps ",
+            result.stats.steps, ", sim ", result.stats.sim_s, " s)")
     end
 
     @testset "pendulum energy constant over 10 s" begin
@@ -758,7 +776,8 @@ _mb4_field(obj, key::Symbol, default = nothing) =
 
         doc0 = _mb4_load()
         doc0["diagram"]["nodes"][2]["params"]["q0"] = "0.0"
-        doc0["diagram"]["nodes"][2]["starts"]["d"] = "[0.0, -9.81e-8]"
+        d00 = _mb4_d0(0.0)
+        doc0["diagram"]["nodes"][2]["starts"]["d"] = "[$(d00[1]), $(d00[2])]"
         result0, dir0 = _mb4_run(doc0; t_end = 2.0, points = 2001)
         @test result0.status == "done"
         data0 = _mb4_columns(dir0)

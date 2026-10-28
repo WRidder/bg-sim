@@ -38,16 +38,19 @@ This example uses the **compliant-pivot** `Revolute2D`:
   `q` — six differential states, no algebraic constraint forces, **no `W201`**;
 - `kt → ∞` recovers the rigid revolute (J-MB6 owns the convergence test).
 
-At `q0 = 0.01 rad` the pivot carries the weight, so the spring sits at the static
-deflection
+At `q0 = 0.01 rad` the pivot carries the weight, and the released-from-rest state
+also has the constant angular acceleration `alpha = -m*g*L*sin(q0)/(J + m*L^2)`.
+The pivot spring must supply the tangential reaction, so the initial deflection is
 
 ```
-d0 = (-m·g·sin(q0)/kt, -m·g·cos(q0)/kt) = (-9.8098365e-10, -9.8095095e-8) m
+d0 = (-m*g*J/(J + m*L^2)*sin(q0)/kt, -m*g*cos(q0)/kt)
+   = (-3.9223657e-13, -9.8095095e-8) m
 ```
 
-in the rotating child frame. The start value `d = d0` is what keeps the fast
-translational mode (`√(kt/m) = 1e4 rad/s`) from being excited: without it the
-integrator damps a `½·kt·|d0|²` transient that would show up as energy "drift".
+in the rotating child frame. This released-from-rest `d0` is what keeps the fast
+translational mode (`sqrt(kt/m) = 1e4 rad/s`) from being excited; the *held* static
+value `(-m*g*sin(q0)/kt, -m*g*cos(q0)/kt)` applies a spurious tangential force
+`m*g*sin(q0)` and lets the integrator damp the spring transient as energy "drift".
 
 The CoM pose is **composed from `q`, never integrated** (D-MB6): `ComposePose2D`
 multiplies the joint pose `(q, 0, 0)` by the constant CoM offset `(π/2, 0, −0.5)`,
@@ -113,13 +116,13 @@ document has no visual field.
 | measured period from `Joint/q` up-crossings | **1.41879603183 s** |
 | amplitude-corrected physical period (`L_eff = 0.5000000981 m`, `q0²/16`) | 1.41879603223 s (rel −2.8e-10) |
 | simple reference `2π√(L/g)` | 1.41850335344 s (rel +2.1e-4; plan target 1e-3) |
-| energy drift over 10 s | **4.80798e-11 J** |
+| energy drift over 10 s | **1.77636e-15 J** |
 | KE/PE swing `m·g·L·(1 − cos q0)` | 2.4524796e-4 J |
-| drift / swing | **1.96046e-7** (target 1e-6) |
-| static deflection `d0` | (−9.8098365e-10, −9.8095095e-8) m |
+| drift / swing | **7.2431e-12** (target 1e-6) |
+| static deflection `d0` (released from rest) | (-3.9223657e-13, -9.8095095e-8) m |
 | states | 6 (P 3, d 2, q 1), all differential |
 | diagnostics | none (`W201`, `E101`, `E102`, `E103`, `E106`, `W206` absent) |
-| run cost | 282 983 adaptive steps for the 4 s run, 288 983 for the 10 s run (the fast translational transient dominates) |
+| run cost | **4 072 adaptive steps for the 4 s run, 10 072 for the 10 s run** (no fast transient) |
 
 The model document runs `t_end = 4 s` (what the editor's **Run** does); the checks
 re-run the same model with a 10 s settings override for the energy budget, so one
@@ -165,10 +168,10 @@ $env:BGSIM_E2E_REAL="1"; npx playwright test tests/e2e/multibond-pendulum.spec.t
   amplitude only if you update `expected.json`, which is the intended signal that
   the physical input changed.
 - Lower `Joint.kt` and recompute the `Joint.d` start from
-  `d0 = (-m·g·sin(q0)/kt, -m·g·cos(q0)/kt)`: the static offset is what keeps
-  the fast `√(kt/m)` mode out of the budget. Change one without the other and the
-  energy check reports the leftover transient (at `kt = 1e6` the deflection is
-  9.8 µm, a hundred times the value here).
+  `d0 = (-m*g*J/(J + m*L^2)*sin(q0)/kt, -m*g*cos(q0)/kt)`: the released-from-rest
+  value is what keeps the fast `sqrt(kt/m)` mode out of the budget. Change one
+  without the other and the energy check reports the leftover transient (at
+  `kt = 1e6` the deflection is 9.8 um, a hundred times the value here).
 - Put a torque on `Drive` (set `e = 0.01 N·m`): the pendulum gains energy linearly
   and the `energy` check fails — that is the budget telling you the drive is doing
   work.
