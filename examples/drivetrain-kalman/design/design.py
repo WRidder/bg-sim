@@ -54,7 +54,7 @@ the load acts (the model cannot tell a load torque from an input offset), so
 ``xhat`` has a fifth state: the load torque, a random walk with
 ``Q_n = 1e-6 (N m)^2`` per sample (a 1 mN m/ms slew, so a 0.5 N m step is
 learned in about 0.1 s).  ``w_load_hat = xhat[4]`` is still the load speed, as
-in the plan.  The script writes ``Ad, Bd, Cd, L, K, Ki, Kff`` into both model
+in the plan.  The script writes ``Phi, Bd, Cd, L, K, Ki, Kff`` into both model
 documents and then integrates the sampled closed loop (3-segment rod, 1 mH
 electrics, RK4) to print the acceptance values.
 
@@ -367,7 +367,7 @@ def main() -> None:
     print(f"  T_load_hat(2.0) = {at(2.0, torque_hat):.6f} N m  (applied {T_LOAD:g} N m)")
 
     values = {
-        "Ad": _matrix_text(ad5),
+        "Phi": _matrix_text(ad5),
         "Bd": _vector_text(bd5),
         "Cd": _vector_text(cd5),
         "L": _vector_text(kalman_gain),
@@ -378,7 +378,7 @@ def main() -> None:
     }
     for path in MODEL_FILES:
         write_parameters(path, values)
-        print(f"wrote Ad/Bd/Cd/L/K/Ki/Kff into {path}")
+        print(f"wrote Phi/Bd/Cd/L/K/Ki/Kff into {path}")
 
 
 if __name__ == "__main__":

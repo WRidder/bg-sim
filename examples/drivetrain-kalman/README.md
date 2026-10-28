@@ -53,7 +53,7 @@ matrices into the model JSON:
 
 | parameter | value (design.py output) |
 | --- | --- |
-| `Ad` | 5×5 ZOH model at 1 ms |
+| `Phi` | 5×5 ZOH model at 1 ms |
 | `Bd` | `[7.88e-4, 1.53, 2.6e-7, 9.3e-4, 0]` |
 | `Cd` | `[1, 0, 0, 0, 0]` |
 | `L` | `[0.214, 25.71, 0.080, 0.960, −2.00]` |
@@ -61,6 +61,9 @@ matrices into the model JSON:
 | `Ki` | `223.31` |
 | `Kff` | `16.95 V/(rad/s)` |
 | `umax` | `24 V` |
+
+The discrete state matrix is `Phi`, not `Ad`, because `Ad` is now the library's adjoint
+builtin (`Ad(H)`) and a declaration that shadows a builtin is E003.
 
 **State.** `xhat = [θ_m, ω_m, θ_L, ω_L, T_load]`; the first four are the plan's
 states and `w_load_hat = xhat[4]`, as in the plan. The fifth is the load torque.

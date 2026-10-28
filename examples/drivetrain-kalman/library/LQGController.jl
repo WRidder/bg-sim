@@ -13,7 +13,7 @@
         ny::Int = 1
     end
     @parameters begin
-        Ad::Mat{nx,nx} = [0.996 0.001 0.0 0.0 0.0; 0.0 0.84 0.0 0.0 0.0; 0.0 0.0 0.988 0.001 0.0; 0.0 0.0 0.0 0.978 0.0; 0.0 0.0 0.0 0.0 1.0], [description = "Discrete state matrix (5 states: the plan's 4 plus the load torque)"]
+        Phi::Mat{nx,nx} = [0.996 0.001 0.0 0.0 0.0; 0.0 0.84 0.0 0.0 0.0; 0.0 0.0 0.988 0.001 0.0; 0.0 0.0 0.0 0.978 0.0; 0.0 0.0 0.0 0.0 1.0], [description = "Discrete state matrix Phi (5 states: the plan's 4 plus the load torque)"]
         Bd::Vec{nx} = [0.0, 1.5, 0.0, 0.0, 0.0], [description = "Discrete input vector (volts)"]
         Cd::Vec{nx} = [1.0, 0.0, 0.0, 0.0, 0.0], [description = "Measurement vector: the motor angle"]
         L::Vec{nx} = [0.3, 60.0, 0.2, 10.0, -5.0], [description = "Steady-state Kalman gain"]
@@ -47,7 +47,7 @@
         if abs(v) > umax
             z -= Ts * (w_ref - xhat[4])                  # anti-windup: undo the integration
         end
-        xhat = Ad * xhat + Bd * u                        # time update
+        xhat = Phi * xhat + Bd * u                       # time update
         w_load_hat = xhat[4]
     end
 end
