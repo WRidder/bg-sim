@@ -125,8 +125,11 @@ variants):
 - states `q`, `d = (dx, dy)`; `qdot` algebraic;
 - `g(q) = (q, rx, ry)`, `S = [1, 0, 0]`;
 - `V_rel = child.f - Ad(g(q))^-1 parent.f`;
-- `qdot = V_rel[1]`, `ddt(q) = qdot`, `ddt(d[i]) = V_rel[i+1]`;
-- `fs = [0, -kt*d[1] - bt*V_rel[2], -kt*d[2] - bt*V_rel[3]]`;
+- `qdot = V_rel[1]`, `ddt(q) = qdot`, and the **rotating-frame** deflection update
+  `ddt(d[1]) = V_rel[2] + qdot*d[2]`, `ddt(d[2]) = V_rel[3] - qdot*d[1]` (the `z x d` transport
+  term; `d . (z x d) = 0`, so the power identity is unchanged);
+- `fs = [0, kt*d[1] + bt*V_rel[2], kt*d[2] + bt*V_rel[3]]` (the port effort is `+kt d` under
+  the `e·f`-into-the-element convention used by `IPlanar`; it gives the body a restoring force);
 - `tau = S^T child.e`, `child.e = fs + S*tau`, `parent.e = -Ad(g(q))^-T child.e`,
   `drive.e = -tau`.
 
@@ -135,7 +138,7 @@ The power identity that must hold on random states is
 ```
 parent.e . parent.f + child.e . child.f + drive.e * qdot
     = fs . V_rel
-    = - d/dt( 1/2 kt |d|^2 ) - bt ( V_rel[2]^2 + V_rel[3]^2 )
+    = + d/dt( 1/2 kt |d|^2 ) + bt ( V_rel[2]^2 + V_rel[3]^2 )
 ```
 
 so the joint stores spring energy and dissipates only through `bt`. With `bt = 0` the pendulum
@@ -148,11 +151,10 @@ the equations above (`qdot` from `V_rel[1]`, `tau` from `child.e[1]`, `fs` from 
 `mtkcompile` should reach index 0 with no dummy derivatives. The body pose for gravity is still
 composed from `q` through `ComposePose2D`; no pose is integrated.
 
-One deliberate simplification to document in the block: `d` is expressed in the **rotating child
-frame**, so `ddt(d) = V_rel[2:3]` integrates a frame-expressed velocity and omits the `omega x d`
-transport term. For an isotropic `kt` and `|d| ~ 1e-5 m` this is negligible, and the power
-identity above holds exactly by construction, so energy conservation is unaffected. Do not
-"fix" it later without also changing the power identity.
+The `z x d` transport term in `ddt(d)` is **included**: `d` is expressed in the rotating child
+frame, and omitting the term lets the spring's rest position wander tangentially by
+`(mg/kt) * delta_q` (about 2e-7 m over the swing, a 1e-5 period effect). Including it costs
+nothing and keeps the energy expression `h = gy + sin(q) d1 + cos(q) d2` consistent.
 
 Current implementation state: the `CoriolisPlanar` **sign bug is fixed** (the port effort is
 now `-ad(V)^T P`; a free-body integration test against an independent RK4 of
@@ -190,12 +192,13 @@ until they land.
    - **finite amplitude:** `T = T0 (1 + theta0^2/16 + ...)`; at `q0 = 0.01` this is 6.25e-6. The
      6.3e-6 "error" measured with the old joint is almost exactly this correction, not a joint
      error.
-   - **static pivot stretch:** `m g / kt ~ 9.8e-6 m` at `kt = 1e6`, `m = 1`, which for
-     `L ~ 0.5 m` shifts the period by about `0.5 * dL/L ~ 1e-5`. Use `kt = 1e8` (fast mode
-     1e4 rad/s, still fine for Rodas5P) or fold the correction in.
-   The test is being tightened to the **amplitude-corrected** physical period at 1e-4 (plus the
-   plan's 1e-3 check against `2*pi*sqrt(L/g)` as reported), and the energy drift is normalised
-   by the KE/PE swing, not by `|E|`.
+   - **static pivot stretch:** `mg/kt = 9.8e-8 m` at `kt = 1e8` (it was `9.8e-6 m` at
+     `kt = 1e6`), so at the chosen `kt` the period shift is ~1e-7 and the 1e-5 assertion is
+     safe. For robustness document the effective length `L_eff = L + m g0 cos(q0)/kt` in the
+     test and, if `kt` is ever lowered, use it or loosen to the plan's 1e-4.
+   The test compares the **amplitude-corrected** physical period at 1e-5 (and reports the plan's
+   1e-3 check against `2*pi*sqrt(L/g)`), and the energy drift is normalised by the KE/PE swing,
+   not by `|E|`.
 6. **Energy and the fast mode.** Unless `d` is initialised at its static deflection, the fast
    `sqrt(kt/m)` mode is excited at `t = 0` with energy `1/2 kt |d0|^2`. Rodas5P damps it
    numerically, and that loss appears as "drift" — on the order of 1e-3 of the swing energy is
