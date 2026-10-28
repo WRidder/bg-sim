@@ -49,6 +49,14 @@ const _MB5_NEW_REFS = [
     "stdlib:multibond/TFPlanar",
 ]
 
+# FIX-MB-4 additions: the matrix transformer pair (`a.f = M b.f`, `b.e = -M^T a.e`) and the
+# frame-neutral adjoint that makes the rigid joint's parent side legal on a body 1-junction.
+const _MB5_FIX_REFS = [
+    "stdlib:multibond/MTFPlanarMat",
+    "stdlib:multibond/TFAdNeutral",
+    "stdlib:multibond/TFPlanarMat",
+]
+
 # ---------------------------------------------------------------------------------------
 # Inline signal sources (parameterised, so a value sweep is a compile-cache hit: parameter
 # values are not in the structural key, D4).
@@ -122,6 +130,48 @@ const _MB5_MAT_CONST = """
     end
 end
 """
+
+# A time-varying 3x3 matrix signal: `G[i,j] = gij + dij*sin(w t)`. The base `gij` keeps it
+# invertible at t = 0 (a gyrator needs that), and the modulation is not a constant, so a
+# latched input fails the constitutive relation at every later sample (FIX-MB-4).
+const _MB5_MAT_SINE = """
+@block MatSine begin
+    @parameters begin
+        g11::Real = 1.0, [description = "Base 1,1"]
+        g12::Real = 0.0, [description = "Base 1,2"]
+        g13::Real = 0.0, [description = "Base 1,3"]
+        g21::Real = 0.0, [description = "Base 2,1"]
+        g22::Real = 1.0, [description = "Base 2,2"]
+        g23::Real = 0.0, [description = "Base 2,3"]
+        g31::Real = 0.0, [description = "Base 3,1"]
+        g32::Real = 0.0, [description = "Base 3,2"]
+        g33::Real = 1.0, [description = "Base 3,3"]
+        d11::Real = 0.0, [description = "Amplitude 1,1"]
+        d12::Real = 0.0, [description = "Amplitude 1,2"]
+        d13::Real = 0.0, [description = "Amplitude 1,3"]
+        d21::Real = 0.0, [description = "Amplitude 2,1"]
+        d22::Real = 0.0, [description = "Amplitude 2,2"]
+        d23::Real = 0.0, [description = "Amplitude 2,3"]
+        d31::Real = 0.0, [description = "Amplitude 3,1"]
+        d32::Real = 0.0, [description = "Amplitude 3,2"]
+        d33::Real = 0.0, [description = "Amplitude 3,3"]
+        w::Real = 1.0, [unit = "rad/s", description = "Angular frequency"]
+    end
+    @outputs G::Mat{3,3}
+    @equations begin
+        G[1, 1] ~ g11 + d11 * sin(w * t)
+        G[1, 2] ~ g12 + d12 * sin(w * t)
+        G[1, 3] ~ g13 + d13 * sin(w * t)
+        G[2, 1] ~ g21 + d21 * sin(w * t)
+        G[2, 2] ~ g22 + d22 * sin(w * t)
+        G[2, 3] ~ g23 + d23 * sin(w * t)
+        G[3, 1] ~ g31 + d31 * sin(w * t)
+        G[3, 2] ~ g32 + d32 * sin(w * t)
+        G[3, 3] ~ g33 + d33 * sin(w * t)
+    end
+end
+"""
+
 
 # ---------------------------------------------------------------------------------------
 # Model-document builders (the same shape as test_multibond_slice.jl)
@@ -272,7 +322,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
     # -----------------------------------------------------------------------------------
     @testset "catalog: clean, dimension 2, per-component units, frames" begin
         blocks = Dict(b.ref => b for b in Library.load_stdlib())
-        for ref in _MB5_NEW_REFS
+        for ref in vcat(_MB5_NEW_REFS, _MB5_FIX_REFS)
             b = blocks[ref]
             @test b.group == "Multibond"
             @test b.interface.dimension == 2
@@ -360,6 +410,25 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         @test _mb5_unit(mgy, :inputs, "G") === nothing
         @test [(d.name, d.size) for d in mgy.interface.inputs] == [("G", [3, 3])]
 
+        # FIX-MB-4: the general matrix transformer (no inverse needed) and the frame-neutral
+        # adjoint. A Mat carries one unit slot, so the matrix has no unit; the port components
+        # above still carry their own.
+        tfm = blocks["stdlib:multibond/TFPlanarMat"]
+        @test _mb5_unit(tfm, :parameters, "M") === nothing
+        @test count(==(';'), tfm.interface.parameters[1].default) == 2
+        @test tfm.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+        mtfm = blocks["stdlib:multibond/MTFPlanarMat"]
+        @test _mb5_unit(mtfm, :inputs, "M") === nothing
+        @test [(d.name, d.size) for d in mtfm.interface.inputs] == [("M", [3, 3])]
+        @test mtfm.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+        tfn = blocks["stdlib:multibond/TFAdNeutral"]
+        @test all(p -> p.frame === nothing, tfn.interface.ports)
+        @test [(d.name, d.size) for d in tfn.interface.inputs] == [("g", [3])]
+        @test tfn.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+
         # The joint transform is the joint-role frame bridge: two *different* named frames.
         jt = blocks["stdlib:multibond/JointTransform2D"]
         @test [p.frame for p in jt.interface.ports] == ["parent", "child"]
@@ -426,6 +495,66 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         println("J-MB5 CPlanar energy balance: |dE - int P| = ",
             abs(energy[end] - energy[1] - stored), " J of ", maximum(abs.(energy)), " J")
     end
+
+    @testset "FIX-MB-4: CPlanar with a nonzero rest: e = k(q - q0), E = 1/2 k (q - q0)^2" begin
+        # The J-MB5 test drove the C from a zero rest, where `q - q0` and `q` are the same
+        # expression. A nonzero rest makes the reference load-bearing in both the effort law
+        # and the stored energy.
+        k = [220.0, 90.0, 140.0]
+        q0 = [0.03, -0.02, 0.05]
+        qstart = [0.05, -0.05, 0.07]
+        doc = _mb5_doc(
+            "CPlanarRest",
+            Any[
+                _mb5_node("n1", "U", _mb5_inline(_MB5_VEC_SINE);
+                    params = Dict{String,Any}("a1" => "0.4", "a2" => "-0.25",
+                        "a3" => "0.3", "w" => "1.3")),
+                _mb5_node("n2", "F", _mb5_ref("stdlib:multibond/SfPlanar")),
+                _mb5_node("n3", "C", _mb5_ref("stdlib:multibond/CPlanar");
+                    params = Dict{String,Any}("kr" => string(k[1]), "kx" => string(k[2]),
+                        "ky" => string(k[3]), "qr0" => string(q0[1]),
+                        "qx0" => string(q0[2]), "qy0" => string(q0[3])),
+                    starts = Dict{String,Any}("qr" => string(qstart[1]),
+                        "qx" => string(qstart[2]), "qy" => string(qstart[3]))),
+            ],
+            Any[
+                _mb5_conn("c1", "signal", "n1", "y", "n2", "u"),
+                _mb5_conn("c2", "bond", "n2", "p", "n3", "p"),
+            ];
+            t_end = 2.0, points = 2001,
+        )
+        @test isempty(_mb5_errors(_mb5_check(doc)))
+        result, dir = _mb5_run(doc; t_end = 2.0, points = 2001)
+        @test result.status == "done"
+        @test !_mb5_has(result, "W201")
+        data = _mb5_columns(dir)
+        t = data["time"]
+        states = [data["C/qr"], data["C/qx"], data["C/qy"]]
+        for j in 1:3
+            q = states[j]
+            @test isapprox(q[1], qstart[j]; atol = 1e-12)
+            # e = k (q - q0): the rest offset is inside the spring law.
+            @test all(isapprox.(data["C/p.e[$j]"], k[j] .* (q .- q0[j]);
+                rtol = 1e-12, atol = 1e-12))
+            # ... and the stored energy is measured from the rest, not from zero.
+            @test isapprox(data["C/p.e[$j]"][1], k[j] * (qstart[j] - q0[j]); rtol = 1e-12)
+        end
+        energy = 0.5 .* (k[1] .* (states[1] .- q0[1]) .^ 2 .+
+                         k[2] .* (states[2] .- q0[2]) .^ 2 .+
+                         k[3] .* (states[3] .- q0[3]) .^ 2)
+        port_power = [sum(data["C/p.e[$jj]"][i] * data["C/p.f[$jj]"][i] for jj in 1:3)
+                      for i in eachindex(t)]
+        stored = _mb5_simpson(t, port_power)
+        @test isapprox(energy[end] - energy[1], stored; rtol = 1e-7, atol = 1e-10)
+        # The rest is load-bearing: E(0) is not zero and the q0 = 0 formula would be wrong.
+        @test energy[1] > 1e-3
+        zero_rest = 0.5 .* (k[1] .* states[1][1]^2 + k[2] .* states[2][1]^2 +
+                            k[3] .* states[3][1]^2)
+        @test abs(zero_rest - energy[1]) > 1e-3
+        println("CPlanar nonzero rest: E0 = ", energy[1], " J, |dE - int P| = ",
+            abs(energy[end] - energy[1] - stored), " J")
+    end
+
 
     @testset "RPlanar: p.e = b.p.f, positive dissipation, free causality" begin
         b = [0.6, 0.35, 0.45]
@@ -552,13 +681,15 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         result, dir = _mb5_run(doc)
         @test result.status == "done"
         data = _mb5_columns(dir)
-        @test isapprox(_mb5_at(data, "E/p.e"), collect(w); atol = 1e-13)
-        @test isapprox(_mb5_at(data, "D/y"), collect(w); atol = 1e-13)
+        # FIX-MB-4: the inputs are the **physical external wrench** `W_ext`; the element is an
+        # effort source, so its port effort is `-W_ext` (the wrench it supplies to the
+        # junction). The detector therefore reads `-w`.
+        @test isapprox(_mb5_at(data, "E/p.e"), -collect(w); atol = 1e-13)
+        @test isapprox(_mb5_at(data, "D/y"), -collect(w); atol = 1e-14)
         @test all(_mb5_at(data, "E/p.f") .== 0.0)
 
-        # The documented sign: the source supplies `w` to the junction, so a body on the
-        # same 1-junction feels `-w`: dP/dt = -w. A constant wrench therefore ramps the
-        # momentum exactly as -w*t.
+        # The sign convention: the body on the 1-junction feels the physical wrench, so
+        # dP/dt = +w and a constant external wrench ramps the momentum exactly as +w*t.
         P0 = [0.02, -0.03, 0.04]
         sign_doc = _mb5_doc(
             "ExternalWrenchSign",
@@ -590,7 +721,7 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         @test results.status == "done"
         datas = _mb5_columns(dirs)
         for k in 1:3
-            @test all(isapprox.(datas["B/P[$k]"], P0[k] .- w[k] .* datas["time"];
+            @test all(isapprox.(datas["B/P[$k]"], P0[k] .+ w[k] .* datas["time"];
                 atol = 1e-10))
         end
     end
@@ -790,6 +921,272 @@ _mb5_unit(b, scope::Symbol, name::AbstractString) =
         @test _mb5_power_residual(data, "G/a", "G/b", 1) <= 1e-12
         println("J-MB5 MGYPlanar power residual = ",
             _mb5_power_residual(data, "G/a", "G/b", 1))
+    end
+
+    # -----------------------------------------------------------------------------------
+    # FIX-MB-4: the matrix transformer, time-varying modulations and a varying-adjoint run
+    # -----------------------------------------------------------------------------------
+    @testset "FIX-MB-4: TFPlanarMat/MTFPlanarMat: random M, power zero, no inverse" begin
+        rng = _mb5_rng(20261029)
+        worst = 0.0
+        for case in 1:4
+            # A well-conditioned random matrix with rotational/translational coupling: the
+            # matrix form is the general 3x3 TF (`a.f = M b.f`, `b.e = -M^T a.e`).
+            M = [1.4 + 0.5 * abs(rng()) 0.3 * rng() -0.4 * rng()
+                 0.25 * rng() 1.1 + 0.6 * abs(rng()) 0.35 * rng()
+                 -0.3 * rng() 0.2 * rng() 1.6 + 0.4 * abs(rng())]
+            E = [rng(), rng(), rng()]
+            F = [rng(), rng(), rng()]
+            mstr = "[$(M[1,1]) $(M[1,2]) $(M[1,3]); $(M[2,1]) $(M[2,2]) $(M[2,3]); " *
+                   "$(M[3,1]) $(M[3,2]) $(M[3,3])]"
+            for (label, block_ref, params, extra_nodes, extra_conns) in (
+                ("TFPlanarMat", "stdlib:multibond/TFPlanarMat",
+                    Dict{String,Any}("M" => mstr), Any[], Any[]),
+                ("MTFPlanarMat", "stdlib:multibond/MTFPlanarMat", Dict{String,Any}(),
+                    Any[_mb5_node("n7", "Ug", _mb5_inline(_MB5_MAT_CONST);
+                        params = Dict{String,Any}(
+                            "g11" => string(M[1, 1]), "g12" => string(M[1, 2]),
+                            "g13" => string(M[1, 3]), "g21" => string(M[2, 1]),
+                            "g22" => string(M[2, 2]), "g23" => string(M[2, 3]),
+                            "g31" => string(M[3, 1]), "g32" => string(M[3, 2]),
+                            "g33" => string(M[3, 3])))],
+                    Any[_mb5_conn("c7", "signal", "n7", "G", "n5", "M")]),
+            )
+                doc = _mb5_doc(
+                    "$label$case",
+                    Any[
+                        _mb5_node("n1", "Ue", _mb5_inline(_MB5_VEC_CONST);
+                            params = Dict{String,Any}("c1" => string(E[1]),
+                                "c2" => string(E[2]), "c3" => string(E[3]))),
+                        _mb5_node("n2", "Uf", _mb5_inline(_MB5_VEC_CONST);
+                            params = Dict{String,Any}("c1" => string(F[1]),
+                                "c2" => string(F[2]), "c3" => string(F[3]))),
+                        _mb5_node("n3", "A", _mb5_ref("stdlib:multibond/SePlanar")),
+                        _mb5_node("n4", "B", _mb5_ref("stdlib:multibond/SfPlanar")),
+                        _mb5_node("n5", "T", _mb5_ref(block_ref); params = params),
+                        extra_nodes...,
+                    ],
+                    Any[
+                        _mb5_conn("c1", "signal", "n1", "y", "n3", "u"),
+                        _mb5_conn("c2", "signal", "n2", "y", "n4", "u"),
+                        _mb5_conn("c3", "bond", "n3", "p", "n5", "a"),
+                        _mb5_conn("c4", "bond", "n5", "b", "n4", "p"),
+                        extra_conns...,
+                    ],
+                )
+                @test isempty(_mb5_errors(_mb5_check(doc)))
+                result, dir = _mb5_run(doc)
+                @test result.status == "done"
+                data = _mb5_columns(dir)
+                ae, af = _mb5_at(data, "T/a.e"), _mb5_at(data, "T/a.f")
+                be, bf = _mb5_at(data, "T/b.e"), _mb5_at(data, "T/b.f")
+                @test isapprox(ae, E; atol = 1e-12)
+                @test isapprox(bf, -F; atol = 1e-12)
+                @test isapprox(af, M * bf; atol = 1e-12)
+                @test isapprox(be, -transpose(M) * ae; atol = 1e-12)
+                res = _mb5_power_residual(data, "T/a", "T/b", 1)
+                worst = max(worst, res)
+                @test res <= 1e-12
+                @test maximum(abs.(af)) > 1e-2         # the test is not vacuous
+            end
+        end
+        println("FIX-MB-4 matrix TF worst power residual (random M) = ", worst)
+    end
+
+    @testset "FIX-MB-4: MTFPlanar with a time-varying modulation" begin
+        # A constant modulation cannot tell a live signal from a value latched at t = 0. The
+        # source is `a[k]*sin(w t)`, so it starts at zero and changes every step.
+        E = [0.9, -1.1, 0.6]
+        F = [-0.4, 0.7, 0.35]
+        a = [1.2, -0.8, 0.9]
+        w = 2.1
+        doc = _mb5_doc(
+            "MTFPlanarTimeVarying",
+            Any[
+                _mb5_node("n1", "Ue", _mb5_inline(_MB5_VEC_CONST);
+                    params = Dict{String,Any}("c1" => string(E[1]),
+                        "c2" => string(E[2]), "c3" => string(E[3]))),
+                _mb5_node("n2", "Uf", _mb5_inline(_MB5_VEC_CONST);
+                    params = Dict{String,Any}("c1" => string(F[1]),
+                        "c2" => string(F[2]), "c3" => string(F[3]))),
+                _mb5_node("n3", "Uu", _mb5_inline(_MB5_VEC_SINE);
+                    params = Dict{String,Any}("a1" => string(a[1]), "a2" => string(a[2]),
+                        "a3" => string(a[3]), "w" => string(w))),
+                _mb5_node("n4", "A", _mb5_ref("stdlib:multibond/SePlanar")),
+                _mb5_node("n5", "B", _mb5_ref("stdlib:multibond/SfPlanar")),
+                _mb5_node("n6", "T", _mb5_ref("stdlib:multibond/MTFPlanar")),
+            ],
+            Any[
+                _mb5_conn("c1", "signal", "n1", "y", "n4", "u"),
+                _mb5_conn("c2", "signal", "n2", "y", "n5", "u"),
+                _mb5_conn("c3", "signal", "n3", "y", "n6", "u"),
+                _mb5_conn("c4", "bond", "n4", "p", "n6", "a"),
+                _mb5_conn("c5", "bond", "n6", "b", "n5", "p"),
+            ];
+            t_end = 1.0, points = 1001,
+        )
+        @test isempty(_mb5_errors(_mb5_check(doc)))
+        result, dir = _mb5_run(doc; t_end = 1.0, points = 1001)
+        @test result.status == "done"
+        data = _mb5_columns(dir)
+        t = data["time"]
+        U = [[a[k] * sin(w * ti) for ti in t] for k in 1:3]
+        @test maximum(maximum(abs, u) for u in U) > 0.5    # the modulation is live
+        for i in (1, 250, 500, 1000)
+            ae, af = _mb5_at(data, "T/a.e", i), _mb5_at(data, "T/a.f", i)
+            be, bf = _mb5_at(data, "T/b.e", i), _mb5_at(data, "T/b.f", i)
+            u = [U[k][i] for k in 1:3]
+            @test isapprox(ae, E; atol = 1e-12)
+            @test isapprox(bf, -F; atol = 1e-12)
+            @test isapprox(af, u .* bf; atol = 1e-11)
+            @test isapprox(be, -u .* ae; atol = 1e-11)
+            @test _mb5_power_residual(data, "T/a", "T/b", i) <= 1e-11
+        end
+        # A latched input (u frozen at t = 0 = 0) would make a.f exactly zero: it is not.
+        @test maximum(abs.(data["T/a.f[1]"])) > 1e-2
+    end
+
+    @testset "FIX-MB-4: MGYPlanar with a time-varying matrix input" begin
+        G0 = [1.4 -0.3 0.2
+              0.5 2.1 -0.4
+              -0.25 0.35 1.7]
+        D = [0.5 0.2 -0.3
+             -0.4 0.6 0.25
+             0.3 -0.2 0.4]
+        w = 1.9
+        r = [1.2, 0.8, 1.5]
+        E = [1.1, -0.9, 0.6]
+        params = Dict{String,Any}("w" => string(w))
+        for i in 1:3, j in 1:3
+            params["g$i$j"] = string(G0[i, j])
+            params["d$i$j"] = string(D[i, j])
+        end
+        doc = _mb5_doc(
+            "MGYPlanarTimeVarying",
+            Any[
+                _mb5_node("n1", "Ue", _mb5_inline(_MB5_VEC_CONST);
+                    params = Dict{String,Any}("c1" => string(E[1]),
+                        "c2" => string(E[2]), "c3" => string(E[3]))),
+                _mb5_node("n2", "Ug", _mb5_inline(_MB5_MAT_SINE); params = params),
+                _mb5_node("n3", "A", _mb5_ref("stdlib:multibond/SePlanar")),
+                _mb5_node("n4", "G", _mb5_ref("stdlib:multibond/MGYPlanar")),
+                _mb5_node("n5", "R", _mb5_ref("stdlib:multibond/RPlanar");
+                    params = Dict{String,Any}("br" => string(r[1]),
+                        "bx" => string(r[2]), "by" => string(r[3]))),
+            ],
+            Any[
+                _mb5_conn("c1", "signal", "n1", "y", "n3", "u"),
+                _mb5_conn("c2", "signal", "n2", "G", "n4", "G"),
+                _mb5_conn("c3", "bond", "n3", "p", "n4", "a"),
+                _mb5_conn("c4", "bond", "n5", "p", "n4", "b"),
+            ];
+            t_end = 1.5, points = 1501,
+        )
+        @test isempty(_mb5_errors(_mb5_check(doc)))
+        result, dir = _mb5_run(doc; t_end = 1.5, points = 1501)
+        @test result.status == "done"
+        data = _mb5_columns(dir)
+        t = data["time"]
+        Gt(i) = G0 .+ D .* sin(w * t[i])
+        @test maximum(abs.(Gt(1000) - G0)) > 0.2         # the matrix is live
+        worst = 0.0
+        for i in (1, 400, 800, 1500)
+            G = Gt(i)
+            ae, af = _mb5_at(data, "G/a.e", i), _mb5_at(data, "G/a.f", i)
+            be, bf = _mb5_at(data, "G/b.e", i), _mb5_at(data, "G/b.f", i)
+            @test isapprox(ae, E; atol = 1e-11)
+            @test isapprox(ae, G * bf; atol = 1e-11)
+            @test isapprox(be, -transpose(G) * af; atol = 1e-11)
+            @test isapprox(be, -r .* bf; atol = 1e-10)    # the R load on the b side
+            res = _mb5_power_residual(data, "G/a", "G/b", i)
+            worst = max(worst, res)
+            @test res <= 1e-11
+        end
+        println("FIX-MB-4 time-varying MGYPlanar worst power residual = ", worst)
+    end
+
+    @testset "FIX-MB-4: TFAd with a time-varying pose in a running model" begin
+        # `g = (theta, x, y)` is a signal input, so the adjoint itself changes every step.
+        # An inertia is driven through the transform: `dP/dt = -b.e = -Ad(g(t))^T E`, which is
+        # integrated independently (RK4) from the analytic `g(t)` and compared to the run.
+        g1, g2, g3, w = 0.6, 0.15, -0.2, 1.7
+        E = [0.5, -0.8, 1.1]
+        P0 = [0.03, -0.02, 0.05]
+        J, m = 0.05, 1.5
+        doc = _mb5_doc(
+            "TFAdTimeVarying",
+            Any[
+                _mb5_node("n1", "G", _mb5_inline(_MB5_VEC_SINE);
+                    params = Dict{String,Any}("a1" => string(g1), "a2" => string(g2),
+                        "a3" => string(g3), "w" => string(w))),
+                _mb5_node("n2", "Ue", _mb5_inline(_MB5_VEC_CONST);
+                    params = Dict{String,Any}("c1" => string(E[1]),
+                        "c2" => string(E[2]), "c3" => string(E[3]))),
+                _mb5_node("n3", "Se", _mb5_ref("stdlib:multibond/SePlanar")),
+                _mb5_node("n4", "T", _mb5_ref("stdlib:multibond/TFAd")),
+                _mb5_node("n5", "J", Dict{String,Any}("junction" => "1")),
+                _mb5_node("n6", "I", _mb5_ref("stdlib:multibond/IPlanar");
+                    params = Dict{String,Any}("J" => string(J), "m" => string(m)),
+                    starts = Dict{String,Any}("P" =>
+                        "[$(P0[1]), $(P0[2]), $(P0[3])]")),
+            ],
+            Any[
+                _mb5_conn("c1", "signal", "n1", "y", "n4", "g"),
+                _mb5_conn("c2", "signal", "n2", "y", "n3", "u"),
+                _mb5_conn("c3", "bond", "n3", "p", "n4", "a"),
+                _mb5_conn("c4", "bond", "n4", "b", "n5"),
+                _mb5_conn("c5", "bond", "n6", "p", "n5"),
+            ];
+            t_end = 1.0, points = 1001,
+        )
+        result = _mb5_check(doc)
+        @test isempty(_mb5_errors(result))
+        @test !_mb5_has(result, "W201")
+        run, dir = _mb5_run(doc; t_end = 1.0, points = 1001, reltol = 1e-10,
+            abstol = 1e-12)
+        @test run.status == "done"
+        data = _mb5_columns(dir)
+        t = data["time"]
+        P = [data["I/P[$k]"] for k in 1:3]
+        worst = 0.0
+        for i in (1, 250, 500, 1000)
+            ti = t[i]
+            gi = [g1 * sin(w * ti), g2 * sin(w * ti), g3 * sin(w * ti)]
+            th = gi[1]
+            A = [1.0 0.0 0.0; gi[3] cos(th) -sin(th); -gi[2] sin(th) cos(th)]
+            ae, af = _mb5_at(data, "T/a.e", i), _mb5_at(data, "T/a.f", i)
+            be, bf = _mb5_at(data, "T/b.e", i), _mb5_at(data, "T/b.f", i)
+            @test isapprox(ae, E; atol = 1e-12)
+            @test isapprox(bf, [P[1][i] / J, P[2][i] / m, P[3][i] / m]; atol = 1e-10)
+            @test isapprox(af, -A * bf; atol = 1e-10)
+            @test isapprox(be, transpose(A) * ae; atol = 1e-10)
+            res = _mb5_power_residual(data, "T/a", "T/b", i)
+            worst = max(worst, res)
+            @test res <= 1e-9
+        end
+        @test maximum(abs.(data["T/a.f[1]"])) > 1e-3     # varying, not frozen at zero
+        # Independent RK4 of dP/dt = -Ad(g(t))^T E with the analytic g(t).
+        function rhs(Pv, ti)
+            gi = [g1 * sin(w * ti), g2 * sin(w * ti), g3 * sin(w * ti)]
+            th = gi[1]
+            A = [1.0 0.0 0.0; gi[3] cos(th) -sin(th); -gi[2] sin(th) cos(th)]
+            return -transpose(A) * E
+        end
+        dt = 1.0e-4
+        Pv = collect(float.(P0))
+        for k in 1:round(Int, 1.0 / dt)
+            ti = (k - 1) * dt
+            k1 = rhs(Pv, ti)
+            k2 = rhs(Pv .+ (dt / 2) .* k1, ti + dt / 2)
+            k3 = rhs(Pv .+ (dt / 2) .* k2, ti + dt / 2)
+            k4 = rhs(Pv .+ dt .* k3, ti + dt)
+            Pv = Pv .+ (dt / 6) .* (k1 .+ 2 .* k2 .+ 2 .* k3 .+ k4)
+        end
+        Pend = [P[j][end] for j in 1:3]
+        @test maximum(abs.(Pend .- Pv)) / max(1.0, maximum(abs, Pv)) <= 1.0e-6
+        println("FIX-MB-4 varying TFAd: worst power residual ", worst,
+            ", momentum vs independent RK4 ", maximum(abs.(Pend .- Pv)) /
+                                                 max(1.0, maximum(abs, Pv)))
     end
 
     # -----------------------------------------------------------------------------------

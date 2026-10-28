@@ -2415,15 +2415,36 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
             ),
         )
     end
-    # A start key that names no component of the composite is E003 on the instance (the
-    # remaining keys are still checked against the component's own `@variables`).
-    for (component_name, _) in starts_by_component
-        Symbol(component_name) in seen_components && continue
+    # A start key must address a component: a bare key (`"P"`), a junction (`"node/x"`) and an
+    # unknown component are E003 on the instance, never a silent drop. The hint is the same in
+    # all three cases: the composite's starts are spelled `<component>/<variable>`.
+    for (key, _) in node.starts
+        parts = split(key, '/')
+        if length(parts) < 2
+            _report_component!(
+                b, node, path, block.ref;
+                code = "E003",
+                message = "start value `$key` of composite `$(node.name)` does not name a component",
+                hint = "use `<component>/<variable>`: name a component of `$(node.name)` before `$key`, for example `inertia/P`",
+            )
+            continue
+        end
+        name = Symbol(parts[1])
+        if name in junction_names
+            _report_component!(
+                b, node, path, block.ref;
+                code = "E003",
+                message = "start value `$key` of composite `$(node.name)` addresses junction `$(parts[1])`",
+                hint = "use `<component>/<variable>` with a block component of `$(node.name)`: junction `$(parts[1])` has no variables of its own (`$key`)",
+            )
+            continue
+        end
+        name in seen_components && continue
         _report_component!(
             b, node, path, block.ref;
             code = "E003",
-            message = "start value of `$(node.name)` names unknown component `$component_name`",
-            hint = "a composite start is `\"<component>/<variable>\"`, for example `\"inertia/P\"`",
+            message = "start value `$key` of composite `$(node.name)` names unknown component `$(parts[1])`",
+            hint = "use `<component>/<variable>`, naming a component of `$(node.name)` (for example `inertia/P`)",
         )
     end
 

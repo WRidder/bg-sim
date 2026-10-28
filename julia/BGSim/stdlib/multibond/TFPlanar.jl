@@ -4,13 +4,13 @@
     # `stdlib:bondgraph/TF`).
     #
     # The modulus is a **diagonal** `Vec{3}` `n` (dimensionless): `a.f[k] = n[k]*b.f[k]` and
-    # `b.e[k] = -n[k]*a.e[k]`, so `a.e . a.f + b.e . b.f = 0` for every component. A general
-    # 3x3 matrix transformer is deliberately not offered here: the matrix form needs an
-    # inverse transpose to express the reverse direction (the equation layer has no `inv`),
-    # and v1 cannot write a whole-matrix transformer that is invertible per component. The
-    # diagonal keeps every component independently invertible, and its modulus is a genuine
-    # dimensionless ratio per axis. The matrix case that needs no inverse is `GYPlanar`
-    # (`a.e = G*b.f`, `b.e = -G^T*a.f`) and the pose adjoint `TFAd`.
+    # `b.e[k] = -n[k]*a.e[k]`, so `a.e . a.f + b.e . b.f = 0` for every component. The general
+    # 3x3 matrix form is `TFPlanarMat` (`a.f = M b.f`, `b.e = -M^T a.e`, component-wise,
+    # power-continuous for every `M` and needing no inverse); the diagonal variant is kept
+    # because its modulus is a genuine dimensionless ratio per axis, so the unit checker
+    # still proves that torque stays torque and force stays force through the element. A
+    # matrix `M` is not unit-homogeneous (a `Mat` has one unit slot), which is why the matrix
+    # block declares it without a unit (D-MB10).
     #
     # `n` is declared with the dimensionless unit "1" (not left unitless), so the unit
     # checker still proves that each port keeps its own component unit through the element:

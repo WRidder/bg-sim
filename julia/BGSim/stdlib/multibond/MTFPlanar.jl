@@ -6,8 +6,9 @@
     # The modulus is the signal input `u`, a diagonal `Vec{3}` in the same dimensionless form
     # as `TFPlanar`'s parameter (a vector signal is unit-homogeneous in v1, and a diagonal
     # modulus is dimensionless, so one `unit = "1"` is exactly right here). `a.f[k] =
-    # u[k]*b.f[k]` and `b.e[k] = -u[k]*a.e[k]` keep `a.e . a.f + b.e . b.f = 0`; a full matrix
-    # modulation would need the inverse transpose and is not offered (see `TFPlanar`).
+    # u[k]*b.f[k]` and `b.e[k] = -u[k]*a.e[k]` keep `a.e . a.f + b.e . b.f = 0`. The general
+    # matrix modulation is `MTFPlanarMat` (`a.f = M b.f`, `b.e = -M^T a.e`, no inverse); this
+    # diagonal form is kept for the unit-homogeneous, dimensionless modulation.
     @ports begin
         a::Power{Planar}
         b::Power{Planar}

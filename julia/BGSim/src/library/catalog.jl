@@ -561,7 +561,7 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "mb-df-planar",
     ),
     "stdlib:multibond/ExternalWrenchPlanar" => (
-        description = "Planar external wrench source in the port frame: three scalar inputs (N*m, N, N) impose the port effort; on a 1-junction the body feels the negative wrench.",
+        description = "Planar external wrench source in the port frame: three scalar inputs (N*m, N, N) are the physical external wrench W_ext; the port effort is -W_ext, so a body on a 1-junction feels +W_ext.",
         icon = "mb-external-wrench-planar",
     ),
     "stdlib:multibond/FixedTransform2D" => (
@@ -601,8 +601,12 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "mb-msf-planar",
     ),
     "stdlib:multibond/MTFPlanar" => (
-        description = "Modulated planar transformer: a diagonal Vec{3} modulus signal scales each component, power-continuous per component.",
+        description = "Modulated planar transformer: a diagonal Vec{3} modulus signal scales each component, power-continuous per component with a dimensionless modulus.",
         icon = "mb-mtf-planar",
+    ),
+    "stdlib:multibond/MTFPlanarMat" => (
+        description = "Modulated planar matrix transformer: a 3x3 matrix signal input with a.f = M*b.f and b.e = -M^T*a.e, power-continuous for every M without an inverse.",
+        icon = "mb-mtf-planar-mat",
     ),
     "stdlib:multibond/Revolute2D" => (
         description = "Minimal planar revolute joint: parent and child planar bonds plus a rotational drive, with the joint pose composed from q (not integrated).",
@@ -625,12 +629,20 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "mb-sf-planar",
     ),
     "stdlib:multibond/TFAd" => (
-        description = "Planar adjoint transformer driven by a pose signal (theta, x, y); power-continuous, the general transform primitive.",
+        description = "Planar adjoint transformer driven by a pose signal (theta, x, y); power-continuous, the general transform primitive, frame-named world -> body.",
         icon = "mb-tf-ad",
+    ),
+    "stdlib:multibond/TFAdNeutral" => (
+        description = "Frame-neutral planar adjoint transformer: the TFAd equations with both ports left frame-neutral, so a joint composite's parent role adopts GroundPlanar's world or a body 1-junction frame (FIX-MB-4).",
+        icon = "mb-tf-ad-neutral",
     ),
     "stdlib:multibond/TFPlanar" => (
         description = "Planar diagonal transformer (the planar TF): a dimensionless Vec{3} modulus per component, a.f[k] = n[k]*b.f[k] and b.e[k] = -n[k]*a.e[k].",
         icon = "mb-tf-planar",
+    ),
+    "stdlib:multibond/TFPlanarMat" => (
+        description = "Planar matrix transformer (the general planar TF): a 3x3 matrix M with a.f = M*b.f and b.e = -M^T*a.e, component-wise and power-continuous for every M without an inverse.",
+        icon = "mb-tf-planar-mat",
     ),
     "stdlib:planar/FixedJoint2D" => (
         description = "Rigid fixed planar joint between the parent and child body frames: a constant adjoint bridge with the joint role frames, written in the parent->child causal direction (FIX-MB-2).",
@@ -669,7 +681,7 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "pl-revolute-2d-limit",
     ),
     "stdlib:planar/Revolute2DRigid" => (
-        description = "Rigid planar revolute joint as a bond-graph composite: 0-junction, adjoint and screw transforms, 1-junction with the drive, Df and integrator; index-3 with exactly two W201 by design (DEC-MB-2).",
+        description = "Rigid planar revolute joint as a bond-graph composite: 0-junction, adjoint and screw transforms, 1-junction with the drive, Df and integrator; frame-neutral parent (a legal elbow), index-3 DAE whose two joint-frame translations are derivative-causal (DEC-MB-2).",
         icon = "pl-revolute-2d-rigid",
     ),
     "stdlib:planar/RigidBody2D" => (

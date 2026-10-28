@@ -201,13 +201,16 @@ const M3_REFS = [
     "stdlib:multibond/MSePlanar",
     "stdlib:multibond/MSfPlanar",
     "stdlib:multibond/MTFPlanar",
+    "stdlib:multibond/MTFPlanarMat",
     "stdlib:multibond/Revolute2D",
     "stdlib:multibond/RPlanar",
     "stdlib:multibond/ScrewTF",
     "stdlib:multibond/SePlanar",
     "stdlib:multibond/SfPlanar",
     "stdlib:multibond/TFAd",
+    "stdlib:multibond/TFAdNeutral",
     "stdlib:multibond/TFPlanar",
+    "stdlib:multibond/TFPlanarMat",
 ]
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
@@ -1423,6 +1426,26 @@ const INTERFACE_FIELDS = [
         @test [(i.name, i.size, i.unit) for i in mtf.interface.inputs] ==
               [("u", [3], "1")]
         @test mtf.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+        # The matrix transformer is the general 3x3 form of the same element (FIX-MB-4): the
+        # matrix carries no single unit (a Mat has one unit slot) and needs no inverse.
+        tfm = blocks["stdlib:multibond/TFPlanarMat"]
+        @test [(p.name, p.domain, p.size, p.frame) for p in tfm.interface.ports] ==
+              [("a", "Planar", [3], nothing), ("b", "Planar", [3], nothing)]
+        @test [(p.name, p.unit) for p in tfm.interface.parameters] == [("M", nothing)]
+        @test count(==(';'), tfm.interface.parameters[1].default) == 2    # three rows
+        @test tfm.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+        mtfm = blocks["stdlib:multibond/MTFPlanarMat"]
+        @test [(i.name, i.size, i.unit) for i in mtfm.interface.inputs] == [("M", [3, 3], nothing)]
+        @test mtfm.interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+        # The frame-neutral adjoint used by the rigid joint composite: both ports null, so a
+        # joint's parent role adopts either world or a body frame.
+        tfn = blocks["stdlib:multibond/TFAdNeutral"]
+        @test [p.frame for p in tfn.interface.ports] == [nothing, nothing]
+        @test [(i.name, i.size) for i in tfn.interface.inputs] == [("g", [3])]
+        @test tfn.interface.causality ==
               [(ports = ["a", "b"], kind = "transformer", value = nothing)]
         gy = blocks["stdlib:multibond/GYPlanar"]
         @test [(p.name, p.unit) for p in gy.interface.parameters] == [("G", nothing)]

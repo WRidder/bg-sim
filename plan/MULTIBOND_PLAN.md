@@ -243,10 +243,12 @@ articulated-body path.
   solves, and W201 reports the derivative causality. Do not add a custom evaluator.
   **A revolute joint's hard constraints are its two pivot translations, not its rotation**:
   a 3-DOF planar body on a 1-DOF rigid revolute is index-3 by construction, so its rigid
-  variant reports **exactly two W201** (the two constrained translations) and may fail to
-  initialise. The compliant-pivot variant (exact rotation, compliant translations `kt`/`bt`)
-  removes them and is the variant the vertical slice and Gate A use; the rigid variant is
-  kept for the DAE/index-reduction tests and for `kt -> Inf` convergence.
+  variant is derivative-causal in those two joint-frame translations and may fail to
+  initialise. MTK's 3-DOF twist parametrisation also reports the three momentum aliases, so the
+  accepted diagnostic set is the two translations plus the aliases; assert the set, not a count.
+  The compliant-pivot variant (exact rotation, compliant translations `kt`/`bt`) removes them
+  and is the variant the vertical slice and Gate A use; the rigid variant is kept for the
+  DAE/index-reduction tests and for `kt -> Inf` convergence.
 - **Poses.** A **floating base** integrates its pose from its twist (2D angle+position; 3D
   quaternion+position). A **fixed-base chain does not integrate link poses**: the link pose
   is `g_child = g_parent ∘ g(q)`, propagated as a signal through `JointTransform` and a
@@ -303,7 +305,7 @@ Each WP ends with tests and a report, following the main plan's rules.
 | WP | Lane | Depends | Owns | Deliverable / acceptance |
 | --- | --- | --- | --- | --- |
 | **J-MB5** | J | J-MB4 | `stdlib/multibond/` | Full planar primitives: `I`, `C`, `R`, `Se`, `Sf`, `MSe`, `MSf`, `TF`, `GY`, `MTF`, `MGY`, `Coriolis` (`P` input), `Gravity`, `Ground`, `ExternalWrench`, `FixedTransform`, `JointTransform`, `ComposePose`, `De`, `Df`. Matrix TF/GY with `Mat`; component-wise loops; power-continuity tests for random V/W; unit tests per element. |
-| **J-MB6** | J | J-MB5 | `stdlib/planar/` | Composites: `RigidBody2D` (1 port + I + Coriolis + Gravity), `Revolute2D`, `Prismatic2D`, `Free2D`, `FixedJoint2D`, compliance/friction/limit **variants**, `PoseIntegrator2D` (floating base only), `ComposePose2D` (fixed-base links). Joint `S`/`Ad`/`Df`/`Integrator` wired with signal connections; q/qdot outputs. Acceptance: a single pendulum on the existing backend; a joint with `k` converges to the rigid case as `k` grows. **The rigid 1-DOF variant reports exactly two W201 by design** (the two constrained pivot translations of a 3-DOF body on a 1-DOF revolute) and must be tested for that, not "fixed"; the compliant-pivot variant reports none; `kt -> Inf` (and `k -> Inf` on the per-axis variant) converges to the rigid case. |
+| **J-MB6** | J | J-MB5 | `stdlib/planar/` | Composites: `RigidBody2D` (1 port + I + Coriolis + Gravity), `Revolute2D`, `Prismatic2D`, `Free2D`, `FixedJoint2D`, compliance/friction/limit **variants**, `PoseIntegrator2D` (floating base only), `ComposePose2D` (fixed-base links). Joint `S`/`Ad`/`Df`/`Integrator` wired with signal connections; q/qdot outputs. Acceptance: a single pendulum on the existing backend; a joint with `k` converges to the rigid case as `k` grows. **The rigid 1-DOF variant is derivative-causal in exactly the two constrained pivot translations of a 3-DOF body on a 1-DOF revolute** and must be tested for that set, not "fixed"; MTK's 3-DOF twist parametrisation also reports the three momentum aliases, so assert the set (2 translations + aliases), and the model may fail to initialise (report it). The compliant-pivot variant reports none; `kt -> Inf` (and `k -> Inf` on the per-axis variant) converges to the rigid case. |
 | **J-MB7** | J | J-MB6 | `test/golden/planar/`, `test_mech_planar.jl` | Planar suite: single pendulum period, energy, double pendulum compliance convergence, prismatic, free body, applied wrench, friction, limits, W201 absent with compliance, fixed-base pose composition vs integrated truth. |
 | **X-MB2** | X | J-MB6, W-MB1 | `examples/robot-arm-2d/`, `examples/reaction-wheel-2d/` | 2-link arm with payload (PD or torque drive) and the planar reaction-wheel/balancer variant; checks for tip trajectory, balance and energy; 2-stroke screenshots. |
 

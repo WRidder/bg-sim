@@ -260,12 +260,147 @@ function _pm_free(; P0 = (0.2, 0.5, -0.3), theta0 = 0.4, x0 = 0.1, y0 = -0.2,
 end
 
 """
-    _pm_rigid_joint()
+    _pm_chain2(; q1, q2, g0, joint)
 
-The rigid 1-DOF revolute composite with a 0.5 m link offset. It is index-3 by construction
-(DEC-MB-2): the two pivot translations are hard constraints, so its acceptance is the two W201
-diagnostics, not a run.
+A two-link planar chain on the J-MB6 composites:
+
+    Ground -> Joint1 -> Link1 -> BodyJ1 (1-junction: Body1 + Joint2) -> Link2 -> BodyJ2
+
+`Link1` is a `FixedJoint2D` with `x = 0.2` (the lever arm from the shoulder pivot to the
+link-1 centre of mass) and `Link2` the same from the elbow; the elbow pivot is `rx = 0.2` in
+the link-1 CoM frame. The pose chain is the plan 5.5 fixed-base composition
+`C1 = Joint1.pose * Link1.pose`, `C2 = C1 * Joint2.pose`, `C3 = C2 * Link2.pose`,
+`Tip = C3 * (0.3, 0)`. `joint` selects the compliant (default) or the rigid revolute variant,
+so the same topology serves the ODE and the DAE diagnostics test.
 """
+function _pm_chain2(; q1 = 0.4, q2 = -0.6, g0 = 0.0,
+    joint = "stdlib:planar/Revolute2DCompliant")
+    rigid = joint == "stdlib:planar/Revolute2DRigid"
+    function joint_params(rx, q0)
+        base = Dict{String,Any}("rx" => string(rx), "ry" => "0.0", "q0" => string(q0))
+        rigid && return base
+        return merge(base, Dict{String,Any}("kt" => string(_PM_KT), "bt" => "0.0",
+            "k" => "0.0", "b" => "0.0", "qrest" => "0.0"))
+    end
+    return _pm_doc("TwoLinkChain",
+        Any[
+            _pm_node("n1", "World", _pm_ref("stdlib:multibond/GroundPlanar")),
+            _pm_node("n2", "J1", _pm_ref(joint); params = joint_params(0.0, q1)),
+            _pm_node("n3", "L1", _pm_ref("stdlib:planar/FixedJoint2D");
+                params = Dict{String,Any}("x" => "0.2", "y" => "0.0", "theta" => "0.0")),
+            _pm_node("n4", "BJ1", _pm_junction("1")),
+            _pm_node("n5", "B1", _pm_ref("stdlib:planar/RigidBody2D");
+                params = Dict{String,Any}("m" => "2.0", "J" => "0.026",
+                    "g0" => string(g0))),
+            _pm_node("n6", "J2", _pm_ref(joint); params = joint_params(0.2, q2)),
+            _pm_node("n7", "L2", _pm_ref("stdlib:planar/FixedJoint2D");
+                params = Dict{String,Any}("x" => "0.2", "y" => "0.0", "theta" => "0.0")),
+            _pm_node("n8", "BJ2", _pm_junction("1")),
+            _pm_node("n9", "B2", _pm_ref("stdlib:planar/RigidBody2D");
+                params = Dict{String,Any}("m" => "1.5", "J" => "0.015",
+                    "g0" => string(g0))),
+            _pm_node("n10", "C1", _pm_ref("stdlib:multibond/ComposePose2D")),
+            _pm_node("n11", "C2", _pm_ref("stdlib:multibond/ComposePose2D")),
+            _pm_node("n12", "C3", _pm_ref("stdlib:multibond/ComposePose2D")),
+            _pm_node("n13", "TipLocal", _pm_ref("stdlib:planar/LocalPose2D");
+                params = Dict{String,Any}("x" => "0.3", "y" => "0.0", "theta" => "0.0")),
+            _pm_node("n14", "C4", _pm_ref("stdlib:multibond/ComposePose2D")),
+            _pm_node("n15", "T1", _pm_ref("stdlib:bondgraph/Se");
+                params = Dict{String,Any}("e" => "0.0")),
+            _pm_node("n16", "T2", _pm_ref("stdlib:bondgraph/Se");
+                params = Dict{String,Any}("e" => "0.0")),
+        ],
+        Any[
+            _pm_conn("c1", "bond", "n1", "p", "n2", "parent"),
+            _pm_conn("c2", "bond", "n2", "child", "n3", "parent"),
+            _pm_conn("c3", "bond", "n3", "child", "n4"),
+            _pm_conn("c4", "bond", "n5", "p", "n4"),
+            _pm_conn("c5", "bond", "n6", "parent", "n4"),
+            _pm_conn("c6", "bond", "n6", "child", "n7", "parent"),
+            _pm_conn("c7", "bond", "n7", "child", "n8"),
+            _pm_conn("c8", "bond", "n9", "p", "n8"),
+            _pm_conn("c9", "signal", "n2", "pose", "n10", "gp"),
+            _pm_conn("c10", "signal", "n3", "pose", "n10", "gl"),
+            _pm_conn("c11", "signal", "n10", "g", "n5", "g"),
+            _pm_conn("c12", "signal", "n10", "g", "n11", "gp"),
+            _pm_conn("c13", "signal", "n6", "pose", "n11", "gl"),
+            _pm_conn("c14", "signal", "n11", "g", "n12", "gp"),
+            _pm_conn("c15", "signal", "n7", "pose", "n12", "gl"),
+            _pm_conn("c16", "signal", "n12", "g", "n9", "g"),
+            _pm_conn("c17", "signal", "n12", "g", "n14", "gp"),
+            _pm_conn("c18", "signal", "n13", "g", "n14", "gl"),
+            _pm_conn("c19", "bond", "n15", "p", "n2", "drive"),
+            _pm_conn("c20", "bond", "n16", "p", "n6", "drive"),
+        ])
+end
+
+"""
+    _pm_elbow(; lever)
+
+The two-link elbow topology of the X-MB2 note, in the two spellings of the offset:
+
+* `lever = false` — the elbow is `Joint2` with `rx = 0.2` on `BodyJ1` (the supported route);
+* `lever = true`  — the elbow is reached through a `FixedJoint2D` whose **parent** is on the
+  body 1-junction (`Lever.parent` on `BodyJ1`, `Lever.child -> Joint2.parent`).
+
+The second spelling is the structural limit FIX-MB-4 records: the fixed joint's causal
+pairing (flow child -> parent, effort parent -> child) is the joint -> fixed -> body chain,
+so using it as a frame extension off a body junction leaves two algebraic tearing unknowns.
+"""
+function _pm_elbow(; lever = false)
+    joint_params = Dict{String,Any}("rx" => "0.0", "ry" => "0.0", "kt" => string(_PM_KT),
+        "bt" => "0.0", "q0" => "0.0")
+    lever_params = Dict{String,Any}("rx" => "0.2", "ry" => "0.0", "kt" => string(_PM_KT),
+        "bt" => "0.0", "q0" => "0.0")
+    nodes = Any[
+        _pm_node("n1", "World", _pm_ref("stdlib:multibond/GroundPlanar")),
+        _pm_node("n2", "J1", _pm_ref("stdlib:multibond/Revolute2D");
+            params = Dict{String,Any}("rx" => "0.0", "ry" => "0.0", "kt" => string(_PM_KT),
+                "bt" => "0.0", "q0" => "0.01")),
+        _pm_node("n3", "L1", _pm_ref("stdlib:planar/FixedJoint2D");
+            params = Dict{String,Any}("x" => "0.2", "y" => "0.0", "theta" => "0.0")),
+        _pm_node("n4", "BJ1", _pm_junction("1")),
+        _pm_node("n5", "B1", _pm_ref("stdlib:planar/RigidBody2D");
+            params = Dict{String,Any}("m" => "2.0", "J" => "0.026", "g0" => "0.0")),
+        _pm_node("n6", "Elbow", _pm_ref("stdlib:multibond/Revolute2D");
+            params = lever ? joint_params : lever_params),
+        _pm_node("n8", "BJ2", _pm_junction("1")),
+        _pm_node("n9", "B2", _pm_ref("stdlib:planar/RigidBody2D");
+            params = Dict{String,Any}("m" => "1.5", "J" => "0.015", "g0" => "0.0")),
+        _pm_node("n10", "P1", _pm_ref("stdlib:planar/LocalPose2D")),
+        _pm_node("n11", "P2", _pm_ref("stdlib:planar/LocalPose2D")),
+        _pm_node("n12", "T1", _pm_ref("stdlib:bondgraph/Se");
+            params = Dict{String,Any}("e" => "0.0")),
+        _pm_node("n13", "T2", _pm_ref("stdlib:bondgraph/Se");
+            params = Dict{String,Any}("e" => "0.0")),
+    ]
+    connections = Any[
+        _pm_conn("c1", "bond", "n1", "p", "n2", "parent"),
+        _pm_conn("c2", "bond", "n2", "child", "n3", "parent"),
+        _pm_conn("c3", "bond", "n3", "child", "n4"),
+        _pm_conn("c4", "bond", "n5", "p", "n4"),
+        _pm_conn("c7", "bond", "n6", "child", "n8"),
+        _pm_conn("c8", "bond", "n9", "p", "n8"),
+        _pm_conn("c9", "signal", "n10", "g", "n5", "g"),
+        _pm_conn("c10", "signal", "n11", "g", "n9", "g"),
+        _pm_conn("c11", "bond", "n12", "p", "n2", "drive"),
+        _pm_conn("c12", "bond", "n13", "p", "n6", "drive"),
+    ]
+    if lever
+        # The frame extension: the lever's parent sits on the body 1-junction and its child is
+        # the elbow's parent. `rx = 0` here so *only* the lever carries the offset; the test
+        # asserts the diagnostics of the topology, not a trajectory.
+        push!(nodes, _pm_node("n7", "Lever", _pm_ref("stdlib:planar/FixedJoint2D");
+            params = Dict{String,Any}("x" => "0.2", "y" => "0.0", "theta" => "0.0")))
+        push!(connections, _pm_conn("c5", "bond", "n7", "parent", "n4"))
+        push!(connections, _pm_conn("c6", "bond", "n7", "child", "n6", "parent"))
+    else
+        push!(connections, _pm_conn("c5", "bond", "n6", "parent", "n4"))
+    end
+    return _pm_doc("TwoLinkElbow", nodes, connections)
+end
+
+
 function _pm_rigid_joint(; q0 = _PM_Q0, m = _PM_M, j = _PM_J)
     return _pm_doc("RigidJointPendulum",
         Any[
@@ -345,7 +480,7 @@ const _PM_REFS = [
         @test frames("stdlib:planar/RigidBody2D") == [("p", "body")]
         @test frames("stdlib:planar/FixedJoint2D") == [("parent", nothing), ("child", "body")]
         @test frames("stdlib:planar/Revolute2DRigid") ==
-              [("parent", "world"), ("child", "body"), ("drive", nothing)]
+              [("parent", nothing), ("child", "body"), ("drive", nothing)]
         @test all(p -> p.frame === nothing,
             blocks["stdlib:planar/Revolute2DCompliant"].interface.ports)
 
@@ -425,6 +560,47 @@ const _PM_REFS = [
             @test all(data["Body/inertia/Pm[$k]"] .== data["Body/inertia/P[$k]"])
         end
         @test haskey(data, "Body/inertia/p.P")
+    end
+
+    @testset "FIX-MB-4: composite starts must be <component>/<variable> (E003)" begin
+        # `RigidBody2D` has no variables of its own: `P` is an output and the momentum lives
+        # in its `inertia` component. A bare key used to be dropped without a word; it is now
+        # E003 with the hint that tells the user the spelling.
+        doc = _pm_load()
+        body = only([n for n in doc["diagram"]["nodes"] if n["name"] == "Body"])
+        body["starts"]["P"] = "[0.0, 0.0, 0.0]"
+        result = _pm_check(doc)
+        errors = [d for d in result.diagnostics if d.code == "E003"]
+        @test length(errors) == 1
+        @test occursin("Body", errors[1].message)
+        @test occursin("`P`", errors[1].message)
+        @test occursin("use `<component>/<variable>`", errors[1].hint)
+
+        # A junction component is not a variable holder either: same code and hint.
+        doc = _pm_load()
+        body = only([n for n in doc["diagram"]["nodes"] if n["name"] == "Body"])
+        body["starts"]["node/x"] = "1.0"
+        result = _pm_check(doc)
+        errors = [d for d in result.diagnostics if d.code == "E003"]
+        @test length(errors) == 1
+        @test occursin("junction `node`", errors[1].message)
+        @test occursin("use `<component>/<variable>`", errors[1].hint)
+
+        # An unknown component still reports E003 with the same hint, and the correctly
+        # spelled `inertia/P` start is accepted (the free-body test relies on it).
+        doc = _pm_load()
+        body = only([n for n in doc["diagram"]["nodes"] if n["name"] == "Body"])
+        body["starts"]["nope/P"] = "[0.0, 0.0, 0.0]"
+        result = _pm_check(doc)
+        errors = [d for d in result.diagnostics if d.code == "E003"]
+        @test length(errors) == 1
+        @test occursin("unknown component `nope`", errors[1].message)
+        @test occursin("use `<component>/<variable>`", errors[1].hint)
+
+        doc = _pm_load()
+        body = only([n for n in doc["diagram"]["nodes"] if n["name"] == "Body"])
+        body["starts"]["inertia/P"] = "[0.0, 0.0, 0.0]"
+        @test !any(d -> d.code == "E003", _pm_check(doc).diagnostics)
     end
 
     # -----------------------------------------------------------------------------------
@@ -543,6 +719,55 @@ const _PM_REFS = [
         @test maximum(periods) - minimum(periods) <= 1.0e-6 * _PM_T_AMP
     end
 
+    @testset "FIX-MB-4: joint pivot offset rx/ry != 0 (same physics, exact pose)" begin
+        # The pivot-offset terms `sin(q) rx - cos(q) ry` / `cos(q) rx + sin(q) ry` in the
+        # relative twist and the parent effort were never exercised: every earlier fit had
+        # rx = ry = 0, where they vanish. A rigid translation of the whole pendulum leaves the
+        # period unchanged and shifts the composed pose by exactly (rx, ry).
+        BGSim.clear_compile_cache!()
+        for (rx, ry) in ((0.2, 0.1), (-0.3, 0.25))
+            doc = _pm_pendulum(extra = Dict{String,Any}("rx" => string(rx),
+                "ry" => string(ry)))
+            result = _pm_check(doc)
+            @test isempty(_pm_errors(result))
+            @test !_pm_has(result, "W201")
+            run, dir = _pm_run(doc; t_end = 4.0, points = 4001)
+            @test run.status == "done"
+            @test !_pm_has(run, "W201")
+            data = _pm_columns(dir)
+            q = data["Joint/qout"]
+            period = _pm_period(data["time"], q)
+            @test isapprox(period, _PM_T_AMP; rtol = 1.0e-5)
+            @test all(isapprox.(data["Compose/g[2]"], rx .+ 0.5 .* sin.(q); atol = 1e-12))
+            @test all(isapprox.(data["Compose/g[3]"], ry .- 0.5 .* cos.(q); atol = 1e-12))
+            # The pivot-offset terms are load-bearing in the effort relation: check the
+            # documented parent.e from child.e at samples across the swing.
+            for i in (1, 500, 2000, 4000)
+                ce = [data["Joint/child.e[$k]"][i] for k in 1:3]
+                pe = [data["Joint/parent.e[$k]"][i] for k in 1:3]
+                qq = q[i]
+                @test isapprox(pe[1], -(ce[1] +
+                                        (sin(qq) * rx - cos(qq) * ry) * ce[2] +
+                                        (cos(qq) * rx + sin(qq) * ry) * ce[3]);
+                    atol = 1e-10)
+                @test isapprox(pe[2], -(cos(qq) * ce[2] - sin(qq) * ce[3]); atol = 1e-10)
+                @test isapprox(pe[3], -(sin(qq) * ce[2] + cos(qq) * ce[3]); atol = 1e-10)
+            end
+            # And the joint still conserves power with the offset present.
+            jp = [sum(data["Joint/parent.e[$k]"][i] * data["Joint/parent.f[$k]"][i]
+                      for k in 1:3) for i in eachindex(q)]
+            jc = [sum(data["Joint/child.e[$k]"][i] * data["Joint/child.f[$k]"][i]
+                      for k in 1:3) for i in eachindex(q)]
+            jd = data["Joint/drive.e"] .* data["Joint/drive.f"]
+            spring = _PM_KT .* (data["Joint/dout[1]"] .* data["Joint/Vrelout[2]"] .+
+                                data["Joint/dout[2]"] .* data["Joint/Vrelout[3]"])
+            scale = max.(1.0, abs.(jp), abs.(jc))
+            @test maximum(abs.(jp .+ jc .+ jd .- spring) ./ scale) <= 1e-9
+            println("pivot offset rx=", rx, " ry=", ry, " period=", period,
+                " (rel ", abs(period - _PM_T_AMP) / _PM_T_AMP, ")")
+        end
+    end
+
     @testset "kt sweep: the compliant pivot converges to the rigid period" begin
         BGSim.clear_compile_cache!()
         errors = Float64[]
@@ -561,6 +786,52 @@ const _PM_REFS = [
         @test errors[1] > errors[2] > errors[3]
         @test errors[3] <= 1.0e-6
         @test errors[1] <= 1.0e-4
+    end
+
+    @testset "FIX-MB-4: 2-link compliant chain: 12 states, no W201, tip pose" begin
+        BGSim.clear_compile_cache!()
+        doc = _pm_chain2(g0 = _PM_G)
+        result = _pm_check(doc)
+        @test isempty(_pm_errors(result))
+        for code in ("E007", "E101", "E102", "E103", "W201", "W202")
+            @test !_pm_has(result, code)
+        end
+        flat = _pm_flat(doc)
+        @test isempty(flat.diagnostics)
+        lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 0.2)
+        unknowns = ModelingToolkit.unknowns(lowered.model.system)
+        differential = ModelingToolkit.collect_differential_variables(lowered.model.system)
+        # P[1:3] + d[1:2] + q per link, all differential: the compliant chain is an index-0
+        # ODE (6 states per link on a 1-DOF joint).
+        @test length(unknowns) == 12
+        @test length(differential) == 12
+        @test isempty([string(u) for u in unknowns if occursin(Char(0x02cd), string(u))])
+        @test isempty(Compile.post_compile_warnings(flat, lowered.model.system))
+
+        run, dir = _pm_run(doc; t_end = 0.2, points = 201)
+        @test run.status == "done"
+        @test !_pm_has(run, "W201")
+        data = _pm_columns(dir)
+        q1 = data["J1/qout"]
+        q2 = data["J2/qout"]
+        @test isapprox(q1[1], 0.4; atol = 1e-12)
+        @test isapprox(q2[1], -0.6; atol = 1e-12)
+        @test maximum(abs.(q1 .- 0.4)) > 1.0e-3      # the chain really moves
+        # The composed fixed-base pose is the analytic forward kinematics of the measured
+        # joint angles: link-1 CoM 0.2 m along q1, elbow 0.4 m, link-2 CoM 0.2 m and the tip
+        # 0.3 m further along q1 + q2.
+        @test all(isapprox.(data["C1/g[2]"], 0.2 .* cos.(q1); atol = 1e-12))
+        @test all(isapprox.(data["C1/g[3]"], 0.2 .* sin.(q1); atol = 1e-12))
+        @test all(isapprox.(data["C2/g[1]"], q1 .+ q2; atol = 1e-12))
+        @test all(isapprox.(data["C2/g[2]"], 0.4 .* cos.(q1); atol = 1e-12))
+        @test all(isapprox.(data["C2/g[3]"], 0.4 .* sin.(q1); atol = 1e-12))
+        tip_x = 0.4 .* cos.(q1) .+ 0.5 .* cos.(q1 .+ q2)
+        tip_y = 0.4 .* sin.(q1) .+ 0.5 .* sin.(q1 .+ q2)
+        tip_error = max(maximum(abs.(data["C4/g[2]"] .- tip_x)),
+            maximum(abs.(data["C4/g[3]"] .- tip_y)))
+        @test tip_error <= 1.0e-12
+        println("2-link compliant chain: 12 states, tip vs analytic FK = ", tip_error,
+            " m, q1 ", q1[end], " q2 ", q2[end])
     end
 
     @testset "the rigid variant: two constrained translations, three momentum W201" begin
@@ -582,14 +853,23 @@ const _PM_REFS = [
         unknown_names = string.(ModelingToolkit.unknowns(lowered.model.system))
         dummies = [n for n in unknown_names if occursin(Char(0x02cd), n)]
         println("rigid variant dummy derivatives = ", dummies)
+        # FIX-MB-4: the achieved derivative-causal set. The two physical pivot translations
+        # are dummy derivatives of the joint-frame velocity (`Joint/xform/b.f[2]`, `[3]`); the
+        # third dummy is the first body twist tap component (`Body/flow/p.f[1]`).
+        @test length(dummies) == 3
         @test count(n -> occursin("/xform/b.f[", n), dummies) == 2
+        @test count(n -> occursin("Body/flow/p.f[1]", n), dummies) == 1
         differential = ModelingToolkit.collect_differential_variables(lowered.model.system)
         @test length(differential) == 2      # the joint angle and one velocity component
         # The momentum itself is eliminated in favour of the twist it is aliased to (IPlanar
         # defines `f = P/M`), so all three momentum components are reported as
         # derivative-causal: the count is a property of MTK's parametrisation, not of the
         # constraint structure. The physical signature of the two constraints is the pair of
-        # dummy derivatives above; the run itself does not initialise (DEC-MB-2's limit).
+        # dummy derivatives above; "exactly two W201" is not reachable without changing the
+        # verified body (the `DfPlanar` tap lives inside `RigidBody2D`), so the acceptance is
+        # the measured set: the two joint-frame translations are derivative-causal and MTK
+        # reports them plus the three body momentum aliases. The run itself does not
+        # initialise (DEC-MB-2's limit).
         @test length(w201) == 3
         @test all(d -> d.path == "Body/inertia", w201)
         for k in 1:3
@@ -611,6 +891,96 @@ const _PM_REFS = [
         compliant_lowered = BGSim.lower_model(compliant_flat; t_start = 0.0, t_end = 1.0)
         @test !any(d -> d.code == "W201",
             Compile.post_compile_warnings(compliant_flat, compliant_lowered.model.system))
+    end
+
+    @testset "FIX-MB-4: rigid 2-link chain, the elbow is legal (frame-neutral parent)" begin
+        # The same topology as the compliant chain, with `Revolute2DRigid` at both joints. The
+        # elbow's parent used to declare `world`, so attaching it to the link-1 body
+        # 1-junction was E007; it is frame-neutral now (its internal adjoint is TFAdNeutral).
+        doc = _pm_chain2(joint = "stdlib:planar/Revolute2DRigid")
+        result = _pm_check(doc)
+        @test !_pm_has(result, "E007")
+        @test isempty(_pm_errors(result))
+        @test endswith(result.frames["c5"], "/body")    # Joint2.parent on BodyJ1
+        @test count(d -> d.code == "W201", result.diagnostics) == 2
+        flat = _pm_flat(doc)
+        @test isempty(_pm_errors(flat))
+        lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 0.5)
+        unknowns = ModelingToolkit.unknowns(lowered.model.system)
+        differential = ModelingToolkit.collect_differential_variables(lowered.model.system)
+        # Two rigid joints: the joint angles and one velocity component survive as the four
+        # differential unknowns; the rest is the DAE's algebraic/derivative-causal set.
+        @test length(unknowns) == 15
+        @test length(differential) == 4
+        dummies = [n for n in string.(unknowns) if occursin(Char(0x02cd), n)]
+        @test length(dummies) == 4
+        @test count(n -> occursin("J1/xform/b.f[", n), dummies) == 2
+        @test count(n -> occursin("flow/p.f[1]", n), dummies) == 2
+        warnings = Compile.post_compile_warnings(flat, lowered.model.system)
+        w201 = [d for d in warnings if d.code == "W201"]
+        @test length(w201) == 6
+        @test sort(unique(d.path for d in w201)) == ["B1/inertia", "B2/inertia"]
+        for path in ("B1/inertia", "B2/inertia"), k in 1:3
+            @test any(d -> d.path == path && occursin("P[$k]", d.message), w201)
+        end
+        # The chain is a DAE that does not initialise (DEC-MB-2's documented limit): assert
+        # the diagnostics, not a trajectory.
+        run, _ = _pm_run(doc; t_end = 0.5, points = 51)
+        @test run.status == "failed"
+        @test any(d -> d.code in ("E901", "E103"), run.diagnostics)
+        println("rigid 2-link chain: ", length(unknowns), " unknowns / ",
+            length(differential), " differential; W201 ", [(d.path) for d in w201],
+            "; run ", run.status)
+    end
+
+    @testset "FIX-MB-4: FixedJoint2D lever arm and the reverse-causality limit" begin
+        # (1) The supported orientation, which the X-MB2 arm uses: the fixed joint's *child*
+        # is the body 1-junction and the lever arm is `x = 0.2`. The 2-link chain is exactly
+        # this case (both links at 0.2 m), an index-0 ODE with 12 differential states.
+        BGSim.clear_compile_cache!()
+        doc = _pm_chain2(g0 = 0.0)
+        lowered = BGSim.lower_model(_pm_flat(doc); t_start = 0.0, t_end = 0.1)
+        @test length(ModelingToolkit.unknowns(lowered.model.system)) == 12
+        @test length(ModelingToolkit.collect_differential_variables(lowered.model.system)) == 12
+
+        # (2) The reverse orientation (the fixed joint's *parent* on the body 1-junction, its
+        # child toward a downstream joint) is the structural limit recorded for J-MB7. The
+        # block's causal pairing is flow child -> parent and effort parent -> child, i.e. the
+        # joint -> fixed -> body chain; used as a frame extension the compiled model is a
+        # 14-unknown DAE with exactly two algebraic tearing unknowns. This is not an `x != 0`
+        # effect (the zero-offset lever has the same signature); it is the port orientation.
+        lever = _pm_elbow(lever = true)
+        result = _pm_check(lever)
+        @test isempty(_pm_errors(result))
+        flat = _pm_flat(lever)
+        @test isempty(flat.diagnostics)
+        lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 0.1)
+        unknowns = ModelingToolkit.unknowns(lowered.model.system)
+        differential = ModelingToolkit.collect_differential_variables(lowered.model.system)
+        algebraic = [u for u in unknowns if !any(isequal(u), differential)]
+        @test length(unknowns) == 14
+        @test length(differential) == 12
+        @test length(algebraic) == 2
+        names = string.(algebraic)
+        @test any(n -> occursin("Elbow/parent.f[2]", n), names)
+        @test any(n -> occursin("Lever/parent.e[2]", n), names)
+        @test !any(isnan, lowered.problem.u0)
+        run, _ = _pm_run(lever; t_end = 0.1, points = 11)
+        @test run.status == "done"
+        println("FixedJoint2D reverse orientation: 14 unknowns / 12 differential, algebraic ",
+            names, "; run ", run.status)
+
+        # (3) The joint's `rx` offset is the index-0 spelling of the same elbow: 12 states.
+        offset = _pm_elbow(lever = false)
+        @test isempty(_pm_errors(_pm_check(offset)))
+        flat = _pm_flat(offset)
+        lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 0.1)
+        @test length(ModelingToolkit.unknowns(lowered.model.system)) == 12
+        @test length(ModelingToolkit.collect_differential_variables(lowered.model.system)) == 12
+        @test !any(d -> d.code == "W201",
+            Compile.post_compile_warnings(flat, lowered.model.system))
+        run, _ = _pm_run(offset; t_end = 0.1, points = 11)
+        @test run.status == "done"
     end
 
     # -----------------------------------------------------------------------------------
@@ -778,6 +1148,35 @@ const _PM_REFS = [
             _pm_conn("c7", "bond", "n8", "shaft", "n2", "drive"))
         broken = _pm_check(bad)
         @test _pm_has(broken, "E102")
+    end
+
+    @testset "FIX-MB-4: prismatic axis at phi = 0.7 and pi/2 (the sin terms are live)" begin
+        # At phi = 0 the `sin(phi)` terms of the pose, the relative twist and the child effort
+        # vanish, so the earlier test never exercised them. A rigid rotation of the axis leaves
+        # the mass-spring period unchanged and puts the pose at (0, q cos phi, q sin phi).
+        BGSim.clear_compile_cache!()
+        analytic = 2 * pi * sqrt(2.0 / 200.0)
+        for phi in (0.7, pi / 2)
+            doc = _pm_prismatic(phi = phi)
+            result = _pm_check(doc)
+            @test isempty(_pm_errors(result))
+            @test !_pm_has(result, "W201")
+            run, dir = _pm_run(doc; t_end = 3.0, points = 3001)
+            @test run.status == "done"
+            @test !_pm_has(run, "W201")
+            data = _pm_columns(dir)
+            q = data["Joint/qout"]
+            @test isapprox(q[1], 0.1; atol = 1e-9)
+            period = _pm_period(data["time"], q)
+            @test isapprox(period, analytic; rtol = 1.0e-3)
+            @test all(isapprox.(data["Joint/pose[2]"], q .* cos(phi); atol = 1e-12))
+            @test all(isapprox.(data["Joint/pose[3]"], q .* sin(phi); atol = 1e-12))
+            @test maximum(abs.(q .* sin(phi))) > 0.05       # the axis really moved
+            @test maximum(abs.(data["Joint/dout"])) <= 1e-8
+            @test maximum(abs.(data["Joint/drout"])) <= 1e-8
+            println("prismatic phi = ", phi, " period = ", period, " (analytic ", analytic,
+                ")")
+        end
     end
 
     @testset "Free2D + PoseIntegrator2D: exact SE(2) screw motion, no pose drift" begin

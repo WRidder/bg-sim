@@ -1150,13 +1150,18 @@ therefore **not** aliased either (`Ground` exists in `stdlib:electrical`, `De`/`
   with `br` in N*m*s/rad and `bx`/`by` in N*s/m; its port power is `sum b f^2 >= 0`.
 * **`MSePlanar`/`MSfPlanar`/`ExternalWrenchPlanar` take three scalar inputs** (`ur/ux/uy`,
   `vr/vx/vy`, `wr/wx/wy`) with their own units, because a `Vec` signal is unit-homogeneous in
-  v1. `ExternalWrenchPlanar` is an effort source (`p.e = w`): on a 1-junction the body feels
-  **`-w`**, the same sign algebra as `GravityPlanar` (whose port effort is `-W_gravity`), so
-  injecting a physical wrench needs `w = -W_ext`.
-* **`TFPlanar`/`MTFPlanar` are diagonal** (`n::Vec{3}`, `u::Vec{3}`, both dimensionless):
-  `a.f[k] = n[k]*b.f[k]`, `b.e[k] = -n[k]*a.e[k]`. A general matrix transformer needs the
-  inverse transpose for its reverse direction (the equation layer has no `inv`), so the
-  matrix case that needs **no** inverse is the gyrator, which is where it lives.
+  v1. `ExternalWrenchPlanar` is an effort source whose inputs are the **physical external
+  wrench** `W_ext`: `p.e = -W_ext` (FIX-MB-4), so on a 1-junction the body feels `+W_ext`
+  (`dP/dt = +W_ext`), the same sign algebra as `GravityPlanar` (whose port effort is
+  `-W_gravity`). Before the fix the block used `p.e = w`, so a body on a 1-junction felt
+  `-W_ext` and the input name was misleading.
+* **`TFPlanar`/`MTFPlanar` are the diagonal variant** (`n::Vec{3}`, `u::Vec{3}`, both
+  dimensionless): `a.f[k] = n[k]*b.f[k]`, `b.e[k] = -n[k]*a.e[k]`. The general matrix transformer
+  is `TFPlanarMat`/`MTFPlanarMat` (FIX-MB-4), a `Mat{3,3}` `M` with `a.f = M*b.f` and
+  `b.e = -M^T*a.e`: power-continuous for every `M` and needing **no inverse** (the earlier
+  claim that the reverse direction needs an inverse transpose was wrong; the continuous pair
+  is the forward flow / dual effort relation). The diagonal variant stays because its modulus
+  is unit-homogeneous (dimensionless), so the per-component unit proof survives.
 * **`GYPlanar`/`MGYPlanar` take a full `Mat{3,3}`** `G` (parameter / signal input):
   `a.e = G*b.f`, `b.e = -G^T*a.f` written component-wise, power-continuous for every `G`; the
   `G` is invertible-free (the block never inverts it). **Unit caveat:** a general planar
@@ -1309,3 +1314,138 @@ solver-heuristic change outside this WP.
 | `test_planar_mechanics.jl` | **407 assertions, ~60 s, green** |
 | `test_multibond_slice.jl` | **6367**, unchanged numbers |
 | `test_library.jl` | **8178** (catalog 160 blocks) |
+
+# FIX-MB-4 - Phase B review fixes (verified 2026-10-28)
+
+The review of J-MB5/J-MB6 left eight findings. The physics that J-MB5/J-MB6 measured is
+unchanged: the J-MB4 slice is **6367** assertions with period 1.418796031834393 s and the same
+1.776e-15 J drift, and the J-MB6 pendulum is 1.4187960322911772 s with ratio 7.24e-12.
+
+## 1. Matrix transformer (`TFPlanarMat` / `MTFPlanarMat`)
+
+The plan requires a matrix TF. The earlier note ("a general matrix transformer needs the
+inverse transpose, so it is not offered") was wrong: with `a.f = M b.f` and `b.e = -M^T a.e`
+the power `a.e . a.f + b.e . b.f = (M^T a.e)^T b.f - (M^T a.e)^T b.f = 0` identically, for
+every `M`, and no inverse is ever written. The two new blocks are the constant `Mat{3,3}`
+parameter and the `Mat{3,3}` signal input; the equations are component-wise
+(`a.f[k] = sum_j M[k,j] b.f[j]`, `b.e[k] = -sum_j M[j,k] a.e[j]`). The diagonal `TFPlanar` /
+`MTFPlanar` stay: their dimensionless `Vec{3}` modulus keeps the per-component unit proof
+alive, while a general `M` is not unit-homogeneous and is declared without a unit (exactly
+like `GYPlanar`; one `Mat` has one unit slot, D-MB10).
+
+Measured: random `M`, `V`, `W` give worst power residual **2.2e-16** (4 random matrices per
+block), and the constitutive relations match to 1e-12. A **frame-neutral adjoint**
+(`TFAdNeutral`, the `TFAd` equations with both ports null) was added for the rigid joint: see
+2. Catalog **163** blocks (160 + the two matrix TFs + the neutral adjoint); `test_library`
+**8311** (M3_REFS carries all three).
+
+## 2. `Revolute2DRigid` parent frame
+
+The composite's `parent` port is frame-neutral now, but that alone is not enough: the internal
+adjoint was `TFAd`, whose `a` side declares `world`, and the frame union-find adopts it through
+the joint's own 0-junction. `TFAdNeutral` leaves both sides null, so the parent group stays
+neutral and one instance attaches to `GroundPlanar` (world) **and** to a link-1 body
+1-junction as an elbow. Measured on the 2-link chain: no `E007`; the rigid rig is a DAE
+(15 compiled unknowns, 4 differential; model.check W201 2, post-compile W201 6, run fails
+`E901` at t = 0 as DEC-MB-2 documents).
+
+## 3. `FixedJoint2D` lever arm: the finding is the port orientation, not `x != 0`
+
+Probe result (run, not guessed): the block is written in the **joint -> fixed -> body** causal
+direction (`parent.f` from `child.f`, `child.e` from `parent.e`). In that direction, which is
+what the X-MB2 arm uses (`Link1`/`Link2` have `x = 0.2` with their **child** on the body
+1-junction), the model is an index-0 ODE: the 2-link arm chain compiles to **12 unknowns /
+12 differential**, no W201, and the tip pose equals the analytic FK to **2.2e-16 m**.
+
+If the fixed joint is instead used as a **frame extension** off a body 1-junction
+(`Lever.parent` on the body junction, `Lever.child -> Elbow.parent`), the compiled model has
+**14 unknowns / 12 differential and exactly two algebraic tearing unknowns**,
+`Elbow/parent.f[2]` and `Lever/parent.e[2]`. This is *not* an `x != 0` effect: the same 14/12
+signature appears with `x = y = 0` and with a `y`-only lever. It is the reverse causal pairing,
+which needs the inverse pairing (`child.f` from `parent.f`) and cannot be written in the same
+block without a second orientation. Under the current compiler (post-FIX-MB-2 sources plus
+FIX-M2-1 algebraic guesses) those two algebraics **do initialise and the run completes**, but
+the model is a DAE rather than the 12-state ODE. The supported spellings are therefore: the
+fixed joint with its child on the body junction (the X-MB2 arm), or the joint's own `rx/ry`
+pivot offset (the `rx` route, 12/12). The test
+`FIX-MB-4: FixedJoint2D lever arm and the reverse-causality limit` asserts both the supported
+12/12 chain and the 14/12 + two-algebraic reverse signature, so J-MB7/J-MB10 know exactly
+what to expect and do not "fix" it by accident.
+
+## 4. The rigid acceptance set (DEC-MB-2's "exactly two")
+
+"Exactly two W201" is not reachable without changing the verified body. Measured on the single
+rigid pendulum: **3 momentum W201** (`Body/inertia/P[1..3]`, all MTK aliases of the twist
+state it parametrises), **3 dummy derivatives** - the two physical pivot translations
+(`Joint/xform/b.f[2]`, `Joint/xform/b.f[3]`) and the first component of the body twist tap
+(`Body/flow/p.f[1]`) - and **2 differential** unknowns; the run fails `E103`. The `DfPlanar`
+tap lives inside `RigidBody2D`, which this WP does not own, so the acceptance is:
+
+> the two joint-frame translations are derivative-causal; MTK reports them plus the body
+> momentum aliases (and the body twist tap), not literally two.
+
+**The `Df` tap is not the cause (probed, FIX-MB-4 follow-up).** A `RigidBody2DRigid` variant
+(`1-junction + I + Coriolis + Gravity`, no `DfPlanar`, no `V` output) was built and measured
+on the same models: the three momentum W201 remain, the third dummy simply moves from
+`Body/flow/p.f[1]` to `Body/coriolis/p.f[1]`, and the single-body model loses its algebraic
+guess (NaN u0 before the `E103`). Reason: `IPlanar` defines `p.f = P/M`, so MTK eliminates the
+momentum in favour of the twist whichever zero-power bond reads it; the aliases are the
+parametrisation of the 3-DOF body by its twist, not an artefact of the tap. The variant was
+reverted (it is a worse model), so the acceptance stays the measured set.
+
+The 2-link rigid chain: 15 unknowns / 4 differential, model.check W201 2, post-compile W201 6
+(3 per inertia), run `E901`. Both sets are asserted in `test_planar_mechanics.jl`.
+
+## 5. `ExternalWrenchPlanar` input is the physical wrench
+
+`p.e = -w` now (was `p.e = w`), so the three inputs `wr/wx/wy` are the physical external
+wrench `W_ext` and a body on a 1-junction feels `+W_ext` (`dP/dt = +W_ext`); the element
+supplies `-W_ext` to the junction, like `GravityPlanar`. Test: `E/p.e = -w`, `D/y = -w`,
+and a free inertia's momentum is `P0 + w t` (was `P0 - w t`).
+
+## 6. Composite starts
+
+A composite start key that does not address a component is **E003** with the hint
+`use `<component>/<variable>``: a bare key (`"P"` on `RigidBody2D`), a junction component
+(`"node/x"`) and an unknown component all report it on the instance path and name the
+composite and the key. The correct `"inertia/P"` still works (the free-body test relies on
+it). `src/compile/instantiate.jl` `_composite_diagram!`, tests in
+`test_planar_mechanics.jl` (`FIX-MB-4: composite starts ... (E003)`).
+
+## 7. Recorded, not changed
+
+* **`Mat` parameter serialization (for C-MB2/W-MB3).** `GYPlanar`'s `G::Mat{3,3}` and the new
+  `TFPlanarMat`/`MTFPlanarMat` matrices serialize through `block_interface` as `type: "Real"`
+  with the matrix text in `default` and **no size**: the contract's `parameterDecl` has no
+  `size` field (only `blockInterface` declarations have one). The editor therefore sees
+  `Real`. A contract change (add `parameterDecl.size`, regenerate pydantic/TS, teach the
+  inspector) is a separate WP; nothing in the equation path is affected.
+* **Native vs composite joint deviation.** The rigid revolute is a composite of the plan 5.2
+  graph; the compliant-pivot joint (and its friction/limit/torsional variants) stays **native**
+  because its child effort and flow are both *sums* (`child.e = fs + S*tau`,
+  `child.f = Ad^-1 parent.f + Vrel`), which no 0/1-junction tree expresses. The native path is
+  the documented deviation, not a missing composite.
+* **Compliance coordinate convention.** `Revolute2DCompliant` implements the **link-side**
+  coordinate: `q` is the link angle (the pose composed from `q` is the geometric link pose),
+  and the torsional spring acts on `q - qrest`; the plan's actuator-side `q - delta` (a `C`
+  state between actuator and link) is **not** implemented because the drive port is a
+  torque/rate port, not a second coordinate. Locked-actuator tests settle at `qrest + tau/k`
+  as the link-side reading predicts.
+
+## Measured (this machine, 2026-10-28)
+
+| item | measured |
+| --- | --- |
+| matrix TF power residual (random `M`, 4 cases per block) | **2.22e-16** worst |
+| time-varying MGYPlanar power residual | **4.20e-16** |
+| time-varying TFAd: power residual / momentum vs independent RK4 | **1.54e-16 / 3.55e-16** |
+| 2-link compliant chain | **12 unknowns / 12 differential**, no W201, tip vs analytic FK **2.22e-16 m** |
+| rigid 2-link chain | 15 unknowns / 4 differential; W201 2 (model.check) + 6 (post-compile); run `E901` |
+| FixedJoint2D reverse orientation | 14 unknowns / 12 differential; algebraic `Elbow/parent.f[2]`, `Lever/parent.e[2]`; run done |
+| single rigid pendulum dummy set | `Joint/xform/b.f[2]`, `[3]`, `Body/flow/p.f[1]` (3), differential 2 |
+| prismatic phi = 0.7 / pi/2 | period **0.6283185298 s** vs analytic 0.6283185307 (1.4e-9 rel) |
+| joint rx/ry offset | period 1.4187960322911772 s (4.05e-11 rel), pose offset exact |
+| `test_planar_primitives.jl` | **124 728** assertions |
+| `test_planar_mechanics.jl` | **546** assertions |
+| `test_library.jl` | **8311** (catalog 163) |
+| `test_multibond_slice.jl` | **6367**, unchanged period/energy |
