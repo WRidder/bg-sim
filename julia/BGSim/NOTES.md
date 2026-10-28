@@ -1449,3 +1449,94 @@ it). `src/compile/instantiate.jl` `_composite_diagram!`, tests in
 | `test_planar_mechanics.jl` | **546** assertions |
 | `test_library.jl` | **8311** (catalog 163) |
 | `test_multibond_slice.jl` | **6367**, unchanged period/energy |
+
+# J-MB7 — the planar mechanics suite (Gate B, verified 2026-10-28)
+
+`test/test_mech_planar.jl` (**259 assertions**) closes Phase B. It drives every model through
+the real pipeline (`parse_model -> flatten -> simulate`, Rodas5P, reltol 1e-9, abstol 1e-11)
+and shares the golden helpers module. No golden fixture was needed: every reference here is
+analytic or an independent integrator, so there is nothing to re-baseline when a number
+improves.
+
+## The double pendulum's independent reference
+
+The two-link reference is the standard Lagrangian written by hand in the test (mass matrix
+`M(q2)`, `C(q,qdot)qdot` with `h = m2 l1 r2 sin q2`, `grad V` for gravity along -y), integrated
+with a classical RK4 at `dt = 1e-5` and checked against `dt = 5e-6` (**5.16e-13** maximum state
+difference, so the reference is converged far below the model errors it measures). The model's
+chain is the J-MB6 `Ground -> J1 -> L1 -> (B1 + J2) -> L2 -> B2` topology: uniform rods
+`l = 0.4 m`, `r = 0.2 m`, `J = m l^2/12`, masses 2.0/1.5 kg, gravity 9.81, release from rest at
+`q1 = -pi/2 + 0.4`, `q2 = 0.6`, with the elbow at `rx = 0.2` in link 1's CoM frame (the supported
+route). The pivot deflections are initialised at the released-from-rest force of the reference
+(`d = -F/kt`, with `F` the force the rigid reference needs at t = 0; the FIX-MB-3 lesson
+generalised to a chain), so the stiff pivot mode is not excited by the release.
+
+| kt (N/m) | trajectory error vs the RK4 reference (rad) | error at t = 1 s | energy drift / swing |
+| --- | --- | --- | --- |
+| 1e6 | **6.253e-4** | 2.732e-4 | 2.148e-5 |
+| 1e7 | **6.248e-5** | 2.733e-5 | 2.148e-6 |
+| 1e8 | **6.247e-6** | 2.733e-6 | 2.148e-7 |
+| 1e9 | **6.247e-7** | 2.733e-7 | 2.149e-8 |
+
+The error is **O(1/kt)**: the measured per-decade ratios are **10.009** (trajectory) and
+**10.001** (at t = 1 s). The test asserts strict decrease, both ratios inside [8, 12], and
+`<= 1e-5` at 1e8; the extra 1e9 run reaches the plan's 1e-6 integrated tolerance (6.25e-7) at a
+12 955-step run. `t = 1 s` is an output grid point; the reference and the run share it exactly.
+
+## The joint's `d` transport uses the child's absolute rate (kinematics fix)
+
+The energy check exposed a real kinematics bug in the compliant joints, not a bookkeeping
+term: `d` lives in the rotating child frame, so its coordinate rate must carry the child's
+**absolute** angular rate `child.f[1]`, not the relative joint rate `qdot`. With a rotating
+parent (the second link) `child.f[1] = parent.f[1] + qdot`, and `V_rel[2:3]` already contains
+the lever term, so the relative rate integrated the wrong displacement. Fixed in
+`Revolute2D`/`Revolute2DCompliant`/`Revolute2DFriction`/`Revolute2DLimit` as
+
+    ddt(d[1]) ~ Vrel[2] + child.f[1] * d[2]
+    ddt(d[2]) ~ Vrel[3] - child.f[1] * d[1]
+
+The power identity is unchanged (`d·(ẑ×d) = 0`). A single-pendulum test cannot see the bug
+(`parent.f[1] = 0` there); the double-pendulum energy check is its regression: the
+deflection-corrected budget (`KE + m g y(nominal + R d) + 1/2 kt |d|^2`, deflections propagated
+through the chain) went from **2.1e-5** of the swing at kt = 1e6 to **1.9e-12**, and it is now
+independent of kt (4.0e-12, 4.8e-12, 4.2e-12, 2.0e-11 at kt = 1e6..1e9), i.e. solver level.
+`test_multibond_slice` (6367) and `test_planar_mechanics` (546) are unchanged and green.
+
+Notes for the reviewer: (a) the *damped* pivot (`bt > 0`) force is not parallel to `δ`, so the
+nominal-adjoint lever adds a second O(δ) term; every model here has `bt = 0`, so it is
+negligible and not "fixed" in this suite.
+
+## `Prismatic2D`'s axial rate carries the parent-rotation transport term
+
+The review of the planar set found the same class of bug as the revolute transport fix, in the
+prismatic joint. The nominal child frame is at `q*n`; the actual child origin is at
+`q*n + d*m`, so `n · V_rel` contains the lever velocity `-omega_parent*d` from the
+perpendicular deflection. The axial rate is therefore
+
+    qdot ~ cos(phi)*V_rel[2] + sin(phi)*V_rel[3] + parent.f[1]*d
+
+Without the last term `q` drifts at `-omega_parent*d` whenever the parent rotates and `d` is
+non-zero even though no axial force acts. The new kinematic regression prescribes the parent
+and child twists with `SfPlanar` (`parent = (omega,0,0)`, child co-rotating at the offset:
+`(omega, -omega*d, 0)`), sets `d = 1e-3` and `kd = 0`, and asserts `max|q| = max|qdot| = 0`
+exactly; the pre-fix equation gives `qdot = -2e-3 m/s`. `Prismatic2D`'s `dr` is still a scalar
+body-fixed component and the nominal adjoint still ignores it, which is a documented
+first-order approximation (exact for `kr -> Inf` and for the static cases the suite runs).
+
+## Measured (this machine, 2026-10-28)
+
+| item | measured |
+| --- | --- |
+| single pendulum period (composite body + compliant joint) | **1.4187960322912 s** vs amplitude-corrected physical 1.4187960322337 (rel **4.05e-11**) and `2π√(L/g)` 1.4185033534 (rel 2.1e-4) |
+| single pendulum energy over 10 s | **1.78e-15 J = 7.24e-12** of the 2.4525e-4 J swing; peak rate 0.04428542 rad/s vs analytic 0.04428543 |
+| double pendulum kt sweep | **6.124e-4 / 6.119e-5 / 6.119e-6 / 6.119e-7 rad**, per-decade ratios **10.008 / 10.001 / 10.000**; 12 states, 12 differential, no dummy derivative |
+| double pendulum energy | **1.9e-12 / 2.2e-12 / 2.0e-12 / 9.3e-12** of the swing at kt = 1e6..1e9, all inside the 1e-6 plan tolerance |
+| prismatic | period **0.6283185298 s** vs analytic 0.6283185307 (1.4e-9); damped + loaded period 0.6314801 vs 0.6314839 (6.0e-6); `q_ss = -0.1000000002` vs `-F/k = -0.1`; drive `Translation`, `e` N, `f` m/s, no E006 |
+| prismatic on a rotating parent | prescribed twists `(2,0,0)` / `(2,-2e-3,0)`, `d = 1e-3`: **max \|q\| = 0, max \|qdot\| = 0** with the transport term (pre-fix `qdot = -2e-3 m/s`) |
+| free body over 10 s | exact SE(2) screw error **1.42e-12** (rotation) / **2.03e-13** (translation); general case theta 1.4e-12, CoM 1.3e-12; world momentum drift px 1.2e-13, py 8.2e-13, H 1.86e-12 |
+| applied wrench | force case `P(t) = W t` to 1e-9, pose to 4e-14; torque case `alpha = 4` exactly, theta(2) = 8.3 |
+| friction | viscous decay `5 -> 0.09172475` vs analytic 0.09172478 (2.5e-7 rel), monotone, `-tau_f w <= 0`; stick creep 1.0986e-3 rad/s = `v_eps atanh(0.4/0.5)`; slide 1.2007 rad/s at 3 s |
+| limits | inside `|tau| = 0` exactly; `tau = kL(q-lower)` outside to 2 %; stop range -9.74..0.011 N*m; elastic rebound to 0.59999995 rad; no W206 |
+| W201 | **0** in `model.check` and **0** in the run for 9 compliant models; rigid variant: 1 model-check W201, 3 post-compile (all `Body/inertia/P[1..3]`), dummies `Joint/xform/b.f[2]`, `[3]`, `Body/flow/p.f[1]`, run E103/E901 |
+| fixed-base pose vs integrated truth over 10 s | **9.22e-8** max (theta 1.7e-15, x 9.2e-8, y 6.6e-8); gravity reads the composed pose exactly (and the integrated pose in `Free2D`) |
+| `test_mech_planar.jl` | **253 assertions, ~58 s, green** |

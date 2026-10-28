@@ -58,7 +58,7 @@
         Vrel[1] ~ child.f[1] - parent.f[1]
         Vrel[2] ~ child.f[2] + q * sin(phi) * parent.f[1] - parent.f[2]
         Vrel[3] ~ child.f[3] - q * cos(phi) * parent.f[1] - parent.f[3]
-        qdot ~ cos(phi) * Vrel[2] + sin(phi) * Vrel[3]
+        qdot ~ cos(phi) * Vrel[2] + sin(phi) * Vrel[3] + parent.f[1] * d
         q ~ q0 + int(qdot, 0.0)
         ddt(dr) ~ Vrel[1]
         ddt(d) ~ -sin(phi) * Vrel[2] + cos(phi) * Vrel[3]
