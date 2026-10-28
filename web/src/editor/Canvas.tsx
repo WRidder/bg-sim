@@ -229,6 +229,7 @@ function CanvasInner() {
   const checkedDomains = useDiagnosticsStore((state) => state.domains);
   const checkedCausality = useDiagnosticsStore((state) => state.causality);
   const checkedUnitFactors = useDiagnosticsStore((state) => state.unitFactors);
+  const checkedFrames = useDiagnosticsStore((state) => state.frames);
 
   useOpenSourceEvents();
 
@@ -264,6 +265,7 @@ function CanvasInner() {
             domains: checkedDomains,
             causality: checkedCausality,
             unitFactors: checkedUnitFactors,
+            frames: checkedFrames,
           }),
     [
       view,
@@ -275,6 +277,7 @@ function CanvasInner() {
       checkedDomains,
       checkedCausality,
       checkedUnitFactors,
+      checkedFrames,
     ],
   );
 

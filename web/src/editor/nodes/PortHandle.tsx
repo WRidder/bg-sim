@@ -16,6 +16,7 @@ import type { DomainName } from "../../contracts/catalog";
 import type { PortDragState } from "../connectionAnalysis";
 import {
   domainColor,
+  multibondStrokes,
   signalColor,
   type PortPosition,
   SIGNAL_ARROW_HALF,
@@ -76,6 +77,9 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
     port.kind === "input" ? "input" : port.kind === "output" ? "output" : "power";
   const vector = port.size.length > 0;
   const generic = isPower && domain === "Generic";
+  // A multibond port stays one logical point (plan 7.2): the port glyph shows
+  // N parallel ticks for the N strokes, and no second port is created.
+  const strokes = isPower ? multibondStrokes(domain) : 1;
   const title = isPower
     ? `${port.name} · power · ${domain}${vector ? ` · ${port.size.join("x")}` : ""}`
     : `${port.name} · ${direction} · ${port.type}${vector ? ` · ${port.size.join("x")}` : ""} · ${SIGNAL_TYPE_LABEL[port.type] ?? ""}`;
@@ -141,12 +145,19 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
       data-type={port.type}
       data-state={state}
       data-side={side}
-      data-glyph={isPower ? "square" : isSignalInput ? "dot" : "arrow"}
+      data-glyph={isPower ? (strokes > 1 ? "multibond" : "square") : isSignalInput ? "dot" : "arrow"}
+      data-strokes={isPower ? strokes : undefined}
       data-arrow-rotation={isPower || isSignalInput ? undefined : rotation}
       title={title}
       aria-label={title}
     >
-      {isPower ? (
+      {isPower && strokes > 1 ? (
+        <span className="port-glyph port-glyph--multibond" aria-hidden="true">
+          {Array.from({ length: strokes }, (_, index) => (
+            <span key={index} className="port-glyph__tick" />
+          ))}
+        </span>
+      ) : isPower ? (
         <span className="port-glyph port-glyph--power" aria-hidden="true" />
       ) : isSignalInput ? (
         <span className="port-glyph port-glyph--in" aria-hidden="true" />

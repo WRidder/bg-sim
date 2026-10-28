@@ -23,6 +23,9 @@ export interface CanvasDecoration {
   domains: Readonly<Record<string, DomainName>>;
   causality: Readonly<Record<string, CausalityStroke>>;
   unitFactors: Readonly<Record<string, number>>;
+  /** Connection id -> instance-qualified frame name (D-MB5); optional so a
+   * caller that only decorates domains still compiles. */
+  frames?: Readonly<Record<string, string>>;
 }
 
 /** The worker's stroke end, or null for an absent/malformed entry. */
@@ -70,14 +73,17 @@ function decoratedEdge(edge: EditorEdge, decoration: CanvasDecoration): EditorEd
     data.kind === "signal"
       ? unitFactorLabel(decoration.unitFactors[edge.id])
       : null;
+  const frame =
+    data.kind === "bond" ? (decoration.frames?.[edge.id] ?? null) : null;
   if (
     domain === data.domain &&
     causalStroke === data.causalStroke &&
-    unitFactor === data.unitFactor
+    unitFactor === data.unitFactor &&
+    frame === data.frame
   ) {
     return edge;
   }
-  return { ...edge, data: { ...data, domain, causalStroke, unitFactor } };}
+  return { ...edge, data: { ...data, domain, causalStroke, unitFactor, frame } };}
 
 /** Apply the worker's visual facts to a built diagram. */
 export function decorateFlow(flow: DiagramFlow, decoration: CanvasDecoration): DiagramFlow {

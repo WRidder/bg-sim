@@ -890,6 +890,234 @@ export function midpoint(a: Point, b: Point): Point {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 
+// ---------------------------------------------------------------- multibonds
+//
+// Visual rule (plan 7.1, D-MB12): the stroke count encodes the model
+// dimension, not the port size. Planar (3 components) draws two strokes,
+// Spatial (6 components) draws three, every scalar domain one.
+
+/** The distance between adjacent strokes of a multibond bundle, in flow px. */
+export const MULTIBOND_GAP = 4.2;
+/** The stroke width of one stroke of a multibond bundle, in px (plan 7.2). */
+export const MULTIBOND_STROKE_WIDTH = 1.5;
+/** The half-arrow size of a multibond stroke: smaller than the scalar 10 px. */
+export const MULTIBOND_ARROW_SIZE = 8;
+/**
+ * The longest miter a waypoint may produce, as a multiple of `distance`.
+ * A very sharp corner would otherwise shoot the bundle far past the element.
+ */
+export const MULTIBOND_MITER_LIMIT = 4;
+
+export type MultibondStrokeCount = 1 | 2 | 3;
+
+/**
+ * How many parallel strokes a bond of `domain` draws (plan 7.1): Planar two,
+ * Spatial three, every other (scalar) domain one. Unknown names are scalar.
+ */
+export function multibondStrokes(domain: DomainName | string | null): MultibondStrokeCount {
+  switch (domain) {
+    case "Planar":
+      return 2;
+    case "Spatial":
+      return 3;
+    default:
+      return 1;
+  }
+}
+
+/** The number of physical components a domain's port carries (Planar 3, Spatial 6). */
+export function multibondComponents(domain: DomainName | string | null): number {
+  switch (domain) {
+    case "Planar":
+      return 3;
+    case "Spatial":
+      return 6;
+    default:
+      return 1;
+  }
+}
+
+/**
+ * The per-stroke offsets of a bundle (plan 7.2): `[-gap/2, +gap/2]` for two
+ * strokes, `[-gap, 0, +gap]` for three, `[0]` for the scalar centre path.
+ */
+export function multibondOffsets(strokes: MultibondStrokeCount): number[] {
+  if (strokes === 2) {
+    return [-MULTIBOND_GAP / 2, MULTIBOND_GAP / 2];
+  }
+  if (strokes === 3) {
+    return [-MULTIBOND_GAP, 0, MULTIBOND_GAP];
+  }
+  return [0];
+}
+
+/** The half width of a bundle: the outer stroke's offset plus half its stroke. */
+export function multibondBundleHalf(strokes: MultibondStrokeCount): number {
+  const offsets = multibondOffsets(strokes);
+  return Math.max(...offsets.map(Math.abs)) + MULTIBOND_STROKE_WIDTH / 2;
+}
+
+/** Consecutive points closer than this are one point, so no normal is undefined. */
+const MIN_SEGMENT = 1e-6;
+
+function finite(point: Point): boolean {
+  return Number.isFinite(point.x) && Number.isFinite(point.y);
+}
+
+function copy(point: Point): Point {
+  return { x: point.x, y: point.y };
+}
+
+function dedupe(points: readonly Point[]): Point[] {
+  const result: Point[] = [];
+  for (const point of points) {
+    if (!finite(point)) {
+      return [];
+    }
+    const last = result[result.length - 1];
+    if (last === undefined || Math.hypot(point.x - last.x, point.y - last.y) >= MIN_SEGMENT) {
+      result.push(copy(point));
+    }
+  }
+  return result;
+}
+
+/**
+ * Offset a routed polyline by `distance` along each segment's normal, mitering
+ * at the waypoints (plan 7.2).
+ *
+ * A positive `distance` moves each stroke to the **left of the direction of
+ * travel** in flow coordinates (x right, y down): a segment travelling +x is
+ * offset towards -y (up on the canvas); a segment travelling +y is offset
+ * towards +x. A negative distance moves it to the right.
+ *
+ * Endpoints use the terminal segment's normal. Interior waypoints take the
+ * intersection of the two offset lines, i.e. they move along the average of
+ * the adjacent unit normals, and the miter length is clamped to
+ * `MULTIBOND_MITER_LIMIT * |distance|` so a hairpin cannot spike. Degenerate
+ * input (no points, zero-length segments, non-finite coordinates) yields a
+ * finite result: the repeated points collapse, and a single point stays a
+ * single point.
+ *
+ * A straight or collinear polyline keeps its exact length (to floating point);
+ * at a corner the miter trims the outside segment and extends the inside one,
+ * which is the normal length change of a parallel offset.
+ */
+export function offsetPolyline(points: readonly Point[], distance: number): Point[] {
+  const path = dedupe(points);
+  if (path.length === 0) {
+    return [];
+  }
+  if (path.length === 1 || distance === 0) {
+    return path;
+  }
+  if (!Number.isFinite(distance)) {
+    return [];
+  }
+
+  const normals: Point[] = [];
+  for (let index = 0; index < path.length - 1; index += 1) {
+    const from = path[index];
+    const to = path[index + 1];
+    if (from === undefined || to === undefined) {
+      continue;
+    }
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const length = Math.hypot(dx, dy);
+    // Left of travel in flow coordinates (x right, y down): (dy, -dx).
+    normals.push({ x: dy / length, y: -dx / length });
+  }
+
+  const offsets: Point[] = [];
+  const first = path[0];
+  const firstNormal = normals[0];
+  if (first === undefined || firstNormal === undefined) {
+    return path;
+  }
+  offsets.push({
+    x: first.x + firstNormal.x * distance,
+    y: first.y + firstNormal.y * distance,
+  });
+
+  for (let index = 1; index < path.length - 1; index += 1) {
+    const corner = path[index];
+    const before = normals[index - 1];
+    const after = normals[index];
+    if (corner === undefined || before === undefined || after === undefined) {
+      continue;
+    }
+    const sum = { x: before.x + after.x, y: before.y + after.y };
+    const length = Math.hypot(sum.x, sum.y);
+    if (length < MIN_SEGMENT) {
+      // A 180 degree reversal: both offset lines are parallel and distinct, so
+      // there is no miter; use the incoming normal to stay finite.
+      offsets.push({
+        x: corner.x + before.x * distance,
+        y: corner.y + before.y * distance,
+      });
+      continue;
+    }
+    const bisector = { x: sum.x / length, y: sum.y / length };
+    // The miter point is d / cos(half angle) along the bisector; `cosine` is
+    // that half-angle cosine, which is also the projection on either normal.
+    const cosine = bisector.x * before.x + bisector.y * before.y;
+    const raw = Math.abs(cosine) < 1e-9 ? Number.POSITIVE_INFINITY : distance / cosine;
+    const limit = MULTIBOND_MITER_LIMIT * Math.abs(distance);
+    const miter = Math.max(-limit, Math.min(limit, raw));
+    offsets.push({
+      x: corner.x + bisector.x * miter,
+      y: corner.y + bisector.y * miter,
+    });
+  }
+
+  const last = path[path.length - 1];
+  const lastNormal = normals[normals.length - 1];
+  if (last === undefined || lastNormal === undefined) {
+    return path;
+  }
+  offsets.push({
+    x: last.x + lastNormal.x * distance,
+    y: last.y + lastNormal.y * distance,
+  });
+  return offsets;
+}
+
+/** The SVG `d` of a bundle stroke: a polyline through the offset points. */
+export function multibondPath(points: readonly Point[], distance: number): string {
+  return offsetPolyline(points, distance)
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+    .join(" ");
+}
+
+export interface BundleCausalBar {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+/**
+ * One causal bar across a whole bundle (plan 7.2), perpendicular to the bond at
+ * its effort-in end. `to` is that end and `halfSpan` the bundle's half width;
+ * the bar spans `2 * (halfSpan + 3)`, so it clears the outer strokes.
+ */
+export function bundleCausalBar(
+  from: Point,
+  to: Point,
+  halfSpan: number,
+): BundleCausalBar {
+  const unit = unitVector(from, to);
+  const normal = { x: -unit.y, y: unit.x };
+  const half = Math.abs(halfSpan) + 3;
+  return {
+    x1: to.x + normal.x * half,
+    y1: to.y + normal.y * half,
+    x2: to.x - normal.x * half,
+    y2: to.y - normal.y * half,
+  };
+}
+
 // -------------------------------------------------------------------- colours
 
 export function domainColor(domain: DomainName): string {

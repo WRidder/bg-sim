@@ -11,6 +11,7 @@
 import { BaseEdge, EdgeLabelRenderer, useReactFlow, type Edge, type EdgeProps } from "@xyflow/react";
 import {
   useRef,
+  useState,
   useSyncExternalStore,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -21,13 +22,20 @@ import type { ConnectionKind } from "../../contracts/model";
 import { useDocumentStore } from "../../state/documentStore";
 import {
   arrowHeadPath,
+  bundleCausalBar,
   domainColor,
   halfArrowPath,
   hubPath,
   midpoint,
   offsetPoint,
+  offsetPolyline,
   orthogonalPath,
   cornerAngleMarker,
+  multibondBundleHalf,
+  multibondComponents,
+  multibondOffsets,
+  multibondPath,
+  multibondStrokes,
   rightAngleMarker,
   routedPath,
   signalColor,
@@ -35,6 +43,8 @@ import {
   SIGNAL_ARROW_SIZE,
   SIGNAL_DOT_RADIUS,
   snapRouteVertex,
+  MULTIBOND_ARROW_SIZE,
+  MULTIBOND_STROKE_WIDTH,
   type Anchor,
   type Point,
   type Side,
@@ -56,6 +66,8 @@ export interface EditorEdgeData extends Record<string, unknown> {
   unitFactor: string | null;
   /** Where the causal stroke sits, when a model check provides it. */
   causalStroke: "from" | "to" | null;
+  /** The instance-qualified reference frame of the bond's ports, if named. */
+  frame: string | null;
   /** Endpoint port names the node no longer exposes (plan 7.7, E101). */
   missingPorts: string[];
   /** Whether routing vertices follow the canvas snap preference. */
@@ -109,6 +121,76 @@ function labelPosition(data: EditorEdgeData): Point {
   }
   const middle = midpoint(a.point, b.point);
   return { x: middle.x, y: middle.y - 10 };
+}
+
+/** How far above the label chip the frame pill sits, so the two never overlap. */
+export const FRAME_BADGE_OFFSET = 26;
+
+/** Where the frame pill would sit: above the bond's label, on the centre line. */
+export function frameBadgePosition(data: EditorEdgeData): Point {
+  const point = labelPosition(data);
+  return { x: point.x, y: point.y - FRAME_BADGE_OFFSET };
+}
+
+/**
+ * Hover state of one edge. The frame badge is shown on hover or selection
+ * (plan 7.2); pointer handlers go on the edge group, whose transparent hit
+ * path the pointer actually crosses.
+ */
+function useEdgeHover(): {
+  hovered: boolean;
+  hoverProps: {
+    onMouseEnter: () => void;
+    onMouseLeave: () => void;
+  };
+} {
+  const [hovered, setHovered] = useState(false);
+  return {
+    hovered,
+    hoverProps: {
+      onMouseEnter: () => {
+        setHovered(true);
+      },
+      onMouseLeave: () => {
+        setHovered(false);
+      },
+    },
+  };
+}
+
+/**
+ * The `frame: <name>` pill of a bond that carries frame metadata (plan 7.2,
+ * D-MB5). It is rendered in the edge label layer above the instance label and
+ * the unit badge, and it is text, not colour, so it does not rely on the theme.
+ */
+function FrameBadge({
+  id,
+  data,
+  visible,
+}: {
+  id: string;
+  data: EditorEdgeData;
+  visible: boolean;
+}) {
+  if (!visible || data.frame === null) {
+    return null;
+  }
+  const point = frameBadgePosition(data);
+  return (
+    <EdgeLabelRenderer>
+      <div
+        className="editor-edge__frame"
+        data-testid={`frame-badge-${id}`}
+        data-frame={data.frame}
+        style={{
+          transform: `translate(-50%, -50%) translate(${point.x}px, ${point.y}px)`,
+        }}
+        title={`Reference frame ${data.frame}`}
+      >
+        frame: {data.frame}
+      </div>
+    </EdgeLabelRenderer>
+  );
 }
 
 function EdgeLabel({ id, data }: { id: string; data: EditorEdgeData }) {
@@ -342,10 +424,145 @@ function RouteHandles({
   );
 }
 
-export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
-  if (data === undefined) {
-    return null;
-  }
+/**
+ * A multibond bond (plan 7.1/7.2, D-MB12): two parallel strokes for Planar,
+ * three for Spatial, one half arrow per stroke at the `to` end, **one** causal
+ * bar across the bundle, one selection halo around the centre path and one
+ * frame pill above the label.
+ */
+export function MultiBond({
+  id,
+  data,
+  selected,
+}: {
+  id: string;
+  data: EditorEdgeData;
+  selected: boolean | undefined;
+}) {
+  const { hovered, hoverProps } = useEdgeHover();
+  const { a, b } = anchors(data);
+  const route = data.route;
+  const points: Point[] = [a.point, ...route, b.point];
+  const strokes = multibondStrokes(data.domain);
+  const offsets = multibondOffsets(strokes);
+  const colour = domainColor(data.domain);
+  const broken = data.missingPorts.length > 0;
+  const bundleHalf = multibondBundleHalf(strokes);
+  const centrePath = multibondPath(points, 0);
+  const strokeAt = data.causalStroke;
+  const barFrom =
+    strokeAt === "to"
+      ? route.length > 0
+        ? route[route.length - 1] ?? a.point
+        : a.point
+      : route.length > 0
+        ? route[0] ?? b.point
+        : b.point;
+  const barTo = strokeAt === "to" ? b.point : a.point;
+  const bar = strokeAt === null ? null : bundleCausalBar(barFrom, barTo, bundleHalf);
+  const ariaLabel = `${data.domain} multibond, ${multibondComponents(data.domain)} components, ${strokes} strokes`;
+
+  return (
+    <g
+      className={`editor-edge editor-edge--bond editor-edge--multibond${selected ? " is-selected" : ""}${broken ? " is-port-missing" : ""}`}
+      data-testid={`edge-${id}`}
+      data-kind="bond"
+      data-domain={data.domain}
+      data-bgsim-client-domain={data.baseDomain}
+      data-port-missing={data.missingPorts.join(",")}
+      data-multibond-strokes={String(strokes)}
+      role="group"
+      aria-label={ariaLabel}
+      {...hoverProps}
+    >
+      {selected ? <Halo path={centrePath} /> : null}
+      {broken ? (
+        <MissingPorts
+          id={id}
+          path={centrePath}
+          names={data.missingPorts}
+          point={midpoint(a.point, b.point)}
+        />
+      ) : null}
+      {/* The visible strokes carry the colour; BaseEdge supplies only the hit area. */}
+      <BaseEdge
+        id={id}
+        path={centrePath}
+        interactionWidth={18 + 2 * bundleHalf}
+        style={{
+          stroke: "transparent",
+          strokeWidth: MULTIBOND_STROKE_WIDTH,
+          fill: "none",
+        }}
+      />
+      {offsets.map((offset, index) => {
+        const offsetPoints = offsetPolyline(points, offset);
+        const tip = offsetPoints[offsetPoints.length - 1] ?? b.point;
+        const from = offsetPoints[offsetPoints.length - 2] ?? a.point;
+        return (
+          <g key={`${id}-stroke-${index}`} className="editor-edge__multibond">
+            <path
+              className="editor-edge__multibond-stroke"
+              data-stroke-index={index}
+              data-offset={offset}
+              d={multibondPath(points, offset)}
+              stroke={colour}
+              strokeWidth={MULTIBOND_STROKE_WIDTH}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              className="editor-edge__half-arrow editor-edge__multibond-arrow"
+              data-stroke-index={index}
+              d={halfArrowPath(from, tip, MULTIBOND_ARROW_SIZE)}
+              stroke={colour}
+              strokeWidth={MULTIBOND_STROKE_WIDTH}
+              fill="none"
+              strokeLinecap="round"
+            />
+          </g>
+        );
+      })}
+      {bar !== null ? (
+        <line
+          className="editor-edge__causal editor-edge__causal--bundle"
+          data-testid={`causal-stroke-${id}`}
+          data-stroke-at={strokeAt}
+          x1={bar.x1}
+          y1={bar.y1}
+          x2={bar.x2}
+          y2={bar.y2}
+          stroke={colour}
+          strokeWidth={2.6}
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+      ) : null}
+      <EdgeLabel id={id} data={data} />
+      <FrameBadge id={id} data={data} visible={hovered || selected === true} />
+      <RouteHandles
+        id={id}
+        route={route}
+        from={a.point}
+        to={b.point}
+        selected={selected}
+        snap={data.snap}
+      />
+    </g>
+  );
+}
+
+function BondEdgeBody({
+  id,
+  data,
+  selected,
+}: {
+  id: string;
+  data: EditorEdgeData;
+  selected: boolean | undefined;
+}) {
+  const { hovered, hoverProps } = useEdgeHover();
   const { a, b } = anchors(data);
   const route = data.route;
   const path =
@@ -365,6 +582,7 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
       data-domain={data.domain}
       data-bgsim-client-domain={data.baseDomain}
       data-port-missing={data.missingPorts.join(",")}
+      {...hoverProps}
     >
       {selected ? <Halo path={path} /> : null}
       {broken ? <MissingPorts id={id} path={path} names={data.missingPorts} point={midpoint(a.point, b.point)} /> : null}
@@ -402,6 +620,7 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
         />
       ) : null}
       <EdgeLabel id={id} data={data} />
+      <FrameBadge id={id} data={data} visible={hovered || selected === true} />
       <RouteHandles
         id={id}
         route={route}
@@ -412,6 +631,20 @@ export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
       />
     </g>
   );
+}
+
+/**
+ * A power bond: one stroke for a scalar domain, a `MultiBond` bundle for a
+ * Planar or Spatial domain (plan 7.1). The scalar rendering is unchanged.
+ */
+export function BondEdge({ id, data, selected }: EdgeProps<EditorEdge>) {
+  if (data === undefined) {
+    return null;
+  }
+  if (multibondStrokes(data.domain) > 1) {
+    return <MultiBond id={id} data={data} selected={selected} />;
+  }
+  return <BondEdgeBody id={id} data={data} selected={selected} />;
 }
 
 export function WireEdge({ id, data, selected }: EdgeProps<EditorEdge>) {

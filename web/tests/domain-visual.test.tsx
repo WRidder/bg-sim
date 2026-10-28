@@ -272,18 +272,26 @@ describe("canvas legend", () => {
     );
   });
 
-  it("carries the port glyph, causal-stroke and unit-badge keys", () => {
+  it("carries the port glyph, causal-stroke, unit-badge and multibond keys", () => {
     expect(LEGEND_KEYS.map((entry) => entry.id)).toEqual([
       "power",
       "in",
       "out",
       "causal",
       "unit",
+      "multibond2d",
+      "multibond3d",
     ]);
     expect(LEGEND_KEYS.find((entry) => entry.id === "causal")?.description).toContain(
       "effort is the input",
     );
     expect(LEGEND_KEYS.find((entry) => entry.id === "unit")?.description).toContain("0.001");
+    expect(LEGEND_KEYS.find((entry) => entry.id === "multibond2d")?.label).toBe(
+      "2D multibond (2 strokes)",
+    );
+    expect(LEGEND_KEYS.find((entry) => entry.id === "multibond3d")?.label).toBe(
+      "3D multibond (3 strokes)",
+    );
   });
 
   it("renders an accessible group with every key", () => {
@@ -297,5 +305,18 @@ describe("canvas legend", () => {
     expect(within(legend).getByTestId("legend-power").textContent).toContain("power");
     expect(within(legend).getByTestId("legend-in").textContent).toContain("in");
     expect(within(legend).getByTestId("legend-out").textContent).toContain("out");
+    // The multibond keys name the stroke count in text, not by colour (7.4).
+    expect(within(legend).getByTestId("legend-multibond2d").textContent).toContain(
+      "2D multibond (2 strokes)",
+    );
+    expect(within(legend).getByTestId("legend-multibond3d").textContent).toContain(
+      "3D multibond (3 strokes)",
+    );
+    expect(within(legend).getByTestId("legend-domain-Planar").textContent).toContain("Planar");
+    expect(within(legend).getByTestId("legend-domain-Spatial").textContent).toContain("Spatial");
+    // Every key is keyboard reachable (plan 7.4 accessibility).
+    for (const item of legend.querySelectorAll(".editor-legend__item")) {
+      expect(item.getAttribute("tabindex"), item.textContent ?? "").toBe("0");
+    }
   });
 });

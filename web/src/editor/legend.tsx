@@ -19,7 +19,7 @@ export interface LegendDomain {
 }
 
 export interface LegendKey {
-  id: "power" | "in" | "out" | "causal" | "unit";
+  id: "power" | "in" | "out" | "causal" | "unit" | "multibond2d" | "multibond3d";
   label: string;
   description: string;
 }
@@ -72,7 +72,37 @@ export const LEGEND_KEYS: readonly LegendKey[] = [
     description:
       "Unit factor badge: the compiler scales this signal, here by 0.001 (mm to m).",
   },
+  {
+    id: "multibond2d",
+    label: "2D multibond (2 strokes)",
+    description:
+      "Planar power bond: two parallel strokes, one causal bar, three components (torque and two forces).",
+  },
+  {
+    id: "multibond3d",
+    label: "3D multibond (3 strokes)",
+    description:
+      "Spatial power bond: three parallel strokes, one causal bar, six components (torque and force triads).",
+  },
 ];
+
+/** A 2- or 3-stroke key: the same parallel lines the canvas draws. */
+function BundleGlyph({ strokes, token }: { strokes: 2 | 3; token: string }) {
+  const ys = strokes === 2 ? [3.5, 8.5] : [2, 6, 10];
+  return (
+    <svg
+      className="editor-legend__bundle"
+      width="20"
+      height="12"
+      viewBox="0 0 20 12"
+      aria-hidden="true"
+    >
+      {ys.map((y) => (
+        <line key={y} x1="0" y1={y} x2="20" y2={y} stroke={token} strokeWidth="1.5" />
+      ))}
+    </svg>
+  );
+}
 
 function KeyGlyph({ id }: { id: LegendKey["id"] }) {
   switch (id) {
@@ -101,6 +131,10 @@ function KeyGlyph({ id }: { id: LegendKey["id"] }) {
           ×0.001
         </span>
       );
+    case "multibond2d":
+      return <BundleGlyph strokes={2} token="var(--domain-planar)" />;
+    case "multibond3d":
+      return <BundleGlyph strokes={3} token="var(--domain-spatial)" />;
     default:
       return null;
   }
@@ -122,6 +156,8 @@ export function CanvasLegend() {
           key={entry.id}
           data-testid={`legend-domain-${entry.id}`}
           title={`${entry.label} domain`}
+          aria-label={`${entry.label} domain`}
+          tabIndex={0}
         >
           <span
             className="editor-legend__swatch"
@@ -138,6 +174,8 @@ export function CanvasLegend() {
           key={entry.id}
           data-testid={`legend-${entry.id}`}
           title={entry.description}
+          aria-label={`${entry.label}: ${entry.description}`}
+          tabIndex={0}
         >
           <KeyGlyph id={entry.id} />
           {entry.label}

@@ -53,6 +53,8 @@ export interface DiagnosticsState {
   causality: Record<string, CausalityStroke>;
   /** Connection id -> unit conversion factor. */
   unitFactors: Record<string, number>;
+  /** Connection id -> instance-qualified reference frame (D-MB5). */
+  frames: Record<string, string>;
   signals: RunSignal[];
   stats: ModelCheckStats | null;
   /** The document revision the shown result belongs to, or null. */
@@ -107,6 +109,7 @@ function initialState(): Omit<DiagnosticsState, keyof DiagnosticsActions> {
     domains: {},
     causality: {},
     unitFactors: {},
+    frames: {},
     signals: [],
     stats: null,
     checkedRevision: null,
@@ -145,6 +148,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>()((set) => ({
       // J2.4 fills this in; an absent map must not break the panel or canvas.
       causality: result.causality ?? {},
       unitFactors: result.unitFactors ?? {},
+      frames: result.frames ?? {},
       signals: result.signals ?? [],
       stats: result.stats ?? null,
       checkedRevision: revision,

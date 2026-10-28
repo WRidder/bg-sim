@@ -319,6 +319,7 @@ export function buildDiagram(
       label: connection.label ?? null,
       unitFactor: null,
       causalStroke: null,
+      frame: null,
       missingPorts,
       snap,
     };

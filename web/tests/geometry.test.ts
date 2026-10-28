@@ -351,7 +351,7 @@ describe("xyflow node types", () => {
             name: "shaft",
             kind: "power",
             domain: "Rotation",
-            size: [],
+            size: [1],
             node: "n2",
             port: "a",
           },

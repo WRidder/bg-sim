@@ -8,6 +8,64 @@
   pointer-events: none;
 }
 
+/* A multibond bundle (plan 7.2): the strokes are their own paths, so the
+ * group and the paths never capture the pointer away from BaseEdge's hit area.
+ * One causal bar spans the whole bundle, not one per stroke. */
+.editor-edge__multibond {
+  pointer-events: none;
+}
+
+.editor-edge__multibond-stroke {
+  shape-rendering: geometricPrecision;
+}
+
+.editor-edge__causal--bundle {
+  pointer-events: none;
+}
+
+/* The frame badge of a bond (plan 7.2, D-MB5). It sits above the instance
+ * label and the unit badge; the "frame:" text, not the colour, carries it. */
+.editor-edge__frame {
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 15px;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  background: var(--color-surface-raised);
+  border: var(--border-width) dashed var(--color-border-strong);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+/* A multibond port is one logical point with N parallel ticks (plan 7.2), not
+ * N ports. Bond-graph letters and Generic ports keep the bond as the marker. */
+.port-glyph--multibond {
+  display: flex;
+  flex: none;
+  gap: 1.5px;
+  width: 9px;
+  height: 9px;
+}
+
+.port-glyph--multibond .port-glyph__tick {
+  flex: 1 1 0;
+  background: currentColor;
+  border-radius: 0.5px;
+}
+
+.bond-node .port-glyph--multibond {
+  display: none;
+}
+
+/* The legend keys are focusable (Tab) so their descriptions are reachable
+ * without a pointer; the ring is the theme focus token. */
+.editor-legend__item:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 .editor-edge__factor {
   display: inline-flex;
   align-items: center;
