@@ -1,0 +1,711 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "balancer-free",
+  "$comment": "Gravity OFF variant of the same balancer (g0 = 0 in both bodies and in the controller): the total angular momentum about the pivot, H = 0.257 * theta_dot + 0.002 * wheel_rate, must stay constant while the motor exchanges momentum between the body and the wheel. The wheel axis is on the far side of the body, so the momentum check is the plan 9.2 reaction-wheel identity.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Ground",
+        "block": {
+          "ref": "stdlib:multibond/GroundPlanar"
+        },
+        "position": {
+          "x": 80,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Pivot",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 260,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.0",
+          "ry": "0.0",
+          "kt": "1000000000.0",
+          "bt": "5000.0",
+          "k": "0.0",
+          "b": "0.0",
+          "q0": "0.0",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "d": "[0.0, -0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "LinkB",
+        "block": {
+          "ref": "stdlib:planar/FixedJoint2D"
+        },
+        "position": {
+          "x": 440,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.0",
+          "y": "0.3",
+          "theta": "1.5707963267948966"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "BodyJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 620,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Body",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 800,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "1.5",
+          "J": "0.02",
+          "g0": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "WheelJ",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 800,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.2",
+          "ry": "0.0",
+          "kt": "1000000000.0",
+          "bt": "5000.0",
+          "k": "0.0",
+          "b": "0.0",
+          "q0": "0.0",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "d": "[0.0, -0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Wheel",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 980,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.4",
+          "J": "0.002",
+          "g0": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.06, 0.0, 0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "PoseJ1",
+        "block": {
+          "ref": "stdlib:planar/JointPose2D"
+        },
+        "position": {
+          "x": 260,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.0",
+          "ry": "0.0",
+          "theta0": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "CoMB",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 260,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.0",
+          "y": "0.3",
+          "theta": "1.5707963267948966"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "PoseB",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 440,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "PoseWrel",
+        "block": {
+          "ref": "stdlib:planar/JointPose2D"
+        },
+        "position": {
+          "x": 620,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.2",
+          "ry": "0.0",
+          "theta0": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "PoseW",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 800,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n40",
+        "name": "Motor",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 260,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n41",
+        "name": "PivotSe",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 260,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n42",
+        "name": "Ref",
+        "block": {
+          "ref": "stdlib:sources/Pulse"
+        },
+        "position": {
+          "x": 80,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "amplitude": "0.012",
+          "period": "4.0",
+          "duty": "0.25",
+          "t_start": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n44",
+        "name": "Ctrl",
+        "block": {
+          "ref": "project:Balancer"
+        },
+        "position": {
+          "x": 440,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "g0": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c01",
+        "kind": "bond",
+        "from": {
+          "node": "n01",
+          "port": "p"
+        },
+        "to": {
+          "node": "n02",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c02",
+        "kind": "bond",
+        "from": {
+          "node": "n02",
+          "port": "child"
+        },
+        "to": {
+          "node": "n03",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c03",
+        "kind": "bond",
+        "from": {
+          "node": "n03",
+          "port": "child"
+        },
+        "to": {
+          "node": "n04"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c04",
+        "kind": "bond",
+        "from": {
+          "node": "n05",
+          "port": "p"
+        },
+        "to": {
+          "node": "n04"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c05",
+        "kind": "bond",
+        "from": {
+          "node": "n07",
+          "port": "parent"
+        },
+        "to": {
+          "node": "n04"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c06",
+        "kind": "bond",
+        "from": {
+          "node": "n07",
+          "port": "child"
+        },
+        "to": {
+          "node": "n09",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n20",
+          "port": "q"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "g"
+        },
+        "to": {
+          "node": "n22",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "g"
+        },
+        "to": {
+          "node": "n22",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "g"
+        },
+        "to": {
+          "node": "n05",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": {
+          "node": "n07",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n25",
+          "port": "q"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "g"
+        },
+        "to": {
+          "node": "n26",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s07",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "g"
+        },
+        "to": {
+          "node": "n26",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s08",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "g"
+        },
+        "to": {
+          "node": "n09",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c10",
+        "kind": "bond",
+        "from": {
+          "node": "n40",
+          "port": "p"
+        },
+        "to": {
+          "node": "n07",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c11",
+        "kind": "bond",
+        "from": {
+          "node": "n41",
+          "port": "p"
+        },
+        "to": {
+          "node": "n02",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s20",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n44",
+          "port": "theta"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s21",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n44",
+          "port": "thetadot"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s22",
+        "kind": "signal",
+        "from": {
+          "node": "n42",
+          "port": "y"
+        },
+        "to": {
+          "node": "n44",
+          "port": "ref"
+        },
+        "route": [],
+        "label": "0.012 rad pulse"
+      },
+      {
+        "id": "s23",
+        "kind": "signal",
+        "from": {
+          "node": "n44",
+          "port": "tau"
+        },
+        "to": {
+          "node": "n40",
+          "port": "u"
+        },
+        "route": [],
+        "label": "wheel torque"
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 3.0,
+    "solver": "auto",
+    "reltol": 1e-09,
+    "abstol": 1e-11,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 3001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Body angle (upright = 0) and reference",
+      "signals": [
+        "Pivot/qout",
+        "Ctrl/ref"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Wheel speed (joint rate)",
+      "signals": [
+        "WheelJ/qdout"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Motor torque and total angular momentum",
+      "signals": [
+        "Motor/p.e",
+        "Pivot/qdout",
+        "WheelJ/qdout"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

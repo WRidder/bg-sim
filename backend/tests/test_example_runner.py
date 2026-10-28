@@ -1,11 +1,15 @@
-"""The example runner's ``fft_peak``, ``period`` and ``energy`` checks.
+"""The example runner's ``fft_peak``, ``period``, ``energy``, ``invariant`` and
+``planar_fk`` checks.
 
 ``examples/run_checks.py`` is an inline ``uv`` script, not an installed module, so
 the tests load it by path.  The spectral helper is checked against synthetic
 signals with a known frequency; the check wrappers get a fake ``Run`` and the
 real ``Report``, so a PASS/FAIL line and its tolerance are exercised without a
 worker, a backend or a run file.  The energy cases use a synthetic planar
-pendulum with an exactly constant budget (and a drifting one for the failure).
+pendulum with an exactly constant budget (and a drifting one for the failure);
+the multi-body form uses a synthetic 2-link arm whose total energy is constant by
+construction, the invariant a synthetic wheel momentum, and ``planar_fk`` a
+synthetic arm whose tip is the analytic forward kinematics.
 """
 
 from __future__ import annotations
@@ -262,5 +266,392 @@ def test_energy_check_rejects_bad_parameters(runner):
     ):
         report = runner.Report()
         runner._energy_check(report, "project", "pendulum", run, broken)
+        assert report.checks == 1 and report.failures == 1, broken
+
+
+# ------------------------------------------------------------- multi-body energy
+
+
+def _arm_run(*, drift: float = 0.0):
+    """A synthetic 2-link arm whose multi-body budget is constant by construction.
+
+    Both links rotate as one rigid body about the shoulder (``q2 = 0``), so the
+    kinetic energy is ``1/2 (J1 + J2) omega^2`` and the potential is
+    ``(m1 lc1 + m2 (lc1 + lc2)) g sin(q1)``; ``omega`` is chosen from the budget
+    ``E = g S`` (its own maximum), so ``E`` is constant to rounding.  ``drift``
+    scales the momenta to give the failing case a real energy drift.
+    """
+    mass1, inertia1, lc1 = 2.0, 0.02666666666666667, 0.2
+    mass2, inertia2, lc2 = 1.5, 0.015, 0.2
+    gravity, rate, inertia = 9.81, 0.8, inertia1 + inertia2
+    moment = mass1 * lc1 + mass2 * (lc1 + lc2)
+    time = np.linspace(0.0, 3.0, 3001)
+    q1 = rate * time
+    ceiling = gravity * moment
+    speed = np.sqrt(2.0 * np.maximum(ceiling - gravity * moment * np.sin(q1), 0.0) / inertia)
+    factor = 1.0 + drift * time / time[-1]
+    signals = {
+        "Joint1/qout": q1,
+        "Joint2/qout": np.zeros_like(time),
+        "Joint1/dout[1]": np.zeros_like(time),
+        "Joint1/dout[2]": np.zeros_like(time),
+        "Joint2/dout[1]": np.zeros_like(time),
+        "Joint2/dout[2]": np.zeros_like(time),
+        "PoseJ2/g[1]": q1,
+        "PoseB1/g[3]": lc1 * np.sin(q1),
+        "PoseB2/g[3]": (lc1 + lc2) * np.sin(q1),
+        "Body1/inertia/P[1]": inertia1 * speed * factor,
+        "Body1/inertia/P[2]": np.zeros_like(time),
+        "Body1/inertia/P[3]": np.zeros_like(time),
+        "Body2/inertia/P[1]": inertia2 * speed * factor,
+        "Body2/inertia/P[2]": np.zeros_like(time),
+        "Body2/inertia/P[3]": np.zeros_like(time),
+    }
+    run = SimpleNamespace(model="arm-free", run_id="0" * 12, manifest={},
+                          time=time, signals=signals)
+    return run, ceiling
+
+
+def _multi_body_entry(**overrides):
+    entry = {
+        "kind": "energy",
+        "g0": 9.81,
+        "bodies": [
+            {
+                "p": ["Body1/inertia/P[1]", "Body1/inertia/P[2]", "Body1/inertia/P[3]"],
+                "J": 0.02666666666666667,
+                "m": 2.0,
+                "pose": "PoseB1/g[3]",
+                "corrections": [
+                    {"q": "Joint1/qout", "d": ["Joint1/dout[1]", "Joint1/dout[2]"]}
+                ],
+            },
+            {
+                "p": ["Body2/inertia/P[1]", "Body2/inertia/P[2]", "Body2/inertia/P[3]"],
+                "J": 0.015,
+                "m": 1.5,
+                "pose": "PoseB2/g[3]",
+                "corrections": [
+                    {"q": "Joint1/qout", "d": ["Joint1/dout[1]", "Joint1/dout[2]"]},
+                    {"q": "PoseJ2/g[1]", "d": ["Joint2/dout[1]", "Joint2/dout[2]"]},
+                ],
+            },
+        ],
+        "springs": [
+            {"kt": 1e8, "d": ["Joint1/dout[1]", "Joint1/dout[2]"]},
+            {"kt": 1e8, "d": ["Joint2/dout[1]", "Joint2/dout[2]"]},
+        ],
+        "tol": 1e-6,
+    }
+    entry.update(overrides)
+    if "bound" not in entry:
+        entry.setdefault("swing", 1.0)
+    return entry
+
+
+def test_multi_body_energy_passes_a_conservative_arm(runner):
+    run, swing = _arm_run()
+    report = runner.Report()
+    runner._energy_check(report, "project", "arm-free", run,
+                         _multi_body_entry(swing=swing))
+    assert report.checks == 1 and report.failures == 0
+    assert swing == pytest.approx(9.81)
+
+
+def test_multi_body_energy_fails_a_drifting_arm(runner):
+    run, swing = _arm_run(drift=0.02)
+    report = runner.Report()
+    runner._energy_check(report, "project", "arm-free", run,
+                         _multi_body_entry(swing=swing))
+    assert report.checks == 1 and report.failures == 1
+
+
+def test_multi_body_energy_bound_form(runner):
+    run, _ = _arm_run()
+    report = runner.Report()
+    # The budget is E = g S = 9.81 J (the potential ceiling) for the whole run.
+    runner._energy_check(report, "project", "balancer", run,
+                         _multi_body_entry(bound=10.0))
+    assert report.checks == 1 and report.failures == 0
+    report = runner.Report()
+    runner._energy_check(report, "project", "balancer", run,
+                         _multi_body_entry(bound=9.0))
+    assert report.checks == 1 and report.failures == 1
+
+
+def test_multi_body_energy_uses_the_joint_corrections(runner):
+    # A pose that ignores a constant pivot deflection is corrected by
+    # ``sin(q) d1 + cos(q) d2``: with ``d = (0, -offset)`` the true height is
+    # ``lc sin q - offset cos q``.  The momenta follow the corrected budget, so the
+    # run is conservative only when the correction is applied.
+    mass1, inertia1, lc1 = 2.0, 0.02666666666666667, 0.2
+    mass2, inertia2, lc2 = 1.5, 0.015, 0.2
+    gravity, rate, offset = 9.81, 0.8, 1e-3
+    inertia = inertia1 + inertia2
+    moment = mass1 * lc1 + mass2 * (lc1 + lc2)
+    mass = mass1 + mass2
+    time = np.linspace(0.0, 3.0, 3001)
+    q1 = rate * time
+    # The corrected potential is moment g sin(q1) - mass g offset cos(q1); its
+    # maximum is moment g + mass g offset (at q1 = 0).
+    ceiling = gravity * moment + gravity * mass * offset
+    potential = gravity * moment * np.sin(q1) - gravity * mass * offset * np.cos(q1)
+    speed = np.sqrt(2.0 * np.maximum(ceiling - potential, 0.0) / inertia)
+    signals = {
+        "Joint1/qout": q1,
+        "Joint2/qout": np.zeros_like(time),
+        "Joint1/dout[1]": np.zeros_like(time),
+        "Joint1/dout[2]": -offset * np.ones_like(time),
+        "Joint2/dout[1]": np.zeros_like(time),
+        "Joint2/dout[2]": np.zeros_like(time),
+        "PoseJ2/g[1]": q1,
+        # The composed poses ignore the deflection (that is the point of the term).
+        "PoseB1/g[3]": lc1 * np.sin(q1),
+        "PoseB2/g[3]": (lc1 + lc2) * np.sin(q1),
+        "Body1/inertia/P[1]": inertia1 * speed,
+        "Body1/inertia/P[2]": np.zeros_like(time),
+        "Body1/inertia/P[3]": np.zeros_like(time),
+        "Body2/inertia/P[1]": inertia2 * speed,
+        "Body2/inertia/P[2]": np.zeros_like(time),
+        "Body2/inertia/P[3]": np.zeros_like(time),
+    }
+    run = SimpleNamespace(model="arm", run_id="0" * 12, manifest={},
+                          time=time, signals=signals)
+    entry = _multi_body_entry(
+        swing=1.0,
+        springs=[],  # the strain term is a constant offset here, not part of drift
+        bodies=[
+            {
+                "p": ["Body1/inertia/P[1]", "Body1/inertia/P[2]", "Body1/inertia/P[3]"],
+                "J": inertia1,
+                "m": mass1,
+                "pose": "PoseB1/g[3]",
+                "corrections": [
+                    {"q": "Joint1/qout", "d": ["Joint1/dout[1]", "Joint1/dout[2]"]}
+                ],
+            },
+            {
+                "p": ["Body2/inertia/P[1]", "Body2/inertia/P[2]", "Body2/inertia/P[3]"],
+                "J": inertia2,
+                "m": mass2,
+                "pose": "PoseB2/g[3]",
+                "corrections": [
+                    {"q": "Joint1/qout", "d": ["Joint1/dout[1]", "Joint1/dout[2]"]},
+                ],
+            },
+        ],
+    )
+    report = runner.Report()
+    runner._energy_check(report, "project", "arm", run, entry)
+    assert report.checks == 1 and report.failures == 0
+
+    # Dropping the correction leaves the 1e-3 m dispatch in the height: the same
+    # run drifts by (m1 + m2) g offset cos(q1) = 0.0343 cos(q1) J, which is far
+    # outside the 1e-6 J budget.
+    without = {**entry, "bodies": [
+        {**body, "corrections": []} for body in entry["bodies"]
+    ]}
+    report = runner.Report()
+    runner._energy_check(report, "project", "arm", run, without)
+    assert report.checks == 1 and report.failures == 1
+
+
+def test_multi_body_energy_rejects_bad_parameters(runner):
+    run, swing = _arm_run()
+    for broken in (
+        _multi_body_entry(bodies=[]),
+        _multi_body_entry(bodies="nope"),
+        _multi_body_entry(swing=swing, bound=9.0),
+        _multi_body_entry(swing=0.0),
+        _multi_body_entry(swing=swing, tol=0.0),
+        _multi_body_entry(swing=swing, g0=0.0),
+        _multi_body_entry(
+            swing=swing,
+            bodies=[
+                {
+                    "p": ["Body1/inertia/P[1]", "Body1/inertia/P[2]",
+                          "Body1/inertia/P[3]"],
+                    "J": 0.0,
+                    "m": 2.0,
+                    "pose": "PoseB1/g[3]",
+                }
+            ],
+        ),
+        _multi_body_entry(
+            swing=swing,
+            bodies=[
+                {
+                    "p": ["Body1/inertia/P[1]", "Body1/inertia/P[2]",
+                          "Body1/inertia/P[3]"],
+                    "J": 0.02,
+                    "m": 2.0,
+                    "pose": "PoseB1/missing",
+                }
+            ],
+        ),
+        _multi_body_entry(
+            swing=swing,
+            bodies=[
+                {
+                    "p": ["Body1/inertia/P[1]", "Body1/inertia/P[2]",
+                          "Body1/inertia/P[3]"],
+                    "J": 0.02,
+                    "m": 2.0,
+                    "pose": "PoseB1/g[3]",
+                    "corrections": [{"q": "Joint1/qout", "d": ["Joint1/dout[1]"]}],
+                }
+            ],
+        ),
+        _multi_body_entry(swing=swing, springs=[{"kt": 1e8, "d": ["Joint1/nope"]}]),
+    ):
+        report = runner.Report()
+        runner._energy_check(report, "project", "arm-free", run, broken)
+        assert report.checks == 1 and report.failures == 1, broken
+
+
+# --------------------------------------------------------------------- invariant
+
+
+def _wheel_run(*, drift: float = 0.0):
+    """A synthetic reaction wheel: the body rate and the wheel rate exchange.
+
+    ``H = 0.257 * theta_dot + 0.002 * wheel_rate``; the body rate is a sine and the
+    wheel rate is chosen to keep ``H`` at 0.06 exactly (plus ``drift``).
+    """
+    time = np.linspace(0.0, 3.0, 3001)
+    rate = 0.035 * np.sin(2.0 * np.pi * 0.4 * time)
+    coefficient = 0.257 / 0.002
+    wheel = 30.0 - coefficient * rate + drift * time / time[-1]
+    signals = {"Pivot/qdout": rate, "WheelJ/qdout": wheel}
+    run = SimpleNamespace(model="balancer-free", run_id="0" * 12, manifest={},
+                          time=time, signals=signals)
+    return run
+
+
+def test_invariant_check_passes_a_conserved_momentum(runner):
+    run = _wheel_run()
+    report = runner.Report()
+    runner._invariant_check(report, "project", "balancer-free", run, {
+        "kind": "invariant", "tol": 1e-6,
+        "terms": [{"signal": "Pivot/qdout", "coeff": 0.257},
+                  {"signal": "WheelJ/qdout", "coeff": 0.002}],
+    })
+    assert report.checks == 1 and report.failures == 0
+
+
+def test_invariant_check_fails_a_drifting_momentum(runner):
+    run = _wheel_run(drift=1e-3)  # 1e-3 kg m^2/s against 0.06 -> ratio 1.7e-2
+    report = runner.Report()
+    runner._invariant_check(report, "project", "balancer-free", run, {
+        "kind": "invariant", "tol": 1e-6,
+        "terms": [{"signal": "Pivot/qdout", "coeff": 0.257},
+                  {"signal": "WheelJ/qdout", "coeff": 0.002}],
+    })
+    assert report.checks == 1 and report.failures == 1
+
+
+def test_invariant_scale_and_window(runner):
+    run = _wheel_run(drift=1e-3)
+    entry = {
+        "kind": "invariant", "tol": 1e-6,
+        "terms": [{"signal": "Pivot/qdout", "coeff": 0.257},
+                  {"signal": "WheelJ/qdout", "coeff": 0.002}],
+    }
+    # An explicit scale much smaller than H makes the same run fail.
+    report = runner.Report()
+    runner._invariant_check(report, "project", "balancer-free", run,
+                            {**entry, "scale": 1e-3})
+    assert report.checks == 1 and report.failures == 1
+    # A window before the excitation sees a constant H.
+    report = runner.Report()
+    runner._invariant_check(report, "project", "balancer-free", run,
+                            {**entry, "from_t": 0.0, "to_t": 0.0})
+    assert report.checks == 1 and report.failures == 1   # fewer than two samples
+
+
+def test_invariant_check_rejects_bad_parameters(runner):
+    run = _wheel_run()
+    good = {
+        "kind": "invariant", "tol": 1e-6,
+        "terms": [{"signal": "Pivot/qdout", "coeff": 0.257}],
+    }
+    for broken in (
+        {"tol": 1e-6},
+        {"terms": []},
+        {"terms": [{"signal": "missing", "coeff": 1.0}], "tol": 1e-6},
+        {"terms": [{"coeff": 1.0}], "tol": 1e-6},
+        {**good, "tol": 0.0},
+        {**good, "from_t": 2.0, "to_t": 1.0},
+        # The invariant is identically zero and no scale is given.
+        {"terms": [{"signal": "Pivot/qdout", "coeff": 0.0}], "tol": 1e-6},
+    ):
+        report = runner.Report()
+        runner._invariant_check(report, "project", "balancer-free", run, broken)
+        assert report.checks == 1 and report.failures == 1, broken
+
+
+# -------------------------------------------------------------------- planar_fk
+
+
+def test_planar_fk_matches_the_analytic_arm(runner):
+    time = np.linspace(0.0, 3.0, 301)
+    q1 = 0.6 * np.sin(time)
+    q2 = -0.4 * np.cos(time)
+    length1, length2 = 0.4, 0.3
+    signals = {
+        "Joint1/qout": q1,
+        "Joint2/qout": q2,
+        "PoseTip/g[2]": length1 * np.cos(q1) + length2 * np.cos(q1 + q2),
+        "PoseTip/g[3]": length1 * np.sin(q1) + length2 * np.sin(q1 + q2),
+    }
+    run = SimpleNamespace(model="arm", run_id="0" * 12, manifest={},
+                          time=time, signals=signals)
+    entry = {
+        "kind": "planar_fk", "tip": ["PoseTip/g[2]", "PoseTip/g[3]"],
+        "angles": ["Joint1/qout", "Joint2/qout"], "lengths": [length1, length2],
+        "max_abs": 1e-12,
+    }
+    report = runner.Report()
+    runner._planar_fk_check(report, "project", "arm", run, entry)
+    assert report.checks == 1 and report.failures == 0
+
+    # A 1 mm tip offset is caught by the 1e-6 m limit.
+    bad = dict(signals)
+    bad["PoseTip/g[2]"] = signals["PoseTip/g[2]"] + 1e-3
+    report = runner.Report()
+    runner._planar_fk_check(
+        report, "project", "arm",
+        SimpleNamespace(model="arm", run_id="0" * 12, manifest={}, time=time,
+                        signals=bad),
+        entry,
+    )
+    assert report.checks == 1 and report.failures == 1
+
+
+def test_planar_fk_rejects_bad_parameters(runner):
+    time = np.linspace(0.0, 1.0, 11)
+    signals = {
+        "Joint1/qout": np.zeros_like(time),
+        "Joint2/qout": np.zeros_like(time),
+        "PoseTip/g[2]": np.full_like(time, 0.7),
+        "PoseTip/g[3]": np.zeros_like(time),
+    }
+    run = SimpleNamespace(model="arm", run_id="0" * 12, manifest={},
+                          time=time, signals=signals)
+    good = {
+        "kind": "planar_fk", "tip": ["PoseTip/g[2]", "PoseTip/g[3]"],
+        "angles": ["Joint1/qout", "Joint2/qout"], "lengths": [0.4, 0.3],
+        "max_abs": 1e-6,
+    }
+    for broken in (
+        {**good, "tip": ["PoseTip/g[2]"]},
+        {**good, "angles": ["Joint1/qout", "Joint1/missing"]},
+        {**good, "lengths": [0.4]},
+        {**good, "lengths": [0.4, -0.3]},
+        {**good, "max_abs": 0.0},
+        {**good, "tip": ["PoseTip/g[2]", "PoseTip/g[3]", "PoseTip/g[1]"]},
+    ):
+        report = runner.Report()
+        runner._planar_fk_check(report, "project", "arm", run, broken)
         assert report.checks == 1 and report.failures == 1, broken
 

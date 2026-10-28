@@ -1,0 +1,201 @@
+{
+  "project": "reaction-wheel-2d",
+  "description": "Plan 9.10 / X-MB2 acceptance: the planar reaction-wheel balancer on the J-MB6 composites. GroundPlanar -> Pivot (Revolute2DCompliant, compliant pivot kt = 1e9 N/m, bt = 5e3 N s/m) -> LinkB (FixedJoint2D to the body centre of mass 0.3 m above the pivot, body frame x along the link) -> BodyJ (1-junction) with Body (RigidBody2D: m = 1.5 kg, J = 0.02 kg m^2) and WheelJ (Revolute2DCompliant whose axis is 0.2 m further along the body frame, i.e. 0.5 m above the pivot) -> Wheel (RigidBody2D: m = 0.4 kg, J = 0.002 kg m^2, its centre on the axis). The body pose is composed from the pivot angle (JointPose2D -> ComposePose2D) and feeds Body.g and PoseW (the wheel frame, composed with the wheel joint angle). Motor: MSe(tau) on the wheel drive; Balancer (project library, 1 ms) is a PD on the body angle with gravity feedforward G = 6.3765 sin(theta), torque limit 1.5 N m. Two variants: `balancer` (gravity on, starts 0.01 rad off upright, recovers, then follows a 0.012 rad reference pulse from 0.5 s to 1.5 s while the wheel spins up to 47 rad/s) and `balancer-free` (g0 = 0 everywhere, the wheel starts at 30 rad/s and the same pulse makes it spin down to 25.5 and back up to 34.5 rad/s while the total angular momentum about the pivot stays at 0.06 kg m^2/s).",
+  "models": {
+    "balancer": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Pivot/qout",
+          "t": 0.0,
+          "value": 0.01,
+          "abs": 1e-12,
+          "note": "the balancer starts 0.01 rad off upright"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Pivot/qout",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 0.02,
+          "note": "the plan's balance band: |theta| stays inside 0.02 rad for the whole run (measured max 0.011969 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pivot/qout",
+          "t": 0.5,
+          "value": 0.0009071640459316285,
+          "abs": 0.001,
+          "note": "the initial 0.01 rad tilt has been recovered by t = 0.5 s (0.9 mrad left)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e",
+          "from_t": 0.4,
+          "to_t": 0.5,
+          "value": 0.002,
+          "note": "before the reference pulse the tracked error is under 2 mrad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/ref",
+          "t": 1.0,
+          "value": 0.012,
+          "abs": 1e-12,
+          "note": "the reference pulse holds 0.012 rad from 0.5 s to 1.5 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WheelJ/qdout",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "the wheel starts at rest"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "WheelJ/qdout",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 47.04605861276283,
+          "abs": 0.01,
+          "note": "the wheel spins up to 47.05 rad/s while the body stays inside the band"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WheelJ/qdout",
+          "t": 3.0,
+          "value": 46.213366231614486,
+          "abs": 0.01,
+          "note": "after the manoeuvre it keeps the momentum the gravity impulse gave it (46.21 rad/s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Motor/p.e",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 1.5,
+          "note": "the motor torque never exceeds its 1.5 N m limit (measured max 0.2687 N m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WheelJ/qdout",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 50.0,
+          "note": "the wheel speed stays under 50 rad/s, so its stored energy is at most 1/2 J w^2 = 2.5 J"
+        },
+        {
+          "kind": "energy",
+          "g0": 9.81,
+          "bodies": [
+            {
+              "p": ["Body/inertia/P[1]", "Body/inertia/P[2]", "Body/inertia/P[3]"],
+              "J": 0.02,
+              "m": 1.5,
+              "pose": "PoseB/g[3]",
+              "corrections": [
+                {"q": "Pivot/qout", "d": ["Pivot/dout[1]", "Pivot/dout[2]"]}
+              ]
+            },
+            {
+              "p": ["Wheel/inertia/P[1]", "Wheel/inertia/P[2]", "Wheel/inertia/P[3]"],
+              "J": 0.002,
+              "m": 0.4,
+              "pose": "PoseW/g[3]",
+              "corrections": [
+                {"q": "Pivot/qout", "d": ["Pivot/dout[1]", "Pivot/dout[2]"]},
+                {"q": "PoseW/g[1]", "d": ["WheelJ/dout[1]", "WheelJ/dout[2]"]}
+              ]
+            }
+          ],
+          "springs": [
+            {"kt": 1000000000.0, "d": ["Pivot/dout[1]", "Pivot/dout[2]"]},
+            {"kt": 1000000000.0, "d": ["WheelJ/dout[1]", "WheelJ/dout[2]"]}
+          ],
+          "bound": 8.9,
+          "note": "bounded form: E = KE_body + KE_wheel + PE + 1/2 kt |d|^2 starts at 6.3762 J (the upright potential) and peaks at 8.5877 J when the wheel carries its 47 rad/s; with the wheel-speed bound of 50 rad/s the stored energy is at most 2.5 J, so E <= 6.376 + 2.5 = 8.88 J (the check uses 8.9 J)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["W201", "E101", "E102", "E103", "E106", "W206"],
+          "note": "both compliant pivots keep every state integral (no W201), the chain is connected and unit-clean, the initialisation succeeds and the two pulse edges fire once each (no W206)"
+        }
+      ]
+    },
+    "balancer-free": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Pivot/qout",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "with gravity off the body starts upright"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WheelJ/qdout",
+          "t": 0.0,
+          "value": 30.0,
+          "abs": 1e-06,
+          "note": "the wheel starts at 30 rad/s (the body inertia that carries the momentum is 0.257 kg m^2)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Pivot/qout",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 0.02,
+          "note": "the body stays inside the same 0.02 rad band while the momentum is exchanged (measured max 0.011967 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WheelJ/qdout",
+          "t": 0.7,
+          "value": 25.989125711907747,
+          "abs": 0.01,
+          "note": "the pulse leans the body positive and the wheel spins down to 25.99 rad/s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WheelJ/qdout",
+          "t": 1.8,
+          "value": 32.699308304091865,
+          "abs": 0.01,
+          "note": "as the body returns the wheel spins back up through 32.70 rad/s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WheelJ/qdout",
+          "t": 3.0,
+          "value": 30.000705582567726,
+          "abs": 0.01,
+          "note": "the exchange is closed: the wheel is back at its 30 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Motor/p.e",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 1.5,
+          "note": "the motor torque stays inside the 1.5 N m limit (measured max 0.1924 N m)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {"signal": "Pivot/qdout", "coeff": 0.257},
+            {"signal": "WheelJ/qdout", "coeff": 0.002}
+          ],
+          "tol": 1e-06,
+          "note": "total angular momentum about the pivot with gravity off: H = (J_b + m_b lc_b^2 + m_w L_w^2 + J_w) theta_dot + J_w wheel_rate = 0.257 theta_dot + 0.002 wheel_rate = 0.06 kg m^2/s at t = 0. The motor torque is internal to the body+wheel pair, so H must stay constant while the wheel exchanges momentum with the body; measured max|H - H0| = 5.27e-9, i.e. 8.78e-8 of H (tol 1e-6)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["W201", "E101", "E102", "E103", "E106", "W206"],
+          "note": "the gravity-off variant reports the same clean diagnostics"
+        }
+      ]
+    }
+  }
+}

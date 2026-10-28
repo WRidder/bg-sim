@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "reaction-wheel-2d",
+  "models": [
+    "balancer",
+    "balancer-free"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

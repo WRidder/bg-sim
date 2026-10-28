@@ -1,0 +1,320 @@
+{
+  "project": "robot-arm-2d",
+  "description": "Plan 9.10 / X-MB2 acceptance: the planar 2-link arm on the J-MB6 composites. GroundPlanar -> Joint1 (Revolute2DCompliant, kt = 1e8 N/m, bt = 1e3 N s/m) -> Link1 (FixedJoint2D to the link-1 centre of mass 0.2 m from the shoulder) -> BodyJ1 (1-junction) with Body1 (RigidBody2D: m = 2 kg, J = 0.0266667 kg m^2) and Joint2 (Revolute2DCompliant, pivot at the elbow via rx = 0.2 m in the link-1 CoM frame) -> Link2 -> Body2 (link 2 + 0.5 kg payload: m = 1.5 kg, J = 0.015 kg m^2, CoM 0.2 m from the elbow). The fixed-base poses are composed from the joint angles (JointPose2D -> ComposePose2D) into Body1.g, Body2.g and PoseTip (the end effector 0.3 m along link 2). The drives are MSe(u1)/MSe(u2) from the 1 ms PD + gravity feedforward ArmPD (Kp 250/30, Kd 26/3, torque limits 30/10 N m); Ref1/Ref2 step the reference to q1 = 0.6 rad and q2 = -0.4 rad at t = 0.2 s. The tip cursor points are the measured trajectory (abs 2 mm) plus the analytic forward kinematics of the settled pose at t = 3 s (abs 1e-6 m); planar_fk proves the composed pose equals the analytic FK of the measured angles over the whole run.",
+  "models": {
+    "arm": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "the arm starts horizontal at q1 = 0 with the PD + feedforward already holding its own weight"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 3.0,
+          "value": 0.6,
+          "abs": 1e-06,
+          "note": "the shoulder reaches the 0.6 rad reference (measured 0.600000000002)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 3.0,
+          "value": -0.4,
+          "abs": 1e-06,
+          "note": "the elbow reaches the -0.4 rad reference (measured -0.3999999999998)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/e1",
+          "from_t": 2.0,
+          "to_t": 3.0,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "the shoulder error is settled to < 1e-6 rad over the last second (measured 4.9e-9)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/e2",
+          "from_t": 2.0,
+          "to_t": 3.0,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "the elbow error is settled to < 1e-6 rad over the last second (measured 2.0e-8)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e1",
+          "from_t": 0.9,
+          "to_t": 3.0,
+          "value": 0.001,
+          "note": "the 1 mrad band is reached 0.63 s after the step (last sample outside at t = 0.829) and never left again"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e2",
+          "from_t": 0.9,
+          "to_t": 3.0,
+          "value": 0.001,
+          "note": "the elbow is inside 1 mrad from t = 0.875 (last sample outside), so the window starts at 0.9 s; measured max 1.89e-4 over [1, 3]"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drive1/p.e",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 30.0,
+          "note": "the shoulder torque never exceeds the 30 N m actuator limit (it saturates during the step: max 30.000)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drive2/p.e",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 10.0,
+          "note": "the elbow torque never exceeds the 10 N m limit (measured max 9.061 N m)"
+        },
+        {
+          "kind": "planar_fk",
+          "tip": [
+            "PoseTip/g[2]",
+            "PoseTip/g[3]"
+          ],
+          "angles": [
+            "Joint1/qout",
+            "Joint2/qout"
+          ],
+          "lengths": [
+            0.4,
+            0.3
+          ],
+          "max_abs": 1e-06,
+          "note": "the composed end-effector pose equals x = 0.4 cos q1 + 0.3 cos(q1 + q2) and the same in y for the measured q1/q2 (measured max 1.1e-16 m): the pose chain is consistent with the joint angles"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[2]",
+          "t": 0.0,
+          "value": 0.7,
+          "abs": 1e-12,
+          "note": "the arm is stretched along +x at t = 0 (both angles zero)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[3]",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "the tip is on the x axis at t = 0"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[2]",
+          "t": 0.3,
+          "value": 0.6866679826862327,
+          "abs": 0.002,
+          "note": "tip x 0.1 s into the step (measurement; the elbow leads the shoulder)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[3]",
+          "t": 0.3,
+          "value": 0.05798088508733319,
+          "abs": 0.002,
+          "note": "tip y 0.1 s into the step"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[2]",
+          "t": 0.5,
+          "value": 0.6265260929215204,
+          "abs": 0.002,
+          "note": "near the end of the transient the tip has swung back in x"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[3]",
+          "t": 0.5,
+          "value": 0.2915003498674234,
+          "abs": 0.002,
+          "note": "and up in y; the measured arc is monotone in y"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[2]",
+          "t": 1.0,
+          "value": 0.6242135937626518,
+          "abs": 0.002,
+          "note": "the tip is within 2 mm of its final position one second into the manoeuvre"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[3]",
+          "t": 1.0,
+          "value": 0.2853587311282977,
+          "abs": 0.002,
+          "note": "tip y at t = 1 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[2]",
+          "t": 3.0,
+          "value": 0.6241542193156968,
+          "abs": 1e-06,
+          "note": "the settled tip is the analytic FK of (0.6, -0.4): 0.4 cos 0.6 + 0.3 cos 0.2 = 0.6241542 m"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[3]",
+          "t": 3.0,
+          "value": 0.28545778859776416,
+          "abs": 1e-06,
+          "note": "0.4 sin 0.6 + 0.3 sin 0.2 = 0.2854578 m"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[1]",
+          "t": 3.0,
+          "value": 0.2,
+          "abs": 1e-06,
+          "note": "the tip frame angle is q1 + q2 = 0.2 rad"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "W206"
+          ],
+          "note": "the compliant pivots keep every state integral (no W201), the chain is connected and unit-clean, the initialisation succeeds and the two reference steps fire once each (no W206)"
+        }
+      ]
+    },
+    "arm-free": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.0,
+          "value": 0.6,
+          "abs": 1e-12,
+          "note": "the torque-free model starts at the driven example's shoulder reference"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 0.0,
+          "value": -0.4,
+          "abs": 1e-12,
+          "note": "and at its elbow reference, at rest"
+        },
+        {
+          "kind": "planar_fk",
+          "tip": [
+            "PoseTip/g[2]",
+            "PoseTip/g[3]"
+          ],
+          "angles": [
+            "Joint1/qout",
+            "Joint2/qout"
+          ],
+          "lengths": [
+            0.4,
+            0.3
+          ],
+          "max_abs": 1e-06,
+          "note": "the composed pose still matches the analytic FK of the measured angles through the whole swing (measured max 1.0e-15 m)"
+        },
+        {
+          "kind": "energy",
+          "g0": 9.81,
+          "bodies": [
+            {
+              "p": [
+                "Body1/inertia/P[1]",
+                "Body1/inertia/P[2]",
+                "Body1/inertia/P[3]"
+              ],
+              "J": 0.02666666666666667,
+              "m": 2.0,
+              "pose": "PoseB1/g[3]",
+              "corrections": [
+                {
+                  "q": "Joint1/qout",
+                  "d": [
+                    "Joint1/dout[1]",
+                    "Joint1/dout[2]"
+                  ]
+                }
+              ]
+            },
+            {
+              "p": [
+                "Body2/inertia/P[1]",
+                "Body2/inertia/P[2]",
+                "Body2/inertia/P[3]"
+              ],
+              "J": 0.015,
+              "m": 1.5,
+              "pose": "PoseB2/g[3]",
+              "corrections": [
+                {
+                  "q": "Joint1/qout",
+                  "d": [
+                    "Joint1/dout[1]",
+                    "Joint1/dout[2]"
+                  ]
+                },
+                {
+                  "q": "PoseJ2/g[1]",
+                  "d": [
+                    "Joint2/dout[1]",
+                    "Joint2/dout[2]"
+                  ]
+                }
+              ]
+            }
+          ],
+          "springs": [
+            {
+              "kt": 100000000.0,
+              "d": [
+                "Joint1/dout[1]",
+                "Joint1/dout[2]"
+              ]
+            },
+            {
+              "kt": 100000000.0,
+              "d": [
+                "Joint2/dout[1]",
+                "Joint2/dout[2]"
+              ]
+            }
+          ],
+          "swing": 18.876826504535163,
+          "tol": 1e-06,
+          "note": "E = sum(1/2 P^T M^-1 P + m g h) + 1/2 kt |d|^2 with h = pose_y + sin(q) d1 + cos(q) d2 for each joint of the chain (the joint-2 correction uses the absolute body-2 angle PoseJ2/g[1] = q1 + q2). The swing is the potential drop from the start pose (q1 = 0.6, q2 = -0.4) to the hanging pose (q1 = -pi/2, q2 = 0): 6.1238265 - (-12.753) = 18.8768265 J; measured drift 5.82e-6 J = 3.09e-7 of the swing over 3 s"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "W206"
+          ],
+          "note": "the torque-free swing reports the same clean diagnostics as the driven model"
+        }
+      ]
+    }
+  }
+}

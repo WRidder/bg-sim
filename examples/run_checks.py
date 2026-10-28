@@ -15,9 +15,9 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
 * evaluates every check kind (``final_value``, ``cursor_value``, ``max_abs``,
   ``max_abs_le``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
-  ``compare_signals``, ``rms_difference``, ``step_response``, ``ripple``,
-  ``fft_peak`` and ``no_diagnostics``), prints one line per check and exits
-  non-zero when any check fails.
+  ``invariant``, ``planar_fk``, ``compare_signals``, ``rms_difference``,
+  ``step_response``, ``ripple``, ``fft_peak`` and ``no_diagnostics``), prints one
+  line per check and exits non-zero when any check fails.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
 (``n`` Float64 values), then one contiguous column per manifest signal, in
@@ -156,6 +156,57 @@ The detail prints E0, the drift in J, the swing and the ratio::
      "d": ["Joint/dout[1]", "Joint/dout[2]"],
      "J": 1e-4, "m": 1.0, "L": 0.5, "g0": 9.81, "kt": 1e8,
      "q0": 0.01, "tol": 1e-6}
+
+``energy`` also has a **multi-body form** (X-MB2, additive; the pendulum form
+above is unchanged).  ``bodies`` is a list of rigid bodies, each with its three
+body-frame momenta ``p``, its ``J`` and ``m``, the y component ``pose`` of its
+composed CoM pose and an optional list of ``corrections`` — one per compliant
+joint between the world and the body, each a ``q`` (the **absolute** angle of
+the joint's child frame) and the two deflections ``d``; the correction adds
+``sin(q)*d1 + cos(q)*d2`` to the CoM height, exactly the pendulum's ``h`` term
+generalised to a chain.  ``springs`` lists the ``kt``/``d`` pairs whose strain
+``1/2 kt |d|^2`` is stored.  With ``swing`` the check is the drift form
+(``max|E - E0| / swing <= tol``); with ``bound`` it is the bounded form
+(``max|E| <= bound``) for a plant with a drive that does work::
+
+    {"kind": "energy", "g0": 9.81,
+     "bodies": [
+       {"p": ["Body1/inertia/P[1]", "Body1/inertia/P[2]", "Body1/inertia/P[3]"],
+        "J": 0.0266667, "m": 2.0, "pose": "PoseB1/g[3]",
+        "corrections": [{"q": "Joint1/qout",
+                         "d": ["Joint1/dout[1]", "Joint1/dout[2]"]}]},
+       {"p": ["Body2/inertia/P[1]", "Body2/inertia/P[2]", "Body2/inertia/P[3]"],
+        "J": 0.015, "m": 1.5, "pose": "PoseB2/g[3]",
+        "corrections": [{"q": "Joint1/qout",
+                         "d": ["Joint1/dout[1]", "Joint1/dout[2]"]},
+                        {"q": "PoseJ2/g[1]",
+                         "d": ["Joint2/dout[1]", "Joint2/dout[2]"]}]}],
+     "springs": [{"kt": 1e8, "d": ["Joint1/dout[1]", "Joint1/dout[2]"]},
+                 {"kt": 1e8, "d": ["Joint2/dout[1]", "Joint2/dout[2]"]}],
+     "swing": 18.8768265045, "tol": 1e-6}
+
+``invariant`` checks that a linear combination of recorded signals is constant:
+``terms`` is a list of ``{"signal", "coeff"}``, the invariant is
+``H = sum(coeff * signal)`` over ``[from_t, to_t]`` and the check passes when
+``max|H - H0| <= tol * scale``.  ``scale`` defaults to ``max|H|`` over the window
+(the invariant's own magnitude); give it explicitly when the invariant is
+identically zero.  The reaction-wheel example reads the total angular momentum
+about the pivot this way::
+
+    {"kind": "invariant", "tol": 1e-6,
+     "terms": [{"signal": "Pivot/qdout", "coeff": 0.257},
+               {"signal": "WheelJ/qdout", "coeff": 0.002}]}
+
+``planar_fk`` checks the composed pose chain of a 2-link planar arm against the
+analytic forward kinematics of the **measured** joint angles: ``tip`` is the
+composed tip pose's ``[x, y]`` signals, ``angles`` the two joint-angle signals and
+``lengths`` the two link lengths.  It passes when ``max|tip - fk(q)| <= max_abs``
+over the whole run; it is an identity between two recorded quantities (the pose
+composition and the angles), so it is exact to round-off::
+
+    {"kind": "planar_fk", "tip": ["PoseTip/g[2]", "PoseTip/g[3]"],
+     "angles": ["Joint1/qout", "Joint2/qout"], "lengths": [0.4, 0.3],
+     "max_abs": 1e-6}
 
 A model entry may also carry ``"model"`` (the file to run when the key is only a
 label) and ``"settings"`` (deep-merged into the model document before the run).
@@ -777,7 +828,12 @@ def _energy_check(
     X-MB1's specialised kind (X-MB6 generalises it): the body momenta, the joint
     angle, the composed CoM pose and the pivot deflection are read from the run and
     the total mechanical energy must stay constant relative to the KE/PE swing.
+    The multi-body form (``bodies``/``springs``, X-MB2) is handled by
+    :func:`_multi_body_energy`, so the pendulum's budget is unchanged.
     """
+    if "bodies" in check:
+        _multi_body_energy(report, project, model, run, check)
+        return
     label = f"{project}/{model} energy"
     try:
         momenta = _signal_list(check.get("p"), 3, "p")
@@ -852,6 +908,259 @@ def _energy_check(
         f"(tol {tolerance:g}, {int(np.count_nonzero(window))} samples)"
     )
     report.check(ratio <= tolerance, label, detail)
+
+
+def _multi_body_energy(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The multi-body mechanical energy (X-MB2's ``bodies``/``springs`` form).
+
+    ``E = sum_b [ 1/2 p^T M^-1 p + m g (pose_y + sum_corr (sin q d1 + cos q d2)) ]
+    + sum_springs 1/2 kt |d|^2``.  The drift form normalises ``max|E - E0|`` by
+    ``swing`` and compares with ``tol``; the bounded form compares ``max|E|`` with
+    ``bound`` (a plant with a drive that does work).
+    """
+    label = f"{project}/{model} energy"
+    bodies = check.get("bodies")
+    if not isinstance(bodies, list) or not bodies:
+        report.check(False, label, "'bodies' must be a non-empty list")
+        return
+    try:
+        gravity = float(check.get("g0", 9.81))
+        tolerance = float(check.get("tol", 1e-6))
+        wanted: list[str] = []
+        body_specs: list[dict[str, Any]] = []
+        for body in bodies:
+            if not isinstance(body, dict):
+                raise TypeError("each body must be an object")
+            momenta = _signal_list(body.get("p"), 3, "p")
+            pose = _pose_y(body.get("pose"))
+            inertia = float(body["J"])
+            mass = float(body["m"])
+            if inertia <= 0.0 or mass <= 0.0:
+                raise ValueError("a body needs J > 0 and m > 0")
+            corrections: list[tuple[str, list[str]]] = []
+            for correction in body.get("corrections") or []:
+                if not isinstance(correction, dict):
+                    raise TypeError("a correction must be an object")
+                corrections.append(
+                    (
+                        _signal_id(correction.get("q")),
+                        _signal_list(correction.get("d"), 2, "d"),
+                    )
+                )
+            body_specs.append(
+                {
+                    "p": momenta,
+                    "pose": pose,
+                    "J": inertia,
+                    "m": mass,
+                    "corrections": corrections,
+                }
+            )
+            wanted += [*momenta, pose]
+            for q_signal, deflection in corrections:
+                wanted += [q_signal, *deflection]
+        springs: list[tuple[float, list[str]]] = []
+        for spring in check.get("springs") or []:
+            if not isinstance(spring, dict):
+                raise TypeError("a spring must be an object")
+            stiffness = float(spring["kt"])
+            if stiffness < 0.0:
+                raise ValueError("a spring needs kt >= 0")
+            springs.append((stiffness, _signal_list(spring.get("d"), 2, "d")))
+            wanted += springs[-1][1]
+        if gravity <= 0.0:
+            report.check(False, label, "'g0' must be positive")
+            return
+        if tolerance <= 0.0:
+            report.check(False, label, "'tol' must be positive")
+            return
+        drift_form = "swing" in check
+        bound_form = "bound" in check
+        if drift_form == bound_form:
+            report.check(False, label, "give exactly one of 'swing' (drift) and 'bound'")
+            return
+        swing = float(check["swing"]) if drift_form else 0.0
+        bound = float(check["bound"]) if bound_form else 0.0
+        if drift_form and not swing > 0.0:
+            report.check(False, label, "'swing' must be positive")
+            return
+        if bound_form and not bound > 0.0:
+            report.check(False, label, "'bound' must be positive")
+            return
+        from_t = float(check.get("from_t", float(run.time[0])))
+        to_t = float(check.get("to_t", float(run.time[-1])))
+    except (KeyError, TypeError, ValueError) as exc:
+        report.check(False, label, f"malformed energy check: {exc}")
+        return
+    for signal in wanted:
+        if signal not in run.signals:
+            report.check(False, label, f"unknown signal {signal!r}")
+            return
+    window = (run.time >= from_t) & (run.time <= to_t)
+    if int(np.count_nonzero(window)) < 2:
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+
+    total = np.zeros(int(np.count_nonzero(window)))
+    kinetic_all = np.zeros_like(total)
+    potential_all = np.zeros_like(total)
+    spring_all = np.zeros_like(total)
+    for body in body_specs:
+        angular, linear_x, linear_y = (
+            run.signals[signal][window] for signal in body["p"]
+        )
+        samples = np.column_stack([angular, linear_x, linear_y])
+        if not np.all(np.isfinite(samples)):
+            report.check(False, label, "the energy signals hold a non-finite sample")
+            return
+        height = run.signals[body["pose"]][window].astype(float, copy=True)
+        for q_signal, deflection in body["corrections"]:
+            q = run.signals[q_signal][window]
+            d1, d2 = (run.signals[signal][window] for signal in deflection)
+            height = height + np.sin(q) * d1 + np.cos(q) * d2
+        kinetic = 0.5 * (
+            angular**2 / body["J"] + linear_x**2 / body["m"] + linear_y**2 / body["m"]
+        )
+        potential = body["m"] * gravity * height
+        kinetic_all = kinetic_all + kinetic
+        potential_all = potential_all + potential
+        total = total + kinetic + potential
+    for stiffness, deflection in springs:
+        d1, d2 = (run.signals[signal][window] for signal in deflection)
+        strain = 0.5 * stiffness * (d1**2 + d2**2)
+        spring_all = spring_all + strain
+        total = total + strain
+    if not np.all(np.isfinite(total)):
+        report.check(False, label, "the energy budget holds a non-finite sample")
+        return
+    if drift_form:
+        drift = float(np.max(np.abs(total - total[0])))
+        ratio = drift / swing
+        detail = (
+            f"over [{from_t:g}, {to_t:g}] E0 {total[0]:.12g} J, "
+            f"max|E - E0| {drift:.6g} J, swing {swing:.6g} J, ratio {ratio:.6g} "
+            f"(tol {tolerance:g}, {total.size} samples)"
+        )
+        report.check(ratio <= tolerance, label, detail)
+        return
+    peak = float(np.max(np.abs(total)))
+    detail = (
+        f"over [{from_t:g}, {to_t:g}] E0 {total[0]:.12g} J, max|E| {peak:.6g} J "
+        f"(KE {float(np.max(kinetic_all)):.6g}, PE {float(np.max(potential_all)):.6g}, "
+        f"strain {float(np.max(spring_all)):.6g}), bound {bound:.6g} J, "
+        f"{total.size} samples"
+    )
+    report.check(peak <= bound, label, detail)
+
+
+def _invariant_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """A linear combination of recorded signals is constant over a time window.
+
+    ``H = sum(coeff * signal)``; the check passes when ``max|H - H0| <= tol *
+    scale``, with ``scale`` the explicit value or ``max|H|`` over the window.
+    """
+    terms = check.get("terms")
+    label = f"{project}/{model} invariant"
+    if not isinstance(terms, list) or not terms:
+        report.check(False, label, "'terms' must be a non-empty list")
+        return
+    try:
+        pairs: list[tuple[str, float]] = []
+        for term in terms:
+            if not isinstance(term, dict):
+                raise TypeError("each term must be an object")
+            pairs.append((_signal_id(term.get("signal")), float(term["coeff"])))
+        tolerance = float(check.get("tol", 1e-6))
+        explicit_scale = float(check["scale"]) if "scale" in check else None
+        from_t = float(check.get("from_t", float(run.time[0])))
+        to_t = float(check.get("to_t", float(run.time[-1])))
+    except (KeyError, TypeError, ValueError) as exc:
+        report.check(False, label, f"malformed invariant check: {exc}")
+        return
+    if tolerance <= 0.0:
+        report.check(False, label, "'tol' must be positive")
+        return
+    for signal, _ in pairs:
+        if signal not in run.signals:
+            report.check(False, label, f"unknown signal {signal!r}")
+            return
+    window = (run.time >= from_t) & (run.time <= to_t)
+    if int(np.count_nonzero(window)) < 2:
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    invariant = np.zeros(int(np.count_nonzero(window)))
+    for signal, coefficient in pairs:
+        invariant = invariant + coefficient * run.signals[signal][window]
+    if not np.all(np.isfinite(invariant)):
+        report.check(False, label, "the invariant holds a non-finite sample")
+        return
+    drift = float(np.max(np.abs(invariant - invariant[0])))
+    scale = explicit_scale if explicit_scale is not None else float(
+        np.max(np.abs(invariant))
+    )
+    if scale is None or not scale > 0.0:
+        report.check(
+            False,
+            label,
+            "the invariant is identically zero: give 'scale' explicitly",
+        )
+        return
+    ratio = drift / scale
+    terms_text = " + ".join(
+        f"{coefficient:g}*{signal}" for signal, coefficient in pairs
+    )
+    detail = (
+        f"over [{from_t:g}, {to_t:g}] H0 {invariant[0]:.12g}, "
+        f"max|H - H0| {drift:.6g}, scale {scale:.6g}, ratio {ratio:.6g} "
+        f"(tol {tolerance:g}, {invariant.size} samples; {terms_text})"
+    )
+    report.check(ratio <= tolerance, label, detail)
+
+
+def _planar_fk_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The composed planar tip pose against the analytic forward kinematics.
+
+    ``x = L1 cos q1 + L2 cos(q1 + q2)`` and the same in ``y``; the composed pose is
+    an exact composition of the same angles, so the identity holds to round-off and
+    ``max_abs`` is the tolerance on both components.
+    """
+    label = f"{project}/{model} planar_fk"
+    try:
+        tip = _signal_list(check.get("tip"), 2, "tip")
+        angles = _signal_list(check.get("angles"), 2, "angles")
+        lengths = [float(value) for value in check.get("lengths") or []]
+        limit = float(check["max_abs"])
+    except (KeyError, TypeError, ValueError) as exc:
+        report.check(False, label, f"malformed planar_fk check: {exc}")
+        return
+    if len(lengths) != 2 or any(length <= 0.0 for length in lengths):
+        report.check(False, label, "'lengths' must be two positive link lengths")
+        return
+    if limit <= 0.0:
+        report.check(False, label, "'max_abs' must be positive")
+        return
+    for signal in [*tip, *angles]:
+        if signal not in run.signals:
+            report.check(False, label, f"unknown signal {signal!r}")
+            return
+    q1 = run.signals[angles[0]]
+    q2 = run.signals[angles[1]]
+    x = lengths[0] * np.cos(q1) + lengths[1] * np.cos(q1 + q2)
+    y = lengths[0] * np.sin(q1) + lengths[1] * np.sin(q1 + q2)
+    delta_x = float(np.max(np.abs(x - run.signals[tip[0]])))
+    delta_y = float(np.max(np.abs(y - run.signals[tip[1]])))
+    worst = max(delta_x, delta_y)
+    detail = (
+        f"max|delta| x {delta_x:.6g} m, y {delta_y:.6g} m over {run.time.size} "
+        f"samples (lengths {lengths[0]:g} / {lengths[1]:g} m, limit {limit:g} m)"
+    )
+    report.check(worst <= limit, label, detail)
 
 
 def _rms_difference_check(
@@ -1342,6 +1651,10 @@ def _check_model_checks(
             _period_check(report, project, model, run, check)
         elif kind == "energy":
             _energy_check(report, project, model, run, check)
+        elif kind == "invariant":
+            _invariant_check(report, project, model, run, check)
+        elif kind == "planar_fk":
+            _planar_fk_check(report, project, model, run, check)
         elif kind == "compare_signals":
             _compare_signals_check(report, project, model, run, check)
         elif kind == "step_response":
