@@ -902,6 +902,10 @@ export function domainColor(domain: DomainName): string {
       return "var(--domain-rotation)";
     case "Hydraulic":
       return "var(--domain-hydraulic)";
+    case "Planar":
+      return "var(--domain-planar)";
+    case "Spatial":
+      return "var(--domain-spatial)";
     case "Generic":
     default:
       return "var(--domain-generic)";

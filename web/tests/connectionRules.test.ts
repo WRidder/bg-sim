@@ -370,6 +370,8 @@ describe("refusals with the exact tooltip text (plan 7.3)", () => {
     expect(domainLetter("Rotation")).toBe("R");
     expect(domainLetter("Hydraulic")).toBe("H");
     expect(domainLetter("Generic")).toBe("G");
+    expect(domainLetter("Planar")).toBe("P");
+    expect(domainLetter("Spatial")).toBe("S");
   });
 
   it("keeps the message constants equal to what the rules return", () => {

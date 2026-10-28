@@ -4,7 +4,7 @@
 export type ValueType = "Real" | "Int" | "Bool";
 export type ValueType1 = "Real" | "Int" | "Bool";
 export type ValueType2 = "Real" | "Int" | "Bool";
-export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic";
+export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
 export type ValueType3 = "Real" | "Int" | "Bool";
 /**
  * State-selection hint (spec: state = :prefer / :avoid), or null.
@@ -18,9 +18,13 @@ export type CausalityKind = "preferred" | "fixed" | "transformer" | "gyrator";
  * effort_out or flow_out for preferred and fixed causality; null for transformer and gyrator.
  */
 export type CausalityValue = "effort_out" | "flow_out" | null;
-export type DomainName1 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic";
 /**
- * Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted.
+ * Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12).
+ */
+export type ModelDimension = 2 | 3;
+export type DomainName1 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
+/**
+ * Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted.
  */
 export type AcrossField = "e" | "f" | null;
 
@@ -71,6 +75,7 @@ export interface CatalogBlock {
    * Source path relative to the repository root, e.g. stdlib/bondgraph/C.jl.
    */
   path: string;
+  dimension?: ModelDimension;
 }
 export interface ConstantDecl {
   name: string;
@@ -120,6 +125,10 @@ export interface PortDecl {
   name: string;
   domain: DomainName;
   size: number[];
+  /**
+   * Reference frame this port lives in (D-MB5). A bond or wire may only join ports in the same frame; FixedTransform and JointTransform are the legal bridges. Null or absent means frame-neutral, as scalar domains are.
+   */
+  frame?: string | null;
 }
 export interface VariableDecl {
   name: string;
@@ -150,11 +159,42 @@ export interface CatalogDomain {
   flow: DomainVariable;
   across: AcrossField;
   /**
-   * Port size: 1 for scalar domains.
+   * Port size: 1 for the scalar domains, 3 for Planar and 6 for Spatial (D-MB1). The arrays in components have one entry per component.
    */
-  size: number;
+  size: 1 | 3 | 6;
+  /**
+   * Per-component effort and flow units of a multibond domain; null or absent for the scalar domains, which the single effort and flow descriptors already cover.
+   */
+  components?: DomainComponents | null;
 }
 export interface DomainVariable {
   name: string;
   unit: string | null;
+}
+/**
+ * The per-component effort and flow units of a multibond domain, angular component first (D-MB2): Planar has three components and Spatial six. Both domains are across = f (D8).
+ */
+export interface DomainComponents {
+  /**
+   * Effort unit per component: torque first, then the force components. Planar is ["N*m","N","N"], Spatial ["N*m","N*m","N*m","N","N","N"].
+   *
+   * @minItems 3
+   * @maxItems 6
+   */
+  effort:
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string];
+  /**
+   * Flow unit per component: angular velocity first, then the linear velocities. Planar is ["rad/s","m/s","m/s"], Spatial ["rad/s","rad/s","rad/s","m/s","m/s","m/s"].
+   *
+   * @minItems 3
+   * @maxItems 6
+   */
+  flow:
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string];
 }

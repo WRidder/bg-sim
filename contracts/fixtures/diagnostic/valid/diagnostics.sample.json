@@ -112,6 +112,18 @@
     "connection": null
   },
   {
+    "code": "E007",
+    "severity": "error",
+    "message": "frame mismatch: Planar port `p` of `Arm1` is in frame `world`, but port `a` of `Load1` is in frame `arm1`",
+    "hint": "connect them through a FixedTransform, or give both ports the same frame",
+    "path": "Plant/Load1",
+    "block": "stdlib:planar/RigidBody2D",
+    "scope": null,
+    "source": null,
+    "node": "n41",
+    "connection": "c31"
+  },
+  {
     "code": "E101",
     "severity": "error",
     "message": "input `e` of `PI1` is not connected",
@@ -190,6 +202,30 @@
     "source": null,
     "node": "n6",
     "connection": "c14"
+  },
+  {
+    "code": "E108",
+    "severity": "error",
+    "message": "invalid inertia: the rotational inertia of `Body1` is not positive definite (J = [0.02, -0.01, 0.03])",
+    "hint": "use three positive principal moments and keep the products of inertia inside the triangle inequality",
+    "path": "Plant/Body1",
+    "block": "stdlib:spatial/RigidBody3D",
+    "scope": null,
+    "source": null,
+    "node": "n51",
+    "connection": null
+  },
+  {
+    "code": "E109",
+    "severity": "error",
+    "message": "singular mass matrix: `Body1` has m = 0 and J = 0, so its acceleration is undetermined",
+    "hint": "give the body m > 0 (and J > 0), or ground it through a compliant element",
+    "path": "Plant/Body1",
+    "block": "stdlib:spatial/RigidBody3D",
+    "scope": null,
+    "source": null,
+    "node": "n51",
+    "connection": null
   },
   {
     "code": "E301",

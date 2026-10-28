@@ -38,6 +38,8 @@ const DOMAIN_LETTER: Record<DomainName, string> = {
   Rotation: "R",
   Hydraulic: "H",
   Generic: "G",
+  Planar: "P",
+  Spatial: "S",
 };
 
 const SIGNAL_TYPE_LABEL: Record<string, string> = {

@@ -217,6 +217,8 @@ describe("canvas diagnostics", () => {
       ["Rotation", "var(--domain-rotation)"],
       ["Hydraulic", "var(--domain-hydraulic)"],
       ["Generic", "var(--domain-generic)"],
+      ["Planar", "var(--domain-planar)"],
+      ["Spatial", "var(--domain-spatial)"],
     ];
     for (const [domain, token] of expected) {
       expect(domainToken(domain)).toBe(token);

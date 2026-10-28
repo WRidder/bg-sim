@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Literal
 
 from pydantic import (
@@ -41,6 +41,11 @@ class BindingSignal(
     root: constr(
         pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?(?:\.[A-Za-z_][A-Za-z0-9_]*)?$'
     ) = Field(..., title='BindingSignal')
+
+
+class ModelDimension(Enum):
+    int_2 = 2
+    int_3 = 3
 
 
 class ValueType(Enum):
@@ -109,6 +114,8 @@ class DomainName(Enum):
     Rotation = 'Rotation'
     Hydraulic = 'Hydraulic'
     Generic = 'Generic'
+    Planar = 'Planar'
+    Spatial = 'Spatial'
 
 
 class PortDecl(BaseModel):
@@ -118,6 +125,10 @@ class PortDecl(BaseModel):
     name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
     domain: DomainName = Field(..., title='DomainName')
     size: list[conint(ge=1)]
+    frame: constr(min_length=1) | None = Field(
+        None,
+        description='Reference frame this port lives in (D-MB5). A bond or wire may only join ports in the same frame; FixedTransform and JointTransform are the legal bridges. Null or absent means frame-neutral, as scalar domains are.',
+    )
 
 
 class VariableState(Enum):
@@ -184,6 +195,38 @@ class AcrossField(Enum):
     NoneType_None = None
 
 
+class Size(Enum):
+    int_1 = 1
+    int_3 = 3
+    int_6 = 6
+
+
+class EffortItem(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class FlowItem(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class DomainComponents(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    effort: list[EffortItem] = Field(
+        ...,
+        description='Effort unit per component: torque first, then the force components. Planar is ["N*m","N","N"], Spatial ["N*m","N*m","N*m","N","N","N"].',
+        max_length=6,
+        min_length=3,
+    )
+    flow: list[FlowItem] = Field(
+        ...,
+        description='Flow unit per component: angular velocity first, then the linear velocities. Planar is ["rad/s","m/s","m/s"], Spatial ["rad/s","rad/s","rad/s","m/s","m/s","m/s"].',
+        max_length=6,
+        min_length=3,
+    )
+
+
 class DomainVariable(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -228,7 +271,7 @@ class ProbeKind(Enum):
     window = 'window'
 
 
-class Size(BaseModel):
+class Size1(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -324,6 +367,18 @@ class ModelSubsystemPowerPort(BaseModel):
     kind: Literal['power']
     domain: DomainName = Field(..., title='DomainName')
     size: list[conint(ge=1)]
+    frame: constr(min_length=1) | None = Field(
+        None,
+        description='Reference frame of the exposed power port (D-MB5); the subsystem keeps the frame of the internal port it attaches to. Null or absent means frame-neutral.',
+    )
+    effortUnits: list[constr(min_length=1)] | None = Field(
+        None,
+        description='Per-component effort units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.',
+    )
+    flowUnits: list[constr(min_length=1)] | None = Field(
+        None,
+        description='Per-component flow units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.',
+    )
     node: str
     port: str
     field_comment: str | None = Field(None, alias='$comment')
@@ -583,6 +638,11 @@ class PingResult(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class Multibond(IntEnum):
+    integer_2 = 2
+    integer_3 = 3
+
+
 class CausalityStrokeAt(Enum):
     from_ = 'from'
     to = 'to'
@@ -766,6 +826,11 @@ class CatalogBlock(BaseModel):
         ...,
         description='Source path relative to the repository root, e.g. stdlib/bondgraph/C.jl.',
     )
+    dimension: ModelDimension | None = Field(
+        None,
+        description='Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12).',
+        title='ModelDimension',
+    )
 
 
 class BlockInterface(BaseModel):
@@ -791,10 +856,17 @@ class CatalogDomain(BaseModel):
     flow: DomainVariable
     across: AcrossField | None = Field(
         ...,
-        description='Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted.',
+        description='Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted.',
         title='AcrossField',
     )
-    size: conint(ge=1) = Field(..., description='Port size: 1 for scalar domains.')
+    size: Size = Field(
+        ...,
+        description='Port size: 1 for the scalar domains, 3 for Planar and 6 for Spatial (D-MB1). The arrays in components have one entry per component.',
+    )
+    components: DomainComponents | None = Field(
+        None,
+        description='Per-component effort and flow units of a multibond domain; null or absent for the scalar domains, which the single effort and flow descriptors already cover.',
+    )
 
 
 class DiagnosticSource(BaseModel):
@@ -816,7 +888,7 @@ class ModelProbe(BaseModel):
     kind: ProbeKind = Field(..., title='ProbeKind')
     position: ModelPoint
     panelPosition: ModelPoint | None = None
-    size: Size | None = None
+    size: Size1 | None = None
     open: bool | None = None
     links: list[ModelProbeLink]
     panels: list[ModelProbePanel] | None = None
@@ -1139,6 +1211,14 @@ class ModelCheckResult(BaseModel):
     )
     causality: dict[str, CausalityStroke] = Field(
         ..., description='Connection id -> causal stroke, for drawing the bond strokes.'
+    )
+    frames: dict[str, str] = Field(
+        ...,
+        description='Connection id -> frame name adopted through the bond, for the editor frame badge (D-MB5). Required; an empty object is valid when no bond carries a frame.',
+    )
+    multibond: dict[str, Multibond] | None = Field(
+        None,
+        description='Connection id -> stroke count of a multibond bond: 2 for Planar and 3 for Spatial (D-MB12). Omitted for scalar bonds, whose stroke count is 1.',
     )
     unitFactors: dict[str, float] = Field(
         ..., description='Connection id -> unit conversion factor.'

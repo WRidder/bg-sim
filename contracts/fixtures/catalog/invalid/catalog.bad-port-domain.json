@@ -1,5 +1,5 @@
 {
-  "$comment": "Invalid: port p declares domain \"Electric\", which is not one of the five domain names (plan 3.2).",
+  "$comment": "Invalid: port p declares domain \"Electric\", which is not one of the seven domain names (plan 3.2, D-MB1).",
   "language": "0.1.0",
   "blocks": [
     {

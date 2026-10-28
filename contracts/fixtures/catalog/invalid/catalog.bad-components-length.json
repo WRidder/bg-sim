@@ -1,0 +1,25 @@
+{
+  "$comment": "Invalid: the Planar domain's components.effort has two units, but a multibond domain needs one unit per component: three for Planar, six for Spatial (D-MB1).",
+  "language": "0.1.0",
+  "blocks": [],
+  "junctions": [],
+  "domains": [
+    {
+      "name": "Planar",
+      "effort": {
+        "name": "wrench",
+        "unit": "N*m"
+      },
+      "flow": {
+        "name": "twist",
+        "unit": "rad/s"
+      },
+      "across": "f",
+      "size": 3,
+      "components": {
+        "effort": ["N*m", "N"],
+        "flow": ["rad/s", "m/s"]
+      }
+    }
+  ]
+}

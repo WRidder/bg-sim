@@ -157,7 +157,7 @@ describe("fixture coverage", () => {
     "stdlib:converters/AngleSensor",
   ];
 
-  it("catalog.min.json has every M1 block, both junctions and five domains", () => {
+  it("catalog.min.json has every M1 block, both junctions and seven domains", () => {
     const catalog = readJson(path.join(fixtureDir, "catalog", "valid", "catalog.min.json")) as {
       blocks: { ref: string; source: string }[];
       junctions: { ref: string }[];
@@ -177,13 +177,15 @@ describe("fixture coverage", () => {
       "Rotation",
       "Hydraulic",
       "Generic",
+      "Planar",
+      "Spatial",
     ]);
   });
 
   it("diagnostics.sample.json has one instance of every code", () => {
     const codes = [
-      "E000", "E001", "E002", "E003", "E004", "E005", "E006",
-      "E101", "E102", "E103", "E104", "E105", "E106",
+      "E000", "E001", "E002", "E003", "E004", "E005", "E006", "E007",
+      "E101", "E102", "E103", "E104", "E105", "E106", "E108", "E109",
       "E900", "E901",
       "W201", "W202", "W203", "W204", "W205", "W206",
       "E301", "E302", "E303", "E304",

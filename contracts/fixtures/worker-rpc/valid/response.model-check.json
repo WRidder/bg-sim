@@ -1,5 +1,5 @@
 {
-  "$comment": "A model.check response (plan 3.6): diagnostics, the adopted domain and causal stroke per connection, unit factors, the signal list and the balance stats.",
+  "$comment": "A model.check response (plan 3.6): diagnostics, the adopted domain, causal stroke and frame per connection, the multibond stroke counts, unit factors, the signal list and the balance stats.",
   "id": 42,
   "result": {
     "diagnostics": [],
@@ -15,6 +15,7 @@
       "c4": { "strokeAt": "from" },
       "c5": { "strokeAt": "from" }
     },
+    "frames": {},
     "unitFactors": {
       "c2": 1.0,
       "c3": 1.0,

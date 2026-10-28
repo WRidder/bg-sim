@@ -131,6 +131,9 @@ export async function checkModel(
     causality: isRecord(payload.causality)
       ? (payload.causality as ModelCheckResult["causality"])
       : {},
+    frames: isRecord(payload.frames)
+      ? (payload.frames as ModelCheckResult["frames"])
+      : {},
     unitFactors: isRecord(payload.unitFactors)
       ? (payload.unitFactors as ModelCheckResult["unitFactors"])
       : {},

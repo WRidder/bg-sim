@@ -1,0 +1,61 @@
+{
+  "$comment": "Invalid: subsystem power port b declares frame 7; a frame is a string name such as \"world\" or \"arm1\", or null when the port is frame-neutral (D-MB5).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "BadFrameType",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Mount",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "a",
+                "kind": "power",
+                "domain": "Planar",
+                "size": [3],
+                "frame": "world",
+                "node": "s1",
+                "port": "a"
+              },
+              {
+                "name": "b",
+                "kind": "power",
+                "domain": "Planar",
+                "size": [3],
+                "frame": 7,
+                "node": "s1",
+                "port": "b"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "s1",
+                  "name": "Transform",
+                  "block": { "ref": "stdlib:multibond/FixedTransform2D" },
+                  "position": { "x": 0, "y": 0 }
+                }
+              ],
+              "connections": []
+            }
+          }
+        },
+        "position": { "x": 60, "y": 100 }
+      }
+    ],
+    "connections": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 1000 },
+    "event_limit": 10000
+  }
+}

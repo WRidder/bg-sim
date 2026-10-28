@@ -1,7 +1,7 @@
 /**
  * W1.3 (plan 7.3): the diagnostics panel.
  *
- * The fixture is the 25-diagnostic sample every lane shares. The panel renders
+ * The fixture is the 28-diagnostic sample every lane shares. The panel renders
  * it, filters it by severity, groups it by instance path, and a click selects
  * the node (or announces the source range when the diagnostic has no node).
  */
@@ -28,6 +28,7 @@ function checkResult(diagnostics: Diagnostic[]): ModelCheckResult {
     diagnostics,
     domains: {},
     causality: {},
+    frames: {},
     unitFactors: {},
     signals: [],
     stats: { states: 0, equations: 0 },
@@ -73,11 +74,11 @@ describe("the diagnostics panel", () => {
     apply(fixture);
     render(<DiagnosticsPanel />);
 
-    expect(screen.getByTestId("diagnostics-count-error").textContent).toContain("19");
+    expect(screen.getByTestId("diagnostics-count-error").textContent).toContain("22");
     expect(screen.getByTestId("diagnostics-count-warning").textContent).toContain("6");
     expect(screen.getByTestId("diagnostics-count-info").textContent).toContain("0");
-    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(25);
-    expect(screen.getAllByTestId("diagnostics-group")).toHaveLength(19);
+    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(28);
+    expect(screen.getAllByTestId("diagnostics-group")).toHaveLength(21);
     expect(screen.getByTestId("diagnostics-status").textContent).toContain("Revision 1 checked");
   });
 
@@ -135,7 +136,7 @@ describe("the diagnostics panel", () => {
     );
 
     fireEvent.click(screen.getByTestId("diagnostics-show-all"));
-    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(25);
+    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(28);
     expect(screen.getByTestId("diagnostics-filter-error").getAttribute("aria-pressed")).toBe(
       "true",
     );
@@ -177,15 +178,15 @@ describe("the diagnostics panel", () => {
     render(<DiagnosticsPanel />);
 
     // E103 has two related entries: Plant/Motor1 and Plant/Gear1.
-    fireEvent.click(screen.getByTestId("diagnostic-item-9"));
+    fireEvent.click(screen.getByTestId("diagnostic-item-10"));
     expect(useDocumentStore.getState().selection.nodes).toEqual(["n3"]);
 
-    fireEvent.click(screen.getByTestId("diagnostic-related-9-1"));
+    fireEvent.click(screen.getByTestId("diagnostic-related-10-1"));
     expect(useDocumentStore.getState().selection.nodes).toEqual(["n22"]);
     expect(useDiagnosticsStore.getState().focus?.nodeId).toBe("n22");
 
     // E301 is a binding diagnostic: it has no node and no source range.
-    const noTarget = screen.getByTestId("diagnostic-item-13");
+    const noTarget = screen.getByTestId("diagnostic-item-16");
     expect(noTarget.getAttribute("data-target")).toBe("none");
     const before = useDocumentStore.getState().selection.nodes;
     fireEvent.click(noTarget);
@@ -214,7 +215,7 @@ describe("the diagnostics panel", () => {
     });
 
     const tab = screen.getByRole("tab", { name: /^Diagnostics/ });
-    expect(within(tab).getByLabelText("19 errors")).toBeTruthy();
+    expect(within(tab).getByLabelText("22 errors")).toBeTruthy();
     expect(within(tab).getByLabelText("6 warnings")).toBeTruthy();
   });
 });

@@ -359,6 +359,7 @@ class FakeWorker:
                 ),
                 "domains": {},
                 "causality": {},
+                "frames": {},
                 "unitFactors": {},
                 "signals": [],
                 "stats": {"states": 0, "equations": 0},

@@ -297,11 +297,26 @@
         "kind": { "const": "power" },
         "domain": {
           "title": "DomainName",
-          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
         },
         "size": {
           "type": "array",
           "items": { "type": "integer", "minimum": 1 }
+        },
+        "frame": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "description": "Reference frame of the exposed power port (D-MB5); the subsystem keeps the frame of the internal port it attaches to. Null or absent means frame-neutral."
+        },
+        "effortUnits": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Per-component effort units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit."
+        },
+        "flowUnits": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Per-component flow units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit."
         },
         "node": { "type": "string" },
         "port": { "type": "string" },

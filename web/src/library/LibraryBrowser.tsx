@@ -36,6 +36,8 @@ const DOMAIN_LETTER: Record<DomainName, string> = {
   Rotation: "R",
   Hydraulic: "H",
   Generic: "G",
+  Planar: "P",
+  Spatial: "S",
 };
 
 function portLines(block: CatalogBlock): { key: string; text: string; domain: string }[] {

@@ -394,6 +394,7 @@ describe("inspector fields", () => {
           ],
           domains: {},
           causality: {},
+          frames: {},
           unitFactors: {},
           signals: [],
           stats: { states: 2, equations: 2 },

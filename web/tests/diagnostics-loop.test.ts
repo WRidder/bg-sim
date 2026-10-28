@@ -19,6 +19,7 @@ function checkResult(code: string): ModelCheckResult {
     diagnostics: [{ code, severity: "error", message: code }],
     domains: {},
     causality: {},
+    frames: {},
     unitFactors: {},
     signals: [],
     stats: { states: 0, equations: 0 },

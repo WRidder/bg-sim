@@ -12,7 +12,7 @@ export type JunctionType = "0" | "1";
 export type ModelSubsystemPort = ModelSubsystemSignalPort | ModelSubsystemPowerPort;
 export type SignalDirection = "input" | "output";
 export type ValueType = "Real" | "Int" | "Bool";
-export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic";
+export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
 /**
  * A constant override: number, boolean, expression string or array (vector, matrix).
  */
@@ -149,6 +149,18 @@ export interface ModelSubsystemPowerPort {
   kind: "power";
   domain: DomainName;
   size: number[];
+  /**
+   * Reference frame of the exposed power port (D-MB5); the subsystem keeps the frame of the internal port it attaches to. Null or absent means frame-neutral.
+   */
+  frame?: string | null;
+  /**
+   * Per-component effort units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.
+   */
+  effortUnits?: string[];
+  /**
+   * Per-component flow units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.
+   */
+  flowUnits?: string[];
   node: string;
   port: string;
   $comment?: string;

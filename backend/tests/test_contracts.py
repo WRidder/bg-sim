@@ -87,13 +87,13 @@ M1_BLOCKS: dict[str, str] = {
     "stdlib:converters/AngleSensor": "AngleSensor",
 }
 
-DOMAIN_NAMES = ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+DOMAIN_NAMES = ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
 
-# One instance of every code in the spec's table plus D14's additions and the
-# viewer codes of plan 7.6.
+# One instance of every code in the spec's table plus D14's additions, the
+# multibond codes (E007, E108, E109) and the viewer codes of plan 7.6.
 DIAGNOSTIC_CODES = [
-    "E000", "E001", "E002", "E003", "E004", "E005", "E006",
-    "E101", "E102", "E103", "E104", "E105", "E106",
+    "E000", "E001", "E002", "E003", "E004", "E005", "E006", "E007",
+    "E101", "E102", "E103", "E104", "E105", "E106", "E108", "E109",
     "E900", "E901",
     "W201", "W202", "W203", "W204", "W205", "W206",
     "E301", "E302", "E303", "E304",

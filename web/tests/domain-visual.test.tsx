@@ -250,7 +250,7 @@ describe("hover values", () => {
 });
 
 describe("canvas legend", () => {
-  it("lists every domain, including Planar, with a solid Generic swatch", () => {
+  it("lists every domain, including the multibond domains, with a solid Generic swatch", () => {
     expect(LEGEND_DOMAINS.map((entry) => entry.label)).toEqual([
       "Electrical",
       "Translation",
@@ -258,6 +258,7 @@ describe("canvas legend", () => {
       "Hydraulic",
       "Generic",
       "Planar",
+      "Spatial",
     ]);
     const generic = LEGEND_DOMAINS.find((entry) => entry.id === "Generic");
     expect(generic).toBeDefined();

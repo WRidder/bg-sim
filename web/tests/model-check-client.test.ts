@@ -31,6 +31,7 @@ describe("the model check client", () => {
         diagnostics: [],
         domains: { c1: "Electrical" },
         causality: {},
+        frames: {},
         unitFactors: { c2: 0.001 },
         signals: [],
         stats: { states: 3, equations: 3 },
@@ -50,6 +51,7 @@ describe("the model check client", () => {
     const request = fetchMock.mock.calls[0]?.[1];
     expect(JSON.parse(String(request?.body))).toEqual({ model });
     expect(result.domains).toEqual({ c1: "Electrical" });
+    expect(result.frames).toEqual({});
     expect(result.unitFactors).toEqual({ c2: 0.001 });
     expect(result.stats).toEqual({ states: 3, equations: 3 });
   });

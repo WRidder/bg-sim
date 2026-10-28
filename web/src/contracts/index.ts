@@ -30,6 +30,7 @@ export type { CatalogDomain } from "./catalog";
 export type { CatalogJunction } from "./catalog";
 export type { CausalityDecl } from "./catalog";
 export type { ConstantDecl } from "./catalog";
+export type { DomainComponents } from "./catalog";
 export type { DomainVariable } from "./catalog";
 export type { IoDecl } from "./catalog";
 export type { ParameterDecl } from "./catalog";

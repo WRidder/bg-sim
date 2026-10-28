@@ -37,6 +37,8 @@ const DOMAIN_TOKENS: Record<DomainName, string> = {
   Rotation: "var(--domain-rotation)",
   Hydraulic: "var(--domain-hydraulic)",
   Generic: "var(--domain-generic)",
+  Planar: "var(--domain-planar)",
+  Spatial: "var(--domain-spatial)",
 };
 
 /** The CSS token of a domain (plan 7.3); unknown domains stay generic. */

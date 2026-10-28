@@ -367,6 +367,7 @@
         "diagnostics",
         "domains",
         "causality",
+        "frames",
         "unitFactors",
         "signals",
         "stats"
@@ -382,7 +383,7 @@
           "type": "object",
           "additionalProperties": {
             "title": "DomainName",
-            "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"],
+            "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"],
             "description": "Adopted domain per connection id."
           },
           "description": "Connection id -> adopted domain, for colouring the bonds."
@@ -391,6 +392,16 @@
           "type": "object",
           "additionalProperties": { "$ref": "#/$defs/causalityStroke" },
           "description": "Connection id -> causal stroke, for drawing the bond strokes."
+        },
+        "frames": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Connection id -> frame name adopted through the bond, for the editor frame badge (D-MB5). Required; an empty object is valid when no bond carries a frame."
+        },
+        "multibond": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "enum": [2, 3] },
+          "description": "Connection id -> stroke count of a multibond bond: 2 for Planar and 3 for Spatial (D-MB12). Omitted for scalar bonds, whose stroke count is 1."
         },
         "unitFactors": {
           "type": "object",

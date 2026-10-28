@@ -1,0 +1,141 @@
+{
+  "$comment": "A planar multibond slice (C-MB1): Ground -> 1-junction -> Arm, joined by Planar bonds in the `world` frame. The Arm subsystem exposes one Planar power port and bridges the boundary into its body frame through a FixedTransform2D. The port carries the per-component effort/flow units (D-MB10).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "PlanarArmMultibond",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Ground1",
+        "block": { "ref": "stdlib:planar/Ground2D" },
+        "position": { "x": 60, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "J1",
+        "block": { "junction": "1" },
+        "position": { "x": 260, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n3",
+        "name": "Arm",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "p",
+                "kind": "power",
+                "domain": "Planar",
+                "size": [3],
+                "frame": "world",
+                "effortUnits": ["N*m", "N", "N"],
+                "flowUnits": ["rad/s", "m/s", "m/s"],
+                "node": "s1",
+                "port": "a"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "s1",
+                  "name": "Mount",
+                  "block": { "ref": "stdlib:multibond/FixedTransform2D" },
+                  "position": { "x": 0, "y": 0 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "x": "0.0", "y": "0.3", "theta": "0.0" },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "s2",
+                  "name": "Body",
+                  "block": { "ref": "stdlib:planar/RigidBody2D" },
+                  "position": { "x": 220, "y": 0 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "m": "1.2", "J": "0.04" },
+                  "constants": {},
+                  "starts": { "P": "[0.0, 0.0, 0.0]" },
+                  "ui": { "showLabel": true, "color": null }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "sc1",
+                  "kind": "bond",
+                  "from": { "node": "s1", "port": "b" },
+                  "to": { "node": "s2", "port": "p" },
+                  "route": [],
+                  "label": null
+                }
+              ],
+              "subsystemPorts": [],
+              "annotations": []
+            }
+          }
+        },
+        "position": { "x": 520, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n3", "port": "p" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 2.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 2000 },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Planar momentum",
+      "signals": ["Arm/Body/P[1]", "Arm/Body/P[2]"]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

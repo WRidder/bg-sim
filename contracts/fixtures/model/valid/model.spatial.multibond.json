@@ -1,0 +1,168 @@
+{
+  "$comment": "A spatial multibond slice (C-MB1): Ground -> 1-junction -> Body3D with an ExternalWrench tap, all bonded in the `world` frame with the Spatial domain (D = 6). The Body3D subsystem bridges `world` to its body frame through a FixedTransform3D and carries the six per-component effort/flow units across the boundary.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "SpatialBodyMultibond",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Ground1",
+        "block": { "ref": "stdlib:spatial/Ground3D" },
+        "position": { "x": 60, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n2",
+        "name": "J1",
+        "block": { "junction": "1" },
+        "position": { "x": 260, "y": 200 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n3",
+        "name": "Body",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "p",
+                "kind": "power",
+                "domain": "Spatial",
+                "size": [6],
+                "frame": "world",
+                "effortUnits": ["N*m", "N*m", "N*m", "N", "N", "N"],
+                "flowUnits": ["rad/s", "rad/s", "rad/s", "m/s", "m/s", "m/s"],
+                "node": "s1",
+                "port": "a"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "s1",
+                  "name": "Mount",
+                  "block": { "ref": "stdlib:multibond/FixedTransform3D" },
+                  "position": { "x": 0, "y": 0 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "x": "0.0",
+                    "y": "0.0",
+                    "z": "0.2",
+                    "roll": "0.0",
+                    "pitch": "0.0",
+                    "yaw": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": { "showLabel": true, "color": null }
+                },
+                {
+                  "id": "s2",
+                  "name": "Link",
+                  "block": { "ref": "stdlib:spatial/RigidBody3D" },
+                  "position": { "x": 220, "y": 0 },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": { "m": "2.5", "J": "[0.02, 0.03, 0.04]" },
+                  "constants": {},
+                  "starts": { "P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]" },
+                  "ui": { "showLabel": true, "color": null }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "sc1",
+                  "kind": "bond",
+                  "from": { "node": "s1", "port": "b" },
+                  "to": { "node": "s2", "port": "p" },
+                  "route": [],
+                  "label": null
+                }
+              ],
+              "subsystemPorts": [],
+              "annotations": []
+            }
+          }
+        },
+        "position": { "x": 520, "y": 160 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "n4",
+        "name": "Wrench1",
+        "block": { "ref": "stdlib:multibond/ExternalWrench" },
+        "position": { "x": 520, "y": 340 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "f": "[0.0, 0.0, -9.81]", "tau": "[0.0, 0.0, 0.0]" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n3", "port": "p" },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "bond",
+        "from": { "node": "n2" },
+        "to": { "node": "n4", "port": "p" },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 2000 },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Spatial momentum",
+      "signals": ["Body/Link/P[1]", "Body/Link/P[4]"]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

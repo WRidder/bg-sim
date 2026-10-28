@@ -1,0 +1,51 @@
+{
+  "$comment": "Invalid: the subsystem power port p spells the domain \"Planer\"; the seven contract domains are Electrical, Translation, Rotation, Hydraulic, Generic, Planar and Spatial (D-MB1).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "BadDomainSpelling",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Arm",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "p",
+                "kind": "power",
+                "domain": "Planer",
+                "size": [3],
+                "node": "s1",
+                "port": "p"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "s1",
+                  "name": "Body",
+                  "block": { "ref": "stdlib:planar/RigidBody2D" },
+                  "position": { "x": 0, "y": 0 }
+                }
+              ],
+              "connections": []
+            }
+          }
+        },
+        "position": { "x": 60, "y": 100 }
+      }
+    ],
+    "connections": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 1000 },
+    "event_limit": 10000
+  }
+}

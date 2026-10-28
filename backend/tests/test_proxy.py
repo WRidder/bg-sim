@@ -227,6 +227,7 @@ def test_model_check_returns_the_worker_result_unchanged(fake_settings, schema_v
             "diagnostics": diagnostics,
             "domains": {},
             "causality": {},
+            "frames": {},
             "unitFactors": {},
             "signals": [],
             "stats": {"states": 0, "equations": 0},

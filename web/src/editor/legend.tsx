@@ -24,7 +24,7 @@ export interface LegendKey {
   description: string;
 }
 
-/** Every domain of plan 7.3, including Planar (not a contract domain yet). */
+/** Every domain of plan 7.3, including the two multibond domains of D-MB1. */
 export const LEGEND_DOMAINS: readonly LegendDomain[] = [
   ...DOMAIN_LEGEND.map((entry) => ({
     id: entry.domain,
@@ -41,6 +41,7 @@ export const LEGEND_DOMAINS: readonly LegendDomain[] = [
               : "var(--domain-generic)",
   })),
   { id: "Planar", label: "Planar", token: "var(--domain-planar)" },
+  { id: "Spatial", label: "Spatial", token: "var(--domain-spatial)" },
 ];
 
 export const LEGEND_KEYS: readonly LegendKey[] = [
