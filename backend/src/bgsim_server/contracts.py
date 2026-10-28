@@ -127,7 +127,7 @@ class PortDecl(BaseModel):
     size: list[conint(ge=1)]
     frame: constr(min_length=1) | None = Field(
         None,
-        description='Reference frame this port lives in (D-MB5). A bond or wire may only join ports in the same frame; FixedTransform and JointTransform are the legal bridges. Null or absent means frame-neutral, as scalar domains are.',
+        description="Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them.",
     )
 
 
@@ -189,16 +189,18 @@ class CatalogJunction(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class DomainName1(Enum):
+    Electrical = 'Electrical'
+    Translation = 'Translation'
+    Rotation = 'Rotation'
+    Hydraulic = 'Hydraulic'
+    Generic = 'Generic'
+
+
 class AcrossField(Enum):
     e = 'e'
     f = 'f'
     NoneType_None = None
-
-
-class Size(Enum):
-    int_1 = 1
-    int_3 = 3
-    int_6 = 6
 
 
 class EffortItem(RootModel[constr(min_length=1)]):
@@ -209,21 +211,39 @@ class FlowItem(RootModel[constr(min_length=1)]):
     root: constr(min_length=1)
 
 
-class DomainComponents(BaseModel):
+class PlanarComponents(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     effort: list[EffortItem] = Field(
         ...,
-        description='Effort unit per component: torque first, then the force components. Planar is ["N*m","N","N"], Spatial ["N*m","N*m","N*m","N","N","N"].',
-        max_length=6,
+        description='Effort unit per component, exactly 3: torque first, then the two force components. The spec value is ["N*m","N","N"].',
+        max_length=3,
         min_length=3,
     )
     flow: list[FlowItem] = Field(
         ...,
-        description='Flow unit per component: angular velocity first, then the linear velocities. Planar is ["rad/s","m/s","m/s"], Spatial ["rad/s","rad/s","rad/s","m/s","m/s","m/s"].',
-        max_length=6,
+        description='Flow unit per component, exactly 3: angular velocity first, then the two linear velocities. The spec value is ["rad/s","m/s","m/s"].',
+        max_length=3,
         min_length=3,
+    )
+
+
+class SpatialComponents(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    effort: list[EffortItem] = Field(
+        ...,
+        description='Effort unit per component, exactly 6: three torques, then three forces. The spec value is ["N*m","N*m","N*m","N","N","N"].',
+        max_length=6,
+        min_length=6,
+    )
+    flow: list[FlowItem] = Field(
+        ...,
+        description='Flow unit per component, exactly 6: three angular velocities, then three linear velocities. The spec value is ["rad/s","rad/s","rad/s","m/s","m/s","m/s"].',
+        max_length=6,
+        min_length=6,
     )
 
 
@@ -271,7 +291,7 @@ class ProbeKind(Enum):
     window = 'window'
 
 
-class Size1(BaseModel):
+class Size(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -359,29 +379,14 @@ class ModelSubsystemSignalPort(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
-class ModelSubsystemPowerPort(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
-    kind: Literal['power']
-    domain: DomainName = Field(..., title='DomainName')
-    size: list[conint(ge=1)]
-    frame: constr(min_length=1) | None = Field(
-        None,
-        description='Reference frame of the exposed power port (D-MB5); the subsystem keeps the frame of the internal port it attaches to. Null or absent means frame-neutral.',
-    )
-    effortUnits: list[constr(min_length=1)] | None = Field(
-        None,
-        description='Per-component effort units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.',
-    )
-    flowUnits: list[constr(min_length=1)] | None = Field(
-        None,
-        description='Per-component flow units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.',
-    )
-    node: str
-    port: str
-    field_comment: str | None = Field(None, alias='$comment')
+class DomainName2(Enum):
+    Electrical = 'Electrical'
+    Translation = 'Translation'
+    Rotation = 'Rotation'
+    Hydraulic = 'Hydraulic'
+    Generic = 'Generic'
+    Planar = 'Planar'
+    Spatial = 'Spatial'
 
 
 class ConnectionKind(Enum):
@@ -479,7 +484,7 @@ class ModelPlot(BaseModel):
     title: str
     signals: list[
         constr(
-            pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?(?:\.[A-Za-z_][A-Za-z0-9_]*)?$'
+            pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?(?:\.[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?)?$'
         )
     ]
     field_comment: str | None = Field(None, alias='$comment')
@@ -494,6 +499,34 @@ class ModelScene(BaseModel):
         description='Scene file relative to the project directory, e.g. scenes/drivetrain.sdf.',
     )
     field_comment: str | None = Field(None, alias='$comment')
+
+
+class UnitArray3Item(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class UnitArray3(RootModel[list[UnitArray3Item]]):
+    root: list[UnitArray3Item] = Field(
+        ...,
+        description='Three unit strings, one per component (Planar).',
+        max_length=3,
+        min_length=3,
+        title='UnitArray3',
+    )
+
+
+class UnitArray6Item(RootModel[constr(min_length=1)]):
+    root: constr(min_length=1)
+
+
+class UnitArray6(RootModel[list[UnitArray6Item]]):
+    root: list[UnitArray6Item] = Field(
+        ...,
+        description='Six unit strings, one per component (Spatial).',
+        max_length=6,
+        min_length=6,
+        title='UnitArray6',
+    )
 
 
 class Project(BaseModel):
@@ -550,8 +583,11 @@ class RunSignal(BaseModel):
         extra='forbid',
     )
     id: constr(
-        pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?(?:\.[A-Za-z_][A-Za-z0-9_]*)?$'
-    ) = Field(..., description='Signal id (plan 3.1).')
+        pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?(?:\.[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?)?$'
+    ) = Field(
+        ...,
+        description='Signal id (plan 3.1). A multibond port is recorded per component, so a component carries both suffixes: <path>/<port>.e[k] or <path>/<port>.f[k], each with its own unit; <path>/<port>.P is the scalar power sum in W.',
+    )
     unit: str | None = None
     kind: RunSignalKind = Field(..., title='RunSignalKind')
     path: constr(pattern=r'^([A-Za-z_][A-Za-z0-9_]*/)*[A-Za-z_][A-Za-z0-9_]*$') = Field(
@@ -844,29 +880,51 @@ class BlockInterface(BaseModel):
     ports: list[PortDecl]
     variables: list[VariableDecl]
     causality: list[CausalityDecl]
+    dimension: ModelDimension | None = Field(
+        None,
+        description='Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12).',
+        title='ModelDimension',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
-class CatalogDomain(BaseModel):
+class PlanarDomain(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: DomainName = Field(..., title='DomainName')
+    name: Literal['Planar']
+    effort: DomainVariable
+    flow: DomainVariable
+    across: Literal['f']
+    size: Literal[3]
+    components: PlanarComponents
+
+
+class SpatialDomain(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: Literal['Spatial']
+    effort: DomainVariable
+    flow: DomainVariable
+    across: Literal['f']
+    size: Literal[6]
+    components: SpatialComponents
+
+
+class ScalarDomain(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: DomainName1 = Field(..., title='DomainName')
     effort: DomainVariable
     flow: DomainVariable
     across: AcrossField | None = Field(
         ...,
-        description='Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted.',
+        description='Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted.',
         title='AcrossField',
     )
-    size: Size = Field(
-        ...,
-        description='Port size: 1 for the scalar domains, 3 for Planar and 6 for Spatial (D-MB1). The arrays in components have one entry per component.',
-    )
-    components: DomainComponents | None = Field(
-        None,
-        description='Per-component effort and flow units of a multibond domain; null or absent for the scalar domains, which the single effort and flow descriptors already cover.',
-    )
+    size: Literal[1]
 
 
 class DiagnosticSource(BaseModel):
@@ -888,19 +946,36 @@ class ModelProbe(BaseModel):
     kind: ProbeKind = Field(..., title='ProbeKind')
     position: ModelPoint
     panelPosition: ModelPoint | None = None
-    size: Size1 | None = None
+    size: Size | None = None
     open: bool | None = None
     links: list[ModelProbeLink]
     panels: list[ModelProbePanel] | None = None
     field_comment: str | None = Field(None, alias='$comment')
 
 
-class ModelSubsystemPort(RootModel[ModelSubsystemSignalPort | ModelSubsystemPowerPort]):
-    root: ModelSubsystemSignalPort | ModelSubsystemPowerPort = Field(
-        ...,
-        description='A port exposed by a subsystem: the outside face plus the internal node and port it attaches to.',
-        title='ModelSubsystemPort',
+class ModelSubsystemPowerPort(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
     )
+    name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
+    kind: Literal['power']
+    domain: DomainName2 = Field(..., title='DomainName')
+    size: list[conint(ge=1)]
+    frame: constr(min_length=1) | None = Field(
+        None,
+        description="Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007.",
+    )
+    effortUnits: UnitArray3 | UnitArray6 | None = Field(
+        None,
+        description="Per-component effort units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.effort for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.",
+    )
+    flowUnits: UnitArray3 | UnitArray6 | None = Field(
+        None,
+        description="Per-component flow units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.flow for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.",
+    )
+    node: str
+    port: str
+    field_comment: str | None = Field(None, alias='$comment')
 
 
 class ModelConnection(BaseModel):
@@ -1088,18 +1163,12 @@ class Binding(
     )
 
 
-class Catalog(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    language: str = Field(
+class CatalogDomain(RootModel[PlanarDomain | SpatialDomain | ScalarDomain]):
+    root: PlanarDomain | SpatialDomain | ScalarDomain = Field(
         ...,
-        description='Language version stamp, written into every saved model and block.',
+        description='One power domain. The name partitions the shape: Planar and Spatial carry authoritative per-component unit arrays and size 3/6; the scalar domains carry size 1 and must not have a components array. For a multibond domain the scalar effort/flow descriptors are only the angular/first-component label kept for existing consumers.',
+        title='CatalogDomain',
     )
-    blocks: list[CatalogBlock]
-    junctions: list[CatalogJunction]
-    domains: list[CatalogDomain]
-    field_comment: str | None = Field(None, alias='$comment')
 
 
 class Diagnostic(BaseModel):
@@ -1150,6 +1219,14 @@ class Diagnostic(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ModelSubsystemPort(RootModel[ModelSubsystemSignalPort | ModelSubsystemPowerPort]):
+    root: ModelSubsystemSignalPort | ModelSubsystemPowerPort = Field(
+        ...,
+        description='A port exposed by a subsystem: the outside face plus the internal node and port it attaches to.',
+        title='ModelSubsystemPort',
+    )
+
+
 class RunManifest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -1169,15 +1246,6 @@ class RunManifest(BaseModel):
     time: RunTime
     diagnostics: list[Diagnostic]
     layout: Literal['columnar-f64-v1']
-    field_comment: str | None = Field(None, alias='$comment')
-
-
-class CatalogGetResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: int
-    result: Catalog
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -1206,7 +1274,7 @@ class ModelCheckResult(BaseModel):
         extra='forbid',
     )
     diagnostics: list[Diagnostic]
-    domains: dict[str, DomainName] = Field(
+    domains: dict[str, DomainName2] = Field(
         ..., description='Connection id -> adopted domain, for colouring the bonds.'
     )
     causality: dict[str, CausalityStroke] = Field(
@@ -1214,17 +1282,18 @@ class ModelCheckResult(BaseModel):
     )
     frames: dict[str, str] = Field(
         ...,
-        description='Connection id -> frame name adopted through the bond, for the editor frame badge (D-MB5). Required; an empty object is valid when no bond carries a frame.',
+        description='Connection id -> instance-qualified frame name adopted through the bond, for the editor frame badge (D-MB5). The value is "{path}/{frame}" (e.g. Arm1/body), so the catalog frame name body on two bodies never compares equal. Required; an empty object is valid when no bond carries a frame.',
     )
     multibond: dict[str, Multibond] | None = Field(
         None,
-        description='Connection id -> stroke count of a multibond bond: 2 for Planar and 3 for Spatial (D-MB12). Omitted for scalar bonds, whose stroke count is 1.',
+        description="Connection id -> stroke count of a multibond bond: 2 for Planar and 3 for Spatial (D-MB12). Must agree with the connection's adopted domain (J-MB1 invariant). Omitted for scalar bonds, whose stroke count is 1.",
     )
     unitFactors: dict[str, float] = Field(
         ..., description='Connection id -> unit conversion factor.'
     )
     signals: list[RunSignal] = Field(
-        ..., description='The signals this model will record, in recording order.'
+        ...,
+        description='The signals this model will record, in recording order. A multibond power port is recorded per component: <path>/<port>.e[k] and <path>/<port>.f[k] each carry their own unit, and the derived <path>/<port>.P is the scalar power sum in W.',
     )
     stats: ModelCheckStats
     field_comment: str | None = Field(None, alias='$comment')
@@ -1249,12 +1318,35 @@ class Bindings(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class Catalog(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    language: str = Field(
+        ...,
+        description='Language version stamp, written into every saved model and block.',
+    )
+    blocks: list[CatalogBlock]
+    junctions: list[CatalogJunction]
+    domains: list[CatalogDomain]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class Diagnostics(RootModel[list[Diagnostic]]):
     root: list[Diagnostic] = Field(
         ...,
         description='A list of diagnostics (plan 3.4). Every validation pass, the worker and the viewer report in this shape; the editor panel, the canvas markers and the code view all consume it.',
         title='Diagnostics',
     )
+
+
+class CatalogGetResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: Catalog
+    field_comment: str | None = Field(None, alias='$comment')
 
 
 class BlockCheckResponse(BaseModel):

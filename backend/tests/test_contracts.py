@@ -90,7 +90,8 @@ M1_BLOCKS: dict[str, str] = {
 DOMAIN_NAMES = ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
 
 # One instance of every code in the spec's table plus D14's additions, the
-# multibond codes (E007, E108, E109) and the viewer codes of plan 7.6.
+# multibond codes (E007 frame mismatch, E108 invalid inertia parameters,
+# E109 singular assembled mass) and the viewer codes of plan 7.6.
 DIAGNOSTIC_CODES = [
     "E000", "E001", "E002", "E003", "E004", "E005", "E006", "E007",
     "E101", "E102", "E103", "E104", "E105", "E106", "E108", "E109",
@@ -130,6 +131,7 @@ def _fixture_cases(kind: str) -> list[tuple[str, str, Path]]:
 
 VALID_CASES = _fixture_cases("valid")
 INVALID_CASES = _fixture_cases("invalid")
+SEMANTIC_CASES = _fixture_cases("semantic")
 
 
 def _read(path: Path) -> object:
@@ -188,6 +190,18 @@ def test_invalid_fixture_is_rejected(schema_name: str, label: str, path: Path) -
     document = _read(path)
     assert _reason(document), f"{label}: invalid fixtures explain the reason in $comment"
     assert not VALIDATORS[schema_name].is_valid(document), f"{label}: expected to be rejected"
+
+
+@pytest.mark.parametrize("schema_name,label,path", SEMANTIC_CASES, ids=[c[1] for c in SEMANTIC_CASES])
+def test_semantic_fixture_is_schema_valid_and_names_the_expected_code(
+    schema_name: str, label: str, path: Path
+) -> None:
+    document = _read(path)
+    errors = sorted(VALIDATORS[schema_name].iter_errors(document), key=lambda e: list(e.path))
+    assert not errors, "\n".join(f"{list(e.path)}: {e.message}" for e in errors)
+    assert re.match(r"^expected E\d{3}: ", _reason(document)), (
+        f"{label}: a semantic fixture must start its $comment with `expected E<code>: `"
+    )
 
 
 # --------------------------------------------------------------------------- generated models

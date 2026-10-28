@@ -1,0 +1,50 @@
+{
+  "$comment": "expected E006: the equation `ddt(P) ~ tau + F` adds a torque [N*m] to a force [N]; a component-wise multibond equation may never mix them (D-MB10).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "SemanticE006UnitMismatch",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "World",
+        "block": {
+          "inline": {
+            "source": "@block GroundPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @equations p.f ~ [0.0, 0.0, 0.0]\n    @causality p => (:flow_out, :fixed)\nend"
+          }
+        },
+        "position": { "x": 60, "y": 100 }
+      },
+      {
+        "id": "n2",
+        "name": "BadUnits",
+        "block": {
+          "inline": {
+            "source": "@block BadUnits begin\n    @ports a::Power{Planar}, [frame = \"world\"]\n    @parameters begin\n        tau::Real = 1.0, [unit = \"N*m\", description = \"Torque component\"]\n        F::Real = 1.0, [unit = \"N\", description = \"Force component\"]\n    end\n    @variables P::Real = 0.0, [state = :prefer]\n    @equations begin\n        ddt(P) ~ tau + F\n        a.e[1] ~ tau\n        a.e[2] ~ F\n    end\nend"
+          }
+        },
+        "position": { "x": 280, "y": 100 }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2", "port": "a" },
+        "route": [],
+        "label": null
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 1000 },
+    "event_limit": 10000
+  }
+}

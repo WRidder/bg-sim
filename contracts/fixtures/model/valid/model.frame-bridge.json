@@ -1,5 +1,5 @@
 {
-  "$comment": "A frame bridge (D-MB5): the Mount node is a FixedTransform2D whose port `a` lives in `world` and whose port `b` lives in `arm1`. The two bonds stay frame-consistent (Ground -> Mount in world, Mount -> Arm in arm1), so the transform is the only legal bridge between the frames.",
+  "$comment": "A legal frame bridge (D-MB5): inline Ground(world) -> 1-junction -> Mount.a(world). Inside Mount, an inline FixedTransform2D declares a: world and b: arm; Mount.b(arm) -> Arm.p(arm), and Arm's internal Body port is arm. Every bond joins equal named frames; only the transform changes frames, and the subsystem port frames match their internal attachments.",
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "PlanarFrameBridge",
@@ -8,7 +8,11 @@
       {
         "id": "n1",
         "name": "World",
-        "block": { "ref": "stdlib:planar/Ground2D" },
+        "block": {
+          "inline": {
+            "source": "@block GroundPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @equations p.f ~ [0.0, 0.0, 0.0]\n    @causality p => (:flow_out, :fixed)\nend"
+          }
+        },
         "position": { "x": 60, "y": 200 },
         "rotation": 0,
         "flipX": false,
@@ -51,7 +55,7 @@
                 "kind": "power",
                 "domain": "Planar",
                 "size": [3],
-                "frame": "arm1",
+                "frame": "arm",
                 "effortUnits": ["N*m", "N", "N"],
                 "flowUnits": ["rad/s", "m/s", "m/s"],
                 "node": "s1",
@@ -63,7 +67,11 @@
                 {
                   "id": "s1",
                   "name": "Transform",
-                  "block": { "ref": "stdlib:multibond/FixedTransform2D" },
+                  "block": {
+                    "inline": {
+                      "source": "@block FixedTransform2D begin\n    @ports begin\n        a::Power{Planar}, [frame = \"world\"]\n        b::Power{Planar}, [frame = \"arm\"]\n    end\n    @parameters begin\n        x::Real = 0.4, [unit = \"m\"]\n        y::Real = 0.0, [unit = \"m\"]\n        theta::Real = 0.0, [unit = \"rad\"]\n    end\n    @equations begin\n        # g maps arm -> world; a.f = Ad(g) b.f and b.e = Ad(g)^T a.e (D-MB5).\n        a.f[1] ~ b.f[1]\n        a.f[2] ~ -y * b.f[1] + cos(theta) * b.f[2] - sin(theta) * b.f[3]\n        a.f[3] ~ x * b.f[1] + sin(theta) * b.f[2] + cos(theta) * b.f[3]\n        b.e[1] ~ a.e[1] - y * a.e[2] + x * a.e[3]\n        b.e[2] ~ cos(theta) * a.e[2] + sin(theta) * a.e[3]\n        b.e[3] ~ -sin(theta) * a.e[2] + cos(theta) * a.e[3]\n    end\nend"
+                    }
+                  },
                   "position": { "x": 0, "y": 0 },
                   "rotation": 0,
                   "flipX": false,
@@ -79,7 +87,7 @@
             }
           }
         },
-        "position": { "x": 520, "y": 200 },
+        "position": { "x": 500, "y": 200 },
         "rotation": 0,
         "flipX": false,
         "params": {},
@@ -98,7 +106,7 @@
                 "kind": "power",
                 "domain": "Planar",
                 "size": [3],
-                "frame": "arm1",
+                "frame": "arm",
                 "effortUnits": ["N*m", "N", "N"],
                 "flowUnits": ["rad/s", "m/s", "m/s"],
                 "node": "s2",
@@ -110,7 +118,11 @@
                 {
                   "id": "s2",
                   "name": "Body",
-                  "block": { "ref": "stdlib:planar/RigidBody2D" },
+                  "block": {
+                    "inline": {
+                      "source": "@block BodyPlanar begin\n    @ports p::Power{Planar}, [frame = \"arm\"]\n    @parameters begin\n        m::Real = 1.2, [unit = \"kg\", min = 0]\n        J::Real = 0.04, [unit = \"kg*m^2\", min = 0]\n    end\n    @variables P::Vec{3} = [0.0, 0.0, 0.0], [state = :prefer]\n    @equations begin\n        p.f[1] ~ P[1] / J\n        p.f[2] ~ P[2] / m\n        p.f[3] ~ P[3] / m\n        for k in 1:3\n            ddt(P[k]) ~ p.e[k]\n        end\n    end\n    @causality p => :flow_out\nend"
+                    }
+                  },
                   "position": { "x": 0, "y": 0 },
                   "rotation": 0,
                   "flipX": false,
@@ -126,7 +138,7 @@
             }
           }
         },
-        "position": { "x": 760, "y": 200 },
+        "position": { "x": 740, "y": 200 },
         "rotation": 0,
         "flipX": false,
         "params": {},

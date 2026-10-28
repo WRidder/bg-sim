@@ -1,0 +1,25 @@
+{
+  "$comment": "Invalid: the Spatial domain lists three component units; a Spatial port has six components (D-MB1).",
+  "language": "0.1.0",
+  "blocks": [],
+  "junctions": [],
+  "domains": [
+    {
+      "name": "Spatial",
+      "effort": {
+        "name": "wrench",
+        "unit": "N*m"
+      },
+      "flow": {
+        "name": "twist",
+        "unit": "rad/s"
+      },
+      "across": "f",
+      "size": 6,
+      "components": {
+        "effort": ["N*m", "N*m", "N*m"],
+        "flow": ["rad/s", "rad/s", "rad/s"]
+      }
+    }
+  ]
+}

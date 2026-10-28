@@ -1,0 +1,50 @@
+{
+  "$comment": "expected E108: the inline body `Body` declares `m = 0`; an inertia parameter must be strictly positive (E108, not E109).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "SemanticE108InvalidInertia",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "World",
+        "block": {
+          "inline": {
+            "source": "@block GroundPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @equations p.f ~ [0.0, 0.0, 0.0]\n    @causality p => (:flow_out, :fixed)\nend"
+          }
+        },
+        "position": { "x": 60, "y": 100 }
+      },
+      {
+        "id": "n2",
+        "name": "Body",
+        "block": {
+          "inline": {
+            "source": "@block ZeroMassBody begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @parameters begin\n        m::Real = 0.0, [unit = \"kg\", min = 0, description = \"Mass\"]\n        J::Real = 0.02, [unit = \"kg*m^2\", min = 0, description = \"Yaw inertia\"]\n    end\n    @variables P::Vec{3} = [0.0, 0.0, 0.0], [state = :prefer]\n    @equations begin\n        p.f[1] ~ P[1] / J\n        p.f[2] ~ P[2] / m\n        p.f[3] ~ P[3] / m\n        for k in 1:3\n            ddt(P[k]) ~ p.e[k]\n        end\n    end\n    @causality p => :flow_out\nend"
+          }
+        },
+        "position": { "x": 280, "y": 100 }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": { "node": "n1", "port": "p" },
+        "to": { "node": "n2", "port": "p" },
+        "route": [],
+        "label": null
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 1000 },
+    "event_limit": 10000
+  }
+}

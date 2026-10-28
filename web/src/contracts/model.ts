@@ -14,6 +14,20 @@ export type SignalDirection = "input" | "output";
 export type ValueType = "Real" | "Int" | "Bool";
 export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
 /**
+ * Three unit strings, one per component (Planar).
+ *
+ * @minItems 3
+ * @maxItems 3
+ */
+export type UnitArray3 = [string, string, string];
+/**
+ * Six unit strings, one per component (Spatial).
+ *
+ * @minItems 6
+ * @maxItems 6
+ */
+export type UnitArray6 = [string, string, string, string, string, string];
+/**
  * A constant override: number, boolean, expression string or array (vector, matrix).
  */
 export type ModelConstantValue = number | boolean | string | (number | number[])[];
@@ -150,17 +164,17 @@ export interface ModelSubsystemPowerPort {
   domain: DomainName;
   size: number[];
   /**
-   * Reference frame of the exposed power port (D-MB5); the subsystem keeps the frame of the internal port it attaches to. Null or absent means frame-neutral.
+   * Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007.
    */
   frame?: string | null;
   /**
-   * Per-component effort units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.
+   * Per-component effort units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.effort for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.
    */
-  effortUnits?: string[];
+  effortUnits?: UnitArray3 | UnitArray6;
   /**
-   * Per-component flow units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.
+   * Per-component flow units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.flow for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.
    */
-  flowUnits?: string[];
+  flowUnits?: UnitArray3 | UnitArray6;
   node: string;
   port: string;
   $comment?: string;

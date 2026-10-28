@@ -56,7 +56,9 @@ function validator(name: SchemaName) {
   return validate;
 }
 
-function fixtureFiles(kind: "valid" | "invalid"): { name: SchemaName; file: string; label: string }[] {
+function fixtureFiles(
+  kind: "valid" | "invalid" | "semantic",
+): { name: SchemaName; file: string; label: string }[] {
   const cases: { name: SchemaName; file: string; label: string }[] = [];
   for (const name of schemaNames) {
     const base = path.join(fixtureDir, name, kind);
@@ -75,6 +77,7 @@ function fixtureFiles(kind: "valid" | "invalid"): { name: SchemaName; file: stri
 
 const validFixtures = fixtureFiles("valid");
 const invalidFixtures = fixtureFiles("invalid");
+const semanticFixtures = fixtureFiles("semantic");
 
 describe("schemas", () => {
   it("registers all eight schemas", () => {
@@ -115,6 +118,20 @@ describe("invalid fixtures", () => {
       expect(comment, `${testCase.label} needs a $comment`).toBeTruthy();
     }
   });
+});
+
+describe("semantic fixtures", () => {
+  it.each(semanticFixtures.map((c) => [c.label, c] as const))(
+    "%s is schema-valid and names the expected code",
+    (_label, testCase) => {
+      const validate = validator(testCase.name);
+      const ok = validate(readJson(testCase.file));
+      expect(validate.errors, JSON.stringify(validate.errors, null, 2)).toBeNull();
+      expect(ok).toBe(true);
+      const document = readJson(testCase.file) as { $comment?: string };
+      expect(document.$comment, `${testCase.label} needs a $comment`).toMatch(/^expected E\d{3}: /);
+    },
+  );
 });
 
 describe("fixture coverage", () => {
@@ -183,6 +200,8 @@ describe("fixture coverage", () => {
   });
 
   it("diagnostics.sample.json has one instance of every code", () => {
+    // Includes the multibond codes: E007 frame mismatch, E108 invalid inertia
+    // parameters, E109 singular assembled mass.
     const codes = [
       "E000", "E001", "E002", "E003", "E004", "E005", "E006", "E007",
       "E101", "E102", "E103", "E104", "E105", "E106", "E108", "E109",

@@ -1,5 +1,5 @@
 {
-  "$comment": "A spatial multibond slice (C-MB1): Ground -> 1-junction -> Body3D with an ExternalWrench tap, all bonded in the `world` frame with the Spatial domain (D = 6). The Body3D subsystem bridges `world` to its body frame through a FixedTransform3D and carries the six per-component effort/flow units across the boundary.",
+  "$comment": "A self-contained spatial multibond slice (C-MB1): inline Ground(world) -> 1-junction -> inline FixedTransform3D(a: world, b: base) -> inline BodySpatial(base). The six-component ports and the transform's two declared frames are the point; the junction is frame-neutral (D-MB5).",
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "SpatialBodyMultibond",
@@ -7,8 +7,12 @@
     "nodes": [
       {
         "id": "n1",
-        "name": "Ground1",
-        "block": { "ref": "stdlib:spatial/Ground3D" },
+        "name": "World",
+        "block": {
+          "inline": {
+            "source": "@block GroundSpatial begin\n    @ports p::Power{Spatial}, [frame = \"world\"]\n    @equations p.f ~ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]\n    @causality p => (:flow_out, :fixed)\nend"
+          }
+        },
         "position": { "x": 60, "y": 200 },
         "rotation": 0,
         "flipX": false,
@@ -31,89 +35,41 @@
       },
       {
         "id": "n3",
-        "name": "Body",
+        "name": "Mount",
         "block": {
-          "subsystem": {
-            "ports": [
-              {
-                "name": "p",
-                "kind": "power",
-                "domain": "Spatial",
-                "size": [6],
-                "frame": "world",
-                "effortUnits": ["N*m", "N*m", "N*m", "N", "N", "N"],
-                "flowUnits": ["rad/s", "rad/s", "rad/s", "m/s", "m/s", "m/s"],
-                "node": "s1",
-                "port": "a"
-              }
-            ],
-            "diagram": {
-              "nodes": [
-                {
-                  "id": "s1",
-                  "name": "Mount",
-                  "block": { "ref": "stdlib:multibond/FixedTransform3D" },
-                  "position": { "x": 0, "y": 0 },
-                  "rotation": 0,
-                  "flipX": false,
-                  "params": {
-                    "x": "0.0",
-                    "y": "0.0",
-                    "z": "0.2",
-                    "roll": "0.0",
-                    "pitch": "0.0",
-                    "yaw": "0.0"
-                  },
-                  "constants": {},
-                  "starts": {},
-                  "ui": { "showLabel": true, "color": null }
-                },
-                {
-                  "id": "s2",
-                  "name": "Link",
-                  "block": { "ref": "stdlib:spatial/RigidBody3D" },
-                  "position": { "x": 220, "y": 0 },
-                  "rotation": 0,
-                  "flipX": false,
-                  "params": { "m": "2.5", "J": "[0.02, 0.03, 0.04]" },
-                  "constants": {},
-                  "starts": { "P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]" },
-                  "ui": { "showLabel": true, "color": null }
-                }
-              ],
-              "connections": [
-                {
-                  "id": "sc1",
-                  "kind": "bond",
-                  "from": { "node": "s1", "port": "b" },
-                  "to": { "node": "s2", "port": "p" },
-                  "route": [],
-                  "label": null
-                }
-              ],
-              "subsystemPorts": [],
-              "annotations": []
-            }
+          "inline": {
+            "source": "@block FixedTransform3D begin\n    @ports begin\n        a::Power{Spatial}, [frame = \"world\"]\n        b::Power{Spatial}, [frame = \"base\"]\n    end\n    @parameters begin\n        x::Real = 0.0, [unit = \"m\"]\n        y::Real = 0.0, [unit = \"m\"]\n        z::Real = 0.2, [unit = \"m\"]\n        roll::Real = 0.0, [unit = \"rad\"]\n        pitch::Real = 0.0, [unit = \"rad\"]\n        yaw::Real = 0.0, [unit = \"rad\"]\n    end\n    @equations begin\n        # Ad(g) is the 6x6 adjoint of the pose (x, y, z, roll, pitch, yaw); the block is\n        # power-continuous and is the only legal bridge from world to base (D-MB5).\n        a.f ~ Ad(x, y, z, roll, pitch, yaw) * b.f\n        b.e ~ transpose(Ad(x, y, z, roll, pitch, yaw)) * a.e\n    end\nend"
           }
         },
-        "position": { "x": 520, "y": 160 },
+        "position": { "x": 460, "y": 200 },
         "rotation": 0,
         "flipX": false,
-        "params": {},
+        "params": {
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.2",
+          "roll": "0.0",
+          "pitch": "0.0",
+          "yaw": "0.0"
+        },
         "constants": {},
         "starts": {},
         "ui": { "showLabel": true, "color": null }
       },
       {
         "id": "n4",
-        "name": "Wrench1",
-        "block": { "ref": "stdlib:multibond/ExternalWrench" },
-        "position": { "x": 520, "y": 340 },
+        "name": "Body",
+        "block": {
+          "inline": {
+            "source": "@block BodySpatial begin\n    @ports p::Power{Spatial}, [frame = \"base\"]\n    @parameters begin\n        m::Real = 2.5, [unit = \"kg\", min = 0, description = \"Mass\"]\n        J::Vec{3} = [0.02, 0.03, 0.04], [unit = \"kg*m^2\", min = 0, description = \"Principal moments about the CoM\"]\n    end\n    @variables P::Vec{6} = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [state = :prefer, description = \"Momentum [angular; linear]\"]\n    @equations begin\n        # Diagonal CoM inertia (D-MB3), component-wise (D-MB10): J for the three angular\n        # components, m for the three linear ones.\n        for k in 1:3\n            p.f[k] ~ P[k] / J[k]\n        end\n        for k in 4:6\n            p.f[k] ~ P[k] / m\n        end\n        for k in 1:6\n            ddt(P[k]) ~ p.e[k]\n        end\n    end\n    @causality p => :flow_out\nend"
+          }
+        },
+        "position": { "x": 700, "y": 200 },
         "rotation": 0,
         "flipX": false,
-        "params": { "f": "[0.0, 0.0, -9.81]", "tau": "[0.0, 0.0, 0.0]" },
+        "params": { "m": "2.5", "J": "[0.02, 0.03, 0.04]" },
         "constants": {},
-        "starts": {},
+        "starts": { "P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]" },
         "ui": { "showLabel": true, "color": null }
       }
     ],
@@ -130,14 +86,14 @@
         "id": "c2",
         "kind": "bond",
         "from": { "node": "n2" },
-        "to": { "node": "n3", "port": "p" },
+        "to": { "node": "n3", "port": "a" },
         "route": [],
         "label": null
       },
       {
         "id": "c3",
         "kind": "bond",
-        "from": { "node": "n2" },
+        "from": { "node": "n3", "port": "b" },
         "to": { "node": "n4", "port": "p" },
         "route": [],
         "label": null
@@ -160,7 +116,7 @@
     {
       "id": "p1",
       "title": "Spatial momentum",
-      "signals": ["Body/Link/P[1]", "Body/Link/P[4]"]
+      "signals": ["Body/P[1]", "Body/P[4]"]
     }
   ],
   "scene": null,

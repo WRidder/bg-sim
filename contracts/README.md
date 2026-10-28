@@ -9,7 +9,9 @@ absolute id, and both test suites register all eight schemas by `$id` before val
 `run.synthetic/` counts); `fixtures/<name>/invalid/*.json` must fail for the reason written in
 their top-level `"$comment"` (for the array-rooted `diagnostic` schema, in the offending item).
 Invalid fixtures stay invalid by omitting a required field or by a wrong type/enum, never because
-of the comment, and `$comment` is an allowed property wherever the fixtures use it.
+of the comment, and `$comment` is an allowed property wherever the fixtures use it. A
+`fixtures/<name>/semantic/*.json` fixture is schema-valid on purpose and states the failure the
+language lanes must raise in a top-level `$comment` of the form `expected E<code>: ...`.
 
 Conventions the plan leaves open: `required` is the plan's core of a shape and defaultable extras
 (rotation, flipX, params, constants, starts, ui, plots, scene, bindings, stats, route, label) are

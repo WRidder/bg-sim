@@ -22,9 +22,14 @@ export type CausalityValue = "effort_out" | "flow_out" | null;
  * Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12).
  */
 export type ModelDimension = 2 | 3;
-export type DomainName1 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
 /**
- * Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted.
+ * One power domain. The name partitions the shape: Planar and Spatial carry authoritative per-component unit arrays and size 3/6; the scalar domains carry size 1 and must not have a components array. For a multibond domain the scalar effort/flow descriptors are only the angular/first-component label kept for existing consumers.
+ */
+export type CatalogDomain = Domain;
+export type Domain = PlanarDomain | SpatialDomain | ScalarDomain;
+export type DomainName1 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic";
+/**
+ * Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted.
  */
 export type AcrossField = "e" | "f" | null;
 
@@ -126,7 +131,7 @@ export interface PortDecl {
   domain: DomainName;
   size: number[];
   /**
-   * Reference frame this port lives in (D-MB5). A bond or wire may only join ports in the same frame; FixedTransform and JointTransform are the legal bridges. Null or absent means frame-neutral, as scalar domains are.
+   * Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them.
    */
   frame?: string | null;
 }
@@ -153,48 +158,80 @@ export interface CatalogJunction {
   ref: string;
   $comment?: string;
 }
-export interface CatalogDomain {
-  name: DomainName1;
+/**
+ * The Planar multibond domain (D = 3): effort is a wrench [torque; force], flow a twist [angular velocity; linear velocity], and both are across = f (D8). components is required and authoritative for the per-component units.
+ */
+export interface PlanarDomain {
+  name: "Planar";
   effort: DomainVariable;
   flow: DomainVariable;
-  across: AcrossField;
-  /**
-   * Port size: 1 for the scalar domains, 3 for Planar and 6 for Spatial (D-MB1). The arrays in components have one entry per component.
-   */
-  size: 1 | 3 | 6;
-  /**
-   * Per-component effort and flow units of a multibond domain; null or absent for the scalar domains, which the single effort and flow descriptors already cover.
-   */
-  components?: DomainComponents | null;
+  across: "f";
+  size: 3;
+  components: PlanarComponents;
 }
+/**
+ * A scalar effort or flow label. On a multibond domain this is the angular/first component only; the per-component components.effort/components.flow arrays are authoritative.
+ */
 export interface DomainVariable {
   name: string;
   unit: string | null;
 }
 /**
- * The per-component effort and flow units of a multibond domain, angular component first (D-MB2): Planar has three components and Spatial six. Both domains are across = f (D8).
+ * The authoritative per-component units of a Planar port, angular component first (D-MB2). The scalar effort/flow descriptors on the domain are only the angular/first-component label kept for existing consumers.
  */
-export interface DomainComponents {
+export interface PlanarComponents {
   /**
-   * Effort unit per component: torque first, then the force components. Planar is ["N*m","N","N"], Spatial ["N*m","N*m","N*m","N","N","N"].
+   * Effort unit per component, exactly 3: torque first, then the two force components. The spec value is ["N*m","N","N"].
    *
    * @minItems 3
-   * @maxItems 6
+   * @maxItems 3
    */
-  effort:
-    | [string, string, string]
-    | [string, string, string, string]
-    | [string, string, string, string, string]
-    | [string, string, string, string, string, string];
+  effort: [string, string, string];
   /**
-   * Flow unit per component: angular velocity first, then the linear velocities. Planar is ["rad/s","m/s","m/s"], Spatial ["rad/s","rad/s","rad/s","m/s","m/s","m/s"].
+   * Flow unit per component, exactly 3: angular velocity first, then the two linear velocities. The spec value is ["rad/s","m/s","m/s"].
    *
    * @minItems 3
+   * @maxItems 3
+   */
+  flow: [string, string, string];
+}
+/**
+ * The Spatial multibond domain (D = 6): effort is a wrench [torque; force], flow a twist [angular velocity; linear velocity], and both are across = f (D8). components is required and authoritative for the per-component units.
+ */
+export interface SpatialDomain {
+  name: "Spatial";
+  effort: DomainVariable;
+  flow: DomainVariable;
+  across: "f";
+  size: 6;
+  components: SpatialComponents;
+}
+/**
+ * The authoritative per-component units of a Spatial port, angular component first (D-MB2). The scalar effort/flow descriptors on the domain are only the angular/first-component label kept for existing consumers.
+ */
+export interface SpatialComponents {
+  /**
+   * Effort unit per component, exactly 6: three torques, then three forces. The spec value is ["N*m","N*m","N*m","N","N","N"].
+   *
+   * @minItems 6
    * @maxItems 6
    */
-  flow:
-    | [string, string, string]
-    | [string, string, string, string]
-    | [string, string, string, string, string]
-    | [string, string, string, string, string, string];
+  effort: [string, string, string, string, string, string];
+  /**
+   * Flow unit per component, exactly 6: three angular velocities, then three linear velocities. The spec value is ["rad/s","rad/s","rad/s","m/s","m/s","m/s"].
+   *
+   * @minItems 6
+   * @maxItems 6
+   */
+  flow: [string, string, string, string, string, string];
+}
+/**
+ * A scalar domain: size 1 and a single effort/flow unit pair. components is not allowed; the scalar descriptors are the whole unit story.
+ */
+export interface ScalarDomain {
+  name: DomainName1;
+  effort: DomainVariable;
+  flow: DomainVariable;
+  across: AcrossField;
+  size: 1;
 }

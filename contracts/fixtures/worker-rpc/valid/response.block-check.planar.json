@@ -1,0 +1,62 @@
+{
+  "$comment": "A block.check response for an inline planar body (C-MB1): the interface reports model dimension 2 and a Planar port in the body frame, with preferred flow-out causality.",
+  "id": 44,
+  "result": {
+    "diagnostics": [],
+    "interface": {
+      "constants": [],
+      "parameters": [
+        {
+          "name": "m",
+          "type": "Real",
+          "default": "1.2",
+          "unit": "kg",
+          "min": 0,
+          "max": null,
+          "tunable": false,
+          "description": "Mass",
+          "options": null
+        },
+        {
+          "name": "J",
+          "type": "Real",
+          "default": "0.04",
+          "unit": "kg*m^2",
+          "min": 0,
+          "max": null,
+          "tunable": false,
+          "description": "Yaw inertia about the CoM",
+          "options": null
+        }
+      ],
+      "inputs": [],
+      "outputs": [],
+      "ports": [
+        {
+          "name": "p",
+          "domain": "Planar",
+          "size": [3],
+          "frame": "body"
+        }
+      ],
+      "variables": [
+        {
+          "name": "P",
+          "type": "Real",
+          "size": [3],
+          "unit": null,
+          "start": "[0.0, 0.0, 0.0]",
+          "state": "prefer"
+        }
+      ],
+      "causality": [
+        {
+          "ports": ["p"],
+          "kind": "preferred",
+          "value": "flow_out"
+        }
+      ],
+      "dimension": 2
+    }
+  }
+}

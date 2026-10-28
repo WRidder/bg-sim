@@ -396,12 +396,12 @@
         "frames": {
           "type": "object",
           "additionalProperties": { "type": "string" },
-          "description": "Connection id -> frame name adopted through the bond, for the editor frame badge (D-MB5). Required; an empty object is valid when no bond carries a frame."
+          "description": "Connection id -> instance-qualified frame name adopted through the bond, for the editor frame badge (D-MB5). The value is \"{path}/{frame}\" (e.g. Arm1/body), so the catalog frame name body on two bodies never compares equal. Required; an empty object is valid when no bond carries a frame."
         },
         "multibond": {
           "type": "object",
           "additionalProperties": { "type": "integer", "enum": [2, 3] },
-          "description": "Connection id -> stroke count of a multibond bond: 2 for Planar and 3 for Spatial (D-MB12). Omitted for scalar bonds, whose stroke count is 1."
+          "description": "Connection id -> stroke count of a multibond bond: 2 for Planar and 3 for Spatial (D-MB12). Must agree with the connection's adopted domain (J-MB1 invariant). Omitted for scalar bonds, whose stroke count is 1."
         },
         "unitFactors": {
           "type": "object",
@@ -416,7 +416,7 @@
           "items": {
             "$ref": "https://bgsim.local/schemas/run-manifest.schema.json#/$defs/signal"
           },
-          "description": "The signals this model will record, in recording order."
+          "description": "The signals this model will record, in recording order. A multibond power port is recorded per component: <path>/<port>.e[k] and <path>/<port>.f[k] each carry their own unit, and the derived <path>/<port>.P is the scalar power sum in W."
         },
         "stats": { "$ref": "#/$defs/modelCheckStats" },
         "$comment": { "type": "string" }

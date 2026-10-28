@@ -1,0 +1,25 @@
+{
+  "$comment": "Invalid: the Electrical domain carries a components array; scalar domains are size 1 and must not have per-component units (D-MB1).",
+  "language": "0.1.0",
+  "blocks": [],
+  "junctions": [],
+  "domains": [
+    {
+      "name": "Electrical",
+      "effort": {
+        "name": "voltage",
+        "unit": "V"
+      },
+      "flow": {
+        "name": "current",
+        "unit": "A"
+      },
+      "across": "e",
+      "size": 1,
+      "components": {
+        "effort": ["V", "V", "V"],
+        "flow": ["A", "A", "A"]
+      }
+    }
+  ]
+}

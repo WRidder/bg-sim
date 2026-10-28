@@ -153,6 +153,11 @@
           "type": "array",
           "items": { "$ref": "#/$defs/causalityDecl" }
         },
+        "dimension": {
+          "title": "ModelDimension",
+          "enum": [2, 3],
+          "description": "Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12)."
+        },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false
@@ -273,7 +278,7 @@
         "frame": {
           "type": ["string", "null"],
           "minLength": 1,
-          "description": "Reference frame this port lives in (D-MB5). A bond or wire may only join ports in the same frame; FixedTransform and JointTransform are the legal bridges. Null or absent means frame-neutral, as scalar domains are."
+          "description": "Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them."
         }
       },
       "additionalProperties": false
@@ -345,12 +350,101 @@
     },
     "domain": {
       "title": "CatalogDomain",
+      "description": "One power domain. The name partitions the shape: Planar and Spatial carry authoritative per-component unit arrays and size 3/6; the scalar domains carry size 1 and must not have a components array. For a multibond domain the scalar effort/flow descriptors are only the angular/first-component label kept for existing consumers.",
+      "$comment": "The oneOf gives the code generators a concrete union to emit; the allOf/if/then below spells out the same name-based partition for validators and readers.",
+      "oneOf": [
+        { "$ref": "#/$defs/planarDomain" },
+        { "$ref": "#/$defs/spatialDomain" },
+        { "$ref": "#/$defs/scalarDomain" }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": { "name": { "const": "Planar" } },
+            "required": ["name"]
+          },
+          "then": {
+            "type": "object",
+            "required": ["components"],
+            "properties": {
+              "size": { "const": 3 },
+              "components": { "$ref": "#/$defs/planarComponents" }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": { "name": { "const": "Spatial" } },
+            "required": ["name"]
+          },
+          "then": {
+            "type": "object",
+            "required": ["components"],
+            "properties": {
+              "size": { "const": 6 },
+              "components": { "$ref": "#/$defs/spatialComponents" }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+              }
+            },
+            "required": ["name"]
+          },
+          "then": {
+            "type": "object",
+            "not": { "type": "object", "required": ["components"] },
+            "properties": { "size": { "const": 1 } }
+          }
+        }
+      ]
+    },
+    "planarDomain": {
+      "title": "PlanarDomain",
+      "description": "The Planar multibond domain (D = 3): effort is a wrench [torque; force], flow a twist [angular velocity; linear velocity], and both are across = f (D8). components is required and authoritative for the per-component units.",
+      "type": "object",
+      "required": ["name", "effort", "flow", "across", "size", "components"],
+      "properties": {
+        "name": { "const": "Planar" },
+        "effort": { "$ref": "#/$defs/domainVariable" },
+        "flow": { "$ref": "#/$defs/domainVariable" },
+        "across": { "const": "f" },
+        "size": { "const": 3 },
+        "components": { "$ref": "#/$defs/planarComponents" }
+      },
+      "additionalProperties": false
+    },
+    "spatialDomain": {
+      "title": "SpatialDomain",
+      "description": "The Spatial multibond domain (D = 6): effort is a wrench [torque; force], flow a twist [angular velocity; linear velocity], and both are across = f (D8). components is required and authoritative for the per-component units.",
+      "type": "object",
+      "required": ["name", "effort", "flow", "across", "size", "components"],
+      "properties": {
+        "name": { "const": "Spatial" },
+        "effort": { "$ref": "#/$defs/domainVariable" },
+        "flow": { "$ref": "#/$defs/domainVariable" },
+        "across": { "const": "f" },
+        "size": { "const": 6 },
+        "components": { "$ref": "#/$defs/spatialComponents" }
+      },
+      "additionalProperties": false
+    },
+    "scalarDomain": {
+      "title": "ScalarDomain",
+      "description": "A scalar domain: size 1 and a single effort/flow unit pair. components is not allowed; the scalar descriptors are the whole unit story.",
       "type": "object",
       "required": ["name", "effort", "flow", "across", "size"],
       "properties": {
         "name": {
           "title": "DomainName",
-          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
+          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
         },
         "effort": { "$ref": "#/$defs/domainVariable" },
         "flow": { "$ref": "#/$defs/domainVariable" },
@@ -358,44 +452,61 @@
           "title": "AcrossField",
           "type": ["string", "null"],
           "enum": ["e", "f", null],
-          "description": "Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted."
+          "description": "Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted."
         },
-        "size": {
-          "enum": [1, 3, 6],
-          "description": "Port size: 1 for the scalar domains, 3 for Planar and 6 for Spatial (D-MB1). The arrays in components have one entry per component."
-        },
-        "components": {
-          "oneOf": [{ "$ref": "#/$defs/domainComponents" }, { "type": "null" }],
-          "description": "Per-component effort and flow units of a multibond domain; null or absent for the scalar domains, which the single effort and flow descriptors already cover."
-        }
+        "size": { "const": 1 }
       },
       "additionalProperties": false
     },
-    "domainComponents": {
-      "title": "DomainComponents",
-      "description": "The per-component effort and flow units of a multibond domain, angular component first (D-MB2): Planar has three components and Spatial six. Both domains are across = f (D8).",
+    "planarComponents": {
+      "title": "PlanarComponents",
+      "description": "The authoritative per-component units of a Planar port, angular component first (D-MB2). The scalar effort/flow descriptors on the domain are only the angular/first-component label kept for existing consumers.",
       "type": "object",
       "required": ["effort", "flow"],
       "properties": {
         "effort": {
           "type": "array",
           "minItems": 3,
-          "maxItems": 6,
+          "maxItems": 3,
           "items": { "type": "string", "minLength": 1 },
-          "description": "Effort unit per component: torque first, then the force components. Planar is [\"N*m\",\"N\",\"N\"], Spatial [\"N*m\",\"N*m\",\"N*m\",\"N\",\"N\",\"N\"]."
+          "description": "Effort unit per component, exactly 3: torque first, then the two force components. The spec value is [\"N*m\",\"N\",\"N\"]."
         },
         "flow": {
           "type": "array",
           "minItems": 3,
+          "maxItems": 3,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Flow unit per component, exactly 3: angular velocity first, then the two linear velocities. The spec value is [\"rad/s\",\"m/s\",\"m/s\"]."
+        }
+      },
+      "additionalProperties": false
+    },
+    "spatialComponents": {
+      "title": "SpatialComponents",
+      "description": "The authoritative per-component units of a Spatial port, angular component first (D-MB2). The scalar effort/flow descriptors on the domain are only the angular/first-component label kept for existing consumers.",
+      "type": "object",
+      "required": ["effort", "flow"],
+      "properties": {
+        "effort": {
+          "type": "array",
+          "minItems": 6,
           "maxItems": 6,
           "items": { "type": "string", "minLength": 1 },
-          "description": "Flow unit per component: angular velocity first, then the linear velocities. Planar is [\"rad/s\",\"m/s\",\"m/s\"], Spatial [\"rad/s\",\"rad/s\",\"rad/s\",\"m/s\",\"m/s\",\"m/s\"]."
+          "description": "Effort unit per component, exactly 6: three torques, then three forces. The spec value is [\"N*m\",\"N*m\",\"N*m\",\"N\",\"N\",\"N\"]."
+        },
+        "flow": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Flow unit per component, exactly 6: three angular velocities, then three linear velocities. The spec value is [\"rad/s\",\"rad/s\",\"rad/s\",\"m/s\",\"m/s\",\"m/s\"]."
         }
       },
       "additionalProperties": false
     },
     "domainVariable": {
       "title": "DomainVariable",
+      "description": "A scalar effort or flow label. On a multibond domain this is the angular/first component only; the per-component components.effort/components.flow arrays are authoritative.",
       "type": "object",
       "required": ["name", "unit"],
       "properties": {

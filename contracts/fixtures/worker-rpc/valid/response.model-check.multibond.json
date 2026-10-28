@@ -1,5 +1,5 @@
 {
-  "$comment": "A model.check response with two independent multibond islands (C-MB1): `frames` names the frame adopted through each bond and `multibond` gives the stroke count, 2 for the Planar bond and 3 for the Spatial bond (D-MB5, D-MB12).",
+  "$comment": "A model.check response with two independent multibond islands (C-MB1): frames are instance-qualified (PlanarArm/body, SpatialBody/base) and multibond gives 2 strokes for the Planar bond and 3 for the Spatial one. The multibond port is recorded per component, each component with its own unit, plus the scalar power P in W.",
   "id": 43,
   "result": {
     "diagnostics": [],
@@ -12,8 +12,8 @@
       "c2": { "strokeAt": "to" }
     },
     "frames": {
-      "c1": "world",
-      "c2": "base"
+      "c1": "PlanarArm/body",
+      "c2": "SpatialBody/base"
     },
     "multibond": {
       "c1": 2,
@@ -24,10 +24,13 @@
       "c2": 1.0
     },
     "signals": [
-      { "id": "PlanarArm/p.f", "unit": "rad/s", "kind": "port", "path": "PlanarArm", "type": "Real" },
-      { "id": "PlanarArm/phi", "unit": "rad", "kind": "state", "path": "PlanarArm", "type": "Real" },
-      { "id": "SpatialBody/p.f", "unit": "rad/s", "kind": "port", "path": "SpatialBody", "type": "Real" },
-      { "id": "SpatialBody/quat[1]", "unit": null, "kind": "state", "path": "SpatialBody", "type": "Real" }
+      { "id": "Plant/Arm1/p.e[1]", "unit": "N*m", "kind": "port", "path": "Plant/Arm1", "type": "Real" },
+      { "id": "Plant/Arm1/p.e[2]", "unit": "N", "kind": "port", "path": "Plant/Arm1", "type": "Real" },
+      { "id": "Plant/Arm1/p.e[3]", "unit": "N", "kind": "port", "path": "Plant/Arm1", "type": "Real" },
+      { "id": "Plant/Arm1/p.f[1]", "unit": "rad/s", "kind": "port", "path": "Plant/Arm1", "type": "Real" },
+      { "id": "Plant/Arm1/p.f[2]", "unit": "m/s", "kind": "port", "path": "Plant/Arm1", "type": "Real" },
+      { "id": "Plant/Arm1/p.f[3]", "unit": "m/s", "kind": "port", "path": "Plant/Arm1", "type": "Real" },
+      { "id": "Plant/Arm1/p.P", "unit": "W", "kind": "power", "path": "Plant/Arm1", "type": "Real" }
     ],
     "stats": {
       "states": 9,

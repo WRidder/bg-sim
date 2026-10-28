@@ -115,13 +115,19 @@
     "code": "E007",
     "severity": "error",
     "message": "frame mismatch: Planar port `p` of `Arm1` is in frame `world`, but port `a` of `Load1` is in frame `arm1`",
-    "hint": "connect them through a FixedTransform, or give both ports the same frame",
+    "hint": "connect them through a FixedTransform, or give both ports the same frame; a null frame unifies with either",
     "path": "Plant/Load1",
     "block": "stdlib:planar/RigidBody2D",
     "scope": null,
     "source": null,
     "node": "n41",
-    "connection": "c31"
+    "connection": "c31",
+    "related": [
+      {
+        "path": "Plant/Arm1",
+        "message": "the other end of connection c31 is here, in frame `world`"
+      }
+    ]
   },
   {
     "code": "E101",
@@ -206,8 +212,8 @@
   {
     "code": "E108",
     "severity": "error",
-    "message": "invalid inertia: the rotational inertia of `Body1` is not positive definite (J = [0.02, -0.01, 0.03])",
-    "hint": "use three positive principal moments and keep the products of inertia inside the triangle inequality",
+    "message": "invalid inertia: `J[2]` = -0.01 kg*m^2 for `Body1`; a principal inertia must be strictly positive",
+    "hint": "set the `J` parameter of `Body1` to positive principal moments; only a full IGeneral matrix must also satisfy the triangle inequality",
     "path": "Plant/Body1",
     "block": "stdlib:spatial/RigidBody3D",
     "scope": null,
@@ -218,8 +224,8 @@
   {
     "code": "E109",
     "severity": "error",
-    "message": "singular mass matrix: `Body1` has m = 0 and J = 0, so its acceleration is undetermined",
-    "hint": "give the body m > 0 (and J > 0), or ground it through a compliant element",
+    "message": "singular mass matrix: `Body1` has no out-of-plane inertia, so the applied spatial wrench leaves its roll and pitch acceleration undetermined",
+    "hint": "give the body the missing out-of-plane inertia, or drive it through a compliant joint instead of a rigid constraint",
     "path": "Plant/Body1",
     "block": "stdlib:spatial/RigidBody3D",
     "scope": null,

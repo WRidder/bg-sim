@@ -81,7 +81,7 @@ export interface RunStats {
 }
 export interface RunSignal {
   /**
-   * Signal id (plan 3.1).
+   * Signal id (plan 3.1). A multibond port is recorded per component, so a component carries both suffixes: <path>/<port>.e[k] or <path>/<port>.f[k], each with its own unit; <path>/<port>.P is the scalar power sum in W.
    */
   id: string;
   unit?: string | null;

@@ -306,17 +306,21 @@
         "frame": {
           "type": ["string", "null"],
           "minLength": 1,
-          "description": "Reference frame of the exposed power port (D-MB5); the subsystem keeps the frame of the internal port it attaches to. Null or absent means frame-neutral."
+          "description": "Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007."
         },
         "effortUnits": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 },
-          "description": "Per-component effort units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit."
+          "oneOf": [
+            { "$ref": "#/$defs/unitArray3" },
+            { "$ref": "#/$defs/unitArray6" }
+          ],
+          "description": "Per-component effort units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.effort for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial."
         },
         "flowUnits": {
-          "type": "array",
-          "items": { "type": "string", "minLength": 1 },
-          "description": "Per-component flow units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit."
+          "oneOf": [
+            { "$ref": "#/$defs/unitArray3" },
+            { "$ref": "#/$defs/unitArray6" }
+          ],
+          "description": "Per-component flow units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.flow for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial."
         },
         "node": { "type": "string" },
         "port": { "type": "string" },
@@ -497,7 +501,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?(?:\\.[A-Za-z_][A-Za-z0-9_]*)?$"
+            "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?(?:\\.[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?)?$"
           }
         },
         "$comment": { "type": "string" }
@@ -516,6 +520,22 @@
         "$comment": { "type": "string" }
       },
       "additionalProperties": false
+    },
+    "unitArray3": {
+      "title": "UnitArray3",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Three unit strings, one per component (Planar)."
+    },
+    "unitArray6": {
+      "title": "UnitArray6",
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Six unit strings, one per component (Spatial)."
     }
   }
 }

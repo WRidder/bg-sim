@@ -37,6 +37,20 @@ export type SignalDirection = "input" | "output";
 export type ValueType = "Real" | "Int" | "Bool";
 export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
 /**
+ * Three unit strings, one per component (Planar).
+ *
+ * @minItems 3
+ * @maxItems 3
+ */
+export type UnitArray3 = [string, string, string];
+/**
+ * Six unit strings, one per component (Spatial).
+ *
+ * @minItems 6
+ * @maxItems 6
+ */
+export type UnitArray6 = [string, string, string, string, string, string];
+/**
  * A constant override: number, boolean, expression string or array (vector, matrix).
  */
 export type ModelConstantValue = number | boolean | string | (number | number[])[];
@@ -85,13 +99,21 @@ export type CausalityValue = "effort_out" | "flow_out" | null;
  * Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12).
  */
 export type ModelDimension = 2 | 3;
-export type DomainName2 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
 /**
- * Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted.
+ * One power domain. The name partitions the shape: Planar and Spatial carry authoritative per-component unit arrays and size 3/6; the scalar domains carry size 1 and must not have a components array. For a multibond domain the scalar effort/flow descriptors are only the angular/first-component label kept for existing consumers.
+ */
+export type CatalogDomain = PlanarDomain | SpatialDomain | ScalarDomain;
+export type DomainName2 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic";
+/**
+ * Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted.
  */
 export type AcrossField = "e" | "f" | null;
 export type DiagnosticSeverity = "error" | "warning" | "info";
 export type SourceKind = "stdlib" | "project" | "inline";
+/**
+ * Model dimension of this block: 2 for a planar multibond block, 3 for a spatial one. Omitted for scalar/1D blocks, whose dimension is not encoded (D-MB12).
+ */
+export type ModelDimension1 = 2 | 3;
 /**
  * Adopted domain per connection id.
  */
@@ -261,17 +283,17 @@ export interface ModelSubsystemPowerPort {
   domain: DomainName;
   size: number[];
   /**
-   * Reference frame of the exposed power port (D-MB5); the subsystem keeps the frame of the internal port it attaches to. Null or absent means frame-neutral.
+   * Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007.
    */
   frame?: string | null;
   /**
-   * Per-component effort units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.
+   * Per-component effort units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.effort for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.
    */
-  effortUnits?: string[];
+  effortUnits?: UnitArray3 | UnitArray6;
   /**
-   * Per-component flow units carried through the subsystem boundary, angular first (D-MB10). Omitted for scalar ports; the catalog domain then defines the single unit.
+   * Per-component flow units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.flow for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.
    */
-  flowUnits?: string[];
+  flowUnits?: UnitArray3 | UnitArray6;
   node: string;
   port: string;
   $comment?: string;
@@ -574,7 +596,7 @@ export interface PortDecl {
   domain: DomainName1;
   size: number[];
   /**
-   * Reference frame this port lives in (D-MB5). A bond or wire may only join ports in the same frame; FixedTransform and JointTransform are the legal bridges. Null or absent means frame-neutral, as scalar domains are.
+   * Reference frame in which this port's effort and flow (twist or wrench) are expressed (D-MB5). A bond or wire joining two different named frames is E007. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A FixedTransform/JointTransform declares two frames and is the only legal bridge between them.
    */
   frame?: string | null;
 }
@@ -601,50 +623,82 @@ export interface CatalogJunction {
   ref: string;
   $comment?: string;
 }
-export interface CatalogDomain {
-  name: DomainName2;
+/**
+ * The Planar multibond domain (D = 3): effort is a wrench [torque; force], flow a twist [angular velocity; linear velocity], and both are across = f (D8). components is required and authoritative for the per-component units.
+ */
+export interface PlanarDomain {
+  name: "Planar";
   effort: DomainVariable;
   flow: DomainVariable;
-  across: AcrossField;
-  /**
-   * Port size: 1 for the scalar domains, 3 for Planar and 6 for Spatial (D-MB1). The arrays in components have one entry per component.
-   */
-  size: 1 | 3 | 6;
-  /**
-   * Per-component effort and flow units of a multibond domain; null or absent for the scalar domains, which the single effort and flow descriptors already cover.
-   */
-  components?: DomainComponents | null;
+  across: "f";
+  size: 3;
+  components: PlanarComponents;
 }
+/**
+ * A scalar effort or flow label. On a multibond domain this is the angular/first component only; the per-component components.effort/components.flow arrays are authoritative.
+ */
 export interface DomainVariable {
   name: string;
   unit: string | null;
 }
 /**
- * The per-component effort and flow units of a multibond domain, angular component first (D-MB2): Planar has three components and Spatial six. Both domains are across = f (D8).
+ * The authoritative per-component units of a Planar port, angular component first (D-MB2). The scalar effort/flow descriptors on the domain are only the angular/first-component label kept for existing consumers.
  */
-export interface DomainComponents {
+export interface PlanarComponents {
   /**
-   * Effort unit per component: torque first, then the force components. Planar is ["N*m","N","N"], Spatial ["N*m","N*m","N*m","N","N","N"].
+   * Effort unit per component, exactly 3: torque first, then the two force components. The spec value is ["N*m","N","N"].
    *
    * @minItems 3
-   * @maxItems 6
+   * @maxItems 3
    */
-  effort:
-    | [string, string, string]
-    | [string, string, string, string]
-    | [string, string, string, string, string]
-    | [string, string, string, string, string, string];
+  effort: [string, string, string];
   /**
-   * Flow unit per component: angular velocity first, then the linear velocities. Planar is ["rad/s","m/s","m/s"], Spatial ["rad/s","rad/s","rad/s","m/s","m/s","m/s"].
+   * Flow unit per component, exactly 3: angular velocity first, then the two linear velocities. The spec value is ["rad/s","m/s","m/s"].
    *
    * @minItems 3
+   * @maxItems 3
+   */
+  flow: [string, string, string];
+}
+/**
+ * The Spatial multibond domain (D = 6): effort is a wrench [torque; force], flow a twist [angular velocity; linear velocity], and both are across = f (D8). components is required and authoritative for the per-component units.
+ */
+export interface SpatialDomain {
+  name: "Spatial";
+  effort: DomainVariable;
+  flow: DomainVariable;
+  across: "f";
+  size: 6;
+  components: SpatialComponents;
+}
+/**
+ * The authoritative per-component units of a Spatial port, angular component first (D-MB2). The scalar effort/flow descriptors on the domain are only the angular/first-component label kept for existing consumers.
+ */
+export interface SpatialComponents {
+  /**
+   * Effort unit per component, exactly 6: three torques, then three forces. The spec value is ["N*m","N*m","N*m","N","N","N"].
+   *
+   * @minItems 6
    * @maxItems 6
    */
-  flow:
-    | [string, string, string]
-    | [string, string, string, string]
-    | [string, string, string, string, string]
-    | [string, string, string, string, string, string];
+  effort: [string, string, string, string, string, string];
+  /**
+   * Flow unit per component, exactly 6: three angular velocities, then three linear velocities. The spec value is ["rad/s","rad/s","rad/s","m/s","m/s","m/s"].
+   *
+   * @minItems 6
+   * @maxItems 6
+   */
+  flow: [string, string, string, string, string, string];
+}
+/**
+ * A scalar domain: size 1 and a single effort/flow unit pair. components is not allowed; the scalar descriptors are the whole unit story.
+ */
+export interface ScalarDomain {
+  name: DomainName2;
+  effort: DomainVariable;
+  flow: DomainVariable;
+  across: AcrossField;
+  size: 1;
 }
 export interface BlockCheckResponse {
   id: number;
@@ -728,6 +782,7 @@ export interface BlockInterface {
   ports: PortDecl[];
   variables: VariableDecl[];
   causality: CausalityDecl[];
+  dimension?: ModelDimension1;
   $comment?: string;
 }
 export interface ModelCheckResponse {
@@ -750,13 +805,13 @@ export interface ModelCheckResult {
     [k: string]: CausalityStroke;
   };
   /**
-   * Connection id -> frame name adopted through the bond, for the editor frame badge (D-MB5). Required; an empty object is valid when no bond carries a frame.
+   * Connection id -> instance-qualified frame name adopted through the bond, for the editor frame badge (D-MB5). The value is "{path}/{frame}" (e.g. Arm1/body), so the catalog frame name body on two bodies never compares equal. Required; an empty object is valid when no bond carries a frame.
    */
   frames: {
     [k: string]: string;
   };
   /**
-   * Connection id -> stroke count of a multibond bond: 2 for Planar and 3 for Spatial (D-MB12). Omitted for scalar bonds, whose stroke count is 1.
+   * Connection id -> stroke count of a multibond bond: 2 for Planar and 3 for Spatial (D-MB12). Must agree with the connection's adopted domain (J-MB1 invariant). Omitted for scalar bonds, whose stroke count is 1.
    */
   multibond?: {
     [k: string]: 2 | 3;
@@ -771,7 +826,7 @@ export interface ModelCheckResult {
     [k: string]: number;
   };
   /**
-   * The signals this model will record, in recording order.
+   * The signals this model will record, in recording order. A multibond power port is recorded per component: <path>/<port>.e[k] and <path>/<port>.f[k] each carry their own unit, and the derived <path>/<port>.P is the scalar power sum in W.
    */
   signals: RunSignal[];
   stats: ModelCheckStats;
@@ -783,7 +838,7 @@ export interface CausalityStroke {
 }
 export interface RunSignal {
   /**
-   * Signal id (plan 3.1).
+   * Signal id (plan 3.1). A multibond port is recorded per component, so a component carries both suffixes: <path>/<port>.e[k] or <path>/<port>.f[k], each with its own unit; <path>/<port>.P is the scalar power sum in W.
    */
   id: string;
   unit?: string | null;
