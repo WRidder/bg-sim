@@ -8,6 +8,7 @@
     # is left open and every component is written on its own (D-MB3/D-MB10).
     @variables P::Vec{3} = [0.0, 0.0, 0.0], [state = :prefer, description = "Momentum [angular; linear]"]
     @outputs Pm::Vec{3}
+    @outputs wout::Real, [unit = "rad/s"]
     @equations begin
         ddt(P[1]) ~ p.e[1]
         ddt(P[2]) ~ p.e[2]
@@ -17,6 +18,8 @@
         p.f[3] ~ P[3] / m
         # The momentum tap: CoriolisPlanar reads it, so the inertia is never copied (D-MB3).
         Pm ~ P
+        # The angular rate tap for a free-body orientation integrator.
+        wout ~ p.f[1]
     end
     @causality p => :flow_out
 end

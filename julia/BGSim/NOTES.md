@@ -955,100 +955,100 @@ golden block), **`test_mech` (2078)**, the M2 files, every `golden/*` group and
 
 ---
 
-# J-MB4 — planar multibond slice (verified 2026-10-28)
+# J-MB4 - planar multibond slice (verified 2026-10-28)
 
 New group `stdlib/multibond/` (13 blocks, catalog group **Multibond**, `dimension = 2`,
-per-component units from the J-MB2 table): `IPlanar`, `CoriolisPlanar`, `SePlanar`,
-`SfPlanar`, `GroundPlanar`, `DePlanar`, `DfPlanar`, `TFAd`, `FixedTransform2D`,
-`ScrewTF`, `ComposePose2D`, `GravityPlanar`, `Revolute2D`. `test/test_multibond_slice.jl`
-(4327 assertions) and `test/fixtures/multibond/pendulum.json` are the acceptance.
+per-component units from the J-MB2 table): `IPlanar` (+ `Pm`, `wout` taps), `CoriolisPlanar`,
+`SePlanar`, `SfPlanar`, `GroundPlanar`, `DePlanar`, `DfPlanar`, `TFAd`,
+`FixedTransform2D`, `ScrewTF`, `ComposePose2D`, `GravityPlanar`, `Revolute2D`.
+`test/test_multibond_slice.jl` (6365 assertions) and
+`test/fixtures/multibond/pendulum.json` are the acceptance.
 
-## Frozen conventions (verified by the power tests; do not copy the fixture blindly)
+## Frozen conventions
 
-* **Transform (TFAd/FixedTransform2D).** With `Ad(g)` mapping a b-frame twist to the a
-  frame, power continuity `a.e·a.f + b.e·b.f = 0` forces **both** signs:
-  `a.f = -Ad(g) b.f` **and** `a.e = Ad(g)^-T b.e`. The C-MB1 hand-written fixture
-  `model.planar.multibond.json` uses `a.f = +Ad b.f` with `b.e = Ad^T a.e`, which is *not*
-  power-continuous (its power sum is `2 a.e·Ad b.f`); the multibond blocks use the
-  continuous pair. The scalar TF's `p1.e = n*p2.e`, `p2.f = -n*p1.f` is exactly this pair
-  with `Ad = 1/n`.
-* **ScrewTF.** `a.f = S b.f` with `S = [1, ry, -rx]` needs **`b.e = -S^T a.e`** (the WP
-  text's `+S^T` does not conserve power).
-* **GravityPlanar.** The physical gravity wrench at the CoM is
-  `W = [0, -sin θ m g0, -cos θ m g0]` in the body frame. A 1-junction **sums efforts**, so
-  the port effort that injects `W` into the inertia is **`p.e = -W`**
-  (`[0, sin θ m g0, cos θ m g0]`). The literal `-Ad(g)^-T [0,0,m g0]` in the WP text is
-  not that wrench (it carries a spurious `p_x m g0` torque and the wrong sign); the
-  pendulum's stable equilibrium at `q = 0` and the energy check pin the implemented sign.
-* **Revolute2D.** `g(q) = (q, rx, ry)` (child origin at the axis point), `S = [1, ry, -rx]`,
-  `child.f = Ad(g)^-1 parent.f + S qdot`, `parent.e = -Ad(g)^-T child.e`,
-  `drive.e = -S^T child.e`, `qdot = drive.f`; the three-port sum is zero. The joint's
-  **parent and child are both effort-out** in an anchored chain (the body twist arrives
-  through the child, the ground through the parent, and the joint computes qdot). A 2-port
-  `:transformer` declaration forces the child to impose flow instead and pushes the body
-  inertia into derivative causality, so the block declares per-port preferences
-  (`parent => :effort_out`, `child => :effort_out`, `drive => :flow_out`). This is a
-  deviation from the WP's "declare it as a transformer"; it is the only declaration that
-  keeps the SCAP free of W201 for the Gate A model.
-* **De/Df declarations follow their equations** (`De: f = 0` → `flow_out` fixed;
-  `Df: e = 0` → `effort_out` fixed), unlike the scalar `De`/`Df` whose declarations the
-  STATUS note records as opposite. A De with an Se on a 0-junction and a Df with an Sf on
-  a 0-junction are the clean sensor models in the test.
+* **Transforms.** With `Ad(g)` mapping a b-frame twist to the a frame, power continuity
+  forces `a.f = -Ad(g) b.f` **and** `a.e = Ad(g)^-T b.e`. The C-MB1 hand-written fixture's
+  `+Ad` pair is not power-continuous; the multibond blocks use the continuous pair.
+* **ScrewTF.** `a.f = S b.f` with `S = [1, ry, -rx]` needs `b.e = -S^T a.e`.
+* **Gravity.** The physical gravity wrench at the CoM is
+  `W = [0, -sin(theta) m g0, -cos(theta) m g0]` in the body frame. A 1-junction sums
+  efforts, so the port effort is `-W` (`[0, sin(theta) m g0, cos(theta) m g0]`).
+* **Coriolis.** The block's port effort is `e = [f2 P3 - f3 P2, -f1 P3, f1 P2]` for its
+  own port flow `f`. On a 1-junction the Coriolis bond flow is `-V_body`, so the inertia
+  receives `+ad(V_body)^T P`: `dP/dt = ad(V)^T P + W`. The free-body test compares against
+  an independent RK4 of that equation (errors **3.8e-14, 1.7e-14, 4.1e-15** relative for
+  the reviewer's three P0 cases), and also checks the convention-independent invariants
+  `m R(theta) [vx, vy]` and the CoM angular momentum (drift **8.0e-15 to 1.8e-13**).
 
-## q0, the tiny axis offset, and the rigid-joint W201
+## Compliant-pivot Revolute2D (Mode A, the shipped joint)
 
-* A block-level `@initial q ~ q0` **does not flatten** (`flat.initial` is empty), and the
-  q start in the model's `starts` map is lost when `mtkcompile` aliases the state to the
-  signal input `Compose/gp[1]` (the start is keyed by the flat variable; `_u0_pairs` sees
-  the input with `start = nothing`). `Revolute2D` therefore writes
-  `q ~ q0 + int(qdout, 0.0)`: `int` is the language's state sugar, the hidden
-  `__bgint/Joint/1` state carries the initial condition 0, and `q0` is the initial angle.
-* The axis point in the pendulum is the parent origin; the model uses `rx = 1e-7` because
-  the fully zero `S = [1,0,0]` makes the reduced DAE structurally singular at `rx = ry = 0`
-  (`dt` collapses to zero at t = 0). The offset only translates the pivot: the CoM is still
-  directly below it at `q = 0`, so the equilibrium, period and energy are unchanged.
-* A **rigid** revolute joint constrains two of the three momentum components of the
-  3-DOF `IPlanar`. `model.check`/SCAP is W201-free, but after `mtkcompile` the reduced DAE
-  keeps only one momentum component as a differential state and reports exactly two
-  `W201` ("`Body/P[1]`/`P[2]` ... not kept as a differential state"), which plan 5.5 says
-  is the derivative-causality report. The test pins that exact pair. **J-MB6's compliant
-  joint is what removes it**; a rigid 1-DOF constraint on a full 3-DOF inertia cannot.
+The joint has an exact rotation `q` and two compliant pivot translations `d`:
 
-## Signal-wiring probe (composite Revolute2D)
+```
+V_rel = child.f - Ad(g(q))^-1 parent.f,   g(q) = (q, rx, ry),  S = [1,0,0]
+qdot = V_rel[1],  ddt(q) = qdot,  ddt(d) = V_rel[2:3] + qdot * [-d[2], d[1]]
+fs = [0, kt d[1] + bt V_rel[2], kt d[2] + bt V_rel[3]]
+tau = S^T child.e,  child.e = fs + S tau,  parent.e = -Ad(g)^-T child.e,  drive.e = -tau
+```
 
-A composite **can** wire the pose path: a project `PoseFromQ(q) -> Vec{3}`, the internal
-`ComposePose2D`, and `GravityPlanar.g` flatten with the signal connections
-`W/compose/gp[1] ~ W/pose/g[1]`, `W/gravity/g[1] ~ W/compose/g[1]`, and the pose exposed
-as a composite output (the test's "signal wiring probe" builds exactly that). The native
-`Revolute2D` is nevertheless shipped for J-MB4 because (a) the two frame transforms
-declare fixed catalog frames `world`/`body`, so a composite joint cannot expose a
-frame-neutral parent/child face without an internal bridge, and (b) the joint's causality
-is a three-port per-port declaration, not a 2-port transformer relation. J-MB6 owns the
-composite replacement.
+`d` is a displacement in the rotating child frame, so the `qdot * [-d2, d1]` transport
+term is included (the earlier omission made the spring rest position wander by
+`(mg/kt) Δq`; at kt = 1e8 that was a ~1e-7 m effect). It is power-neutral because
+`d . (z_hat x d) = 0`, so `fs . V_rel` and `1/2 kt |d|^2` stay exact. The **sign**
+`fs = +kt d + bt V_rel` is correct under the `e.f`-into-the-element convention: it gives
+the body the restoring force. `child.e = fs + S tau` and the energy budget are tested on
+the produced run (port power = spring rate + damping, <= 1e-9).
+
+The body is `IPlanar` (+ `CoriolisPlanar` + `GravityPlanar`) on a 1-junction. All storage
+is integral; there is **no W201** in `model.check` or the run. `rx = ry = 0` (no pivot
+offset). The body-frame orientation is chosen as `theta = pi/2` in `FixedTransform2D`
+and in the `LocalPose2D` used for gravity: this is a **coordinate orientation** of the
+link frame (the CoM position, period and energy are invariant), not a pivot offset. At
+`theta = 0` the transform's two effort components decouple and the tearing leaves the
+pivot x-force `Link/b.e[2]` as an unsolvable algebraic (the exact structural triage
+variable); the 90-degree frame couples them and makes the equation set solvable without
+changing the physics. The only algebraics are `qdot`, `fs`, `Vrel` and the algebraic
+`q = q0 + int(qdot)`; the int state, `d` and `P` are the states, and `mtkcompile` reaches
+an index-0 ODE with no dummy derivatives.
+
+**Static initial deflection.** `d` is initialised at the translational static value
+`d = [-m g0 sin(q0) / kt, -m g0 cos(q0) / kt]` in the child frame, so the fast
+`sqrt(kt/m)` mode is not excited. At `q0 = 0.01`, `kt = 1e8`:
+`d0 = [-9.8098365e-10, -9.8095095e-8]` m. The energy includes `1/2 kt |d|^2` and the
+actual CoM height `h = Compose/g[3] + sin(q) d1 + cos(q) d2`. At `q0 = 0` the start is
+`[0, -m g0/kt] = [0, -9.81e-8]` m.
 
 ## Measured (this machine, 2026-10-28)
 
 | item | measured |
 | --- | --- |
-| Gate A pendulum period (first two upward q crossings, 4 s, 4001 pts) | **1.418795892 s**; analytic `2π√((J+mL²)/(mgL)) = 1.418787026 s` (rel **6.3e-6**), `2π√(L/g) = 1.418503353 s` (rel **2.1e-4**) |
-| same through the worker `run.start` | **1.418795892 s** (identical) |
-| energy `½PᵀM⁻¹P + mgh` drift, 10 s / 10001 pts | **4.00e-9** relative (target 1e-6) |
-| stable equilibrium, `q0 = 0`, 2 s | **max \|q\| = 4.00e-7** (target 1e-6) |
-| Joint/transform power sums on the run | ≤ 1e-9 relative at every sample |
-| Coriolis `e·f` random V/P | 0 to 1e-12 absolute |
-| `test_multibond_slice.jl` | **4327 assertions, 30 s, green** |
-| full `Pkg.test()` | **green**; `library` 6838, J-MB4 4327 |
+| Gate A pendulum period, 4 s / 4001 pts | **1.4187960318309 s** (also through the worker `run.start`) |
+| raw physical `2pi sqrt((J+mL^2)/(m g L))` | 1.4187870257492 s (measured rel **6.4e-6**) |
+| effective length `L_eff = L + m g0 cos(q0)/kt` | 0.5000000981 m; physical 1.4187871648139 s |
+| amplitude-corrected `T0 (1 + q0^2/16)` | 1.4187960322337 s (measured rel **2.8e-10**, target 1e-5) |
+| plan check `2pi sqrt(L/g)` | 1.4185033534429 s (measured rel **2.1e-4**, target 1e-3) |
+| energy drift over 10 s (KE + PE_actual + 1/2 kt|d|^2) | **4.808e-11 J**, ratio **1.96e-7** of the swing 2.4525e-4 J (target 1e-6) |
+| `max|q|` at `q0 = 0.01` / equilibrium `q0 = 0` | **0.01** / **0.0** |
+| W201 `model.check` / run | **0 / 0** |
+| energy run steps / sim time | **290340 steps, 1.83 s** (10 s, 10001 pts, reltol 1e-9, abstol 1e-11, Rodas5P) |
+| fast translational mode `sqrt(kt/m)` | **1e4 rad/s** (kt = 1e8 N/m) |
+| Coriolis free-body error / world-momentum drift | **3.8e-14** / **8.0e-15** (worst 4.1e-15 / 1.8e-13) |
+| joint + transform + Coriolis power identities on the run | <= 1e-9 relative at every sample |
+| `test_multibond_slice.jl` | **6365 assertions, ~55 s, green** |
+| full `Pkg.test()` | **green** |
 | `uv run pytest backend/tests -q` / `-m julia` | **264 passed, 4 deselected** / **4 passed** |
 | `web npm run typecheck` | clean |
 
 **Out-of-owns edit:** `test/test_frames.jl` lines 415-421 asserted *every* catalog block
-omits `dimension` and has null port frames — true before the first multibond group, false
+omits `dimension` and has null port frames - true before the first multibond group, false
 now. The assertion was split: scalar blocks keep the old check; a block with a Planar/
-Spatial port must carry `dimension` 2/3 and a nullable frame. This is the same
-`catalog grew` maintenance that J2.7a did for `test_worker.jl`; nothing was weakened
+Spatial port must carry `dimension` 2/3 and a nullable frame. Nothing was weakened
 (scalar blocks still assert null frames and no dimension).
 
----
+**Left for J-MB5/J-MB6:** `FixedTransform2D` hard-codes the frames `world`/`body` (a
+2-link chain needs parameterised frame names in `JointTransform`), and `ScrewTF` is not
+used in this slice. The rigid 1-DOF variant and its exactly-two-W201 behaviour belong to
+J-MB6.
 
 # J-MB2 review round 1 — component units, whole-field rule, labels (verified 2026-10-28)
 

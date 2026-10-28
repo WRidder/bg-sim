@@ -2,16 +2,17 @@
 #
 # The acceptance is the Gate A pendulum:
 #   * `GroundPlanar -> Revolute2D -> FixedTransform2D -> 1-junction -> IPlanar +
-#     GravityPlanar` through `simulate` and through the worker `run.start` path;
-#   * the small-angle period within 1e-3 of the analytic value, energy constant over 10 s,
-#     and the stable equilibrium at q = 0;
-#   * every new block passes the plan 9.1 four checks (constitutive, power continuity,
-#     per-component units, causality) and the catalog is `block.check`-clean.
+#     GravityPlanar + CoriolisPlanar` through `simulate` and the worker `run.start` path;
+#   * the physical period within 1e-5 (finite-amplitude corrected), the `2π√(L/g)` check
+#     within 1e-3, energy constant over 10 s, and the stable equilibrium;
+#   * every new block passes the plan 9.1 four checks and the catalog is clean.
 #
-# The joint is rigid, so the two constrained momentum components of the 3-DOF inertia are
-# in derivative causality after `mtkcompile`: plan 5.5 says W201 reports exactly that. The
-# model check (SCAP) is W201-free; the test pins the two expected post-compile warnings.
-# The J-MB6 compliant joint is what removes them (NOTES.md and the WP report record this).
+# The joint is the compliant-pivot Mode A joint: exact rotation, compliant translation at
+# the pivot. All storage stays integral, so the 3-DOF inertia keeps all three momenta
+# differential and there is no W201 in model.check or the run. The block's algebraic
+# quantities (qdot, fs, Vrel, and the algebraic q = q0 + int(qdot)) are explicit functions
+# of the states; the only hidden states are the int integrals, d and P, so mtkcompile
+# reaches an index-0 ODE with no dummy derivatives (checked by the absent W201).
 #
 # All helpers are `_mb4_`-prefixed: the test files share `Main`.
 using Test
@@ -31,13 +32,16 @@ const _MB4_L = 0.5
 const _MB4_M = 1.0
 const _MB4_J = 1.0e-4
 const _MB4_G = 9.81
-# The tiny axis offset keeps the reduced DAE structurally non-singular; it only translates
-# the pivot, so the equilibrium q = 0, the period and the energy are unchanged.
-const _MB4_RX = 1.0e-7
+const _MB4_KT = 1.0e8
+const _MB4_L_EFF = _MB4_L + _MB4_M * _MB4_G * cos(0.01) / _MB4_KT
 
 const _MB4_T_SIMPLE = 2 * pi * sqrt(_MB4_L / _MB4_G)
-const _MB4_T_LINEAR =
+const _MB4_T_RAW =
     2 * pi * sqrt((_MB4_J + _MB4_M * _MB4_L^2) / (_MB4_M * _MB4_G * _MB4_L))
+const _MB4_T_LINEAR =
+    2 * pi * sqrt((_MB4_J + _MB4_M * _MB4_L_EFF^2) / (_MB4_M * _MB4_G * _MB4_L_EFF))
+const _MB4_T_AMP = _MB4_T_LINEAR * (1 + 0.01^2 / 16)
+const _MB4_SWING = _MB4_M * _MB4_G * _MB4_L * (1 - cos(0.01))
 
 # ---------------------------------------------------------------------------------------
 # Model-document builders
@@ -247,7 +251,79 @@ _mb4_field(obj, key::Symbol, default = nothing) =
         @test isapprox(data["B/p.f[2]"][end], 2.0 * 0.1 / 2.0; atol = 1e-12)
     end
 
-    @testset "CoriolisPlanar: e = ad(f)^T P and e . f = 0" begin
+    @testset "CoriolisPlanar: free-body integration against an independent RK4" begin
+        # dP/dt = ad(V)^T P with V = M^-1 P. The block's 1-junction port effort is
+        # e = -ad(f)^T P (the same sign convention as GravityPlanar), so the inertia gets
+        # +ad(V)^T P. The reference is a small independent RK4 in the test.
+        function ref_rhs(P, J, m)
+            V = (P[1] / J, P[2] / m, P[3] / m)
+            ω, vx, vy = V
+            return [vy * P[2] - vx * P[3], ω * P[3], -ω * P[2]]
+        end
+        function ref_rk4(P0, J, m, t_end, dt)
+            n = round(Int, t_end / dt)
+            P = collect(float.(P0))
+            for _ in 1:n
+                k1 = ref_rhs(P, J, m)
+                k2 = ref_rhs(P .+ (dt / 2) .* k1, J, m)
+                k3 = ref_rhs(P .+ (dt / 2) .* k2, J, m)
+                k4 = ref_rhs(P .+ dt .* k3, J, m)
+                P = P .+ (dt / 6) .* (k1 .+ 2 .* k2 .+ 2 .* k3 .+ k4)
+            end
+            return P
+        end
+
+        J, m = 0.5, 2.0
+        for (index, P0) in enumerate(([0.3, 1.0, 0.5], [-1.2, 0.4, 2.0],
+            [2.5, -0.7, 0.9]))
+            doc = _mb4_doc(
+                "FreeBodyCoriolis$(index)",
+                Any[
+                    _mb4_node("n1", "J1", Dict{String,Any}("junction" => "1")),
+                    _mb4_node("n2", "B", _mb4_ref("stdlib:multibond/IPlanar");
+                        params = Dict{String,Any}("J" => string(J), "m" => string(m)),
+                        starts = Dict{String,Any}(
+                            "P" => "[$(P0[1]), $(P0[2]), $(P0[3])]")),
+                    _mb4_node("n3", "C", _mb4_ref("stdlib:multibond/CoriolisPlanar")),
+                    _mb4_node("n4", "Theta", _mb4_ref("stdlib:continuous/Integrator")),
+                ],
+                Any[
+                    _mb4_conn("c1", "bond", "n2", "p", "n1"),
+                    _mb4_conn("c2", "bond", "n3", "p", "n1"),
+                    _mb4_conn("c3", "signal", "n2", "Pm", "n3", "P"),
+                    _mb4_conn("c4", "signal", "n2", "wout", "n4", "u"),
+                ];
+                t_end = 2.0, points = 2001,
+            )
+            @test isempty(_mb4_errors(_mb4_check(doc)))
+            result, dir = _mb4_run(doc; t_end = 2.0, points = 2001)
+            @test result.status == "done"
+            @test !_mb4_has(result, "W201")
+            data = _mb4_columns(dir)
+            P_end = [data["B/P[$k]"][end] for k in 1:3]
+            P_ref = ref_rk4(P0, J, m, 2.0, 1.0e-5)
+            rel = maximum(abs.(P_end .- P_ref)) / max(1.0, maximum(abs, P_ref))
+            @test rel <= 1.0e-6
+            @test rel <= 1.0e-9            # measured ~4e-14
+            # Convention-independent check: with no external wrench the world linear
+            # momentum m R(theta) [vx, vy] and the angular momentum about the CoM are
+            # constant. theta is integrated from the body angular rate.
+            theta = data["Theta/y"]
+            vx = data["B/p.f[2]"]
+            vy = data["B/p.f[3]"]
+            px = m .* (cos.(theta) .* vx .- sin.(theta) .* vy)
+            py = m .* (sin.(theta) .* vx .+ cos.(theta) .* vy)
+            Lz = data["B/P[1]"]
+            pscale = max(1.0, maximum(abs, px), maximum(abs, py))
+            @test maximum(abs.(px .- px[1])) / pscale <= 1.0e-6
+            @test maximum(abs.(py .- py[1])) / pscale <= 1.0e-6
+            @test maximum(abs.(Lz .- Lz[1])) / max(1.0, maximum(abs, Lz)) <= 1.0e-6
+            println("J-MB4 Coriolis free-body relative error = ", rel,
+                ", world momentum drift = ",
+                max(maximum(abs.(px .- px[1])), maximum(abs.(py .- py[1]))) / pscale)
+        end
+
+        # The instantaneous constitutive relation and e . f = 0 on a driven Sf bond.
         V = (0.7, -1.3, 0.4)
         P = (2.0, -0.5, 1.1)
         flow = _mb4_vec_source(V; name = "FlowSource")
@@ -273,9 +349,9 @@ _mb4_field(obj, key::Symbol, default = nothing) =
         e = [data["C/p.e[$k]"][1] for k in 1:3]
         fr = [data["C/p.f[$k]"][1] for k in 1:3]
         @test fr == -[V...]
-        @test e[1] ≈ fr[3] * P[2] - fr[2] * P[3]
-        @test e[2] ≈ fr[1] * P[3]
-        @test e[3] ≈ -fr[1] * P[2]
+        @test e[1] ≈ fr[2] * P[3] - fr[3] * P[2]
+        @test e[2] ≈ -fr[1] * P[3]
+        @test e[3] ≈ fr[1] * P[2]
         @test abs(sum(e[k] * fr[k] for k in 1:3)) <= 1e-12 * max(1.0, maximum(abs, e))
     end
 
@@ -595,60 +671,51 @@ _mb4_field(obj, key::Symbol, default = nothing) =
         for code in ("E101", "E102", "E103", "E106")
             @test !_mb4_has(result, code)
         end
-        @test result.stats.states == 0            # q is the language-level int state
         flat = _mb4_flat(doc)
         @test isempty(flat.diagnostics)
         ids = Set(s.id for s in flat.signals)
-        for id in ("Joint/qout", "Joint/pose[1]", "Compose/g[1]", "Compose/g[3]",
-            "Gravity/g[1]", "Body/P[1]", "Body/Pm[1]", "Body/p.e[1]", "Body/p.e[2]",
-            "Body/p.f[3]")
+        for id in ("Joint/qout", "Joint/qdout", "Joint/pose[1]", "Joint/dout[1]",
+            "Joint/Vrelout[2]", "Compose/g[1]", "Compose/g[3]", "Gravity/g[1]",
+            "Body/P[1]", "Body/Pm[1]", "Body/p.e[1]", "Body/p.e[2]", "Body/p.f[3]",
+            "Coriolis/p.e[1]", "Coriolis/p.e[2]")
             @test id in ids
         end
-        # The flat graph contains only documented primitives (the minimal Revolute2D is the
-        # one native joint, which J-MB6 replaces with a composite).
+        # The flat graph contains only documented primitives.
         raw_refs = Set(n["block"]["ref"] for n in doc["diagram"]["nodes"]
                        if haskey(n["block"], "ref"))
         @test raw_refs == Set([
             "stdlib:multibond/GroundPlanar", "stdlib:multibond/Revolute2D",
             "stdlib:multibond/FixedTransform2D", "stdlib:multibond/IPlanar",
-            "stdlib:multibond/GravityPlanar", "stdlib:multibond/ComposePose2D",
-            "stdlib:bondgraph/Se",
+            "stdlib:multibond/GravityPlanar", "stdlib:multibond/CoriolisPlanar",
+            "stdlib:multibond/ComposePose2D", "stdlib:bondgraph/Se",
         ])
     end
 
-    @testset "pendulum period: first two upward zero crossings" begin
+    @testset "pendulum period: physical and simple references" begin
         BGSim.clear_compile_cache!()
         doc = _mb4_load()
         result, dir = _mb4_run(doc; t_end = 4.0, points = 4001)
         @test result.status == "done"
         @test isempty(_mb4_errors(result))
-        for code in ("E101", "E102", "E103", "E106", "E900", "E901")
+        for code in ("E101", "E102", "E103", "E106", "E900", "E901", "W201")
             @test !_mb4_has(result, code)
         end
-        # The rigid joint puts the two constrained momentum components in derivative
-        # causality after mtkcompile (plan 5.5); the SCAP/model check is W201-free. This is
-        # the exact expected pair; J-MB6's compliant joint removes it.
-        w201 = [d for d in result.diagnostics if d.code == "W201"]
-        @test length(w201) == 2
-        @test Set(d.message for d in w201) == Set([
-            "`Body/P[1]` appears under ddt but was not kept as a differential state; the DAE index is raised",
-            "`Body/P[2]` appears under ddt but was not kept as a differential state; the DAE index is raised",
-        ])
         data = _mb4_columns(dir)
         q = data["Joint/qout"]
         @test isapprox(q[1], 0.01; atol = 1e-9)
         crossings = _mb4_upward_crossings(data["time"], q)
         @test length(crossings) >= 3
         period = crossings[2] - crossings[1]
-        @test isapprox(period, _MB4_T_SIMPLE; rtol = 1e-3)
-        @test isapprox(period, _MB4_T_LINEAR; rtol = 1e-3)
+        @test isapprox(period, _MB4_T_AMP; rtol = 1.0e-5)
+        @test isapprox(period, _MB4_T_SIMPLE; rtol = 1.0e-3)
         # The CoM x crossing gives the same period (the WP allows either).
         gx = data["Compose/g[2]"]
-        xcross = _mb4_upward_crossings(data["time"], gx .- _MB4_RX)
+        xcross = _mb4_upward_crossings(data["time"], gx)
         @test length(xcross) >= 3
         @test isapprox(xcross[2] - xcross[1], period; rtol = 1e-6)
-        println("J-MB4 pendulum period = ", period, " s (analytic ", _MB4_T_LINEAR,
-            " s, simple ", _MB4_T_SIMPLE, " s)")
+        println("J-MB4 pendulum period = ", period, " s (raw physical ",
+            _MB4_T_RAW, " s, L_eff physical ", _MB4_T_LINEAR, " s, amplitude ",
+            _MB4_T_AMP, " s, simple ", _MB4_T_SIMPLE, " s)")
     end
 
     @testset "pendulum energy constant over 10 s" begin
@@ -656,28 +723,50 @@ _mb4_field(obj, key::Symbol, default = nothing) =
         doc = _mb4_load()
         result, dir = _mb4_run(doc; t_end = 10.0, points = 10001)
         @test result.status == "done"
+        @test !_mb4_has(result, "W201")
         data = _mb4_columns(dir)
-        E = 0.5 .* (data["Body/P[1]"] .^ 2 ./ _MB4_J .+
-                    data["Body/P[2]"] .^ 2 ./ _MB4_M .+
-                    data["Body/P[3]"] .^ 2 ./ _MB4_M) .+
-            _MB4_M * _MB4_G .* data["Compose/g[3]"]
-        drift = maximum(abs.(E .- E[1])) / abs(E[1])
-        @test drift <= 1.0e-6
-        println("J-MB4 pendulum energy drift over 10 s = ", drift)
+        q = data["Joint/qout"]
+        d1 = data["Joint/dout[1]"]
+        d2 = data["Joint/dout[2]"]
+        KE = 0.5 .* (data["Body/P[1]"] .^ 2 ./ _MB4_J .+
+                     data["Body/P[2]"] .^ 2 ./ _MB4_M .+
+                     data["Body/P[3]"] .^ 2 ./ _MB4_M)
+        # The actual CoM height includes the compliant pivot deflection d in the child
+        # frame: h = gy + sin(q) d1 + cos(q) d2.
+        h = data["Compose/g[3]"] .+ sin.(q) .* d1 .+ cos.(q) .* d2
+        Es = 0.5 * _MB4_KT .* (d1 .^ 2 .+ d2 .^ 2)
+        E = KE .+ _MB4_M * _MB4_G .* h .+ Es
+        drift = maximum(abs.(E .- E[1]))
+        @test drift <= 1.0e-6 * _MB4_SWING
+        println("J-MB4 pendulum energy drift over 10 s = ", drift,
+            " J (swing ", _MB4_SWING, " J, ratio ", drift / _MB4_SWING,
+            "; steps ", result.stats.steps, ", sim ", result.stats.sim_s,
+            " s, fast mode ", sqrt(_MB4_KT / _MB4_M), " rad/s)")
     end
 
-    @testset "pendulum stable equilibrium at q = 0" begin
+    @testset "pendulum returns from q0 = 0.01 and rests at q = 0" begin
         BGSim.clear_compile_cache!()
         doc = _mb4_load()
-        doc["diagram"]["nodes"][2]["params"]["q0"] = "0.0"
         result, dir = _mb4_run(doc; t_end = 2.0, points = 2001)
         @test result.status == "done"
         data = _mb4_columns(dir)
-        @test maximum(abs.(data["Joint/qout"])) < 1.0e-6
-        println("J-MB4 equilibrium max|q| = ", maximum(abs.(data["Joint/qout"])))
+        q = data["Joint/qout"]
+        @test q[2] < q[1]                       # gravity pulls back toward zero
+        @test minimum(q) < 0.0                  # it crosses the bottom
+        @test maximum(abs.(q)) ≈ 0.01 rtol = 1.0e-3
+        println("J-MB4 q0=0.01 max|q| = ", maximum(abs.(q)))
+
+        doc0 = _mb4_load()
+        doc0["diagram"]["nodes"][2]["params"]["q0"] = "0.0"
+        doc0["diagram"]["nodes"][2]["starts"]["d"] = "[0.0, -9.81e-8]"
+        result0, dir0 = _mb4_run(doc0; t_end = 2.0, points = 2001)
+        @test result0.status == "done"
+        data0 = _mb4_columns(dir0)
+        @test maximum(abs.(data0["Joint/qout"])) < 1.0e-6
+        println("J-MB4 equilibrium max|q| = ", maximum(abs.(data0["Joint/qout"])))
     end
 
-    @testset "power continuity on the produced pendulum run" begin
+    @testset "joint and Coriolis power identities on the run" begin
         BGSim.clear_compile_cache!()
         doc = _mb4_load()
         result, dir = _mb4_run(doc; t_end = 2.0, points = 2001)
@@ -689,10 +778,20 @@ _mb4_field(obj, key::Symbol, default = nothing) =
             jc = sum(data["Joint/child.e[$k]"][i] * data["Joint/child.f[$k]"][i]
                      for k in 1:3)
             jd = data["Joint/drive.e"][i] * data["Joint/drive.f"][i]
-            @test abs(jp + jc + jd) <= 1e-9 * max(1.0, abs(jp), abs(jc), abs(jd))
+            v2 = data["Joint/Vrelout[2]"][i]
+            v3 = data["Joint/Vrelout[3]"][i]
+            spring = _MB4_KT * (data["Joint/dout[1]"][i] * v2 +
+                                data["Joint/dout[2]"][i] * v3)
+            # bt = 0 in the fixture; keep the damping term explicit.
+            damp = 0.0
+            @test abs(jp + jc + jd - spring - damp) <= 1.0e-9 *
+                  max(1.0, abs(jp), abs(jc), abs(jd), abs(spring))
             la = sum(data["Link/a.e[$k]"][i] * data["Link/a.f[$k]"][i] for k in 1:3)
             lb = sum(data["Link/b.e[$k]"][i] * data["Link/b.f[$k]"][i] for k in 1:3)
-            @test abs(la + lb) <= 1e-9 * max(1.0, abs(la), abs(lb))
+            @test abs(la + lb) <= 1.0e-9 * max(1.0, abs(la), abs(lb))
+            ce = sum(data["Coriolis/p.e[$k]"][i] * data["Coriolis/p.f[$k]"][i]
+                     for k in 1:3)
+            @test abs(ce) <= 1.0e-9 * max(1.0, abs(jp), abs(jc))
         end
     end
 
@@ -745,6 +844,8 @@ _mb4_field(obj, key::Symbol, default = nothing) =
                 @test done.params.status == "done"
                 @test isempty([d for d in done.params.diagnostics
                                if d.severity == "error"])
+                @test !any(d -> _mb4_field(d, :code, "") == "W201",
+                    done.params.diagnostics)
                 final = JSON3.read(read(joinpath(run_dir, "manifest.json"), String))
                 @test final.status == "done"
                 @test Int(final.time.n) == 4001
@@ -752,7 +853,7 @@ _mb4_field(obj, key::Symbol, default = nothing) =
                 crossings = _mb4_upward_crossings(data["time"], data["Joint/qout"])
                 @test length(crossings) >= 3
                 period = crossings[2] - crossings[1]
-                @test isapprox(period, _MB4_T_SIMPLE; rtol = 1e-3)
+                @test isapprox(period, _MB4_T_AMP; rtol = 1.0e-5)
                 println("J-MB4 worker-run period = ", period, " s")
             finally
                 close(sock)

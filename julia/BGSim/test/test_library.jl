@@ -1353,8 +1353,10 @@ const INTERFACE_FIELDS = [
               [("parent", "Planar", [3], nothing), ("child", "Planar", [3], nothing),
                   ("drive", "Rotation", Int[], nothing)]
         @test [(o.name, o.size) for o in revolute.interface.outputs] ==
-              [("qout", Int[]), ("qdout", Int[]), ("pose", [3])]
-        @test [p.name for p in revolute.interface.parameters] == ["rx", "ry", "q0"]
+              [("qout", Int[]), ("qdout", Int[]), ("pose", [3]), ("dout", [2]),
+                  ("Vrelout", [3])]
+        @test [p.name for p in revolute.interface.parameters] ==
+              ["rx", "ry", "kt", "bt", "q0"]
     end
 
     @testset "catalog structure against catalog.schema.json" begin

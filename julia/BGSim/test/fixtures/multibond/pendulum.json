@@ -31,11 +31,14 @@
                     "x": 0
                 },
                 "params": {
-                    "rx": "1.0e-7",
+                    "rx": "0.0",
+                    "kt": "1.0e8",
                     "q0": "0.01",
+                    "bt": "0.0",
                     "ry": "0.0"
                 },
                 "starts": {
+                    "d": "[-9.809836500817498e-10, -9.809509504087487e-8]"
                 }
             },
             {
@@ -51,7 +54,7 @@
                     "x": 0
                 },
                 "params": {
-                    "theta": "0.0",
+                    "theta": "1.5707963267948966",
                     "y": "-0.5",
                     "x": "0.0"
                 },
@@ -121,7 +124,7 @@
                 },
                 "block": {
                     "inline": {
-                        "source": "@block LocalPose2D begin\n    @parameters begin\n        x::Real = 0.0, [unit = \"m\", description = \"Local x\"]\n        y::Real = 0.0, [unit = \"m\", description = \"Local y\"]\n        theta::Real = 0.0, [unit = \"rad\", description = \"Local angle\"]\n    end\n    @outputs g::Vec{3}\n    @equations begin\n        g[1] ~ theta\n        g[2] ~ x\n        g[3] ~ y\n    end\nend\n"
+                        "source": "@block LocalPose2D begin\n    @parameters begin\n        x::Real = 0.0, [unit = \"m\"]\n        y::Real = 0.0, [unit = \"m\"]\n        theta::Real = 0.0, [unit = \"rad\"]\n    end\n    @outputs g::Vec{3}\n    @equations begin\n        g[1] ~ theta\n        g[2] ~ x\n        g[3] ~ y\n    end\nend\n"
                     }
                 },
                 "position": {
@@ -129,7 +132,7 @@
                     "x": 0
                 },
                 "params": {
-                    "theta": "0.0",
+                    "theta": "1.5707963267948966",
                     "y": "-0.5",
                     "x": "0.0"
                 },
@@ -167,6 +170,23 @@
                 },
                 "params": {
                     "e": "0.0"
+                },
+                "starts": {
+                }
+            },
+            {
+                "name": "Coriolis",
+                "id": "n10",
+                "constants": {
+                },
+                "block": {
+                    "ref": "stdlib:multibond/CoriolisPlanar"
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
                 },
                 "starts": {
                 }
@@ -279,6 +299,29 @@
                     "port": "g",
                     "node": "n6"
                 }
+            },
+            {
+                "from": {
+                    "port": "p",
+                    "node": "n10"
+                },
+                "kind": "bond",
+                "id": "c10",
+                "to": {
+                    "node": "n4"
+                }
+            },
+            {
+                "from": {
+                    "port": "Pm",
+                    "node": "n5"
+                },
+                "kind": "signal",
+                "id": "c11",
+                "to": {
+                    "port": "P",
+                    "node": "n10"
+                }
             }
         ],
         "subsystemPorts": [
@@ -287,7 +330,7 @@
     "bindings": [
     ],
     "language": "0.1.0",
-    "name": "PlanarPendulum",
+    "name": "CompliantPivotPendulum",
     "settings": {
         "reltol": 1.0e-9,
         "abstol": 1.0e-11,
