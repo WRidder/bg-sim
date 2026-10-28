@@ -218,6 +218,48 @@ islands report W205 by design, and X2.5's valve uses a smoothed max plus rail Fl
 starts from this commit.
 
 
+### M3 — Phase A: foundations and the 2D vertical slice (Gate A: green, 2026-10-28)
+
+**Works.** Contracts (C-MB1): Planar/Spatial domains, structurally required per-component units,
+port/subsystem frames, `model.check.frames`/`multibond`, E007/E108/E109, an ADR (D-MB1..D-MB13)
+and 30 valid / 29 invalid / 4 semantic fixtures. Julia: `Power{Planar}`/`Power{Spatial}` with
+per-component flat ids and vector junctions (J-MB1), frame union-find with E007 and connected
+subsystem bridges, per-component units and dot-product power (J-MB2), the SE2/SE3/quaternion/
+inertia core (J-MB3), and the 13-block planar slice (J-MB4). Web: the 2-stroke multibond renderer,
+one causal bar per bundle, frame pill, legend keys, port ticks and `data-multibond-strokes`
+(W-MB1). Example: `multibond-pendulum-2d` with period and energy checks and a real-worker
+Playwright spec (X-MB1). FIX-MB-1 renamed the M2 LQG matrix to `Phi` (`Ad` is now a builtin).
+
+**Gate.** `uv run tools/check.py --lane all` at `7386058` → **11 passed, 0 failed, 0 skipped**:
+Julia `Pkg.test()` **25 292 assertions / 110 testsets** in 455 s (incl. `test_multibond_slice`
+6365), pytest **264** + **4** julia-marked, ruff, tsc, ESLint, Vitest **433**, Vite build,
+examples **204/204** in 250 s, Playwright **34** fake-worker specs and **13** real-worker specs
+(3.1 min, incl. `multibond-pendulum.spec.ts`).
+
+**Measured.** Pendulum period **1.4187960318 s** vs amplitude-corrected physical
+**1.4187960322 s** (rel **2.8e-10**, target 1e-5) and vs `2π√(L/g)` **2.1e-4** (target 1e-3);
+energy drift **4.81e-11 J = 1.96e-7** of the **2.45e-4 J** swing over 10 s (target 1e-6);
+`W201` **0** in `model.check`, the run and the worker; Coriolis free-body **4.1e-14**; world
+momentum drift ≤1.8e-13; the editor shows **9** planar bonds with 2 strokes and 1 causal bar,
+the Rotation drive with 1 stroke, and the frame pill. Per-component manifest units are
+`N*m`/`N`/`rad/s`/`m/s` and `p.P` is `W`.
+
+**Known gaps (Phase B).** **FIX-MB-2**: the slice runs only with the body frame at ±π/2; other
+mounting angles leave `Link/b.e[2]` as a dummy derivative and fail `E901`. The 90° frame is a
+physics-neutral coordinate choice for the slice, but J-MB5/J-MB6 must remove the tearing before
+the 2-link arm. **FIX-MB-3**: the fixture/example starts `d` at the *held* static deflection,
+which excites the 1e4 rad/s mode (290k steps vs ~10k and a 1.96e-7 vs 1.8e-15 energy ratio).
+Also: `FixedTransform2D` hard-codes its two frames (J-MB5's `JointTransform`), `ScrewTF` is unused
+until the composite joint, E108/E109 are defined and fixtured but not yet emitted by the
+compiler, and Phase C (spatial) has not started.
+
+**Deviations.** DEC-MB-1 (frames compare by unqualified name, display-qualified map, documented
+false negative), DEC-MB-2 (compliant-pivot revolute for Gate A; the rigid variant and its exactly
+two W201 are J-MB6's), the 90° body frame, W-MB1's regenerated RLC-dual snapshot (legend growth
+only), and the minimal web consumer repairs C-MB1 needed to keep the tree compiling.
+
+
+
 ## Contract changes and orchestrator decisions
 
 | ID | Kind | Note |
