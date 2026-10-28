@@ -411,12 +411,26 @@ end
               (effort = ["N*m", "N*m", "N*m", "N", "N", "N"],
                   flow = ["rad/s", "rad/s", "rad/s", "m/s", "m/s", "m/s"])
         # Every port entry carries the new nullable `frame` property (null for the scalar
-        # stdlib blocks); `dimension` is non-nullable, so scalar blocks omit it.
+        # stdlib blocks); `dimension` is non-nullable, so scalar blocks omit it. The
+        # J-MB4 `multibond` group is the first group that carries `dimension` and named
+        # frames, so the scalar assertion applies only to the blocks without a multibond
+        # port (the M1/M2 catalog is unchanged).
         for block in cat.blocks
-            @test !haskey(block, :dimension)
-            for port in block.ports
-                @test haskey(port, :frame)
-                @test port.frame === nothing
+            multibond = any(p -> p.domain in ("Planar", "Spatial"), block.ports)
+            if multibond
+                @test haskey(block, :dimension)
+                @test block.dimension ==
+                      (any(p -> p.domain == "Planar", block.ports) ? 2 : 3)
+                for port in block.ports
+                    @test haskey(port, :frame)
+                    @test port.frame === nothing || port.frame isa String
+                end
+            else
+                @test !haskey(block, :dimension)
+                for port in block.ports
+                    @test haskey(port, :frame)
+                    @test port.frame === nothing
+                end
             end
         end
 

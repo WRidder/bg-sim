@@ -182,9 +182,27 @@ const M2_REFS = [
     "stdlib:converters/ExportParameter",
 ]
 
+# The M3 planar multibond primitives of J-MB4 (plan 6, row J-MB4). They live in the
+# `multibond` group; the catalog must carry them alongside the M1/M2 blocks.
+const M3_REFS = [
+    "stdlib:multibond/ComposePose2D",
+    "stdlib:multibond/CoriolisPlanar",
+    "stdlib:multibond/DePlanar",
+    "stdlib:multibond/DfPlanar",
+    "stdlib:multibond/FixedTransform2D",
+    "stdlib:multibond/GravityPlanar",
+    "stdlib:multibond/GroundPlanar",
+    "stdlib:multibond/IPlanar",
+    "stdlib:multibond/Revolute2D",
+    "stdlib:multibond/ScrewTF",
+    "stdlib:multibond/SePlanar",
+    "stdlib:multibond/SfPlanar",
+    "stdlib:multibond/TFAd",
+]
+
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
 # Sorted, because `load_stdlib` sorts its blocks by ref.
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS))
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -1291,6 +1309,52 @@ const INTERFACE_FIELDS = [
         @test [p.name for p in ep.interface.parameters] == ["value"]
         @test ep.interface.parameters[1].tunable
         @test occursin("sink ~ value", ep.source)
+    end
+
+    @testset "the M3 multibond group (J-MB4)" begin
+        # The first planar vector primitives (plan 6, J-MB4). The constitutive and power
+        # tests live in `test_multibond_slice.jl`; here the catalog contract is pinned.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        for ref in M3_REFS
+            b = blocks[ref]
+            @test b.group == "Multibond"
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test isempty([d for d in b.diagnostics if d.severity == "error"])
+            @test isempty([d for d in b.diagnostics if d.code in ("W204", "E103")])
+        end
+        # Every multibond block with a Planar port declares dimension 2; the signal-only
+        # pose block has no dimension. Every Planar port carries a frame field (null means
+        # frame-neutral) and the catalog emits it.
+        for ref in M3_REFS
+            b = blocks[ref]
+            planar = any(p -> p.domain == "Planar", b.interface.ports)
+            if planar
+                @test b.interface.dimension == 2
+            else
+                @test get(b.interface, :dimension, nothing) === nothing
+            end
+            for p in b.interface.ports
+                @test haskey(p, :frame)
+            end
+        end
+        @test [p.frame for p in blocks["stdlib:multibond/GroundPlanar"].interface.ports] ==
+              ["world"]
+        @test [p.frame for p in blocks["stdlib:multibond/IPlanar"].interface.ports] ==
+              ["body"]
+        @test [p.frame for p in blocks["stdlib:multibond/GravityPlanar"].interface.ports] ==
+              ["body"]
+        @test [p.frame for p in blocks["stdlib:multibond/FixedTransform2D"].interface.ports] ==
+              ["world", "body"]
+        # The joint's two body ports are frame-neutral so one instance joins any body frame
+        # (D-MB5: null unifies); the drive is the scalar Rotation port.
+        revolute = blocks["stdlib:multibond/Revolute2D"]
+        @test [(p.name, p.domain, p.size, p.frame) for p in revolute.interface.ports] ==
+              [("parent", "Planar", [3], nothing), ("child", "Planar", [3], nothing),
+                  ("drive", "Rotation", Int[], nothing)]
+        @test [(o.name, o.size) for o in revolute.interface.outputs] ==
+              [("qout", Int[]), ("qdout", Int[]), ("pose", [3])]
+        @test [p.name for p in revolute.interface.parameters] == ["rx", "ry", "q0"]
     end
 
     @testset "catalog structure against catalog.schema.json" begin

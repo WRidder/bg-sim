@@ -35,6 +35,7 @@ const GROUPS = (
     (dir = "rotation", name = "Rotation", icon_prefix = "rot"),
     (dir = "hydraulic", name = "Hydraulic", icon_prefix = "hyd"),
     (dir = "converters", name = "Converters and sensors", icon_prefix = "conv"),
+    (dir = "multibond", name = "Multibond", icon_prefix = "mb"),
 )
 
 """    GROUP_BY_DIR
@@ -537,6 +538,58 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:translation/VelocitySource" => (
         description = "Signal-controlled velocity source; a.f = v*u with fixed flow causality (D6).",
         icon = "mech-velocity-source",
+    ),
+    "stdlib:multibond/ComposePose2D" => (
+        description = "Planar pose composition g = gp composed with gl on the SE(2) chart (theta, x, y); the fixed-base link pose is algebraic (D-MB6).",
+        icon = "mb-compose-pose-2d",
+    ),
+    "stdlib:multibond/CoriolisPlanar" => (
+        description = "Eulerian junction structure (Coriolis/gyroscopic) for a planar body: p.e = ad(p.f)^T P from the momentum signal, no inertia copy (D-MB3).",
+        icon = "mb-coriolis-planar",
+    ),
+    "stdlib:multibond/DePlanar" => (
+        description = "Planar effort detector; reads the wrench, imposes zero twist, outputs the three wrench components.",
+        icon = "mb-de-planar",
+    ),
+    "stdlib:multibond/DfPlanar" => (
+        description = "Planar flow detector; reads the twist, imposes zero wrench, outputs the three twist components.",
+        icon = "mb-df-planar",
+    ),
+    "stdlib:multibond/FixedTransform2D" => (
+        description = "Constant planar frame transform (x, y, theta) from a parent frame to a child frame; the legal two-frame bridge (D-MB5).",
+        icon = "mb-fixed-transform-2d",
+    ),
+    "stdlib:multibond/GravityPlanar" => (
+        description = "Planar gravity wrench at the body centre of mass, from the composed body pose in the world; the port effort is the negative of that wrench for a 1-junction.",
+        icon = "mb-gravity-planar",
+    ),
+    "stdlib:multibond/GroundPlanar" => (
+        description = "Planar reference node; holds its port at zero twist in the world frame.",
+        icon = "mb-ground-planar",
+    ),
+    "stdlib:multibond/IPlanar" => (
+        description = "Planar rigid-body inertia at the centre of mass (J, m): momentum P is the state, the twist is its output, and P is exposed as a signal for Coriolis (D-MB3).",
+        icon = "mb-i-planar",
+    ),
+    "stdlib:multibond/Revolute2D" => (
+        description = "Minimal planar revolute joint: parent and child planar bonds plus a rotational drive, with the joint pose composed from q (not integrated).",
+        icon = "mb-revolute-2d",
+    ),
+    "stdlib:multibond/ScrewTF" => (
+        description = "Planar revolute screw transformer S = [1, ry, -rx] between a planar bond and one rotational drive axis (D-MB8).",
+        icon = "mb-screw-tf",
+    ),
+    "stdlib:multibond/SePlanar" => (
+        description = "Planar effort source; imposes a Vec{3} wrench on its bond (fixed effort causality).",
+        icon = "mb-se-planar",
+    ),
+    "stdlib:multibond/SfPlanar" => (
+        description = "Planar flow source; imposes a Vec{3} twist on its bond (fixed flow causality).",
+        icon = "mb-sf-planar",
+    ),
+    "stdlib:multibond/TFAd" => (
+        description = "Planar adjoint transformer driven by a pose signal (theta, x, y); power-continuous, the general transform primitive.",
+        icon = "mb-tf-ad",
     ),
 )
 

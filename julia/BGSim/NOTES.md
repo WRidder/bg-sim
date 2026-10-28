@@ -952,3 +952,98 @@ that run aborts before the later files. Nothing under `contracts/`, `src/library
 `test_flatten`, `test_simulate`, `test_worker`, `test_language` (incl. the LQGController
 golden block), **`test_mech` (2078)**, the M2 files, every `golden/*` group and
 `test_causality` — **green (exit 0)**.
+
+---
+
+# J-MB4 — planar multibond slice (verified 2026-10-28)
+
+New group `stdlib/multibond/` (13 blocks, catalog group **Multibond**, `dimension = 2`,
+per-component units from the J-MB2 table): `IPlanar`, `CoriolisPlanar`, `SePlanar`,
+`SfPlanar`, `GroundPlanar`, `DePlanar`, `DfPlanar`, `TFAd`, `FixedTransform2D`,
+`ScrewTF`, `ComposePose2D`, `GravityPlanar`, `Revolute2D`. `test/test_multibond_slice.jl`
+(4327 assertions) and `test/fixtures/multibond/pendulum.json` are the acceptance.
+
+## Frozen conventions (verified by the power tests; do not copy the fixture blindly)
+
+* **Transform (TFAd/FixedTransform2D).** With `Ad(g)` mapping a b-frame twist to the a
+  frame, power continuity `a.e·a.f + b.e·b.f = 0` forces **both** signs:
+  `a.f = -Ad(g) b.f` **and** `a.e = Ad(g)^-T b.e`. The C-MB1 hand-written fixture
+  `model.planar.multibond.json` uses `a.f = +Ad b.f` with `b.e = Ad^T a.e`, which is *not*
+  power-continuous (its power sum is `2 a.e·Ad b.f`); the multibond blocks use the
+  continuous pair. The scalar TF's `p1.e = n*p2.e`, `p2.f = -n*p1.f` is exactly this pair
+  with `Ad = 1/n`.
+* **ScrewTF.** `a.f = S b.f` with `S = [1, ry, -rx]` needs **`b.e = -S^T a.e`** (the WP
+  text's `+S^T` does not conserve power).
+* **GravityPlanar.** The physical gravity wrench at the CoM is
+  `W = [0, -sin θ m g0, -cos θ m g0]` in the body frame. A 1-junction **sums efforts**, so
+  the port effort that injects `W` into the inertia is **`p.e = -W`**
+  (`[0, sin θ m g0, cos θ m g0]`). The literal `-Ad(g)^-T [0,0,m g0]` in the WP text is
+  not that wrench (it carries a spurious `p_x m g0` torque and the wrong sign); the
+  pendulum's stable equilibrium at `q = 0` and the energy check pin the implemented sign.
+* **Revolute2D.** `g(q) = (q, rx, ry)` (child origin at the axis point), `S = [1, ry, -rx]`,
+  `child.f = Ad(g)^-1 parent.f + S qdot`, `parent.e = -Ad(g)^-T child.e`,
+  `drive.e = -S^T child.e`, `qdot = drive.f`; the three-port sum is zero. The joint's
+  **parent and child are both effort-out** in an anchored chain (the body twist arrives
+  through the child, the ground through the parent, and the joint computes qdot). A 2-port
+  `:transformer` declaration forces the child to impose flow instead and pushes the body
+  inertia into derivative causality, so the block declares per-port preferences
+  (`parent => :effort_out`, `child => :effort_out`, `drive => :flow_out`). This is a
+  deviation from the WP's "declare it as a transformer"; it is the only declaration that
+  keeps the SCAP free of W201 for the Gate A model.
+* **De/Df declarations follow their equations** (`De: f = 0` → `flow_out` fixed;
+  `Df: e = 0` → `effort_out` fixed), unlike the scalar `De`/`Df` whose declarations the
+  STATUS note records as opposite. A De with an Se on a 0-junction and a Df with an Sf on
+  a 0-junction are the clean sensor models in the test.
+
+## q0, the tiny axis offset, and the rigid-joint W201
+
+* A block-level `@initial q ~ q0` **does not flatten** (`flat.initial` is empty), and the
+  q start in the model's `starts` map is lost when `mtkcompile` aliases the state to the
+  signal input `Compose/gp[1]` (the start is keyed by the flat variable; `_u0_pairs` sees
+  the input with `start = nothing`). `Revolute2D` therefore writes
+  `q ~ q0 + int(qdout, 0.0)`: `int` is the language's state sugar, the hidden
+  `__bgint/Joint/1` state carries the initial condition 0, and `q0` is the initial angle.
+* The axis point in the pendulum is the parent origin; the model uses `rx = 1e-7` because
+  the fully zero `S = [1,0,0]` makes the reduced DAE structurally singular at `rx = ry = 0`
+  (`dt` collapses to zero at t = 0). The offset only translates the pivot: the CoM is still
+  directly below it at `q = 0`, so the equilibrium, period and energy are unchanged.
+* A **rigid** revolute joint constrains two of the three momentum components of the
+  3-DOF `IPlanar`. `model.check`/SCAP is W201-free, but after `mtkcompile` the reduced DAE
+  keeps only one momentum component as a differential state and reports exactly two
+  `W201` ("`Body/P[1]`/`P[2]` ... not kept as a differential state"), which plan 5.5 says
+  is the derivative-causality report. The test pins that exact pair. **J-MB6's compliant
+  joint is what removes it**; a rigid 1-DOF constraint on a full 3-DOF inertia cannot.
+
+## Signal-wiring probe (composite Revolute2D)
+
+A composite **can** wire the pose path: a project `PoseFromQ(q) -> Vec{3}`, the internal
+`ComposePose2D`, and `GravityPlanar.g` flatten with the signal connections
+`W/compose/gp[1] ~ W/pose/g[1]`, `W/gravity/g[1] ~ W/compose/g[1]`, and the pose exposed
+as a composite output (the test's "signal wiring probe" builds exactly that). The native
+`Revolute2D` is nevertheless shipped for J-MB4 because (a) the two frame transforms
+declare fixed catalog frames `world`/`body`, so a composite joint cannot expose a
+frame-neutral parent/child face without an internal bridge, and (b) the joint's causality
+is a three-port per-port declaration, not a 2-port transformer relation. J-MB6 owns the
+composite replacement.
+
+## Measured (this machine, 2026-10-28)
+
+| item | measured |
+| --- | --- |
+| Gate A pendulum period (first two upward q crossings, 4 s, 4001 pts) | **1.418795892 s**; analytic `2π√((J+mL²)/(mgL)) = 1.418787026 s` (rel **6.3e-6**), `2π√(L/g) = 1.418503353 s` (rel **2.1e-4**) |
+| same through the worker `run.start` | **1.418795892 s** (identical) |
+| energy `½PᵀM⁻¹P + mgh` drift, 10 s / 10001 pts | **4.00e-9** relative (target 1e-6) |
+| stable equilibrium, `q0 = 0`, 2 s | **max \|q\| = 4.00e-7** (target 1e-6) |
+| Joint/transform power sums on the run | ≤ 1e-9 relative at every sample |
+| Coriolis `e·f` random V/P | 0 to 1e-12 absolute |
+| `test_multibond_slice.jl` | **4327 assertions, 30 s, green** |
+| full `Pkg.test()` | **green**; `library` 6838, J-MB4 4327 |
+| `uv run pytest backend/tests -q` / `-m julia` | **264 passed, 4 deselected** / **4 passed** |
+| `web npm run typecheck` | clean |
+
+**Out-of-owns edit:** `test/test_frames.jl` lines 415-421 asserted *every* catalog block
+omits `dimension` and has null port frames — true before the first multibond group, false
+now. The assertion was split: scalar blocks keep the old check; a block with a Planar/
+Spatial port must carry `dimension` 2/3 and a nullable frame. This is the same
+`catalog grew` maintenance that J2.7a did for `test_worker.jl`; nothing was weakened
+(scalar blocks still assert null frames and no dimension).

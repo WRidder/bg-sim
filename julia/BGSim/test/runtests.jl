@@ -247,6 +247,9 @@ include("test_mech.jl")
 # Work package J-MB2: per-component units for multibond ports (Planar/Spatial).
 include("test_units_multibond.jl")
 
+# Work package J-MB4: the minimal planar multibond vertical slice and the Gate A pendulum.
+include("test_multibond_slice.jl")
+
 # Milestone M2 scaffolding: each WP creates exactly one of these files, and the M2 gate
 # replaces these guards with plain includes (the same pattern DEC-5 used for M1).
 for entry in ("test_events.jl", "test_discrete.jl", "test_units_model.jl",

@@ -1,0 +1,308 @@
+{
+    "diagram": {
+        "nodes": [
+            {
+                "name": "World",
+                "id": "n1",
+                "constants": {
+                },
+                "block": {
+                    "ref": "stdlib:multibond/GroundPlanar"
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
+                },
+                "starts": {
+                }
+            },
+            {
+                "name": "Joint",
+                "id": "n2",
+                "constants": {
+                },
+                "block": {
+                    "ref": "stdlib:multibond/Revolute2D"
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
+                    "rx": "1.0e-7",
+                    "q0": "0.01",
+                    "ry": "0.0"
+                },
+                "starts": {
+                }
+            },
+            {
+                "name": "Link",
+                "id": "n3",
+                "constants": {
+                },
+                "block": {
+                    "ref": "stdlib:multibond/FixedTransform2D"
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
+                    "theta": "0.0",
+                    "y": "-0.5",
+                    "x": "0.0"
+                },
+                "starts": {
+                }
+            },
+            {
+                "name": "J1",
+                "id": "n4",
+                "constants": {
+                },
+                "block": {
+                    "junction": "1"
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
+                },
+                "starts": {
+                }
+            },
+            {
+                "name": "Body",
+                "id": "n5",
+                "constants": {
+                },
+                "block": {
+                    "ref": "stdlib:multibond/IPlanar"
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
+                    "J": "0.0001",
+                    "m": "1.0"
+                },
+                "starts": {
+                    "P": "[0.0, 0.0, 0.0]"
+                }
+            },
+            {
+                "name": "Gravity",
+                "id": "n6",
+                "constants": {
+                },
+                "block": {
+                    "ref": "stdlib:multibond/GravityPlanar"
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
+                    "g0": "9.81",
+                    "m": "1.0"
+                },
+                "starts": {
+                }
+            },
+            {
+                "name": "Local",
+                "id": "n7",
+                "constants": {
+                },
+                "block": {
+                    "inline": {
+                        "source": "@block LocalPose2D begin\n    @parameters begin\n        x::Real = 0.0, [unit = \"m\", description = \"Local x\"]\n        y::Real = 0.0, [unit = \"m\", description = \"Local y\"]\n        theta::Real = 0.0, [unit = \"rad\", description = \"Local angle\"]\n    end\n    @outputs g::Vec{3}\n    @equations begin\n        g[1] ~ theta\n        g[2] ~ x\n        g[3] ~ y\n    end\nend\n"
+                    }
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
+                    "theta": "0.0",
+                    "y": "-0.5",
+                    "x": "0.0"
+                },
+                "starts": {
+                }
+            },
+            {
+                "name": "Compose",
+                "id": "n8",
+                "constants": {
+                },
+                "block": {
+                    "ref": "stdlib:multibond/ComposePose2D"
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
+                },
+                "starts": {
+                }
+            },
+            {
+                "name": "Torque",
+                "id": "n9",
+                "constants": {
+                },
+                "block": {
+                    "ref": "stdlib:bondgraph/Se"
+                },
+                "position": {
+                    "y": 0,
+                    "x": 0
+                },
+                "params": {
+                    "e": "0.0"
+                },
+                "starts": {
+                }
+            }
+        ],
+        "annotations": [
+        ],
+        "connections": [
+            {
+                "from": {
+                    "port": "p",
+                    "node": "n1"
+                },
+                "kind": "bond",
+                "id": "c1",
+                "to": {
+                    "port": "parent",
+                    "node": "n2"
+                }
+            },
+            {
+                "from": {
+                    "port": "child",
+                    "node": "n2"
+                },
+                "kind": "bond",
+                "id": "c2",
+                "to": {
+                    "port": "a",
+                    "node": "n3"
+                }
+            },
+            {
+                "from": {
+                    "port": "b",
+                    "node": "n3"
+                },
+                "kind": "bond",
+                "id": "c3",
+                "to": {
+                    "node": "n4"
+                }
+            },
+            {
+                "from": {
+                    "port": "p",
+                    "node": "n5"
+                },
+                "kind": "bond",
+                "id": "c4",
+                "to": {
+                    "node": "n4"
+                }
+            },
+            {
+                "from": {
+                    "port": "p",
+                    "node": "n6"
+                },
+                "kind": "bond",
+                "id": "c5",
+                "to": {
+                    "node": "n4"
+                }
+            },
+            {
+                "from": {
+                    "port": "p",
+                    "node": "n9"
+                },
+                "kind": "bond",
+                "id": "c6",
+                "to": {
+                    "port": "drive",
+                    "node": "n2"
+                }
+            },
+            {
+                "from": {
+                    "port": "pose",
+                    "node": "n2"
+                },
+                "kind": "signal",
+                "id": "c7",
+                "to": {
+                    "port": "gp",
+                    "node": "n8"
+                }
+            },
+            {
+                "from": {
+                    "port": "g",
+                    "node": "n7"
+                },
+                "kind": "signal",
+                "id": "c8",
+                "to": {
+                    "port": "gl",
+                    "node": "n8"
+                }
+            },
+            {
+                "from": {
+                    "port": "g",
+                    "node": "n8"
+                },
+                "kind": "signal",
+                "id": "c9",
+                "to": {
+                    "port": "g",
+                    "node": "n6"
+                }
+            }
+        ],
+        "subsystemPorts": [
+        ]
+    },
+    "bindings": [
+    ],
+    "language": "0.1.0",
+    "name": "PlanarPendulum",
+    "settings": {
+        "reltol": 1.0e-9,
+        "abstol": 1.0e-11,
+        "solver": "auto",
+        "t_end": 4,
+        "t_start": 0,
+        "max_step": null,
+        "event_limit": 10000,
+        "output": {
+            "points": 4001,
+            "mode": "points"
+        }
+    },
+    "plots": [
+    ],
+    "format": "bgsim.model",
+    "scene": null
+}
