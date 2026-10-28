@@ -27,6 +27,11 @@ export mtk_variable, mtk_parameter, mtk_discrete, signal_name
 # The diagnostics contract (plan 3.4).
 include("diagnostics.jl")
 
+# Work package J-MB3: the Lie-group / screw core (`mech/`: SE2, SE3, quaternions, Ad/ad,
+# exp/log, spatial inertia). Numeric only; the lowering calls it through `fnmap.jl`.
+include("mech/mech.jl")
+using .Mech
+
 # The language front end (plan section 4).
 include("syntax/ast.jl")
 include("syntax/constfold.jl")
@@ -82,5 +87,14 @@ export LowerError, CompiledModel, nonsmooth_conditions, compile_key, lower_model
     set_parameter_values, set_start_values, clear_compile_cache!, cache_size,
     compile_build_count, compile_cache_limit,
     RunSettings, SimResult, simulate, output_grid
+
+# Work package J-MB3: the screw core (also reachable as `BGSim.Mech`). `exp`, `log`, `inv`
+# and `*` are extended on the pose/screw types rather than exported, so they stay Base's
+# functions and `exp(1.0)` still means what it always meant.
+export Screw, Twist, Wrench, SE2, SE3, Quat
+export hat, vee, skew, Ad, ad, rotation, translation
+export spatial_inertia, planar_inertia, validate_inertia
+export screw, revolute_screw, prismatic_screw, joint_basis
+export quat_exp, quat_log, quat_from_rotation, quat_to_matrix, quat_rotate, normalise
 
 end # module BGSim

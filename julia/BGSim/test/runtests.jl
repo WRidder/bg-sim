@@ -240,6 +240,9 @@ include("test_simulate.jl")
 include("test_worker.jl")
 include("test_language.jl")
 
+# Work package J-MB3: the Lie-group / screw core (numeric, whitelist and registration).
+include("test_mech.jl")
+
 # Milestone M2 scaffolding: each WP creates exactly one of these files, and the M2 gate
 # replaces these guards with plain includes (the same pattern DEC-5 used for M1).
 for entry in ("test_events.jl", "test_discrete.jl", "test_units_model.jl",

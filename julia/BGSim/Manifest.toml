@@ -2,7 +2,7 @@
 
 julia_version = "1.13.2"
 manifest_format = "2.1"
-project_hash = "d712896f8a73a8516f53190a53d59b89e0177e34"
+project_hash = "3597186e715ebd175b2edc655f4c879316bd5453"
 
 [[deps.ADTypes]]
 deps = ["PrecompileTools"]
@@ -144,7 +144,7 @@ uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 version = "1.11.0"
 
 [[deps.BGSim]]
-deps = ["Dates", "JSON3", "JuliaSyntax", "ModelingToolkit", "OrdinaryDiffEqBDF", "OrdinaryDiffEqNonlinearSolve", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", "PrecompileTools", "RuntimeGeneratedFunctions", "SHA", "Sockets", "StaticArrays", "SymbolicIndexingInterface", "Symbolics"]
+deps = ["Dates", "JSON3", "JuliaSyntax", "LinearAlgebra", "ModelingToolkit", "OrdinaryDiffEqBDF", "OrdinaryDiffEqNonlinearSolve", "OrdinaryDiffEqRosenbrock", "OrdinaryDiffEqTsit5", "OrdinaryDiffEqVerner", "PrecompileTools", "RuntimeGeneratedFunctions", "SHA", "Sockets", "StaticArrays", "SymbolicIndexingInterface", "Symbolics"]
 path = "."
 uuid = "13a97ae1-5156-43a9-8542-dfea90b93047"
 version = "0.1.0"

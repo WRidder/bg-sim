@@ -1045,10 +1045,13 @@ const ROW_OVERRIDES = Dict{Symbol,NamedTuple}(
                 )
             end
         end
-        # The table has one row per spec line (23 rows including the D12 intrinsics).
+        # The table has one row per spec line (23 rows including the D12 intrinsics). The
+        # spatial-mechanics additions of J-MB3 live in their own table
+        # (`MECH_FUNCTION_RULES`), mirroring the spec's separate table.
         @test length(BGSim.FUNCTION_RULES) == 23
+        @test length(BGSim.MECH_FUNCTION_RULES) == 18
         @test BGSim.function_rule(:rand) === nothing
-        @test BGSim.function_rule(:inv) === nothing
+        @test BGSim.function_rule(:jacobian) === nothing
     end
 
     @testset "whitelist: every operator and statement row" begin

@@ -123,10 +123,74 @@ const FUNCTION_LOOKUP = Dict{Symbol,FunctionRule}(name => rule
                                                   for rule in FUNCTION_RULES
                                                   for name in rule.names)
 
+"""
+The function additions of the spatial-mechanics section (spec "Spatial mechanics (screw
+theory)", table "Function additions"), in the same `FunctionRule` style as
+[`BASE_FUNCTION_RULES`](@ref) but in their own table, exactly as the spec presents them.
+
+They are **overloaded on the shape of the argument**, which is why a scalar whitelist row
+alone cannot describe them: `exp`/`log` keep their scalar meaning from the base table and
+mean the screw exponential/logarithm on a pose or twist value; `hat`/`vee`/`Ad`/`ad` take a
+`Vec{3}` (planar) or `Vec{6}` (spatial) twist; `compose`/`inv` take a pose; `SE3`,
+`rotation` and `translation` build and take apart a spatial pose. The quaternion helpers
+are the D-MB6 pose-state operations (`PoseIntegrator3D`, J-MB8) — the spec's pose-state
+section requires them, its function table does not enumerate them.
+
+`function_rule` consults this table after [`FUNCTION_RULES`](@ref). `pose_of` and
+`jacobian` are deliberately absent: they are generated per model and out of scope for M3
+(plan `MULTIBOND_PLAN.md` section 12).
+
+| function | meaning | scopes |
+| --- | --- | --- |
+| `hat(T)`, `vee(M)` | twist to matrix form and back | all |
+| `Ad(H)` | adjoint: changes the frame of a twist | all |
+| `ad(T)` | small adjoint (Lie bracket) of a twist | all |
+| `exp(T)`, `log(H)` | exponential and logarithm on SE(2)/SE(3) | all |
+| `compose(H1, H2)`, `inv(H)` | pose composition and inverse (`H1 * H2` needs the pose value type) | all |
+| `spatial_inertia(m, Ic, c)` | the 6x6 (or planar 3x3) inertia | all |
+| `SE3(R, p)`, `rotation(H)`, `translation(H)` | build and take apart poses | all |
+| `quat_compose`, `quat_inv`, `quat_normalise` | quaternion algebra | all |
+| `quat_exp`, `quat_log`, `quat_to_matrix`, `quat_from_rotation`, `quat_rotate` | the quaternion pose state | all |
+"""
+const MECH_FUNCTION_RULES = FunctionRule[
+    FunctionRule([:hat], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:vee], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:Ad], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:ad], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:compose], ALL_CONTEXTS, 2, 2, :mech),
+    FunctionRule([:inv], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:spatial_inertia], ALL_CONTEXTS, 2, 3, :mech),
+    FunctionRule([:SE3], ALL_CONTEXTS, 0, 2, :mech),
+    FunctionRule([:rotation], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:translation], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:quat_compose], ALL_CONTEXTS, 2, 2, :mech),
+    FunctionRule([:quat_inv], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:quat_normalise], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:quat_exp], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:quat_log], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:quat_to_matrix], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:quat_from_rotation], ALL_CONTEXTS, 1, 1, :mech),
+    FunctionRule([:quat_rotate], ALL_CONTEXTS, 2, 2, :mech),
+]
+
+const MECH_LOOKUP = Dict{Symbol,FunctionRule}(name => rule
+                                              for rule in MECH_FUNCTION_RULES
+                                              for name in rule.names)
+
+"""    mech_function_rule(name::Symbol) -> Union{FunctionRule,Nothing}
+
+The spatial-mechanics row for a name, or `nothing`."""
+mech_function_rule(name::Symbol) = get(MECH_LOOKUP, name, nothing)
+
 """    function_rule(name::Symbol) -> Union{FunctionRule,Nothing}
 
-The whitelist row for a function name, or `nothing` (which the checker reports as E002)."""
-function_rule(name::Symbol) = get(FUNCTION_LOOKUP, name, nothing)
+The whitelist row for a function name, or `nothing` (which the checker reports as E002).
+The built-in table is consulted first, then the spatial-mechanics additions."""
+function function_rule(name::Symbol)
+    rule = get(FUNCTION_LOOKUP, name, nothing)
+    rule === nothing || return rule
+    return get(MECH_LOOKUP, name, nothing)
+end
 
 struct SyntaxRule
     key::Symbol

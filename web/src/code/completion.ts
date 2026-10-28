@@ -78,6 +78,25 @@ export const WHITELIST_FUNCTIONS = [
   "noise_normal",
   "reinit",
   "ifelse",
+  // Spatial-mechanics additions (J-MB3, `MECH_FUNCTION_RULES` in the Julia table).
+  "hat",
+  "vee",
+  "Ad",
+  "ad",
+  "compose",
+  "inv",
+  "spatial_inertia",
+  "SE3",
+  "rotation",
+  "translation",
+  "quat_compose",
+  "quat_inv",
+  "quat_normalise",
+  "quat_exp",
+  "quat_log",
+  "quat_to_matrix",
+  "quat_from_rotation",
+  "quat_rotate",
 ] as const;
 
 /** The accepted unit spellings of the dimension table (`UNIT_TABLE`). */

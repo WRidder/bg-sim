@@ -220,6 +220,11 @@ end
 # the matrices below are those literals. `nu` and `ny` are the plan's structural constants and
 # are used as the bounds of the one-iteration loops around the single input and the single
 # measurement (the language has no Mat{1,4} -> scalar product).
+#
+# J-MB3: the plan calls the discrete transition matrix `Ad`, which now shadows the built-in
+# `Ad(H)` of the spatial-mechanics function table (E003, "a declaration may not shadow a
+# built-in function"). The fixture uses the conventional `Phi` instead; the same rename is
+# needed in the plan's 9.5 text and in `examples/drivetrain-kalman`'s README description.
 const LQG = """
 @block LQGController begin
     @constants begin
@@ -228,7 +233,7 @@ const LQG = """
         ny::Int = 1
     end
     @parameters begin
-        Ad::Mat{nx,nx} = [1.0 1e-3 0.0 0.0; -0.02 0.998 0.01 0.0; 0.0 0.0 1.0 1e-3; 0.0 0.0 -0.02 0.998]
+        Phi::Mat{nx,nx} = [1.0 1e-3 0.0 0.0; -0.02 0.998 0.01 0.0; 0.0 0.0 1.0 1e-3; 0.0 0.0 -0.02 0.998]
         Bd::Vec{nx} = [0.0, 0.001, 0.0, 0.0]
         Cd::Vec{nx} = [1.0, 0.0, 0.0, 0.0]
         L::Vec{nx} = [0.5, 0.1, 0.05, 0.01]
@@ -261,7 +266,7 @@ const LQG = """
         if abs(v) > umax
             z -= Ts * (w_ref - xhat[4])
         end
-        xhat = Ad * xhat + Bd * u
+        xhat = Phi * xhat + Bd * u
         w_load_hat = xhat[nx]
     end
 end
@@ -361,7 +366,7 @@ end
         @test [c.name for c in iface.constants] == ["nx", "nu", "ny"]
         @test all(c -> c.structural, iface.constants)
         @test [p.name for p in iface.parameters] ==
-              ["Ad", "Bd", "Cd", "L", "K", "Ki", "umax"]
+              ["Phi", "Bd", "Cd", "L", "K", "Ki", "umax"]
         @test iface.parameters[1].type == "Real"    # catalog type is the element type
         @test iface.parameters[1].default ==
               "[1.0 1e-3 0.0 0.0; -0.02 0.998 0.01 0.0; 0.0 0.0 1.0 1e-3; 0.0 0.0 -0.02 0.998]"
@@ -1402,7 +1407,9 @@ end
             end
         end
 
-        # Names outside the whitelist are E002 with a helpful hint.
+        # Names outside the whitelist are E002 with a helpful hint. (`inv` moved into the
+        # spatial-mechanics additions table in J-MB3; `pose_of`/`jacobian` stay out of
+        # scope, MULTIBOND_PLAN section 12.)
         pb = parse_block("""
         @block Unknown begin
             @inputs e::Real
@@ -1412,7 +1419,7 @@ end
         """)
         d = lang_expect(pb, "E002", 4, 20; contains = "rand")
         @test d !== nothing && occursin("noise_normal", d.hint)
-        @test BGSim.function_rule(:inv) === nothing
+        @test BGSim.function_rule(:jacobian) === nothing
         @test BGSim.function_rule(:randn) === nothing
 
         # The D12 intrinsics table is the same single source as FUNCTION_RULES.
