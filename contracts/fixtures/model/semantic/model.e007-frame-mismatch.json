@@ -10,7 +10,7 @@
         "name": "World",
         "block": {
           "inline": {
-            "source": "@block GroundPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @equations p.f ~ [0.0, 0.0, 0.0]\n    @causality p => (:flow_out, :fixed)\nend"
+            "source": "@block GroundPlanar begin\n    @ports p::Power{Planar}, [frame = \"world\"]\n    @equations begin\n        p.f[1] ~ 0.0\n        p.f[2] ~ 0.0\n        p.f[3] ~ 0.0\n    end\n    @causality p => (:flow_out, :fixed)\nend"
           }
         },
         "position": { "x": 60, "y": 100 }

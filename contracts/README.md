@@ -18,6 +18,8 @@ Conventions the plan leaves open: `required` is the plan's core of a shape and d
 optional; `output.mode` is `points` or `interval`; `modelHash` is a sha256 hex digest, optionally
 `sha256:`-prefixed; catalog `size` arrays are the default expansion of structural constants; a
 diagnostic `path` is an instance path or a scene target (`joint:`/`link:`/`frame:`/`visual:`).
+Multibond fixture equations are component-wise (`p.e[k]`, `p.f[k]`) by contract (D-MB10); a
+whole-field write on a multibond port is E006, so do not reintroduce one in a fixture.
 
 Data files (plan 3.5): `columns.f64` is the time column followed by one column per manifest signal,
 `stream.f64` is row-major `[t, v1 ... vn]`, both little-endian Float64 and gitignored, written by

@@ -1,5 +1,5 @@
 {
-  "$comment": "A self-contained spatial multibond slice (C-MB1): inline Ground(world) -> 1-junction -> inline FixedTransform3D(a: world, b: base) -> inline BodySpatial(base). The six-component ports and the transform's two declared frames are the point; the junction is frame-neutral (D-MB5).",
+  "$comment": "A self-contained spatial multibond slice (C-MB1): inline Ground(world) -> 1-junction -> inline FixedTransform3D(a: world, b: base, pure translation, component-wise power-continuous adjoint) -> inline BodySpatial(base). The six-component ports and the transform's two declared frames are the point; the junction is frame-neutral (D-MB5).",
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "SpatialBodyMultibond",
@@ -10,7 +10,7 @@
         "name": "World",
         "block": {
           "inline": {
-            "source": "@block GroundSpatial begin\n    @ports p::Power{Spatial}, [frame = \"world\"]\n    @equations p.f ~ [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]\n    @causality p => (:flow_out, :fixed)\nend"
+            "source": "@block GroundSpatial begin\n    @ports p::Power{Spatial}, [frame = \"world\"]\n    @equations begin\n        p.f[1] ~ 0.0\n        p.f[2] ~ 0.0\n        p.f[3] ~ 0.0\n        p.f[4] ~ 0.0\n        p.f[5] ~ 0.0\n        p.f[6] ~ 0.0\n    end\n    @causality p => (:flow_out, :fixed)\nend"
           }
         },
         "position": { "x": 60, "y": 200 },
@@ -38,7 +38,7 @@
         "name": "Mount",
         "block": {
           "inline": {
-            "source": "@block FixedTransform3D begin\n    @ports begin\n        a::Power{Spatial}, [frame = \"world\"]\n        b::Power{Spatial}, [frame = \"base\"]\n    end\n    @parameters begin\n        x::Real = 0.0, [unit = \"m\"]\n        y::Real = 0.0, [unit = \"m\"]\n        z::Real = 0.2, [unit = \"m\"]\n        roll::Real = 0.0, [unit = \"rad\"]\n        pitch::Real = 0.0, [unit = \"rad\"]\n        yaw::Real = 0.0, [unit = \"rad\"]\n    end\n    @equations begin\n        # Ad(g) is the 6x6 adjoint of the pose (x, y, z, roll, pitch, yaw); the block is\n        # power-continuous and is the only legal bridge from world to base (D-MB5).\n        a.f ~ Ad(x, y, z, roll, pitch, yaw) * b.f\n        b.e ~ transpose(Ad(x, y, z, roll, pitch, yaw)) * a.e\n    end\nend"
+            "source": "@block FixedTransform3D begin\n    @ports begin\n        a::Power{Spatial}, [frame = \"world\"]\n        b::Power{Spatial}, [frame = \"base\"]\n    end\n    @parameters begin\n        x::Real = 0.0, [unit = \"m\", description = \"Translation x from base to world\"]\n        y::Real = 0.0, [unit = \"m\", description = \"Translation y from base to world\"]\n        z::Real = 0.2, [unit = \"m\", description = \"Translation z from base to world\"]\n    end\n    @equations begin\n        # Pure translation p = (x, y, z): Ad = [[I, 0], [p̂, I]] and\n        # Ad^{-T} = [[I, p̂], [0, I]]. With a.f = -Ad b.f and a.e = Ad^{-T} b.e,\n        # a.e·a.f = -b.e·b.f, so the block is power-continuous (D-MB5).\n        # Hand check: p = (0, 0, 0.2), b.f = (0, 0, 3, 4, 5, 6) and\n        # b.e = (0, 0, 1, 0, 0, 2) give a.f = (0, 0, -3, -4, -5, -6) and\n        # a.e = (0, 0, 1, 0, 0, 2), so a.e·a.f = -15 and b.e·b.f = 15.\n        a.f[1] ~ -b.f[1]\n        a.f[2] ~ -b.f[2]\n        a.f[3] ~ -b.f[3]\n        a.f[4] ~ -(b.f[4] + y * b.f[3] - z * b.f[2])\n        a.f[5] ~ -(b.f[5] + z * b.f[1] - x * b.f[3])\n        a.f[6] ~ -(b.f[6] + x * b.f[2] - y * b.f[1])\n        a.e[1] ~ b.e[1] + y * b.e[6] - z * b.e[5]\n        a.e[2] ~ b.e[2] + z * b.e[4] - x * b.e[6]\n        a.e[3] ~ b.e[3] + x * b.e[5] - y * b.e[4]\n        a.e[4] ~ b.e[4]\n        a.e[5] ~ b.e[5]\n        a.e[6] ~ b.e[6]\n    end\nend"
           }
         },
         "position": { "x": 460, "y": 200 },
@@ -47,10 +47,7 @@
         "params": {
           "x": "0.0",
           "y": "0.0",
-          "z": "0.2",
-          "roll": "0.0",
-          "pitch": "0.0",
-          "yaw": "0.0"
+          "z": "0.2"
         },
         "constants": {},
         "starts": {},
