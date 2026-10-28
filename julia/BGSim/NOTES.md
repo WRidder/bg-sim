@@ -711,38 +711,49 @@ Everything below was probed on this machine (Julia 1.13.2) and is asserted by
 
 `src/mech/` is the submodule `BGSim.Mech` (`mech.jl` includes `lie.jl`, `quat.jl`, `se2.jl`,
 `se3.jl`; `BGSim.jl` includes it after the diagnostics and re-exports the numeric API).
-Everything below was **run** on this machine; `test/test_mech.jl` asserts it (1926 assertions,
-green) and the full suite is green with it included.
+Everything below was **run** on this machine; `test/test_mech.jl` asserts it (2078 assertions,
+green).
 
 ## Conventions (frozen — do not re-litigate in later WPs)
 
 * **Angular first** (D-MB2): a twist is `[ω; v]`, a wrench is `[m; f]`; planar `D = 3`
   `(ω, vx, vy)` / `(τ, fx, fy)`, spatial `D = 6`.
 * The **linear part of a twist is the velocity of the frame origin**, not of the CoM and not
-  of a joint point. The planar revolute screw is therefore `[1, r_y, -r_x]` (plan 3.1).
-* `Ad(g)` maps a body twist to the base frame; a wrench maps with `Ad(inv(g))'`, so
-  `dot(W, V)` is frame invariant. `ad(V)` is the Lie bracket and satisfies `ad(V) V = 0`;
-  `dot(V, ad(V)' * P) == 0` is the Coriolis/gyrator power test.
+  of a joint point. The planar revolute screw is therefore `[1, r_y, -r_x]` (plan 3.1), the
+  **unit-ω** convention; every screw constructor normalises its axis (`screw`,
+  `revolute_screw`, `prismatic_screw`) and refuses a zero one, so a joint coordinate is always
+  radians or metres and never silently scaled.
+* `Ad(g)` maps a body twist to the base frame. A wrench is its **dual** and maps with
+  `Ad(inv(g))'`, so `dot(W, V)` is frame invariant. In this library that is written
+  `AdDual(g) * W`; `Ad(g) * W` (and any other matrix × `Wrench`) throws an `ArgumentError`
+  instead of returning a plausible-but-wrong value. `ad(V)` is the Lie bracket and satisfies
+  `ad(V) V = 0`; `dot(V, Wrench(transpose(ad(V)) * P.v)) == 0` is the Coriolis/gyrator power
+  test (the wrench-space bracket applied through the explicit dual).
 * A spatial **pose chart** (the shape used in the language and in the `bg_*` functions) is
-  `Vec{7} = (q_w, q_x, q_y, q_z, p_x, p_y, p_z)`, i.e. quaternion + position (D-MB6), with the
-  quaternion canonicalised to `q_w >= 0` (the same branch `quat_log` takes). A planar pose
-  chart is `Vec{3} = (θ, p_x, p_y)`; a planar twist is the same `Vec{3}`.
+  `Vec{7} = (q_w, q_x, q_y, q_z, p_x, p_y, p_z)`, i.e. quaternion + position (D-MB6). The
+  **conversion** paths (`quat_from_rotation`, `chart`, `quat_log`) canonicalise the sign to
+  `q_w >= 0`; the **algebra** (`compose`, `inv`, `normalise`, `quat_exp`, `quat_to_matrix`)
+  does not — a product of two canonical quaternions may have `q_w < 0`, which is the same
+  rotation. A planar pose chart is `Vec{3} = (θ, p_x, p_y)`; a planar twist is the same
+  `Vec{3}`.
 * An inertia is expressed about the **body origin**; `spatial_inertia(m, Ic, c)` takes `Ic`
   about the CoM and the CoM offset `c`, both in body coordinates, and builds
   `[[Ic + m ĉ ĉᵀ, m ĉ], [m ĉᵀ, m I]]`. `planar_inertia(m, J, c)` is its plane restriction
   (`diag(J, m, m)` at `c = 0`, the D-MB3 v1 case). Both **validate** symmetry and positive
   definiteness and throw an `ArgumentError` naming the failed property (E108); nothing is
-  accepted silently.
+  accepted silently. The symmetry tolerance is one constant, `Mech.INERTIA_RTOL = 1e-12`,
+  used by the validator *and* the builder, so a matrix that is symmetric to rounding (1e-13)
+  is accepted by both and a real asymmetry (1e-6) is rejected by both.
 * `Twist{D}` / `Wrench{D}` are `AbstractVector` wrappers (not bare `SVector` aliases), so
   `exp`/`log`/`inv` extend Base only on our own types, `hat`/`Ad` dispatch on the screw type,
   and `V + W` is refused with an `ArgumentError` instead of Base's elementwise `+`.
 
 ## Frozen API (for J-MB4 .. J-MB15 and J-MB8)
 
-`BGSim` re-exports: `Screw, Twist, Wrench, SE2, SE3, Quat, hat, vee, skew, Ad, ad, rotation,
-translation, spatial_inertia, planar_inertia, validate_inertia, screw, revolute_screw,
-prismatic_screw, joint_basis, quat_exp, quat_log, quat_from_rotation, quat_to_matrix,
-quat_rotate, normalise`.
+`BGSim` re-exports: `Screw, Twist, Wrench, SE2, SE3, Quat, CoAdjoint, hat, vee, skew, Ad,
+AdDual, ad, rotation, translation, spatial_inertia, planar_inertia, validate_inertia, screw,
+revolute_screw, prismatic_screw, joint_basis, quat_exp, quat_log, quat_from_rotation,
+quat_to_matrix, quat_rotate, normalise`.
 
 | signature | meaning |
 | --- | --- |
@@ -751,7 +762,8 @@ quat_rotate, normalise`.
 | `hat(::Twist{3})::SMatrix{3,3}`, `hat(::Twist{6})::SMatrix{4,4}` | `se(2)` / `se(3)` matrix; `exp(hat(V))` is the homogeneous transform |
 | `vee(::AbstractMatrix)::Twist{3/6}` | inverse of `hat` (3x3 → planar, 4x4 → spatial) |
 | `skew(::SVector{3})::SMatrix{3,3}` | cross-product matrix |
-| `Ad(::SE2)::SMatrix{3,3}`, `Ad(::SE3)::SMatrix{6,6}` | adjoint; `Ad(g1*g2) == Ad(g1)*Ad(g2)` |
+| `Ad(::SE2)::SMatrix{3,3}`, `Ad(::SE3)::SMatrix{6,6}` | twist adjoint; `Ad(g1*g2) == Ad(g1)*Ad(g2)`; the planar one is the 6x6 restricted to indices `[3,4,5]` |
+| `AdDual(g) -> CoAdjoint` | the wrench dual `Ad(inv(g))'`: `AdDual(g) * W` maps a wrench to the base frame; `Matrix(AdDual(g))` is the matrix; only a `Wrench` may be multiplied |
 | `ad(::Twist{3})::SMatrix{3,3}`, `ad(::Twist{6})::SMatrix{6,6}` | Lie bracket matrix |
 | `SE2()`, `SE2(θ[, x, y])`, `SE2(θ, p)` | planar pose |
 | `SE3()`, `SE3(R, p)` (validated: orthonormal within `1e-8`, `det = +1`), `SE3(q::Quat, p)` | spatial pose |
@@ -763,52 +775,78 @@ quat_rotate, normalise`.
 | `quat_to_matrix(q)` / `rotation(q)`, `quat_from_rotation(R)`, `quat_rotate(q, v)` | the D-MB6 pose state |
 | `spatial_inertia(m, Ic[, c])`, `spatial_inertia(m, J::SVector{3}[, c])` | 6x6 inertia, validated |
 | `planar_inertia(m, J[, c::SVector{2}])`, `planar_inertia(m, J, cx, cy)` | 3x3 inertia, validated |
-| `validate_inertia(M)` | symmetry + SPD check, returns `M`, throws a named `ArgumentError` |
+| `validate_inertia(M; atol = 0, rtol = Mech.INERTIA_RTOL)` | symmetry + SPD check, returns `M`, throws a named `ArgumentError` |
 | `inertia_entry(m, J, c, i, j)` | one entry of the diagonal-`J` 6x6 inertia, no validation (used by `bg_inertia3`) |
-| `screw(axis, point, pitch = 0)`, `revolute_screw(axis, point)`, `revolute_screw(r::SVector{2})`, `prismatic_screw(axis)` | joint screws, origin-velocity convention |
+| `screw(axis, point, pitch = 0)`, `revolute_screw(axis, point)`, `revolute_screw(r::SVector{2})`, `prismatic_screw(axis)` | joint screws, origin-velocity convention, **axis normalised** and non-zero (else `ArgumentError`) |
 | `joint_basis(Vs)::SMatrix{D,N}`, `joint_basis(S1, S2, …)` | the `Mat{D,N}` joint basis `S` (D-MB8) |
 | `chart(::SE2/SE3)`, `pose(SE2/SE3, v)` | the `Vec{3}`/`Vec{7}` language chart and back (`BGSim.Mech` only) |
 
-## Symbolics registration: the probe (what was run, not guessed)
+## Symbolics registration: the probe and what is differentiable
 
-Thirteen **opaque component functions** are registered with
-`Symbolics.@register_symbolic`: `bg_exp2`, `bg_log2`, `bg_exp3`, `bg_log3`, `bg_quat_mul`,
-`bg_quat_normalise`, `bg_quat_exp`, `bg_quat_log`, `bg_quat_to_matrix`,
-`bg_quat_from_rotation`, `bg_quat_rotate`, `bg_inertia2`, `bg_inertia3`. Each takes the
-pose/twist/quaternion as **separate scalar components plus a 1-based selector** (`k`, or a
-row/column pair) because the flat IR is scalar (`p.e[k]`, plan 5.3, D-MB10). Everything else
-(`hat`, `vee`, `Ad`, `ad`, `compose`, `inv`, `spatial_inertia`, the quaternion products) is
-expanded into scalar arithmetic by `lower_mech` in `src/lower/fnmap.jl`, so Symbolics can
-differentiate it itself.
+The equation layer splits the screw algebra in two, and the difference decides whether
+`ODEProblem(...; jac = true)` works:
 
-Probe results (one script, `julia --project=julia/BGSim`):
+* **Expanded symbolically by `lower_mech`** (no opaque call, so `Symbolics.jacobian` sees
+  plain arithmetic): `hat`, `vee`, `Ad`, `ad`, `compose`, `inv`, `rotation`, `translation`,
+  `spatial_inertia`, `SE3`, and the **whole quaternion algebra** — product (16 products),
+  conjugation, normalisation (`q/sqrt(|q|²)`), rotation matrix (9 quadratic quotients) and
+  rotation of a vector. This is the D-MB6 pose path
+  (`dq = 0.5 q ⊗ [0, ω]`, `dp = R(q) v`), which a symbolic Jacobian must differentiate.
+* **Nine opaque registered functions** (`Symbolics.@register_symbolic`), only where the
+  closed form has a branch that cannot be taken symbolically: `bg_exp2`, `bg_log2`,
+  `bg_exp3`, `bg_log3` (SE(2)/SE(3) `exp`/`log`), `bg_quat_exp`, `bg_quat_log` (the
+  rotation-vector pair), `bg_quat_from_rotation` (Shepperd's four branches) and
+  `bg_inertia2`, `bg_inertia3` (the component inertia entries a native block calls).
+
+Each takes the pose/twist/quaternion as **separate scalar components plus a 1-based
+selector** (`k`, or a row/column pair) because the flat IR is scalar (`p.e[k]`, plan 5.3,
+D-MB10).
+
+Probe results (run, not guessed):
 
 1. **An opaque call is usable in a `System` equation and stays unexpanded.** `mtkcompile`
    keeps one call per component (`observed: e1 ~ bg_exp2(w, 1.0, 0.5, 2)`), and the quoted
    literals (including the `Int` selector) survive: `arguments(...) == [w(t), 1.0, 0.5, 2]`.
 2. **`Symbolics.derivative` of an opaque call does not error and does not expand**: it returns
    an unevaluated `Differential(w(t), 1)(bg_exp2(w(t), 0.0, 0.0, 1))` (a `Num`).
-   `@register_derivative` **exists** in Symbolics 7.47 but is **not needed and not used**:
-   there is no symbolic-differentiation path for these functions in M3 (see 3).
-3. **The solver does not need a derivative rule.** A `System` with an opaque call in
-   `D(w) ~ -k*bg_exp2(w, 1, 0, 2)` compiles with `mtkcompile`, and `Rodas5P()` and `FBDF()`
+   `@register_derivative` **exists** in Symbolics 7.47 but is not needed: the M3 blocks never
+   differentiate an `exp`/`log`/`from_rotation` symbolically (D-MB6 integrates the quaternion,
+   not a pose through `exp`), and the quaternion algebra is expanded instead (below).
+3. **The default solver path does not need a derivative rule.** A `System` with an opaque call
+   in `D(w) ~ -k*bg_exp2(w, 1, 0, 2)` compiles with `mtkcompile`, and `Rodas5P()` and `FBDF()`
    both reach `retcode = Success`. `Rodas5P`'s Jacobian differentiates the *generated*
    right-hand side numerically: a recording wrapper saw **182 calls with `Float64` and 20 with
    `ForwardDiff.Dual{DiffEqBase.OrdinaryDiffEqTag, Float64}`**. Every `bg_*`/`Mech` method is
    therefore generic over `Real`, with branches on primal values and no `Float64` conversion
    (`spatial_inertia` validates with `isposdef`, which is why the equation path calls the
    unvalidated `inertia_entry`/`bg_inertia3` instead).
-4. **Index reduction is unaffected**: a DAE with `0 ~ y - bg_exp2(w, …)` plus `D(w) ~ -y`
+4. **`jac = true` needs the symbolic Jacobian, and that is why the quaternion algebra is
+   expanded.** The review proved that an opaque `bg_quat_mul` in `dq = 0.5 q ⊗ [0, ω]` leaves
+   a `Differential` term in the symbolic Jacobian and `ODEProblem(...; jac = true)` fails with
+   `Float64(::Num)`. After the fix, a 7-chart pose system (`D(q[k]) ~ 0.5 (q ⊗ [0, ω])[k]`,
+   `D(p[k]) ~ (R(q) v)[k]`) builds a problem with `prob.f.jac` set and solves with `Rodas5P`
+   (`Success`); against the analytic solution for a constant z-rate **max |q − q_exact| =
+   6.4e-16** and **max |p − p_exact| = 2.2e-13**. The symbolic Jacobian of the product and of
+   the rotation matches a central finite difference of the numeric core to **2.2e-11** and
+   **2.0e-10** (scale 0.3 and 1.7). An algebraic `Ad(g(q))` with the seven chart components as
+   *states* compiles and solves with `jac = true` too, and its matrix contains no `bg_*` call.
+5. **Index reduction is unaffected**: a DAE with `0 ~ y - bg_exp2(w, …)` plus `D(w) ~ -y`
    compiles and solves (`Success`).
-5. **Unsupported (by design, D-MB6)**: `ddt(pose_function(...))` would need a *symbolic*
-   derivative of the pose algebra. Poses are algebraic functions of the states, so no M3 block
-   differentiates one; MTK reports such a form as an error rather than silently accepting it.
+6. **Still not supported (by design):** `jac = true` on a system whose equations contain one
+   of the nine opaque functions (`exp`/`log`, the quaternion exp/log, `from_rotation`, the
+   inertia entries): the symbolic Jacobian would keep a `Differential` and fail to compile.
+   The production lowering (`src/lower/mtk.jl`) does not pass `jac = true`, and the default
+   ForwardDiff Jacobian of the generated code is tested for `bg_exp2` and `bg_inertia3`
+   (item 3). A block that needs the inertia on a `jac = true` path can use the
+   `spatial_inertia` language function, which is expanded.
 
-The regression lives in `test/test_mech.jl` ("registration"): a `System` that uses `bg_exp2`
-in the state derivative and `bg_inertia3` in an observed equation, solved with `Rodas5P`, whose
-observed values equal the numeric core at the solved state (rtol 1e-8), plus a second `System`
-whose equation is one entry of the **lowered** `Ad(g)` matrix (`lower_mech` → `cos(θ)`) so the
-language-to-solver path is covered too.
+Regression ("registration" and "differentiability: jac = true on the D-MB6 pose path" in
+`test/test_mech.jl`): `bg_exp2` in a state derivative and `bg_inertia3` in an observed
+equation solved with `Rodas5P` (values equal the numeric core, rtol 1e-9); one entry of the
+**lowered** `Ad(g)` matrix as a solved state function; the 7-chart quaternion/position
+integration with `jac = true` against the analytic solution; the AD Jacobian of the product
+and the rotation against a finite difference (rel 1e-6); and an algebraic `Ad(g(q))` with
+`q` as states under `jac = true`.
 
 ## Language surface (whitelist) and one open interface point
 
@@ -818,6 +856,21 @@ additions", same `FunctionRule` style; `function_rule` consults it after the bas
 are **unchanged** (23 rows), so the M1 per-row tests and the web parity test keep their
 meaning. `pose_of`/`jacobian` stay out (MULTIBOND_PLAN section 12). Lowering of every row is
 implemented in `fnmap.jl` (`lower_mech`) and tested against the numeric core.
+
+Two table facts for consumers:
+
+* **`exp` and `log` are not rows of `MECH_FUNCTION_RULES`.** They keep their M1 rows
+  (`lowering = :math`) and `lower_call` *shape-dispatches* them: a scalar argument is the
+  ordinary exponential/logarithm, a `Vec` argument is the screw exponential/logarithm. A
+  consumer that selects mech functions by `rule.lowering === :mech` (rather than calling
+  `lower_call`) therefore misses them; J-MB4 goes through `lower_call`, which is correct.
+* **The spec's `H1 * H2` composition syntax is not wired, deliberately.** `*` on two `Vec{3}`
+  or `Vec{7}` charts is ordinary vector/scalar arithmetic (there is no pose value type in v1),
+  so a `*` that silently meant composition would be ambiguous with scaling and matrix
+  products. v1 spells pose composition out: `compose(g1, g2)` (the whitelisted function), or
+  `BGSim.Mech.compose(g1, g2)` / `g1 * g2` on the *numeric* `SE2`/`SE3`/`Quat` types. Typed
+  pose multiplication belongs to the deferred dependent-frame type system (D-MB5, spec v0.3);
+  when that lands, `H1 * H2` can be that type's `*` without touching this lowering.
 
 **Open for J-MB4/J-MB5 (not owned by J-MB3):** `_check_call!`'s tail in
 `src/syntax/scopes.jl` rejects a `Vec`/`Mat` argument (`_numeric` is `Real`/`Int` only), so a
@@ -846,6 +899,30 @@ the pose-valued expressions. `lower_mech` already handles `Vec{3}`, `Vec{6}`, `V
   updated by the docs/contracts lane. `ad` (the Lie bracket) and `Ad` are both built-ins, so a
   model may not declare either name.
 
+### Review round 1 (fixed in the same tree)
+
+* **Differentiation.** The four quaternion component functions (`bg_quat_mul`,
+  `bg_quat_normalise`, `bg_quat_to_matrix`, `bg_quat_rotate`) were removed; the lowering emits
+  the algebra directly, so `jac = true` works on the D-MB6 pose path (numbers in "Measured").
+  The nine opaque functions that remain, and the fact that `jac = true` is unsupported on a
+  system that differentiates one of them, are stated above.
+* **Wrench safety.** `Ad(g) * W` (and every other `StaticMatrix`/`Matrix`/`Diagonal` ×
+  `Wrench`) throws an `ArgumentError` with a hint; the dual is `AdDual(g) * W`
+  (`CoAdjoint`, exports `AdDual`, `CoAdjoint`). A wrench-space bracket is applied explicitly:
+  `Wrench(transpose(ad(V)) * P.v)`.
+* **`prismatic_screw` normalises its axis** and rejects a zero one (this is a value change:
+  `prismatic_screw([2, 0, 0])` used to be `[0; 2, 0, 0]` and is now `[0; 1, 0, 0]`, which is
+  the unit-ω/unit-displacement convention). `screw` also rejects a zero axis.
+* **One inertia symmetry tolerance**: `Mech.INERTIA_RTOL = 1e-12`, used by both
+  `validate_inertia` and `spatial_inertia` (a 1e-13 one-sided asymmetry is accepted by both,
+  a 1e-6 one is rejected by both).
+* **The finite-difference `ad` test** is now step-relative
+  (`max |fd - ad| <= 1e-9 * max(1, |ad(V)|)`), ~1e3 above the measured 1.3e-12/3.6e-12 and
+  tight enough that a 1e-6 error fails.
+* **Docs**: the planar `Ad` comment names the correct restriction (`(ω_z, v_x, v_y)`, indices
+  3/4/5, not "drop z"), and the quaternion canonicalisation (`q_w >= 0`) is scoped to
+  `quat_from_rotation`/`chart`/`quat_log` — the algebra does not canonicalise.
+
 ## Measured (this machine, 2026-10-28)
 
 | item | measured |
@@ -857,16 +934,21 @@ the pose-valued expressions. `lower_mech` already handles `Vec{3}`, `Vec{6}`, `V
 | `exp(log(g))` at an SE(2) angle of ±2π (6 angles × 3 positions) | **max rel 1.1e-16** |
 | `log(exp(T)) - T` small twists, 1000 each | **planar 9.8e-15, spatial 3.2e-15** |
 | quaternion norm drift over **1e5** random compositions | **2.35e-14** (target < 1e-12) |
-| `test_mech.jl` | **1930 assertions, all pass, 25 s** |
+| symbolic Jacobian of the quaternion product vs central difference (scale 0.3) | **2.2e-11** (target 1e-6) |
+| symbolic Jacobian of `quat_to_matrix` vs central difference (scale 1.7) | **2.0e-10** (target 1e-6) |
+| 7-chart pose system with `jac = true`, `Rodas5P` | `Success`; **max \|q − q_exact\| 6.4e-16**, **max \|p − p_exact\| 2.2e-13** |
+| `test_mech.jl` | **2078 assertions, all pass, 36 s** |
 
-**Full suite state at the time of writing:** `Pkg.test()` reports **5146 passed / 250
-failed** and then aborts, because every failure is in `test/test_library.jl` (a failing
-top-level `@testset` throws, so the files after it are not reached). All 250 are
-"catalog structure against catalog.schema.json" (`:211`) and one fixture comparison
-(`:1363`): C-MB1's uncommitted `contracts/schemas/catalog.schema.json` adds `dimension` and
-`portDecl.frame`, which the J-MB1 library/catalog code has not landed yet. That mismatch is
-independent of this WP (no file under `contracts/`, `src/library/` or `src/compile/` was
-touched here). A driver that uses `runtests.jl`'s header and skips only `test_library.jl`
-runs the whole remaining chain — `test_syntax`, `test_units`, `test_flatten`,
-`test_simulate`, `test_worker`, `test_language` (incl. the LQGController golden block),
-**`test_mech` (1930)**, the M2 files, every `golden/*` group and `test_causality` — **green**.
+**Full suite state at the time of writing:** another agent is landing C-MB1/J-MB1 in this
+same working tree, so `test_library.jl` (and only that file) is red while the catalog
+code catches up with the new contract. The last full `Pkg.test()` run reported **5140
+passed / 246 failed / 10 errored**, and *every* failure and error is in
+`test/test_library.jl` (`:211`, `:212`, `:1326`, `:1363`: the catalog schema now has
+`dimension` and `portDecl.frame`, and the catalog fixture files changed, while
+`src/library/` has not landed the matching fields). A failing top-level `@testset` throws, so
+that run aborts before the later files. Nothing under `contracts/`, `src/library/` or
+`src/compile/` is touched by this WP. A driver that uses `runtests.jl`'s header and skips only
+`test_library.jl` runs the whole remaining chain — `test_syntax`, `test_units`,
+`test_flatten`, `test_simulate`, `test_worker`, `test_language` (incl. the LQGController
+golden block), **`test_mech` (2078)**, the M2 files, every `golden/*` group and
+`test_causality` — **green (exit 0)**.

@@ -95,16 +95,55 @@ Base.:*(α::Number, a::S) where {S<:Screw} = S(α * a.v)
 Base.:*(a::S, α::Number) where {S<:Screw} = S(a.v * α)
 
 # Matrix products with the matrix types the pose algebra produces: a dense `Matrix`, a
-# `StaticMatrix`, and their transposes/adjoints. Deliberately **not** every `AbstractMatrix`
-# and not a `Union`, so each method is more specific than LinearAlgebra's and StaticArrays'
-# `AbstractVector` products (checked with `Test.detect_ambiguities`: no ambiguities).
-for M in (:(StaticArrays.StaticMatrix), :(Matrix))
-    @eval Base.:*(A::$M, a::S) where {S<:Screw} = S(SVector{size(A, 1)}(A * a.v))
-    @eval Base.:*(A::Transpose{<:Any,<:$M}, a::S) where {S<:Screw} =
+# `StaticMatrix`, a `Diagonal`, and their transposes/adjoints. Deliberately **not** every
+# `AbstractMatrix` and not a `Union`, so each method is more specific than LinearAlgebra's and
+# StaticArrays' `AbstractVector` products (checked with `Test.detect_ambiguities`).
+#
+# Only **twists** are accepted. A wrench is the dual of a twist: it transforms with
+# `Ad(inv(g))'`, so `Ad(g) * W` would return a plausible but wrong value. Every matrix x
+# wrench product therefore throws with a hint, and [`AdDual`](@ref) is the typo-proof way to
+# change a wrench's frame.
+const _WRENCH_MUL_HINT =
+    "a wrench transforms with the dual of a matrix, not with the matrix itself: use " *
+    "`AdDual(g) * W` (a pose, `W = Ad(inv(g))' W`), or `Wrench(transpose(M) * W.v)` for a " *
+    "matrix you assembled yourself (for example `transpose(ad(V))`)"
+
+_wrench_mul_error() = throw(ArgumentError(_WRENCH_MUL_HINT))
+
+for M in (:(StaticArrays.StaticMatrix), :(Matrix), :(Diagonal))
+    @eval Base.:*(A::$M, a::S) where {S<:Twist} = S(SVector{size(A, 1)}(A * a.v))
+    @eval Base.:*(A::Transpose{<:Any,<:$M}, a::S) where {S<:Twist} =
         S(SVector{size(A, 1)}(A * a.v))
-    @eval Base.:*(A::Adjoint{<:Any,<:$M}, a::S) where {S<:Screw} =
+    @eval Base.:*(A::Adjoint{<:Any,<:$M}, a::S) where {S<:Twist} =
         S(SVector{size(A, 1)}(A * a.v))
+    @eval Base.:*(A::$M, w::Wrench) = _wrench_mul_error()
+    @eval Base.:*(A::Transpose{<:Any,<:$M}, w::Wrench) = _wrench_mul_error()
+    @eval Base.:*(A::Adjoint{<:Any,<:$M}, w::Wrench) = _wrench_mul_error()
 end
+
+"""
+    AdDual(g) -> CoAdjoint
+
+The **wrench** transform of a pose `g`: `AdDual(g) * W` maps a wrench from the body frame to
+the base frame, `W_base = Ad(inv(g))' W_body`, which keeps `dot(W, V)` frame invariant. It is
+a small wrapper rather than a bare matrix because `Ad(g) * W` (the twist rule applied to a
+wrench) is a common and silent error: that expression throws an `ArgumentError`.
+
+A `CoAdjoint` only multiplies a [`Wrench`](@ref); `AdDual(g) * V` for a twist is a
+`MethodError` (use `Ad(g) * V`).
+"""
+struct CoAdjoint{P,M}
+    pose::P
+    M::M
+end
+
+AdDual(g) = CoAdjoint(g, transpose(Ad(inv(g))))
+AdDual(g::CoAdjoint) = g
+
+Base.:*(A::CoAdjoint, w::Wrench{D}) where {D} = Wrench{D}(SVector{D}(A.M * w.v))
+Base.Matrix(A::CoAdjoint) = Matrix(A.M)
+Base.size(A::CoAdjoint) = size(A.M)
+Base.getindex(A::CoAdjoint, i::Int, j::Int) = A.M[i, j]
 
 # ---------------------------------------------------------------------------------------
 # hat / vee
@@ -210,9 +249,12 @@ end
     Ad(g) -> SMatrix{D,D}
 
 The adjoint of a pose: the matrix that maps a twist expressed in the pose's body frame to
-the same twist expressed in its base frame (`V_base = Ad(g) * V_body`). Wrenches transform
-with the inverse transpose, `W_base = transpose(Ad(inv(g))) * W_body`, so that
-`dot(W, V)` is frame invariant. Defined per pose type in `se2.jl` and `se3.jl`.
+the same twist expressed in its base frame (`V_base = Ad(g) * V_body`).
+
+A wrench is the **dual** of a twist and does **not** transform with `Ad(g)`: it transforms
+with the inverse transpose, `W_base = Ad(inv(g))' * W_body`, so that `dot(W, V)` is frame
+invariant. Use [`AdDual`](@ref) for that (`AdDual(g) * W`); `Ad(g) * W` throws, because it
+looks plausible and is wrong. Defined per pose type in `se2.jl` and `se3.jl`.
 """
 function Ad end
 
@@ -249,9 +291,13 @@ The twist of a helical joint: unit `axis`, a `point` on the axis, and the `pitch
 (metres of translation per radian, `0` for a revolute joint). The linear part is the
 **origin velocity** (plan 3.1): `v = cross(point, axis) + pitch * axis`, so for a pure
 rotation about `axis` through `point` the velocity at the origin is `ω × (0 - point)`.
+
+The axis is normalised (the screw is the unit-ω twist) and a zero axis is refused.
 """
 function screw(axis::SVector{3}, point::SVector{3}, pitch::Real = 0)
-    a = axis / norm(axis)
+    n = norm(axis)
+    n > 0 || throw(ArgumentError("screw: the axis must be a non-zero vector"))
+    a = axis / n
     return Twist{6}(a[1], a[2], a[3],
         (point[2] * a[3] - point[3] * a[2]) + pitch * a[1],
         (point[3] * a[1] - point[1] * a[3]) + pitch * a[2],
@@ -260,9 +306,12 @@ end
 
 """
     revolute_screw(axis, point) -> Twist
+    revolute_screw(point::SVector{2}) -> Twist{3}
 
-The twist of a revolute joint about `axis` through `point`, both in one frame. The planar
-form takes only the point and returns the plan 3.1 screw `[1, r_y, -r_x]`.
+The twist of a revolute joint about `axis` through `point`, both in one frame. The axis is
+normalised. The planar form takes only the point and returns the plan 3.1 screw
+`[1, r_y, -r_x]` — the **unit-ω** convention, so the joint coordinate is the angle in
+radians and the origin velocity is `ω × (0 - r)`.
 """
 revolute_screw(axis::SVector{3}, point::SVector{3}) = screw(axis, point, 0)
 revolute_screw(axis::AbstractVector, point::AbstractVector) =
@@ -272,11 +321,27 @@ revolute_screw(point::SVector{2}) = Twist{3}(1.0, point[2], -point[1])
 """
     prismatic_screw(axis) -> Twist
 
-The twist of a prismatic joint along `axis`: `[0; axis]` (no rotation, pure translation).
+The twist of a prismatic joint along `axis`: `[0; axis]` with the axis **normalised**, so
+the joint coordinate is the displacement in metres (`f = ẋ`). A zero axis is refused rather
+than silently producing a zero twist.
 """
-prismatic_screw(axis::SVector{3}) = Twist{6}(0.0, 0.0, 0.0, axis[1], axis[2], axis[3])
-prismatic_screw(axis::AbstractVector) = prismatic_screw(SVector{3}(axis))
-prismatic_screw(axis::SVector{2}) = Twist{3}(0.0, axis[1], axis[2])
+function prismatic_screw(axis::SVector{3})
+    n = norm(axis)
+    n > 0 || throw(ArgumentError("prismatic_screw: the axis must be a non-zero vector"))
+    a = axis / n
+    return Twist{6}(0.0, 0.0, 0.0, a[1], a[2], a[3])
+end
+
+function prismatic_screw(axis::SVector{2})
+    n = norm(axis)
+    n > 0 || throw(ArgumentError("prismatic_screw: the axis must be a non-zero vector"))
+    a = axis / n
+    return Twist{3}(0.0, a[1], a[2])
+end
+
+prismatic_screw(axis::AbstractVector) =
+    length(axis) == 2 ? prismatic_screw(SVector{2}(axis)) :
+    prismatic_screw(SVector{3}(axis))
 
 """
     joint_basis(Vs) -> SMatrix{D,N}
@@ -295,22 +360,28 @@ joint_basis(Vs::Vararg{Twist{D}}) where {D} = joint_basis(collect(Vs))
 # Spatial inertia
 # ---------------------------------------------------------------------------------------
 
+const INERTIA_RTOL = 1e-12
+
 """
-    validate_inertia(M; atol = 0) -> M
+    validate_inertia(M; atol = 0, rtol = 1e-12) -> M
 
 Check that `M` is a symmetric positive definite spatial inertia (6x6) or planar inertia
-(3x3) and return it. Throws an `ArgumentError` naming the failed property when it is not:
-a silently accepted non-SPD inertia makes a body with negative mass simulate happily and
-lie about its energy (the E108 case of plan C-MB1).
+(3x3) and return it. `rtol` is the one symmetry tolerance used everywhere a physical inertia
+is checked (here and for the rotational block in [`spatial_inertia`](@ref)), so a matrix
+that is symmetric to rounding is accepted by both and a real asymmetry is rejected by both.
+Throws an `ArgumentError` naming the failed property when it is not: a silently accepted
+non-SPD inertia makes a body with negative mass simulate happily and lie about its energy
+(the E108 case of plan C-MB1).
 """
-function validate_inertia(M::AbstractMatrix; atol::Real = 0)
+function validate_inertia(M::AbstractMatrix; atol::Real = 0, rtol::Real = INERTIA_RTOL)
     n = size(M, 1)
     (n == 6 || n == 3) && size(M, 2) == n ||
         throw(ArgumentError("inertia: expected a 3x3 or 6x6 matrix, got $(size(M))"))
-    if !isapprox(M, transpose(M); atol = atol, rtol = 0)
+    if !isapprox(M, transpose(M); atol = atol, rtol = rtol)
         throw(ArgumentError(
             "inertia: the matrix is not symmetric; a spatial inertia must equal its " *
-            "transpose (largest mismatch $(maximum(abs, M - transpose(M))))"
+            "transpose (largest mismatch $(maximum(abs, M - transpose(M))) > " *
+            "rtol $(rtol) of $(maximum(abs, M)))"
         ))
     end
     S = Symmetric(SMatrix{n,n}(Float64.(M)))
@@ -410,7 +481,7 @@ function spatial_inertia(m::Real, Ic::AbstractMatrix, c::AbstractVector = SVecto
         "spatial_inertia: the rotational inertia must be 3x3, got $(size(Ic))"
     ))
     Ic32 = SMatrix{3,3}(Float64.(Ic))
-    if !isapprox(Ic32, transpose(Ic32); atol = 0, rtol = 1e-12)
+    if !isapprox(Ic32, transpose(Ic32); atol = 0, rtol = INERTIA_RTOL)
         throw(ArgumentError("spatial_inertia: the rotational inertia is not symmetric: $Ic"))
     end
     if !isposdef(Symmetric(Ic32))

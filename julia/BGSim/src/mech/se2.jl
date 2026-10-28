@@ -77,8 +77,10 @@ The planar adjoint in the `(ω, vx, vy)` ordering,
     [ p_y  cosθ -sinθ ]
     [ -p_x sinθ  cosθ ]
 
-which maps a twist expressed in the body frame to the base frame (plan 3.1). It equals the
-spatial `Ad` restricted to the plane (`z` row/column dropped).
+which maps a twist expressed in the body frame to the base frame (plan 3.1). It is the
+spatial `Ad` of the same pose restricted to the planar subalgebra: the **rows and columns
+`(ω_z, v_x, v_y)`, i.e. indices 3, 4, 5** of the 6x6 `Ad` (the `ω_x`, `ω_y` and `v_z`
+directions are dropped; dropping only the `z` row and column would not span SE(2)).
 """
 function Ad(g::SE2{T}) where {T}
     c, s = cos(g.θ), sin(g.θ)

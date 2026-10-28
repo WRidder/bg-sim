@@ -13,11 +13,11 @@
 module Mech
 
 using StaticArrays
-using LinearAlgebra: norm, isposdef, Symmetric, det, Transpose, Adjoint
+using LinearAlgebra: norm, isposdef, Symmetric, det, Transpose, Adjoint, Diagonal
 import Base: exp, log, inv, *, +, -, size, getindex
 
-export Screw, Twist, Wrench, SE2, SE3, Quat,
-    hat, vee, skew, Ad, ad, compose, rotation, translation,
+export Screw, Twist, Wrench, SE2, SE3, Quat, CoAdjoint,
+    hat, vee, skew, Ad, AdDual, ad, compose, rotation, translation,
     spatial_inertia, planar_inertia, validate_inertia, inertia_entry,
     screw, revolute_screw, prismatic_screw, joint_basis,
     quat_exp, quat_log, quat_from_rotation, quat_to_matrix, quat_rotate,

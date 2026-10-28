@@ -135,11 +135,22 @@ const PLANAR_IDX = [3, 4, 5]
         end
 
         # `Ad(g)` maps a body twist to the base frame, so `dot(W, V)` is frame invariant
-        # with `W -> Ad(inv(g))' W`.
+        # with the dual rule `W -> AdDual(g) W = Ad(inv(g))' W`.
         h = _pose3(g)
         V6 = _twist6(g)
         W6 = Wrench{6}(SVector{6}(V6.v))
-        @test dot(W6, V6) ≈ dot(Ad(inv(h))' * W6, Ad(h) * V6) rtol = 1e-12
+        @test dot(W6, V6) ≈ dot(AdDual(h) * W6, Ad(h) * V6) rtol = 1e-12
+        @test Matrix(AdDual(h)) ≈ transpose(Ad(inv(h)))
+        @test size(AdDual(h)) == (6, 6)
+        # The twist rule applied to a wrench is a silent error, so it throws and points at
+        # the dual; the dual applied to a twist is not a thing at all.
+        @test_throws ArgumentError Ad(h) * W6
+        @test_throws ArgumentError ad(V6) * W6
+        @test_throws MethodError AdDual(h) * V6
+        @test_throws ArgumentError Diagonal(ones(6)) * W6
+        @test_throws ArgumentError hcat(Ad(h)[:, 1], Ad(h)[:, 2]) * W6
+        # A matrix assembled by hand is applied to a wrench explicitly, through `.v`.
+        @test Wrench(transpose(Ad(inv(h))) * W6.v) ≈ AdDual(h) * W6
     end
 
     # -----------------------------------------------------------------------------------
@@ -149,13 +160,15 @@ const PLANAR_IDX = [3, 4, 5]
         for _ in 1:32
             V = _twist3(g)
             fd = (Ad(exp(h * V)) - Ad(exp(-h * V))) / (2h)
-            @test maximum(abs, fd - ad(V)) < 1e-6
+            # Step-relative: a wrong entry of order 1e-6 must fail, a rounding-limited
+            # central difference must pass (measured 1.3e-12 for the planar 3x3).
+            @test maximum(abs, fd - ad(V)) <= 1e-9 * max(1.0, norm(ad(V)))
             # The second-order term of `Ad(exp(hV))` is `h² ad(V)² / 2`.
             @test _relclose(Ad(exp(h * V)),
                 Matrix(Ad(SE2())) + h * ad(V) + h^2 / 2 * ad(V)^2; rtol = 1e-9)
             U = _twist6(g)
             fd6 = (Ad(exp(h * U)) - Ad(exp(-h * U))) / (2h)
-            @test maximum(abs, fd6 - ad(U)) < 1e-6
+            @test maximum(abs, fd6 - ad(U)) <= 1e-9 * max(1.0, norm(ad(U)))
         end
     end
 
@@ -186,11 +199,13 @@ const PLANAR_IDX = [3, 4, 5]
             V3 = _twist3(g)
             P3 = Wrench{3}(SVector{3}(_twist3(g).v))
             @test maximum(abs, ad(V3) * V3) < 1e-15
-            @test abs(dot(V3, ad(V3)' * P3)) <= 1e-9 * norm(V3) * norm(ad(V3)) * norm(P3)
+            @test abs(dot(V3, Wrench(transpose(ad(V3)) * P3.v))) <=
+                  1e-9 * norm(V3) * norm(ad(V3)) * norm(P3)
             V6 = _twist6(g)
             P6 = Wrench{6}(SVector{6}(_twist6(g).v))
             @test maximum(abs, ad(V6) * V6) < 1e-15
-            @test abs(dot(V6, ad(V6)' * P6)) <= 1e-9 * norm(V6) * norm(ad(V6)) * norm(P6)
+            @test abs(dot(V6, Wrench(transpose(ad(V6)) * P6.v))) <=
+                  1e-9 * norm(V6) * norm(ad(V6)) * norm(P6)
         end
         # The planar formula of plan 3.1, entry by entry.
         ω, vx, vy = 0.4, -1.2, 2.5
@@ -329,6 +344,26 @@ const PLANAR_IDX = [3, 4, 5]
             @test M == transpose(M)
             @test isposdef(Symmetric(M))
             @test isposdef(Symmetric(M[1:3, 1:3]))
+            # One tolerance for the symmetry of a physical inertia: a one-sided asymmetry at
+            # the rounding level (1e-13) is accepted by both the validator and the builder...
+            Meps = Matrix(M)
+            Meps[1, 2] += 1e-13
+            @test validate_inertia(SMatrix{6,6}(Meps)) !== nothing
+            @test validate_inertia(SMatrix{3,3}(Meps[1:3, 1:3])) !== nothing
+            Ic = Matrix(SMatrix{3,3}(M[1:3, 1:3]))
+            Iceps = copy(Ic)
+            Iceps[1, 2] += 1e-13
+            @test spatial_inertia(m, SMatrix{3,3}(Iceps), c) isa SMatrix{6,6}
+            # ... and a real asymmetry is refused by both.
+            Mbad = Matrix(M)
+            Mbad[1, 2] += 1e-6
+            @test_throws ArgumentError validate_inertia(SMatrix{6,6}(Mbad))
+            Icbad = copy(Ic)
+            Icbad[1, 2] += 1e-6
+            @test_throws ArgumentError spatial_inertia(m, SMatrix{3,3}(Icbad), c)
+            # A 1e-13 asymmetry is inside the tolerance, a 1e-6 one is not: the *same*
+            # `rtol` decides both, so the two functions cannot disagree.
+            @test BGSim.Mech.INERTIA_RTOL == 1e-12
 
             # the formula of plan 3.1, block by block
             C = skew(c)
@@ -401,10 +436,23 @@ const PLANAR_IDX = [3, 4, 5]
         @test vorigin + cross(ωvec, p) ≈ cross(ωvec, p - r) rtol = 1e-15
         @test vorigin ≈ cross(ωvec, -r) rtol = 1e-15
 
-        # Prismatic: no rotation, pure translation along the axis.
+        # Prismatic: no rotation, pure translation along the (normalised) axis.
         @test prismatic_screw(SVector(0.0, 1.0, 0.0)) ==
               Twist{6}(0.0, 0.0, 0.0, 0.0, 1.0, 0.0)
-        @test prismatic_screw(SVector(2.0, 0.0)) == Twist{3}(0.0, 2.0, 0.0)
+        @test prismatic_screw(SVector(2.0, 0.0)) == Twist{3}(0.0, 1.0, 0.0)
+        # A non-unit axis is normalised, so the joint coordinate stays a displacement in
+        # metres instead of being silently scaled by |axis|.
+        @test prismatic_screw(SVector(0.0, 0.0, 3.0)) ==
+              Twist{6}(0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+        @test prismatic_screw(SVector(-2.0, 2.0)) == Twist{3}(0.0, -1 / sqrt(2), 1 / sqrt(2))
+        @test prismatic_screw([0.0, -4.0]) == Twist{3}(0.0, 0.0, -1.0)
+        @test prismatic_screw([0.0, 0.0, 5.0]) == Twist{6}(0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+        @test_throws ArgumentError prismatic_screw(SVector(0.0, 0.0, 0.0))
+        @test_throws ArgumentError prismatic_screw(SVector(0.0, 0.0))
+        @test_throws ArgumentError prismatic_screw([0.0, 0.0])
+        @test_throws ArgumentError screw(SVector(0.0, 0.0, 0.0), SVector(1.0, 2.0, 0.0))
+        @test_throws ArgumentError revolute_screw(SVector(0.0, 0.0, 0.0),
+            SVector(1.0, 2.0, 0.0))
 
         # Helical: `pitch` adds the axial translation to the origin velocity.
         a = SVector(0.0, 0.0, 1.0)
@@ -598,20 +646,38 @@ const PLANAR_IDX = [3, 4, 5]
         @test sol(0.5, idxs = e2) ≈ chart_end[3] rtol = 1e-9
         @test sol(0.5, idxs = e3) ≈
               tr(spatial_inertia(2.0, SVector(1.0, 2.0, 3.0), SVector(0.1, 0.2, 0.3))) rtol = 1e-12
-        # The derivative of an opaque registered call stays unevaluated (no rule is
-        # needed; the probe and the numbers are in NOTES.md).
+        # The derivative of an opaque registered call stays unevaluated: that is fine for
+        # the *numerical* Jacobian (ForwardDiff through the generated code, the production
+        # path) and is why `jac = true` is only used on the paths that expand symbolically
+        # (see the next testset).
         d = Symbolics.derivative(BGSim.bg_exp2(w, 1.0, 0.0, 2), w)
         @test d isa Num
         @test occursin("Differential", string(d))
+        # The quaternion algebra does NOT: a product of two state quaternions is plain
+        # scalar arithmetic with no opaque call and a plain symbolic derivative.
+        R = SourceRange("", 1, 1, 1, 1)
+        cq = [mtk_variable("mech.cq$k") for k in 1:4]
+        cr = [mtk_variable("mech.cr$k") for k in 1:4]
+        ctxq = LowerCtx(Dict{String,Num}(), Dict{String,Num}())
+        for k in 1:4
+            ctxq.vars["cq$k"] = cq[k]
+            ctxq.vars["cr$k"] = cr[k]
+        end
+        prod = lower_expression(Call(Name(:quat_compose, R),
+            [VectorLit([Name(Symbol("cq$k"), R) for k in 1:4], R),
+                VectorLit([Name(Symbol("cr$k"), R) for k in 1:4], R)], R), ctxq)
+        @test !occursin("bg_quat", string(prod))
+        dq = Symbolics.derivative(Symbolics.unwrap(prod[1]), Symbolics.unwrap(cq[2]))
+        @test !occursin("Differential", string(dq))
+        @test dq isa Num
 
         # The *lowered* pose algebra also goes through a real System: `Ad(g)` built by
         # `lower_mech` is a matrix of symbolic entries, and one of its entries is solved
         # here as a state function.
-        R = SourceRange("", 1, 1, 1, 1)
-        ctx = LowerCtx(Dict{String,Num}("w" => w), Dict{String,Num}())
+        ctxw = LowerCtx(Dict{String,Num}("w" => w), Dict{String,Num}())
         A = lower_expression(
             Call(Name(:Ad, R), [VectorLit([Name(:w, R), Lit(1.0, R), Lit(2.0, R)], R)], R),
-            ctx,
+            ctxw,
         )
         @test size(A) == (3, 3)
         ya = mtk_variable("mech.ya")
@@ -624,5 +690,120 @@ const PLANAR_IDX = [3, 4, 5]
         # w(0.4) = 0.2 + 0.5 * 0.4 = 0.4 and A[2,2] = cos(θ).
         @test sol2(0.4, idxs = ya) ≈ cos(0.4) rtol = 1e-9
         @test sol2(0.4, idxs = w) ≈ 0.4 rtol = 1e-10
+    end
+
+    # -----------------------------------------------------------------------------------
+    @testset "differentiability: jac = true on the D-MB6 pose path" begin
+        R = SourceRange("", 1, 1, 1, 1)
+        ast(x) = x isa Symbol ? Name(x, R) : Lit(x, R)
+        vlit(xs) = VectorLit([ast(x) for x in xs], R)
+        call(f, args) = Call(Name(f, R), args, R)
+
+        # --- (a) the 7-chart pose state: dq = 0.5 q ⊗ [0, ω], dp = R(q) v ------------
+        names = [Symbol("q$k") for k in 1:4]
+        pnames = [Symbol("p$k") for k in 1:3]
+        wnames = [Symbol("om$k") for k in 1:3]
+        qv = [mtk_variable("mech.pose." * String(n)) for n in names]
+        pv = [mtk_variable("mech.pose." * String(n)) for n in pnames]
+        om = [mtk_variable("mech.pose." * String(n)) for n in wnames]
+        ctx = LowerCtx(Dict{String,Num}(), Dict{String,Num}())
+        for k in 1:4
+            ctx.vars[String(names[k])] = qv[k]
+        end
+        for k in 1:3
+            ctx.vars[String(pnames[k])] = pv[k]
+            ctx.vars[String(wnames[k])] = om[k]
+        end
+        qlit = VectorLit([Name(n, R) for n in names], R)
+        dp = lower_expression(call(:quat_compose, [qlit, vlit([0.0, :om1, :om2, :om3])]),
+            ctx)
+        dpv = lower_expression(call(:quat_rotate, [qlit, vlit([1.0, 0.0, 0.0])]), ctx)
+        eqs = vcat([D(qv[k]) ~ 0.5 * dp[k] for k in 1:4],
+            [D(pv[k]) ~ dpv[k] for k in 1:3])
+        sys = mtkcompile(System(eqs, t, vcat(qv, pv), om; name = :mech_pose7))
+        # A constant body rate about z: q(t) = (cos(ωt/2), 0, 0, sin(ωt/2)) from the
+        # identity, and p(t) = (sin(ωt), 1 - cos(ωt), 0)/ω for R(q) (1, 0, 0).
+        wr = 0.4
+        op = [qv[1] => 1.0, qv[2] => 0.0, qv[3] => 0.0, qv[4] => 0.0,
+            pv[1] => 0.0, pv[2] => 0.0, pv[3] => 0.0,
+            om[1] => 0.0, om[2] => 0.0, om[3] => wr]
+        # This is the case the reviewer proved fails with an opaque quaternion product.
+        prob = ODEProblem(sys, op, (0.0, 0.5); jac = true)
+        @test prob.f.jac !== nothing
+        sol = solve(prob, Rodas5P(); abstol = 1e-10, reltol = 1e-10)
+        @test sol.retcode == ReturnCode.Success
+        @test sol(0.5, idxs = qv[1]) ≈ cos(wr * 0.25) rtol = 1e-8
+        @test sol(0.5, idxs = qv[2]) ≈ 0.0 atol = 1e-9
+        @test sol(0.5, idxs = qv[3]) ≈ 0.0 atol = 1e-9
+        @test sol(0.5, idxs = qv[4]) ≈ sin(wr * 0.25) rtol = 1e-8
+        @test abs(sum(sol(0.5, idxs = qv[k])^2 for k in 1:4) - 1) < 1e-8
+        @test sol(0.5, idxs = pv[1]) ≈ sin(0.5wr) / wr rtol = 1e-8
+        @test sol(0.5, idxs = pv[2]) ≈ (1 - cos(0.5wr)) / wr rtol = 1e-8
+        @test sol(0.5, idxs = pv[3]) ≈ 0.0 atol = 1e-9
+
+        # --- (b) the symbolic Jacobian of the product and the rotation is the AD one ---
+        qn = [mtk_variable("mech.jq$k") for k in 1:4]
+        ctxj = LowerCtx(Dict{String,Num}("jq$k" => qn[k] for k in 1:4),
+            Dict{String,Num}())
+        qjlit = VectorLit([Name(Symbol("jq$k"), R) for k in 1:4], R)
+        b = [0.0, 0.1, -0.2, 0.3]
+        prod = lower_expression(call(:quat_compose, [qjlit, vlit(b)]), ctxj)
+        rot = lower_expression(call(:quat_to_matrix, [qjlit]), ctxj)
+        Jp = Symbolics.jacobian(prod, qn)          # 4x4
+        Jr = Symbolics.jacobian(vec(rot), qn)      # 9x4
+        hp = 1e-6
+        qmul(q) = (qq = compose(Quat(q...), Quat(b...)); [qq.w, qq.x, qq.y, qq.z])
+        qrot(q) = vec(collect(quat_to_matrix(Quat(q...))))
+        E4 = Matrix{Float64}(I, 4, 4)
+        # Several unit quaternions from the deterministic stream (a "random point").
+        gq = _Stream(404)
+        for _ in 1:8
+            p0 = SVector(_sf(gq), _sf(gq), _sf(gq), _sf(gq))
+            p0 = p0 / norm(p0)
+            evalJ(x) = begin
+                f = Symbolics.build_function(x, qn...; expression = Val(false))
+                (f isa Tuple ? first(f) : f)(p0...)
+            end
+            # Central finite difference of the numeric core at the same point.
+            fd(f) = reduce(hcat,
+                [(f(collect(p0) + hp * e) .- f(collect(p0) - hp * e)) ./ (2hp)
+                 for e in eachcol(E4)])
+            Jpfd = fd(qmul)
+            Jrfd = fd(qrot)
+            @test maximum(abs, evalJ(Jp) - Jpfd) <= 1e-6 * max(1.0, maximum(abs, Jpfd))
+            @test maximum(abs, evalJ(Jr) - Jrfd) <= 1e-6 * max(1.0, maximum(abs, Jrfd))
+        end
+        q0 = SVector(0.8, 0.1, -0.4, 0.3)
+        q0 = q0 / norm(q0)
+
+        # --- (c) an algebraic Ad(g(q)) with the quaternion components as states ----------
+        gv = [mtk_variable("mech.adq$k") for k in 1:4]
+        gp = [mtk_variable("mech.adp$k") for k in 1:3]
+        ctxa = LowerCtx(Dict{String,Num}(), Dict{String,Num}())
+        for k in 1:4
+            ctxa.vars["adq$k"] = gv[k]
+        end
+        for k in 1:3
+            ctxa.vars["adp$k"] = gp[k]
+        end
+        gchart = VectorLit(vcat([Name(Symbol("adq$k"), R) for k in 1:4],
+            [Name(Symbol("adp$k"), R) for k in 1:3]), R)
+        Ag = lower_expression(call(:Ad, [gchart]), ctxa)
+        @test size(Ag) == (6, 6)
+        @test !occursin("bg_quat", string(Ag))
+        ya = mtk_variable("mech.ad_y")
+        sysa = mtkcompile(System(
+            vcat([D(gv[k]) ~ 0.0 for k in 1:4], [D(gp[k]) ~ 0.0 for k in 1:3],
+                [ya ~ Ag[1, 1] + Ag[4, 5] + Ag[6, 3]]),
+            t, vcat(gv, gp, [ya]), []; name = :mech_adstate,
+        ))
+        opa = vcat([gv[k] => q0[k] for k in 1:4], [gp[k] => 0.1 * k for k in 1:3])
+        proba = ODEProblem(sysa, opa, (0.0, 0.1); jac = true)
+        @test proba.f.jac !== nothing
+        sola = solve(proba, Rodas5P(); abstol = 1e-10, reltol = 1e-10)
+        @test sola.retcode == ReturnCode.Success
+        Aref = Ad(SE3(quat_to_matrix(Quat(q0...)), SVector(0.1, 0.2, 0.3)))
+        @test sola(0.0, idxs = ya) ≈ Aref[1, 1] + Aref[4, 5] + Aref[6, 3] rtol = 1e-9
+        @test proba.f.jac !== nothing
     end
 end

@@ -51,7 +51,9 @@ quat_norm(q::Quat) = sqrt(q.w^2 + q.x^2 + q.y^2 + q.z^2)
     q1 * q2
 
 Hamilton product: the rotation `q1` followed by the rotation `q2` relative to it, matching
-[`compose`](@ref) of poses.
+[`compose`](@ref) of poses. The product is not renormalised or sign-canonicalised (a product
+of two unit quaternions is unit to rounding; `q` and `-q` are the same rotation), which is
+what the D-MB6 state path wants — the integrator's manifold projection keeps the norm.
 """
 compose(a::Quat, b::Quat) = Quat(
     a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
@@ -106,7 +108,10 @@ rotation(q::Quat) = quat_to_matrix(q)
 
 The unit quaternion of a rotation matrix, using Shepperd's branch on the largest of the
 trace and the three diagonal entries, so it stays accurate at and near a rotation angle of
-π. Throws when `R` is not a rotation (non-orthonormal within `1e-6`, or `det(R) <= 0`).
+π. The result is **canonicalised to `q_w >= 0`** (the same branch [`quat_log`](@ref) and
+`chart` use); a quaternion and its negative are the same rotation, so this fixes the sign
+of a conversion but does not change the rotation. Throws when `R` is not a rotation
+(non-orthonormal within `1e-6`, or `det(R) <= 0`).
 """
 function quat_from_rotation(R::AbstractMatrix)
     size(R) == (3, 3) || throw(ArgumentError("quat_from_rotation: expected a 3x3 matrix"))
@@ -143,8 +148,11 @@ function quat_from_rotation(R::AbstractMatrix)
 end
 
 # The canonical branch of the quaternion of a rotation: `q` and `-q` are the same
-# rotation, and `q_w >= 0` is the branch `quat_log` and `chart` take, so a pose chart
-# never jumps sign when the angle passes π.
+# rotation, and `q_w >= 0` is the branch `quat_log` and `chart` take, so a pose chart never
+# jumps sign when the angle passes π. Only the *conversion* paths canonicalise:
+# `quat_from_rotation`, `chart` and `quat_log`. The algebra (`compose`, `inv`,
+# `normalise`, `quat_exp`, `quat_to_matrix`) does **not** canonicalise — a product of two
+# canonical quaternions can have `q_w < 0`, and that is still the same rotation.
 function _canonical(q::Quat)
     return q.w < 0 ? -q : q
 end
@@ -166,7 +174,9 @@ end
     quat_exp(v::SVector{3}) -> Quat
 
 The exponential of the rotation vector `v` (axis times angle): `(cos(θ/2),
-sin(θ/2) v̂)` with `θ = |v|`. Small-angle branch through `sin(θ/2)/θ`.
+sin(θ/2) v̂)` with `θ = |v|`. Small-angle branch through `sin(θ/2)/θ`. The result is unit
+norm but **not** canonicalised (a rotation of more than π gives `q_w < 0`; both signs are
+the same rotation).
 """
 function quat_exp(v::SVector{3,T}) where {T}
     θ = sqrt(v[1]^2 + v[2]^2 + v[3]^2)
@@ -180,8 +190,9 @@ quat_exp(v::AbstractVector) = quat_exp(SVector{3}(v))
     quat_log(q) -> SVector{3}
 
 The principal rotation vector of `q`: `θ û` with `θ = 2 atan(|q_v|, q_w) ∈ [0, π]` after
-canonicalising the sign of `q`, so `quat_exp(quat_log(q))` is `±q`. Small-angle branch
-`2 q_v / q_w`.
+canonicalising the sign of `q`, so `quat_exp(quat_log(q))` is `±q` with a rotation angle in
+`[0, π]`. Small-angle branch `2 q_v / q_w`. This is a *conversion*, so it does canonicalise;
+the algebra (`compose`, `inv`) does not.
 """
 function quat_log(q::Quat{T}) where {T}
     u = normalise(q)

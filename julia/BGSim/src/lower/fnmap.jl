@@ -29,10 +29,11 @@
 #   `bg_interp1(...)` term instead of an unrolled table search, and the generated RHS calls
 #   the numeric method at run time. `delay` and `noise_normal` still raise a `LowerError`
 #   (see `lower_call`).
-# * J-MB3 adds the screw algebra (`bg_exp2`, `bg_Ad`…): the component functions below are
-#   the scalar interface to `src/mech/`, and `lower_mech` builds them from the pose
-#   functions of the spec. They are generic over `Real` because the solver's Jacobian calls
-#   them with `ForwardDiff.Dual` numbers.
+# * J-MB3 adds the screw algebra: the `bg_*` functions below are the scalar interface to
+#   `src/mech/` for the branchy pieces, and `lower_mech` expands the rest into plain
+#   arithmetic (the quaternion algebra included, so `jac = true` works on the D-MB6 pose
+#   path). They are generic over `Real` because the solver's Jacobian calls them with
+#   `ForwardDiff.Dual` numbers.
 
 using StaticArrays: SVector, SMatrix
 
@@ -116,28 +117,37 @@ Symbolics.@register_symbolic bg_interp2(
 # J-MB3: the screw algebra for equations
 # ---------------------------------------------------------------------------------------
 # The flat IR is scalar (see the file header), so every screw function that an equation can
-# call has a **component form** here: the pose/twist/quaternion components as separate
+# call is expressed in **components**: the pose/twist/quaternion components as separate
 # scalar arguments plus a 1-based selector (`k`, or a row/column pair). A block writes its
-# component-wise loop (plan 5.3, D-MB10) and calls exactly these functions, and the
-# lowering of the spec's `Ad(g)`/`exp(T)`/... builds the same calls (see `lower_mech`).
+# component-wise loop (plan 5.3, D-MB10) and calls these functions, and the lowering of the
+# spec's `Ad(g)`/`exp(T)`/... builds the same components (see `lower_mech`).
 #
-# Only the functions whose closed form has a branch that cannot be taken symbolically are
-# opaque registered functions: `exp`, `log`, the quaternion exponential/logarithm and the
-# quaternion-of-a-matrix branch. Everything else (`hat`, `vee`, `Ad`, `ad`, `compose`,
-# `inv`, `spatial_inertia`, the quaternion products and rotations) expands into scalar
-# arithmetic, which Symbolics can differentiate itself.
+# Two kinds of component function exist, and the difference matters for `jac = true`:
 #
-# The solver's Jacobian calls these methods with `ForwardDiff.Dual` numbers (probe in
-# NOTES.md), so nothing here may convert to `Float64`: the numeric core is generic over
-# `Real` and every branch compares primal values.
+# * **Expanded in `lower_mech`** (no opaque call, so Symbolics differentiates them itself):
+#   `hat`, `vee`, `Ad`, `ad`, `compose`, `inv`, `rotation`, `translation`,
+#   `spatial_inertia`, `SE3`, and the whole quaternion algebra — product, conjugation,
+#   normalisation, rotation matrix and rotation of a vector. The quaternion ones are
+#   short fixed-size expressions (16 products, 9 entries), and they are the D-MB6 pose-state
+#   path (`dq = 0.5 q ⊗ [0, ω]`, `dp = R(q) v`), which a symbolic Jacobian *must* be able to
+#   differentiate.
+# * **Opaque registered functions** (below), only where the closed form has a branch that
+#   cannot be taken symbolically: `exp`/`log` on SE(2)/SE(3) (`bg_exp2`, `bg_log2`,
+#   `bg_exp3`, `bg_log3`), the quaternion exponential/logarithm (`bg_quat_exp`,
+#   `bg_quat_log`), the quaternion-of-a-matrix branch (`bg_quat_from_rotation`), and the
+#   component-wise inertia entries (`bg_inertia2`, `bg_inertia3`, pure polynomials that a
+#   native block calls directly).
 #
-# `@register_symbolic` gives each of them an *opaque* symbolic term: `mtkcompile` keeps one
-# call instead of unrolling it, and `Symbolics.derivative` of such a term returns an
-# unevaluated `Differential` (verified). No explicit derivative rule is registered because
-# no path in this milestone differentiates a pose *symbolically*: poses are algebraic
-# functions of the states (D-MB6) and the solver differentiates the generated right-hand
-# side numerically. NOTES.md records the probe and the one unsupported form
-# (`ddt(pose_function(...))`, which MTK reports rather than silently accepting).
+# The solver's Jacobian also calls these methods with `ForwardDiff.Dual` numbers, so nothing
+# here may convert to `Float64`: the numeric core is generic over `Real` and every branch
+# compares primal values.
+#
+# `@register_symbolic` gives an opaque *symbolic* term: `mtkcompile` keeps one call instead
+# of unrolling it, and `Symbolics.derivative` of such a term returns an unevaluated
+# `Differential`. That is safe on the paths M3 uses (below), and NOT safe if a model
+# differentiates one of the opaque functions symbolically: see NOTES.md, "What is
+# differentiable" — `exp`/`log` are not, and `jac = true` must not be used on a system whose
+# equations contain one.
 
 function _component(k::Integer, r, name::String)
     k in r || throw(ArgumentError("$name: component $k is not in $r"))
@@ -179,26 +189,10 @@ function bg_log3(qw::Real, qx::Real, qy::Real, qz::Real, px::Real, py::Real, pz:
     return V[_component(k, 1:6, "bg_log3")]
 end
 
-"""    bg_quat_mul(a0, a1, a2, a3, b0, b1, b2, b3, k)
-
-Component `k` of the Hamilton product `a ⊗ b`."""
-function bg_quat_mul(a0::Real, a1::Real, a2::Real, a3::Real,
-    b0::Real, b1::Real, b2::Real, b3::Real, k::Integer)
-    q = Mech.compose(Mech.Quat(a0, a1, a2, a3), Mech.Quat(b0, b1, b2, b3))
-    return SVector{4}(q.w, q.x, q.y, q.z)[_component(k, 1:4, "bg_quat_mul")]
-end
-
-"""    bg_quat_normalise(q0, q1, q2, q3, k)
-
-Component `k` of `q / |q|` (the D-MB6 normalisation of a quaternion state)."""
-function bg_quat_normalise(q0::Real, q1::Real, q2::Real, q3::Real, k::Integer)
-    q = normalise(Mech.Quat(q0, q1, q2, q3))
-    return SVector{4}(q.w, q.x, q.y, q.z)[_component(k, 1:4, "bg_quat_normalise")]
-end
-
 """    bg_quat_exp(wx, wy, wz, k)
 
-Component `k` of the quaternion of the rotation vector `[wx, wy, wz]`."""
+Component `k` of the quaternion of the rotation vector `[wx, wy, wz]` (a branch: small
+angle versus `sin(θ/2)/θ`; opaque)."""
 function bg_quat_exp(wx::Real, wy::Real, wz::Real, k::Integer)
     q = Mech.quat_exp(SVector(wx, wy, wz))
     return SVector{4}(q.w, q.x, q.y, q.z)[_component(k, 1:4, "bg_quat_exp")]
@@ -206,39 +200,22 @@ end
 
 """    bg_quat_log(q0, q1, q2, q3, k)
 
-Component `k` of the principal rotation vector of a unit quaternion."""
+Component `k` of the principal rotation vector of a unit quaternion (a branch: `atan2`
+versus `2 q_v / q_w`; opaque)."""
 function bg_quat_log(q0::Real, q1::Real, q2::Real, q3::Real, k::Integer)
     v = Mech.quat_log(Mech.Quat(q0, q1, q2, q3))
     return v[_component(k, 1:3, "bg_quat_log")]
 end
 
-"""    bg_quat_to_matrix(q0, q1, q2, q3, i, j)
-
-Entry `(i, j)` of the rotation matrix of `normalise(q)`."""
-function bg_quat_to_matrix(q0::Real, q1::Real, q2::Real, q3::Real, i::Integer, j::Integer)
-    _component(i, 1:3, "bg_quat_to_matrix")
-    _component(j, 1:3, "bg_quat_to_matrix")
-    return Mech.quat_to_matrix(Mech.Quat(q0, q1, q2, q3))[i, j]
-end
-
 """    bg_quat_from_rotation(r11, …, r33, k)
 
 Component `k` of the quaternion of a 3x3 rotation matrix (row-major arguments, so
-`r12` is `R[1, 2]`)."""
+`r12` is `R[1, 2]`). Shepperd's four branches: opaque."""
 function bg_quat_from_rotation(r11::Real, r12::Real, r13::Real,
     r21::Real, r22::Real, r23::Real, r31::Real, r32::Real, r33::Real, k::Integer)
     R = SMatrix{3,3}(r11, r21, r31, r12, r22, r32, r13, r23, r33)
     q = Mech.quat_from_rotation(R)
     return SVector{4}(q.w, q.x, q.y, q.z)[_component(k, 1:4, "bg_quat_from_rotation")]
-end
-
-"""    bg_quat_rotate(q0, q1, q2, q3, vx, vy, vz, k)
-
-Component `k` of `q v q*` (the rotation of a vector by a quaternion)."""
-function bg_quat_rotate(q0::Real, q1::Real, q2::Real, q3::Real,
-    vx::Real, vy::Real, vz::Real, k::Integer)
-    v = Mech.quat_rotate(Mech.Quat(q0, q1, q2, q3), SVector(vx, vy, vz))
-    return v[_component(k, 1:3, "bg_quat_rotate")]
 end
 
 """    bg_inertia2(m, J, cx, cy, i, j)
@@ -274,16 +251,10 @@ for _f in (
     :(bg_exp3(wx::Real, wy::Real, wz::Real, vx::Real, vy::Real, vz::Real, k::Integer)),
     :(bg_log3(qw::Real, qx::Real, qy::Real, qz::Real, px::Real, py::Real, pz::Real,
         k::Integer)),
-    :(bg_quat_mul(a0::Real, a1::Real, a2::Real, a3::Real, b0::Real, b1::Real, b2::Real,
-        b3::Real, k::Integer)),
-    :(bg_quat_normalise(q0::Real, q1::Real, q2::Real, q3::Real, k::Integer)),
     :(bg_quat_exp(wx::Real, wy::Real, wz::Real, k::Integer)),
     :(bg_quat_log(q0::Real, q1::Real, q2::Real, q3::Real, k::Integer)),
-    :(bg_quat_to_matrix(q0::Real, q1::Real, q2::Real, q3::Real, i::Integer, j::Integer)),
     :(bg_quat_from_rotation(r11::Real, r12::Real, r13::Real, r21::Real, r22::Real,
         r23::Real, r31::Real, r32::Real, r33::Real, k::Integer)),
-    :(bg_quat_rotate(q0::Real, q1::Real, q2::Real, q3::Real, vx::Real, vy::Real,
-        vz::Real, k::Integer)),
     :(bg_inertia2(m::Real, J::Real, cx::Real, cy::Real, i::Integer, j::Integer)),
     :(bg_inertia3(m::Real, J1::Real, J2::Real, J3::Real, c1::Real, c2::Real, c3::Real,
         i::Integer, j::Integer)),
@@ -521,8 +492,47 @@ function _hat3(a, b, c)
     return [z -c b; c z -a; -b a z]
 end
 
-# The 3x3 rotation matrix of a quaternion chart, one opaque call per entry.
-_quat_matrix(q) = [bg_quat_to_matrix(q[1], q[2], q[3], q[4], i, j) for i in 1:3, j in 1:3]
+# ---------------------------------------------------------------------------------------
+# The quaternion algebra, expanded symbolically
+# ---------------------------------------------------------------------------------------
+# These four helpers replace the former opaque `bg_quat_mul` / `bg_quat_normalise` /
+# `bg_quat_to_matrix` / `bg_quat_rotate` calls. They are short and fixed size, and they are
+# on the D-MB6 state path (`dq = 0.5 q ⊗ [0, ω]`, `dp = R(q) v`), which `jac = true`
+# differentiates *symbolically*; an opaque call there would make the Jacobian unevaluated
+# (a `Differential` term, which fails when the generated code is compiled). The expressions
+# are the same algebra as `src/mech/quat.jl`, with the unnormalised forms divided by
+# `|q|²`/`|q|` so that a non-unit chart gives exactly what `normalise` gives.
+
+"The Hamilton product `a ⊗ b` (same order as `Mech.compose`)."
+function _quat_mul(a, b)
+    return [a[1] * b[1] - a[2] * b[2] - a[3] * b[3] - a[4] * b[4],
+        a[1] * b[2] + a[2] * b[1] + a[3] * b[4] - a[4] * b[3],
+        a[1] * b[3] - a[2] * b[4] + a[3] * b[1] + a[4] * b[2],
+        a[1] * b[4] + a[2] * b[3] - a[3] * b[2] + a[4] * b[1]]
+end
+
+"`q / |q|` component-wise (`sqrt(|q|²)`; opaque-free and differentiable)."
+_quat_normalise(q) = begin
+    s = q[1]^2 + q[2]^2 + q[3]^2 + q[4]^2
+    return [q[k] / sqrt(s) for k in 1:4]
+end
+
+"""
+The rotation matrix of a quaternion chart, `R = quat_to_matrix(normalise(q))`, entry by
+entry. Written with the unnormalised quadratic form divided by `|q|²`, so it needs no
+`sqrt` and is a plain polynomial quotient (differentiable, and exactly the numeric core's
+result for a unit quaternion).
+"""
+function _quat_matrix(q)
+    w, x, y, z = q[1], q[2], q[3], q[4]
+    s = w^2 + x^2 + y^2 + z^2
+    return [(w^2 + x^2 - y^2 - z^2) / s  2 * (x * y - w * z) / s  2 * (x * z + w * y) / s
+            2 * (x * y + w * z) / s  (w^2 - x^2 + y^2 - z^2) / s  2 * (y * z - w * x) / s
+            2 * (x * z - w * y) / s  2 * (y * z + w * x) / s  (w^2 - x^2 - y^2 + z^2) / s]
+end
+
+"The rotation of a 3-vector by a quaternion chart: `R(q) * v` (same as `Mech.quat_rotate`)."
+_quat_rotate(q, v) = _quat_matrix(q) * v
 
 function lower_mech(fn::Symbol, values::AbstractVector, ctx::LowerCtx)
     if fn === :hat
@@ -578,11 +588,9 @@ function lower_mech(fn::Symbol, values::AbstractVector, ctx::LowerCtx)
             c, s = cos(a[1]), sin(a[1])
             return [a[1] + b[1], a[2] + c * b[2] - s * b[3], a[3] + s * b[2] + c * b[3]]
         elseif length(a) == 7 && length(b) == 7
-            q = [bg_quat_mul(a[1], a[2], a[3], a[4], b[1], b[2], b[3], b[4], k)
-                 for k in 1:4]
-            p = [a[4 + k] + bg_quat_rotate(a[1], a[2], a[3], a[4],
-                b[5], b[6], b[7], k) for k in 1:3]
-            return vcat(q, p)
+            q = _quat_mul(a[1:4], b[1:4])
+            p12 = _quat_rotate(a[1:4], b[5:7])
+            return vcat(q, [a[4 + k] + p12[k] for k in 1:3])
         end
         return _mech_error(fn, ctx)
     elseif fn === :inv
@@ -591,11 +599,10 @@ function lower_mech(fn::Symbol, values::AbstractVector, ctx::LowerCtx)
             c, s = cos(g[1]), sin(g[1])
             return [-g[1], -(c * g[2] + s * g[3]), -(-s * g[2] + c * g[3])]
         elseif length(g) == 7
-            # A unit quaternion's inverse is its conjugate.
+            # A unit quaternion's inverse is its conjugate; `p' = -R(q*) p`.
             qi = [g[1], -g[2], -g[3], -g[4]]
-            p = [-bg_quat_rotate(qi[1], qi[2], qi[3], qi[4], g[5], g[6], g[7], k)
-                 for k in 1:3]
-            return vcat(qi, p)
+            pi = _quat_rotate(qi, g[5:7])
+            return vcat(qi, [-pi[k] for k in 1:3])
         end
         return _mech_error(fn, ctx)
     elseif fn === :exp
@@ -696,24 +703,20 @@ function lower_mech(fn::Symbol, values::AbstractVector, ctx::LowerCtx)
         length(g) == 7 && return [g[5], g[6], g[7]]
         return _mech_error(fn, ctx)
     elseif fn === :quat_compose || fn === :quat_rotate
-        nargs = fn === :quat_compose ? 2 : 2
-        length(values) == nargs ||
-            return _lower_error("`$fn` takes two arguments", ctx)
+        length(values) == 2 || return _lower_error("`$fn` takes two arguments", ctx)
         a, b = values[1], values[2]
         if fn === :quat_compose
             (a isa AbstractVector && length(a) == 4 && b isa AbstractVector &&
              length(b) == 4) || return _lower_error(
                 "`quat_compose` needs two `Vec{4}` quaternions", ctx
             )
-            return [bg_quat_mul(a[1], a[2], a[3], a[4], b[1], b[2], b[3], b[4], k)
-                    for k in 1:4]
+            return _quat_mul(a, b)
         end
         (a isa AbstractVector && length(a) == 4 && b isa AbstractVector &&
          length(b) == 3) || return _lower_error(
             "`quat_rotate` needs a `Vec{4}` quaternion and a `Vec{3}` vector", ctx
         )
-        return [bg_quat_rotate(a[1], a[2], a[3], a[4], b[1], b[2], b[3], k)
-                for k in 1:3]
+        return _quat_rotate(a, b)
     elseif fn === :quat_inv
         q = _mech_vec(fn, values, ctx)
         length(q) == 4 || return _lower_error("`quat_inv` needs a `Vec{4}` quaternion", ctx)
@@ -722,7 +725,7 @@ function lower_mech(fn::Symbol, values::AbstractVector, ctx::LowerCtx)
         q = _mech_vec(fn, values, ctx)
         length(q) == 4 ||
             return _lower_error("`quat_normalise` needs a `Vec{4}` quaternion", ctx)
-        return [bg_quat_normalise(q[1], q[2], q[3], q[4], k) for k in 1:4]
+        return _quat_normalise(q)
     elseif fn === :quat_exp
         v = _mech_vec(fn, values, ctx)
         length(v) == 3 || return _lower_error(

@@ -91,8 +91,8 @@ export LowerError, CompiledModel, nonsmooth_conditions, compile_key, lower_model
 # Work package J-MB3: the screw core (also reachable as `BGSim.Mech`). `exp`, `log`, `inv`
 # and `*` are extended on the pose/screw types rather than exported, so they stay Base's
 # functions and `exp(1.0)` still means what it always meant.
-export Screw, Twist, Wrench, SE2, SE3, Quat
-export hat, vee, skew, Ad, ad, rotation, translation
+export Screw, Twist, Wrench, SE2, SE3, Quat, CoAdjoint
+export hat, vee, skew, Ad, AdDual, ad, rotation, translation
 export spatial_inertia, planar_inertia, validate_inertia
 export screw, revolute_screw, prismatic_screw, joint_basis
 export quat_exp, quat_log, quat_from_rotation, quat_to_matrix, quat_rotate, normalise
