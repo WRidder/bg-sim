@@ -17,12 +17,14 @@ import ..BGSim: Name, Field, Lit, Call, BinOp, UnOp, Index, VectorLit, MatrixLit
     Comparison, BoolOp, Equation, IfEquation, ForEquation, EqBranch, try_eval_const,
     eval_const, ConstFoldError, constant_env, type_scalar_count
 
-"""    PortInfo(node, path, name, domain, size, eids, fids, qname, range)
+"""    PortInfo(node, path, name, domain, size, eids, fids, qname, range, frame)
 
 One power port of one instance. `domain` is the *declared* domain (`:Generic` for a bond
-graph element); `size` is the domain's size (1 for every domain the model schema allows);
+graph element); `size` is the domain's size (`3` for Planar, `6` for Spatial, `1` otherwise);
 `eids`/`fids` are the flat variable ids of the effort and flow, one per component. `qname`
-is the qualified port name used as the base of a `Field` expression (`"Motor1/shaft"`)."""
+is the qualified port name used as the base of a `Field` expression (`"Motor1/shaft"`).
+`frame` is the port's declared reference frame (D-MB5, unqualified catalog name) or
+`nothing` for a frame-neutral port."""
 struct PortInfo
     node::String
     path::String
@@ -33,19 +35,26 @@ struct PortInfo
     fids::Vector{String}
     qname::String
     range::BGSim.SourceRange
+    frame::Union{String,Nothing}
 end
 
-"""    RawEndpoint(node, path, port, kind)
+"""    RawEndpoint(node, path, port, kind, face)
 
 One endpoint of a connection after resolving subsystem faces: `kind` is `:power`, `:input`,
 `:output`, `:junction` or `:unknown`. `path` is the *internal* instance path (for a
-subsystem face, the leaf instance it exposes); `node` is the editor id of that leaf node."""
+subsystem face, the leaf instance it exposes); `node` is the editor id of that leaf node.
+`face` is `(subsystem path, exposed port name)` when the endpoint was reached through a
+subsystem boundary, and `nothing` for an ordinary instance port (D-MB5: the face's frame is
+authoritative for the exposed port)."""
 struct RawEndpoint
     node::String
     path::String
     port::Union{Symbol,Nothing}
     kind::Symbol
+    face::Union{Nothing,Tuple{String,Symbol}}
 end
+
+RawEndpoint(node, path, port, kind) = RawEndpoint(node, path, port, kind, nothing)
 
 """    RawConnection(conn, from, to, diagram)
 
@@ -553,7 +562,7 @@ function _create_declarations!(b::Builder, st::BlockState, node::IR.ModelNode)
             )
         end
         info = PortInfo(node.id, st.path, name, domain, size, eids, fids, qport,
-            BGSim.decl_range(d))
+            BGSim.decl_range(d), get(BGSim.decl_attrs(d), :frame, nothing))
         st.ports[name] = info
         b.port_at[(st.path, name)] = info
         st.var_count += 2 * size
@@ -2413,6 +2422,9 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
                     :Real,
                     kind === :power ? Int[] : something(BGSim.type_size(t, consts), Int[]),
                     get(BGSim.decl_attrs(d), :unit, nothing),
+                    nothing,        # frame: a textual composite declares no frames
+                    nothing,        # effortUnits
+                    nothing,        # flowUnits
                     get(ids, instance, ""),
                     BGSim.portref_port(target),
                 ),
@@ -2580,6 +2592,115 @@ function _instantiate_diagram!(
     return nothing
 end
 
+"""    _subsystem_bridge_frames(b, path) -> Set{String}
+
+The frame names declared inside the subsystem at `path`: every port frame of a component
+whose own block declares ports in two different frames is a candidate bridge (D-MB5: a
+`FixedTransform`/`JointTransform` declares two frames). The set holds only frames that take
+part in such a pair, so it is the check "an internal transform bridges frame X and frame Y".
+"""
+function _subsystem_bridge_frames(b::Builder, path::String)
+    bridged = Set{String}()
+    prefix = path * "/"
+    for st in b.states
+        startswith(st.path, prefix) || continue
+        frames = String[p.frame for p in values(st.ports) if p.frame !== nothing]
+        length(unique(frames)) < 2 && continue
+        for f in unique(frames)
+            push!(bridged, f)
+        end
+    end
+    return bridged
+end
+
+"""Check the declared domain, size, component units and frame of a subsystem power port
+against the internal port it exposes (D-MB4/D-MB5, C-MB1 invariant).
+
+A subsystem port's frame is authoritative for the exposed port. It may differ from the
+internal port's catalog frame only when an internal `FixedTransform`/`JointTransform`
+bridges the two named frames; a direct difference is E007."""
+function _check_subsystem_power_port!(
+    b::Builder,
+    node::IR.ModelNode,
+    path::String,
+    sp::IR.SubsystemPort,
+    internal::RawEndpoint,
+)
+    port = get(b.port_at, _portkey(internal), nothing)
+    port === nothing && return nothing
+    if sp.domain !== nothing && port.domain != :Generic && sp.domain != port.domain
+        _report_node!(
+            b,
+            node,
+            path,
+            nothing;
+            code = "E102",
+            message = "subsystem port `$(sp.name)` of `$(node.name)` declares domain `$(sp.domain)`, but the internal `$(sp.port)` it exposes is `$(port.domain)`",
+            hint = "give the subsystem port the internal port's domain, or change the internal block",
+        )
+    end
+    if !isempty(sp.size) && prod(sp.size) != port.size
+        _report_node!(
+            b,
+            node,
+            path,
+            nothing;
+            code = "E102",
+            message = "subsystem port `$(sp.name)` of `$(node.name)` declares size $(sp.size), but the internal `$(sp.port)` has $(port.size) component(s)",
+            hint = "a multibond power port exposes all of its domain's components",
+        )
+    end
+    components = BGSim.Library.domain_components(something(sp.domain, port.domain))
+    for (what, declared, expected) in (
+        ("effort", sp.effort_units, components === nothing ? nothing : components.effort),
+        ("flow", sp.flow_units, components === nothing ? nothing : components.flow),
+    )
+        declared === nothing && continue
+        if expected !== nothing && declared != expected
+            _report_node!(
+                b,
+                node,
+                path,
+                nothing;
+                code = "E102",
+                message = "subsystem port `$(sp.name)` of `$(node.name)` has $(what)Units $(declared), but the catalog domain's components are $(expected)",
+                hint = "derive the per-component units from the port's domain, or match its components exactly",
+            )
+        elseif expected === nothing && !(length(declared) in (3, 6))
+            _report_node!(
+                b,
+                node,
+                path,
+                nothing;
+                code = "E102",
+                message = "subsystem port `$(sp.name)` of `$(node.name)` has $(length(declared)) $(what)Units; a multibond array is exactly 3 (Planar) or 6 (Spatial)",
+                hint = "give the subsystem port a concrete domain, or list 3 or 6 component units",
+            )
+        end
+    end
+    # Frames: the face is authoritative. Equality is by the unqualified frame name (a named
+    # frame is shared across instances, e.g. `world`); only the reported values are
+    # instance-qualified.
+    sp.frame === nothing && return nothing
+    port.frame === nothing && return nothing
+    sp.frame == port.frame && return nothing
+    bridged = _subsystem_bridge_frames(b, path)
+    sp.frame in bridged && port.frame in bridged && return nothing
+    push!(
+        b.diagnostics,
+        diag(
+            "E007",
+            "frame mismatch: subsystem port `$(sp.name)` of `$(node.name)` is in frame `$(sp.frame)`, but the internal `$(sp.port)` it exposes is in frame `$(port.frame)`",
+            hint = "insert a FixedTransform or JointTransform inside the subsystem, or declare the subsystem port's frame equal to the internal port's frame; a null frame unifies with either",
+            path = path,
+            node = node.id,
+            related = [BGSim.Related(internal.path,
+                "the exposed internal port is here, in frame `$(port.frame)`")],
+        ),
+    )
+    return nothing
+end
+
 function _bind_boundary!(b::Builder, node::IR.ModelNode, path::String)
     sub = node.subsystem
     sub === nothing && return nothing
@@ -2607,6 +2728,7 @@ function _bind_boundary!(b::Builder, node::IR.ModelNode, path::String)
             )
             continue
         end
+        sp.kind == :power && _check_subsystem_power_port!(b, node, path, sp, internal)
         boundary[sp.name] = internal
         b.boundary_ports[(path, sp.name)] = sp
     end
@@ -2673,9 +2795,13 @@ function _resolve_endpoint(
     boundary = get(b.boundary, path, nothing)
     if boundary !== nothing
         # A JSON subsystem node or a textual composite (J2.6): its face resolves to the
-        # internal instance port it exposes.
+        # internal instance port it exposes. The face tuple keeps the exposed port's frame
+        # authoritative for connections outside the subsystem (D-MB5).
         ep.port === nothing && return RawEndpoint(node.id, path, nothing, :unknown)
-        return get(boundary, Symbol(ep.port), RawEndpoint(node.id, path, Symbol(ep.port), :unknown))
+        face = (path, Symbol(ep.port))
+        internal = get(boundary, Symbol(ep.port),
+            RawEndpoint(node.id, path, Symbol(ep.port), :unknown))
+        return RawEndpoint(internal.node, internal.path, internal.port, internal.kind, face)
     elseif node.block_kind == :subsystem
         ep.port === nothing && return RawEndpoint(node.id, path, nothing, :unknown)
         return RawEndpoint(node.id, path, Symbol(ep.port), :unknown)

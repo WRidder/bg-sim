@@ -206,9 +206,9 @@ _plain(v) = v
 _schema_keys(props) = Set(String(k) for k in keys(props) if String(k) != raw"$comment")
 _schema_required(def) = Set(String.(def.required))
 
-function _check_object_keys(entry, def)
+function _check_object_keys(entry, def; optional = String[])
     e = _plain(entry)
-    @test Set(keys(e)) == _schema_keys(def.properties)
+    @test Set(keys(e)) == setdiff(_schema_keys(def.properties), Set(optional))
     @test _schema_required(def) ⊆ Set(keys(e))
     return nothing
 end
@@ -1302,7 +1302,9 @@ const INTERFACE_FIELDS = [
         @test cat.language == "0.1.0"
 
         for block in cat.blocks
-            _check_object_keys(block, defs["catalogBlock"])
+            # `dimension` is optional and non-nullable (`2 | 3`), so the scalar stdlib blocks
+            # omit it; every other schema property is always present.
+            _check_object_keys(block, defs["catalogBlock"]; optional = ["dimension"])
             for (field, defname) in INTERFACE_FIELDS
                 for entry in _field(block, field)
                     _check_object_keys(entry, defs[defname])
@@ -1314,7 +1316,14 @@ const INTERFACE_FIELDS = [
             _check_object_keys(junction, defs["junction"])
         end
         for domain in cat.domains
-            _check_object_keys(domain, defs["domain"])
+            name = String(domain.name)
+            defname = name == "Planar" ? "planarDomain" :
+                      name == "Spatial" ? "spatialDomain" : "scalarDomain"
+            _check_object_keys(domain, defs[defname])
+            if haskey(_plain(domain), "components")
+                cdef = name == "Planar" ? "planarComponents" : "spatialComponents"
+                _check_object_keys(_field(domain, "components"), defs[cdef])
+            end
             for field in ("effort", "flow")
                 _check_object_keys(_field(domain, field), defs["domainVariable"])
             end
@@ -1323,10 +1332,9 @@ const INTERFACE_FIELDS = [
         # The shared `blockInterface` definition exists and covers the same seven arrays the
         # catalog block embeds; that is what keeps `block.check` and `catalog.get` aligned.
         iface = _schema_keys(defs["blockInterface"].properties)
-        @test iface == Set([field for (field, _) in INTERFACE_FIELDS])
+        @test iface == Set([field for (field, _) in INTERFACE_FIELDS]) ∪ Set(["dimension"])
         first_interface = _plain(block_interface(load_stdlib()[1].ast))
-        @test _schema_required(defs["blockInterface"]) ⊆ Set(keys(first_interface))
-    end
+        @test _schema_required(defs["blockInterface"]) ⊆ Set(keys(first_interface))    end
 
     @testset "catalog against the contract fixture, field for field" begin
         fixture = JSON3.read(read(CATALOG_FIXTURE_PATH, String))
@@ -1341,6 +1349,18 @@ const INTERFACE_FIELDS = [
 
         ours = Dict(b.ref => _plain(b) for b in cat.blocks)
         theirs = Dict(String(b.ref) => _plain(b) for b in fixture.blocks)
+        # C-MB1 added two optional contract fields (`catalogBlock.dimension` and
+        # `portDecl.frame`). The M1 fixture predates them and is not edited by the M2/M3
+        # work packages, while `catalog.get` always emits `portDecl.frame` (the schema allows
+        # null). `catalogBlock.dimension` is non-nullable (`2 | 3`), so the scalar M1 blocks
+        # omit it in both the fixture and the catalog. Inject the null `frame` into the
+        # fixture copy, then compare key-for-key and value-for-value exactly as before (the
+        # same assertion, not a weaker one).
+        for block in values(theirs)
+            for port in block["ports"]
+                port["frame"] = nothing
+            end
+        end
         @test sort(collect(keys(theirs))) == sort(M1_REFS)
         @test sort(collect(keys(ours))) == ALL_REFS
         @test all(haskey(ours, ref) for ref in keys(theirs))
@@ -1362,10 +1382,10 @@ const INTERFACE_FIELDS = [
         @test _plain(cat.junctions) == _plain(fixture.junctions)
         @test _plain(cat.domains) == _plain(fixture.domains)
 
-        # The two junctions and the five domains, explicitly (plan 3.2 and decision D8).
+        # The two junctions and the seven domains, explicitly (plan 3.2, D8 and D-MB1).
         @test [j.ref for j in cat.junctions] == ["junction:0", "junction:1"]
         @test [d.name for d in cat.domains] ==
-              ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+              ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
         domains = Dict(d.name => d for d in cat.domains)
         @test domains["Electrical"].effort == (name = "voltage", unit = "V")
         @test domains["Electrical"].flow == (name = "current", unit = "A")
@@ -1382,7 +1402,17 @@ const INTERFACE_FIELDS = [
         @test domains["Generic"].effort == (name = "effort", unit = nothing)
         @test domains["Generic"].flow == (name = "flow", unit = nothing)
         @test domains["Generic"].across === nothing
-        @test all(d -> d.size == 1, cat.domains)
+        @test all(d -> d.size == 1, cat.domains[1:5])
+        # D-MB1/D-MB2: multibond sizes and the authoritative, angular-first components.
+        @test domains["Planar"].size == 3
+        @test domains["Planar"].across == "f"
+        @test domains["Planar"].components ==
+              (effort = ["N*m", "N", "N"], flow = ["rad/s", "m/s", "m/s"])
+        @test domains["Spatial"].size == 6
+        @test domains["Spatial"].across == "f"
+        @test domains["Spatial"].components ==
+              (effort = ["N*m", "N*m", "N*m", "N", "N", "N"],
+                  flow = ["rad/s", "rad/s", "rad/s", "m/s", "m/s", "m/s"])
 
         # Deterministic: a second call returns the same catalog (and exercises the cache).
         @test _plain(catalog()) == _plain(cat)

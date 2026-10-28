@@ -101,6 +101,7 @@ function check_block(pb::ParsedBlock)
     ck = Checker(pb)
     _check_declaration_names!(ck)
     _check_declaration_types!(ck)
+    _check_port_dimension!(ck)
     _check_defaults!(ck)
     _check_components!(ck)
     _check_observations!(ck)
@@ -244,6 +245,34 @@ function _check_declaration_types!(ck::Checker)
             end
         end
     end
+    ck.scope = :equations
+    return nothing
+end
+
+"""
+    _check_port_dimension!(ck)
+
+D-MB12: a block has at most one model dimension, derived from its ports (Planar -> 2,
+Spatial -> 3). Mixing Planar and Spatial ports in one block is a clear E102 instead of
+silently picking one; the interface then omits `dimension`.
+"""
+function _check_port_dimension!(ck::Checker)
+    planar = nothing
+    spatial = nothing
+    for d in ports(ck.pb)
+        dom = type_domain(d.type)
+        dom === :Planar && planar === nothing && (planar = d)
+        dom === :Spatial && spatial === nothing && (spatial = d)
+    end
+    (planar === nothing || spatial === nothing) && return nothing
+    ck.scope = :ports
+    _report!(
+        ck,
+        "E102",
+        "`$(ck.pb.name)` mixes Planar and Spatial ports (`$(planar.name)` is Planar, `$(spatial.name)` is Spatial)",
+        spatial;
+        hint = "a block has one model dimension; split it into a planar and a spatial block, or use ports of the same domain",
+    )
     ck.scope = :equations
     return nothing
 end
@@ -1235,6 +1264,12 @@ function _scalar_size(e, decls::Dict{Symbol,Decl}, consts::AbstractDict)::Int
     if e isa Name && haskey(decls, e.name)
         d = decls[e.name]
         return type_scalar_count(resolve_type(d.type, consts), consts)
+    elseif e isa Field && e.base isa Name && haskey(decls, e.base.name)
+        # `p.e`/`p.f` on a multibond port is one scalar per component: the balance count of
+        # a whole-port equation is the port size (D-MB10).
+        d = decls[e.base.name]
+        d.scope == :ports && return type_scalar_count(resolve_type(d.type, consts), consts)
+        return 1
     elseif e isa Call && e.fn.name === :ddt && length(e.args) == 1
         return _scalar_size(e.args[1], decls, consts)
     end
@@ -1331,7 +1366,7 @@ function _check_expr!(ck::Checker, e)::Union{TypeSpec,Nothing}
             _report!(
                 ck,
                 "E001",
-                "string literals are only allowed in `description` and `unit` attributes",
+                "string literals are only allowed in `description`, `unit` and `frame` attributes",
                 e;
             )
         end
@@ -1695,6 +1730,12 @@ function _check_ddt!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
             )
             return nothing
         end
+    elseif arg isa Index && arg.base isa Name && haskey(ck.decls, arg.base.name) &&
+           ck.decls[arg.base.name].scope == :variables
+        # `ddt(P[k])` on a declared Vec/Mat variable: one scalar state per element
+        # (D-MB10 writes multibond equations component-wise).
+        push!(ck.used, arg.base.name)
+        return _check_index!(ck, arg)
     elseif arg isa Field
         _report!(
             ck,
@@ -2129,6 +2170,28 @@ end
 # block_interface (plan 3.2)
 # ---------------------------------------------------------------------------------------
 
+"""
+    block_dimension(pb::ParsedBlock) -> Union{Int,Nothing}
+
+The model dimension encoded by the block's ports (D-MB12): `2` when it has a Planar port,
+`3` when it has a Spatial port, and `nothing` for a scalar block or a block that mixes the
+two (which `check_block` reports as E102). This is the catalog's and block interface's
+`dimension`.
+"""
+function block_dimension(pb::ParsedBlock)
+    planar = false
+    spatial = false
+    for d in ports(pb)
+        dom = type_domain(d.type)
+        dom === :Planar && (planar = true)
+        dom === :Spatial && (spatial = true)
+    end
+    planar && spatial && return nothing
+    spatial && return 3
+    planar && return 2
+    return nothing
+end
+
 function _const_value(d::Decl, consts::AbstractDict)
     if d.default !== nothing
         ok, value = try_eval_const(d.default, consts)
@@ -2197,6 +2260,7 @@ function block_interface(pb::ParsedBlock)
             domain = String(something(type_domain(d.type), :Generic)),
             size = domain_size(type_domain(d.type)) == 1 ? Int[] :
                    Int[domain_size(type_domain(d.type))],
+            frame = get(d.attrs, :frame, nothing),
         ) for d in get(pb.declaration_map, :ports, Decl[])
     ]
 
@@ -2221,7 +2285,7 @@ function block_interface(pb::ParsedBlock)
         ) for c in pb.causality_items
     ]
 
-    return (
+    iface = (
         constants = constants,
         parameters = parameters,
         inputs = io_entries(:inputs),
@@ -2230,6 +2294,10 @@ function block_interface(pb::ParsedBlock)
         variables = variables,
         causality = causality_entries,
     )
+    # `dimension` is optional and the schema's enum is `2 | 3` (no null), so a scalar block
+    # omits it; a multibond block reports the model dimension (D-MB12).
+    dimension = block_dimension(pb)
+    return dimension === nothing ? iface : merge(iface, (dimension = dimension,))
 end
 
 """

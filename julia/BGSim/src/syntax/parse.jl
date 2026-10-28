@@ -60,10 +60,13 @@ const ATTRIBUTE_SCOPES = Dict{Symbol,Vector{Symbol}}(
     :state => Symbol[:variables],
     :options => Symbol[:parameters, :constants],
     :structural => Symbol[:constants],
+    # D-MB5: metadata only, on power ports. Like `description`, the value is a string and
+    # never becomes an expression, so D11's no-strings-in-values rule does not apply.
+    :frame => Symbol[:ports],
 )
 
 const ATTRIBUTE_NAMES =
-    "unit, min, max, tunable, description, nominal, state, options, structural"
+    "unit, min, max, tunable, description, nominal, state, options, structural, frame"
 
 # ---------------------------------------------------------------------------------------
 # Small helpers
@@ -720,7 +723,7 @@ function _parse_type!(b::BlockBuilder, node)
                     b,
                     "E001",
                     "`$dom` is not a power domain";
-                    hint = "use Electrical, Translation, Rotation, Hydraulic or Generic (Planar and Spatial arrive with M4)",
+                    hint = "use Electrical, Translation, Rotation, Hydraulic, Generic, Planar or Spatial",
                 )
                 return nothing
             end
@@ -821,7 +824,7 @@ function _parse_attrs!(b::BlockBuilder, node, attrs::Dict{Symbol,Any}, scope::Sy
 end
 
 function _parse_attr_value!(b::BlockBuilder, key::Symbol, node, scope::Symbol)
-    if key === :unit || key === :description
+    if key === :unit || key === :description || key === :frame
         s = _string_literal(node)
         s === nothing &&
             _error!(b, "E001", "`$key` must be a plain string literal, as in `$key = \"...\"`", node)

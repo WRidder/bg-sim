@@ -321,6 +321,211 @@ function _resolve_wire_nodes!(
 end
 
 # ---------------------------------------------------------------------------------------
+# Frame metadata (D-MB5)
+# ---------------------------------------------------------------------------------------
+
+"""    _FrameClaim(frame, path, port, domain, node, block)
+
+The named frame that a union-find group adopted, and the port that declared it. `path` is
+the instance-qualified instance (a subsystem path for an exposed face), so the editor's
+`frames` value can be `"{path}/{frame}"`. Frames compare by the unqualified `frame` name: a
+name such as `world` is shared across instances; only the reported values are qualified."""
+struct _FrameClaim
+    frame::String
+    path::String
+    port::Symbol
+    domain::Symbol
+    node::Union{String,Nothing}
+    block::Union{String,Nothing}
+end
+
+"""    _frame_slot(ep) -> Tuple{String,Symbol}
+
+The union-find slot of an endpoint. An exposed subsystem face is a slot of its own (the
+outside face), distinct from the internal port it exposes: the face frame is authoritative
+outside, the catalog frame inside, and an internal transform is what bridges them."""
+function _frame_slot(ep::RawEndpoint)
+    ep.kind == :junction && return _junction_key(ep.path)
+    ep.face === nothing && return _portkey(ep)
+    return ("face:" * ep.face[1], ep.face[2])
+end
+
+"""    _endpoint_frame(b, ep) -> Union{String,Nothing}
+
+The named frame of one endpoint. A subsystem face uses its declared frame (authoritative);
+when the face has no frame, the internal port's catalog frame is the fallback, so an old
+subsystem without frames behaves as before. A junction and a frame-neutral port give
+`nothing`."""
+function _endpoint_frame(b::Builder, ep::RawEndpoint)
+    if ep.face !== nothing
+        sp = get(b.boundary_ports, ep.face, nothing)
+        sp !== nothing && sp.frame !== nothing && return sp.frame
+    end
+    ep.kind == :power || return nothing
+    port = get(b.port_at, _portkey(ep), nothing)
+    return port === nothing ? nothing : port.frame
+end
+
+function _frame_claim(b::Builder, ep::RawEndpoint)
+    frame = _endpoint_frame(b, ep)
+    frame === nothing && return nothing
+    if ep.face !== nothing
+        sp = get(b.boundary_ports, ep.face, nothing)
+        domain = sp === nothing ? :Generic : something(sp.domain, :Generic)
+        st = get(b.state_by_path, ep.path, nothing)
+        return _FrameClaim(frame, ep.face[1], ep.face[2], domain, ep.node,
+            st === nothing ? nothing : st.ref)
+    end
+    ep.kind == :power || return nothing
+    ep.port === nothing && return nothing
+    port = get(b.port_at, _portkey(ep), nothing)
+    port === nothing && return nothing
+    st = get(b.state_by_path, ep.path, nothing)
+    return _FrameClaim(frame, ep.path, ep.port, port.domain, ep.node,
+        st === nothing ? nothing : st.ref)
+end
+
+function _seed_frame!(
+    uf::UnionFind,
+    claims::Dict{Tuple{String,Symbol},_FrameClaim},
+    b::Builder,
+    ep::RawEndpoint,
+)
+    claim = _frame_claim(b, ep)
+    claim === nothing && return nothing
+    root = _uf_find!(uf, _frame_slot(ep))
+    haskey(claims, root) || (claims[root] = claim)
+    return nothing
+end
+
+"""    _unify_frames!(uf, claims, a, b) -> Union{Nothing,Tuple{_FrameClaim,_FrameClaim}}
+
+Union two frame slots. Returns the two conflicting claims when both groups already carry a
+named frame and the names differ; the caller then reports E007 on the connection that closed
+the conflict. A group with no frame is frame-neutral and adopts the other one."""
+function _unify_frames!(
+    uf::UnionFind,
+    claims::Dict{Tuple{String,Symbol},_FrameClaim},
+    a::Tuple{String,Symbol},
+    b::Tuple{String,Symbol},
+)
+    ra = _uf_find!(uf, a)
+    rb = _uf_find!(uf, b)
+    ra == rb && return nothing
+    ca = get(claims, ra, nothing)
+    cb = get(claims, rb, nothing)
+    if ca !== nothing && cb !== nothing && ca.frame != cb.frame
+        return (ca, cb)
+    end
+    root = _uf_union!(uf, a, b)
+    merged = ca === nothing ? cb : ca
+    delete!(claims, ra == root ? rb : ra)
+    merged === nothing ? delete!(claims, root) : (claims[root] = merged)
+    return nothing
+end
+
+function _e007_frame!(
+    b::Builder,
+    state::ConnState,
+    conflict::Tuple{_FrameClaim,_FrameClaim},
+)
+    ca, cb = conflict
+    # The port of the connection that closed the conflict: the `to` side when it is a port,
+    # otherwise the `from` side (a bond to a junction has only one port).
+    closing = state.to.kind == :power ? state.to :
+              state.from.kind == :power ? state.from : nothing
+    claim = closing === nothing ? nothing : _frame_claim(b, closing)
+    path_claim, other = if claim !== nothing &&
+                          (claim.path == ca.path && claim.port == ca.port)
+        (ca, cb)
+    elseif claim !== nothing && (claim.path == cb.path && claim.port == cb.port)
+        (cb, ca)
+    else
+        (cb, ca)
+    end
+    message = "frame mismatch: $(path_claim.domain) port `$(path_claim.port)` of " *
+              "`$(_owner(path_claim.path))` is in frame `$(path_claim.frame)`, but port " *
+              "`$(other.port)` of `$(_owner(other.path))` is in frame `$(other.frame)`"
+    push!(
+        b.diagnostics,
+        diag(
+            "E007",
+            message;
+            hint = "connect them through a FixedTransform or JointTransform, or give both ports the same frame; a null frame unifies with either",
+            path = path_claim.path,
+            block = path_claim.block,
+            node = path_claim.node,
+            connection = state.conn.id,
+            related = [BGSim.Related(other.path,
+                "the other end of connection $(state.conn.id) is here, in frame `$(other.frame)`")],
+        ),
+    )
+    return nothing
+end
+
+"""    _check_frames!(b, plan) -> (frames, multibond)
+
+The D-MB5 frame rule and the D-MB12 stroke counts. A bond or wire group unifies the frames
+of its ports; a junction's attached bonds share one frame. Two different named frames in one
+group are E007 on the connection that closes the conflict. `frames` maps every bond/wire with
+an adopted frame to `"{path}/{frame}"` (instance-qualified, so a catalog name `body` on two
+bodies is distinguishable); `multibond` maps every Planar/Spatial bond to 2/3 strokes. Frames
+are metadata, not type parameters: nothing here computes with a frame.
+"""
+function _check_frames!(b::Builder, plan::ConnPlan)
+    uf = UnionFind()
+    claims = Dict{Tuple{String,Symbol},_FrameClaim}()
+    for state in plan.states
+        (state.valid && state.conn.kind == :bond) || continue
+        _seed_frame!(uf, claims, b, state.from)
+        _seed_frame!(uf, claims, b, state.to)
+        conflict = _unify_frames!(uf, claims, _frame_slot(state.from), _frame_slot(state.to))
+        conflict === nothing || _e007_frame!(b, state, conflict)
+    end
+    for group in plan.wires
+        group.valid || continue
+        for i in group.edges
+            state = plan.states[i]
+            state.valid || continue
+            _seed_frame!(uf, claims, b, state.from)
+            _seed_frame!(uf, claims, b, state.to)
+            conflict = _unify_frames!(uf, claims, _frame_slot(state.from),
+                _frame_slot(state.to))
+            conflict === nothing || _e007_frame!(b, state, conflict)
+        end
+    end
+
+    frames = Dict{String,String}()
+    for state in plan.states
+        state.valid || continue
+        state.conn.kind in (:bond, :wire) || continue
+        entry = nothing
+        for ep in (state.to, state.from)
+            ep.kind == :power || continue
+            frame = _endpoint_frame(b, ep)
+            frame === nothing && continue
+            path = ep.face === nothing ? ep.path : ep.face[1]
+            entry = path * "/" * frame
+            break
+        end
+        if entry === nothing
+            claim = get(claims, _uf_find!(uf, _frame_slot(state.to)), nothing)
+            entry = claim === nothing ? nothing : claim.path * "/" * claim.frame
+        end
+        entry === nothing || (frames[state.conn.id] = entry)
+    end
+
+    multibond = Dict{String,Int}()
+    for state in plan.states
+        state.valid || continue
+        state.conn.kind == :bond || continue
+        state.domain === :Planar && (multibond[state.conn.id] = 2)
+        state.domain === :Spatial && (multibond[state.conn.id] = 3)
+    end
+    return frames, multibond
+end
+
+# ---------------------------------------------------------------------------------------
 # Units: adoption of Generic declarations, power signals and unit factors
 # ---------------------------------------------------------------------------------------
 

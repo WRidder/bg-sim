@@ -45,11 +45,16 @@ struct ModelConnection
     label::Union{String,Nothing}
 end
 
-"""    SubsystemPort(name, kind, direction, domain, type, size, unit, node, port)
+"""    SubsystemPort(name, kind, direction, domain, type, size, unit, frame,
+                   effort_units, flow_units, node, port)
 
 A port exposed by a subsystem (plan 3.3 `subsystemPort`). `kind` is `:signal` or `:power`;
 `direction` is `:input`/`:output` for a signal port; `domain` is the power domain for a
-power port. `node` and `port` name the internal endpoint the exposed face attaches to."""
+power port. `frame` is the exposed port's reference frame (D-MB5; `nothing` is
+frame-neutral) and is authoritative for the exposed port. `effort_units`/`flow_units` are
+the optional per-component unit overrides of a multibond port (`nothing` when the catalog
+domain supplies them). `node` and `port` name the internal endpoint the exposed face
+attaches to."""
 struct SubsystemPort
     name::Symbol
     kind::Symbol
@@ -58,6 +63,9 @@ struct SubsystemPort
     type::Symbol
     size::Vector{Int}
     unit::Union{String,Nothing}
+    frame::Union{String,Nothing}
+    effort_units::Union{Vector{String},Nothing}
+    flow_units::Union{Vector{String},Nothing}
     node::String
     port::Symbol
 end
@@ -180,6 +188,12 @@ function _int_vector(v, what::AbstractString)
     return Int[Int(x) for x in v]
 end
 
+function _string_vector(v, what::AbstractString)
+    v === nothing && return nothing
+    v isa AbstractVector || throw(ArgumentError("$what must be an array"))
+    return String[_str(x, what) for x in v]
+end
+
 # ---------------------------------------------------------------------------------------
 # Parsing
 # ---------------------------------------------------------------------------------------
@@ -216,9 +230,14 @@ function _parse_subsystem_port(p, what::AbstractString)
     size = _int_vector(_get(p, "size", nothing), "$what.size")
     unit_value = _get(p, "unit", nothing)
     unit = unit_value === nothing ? nothing : _str(unit_value, "$what.unit")
+    frame_value = _get(p, "frame", nothing)
+    frame = frame_value === nothing ? nothing : _str(frame_value, "$what.frame")
+    effort_units = _string_vector(_get(p, "effortUnits", nothing), "$what.effortUnits")
+    flow_units = _string_vector(_get(p, "flowUnits", nothing), "$what.flowUnits")
     node = _str(_get(p, "node", nothing), "$what.node")
     port = Symbol(_str(_get(p, "port", nothing), "$what.port"))
-    return SubsystemPort(name, kind, direction, domain, type, size, unit, node, port)
+    return SubsystemPort(name, kind, direction, domain, type, size, unit, frame,
+        effort_units, flow_units, node, port)
 end
 
 function _parse_node(n, index::Int)

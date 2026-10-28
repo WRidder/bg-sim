@@ -139,11 +139,11 @@ function flatten(md::IR.ModelDoc; project_dir = nothing)
     return first(_flatten(md; project_dir = project_dir))
 end
 
-"""    _flatten(md; project_dir) -> (FlatModel, CausalityMap)
+"""    _flatten(md; project_dir) -> (FlatModel, CausalityMap, frames, multibond)
 
-The one flattening run. It returns the flat model *and* the causal strokes, because the
-strokes are editor metadata that `model_check` returns and `FlatModel` deliberately does not
-carry (J2.4 keeps the plan 5.1 shape)."""
+The one flattening run. It returns the flat model, the causal strokes, and the two editor
+metadata maps of the frame pass, because they are editor metadata that `FlatModel`
+deliberately does not carry (J2.4 keeps the plan 5.1 shape)."""
 function _flatten(md::IR.ModelDoc; project_dir = nothing)
     b = Builder(md, project_dir === nothing ? nothing : String(project_dir))
     instantiate!(b)
@@ -152,6 +152,7 @@ function _flatten(md::IR.ModelDoc; project_dir = nothing)
     plan = classify_connections!(b)
     domains = resolve_domains!(b, plan)
     unit_factors = apply_domains!(b, plan)
+    frames, multibond = _check_frames!(b, plan)
     emit_connections!(b, plan)
     emit_junction_equations!(b)
     check_unconnected!(b, plan)
@@ -190,7 +191,7 @@ function _flatten(md::IR.ModelDoc; project_dir = nothing)
         diagnostics,
         stats,
     )
-    return model, causality
+    return model, causality, frames, multibond
 end
 
 flatten(source::AbstractString; project_dir = nothing) =
@@ -202,19 +203,21 @@ flatten(doc::AbstractDict; project_dir = nothing) =
 
 The plan 3.6 `model.check` result:
 
-    (diagnostics, domains, causality, unitFactors, signals, stats)
+    (diagnostics, domains, causality, frames, multibond, unitFactors, signals, stats)
 
 `domains` maps a power connection id to the adopted domain name (plan 5.6), `unitFactors`
 maps a connection id to the factor the compiler inserts (plan 5.3), and `signals` is the plan
 3.5 recording list. `causality` maps a bond connection id to `(strokeAt = "from" | "to",)`,
 the end where effort is the input to the element there (plan 5.7); it is empty for a model
-with no bonds.
+with no bonds. `frames` maps a bond or wire connection id to its instance-qualified frame
+(`"{path}/{frame}"`, D-MB5; the required empty object when no connection carries a frame) and
+`multibond` maps a Planar/Spatial bond to its stroke count (2/3, D-MB12).
 
 `stats` contains exactly the two fields the worker contract allows (`states`, `equations`);
 the full counts are on `flatmodel.stats`.
 """
 function model_check(md::IR.ModelDoc; project_dir = nothing)
-    fm, causality = try
+    fm, causality, frames, multibond = try
         _flatten(md; project_dir = project_dir)
     catch err
         message = "internal compiler error while flattening `$(md.name)`"
@@ -222,12 +225,16 @@ function model_check(md::IR.ModelDoc; project_dir = nothing)
         (
             Flat.empty_model(md.name; diagnostics = [d], stats = (states = 0, equations = 0)),
             CausalityMap(),
+            Dict{String,String}(),
+            Dict{String,Int}(),
         )
     end
     return (
         diagnostics = fm.diagnostics,
         domains = fm.domains,
         causality = causality,
+        frames = frames,
+        multibond = multibond,
         unitFactors = fm.unit_factors,
         signals = fm.signals,
         stats = (states = fm.stats.states, equations = fm.stats.equations),

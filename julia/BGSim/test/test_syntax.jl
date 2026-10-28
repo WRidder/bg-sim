@@ -341,7 +341,7 @@ const ROW_OVERRIDES = Dict{Symbol,NamedTuple}(
         @test iface.variables[1].size == Int[]
         @test iface.variables[1].start == "0.0"
         @test iface.variables[1].state == "prefer"
-        @test iface.ports == [(name = "p", domain = "Generic", size = Int[])]
+        @test iface.ports == [(name = "p", domain = "Generic", size = Int[], frame = nothing)]
         @test iface.causality[1].ports == ["p"]
         @test iface.causality[1].kind == "preferred"
         @test iface.causality[1].value == "effort_out"

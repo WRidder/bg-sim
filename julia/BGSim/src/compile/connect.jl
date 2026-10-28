@@ -333,16 +333,22 @@ function _classify_bond!(
         return nothing
     end
     if pf !== nothing && pt !== nothing && pf.domain != :Generic && pt.domain != :Generic
-        _connection_diag!(
-            b,
-            t;
-            code = "E102",
-            message = "a bond needs at least one Generic port or a junction: $(pf.domain) port `$(pf.name)` of `$(_owner(f.path))` and $(pt.domain) port `$(pt.name)` of `$(_owner(t.path))` are both concrete",
-            hint = "connect two concrete ports of one domain with a wire",
-            connection = c.id,
-        )
-        state.valid = false
-        return nothing
+        # C-MB1/ADR-MB1: a multibond bond may join two concrete ports of the same multibond
+        # domain (the frame rule is what checks such a bond). A scalar bond still needs a
+        # Generic port or a junction (D7).
+        multibond_pair = pf.domain == pt.domain && pf.domain in (:Planar, :Spatial)
+        if !multibond_pair
+            _connection_diag!(
+                b,
+                t;
+                code = "E102",
+                message = "a bond needs at least one Generic port or a junction: $(pf.domain) port `$(pf.name)` of `$(_owner(f.path))` and $(pt.domain) port `$(pt.name)` of `$(_owner(t.path))` are both concrete",
+                hint = "connect two concrete ports of one domain with a wire",
+                connection = c.id,
+            )
+            state.valid = false
+            return nothing
+        end
     end
     for (ep, port) in ((f, pf), (t, pt))
         port === nothing && continue
@@ -356,17 +362,6 @@ function _classify_bond!(
                 code = "E102",
                 message = "power port `$(port.name)` of `$(_owner(ep.path))` already has a bond (`$previous_id`)",
                 hint = "a power port carries exactly one bond",
-                connection = c.id,
-            )
-            state.valid = false
-        end
-        if port.size > 1 && (f.kind == :junction || t.kind == :junction)
-            _connection_diag!(
-                b,
-                ep;
-                code = "E102",
-                message = "a junction needs scalar power ports: `$(port.name)` of `$(_owner(ep.path))` has $(port.size) components",
-                hint = "bond-graph junctions are scalar; use a converter block for vectors",
                 connection = c.id,
             )
             state.valid = false
@@ -474,7 +469,6 @@ function _record_junction_bonds!(b::Builder, states::Vector{ConnState})
         junction_ep = f.kind == :junction ? f : t
         port = get(b.port_at, _portkey(port_ep), nothing)
         port === nothing && continue
-        port.size == 1 || continue
         junction = _junction(b, junction_ep)
         junction === nothing && continue
         into = t.kind == :junction

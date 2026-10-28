@@ -309,6 +309,7 @@ One declaration. `type` is a [`TypeSpec`](@ref); `default` is the default-value 
 | `:state` | `:prefer` or `:avoid` |
 | `:options` | `Vector{String}` |
 | `:structural` | `Bool` |
+| `:frame` | `String` (ports only, D-MB5) |
 
 `default_text` is the default's original source text, which is what the catalog reports
 (`parameterDecl.default`, plan 3.2) so that `1e-3` stays `1e-3`.

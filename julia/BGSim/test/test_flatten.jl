@@ -776,8 +776,11 @@ end
 
         result = Compile.model_check(IR.parse_model(_fixture("model.dcmotor.json")))
         @test Set(keys(result)) ==
-              Set([:diagnostics, :domains, :causality, :unitFactors, :signals, :stats])
+              Set([:diagnostics, :domains, :causality, :frames, :multibond,
+                    :unitFactors, :signals, :stats])
         @test isempty(result.causality)          # an iconic model has no bonds to stroke
+        @test result.frames == Dict{String,String}()   # required, empty when no frame
+        @test result.multibond == Dict{String,Int}()
         @test result.stats == (states = 3, equations = 41)
         @test result.signals == fm.signals
         @test result.domains == fm.domains

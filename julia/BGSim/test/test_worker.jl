@@ -236,7 +236,7 @@ end
             # packages have added to it (J2.7 grows this count).
             @test length(catalog.blocks) == length(Library.load_stdlib())
             @test length(catalog.junctions) == 2
-            @test length(catalog.domains) == 5
+            @test length(catalog.domains) == 7
             dc = only(filter(b -> b.ref == "stdlib:converters/DCMotor", catalog.blocks))
             @test length(dc.ports) == 4
             @test dc.name == "DCMotor"

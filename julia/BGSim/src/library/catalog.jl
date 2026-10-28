@@ -554,13 +554,41 @@ The [`GROUPS`](@ref) entry for a stdlib directory name, or `nothing`."""
 group_info(dir::AbstractString) = get(GROUP_BY_DIR, String(dir), nothing)
 
 """
+    DOMAIN_COMPONENTS
+
+The authoritative per-component effort/flow units of a multibond domain, angular first
+(D-MB2, C-MB1). A scalar domain has no components; its scalar `effort`/`flow` descriptors
+are the whole unit story.
+"""
+const DOMAIN_COMPONENTS = Dict{Symbol,NamedTuple{(:effort, :flow),Tuple{Vector{String},Vector{String}}}}(
+    :Planar => (
+        effort = ["N*m", "N", "N"],
+        flow = ["rad/s", "m/s", "m/s"],
+    ),
+    :Spatial => (
+        effort = ["N*m", "N*m", "N*m", "N", "N", "N"],
+        flow = ["rad/s", "rad/s", "rad/s", "m/s", "m/s", "m/s"],
+    ),
+)
+
+"""
+    domain_components(domain) -> Union{NamedTuple,Nothing}
+
+The per-component unit arrays of a multibond domain (Planar or Spatial), or `nothing` for a
+scalar domain. Used by the subsystem-boundary check and by the catalog.
+"""
+domain_components(domain::Symbol) = get(DOMAIN_COMPONENTS, domain, nothing)
+
+"""
     DOMAINS
 
-The five power domains of plan 3.2 and decision D8: effort and flow names and units, which
-port field is the across variable (`e` for Electrical and Hydraulic, `f` for Translation and
-Rotation, `nothing` for Generic until a domain is adopted) and the port size.
+The seven power domains of plan 3.2 and decisions D8/D-MB1: effort and flow names and units,
+which port field is the across variable (`e` for Electrical and Hydraulic, `f` for
+Translation, Rotation, Planar and Spatial, `nothing` for Generic until a domain is adopted),
+the port size, and for the multibond domains the authoritative `components` arrays. The order
+is the contract fixture's order.
 """
-const DOMAINS = [
+const DOMAINS = Any[
     (
         name = "Electrical",
         effort = (name = "voltage", unit = "V"),
@@ -595,6 +623,22 @@ const DOMAINS = [
         flow = (name = "flow", unit = nothing),
         across = nothing,
         size = 1,
+    ),
+    (
+        name = "Planar",
+        effort = (name = "wrench", unit = "N*m"),
+        flow = (name = "twist", unit = "rad/s"),
+        across = "f",
+        size = 3,
+        components = DOMAIN_COMPONENTS[:Planar],
+    ),
+    (
+        name = "Spatial",
+        effort = (name = "wrench", unit = "N*m"),
+        flow = (name = "twist", unit = "rad/s"),
+        across = "f",
+        size = 6,
+        components = DOMAIN_COMPONENTS[:Spatial],
     ),
 ]
 

@@ -184,8 +184,8 @@ _comp_block(source) = parse_block(source; filename = "inline", ref = "inline:tes
 
         gwb = blocks[:GearWithBacklash]
         @test gwb.interface.ports == [
-            (name = "a", domain = "Rotation", size = Int[]),
-            (name = "b", domain = "Rotation", size = Int[]),
+            (name = "a", domain = "Rotation", size = Int[], frame = nothing),
+            (name = "b", domain = "Rotation", size = Int[], frame = nothing),
         ]
         @test isempty(gwb.interface.parameters)
         @test isempty(gwb.interface.variables)

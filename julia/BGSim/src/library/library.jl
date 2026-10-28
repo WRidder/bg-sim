@@ -94,7 +94,7 @@ arrays are passed through unchanged.
 """
 function to_namedtuple(b::BlockDef)
     i = b.interface
-    return (
+    block = (
         ref = b.ref,
         name = String(b.name),
         group = b.group,
@@ -111,6 +111,8 @@ function to_namedtuple(b::BlockDef)
         source = b.source,
         path = b.path,
     )
+    # `dimension` is optional and non-nullable in the schema, so a scalar block omits it.
+    return haskey(i, :dimension) ? merge(block, (dimension = i.dimension,)) : block
 end
 
 """
@@ -134,6 +136,6 @@ include("loader.jl")
 include("intrinsics.jl")
 
 export BlockDef, has_errors, load_block, load_source, stdlib_dir, load_stdlib,
-    load_project_library, catalog, intrinsics, clear_cache
+    load_project_library, catalog, intrinsics, clear_cache, domain_components
 
 end # module Library
