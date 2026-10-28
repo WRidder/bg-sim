@@ -262,6 +262,41 @@ two W201 are J-MB6's), the 90° body frame, W-MB1's regenerated RLC-dual snapsho
 only), and the minimal web consumer repairs C-MB1 needed to keep the tree compiling.
 
 
+### M3 — Phase B: planar mechanics (Gate B: green, 2026-10-29)
+
+**Works.** J-MB5 added the full planar primitive set (C/R/MSe/MSf/TF/GY/MTF/MGY with per-
+component units, matrix `TFPlanarMat`/`MTFPlanarMat`, `ExternalWrenchPlanar`, `JointTransform2D`);
+J-MB6 added the planar composites (`RigidBody2D`, the compliant/friction/limit/rigid revolute
+family, `Prismatic2D`, `Free2D` + `PoseIntegrator2D`, `FixedJoint2D`, pose composition) and fixed
+the arbitrary-mount-angle tearing; J-MB7 is the planar mechanics suite; X-MB2 added the 2-link arm
+and reaction-wheel/balancer examples. FIX-MB-4 closed the Phase B review gaps and FIX-MB-5 fixed
+the compliant-pivot transport term to use the child's absolute rate.
+
+**Gate.** `uv run tools/check.py --lane all` at `58b6a30` -> **11 passed, 0 failed, 0 skipped**:
+Julia `Pkg.test()` in **455.2 s** (J-MB7 **259** assertions; prior suite **152 137**, so ~152 396
+total), pytest **281** + **4** julia-marked, ruff, tsc, ESLint, Vitest **433**, Vite build,
+examples **252/252** in **196.6 s**, Playwright **34** fake-worker specs and **15** real-worker
+specs (2.7 min, incl. `robot-arm-2d.spec.ts` and `reaction-wheel-2d.spec.ts`). Gate B criteria:
+double-pendulum error **6.119e-6 rad** at kt=1e8 with per-decade ratios **10.008/10.001/10.000**;
+2-link arm tip vs analytic FK **1.1e-16 m**, q1/q2 at 3 s **0.600000000002/-0.3999999999998**;
+**W201 0** for every compliant model (the rigid set is asserted by count/pattern); the 2-stroke
+screenshot is stable over 3 runs; fixed-base pose composition vs integrated truth **9.2e-8**
+(component 1.7e-15 / 9.2e-8 / 6.6e-8).
+
+**Measured.** Pendulum period **1.4187960323 s** (rel **4.1e-11**), energy **7.24e-12** of the
+swing; prismatic **0.6283185298 s** (1.4e-9); free-body SE(2) screw **1.4e-12**; arm free-run
+energy drift **3.98e-12** of 18.877 J; wheel gravity-off momentum constant **8.78e-8** relative.
+
+**Deviations / open.** The prismatic axial rate now carries the parent-rotation transport term
+`+ parent.f[1]*d` (J-MB7's kinematic regression: max |q| = 0); the `dr`-ignoring nominal adjoint
+is a documented first-order approximation. The Claude review's frame instance-scoping is deferred
+as **FIX-MB-6** with a full design in `plan/wps/M3-frame-scoping.md` (the current models always
+bridge through a frame-neutral joint/transform, so the body-body false negative is not exercised).
+The review's damped default for `bt` and the `CPlanar` body-frame-velocity note are documented but
+not changed; `J-MB9` should state the nominal-adjoint validity rule once for the spatial joints.
+
+
+
 
 ## Contract changes and orchestrator decisions
 
