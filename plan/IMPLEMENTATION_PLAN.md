@@ -759,7 +759,7 @@ end
   | Translation | green `#2E9E5B` |
   | Rotation | violet `#7A5AF8` |
   | Hydraulic | cyan `#0EA5C6` |
-  | Planar | brown `#8D6E63` |
+  | Planar and Spatial (mechanics) | brown `#8D6E63`, one shared colour; 2D vs 3D is the stroke count (revised 2026-10-29) |
   | Generic, unresolved | grey `#6B7280`, **dashed** |
   | Real signal | ink, 1.25 px, with an arrowhead |
   | Bool signal | dashed |

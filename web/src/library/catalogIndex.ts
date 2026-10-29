@@ -25,11 +25,29 @@ export interface CatalogIndex {
 
 export const JUNCTION_GROUP = "Junctions";
 
-/** Group blocks by their `group` field, preserving the catalog's order. */
+/**
+ * The two robotics categories of W-MB3. They are derived from the live catalog:
+ * a block's `dimension` (C-MB1: 2 planar, 3 spatial) is authoritative, and no
+ * block list is hard-coded here. A scalar block keeps its catalog group.
+ */
+export const DIMENSION_GROUPS = {
+  2: "2D multibond",
+  3: "3D multibond",
+} as const;
+
+/** The visible group of one block: the model dimension, or the catalog group. */
+export function libraryGroupFor(block: CatalogBlock): string {
+  if (block.dimension !== undefined) {
+    return DIMENSION_GROUPS[block.dimension];
+  }
+  return block.group.trim() || "Other";
+}
+
+/** Group blocks by their visible group, preserving the catalog's order. */
 export function groupBlocks(blocks: readonly CatalogBlock[]): LibraryGroup[] {
   const groups = new Map<string, CatalogBlock[]>();
   for (const block of blocks) {
-    const key = block.group.trim() || "Other";
+    const key = libraryGroupFor(block);
     const list = groups.get(key);
     if (list === undefined) {
       groups.set(key, [block]);

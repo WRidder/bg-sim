@@ -1,0 +1,336 @@
+{
+  "project": "robot-arm-3d",
+  "description": "Plan 9.10 / X-MB3 acceptance: a UR5-like six-axis arm on the M3 spatial multibond mechanics. GroundSpatial -> Mount -> six Revolute3D joints (axis = local z, kt = kr = 1e7, 0.7-critical damping on the held directions) joined by FixedTransform3DNeutral standard-DH offsets, RigidBody3D links (J-MB10 masses and inertias). Drives: MSe torque sources from the 1 ms ArmPD6 firmware (quintic reference from home to target over 0.8 s starting at 0.1 s, PD, gravity feedforward from the same geometry, torque limits). TCP pose from the ComposePose3D chain plus a 0.1823 m tool offset. Checks: settled joint angles, TCP against the analytic forward kinematics, settled gravity torques, torque limits, tracking errors and diagnostics.",
+  "models": {
+    "arm": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "joint 1 starts at the home angle (released at rest on its consistent deflection)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J2/qout",
+          "t": 0.0,
+          "value": -1.2,
+          "abs": 1e-09,
+          "note": "joint 2 starts at the home angle (released at rest on its consistent deflection)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J3/qout",
+          "t": 0.0,
+          "value": 1.2,
+          "abs": 1e-09,
+          "note": "joint 3 starts at the home angle (released at rest on its consistent deflection)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J4/qout",
+          "t": 0.0,
+          "value": -1.5,
+          "abs": 1e-09,
+          "note": "joint 4 starts at the home angle (released at rest on its consistent deflection)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J5/qout",
+          "t": 0.0,
+          "value": -1.5,
+          "abs": 1e-09,
+          "note": "joint 5 starts at the home angle (released at rest on its consistent deflection)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J6/qout",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "joint 6 starts at the home angle (released at rest on its consistent deflection)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 2.0,
+          "value": 0.8,
+          "abs": 0.0005,
+          "note": "joint 1 settled at the target angle 0.8 rad. Measured error at 2.0 s is under 1.0e-4 rad (gravity feedforward removes the PD droop; the rest is the reference-move tail and the solver tolerance reltol 1e-6). The 5e-4 bound is 5x the measurement."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J2/qout",
+          "t": 2.0,
+          "value": -0.8,
+          "abs": 0.0005,
+          "note": "joint 2 settled at the target angle -0.8 rad. Measured error at 2.0 s is under 1.0e-4 rad (gravity feedforward removes the PD droop; the rest is the reference-move tail and the solver tolerance reltol 1e-6). The 5e-4 bound is 5x the measurement."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J3/qout",
+          "t": 2.0,
+          "value": 0.9,
+          "abs": 0.0005,
+          "note": "joint 3 settled at the target angle 0.9 rad. Measured error at 2.0 s is under 1.0e-4 rad (gravity feedforward removes the PD droop; the rest is the reference-move tail and the solver tolerance reltol 1e-6). The 5e-4 bound is 5x the measurement."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J4/qout",
+          "t": 2.0,
+          "value": -1.9,
+          "abs": 0.0005,
+          "note": "joint 4 settled at the target angle -1.9 rad. Measured error at 2.0 s is under 1.0e-4 rad (gravity feedforward removes the PD droop; the rest is the reference-move tail and the solver tolerance reltol 1e-6). The 5e-4 bound is 5x the measurement."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J5/qout",
+          "t": 2.0,
+          "value": -1.2,
+          "abs": 0.0005,
+          "note": "joint 5 settled at the target angle -1.2 rad. Measured error at 2.0 s is under 1.0e-4 rad (gravity feedforward removes the PD droop; the rest is the reference-move tail and the solver tolerance reltol 1e-6). The 5e-4 bound is 5x the measurement."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J6/qout",
+          "t": 2.0,
+          "value": 0.6,
+          "abs": 0.0005,
+          "note": "joint 6 settled at the target angle 0.6 rad. Measured error at 2.0 s is under 1.0e-4 rad (gravity feedforward removes the PD droop; the rest is the reference-move tail and the solver tolerance reltol 1e-6). The 5e-4 bound is 5x the measurement."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qdout",
+          "t": 2.0,
+          "value": 0.0,
+          "abs": 0.005,
+          "note": "joint 1 is at rest at the end (measured under 6e-4 rad/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J2/qdout",
+          "t": 2.0,
+          "value": 0.0,
+          "abs": 0.005,
+          "note": "joint 2 is at rest at the end (measured under 6e-4 rad/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J3/qdout",
+          "t": 2.0,
+          "value": 0.0,
+          "abs": 0.005,
+          "note": "joint 3 is at rest at the end (measured under 6e-4 rad/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J4/qdout",
+          "t": 2.0,
+          "value": 0.0,
+          "abs": 0.005,
+          "note": "joint 4 is at rest at the end (measured under 6e-4 rad/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J5/qdout",
+          "t": 2.0,
+          "value": 0.0,
+          "abs": 0.005,
+          "note": "joint 5 is at rest at the end (measured under 6e-4 rad/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J6/qdout",
+          "t": 2.0,
+          "value": 0.0,
+          "abs": 0.005,
+          "note": "joint 6 is at rest at the end (measured under 6e-4 rad/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TCP/g[5]",
+          "t": 2.0,
+          "value": -0.44364106789018026,
+          "abs": 0.0005,
+          "note": "TCP x against the analytic forward kinematics of the target angles (standard-DH chain with the 0.1823 m tool offset, computed in data.jl). Measured error under 1.0e-4 m: the compliant joints (kt = 1e7 N/m, kr = 1e7 N m/rad) sag by about 1e-5 m each under gravity, plus the angle error times the 0.9 m reach. The 5e-4 m bound is 5x the measurement."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TCP/g[6]",
+          "t": 2.0,
+          "value": -0.7082699710580803,
+          "abs": 0.0005,
+          "note": "TCP y against the analytic forward kinematics of the target angles (standard-DH chain with the 0.1823 m tool offset, computed in data.jl). Measured error under 1.0e-4 m: the compliant joints (kt = 1e7 N/m, kr = 1e7 N m/rad) sag by about 1e-5 m each under gravity, plus the angle error times the 0.9 m reach. The 5e-4 m bound is 5x the measurement."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TCP/g[7]",
+          "t": 2.0,
+          "value": 0.21091320185113174,
+          "abs": 0.0005,
+          "note": "TCP z against the analytic forward kinematics of the target angles (standard-DH chain with the 0.1823 m tool offset, computed in data.jl). Measured error under 1.0e-4 m: the compliant joints (kt = 1e7 N/m, kr = 1e7 N m/rad) sag by about 1e-5 m each under gravity, plus the angle error times the 0.9 m reach. The 5e-4 m bound is 5x the measurement."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TCP/g[5]",
+          "t": 0.0,
+          "value": -0.6278018574000032,
+          "abs": 0.0002,
+          "note": "TCP x at the home pose against the analytic forward kinematics (the deflections of the released-at-rest start shift it by about 4e-5 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TCP/g[6]",
+          "t": 0.0,
+          "value": -0.12204539186402222,
+          "abs": 0.0002,
+          "note": "TCP y at the home pose against the analytic forward kinematics (the deflections of the released-at-rest start shift it by about 4e-5 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TCP/g[7]",
+          "t": 0.0,
+          "value": 0.29719251933309243,
+          "abs": 0.0002,
+          "note": "TCP z at the home pose against the analytic forward kinematics (the deflections of the released-at-rest start shift it by about 4e-5 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/u1",
+          "t": 2.0,
+          "value": -1.0314431985397533e-15,
+          "abs": 0.05,
+          "note": "joint 1 torque settles on the gravity torque of the target pose (independent Newton-Euler reference of J-MB10, N m). Measured difference under 7e-3 N m."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/u2",
+          "t": 2.0,
+          "value": -45.85485447550924,
+          "abs": 0.05,
+          "note": "joint 2 torque settles on the gravity torque of the target pose (independent Newton-Euler reference of J-MB10, N m). Measured difference under 7e-3 N m."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/u3",
+          "t": 2.0,
+          "value": -17.82552292505751,
+          "abs": 0.05,
+          "note": "joint 3 torque settles on the gravity torque of the target pose (independent Newton-Euler reference of J-MB10, N m). Measured difference under 7e-3 N m."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/u4",
+          "t": 2.0,
+          "value": -1.3053338414066165,
+          "abs": 0.05,
+          "note": "joint 4 torque settles on the gravity torque of the target pose (independent Newton-Euler reference of J-MB10, N m). Measured difference under 7e-3 N m."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/u5",
+          "t": 2.0,
+          "value": 0.11313809515274359,
+          "abs": 0.05,
+          "note": "joint 5 torque settles on the gravity torque of the target pose (independent Newton-Euler reference of J-MB10, N m). Measured difference under 7e-3 N m."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/u6",
+          "t": 2.0,
+          "value": 0.0,
+          "abs": 0.05,
+          "note": "joint 6 torque settles on the gravity torque of the target pose (independent Newton-Euler reference of J-MB10, N m). Measured difference under 7e-3 N m."
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u1",
+          "value": 150.0,
+          "note": "joint 1 torque stays inside its 150 N m limit (measured peak 19.82 N m, so the clamp never engages)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u2",
+          "value": 150.0,
+          "note": "joint 2 torque stays inside its 150 N m limit (measured peak 54.57 N m, so the clamp never engages)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u3",
+          "value": 150.0,
+          "note": "joint 3 torque stays inside its 150 N m limit (measured peak 20.75 N m, so the clamp never engages)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u4",
+          "value": 28.0,
+          "note": "joint 4 torque stays inside its 28 N m limit (measured peak 1.534 N m, so the clamp never engages)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u5",
+          "value": 28.0,
+          "note": "joint 5 torque stays inside its 28 N m limit (measured peak 0.2 N m, so the clamp never engages)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u6",
+          "value": 28.0,
+          "note": "joint 6 torque stays inside its 28 N m limit (measured peak 0.00135 N m, so the clamp never engages)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e1",
+          "value": 0.05,
+          "note": "joint 1 tracking error during the move stays under 0.05 rad (the controller has no inertia feedforward, so the error is about M qdd / Kp)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e2",
+          "value": 0.03,
+          "note": "joint 2 tracking error during the move stays under 0.03 rad (the controller has no inertia feedforward, so the error is about M qdd / Kp)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e3",
+          "value": 0.03,
+          "note": "joint 3 tracking error during the move stays under 0.03 rad (the controller has no inertia feedforward, so the error is about M qdd / Kp)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e4",
+          "value": 0.04,
+          "note": "joint 4 tracking error during the move stays under 0.04 rad (the controller has no inertia feedforward, so the error is about M qdd / Kp)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e5",
+          "value": 0.12,
+          "note": "joint 5 tracking error during the move stays under 0.12 rad (the controller has no inertia feedforward, so the error is about M qdd / Kp)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e6",
+          "value": 0.01,
+          "note": "joint 6 tracking error during the move stays under 0.01 rad (the controller has no inertia feedforward, so the error is about M qdd / Kp)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "the compliant joints keep every state integral (no W201), the chain is connected, frame-consistent and unit-clean, and the consistent-deflection start initialises"
+        }
+      ]
+    }
+  }
+}

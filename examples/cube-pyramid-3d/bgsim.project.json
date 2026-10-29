@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "cube-pyramid-3d",
+  "models": [
+    "sequence-contact",
+    "edge-contact",
+    "edge-switched"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

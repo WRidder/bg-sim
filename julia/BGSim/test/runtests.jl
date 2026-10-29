@@ -262,6 +262,20 @@ include("test_mech_planar.jl")
 # Work package J-MB8: the spatial vector primitives and pose integration (Phase C).
 include("test_spatial_slice.jl")
 
+# Work package J-MB9: the spatial body and joint composites (Phase C).
+include("test_mech_spatial.jl")
+
+# Work package J-MB13: compliant plane contact (ContactSurface, ContactPoint).
+include("test_contact.jl")
+
+# Work package J-MB14: SwitchedPivot3D, the impact map and its numeric projection (needs the
+# test_contact.jl rig helpers).
+include("test_switched_joint.jl")
+
+# Work packages J-MB11/J-MB12: electric and current-controlled drives and their golden tests.
+include("test_drives.jl")
+include("test_loader.jl")
+
 # Milestone M2 scaffolding: each WP creates exactly one of these files, and the M2 gate
 # replaces these guards with plain includes (the same pattern DEC-5 used for M1).
 for entry in ("test_events.jl", "test_discrete.jl", "test_units_model.jl",

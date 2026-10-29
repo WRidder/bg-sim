@@ -13,7 +13,7 @@
 module Mech
 
 using StaticArrays
-using LinearAlgebra: norm, isposdef, Symmetric, det, Transpose, Adjoint, Diagonal
+using LinearAlgebra: norm, isposdef, Symmetric, det, Transpose, Adjoint, Diagonal, dot, I
 import Base: exp, log, inv, *, +, -, size, getindex
 
 export Screw, Twist, Wrench, SE2, SE3, Quat, CoAdjoint,
@@ -21,11 +21,14 @@ export Screw, Twist, Wrench, SE2, SE3, Quat, CoAdjoint,
     spatial_inertia, planar_inertia, validate_inertia, inertia_entry,
     screw, revolute_screw, prismatic_screw, joint_basis,
     quat_exp, quat_log, quat_from_rotation, quat_to_matrix, quat_rotate,
-    normalise, chart, pose
+    normalise, chart, pose,
+    pivot_inertia, impact_projection, impact_projection_complement, kinetic_energy,
+    switched_modes, switched_basis
 
 include("lie.jl")
 include("quat.jl")
 include("se2.jl")
 include("se3.jl")
+include("impulse.jl")
 
 end # module Mech

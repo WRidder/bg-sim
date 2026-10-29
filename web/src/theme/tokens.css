@@ -67,8 +67,11 @@
   --domain-translation: #5fc08a; /* plan: #2E9E5B */
   --domain-rotation: #a08cf8; /* plan: #7A5AF8 */
   --domain-hydraulic: #45c4de; /* plan: #0EA5C6 */
-  --domain-planar: #b5988d; /* plan: #8D6E63 */
-  --domain-spatial: #878ceb; /* plan: #4B53C9, indigo */
+  /* Planar and Spatial are one physical domain, mechanics; 2D vs 3D is shown
+     by the stroke count and the letter's superscript, not by colour. */
+  --domain-mechanics: #b5988d; /* plan: #8D6E63 */
+  --domain-planar: var(--domain-mechanics);
+  --domain-spatial: var(--domain-mechanics);
   --domain-generic: #9aa5b4; /* plan: #6B7280, drawn dashed */
   --domain-generic-dash: 4 3;
 
@@ -124,8 +127,9 @@
   --domain-translation: #2e9e5b;
   --domain-rotation: #7a5af8;
   --domain-hydraulic: #0ea5c6;
-  --domain-planar: #8d6e63;
-  --domain-spatial: #4b53c9;
+  --domain-mechanics: #8d6e63;
+  --domain-planar: var(--domain-mechanics);
+  --domain-spatial: var(--domain-mechanics);
   --domain-generic: #6b7280;
 
   --signal-real: var(--color-text);

@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 import catalogJson from "../../contracts/fixtures/catalog/valid/catalog.min.json";
 import type { Catalog } from "../src/contracts/catalog";
-import { BlockIcon, hasIcon, JunctionGlyph, svgIconIds } from "../src/editor/icons";
+import { BlockIcon, hasIcon, isLetterIcon, JunctionGlyph, svgIconIds } from "../src/editor/icons";
 
 const catalog = catalogJson as unknown as Catalog;
 
@@ -35,7 +35,7 @@ describe("block icons", () => {
   it("covers every non-bond-graph icon with an explicit SVG glyph", () => {
     const ids = new Set(svgIconIds());
     for (const block of catalog.blocks) {
-      if (!block.icon.startsWith("bg-")) {
+      if (!isLetterIcon(block.icon)) {
         expect(ids.has(block.icon), block.icon).toBe(true);
       }
     }

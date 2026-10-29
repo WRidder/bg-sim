@@ -168,7 +168,7 @@
         },
         "position": {
           "x": 1060,
-          "y": 180
+          "y": 50
         },
         "rotation": 0,
         "flipX": false,
@@ -191,7 +191,7 @@
         },
         "position": {
           "x": 1060,
-          "y": 320
+          "y": 170
         },
         "rotation": 0,
         "flipX": false,
@@ -235,9 +235,9 @@
         },
         "position": {
           "x": 860,
-          "y": 440
+          "y": 400
         },
-        "rotation": 0,
+        "rotation": 270,
         "flipX": false,
         "params": {},
         "constants": {},
@@ -255,9 +255,9 @@
         },
         "position": {
           "x": 1260,
-          "y": 440
+          "y": 400
         },
-        "rotation": 0,
+        "rotation": 270,
         "flipX": false,
         "params": {},
         "constants": {},
@@ -424,8 +424,17 @@
           "node": "n8",
           "port": "a"
         },
-        "route": [],
-        "label": "flexible rod"
+        "route": [
+          {
+            "x": 830,
+            "y": 250
+          },
+          {
+            "x": 830,
+            "y": 80
+          }
+        ],
+        "label": null
       },
       {
         "id": "c9",
@@ -438,7 +447,16 @@
           "node": "n10",
           "port": "a"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1210,
+            "y": 80
+          },
+          {
+            "x": 1210,
+            "y": 250
+          }
+        ],
         "label": null
       },
       {
@@ -452,7 +470,16 @@
           "node": "n9",
           "port": "a"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 830,
+            "y": 250
+          },
+          {
+            "x": 830,
+            "y": 200
+          }
+        ],
         "label": null
       },
       {
@@ -466,7 +493,16 @@
           "node": "n10",
           "port": "a"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1210,
+            "y": 200
+          },
+          {
+            "x": 1210,
+            "y": 250
+          }
+        ],
         "label": null
       },
       {
@@ -508,7 +544,24 @@
           "node": "n10",
           "port": "a"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1400,
+            "y": 250
+          },
+          {
+            "x": 1400,
+            "y": 20
+          },
+          {
+            "x": 1210,
+            "y": 20
+          },
+          {
+            "x": 1210,
+            "y": 250
+          }
+        ],
         "label": null
       },
       {
@@ -522,7 +575,16 @@
           "node": "n11",
           "port": "a"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1490,
+            "y": 340
+          },
+          {
+            "x": 1290,
+            "y": 340
+          }
+        ],
         "label": null
       },
       {

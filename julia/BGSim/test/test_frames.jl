@@ -966,10 +966,177 @@ end
         end
     end
 
-    @testset "two instances with the same frame name are the same frame (v1)" begin
-        # D-MB5 v1 limitation: frames are compared by unqualified name, so two different
-        # bodies that both name their local frame `body` are accepted. Distinct names per
-        # body are the discipline until typed frame objects land.
+    # -----------------------------------------------------------------------------------
+    # FIX-MB-6: face-scoped frame identity (option 1)
+    # -----------------------------------------------------------------------------------
+
+    _ref(r) = Dict{String,Any}("ref" => r)
+    _e007s(result) = [d for d in result.diagnostics if d.code == "E007"]
+
+    @testset "FIX-MB-6: a direct bond between two RigidBody2D faces is one E007" begin
+        direct = _model(
+            "DirectBodies2D";
+            nodes = Any[
+                _node("n1", "Body1", _ref("stdlib:planar/RigidBody2D")),
+                _node("n2", "Body2", _ref("stdlib:planar/RigidBody2D")),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        result = check(direct)
+        es = _e007s(result)
+        @test length(es) == 1
+        d = only(es)
+        @test d.connection == "c1"
+        @test Set([d.path, d.related[1].path]) == Set(["Body1", "Body2"])
+        @test occursin("Body1/body", d.message) && occursin("Body2/body", d.message)
+        @test occursin("different instances", d.message)
+        @test occursin("joint", d.hint) && occursin("FixedTransform", d.hint)
+        # The editor badge keeps the display-qualified shape.
+        @test result.frames["c1"] in ("Body1/body", "Body2/body")
+
+        # The same bodies through a frame-neutral pass-through or a FixedJoint2D are legal.
+        for (bridge, ports) in (
+            (_inline(_pass_block("Planar", nothing, nothing)), ("a", "b")),
+            (_ref("stdlib:planar/FixedJoint2D"), ("parent", "child")),
+        )
+            bridged = _model(
+                "BridgedBodies2D";
+                nodes = Any[
+                    _node("n1", "Body1", _ref("stdlib:planar/RigidBody2D")),
+                    _node("n2", "Body2", _ref("stdlib:planar/RigidBody2D")),
+                    _node("n3", "Bridge", bridge),
+                ],
+                connections = Any[
+                    _conn("c1", "bond", "n1", "p", "n3", ports[1]),
+                    _conn("c2", "bond", "n3", ports[2], "n2", "p"),
+                ],
+            )
+            @test isempty(_e007s(check(bridged)))
+        end
+    end
+
+    @testset "FIX-MB-6: a direct bond between two RigidBody3D faces is one E007" begin
+        direct = _model(
+            "DirectBodies3D";
+            nodes = Any[
+                _node("n1", "Body1", _ref("stdlib:spatial/RigidBody3D")),
+                _node("n2", "Body2", _ref("stdlib:spatial/RigidBody3D")),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        es = _e007s(check(direct))
+        @test length(es) == 1
+        @test Set([only(es).path, only(es).related[1].path]) == Set(["Body1", "Body2"])
+        @test occursin("Body1/body", only(es).message)
+
+        bridged = _model(
+            "BridgedBodies3D";
+            nodes = Any[
+                _node("n1", "Body1", _ref("stdlib:spatial/RigidBody3D")),
+                _node("n2", "Body2", _ref("stdlib:spatial/RigidBody3D")),
+                _node("n3", "Joint", _inline(_pass_block("Spatial", nothing, nothing))),
+            ],
+            connections = Any[
+                _conn("c1", "bond", "n1", "p", "n3", "a"),
+                _conn("c2", "bond", "n3", "b", "n2", "p"),
+            ],
+        )
+        @test isempty(_e007s(check(bridged)))
+    end
+
+    @testset "FIX-MB-6: world is global, a transform adopts the body face, interiors are clean" begin
+        # Ground(world) -> FixedTransform2D(world->body) -> Body, twice. Every legal chain
+        # keeps working and the composite interiors (I, Coriolis and Gravity all declare
+        # `body`) report nothing.
+        chain = _model(
+            "TwoBodiesOnWorld";
+            nodes = Any[
+                _node("n1", "G1", _ref("stdlib:multibond/GroundPlanar")),
+                _node("n2", "G2", _ref("stdlib:multibond/GroundPlanar")),
+                _node("n3", "T1", _ref("stdlib:multibond/FixedTransform2D")),
+                _node("n4", "T2", _ref("stdlib:multibond/FixedTransform2D")),
+                _node("n5", "Body1", _ref("stdlib:planar/RigidBody2D")),
+                _node("n6", "Body2", _ref("stdlib:planar/RigidBody2D")),
+            ],
+            connections = Any[
+                _conn("c1", "bond", "n1", "p", "n3", "a"),
+                _conn("c2", "bond", "n3", "b", "n5", "p"),
+                _conn("c3", "bond", "n2", "p", "n4", "a"),
+                _conn("c4", "bond", "n4", "b", "n6", "p"),
+            ],
+        )
+        result = check(chain)
+        @test isempty(_e007s(result))
+        @test result.frames["c2"] == "T1/body"
+        @test result.frames["c4"] == "T2/body"
+        @test result.frames["c1"] == "T1/world"
+
+        # `world` faces of two different subsystems are the same global frame.
+        sub(frame) = Dict{String,Any}(
+            "ports" => Any[Dict{String,Any}(
+                "name" => "p", "kind" => "power", "domain" => "Planar",
+                "size" => Any[3], "frame" => frame, "node" => "s1", "port" => "p",
+            )],
+            "diagram" => _diagram(
+                Any[_node("s1", "Sink", _inline(_sink_block("Planar", frame)))],
+                Any[],
+            ),
+        )
+        worlds = _model(
+            "WorldFaces";
+            nodes = Any[
+                _node("n1", "A", Dict{String,Any}("subsystem" => sub("world"))),
+                _node("n2", "B", Dict{String,Any}("subsystem" => sub("world"))),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        @test isempty(_e007s(check(worlds)))
+    end
+
+    @testset "FIX-MB-6: model-JSON subsystem faces are scoped by instance" begin
+        face = Dict{String,Any}(
+            "name" => "p", "kind" => "power", "domain" => "Planar",
+            "size" => Any[3], "frame" => "body", "node" => "s1", "port" => "p",
+        )
+        sub = Dict{String,Any}(
+            "ports" => Any[face],
+            "diagram" => _diagram(
+                Any[_node("s1", "Sink", _inline(_sink_block("Planar", "body")))],
+                Any[],
+            ),
+        )
+        direct = _model(
+            "SubsystemFaces";
+            nodes = Any[
+                _node("n1", "Arm1", Dict{String,Any}("subsystem" => sub)),
+                _node("n2", "Arm2", Dict{String,Any}("subsystem" => sub)),
+            ],
+            connections = Any[_conn("c1", "bond", "n1", "p", "n2", "p")],
+        )
+        es = _e007s(check(direct))
+        @test length(es) == 1
+        @test Set([only(es).path, only(es).related[1].path]) == Set(["Arm1", "Arm2"])
+        @test only(es).connection == "c1"
+
+        bridged = _model(
+            "SubsystemFacesBridged";
+            nodes = Any[
+                _node("n1", "Arm1", Dict{String,Any}("subsystem" => sub)),
+                _node("n2", "Arm2", Dict{String,Any}("subsystem" => sub)),
+                _node("n3", "Joint", _inline(_pass_block("Planar", nothing, nothing))),
+            ],
+            connections = Any[
+                _conn("c1", "bond", "n1", "p", "n3", "a"),
+                _conn("c2", "bond", "n3", "b", "n2", "p"),
+            ],
+        )
+        @test isempty(_e007s(check(bridged)))
+    end
+
+    @testset "two plain ports with the same frame name are one frame (residual limit)" begin
+        # FIX-MB-6 residual limitation: only composite/subsystem faces are instance-scoped.
+        # Two primitive (non-face) ports that both name their frame `body` are still the
+        # same frame by name and are accepted.
         model = _model(
             "SameFrameName";
             nodes = Any[
@@ -1056,7 +1223,7 @@ end
             joinpath(_MODEL_VALID, "model.frame-bridge.json")))
         mount = mdf.diagram.nodes[3]
         arm = mdf.diagram.nodes[4]
-        @test [sp.frame for sp in mount.subsystem_ports] == ["world", "arm"]
+        @test [sp.frame for sp in mount.subsystem_ports] == ["world", nothing]
         @test [sp.frame for sp in arm.subsystem_ports] == ["arm"]
         @test mount.subsystem_ports[1].effort_units == ["N*m", "N", "N"]
         @test mount.subsystem_ports[1].flow_units == ["rad/s", "m/s", "m/s"]

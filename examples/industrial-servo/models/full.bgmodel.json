@@ -12,8 +12,8 @@
           "ref": "stdlib:bondgraph/MSe"
         },
         "position": {
-          "x": 60,
-          "y": 120.0
+          "x": 160,
+          "y": 380.0
         },
         "rotation": 0,
         "flipX": false,
@@ -35,7 +35,7 @@
         },
         "position": {
           "x": 240,
-          "y": 220.0
+          "y": 380.0
         },
         "rotation": 0,
         "flipX": false,
@@ -54,8 +54,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 240,
-          "y": 80.0
+          "x": 180,
+          "y": 310.0
         },
         "rotation": 0,
         "flipX": false,
@@ -76,8 +76,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 240,
-          "y": 360.0
+          "x": 300,
+          "y": 310.0
         },
         "rotation": 0,
         "flipX": false,
@@ -98,8 +98,8 @@
           "ref": "project:FlowSensor"
         },
         "position": {
-          "x": 420,
-          "y": 360.0
+          "x": 410,
+          "y": 370.0
         },
         "rotation": 0,
         "flipX": false,
@@ -118,8 +118,8 @@
           "ref": "stdlib:bondgraph/MGY"
         },
         "position": {
-          "x": 420,
-          "y": 220.0
+          "x": 240,
+          "y": 510.0
         },
         "rotation": 0,
         "flipX": false,
@@ -138,8 +138,8 @@
           "ref": "stdlib:bondgraph/MSe"
         },
         "position": {
-          "x": 60,
-          "y": 520.0
+          "x": 20,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -160,8 +160,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 620,
-          "y": 420.0
+          "x": 240,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -180,8 +180,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 620,
-          "y": 300.0
+          "x": 110,
+          "y": 720.0
         },
         "rotation": 0,
         "flipX": false,
@@ -202,8 +202,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 620,
-          "y": 540.0
+          "x": 370,
+          "y": 720.0
         },
         "rotation": 0,
         "flipX": false,
@@ -224,8 +224,8 @@
           "ref": "project:FlowSensor"
         },
         "position": {
-          "x": 780,
-          "y": 540.0
+          "x": 410,
+          "y": 630.0
         },
         "rotation": 0,
         "flipX": false,
@@ -244,8 +244,8 @@
           "ref": "stdlib:bondgraph/MSe"
         },
         "position": {
-          "x": 620,
-          "y": 180.0
+          "x": 420,
+          "y": 570.0
         },
         "rotation": 0,
         "flipX": false,
@@ -266,8 +266,8 @@
           "ref": "project:FlowSensor"
         },
         "position": {
-          "x": 960,
-          "y": 420.0
+          "x": 840,
+          "y": 510.0
         },
         "rotation": 0,
         "flipX": false,
@@ -286,8 +286,8 @@
           "ref": "stdlib:bondgraph/MSf"
         },
         "position": {
-          "x": 780,
-          "y": 420.0
+          "x": 560,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -308,8 +308,8 @@
           "ref": "stdlib:bondgraph/GY"
         },
         "position": {
-          "x": 960,
-          "y": 300.0
+          "x": 680,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -330,8 +330,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 1140,
-          "y": 300.0
+          "x": 850,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -350,8 +350,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 1140,
-          "y": 160.0
+          "x": 790,
+          "y": 720.0
         },
         "rotation": 0,
         "flipX": false,
@@ -372,8 +372,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 1140,
-          "y": 440.0
+          "x": 860,
+          "y": 720.0
         },
         "rotation": 0,
         "flipX": false,
@@ -394,8 +394,8 @@
           "ref": "stdlib:continuous/Integrator"
         },
         "position": {
-          "x": 1320,
-          "y": 500.0
+          "x": 1000,
+          "y": 510.0
         },
         "rotation": 0,
         "flipX": false,
@@ -416,8 +416,8 @@
           "ref": "stdlib:bondgraph/TF"
         },
         "position": {
-          "x": 1320,
-          "y": 300.0
+          "x": 970,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -438,8 +438,8 @@
           "junction": "0"
         },
         "position": {
-          "x": 1500,
-          "y": 300.0
+          "x": 1090,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -458,8 +458,8 @@
           "ref": "stdlib:bondgraph/TF"
         },
         "position": {
-          "x": 1680,
-          "y": 300.0
+          "x": 1250,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -480,8 +480,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 1500,
-          "y": 120.0
+          "x": 1090,
+          "y": 740.0
         },
         "rotation": 0,
         "flipX": false,
@@ -500,8 +500,8 @@
           "ref": "stdlib:bondgraph/C"
         },
         "position": {
-          "x": 1320,
-          "y": 120.0
+          "x": 960,
+          "y": 840.0
         },
         "rotation": 0,
         "flipX": false,
@@ -522,8 +522,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 1680,
-          "y": 120.0
+          "x": 1220,
+          "y": 840.0
         },
         "rotation": 0,
         "flipX": false,
@@ -544,8 +544,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 1860,
-          "y": 300.0
+          "x": 1370,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -564,8 +564,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 1860,
-          "y": 160.0
+          "x": 1310,
+          "y": 720.0
         },
         "rotation": 0,
         "flipX": false,
@@ -586,8 +586,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 1860,
-          "y": 440.0
+          "x": 1380,
+          "y": 720.0
         },
         "rotation": 0,
         "flipX": false,
@@ -608,8 +608,8 @@
           "ref": "project:FlowSensor"
         },
         "position": {
-          "x": 2040,
-          "y": 300.0
+          "x": 1360,
+          "y": 510.0
         },
         "rotation": 0,
         "flipX": false,
@@ -628,8 +628,8 @@
           "ref": "stdlib:bondgraph/MSe"
         },
         "position": {
-          "x": 2040,
-          "y": 460.0
+          "x": 1490,
+          "y": 640.0
         },
         "rotation": 0,
         "flipX": false,
@@ -650,8 +650,8 @@
           "ref": "stdlib:sources/Step"
         },
         "position": {
-          "x": 1140,
-          "y": 620.0
+          "x": 1480,
+          "y": 770.0
         },
         "rotation": 0,
         "flipX": false,
@@ -674,8 +674,8 @@
           "ref": "stdlib:discrete/Quantizer"
         },
         "position": {
-          "x": 1320,
-          "y": 620.0
+          "x": 1140,
+          "y": 510.0
         },
         "rotation": 0,
         "flipX": false,
@@ -698,8 +698,8 @@
           "ref": "project:SpeedEstimator"
         },
         "position": {
-          "x": 1500,
-          "y": 700.0
+          "x": 1320,
+          "y": 430.0
         },
         "rotation": 0,
         "flipX": false,
@@ -722,8 +722,8 @@
           "ref": "project:EncoderMonitor"
         },
         "position": {
-          "x": 1500,
-          "y": 580.0
+          "x": 1140,
+          "y": 370.0
         },
         "rotation": 0,
         "flipX": false,
@@ -744,8 +744,8 @@
           "ref": "stdlib:sources/Constant"
         },
         "position": {
-          "x": 1320,
-          "y": 820.0
+          "x": 1160,
+          "y": 90.0
         },
         "rotation": 0,
         "flipX": false,
@@ -766,8 +766,8 @@
           "ref": "stdlib:sources/Step"
         },
         "position": {
-          "x": 1320,
-          "y": 940.0
+          "x": 1160,
+          "y": 170.0
         },
         "rotation": 0,
         "flipX": false,
@@ -790,8 +790,8 @@
           "ref": "stdlib:sources/Step"
         },
         "position": {
-          "x": 1500,
-          "y": 940.0
+          "x": 1300,
+          "y": 30.0
         },
         "rotation": 0,
         "flipX": false,
@@ -814,8 +814,8 @@
           "ref": "project:ServoPositionLoop"
         },
         "position": {
-          "x": 1700,
-          "y": 820.0
+          "x": 1000,
+          "y": 120.0
         },
         "rotation": 0,
         "flipX": false,
@@ -839,8 +839,8 @@
           "ref": "stdlib:discrete/DiscreteTF"
         },
         "position": {
-          "x": 1700,
-          "y": 620.0
+          "x": 900,
+          "y": 250.0
         },
         "rotation": 0,
         "flipX": false,
@@ -864,8 +864,8 @@
           "ref": "project:ServoSpeedLoop"
         },
         "position": {
-          "x": 1900,
-          "y": 820.0
+          "x": 840,
+          "y": 120.0
         },
         "rotation": 0,
         "flipX": false,
@@ -890,8 +890,8 @@
           "ref": "project:ServoCurrentLoop"
         },
         "position": {
-          "x": 2100,
-          "y": 820.0
+          "x": 490,
+          "y": 120.0
         },
         "rotation": 0,
         "flipX": false,
@@ -923,8 +923,8 @@
           "ref": "stdlib:discrete/UnitDelay"
         },
         "position": {
-          "x": 2280,
-          "y": 700.0
+          "x": 300,
+          "y": 160.0
         },
         "rotation": 0,
         "flipX": false,
@@ -945,8 +945,8 @@
           "ref": "stdlib:discrete/UnitDelay"
         },
         "position": {
-          "x": 2280,
-          "y": 820.0
+          "x": 300,
+          "y": 80.0
         },
         "rotation": 0,
         "flipX": false,
@@ -967,8 +967,8 @@
           "ref": "stdlib:continuous/Gain"
         },
         "position": {
-          "x": 2280,
-          "y": 940.0
+          "x": 160,
+          "y": 20.0
         },
         "rotation": 0,
         "flipX": false,
@@ -989,8 +989,8 @@
           "ref": "project:PwmInverter"
         },
         "position": {
-          "x": 2460,
-          "y": 700.0
+          "x": 160,
+          "y": 120.0
         },
         "rotation": 0,
         "flipX": false,
@@ -1016,8 +1016,8 @@
           "ref": "stdlib:continuous/Gain"
         },
         "position": {
-          "x": 420,
-          "y": 100.0
+          "x": 370,
+          "y": 500.0
         },
         "rotation": 0,
         "flipX": false,
@@ -1038,8 +1038,8 @@
           "ref": "project:PhaseCurrent"
         },
         "position": {
-          "x": 960,
-          "y": 620.0
+          "x": 590,
+          "y": 370.0
         },
         "rotation": 0,
         "flipX": false,
@@ -1207,7 +1207,20 @@
           "node": "n12",
           "port": "u"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 930,
+            "y": 540
+          },
+          {
+            "x": 930,
+            "y": 590
+          },
+          {
+            "x": 490,
+            "y": 590
+          }
+        ],
         "label": "back-EMF speed"
       },
       {
@@ -1485,7 +1498,16 @@
           "node": "n33",
           "port": "theta"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1260,
+            "y": 540
+          },
+          {
+            "x": 1260,
+            "y": 460
+          }
+        ],
         "label": "24-bit angle"
       },
       {
@@ -1499,7 +1521,16 @@
           "node": "n34",
           "port": "theta"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1100,
+            "y": 540
+          },
+          {
+            "x": 1100,
+            "y": 400
+          }
+        ],
         "label": "true angle"
       },
       {
@@ -1513,7 +1544,20 @@
           "node": "n34",
           "port": "theta_q"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1260,
+            "y": 540
+          },
+          {
+            "x": 1260,
+            "y": 470
+          },
+          {
+            "x": 1170,
+            "y": 470
+          }
+        ],
         "label": "quantized angle"
       },
       {
@@ -1541,7 +1585,20 @@
           "node": "n38",
           "port": "pos_meas"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1260,
+            "y": 540
+          },
+          {
+            "x": 1260,
+            "y": 300
+          },
+          {
+            "x": 1030,
+            "y": 300
+          }
+        ],
         "label": "position feedback"
       },
       {
@@ -1569,7 +1626,16 @@
           "node": "n38",
           "port": "mode"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1080,
+            "y": 60
+          },
+          {
+            "x": 1080,
+            "y": 140
+          }
+        ],
         "label": "speed mode -> position mode at 0.4 s"
       },
       {
@@ -1583,7 +1649,16 @@
           "node": "n39",
           "port": "u"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1400,
+            "y": 460
+          },
+          {
+            "x": 1400,
+            "y": 280
+          }
+        ],
         "label": "motor speed"
       },
       {
@@ -1611,7 +1686,12 @@
           "node": "n40",
           "port": "w_meas"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 870,
+            "y": 280
+          }
+        ],
         "label": "speed feedback"
       },
       {
@@ -1653,7 +1733,16 @@
           "node": "n41",
           "port": "id"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 510,
+            "y": 400
+          },
+          {
+            "x": 510,
+            "y": 230
+          }
+        ],
         "label": "i_d"
       },
       {
@@ -1667,7 +1756,16 @@
           "node": "n41",
           "port": "iq"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 530,
+            "y": 660
+          },
+          {
+            "x": 530,
+            "y": 230
+          }
+        ],
         "label": "i_q"
       },
       {
@@ -1681,7 +1779,24 @@
           "node": "n41",
           "port": "w_m"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1400,
+            "y": 460
+          },
+          {
+            "x": 1400,
+            "y": 360
+          },
+          {
+            "x": 580,
+            "y": 360
+          },
+          {
+            "x": 580,
+            "y": 200
+          }
+        ],
         "label": "speed for decoupling"
       },
       {
@@ -1723,7 +1838,32 @@
           "node": "n44",
           "port": "u"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1260,
+            "y": 540
+          },
+          {
+            "x": 1260,
+            "y": 500
+          },
+          {
+            "x": 1470,
+            "y": 500
+          },
+          {
+            "x": 1470,
+            "y": 20
+          },
+          {
+            "x": 20,
+            "y": 20
+          },
+          {
+            "x": 20,
+            "y": 50
+          }
+        ],
         "label": "electrical angle"
       },
       {
@@ -1737,7 +1877,16 @@
           "node": "n45",
           "port": "vd"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 260,
+            "y": 190
+          },
+          {
+            "x": 260,
+            "y": 160
+          }
+        ],
         "label": null
       },
       {
@@ -1751,7 +1900,16 @@
           "node": "n45",
           "port": "vq"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 260,
+            "y": 110
+          },
+          {
+            "x": 260,
+            "y": 140
+          }
+        ],
         "label": null
       },
       {
@@ -1779,7 +1937,20 @@
           "node": "n45",
           "port": "id"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 510,
+            "y": 400
+          },
+          {
+            "x": 510,
+            "y": 300
+          },
+          {
+            "x": 180,
+            "y": 300
+          }
+        ],
         "label": null
       },
       {
@@ -1793,7 +1964,20 @@
           "node": "n45",
           "port": "iq"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 530,
+            "y": 660
+          },
+          {
+            "x": 530,
+            "y": 290
+          },
+          {
+            "x": 200,
+            "y": 290
+          }
+        ],
         "label": null
       },
       {
@@ -1807,7 +1991,20 @@
           "node": "n01",
           "port": "u"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 120,
+            "y": 170
+          },
+          {
+            "x": 120,
+            "y": 330
+          },
+          {
+            "x": 180,
+            "y": 330
+          }
+        ],
         "label": "v_d applied"
       },
       {
@@ -1821,7 +2018,12 @@
           "node": "n07",
           "port": "u"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 40,
+            "y": 130
+          }
+        ],
         "label": "v_q applied"
       },
       {
@@ -1835,7 +2037,24 @@
           "node": "n46",
           "port": "u"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 930,
+            "y": 540
+          },
+          {
+            "x": 930,
+            "y": 490
+          },
+          {
+            "x": 470,
+            "y": 490
+          },
+          {
+            "x": 470,
+            "y": 530
+          }
+        ],
         "label": "w_e L_q"
       },
       {
@@ -1877,7 +2096,16 @@
           "node": "n47",
           "port": "iq"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 530,
+            "y": 660
+          },
+          {
+            "x": 530,
+            "y": 420
+          }
+        ],
         "label": null
       }
     ],
@@ -1888,9 +2116,9 @@
         "kind": "text",
         "text": "Bond-graph plant (D28): Vd/Vq MSe -> d/q 1-junctions (R_s, L_d/L_q) with the MGY cross-coupling and the q-axis MSe back-EMF -> GY k_t to the mechanical 1-junction. Two-mass: MJ -TF(1)-> S0(0) <-TF(1)- LJ, with C=1/k_c and R=c_c in parallel on the 1-junction KJ fed by S0. Switching: PwmInverter at 100 kHz on a 4 kHz carrier, 2 us dead time, 1.2 V drop. Sensor: 24-bit encoder, 1 kHz differenced speed estimate. Loop rates 8/1/0.2 kHz; one 8 kHz computation delay.",
         "x": 40,
-        "y": 1050,
-        "w": 2600,
-        "h": 90
+        "y": 960,
+        "w": 1500,
+        "h": 100
       }
     ]
   },

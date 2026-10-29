@@ -11,10 +11,7 @@
         "block": {
           "ref": "stdlib:multibond/GroundPlanar"
         },
-        "position": {
-          "x": 80,
-          "y": 300
-        },
+        "position": { "x": 80, "y": 340 },
         "rotation": 0,
         "flipX": false,
         "params": {},
@@ -31,10 +28,7 @@
         "block": {
           "ref": "stdlib:planar/Revolute2DCompliant"
         },
-        "position": {
-          "x": 260,
-          "y": 300
-        },
+        "position": { "x": 260, "y": 340 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -62,10 +56,7 @@
         "block": {
           "ref": "stdlib:planar/FixedJoint2D"
         },
-        "position": {
-          "x": 440,
-          "y": 300
-        },
+        "position": { "x": 440, "y": 340 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -86,10 +77,7 @@
         "block": {
           "junction": "1"
         },
-        "position": {
-          "x": 620,
-          "y": 300
-        },
+        "position": { "x": 620, "y": 340 },
         "rotation": 0,
         "flipX": false,
         "params": {},
@@ -106,10 +94,7 @@
         "block": {
           "ref": "stdlib:planar/RigidBody2D"
         },
-        "position": {
-          "x": 800,
-          "y": 220
-        },
+        "position": { "x": 620, "y": 480 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -130,10 +115,7 @@
         "block": {
           "ref": "stdlib:planar/Revolute2DCompliant"
         },
-        "position": {
-          "x": 800,
-          "y": 420
-        },
+        "position": { "x": 800, "y": 340 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -161,10 +143,7 @@
         "block": {
           "ref": "stdlib:planar/FixedJoint2D"
         },
-        "position": {
-          "x": 980,
-          "y": 420
-        },
+        "position": { "x": 980, "y": 340 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -185,10 +164,7 @@
         "block": {
           "ref": "stdlib:planar/RigidBody2D"
         },
-        "position": {
-          "x": 1160,
-          "y": 420
-        },
+        "position": { "x": 1160, "y": 340 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -209,10 +185,7 @@
         "block": {
           "ref": "stdlib:planar/JointPose2D"
         },
-        "position": {
-          "x": 260,
-          "y": 560
-        },
+        "position": { "x": 340, "y": 480 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -233,10 +206,7 @@
         "block": {
           "ref": "stdlib:planar/LocalPose2D"
         },
-        "position": {
-          "x": 260,
-          "y": 680
-        },
+        "position": { "x": 340, "y": 600 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -257,10 +227,7 @@
         "block": {
           "ref": "stdlib:multibond/ComposePose2D"
         },
-        "position": {
-          "x": 440,
-          "y": 560
-        },
+        "position": { "x": 520, "y": 600 },
         "rotation": 0,
         "flipX": false,
         "params": {},
@@ -277,10 +244,7 @@
         "block": {
           "ref": "stdlib:planar/JointPose2D"
         },
-        "position": {
-          "x": 620,
-          "y": 560
-        },
+        "position": { "x": 880, "y": 480 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -301,10 +265,7 @@
         "block": {
           "ref": "stdlib:multibond/ComposePose2D"
         },
-        "position": {
-          "x": 800,
-          "y": 560
-        },
+        "position": { "x": 1000, "y": 600 },
         "rotation": 0,
         "flipX": false,
         "params": {},
@@ -321,10 +282,7 @@
         "block": {
           "ref": "stdlib:planar/LocalPose2D"
         },
-        "position": {
-          "x": 800,
-          "y": 680
-        },
+        "position": { "x": 1060, "y": 480 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -345,10 +303,7 @@
         "block": {
           "ref": "stdlib:multibond/ComposePose2D"
         },
-        "position": {
-          "x": 980,
-          "y": 560
-        },
+        "position": { "x": 1160, "y": 600 },
         "rotation": 0,
         "flipX": false,
         "params": {},
@@ -365,10 +320,7 @@
         "block": {
           "ref": "stdlib:planar/LocalPose2D"
         },
-        "position": {
-          "x": 980,
-          "y": 680
-        },
+        "position": { "x": 1000, "y": 780 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -389,10 +341,7 @@
         "block": {
           "ref": "stdlib:multibond/ComposePose2D"
         },
-        "position": {
-          "x": 1160,
-          "y": 680
-        },
+        "position": { "x": 1160, "y": 740 },
         "rotation": 0,
         "flipX": false,
         "params": {},
@@ -409,10 +358,7 @@
         "block": {
           "ref": "stdlib:bondgraph/MSe"
         },
-        "position": {
-          "x": 260,
-          "y": 120
-        },
+        "position": { "x": 260, "y": 200 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -431,10 +377,7 @@
         "block": {
           "ref": "stdlib:bondgraph/MSe"
         },
-        "position": {
-          "x": 800,
-          "y": 120
-        },
+        "position": { "x": 800, "y": 200 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -453,10 +396,7 @@
         "block": {
           "ref": "stdlib:sources/Step"
         },
-        "position": {
-          "x": 80,
-          "y": 680
-        },
+        "position": { "x": 80, "y": 60 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -477,10 +417,7 @@
         "block": {
           "ref": "stdlib:sources/Step"
         },
-        "position": {
-          "x": 80,
-          "y": 800
-        },
+        "position": { "x": 80, "y": 140 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -501,10 +438,7 @@
         "block": {
           "ref": "project:ArmPD"
         },
-        "position": {
-          "x": 440,
-          "y": 860
-        },
+        "position": { "x": 530, "y": 100 },
         "rotation": 0,
         "flipX": false,
         "params": {},

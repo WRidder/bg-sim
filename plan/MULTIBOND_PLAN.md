@@ -324,7 +324,7 @@ a `Translation` drive; a generic joint takes the domain from the screw. Never ha
 | WP | Lane | Depends | Owns | Deliverable / acceptance |
 | --- | --- | --- | --- | --- |
 | **J-MB8** | J | J-MB5, J-MB3 | `stdlib/multibond/`, `src/mech/` | Spatial primitives: `I` (diagonal `J` + `m`, `P` output), `C`, `R`, `Se`, `Sf`, `TF`/`GY` (6x6), `MTF`/`MGY` (6x6), `Coriolis` (`P` input), `Gravity`, `Ground`, `ExternalWrench`, `FixedTransform3D`, `JointTransform3D`, `ComposePose3D`, `Df/De`, `PoseIntegrator3D` (floating base only: quaternion + position + `ManifoldProjection`). Tests: free body momentum/energy, Dzhanibekov, floating-base screw motion, quaternion norm, fixed-base pose composition. |
-| **J-MB9** | J | J-MB8 | `stdlib/spatial/` | Composites: `RigidBody3D`, revolute/prismatic/helical/cylindrical/universal/spherical/planar/free joints, compliance/friction/limits variants. One scalar port per axis with the **domain from the screw** (Rotation for revolute, Translation for prismatic; helical spans both, so expose the coordinate domain and keep pitch in `S`). Basis `S` from axis/point/pitch; product-of-exponentials pose; typed variants + a generic `JointBasis` for advanced users. Tests: `S` columns, joint torque/rate, spherical pose storage, universal q-dependence, prismatic drive units. |
+| **J-MB9** | J | J-MB8 | `stdlib/spatial/` | Composites: `RigidBody3D`, revolute/prismatic/helical/cylindrical/universal/spherical/planar/free joints, compliance/friction/limits variants. One scalar port per axis with the **domain from the screw** (Rotation for revolute, Translation for prismatic; helical spans both, so expose the coordinate domain and keep pitch in `S`). Fixed-structure typed joints only, axis = local z of the joint frame (placed with `FixedTransform3D`), compliance on the complement; the generic `JointBasis` was dropped (user correction 2026-10-29, `plan/wps/M3-remaining-orchestration.md`). Tests: `S` columns, joint torque/rate, spherical pose storage, universal q-dependence, prismatic drive units. |
 | **J-MB10** | J | J-MB9 | `test/golden/spatial/` | Six-axis arm: inverse dynamics computed from the model (rigid variant or high stiffness; validated against an independent recursive Newton-Euler helper on random `(q, qdot, qddot)`); forward dynamics to integrator order; gravity compensation; spherical pendulum; floating base. |
 | **W-MB2** | W | W-MB1, C-MB1 | `web/src/editor/` | 3-stroke renderer (section 7); Spatial colour/letter/legend; a 3D graph screenshot; `data-multibond-strokes="3"`; no mixed Planar/Spatial bond island (E102). |
 | **X-MB3** | X | J-MB10, W-MB2 | `examples/robot-arm-3d/` | 6-axis arm scene/model; run/plot; 3-stroke screenshot; existing-backend checks. |
@@ -380,9 +380,10 @@ sensor taps) stay thin single lines, as in the reference image.
 - **Joins:** miter at each waypoint using the average of the adjacent segment normals;
   clamp the miter length to avoid spikes. At the endpoints use the terminal segment normal.
 - **Stroke:** `strokeWidth = 1.5`, the domain colour, `fill = none`.
-- **Half arrow:** one half-arrow per stroke at the `to` end, each offset with its stroke.
-  The arrowhead size is slightly smaller than the scalar one (`8 px`) so the bundle stays
-  readable.
+- **Half arrow:** **one** half arrow for the whole bundle at the `to` end (multibond notation),
+  the scalar size (`10 px`), on the outer stroke the barb turns to, so the barb stays clear of
+  the other strokes. (Revised 2026-10-29 at the user's request; one arrow per stroke read as
+  extra strokes.)
 - **Causal stroke:** **one** perpendicular bar across the whole bundle at the effort-in end,
   spanning `2 * (bundleHalf + 3)`. Do not draw one bar per stroke; that reads as several
   bonds.

@@ -105,7 +105,10 @@ class IoDecl(BaseModel):
         ...,
         description="Array shape; empty for a scalar. Sizes are the default expansion of the block's structural constants.",
     )
-    unit: str | None
+    unit: str | None = Field(
+        ...,
+        description="One unit for the whole declaration. For a vector or matrix signal it applies to every element; null means unit-free or mixed (a wrench, twist or pose chart whose elements have different units). The catalog carries no per-element signal units: the per-component units of a multibond quantity live on the power port, in the domain 'components' arrays (D-MB1, C-MB2).",
+    )
 
 
 class DomainName(Enum):
@@ -793,7 +796,7 @@ class PoseBinding(BaseModel):
     property: Literal['pose']
     signal: list[BindingSignal] = Field(
         ...,
-        description='Position and unit quaternion; the count is checked by the viewer (E304).',
+        description="Exactly 7 signals, in this fixed order: quaternion then position, (q_w, q_x, q_y, q_z, x, y, z), the same chart as the model's spatial pose Vec{7} (PoseIntegrator3D, ComposePose3D, JointTransform3D). The scalar quaternion part q_w comes first and the position is in metres in the world frame. The count is checked by the viewer (E304); the viewer must not reorder or infer the order from signal names.",
         min_length=1,
     )
     gain: float | None = None

@@ -15,8 +15,9 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
 * evaluates every check kind (``final_value``, ``cursor_value``, ``max_abs``,
   ``max_abs_le``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
-  ``invariant``, ``planar_fk``, ``compare_signals``, ``rms_difference``,
-  ``step_response``, ``ripple``, ``fft_peak`` and ``no_diagnostics``), prints one
+  ``invariant``, ``planar_fk``, ``energy_ledger``, ``compare_signals``,
+  ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak`` and
+  ``no_diagnostics``), prints one
   line per check and exits non-zero when any check fails.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
@@ -185,6 +186,25 @@ generalised to a chain.  ``springs`` lists the ``kt``/``d`` pairs whose strain
                  {"kt": 1e8, "d": ["Joint2/dout[1]", "Joint2/dout[2]"]}],
      "swing": 18.8768265045, "tol": 1e-6}
 
+``energy_ledger`` (X-MB6, additive) is the port-power ledger of ``tools/energy_balance.py``
+over a run: every element's ``integral p.P dt`` (trapezoid on the solver grid),
+grouped into storage / dissipation / source / mixed / conversion / measure by the
+block types of the model, and the Tellegen residual ``sum_all integral P`` (zero to
+round-off, because every bond's two ports carry opposite power).  With ``stored``
+(a list of stored-energy terms) or ``"stored_from": "energy"`` (the first ``energy``
+check of the same model entry, so the budget is written once) or ``stored_spec``
+(an inline ``energy`` check object, for a model whose own energy check is a bound
+form or absent) it also checks the
+storage balance ``E(t) - E(0) - integral P_storage`` and the supply balance
+``E(t) - E(0) + integral (P_source + P_dissipation + P_mixed)`` at every sample.
+All deviations are normalised by the ledger's throughput ``1/2 sum integral |P| dt``
+and compared with ``tol`` (default ``1e-6``).  ``overrides`` maps instance-path
+globs to classes (first match wins), ``class_totals`` pins a class total
+(``{"source": {"value": -6.1242, "abs": 1e-3}}``)::
+
+    {"kind": "energy_ledger", "tol": 1e-9, "stored_from": "energy",
+     "class_totals": {"source": {"value": 0.0, "abs": 1e-12}}}
+
 ``invariant`` checks that a linear combination of recorded signals is constant:
 ``terms`` is a list of ``{"signal", "coeff"}``, the invariant is
 ``H = sum(coeff * signal)`` over ``[from_t, to_t]`` and the check passes when
@@ -239,8 +259,9 @@ EXAMPLES = ROOT / "examples"
 
 #: A cold worker may precompile; plan 5.12 budgets about a minute.
 START_TIMEOUT = 300.0
-#: One example run is seconds; this only catches a hung worker.
-RUN_TIMEOUT = 180.0
+#: Most example runs take seconds; the M3 spatial models (72+ states) compile and run in
+#: minutes under load. This only catches a hung worker.
+RUN_TIMEOUT = 600.0
 
 
 # --------------------------------------------------------------------------- backend
@@ -342,6 +363,11 @@ class Run:
     manifest: dict[str, Any]
     time: np.ndarray
     signals: dict[str, np.ndarray]
+    #: The model document that was run and its project folder (the ledger of
+    #: ``energy_ledger`` classifies elements from them).
+    model_document: dict[str, Any] | None = None
+    project_dir: Path | None = None
+    run_dir: Path | None = None
 
 
 def _get_json(client: httpx.Client, path: str) -> Any:
@@ -386,6 +412,7 @@ def _run_model(
     project_dir: Path,
     model: str,
     settings: Any = None,
+    run_timeout: float = RUN_TIMEOUT,
 ) -> Run:
     """Open the model, run it and read its columns once it is done."""
     model_document = _get_json(client, f"/api/projects/{project}/models/{model}")
@@ -401,7 +428,7 @@ def _run_model(
         )
     run_id = str(response.json()["runId"])
 
-    deadline = time.monotonic() + RUN_TIMEOUT
+    deadline = time.monotonic() + run_timeout
     manifest: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         manifest = _get_json(client, f"/api/runs/{run_id}")
@@ -416,7 +443,16 @@ def _run_model(
         raise RuntimeError(f"run {run_id} ended {status!r}: {json.dumps(diagnostics)[:800]}")
 
     time_column, signals = _read_columns(project_dir / "runs" / run_id, manifest)
-    return Run(model=model, run_id=run_id, manifest=manifest, time=time_column, signals=signals)
+    return Run(
+        model=model,
+        run_id=run_id,
+        manifest=manifest,
+        time=time_column,
+        signals=signals,
+        model_document=model_document,
+        project_dir=project_dir,
+        run_dir=project_dir / "runs" / run_id,
+    )
 
 
 # --------------------------------------------------------------------------- checks
@@ -1121,6 +1157,97 @@ def _invariant_check(
     report.check(ratio <= tolerance, label, detail)
 
 
+def _energy_ledger_check(
+    report: Report,
+    project: str,
+    model: str,
+    run: Run,
+    check: dict[str, Any],
+    siblings: list[Any],
+) -> None:
+    """The port-power ledger of the run (``tools/energy_balance.py``, X-MB6)."""
+    label = f"{project}/{model} energy_ledger"
+    sys.path.insert(0, str(ROOT / "tools"))
+    try:
+        import energy_balance as ledger_tool
+    finally:
+        sys.path.remove(str(ROOT / "tools"))
+    try:
+        tolerance = float(check.get("tol", 1e-6))
+        stored = check.get("stored")
+        if check.get("stored_from") == "energy":
+            source = next(
+                (c for c in siblings if isinstance(c, dict) and c.get("kind") == "energy"), None
+            )
+            if source is None:
+                raise ValueError("'stored_from' needs an 'energy' check in the same model entry")
+            stored = ledger_tool.terms_from_energy_spec(source)
+        elif "stored_from" in check:
+            raise ValueError("'stored_from' must be \"energy\"")
+        elif "stored_spec" in check:
+            if not isinstance(check["stored_spec"], dict):
+                raise TypeError("'stored_spec' must be an energy-check object")
+            stored = ledger_tool.terms_from_energy_spec(check["stored_spec"])
+        overrides = check.get("overrides") or {}
+        if not isinstance(overrides, dict):
+            raise TypeError("'overrides' must be an object")
+        from_t = float(check["from_t"]) if "from_t" in check else None
+        to_t = float(check["to_t"]) if "to_t" in check else None
+        totals = check.get("class_totals") or {}
+        if not isinstance(totals, dict):
+            raise TypeError("'class_totals' must be an object")
+        if tolerance <= 0.0:
+            raise ValueError("'tol' must be positive")
+        data = ledger_tool.RunData(run.manifest, run.time, run.signals, run.run_dir)
+        result = ledger_tool.balance_run(
+            data,
+            tol=tolerance,
+            stored=stored,
+            overrides=overrides,
+            model=run.model_document,
+            project_dir=run.project_dir,
+            from_t=from_t,
+            to_t=to_t,
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        report.check(False, label, f"malformed energy_ledger check: {exc}")
+        return
+    problems: list[str] = []
+    for name, spec in totals.items():
+        if name not in result["classes"]:
+            problems.append(f"unknown class {name!r}")
+            continue
+        measured = result["classes"][name]["integral"]
+        allowed = float(spec.get("abs", 0.0)) + float(spec.get("rtol", 0.0)) * abs(float(spec["value"]))
+        if abs(measured - float(spec["value"])) > allowed:
+            problems.append(
+                f"{name} total {measured:.9g} J, expected {float(spec['value']):.9g} (+-{allowed:.3g})"
+            )
+    parts = ", ".join(
+        f"{name} {result['classes'][name]['integral']:.6g} J"
+        for name in ledger_tool.CLASSES
+        if result["classes"][name]["count"]
+    )
+    detail = (
+        f"over [{result['window'][0]:g}, {result['window'][1]:g}] {len(result['elements'])} elements "
+        f"({parts}); Tellegen residual {result['residual']:.3g} J (running max "
+        f"{result['residual_running_max']:.3g} J, throughput {result['throughput']:.6g} J, "
+        f"rel {result['residual_rel']:.3g})"
+    )
+    if result["stored"] is not None:
+        s = result["stored"]
+        detail += (
+            f"; Delta E {s['delta_E']:.6g} J, storage balance rel {s['storage_balance_rel']:.3g}, "
+            f"supply balance rel {s['supply_balance_rel']:.3g}"
+        )
+    if result["unclassified"]:
+        detail += f"; unclassified {', '.join(result['unclassified'])}"
+    detail += f" (tol {tolerance:g})"
+    if problems:
+        detail += "; FAIL: " + "; ".join(problems)
+    report.check(result["ok"] and not problems, label, detail)
+
+
 def _planar_fk_check(
     report: Report, project: str, model: str, run: Run, check: dict[str, Any]
 ) -> None:
@@ -1655,6 +1782,8 @@ def _check_model_checks(
             _invariant_check(report, project, model, run, check)
         elif kind == "planar_fk":
             _planar_fk_check(report, project, model, run, check)
+        elif kind == "energy_ledger":
+            _energy_ledger_check(report, project, model, run, check, checks)
         elif kind == "compare_signals":
             _compare_signals_check(report, project, model, run, check)
         elif kind == "step_response":
@@ -1704,11 +1833,13 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
             checks = entry.get("checks", []) if isinstance(entry, dict) else entry
             source = model
             settings: Any = None
+            run_timeout = RUN_TIMEOUT
             if isinstance(entry, dict):
                 source = str(entry.get("model") or model)
                 settings = entry.get("settings")
+                run_timeout = float(entry.get("run_timeout", RUN_TIMEOUT))
             try:
-                run = _run_model(client, project, project_dir, source, settings)
+                run = _run_model(client, project, project_dir, source, settings, run_timeout)
             except (RuntimeError, httpx.HTTPError, KeyError, ValueError) as exc:
                 report.check(False, f"{project}/{model} run", str(exc))
                 continue
@@ -1728,6 +1859,19 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
 
 def main() -> int:
     expected_files = sorted(EXAMPLES.glob("*/expected.json"))
+    # `--only name[,name...]` restricts the run to those example directories (for
+    # iterating on one example); the gate always runs every example.
+    if "--only" in sys.argv[1:]:
+        index = sys.argv.index("--only")
+        if index + 1 >= len(sys.argv):
+            print("--only needs a comma-separated list of example names")
+            return 2
+        wanted = {name.strip() for name in sys.argv[index + 1].split(",") if name.strip()}
+        unknown = wanted - {path.parent.name for path in expected_files}
+        if unknown:
+            print(f"--only: unknown example(s): {', '.join(sorted(unknown))}")
+            return 2
+        expected_files = [path for path in expected_files if path.parent.name in wanted]
     print(f"example checks: {len(expected_files)} expected.json file(s) under {EXAMPLES}")
     if not expected_files:
         print("no example checks found")

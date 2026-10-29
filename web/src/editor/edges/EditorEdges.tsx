@@ -114,12 +114,28 @@ function anchors(data: EditorEdgeData): { a: Anchor; b: Anchor } {
   return { a: data.sourceAnchor, b: data.targetAnchor };
 }
 
+/**
+ * The label sits above the middle of the longest straight run of the drawn
+ * path, so a routed connection keeps its label on the wire and an author can
+ * steer it with the route vertices.
+ */
 function labelPosition(data: EditorEdgeData): Point {
   const { a, b } = anchors(data);
   if (data.wireHub !== null) {
     return data.wireHub;
   }
-  const middle = midpoint(a.point, b.point);
+  const points = [a.point, ...data.route, b.point];
+  let middle = midpoint(a.point, b.point);
+  let longest = -1;
+  for (let index = 1; index < points.length; index += 1) {
+    const from = points[index - 1];
+    const to = points[index];
+    const length = Math.hypot(to.x - from.x, to.y - from.y);
+    if (length > longest) {
+      longest = length;
+      middle = midpoint(from, to);
+    }
+  }
   return { x: middle.x, y: middle.y - 10 };
 }
 
@@ -426,7 +442,7 @@ function RouteHandles({
 
 /**
  * A multibond bond (plan 7.1/7.2, D-MB12): two parallel strokes for Planar,
- * three for Spatial, one half arrow per stroke at the `to` end, **one** causal
+ * three for Spatial, **one** half arrow for the bundle at the `to` end, **one** causal
  * bar across the bundle, one selection halo around the centre path and one
  * frame pill above the label.
  */
@@ -460,6 +476,13 @@ export function MultiBond({
         : b.point;
   const barTo = strokeAt === "to" ? b.point : a.point;
   const bar = strokeAt === null ? null : bundleCausalBar(barFrom, barTo, bundleHalf);
+  // One half arrow for the whole bundle (multibond notation), on the outer
+  // stroke whose side the barb points to, so the barb stays clear of the
+  // other strokes. `halfArrowPath` turns right of travel, which is the
+  // negative offset side of `offsetPolyline`.
+  const arrowStroke = offsetPolyline(points, offsets[0] ?? 0);
+  const arrowTip = arrowStroke[arrowStroke.length - 1] ?? b.point;
+  const arrowFrom = arrowStroke[arrowStroke.length - 2] ?? a.point;
   const ariaLabel = `${data.domain} multibond, ${multibondComponents(data.domain)} components, ${strokes} strokes`;
 
   return (
@@ -495,35 +518,30 @@ export function MultiBond({
           fill: "none",
         }}
       />
-      {offsets.map((offset, index) => {
-        const offsetPoints = offsetPolyline(points, offset);
-        const tip = offsetPoints[offsetPoints.length - 1] ?? b.point;
-        const from = offsetPoints[offsetPoints.length - 2] ?? a.point;
-        return (
-          <g key={`${id}-stroke-${index}`} className="editor-edge__multibond">
-            <path
-              className="editor-edge__multibond-stroke"
-              data-stroke-index={index}
-              data-offset={offset}
-              d={multibondPath(points, offset)}
-              stroke={colour}
-              strokeWidth={MULTIBOND_STROKE_WIDTH}
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              className="editor-edge__half-arrow editor-edge__multibond-arrow"
-              data-stroke-index={index}
-              d={halfArrowPath(from, tip, MULTIBOND_ARROW_SIZE)}
-              stroke={colour}
-              strokeWidth={MULTIBOND_STROKE_WIDTH}
-              fill="none"
-              strokeLinecap="round"
-            />
-          </g>
-        );
-      })}
+      <g className="editor-edge__multibond">
+        {offsets.map((offset, index) => (
+          <path
+            key={`${id}-stroke-${index}`}
+            className="editor-edge__multibond-stroke"
+            data-stroke-index={index}
+            data-offset={offset}
+            d={multibondPath(points, offset)}
+            stroke={colour}
+            strokeWidth={MULTIBOND_STROKE_WIDTH}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+        <path
+          className="editor-edge__half-arrow editor-edge__multibond-arrow"
+          d={halfArrowPath(arrowFrom, arrowTip, MULTIBOND_ARROW_SIZE)}
+          stroke={colour}
+          strokeWidth={MULTIBOND_STROKE_WIDTH}
+          fill="none"
+          strokeLinecap="round"
+        />
+      </g>
       {bar !== null ? (
         <line
           className="editor-edge__causal editor-edge__causal--bundle"

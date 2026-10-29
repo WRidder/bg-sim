@@ -112,6 +112,18 @@
             "W206"
           ],
           "note": "the 10 s energy run reports the same clean diagnostics"
+        },
+        {
+          "kind": "energy_ledger",
+          "stored_from": "energy",
+          "tol": 1e-10,
+          "class_totals": {
+            "source": {
+              "value": 0.0,
+              "abs": 1e-12
+            }
+          },
+          "note": "X-MB6 port-power ledger over the 10 s run (tools/energy_balance.py): storage (Body, Gravity, Joint) and sources (zero-torque Drive, Ground) classified from the model; Tellegen sum of every integral p.P dt at round-off, and the stored energy E of the energy check above closes the storage and supply balances at every sample; measured storage/supply balance 2.6e-13 and Tellegen 2e-18 of the 6.9e-3 J throughput, tol 1e-10"
         }
       ]
     }

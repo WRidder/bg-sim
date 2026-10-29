@@ -37,6 +37,9 @@ const GROUPS = (
     (dir = "converters", name = "Converters and sensors", icon_prefix = "conv"),
     (dir = "multibond", name = "Multibond", icon_prefix = "mb"),
     (dir = "planar", name = "Planar mechanics", icon_prefix = "pl"),
+    (dir = "drives", name = "Drives", icon_prefix = "drv"),
+    (dir = "spatial", name = "Spatial mechanics", icon_prefix = "sp"),
+    (dir = "contact", name = "Contact", icon_prefix = "ct"),
 )
 
 """    GROUP_BY_DIR
@@ -772,6 +775,113 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:planar/RigidBody2D" => (
         description = "Planar rigid body (m, J) with one planar port: the flat graph is the 1-junction with IPlanar, CoriolisPlanar fed by IPlanar/Pm and GravityPlanar fed by the world pose (plan 5.2).",
         icon = "pl-rigid-body-2d",
+    ),
+    # J-MB11: the drives (composites of the electrical/rotation primitives).
+    "stdlib:drives/CurrentControlledDrive" => (
+        description = "Current/torque-controlled drive: a signal current reference gives the motor torque k_t*i_ref through an ideal current source and a gyrator, with rotor inertia and viscous loss; taps for current, speed, torque and power.",
+        icon = "drv-current-drive",
+    ),
+    "stdlib:drives/ElectricDrive" => (
+        description = "Voltage-input DC drive (armature R_w and L, torque constant k_t, rotor inertia J_m, viscous loss) with a rotation shaft port for a joint drive axis; taps for current, speed, torque and electrical and mechanical power.",
+        icon = "drv-electric-drive",
+    ),
+    "stdlib:drives/Gearbox" => (
+        description = "Ideal efficiency-free gearbox on IdealGear: the motor side turns N times as fast as the output, so a motor-side inertia J_m reflects to N^2*J_m; taps for both rates, the output torque and the transmitted power.",
+        icon = "drv-gearbox",
+    ),
+    "stdlib:drives/ReactionWheel" => (
+        description = "Voltage-driven reaction wheel: a DC motor between a free housing port and an absolute wheel inertia, with the reaction -tau on the housing and the back-EMF on the rate relative to the housing; taps for current, wheel rate and momentum, torque and power.",
+        icon = "drv-reaction-wheel",
+    ),
+    # J-MB9: the spatial composites (one port per body, one scalar port per joint axis, the
+    # domain from the screw, and the compliant-pivot formulation as the default; D-MB4,
+    # D-MB7, D-MB8).
+    "stdlib:spatial/Cylindrical3D" => (
+        description = "Spatial cylindrical joint (n = 2): rotation about and translation along the local z of the joint frame, a Rotation and a Translation drive, compliant rotations about x/y and translations along x/y with the child-frame transport.",
+        icon = "sp-cylindrical-3d",
+    ),
+    "stdlib:spatial/Free3D" => (
+        description = "Free 6-DOF spatial joint (n = 6, no complement): three Rotation and three Translation ports carrying the relative body-frame twist components; the relative pose is an integrated quaternion plus position (no Euler angles); GroundSpatial -> Free3D -> RigidBody3D is a floating body.",
+        icon = "sp-free-3d",
+    ),
+    "stdlib:spatial/Helical3D" => (
+        description = "Spatial helical (screw) joint (n = 1): angle about the local z of the joint frame with the pitch h inside the screw, a Rotation drive, compliant rotations about x/y and the three translations (the axial one is the deflection from the pitch coupling).",
+        icon = "sp-helical-3d",
+    ),
+    "stdlib:spatial/LocalPose3D" => (
+        description = "Constant SE(3) local pose (quaternion + position): the link mounting pose composed by ComposePose3D in a fixed-base chain.",
+        icon = "sp-local-pose-3d",
+    ),
+    "stdlib:spatial/Planar3D" => (
+        description = "Spatial planar joint (n = 3): rotation about the local z of the joint frame and translations along the joint x/y (one Rotation + two Translation drives), compliant in the normal translation and the rotations about x/y.",
+        icon = "sp-planar-3d",
+    ),
+    "stdlib:spatial/Prismatic3D" => (
+        description = "Spatial prismatic joint (n = 1): translation along the local z of the joint frame with a Translation drive (N, m/s), a fully held compliant rotation and two compliant perpendicular translations; the axial rate carries the deflection lever; q/qdot/pose outputs.",
+        icon = "sp-prismatic-3d",
+    ),
+    "stdlib:spatial/Prismatic3DCompliant" => (
+        description = "Compliant spatial prismatic joint: Prismatic3D plus a longitudinal spring-damper on the joint displacement.",
+        icon = "sp-prismatic-3d-compliant",
+    ),
+    "stdlib:spatial/Prismatic3DFriction" => (
+        description = "Spatial prismatic joint with viscous plus regularised-Coulomb friction on the joint rate; dissipative by construction.",
+        icon = "sp-prismatic-3d-friction",
+    ),
+    "stdlib:spatial/Prismatic3DLimit" => (
+        description = "Spatial prismatic joint with smooth one-sided spring-damper limits on the joint displacement (lower, upper, kL, bL).",
+        icon = "sp-prismatic-3d-limit",
+    ),
+    "stdlib:spatial/Revolute3D" => (
+        description = "Spatial revolute joint (n = 1): exact rotation about the local z of the joint frame with a Rotation drive; the two held rotations and three pivot translations are compliant with the child-frame transport; q/qdot/pose outputs.",
+        icon = "sp-revolute-3d",
+    ),
+    "stdlib:spatial/Revolute3DCompliant" => (
+        description = "Compliant spatial revolute joint: Revolute3D plus a torsional spring-damper on the joint angle (k, b, qrest).",
+        icon = "sp-revolute-3d-compliant",
+    ),
+    "stdlib:spatial/Revolute3DFriction" => (
+        description = "Spatial revolute joint with viscous plus regularised-Coulomb friction on the joint rate (stick/slip); dissipative by construction.",
+        icon = "sp-revolute-3d-friction",
+    ),
+    "stdlib:spatial/Revolute3DLimit" => (
+        description = "Spatial revolute joint with smooth one-sided spring-damper limits on the joint angle (lower, upper, kL, bL).",
+        icon = "sp-revolute-3d-limit",
+    ),
+    "stdlib:spatial/RigidBody3D" => (
+        description = "Spatial rigid body (diagonal J, m) with one spatial port: the flat graph is the 1-junction with ISpatial, CoriolisSpatial fed by ISpatial/Pm and GravitySpatial fed by the world pose (plan 5.2).",
+        icon = "sp-rigid-body-3d",
+    ),
+    "stdlib:spatial/Spherical3D" => (
+        description = "Spatial spherical (ball) joint (n = 3): three Rotation ports carrying the relative body-frame angular velocity, the relative orientation stored as an integrated unit quaternion (no gimbal lock), and a compliant pivot translation.",
+        icon = "sp-spherical-3d",
+    ),
+    "stdlib:spatial/Universal3D" => (
+        description = "Spatial universal joint (n = 2): two Rotation ports, the first about the local z of the joint frame and the second about the x axis of the already rotated frame (the second axis follows the first rotation), with a compliant third rotation and pivot.",
+        icon = "sp-universal-3d",
+    ),
+    # J-MB13: compliant plane contact (smooth Hunt-Crossley normal force, two scalar tangential
+    # regularised Coulomb dampers).
+    "stdlib:contact/ContactPoint" => (
+        description = "Compliant point contact on a spatial port: smooth Hunt-Crossley normal force from the penetration into a ContactSurface plane, two scalar regularised Coulomb dampers along the plane tangents, and the point-frame wrench [0; R^T F] on the port.",
+        icon = "ct-contact-point",
+    ),
+    "stdlib:contact/ContactSurface" => (
+        description = "Rigid contact plane (world point and normal, tangent heading) as a signal source for any number of ContactPoint elements.",
+        icon = "ct-contact-surface",
+    ),
+    # J-MB14: mode-switched pivot and the impact map.
+    "stdlib:contact/ImpactBody3D" => (
+        description = "Spatial rigid body whose port is the pivot frame of a SwitchedPivot3D (CoM offset r mounted inside): ImpactInertia3D, CoriolisSpatial and GravitySpatial on the CoM 1-junction, with the impact map applied to the body momentum at a mode switch.",
+        icon = "ct-impact-body-3d",
+    ),
+    "stdlib:contact/ImpactInertia3D" => (
+        description = "ISpatial with the impact map: when the switch guard crosses 0.5 upward the momentum is replaced by V+ = S (S^T M S)^-1 S^T M V- for the new pivot mode (corner, edge or face) with M the inertia at the pivot.",
+        icon = "ct-impact-inertia-3d",
+    ),
+    "stdlib:contact/SwitchedPivot3D" => (
+        description = "Mode-switched spatial pivot between ground and one body (free, corner, edge about the local z axis, face): the relative pose is integrated as in Free3D and the held directions are pulled back to an anchor by a mask-multiplied stiff spring-damper, re-anchored at each switch.",
+        icon = "ct-switched-pivot-3d",
     ),
 )
 

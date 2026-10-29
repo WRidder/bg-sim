@@ -97,4 +97,11 @@ export spatial_inertia, planar_inertia, validate_inertia
 export screw, revolute_screw, prismatic_screw, joint_basis
 export quat_exp, quat_log, quat_from_rotation, quat_to_matrix, quat_rotate, normalise
 
+
+# Work package J-MB15: joint-chain records, loader, lumpInto, inverse dynamics.
+using .Library: LinkRecord, JointRecord, JointChain, joint_pose, load_chain, chain_model, lumpInto,
+    inverse_dynamics, gravity_compensation
+export LinkRecord, JointRecord, JointChain, joint_pose, load_chain, chain_model, lumpInto,
+    inverse_dynamics, gravity_compensation
+
 end # module BGSim

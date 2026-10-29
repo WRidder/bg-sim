@@ -103,7 +103,7 @@
         "id": "n8",
         "name": "Gravity",
         "block": { "ref": "stdlib:multibond/GravityPlanar" },
-        "position": { "x": 980, "y": 340 },
+        "position": { "x": 980, "y": 500 },
         "rotation": 0,
         "flipX": false,
         "params": { "m": "1.0", "g0": "9.81" },
@@ -115,7 +115,7 @@
         "id": "n9",
         "name": "Coriolis",
         "block": { "ref": "stdlib:multibond/CoriolisPlanar" },
-        "position": { "x": 980, "y": 500 },
+        "position": { "x": 980, "y": 340 },
         "rotation": 0,
         "flipX": false,
         "params": {},
@@ -155,7 +155,7 @@
             "source": "@block CoMOffsetPose2D begin\n    @parameters begin\n        x::Real = 0.0, [unit = \"m\", description = \"CoM x in the joint frame\"]\n        y::Real = 0.0, [unit = \"m\", description = \"CoM y in the joint frame\"]\n        theta::Real = 0.0, [unit = \"rad\", description = \"Body frame angle in the joint frame\"]\n    end\n    @outputs g::Vec{3}\n    @equations begin\n        g[1] ~ theta\n        g[2] ~ x\n        g[3] ~ y\n    end\nend\n"
           }
         },
-        "position": { "x": 440, "y": 620 },
+        "position": { "x": 440, "y": 500 },
         "rotation": 0,
         "flipX": false,
         "params": {
@@ -171,7 +171,7 @@
         "id": "n13",
         "name": "Compose",
         "block": { "ref": "stdlib:multibond/ComposePose2D" },
-        "position": { "x": 620, "y": 620 },
+        "position": { "x": 620, "y": 500 },
         "rotation": 0,
         "flipX": false,
         "params": {},

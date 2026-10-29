@@ -272,8 +272,8 @@
   {
     "code": "E304",
     "severity": "error",
-    "message": "wrong signal count: `pose` needs 7 signals (position and unit quaternion), the binding lists 3",
-    "hint": "add the missing position or quaternion signals",
+    "message": "wrong signal count: `pose` needs 7 signals (quaternion q_w, q_x, q_y, q_z, then position x, y, z), the binding lists 3",
+    "hint": "add the missing quaternion or position signals",
     "path": "link:cart",
     "block": null,
     "scope": null,

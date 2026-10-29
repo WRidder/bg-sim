@@ -412,7 +412,7 @@ test("a Spatial out bond is a three-stroke bundle with one causal bar and three 
     await strokes.nth(2).getAttribute("d"),
   );
   expect(await strokes.nth(0).getAttribute("stroke")).toBe("var(--domain-spatial)");
-  await expect(edge.locator(".editor-edge__multibond-arrow")).toHaveCount(3);
+  await expect(edge.locator(".editor-edge__multibond-arrow")).toHaveCount(1);
 
   const bar = page.getByTestId("causal-stroke-c1");
   await expect(bar).toHaveCount(1);

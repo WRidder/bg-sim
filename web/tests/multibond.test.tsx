@@ -355,8 +355,13 @@ describe("the multibond edge renderer", () => {
     expect(strokes[0]?.getAttribute("stroke-width")).toBe("1.5");
     expect(strokes[0]?.getAttribute("fill")).toBe("none");
 
-    // One half arrow per stroke, one causal bar across the bundle.
-    expect(container.querySelectorAll(".editor-edge__multibond-arrow")).toHaveLength(2);
+    // One half arrow for the bundle, on the outer stroke the barb turns to.
+    const arrows = container.querySelectorAll(".editor-edge__multibond-arrow");
+    expect(arrows).toHaveLength(1);
+    const strokeEnd = /L (-?[\d.]+) (-?[\d.]+)$/.exec(strokes[0]?.getAttribute("d") ?? "");
+    const arrowTip = /^M (-?[\d.]+) (-?[\d.]+)/.exec(arrows[0]?.getAttribute("d") ?? "");
+    expect(strokeEnd).not.toBeNull();
+    expect(arrowTip?.slice(1)).toEqual(strokeEnd?.slice(1));
     const bars = container.querySelectorAll(".editor-edge__causal");
     expect(bars).toHaveLength(1);
     expect(bars[0]?.classList.contains("editor-edge__causal--bundle")).toBe(true);
@@ -403,8 +408,8 @@ describe("the multibond edge renderer", () => {
     expect(strokes[0]?.getAttribute("stroke")).toBe("var(--domain-spatial)");
     expect(strokes[0]?.getAttribute("stroke-width")).toBe("1.5");
 
-    // One half arrow per stroke, one causal bar across all three.
-    expect(container.querySelectorAll(".editor-edge__multibond-arrow")).toHaveLength(3);
+    // One half arrow for the bundle, one causal bar across all three.
+    expect(container.querySelectorAll(".editor-edge__multibond-arrow")).toHaveLength(1);
     const bars = container.querySelectorAll(".editor-edge__causal");
     expect(bars).toHaveLength(1);
     expect(bars[0]?.classList.contains("editor-edge__causal--bundle")).toBe(true);
@@ -521,6 +526,17 @@ describe("the frame badge", () => {
     expect(Number.isFinite(chipY)).toBe(true);
     expect(pillY).toBeLessThan(chipY);
     expect(chipY - pillY).toBeGreaterThanOrEqual(20);
+  });
+
+  it("follows the longest segment of a routed connection", () => {
+    const a = { x: 0, y: 0 };
+    const data = edgeData({ frame: "Arm1/body", label: "p" });
+    data.sourceAnchor = { ...data.sourceAnchor, point: a };
+    data.targetAnchor = { ...data.targetAnchor, point: { x: 40, y: 200 } };
+    data.route = [{ x: 0, y: 40 }, { x: 300, y: 40 }, { x: 300, y: 200 }];
+    const position = frameBadgePosition(data);
+    expect(position.x).toBeCloseTo(150, 12);
+    expect(position.y).toBeCloseTo(40 - 10 - FRAME_BADGE_OFFSET, 12);
   });
 });
 

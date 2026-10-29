@@ -10,6 +10,7 @@ import type { Diagnostic } from "../src/contracts/diagnostic";
 import type { DomainName } from "../src/contracts/catalog";
 import type { Model } from "../src/contracts/model";
 import {
+  applyEdgeDomain,
   collectConnectionMarkers,
   collectNodeMarkers,
   decorateCanvas,
@@ -248,5 +249,25 @@ describe("canvas diagnostics", () => {
     ]);
     expect(connectionMarkers.get("c9")).toMatchObject({ severity: "error", count: 2 });
     expect(connectionMarkers.has("missing")).toBe(false);
+  });
+
+  it("keeps a multibond's hit path invisible when it applies the domain", () => {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.innerHTML = `
+      <g data-testid="edge-c4" data-kind="bond" data-domain="Planar" data-multibond-strokes="2">
+        <path class="react-flow__edge-path" style="stroke: transparent;"></path>
+        <path class="editor-edge__multibond-stroke" stroke="var(--domain-planar)"></path>
+        <path class="editor-edge__multibond-stroke" stroke="var(--domain-planar)"></path>
+        <path class="editor-edge__half-arrow editor-edge__multibond-arrow" stroke="var(--domain-planar)"></path>
+      </g>`;
+    const edge = svg.querySelector('[data-testid="edge-c4"]');
+    expect(edge).not.toBeNull();
+    expect(applyEdgeDomain(edge!, "Planar" as DomainName)).toBe("Planar");
+    // Painting the hit path would draw a third stroke between the two.
+    const hit = edge?.querySelector<SVGPathElement>(".react-flow__edge-path");
+    expect(hit?.style.getPropertyValue("stroke")).toBe("transparent");
+    expect(edge?.querySelector(".editor-edge__half-arrow")?.getAttribute("stroke")).toBe(
+      "var(--domain-planar)",
+    );
   });
 });

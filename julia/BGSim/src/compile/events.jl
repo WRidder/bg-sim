@@ -359,13 +359,13 @@ function _event_if!(env::EventEnv, b::Builder, st::BlockState, stmt::BGSim.IfSta
         push!(conds, cond)
     end
 
-    keys = String[]
+    assigned_keys = String[]
     for branch_env in branch_envs
         for key in branch_env.order
-            key in keys || push!(keys, key)
+            key in assigned_keys || push!(assigned_keys, key)
         end
     end
-    for key in keys
+    for key in assigned_keys
         current = get(env.assigned, key, nothing)
         current === nothing && (current = _name_for_id(st, key))
         current === nothing && continue
@@ -687,7 +687,10 @@ function event_callbacks(flat::Flat.FlatModel, ctx)
                     push!(params_written, target)
                 end
                 push!(affects, target ~ value)
-                ctx.event_values[id] = value
+                # No `ctx.event_values[id] = value`: the flat expressions are already fully
+                # substituted (`_subst_event`), so a raw state read is the PRE-event value even
+                # for a simultaneous vector `reinit(P, [f(P), g(P), ...])`; registering the new
+                # value here would feed it to the later elements of the same event.
             end
             kwargs = (;)
             if !isempty(params_written)

@@ -11,8 +11,8 @@
           "ref": "stdlib:bondgraph/MSe"
         },
         "position": {
-          "x": 40,
-          "y": 200
+          "x": 100,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -34,7 +34,7 @@
         },
         "position": {
           "x": 240,
-          "y": 200
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -53,8 +53,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 240,
-          "y": 60
+          "x": 170,
+          "y": 610
         },
         "rotation": 0,
         "flipX": false,
@@ -75,8 +75,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 240,
-          "y": 340
+          "x": 310,
+          "y": 610
         },
         "rotation": 0,
         "flipX": false,
@@ -97,8 +97,8 @@
           "ref": "project:FlowSensor"
         },
         "position": {
-          "x": 420,
-          "y": 340
+          "x": 240,
+          "y": 370
         },
         "rotation": 0,
         "flipX": false,
@@ -117,8 +117,8 @@
           "ref": "stdlib:bondgraph/GY"
         },
         "position": {
-          "x": 460,
-          "y": 200
+          "x": 360,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -139,8 +139,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 640,
-          "y": 200
+          "x": 480,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -159,8 +159,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 640,
-          "y": 60
+          "x": 410,
+          "y": 610
         },
         "rotation": 0,
         "flipX": false,
@@ -181,8 +181,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 640,
-          "y": 340
+          "x": 550,
+          "y": 610
         },
         "rotation": 0,
         "flipX": false,
@@ -203,8 +203,8 @@
           "ref": "project:FlowSensor"
         },
         "position": {
-          "x": 800,
-          "y": 340
+          "x": 480,
+          "y": 370
         },
         "rotation": 0,
         "flipX": false,
@@ -223,8 +223,8 @@
           "ref": "stdlib:continuous/Integrator"
         },
         "position": {
-          "x": 800,
-          "y": 460
+          "x": 480,
+          "y": 210
         },
         "rotation": 0,
         "flipX": false,
@@ -245,8 +245,8 @@
           "ref": "stdlib:discrete/Quantizer"
         },
         "position": {
-          "x": 800,
-          "y": 580
+          "x": 310,
+          "y": 210
         },
         "rotation": 0,
         "flipX": false,
@@ -269,8 +269,8 @@
           "ref": "stdlib:bondgraph/TF"
         },
         "position": {
-          "x": 880,
-          "y": 200
+          "x": 600,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -291,8 +291,8 @@
           "ref": "stdlib:bondgraph/TF"
         },
         "position": {
-          "x": 1000,
-          "y": 200
+          "x": 720,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -313,8 +313,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 1120,
-          "y": 200
+          "x": 840,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -333,8 +333,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 1120,
-          "y": 60
+          "x": 840,
+          "y": 350
         },
         "rotation": 0,
         "flipX": false,
@@ -355,8 +355,8 @@
           "junction": "0"
         },
         "position": {
-          "x": 1280,
-          "y": 200
+          "x": 960,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -375,8 +375,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 1280,
-          "y": 320
+          "x": 960,
+          "y": 610
         },
         "rotation": 0,
         "flipX": false,
@@ -395,8 +395,8 @@
           "ref": "stdlib:bondgraph/C"
         },
         "position": {
-          "x": 1140,
-          "y": 400
+          "x": 890,
+          "y": 690
         },
         "rotation": 0,
         "flipX": false,
@@ -417,8 +417,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 1420,
-          "y": 400
+          "x": 1030,
+          "y": 690
         },
         "rotation": 0,
         "flipX": false,
@@ -439,8 +439,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 1440,
-          "y": 200
+          "x": 1080,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -459,8 +459,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 1440,
-          "y": 60
+          "x": 1080,
+          "y": 350
         },
         "rotation": 0,
         "flipX": false,
@@ -481,8 +481,8 @@
           "junction": "0"
         },
         "position": {
-          "x": 1600,
-          "y": 200
+          "x": 1200,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -501,8 +501,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 1600,
-          "y": 320
+          "x": 1200,
+          "y": 610
         },
         "rotation": 0,
         "flipX": false,
@@ -521,8 +521,8 @@
           "ref": "stdlib:bondgraph/C"
         },
         "position": {
-          "x": 1460,
-          "y": 400
+          "x": 1130,
+          "y": 690
         },
         "rotation": 0,
         "flipX": false,
@@ -543,8 +543,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 1740,
-          "y": 400
+          "x": 1270,
+          "y": 690
         },
         "rotation": 0,
         "flipX": false,
@@ -565,8 +565,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 1760,
-          "y": 200
+          "x": 1320,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -585,8 +585,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 1760,
-          "y": 60
+          "x": 1320,
+          "y": 350
         },
         "rotation": 0,
         "flipX": false,
@@ -607,8 +607,8 @@
           "junction": "0"
         },
         "position": {
-          "x": 1920,
-          "y": 200
+          "x": 1440,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -627,8 +627,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 1920,
-          "y": 320
+          "x": 1440,
+          "y": 610
         },
         "rotation": 0,
         "flipX": false,
@@ -647,8 +647,8 @@
           "ref": "stdlib:bondgraph/C"
         },
         "position": {
-          "x": 1780,
-          "y": 400
+          "x": 1370,
+          "y": 690
         },
         "rotation": 0,
         "flipX": false,
@@ -669,8 +669,8 @@
           "ref": "stdlib:bondgraph/R"
         },
         "position": {
-          "x": 2060,
-          "y": 400
+          "x": 1510,
+          "y": 690
         },
         "rotation": 0,
         "flipX": false,
@@ -691,8 +691,8 @@
           "junction": "1"
         },
         "position": {
-          "x": 2080,
-          "y": 200
+          "x": 1560,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -711,8 +711,8 @@
           "ref": "stdlib:bondgraph/I"
         },
         "position": {
-          "x": 2080,
-          "y": 60
+          "x": 1560,
+          "y": 350
         },
         "rotation": 0,
         "flipX": false,
@@ -733,8 +733,8 @@
           "ref": "stdlib:bondgraph/MSe"
         },
         "position": {
-          "x": 2080,
-          "y": 320
+          "x": 1680,
+          "y": 490
         },
         "rotation": 0,
         "flipX": false,
@@ -755,8 +755,8 @@
           "ref": "stdlib:sources/Step"
         },
         "position": {
-          "x": 2260,
-          "y": 440
+          "x": 1680,
+          "y": 630
         },
         "rotation": 0,
         "flipX": false,
@@ -779,8 +779,8 @@
           "ref": "stdlib:sources/Step"
         },
         "position": {
-          "x": 980,
-          "y": 760
+          "x": 100,
+          "y": 50
         },
         "rotation": 0,
         "flipX": false,
@@ -803,8 +803,8 @@
           "ref": "project:LQGController"
         },
         "position": {
-          "x": 780,
-          "y": 880
+          "x": 100,
+          "y": 210
         },
         "rotation": 0,
         "flipX": false,
@@ -1327,9 +1327,9 @@
         "kind": "text",
         "text": "Plant (D28, pure bond graph): MSe(V) -> 1-junction (R=1, L=1 mH) -> GY(k=0.1) -> 1-junction (J_m=5e-5, R_d) -> TF(1)·TF(0.1) = a 10:1 ideal gear -> wheel 1 (J1=1e-3) -> three rod segments (C=1/150, R=0.02 each, two 6.7e-5 mid inertias) -> wheel 2 (J2=2e-3) -> load MSe. The two FlowSensors, the kinematic Theta integrator and the 2*pi/4096 encoder are sensors; LQGController is the 1 ms firmware.",
         "x": 40,
-        "y": 1000,
-        "w": 2260,
-        "h": 90
+        "y": 820,
+        "w": 1700,
+        "h": 110
       }
     ]
   },

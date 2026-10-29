@@ -229,6 +229,68 @@ def test_generated_model_rejects_invalid_fixture(schema_name: str, label: str, p
         model.model_validate(_read(path))
 
 
+def _mutate(document: dict, change) -> dict:
+    import copy
+
+    mutated = copy.deepcopy(document)
+    change(mutated)
+    return mutated
+
+
+def _set_domain(document: dict, name: str, key: str, value: object) -> None:
+    next(d for d in document["domains"] if d["name"] == name)[key] = value
+
+
+MULTIBOND_MUTATIONS = {
+    "block dimension 4": lambda d: d["blocks"][0].__setitem__("dimension", 4),
+    "block dimension as a string": lambda d: d["blocks"][0].__setitem__("dimension", "2"),
+    "Spatial size 3": lambda d: _set_domain(d, "Spatial", "size", 3),
+    "Planar size 6": lambda d: _set_domain(d, "Planar", "size", 6),
+    "Planar effort components of length 4": lambda d: next(
+        x for x in d["domains"] if x["name"] == "Planar"
+    )["components"]["effort"].append("N"),
+    "Spatial flow components of length 5": lambda d: next(
+        x for x in d["domains"] if x["name"] == "Spatial"
+    )["components"]["flow"].pop(),
+    "frame as an integer": lambda d: d["blocks"][0]["ports"][0].__setitem__("frame", 3),
+}
+
+
+@pytest.mark.parametrize("label", sorted(MULTIBOND_MUTATIONS))
+def test_multibond_catalog_mutation_is_rejected_by_schema_and_generated_model(label: str) -> None:
+    """C-MB2: the multibond shape rules hold in the schema and in the generated pydantic."""
+    from pydantic import ValidationError
+
+    base = _read(FIXTURE_DIR / "catalog" / "valid" / "catalog.planar.json")
+    VALIDATORS["catalog"].validate(base)
+    mutated = _mutate(base, MULTIBOND_MUTATIONS[label])
+    assert list(VALIDATORS["catalog"].iter_errors(mutated)), f"schema accepted: {label}"
+    with pytest.raises(ValidationError):
+        _generated_models()["catalog"].model_validate(mutated)
+
+
+def test_explicit_null_dimension_is_a_known_pydantic_laxness() -> None:
+    """C-MB2: `dimension` is absent-or-2|3 in the schema; pydantic also takes an explicit null.
+
+    The JSON Schema is authoritative (the Julia worker omits the key for scalar blocks, never
+    sends null). The generated model is typing support, so this laxness is recorded in
+    ADR-MB1 rather than worked around; this test pins both halves of the statement.
+    """
+    base = _read(FIXTURE_DIR / "catalog" / "valid" / "catalog.planar.json")
+    mutated = _mutate(base, lambda d: d["blocks"][0].__setitem__("dimension", None))
+    assert list(VALIDATORS["catalog"].iter_errors(mutated)), "schema must reject a null dimension"
+    _generated_models()["catalog"].model_validate(mutated)
+
+
+def test_bindings_pose_order_is_documented_in_the_schema() -> None:
+    """C-MB2: the pose binding says quaternion first, matching the model's Vec{7} chart."""
+    description = SCHEMAS_DOCS["bindings"]["$defs"]["poseBinding"]["properties"]["signal"][
+        "description"
+    ]
+    assert "(q_w, q_x, q_y, q_z, x, y, z)" in description
+    assert "quaternion then position" in description
+
+
 def test_generated_files_exist() -> None:
     assert GENERATED_PY.exists() and GENERATED_PY.stat().st_size > 0
     for name in SCHEMAS:
@@ -309,7 +371,9 @@ def test_bindings_sample_has_the_spec_examples() -> None:
     bindings = _read(FIXTURE_DIR / "bindings" / "valid" / "bindings.robot.json")["bindings"]
     assert [b["property"] for b in bindings] == ["position", "pose", "scale.z", "color", "visible"]
     pose = next(b for b in bindings if b["property"] == "pose")
-    assert len(pose["signal"]) == 7, "a pose is position plus a unit quaternion"
+    assert len(pose["signal"]) == 7, "a pose is a unit quaternion plus a position"
+    # The model's pose chart is Vec{7} = (q_w, q_x, q_y, q_z, x, y, z): quaternion first.
+    assert [s.rsplit("/", 1)[1] for s in pose["signal"]] == ["qw", "qx", "qy", "qz", "x", "y", "z"]
     assert all(b["target"].split(":")[0] in {"joint", "link", "frame", "visual"} for b in bindings)
 
 

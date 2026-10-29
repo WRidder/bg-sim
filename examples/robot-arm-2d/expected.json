@@ -194,6 +194,84 @@
             "W206"
           ],
           "note": "the compliant pivots keep every state integral (no W201), the chain is connected and unit-clean, the initialisation succeeds and the two reference steps fire once each (no W206)"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 0.0002,
+          "stored_spec": {
+            "g0": 9.81,
+            "bodies": [
+              {
+                "p": [
+                  "Body1/inertia/P[1]",
+                  "Body1/inertia/P[2]",
+                  "Body1/inertia/P[3]"
+                ],
+                "J": 0.02666666666666667,
+                "m": 2.0,
+                "pose": "PoseB1/g[3]",
+                "corrections": [
+                  {
+                    "q": "Joint1/qout",
+                    "d": [
+                      "Joint1/dout[1]",
+                      "Joint1/dout[2]"
+                    ]
+                  }
+                ]
+              },
+              {
+                "p": [
+                  "Body2/inertia/P[1]",
+                  "Body2/inertia/P[2]",
+                  "Body2/inertia/P[3]"
+                ],
+                "J": 0.015,
+                "m": 1.5,
+                "pose": "PoseB2/g[3]",
+                "corrections": [
+                  {
+                    "q": "Joint1/qout",
+                    "d": [
+                      "Joint1/dout[1]",
+                      "Joint1/dout[2]"
+                    ]
+                  },
+                  {
+                    "q": "PoseJ2/g[1]",
+                    "d": [
+                      "Joint2/dout[1]",
+                      "Joint2/dout[2]"
+                    ]
+                  }
+                ]
+              }
+            ],
+            "springs": [
+              {
+                "kt": 100000000.0,
+                "d": [
+                  "Joint1/dout[1]",
+                  "Joint1/dout[2]"
+                ]
+              },
+              {
+                "kt": 100000000.0,
+                "d": [
+                  "Joint2/dout[1]",
+                  "Joint2/dout[2]"
+                ]
+              }
+            ],
+            "kind": "energy"
+          },
+          "class_totals": {
+            "source": {
+              "value": -6.1242,
+              "abs": 0.001
+            }
+          },
+          "note": "X-MB6 port-power ledger of the driven arm: the two joint drives deliver 6.1242 J net (class total of the Drive sources), the arm's E (bodies KE + gravity PE + pivot strain, the arm-free budget) rises by 6.1238 J, and both balances close at every sample to the trapezoid order of the 0.5 ms output grid under the 1 ms PD torque steps; Tellegen at round-off"
         }
       ]
     },
@@ -313,6 +391,18 @@
             "W206"
           ],
           "note": "the torque-free swing reports the same clean diagnostics as the driven model"
+        },
+        {
+          "kind": "energy_ledger",
+          "stored_from": "energy",
+          "tol": 2e-06,
+          "class_totals": {
+            "source": {
+              "value": 0.0,
+              "abs": 1e-06
+            }
+          },
+          "note": "X-MB6 ledger of the free arm: no source delivers energy and the arm-free energy budget closes both balances"
         }
       ]
     }

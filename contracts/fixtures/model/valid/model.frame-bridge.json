@@ -1,5 +1,5 @@
 {
-  "$comment": "A legal frame bridge (D-MB5): inline Ground(world) -> 1-junction -> Mount.a(world). Inside Mount, an inline FixedTransform2D declares a: world and b: arm; Mount.b(arm) -> Arm.p(arm), and Arm's internal Body port is arm. Every bond joins equal named frames; only the transform changes frames, and the subsystem port frames match their internal attachments.",
+  "$comment": "A legal frame bridge (D-MB5): inline Ground(world) -> 1-junction -> Mount.a(world). Inside Mount, an inline FixedTransform2D declares a: world and b: arm; Mount.b is frame-neutral (a transform subsystem adopts the frame of what it joins, FIX-MB-6) and is bonded to Arm.p(arm), whose internal Body port is arm. Subsystem faces are scoped by instance, so a bond between two named faces would be E007; the neutral Mount.b keeps this legal, and only the transform changes frames.",
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "PlanarFrameBridge",
@@ -55,7 +55,6 @@
                 "kind": "power",
                 "domain": "Planar",
                 "size": [3],
-                "frame": "arm",
                 "effortUnits": ["N*m", "N", "N"],
                 "flowUnits": ["rad/s", "m/s", "m/s"],
                 "node": "s1",

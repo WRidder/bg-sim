@@ -254,7 +254,10 @@
           "items": { "type": "integer", "minimum": 1 },
           "description": "Array shape; empty for a scalar. Sizes are the default expansion of the block's structural constants."
         },
-        "unit": { "type": ["string", "null"] }
+        "unit": {
+          "type": ["string", "null"],
+          "description": "One unit for the whole declaration. For a vector or matrix signal it applies to every element; null means unit-free or mixed (a wrench, twist or pose chart whose elements have different units). The catalog carries no per-element signal units: the per-component units of a multibond quantity live on the power port, in the domain 'components' arrays (D-MB1, C-MB2)."
+        }
       },
       "additionalProperties": false
     },

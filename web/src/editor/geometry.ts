@@ -10,6 +10,7 @@
 import type { DomainName, ValueType } from "../contracts/catalog";
 import type { Model, ModelConnection, ModelNode, ModelPoint } from "../contracts/model";
 import type { CatalogIndex } from "../library/catalogIndex";
+import { isLetterIcon } from "./icons/letters";
 import {
   INLINE_ICON,
   SUBSYSTEM_ICON,
@@ -97,7 +98,7 @@ export interface NodeLayout {
 
 /** Bond-graph elements render as their letter, not as a block card (plan 7.3). */
 export function isBondGraph(iface: NodeInterface): boolean {
-  return iface.icon.startsWith("bg-");
+  return isLetterIcon(iface.icon);
 }
 
 /**
@@ -900,8 +901,8 @@ export function midpoint(a: Point, b: Point): Point {
 export const MULTIBOND_GAP = 4.2;
 /** The stroke width of one stroke of a multibond bundle, in px (plan 7.2). */
 export const MULTIBOND_STROKE_WIDTH = 1.5;
-/** The half-arrow size of a multibond stroke: smaller than the scalar 10 px. */
-export const MULTIBOND_ARROW_SIZE = 8;
+/** The size of the single half arrow of a multibond bundle, as for a scalar bond. */
+export const MULTIBOND_ARROW_SIZE = 10;
 /**
  * The longest miter a waypoint may produce, as a multiple of `distance`.
  * A very sharp corner would otherwise shoot the bundle far past the element.

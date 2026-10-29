@@ -13,7 +13,7 @@ import type { DomainName } from "../../contracts/catalog";
 import type { ModelPoint } from "../../contracts/model";
 import type { PortDragState } from "../connectionAnalysis";
 import { JUNCTION_NODE_SIZE, type NodeLayout, type Side } from "../geometry";
-import { BlockIcon } from "../icons";
+import { BlockIcon, BondLetterText, bondLetterFor, dimDescription } from "../icons";
 import type { NodeInterface } from "../nodeInterface";
 import { useQuickConnect } from "../quickConnect";
 import { PortHandle } from "./PortHandle";
@@ -105,6 +105,7 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
   };
 
   if (data.bond) {
+    const letter = bondLetterFor(iface.icon, iface.title) ?? { letter: iface.title, dim: null };
     return (
       <div
         className={`bond-node${selected ? " is-selected" : ""}`}
@@ -122,9 +123,13 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
         <span
           className="bond-node__glyph bond-letter"
           data-icon={iface.icon}
-          data-glyph-length={iface.title.length}
+          data-glyph-length={letter.letter.length}
+          data-dim={letter.dim ?? undefined}
+          role={letter.dim === null ? undefined : "img"}
+          aria-label={letter.dim === null ? undefined : iface.title}
+          aria-description={letter.dim === null ? undefined : dimDescription(letter.dim)}
         >
-          {iface.title}
+          <BondLetterText letter={letter.letter} dim={letter.dim} />
         </span>
         <span
           className={`bond-node__label bond-node__label--${data.labelSide}`}

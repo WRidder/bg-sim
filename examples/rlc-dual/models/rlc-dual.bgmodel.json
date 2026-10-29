@@ -124,7 +124,7 @@
                   "kind": "wire",
                   "from": { "node": "i5", "port": "n" },
                   "to": { "node": "i6", "port": "p" },
-                  "route": [],
+                  "route": [ { "x": 810, "y": 180 }, { "x": 560, "y": 180 }, { "x": 560, "y": 330 } ],
                   "label": null
                 },
                 {
@@ -132,7 +132,7 @@
                   "kind": "wire",
                   "from": { "node": "i2", "port": "n" },
                   "to": { "node": "i6", "port": "p" },
-                  "route": [],
+                  "route": [ { "x": 560, "y": 160 }, { "x": 560, "y": 330 } ],
                   "label": null
                 }
               ],
@@ -185,7 +185,7 @@
                   "id": "b3",
                   "name": "R1",
                   "block": { "ref": "stdlib:bondgraph/R" },
-                  "position": { "x": 480, "y": 40 },
+                  "position": { "x": 260, "y": 40 },
                   "rotation": 0,
                   "flipX": false,
                   "params": { "r": "10.0" },
@@ -209,7 +209,7 @@
                   "id": "b5",
                   "name": "C1",
                   "block": { "ref": "stdlib:bondgraph/C" },
-                  "position": { "x": 480, "y": 320 },
+                  "position": { "x": 260, "y": 320 },
                   "rotation": 0,
                   "flipX": false,
                   "params": { "c": "100e-6" },

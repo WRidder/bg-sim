@@ -1047,3 +1047,24 @@
   pointer-events: none;
   white-space: nowrap;
 }
+
+/* Superscript dimension mark of the multibond letters (TF2, I3, MSe3): the
+   digit is the bond stroke count. It inherits the letter colour (colour comes
+   only from the domain, never from the dimension). Absolutely positioned, so the letter keeps
+   the footprint of the 1D letters. */
+.bond-letter__text {
+  position: relative;
+  display: inline-block;
+}
+
+.bond-letter__dim {
+  position: absolute;
+  left: 100%;
+  top: -0.12em;
+  margin-left: 0.04em;
+  font-size: 0.52em;
+  line-height: 1;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0;
+}
+

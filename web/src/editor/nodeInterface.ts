@@ -21,6 +21,18 @@ export interface PortSpec {
   type: ValueType;
   size: number[];
   unit: string | null;
+  /**
+   * Declared reference frame, unqualified (D-MB5). Identity is face-scoped by the
+   * worker (FIX-MB-6): faces compare as (instance path, name). Null is
+   * frame-neutral: it unifies with any adjacent frame and never causes E007.
+   */
+  frame?: string | null;
+  /**
+   * Per-component unit overrides carried by a subsystem power port, angular
+   * first. Absent for catalog ports, whose units come from the domain.
+   */
+  effortUnits?: readonly string[];
+  flowUnits?: readonly string[];
 }
 
 export interface NodeInterface {
@@ -44,7 +56,7 @@ export function interfaceForBlock(block: {
   name: string;
   icon: string;
   ref: string;
-  ports: { name: string; domain: DomainName; size: number[] }[];
+  ports: { name: string; domain: DomainName; size: number[]; frame?: string | null }[];
   inputs: { name: string; type: ValueType; size: number[]; unit: string | null }[];
   outputs: { name: string; type: ValueType; size: number[]; unit: string | null }[];
 }): NodeInterface {
@@ -60,7 +72,12 @@ export function interfaceForBlock(block: {
 }
 
 function portSpecs(
-  power: { name: string; domain: DomainName; size: number[] }[],
+  power: {
+    name: string;
+    domain: DomainName;
+    size: number[];
+    frame?: string | null;
+  }[],
   inputs: { name: string; type: ValueType; size: number[]; unit: string | null }[],
   outputs: { name: string; type: ValueType; size: number[]; unit: string | null }[],
 ): PortSpec[] {
@@ -73,6 +90,7 @@ function portSpecs(
       type: "Real",
       size: port.size,
       unit: null,
+      frame: port.frame ?? null,
     });
   }
   for (const input of inputs) {
@@ -83,6 +101,7 @@ function portSpecs(
       type: input.type,
       size: input.size,
       unit: input.unit,
+      frame: null,
     });
   }
   for (const output of outputs) {
@@ -93,6 +112,7 @@ function portSpecs(
       type: output.type,
       size: output.size,
       unit: output.unit,
+      frame: null,
     });
   }
   return ports;
@@ -149,6 +169,9 @@ export function interfaceForNode(node: ModelNode, index: CatalogIndex): NodeInte
             type: "Real",
             size: port.size,
             unit: null,
+            frame: port.frame ?? null,
+            effortUnits: port.effortUnits,
+            flowUnits: port.flowUnits,
           }
         : {
             name: port.name,
@@ -157,6 +180,7 @@ export function interfaceForNode(node: ModelNode, index: CatalogIndex): NodeInte
             type: port.type,
             size: port.size,
             unit: port.unit,
+            frame: null,
           },
     );
     return {

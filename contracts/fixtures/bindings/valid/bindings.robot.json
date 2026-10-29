@@ -1,5 +1,5 @@
 {
-  "$comment": "The four bindings of the spec's \"Visualization and bindings\" example, plus a Bool `visible` binding.",
+  "$comment": "The four bindings of the spec's \"Visualization and bindings\" example, plus a Bool `visible` binding. The `pose` signal order is quaternion then position, (qw, qx, qy, qz, x, y, z), matching the model Vec{7} pose chart (C-MB2); the spec example lists position first and is superseded.",
   "bindings": [
     {
       "target": "joint:shoulder",
@@ -12,13 +12,13 @@
       "target": "link:cart",
       "property": "pose",
       "signal": [
-        "Plant/Cart/x",
-        "Plant/Cart/y",
-        "Plant/Cart/z",
         "Plant/Cart/qw",
         "Plant/Cart/qx",
         "Plant/Cart/qy",
-        "Plant/Cart/qz"
+        "Plant/Cart/qz",
+        "Plant/Cart/x",
+        "Plant/Cart/y",
+        "Plant/Cart/z"
       ]
     },
     {

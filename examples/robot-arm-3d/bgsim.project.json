@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "robot-arm-3d",
+  "models": [
+    "arm"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

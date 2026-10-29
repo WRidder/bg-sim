@@ -560,8 +560,8 @@ The 3D viewer (Babylon.js) shows an SDFormat-style scene, and simulation values 
   { "target": "joint:shoulder", "property": "position",
     "signal": "Plant/Arm/phi1", "gain": 1.0, "offset": 0.0 },
   { "target": "link:cart", "property": "pose",
-    "signal": ["Plant/Cart/x", "Plant/Cart/y", "Plant/Cart/z",
-               "Plant/Cart/qw", "Plant/Cart/qx", "Plant/Cart/qy", "Plant/Cart/qz"] },
+    "signal": ["Plant/Cart/qw", "Plant/Cart/qx", "Plant/Cart/qy", "Plant/Cart/qz",
+               "Plant/Cart/x", "Plant/Cart/y", "Plant/Cart/z"] },
   { "target": "visual:force_arrow", "property": "scale.z",
     "signal": "Plant/Gripper/F", "gain": 0.01 },
   { "target": "visual:motor_body", "property": "color",
@@ -573,7 +573,7 @@ The 3D viewer (Babylon.js) shows an SDFormat-style scene, and simulation values 
 | --- | --- | --- | --- |
 | `position` | Revolute or continuous joint | 1 | rad |
 | `position` | Prismatic joint | 1 | m |
-| `pose` | Link or frame | 7: position + unit quaternion | m, dimensionless |
+| `pose` | Link or frame | 7: unit quaternion `(q_w, q_x, q_y, q_z)` then position `(x, y, z)`, the model's `Vec{7}` pose chart | dimensionless, m |
 | `scale.x`, `scale.y`, `scale.z` | Visual | 1 | Any, after `gain` |
 | `color` | Visual | 1, with `colormap` and `range` | Any |
 | `visible` | Visual or link | 1 Bool | None |

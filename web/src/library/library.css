@@ -273,6 +273,14 @@
   border-radius: 2px;
 }
 
+/* One tick per bond stroke: 1 scalar, 2 Planar, 3 Spatial (D-MB12). */
+.library-port-glyph {
+  flex: none;
+  width: 18px;
+  height: 11px;
+  overflow: visible;
+}
+
 .library-item__none {
   margin: 0;
   color: var(--color-text-faint);

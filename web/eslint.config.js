@@ -29,6 +29,10 @@ export default defineConfig(
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
   {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+  },
+  {
     files: ["*.config.{js,ts}", "eslint.config.js"],
     languageOptions: { globals: globals.node },
   },

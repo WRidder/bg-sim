@@ -12,11 +12,12 @@ import type { ModelConnection, ModelNode } from "../contracts/model";
 import { EmptyState } from "../app/EmptyState";
 import { useDiagnosticsStore } from "../diagnostics/store";
 import { interfaceForNode } from "../editor/nodeInterface";
-import { activeModel } from "../editor/subsystemPath";
+import { activeModel, subsystemPathCrumbs } from "../editor/subsystemPath";
 import { useCatalogStore } from "../library/catalogStore";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { useDocumentStore } from "../state/documentStore";
 import { ProbeInspector } from "../probe/ProbeInspector";
+import { ConnectionInspector } from "./ConnectionInspector";
 import { NodeInspector } from "./NodeInspector";
 import "./inspector.css";
 
@@ -133,9 +134,11 @@ export function Inspector({ diagnostics }: InspectorProps) {
   const revision = useDocumentStore((state) => state.revision);
   const index = useCatalogStore((state) => state.index);
   const liveDiagnostics = useDiagnosticsStore((state) => state.diagnostics);
+  const liveFrames = useDiagnosticsStore((state) => state.frames);
+  const liveDomains = useDiagnosticsStore((state) => state.domains);
   const checkedRevision = useDiagnosticsStore((state) => state.checkedRevision);
-  const effectiveDiagnostics =
-    diagnostics ?? (checkedRevision === revision ? liveDiagnostics : []);
+  const current = checkedRevision === revision;
+  const effectiveDiagnostics = diagnostics ?? (current ? liveDiagnostics : []);
 
   if (doc === null) {
     return (
@@ -173,6 +176,23 @@ export function Inspector({ diagnostics }: InspectorProps) {
       const selectedConnections = doc.diagram.connections.filter((connection) =>
         selection.connections.includes(connection.id),
       );
+      const pathNames = subsystemPathCrumbs(doc, activePath).map((crumb) => crumb.name);
+      if (selectedConnections.length === 1 && index !== null) {
+        const connection = selectedConnections[0];
+        if (connection !== undefined) {
+          return (
+            <ConnectionInspector
+              connection={connection}
+              nodes={doc.diagram.nodes}
+              index={index}
+              frames={current ? liveFrames : {}}
+              domains={current ? liveDomains : {}}
+              diagnostics={effectiveDiagnostics}
+              path={pathNames}
+            />
+          );
+        }
+      }
       return <ConnectionSelection connections={selectedConnections} nodes={doc.diagram.nodes} />;
     }
     return (
@@ -211,6 +231,7 @@ export function Inspector({ diagnostics }: InspectorProps) {
       index={index}
       project={project}
       diagnostics={effectiveDiagnostics}
+      path={subsystemPathCrumbs(doc, activePath).map((crumb) => crumb.name)}
     />
   );
 }

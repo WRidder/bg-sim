@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "render-models": "node scripts/render-models.mjs",
     "test": "vitest run",
     "e2e": "npm run build && playwright test"
   },

@@ -88,7 +88,7 @@ test.beforeAll(async () => {
   test.setTimeout(300_000);
   if (process.env.BGSIM_E2E_REAL === "1") {
     // The real-worker Playwright pass already serves this URL.
-    serverUrl = "http://127.0.0.1:8765";
+    serverUrl = `http://127.0.0.1:${process.env.BGSIM_E2E_PORT ?? "8765"}`;
     await waitForWorker(serverUrl, null);
     return;
   }

@@ -2,7 +2,7 @@
     # Spatial flow detector (the spatial `Df`): imposes zero wrench, outputs the six twist
     # components.
     #
-    # Limitation (C-MB2 contract gap, same as `SfSpatial`): the output `y` is one `Vec{6}`
+    # Limitation (v1 contract deviation, ADR-MB1 "M3 final", same as `SfSpatial`): the output `y` is one `Vec{6}`
     # signal with a single unit slot, so the manifest shows no per-component unit for it even
     # though `y[1]` is an angular rate and `y[4]` a linear one. The power port `p.f[k]` keeps
     # its per-component units (asserted in `test_spatial_slice.jl`).

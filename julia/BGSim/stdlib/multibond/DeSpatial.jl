@@ -2,7 +2,7 @@
     # Spatial effort detector (the spatial `De`): imposes zero twist, outputs the six wrench
     # components.
     #
-    # Limitation (C-MB2 contract gap, same as `SeSpatial`): the output `y` is one `Vec{6}`
+    # Limitation (v1 contract deviation, ADR-MB1 "M3 final", same as `SeSpatial`): the output `y` is one `Vec{6}`
     # signal with a single unit slot, so the manifest shows no per-component unit for it even
     # though `y[1]` is a torque and `y[4]` a force. The power port `p.e[k]` keeps its
     # per-component units (asserted in `test_spatial_slice.jl`).

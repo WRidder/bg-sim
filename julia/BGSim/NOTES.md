@@ -1636,3 +1636,58 @@ against the analytic direction).
 | port power on a run | `abs(P_I + P_W) = 1.11e-16 W`; `p.P = sum e[k] f[k]` to 1e-16 |
 | `test_spatial_slice.jl` | **901 assertions, green** |
 | full `Pkg.test()` | **green** (`library` 9330, J-MB8 901) |
+
+# J-MB9 — spatial body and joint composites (verified 2026-10-29)
+
+`stdlib/spatial/` (group **Spatial mechanics**, 16 blocks): `RigidBody3D`, `LocalPose3D`,
+`Revolute3D`, `Prismatic3D` (each with `Compliant`/`Friction`/`Limit` variants), `Helical3D`,
+`Cylindrical3D`, `Universal3D`, `Spherical3D`, `Planar3D`, `Free3D`. The generic 6x6
+`JointBasis` and `JointPose3D` were dropped (user correction 2026-10-29, see
+`plan/wps/M3-remaining-orchestration.md`). Acceptance: `test/test_mech_spatial.jl`.
+
+## Conventions
+
+* **Axis = local z of the joint frame.** Place and orient a joint with `FixedTransform3D` /
+  `FixedTransform3DNeutral` on either side; `[S | N]` is then the identity (up to the pitch).
+* **Port orientation in rigs.** Transformers are `a.f = -Ad(g) b.f`, `b.e = Ad(g)^T a.e`; side
+  `a` attaches to the joint port, side `b` to the ground/body, and `g` is the body-side pose in
+  the joint-side frame. The opposite orientation gives NaN at initialisation. Bonds run
+  `transform.b -> body.p`; the reverse flips the relative-rate sign.
+* Joints are **frame-neutral** (FIX-MB-6: two `RigidBody3D` faces are always bridged by a joint
+  or neutral transform). One scalar port per axis, domain from the screw.
+* `Spherical3D`/`Free3D` ports carry the **relative body-frame twist components** (quasi-
+  velocities) and integrate a relative quaternion (+ position); no Euler angles, no
+  `ManifoldProjection` (the J-MB8 deviation: `q.qdot = 0` keeps the norm, measured 5e-14).
+
+## The exact deflected chart (Fable review, replaces the first-order chart)
+
+The first-order chart (nominal `Ad(g(q))` + small-angle `dθ`) closed the joint port power but
+not total energy: the pose fed to gravity was not the integral of the twists the joint
+produced (missing `O(dθ x w_p)` term), giving an `O(1/k)` drift (2.6e-6 of the swing at
+k = 1e5). Now every compliant joint uses the **actual deflected pose** `H(q, dθ, dl)` in both
+adjoints: `V_rel = child.f - Ad(H)^-1 parent.f` (the exact body twist of `H`, reported as
+`Vrelout`), `parent.e = -Ad(H)^-T child.e`. The chart rates are `xdot = B V_rel` with `B` the
+closed-form inverse of the chart Jacobian, and the wrench is its transpose,
+`child.e = B^T [tau; kr dθ + br dθ'; kt dl + bt dl']`, so
+`child.e . V_rel = tau qdot + dE/dt + dissipation` identically.
+
+* Vector rotational deflections use the Gibbs vector `g = dθ/2` (`dθ = 2 tan(θ/2) u`, the
+  rotation vector to third order); `R_g` is the rotation of the unnormalised quaternion
+  `(1, g)`, polynomial over `D = 1 + |g|^2`; strain `½ kr |dθ|²`.
+* Damping acts on the chart rates (`br|dθ'|²`, `bt|dl'|²`), identical to first order.
+* `dl` is in the child frame (FIX-MB-5 transport `dl' = v - w x dl`), except `Prismatic3D`
+  (parent frame) and `Cylindrical3D` (nominal child frame), as their poses already implied.
+* `Universal3D` uses the exact deflection angle with one division by `cos(dt)` (1 at zero
+  deflection); no other division besides `D` appears in the set.
+
+## Measured (this machine, 2026-10-29)
+
+| Item | Value |
+| --- | --- |
+| two-link non-planar chain, energy drift of the swing, k = 1e5/1e6/1e7/1e8/1e9 | **3.6e-12 / 6.0e-13 / 1.6e-12 / 2.7e-11 / 1.1e-10** (first-order chart: 2.6e-6 ... 3e-10) |
+| same chain vs independent rigid RNE/RK4 | 2.72e-3 ... 2.71e-7, ratio **10.00 per decade** |
+| joint port-power identity (8 variants, driven parent) | 3.4e-16 ... 7.9e-16 |
+| pose = integral of the relative twist (8 joints, large deflections) | 1.5e-7 (finite-difference floor; first-order chart ~1e-2) |
+| spatial pendulum | period rel 6.3e-8, energy 7.2e-12; composed vs integrated pose 6.7e-8 |
+| spherical pendulum / Free3D | Lz drift 1.8e-13, |q| drift 5e-14 / identical to `PoseIntegrator3D` |
+| `test_mech_spatial.jl` | **1067 assertions, ~5 min, green** |

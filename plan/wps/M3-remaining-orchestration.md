@@ -34,6 +34,37 @@ known constraints each implementer must be told; the WP text in `plan/MULTIBOND_
   test that fails without it; algebraic 1e-9, integrated 1e-6 over 10 s.
 - Do not edit `plan/STATUS.md`, do not commit, do not run state-changing git commands.
 
+## J-MB9 design correction (user, 2026-10-29)
+
+The variable-column `JointBasis` (a 6-column screw matrix with zero columns and one drive per
+column) is **dropped**. A zero column makes the drive equation `0 = 0` structurally singular
+before MTK knows parameter values; `ifelse` guards only hide it and turn inactive drives into
+fake effort sources, and the diagonal-Gram `(Sₖ·V)/(|Sₖ|²+ε)` is only correct for orthogonal
+columns. The 3 % initial-flow error is a second, independent lever/Gram error.
+
+Use fixed-structure typed joints only (D-MB8: a fixed `Mat{D,n}` screw per joint, one scalar
+port per axis, n a property of the joint type):
+- `Revolute3D`, `Prismatic3D`, `Helical3D` (n=1), `Universal3D` (2), `Spherical3D` (3),
+  `Free3D` (6, no complement). `JointBasis` is removed (or, if ever wanted later, split into
+  `JointBasis1/2/3` with a parse-time orthonormality diagnostic and no zero column).
+- The joint axis is the **local z of the joint frame**; the user places the joint with
+  `FixedTransform3D`. Then `[S | N]` is the identity up to the pitch, so
+  `V_rel = S q̇ + N ḋ` splits exactly: no Gram inverse, no orthogonality precondition, no
+  `ε` guard.
+- Compliance lives on the complement `N` (a revolute's five hard directions: two rotations,
+  three translations). States: `q`, rotational deflection `dθ` (small-angle vector),
+  translational deflection `dl`; all integral, no W201.
+- Transport (J-MB6 lesson, on every deflection state): both deflections are in the child
+  frame, so `ḋl = v_rel − ω_child × dl` and `θ̇ = ω_rel − ω_child × dθ`, with
+  `ω_child = child.f[1:3]` absolute. Energy stays exact because `d·(ω×d)=0`.
+- The prismatic constrained rotation is fully held (`ddt(dθ) = θ̇`, no axial projection), and
+  the prismatic axial rate carries the deflection lever (`qdot = n·v_rel − n·(ω_p×dl)`), the
+  3-D J-MB7 term.
+- The C2 reviewer checklist additionally requires: (a) the transport rule above on every
+  deflection state; (b) instance-scoped frame names before the first two-body spatial model
+  (FIX-MB-6); (c) a double-pendulum-class energy test **with a rotating parent at the softest
+  stiffness in the sweep** — single-joint tests cannot catch the transport bugs.
+
 ## J-MB8-specific risks
 
 - **Manifold projection.** D-MB6 asks for a `ManifoldProjection` on the floating-base quaternion.

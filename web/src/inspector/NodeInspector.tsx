@@ -23,6 +23,8 @@ import { nodeNameIssue, useDocumentStore } from "../state/documentStore";
 import { nodeRef } from "../state/modelFactory";
 import { copyBlockToProjectLibrary } from "./copyToLibrary";
 import { SelectField, TextField, type SelectOption } from "./fields";
+import { qualifiedFrame } from "./frames";
+import { portComponentUnits, unitArrayText } from "./units";
 import {
   arrayConstantIssue,
   constantDefaultText,
@@ -40,6 +42,12 @@ export interface NodeInspectorProps {
   index: CatalogIndex;
   project: string | null;
   diagnostics: readonly Diagnostic[];
+  /**
+   * Instance names of the subsystem path to this diagram, root first. A port
+   * frame is shown qualified as `{path}/{node}/{frame}`, matching the
+   * display-qualified `model.check.frames` values. Frame identity is face-scoped (FIX-MB-6).
+   */
+  path?: readonly string[];
 }
 
 interface CopyState {
@@ -285,6 +293,38 @@ function signalLines(node: ModelNode, port: PortSpec, index: CatalogIndex): Sign
       },
     ];
   }
+  const components = portComponentUnits(port, index);
+  if (components !== null && components.effort.length > 1) {
+    // A multibond is recorded per component: each e[k]/f[k] carries its own
+    // unit (D-MB10), and P is the scalar power sum in W.
+    const lines: SignalLine[] = [];
+    const count = components.effort.length;
+    components.effort.forEach((unit, position) => {
+      const k = position + 1;
+      lines.push({
+        key: `e${k}`,
+        id: `${prefix}.e[${k}]`,
+        unit,
+        title: `effort component ${k} of ${count} (${unit})`,
+      });
+    });
+    components.flow.forEach((unit, position) => {
+      const k = position + 1;
+      lines.push({
+        key: `f${k}`,
+        id: `${prefix}.f[${k}]`,
+        unit,
+        title: `flow component ${k} of ${count} (${unit})`,
+      });
+    });
+    lines.push({
+      key: "P",
+      id: `${prefix}.P`,
+      unit: "W",
+      title: "derived power sum, Σ e[k]·f[k]",
+    });
+    return lines;
+  }
   const domain = index.domains.get(port.domain);
   return [
     {
@@ -312,14 +352,31 @@ function PortRow({
   node,
   port,
   index,
+  path = [],
 }: {
   node: ModelNode;
   port: PortSpec;
   index: CatalogIndex;
+  path?: readonly string[];
 }) {
   const lines = signalLines(node, port, index);
+  const components = portComponentUnits(port, index);
+  const declared =
+    port.frame === null || port.frame === undefined ? "" : port.frame.trim();
+  const qualified = qualifiedFrame([...path, node.name], declared);
   return (
-    <div className="inspector-port" data-testid={`inspector-port-${port.name}`}>
+    <div
+      className="inspector-port"
+      data-testid={`inspector-port-${port.name}`}
+      data-domain={port.domain}
+      data-multibond={components !== null ? components.effort.length : undefined}
+      role="group"
+      aria-label={
+        components === null
+          ? `${port.name} port, ${port.domain}`
+          : `${port.name} port, ${port.domain} multibond, ${components.effort.length} components`
+      }
+    >
       <div className="inspector-port__head">
         <span
           className="inspector-port__letter"
@@ -340,6 +397,45 @@ function PortRow({
         ) : null}
         <span className="inspector-port__domain">{port.domain}</span>
       </div>
+      {port.kind === "power" ? (
+        <p
+          className={`inspector-port__frame${declared.length === 0 ? " is-neutral" : ""}`}
+          data-testid={`inspector-port-${port.name}-frame`}
+          data-frame={declared.length === 0 ? null : declared}
+        >
+          {declared.length === 0 ? (
+            "frame-neutral"
+          ) : (
+            <>
+              <span className="inspector-port__frame-label">frame</span>
+              <code>{declared}</code>
+              {qualified !== null && qualified !== declared ? (
+                <span className="inspector-port__frame-qualified">{qualified}</span>
+              ) : null}
+            </>
+          )}
+        </p>
+      ) : null}
+      {components !== null ? (
+        <dl
+          className="inspector-units"
+          data-testid={`inspector-port-${port.name}-units`}
+          aria-label={`${port.domain} component units`}
+        >
+          <div className="inspector-units__row">
+            <dt>effort</dt>
+            <dd>
+              <code>{unitArrayText(components.effort)}</code>
+            </dd>
+          </div>
+          <div className="inspector-units__row">
+            <dt>flow</dt>
+            <dd>
+              <code>{unitArrayText(components.flow)}</code>
+            </dd>
+          </div>
+        </dl>
+      ) : null}
       <ul className="inspector-signals">
         {lines.map((line) => (
           <li key={line.key} title={line.title} data-testid={`inspector-signal-${line.id}`}>
@@ -359,6 +455,7 @@ export function NodeInspector({
   index,
   project,
   diagnostics,
+  path = [],
 }: NodeInspectorProps) {
   const iface = interfaceForNode(node, index);
   const ref = nodeRef(node);
@@ -589,7 +686,7 @@ export function NodeInspector({
           <p className="inspector-none">This element has no ports.</p>
         ) : (
           iface.ports.map((port) => (
-            <PortRow key={port.name} node={node} port={port} index={index} />
+            <PortRow key={port.name} node={node} port={port} index={index} path={path} />
           ))
         )}
         {iface.isJunction ? (

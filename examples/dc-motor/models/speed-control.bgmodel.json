@@ -13,7 +13,7 @@
         },
         "position": {
           "x": 40,
-          "y": 120
+          "y": 250
         },
         "rotation": 0,
         "flipX": false,
@@ -38,7 +38,7 @@
           }
         },
         "position": {
-          "x": 240,
+          "x": 260,
           "y": 220
         },
         "rotation": 0,
@@ -58,8 +58,8 @@
           "ref": "stdlib:discrete/DiscretePID"
         },
         "position": {
-          "x": 440,
-          "y": 220
+          "x": 500,
+          "y": 260
         },
         "rotation": 0,
         "flipX": false,
@@ -87,8 +87,8 @@
           "ref": "stdlib:electrical/VoltageSource"
         },
         "position": {
-          "x": 640,
-          "y": 220
+          "x": 780,
+          "y": 260
         },
         "rotation": 0,
         "flipX": false,
@@ -109,8 +109,8 @@
           "ref": "stdlib:converters/DCMotor"
         },
         "position": {
-          "x": 840,
-          "y": 220
+          "x": 980,
+          "y": 260
         },
         "rotation": 0,
         "flipX": false,
@@ -135,8 +135,8 @@
           "ref": "stdlib:electrical/Ground"
         },
         "position": {
-          "x": 640,
-          "y": 380
+          "x": 780,
+          "y": 420
         },
         "rotation": 0,
         "flipX": false,
@@ -155,8 +155,8 @@
           "ref": "stdlib:rotation/FixedShaft"
         },
         "position": {
-          "x": 840,
-          "y": 60
+          "x": 980,
+          "y": 100
         },
         "rotation": 0,
         "flipX": false,
@@ -175,8 +175,8 @@
           "ref": "stdlib:rotation/RotationalDamper"
         },
         "position": {
-          "x": 1240,
-          "y": 300
+          "x": 1180,
+          "y": 260
         },
         "rotation": 0,
         "flipX": false,
@@ -197,8 +197,8 @@
           "ref": "stdlib:rotation/FixedShaft"
         },
         "position": {
-          "x": 1440,
-          "y": 300
+          "x": 1380,
+          "y": 260
         },
         "rotation": 0,
         "flipX": false,
@@ -217,8 +217,8 @@
           "ref": "stdlib:converters/SpeedSensor"
         },
         "position": {
-          "x": 1240,
-          "y": 160
+          "x": 1130,
+          "y": 20
         },
         "rotation": 0,
         "flipX": false,
@@ -257,7 +257,24 @@
           "node": "n2",
           "port": "u2"
         },
-        "route": [],
+        "route": [
+          {
+            "x": 1090,
+            "y": 50
+          },
+          {
+            "x": 1090,
+            "y": -20
+          },
+          {
+            "x": 470,
+            "y": -20
+          },
+          {
+            "x": 470,
+            "y": 270
+          }
+        ],
         "label": "measured speed"
       },
       {
@@ -356,7 +373,7 @@
           "port": "a"
         },
         "route": [],
-        "label": "rotor speed"
+        "label": null
       },
       {
         "id": "w05",

@@ -88,7 +88,7 @@ test.beforeAll(async () => {
   // A cold Julia worker (MTK precompilation plus the first compile) needs more than 30 s.
   test.setTimeout(600_000);
   if (process.env.BGSIM_E2E_REAL === "1") {
-    serverUrl = "http://127.0.0.1:8765";
+    serverUrl = `http://127.0.0.1:${process.env.BGSIM_E2E_PORT ?? "8765"}`;
     await waitForWorker(serverUrl, null);
     return;
   }

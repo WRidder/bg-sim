@@ -24,7 +24,7 @@ export interface LegendKey {
   description: string;
 }
 
-/** Every domain of plan 7.3, including the two multibond domains of D-MB1. */
+/** Every domain colour of plan 7.3; the two multibond domains of D-MB1 share one. */
 export const LEGEND_DOMAINS: readonly LegendDomain[] = [
   ...DOMAIN_LEGEND.map((entry) => ({
     id: entry.domain,
@@ -40,8 +40,9 @@ export const LEGEND_DOMAINS: readonly LegendDomain[] = [
               ? "var(--domain-hydraulic)"
               : "var(--domain-generic)",
   })),
-  { id: "Planar", label: "Planar", token: "var(--domain-planar)" },
-  { id: "Spatial", label: "Spatial", token: "var(--domain-spatial)" },
+  // Planar and Spatial share one colour: the domain is mechanics, and 2D vs
+  // 3D shows as the stroke count (the multibond keys below).
+  { id: "Mechanics", label: "Mechanics (2D/3D)", token: "var(--domain-mechanics)" },
 ];
 
 export const LEGEND_KEYS: readonly LegendKey[] = [

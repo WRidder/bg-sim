@@ -12,6 +12,7 @@ import { retrySession } from "../state/session";
 import { useCatalogStore } from "./catalogStore";
 import { blockSummary, JUNCTION_GROUP, searchGroups } from "./catalogIndex";
 import { payloadForBlock, writeDragPayload } from "./dnd";
+import { PortGlyph, type PortGlyphProps } from "./PortGlyph";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
 import "./library.css";
 
@@ -40,13 +41,16 @@ const DOMAIN_LETTER: Record<DomainName, string> = {
   Spatial: "S",
 };
 
-function portLines(block: CatalogBlock): { key: string; text: string; domain: string }[] {
-  const lines: { key: string; text: string; domain: string }[] = [];
+function portLines(
+  block: CatalogBlock,
+): { key: string; text: string; domain: string; glyph: PortGlyphProps | null }[] {
+  const lines: { key: string; text: string; domain: string; glyph: PortGlyphProps | null }[] = [];
   for (const port of block.ports) {
     lines.push({
       key: `p-${port.name}`,
       text: `${port.name} · power${port.size.length > 0 ? ` · ${port.size.join("x")}` : ""}`,
       domain: DOMAIN_LETTER[port.domain],
+      glyph: { domain: port.domain, name: port.name, frame: port.frame },
     });
   }
   for (const input of block.inputs) {
@@ -54,6 +58,7 @@ function portLines(block: CatalogBlock): { key: string; text: string; domain: st
       key: `i-${input.name}`,
       text: `${input.name} · ${input.type} input${input.unit ? ` · ${input.unit}` : ""}`,
       domain: "↦",
+      glyph: null,
     });
   }
   for (const output of block.outputs) {
@@ -61,6 +66,7 @@ function portLines(block: CatalogBlock): { key: string; text: string; domain: st
       key: `o-${output.name}`,
       text: `${output.name} · ${output.type} output${output.unit ? ` · ${output.unit}` : ""}`,
       domain: "↦",
+      glyph: null,
     });
   }
   return lines;
@@ -249,7 +255,11 @@ export function LibraryBrowser() {
                         {portLines(entry.block).length > 0 ? (
                           <ul className="library-item__ports">
                             {portLines(entry.block).map((line) => (
-                              <li key={line.key}>
+                              <li
+                                key={line.key}
+                                data-testid={`library-port-${entry.name}-${line.key}`}
+                              >
+                                {line.glyph !== null ? <PortGlyph {...line.glyph} /> : null}
                                 <span className="library-item__domain" aria-hidden="true">
                                   {line.domain}
                                 </span>

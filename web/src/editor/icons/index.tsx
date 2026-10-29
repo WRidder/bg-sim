@@ -9,6 +9,12 @@
 
 import type { ReactNode } from "react";
 
+import { bondLetterFor, dimDescription, isLetterIcon, type BondDim } from "./letters";
+import { MULTIBOND_GLYPHS } from "./multibond";
+
+export { MULTIBOND_LETTERS, bondLetterFor, dimDescription, isLetterIcon } from "./letters";
+export type { BondDim, BondLetter } from "./letters";
+
 export interface BlockIconProps {
   icon: string;
   /** The block name; bond-graph elements render it as their letter glyph. */
@@ -36,6 +42,7 @@ function label(text: string, size = 8): ReactNode {
 }
 
 const GLYPHS: Record<string, Glyph> = {
+  ...MULTIBOND_GLYPHS,
   // ---------------------------------------------------------- sources & sinks
   "src-constant": () => (
     <>
@@ -215,24 +222,44 @@ function FallbackGlyph(): ReactNode {
 
 /** True when the catalog icon id has a renderer (a letter glyph or an SVG). */
 export function hasIcon(icon: string): boolean {
-  return icon.startsWith("bg-") || Object.hasOwn(GLYPHS, icon);
+  return isLetterIcon(icon) || Object.hasOwn(GLYPHS, icon);
 }
 
-/** Every explicit SVG icon id (the bond-graph letters are separate). */
+/** Every explicit SVG icon id (the bond-graph and multibond letters are separate). */
 export function svgIconIds(): string[] {
   return Object.keys(GLYPHS);
 }
 
+/**
+ * A bond-graph letter with its optional superscript dimension mark. The mark is
+ * absolutely positioned so the letter keeps the footprint of the 1D letters.
+ */
+export function BondLetterText({ letter, dim }: { letter: string; dim: BondDim | null }) {
+  return (
+    <span className="bond-letter__text">
+      {letter}
+      {dim === null ? null : (
+        <sup className="bond-letter__dim" data-dim={dim} aria-hidden="true">
+          {dim === 2 ? "²" : "³"}
+        </sup>
+      )}
+    </span>
+  );
+}
+
 export function BlockIcon({ icon, name, size = 40, className }: BlockIconProps) {
-  if (icon.startsWith("bg-")) {
+  const letter = bondLetterFor(icon, name);
+  if (letter !== null) {
     return (
       <span
         className={`bond-letter${className ? ` ${className}` : ""}`}
         data-icon={icon}
+        data-dim={letter.dim ?? undefined}
         style={{ fontSize: Math.round(size * 0.62), lineHeight: `${size}px` }}
         aria-hidden="true"
+        title={letter.dim === null ? undefined : `${name} (${dimDescription(letter.dim)})`}
       >
-        {name}
+        <BondLetterText letter={letter.letter} dim={letter.dim} />
       </span>
     );
   }

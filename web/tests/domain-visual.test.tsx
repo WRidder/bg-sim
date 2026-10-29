@@ -257,9 +257,11 @@ describe("canvas legend", () => {
       "Rotation",
       "Hydraulic",
       "Generic",
-      "Planar",
-      "Spatial",
+      "Mechanics (2D/3D)",
     ]);
+    expect(LEGEND_DOMAINS.find((entry) => entry.id === "Mechanics")?.token).toBe(
+      "var(--domain-mechanics)",
+    );
     const generic = LEGEND_DOMAINS.find((entry) => entry.id === "Generic");
     expect(generic).toBeDefined();
     if (generic === undefined) {
@@ -312,8 +314,9 @@ describe("canvas legend", () => {
     expect(within(legend).getByTestId("legend-multibond3d").textContent).toContain(
       "3D multibond (3 strokes)",
     );
-    expect(within(legend).getByTestId("legend-domain-Planar").textContent).toContain("Planar");
-    expect(within(legend).getByTestId("legend-domain-Spatial").textContent).toContain("Spatial");
+    expect(within(legend).getByTestId("legend-domain-Mechanics").textContent).toContain(
+      "Mechanics (2D/3D)",
+    );
     // Every key is keyboard reachable (plan 7.4 accessibility).
     for (const item of legend.querySelectorAll(".editor-legend__item")) {
       expect(item.getAttribute("tabindex"), item.textContent ?? "").toBe("0");

@@ -299,7 +299,7 @@ export interface PoseBinding {
   target: string;
   property: "pose";
   /**
-   * Position and unit quaternion; the count is checked by the viewer (E304).
+   * Exactly 7 signals, in this fixed order: quaternion then position, (q_w, q_x, q_y, q_z, x, y, z), the same chart as the model's spatial pose Vec{7} (PoseIntegrator3D, ComposePose3D, JointTransform3D). The scalar quaternion part q_w comes first and the position is in metres in the world frame. The count is checked by the viewer (E304); the viewer must not reorder or infer the order from signal names.
    *
    * @minItems 1
    */

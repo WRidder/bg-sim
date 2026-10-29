@@ -326,7 +326,7 @@ end
     # Catalog contract: clean, dimension 3, per-component units, frames
     # -----------------------------------------------------------------------------------
     @testset "catalog: clean, dimension 3, per-component units, frames" begin
-        @test length(blocks) == 184
+        @test length(blocks) == length(ALL_REFS)   # the full catalog list lives in test_library.jl
         for ref in _MB8_NEW_REFS
             b = blocks[ref]
             @test b.group == "Multibond"

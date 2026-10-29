@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "reaction-wheel-3d",
+  "models": [
+    "gravity-off",
+    "gravity-on"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

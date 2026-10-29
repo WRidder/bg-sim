@@ -239,9 +239,12 @@ export function applyEdgeDomain(edge: Element, domain: DomainName | null): Domai
 
   const colour = domainToken(effective);
   const dash = domainDash(effective);
+  // A multibond draws its own coloured strokes; its edge path is only the
+  // hit area and must stay invisible, or it paints an extra centre stroke.
+  const multibond = Number(edge.getAttribute("data-multibond-strokes") ?? "1") > 1;
   for (const path of edge.querySelectorAll<SVGPathElement>(".react-flow__edge-path")) {
-    path.style.setProperty("stroke", colour, "important");
-    path.style.setProperty("stroke-dasharray", dash, "important");
+    path.style.setProperty("stroke", multibond ? "transparent" : colour, "important");
+    path.style.setProperty("stroke-dasharray", multibond ? "none" : dash, "important");
   }
   for (const path of edge.querySelectorAll<SVGElement>(".editor-edge__half-arrow")) {
     path.setAttribute("stroke", colour);

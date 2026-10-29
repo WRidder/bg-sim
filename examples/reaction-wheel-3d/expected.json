@@ -1,0 +1,747 @@
+{
+  "project": "reaction-wheel-3d",
+  "description": "Plan 9.10 / X-MB4 acceptance: a reaction-wheel attitude actuator on a spherical pivot, in 3D. GroundSpatial -> Pivot (Spherical3D, compliant: kt = 1e9 N/m, bt = 5e3 N s/m) -> Link (FixedTransform3DNeutral, body CoM 0.2 m below the pivot) -> Body (RigidBody3D: m = 2 kg, J = (0.06, 0.05, 0.04) kg m^2). Four pyramid wheels (axis tilted atan(sqrt 2) from the body z axis, azimuth 0/90/180/270 deg, so A A^T = 4/3 I), each a RigidBody3D (m = 0.3 kg, J = (1e-3, 1e-3, 2e-3)) on a Revolute3D (kr = 1e5, kt = 1e7) oriented by a FixedTransform3DNeutral, driven by a CurrentControlledDrive (k_t = 0.05 N m/A) through a stiff ElasticShaft. Project library: Allocator (1 ms minimum-norm allocation of a scripted three-axis body torque plus a null-space component lam = 0.01 N m), WheelTap (measured null-space tap) and BodyMeasure (world angular momentum and gravity impulse per body). Two variants: `gravity-off` (g0 = 0, the body spins at (0.3, -0.2, 0.5) rad/s) and `gravity-on` (g0 = 9.81, the body is released 0.5 rad off the vertical).",
+  "models": {
+    "gravity-off": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Pivot/qrel[1]",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-12,
+          "note": "gravity off: the body starts upright (identity quaternion)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MeasBody/H[1]",
+          "t": 0.0,
+          "value": 0.042,
+          "abs": 1e-12,
+          "note": "the body alone carries H_x = J_x w_x + m (r x v)_x = 0.018 + 0.024 = 0.042 kg m^2/s at t = 0 (spin (0.3, -0.2, 0.5) rad/s about the pivot, CoM 0.2 m below it)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WJoint1/qdout",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "the wheels start at rest relative to the body"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "MeasBody/H[1]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW1/H[1]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW2/H[1]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW3/H[1]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW4/H[1]",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 1e-09,
+          "note": "world angular momentum about the pivot, component x (body + 4 wheels), H0 = 0.0598 kg m^2/s: gravity off and the pivot wrench has no moment about the pivot, so it is constant while the four wheels exchange momentum with the body; measured max|H - H0| / max|H| = 3.1e-14; tol 1e-9 is the stated bound for the pivot stiffness kt = 1e9 N/m (the error of a compliant pivot scales as 1/kt)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "MeasBody/H[2]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW1/H[2]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW2/H[2]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW3/H[2]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW4/H[2]",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 1e-09,
+          "note": "world angular momentum about the pivot, component y (body + 4 wheels), H0 = -0.0378667 kg m^2/s: gravity off and the pivot wrench has no moment about the pivot, so it is constant while the four wheels exchange momentum with the body; measured max|H - H0| / max|H| = 7.1e-14; tol 1e-9 is the stated bound for the pivot stiffness kt = 1e9 N/m (the error of a compliant pivot scales as 1/kt)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "MeasBody/H[3]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW1/H[3]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW2/H[3]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW3/H[3]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW4/H[3]",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 1e-09,
+          "note": "world angular momentum about the pivot, component z (body + 4 wheels), H0 = 0.0286667 kg m^2/s: gravity off and the pivot wrench has no moment about the pivot, so it is constant while the four wheels exchange momentum with the body; measured max|H - H0| / max|H| = 3.2e-14; tol 1e-9 is the stated bound for the pivot stiffness kt = 1e9 N/m (the error of a compliant pivot scales as 1/kt)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "MeasBody/H[3]",
+          "value": 0.05156286608904764,
+          "abs": 0.0001,
+          "note": "the body alone does not conserve momentum: its H_z goes from 0.02 to 0.0516 as the wheels spin up (the wheels carry the difference)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Pivot/omega[3]",
+          "value": 1.1950301230874028,
+          "abs": 0.001,
+          "note": "body rate about z peaks at 1.195 rad/s (the body tumbles, so the gyroscopic coupling is live)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint1/qdout",
+          "value": 30.0,
+          "note": "wheel speeds stay under 30 rad/s (measured peak 24.99 rad/s on wheel 3)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint2/qdout",
+          "value": 30.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint3/qdout",
+          "value": 30.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint4/qdout",
+          "value": 30.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WJoint1/qdout",
+          "t": 4.0,
+          "value": 23.582048575304196,
+          "abs": 0.01,
+          "note": "wheel 1 speed at 4 s (rad/s, relative to the body)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WJoint2/qdout",
+          "t": 4.0,
+          "value": -4.191671454077645,
+          "abs": 0.01,
+          "note": "wheel 2 speed at 4 s (rad/s, relative to the body)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WJoint3/qdout",
+          "t": 4.0,
+          "value": 23.31204973608389,
+          "abs": 0.01,
+          "note": "wheel 3 speed at 4 s (rad/s, relative to the body)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WJoint4/qdout",
+          "t": 4.0,
+          "value": 11.0959697736457,
+          "abs": 0.01,
+          "note": "wheel 4 speed at 4 s (rad/s, relative to the body)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tap/nsp",
+          "t": 2.0,
+          "value": 0.01,
+          "abs": 1e-09,
+          "note": "the null-space component of the four measured motor torques equals the commanded lam = 0.01 N m"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Tap/nsp",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Lambda/y",
+              "coeff": -1.0
+            }
+          ],
+          "from_t": 0.002,
+          "scale": 0.01,
+          "tol": 1e-09,
+          "note": "n . tau - lam stays 0 for the whole run (measured max 3.5e-18): the motors realise the null-space command exactly"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/resid",
+          "value": 1e-12,
+          "note": "range and null space of the torque vector are orthogonal: |tau|^2 - |A+ A tau|^2 - (n . tau)^2 = 0 (measured 1.5e-18)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbx",
+          "signal_b": "Alloc/Tbx",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, x"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tby",
+          "signal_b": "Alloc/Tby",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, y"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbz",
+          "signal_b": "Alloc/Tbz",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, z"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbx",
+          "signal_b": "TxCmd/y",
+          "from_t": 0.002,
+          "max_abs": 0.0001,
+          "note": "the realised body torque follows the continuous command within the 1 ms zero-order-hold error A w Ts = 6.0e-5 N m (axis x)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tby",
+          "signal_b": "TyCmd/y",
+          "from_t": 0.002,
+          "max_abs": 0.0001,
+          "note": "the realised body torque follows the continuous command within the 1 ms zero-order-hold error A w Ts = 6.3e-5 N m (axis y)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbz",
+          "signal_b": "TzCmd/y",
+          "from_t": 0.002,
+          "max_abs": 0.0001,
+          "note": "the realised body torque follows the continuous command within the 1 ms zero-order-hold error A w Ts = 5.5e-5 N m (axis z)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv1/tmotor/y",
+          "value": 0.06,
+          "note": "motor torque of wheel 1 stays under the 0.06 N m rating (measured 0.0481)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv2/tmotor/y",
+          "value": 0.06,
+          "note": "motor torque of wheel 2 stays under the 0.06 N m rating (measured 0.0401)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv3/tmotor/y",
+          "value": 0.06,
+          "note": "motor torque of wheel 3 stays under the 0.06 N m rating (measured 0.0327)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv4/tmotor/y",
+          "value": 0.06,
+          "note": "motor torque of wheel 4 stays under the 0.06 N m rating (measured 0.0281)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "the compliant pivot and the shafted rotors keep every state integral (no W201), the chain is connected, frame-consistent and unit-clean, and the initialisation succeeds"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 2.5e-05,
+          "stored": [
+            {
+              "coeff": 0.5,
+              "signals": [
+                "{b}/inertia/P[{k}]",
+                "{b}/inertia/twout[{k}]"
+              ],
+              "for": {
+                "b": [
+                  "Body",
+                  "Wheel1",
+                  "Wheel2",
+                  "Wheel3",
+                  "Wheel4"
+                ],
+                "k": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ]
+              }
+            },
+            {
+              "coeff": 5e-09,
+              "signal": "Drv{i}/rotor/w",
+              "pow": 2,
+              "for": {
+                "i": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              }
+            },
+            {
+              "coeff": 50.0,
+              "signal": "Shaft{i}/phi",
+              "pow": 2,
+              "for": {
+                "i": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              }
+            }
+          ],
+          "note": "X-MB6 ledger, gravity off: the same budget without the m g z terms; measured balance 5.9e-6 of the 2.56 J throughput (1.5e-5 J, the heat of the compliant-joint and shaft dampers, which the storage class absorbs), tol 2.5e-5"
+        }
+      ]
+    },
+    "gravity-on": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Pivot/qrel[1]",
+          "t": 0.0,
+          "value": 0.9689124217106447,
+          "abs": 1e-12,
+          "note": "gravity on: the body starts tilted 0.5 rad about the world axis (1, 1, 0)/sqrt 2"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Pivot/omega[1]",
+          "value": 2.7548495919199123,
+          "abs": 0.01,
+          "note": "the pendulum swings: body rate x peaks at 2.755 rad/s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "MeasBody/Ig[1]",
+          "value": 0.24961475981491643,
+          "abs": 0.001,
+          "note": "the gravity impulse is real: the body's own integral of tau_g,x peaks at 0.250 kg m^2/s (torque up to 1.34 N m)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "MeasBody/H[1]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW1/H[1]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW2/H[1]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW3/H[1]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW4/H[1]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasBody/Ig[1]",
+              "coeff": -1.0
+            },
+            {
+              "signal": "MeasW1/Ig[1]",
+              "coeff": -1.0
+            },
+            {
+              "signal": "MeasW2/Ig[1]",
+              "coeff": -1.0
+            },
+            {
+              "signal": "MeasW3/Ig[1]",
+              "coeff": -1.0
+            },
+            {
+              "signal": "MeasW4/Ig[1]",
+              "coeff": -1.0
+            }
+          ],
+          "tol": 1e-09,
+          "scale": 0.4,
+          "note": "d/dt H = gravity torque: H_x (body + 4 wheels, world, about the pivot) minus the integral of the five bodies' gravity torques r_c x m g is constant; H itself reaches 0.3994 kg m^2/s, the residual max|H - int tau_g| is 2.0e-12, explicit scale 0.4, tol 1e-9"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "MeasBody/H[2]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW1/H[2]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW2/H[2]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW3/H[2]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW4/H[2]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasBody/Ig[2]",
+              "coeff": -1.0
+            },
+            {
+              "signal": "MeasW1/Ig[2]",
+              "coeff": -1.0
+            },
+            {
+              "signal": "MeasW2/Ig[2]",
+              "coeff": -1.0
+            },
+            {
+              "signal": "MeasW3/Ig[2]",
+              "coeff": -1.0
+            },
+            {
+              "signal": "MeasW4/Ig[2]",
+              "coeff": -1.0
+            }
+          ],
+          "tol": 1e-09,
+          "scale": 0.44,
+          "note": "d/dt H = gravity torque: H_y (body + 4 wheels, world, about the pivot) minus the integral of the five bodies' gravity torques r_c x m g is constant; H itself reaches 0.4321 kg m^2/s, the residual max|H - int tau_g| is 2.2e-12, explicit scale 0.44, tol 1e-9"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "MeasBody/H[3]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW1/H[3]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW2/H[3]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW3/H[3]",
+              "coeff": 1.0
+            },
+            {
+              "signal": "MeasW4/H[3]",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 1e-09,
+          "scale": 0.4,
+          "note": "a vertical gravity force has no vertical torque about a pivot on the vertical: H_z stays 0 (measured max 3.9e-13, scale 0.4)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint1/qdout",
+          "value": 35.0,
+          "note": "wheel speeds stay under 35 rad/s (measured peak 27.88 rad/s on wheel 3)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint2/qdout",
+          "value": 35.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint3/qdout",
+          "value": 35.0
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint4/qdout",
+          "value": 35.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WJoint1/qdout",
+          "t": 4.0,
+          "value": 22.864364392169062,
+          "abs": 0.01,
+          "note": "wheel 1 speed at 4 s (rad/s, relative to the body)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WJoint2/qdout",
+          "t": 4.0,
+          "value": -4.365256616006869,
+          "abs": 0.01,
+          "note": "wheel 2 speed at 4 s (rad/s, relative to the body)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WJoint3/qdout",
+          "t": 4.0,
+          "value": 24.64559878759497,
+          "abs": 0.01,
+          "note": "wheel 3 speed at 4 s (rad/s, relative to the body)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WJoint4/qdout",
+          "t": 4.0,
+          "value": 11.88542421612058,
+          "abs": 0.01,
+          "note": "wheel 4 speed at 4 s (rad/s, relative to the body)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tap/nsp",
+          "t": 2.0,
+          "value": 0.01,
+          "abs": 1e-09,
+          "note": "the null-space component of the four measured motor torques equals the commanded lam = 0.01 N m"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Tap/nsp",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Lambda/y",
+              "coeff": -1.0
+            }
+          ],
+          "from_t": 0.002,
+          "scale": 0.01,
+          "tol": 1e-09,
+          "note": "n . tau - lam stays 0 for the whole run (measured max 3.5e-18): the motors realise the null-space command exactly"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/resid",
+          "value": 1e-12,
+          "note": "range and null space of the torque vector are orthogonal: |tau|^2 - |A+ A tau|^2 - (n . tau)^2 = 0 (measured 1.5e-18)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbx",
+          "signal_b": "Alloc/Tbx",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, x"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tby",
+          "signal_b": "Alloc/Tby",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, y"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbz",
+          "signal_b": "Alloc/Tbz",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, z"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbx",
+          "signal_b": "TxCmd/y",
+          "from_t": 0.002,
+          "max_abs": 0.0001,
+          "note": "the realised body torque follows the continuous command within the 1 ms zero-order-hold error A w Ts = 6.0e-5 N m (axis x)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tby",
+          "signal_b": "TyCmd/y",
+          "from_t": 0.002,
+          "max_abs": 0.0001,
+          "note": "the realised body torque follows the continuous command within the 1 ms zero-order-hold error A w Ts = 6.3e-5 N m (axis y)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbz",
+          "signal_b": "TzCmd/y",
+          "from_t": 0.002,
+          "max_abs": 0.0001,
+          "note": "the realised body torque follows the continuous command within the 1 ms zero-order-hold error A w Ts = 5.5e-5 N m (axis z)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv1/tmotor/y",
+          "value": 0.06,
+          "note": "motor torque of wheel 1 stays under the 0.06 N m rating (measured 0.0481)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv2/tmotor/y",
+          "value": 0.06,
+          "note": "motor torque of wheel 2 stays under the 0.06 N m rating (measured 0.0401)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv3/tmotor/y",
+          "value": 0.06,
+          "note": "motor torque of wheel 3 stays under the 0.06 N m rating (measured 0.0327)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv4/tmotor/y",
+          "value": 0.06,
+          "note": "motor torque of wheel 4 stays under the 0.06 N m rating (measured 0.0281)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "the compliant pivot and the shafted rotors keep every state integral (no W201), the chain is connected, frame-consistent and unit-clean, and the initialisation succeeds"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-05,
+          "stored": [
+            {
+              "coeff": 0.5,
+              "signals": [
+                "{b}/inertia/P[{k}]",
+                "{b}/inertia/twout[{k}]"
+              ],
+              "for": {
+                "b": [
+                  "Body",
+                  "Wheel1",
+                  "Wheel2",
+                  "Wheel3",
+                  "Wheel4"
+                ],
+                "k": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ]
+              }
+            },
+            {
+              "coeff": 5e-09,
+              "signal": "Drv{i}/rotor/w",
+              "pow": 2,
+              "for": {
+                "i": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              }
+            },
+            {
+              "coeff": 50.0,
+              "signal": "Shaft{i}/phi",
+              "pow": 2,
+              "for": {
+                "i": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              }
+            },
+            {
+              "coeff": 19.62,
+              "signal": "Body/gravity/g[7]"
+            },
+            {
+              "coeff": 2.943,
+              "signal": "Wheel{i}/gravity/g[7]",
+              "for": {
+                "i": [
+                  1,
+                  2,
+                  3,
+                  4
+                ]
+              }
+            }
+          ],
+          "note": "X-MB6 ledger: E = 1/2 P.V of the body and the four wheels + 1/2 J_m w^2 of the rotors + 1/2 k phi^2 of the shafts + m g z; sources are the four current-source drives (net 1.209 J into the stack); measured balance 8.0e-7 of the 13.4 J throughput (the damper heat inside the storage class), tol 1e-5"
+        }
+      ]
+    }
+  }
+}

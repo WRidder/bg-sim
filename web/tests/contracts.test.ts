@@ -234,6 +234,9 @@ describe("fixture coverage", () => {
     ]);
     const pose = bindings.find((binding) => binding.property === "pose");
     expect(Array.isArray(pose?.signal) ? pose.signal.length : 0).toBe(7);
+    // The model's pose chart is Vec{7} = (q_w, q_x, q_y, q_z, x, y, z): quaternion first.
+    const names = Array.isArray(pose?.signal) ? pose.signal.map((id) => id.split("/").pop()) : [];
+    expect(names).toEqual(["qw", "qx", "qy", "qz", "x", "y", "z"]);
   });
 
   it("the synthetic run manifest lists the generated columns in order", () => {

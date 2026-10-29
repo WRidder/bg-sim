@@ -1,0 +1,738 @@
+{
+  "project": "cube-pyramid-3d",
+  "description": "Plan 9.6 / X-MB5 acceptance: a floating cube (a = 0.2 m, 0.4 kg, RigidBody3D + PoseIntegrator3D) with four pyramid reaction wheels (each 0.25 kg RigidBody3D on a Revolute3D behind an ElasticShaft, CurrentControlledDrive k_t = 0.1 N m/A) and compliant ContactPoints (Hunt-Crossley, Coulomb) on all eight vertices over a ContactSurface. `sequence-contact` runs a scripted face -> edge -> corner sequence (TipSequencer, Allocator, 1 ms): rests on the face, tips onto an edge (45 deg), holds, tips onto a corner (atan sqrt 2), holds. `edge-contact` and `edge-switched` run the edge phase on the vertex contacts and on a SwitchedPivot3D in edge mode, with the same wheels and firmware; the cross-model comparison pins them together.",
+  "models": {
+    "sequence-contact": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "the cube starts flat on a face (identity attitude)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/sumfn",
+          "t": 0.25,
+          "value": 13.734,
+          "abs": 0.002,
+          "note": "initial rest on the face: sum of the vertex normal forces equals the total weight m_total g = 1.4 x 9.81 = 13.734 N (measured ratio 1 + 1.3e-5 at 0.25 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/sumfn",
+          "t": 0.49,
+          "value": 13.734,
+          "abs": 0.001,
+          "note": "still at rest at the end of the face phase: sum f_n = m_total g (measured ratio 1 - 5e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C1/f_n",
+          "t": 0.3,
+          "value": 3.4335,
+          "abs": 0.005,
+          "note": "face phase: bottom vertex 1 carries a quarter of the weight, 3.4335 N"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C2/f_n",
+          "t": 0.3,
+          "value": 3.4335,
+          "abs": 0.005,
+          "note": "face phase: bottom vertex 2 carries a quarter of the weight, 3.4335 N"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C3/f_n",
+          "t": 0.3,
+          "value": 3.4335,
+          "abs": 0.005,
+          "note": "face phase: bottom vertex 3 carries a quarter of the weight, 3.4335 N"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C4/f_n",
+          "t": 0.3,
+          "value": 3.4335,
+          "abs": 0.005,
+          "note": "face phase: bottom vertex 4 carries a quarter of the weight, 3.4335 N"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 2.2,
+          "value": 0.7853981633974483,
+          "abs": 0.002,
+          "note": "edge phase held: tilt about the edge is 45 deg (measured 0.7860 at 2.2 s, 0.7862 max over the phase)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/nload",
+          "t": 2.2,
+          "value": 2.0,
+          "abs": 0.01,
+          "note": "edge phase: exactly two vertices loaded (smooth count, measured 1.99958)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C1/f_n",
+          "t": 2.2,
+          "value": 6.867,
+          "abs": 0.01,
+          "note": "edge phase: edge vertex 1 carries half the weight, 6.867 N"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C2/f_n",
+          "t": 2.2,
+          "value": 6.867,
+          "abs": 0.01,
+          "note": "edge phase: edge vertex 2 carries half the weight, 6.867 N"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C3/f_n",
+          "value": 1e-06,
+          "note": "edge phase: vertex 3 is free (f_n = 0 to 1e-6 N; the top four vertices stay 0.114 m above the plane and carry no contact in this model)",
+          "from_t": 2.0,
+          "to_t": 2.3
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C4/f_n",
+          "value": 1e-06,
+          "note": "edge phase: vertex 4 is free (f_n = 0 to 1e-6 N; the top four vertices stay 0.114 m above the plane and carry no contact in this model)",
+          "from_t": 2.0,
+          "to_t": 2.3
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/sumfn",
+          "t": 2.2,
+          "value": 13.734,
+          "abs": 0.001,
+          "note": "edge phase: the two edge vertices carry the full weight"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 4.2,
+          "value": 0.9553166181245093,
+          "abs": 0.001,
+          "note": "corner phase held: the body diagonal is vertical, tilt = atan(sqrt 2) = 54.7356 deg (measured 0.95532 to 0.95557)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/nload",
+          "t": 4.2,
+          "value": 1.0,
+          "abs": 0.01,
+          "note": "corner phase: exactly one vertex loaded (smooth count, measured 0.99995)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C1/f_n",
+          "t": 4.2,
+          "value": 13.734,
+          "abs": 0.02,
+          "note": "corner phase: vertex 1 carries the full weight, 13.734 N"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C2/f_n",
+          "value": 1e-06,
+          "note": "corner phase: vertex 2 is free (f_n = 0 to 1e-6 N; the top four vertices stay 0.114 m above the plane and carry no contact in this model)",
+          "from_t": 3.8,
+          "to_t": 4.5
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C3/f_n",
+          "value": 1e-06,
+          "note": "corner phase: vertex 3 is free (f_n = 0 to 1e-6 N; the top four vertices stay 0.114 m above the plane and carry no contact in this model)",
+          "from_t": 3.8,
+          "to_t": 4.5
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C4/f_n",
+          "value": 1e-06,
+          "note": "corner phase: vertex 4 is free (f_n = 0 to 1e-6 N; the top four vertices stay 0.114 m above the plane and carry no contact in this model)",
+          "from_t": 3.8,
+          "to_t": 4.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/zc",
+          "t": 4.5,
+          "value": 0.17242672,
+          "abs": 0.0001,
+          "note": "corner phase: the centre of mass sits sqrt(3)/2 a = 0.17321 m above the vertex minus the 0.76 mm contact penetration (measured 0.172427)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tap/nsp",
+          "t": 2.0,
+          "value": 0.005,
+          "abs": 1e-09,
+          "note": "null-space component n.tau of the four MEASURED motor torques equals the commanded lam = 0.005 N m"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Tap/nsp",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Lambda/y",
+              "coeff": -1.0
+            }
+          ],
+          "from_t": 0.002,
+          "scale": 0.005,
+          "tol": 1e-09,
+          "note": "n.tau - lam stays 0 for the whole run (measured max 2e-16), through every phase and through torque saturation: the pyramid null direction (1,-1,1,-1) carries no body torque"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/resid",
+          "value": 1e-12,
+          "note": "range and null space of the torque vector are orthogonal: |tau|^2 - |A+ A tau|^2 - (n.tau)^2 = 0 (measured 1e-15)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbx",
+          "signal_b": "Alloc/Tbx",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis x (measured 2e-16)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tby",
+          "signal_b": "Alloc/Tby",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis y (measured 2e-16)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbz",
+          "signal_b": "Alloc/Tbz",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis z (measured 2e-16)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint1/qdout",
+          "value": 320.0,
+          "note": "wheel 1 speed relative to the body stays under 320 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint2/qdout",
+          "value": 320.0,
+          "note": "wheel 2 speed relative to the body stays under 320 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint3/qdout",
+          "value": 320.0,
+          "note": "wheel 3 speed relative to the body stays under 320 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint4/qdout",
+          "value": 320.0,
+          "note": "wheel 4 speed relative to the body stays under 320 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t1",
+          "value": 1.2001,
+          "note": "motor torque of wheel 1 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t2",
+          "value": 1.2001,
+          "note": "motor torque of wheel 2 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t3",
+          "value": 1.2001,
+          "note": "motor torque of wheel 3 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t4",
+          "value": 1.2001,
+          "note": "motor torque of wheel 4 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "WJoint4/qdout",
+          "value": 307.89082,
+          "abs": 0.5,
+          "note": "wheel speed peak: wheel 4 reaches 307.9 rad/s during the corner tip-up (stated limit 320 rad/s, about 3060 rpm)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "EnCube/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnCube/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW1/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW1/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW2/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW2/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW3/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW3/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW4/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW4/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "C1/Ec",
+              "coeff": 1.0
+            },
+            {
+              "signal": "C2/Ec",
+              "coeff": 1.0
+            },
+            {
+              "signal": "C3/Ec",
+              "coeff": 1.0
+            },
+            {
+              "signal": "C4/Ec",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Ledger/Es",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Ledger/Ed",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Ledger/Wm",
+              "coeff": -1.0
+            }
+          ],
+          "scale": 1.4,
+          "tol": 0.0015,
+          "note": "energy ledger: kinetic + potential energy of the cube and four wheels, plus the contact spring energy, plus shaft and rotor energy, plus the dissipated contact energy, minus the motor input work is constant. Measured max drift 1.0e-3 J on an energy scale of 1.4 J (the wheel joints' own compliance, kr = 2e4 N m/rad, stores the rest); the bound is 2.1e-3 J"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "every wheel rotor sits behind a shaft (no W201), the chain is connected, frame-consistent and unit-clean, and no event fires (no W206)"
+        }
+      ],
+      "run_timeout": 900
+    },
+    "edge-contact": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 0.0,
+          "value": 0.7,
+          "abs": 1e-09,
+          "note": "the edge phase starts 0.70 rad (40.1 deg) tilted about the edge"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 1.2,
+          "value": 0.7853981633974483,
+          "abs": 0.001,
+          "note": "edge balance reached: tilt 45 deg (measured 0.78510)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/nload",
+          "t": 1.2,
+          "value": 2.0,
+          "abs": 0.01,
+          "note": "exactly two vertices loaded (measured 1.99958)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C1/f_n",
+          "t": 1.2,
+          "value": 6.867,
+          "abs": 0.01,
+          "note": "edge vertex 1 carries half the weight (6.867 N)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C2/f_n",
+          "t": 1.2,
+          "value": 6.867,
+          "abs": 0.01,
+          "note": "edge vertex 2 carries half the weight (6.867 N)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C3/f_n",
+          "value": 1e-06,
+          "note": "vertex 3 is free",
+          "from_t": 0.0,
+          "to_t": 1.2
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C4/f_n",
+          "value": 1e-06,
+          "note": "vertex 4 is free",
+          "from_t": 0.0,
+          "to_t": 1.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tap/nsp",
+          "t": 1.0,
+          "value": 0.005,
+          "abs": 1e-09,
+          "note": "null-space component n.tau of the four MEASURED motor torques equals the commanded lam = 0.005 N m"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Tap/nsp",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Lambda/y",
+              "coeff": -1.0
+            }
+          ],
+          "from_t": 0.002,
+          "scale": 0.005,
+          "tol": 1e-09,
+          "note": "n.tau - lam stays 0 for the whole run (measured max 2e-16), through every phase and through torque saturation: the pyramid null direction (1,-1,1,-1) carries no body torque"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/resid",
+          "value": 1e-12,
+          "note": "range and null space of the torque vector are orthogonal: |tau|^2 - |A+ A tau|^2 - (n.tau)^2 = 0 (measured 1e-15)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbx",
+          "signal_b": "Alloc/Tbx",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis x (measured 2e-16)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tby",
+          "signal_b": "Alloc/Tby",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis y (measured 2e-16)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbz",
+          "signal_b": "Alloc/Tbz",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis z (measured 2e-16)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint1/qdout",
+          "value": 20.0,
+          "note": "wheel 1 speed relative to the body stays under 20 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint2/qdout",
+          "value": 20.0,
+          "note": "wheel 2 speed relative to the body stays under 20 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint3/qdout",
+          "value": 20.0,
+          "note": "wheel 3 speed relative to the body stays under 20 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint4/qdout",
+          "value": 20.0,
+          "note": "wheel 4 speed relative to the body stays under 20 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t1",
+          "value": 1.2001,
+          "note": "motor torque of wheel 1 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t2",
+          "value": 1.2001,
+          "note": "motor torque of wheel 2 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t3",
+          "value": 1.2001,
+          "note": "motor torque of wheel 3 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t4",
+          "value": 1.2001,
+          "note": "motor torque of wheel 4 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "every wheel rotor sits behind a shaft (no W201), the chain is connected, frame-consistent and unit-clean, and no event fires (no W206)"
+        }
+      ],
+      "run_timeout": 600
+    },
+    "edge-switched": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 0.0,
+          "value": 0.7,
+          "abs": 1e-09,
+          "note": "the edge phase starts 0.70 rad (40.1 deg) tilted about the edge"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 1.2,
+          "value": 0.7853981633974483,
+          "abs": 0.001,
+          "note": "edge balance reached: tilt 45 deg (measured 0.78510)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/nload",
+          "t": 1.2,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "no vertex contact in this model (the pivot carries the load)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tap/nsp",
+          "t": 1.0,
+          "value": 0.005,
+          "abs": 1e-09,
+          "note": "null-space component n.tau of the four MEASURED motor torques equals the commanded lam = 0.005 N m"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Tap/nsp",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Lambda/y",
+              "coeff": -1.0
+            }
+          ],
+          "from_t": 0.002,
+          "scale": 0.005,
+          "tol": 1e-09,
+          "note": "n.tau - lam stays 0 for the whole run (measured max 2e-16), through every phase and through torque saturation: the pyramid null direction (1,-1,1,-1) carries no body torque"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/resid",
+          "value": 1e-12,
+          "note": "range and null space of the torque vector are orthogonal: |tau|^2 - |A+ A tau|^2 - (n.tau)^2 = 0 (measured 1e-15)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbx",
+          "signal_b": "Alloc/Tbx",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis x (measured 2e-16)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tby",
+          "signal_b": "Alloc/Tby",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis y (measured 2e-16)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbz",
+          "signal_b": "Alloc/Tbz",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis z (measured 2e-16)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint1/qdout",
+          "value": 20.0,
+          "note": "wheel 1 speed relative to the body stays under 20 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint2/qdout",
+          "value": 20.0,
+          "note": "wheel 2 speed relative to the body stays under 20 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint3/qdout",
+          "value": 20.0,
+          "note": "wheel 3 speed relative to the body stays under 20 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint4/qdout",
+          "value": 20.0,
+          "note": "wheel 4 speed relative to the body stays under 20 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t1",
+          "value": 1.2001,
+          "note": "motor torque of wheel 1 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t2",
+          "value": 1.2001,
+          "note": "motor torque of wheel 2 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t3",
+          "value": 1.2001,
+          "note": "motor torque of wheel 3 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t4",
+          "value": 1.2001,
+          "note": "motor torque of wheel 4 stays at the 1.2 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "every wheel rotor sits behind a shaft (no W201), the chain is connected, frame-consistent and unit-clean, and no event fires (no W206)"
+        }
+      ],
+      "run_timeout": 600
+    }
+  },
+  "compare": [
+    {
+      "a": "edge-contact",
+      "b": "edge-switched",
+      "signal_a": "Sense/tilt",
+      "signal_b": "Sense/tilt",
+      "max_abs": 5e-05,
+      "from_t": 0.0,
+      "note": "tilt about the edge, contact vs switched pivot: measured max 1.2e-5 rad (limit about 4x)"
+    },
+    {
+      "a": "edge-contact",
+      "b": "edge-switched",
+      "signal_a": "Sense/zc",
+      "signal_b": "Sense/zc",
+      "max_abs": 6e-05,
+      "from_t": 0.0,
+      "note": "height of the centre of mass: measured max 1.6e-5 m, the size of the pivot weight deflection m g / kt = 1.4e-5 m (limit about 4x the measured value)"
+    },
+    {
+      "a": "edge-contact",
+      "b": "edge-switched",
+      "signal_a": "Sense/py",
+      "signal_b": "Sense/py",
+      "max_abs": 2.5e-05,
+      "from_t": 0.0,
+      "note": "centre-of-mass position across the edge: measured max 5.4e-6 m"
+    },
+    {
+      "a": "edge-contact",
+      "b": "edge-switched",
+      "signal_a": "WJoint1/qdout",
+      "signal_b": "WJoint1/qdout",
+      "max_abs": 0.02,
+      "from_t": 0.0,
+      "note": "wheel 1 speed: measured max 4.6e-3 rad/s of 11 rad/s (the wheels see the same body motion)"
+    }
+  ]
+}

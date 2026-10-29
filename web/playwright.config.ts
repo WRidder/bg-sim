@@ -9,7 +9,9 @@ import { defineConfig, devices } from "@playwright/test";
  * the backend can serve the app itself.
  */
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
-const BASE_URL = "http://127.0.0.1:8765";
+// BGSIM_E2E_PORT moves the test backend off 8765 when a dev backend runs there.
+const PORT = process.env.BGSIM_E2E_PORT ?? "8765";
+const BASE_URL = `http://127.0.0.1:${PORT}`;
 // The X1.1 acceptance spec needs the real Julia worker; the other UI specs use
 // the fixture-driven fake worker (plan 2.3). Lane x runs both passes.
 const realWorker = process.env.BGSIM_E2E_REAL === "1";
@@ -35,7 +37,7 @@ export default defineConfig({
       // The real-worker acceptance specs are skipped in the fake-worker pass.
       testIgnore: realWorker
         ? [/perf[\\/]/, /multibond\.spec\.ts/]
-        : [/perf[\\/]/, /multibond-pendulum\.spec\.ts/, /dcmotor\.spec\.ts/, /subsystems\.spec\.ts/, /rlc-dual\.spec\.ts/, /domain-visual\.spec\.ts/, /inverted-pendulum-cart\.spec\.ts/, /drivetrain-kalman\.spec\.ts/, /quarter-car\.spec\.ts/, /industrial-servo\.spec\.ts/, /hydraulic-servo\.spec\.ts/, /speed-control\.spec\.ts/, /robot-arm-2d\.spec\.ts/, /reaction-wheel-2d\.spec\.ts/],
+        : [/perf[\\/]/, /multibond-pendulum\.spec\.ts/, /dcmotor\.spec\.ts/, /subsystems\.spec\.ts/, /rlc-dual\.spec\.ts/, /domain-visual\.spec\.ts/, /inverted-pendulum-cart\.spec\.ts/, /drivetrain-kalman\.spec\.ts/, /quarter-car\.spec\.ts/, /industrial-servo\.spec\.ts/, /hydraulic-servo\.spec\.ts/, /speed-control\.spec\.ts/, /robot-arm-2d\.spec\.ts/, /reaction-wheel-2d\.spec\.ts/, /robot-arm-3d\.spec\.ts/],
     },
     {
       name: "perf",
@@ -49,7 +51,10 @@ export default defineConfig({
   webServer: {
     command: "uv run bgsim",
     cwd: repoRoot,
-    env: process.env.BGSIM_E2E_REAL === "1" ? {} : { BGSIM_FAKE_WORKER: "1" },
+    env: {
+      BGSIM_PORT_HTTP: PORT,
+      ...(process.env.BGSIM_E2E_REAL === "1" ? {} : { BGSIM_FAKE_WORKER: "1" }),
+    },
     url: `${BASE_URL}/api/health`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,

@@ -134,9 +134,12 @@ _dictify(v) = v
 
 include("catalog.jl")
 include("loader.jl")
+include("chain_loader.jl")
 include("intrinsics.jl")
 
 export BlockDef, has_errors, load_block, load_source, stdlib_dir, load_stdlib,
-    load_project_library, catalog, intrinsics, clear_cache, domain_components
+    load_project_library, catalog, intrinsics, clear_cache, domain_components,
+    LinkRecord, JointRecord, JointChain, joint_pose, load_chain, chain_model, lumpInto,
+    inverse_dynamics, gravity_compensation
 
 end # module Library

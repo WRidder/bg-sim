@@ -251,7 +251,45 @@ const M3_PLANAR_REFS = [
     "stdlib:planar/RigidBody2D",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS))
+# The M3 spatial composites of J-MB9 (plan 6, row J-MB9): bodies, joints and pose helpers in
+# the new `spatial` group.
+const M3_SPATIAL_REFS = [
+    "stdlib:spatial/Cylindrical3D",
+    "stdlib:spatial/Free3D",
+    "stdlib:spatial/Helical3D",
+    "stdlib:spatial/LocalPose3D",
+    "stdlib:spatial/Planar3D",
+    "stdlib:spatial/Prismatic3D",
+    "stdlib:spatial/Prismatic3DCompliant",
+    "stdlib:spatial/Prismatic3DFriction",
+    "stdlib:spatial/Prismatic3DLimit",
+    "stdlib:spatial/Revolute3D",
+    "stdlib:spatial/Revolute3DCompliant",
+    "stdlib:spatial/Revolute3DFriction",
+    "stdlib:spatial/Revolute3DLimit",
+    "stdlib:spatial/RigidBody3D",
+    "stdlib:spatial/Spherical3D",
+    "stdlib:spatial/Universal3D",
+]
+
+# The M3 contact elements of J-MB13 (plane surface and compliant contact point).
+const M3_CONTACT_REFS = [
+    "stdlib:contact/ContactPoint",
+    "stdlib:contact/ContactSurface",
+    "stdlib:contact/ImpactBody3D",
+    "stdlib:contact/ImpactInertia3D",
+    "stdlib:contact/SwitchedPivot3D",
+]
+
+# The M3 drives of J-MB11 (plan 6, row J-MB11): composites in the new `drives` group.
+const M3_DRIVES_REFS = [
+    "stdlib:drives/CurrentControlledDrive",
+    "stdlib:drives/ElectricDrive",
+    "stdlib:drives/Gearbox",
+    "stdlib:drives/ReactionWheel",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`

@@ -352,12 +352,19 @@ end
 # Frame metadata (D-MB5)
 # ---------------------------------------------------------------------------------------
 
-"""    _FrameClaim(frame, path, port, domain, node, block)
+"""    _FrameClaim(frame, path, port, domain, node, block, is_face)
 
 The named frame that a union-find group adopted, and the port that declared it. `path` is
 the instance-qualified instance (a subsystem path for an exposed face), so the editor's
-`frames` value can be `"{path}/{frame}"`. Frames compare by the unqualified `frame` name: a
-name such as `world` is shared across instances; only the reported values are qualified."""
+`frames` value can be `"{path}/{frame}"`.
+
+Face-scoped identity (FIX-MB-6): `is_face` marks a claim made by a composite/subsystem face
+(an endpoint reached through a boundary). Two claims conflict when their names differ, or
+when **both** are faces of different instances and the shared name is not the global
+`world`: `Body1/body` and `Body2/body` are different frames, while a primitive port keeps
+its bare declared name (so a transform's `body` side is compatible with any body face).
+Two primitive ports with the same name are still accepted (the documented residual
+limitation of option 1)."""
 struct _FrameClaim
     frame::String
     path::String
@@ -365,6 +372,16 @@ struct _FrameClaim
     domain::Symbol
     node::Union{String,Nothing}
     block::Union{String,Nothing}
+    is_face::Bool
+end
+
+"""    _frames_conflict(ca, cb) -> Bool
+
+The comparison rule: different names always conflict; the same name conflicts only when both
+claims are faces of different instances and the name is not the global `world`."""
+function _frames_conflict(ca::_FrameClaim, cb::_FrameClaim)
+    ca.frame != cb.frame && return true
+    return ca.is_face && cb.is_face && ca.frame != "world" && ca.path != cb.path
 end
 
 """    _frame_slot(ep) -> Tuple{String,Symbol}
@@ -402,7 +419,7 @@ function _frame_claim(b::Builder, ep::RawEndpoint)
         domain = sp === nothing ? :Generic : something(sp.domain, :Generic)
         st = get(b.state_by_path, ep.path, nothing)
         return _FrameClaim(frame, ep.face[1], ep.face[2], domain, ep.node,
-            st === nothing ? nothing : st.ref)
+            st === nothing ? nothing : st.ref, true)
     end
     ep.kind == :power || return nothing
     ep.port === nothing && return nothing
@@ -410,7 +427,7 @@ function _frame_claim(b::Builder, ep::RawEndpoint)
     port === nothing && return nothing
     st = get(b.state_by_path, ep.path, nothing)
     return _FrameClaim(frame, ep.path, ep.port, port.domain, ep.node,
-        st === nothing ? nothing : st.ref)
+        st === nothing ? nothing : st.ref, false)
 end
 
 function _seed_frame!(
@@ -422,15 +439,20 @@ function _seed_frame!(
     claim = _frame_claim(b, ep)
     claim === nothing && return nothing
     root = _uf_find!(uf, _frame_slot(ep))
-    haskey(claims, root) || (claims[root] = claim)
+    # A face claim outranks a primitive one already on the group (a composite's face and its
+    # own junction share one slot), so the face is what a later bond compares against.
+    existing = get(claims, root, nothing)
+    (existing === nothing || (claim.is_face && !existing.is_face)) && (claims[root] = claim)
     return nothing
 end
 
 """    _unify_frames!(uf, claims, a, b) -> Union{Nothing,Tuple{_FrameClaim,_FrameClaim}}
 
 Union two frame slots. Returns the two conflicting claims when both groups already carry a
-named frame and the names differ; the caller then reports E007 on the connection that closed
-the conflict. A group with no frame is frame-neutral and adopts the other one."""
+named frame and `_frames_conflict` holds; the caller then reports E007 on the connection that
+closed the conflict. A group with no frame is frame-neutral and adopts the other one. A merged
+group keeps a face claim in preference to a primitive one, so a later face of another
+instance is still compared by `(path, name)`."""
 function _unify_frames!(
     uf::UnionFind,
     claims::Dict{Tuple{String,Symbol},_FrameClaim},
@@ -442,11 +464,11 @@ function _unify_frames!(
     ra == rb && return nothing
     ca = get(claims, ra, nothing)
     cb = get(claims, rb, nothing)
-    if ca !== nothing && cb !== nothing && ca.frame != cb.frame
+    if ca !== nothing && cb !== nothing && _frames_conflict(ca, cb)
         return (ca, cb)
     end
     root = _uf_union!(uf, a, b)
-    merged = ca === nothing ? cb : ca
+    merged = ca === nothing ? cb : cb === nothing ? ca : (cb.is_face && !ca.is_face) ? cb : ca
     delete!(claims, ra == root ? rb : ra)
     merged === nothing ? delete!(claims, root) : (claims[root] = merged)
     return nothing
@@ -474,12 +496,18 @@ function _e007_frame!(
     message = "frame mismatch: $(path_claim.domain) port `$(path_claim.port)` of " *
               "`$(_owner(path_claim.path))` is in frame `$(path_claim.frame)`, but port " *
               "`$(other.port)` of `$(_owner(other.path))` is in frame `$(other.frame)`"
+    same_name = path_claim.frame == other.frame
+    same_name && (message *= "; frames of different instances are distinct " *
+                             "(`$(path_claim.path)/$(path_claim.frame)` vs " *
+                             "`$(other.path)/$(other.frame)`)")
     push!(
         b.diagnostics,
         diag(
             "E007",
             message;
-            hint = "connect them through a FixedTransform or JointTransform, or give both ports the same frame; a null frame unifies with either",
+            hint = same_name ?
+                   "two bodies' own frames are different frames even when both are named `$(path_claim.frame)`: connect them through a joint or a FixedTransform/JointTransform (frame-neutral), not directly" :
+                   "connect them through a FixedTransform or JointTransform, or give both ports the same frame; a null frame unifies with either",
             path = path_claim.path,
             block = path_claim.block,
             node = path_claim.node,
@@ -497,7 +525,7 @@ The D-MB5 frame rule and the D-MB12 stroke counts. A bond or wire group unifies 
 of its ports; a junction's attached bonds share one frame. Two different named frames in one
 group are E007 on the connection that closes the conflict. `frames` maps every bond/wire with
 an adopted frame to `"{path}/{frame}"` (display-qualified, so a catalog name `body` on two
-bodies is distinguishable in the editor; equality itself is by the unqualified frame name);
+bodies is distinguishable in the editor; equality is face-scoped: `(path, name)` when both claims are composite faces, the bare name otherwise, and `world` is global);
 `multibond` maps every Planar/Spatial **bond** to 2/3 strokes. Plan 7.1 makes the stroke count
 a bond property, so a Planar wire deliberately has no `multibond` entry. Frames are metadata,
 not type parameters: nothing here computes with a frame.
