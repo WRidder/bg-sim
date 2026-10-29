@@ -15,6 +15,7 @@ import { StartPage } from "./StartPage";
 import { TopBar } from "./TopBar";
 import { useAppShortcuts } from "./useAppShortcuts";
 import { useAutoDetachStore, useDetachStore } from "../plot/detachStore";
+import { useViewerDetachStore } from "../viewer/detachStore";
 
 // The popup windows pull in uPlot; they load only once a plot is detached (code splitting, W5.4).
 const DetachedPlotWindow = lazy(() =>
@@ -22,6 +23,10 @@ const DetachedPlotWindow = lazy(() =>
 );
 const DetachedAutoPlotWindow = lazy(() =>
   import("../plot/DetachedAutoPlotWindow").then((m) => ({ default: m.DetachedAutoPlotWindow })),
+);
+// Likewise the detached 3D View pulls in Babylon (W5.5).
+const DetachedViewerWindow = lazy(() =>
+  import("../viewer/DetachedViewerWindow").then((m) => ({ default: m.DetachedViewerWindow })),
 );
 
 /**
@@ -47,6 +52,7 @@ export function App() {
   useAppShortcuts();
   const plotsDetached = useDetachStore((state) => state.detached);
   const autoPlotDetached = useAutoDetachStore((state) => state.detached);
+  const viewerDetached = useViewerDetachStore((state) => state.detached);
 
   useEffect(() => {
     const showPlots = (): void => setDockTab("plots");
@@ -66,6 +72,7 @@ export function App() {
       <Suspense fallback={null}>
         {plotsDetached ? <DetachedPlotWindow /> : null}
         {autoPlotDetached ? <DetachedAutoPlotWindow /> : null}
+        {viewerDetached ? <DetachedViewerWindow /> : null}
       </Suspense>
 
       {startPage ? null : (

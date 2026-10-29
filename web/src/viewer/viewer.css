@@ -74,3 +74,23 @@
   background: var(--color-surface);
   text-align: center;
 }
+
+/* The popup window of a detached 3D View (W5.5); the Plots popup styles come from plot.css, which may not be loaded. */
+.bgsim-detached-body {
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+#bgsim-detached-root {
+  height: 100vh;
+}
+
+.viewer__note {
+  align-self: center;
+  padding: 0 var(--space-2, 0.5rem);
+  color: var(--color-error);
+  font-size: var(--font-size-sm);
+}

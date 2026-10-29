@@ -9,6 +9,8 @@ export interface PlaybackBarProps {
   readonly snapshot: PlaybackSnapshot;
   /** A message for the user about the stream, or null. */
   readonly streamError: string | null;
+  /** The stream failed and the run was loaded over HTTP instead (W5.5), or absent. */
+  readonly streamNote?: string | null;
   /** The model has bindings. */
   readonly hasBindings: boolean;
   /** The binding table is open. */
@@ -40,7 +42,7 @@ export function playbackKeyHandler(playback: ViewerPlayback | null): (event: Key
  * follow the newest data (the controls wait for the run to finish); `data-*` attributes expose the state:
  * `data-mode`, `data-playing`, `data-time` and `data-applied` (position bindings, JSON) for tests.
  */
-export function PlaybackBar({ playback, snapshot, streamError, hasBindings, bindingsOpen, onToggleBindings }: PlaybackBarProps): ReactElement {
+export function PlaybackBar({ playback, snapshot, streamError, streamNote = null, hasBindings, bindingsOpen, onToggleBindings }: PlaybackBarProps): ReactElement {
   const { mode, playing, time, start, end, speed, loop, applied } = snapshot;
   // the slider shows what the user just chose until the next frame reports the new head; a controlled range
   // that waited for that frame would snap back under the thumb
@@ -157,6 +159,11 @@ export function PlaybackBar({ playback, snapshot, streamError, hasBindings, bind
           Bindings
         </button>
       </div>
+      {streamNote !== null && streamError === null ? (
+        <p className="playback__note" role="status" data-testid="playback-fallback-note">
+          {streamNote}
+        </p>
+      ) : null}
       {note !== null ? (
         <p className="playback__note" role={streamError !== null ? "alert" : undefined} data-testid="playback-note">
           {note}

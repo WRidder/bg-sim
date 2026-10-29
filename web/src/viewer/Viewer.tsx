@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
-import { hardwareScaling, RenderScheduler } from "./renderScheduler";
+import { hardwareScaling, RenderScheduler, windowClock } from "./renderScheduler";
 import { TAP_SLOP_PX } from "./picking";
 import { ViewerScene, type CameraPreset, type ViewerColours } from "./viewerScene";
 import "./viewer.css";
@@ -25,6 +25,8 @@ export interface ViewerProps {
   readonly selection?: readonly string[] | undefined;
   /** Shown over a corner of the view; the grid and axes are drawn behind it. */
   readonly overlay?: ReactNode;
+  /** Appended to the toolbar (the 3D View's Detach / Dock button). */
+  readonly toolbarEnd?: ReactNode;
 }
 
 const DEFAULT_DPR_CAP = 1.5;
@@ -40,8 +42,13 @@ function webglEngine(canvas: HTMLCanvasElement): AbstractEngine {
   return new Engine(canvas, true, { useHighPrecisionMatrix: true, stencil: true, preserveDrawingBuffer: false, adaptToDeviceRatio: false, canvasTabIndex: 0 });
 }
 
+/** The window an element is shown in: the opener, or a popup the view was detached to. */
+function windowOf(el: Element): Window & typeof globalThis {
+  return (el.ownerDocument.defaultView as (Window & typeof globalThis) | null) ?? window;
+}
+
 function tokenColour(el: Element, name: string, fallback: Color3): Color3 {
-  const v = getComputedStyle(el).getPropertyValue(name).trim();
+  const v = windowOf(el).getComputedStyle(el).getPropertyValue(name).trim();
   if (/^#[0-9a-f]{6}$/i.test(v)) return Color3.FromHexString(v);
   const m = /^rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(v);
   return m ? new Color3(Number(m[1]) / 255, Number(m[2]) / 255, Number(m[3]) / 255) : fallback;
@@ -101,7 +108,10 @@ export function Viewer(props: ViewerProps) {
       };
     }
     const cap = propsRef.current.dprCap ?? DEFAULT_DPR_CAP;
-    engine.setHardwareScalingLevel(hardwareScaling(window.devicePixelRatio, cap));
+    // Everything that belongs to the screen is the hosting window's: after a detach that is the popup.
+    const doc = canvas.ownerDocument;
+    const win = windowOf(canvas);
+    engine.setHardwareScalingLevel(hardwareScaling(win.devicePixelRatio, cap));
 
     // Shaders compile asynchronously: a frame drawn before they are ready lacks those meshes, and an
     // on-demand scheduler would never draw another. One redraw is queued for when the scene is ready.
@@ -119,7 +129,7 @@ export function Viewer(props: ViewerProps) {
       host.dataset["state"] = moving ? "rendering" : "idle";
       host.dataset["frames"] = String(scheduler.frames);
       return moving;
-    });
+    }, windowClock(win));
     const scene = new ViewerScene(engine, () => {
       if (disposed) return;
       host.dataset["state"] = "rendering";
@@ -137,20 +147,20 @@ export function Viewer(props: ViewerProps) {
     shown.apply = () => {
       scheduler.setVisible(shown.page && shown.inView && shown.active);
     };
-    shown.page = !document.hidden;
+    shown.page = !doc.hidden;
     shown.apply();
 
     const wake = () => {
       scheduler.invalidate();
     };
     const onVisibility = () => {
-      shown.page = !document.hidden;
+      shown.page = !doc.hidden;
       shown.apply();
     };
-    document.addEventListener("visibilitychange", onVisibility);
+    doc.addEventListener("visibilitychange", onVisibility);
     const io =
-      typeof IntersectionObserver !== "undefined"
-        ? new IntersectionObserver((entries) => {
+      typeof win.IntersectionObserver !== "undefined"
+        ? new win.IntersectionObserver((entries) => {
             const e = entries[entries.length - 1];
             if (disposed || !e) return;
             shown.inView = e.isIntersecting;
@@ -159,10 +169,10 @@ export function Viewer(props: ViewerProps) {
         : null;
     io?.observe(canvas);
     const ro =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => {
+      typeof win.ResizeObserver !== "undefined"
+        ? new win.ResizeObserver(() => {
             if (disposed) return;
-            engine.setHardwareScalingLevel(hardwareScaling(window.devicePixelRatio, cap));
+            engine.setHardwareScalingLevel(hardwareScaling(win.devicePixelRatio, cap));
             engine.resize();
             wake();
           })
@@ -170,13 +180,13 @@ export function Viewer(props: ViewerProps) {
     ro?.observe(canvas);
     // A theme switch changes the token colours of the grid, axes and outline.
     const themeWatch =
-      typeof MutationObserver !== "undefined"
-        ? new MutationObserver(() => {
+      typeof win.MutationObserver !== "undefined"
+        ? new win.MutationObserver(() => {
             if (disposed) return;
             scene.setColours(themeColours(host));
           })
         : null;
-    themeWatch?.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    themeWatch?.observe(doc.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
     const noMenu = (e: Event) => {
       e.preventDefault();
@@ -215,7 +225,7 @@ export function Viewer(props: ViewerProps) {
     return () => {
       disposed = true;
       propsRef.current.onReady?.(null);
-      document.removeEventListener("visibilitychange", onVisibility);
+      doc.removeEventListener("visibilitychange", onVisibility);
       io?.disconnect();
       ro?.disconnect();
       themeWatch?.disconnect();
@@ -274,6 +284,7 @@ export function Viewer(props: ViewerProps) {
             <button type="button" className="viewer__button" data-testid="viewer-ortho" aria-pressed={ortho} onClick={toggleOrtho}>
               Ortho
             </button>
+            {props.toolbarEnd}
           </div>
           {props.overlay ? <div className="viewer__overlay">{props.overlay}</div> : null}
         </>

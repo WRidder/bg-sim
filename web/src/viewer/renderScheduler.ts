@@ -10,6 +10,16 @@ export const browserClock: FrameClock = {
   },
 };
 
+/** The frame clock of one window: a popup throttles and pauses its own `requestAnimationFrame`, not the opener's. */
+export function windowClock(win: Pick<Window, "requestAnimationFrame" | "cancelAnimationFrame">): FrameClock {
+  return {
+    request: (cb) => win.requestAnimationFrame(cb),
+    cancel: (id) => {
+      win.cancelAnimationFrame(id);
+    },
+  };
+}
+
 /**
  * On-demand rendering: a frame is drawn only when something asked for one (a pose
  * sample, an input, a prop change) or the previous frame reported ongoing motion

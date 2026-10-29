@@ -4,6 +4,7 @@ import { DiagnosticsPanel } from "../diagnostics/DiagnosticsPanel";
 import { useDiagnosticBadges } from "../diagnostics/useDiagnostics";
 import { useAutoDetachStore, useDetachStore } from "../plot/detachStore";
 import { SignalBrowser } from "../plot/SignalBrowser";
+import { useViewerDetachStore } from "../viewer/detachStore";
 import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
 
@@ -71,6 +72,8 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
   const attach = useDetachStore((state) => state.attach);
   const autoDetached = useAutoDetachStore((state) => state.detached);
   const autoAttach = useAutoDetachStore((state) => state.attach);
+  const viewerDetached = useViewerDetachStore((state) => state.detached);
+  const viewerAttach = useViewerDetachStore((state) => state.attach);
   const counts: DiagnosticCounts = {
     error: Math.max(diagnostics.error, live.error),
     warning: Math.max(diagnostics.warning, live.warning),
@@ -146,7 +149,17 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
       case "signals":
         return <SignalBrowser />;
       case "viewer":
-        return null;
+        return viewerDetached ? (
+          <div className="dock__detached" data-testid="viewer-detached">
+            <EmptyState
+              title="The 3D view is in a separate window"
+              hint="The detached window shares this run, its bindings, the playback time and the plot cursor. Bring it back here whenever you like."
+            />
+            <button type="button" className="button" onClick={viewerAttach} data-testid="attach-viewer">
+              Dock the 3D view
+            </button>
+          </div>
+        ) : null;
       case "diagnostics":
         return <DiagnosticsPanel />;
       default:
@@ -165,7 +178,7 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
         tabIndex={0}
       >
         {panel()}
-        {viewerSeen ? (
+        {viewerSeen && !viewerDetached ? (
           <div style={{ height: "100%" }} hidden={active !== "viewer"} data-testid="dock-viewer">
             <Suspense fallback={<EmptyState title="Loading the 3D view" hint="One moment." />}>
               <DockViewer active={active === "viewer"} />

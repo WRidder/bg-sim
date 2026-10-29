@@ -35,6 +35,7 @@ export interface DetachOptions {
 
 export function createDetachStore(options: DetachOptions) {
   let popupWindow: Window | null = null;
+  let themeWatch: MutationObserver | null = null;
 
   const store = create<DetachStoreState>((set) => {
     const forget = (windowRef: Window): void => {
@@ -42,6 +43,8 @@ export function createDetachStore(options: DetachOptions) {
         return;
       }
       popupWindow = null;
+      themeWatch?.disconnect();
+      themeWatch = null;
       if (store.getState().popup === windowRef) {
         store.setState({ detached: false, popup: null });
       }
@@ -75,6 +78,12 @@ export function createDetachStore(options: DetachOptions) {
         doc.documentElement.lang = document.documentElement.lang;
         doc.documentElement.dataset.theme =
           document.documentElement.dataset.theme ?? "";
+        // a theme switch in the main window reaches the popup (the 3D view re-reads its token colours)
+        themeWatch?.disconnect();
+        themeWatch = new MutationObserver(() => {
+          doc.documentElement.dataset.theme = document.documentElement.dataset.theme ?? "";
+        });
+        themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
         // `about:blank` has no base URL, so relative asset URLs (fonts, images)
         // must resolve against the main document.
         const base = doc.createElement("base");
@@ -103,6 +112,8 @@ export function createDetachStore(options: DetachOptions) {
       attach: () => {
         const windowRef = popupWindow;
         popupWindow = null;
+        themeWatch?.disconnect();
+        themeWatch = null;
         set({ detached: false, popup: null });
         if (windowRef !== null && !windowRef.closed) {
           windowRef.close();

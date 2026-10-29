@@ -9,13 +9,20 @@ import { decodeFrames } from "./timeline";
 
 export type StreamMode = "live" | "playback";
 
+/** How a stream ended. `code` is the WebSocket close code of a failure (1006 when the connection never opened or broke). */
+export interface StreamEnd {
+  readonly ok: boolean;
+  readonly reason: string;
+  readonly code?: number;
+}
+
 export interface StreamHandlers {
   /** The handshake arrived; signals are in frame order. */
   onHandshake(handshake: StreamHandshake): void;
   /** Whole decoded frames, `[t, v1 ... vn]` each. */
   onFrames(frames: Float64Array): void;
   /** The stream ended: a normal close carries the run status (`done`, `cancelled`, `failed`), anything else an error text. */
-  onEnd(end: { readonly ok: boolean; readonly reason: string }): void;
+  onEnd(end: StreamEnd): void;
 }
 
 /** The URL of a run's stream for the given signal ids, in request order. */
@@ -29,8 +36,13 @@ export function streamUrl(runId: string, ids: readonly string[], mode: StreamMod
   return url.toString();
 }
 
+/** The request itself is wrong (bad ids, gone run, run not finished): the HTTP path would fail the same way. */
+export function isRefusal(code: number | undefined): boolean {
+  return code === 4400 || code === 4404 || code === 4409;
+}
+
 /** Refusal codes of the stream endpoint and what to do about them. */
-function refusal(code: number, reason: string): string {
+export function refusal(code: number, reason: string): string {
   switch (code) {
     case 4400:
       return `the stream request was refused: ${reason}`;
@@ -39,7 +51,7 @@ function refusal(code: number, reason: string): string {
     case 4409:
       return `the run cannot be followed yet (${reason}); wait for it to finish`;
     default:
-      return `the stream closed with ${String(code)} ${reason}`;
+      return `the 3D stream connection was dropped (${String(code)}${reason.length > 0 ? ` ${reason}` : ""})`;
   }
 }
 
@@ -56,7 +68,20 @@ export function openStream(
 ): () => void {
   let closed = false;
   let signalCount = -1;
-  const socket = makeSocket(streamUrl(runId, ids, mode));
+  let socket: WebSocket;
+  try {
+    socket = makeSocket(streamUrl(runId, ids, mode));
+  } catch (error) {
+    // some browsers refuse the constructor itself (mixed content, blocked ports): same as a dropped connection
+    queueMicrotask(() => {
+      if (closed) return;
+      closed = true;
+      handlers.onEnd({ ok: false, reason: refusal(1006, error instanceof Error ? error.message : String(error)), code: 1006 });
+    });
+    return () => {
+      closed = true;
+    };
+  }
   socket.binaryType = "arraybuffer";
   socket.onmessage = (event: MessageEvent) => {
     if (closed) return;
@@ -71,17 +96,24 @@ export function openStream(
     } catch (error) {
       closed = true;
       socket.close();
-      handlers.onEnd({ ok: false, reason: error instanceof Error ? error.message : String(error) });
+      handlers.onEnd({ ok: false, reason: error instanceof Error ? error.message : String(error), code: 1003 });
     }
   };
   socket.onclose = (event: CloseEvent) => {
     if (closed) return;
     closed = true;
     if (event.code === 1000) handlers.onEnd({ ok: true, reason: event.reason });
-    else handlers.onEnd({ ok: false, reason: refusal(event.code, event.reason) });
+    else handlers.onEnd({ ok: false, reason: refusal(event.code, event.reason), code: event.code });
   };
   socket.onerror = () => {
-    // a close event follows; it carries the reason
+    // A close event normally follows and carries the reason. Before the handshake some browsers
+    // report only the error (or the close never comes): end the stream here so the caller can fall back.
+    if (closed || signalCount >= 0) return;
+    closed = true;
+    socket.onmessage = null;
+    socket.onclose = null;
+    socket.close();
+    handlers.onEnd({ ok: false, reason: refusal(1006, ""), code: 1006 });
   };
   return () => {
     if (closed) return;

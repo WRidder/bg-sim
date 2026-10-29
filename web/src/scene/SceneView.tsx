@@ -36,6 +36,8 @@ export interface SceneViewProps {
   onKeyDown?: KeyboardEventHandler<HTMLDivElement>;
   /** Rendered under the viewer in the stage (playback bar, binding table). */
   extras?: ReactNode;
+  /** Appended to the viewer toolbar (Detach / Dock, W5.5). */
+  toolbarEnd?: ReactNode;
 }
 
 const NO_REFS: readonly string[] = [];
@@ -49,7 +51,7 @@ function describe(error: unknown): string {
  * camera, lists the scene as a tree beside the view and publishes the scene's E305/E306
  * diagnostics to the Diagnostics panel. `data-state` is `none`, `loading`, `loaded` or `error`.
  */
-export function SceneView({ active, createEngine, onBuilt, highlight = null, onKeyDown, extras }: SceneViewProps) {
+export function SceneView({ active, createEngine, onBuilt, highlight = null, onKeyDown, extras, toolbarEnd }: SceneViewProps) {
   const project = useDocumentStore((state) => state.project);
   const sceneFile = useDocumentStore((state) => state.doc?.scene?.file ?? null);
   const [viewer, setViewer] = useState<ViewerScene | null>(null);
@@ -135,7 +137,7 @@ export function SceneView({ active, createEngine, onBuilt, highlight = null, onK
       {status === "loaded" && current !== null ? <SceneTree tree={current.tree} selected={selected} onSelect={setSelected} /> : null}
       <div className="scene-view__stage" tabIndex={0} role="group" aria-label="3D view" onKeyDown={onKeyDown} data-testid="scene-stage">
         <div className="scene-view__viewer">
-          <Viewer active={active} createEngine={createEngine} onReady={setViewer} onSelect={setSelected} selection={selection} overlay={overlay} />
+          <Viewer active={active} createEngine={createEngine} onReady={setViewer} onSelect={setSelected} selection={selection} overlay={overlay} toolbarEnd={toolbarEnd} />
         </div>
         {extras}
       </div>
