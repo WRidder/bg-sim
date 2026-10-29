@@ -316,6 +316,23 @@ describe("refusals with the exact tooltip text (plan 7.3)", () => {
     });
   });
 
+  it("refuses to mix the Planar and Spatial multibond domains (E102)", () => {
+    // Regression guard: checkConnection already refused any two differing
+    // concrete domains before W-MB2. This pins the E102 tooltip for the pair
+    // the renderer guard protects; it is not a fail-without-change test.
+    const planar = power("Planar", { node: "n1", name: "p", size: [3] });
+    const spatial = power("Spatial", { node: "n2", name: "p", size: [6] });
+    expect(checkConnection(modelWith([]), planar, spatial)).toEqual({
+      ok: false,
+      reason: "Planar port cannot connect to Spatial; use a converter block",
+    });
+    // The same pair, reversed, is refused the same way.
+    expect(checkConnection(modelWith([]), spatial, planar)).toEqual({
+      ok: false,
+      reason: "Spatial port cannot connect to Planar; use a converter block",
+    });
+  });
+
   it("refuses the same pair twice", () => {
     const source = nodeFor("VoltageSource");
     const ground = nodeFor("Ground");

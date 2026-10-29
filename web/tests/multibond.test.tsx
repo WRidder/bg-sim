@@ -19,7 +19,8 @@ import type { Catalog } from "../src/contracts/catalog";
 import catalogJson from "../../contracts/fixtures/catalog/valid/catalog.min.json";
 import type { Model } from "../src/contracts/model";
 import { useDiagnosticsStore, resetDiagnosticsStore } from "../src/diagnostics/store";
-import { buildDiagram } from "../src/editor/buildFlow";
+import { buildDiagram, type DiagramFlow } from "../src/editor/buildFlow";
+import type { ConnectionVisual } from "../src/editor/connectionAnalysis";
 import { decorateFlow } from "../src/editor/edges/decorateFlow";
 import type { EditorEdgeData } from "../src/editor/edges/EditorEdges";
 import {
@@ -93,6 +94,20 @@ describe("multibond stroke count", () => {
     expect(multibondOffsets(1)).toEqual([0]);
     expect(multibondBundleHalf(2)).toBeCloseTo(2.1 + 0.75, 12);
     expect(multibondBundleHalf(3)).toBeCloseTo(4.2 + 0.75, 12);
+  });
+
+  it("spaces the D=6 Spatial bundle at [-gap, 0, +gap] and leaves D=3 at two strokes", () => {
+    // Spatial has six components but three strokes, at the full gap.
+    expect(multibondStrokes("Spatial")).toBe(3);
+    expect(multibondComponents("Spatial")).toBe(6);
+    expect(multibondOffsets(multibondStrokes("Spatial"))).toEqual([-4.2, 0, 4.2]);
+    expect(multibondBundleHalf(3)).toBeCloseTo(4.95, 12);
+
+    // Planar has three components and still draws two strokes, half a gap out.
+    expect(multibondStrokes("Planar")).toBe(2);
+    expect(multibondComponents("Planar")).toBe(3);
+    expect(multibondOffsets(multibondStrokes("Planar"))).toEqual([-2.1, 2.1]);
+    expect(multibondBundleHalf(2)).toBeCloseTo(2.85, 12);
   });
 });
 
@@ -377,7 +392,46 @@ describe("the multibond edge renderer", () => {
     expect(group?.getAttribute("aria-label")).toBe(
       "Spatial multibond, 6 components, 3 strokes",
     );
-    expect(container.querySelectorAll(".editor-edge__multibond-stroke")).toHaveLength(3);
+
+    const strokes = container.querySelectorAll(".editor-edge__multibond-stroke");
+    expect(strokes).toHaveLength(3);
+    expect(
+      [...strokes].map((stroke) => stroke.getAttribute("data-offset")),
+    ).toEqual(["-4.2", "0", "4.2"]);
+    const paths = new Set([...strokes].map((stroke) => stroke.getAttribute("d")));
+    expect(paths.size).toBe(3);
+    expect(strokes[0]?.getAttribute("stroke")).toBe("var(--domain-spatial)");
+    expect(strokes[0]?.getAttribute("stroke-width")).toBe("1.5");
+
+    // One half arrow per stroke, one causal bar across all three.
+    expect(container.querySelectorAll(".editor-edge__multibond-arrow")).toHaveLength(3);
+    const bars = container.querySelectorAll(".editor-edge__causal");
+    expect(bars).toHaveLength(1);
+    expect(bars[0]?.classList.contains("editor-edge__causal--bundle")).toBe(true);
+    const span = Math.hypot(
+      Number(bars[0]?.getAttribute("x2")) - Number(bars[0]?.getAttribute("x1")),
+      Number(bars[0]?.getAttribute("y2")) - Number(bars[0]?.getAttribute("y1")),
+    );
+    // 2 * (bundleHalf + 3) with bundleHalf = gap + strokeWidth/2 = 4.95.
+    expect(span).toBeCloseTo(15.9, 6);
+
+    // The hit area is the scalar 18 px plus the bundle width, on the centre path.
+    const hit = container.querySelector<SVGPathElement>("path.react-flow__edge-path");
+    expect(hit?.style.stroke).toBe("transparent");
+    expect(hit?.getAttribute("d")).toBe(
+      multibondPath(
+        [
+          { x: 0, y: 0 },
+          { x: 200, y: 0 },
+        ],
+        0,
+      ),
+    );
+    const interaction = container.querySelector("path.react-flow__edge-interaction");
+    expect(Number(interaction?.getAttribute("stroke-width"))).toBeCloseTo(
+      18 + 2 * multibondBundleHalf(3),
+      12,
+    );
   });
 
   it("keeps the scalar bond at one path and no bundle bar", () => {
@@ -467,6 +521,81 @@ describe("the frame badge", () => {
     expect(Number.isFinite(chipY)).toBe(true);
     expect(pillY).toBeLessThan(chipY);
     expect(chipY - pillY).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe("multibond domain consistency", () => {
+  function bondFlow(base: DomainName): DiagramFlow {
+    return {
+      nodes: [],
+      edges: [
+        {
+          id: "c1",
+          type: "bond",
+          source: "n1",
+          target: "n2",
+          data: edgeData({ domain: base, baseDomain: base }),
+        },
+      ],
+      analysis: {
+        connections: new Map<string, ConnectionVisual>(),
+        portDomains: new Map<string, DomainName>(),
+      },
+    };
+  }
+
+  it("never turns a Planar bond into a 3-stroke Spatial one", () => {
+    const flow = decorateFlow(bondFlow("Planar"), {
+      domains: { c1: "Spatial" },
+      causality: {},
+      unitFactors: {},
+    });
+    expect(flow.edges[0]?.data?.domain).toBe("Planar");
+    expect(multibondStrokes(flow.edges[0]!.data!.domain)).toBe(2);
+  });
+
+  it("never turns a Spatial bond into a 2-stroke Planar one", () => {
+    const flow = decorateFlow(bondFlow("Spatial"), {
+      domains: { c1: "Planar" },
+      causality: {},
+      unitFactors: {},
+    });
+    expect(flow.edges[0]?.data?.domain).toBe("Spatial");
+    expect(multibondStrokes(flow.edges[0]!.data!.domain)).toBe(3);
+  });
+
+  it("never lets a check result replace a Spatial bond with a scalar or Generic domain", () => {
+    // Without the tightening this check result would turn the 3-stroke bundle
+    // into a 1-stroke scalar bond (Rotation) or a Generic bond.
+    for (const reported of ["Rotation", "Generic"] as const) {
+      const flow = decorateFlow(bondFlow("Spatial"), {
+        domains: { c1: reported },
+        causality: {},
+        unitFactors: {},
+      });
+      expect(flow.edges[0]?.data?.domain, reported).toBe("Spatial");
+      expect(multibondStrokes(flow.edges[0]!.data!.domain), reported).toBe(3);
+    }
+  });
+
+  it("never lets a check result turn a Rotation bond into a Spatial one", () => {
+    const flow = decorateFlow(bondFlow("Rotation"), {
+      domains: { c1: "Spatial" },
+      causality: {},
+      unitFactors: {},
+    });
+    expect(flow.edges[0]?.data?.domain).toBe("Rotation");
+    expect(multibondStrokes(flow.edges[0]!.data!.domain)).toBe(1);
+  });
+
+  it("still lets a Generic port adopt a concrete multibond domain", () => {
+    const flow = decorateFlow(bondFlow("Generic"), {
+      domains: { c1: "Spatial" },
+      causality: {},
+      unitFactors: {},
+    });
+    expect(flow.edges[0]?.data?.domain).toBe("Spatial");
+    expect(multibondStrokes(flow.edges[0]!.data!.domain)).toBe(3);
   });
 });
 

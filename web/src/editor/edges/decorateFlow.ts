@@ -36,6 +36,23 @@ export function causalityStrokeAt(
   return value === "from" || value === "to" ? value : null;
 }
 
+/**
+ * A concrete domain is authoritative for the strokes: keep it unless the
+ * current domain is Generic, which is the documented bridge that adopts the
+ * concrete domain a check result reports (plan 5.6, E102). This also stops a
+ * check result from crossing the 2D/3D divide (Planar two strokes, Spatial
+ * three) or erasing a concrete domain as Generic.
+ */
+function consistentDomain(
+  base: DomainName | undefined,
+  domain: DomainName,
+): DomainName {
+  if (base === undefined || base === "Generic") {
+    return domain;
+  }
+  return base;
+}
+
 function decoratedNode(
   node: DiagramNode,
   domains: ReadonlyMap<string, DomainName>,
@@ -47,8 +64,9 @@ function decoratedNode(
   let changed = false;
   const portDomains: Record<string, DomainName> = { ...data.portDomains };
   for (const [port, domain] of domains) {
-    if (portDomains[port] !== domain) {
-      portDomains[port] = domain;
+    const adopted = consistentDomain(data.portDomains[port], domain);
+    if (portDomains[port] !== adopted) {
+      portDomains[port] = adopted;
       changed = true;
     }
   }
@@ -63,10 +81,11 @@ function decoratedEdge(edge: EditorEdge, decoration: CanvasDecoration): EditorEd
   if (data === undefined) {
     return edge;
   }
+  const workerDomain = decoration.domains[edge.id];
   const domain =
-    data.kind === "signal"
+    data.kind === "signal" || workerDomain === undefined
       ? data.domain
-      : (decoration.domains[edge.id] ?? data.domain);
+      : consistentDomain(data.baseDomain, workerDomain);
   const causalStroke =
     data.kind === "bond" ? causalityStrokeAt(decoration.causality[edge.id]) : null;
   const unitFactor =
