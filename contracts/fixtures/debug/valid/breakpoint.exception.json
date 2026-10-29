@@ -1,0 +1,12 @@
+{
+  "$comment": "A exception breakpoint (plan 3.8).",
+  "id": "bp5",
+  "enabled": true,
+  "kind": "exception",
+  "exception": {
+    "on": [
+      "E901",
+      "W206"
+    ]
+  }
+}

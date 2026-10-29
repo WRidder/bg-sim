@@ -1,0 +1,22 @@
+{
+  "id": "bp8",
+  "verified": false,
+  "resolved": {
+    "hooks": 0,
+    "paths": []
+  },
+  "diagnostics": [
+    {
+      "code": "W401",
+      "severity": "warning",
+      "message": "the breakpoint's block is not used in this model, so it stays unverified",
+      "hint": "instantiate project:Unused in the model or remove the breakpoint",
+      "path": null,
+      "block": "project:Unused",
+      "scope": null,
+      "source": null,
+      "node": null,
+      "connection": null
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "$comment": "A line breakpoint (plan 3.8).",
+  "id": "bp1",
+  "enabled": true,
+  "kind": "line",
+  "line": {
+    "ref": "project:LQGController",
+    "line": 14,
+    "path": "Ctrl"
+  },
+  "condition": "k == 5",
+  "hitCount": 3
+}

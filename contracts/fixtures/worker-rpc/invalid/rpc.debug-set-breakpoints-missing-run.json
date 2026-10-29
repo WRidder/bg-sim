@@ -1,0 +1,8 @@
+{
+  "$comment": "Invalid: debug.setBreakpoints needs a runId.",
+  "id": 61,
+  "method": "debug.setBreakpoints",
+  "params": {
+    "breakpoints": []
+  }
+}

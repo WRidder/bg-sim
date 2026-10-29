@@ -10,7 +10,12 @@
     "source": {
       "kind": "inline",
       "ref": "inline:n7",
-      "range": { "line": 9, "col": 1, "endLine": 9, "endCol": 1 }
+      "range": {
+        "line": 9,
+        "col": 1,
+        "endLine": 9,
+        "endCol": 1
+      }
     },
     "node": "n7",
     "connection": null
@@ -26,7 +31,12 @@
     "source": {
       "kind": "project",
       "ref": "project:MyController",
-      "range": { "line": 12, "col": 5, "endLine": 12, "endCol": 24 }
+      "range": {
+        "line": 12,
+        "col": 5,
+        "endLine": 12,
+        "endCol": 24
+      }
     },
     "node": "n12",
     "connection": null
@@ -42,7 +52,12 @@
     "source": {
       "kind": "inline",
       "ref": "inline:n4",
-      "range": { "line": 6, "col": 13, "endLine": 6, "endCol": 17 }
+      "range": {
+        "line": 6,
+        "col": 13,
+        "endLine": 6,
+        "endCol": 17
+      }
     },
     "node": "n4",
     "connection": null
@@ -58,7 +73,12 @@
     "source": {
       "kind": "project",
       "ref": "project:MyController",
-      "range": { "line": 18, "col": 9, "endLine": 18, "endCol": 11 }
+      "range": {
+        "line": 18,
+        "col": 9,
+        "endLine": 18,
+        "endCol": 11
+      }
     },
     "node": "n12",
     "connection": null
@@ -74,7 +94,12 @@
     "source": {
       "kind": "inline",
       "ref": "inline:n21",
-      "range": { "line": 4, "col": 9, "endLine": 4, "endCol": 27 }
+      "range": {
+        "line": 4,
+        "col": 9,
+        "endLine": 4,
+        "endCol": 27
+      }
     },
     "node": "n21",
     "connection": null
@@ -90,7 +115,12 @@
     "source": {
       "kind": "inline",
       "ref": "inline:n9",
-      "range": { "line": 5, "col": 15, "endLine": 5, "endCol": 18 }
+      "range": {
+        "line": 5,
+        "col": 15,
+        "endLine": 5,
+        "endCol": 18
+      }
     },
     "node": "n9",
     "connection": null
@@ -106,7 +136,12 @@
     "source": {
       "kind": "inline",
       "ref": "inline:n14",
-      "range": { "line": 7, "col": 9, "endLine": 7, "endCol": 25 }
+      "range": {
+        "line": 7,
+        "col": 9,
+        "endLine": 7,
+        "endCol": 25
+      }
     },
     "node": "n14",
     "connection": null
@@ -165,8 +200,14 @@
     "node": "n3",
     "connection": null,
     "related": [
-      { "path": "Plant/Motor1", "message": "1 extra unknown here" },
-      { "path": "Plant/Gear1", "message": "balanced" }
+      {
+        "path": "Plant/Motor1",
+        "message": "1 extra unknown here"
+      },
+      {
+        "path": "Plant/Gear1",
+        "message": "balanced"
+      }
     ]
   },
   {
@@ -180,7 +221,12 @@
     "source": {
       "kind": "project",
       "ref": "project:MyController",
-      "range": { "line": 3, "col": 5, "endLine": 3, "endCol": 18 }
+      "range": {
+        "line": 3,
+        "col": 5,
+        "endLine": 3,
+        "endCol": 18
+      }
     },
     "node": "n12",
     "connection": null
@@ -328,7 +374,12 @@
     "source": {
       "kind": "inline",
       "ref": "inline:n8",
-      "range": { "line": 1, "col": 1, "endLine": 24, "endCol": 3 }
+      "range": {
+        "line": 1,
+        "col": 1,
+        "endLine": 24,
+        "endCol": 3
+      }
     },
     "node": "n8",
     "connection": null
@@ -368,7 +419,12 @@
     "source": {
       "kind": "inline",
       "ref": "inline:n9",
-      "range": { "line": 8, "col": 9, "endLine": 8, "endCol": 21 }
+      "range": {
+        "line": 8,
+        "col": 9,
+        "endLine": 8,
+        "endCol": 21
+      }
     },
     "node": "n9",
     "connection": null
@@ -384,7 +440,12 @@
     "source": {
       "kind": "project",
       "ref": "project:MyFilter",
-      "range": { "line": 9, "col": 5, "endLine": 9, "endCol": 30 }
+      "range": {
+        "line": 9,
+        "col": 5,
+        "endLine": 9,
+        "endCol": 30
+      }
     },
     "node": "n10",
     "connection": null
@@ -411,6 +472,51 @@
     "scope": null,
     "source": null,
     "node": "n8",
+    "connection": null
+  },
+  {
+    "code": "E401",
+    "severity": "error",
+    "message": "no statement on line 14 of project:LQGController",
+    "hint": "equations do not execute in order; add a watch breakpoint on a signal instead",
+    "path": "Ctrl",
+    "block": "project:LQGController",
+    "scope": "@equations",
+    "source": {
+      "kind": "project",
+      "ref": "project:LQGController",
+      "range": {
+        "line": 14,
+        "col": 1,
+        "endLine": 14,
+        "endCol": 20
+      }
+    },
+    "node": null,
+    "connection": null
+  },
+  {
+    "code": "E402",
+    "severity": "error",
+    "message": "state change refused: Plant/Ball/y is determined by an algebraic equation, not a differential state",
+    "hint": "change a differential state or a parameter instead; algebraic variables follow from the equations (DAE)",
+    "path": "Plant/Ball",
+    "block": "inline:n8",
+    "scope": null,
+    "source": null,
+    "node": "n8",
+    "connection": null
+  },
+  {
+    "code": "W401",
+    "severity": "warning",
+    "message": "the breakpoint's block is not used in this model, so it stays unverified",
+    "hint": "instantiate project:Unused in the model or remove the breakpoint",
+    "path": "Plant/Filter1",
+    "block": "project:Unused",
+    "scope": null,
+    "source": null,
+    "node": null,
     "connection": null
   }
 ]

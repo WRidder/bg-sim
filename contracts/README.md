@@ -3,7 +3,7 @@
 `schemas/*.schema.json` (JSON Schema 2020-12) is the single source of truth for the shapes the
 Julia worker, the Python backend and the TypeScript web app exchange. Every schema carries
 `"$id": "https://bgsim.local/schemas/<name>.schema.json"`, cross-schema references use that
-absolute id, and both test suites register all eight schemas by `$id` before validating.
+absolute id, and both test suites register all nine schemas by `$id` before validating.
 
 `fixtures/<name>/valid/**/*.json` must validate (the walkers use a recursive glob, so
 `run.synthetic/` counts); `fixtures/<name>/invalid/*.json` must fail for the reason written in
@@ -27,3 +27,11 @@ Data files (plan 3.5): `columns.f64` is the time column followed by one column p
 same `t` (left and right limit). Generated code lives in `backend/src/bgsim_server/contracts.py`
 (pydantic v2) and `web/src/contracts/` (one `.ts` per schema plus `index.ts`); regenerate both with
 `uv run tools/gen_contracts.py`, and never edit the generated files by hand.
+
+Debugging (M4, plan 3.8): `debug.schema.json` holds the shared debug shapes (`breakpoint`, a
+`oneOf` of the five kinds, each requiring its own kind object; `pausedInfo`, `frame`, `edit`,
+`runDebugInfo`, `breakpointStatus`, `evaluateResult`, `valuesResult`, `explainResult`, ...).
+`worker-rpc` references them for the debug methods and the `debug.paused`/`debug.resumed`
+notifications, and `run-manifest` for the optional `debug`, `parentRun` and `branchAt` fields
+(status `paused`). `frameValue.value` nests at most three array levels (a Mat of Vecs), because
+the code generators reject recursive `$ref`s.

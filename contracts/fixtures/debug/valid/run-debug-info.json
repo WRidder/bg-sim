@@ -1,0 +1,34 @@
+{
+  "breakpoints": [
+    {
+      "id": "bp1",
+      "enabled": true,
+      "kind": "line",
+      "line": {
+        "ref": "project:LQGController",
+        "line": 14,
+        "path": "Ctrl"
+      },
+      "condition": "k == 5",
+      "hitCount": 3
+    }
+  ],
+  "edits": [
+    {
+      "t": 0.2,
+      "kind": "parameter",
+      "target": "Motor1/R",
+      "value": 2.5
+    }
+  ],
+  "pauses": [
+    {
+      "t": 0.2,
+      "reason": "breakpoint"
+    },
+    {
+      "t": 0.4,
+      "reason": "step"
+    }
+  ]
+}

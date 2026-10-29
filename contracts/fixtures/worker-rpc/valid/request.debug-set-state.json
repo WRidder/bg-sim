@@ -1,0 +1,9 @@
+{
+  "id": 69,
+  "method": "debug.setState",
+  "params": {
+    "runId": "run-1",
+    "id": "Plant/Ball/y",
+    "value": 1.0
+  }
+}

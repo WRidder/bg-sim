@@ -258,6 +258,204 @@ class DomainVariable(BaseModel):
     unit: str | None
 
 
+class BreakpointResolved(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    hooks: conint(ge=0)
+    paths: list[str]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ResumedInfo(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class EditKind(Enum):
+    parameter = 'parameter'
+    state = 'state'
+
+
+class Edit(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    t: float
+    kind: EditKind = Field(..., title='EditKind')
+    target: str
+    value: float
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class FrameValueType(Enum):
+    Real = 'Real'
+    Int = 'Int'
+    Bool = 'Bool'
+
+
+class PauseReason(Enum):
+    entry = 'entry'
+    breakpoint = 'breakpoint'
+    step = 'step'
+    pause = 'pause'
+    event = 'event'
+    exception = 'exception'
+    time = 'time'
+
+
+class StepGranularity(Enum):
+    statement = 'statement'
+    tick = 'tick'
+    solverStep = 'solverStep'
+    event = 'event'
+
+
+class ValuesResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    t: float
+    values: dict[str, float] = Field(
+        ..., description='Signal id -> value at the pause.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExplainKind(Enum):
+    state = 'state'
+    algebraic = 'algebraic'
+    observed = 'observed'
+    alias = 'alias'
+    parameter = 'parameter'
+    discrete = 'discrete'
+
+
+class LineBreakpointTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    ref: str = Field(
+        ..., description='Block reference of the source, e.g. project:LQGController.'
+    )
+    line: conint(ge=1)
+    path: str | None = Field(
+        ..., description='Instance path; null means every instance.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class LineBreakpoint(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    enabled: bool
+    kind: Literal['line']
+    line: LineBreakpointTarget = Field(..., title='LineBreakpointTarget')
+    condition: str | None = Field(
+        None,
+        description='Line breakpoints only: an expression evaluated in the frame; pause only when it is true.',
+    )
+    hitCount: conint(ge=1) | None = Field(
+        None, description='Line and watch breakpoints: pause on the n-th hit.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class WatchBreakpointTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    expr: str = Field(
+        ...,
+        description='A boolean watch expression over signals (D22), e.g. s"Motor1/i" > 5.',
+    )
+    context: str | None = Field(
+        ..., description='Instance path that relative names resolve in, or null.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class WatchBreakpoint(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    enabled: bool
+    kind: Literal['watch']
+    watch: WatchBreakpointTarget = Field(..., title='WatchBreakpointTarget')
+    hitCount: conint(ge=1) | None = Field(
+        None, description='Line and watch breakpoints: pause on the n-th hit.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class TimeBreakpointTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    t: float
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class TimeBreakpoint(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    enabled: bool
+    kind: Literal['time']
+    time: TimeBreakpointTarget = Field(..., title='TimeBreakpointTarget')
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class EventBreakpointTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str | None = Field(
+        ...,
+        description='Pause after an @events firing of this instance; null means any instance.',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class EventBreakpoint(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    enabled: bool
+    kind: Literal['event']
+    event: EventBreakpointTarget = Field(..., title='EventBreakpointTarget')
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExceptionBreakpointTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    on: list[constr(pattern=r'^[EW][0-9]{3}$')] = Field(
+        ..., description='Diagnostic codes to pause on, before the run ends.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExceptionBreakpoint(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    enabled: bool
+    kind: Literal['exception']
+    exception: ExceptionBreakpointTarget = Field(..., title='ExceptionBreakpointTarget')
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class DiagnosticSeverity(Enum):
     error = 'error'
     warning = 'warning'
@@ -558,6 +756,7 @@ class Project(BaseModel):
 
 class RunStatus(Enum):
     running = 'running'
+    paused = 'paused'
     done = 'done'
     failed = 'failed'
     cancelled = 'cancelled'
@@ -760,6 +959,13 @@ class RunProgressParams(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class RunStatus1(Enum):
+    running = 'running'
+    done = 'done'
+    failed = 'failed'
+    cancelled = 'cancelled'
+
+
 class LogLevel(Enum):
     debug = 'debug'
     info = 'info'
@@ -773,6 +979,172 @@ class LogParams(BaseModel):
     )
     level: LogLevel = Field(..., title='LogLevel')
     message: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugPauseParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugPauseResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: OkResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugContinueParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugContinueResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: OkResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugStepParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    granularity: StepGranularity
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugStepResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: OkResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugRunToParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    t: float
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugRunToResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: OkResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugEvaluateParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    expr: str
+    context: str | None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugValuesParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    ids: list[str]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugValuesResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: ValuesResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugSetParameterParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    name: str
+    value: float
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugSetStateParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    id: str
+    value: float
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class RunReplayParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    newRunId: str
+    runDir: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class RunReplayResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: RunStartResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class RunBranchParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    newRunId: str
+    runDir: str
+    t: float
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class RunBranchResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: RunStartResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugResumedNotification(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    method: Literal['debug.resumed']
+    params: ResumedInfo
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -934,6 +1306,113 @@ class ScalarDomain(BaseModel):
         title='AcrossField',
     )
     size: Literal[1]
+
+
+class Breakpoint(
+    RootModel[
+        LineBreakpoint
+        | WatchBreakpoint
+        | TimeBreakpoint
+        | EventBreakpoint
+        | ExceptionBreakpoint
+    ]
+):
+    root: (
+        LineBreakpoint
+        | WatchBreakpoint
+        | TimeBreakpoint
+        | EventBreakpoint
+        | ExceptionBreakpoint
+    ) = Field(
+        ...,
+        description='A breakpoint (plan 3.8). Exactly the object that belongs to its kind is present: line, watch, time, event or exception.',
+        title='Breakpoint',
+    )
+
+
+class DebugStartOptions(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    breakpoints: list[Breakpoint]
+    pauseOnEntry: bool
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class SourceLocation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str
+    ref: str
+    scope: str = Field(
+        ...,
+        description='Source scope, e.g. @discrete, or "watch" for a watch pause (D27).',
+    )
+    range: SourceRange
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class FrameValue(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+    type: FrameValueType
+    size: list[conint(ge=0)]
+    value: float | bool | list[float | list[float | list[float]]] = Field(
+        ...,
+        description='A scalar, or nested arrays of numbers (up to three levels) matching size.',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class Frame(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    locals: list[FrameValue]
+    held: list[FrameValue]
+    previous: list[FrameValue]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class PauseRecord(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    t: float
+    reason: PauseReason
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class RunDebugInfo(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    breakpoints: list[Breakpoint]
+    edits: list[Edit]
+    pauses: list[PauseRecord]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExplainOrigin(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    path: str | None
+    ref: str | None
+    range: SourceRange | None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExplainEquation(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    text: str
+    origin: ExplainOrigin = Field(..., title='ExplainOrigin')
+    field_comment: str | None = Field(None, alias='$comment')
 
 
 class DiagnosticSource(BaseModel):
@@ -1155,6 +1634,115 @@ class LogNotification(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class DebugSetBreakpointsParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    breakpoints: list[Breakpoint] = Field(..., description='Always the full set.')
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugPauseRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['debug.pause']
+    params: DebugPauseParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugContinueRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['debug.continue']
+    params: DebugContinueParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugStepRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['debug.step']
+    params: DebugStepParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugRunToRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['debug.runTo']
+    params: DebugRunToParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugEvaluateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['debug.evaluate']
+    params: DebugEvaluateParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugValuesRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['debug.values']
+    params: DebugValuesParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugSetParameterRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['debug.setParameter']
+    params: DebugSetParameterParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugSetStateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['debug.setState']
+    params: DebugSetStateParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class RunReplayRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['run.replay']
+    params: RunReplayParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class RunBranchRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['run.branch']
+    params: RunBranchParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class Binding(
     RootModel[
         JointPositionBinding
@@ -1191,7 +1779,7 @@ class Diagnostic(BaseModel):
     )
     code: constr(pattern=r'^[EW][0-9]{3}$') = Field(
         ...,
-        description='Diagnostic code: E0xx block checks, E1xx model checks, E3xx bindings, E9xx internal and solver, W2xx warnings.',
+        description='Diagnostic code: E0xx block checks, E1xx model checks, E3xx bindings, E4xx and W4xx debugging, E9xx internal and solver, W2xx warnings.',
     )
     severity: DiagnosticSeverity = Field(..., title='DiagnosticSeverity')
     message: str
@@ -1260,6 +1848,17 @@ class RunManifest(BaseModel):
     time: RunTime
     diagnostics: list[Diagnostic]
     layout: Literal['columnar-f64-v1']
+    debug: RunDebugInfo | None = Field(
+        None,
+        description='Debug information of a debug run (plan 3.5, 3.8): its breakpoints, the edits made and the pauses.',
+    )
+    parentRun: str | None = Field(
+        None, description='Branch runs only: the id of the run this one replays.'
+    )
+    branchAt: float | None = Field(
+        None,
+        description='Branch runs only: the time at which this run diverges from its parent.',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -1318,8 +1917,28 @@ class RunDoneParams(BaseModel):
         extra='forbid',
     )
     runId: str
-    status: RunStatus = Field(..., title='RunStatus')
+    status: RunStatus1 = Field(..., title='RunStatus')
     stats: RunStats
+    diagnostics: list[Diagnostic]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugSetBreakpointsRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['debug.setBreakpoints']
+    params: DebugSetBreakpointsParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugEditResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    ok: bool
+    edit: Edit | None
     diagnostics: list[Diagnostic]
     field_comment: str | None = Field(None, alias='$comment')
 
@@ -1343,6 +1962,65 @@ class Catalog(BaseModel):
     blocks: list[CatalogBlock]
     junctions: list[CatalogJunction]
     domains: list[CatalogDomain]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class BreakpointStatus(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    verified: bool = Field(
+        ..., description='False when the breakpoint binds to no hook in this model.'
+    )
+    resolved: BreakpointResolved = Field(..., title='BreakpointResolved')
+    diagnostics: list[Diagnostic]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class PausedInfo(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    runId: str
+    t: float
+    tick: int | None
+    reason: PauseReason
+    breakpointId: str | None
+    location: SourceLocation | None
+    frame: Frame | None = Field(..., description='Statement pauses only.')
+    diagnostics: list[Diagnostic]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class EvaluateResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    value: float | bool | list[float | list[float | list[float]]]
+    type: FrameValueType
+    size: list[conint(ge=0)]
+    unit: str | None
+    diagnostics: list[Diagnostic]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExplainResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    signal: str
+    kind: ExplainKind = Field(..., title='ExplainKind')
+    unit: str | None
+    expression: str | None = Field(
+        ...,
+        description='Defining expression rendered with signal ids, for observed and alias signals.',
+    )
+    aliasOf: str | None
+    equations: list[ExplainEquation]
+    diagnostics: list[Diagnostic] = Field(
+        ..., description='The W201 and W202 findings that involve the signal.'
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -1396,6 +2074,110 @@ class RunDoneNotification(BaseModel):
     )
     method: Literal['run.done']
     params: RunDoneParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugEvaluateResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: EvaluateResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugSetParameterResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: DebugEditResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugSetStateResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: DebugEditResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelExplainResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: ExplainResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugSetBreakpointsResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    breakpoints: list[BreakpointStatus]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class DebugPausedNotification(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    method: Literal['debug.paused']
+    params: PausedInfo
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class Debug(
+    RootModel[
+        Breakpoint
+        | DebugStartOptions
+        | BreakpointStatus
+        | SourceLocation
+        | FrameValue
+        | Frame
+        | PausedInfo
+        | ResumedInfo
+        | Edit
+        | PauseRecord
+        | RunDebugInfo
+        | StepGranularity
+        | EvaluateResult
+        | ValuesResult
+        | ExplainResult
+    ]
+):
+    root: (
+        Breakpoint
+        | DebugStartOptions
+        | BreakpointStatus
+        | SourceLocation
+        | FrameValue
+        | Frame
+        | PausedInfo
+        | ResumedInfo
+        | Edit
+        | PauseRecord
+        | RunDebugInfo
+        | StepGranularity
+        | EvaluateResult
+        | ValuesResult
+        | ExplainResult
+    ) = Field(
+        ...,
+        description='Debug protocol shapes (plan 3.8): breakpoints, pause information, frames, edits, run debug info and the explain result. The worker RPC, the HTTP API and the run manifest use them. A document validates against the root when it is any one of the listed shapes.',
+        title='Debug',
+    )
+
+
+class DebugSetBreakpointsResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    result: DebugSetBreakpointsResult
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -1517,6 +2299,30 @@ class RunStartParams(BaseModel):
     model: Model
     projectDir: str
     runDir: str
+    debug: DebugStartOptions | None = Field(
+        None,
+        description='Debug run options (plan 3.8), or null/absent for a normal run.',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelExplainRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: int
+    method: Literal['model.explain']
+    params: ModelExplainParams
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelExplainParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    model: Model
+    projectDir: str
+    signal: str
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -1555,6 +2361,32 @@ class WorkerRpc(
         | RunProgressNotification
         | RunDoneNotification
         | LogNotification
+        | DebugSetBreakpointsRequest
+        | DebugPauseRequest
+        | DebugContinueRequest
+        | DebugStepRequest
+        | DebugRunToRequest
+        | DebugEvaluateRequest
+        | DebugValuesRequest
+        | DebugSetParameterRequest
+        | DebugSetStateRequest
+        | RunReplayRequest
+        | RunBranchRequest
+        | ModelExplainRequest
+        | DebugSetBreakpointsResponse
+        | DebugPauseResponse
+        | DebugContinueResponse
+        | DebugStepResponse
+        | DebugRunToResponse
+        | DebugEvaluateResponse
+        | DebugValuesResponse
+        | DebugSetParameterResponse
+        | DebugSetStateResponse
+        | RunReplayResponse
+        | RunBranchResponse
+        | ModelExplainResponse
+        | DebugPausedNotification
+        | DebugResumedNotification
     ]
 ):
     root: (
@@ -1577,6 +2409,32 @@ class WorkerRpc(
         | RunProgressNotification
         | RunDoneNotification
         | LogNotification
+        | DebugSetBreakpointsRequest
+        | DebugPauseRequest
+        | DebugContinueRequest
+        | DebugStepRequest
+        | DebugRunToRequest
+        | DebugEvaluateRequest
+        | DebugValuesRequest
+        | DebugSetParameterRequest
+        | DebugSetStateRequest
+        | RunReplayRequest
+        | RunBranchRequest
+        | ModelExplainRequest
+        | DebugSetBreakpointsResponse
+        | DebugPauseResponse
+        | DebugContinueResponse
+        | DebugStepResponse
+        | DebugRunToResponse
+        | DebugEvaluateResponse
+        | DebugValuesResponse
+        | DebugSetParameterResponse
+        | DebugSetStateResponse
+        | RunReplayResponse
+        | RunBranchResponse
+        | ModelExplainResponse
+        | DebugPausedNotification
+        | DebugResumedNotification
     ) = Field(
         ...,
         description='Worker protocol messages (plan 3.6). Each JSON frame is one of these: a request, a response, an error response or a notification. The transport framing (u32 LE length, u8 kind, payload) is not part of this schema.',
@@ -1588,6 +2446,7 @@ class Contracts(
     RootModel[
         Bindings
         | Catalog
+        | Debug
         | Diagnostics
         | Model
         | Project
@@ -1599,6 +2458,7 @@ class Contracts(
     root: (
         Bindings
         | Catalog
+        | Debug
         | Diagnostics
         | Model
         | Project
@@ -1617,3 +2477,4 @@ ModelDiagram.model_rebuild()
 ModelNode.model_rebuild()
 ModelCheckRequest.model_rebuild()
 RunStartRequest.model_rebuild()
+ModelExplainRequest.model_rebuild()

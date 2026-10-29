@@ -1,0 +1,9 @@
+{
+  "id": 68,
+  "method": "debug.setParameter",
+  "params": {
+    "runId": "run-1",
+    "name": "Motor1/R",
+    "value": 2.5
+  }
+}

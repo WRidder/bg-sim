@@ -1,0 +1,9 @@
+{
+  "$comment": "Invalid: kind \"data\" is not one of line, watch, time, event, exception.",
+  "id": "bp2",
+  "enabled": true,
+  "kind": "data",
+  "time": {
+    "t": 1.0
+  }
+}

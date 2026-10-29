@@ -1,0 +1,11 @@
+{
+  "$comment": "Invalid: reason \"sleeping\" is not an allowed pause reason.",
+  "runId": "r",
+  "t": 0.0,
+  "tick": null,
+  "reason": "sleeping",
+  "breakpointId": null,
+  "location": null,
+  "frame": null,
+  "diagnostics": []
+}

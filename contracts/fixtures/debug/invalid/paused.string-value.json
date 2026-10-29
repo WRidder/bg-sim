@@ -1,0 +1,32 @@
+{
+  "$comment": "Invalid: a frame value must be a number, a boolean or nested arrays of numbers, not a string.",
+  "runId": "r",
+  "t": 0.1,
+  "tick": 1,
+  "reason": "step",
+  "breakpointId": null,
+  "location": {
+    "path": "Ctrl",
+    "ref": "project:LQGController",
+    "scope": "@discrete",
+    "range": {
+      "line": 14,
+      "col": 9,
+      "endLine": 14,
+      "endCol": 31
+    }
+  },
+  "frame": {
+    "locals": [
+      {
+        "name": "v",
+        "type": "Real",
+        "size": [],
+        "value": "high"
+      }
+    ],
+    "held": [],
+    "previous": []
+  },
+  "diagnostics": []
+}

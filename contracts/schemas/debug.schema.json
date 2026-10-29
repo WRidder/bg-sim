@@ -1,0 +1,973 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/debug.schema.json",
+  "title": "Debug",
+  "description": "Debug protocol shapes (plan 3.8): breakpoints, pause information, frames, edits, run debug info and the explain result. The worker RPC, the HTTP API and the run manifest use them. A document validates against the root when it is any one of the listed shapes.",
+  "anyOf": [
+    {
+      "$ref": "#/$defs/breakpoint"
+    },
+    {
+      "$ref": "#/$defs/debugStartOptions"
+    },
+    {
+      "$ref": "#/$defs/breakpointStatus"
+    },
+    {
+      "$ref": "#/$defs/sourceLocation"
+    },
+    {
+      "$ref": "#/$defs/frameValue"
+    },
+    {
+      "$ref": "#/$defs/frame"
+    },
+    {
+      "$ref": "#/$defs/pausedInfo"
+    },
+    {
+      "$ref": "#/$defs/resumedInfo"
+    },
+    {
+      "$ref": "#/$defs/edit"
+    },
+    {
+      "$ref": "#/$defs/pauseRecord"
+    },
+    {
+      "$ref": "#/$defs/runDebugInfo"
+    },
+    {
+      "$ref": "#/$defs/stepGranularity"
+    },
+    {
+      "$ref": "#/$defs/evaluateResult"
+    },
+    {
+      "$ref": "#/$defs/valuesResult"
+    },
+    {
+      "$ref": "#/$defs/explainResult"
+    }
+  ],
+  "$defs": {
+    "breakpoint": {
+      "title": "Breakpoint",
+      "description": "A breakpoint (plan 3.8). Exactly the object that belongs to its kind is present: line, watch, time, event or exception.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/lineBreakpoint"
+        },
+        {
+          "$ref": "#/$defs/watchBreakpoint"
+        },
+        {
+          "$ref": "#/$defs/timeBreakpoint"
+        },
+        {
+          "$ref": "#/$defs/eventBreakpoint"
+        },
+        {
+          "$ref": "#/$defs/exceptionBreakpoint"
+        }
+      ]
+    },
+    "debugStartOptions": {
+      "title": "DebugStartOptions",
+      "description": "The debug option of run.start and of the body of POST runs (plan 3.8).",
+      "type": "object",
+      "required": [
+        "breakpoints",
+        "pauseOnEntry"
+      ],
+      "properties": {
+        "breakpoints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/breakpoint"
+          }
+        },
+        "pauseOnEntry": {
+          "type": "boolean"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "breakpointStatus": {
+      "title": "BreakpointStatus",
+      "description": "One entry of the debug.setBreakpoints result.",
+      "type": "object",
+      "required": [
+        "id",
+        "verified",
+        "resolved",
+        "diagnostics"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "False when the breakpoint binds to no hook in this model."
+        },
+        "resolved": {
+          "title": "BreakpointResolved",
+          "type": "object",
+          "required": [
+            "hooks",
+            "paths"
+          ],
+          "properties": {
+            "hooks": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "$comment": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+          }
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "sourceLocation": {
+      "title": "SourceLocation",
+      "type": "object",
+      "required": [
+        "path",
+        "ref",
+        "scope",
+        "range"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string",
+          "description": "Source scope, e.g. @discrete, or \"watch\" for a watch pause (D27)."
+        },
+        "range": {
+          "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/range"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "frameValue": {
+      "title": "FrameValue",
+      "type": "object",
+      "required": [
+        "name",
+        "type",
+        "size",
+        "value"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/frameValueType"
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "description": "A scalar, or nested arrays of numbers (up to three levels) matching size."
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "frame": {
+      "title": "Frame",
+      "description": "The variables of the stopped statement (plan 3.8, 5.13).",
+      "type": "object",
+      "required": [
+        "locals",
+        "held",
+        "previous"
+      ],
+      "properties": {
+        "locals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/frameValue"
+          }
+        },
+        "held": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/frameValue"
+          }
+        },
+        "previous": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/frameValue"
+          }
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pausedInfo": {
+      "title": "PausedInfo",
+      "description": "The debug.paused notification (plan 3.8).",
+      "type": "object",
+      "required": [
+        "runId",
+        "t",
+        "tick",
+        "reason",
+        "breakpointId",
+        "location",
+        "frame",
+        "diagnostics"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "t": {
+          "type": "number"
+        },
+        "tick": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/pauseReason"
+        },
+        "breakpointId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/sourceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "frame": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/frame"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Statement pauses only."
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+          }
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "resumedInfo": {
+      "title": "ResumedInfo",
+      "description": "The debug.resumed notification.",
+      "type": "object",
+      "required": [
+        "runId"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "edit": {
+      "title": "Edit",
+      "description": "A parameter or state change made while paused; also stored in the manifest's debug.edits.",
+      "type": "object",
+      "required": [
+        "t",
+        "kind",
+        "target",
+        "value"
+      ],
+      "properties": {
+        "t": {
+          "type": "number"
+        },
+        "kind": {
+          "title": "EditKind",
+          "enum": [
+            "parameter",
+            "state"
+          ]
+        },
+        "target": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pauseRecord": {
+      "title": "PauseRecord",
+      "type": "object",
+      "required": [
+        "t",
+        "reason"
+      ],
+      "properties": {
+        "t": {
+          "type": "number"
+        },
+        "reason": {
+          "$ref": "#/$defs/pauseReason"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runDebugInfo": {
+      "title": "RunDebugInfo",
+      "description": "The debug section of a run manifest (plan 3.5).",
+      "type": "object",
+      "required": [
+        "breakpoints",
+        "edits",
+        "pauses"
+      ],
+      "properties": {
+        "breakpoints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/breakpoint"
+          }
+        },
+        "edits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/edit"
+          }
+        },
+        "pauses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pauseRecord"
+          }
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "frameValueType": {
+      "title": "FrameValueType",
+      "enum": [
+        "Real",
+        "Int",
+        "Bool"
+      ]
+    },
+    "pauseReason": {
+      "title": "PauseReason",
+      "enum": [
+        "entry",
+        "breakpoint",
+        "step",
+        "pause",
+        "event",
+        "exception",
+        "time"
+      ]
+    },
+    "stepGranularity": {
+      "title": "StepGranularity",
+      "enum": [
+        "statement",
+        "tick",
+        "solverStep",
+        "event"
+      ]
+    },
+    "evaluateResult": {
+      "title": "EvaluateResult",
+      "type": "object",
+      "required": [
+        "value",
+        "type",
+        "size",
+        "unit",
+        "diagnostics"
+      ],
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "type": {
+          "$ref": "#/$defs/frameValueType"
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+          }
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "valuesResult": {
+      "title": "ValuesResult",
+      "type": "object",
+      "required": [
+        "t",
+        "values"
+      ],
+      "properties": {
+        "t": {
+          "type": "number"
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Signal id -> value at the pause."
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "explainResult": {
+      "title": "ExplainResult",
+      "description": "The model.explain result (plan 5.13).",
+      "type": "object",
+      "required": [
+        "signal",
+        "kind",
+        "unit",
+        "expression",
+        "aliasOf",
+        "equations",
+        "diagnostics"
+      ],
+      "properties": {
+        "signal": {
+          "type": "string"
+        },
+        "kind": {
+          "title": "ExplainKind",
+          "enum": [
+            "state",
+            "algebraic",
+            "observed",
+            "alias",
+            "parameter",
+            "discrete"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expression": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Defining expression rendered with signal ids, for observed and alias signals."
+        },
+        "aliasOf": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "equations": {
+          "type": "array",
+          "items": {
+            "title": "ExplainEquation",
+            "type": "object",
+            "required": [
+              "text",
+              "origin"
+            ],
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "origin": {
+                "title": "ExplainOrigin",
+                "type": "object",
+                "required": [
+                  "path",
+                  "ref",
+                  "range"
+                ],
+                "properties": {
+                  "path": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "ref": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "range": {
+                    "anyOf": [
+                      {
+                        "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/range"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "$comment": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "$comment": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+          },
+          "description": "The W201 and W202 findings that involve the signal."
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "lineBreakpoint": {
+      "title": "LineBreakpoint",
+      "type": "object",
+      "required": [
+        "id",
+        "enabled",
+        "kind",
+        "line"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "line"
+        },
+        "line": {
+          "title": "LineBreakpointTarget",
+          "type": "object",
+          "required": [
+            "ref",
+            "line",
+            "path"
+          ],
+          "properties": {
+            "ref": {
+              "type": "string",
+              "description": "Block reference of the source, e.g. project:LQGController."
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "path": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Instance path; null means every instance."
+            },
+            "$comment": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "condition": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Line breakpoints only: an expression evaluated in the frame; pause only when it is true."
+        },
+        "hitCount": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Line and watch breakpoints: pause on the n-th hit."
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "watchBreakpoint": {
+      "title": "WatchBreakpoint",
+      "type": "object",
+      "required": [
+        "id",
+        "enabled",
+        "kind",
+        "watch"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "watch"
+        },
+        "watch": {
+          "title": "WatchBreakpointTarget",
+          "type": "object",
+          "required": [
+            "expr",
+            "context"
+          ],
+          "properties": {
+            "expr": {
+              "type": "string",
+              "description": "A boolean watch expression over signals (D22), e.g. s\"Motor1/i\" > 5."
+            },
+            "context": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Instance path that relative names resolve in, or null."
+            },
+            "$comment": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "hitCount": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Line and watch breakpoints: pause on the n-th hit."
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "timeBreakpoint": {
+      "title": "TimeBreakpoint",
+      "type": "object",
+      "required": [
+        "id",
+        "enabled",
+        "kind",
+        "time"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "time"
+        },
+        "time": {
+          "title": "TimeBreakpointTarget",
+          "type": "object",
+          "required": [
+            "t"
+          ],
+          "properties": {
+            "t": {
+              "type": "number"
+            },
+            "$comment": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "eventBreakpoint": {
+      "title": "EventBreakpoint",
+      "type": "object",
+      "required": [
+        "id",
+        "enabled",
+        "kind",
+        "event"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "event"
+        },
+        "event": {
+          "title": "EventBreakpointTarget",
+          "type": "object",
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Pause after an @events firing of this instance; null means any instance."
+            },
+            "$comment": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "exceptionBreakpoint": {
+      "title": "ExceptionBreakpoint",
+      "type": "object",
+      "required": [
+        "id",
+        "enabled",
+        "kind",
+        "exception"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "kind": {
+          "const": "exception"
+        },
+        "exception": {
+          "title": "ExceptionBreakpointTarget",
+          "type": "object",
+          "required": [
+            "on"
+          ],
+          "properties": {
+            "on": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[EW][0-9]{3}$"
+              },
+              "description": "Diagnostic codes to pause on, before the run ends."
+            },
+            "$comment": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

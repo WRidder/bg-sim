@@ -1,0 +1,75 @@
+{
+  "$comment": "A debug run.start: the params gain a debug object (plan 3.8).",
+  "id": 60,
+  "method": "run.start",
+  "params": {
+    "runId": "run-20261021-093050",
+    "model": {
+      "format": "bgsim.model",
+      "language": "0.1.0",
+      "name": "SyntheticSignals",
+      "diagram": {
+        "nodes": [
+          {
+            "id": "n1",
+            "name": "Synthetic",
+            "block": {
+              "ref": "stdlib:sources/Sine"
+            },
+            "position": {
+              "x": 80,
+              "y": 80
+            },
+            "params": {
+              "amplitude": "1.0",
+              "frequency": "6.283185307179586"
+            }
+          }
+        ],
+        "connections": []
+      },
+      "settings": {
+        "t_start": 0.0,
+        "t_end": 1.0,
+        "solver": "auto",
+        "reltol": 1e-06,
+        "abstol": 1e-08,
+        "max_step": null,
+        "output": {
+          "mode": "points",
+          "points": 1001
+        },
+        "event_limit": 10000
+      }
+    },
+    "projectDir": "C:/Users/WVDR/bgsim-projects/synthetic",
+    "runDir": "C:/Users/WVDR/bgsim-projects/synthetic/runs/run-20261021-093050",
+    "debug": {
+      "breakpoints": [
+        {
+          "id": "bp1",
+          "enabled": true,
+          "kind": "line",
+          "line": {
+            "ref": "project:LQGController",
+            "line": 14,
+            "path": "Ctrl"
+          },
+          "condition": "k == 5",
+          "hitCount": 3
+        },
+        {
+          "id": "bp2",
+          "enabled": true,
+          "kind": "watch",
+          "watch": {
+            "expr": "s\"Motor1/i\" > 5",
+            "context": null
+          },
+          "hitCount": null
+        }
+      ],
+      "pauseOnEntry": false
+    }
+  }
+}

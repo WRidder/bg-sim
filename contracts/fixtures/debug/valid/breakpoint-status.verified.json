@@ -1,0 +1,12 @@
+{
+  "id": "bp1",
+  "verified": true,
+  "resolved": {
+    "hooks": 2,
+    "paths": [
+      "Ctrl",
+      "Ctrl2"
+    ]
+  },
+  "diagnostics": []
+}

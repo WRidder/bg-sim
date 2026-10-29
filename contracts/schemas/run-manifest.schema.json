@@ -35,7 +35,7 @@
       "format": "date-time",
       "description": "ISO 8601 creation time."
     },
-    "status": { "title": "RunStatus", "enum": ["running", "done", "failed", "cancelled"] },
+    "status": { "title": "RunStatus", "enum": ["running", "paused", "done", "failed", "cancelled"] },
     "settings": {
       "$ref": "https://bgsim.local/schemas/model.schema.json#/$defs/settings"
     },
@@ -53,6 +53,18 @@
       }
     },
     "layout": { "const": "columnar-f64-v1" },
+    "debug": {
+      "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/runDebugInfo",
+      "description": "Debug information of a debug run (plan 3.5, 3.8): its breakpoints, the edits made and the pauses."
+    },
+    "parentRun": {
+      "type": "string",
+      "description": "Branch runs only: the id of the run this one replays."
+    },
+    "branchAt": {
+      "type": "number",
+      "description": "Branch runs only: the time at which this run diverges from its parent."
+    },
     "$comment": { "type": "string" }
   },
   "additionalProperties": false,

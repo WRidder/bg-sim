@@ -1,0 +1,9 @@
+{
+  "$comment": "Invalid: granularity \"line\" is not statement, tick, solverStep or event.",
+  "id": 64,
+  "method": "debug.step",
+  "params": {
+    "runId": "run-1",
+    "granularity": "line"
+  }
+}

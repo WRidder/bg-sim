@@ -1,0 +1,6 @@
+{
+  "$comment": "Invalid: kind line but no `line` object.",
+  "id": "bp1",
+  "enabled": true,
+  "kind": "line"
+}

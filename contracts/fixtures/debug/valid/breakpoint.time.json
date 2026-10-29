@@ -1,0 +1,9 @@
+{
+  "$comment": "A time breakpoint (plan 3.8).",
+  "id": "bp3",
+  "enabled": false,
+  "kind": "time",
+  "time": {
+    "t": 0.25
+  }
+}

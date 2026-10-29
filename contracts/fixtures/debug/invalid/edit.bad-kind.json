@@ -1,0 +1,7 @@
+{
+  "$comment": "Invalid: edit kind \"input\" is not parameter or state.",
+  "t": 0.2,
+  "kind": "input",
+  "target": "Motor1/R",
+  "value": 2.5
+}

@@ -1,0 +1,9 @@
+{
+  "id": 70,
+  "method": "run.replay",
+  "params": {
+    "runId": "run-1",
+    "newRunId": "run-2",
+    "runDir": "C:/p/runs/run-2"
+  }
+}

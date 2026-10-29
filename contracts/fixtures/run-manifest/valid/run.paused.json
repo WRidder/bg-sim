@@ -1,0 +1,74 @@
+{
+  "$comment": "A debug run that is paused: status paused, debug information with a breakpoint, an edit and a pause.",
+  "id": "run-20261021-093050",
+  "model": "DCMotorSpeed",
+  "modelHash": "sha256:1c9f7c1a5f0f4a2b6d3e8c4b9a7f2e5d0c3b6a9e8f7d4c1b2a5e8f7d4c1b2a5e",
+  "created": "2026-10-21T09:30:50Z",
+  "status": "paused",
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 5000
+    },
+    "event_limit": 10000
+  },
+  "signals": [
+    {
+      "id": "Motor1/shaft.f",
+      "unit": "rad/s",
+      "kind": "port",
+      "path": "Motor1",
+      "type": "Real"
+    },
+    {
+      "id": "Motor1/shaft.P",
+      "unit": "W",
+      "kind": "power",
+      "path": "Motor1",
+      "type": "Real"
+    }
+  ],
+  "time": {
+    "n": 0,
+    "t0": 0.0,
+    "t1": 0.0
+  },
+  "diagnostics": [],
+  "layout": "columnar-f64-v1",
+  "debug": {
+    "breakpoints": [
+      {
+        "id": "bp1",
+        "enabled": true,
+        "kind": "line",
+        "line": {
+          "ref": "project:LQGController",
+          "line": 14,
+          "path": "Ctrl"
+        },
+        "condition": "k == 5",
+        "hitCount": 3
+      }
+    ],
+    "edits": [
+      {
+        "t": 0.2,
+        "kind": "parameter",
+        "target": "Motor1/R",
+        "value": 2.5
+      }
+    ],
+    "pauses": [
+      {
+        "t": 0.4123,
+        "reason": "breakpoint"
+      }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": 69,
+  "result": {
+    "ok": false,
+    "edit": null,
+    "diagnostics": [
+      {
+        "code": "E402",
+        "severity": "error",
+        "message": "state change refused: Plant/Ball/y is determined by an algebraic equation, not a differential state",
+        "hint": "change a differential state or a parameter instead; algebraic variables follow from the equations (DAE)",
+        "path": "Plant/Ball",
+        "block": "inline:n8",
+        "scope": null,
+        "source": null,
+        "node": "n8",
+        "connection": null
+      }
+    ]
+  }
+}

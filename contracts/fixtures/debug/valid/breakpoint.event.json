@@ -1,0 +1,9 @@
+{
+  "$comment": "A event breakpoint (plan 3.8).",
+  "id": "bp4",
+  "enabled": true,
+  "kind": "event",
+  "event": {
+    "path": "Ball"
+  }
+}

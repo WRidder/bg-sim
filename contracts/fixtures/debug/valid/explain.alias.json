@@ -1,0 +1,18 @@
+{
+  "signal": "Motor1/shaft.f",
+  "kind": "alias",
+  "unit": "rad/s",
+  "expression": null,
+  "aliasOf": "Load/shaft.f",
+  "equations": [
+    {
+      "text": "Motor1.shaft.f ~ Load.shaft.f",
+      "origin": {
+        "path": null,
+        "ref": null,
+        "range": null
+      }
+    }
+  ],
+  "diagnostics": []
+}

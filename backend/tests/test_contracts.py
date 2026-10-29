@@ -45,6 +45,7 @@ SCHEMAS: dict[str, str] = {
     "worker-rpc": "WorkerRpc",
     "stream-handshake": "StreamHandshake",
     "bindings": "Bindings",
+    "debug": "Debug",
 }
 
 # The M1 blocks of plan section 8, as ref -> name.
@@ -98,6 +99,7 @@ DIAGNOSTIC_CODES = [
     "E900", "E901",
     "W201", "W202", "W203", "W204", "W205", "W206",
     "E301", "E302", "E303", "E304", "E305", "E306",
+    "E401", "E402", "W401",
 ]
 
 

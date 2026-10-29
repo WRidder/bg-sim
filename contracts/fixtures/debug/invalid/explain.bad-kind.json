@@ -1,0 +1,10 @@
+{
+  "$comment": "Invalid: explain kind \"magic\" is not allowed.",
+  "signal": "A/x",
+  "kind": "magic",
+  "unit": null,
+  "expression": null,
+  "aliasOf": null,
+  "equations": [],
+  "diagnostics": []
+}

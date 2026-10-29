@@ -1,0 +1,13 @@
+{
+  "id": 68,
+  "result": {
+    "ok": true,
+    "edit": {
+      "t": 0.4123,
+      "kind": "parameter",
+      "target": "Motor1/R",
+      "value": 2.5
+    },
+    "diagnostics": []
+  }
+}

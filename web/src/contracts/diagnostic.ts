@@ -10,7 +10,7 @@ export type Diagnostics = Diagnostic[];
 
 export interface Diagnostic {
   /**
-   * Diagnostic code: E0xx block checks, E1xx model checks, E3xx bindings, E9xx internal and solver, W2xx warnings.
+   * Diagnostic code: E0xx block checks, E1xx model checks, E3xx bindings, E4xx and W4xx debugging, E9xx internal and solver, W2xx warnings.
    */
   code: string;
   severity: DiagnosticSeverity;

@@ -1,0 +1,11 @@
+{
+  "$comment": "A watch breakpoint (plan 3.8).",
+  "id": "bp2",
+  "enabled": true,
+  "kind": "watch",
+  "watch": {
+    "expr": "s\"Motor1/i\" > 5",
+    "context": null
+  },
+  "hitCount": null
+}

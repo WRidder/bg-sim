@@ -1,0 +1,59 @@
+{
+  "$comment": "Always the full breakpoint set.",
+  "id": 61,
+  "method": "debug.setBreakpoints",
+  "params": {
+    "runId": "run-1",
+    "breakpoints": [
+      {
+        "id": "bp1",
+        "enabled": true,
+        "kind": "line",
+        "line": {
+          "ref": "project:LQGController",
+          "line": 14,
+          "path": "Ctrl"
+        },
+        "condition": "k == 5",
+        "hitCount": 3
+      },
+      {
+        "id": "bp2",
+        "enabled": true,
+        "kind": "watch",
+        "watch": {
+          "expr": "s\"Motor1/i\" > 5",
+          "context": null
+        },
+        "hitCount": null
+      },
+      {
+        "id": "bp3",
+        "enabled": false,
+        "kind": "time",
+        "time": {
+          "t": 0.25
+        }
+      },
+      {
+        "id": "bp4",
+        "enabled": true,
+        "kind": "event",
+        "event": {
+          "path": "Ball"
+        }
+      },
+      {
+        "id": "bp5",
+        "enabled": true,
+        "kind": "exception",
+        "exception": {
+          "on": [
+            "E901",
+            "W206"
+          ]
+        }
+      }
+    ]
+  }
+}

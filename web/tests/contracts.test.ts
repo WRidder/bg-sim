@@ -34,6 +34,7 @@ const schemaNames = [
   "worker-rpc",
   "stream-handshake",
   "bindings",
+  "debug",
 ] as const;
 type SchemaName = (typeof schemaNames)[number];
 
@@ -80,8 +81,8 @@ const invalidFixtures = fixtureFiles("invalid");
 const semanticFixtures = fixtureFiles("semantic");
 
 describe("schemas", () => {
-  it("registers all eight schemas", () => {
-    expect(schemaNames).toHaveLength(8);
+  it("registers all nine schemas", () => {
+    expect(schemaNames).toHaveLength(9);
     for (const name of schemaNames) {
       expect(validator(name)).toBeTypeOf("function");
     }
@@ -208,6 +209,7 @@ describe("fixture coverage", () => {
       "E900", "E901",
       "W201", "W202", "W203", "W204", "W205", "W206",
       "E301", "E302", "E303", "E304", "E305", "E306",
+      "E401", "E402", "W401",
     ];
     const sample = readJson(path.join(fixtureDir, "diagnostic", "valid", "diagnostics.sample.json")) as {
       code: string;

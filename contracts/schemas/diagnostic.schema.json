@@ -14,7 +14,7 @@
         "code": {
           "type": "string",
           "pattern": "^[EW][0-9]{3}$",
-          "description": "Diagnostic code: E0xx block checks, E1xx model checks, E3xx bindings, E9xx internal and solver, W2xx warnings."
+          "description": "Diagnostic code: E0xx block checks, E1xx model checks, E3xx bindings, E4xx and W4xx debugging, E9xx internal and solver, W2xx warnings."
         },
         "severity": { "title": "DiagnosticSeverity", "enum": ["error", "warning", "info"] },
         "message": { "type": "string" },

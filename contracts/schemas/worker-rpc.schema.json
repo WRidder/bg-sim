@@ -22,7 +22,33 @@
     { "$ref": "#/$defs/runPhaseNotification" },
     { "$ref": "#/$defs/runProgressNotification" },
     { "$ref": "#/$defs/runDoneNotification" },
-    { "$ref": "#/$defs/logNotification" }
+    { "$ref": "#/$defs/logNotification" },
+    { "$ref": "#/$defs/debugSetBreakpointsRequest" },
+    { "$ref": "#/$defs/debugPauseRequest" },
+    { "$ref": "#/$defs/debugContinueRequest" },
+    { "$ref": "#/$defs/debugStepRequest" },
+    { "$ref": "#/$defs/debugRunToRequest" },
+    { "$ref": "#/$defs/debugEvaluateRequest" },
+    { "$ref": "#/$defs/debugValuesRequest" },
+    { "$ref": "#/$defs/debugSetParameterRequest" },
+    { "$ref": "#/$defs/debugSetStateRequest" },
+    { "$ref": "#/$defs/runReplayRequest" },
+    { "$ref": "#/$defs/runBranchRequest" },
+    { "$ref": "#/$defs/modelExplainRequest" },
+    { "$ref": "#/$defs/debugSetBreakpointsResponse" },
+    { "$ref": "#/$defs/debugPauseResponse" },
+    { "$ref": "#/$defs/debugContinueResponse" },
+    { "$ref": "#/$defs/debugStepResponse" },
+    { "$ref": "#/$defs/debugRunToResponse" },
+    { "$ref": "#/$defs/debugEvaluateResponse" },
+    { "$ref": "#/$defs/debugValuesResponse" },
+    { "$ref": "#/$defs/debugSetParameterResponse" },
+    { "$ref": "#/$defs/debugSetStateResponse" },
+    { "$ref": "#/$defs/runReplayResponse" },
+    { "$ref": "#/$defs/runBranchResponse" },
+    { "$ref": "#/$defs/modelExplainResponse" },
+    { "$ref": "#/$defs/debugPausedNotification" },
+    { "$ref": "#/$defs/debugResumedNotification" }
   ],
   "$defs": {
     "pingRequest": {
@@ -161,6 +187,13 @@
         "model": { "$ref": "https://bgsim.local/schemas/model.schema.json" },
         "projectDir": { "type": "string" },
         "runDir": { "type": "string" },
+        "debug": {
+          "anyOf": [
+            { "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/debugStartOptions" },
+            { "type": "null" }
+          ],
+          "description": "Debug run options (plan 3.8), or null/absent for a normal run."
+        },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false
@@ -530,6 +563,897 @@
         "level": { "title": "LogLevel", "enum": ["debug", "info", "warning", "error"] },
         "message": { "type": "string" },
         "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "debugSetBreakpointsRequest": {
+      "title": "DebugSetBreakpointsRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "debug.setBreakpoints"
+        },
+        "params": {
+          "$ref": "#/$defs/debugSetBreakpointsParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugSetBreakpointsParams": {
+      "title": "DebugSetBreakpointsParams",
+      "type": "object",
+      "required": [
+        "runId",
+        "breakpoints"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "breakpoints": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/breakpoint"
+          },
+          "description": "Always the full set."
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugSetBreakpointsResponse": {
+      "title": "DebugSetBreakpointsResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "#/$defs/debugSetBreakpointsResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugPauseRequest": {
+      "title": "DebugPauseRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "debug.pause"
+        },
+        "params": {
+          "$ref": "#/$defs/debugPauseParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugPauseParams": {
+      "title": "DebugPauseParams",
+      "type": "object",
+      "required": [
+        "runId"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugPauseResponse": {
+      "title": "DebugPauseResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "#/$defs/okResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugContinueRequest": {
+      "title": "DebugContinueRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "debug.continue"
+        },
+        "params": {
+          "$ref": "#/$defs/debugContinueParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugContinueParams": {
+      "title": "DebugContinueParams",
+      "type": "object",
+      "required": [
+        "runId"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugContinueResponse": {
+      "title": "DebugContinueResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "#/$defs/okResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugStepRequest": {
+      "title": "DebugStepRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "debug.step"
+        },
+        "params": {
+          "$ref": "#/$defs/debugStepParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugStepParams": {
+      "title": "DebugStepParams",
+      "type": "object",
+      "required": [
+        "runId",
+        "granularity"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "granularity": {
+          "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/stepGranularity"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugStepResponse": {
+      "title": "DebugStepResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "#/$defs/okResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugRunToRequest": {
+      "title": "DebugRunToRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "debug.runTo"
+        },
+        "params": {
+          "$ref": "#/$defs/debugRunToParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugRunToParams": {
+      "title": "DebugRunToParams",
+      "type": "object",
+      "required": [
+        "runId",
+        "t"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "t": {
+          "type": "number"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugRunToResponse": {
+      "title": "DebugRunToResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "#/$defs/okResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugEvaluateRequest": {
+      "title": "DebugEvaluateRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "debug.evaluate"
+        },
+        "params": {
+          "$ref": "#/$defs/debugEvaluateParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugEvaluateParams": {
+      "title": "DebugEvaluateParams",
+      "type": "object",
+      "required": [
+        "runId",
+        "expr",
+        "context"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "expr": {
+          "type": "string"
+        },
+        "context": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugEvaluateResponse": {
+      "title": "DebugEvaluateResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/evaluateResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugValuesRequest": {
+      "title": "DebugValuesRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "debug.values"
+        },
+        "params": {
+          "$ref": "#/$defs/debugValuesParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugValuesParams": {
+      "title": "DebugValuesParams",
+      "type": "object",
+      "required": [
+        "runId",
+        "ids"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugValuesResponse": {
+      "title": "DebugValuesResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/valuesResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugSetParameterRequest": {
+      "title": "DebugSetParameterRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "debug.setParameter"
+        },
+        "params": {
+          "$ref": "#/$defs/debugSetParameterParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugSetParameterParams": {
+      "title": "DebugSetParameterParams",
+      "type": "object",
+      "required": [
+        "runId",
+        "name",
+        "value"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugSetParameterResponse": {
+      "title": "DebugSetParameterResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "#/$defs/debugEditResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugSetStateRequest": {
+      "title": "DebugSetStateRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "debug.setState"
+        },
+        "params": {
+          "$ref": "#/$defs/debugSetStateParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugSetStateParams": {
+      "title": "DebugSetStateParams",
+      "type": "object",
+      "required": [
+        "runId",
+        "id",
+        "value"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugSetStateResponse": {
+      "title": "DebugSetStateResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "#/$defs/debugEditResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runReplayRequest": {
+      "title": "RunReplayRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "run.replay"
+        },
+        "params": {
+          "$ref": "#/$defs/runReplayParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runReplayParams": {
+      "title": "RunReplayParams",
+      "type": "object",
+      "required": [
+        "runId",
+        "newRunId",
+        "runDir"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "newRunId": {
+          "type": "string"
+        },
+        "runDir": {
+          "type": "string"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runReplayResponse": {
+      "title": "RunReplayResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "#/$defs/runStartResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runBranchRequest": {
+      "title": "RunBranchRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "run.branch"
+        },
+        "params": {
+          "$ref": "#/$defs/runBranchParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runBranchParams": {
+      "title": "RunBranchParams",
+      "type": "object",
+      "required": [
+        "runId",
+        "newRunId",
+        "runDir",
+        "t"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string"
+        },
+        "newRunId": {
+          "type": "string"
+        },
+        "runDir": {
+          "type": "string"
+        },
+        "t": {
+          "type": "number"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "runBranchResponse": {
+      "title": "RunBranchResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "#/$defs/runStartResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "modelExplainRequest": {
+      "title": "ModelExplainRequest",
+      "type": "object",
+      "required": [
+        "id",
+        "method",
+        "params"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "method": {
+          "const": "model.explain"
+        },
+        "params": {
+          "$ref": "#/$defs/modelExplainParams"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "modelExplainParams": {
+      "title": "ModelExplainParams",
+      "type": "object",
+      "required": [
+        "model",
+        "projectDir",
+        "signal"
+      ],
+      "properties": {
+        "model": {
+          "$ref": "https://bgsim.local/schemas/model.schema.json"
+        },
+        "projectDir": {
+          "type": "string"
+        },
+        "signal": {
+          "type": "string"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "modelExplainResponse": {
+      "title": "ModelExplainResponse",
+      "type": "object",
+      "required": [
+        "id",
+        "result"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "result": {
+          "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/explainResult"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugSetBreakpointsResult": {
+      "title": "DebugSetBreakpointsResult",
+      "type": "object",
+      "required": [
+        "breakpoints"
+      ],
+      "properties": {
+        "breakpoints": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/breakpointStatus"
+          }
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugEditResult": {
+      "title": "DebugEditResult",
+      "type": "object",
+      "required": [
+        "ok",
+        "edit",
+        "diagnostics"
+      ],
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "edit": {
+          "anyOf": [
+            {
+              "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/edit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic"
+          }
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugPausedNotification": {
+      "title": "DebugPausedNotification",
+      "type": "object",
+      "required": [
+        "method",
+        "params"
+      ],
+      "properties": {
+        "method": {
+          "const": "debug.paused"
+        },
+        "params": {
+          "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/pausedInfo"
+        },
+        "$comment": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "debugResumedNotification": {
+      "title": "DebugResumedNotification",
+      "type": "object",
+      "required": [
+        "method",
+        "params"
+      ],
+      "properties": {
+        "method": {
+          "const": "debug.resumed"
+        },
+        "params": {
+          "$ref": "https://bgsim.local/schemas/debug.schema.json#/$defs/resumedInfo"
+        },
+        "$comment": {
+          "type": "string"
+        }
       },
       "additionalProperties": false
     }

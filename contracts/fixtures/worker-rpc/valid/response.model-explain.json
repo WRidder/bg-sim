@@ -1,0 +1,26 @@
+{
+  "id": 72,
+  "result": {
+    "signal": "Motor1/i",
+    "kind": "observed",
+    "unit": "A",
+    "expression": "(s\"Motor1/V\" - s\"Motor1/E\") / s\"Motor1/R\"",
+    "aliasOf": null,
+    "equations": [
+      {
+        "text": "i ~ (V - E) / R",
+        "origin": {
+          "path": "Motor1",
+          "ref": "stdlib:converters/DCMotor",
+          "range": {
+            "line": 22,
+            "col": 5,
+            "endLine": 22,
+            "endCol": 20
+          }
+        }
+      }
+    ],
+    "diagnostics": []
+  }
+}

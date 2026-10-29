@@ -23,7 +23,33 @@ export type WorkerRpc =
   | RunPhaseNotification
   | RunProgressNotification
   | RunDoneNotification
-  | LogNotification;
+  | LogNotification
+  | DebugSetBreakpointsRequest
+  | DebugPauseRequest
+  | DebugContinueRequest
+  | DebugStepRequest
+  | DebugRunToRequest
+  | DebugEvaluateRequest
+  | DebugValuesRequest
+  | DebugSetParameterRequest
+  | DebugSetStateRequest
+  | RunReplayRequest
+  | RunBranchRequest
+  | ModelExplainRequest
+  | DebugSetBreakpointsResponse
+  | DebugPauseResponse
+  | DebugContinueResponse
+  | DebugStepResponse
+  | DebugRunToResponse
+  | DebugEvaluateResponse
+  | DebugValuesResponse
+  | DebugSetParameterResponse
+  | DebugSetStateResponse
+  | RunReplayResponse
+  | RunBranchResponse
+  | ModelExplainResponse
+  | DebugPausedNotification
+  | DebugResumedNotification;
 /**
  * Where a node's behaviour comes from: a library reference, a junction, an inline block or a nested subsystem.
  */
@@ -105,6 +131,10 @@ export type Binding = JointPositionBinding | PoseBinding | VisualScaleBinding | 
 export type BindingSignal = string;
 export type ScaleProperty = "scale.x" | "scale.y" | "scale.z";
 export type Colormap = "heat" | "viridis" | "coolwarm";
+/**
+ * A breakpoint (plan 3.8). Exactly the object that belongs to its kind is present: line, watch, time, event or exception.
+ */
+export type Breakpoint = LineBreakpoint | WatchBreakpoint | TimeBreakpoint | EventBreakpoint | ExceptionBreakpoint;
 export type ValueType1 = "Real" | "Int" | "Bool";
 export type ValueType2 = "Real" | "Int" | "Bool";
 export type ValueType3 = "Real" | "Int" | "Bool";
@@ -157,6 +187,11 @@ export type ValueType5 = "Real" | "Int" | "Bool";
 export type RunPhase = "parse" | "flatten" | "causality" | "mtkcompile" | "init" | "simulate" | "write";
 export type RunStatus = "running" | "done" | "failed" | "cancelled";
 export type LogLevel = "debug" | "info" | "warning" | "error";
+export type StepGranularity = "statement" | "tick" | "solverStep" | "event";
+export type FrameValueType = "Real" | "Int" | "Bool";
+export type EditKind = "parameter" | "state";
+export type ExplainKind = "state" | "algebraic" | "observed" | "alias" | "parameter" | "discrete";
+export type PauseReason = "entry" | "breakpoint" | "step" | "pause" | "event" | "exception" | "time";
 
 export interface PingRequest {
   id: number;
@@ -467,6 +502,106 @@ export interface RunStartParams {
   model: Model;
   projectDir: string;
   runDir: string;
+  /**
+   * Debug run options (plan 3.8), or null/absent for a normal run.
+   */
+  debug?: DebugStartOptions | null;
+  $comment?: string;
+}
+/**
+ * The debug option of run.start and of the body of POST runs (plan 3.8).
+ */
+export interface DebugStartOptions {
+  breakpoints: Breakpoint[];
+  pauseOnEntry: boolean;
+  $comment?: string;
+}
+export interface LineBreakpoint {
+  id: string;
+  enabled: boolean;
+  kind: "line";
+  line: LineBreakpointTarget;
+  /**
+   * Line breakpoints only: an expression evaluated in the frame; pause only when it is true.
+   */
+  condition?: string | null;
+  /**
+   * Line and watch breakpoints: pause on the n-th hit.
+   */
+  hitCount?: number | null;
+  $comment?: string;
+}
+export interface LineBreakpointTarget {
+  /**
+   * Block reference of the source, e.g. project:LQGController.
+   */
+  ref: string;
+  line: number;
+  /**
+   * Instance path; null means every instance.
+   */
+  path: string | null;
+  $comment?: string;
+}
+export interface WatchBreakpoint {
+  id: string;
+  enabled: boolean;
+  kind: "watch";
+  watch: WatchBreakpointTarget;
+  /**
+   * Line and watch breakpoints: pause on the n-th hit.
+   */
+  hitCount?: number | null;
+  $comment?: string;
+}
+export interface WatchBreakpointTarget {
+  /**
+   * A boolean watch expression over signals (D22), e.g. s"Motor1/i" > 5.
+   */
+  expr: string;
+  /**
+   * Instance path that relative names resolve in, or null.
+   */
+  context: string | null;
+  $comment?: string;
+}
+export interface TimeBreakpoint {
+  id: string;
+  enabled: boolean;
+  kind: "time";
+  time: TimeBreakpointTarget;
+  $comment?: string;
+}
+export interface TimeBreakpointTarget {
+  t: number;
+  $comment?: string;
+}
+export interface EventBreakpoint {
+  id: string;
+  enabled: boolean;
+  kind: "event";
+  event: EventBreakpointTarget;
+  $comment?: string;
+}
+export interface EventBreakpointTarget {
+  /**
+   * Pause after an @events firing of this instance; null means any instance.
+   */
+  path: string | null;
+  $comment?: string;
+}
+export interface ExceptionBreakpoint {
+  id: string;
+  enabled: boolean;
+  kind: "exception";
+  exception: ExceptionBreakpointTarget;
+  $comment?: string;
+}
+export interface ExceptionBreakpointTarget {
+  /**
+   * Diagnostic codes to pause on, before the run ends.
+   */
+  on: string[];
   $comment?: string;
 }
 export interface RunCancelRequest {
@@ -724,7 +859,7 @@ export interface BlockCheckResult {
 }
 export interface Diagnostic {
   /**
-   * Diagnostic code: E0xx block checks, E1xx model checks, E3xx bindings, E9xx internal and solver, W2xx warnings.
+   * Diagnostic code: E0xx block checks, E1xx model checks, E3xx bindings, E4xx and W4xx debugging, E9xx internal and solver, W2xx warnings.
    */
   code: string;
   severity: DiagnosticSeverity;
@@ -954,5 +1089,354 @@ export interface LogNotification {
 export interface LogParams {
   level: LogLevel;
   message: string;
+  $comment?: string;
+}
+export interface DebugSetBreakpointsRequest {
+  id: number;
+  method: "debug.setBreakpoints";
+  params: DebugSetBreakpointsParams;
+  $comment?: string;
+}
+export interface DebugSetBreakpointsParams {
+  runId: string;
+  /**
+   * Always the full set.
+   */
+  breakpoints: Breakpoint[];
+  $comment?: string;
+}
+export interface DebugPauseRequest {
+  id: number;
+  method: "debug.pause";
+  params: DebugPauseParams;
+  $comment?: string;
+}
+export interface DebugPauseParams {
+  runId: string;
+  $comment?: string;
+}
+export interface DebugContinueRequest {
+  id: number;
+  method: "debug.continue";
+  params: DebugContinueParams;
+  $comment?: string;
+}
+export interface DebugContinueParams {
+  runId: string;
+  $comment?: string;
+}
+export interface DebugStepRequest {
+  id: number;
+  method: "debug.step";
+  params: DebugStepParams;
+  $comment?: string;
+}
+export interface DebugStepParams {
+  runId: string;
+  granularity: StepGranularity;
+  $comment?: string;
+}
+export interface DebugRunToRequest {
+  id: number;
+  method: "debug.runTo";
+  params: DebugRunToParams;
+  $comment?: string;
+}
+export interface DebugRunToParams {
+  runId: string;
+  t: number;
+  $comment?: string;
+}
+export interface DebugEvaluateRequest {
+  id: number;
+  method: "debug.evaluate";
+  params: DebugEvaluateParams;
+  $comment?: string;
+}
+export interface DebugEvaluateParams {
+  runId: string;
+  expr: string;
+  context: string | null;
+  $comment?: string;
+}
+export interface DebugValuesRequest {
+  id: number;
+  method: "debug.values";
+  params: DebugValuesParams;
+  $comment?: string;
+}
+export interface DebugValuesParams {
+  runId: string;
+  ids: string[];
+  $comment?: string;
+}
+export interface DebugSetParameterRequest {
+  id: number;
+  method: "debug.setParameter";
+  params: DebugSetParameterParams;
+  $comment?: string;
+}
+export interface DebugSetParameterParams {
+  runId: string;
+  name: string;
+  value: number;
+  $comment?: string;
+}
+export interface DebugSetStateRequest {
+  id: number;
+  method: "debug.setState";
+  params: DebugSetStateParams;
+  $comment?: string;
+}
+export interface DebugSetStateParams {
+  runId: string;
+  id: string;
+  value: number;
+  $comment?: string;
+}
+export interface RunReplayRequest {
+  id: number;
+  method: "run.replay";
+  params: RunReplayParams;
+  $comment?: string;
+}
+export interface RunReplayParams {
+  runId: string;
+  newRunId: string;
+  runDir: string;
+  $comment?: string;
+}
+export interface RunBranchRequest {
+  id: number;
+  method: "run.branch";
+  params: RunBranchParams;
+  $comment?: string;
+}
+export interface RunBranchParams {
+  runId: string;
+  newRunId: string;
+  runDir: string;
+  t: number;
+  $comment?: string;
+}
+export interface ModelExplainRequest {
+  id: number;
+  method: "model.explain";
+  params: ModelExplainParams;
+  $comment?: string;
+}
+export interface ModelExplainParams {
+  model: Model;
+  projectDir: string;
+  signal: string;
+  $comment?: string;
+}
+export interface DebugSetBreakpointsResponse {
+  id: number;
+  result: DebugSetBreakpointsResult;
+  $comment?: string;
+}
+export interface DebugSetBreakpointsResult {
+  breakpoints: BreakpointStatus[];
+  $comment?: string;
+}
+/**
+ * One entry of the debug.setBreakpoints result.
+ */
+export interface BreakpointStatus {
+  id: string;
+  /**
+   * False when the breakpoint binds to no hook in this model.
+   */
+  verified: boolean;
+  resolved: BreakpointResolved;
+  diagnostics: Diagnostic[];
+  $comment?: string;
+}
+export interface BreakpointResolved {
+  hooks: number;
+  paths: string[];
+  $comment?: string;
+}
+export interface DebugPauseResponse {
+  id: number;
+  result: OkResult;
+  $comment?: string;
+}
+export interface DebugContinueResponse {
+  id: number;
+  result: OkResult;
+  $comment?: string;
+}
+export interface DebugStepResponse {
+  id: number;
+  result: OkResult;
+  $comment?: string;
+}
+export interface DebugRunToResponse {
+  id: number;
+  result: OkResult;
+  $comment?: string;
+}
+export interface DebugEvaluateResponse {
+  id: number;
+  result: EvaluateResult;
+  $comment?: string;
+}
+export interface EvaluateResult {
+  value: number | boolean | (number | (number | number[])[])[];
+  type: FrameValueType;
+  size: number[];
+  unit: string | null;
+  diagnostics: Diagnostic[];
+  $comment?: string;
+}
+export interface DebugValuesResponse {
+  id: number;
+  result: ValuesResult;
+  $comment?: string;
+}
+export interface ValuesResult {
+  t: number;
+  /**
+   * Signal id -> value at the pause.
+   */
+  values: {
+    [k: string]: number;
+  };
+  $comment?: string;
+}
+export interface DebugSetParameterResponse {
+  id: number;
+  result: DebugEditResult;
+  $comment?: string;
+}
+export interface DebugEditResult {
+  ok: boolean;
+  edit: Edit | null;
+  diagnostics: Diagnostic[];
+  $comment?: string;
+}
+/**
+ * A parameter or state change made while paused; also stored in the manifest's debug.edits.
+ */
+export interface Edit {
+  t: number;
+  kind: EditKind;
+  target: string;
+  value: number;
+  $comment?: string;
+}
+export interface DebugSetStateResponse {
+  id: number;
+  result: DebugEditResult;
+  $comment?: string;
+}
+export interface RunReplayResponse {
+  id: number;
+  result: RunStartResult;
+  $comment?: string;
+}
+export interface RunBranchResponse {
+  id: number;
+  result: RunStartResult;
+  $comment?: string;
+}
+export interface ModelExplainResponse {
+  id: number;
+  result: ExplainResult;
+  $comment?: string;
+}
+/**
+ * The model.explain result (plan 5.13).
+ */
+export interface ExplainResult {
+  signal: string;
+  kind: ExplainKind;
+  unit: string | null;
+  /**
+   * Defining expression rendered with signal ids, for observed and alias signals.
+   */
+  expression: string | null;
+  aliasOf: string | null;
+  equations: ExplainEquation[];
+  /**
+   * The W201 and W202 findings that involve the signal.
+   */
+  diagnostics: Diagnostic[];
+  $comment?: string;
+}
+export interface ExplainEquation {
+  text: string;
+  origin: ExplainOrigin;
+  $comment?: string;
+}
+export interface ExplainOrigin {
+  path: string | null;
+  ref: string | null;
+  range: SourceRange | null;
+  $comment?: string;
+}
+export interface DebugPausedNotification {
+  method: "debug.paused";
+  params: PausedInfo;
+  $comment?: string;
+}
+/**
+ * The debug.paused notification (plan 3.8).
+ */
+export interface PausedInfo {
+  runId: string;
+  t: number;
+  tick: number | null;
+  reason: PauseReason;
+  breakpointId: string | null;
+  location: SourceLocation | null;
+  /**
+   * Statement pauses only.
+   */
+  frame: Frame | null;
+  diagnostics: Diagnostic[];
+  $comment?: string;
+}
+export interface SourceLocation {
+  path: string;
+  ref: string;
+  /**
+   * Source scope, e.g. @discrete, or "watch" for a watch pause (D27).
+   */
+  scope: string;
+  range: SourceRange;
+  $comment?: string;
+}
+/**
+ * The variables of the stopped statement (plan 3.8, 5.13).
+ */
+export interface Frame {
+  locals: FrameValue[];
+  held: FrameValue[];
+  previous: FrameValue[];
+  $comment?: string;
+}
+export interface FrameValue {
+  name: string;
+  type: FrameValueType;
+  size: number[];
+  /**
+   * A scalar, or nested arrays of numbers (up to three levels) matching size.
+   */
+  value: number | boolean | (number | (number | number[])[])[];
+  $comment?: string;
+}
+export interface DebugResumedNotification {
+  method: "debug.resumed";
+  params: ResumedInfo;
+  $comment?: string;
+}
+/**
+ * The debug.resumed notification.
+ */
+export interface ResumedInfo {
+  runId: string;
   $comment?: string;
 }

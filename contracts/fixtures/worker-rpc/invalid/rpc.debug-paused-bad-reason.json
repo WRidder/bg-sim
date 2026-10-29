@@ -1,0 +1,14 @@
+{
+  "$comment": "Invalid: the debug.paused reason \"sleeping\" is not allowed.",
+  "method": "debug.paused",
+  "params": {
+    "runId": "r",
+    "t": 0.0,
+    "tick": null,
+    "reason": "sleeping",
+    "breakpointId": null,
+    "location": null,
+    "frame": null,
+    "diagnostics": []
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "$comment": "Invalid: a breakpoint status needs the resolved object.",
+  "id": "bp9",
+  "verified": false,
+  "diagnostics": []
+}

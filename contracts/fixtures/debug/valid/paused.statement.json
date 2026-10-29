@@ -1,0 +1,69 @@
+{
+  "$comment": "A statement pause with a frame.",
+  "runId": "run-20261021-093050",
+  "t": 0.4123,
+  "tick": 412,
+  "reason": "breakpoint",
+  "breakpointId": "bp1",
+  "location": {
+    "path": "Ctrl",
+    "ref": "project:LQGController",
+    "scope": "@discrete",
+    "range": {
+      "line": 14,
+      "col": 9,
+      "endLine": 14,
+      "endCol": 31
+    }
+  },
+  "frame": {
+    "locals": [
+      {
+        "name": "v",
+        "type": "Real",
+        "size": [],
+        "value": 0.12
+      },
+      {
+        "name": "k",
+        "type": "Int",
+        "size": [],
+        "value": 5
+      },
+      {
+        "name": "on",
+        "type": "Bool",
+        "size": [],
+        "value": true
+      },
+      {
+        "name": "x",
+        "type": "Real",
+        "size": [
+          2,
+          2
+        ],
+        "value": [
+          [
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0
+          ]
+        ]
+      }
+    ],
+    "held": [
+      {
+        "name": "u",
+        "type": "Real",
+        "size": [],
+        "value": 3.4
+      }
+    ],
+    "previous": []
+  },
+  "diagnostics": []
+}

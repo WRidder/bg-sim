@@ -1,0 +1,9 @@
+{
+  "$comment": "Invalid: kind watch carries the `time` object instead of `watch`.",
+  "id": "bp2",
+  "enabled": true,
+  "kind": "watch",
+  "time": {
+    "t": 1.0
+  }
+}

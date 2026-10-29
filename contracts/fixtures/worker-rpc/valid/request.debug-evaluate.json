@@ -1,0 +1,9 @@
+{
+  "id": 66,
+  "method": "debug.evaluate",
+  "params": {
+    "runId": "run-1",
+    "expr": "v * 2",
+    "context": "Ctrl"
+  }
+}

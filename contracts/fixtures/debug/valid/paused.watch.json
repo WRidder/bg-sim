@@ -1,0 +1,21 @@
+{
+  "$comment": "A watch pause: scope is watch and the frame is null (D27).",
+  "runId": "run-20261021-093050",
+  "t": 0.31,
+  "tick": null,
+  "reason": "breakpoint",
+  "breakpointId": "bp2",
+  "location": {
+    "path": "Motor1",
+    "ref": "stdlib:converters/DCMotor",
+    "scope": "watch",
+    "range": {
+      "line": 1,
+      "col": 1,
+      "endLine": 1,
+      "endCol": 15
+    }
+  },
+  "frame": null,
+  "diagnostics": []
+}

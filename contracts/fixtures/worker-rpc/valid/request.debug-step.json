@@ -1,0 +1,8 @@
+{
+  "id": 64,
+  "method": "debug.step",
+  "params": {
+    "runId": "run-1",
+    "granularity": "statement"
+  }
+}

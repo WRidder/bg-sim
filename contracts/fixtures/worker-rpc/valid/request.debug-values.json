@@ -1,0 +1,10 @@
+{
+  "id": 67,
+  "method": "debug.values",
+  "params": {
+    "runId": "run-1",
+    "ids": [
+      "Motor1/i"
+    ]
+  }
+}

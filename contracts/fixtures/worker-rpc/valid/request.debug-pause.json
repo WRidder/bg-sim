@@ -1,0 +1,7 @@
+{
+  "id": 62,
+  "method": "debug.pause",
+  "params": {
+    "runId": "run-1"
+  }
+}

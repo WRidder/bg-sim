@@ -1,0 +1,32 @@
+{
+  "$comment": "An unverified breakpoint with an E401 diagnostic.",
+  "id": "bp9",
+  "verified": false,
+  "resolved": {
+    "hooks": 0,
+    "paths": []
+  },
+  "diagnostics": [
+    {
+      "code": "E401",
+      "severity": "error",
+      "message": "no statement on line 14 of project:LQGController",
+      "hint": "equations do not execute in order; add a watch breakpoint on a signal instead",
+      "path": "Ctrl",
+      "block": "project:LQGController",
+      "scope": "@equations",
+      "source": {
+        "kind": "project",
+        "ref": "project:LQGController",
+        "range": {
+          "line": 14,
+          "col": 1,
+          "endLine": 14,
+          "endCol": 20
+        }
+      },
+      "node": null,
+      "connection": null
+    }
+  ]
+}
