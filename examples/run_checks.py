@@ -1751,6 +1751,63 @@ def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Ru
         report.check(difference <= limit, label, detail)
 
 
+# --------------------------------------------------------------------------- scene bindings
+
+
+def _compare_scaling_checks(report: Report, project: str, specs: Any, runs: dict[str, Run]) -> None:
+    """X5.4: the difference to a reference model scales with a parameter ratio.
+
+    ``compare_scaling`` entries name a reference run ``a`` and two variants ``b_stiff`` and
+    ``b_soft`` (a 1/k-compliant joint at two stiffnesses). For every ``signals`` pair
+    ``[signal_a, signal_b]`` the largest absolute difference ``e = max|a - b|`` over
+    ``[from_t, end]`` is measured on the union of the time grids for both variants, and the check
+    passes when ``e_soft / e_stiff`` lies in ``[ratio_min, ratio_max]`` (``k_ratio`` documents
+    the stiffness ratio the interval is built around).
+    """
+    if isinstance(specs, dict):
+        specs = [specs]
+    if not isinstance(specs, list):
+        report.check(False, f"{project} compare_scaling", "must be an object or a list")
+        return
+    for spec in specs:
+        try:
+            names = [str(spec["a"]), str(spec["b_stiff"]), str(spec["b_soft"])]
+            pairs = [(str(p[0]), str(p[1])) for p in spec["signals"]]
+            from_t = float(spec.get("from_t", 0.0))
+            ratio_min = float(spec["ratio_min"])
+            ratio_max = float(spec["ratio_max"])
+        except (KeyError, TypeError, ValueError, IndexError) as exc:
+            report.check(False, f"{project} compare_scaling", f"malformed entry: {exc!r}")
+            continue
+        if any(name not in runs for name in names):
+            report.check(False, f"{project} compare_scaling", f"runs {names} are all required")
+            continue
+        run_a, run_stiff, run_soft = (runs[name] for name in names)
+        for signal_a, signal_b in pairs:
+            label = f"{project} compare_scaling {names[0]}/{signal_a} vs {signal_b}"
+            if signal_a not in run_a.signals or any(
+                signal_b not in run.signals for run in (run_stiff, run_soft)
+            ):
+                report.check(False, label, "unknown signal")
+                continue
+            errors = []
+            for run_b in (run_stiff, run_soft):
+                upper = min(float(run_a.time[-1]), float(run_b.time[-1]))
+                grid = np.union1d(run_a.time, run_b.time)
+                grid = grid[(grid >= from_t) & (grid <= upper)]
+                values_a = np.interp(grid, run_a.time, run_a.signals[signal_a])
+                values_b = np.interp(grid, run_b.time, run_b.signals[signal_b])
+                errors.append(float(np.max(np.abs(values_a - values_b))))
+            e_stiff, e_soft = errors
+            ratio = e_soft / e_stiff if e_stiff > 0.0 else float("inf")
+            detail = (
+                f"from t={from_t:g} max|delta| stiff {e_stiff:.3g}, soft {e_soft:.3g}, ratio "
+                f"{ratio:.3g} (allowed {ratio_min:g}..{ratio_max:g}, stiffness ratio "
+                f"{spec.get('k_ratio', '?')})"
+            )
+            report.check(ratio_min <= ratio <= ratio_max, label, detail)
+
+
 def _check_model_checks(
     report: Report, project: str, model: str, run: Run, checks: Any
 ) -> None:
@@ -1853,6 +1910,9 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
         compare = document.get("compare")
         if compare:
             _compare_checks(report, project, compare, runs)
+        compare_scaling = document.get("compare_scaling")
+        if compare_scaling:
+            _compare_scaling_checks(report, project, compare_scaling, runs)
     finally:
         client.delete(f"/api/projects/{project}")
 

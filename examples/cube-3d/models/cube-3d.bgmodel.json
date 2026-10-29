@@ -1,0 +1,524 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "cube-3d",
+  "$comment": "Plan 9.9 (X5.4): a 0.15 m cube balanced on one corner by three body-axis reaction wheels, equation-block plant (library/CornerCube.jl) and a 2 ms discrete LQR (library/CubeLQR.jl, K from design/design.py). The motors are the stdlib drives/ElectricDrive with the stator fixed (the reaction torque is inside the block); the motor rotor inertia J_m = 1e-6 kg m^2 (rotating relative to the cube) is the smallest value that keeps the solver robust, J_m <= 1e-8 makes the re-initialisation at the controller ticks fail (derivative causality of the rotor against the rate-imposed wheel). The position of the 3D pose binding comes from the three constant blocks PosX/Y/Z (inline, output unit m, which the pose binding requires) (the pivot corner is the world origin).",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Ctrl",
+        "block": {
+          "ref": "project:CubeLQR"
+        },
+        "position": {
+          "x": 460,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "K": "[206.848968 -358.272922 -47.0030541 7.45310376 7.45310376 -0.125318573 0.0483532841 0.0483532841; 206.848968 358.272922 7.45310376 -47.0030541 7.45310376 0.0483532841 -0.125318573 0.0483532841; -413.697936 -1.80216087e-09 7.45310376 7.45310376 -47.0030541 0.0483532841 0.0483532841 -0.125318573]",
+          "u_max": "12.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Cube",
+        "block": {
+          "ref": "project:CornerCube"
+        },
+        "position": {
+          "x": 760,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.42",
+          "a": "0.15",
+          "Thcm": "3e-3",
+          "Thw": "6e-4",
+          "g": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Drv1",
+        "block": {
+          "ref": "stdlib:drives/ElectricDrive"
+        },
+        "position": {
+          "x": 300,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R_w": "1.0",
+          "L": "1e-4",
+          "k_t": "0.0335",
+          "J_m": "1e-6",
+          "b_m": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Drv2",
+        "block": {
+          "ref": "stdlib:drives/ElectricDrive"
+        },
+        "position": {
+          "x": 300,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R_w": "1.0",
+          "L": "1e-4",
+          "k_t": "0.0335",
+          "J_m": "1e-6",
+          "b_m": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Drv3",
+        "block": {
+          "ref": "stdlib:drives/ElectricDrive"
+        },
+        "position": {
+          "x": 300,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R_w": "1.0",
+          "L": "1e-4",
+          "k_t": "0.0335",
+          "J_m": "1e-6",
+          "b_m": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "PosX",
+        "block": {
+          "inline": {
+            "source": "@block Origin begin\n    @parameters value::Real = 0.0, [unit = \"m\"]\n    @outputs y::Real, [unit = \"m\"]\n    @equations y ~ value\nend\n"
+          }
+        },
+        "position": {
+          "x": 1000,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "PosY",
+        "block": {
+          "inline": {
+            "source": "@block Origin begin\n    @parameters value::Real = 0.0, [unit = \"m\"]\n    @outputs y::Real, [unit = \"m\"]\n    @equations y ~ value\nend\n"
+          }
+        },
+        "position": {
+          "x": 1000,
+          "y": 450
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "PosZ",
+        "block": {
+          "inline": {
+            "source": "@block Origin begin\n    @parameters value::Real = 0.0, [unit = \"m\"]\n    @outputs y::Real, [unit = \"m\"]\n    @equations y ~ value\nend\n"
+          }
+        },
+        "position": {
+          "x": 1000,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n01",
+          "port": "pose"
+        },
+        "route": [
+          {
+            "x": 880,
+            "y": 500
+          },
+          {
+            "x": 880,
+            "y": 110
+          },
+          {
+            "x": 440,
+            "y": 110
+          },
+          {
+            "x": 440,
+            "y": 160
+          }
+        ],
+        "label": "pose (qw qx qy qz 0 0 0)"
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "omega"
+        },
+        "to": {
+          "node": "n01",
+          "port": "omega"
+        },
+        "route": [
+          {
+            "x": 900,
+            "y": 510
+          },
+          {
+            "x": 900,
+            "y": 90
+          },
+          {
+            "x": 420,
+            "y": 90
+          },
+          {
+            "x": 420,
+            "y": 170
+          }
+        ],
+        "label": "body rates"
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "wheel"
+        },
+        "to": {
+          "node": "n01",
+          "port": "wheel"
+        },
+        "route": [
+          {
+            "x": 920,
+            "y": 520
+          },
+          {
+            "x": 920,
+            "y": 70
+          },
+          {
+            "x": 400,
+            "y": 70
+          },
+          {
+            "x": 400,
+            "y": 180
+          }
+        ],
+        "label": "wheel rates (relative to the cube)"
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "u1"
+        },
+        "to": {
+          "node": "n03",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 480,
+            "y": 330
+          },
+          {
+            "x": 330,
+            "y": 330
+          }
+        ],
+        "label": "motor voltages (+-12 V)"
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "u2"
+        },
+        "to": {
+          "node": "n04",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 490,
+            "y": 450
+          },
+          {
+            "x": 330,
+            "y": 450
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "u3"
+        },
+        "to": {
+          "node": "n05",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 500,
+            "y": 570
+          },
+          {
+            "x": 330,
+            "y": 570
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "w01",
+        "kind": "wire",
+        "from": {
+          "node": "n03",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "n02",
+          "port": "m1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w02",
+        "kind": "wire",
+        "from": {
+          "node": "n04",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "n02",
+          "port": "m2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w03",
+        "kind": "wire",
+        "from": {
+          "node": "n05",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "n02",
+          "port": "m3"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Corner-balancing cube (plan 9.9). Cube (project block CornerCube): rigid body on a ball joint at the corner (world origin), 3 reaction wheels on the body axes; hand-derived dynamics with quaternion, body rates and relative wheel rates as states. Each wheel is driven by an ElectricDrive (R 1 ohm, L 0.1 mH, k 0.0335) whose stator is fixed: the reaction torque on the cube is already inside the block. Ctrl (CubeLQR): 2 ms discrete LQR on [tilt(2), rates(3), wheel rates(3)], gains from design/design.py, voltage limit +-12 V. Start: 2 degrees off the vertical about the world x axis.",
+        "x": 100,
+        "y": 720,
+        "w": 1000,
+        "h": 90
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 4.0,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 4001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Tilt of the body diagonal from the vertical (rad)",
+      "signals": [
+        "Cube/tilt"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Wheel rates relative to the cube (rad/s)",
+      "signals": [
+        "Cube/wheel[1]",
+        "Cube/wheel[2]",
+        "Cube/wheel[3]"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Motor voltages (clamped at +-12 V)",
+      "signals": [
+        "Ctrl/u1",
+        "Ctrl/u2",
+        "Ctrl/u3"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Body rates (rad/s)",
+      "signals": [
+        "Cube/omega[1]",
+        "Cube/omega[2]",
+        "Cube/omega[3]"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Vertical angular momentum about the pivot: total and in the wheels (N m s)",
+      "signals": [
+        "Cube/Hz",
+        "Cube/Hzw"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Quaternion norm error",
+      "signals": [
+        "Cube/qerr"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/cube-3d.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:cube",
+      "property": "pose",
+      "signal": [
+        "Cube/pose[1]",
+        "Cube/pose[2]",
+        "Cube/pose[3]",
+        "Cube/pose[4]",
+        "PosX/y",
+        "PosY/y",
+        "PosZ/y"
+      ]
+    },
+    {
+      "target": "joint:wheel_x",
+      "property": "position",
+      "signal": "Cube/phi1"
+    },
+    {
+      "target": "joint:wheel_y",
+      "property": "position",
+      "signal": "Cube/phi2"
+    },
+    {
+      "target": "joint:wheel_z",
+      "property": "position",
+      "signal": "Cube/phi3"
+    }
+  ]
+}

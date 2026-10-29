@@ -101,3 +101,9 @@ Open: <anything the next WP must know, or none>
 ```
 
 Paste real command output numbers. Do not claim a command passed without running it.
+
+## Process hygiene (added during M5)
+
+- Any backend (`uv run bgsim`) or Julia process you start yourself must be stopped with
+  `taskkill /PID <pid> /T /F` before you report. Killing only the `uv` wrapper leaves the server and
+  its Julia worker (≈ 0.5–2 GB each) running; leaked backends used 22 GB during wave 2.

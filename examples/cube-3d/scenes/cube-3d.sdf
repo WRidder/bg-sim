@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<!--
+  cube-3d (plan 9.9): a 0.15 m cube balanced on one corner by three reaction wheels.
+
+  Z-up, metres. The pivot corner is the world origin. The link "cube" has its frame at the
+  pivot with the axes along the three cube edges that meet there (the model's body frame), and
+  its `pose` is bound to the seven pose signals of the model (quaternion qw qx qy qz, then the
+  position, which stays at the origin). The cube visual is offset by (a/2, a/2, a/2) = 0.075 m
+  inside the link, so the body diagonal (1,1,1) is vertical at the equilibrium.
+
+  The three wheels are discs on the cube centre with their axes along the body x, y and z
+  (joints "wheel_x", "wheel_y", "wheel_z", bound to the integrated wheel angles of the model,
+  relative to the cube). Each has a dark spoke that makes the rotation visible.
+-->
+<sdf version="1.9">
+  <model name="cube_3d">
+    <link name="base">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="floor">
+        <pose>0 0 -0.01 0 0 0</pose>
+        <geometry><box><size>0.5 0.5 0.02</size></box></geometry>
+        <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
+      </visual>
+      <visual name="pivot_ball">
+        <geometry><sphere><radius>0.008</radius></sphere></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="cube">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="cube_body">
+        <pose>0.075 0.075 0.075 0 0 0</pose>
+        <geometry><box><size>0.15 0.15 0.15</size></box></geometry>
+        <material><diffuse>0.25 0.5 0.85 0.4</diffuse></material>
+      </visual>
+    </link>
+
+    <!-- wheel about the body x axis: the cylinder axis (z) is turned onto x -->
+    <link name="wheel_x_link">
+      <pose>0.075 0.075 0.075 0 0 0</pose>
+      <visual name="wheel_x_disk">
+        <pose>0 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.05</radius><length>0.012</length></cylinder></geometry>
+        <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
+      </visual>
+      <visual name="wheel_x_spoke">
+        <pose>0 0.035 0 0 0 0</pose>
+        <geometry><box><size>0.016 0.03 0.008</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <!-- wheel about the body y axis -->
+    <link name="wheel_y_link">
+      <pose>0.075 0.075 0.075 0 0 0</pose>
+      <visual name="wheel_y_disk">
+        <pose>0 0 0 1.5707963 0 0</pose>
+        <geometry><cylinder><radius>0.05</radius><length>0.012</length></cylinder></geometry>
+        <material><diffuse>0.35 0.7 0.35 1</diffuse></material>
+      </visual>
+      <visual name="wheel_y_spoke">
+        <pose>0 0 0.035 0 0 0</pose>
+        <geometry><box><size>0.008 0.016 0.03</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <!-- wheel about the body z axis -->
+    <link name="wheel_z_link">
+      <pose>0.075 0.075 0.075 0 0 0</pose>
+      <visual name="wheel_z_disk">
+        <geometry><cylinder><radius>0.05</radius><length>0.012</length></cylinder></geometry>
+        <material><diffuse>0.8 0.3 0.3 1</diffuse></material>
+      </visual>
+      <visual name="wheel_z_spoke">
+        <pose>0.035 0 0 0 0 0</pose>
+        <geometry><box><size>0.03 0.008 0.016</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <joint name="wheel_x" type="continuous">
+      <parent>cube</parent>
+      <child>wheel_x_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="wheel_y" type="continuous">
+      <parent>cube</parent>
+      <child>wheel_y_link</child>
+      <axis><xyz>0 1 0</xyz></axis>
+    </joint>
+    <joint name="wheel_z" type="continuous">
+      <parent>cube</parent>
+      <child>wheel_z_link</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+  </model>
+</sdf>

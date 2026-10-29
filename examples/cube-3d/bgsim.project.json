@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "cube-3d",
+  "models": [
+    "cube-3d",
+    "cube-3d-mb",
+    "cube-3d-mb-soft"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
