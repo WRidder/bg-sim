@@ -45,6 +45,7 @@ SCHEMAS: dict[str, str] = {
     "worker-rpc": "WorkerRpc",
     "stream-handshake": "StreamHandshake",
     "bindings": "Bindings",
+    "docs": "Docs",
 }
 
 # The M1 blocks of plan section 8, as ref -> name.

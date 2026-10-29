@@ -34,6 +34,7 @@ const schemaNames = [
   "worker-rpc",
   "stream-handshake",
   "bindings",
+  "docs",
 ] as const;
 type SchemaName = (typeof schemaNames)[number];
 
@@ -80,8 +81,8 @@ const invalidFixtures = fixtureFiles("invalid");
 const semanticFixtures = fixtureFiles("semantic");
 
 describe("schemas", () => {
-  it("registers all eight schemas", () => {
-    expect(schemaNames).toHaveLength(8);
+  it("registers all nine schemas", () => {
+    expect(schemaNames).toHaveLength(9);
     for (const name of schemaNames) {
       expect(validator(name)).toBeTypeOf("function");
     }

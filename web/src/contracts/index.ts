@@ -10,6 +10,7 @@
 export * as bindings from "./bindings";
 export * as catalog from "./catalog";
 export * as diagnostic from "./diagnostic";
+export * as docs from "./docs";
 export * as model from "./model";
 export * as project from "./project";
 export * as runManifest from "./run-manifest";
@@ -45,6 +46,8 @@ export type { DiagnosticSource } from "./diagnostic";
 export type { Diagnostics } from "./diagnostic";
 export type { RelatedDiagnostic } from "./diagnostic";
 export type { SourceRange } from "./diagnostic";
+export type { Docs } from "./docs";
+export type { DocsPage } from "./docs";
 export type { Model } from "./model";
 export type { ModelAnnotation } from "./model";
 export type { ModelBlock } from "./model";
