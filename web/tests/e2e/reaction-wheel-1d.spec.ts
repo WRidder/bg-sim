@@ -237,4 +237,59 @@ test("opens the reaction-wheel cube, runs it and reads the angle at 3 s", async 
 
   const angle = await legendNumber(page, "Body/theta");
   expect(Math.abs(angle)).toBeLessThan(0.0034906585);
+
+  // The same run plays in 3D: the cube's edge joint follows Body/theta, the wheel joint
+  // Drive/phi_rel, and the bindings validate without a single diagnostic.
+  await page.getByRole("tab", { name: "3D View" }).click();
+  await expect(page.getByTestId("scene-view")).toHaveAttribute("data-state", "loaded", {
+    timeout: 30_000,
+  });
+  const bar = page.getByTestId("playback-bar");
+  await expect(bar).toHaveAttribute("data-mode", "playback", { timeout: 30_000 });
+
+  const tree = page.getByTestId("scene-tree");
+  await expect(tree).toContainText("cube");
+  await expect(tree).toContainText("wheel");
+
+  await page.getByTestId("bindings-toggle").click();
+  await expect(page.getByTestId("bindings-editor")).toBeVisible();
+  for (const row of ["binding-row-0", "binding-row-1"]) {
+    await expect(page.getByTestId(row)).not.toHaveAttribute("data-invalid", "true");
+  }
+  await expect(page.getByTestId("binding-problem-0")).toHaveCount(0);
+  await expect(page.getByTestId("binding-problem-1")).toHaveCount(0);
+  await page.getByTestId("bindings-toggle").click();
+
+  const appliedTo = async (target: string): Promise<number | undefined> => {
+    const raw = await bar.getAttribute("data-applied");
+    return (JSON.parse(raw ?? "{}") as Record<string, number>)[target];
+  };
+  // Values of design.py / expected.json (60 Hz decimation and interpolation: 1e-3).
+  for (const [time, theta] of [
+    [0.1, 0.014607],
+    [1.0, -0.002021],
+  ] as const) {
+    await page.getByTestId("playback-time").fill(String(time));
+    await expect
+      .poll(async () => Math.abs(((await appliedTo("joint:edge")) ?? Number.NaN) - theta), {
+        message: `the edge joint at t = ${time} s`,
+      })
+      .toBeLessThan(1e-3);
+  }
+  await page.getByTestId("playback-time").fill("4");
+  await expect
+    .poll(async () => Math.abs(((await appliedTo("joint:wheel_joint")) ?? Number.NaN) - 3.075))
+    .toBeLessThan(0.05);
+
+  await page.screenshot({ path: "test-results/reaction-wheel-1d-3d.png" });
+
+  await page.getByTestId("playback-rewind").click();
+  await expect.poll(async () => Number(await bar.getAttribute("data-time"))).toBe(0);
+  await page.getByTestId("playback-speed").selectOption("0.25");
+  await page.getByTestId("playback-toggle").click();
+  await expect(bar).toHaveAttribute("data-playing", "true");
+  await expect
+    .poll(async () => Number(await bar.getAttribute("data-time")))
+    .toBeGreaterThan(0.05);
+  await page.getByTestId("playback-toggle").click();
 });
