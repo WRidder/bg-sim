@@ -23,6 +23,7 @@ import { expect, test, type Page } from "@playwright/test";
  */
 
 test.describe.configure({ timeout: 240_000 });
+test.use({ deviceScaleFactor: 2 });
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -272,8 +273,8 @@ test("opens the corner-balancing cube, runs it and reads the tilt at 3 s", async
   };
   // Integrated wheel angles of the run (design: Cube/phi1..3), 60 Hz decimation: 1e-3.
   for (const [time, angles] of [
-    [1.0, [2.6616, -0.7147, -1.9477]],
-    [4.0, [7.101, -1.9065, -5.1953]],
+    [1.0, [7.0161, -1.8908, -5.1311]],
+    [4.0, [9.1459, -2.4647, -6.6871]],
   ] as const) {
     await page.getByTestId("playback-time").fill(String(time));
     for (const [index, axis] of ["x", "y", "z"].entries()) {
@@ -290,6 +291,15 @@ test("opens the corner-balancing cube, runs it and reads the tilt at 3 s", async
   await page.getByTestId("playback-time").fill("0");
   await page.waitForTimeout(500);
   await page.screenshot({ path: "test-results/cube-3d-3d.png" });
+  // The wheels sit on three faces of the cube, away from the pivot corner: a close-up of the viewer.
+  await page.getByTestId("viewer-fit").click();
+  const viewBox = await page.getByTestId("scene-view").boundingBox();
+  if (viewBox !== null) {
+    await page.mouse.move(viewBox.x + viewBox.width * 0.5, viewBox.y + viewBox.height * 0.45);
+    await page.mouse.wheel(0, -3000);
+  }
+  await page.waitForTimeout(500);
+  await page.getByTestId("scene-view").screenshot({ path: "test-results/cube-3d-3d-view.png" });
 
   await page.getByTestId("playback-rewind").click();
   await expect.poll(async () => Number(await bar.getAttribute("data-time"))).toBe(0);

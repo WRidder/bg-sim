@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "cube-3d-mb-soft",
-  "$comment": "Plan 9.9 / DEC-M5-3 (X5.4): the multibond counterpart of cube-3d, built from the M3 spatial stdlib and run with the same controller (project:CubeLQR, same K). World -> Pivot (Spherical3D, compliant: kt = 1e+06 N/m, bt = 158 N s/m) -> Link (FixedTransform3DNeutral, the CoM r = (a/2)(1,1,1) in the corner frame) -> Body (RigidBody3D, m = 0.36 kg, J = 0.0024 kg m^2 about the CoM). Three body-axis wheels, each a RigidBody3D (m = 0.02 kg, J = (3e-4, 3e-4, 6e-4): axial Thw = 6e-4, transverse 3e-4) on a Revolute3D whose axis is the body x, y, z (mounted by FixedTransform3DNeutral), driven by an ElectricDrive (same motor as cube-3d, rotor 1e-6) through a stiff ElasticShaft (a rotor rigidly on a rate-imposing joint is W201). The wheels sit on the CoM, so the total mass is 0.42 kg and the inertia about the CoM is 3e-3 + 6e-4 = 3.6e-3 on every axis (body 2.4e-3 + own axis 6e-4 + the two other wheels' transverse 2 x 3e-4), exactly the cube-3d inertia. Measurements: PoseBody (composed pose, quaternion for the controller), Body.V (body rates), the three joint rates (wheel rates relative to the cube), TiltMeter, BodyMeasure (angular momentum about the world origin = the pivot; the vertical part summed over body and wheels is conserved).",
+  "$comment": "Plan 9.9 / DEC-M5-3 (X5.4): the multibond counterpart of cube-3d, built from the M3 spatial stdlib and run with the same controller (project:CubeLQR, same K). World -> Pivot (Spherical3D, compliant: kt = 1e+06 N/m, bt = 158 N s/m) -> Link (FixedTransform3DNeutral, the CoM r = (a/2)(1,1,1) in the corner frame) -> Body (RigidBody3D, the cube structure: m = 0.18 kg, J = 1.125e-3 kg m^2 about the CoM). Three body-axis wheels, each a RigidBody3D (m = 0.08 kg, J = (9.6e-5, 9.6e-5, 1.9e-4): transverse 9.6e-5, axial Thw = 1.9e-4) on a Revolute3D whose axis is the body x, y, z (mounted by FixedTransform3DNeutral), driven by an ElectricDrive (same motor as cube-3d, rotor 1e-6) through a stiff ElasticShaft (k = 1e4 N m/rad: a softer shaft leaves a rotor-lag error in the wheel rates that does not scale with 1/kt; a rotor rigidly on a rate-imposing joint is W201). Wheel i is mounted on the inside of the face opposite the pivot corner along axis i, centred on the face, its centre d = 0.01 m inside it: the wheel offset (a/2 - d = 0.065 m along the body axis i from the cube centre) is in the mount (child origin in the body frame, WLocal) and in the inverse mount (WMount). The total mass is 0.42 kg, the CoM (0.08738 m)(1,1,1) and the inertia about the pivot equal the cube-3d block exactly. Measurements: PoseBody (composed pose, quaternion for the controller), Body.V (body rates), the three joint rates (wheel rates relative to the cube), TiltMeter, BodyMeasure (angular momentum about the world origin = the pivot; the vertical part summed over body and wheels is conserved).",
   "diagram": {
     "nodes": [
       {
@@ -18,7 +18,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "K": "[206.848968 -358.272922 -47.0030541 7.45310376 7.45310376 -0.125318573 0.0483532841 0.0483532841; 206.848968 358.272922 7.45310376 -47.0030541 7.45310376 0.0483532841 -0.125318573 0.0483532841; -413.697936 -1.80216087e-09 7.45310376 7.45310376 -47.0030541 0.0483532841 0.0483532841 -0.125318573]",
+          "K": "[243.436142 -421.643766 -53.9547345 14.5328372 14.5328372 -0.169790443 0.0717678091 0.0717678091; 243.436142 421.643766 14.5328372 -53.9547345 14.5328372 0.0717678091 -0.169790443 0.0717678091; -486.872283 -2.5527019e-09 14.5328372 14.5328372 -53.9547345 0.0717678091 0.0717678091 -0.169790443]",
           "u_max": "12.0"
         },
         "constants": {},
@@ -117,8 +117,8 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.36",
-          "J": "[0.0024000000000000002, 0.0024000000000000002, 0.0024000000000000002]",
+          "m": "0.18",
+          "J": "[0.001125, 0.001125, 0.001125]",
           "g0": "9.81"
         },
         "constants": {},
@@ -321,7 +321,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.36",
+          "m": "0.18",
           "g0": "9.81"
         },
         "constants": {},
@@ -350,7 +350,7 @@
           "qz": "-0.0",
           "x": "0.0",
           "y": "0.0",
-          "z": "0.0"
+          "z": "-0.065"
         },
         "constants": {},
         "starts": {},
@@ -418,8 +418,8 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.02",
-          "J": "[0.0003, 0.0003, 0.0006]",
+          "m": "0.08",
+          "J": "[9.6e-5, 9.6e-5, 1.9e-4]",
           "g0": "9.81"
         },
         "constants": {},
@@ -474,7 +474,7 @@
           "qx": "0.0",
           "qy": "0.7071067811865476",
           "qz": "0.0",
-          "x": "0.0",
+          "x": "0.065",
           "y": "0.0",
           "z": "0.0"
         },
@@ -538,7 +538,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.02",
+          "m": "0.08",
           "g0": "9.81"
         },
         "constants": {},
@@ -561,8 +561,8 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "100.0",
-          "d": "0.002"
+          "k": "10000.0",
+          "d": "0.02"
         },
         "constants": {},
         "starts": {},
@@ -590,7 +590,7 @@
           "qz": "-0.0",
           "x": "0.0",
           "y": "0.0",
-          "z": "0.0"
+          "z": "-0.065"
         },
         "constants": {},
         "starts": {},
@@ -658,8 +658,8 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.02",
-          "J": "[0.0003, 0.0003, 0.0006]",
+          "m": "0.08",
+          "J": "[9.6e-5, 9.6e-5, 1.9e-4]",
           "g0": "9.81"
         },
         "constants": {},
@@ -715,7 +715,7 @@
           "qy": "0.0",
           "qz": "0.0",
           "x": "0.0",
-          "y": "0.0",
+          "y": "0.065",
           "z": "0.0"
         },
         "constants": {},
@@ -778,7 +778,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.02",
+          "m": "0.08",
           "g0": "9.81"
         },
         "constants": {},
@@ -801,8 +801,8 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "100.0",
-          "d": "0.002"
+          "k": "10000.0",
+          "d": "0.02"
         },
         "constants": {},
         "starts": {},
@@ -830,7 +830,7 @@
           "qz": "-0.0",
           "x": "0.0",
           "y": "0.0",
-          "z": "0.0"
+          "z": "-0.065"
         },
         "constants": {},
         "starts": {},
@@ -898,8 +898,8 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.02",
-          "J": "[0.0003, 0.0003, 0.0006]",
+          "m": "0.08",
+          "J": "[9.6e-5, 9.6e-5, 1.9e-4]",
           "g0": "9.81"
         },
         "constants": {},
@@ -956,7 +956,7 @@
           "qz": "0.0",
           "x": "0.0",
           "y": "0.0",
-          "z": "0.0"
+          "z": "0.065"
         },
         "constants": {},
         "starts": {},
@@ -1018,7 +1018,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.02",
+          "m": "0.08",
           "g0": "9.81"
         },
         "constants": {},
@@ -1041,8 +1041,8 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "k": "100.0",
-          "d": "0.002"
+          "k": "10000.0",
+          "d": "0.02"
         },
         "constants": {},
         "starts": {},

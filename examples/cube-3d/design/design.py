@@ -5,8 +5,10 @@
 """Discrete LQR design for the `cube-3d` sample (plan 9.9).
 
 A cube of side ``a`` balances on one corner (the pivot, a ball joint at the world origin)
-with its body diagonal vertical. Three reaction wheels sit on the body axes ``x``, ``y``,
-``z`` (the cube edges at the pivot). The plant is the equation block
+with its body diagonal vertical. Three reaction wheels spin about the body axes ``x``, ``y``,
+``z`` (the cube edges at the pivot); wheel ``i`` is mounted on the inside of the face opposite
+the pivot corner along axis ``i`` (face ``x_i = a``), centred on the face, its centre ``D_INSET``
+inside it, so the centre of mass stays on the body diagonal. The plant is the equation block
 ``library/CornerCube.jl``; this script holds an independent numpy replica of it.
 
 States of the replica: the quaternion ``q`` (body to world), the body rates ``w`` and the
@@ -19,7 +21,8 @@ wheel rates relative to the body ``wr``; ``T`` is the shaft torque on the wheels
     T     = em - JM wr'      (JM: motor rotor inertia relative to the body, 1e-6)
     q'    = 1/2 q (x) [0, w]
 
-``Thc = Thcm I + m (|r|^2 I - r r')`` is the cube inertia about the pivot without the wheels'
+``m`` is the total mass (structure + 3 wheels), ``r`` the CoM, ``Thc`` the inertia about the pivot
+(structure, wheel masses by the parallel-axis theorem, wheel transverse inertia) without the wheels'
 spin, ``Thw`` the inertia of each wheel about its own axis (rotor included).
 
 Linearisation: central finite differences of the replica at the equilibrium (body diagonal
@@ -62,11 +65,17 @@ ROOT = Path(__file__).resolve().parent.parent
 MODELS = [ROOT / "models" / f"{name}.bgmodel.json" for name in ("cube-3d", "cube-3d-mb", "cube-3d-mb-soft")]
 
 #: Plant parameters, identical to the model document.
-M = 0.42                      # kg     cube mass
+M_S = 0.18                    # kg     cube structure (frame, electronics, motors), wheels excluded
+M_W = 0.08                    # kg     one wheel (steel rim wheel, R_W_DISC x H_W_DISC)
 A_SIDE = 0.15                 # m      cube side
 G = 9.81                      # m/s^2
-THCM = 3.0e-3                 # kg m^2 cube inertia about its centre (wheels' spin excluded)
-THW = 6.0e-4                  # kg m^2 wheel inertia about its axis, rotor included
+THS = 1.125e-3               # kg m^2 structure inertia about its centre (thin cubic shell 5/18 m a^2)
+THW = 1.9e-4                  # kg m^2 wheel inertia about its axis (rotor included), 0.79 m R^2: rim-heavy
+R_WHEEL = 0.055               # m      wheel radius
+H_WHEEL = 0.012               # m      wheel thickness
+GAP = 0.004                   # m      mounting gap between wheel and inner face
+D_INSET = H_WHEEL / 2 + GAP  # m      wheel centre inset from its face = 0.010 m
+THWT = 9.6e-5                 # kg m^2 wheel inertia about a diameter, THW/2 + M_W H^2/12 = 9.596e-5 rounded
 JM = 1.0e-6                   # kg m^2 rotor inertia of the motor model (relative to the body, see below)
 K_T = 0.0335                  # N m/A  motor constant
 R_W = 1.0                     # Ohm
@@ -77,8 +86,30 @@ U_MAX = 12.0                  # V
 T_END = 4.0                   # s
 RHO = 1.0005
 
-R_VEC = 0.5 * A_SIDE * np.ones(3)
-THC = THCM * np.eye(3) + M * (R_VEC @ R_VEC * np.eye(3) - np.outer(R_VEC, R_VEC))
+def _mass_model() -> tuple[float, np.ndarray, np.ndarray, list[np.ndarray]]:
+    """Total mass, CoM vector r and inertia about the pivot (body frame) with the wheels' spin excluded.
+
+    Built generically (parallel-axis theorem per body), independent of the closed form in
+    `CornerCube.jl`. Wheel i is centred on the face x_i = a (opposite the pivot corner along axis i), its centre
+    ``D_INSET`` inside the face. Its transverse inertia ``THWT`` acts about the two axes
+    perpendicular to e_i; the axial part ``THW`` is `Lw` in the dynamics.
+    """
+    eye = np.eye(3)
+    centre = 0.5 * A_SIDE * np.ones(3)
+    pos = [0.5 * A_SIDE * np.ones(3) for _ in range(3)]
+    for i in range(3):
+        pos[i][i] = A_SIDE - D_INSET
+    m_tot = M_S + 3 * M_W
+    r = (M_S * centre + M_W * sum(pos)) / m_tot
+    thc = THS * eye + M_S * (centre @ centre * eye - np.outer(centre, centre))
+    for i, p in enumerate(pos):
+        e = np.zeros(3)
+        e[i] = 1.0
+        thc = thc + M_W * (p @ p * eye - np.outer(p, p)) + THWT * (eye - np.outer(e, e))
+    return m_tot, r, thc, pos
+
+
+M, R_VEC, THC, WHEEL_POS = _mass_model()
 THC_INV = np.linalg.inv(THC)
 N0 = np.ones(3) / np.sqrt(3.0)
 
@@ -267,7 +298,8 @@ def write_gain(path: Path, k: np.ndarray) -> None:
 def main() -> None:
     k, ad, bd, a = lqr()
     closed = np.linalg.eigvals(ad - bd @ k)
-    print(f"Thc diag {np.diag(THC)}, off {THC[0, 1]:.6g}; Q_EQ {Q_EQ}")
+    print(f"m {M:.4f} kg, r {R_VEC}, wheel centres {WHEEL_POS}\n"
+          f"Thc diag {np.diag(THC)}, off {THC[0, 1]:.9g}; Q_EQ {Q_EQ}")
     print(f"open-loop eigenvalues (continuous): {np.sort_complex(np.linalg.eigvals(a))}")
     print(f"K (u = -K z, z = [tilt1, tilt2, w1..3, wr1..3]) =\n"
           f"{np.array2string(k, precision=4, max_line_width=140)}")
