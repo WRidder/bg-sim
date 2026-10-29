@@ -74,11 +74,11 @@ describe("the diagnostics panel", () => {
     apply(fixture);
     render(<DiagnosticsPanel />);
 
-    expect(screen.getByTestId("diagnostics-count-error").textContent).toContain("22");
+    expect(screen.getByTestId("diagnostics-count-error").textContent).toContain("24");
     expect(screen.getByTestId("diagnostics-count-warning").textContent).toContain("6");
     expect(screen.getByTestId("diagnostics-count-info").textContent).toContain("0");
-    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(28);
-    expect(screen.getAllByTestId("diagnostics-group")).toHaveLength(21);
+    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(30);
+    expect(screen.getAllByTestId("diagnostics-group")).toHaveLength(23);
     expect(screen.getByTestId("diagnostics-status").textContent).toContain("Revision 1 checked");
   });
 
@@ -136,7 +136,7 @@ describe("the diagnostics panel", () => {
     );
 
     fireEvent.click(screen.getByTestId("diagnostics-show-all"));
-    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(28);
+    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(30);
     expect(screen.getByTestId("diagnostics-filter-error").getAttribute("aria-pressed")).toBe(
       "true",
     );
@@ -215,7 +215,7 @@ describe("the diagnostics panel", () => {
     });
 
     const tab = screen.getByRole("tab", { name: /^Diagnostics/ });
-    expect(within(tab).getByLabelText("22 errors")).toBeTruthy();
+    expect(within(tab).getByLabelText("24 errors")).toBeTruthy();
     expect(within(tab).getByLabelText("6 warnings")).toBeTruthy();
   });
 });

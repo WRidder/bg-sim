@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="m">
+    <link name="body">
+      <visual name="shell">
+        <geometry><mesh><uri>meshes/tri.glb</uri></mesh></geometry>
+      </visual>
+      <visual name="stl">
+        <geometry><mesh><uri>meshes/old.stl</uri></mesh></geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

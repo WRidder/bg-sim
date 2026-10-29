@@ -1,5 +1,5 @@
-import { EmptyState } from "../app/EmptyState";
-import { Viewer, type ViewerProps } from "./Viewer";
+import { SceneView } from "../scene/SceneView";
+import type { ViewerProps } from "./Viewer";
 
 export interface DockViewerProps {
   /** False while the 3D View dock tab is not the active one. */
@@ -9,20 +9,9 @@ export interface DockViewerProps {
 }
 
 /**
- * The body of the dock's 3D View tab. Models have no scene yet (scenes arrive with the SDF
- * loader, W5.2), so the empty scene is drawn with an explanation over it.
+ * The body of the dock's 3D View tab: the viewer with the open model's SDF scene (W5.2), or the
+ * empty scene with a note on how to add one.
  */
 export default function DockViewer({ active, createEngine }: DockViewerProps) {
-  return (
-    <Viewer
-      active={active}
-      createEngine={createEngine}
-      overlay={
-        <EmptyState
-          title="No scene"
-          hint="This model has no 3D scene yet. Open a model with a 3D scene to see it here; drag to orbit, right-drag to pan, scroll to zoom."
-        />
-      }
-    />
-  );
+  return <SceneView active={active} createEngine={createEngine} />;
 }

@@ -47,6 +47,8 @@ export interface SourceFocus {
 export interface DiagnosticsState {
   status: DiagnosticsStatus;
   diagnostics: Diagnostic[];
+  /** Scene diagnostics of the 3D viewer (E305, E306); shown with, counted with, but never replaced by a model check. */
+  viewerDiagnostics: Diagnostic[];
   /** Connection id -> adopted domain (plan 3.6). */
   domains: Record<string, DomainName>;
   /** Connection id -> causal stroke; empty until J2.4. */
@@ -71,6 +73,7 @@ export interface DiagnosticsState {
   applyResult: (result: ModelCheckResult, revision: number) => void;
   setCheckError: (message: string, diagnostics?: readonly Diagnostic[]) => void;
   setWorkerState: (state: WorkerState) => void;
+  setViewerDiagnostics: (diagnostics: readonly Diagnostic[]) => void;
   requestFocus: (nodeId: string) => void;
   requestSourceFocus: (source: { ref: string; line: number; col: number }) => void;
   clearResults: () => void;
@@ -106,6 +109,7 @@ function initialState(): Omit<DiagnosticsState, keyof DiagnosticsActions> {
   return {
     status: "idle",
     diagnostics: [],
+    viewerDiagnostics: [],
     domains: {},
     causality: {},
     unitFactors: {},
@@ -128,12 +132,13 @@ type DiagnosticsActions = Pick<
   | "applyResult"
   | "setCheckError"
   | "setWorkerState"
+  | "setViewerDiagnostics"
   | "requestFocus"
   | "requestSourceFocus"
   | "clearResults"
 >;
 
-export const useDiagnosticsStore = create<DiagnosticsState>()((set) => ({
+export const useDiagnosticsStore = create<DiagnosticsState>()((set, get) => ({
   ...initialState(),
 
   beginCheck: () => set({ status: "checking", error: null }),
@@ -153,7 +158,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>()((set) => ({
       stats: result.stats ?? null,
       checkedRevision: revision,
       error: null,
-      counts: countDiagnostics(result.diagnostics),
+      counts: countDiagnostics([...result.diagnostics, ...get().viewerDiagnostics]),
     }),
 
   setCheckError: (message, diagnostics = []) =>
@@ -161,10 +166,16 @@ export const useDiagnosticsStore = create<DiagnosticsState>()((set) => ({
       status: "error",
       error: message,
       diagnostics: [...diagnostics],
-      counts: countDiagnostics(diagnostics),
+      counts: countDiagnostics([...diagnostics, ...get().viewerDiagnostics]),
     }),
 
   setWorkerState: (workerState) => set({ workerState }),
+
+  setViewerDiagnostics: (viewerDiagnostics) =>
+    set((state) => ({
+      viewerDiagnostics: [...viewerDiagnostics],
+      counts: countDiagnostics([...state.diagnostics, ...viewerDiagnostics]),
+    })),
 
   requestFocus: (nodeId) =>
     set((state) => ({
@@ -185,6 +196,9 @@ export const useDiagnosticsStore = create<DiagnosticsState>()((set) => ({
     set((state) => ({
       ...initialState(),
       workerState: state.workerState,
+      // the 3D view owns these: a model switch clears them when its scene reloads
+      viewerDiagnostics: state.viewerDiagnostics,
+      counts: countDiagnostics(state.viewerDiagnostics),
     })),
 }));
 

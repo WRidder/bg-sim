@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="rig">
+    <pose>10 0 0 0 0 0</pose>
+    <link name="a">
+      <pose>1 2 3 0 0 0</pose>
+      <visual name="a_box">
+        <geometry><box><size>1 2 3</size></box></geometry>
+        <material><diffuse>0.8 0.2 0.1 1</diffuse></material>
+      </visual>
+      <collision name="a_col"><geometry><box><size>1 1 1</size></box></geometry></collision>
+      <inertial><mass>1</mass></inertial>
+    </link>
+    <frame name="f" attached_to="a">
+      <pose>0 0 1 0 0 0</pose>
+    </frame>
+    <link name="b">
+      <pose relative_to="a">1 0 0 0 0 1.5707963267948966</pose>
+    </link>
+    <link name="c">
+      <pose relative_to="f">0 1 0 0 0 0</pose>
+    </link>
+    <link name="d">
+      <pose relative_to="world">0 0 5 0 0 0</pose>
+    </link>
+    <link name="slider">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="slider_visual"><geometry><box><size>0.1 0.1 0.1</size></box></geometry></visual>
+    </link>
+    <joint name="prism" type="prismatic">
+      <parent>a</parent>
+      <child>slider</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <model name="sub">
+      <pose>0 0 2 0 0 0</pose>
+      <link name="inner">
+        <pose>0.5 0 0 0 0 0</pose>
+        <visual name="inner_visual"><geometry><sphere><radius>0.2</radius></sphere></geometry></visual>
+      </link>
+    </model>
+  </model>
+</sdf>

@@ -207,7 +207,7 @@ describe("fixture coverage", () => {
       "E101", "E102", "E103", "E104", "E105", "E106", "E108", "E109",
       "E900", "E901",
       "W201", "W202", "W203", "W204", "W205", "W206",
-      "E301", "E302", "E303", "E304",
+      "E301", "E302", "E303", "E304", "E305", "E306",
     ];
     const sample = readJson(path.join(fixtureDir, "diagnostic", "valid", "diagnostics.sample.json")) as {
       code: string;

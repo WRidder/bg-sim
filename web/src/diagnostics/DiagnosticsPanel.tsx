@@ -122,7 +122,13 @@ function statusLabel(
  * click a row to select and pan to the element (or to reveal its source range).
  */
 export function DiagnosticsPanel() {
-  const diagnostics = useDiagnosticsStore((state) => state.diagnostics);
+  const modelDiagnostics = useDiagnosticsStore((state) => state.diagnostics);
+  // W5.2: the 3D view reports its scene problems (E305, E306) next to the model check.
+  const viewerDiagnostics = useDiagnosticsStore((state) => state.viewerDiagnostics);
+  const diagnostics = useMemo(
+    () => (viewerDiagnostics.length === 0 ? modelDiagnostics : [...modelDiagnostics, ...viewerDiagnostics]),
+    [modelDiagnostics, viewerDiagnostics],
+  );
   const status = useDiagnosticsStore((state) => state.status);
   const error = useDiagnosticsStore((state) => state.error);
   const workerState = useDiagnosticsStore((state) => state.workerState);

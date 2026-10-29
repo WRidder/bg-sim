@@ -282,6 +282,30 @@
     "connection": null
   },
   {
+    "code": "E305",
+    "severity": "error",
+    "message": "scene file could not be loaded or parsed: link base has pose relative_to \"ghost\", which is not a frame of its model (in scenes/arm.sdf)",
+    "hint": "name a link, joint, frame or nested model of the same model, or `world`",
+    "path": "link:base",
+    "block": null,
+    "scope": null,
+    "source": null,
+    "node": null,
+    "connection": null
+  },
+  {
+    "code": "E306",
+    "severity": "error",
+    "message": "unsupported SDF element skipped: joint wrist has type \"ball\" (in scenes/arm.sdf)",
+    "hint": "use a revolute, continuous, prismatic or fixed joint; the viewer does not draw this one",
+    "path": "joint:wrist",
+    "block": null,
+    "scope": null,
+    "source": null,
+    "node": null,
+    "connection": null
+  },
+  {
     "code": "E900",
     "severity": "error",
     "message": "internal compiler error while lowering Plant/Motor1",
