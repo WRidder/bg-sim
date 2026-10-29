@@ -104,13 +104,13 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | W4.2 | W | M4 | W4.1 | todo | Debug panels, watches and explain |
 | W4.3 | W | M4 | W4.1, W2.4 | todo | Pause-aware plots and live inspector |
 | X4.1 | X | M4 | J4.5, P4.1, W4.1–W4.3 | todo | Debugging walkthrough e2e |
-| W5.1 | W | M5 | M2 | todo | Viewer core port |
+| W5.1 | W | M5 | M2 | running | Viewer core port |
 | W5.2 | W | M5 | W5.1 | todo | SDF parser and scene builder |
 | W5.3 | W | M5 | W5.2, W2.4, W4.3 | todo | Bindings and playback |
-| P5.1 | P | M5 | M2 | todo | Stream endpoint and meshes |
+| P5.1 | P | M5 | M2 | running | Stream endpoint and meshes |
 | X5.1 | X | M5 | W5.2 | todo | Scenes for M1/M2 examples |
-| X5.2 | X | M5 | M2 | todo | Example reaction-wheel-1d |
-| X5.3 | X | M5 | M2, M3 | todo | Example robot-arm-3d |
+| X5.2 | X | M5 | M2 | running | Example reaction-wheel-1d |
+| X5.3 | X | M5 | M2, M3 | running | Example robot-arm-3d |
 | X5.4 | X | M5 | M2, M3 | todo | Example cube-3d |
 | W5.4 | W | M5 | W5.3 | todo | Polish |
 
@@ -420,6 +420,11 @@ vertices for orthogonal wires and feedback lanes.
 | R2 | sample request | **`industrial-servo`** (plan 9.6b, **X2.6**): an industrial PMSM servo drive with the fidelity forks **baseline / two-mass / switching / encoder / full** (the last combines all of them). Baseline = averaged inverter, dq PMSM, rigid inertia, 8 kHz current / 1 kHz speed / 200 Hz position discrete cascade with one-sample delay; two-mass adds coupling compliance + notch; switching adds PWM/dead time/device drops; encoder adds 24-bit quantization + differenced speed estimate; full = two-mass + switching + encoder. The PMSM is a **bond-graph plant** (d/q 1-junctions with R/I, MGY cross-coupling, MSe back-EMF, GY to the shaft); the two-mass mechanics are I–C–R; only the firmware and switching logic are code. Scheduled after J2.2/J2.7c/J2.7e; see X2.6. |
 | BASE-1 | baseline | **Stale visual baseline repaired before M3.** The pre-M3 baseline run of `uv run tools/check.py --lane all` was red only on `domain-visual.spec.ts` `rlc-dual-strokes.png` (1783 px, deterministic): the post-M2 UI commits moved the bond end and its causal bar to the block edge but did not refresh the snapshot. The refreshed baseline keeps the same assertions (four strokes, `×0.001` badge, hover values); the three tests pass twice in a row. No assertion changed. |
 | R3 | sample request | **`inverted-pendulum-cart`** (plan 9.6c, **X2.7**): a **bond-graph** cart–pendulum plant (cart I/R/MSe, two point-mass I elements + rod I, MTF cos/sin coupling, gravity MSe; kinematic integrators for x/theta; no plant equation block) plus a discrete LQR at 1 ms, gains from a committed `design.py`, a 0.2 m cart reference step at 1.5 s and ±20 N. Checks: |theta| < 0.5° and |x| < 1 cm by 3 s, reference settles within 2 s, |u| ≤ 20 N. Scheduled after J2.2/J2.7c; see X2.7. |
+| DEC-M5-1 | order | **M5 runs before M4** (user, 2026-10-29). W5.3 depends on W4.3; W5.3 delivers everything except the debug pause marker, which moves to W4.3. The M3 Phases C-F work was committed as the M5 baseline (`efb238c`). |
+| DEC-M5-2 | shared example | `examples/robot-arm-3d/` already holds the M3 six-axis multibond arm (X-MB3). X5.3 adds the plan 9.8 RRR equation-block arm next to it; the M3 comparison uses an RRR multibond counterpart of the same geometry built from the M3 spatial stdlib, since a six-axis arm cannot follow an RRR motion. |
+| DEC-M5-3 | comparison | X5.4 compares the plan 9.9 cube with a multibond counterpart (compliant spherical corner pivot, three body-axis `ReactionWheel`s) built inside `examples/cube-3d/`; the M3 pyramid cube has four pyramid wheels and contacts. |
+| DEC-M5-4 | scope | X5.1 adds scenes for every pre-M5 example (M1, M2 and M3), because plan 9.10 defers the M3 3D cross-checks to M5. |
+| DEC-M5-5..7 | process | Scenes at `examples/<name>/scenes/*.sdf`; additive-only shared edits (`BottomDock.tsx` viewer tab, `playwright.config.ts` ignore list, `tools/check.py` real list, new `run_checks.py` kinds); one e2e port per WP. See `plan/wps/M5-RULES.md`. |
 
 ## Measured numbers
 
