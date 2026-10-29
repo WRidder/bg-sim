@@ -644,6 +644,91 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Planar matrix transformer (the general planar TF): a 3x3 matrix M with a.f = M*b.f and b.e = -M^T*a.e, component-wise and power-continuous for every M without an inverse.",
         icon = "mb-tf-planar-mat",
     ),
+    # J-MB8: the spatial elements (angular-first twist [w; v], wrench [m; f], D = 6).
+    "stdlib:multibond/ComposePose3D" => (
+        description = "Spatial pose composition on the Vec{7} chart (quaternion + position): q = qp (x) ql and p = p_p + R(qp) p_l, the fixed-base link pose, never integrated (D-MB6).",
+        icon = "mb-compose-pose-3d",
+    ),
+    "stdlib:multibond/CoriolisSpatial" => (
+        description = "Spatial Eulerian junction structure: p.e = -ad(p.f)^T P from the momentum signal, the body-frame Euler equation with no inertia copy (D-MB3).",
+        icon = "mb-coriolis-spatial",
+    ),
+    "stdlib:multibond/CSpatial" => (
+        description = "Spatial capacitive storage: six scalar displacement states, three torsional (N*m/rad) and three translational (N/m), with their own units and rest deflections.",
+        icon = "mb-c-spatial",
+    ),
+    "stdlib:multibond/DeSpatial" => (
+        description = "Spatial effort detector; reads the wrench, imposes zero twist, outputs the six wrench components.",
+        icon = "mb-de-spatial",
+    ),
+    "stdlib:multibond/DfSpatial" => (
+        description = "Spatial flow detector; reads the twist, imposes zero wrench, outputs the six twist components.",
+        icon = "mb-df-spatial",
+    ),
+    "stdlib:multibond/ExternalWrenchSpatial" => (
+        description = "Spatial external wrench source: six scalar inputs with their own units (N*m x3, N x3) are the physical wrench W_ext; the port effort is -W_ext, so a body on a 1-junction feels +W_ext.",
+        icon = "mb-external-wrench-spatial",
+    ),
+    "stdlib:multibond/FixedTransform3D" => (
+        description = "Constant spatial frame transform (quaternion + position) from a parent frame to a child frame: a.f = -Ad(g) b.f and b.e = Ad(g)^T a.e, the legal world -> body bridge (D-MB5).",
+        icon = "mb-fixed-transform-3d",
+    ),
+    "stdlib:multibond/FixedTransform3DNeutral" => (
+        description = "Frame-neutral constant spatial mount: the FixedTransform3D equations with both ports neutral, so a body -> body mount or a composite's internal mount adopts the adjacent frames (the spatial TFAdNeutral).",
+        icon = "mb-fixed-transform-3d-neutral",
+    ),
+    "stdlib:multibond/GYSpatial" => (
+        description = "Spatial matrix gyrator: a.e = G*b.f and b.e = -G^T*a.f with a 6x6 G, power-continuous for every G and needing no inverse.",
+        icon = "mb-gy-spatial",
+    ),
+    "stdlib:multibond/GravitySpatial" => (
+        description = "Spatial gravity wrench at the body centre of mass from the Vec{7} body pose in the world; the port effort is the negative of that wrench for a 1-junction.",
+        icon = "mb-gravity-spatial",
+    ),
+    "stdlib:multibond/GroundSpatial" => (
+        description = "Spatial reference node; holds its port at zero twist in the world frame.",
+        icon = "mb-ground-spatial",
+    ),
+    "stdlib:multibond/ISpatial" => (
+        description = "Spatial rigid-body inertia at the centre of mass on the principal axes (Vec{3} J, m): momentum P is the state, the six-component twist is its output, and P is a signal for Coriolis (D-MB3).",
+        icon = "mb-i-spatial",
+    ),
+    "stdlib:multibond/JointTransform3D" => (
+        description = "Joint-role spatial adjoint transform (the plan JointTransform): component-wise Ad(g) from a Vec{7} pose between the parent and child frames, power-continuous.",
+        icon = "mb-joint-transform-3d",
+    ),
+    "stdlib:multibond/MGYSpatial" => (
+        description = "Modulated spatial matrix gyrator: the 6x6 gyrator matrix is a signal input; a.e = G*b.f and b.e = -G^T*a.f.",
+        icon = "mb-mgy-spatial",
+    ),
+    "stdlib:multibond/MTFSpatial" => (
+        description = "Modulated spatial transformer: a diagonal Vec{6} dimensionless modulus signal scales each component, power-continuous per component.",
+        icon = "mb-mtf-spatial",
+    ),
+    "stdlib:multibond/PoseIntegrator3D" => (
+        description = "Floating-base spatial pose integrator: ddt(q) = 0.5 q (x) [0, w] and ddt(p) = R(q) v from the body twist; seven pose states on the Vec{7} chart, no projection backend (D-MB6).",
+        icon = "mb-pose-integrator-3d",
+    ),
+    "stdlib:multibond/RSpatial" => (
+        description = "Spatial resistive element: three torsional and three translational damping coefficients with their own units, free causality.",
+        icon = "mb-r-spatial",
+    ),
+    "stdlib:multibond/SeSpatial" => (
+        description = "Spatial effort source; imposes a Vec{6} wrench on its bond (fixed effort causality).",
+        icon = "mb-se-spatial",
+    ),
+    "stdlib:multibond/SfSpatial" => (
+        description = "Spatial flow source; imposes a Vec{6} twist on its bond (fixed flow causality).",
+        icon = "mb-sf-spatial",
+    ),
+    "stdlib:multibond/TFSpatial" => (
+        description = "Spatial diagonal transformer: a dimensionless Vec{6} modulus per component, a.f[k] = n[k]*b.f[k] and b.e[k] = -n[k]*a.e[k].",
+        icon = "mb-tf-spatial",
+    ),
+    "stdlib:multibond/TFSpatialMat" => (
+        description = "Spatial matrix transformer (the general spatial TF): a 6x6 matrix M with a.f = M*b.f and b.e = -M^T*a.e, component-wise and power-continuous for every M without an inverse.",
+        icon = "mb-tf-spatial-mat",
+    ),
     "stdlib:planar/FixedJoint2D" => (
         description = "Rigid fixed planar joint between the parent and child body frames: a constant adjoint bridge with the joint role frames, written in the parent->child causal direction (FIX-MB-2).",
         icon = "pl-fixed-joint-2d",

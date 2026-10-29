@@ -259,6 +259,9 @@ include("test_planar_mechanics.jl")
 # Work package J-MB7: the planar mechanics suite (Phase B's Gate B).
 include("test_mech_planar.jl")
 
+# Work package J-MB8: the spatial vector primitives and pose integration (Phase C).
+include("test_spatial_slice.jl")
+
 # Milestone M2 scaffolding: each WP creates exactly one of these files, and the M2 gate
 # replaces these guards with plain includes (the same pattern DEC-5 used for M1).
 for entry in ("test_events.jl", "test_discrete.jl", "test_units_model.jl",

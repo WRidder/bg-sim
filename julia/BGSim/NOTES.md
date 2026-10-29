@@ -1473,15 +1473,15 @@ generalised to a chain), so the stiff pivot mode is not excited by the release.
 
 | kt (N/m) | trajectory error vs the RK4 reference (rad) | error at t = 1 s | energy drift / swing |
 | --- | --- | --- | --- |
-| 1e6 | **6.253e-4** | 2.732e-4 | 2.148e-5 |
-| 1e7 | **6.248e-5** | 2.733e-5 | 2.148e-6 |
-| 1e8 | **6.247e-6** | 2.733e-6 | 2.148e-7 |
-| 1e9 | **6.247e-7** | 2.733e-7 | 2.149e-8 |
+| 1e6 | **6.124e-4** | 2.895e-4 | 1.9e-12 |
+| 1e7 | **6.119e-5** | 2.896e-5 | 2.2e-12 |
+| 1e8 | **6.119e-6** | 2.896e-6 | 2.0e-12 |
+| 1e9 | **6.119e-7** | 2.897e-7 | 9.3e-12 |
 
-The error is **O(1/kt)**: the measured per-decade ratios are **10.009** (trajectory) and
+The error is **O(1/kt)**: the measured per-decade ratios are **10.008** (trajectory) and
 **10.001** (at t = 1 s). The test asserts strict decrease, both ratios inside [8, 12], and
-`<= 1e-5` at 1e8; the extra 1e9 run reaches the plan's 1e-6 integrated tolerance (6.25e-7) at a
-12 955-step run. `t = 1 s` is an output grid point; the reference and the run share it exactly.
+`<= 1e-5` at 1e8; the extra 1e9 run reaches the plan's 1e-6 integrated tolerance (6.119e-7) at a
+13 015-step run. `t = 1 s` is an output grid point; the reference and the run share it exactly.
 
 ## The joint's `d` transport uses the child's absolute rate (kinematics fix)
 
@@ -1539,4 +1539,100 @@ first-order approximation (exact for `kr -> Inf` and for the static cases the su
 | limits | inside `|tau| = 0` exactly; `tau = kL(q-lower)` outside to 2 %; stop range -9.74..0.011 N*m; elastic rebound to 0.59999995 rad; no W206 |
 | W201 | **0** in `model.check` and **0** in the run for 9 compliant models; rigid variant: 1 model-check W201, 3 post-compile (all `Body/inertia/P[1..3]`), dummies `Joint/xform/b.f[2]`, `[3]`, `Body/flow/p.f[1]`, run E103/E901 |
 | fixed-base pose vs integrated truth over 10 s | **9.22e-8** max (theta 1.7e-15, x 9.2e-8, y 6.6e-8); gravity reads the composed pose exactly (and the integrated pose in `Free2D`) |
-| `test_mech_planar.jl` | **253 assertions, ~58 s, green** |
+| `test_mech_planar.jl` | **259 assertions, ~56 s, green** |
+
+# J-MB8 — spatial vector primitives and pose integration (verified 2026-10-29)
+
+The spatial element set is in `stdlib/multibond/` beside the planar one, group **Multibond**,
+catalog **184** blocks (**20** new): `ISpatial`, `CoriolisSpatial`, `CSpatial`, `RSpatial`,
+`SeSpatial`, `SfSpatial`, `TFSpatial` (diagonal `Vec{6}`), `TFSpatialMat` (6x6), `GYSpatial`
+(6x6), `MTFSpatial` (diagonal signal), `MGYSpatial` (6x6 signal), `GravitySpatial`,
+`GroundSpatial`, `ExternalWrenchSpatial`, `FixedTransform3D`, `FixedTransform3DNeutral`,
+`JointTransform3D`, `ComposePose3D`, `DeSpatial`, `DfSpatial`, `PoseIntegrator3D`.
+`test/test_spatial_slice.jl` (**901 assertions**) is the acceptance; every model runs through
+`IR.parse_model -> Compile.flatten -> simulate` (Rodas5P, reltol 1e-9, abstol 1e-11).
+
+## Conventions and the frozen interface
+
+* Angular first (D-MB2): twist `[w; v]`, wrench `[m; f]`, D = 6. The pose chart is
+  `Vec{7} = (q_w, q_x, q_y, q_z, p_x, p_y, p_z)` (quaternion first, then the body origin in the
+  world, D-MB6). `ISpatial` carries a diagonal principal `J::Vec{3}` (kg*m^2) and `m`; the
+  momentum `P::Vec{6}` has **no** single unit and every component is written on its own
+  (D-MB10). `m` has `min = 1e-12`; `J[k] > 0` is documented (positivity is not a runtime E108
+  check yet).
+* `TFSpatial` is the diagonal, dimensionless `Vec{6}` form (it keeps the per-component unit
+  proof alive); `TFSpatialMat` is the general 6x6 `Mat` (`a.f = M b.f`, `b.e = -M^T a.e`, no
+  inverse). `GYSpatial` is a full 6x6 `Mat` (`a.e = G b.f`, `b.e = -G^T a.f`); `MTF`/`MGY` are
+  their signal-modulated forms. `MSeSpatial`/`MSfSpatial` were **not** added (not in the
+  J-MB8 element list); a per-component wrench source is `ExternalWrenchSpatial` (six scalar
+  inputs with their own units) and `SeSpatial`/`SfSpatial` take one `Vec{6}` signal.
+* Transforms: `a.f = -Ad(g) b.f` and `b.e = Ad(g)^T a.e`, written component-wise with the
+  explicit causal direction (`b.e` from `a.e`, FIX-MB-2 style). `FixedTransform3D` is the
+  checked **world -> body** mount. `FixedTransform3DNeutral` (both ports neutral) is the
+  **body -> body** mount, and `JointTransform3D` is **frame-neutral on both ports** because a
+  joint composite must bond it to `ISpatial` (`body`) or `GroundSpatial` (`world`); the two
+  ports stay separate frame unions bridged by the block, so two bodies' frames are never
+  falsely unified (the `TFAdNeutral` pattern). The old `parent`/`child` names made every
+  joint-to-body bond E007 (review major 1).
+* Frames pack: `GroundSpatial -> FixedTransform3D -> ISpatial` is E007-clean
+  (`frames["c1"] = "Mount/world"`, `"c2" = "I/body"`); the same chain with a direct
+  `GroundSpatial -> ISpatial` bond gives exactly one E007; `SeSpatial -> FixedTransform3D ->
+  SfSpatial` runs and reports `T/world` / `T/body`. A **rigidly clamped inertia** is the
+  documented DEC-MB-2 derivative-causality DAE (1 W201, run E901), exactly like the planar rigid
+  joint; the runnable mount model is the transformer's forward direction. A body -> body mount
+  through `FixedTransform3DNeutral` (and through `JointTransform3D`) is frame-accepted, with
+  the two body unions separate (`IA/body` vs `IB/body`) and a W201 for the rigid constraint.
+
+## PoseIntegrator3D and the ManifoldProjection deviation
+
+The floating-base pose is seven states (`qw, qx, qy, qz, px, py, pz`; the initial pose is a
+start value, D4). The RHS is
+
+    ddt(q) = 0.5 q (x) [0, w],      ddt(p) = R(q) v,
+
+with `R` the unnormalised quadratic form divided by `|q|^2` (the same expansion as
+`_quat_matrix`). **`q . qdot = 0` identically**, so `d/dt |q|^2 = 2 q . qdot = 0`: the unit
+norm is a first integral of the RHS and the norm drift is only the solver's accumulation. No
+`ManifoldProjection` callback is attached: there is **no seam** for it — `lower/mtk.jl`
+passes only `continuous_events`/`initialization_eqs` to `System`, and `simulate` only remakes
+the problem to wrap the event callbacks. Adding one needs a new `src/sim` callback kwarg
+(outside J-MB8's paths), recorded as the D-MB6 deviation. Measured norm drift over 10 s:
+**9.33e-15** (constant-screw run) and **6.13e-14** (general free body).
+
+D-MB6 also wants the floating-base-only rule: a fixed-base chain composes its pose and holds
+no pose state. `ComposePose3D` is `q = qp (x) ql` (raw Hamilton product, not renormalised or
+sign-canonicalised, like `Mech.compose`), `p = p_p + R(qp) p_l`; a fixed-base chain has one
+state (the joint angle), the composition model with a truth integrator has eight, and a
+composed pose drives `GravitySpatial` (`e = [0; m g0 R(g)[3,:]]`, error 6.4e-14 / 1.4e-13
+against the analytic direction).
+
+## Element notes
+
+* `CoriolisSpatial`: `p.e = -ad(f)^T P` component-wise (the spatial EJS); the element power is
+  0 (`V^T ad(V)^T P = 0`), and the free-body run reproduces the body-frame Euler equation.
+* `ExternalWrenchSpatial` takes the **physical** wrench as six scalar inputs (N*m x3, N x3)
+  and sets `p.e = -W`; a body on a 1-junction feels `+W_ext` (component units proven end to
+  end: a torque moves only the angular momentum, a force only the linear one).
+* `GravitySpatial`: `p.e = [0; m g0 R(g)[3,:]]` (the negative of the physical gravity wrench
+  at the CoM), reading the composed or integrated pose chart.
+* `CSpatial`/`RSpatial` keep six scalar states/parameters because a torsional and a
+  translational entry do not share a unit; `DeSpatial`/`DfSpatial` are the detectors.
+* **C-MB2 contract gap (recorded, not changed):** a `Vec{6}` *signal* has one unit slot, so
+  the `u`/`y` inputs/outputs of `SeSpatial`/`SfSpatial`/`DeSpatial`/`DfSpatial` show no
+  per-component unit in the manifest (the planar `Se`/`De` precede them). The power ports are
+  per-component in the manifest: `p.e = N*m,N*m,N*m,N,N,N`, `p.f = rad/s x3, m/s x3`,
+  `P = "W"`; a per-component signal declaration is a contract change owned by C-MB2.
+
+## Measured (this machine, 2026-10-29)
+
+| item | measured |
+| --- | --- |
+| free body over 10 s (J = 1,2,3; m = 2) | KE drift **5.52e-14**, world H **5.43e-14**, world P **3.00e-14**, quat norm **6.13e-14** |
+| Dzhanibekov (spin about the intermediate axis) | `w_y` in **[-3.0, 3.0]**, 2 sign changes; world H **4.87e-14**, KE **9.59e-14** |
+| floating-base constant screw vs `exp(V t)` | max pose error **1.24e-12** (quaternion 1.25e-14), quat norm drift **9.33e-15** |
+| fixed-base composition vs integrated truth | **1.34e-12** over 10 s; fixed chain 1 state vs 8 with the truth integrator; composed pose exact to 5.95e-14 |
+| two-port power residual (TF/TFMat/GY/MTF/MGY, 10 random models) | **1.61e-15**; Coriolis `abs(e.f)` **6.41e-17** |
+| gravity / wrench | `P_y(1 s) = -12.6395510236034` vs analytic -12.6395510236035; torque `P_ang_x(2 s) = 2.80000000000007` for tau*t = 2.8, force `P_lin = F t` to 1e-9 |
+| port power on a run | `abs(P_I + P_W) = 1.11e-16 W`; `p.P = sum e[k] f[k]` to 1e-16 |
+| `test_spatial_slice.jl` | **901 assertions, green** |
+| full `Pkg.test()` | **green** (`library` 9330, J-MB8 901) |

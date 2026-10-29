@@ -211,6 +211,28 @@ const M3_REFS = [
     "stdlib:multibond/TFAdNeutral",
     "stdlib:multibond/TFPlanar",
     "stdlib:multibond/TFPlanarMat",
+    # J-MB8: the spatial primitives with Power{Spatial} (D = 6).
+    "stdlib:multibond/ComposePose3D",
+    "stdlib:multibond/CoriolisSpatial",
+    "stdlib:multibond/CSpatial",
+    "stdlib:multibond/DeSpatial",
+    "stdlib:multibond/DfSpatial",
+    "stdlib:multibond/ExternalWrenchSpatial",
+    "stdlib:multibond/FixedTransform3D",
+    "stdlib:multibond/FixedTransform3DNeutral",
+    "stdlib:multibond/GYSpatial",
+    "stdlib:multibond/GravitySpatial",
+    "stdlib:multibond/GroundSpatial",
+    "stdlib:multibond/ISpatial",
+    "stdlib:multibond/JointTransform3D",
+    "stdlib:multibond/MGYSpatial",
+    "stdlib:multibond/MTFSpatial",
+    "stdlib:multibond/PoseIntegrator3D",
+    "stdlib:multibond/RSpatial",
+    "stdlib:multibond/SeSpatial",
+    "stdlib:multibond/SfSpatial",
+    "stdlib:multibond/TFSpatial",
+    "stdlib:multibond/TFSpatialMat",
 ]
 
 # Every stdlib block the library must hold: the M1 set plus the M2 rows that have landed.
@@ -1350,14 +1372,18 @@ const INTERFACE_FIELDS = [
             @test isempty([d for d in b.diagnostics if d.severity == "error"])
             @test isempty([d for d in b.diagnostics if d.code in ("W204", "E103")])
         end
-        # Every multibond block with a Planar port declares dimension 2; the signal-only
-        # pose block has no dimension. Every Planar port carries a frame field (null means
-        # frame-neutral) and the catalog emits it.
+        # Every multibond block with a Planar port declares dimension 2 and one with a
+        # Spatial port declares dimension 3; the signal-only pose blocks have no dimension.
+        # Every multibond port carries a frame field (null means frame-neutral) and the
+        # catalog emits it.
         for ref in M3_REFS
             b = blocks[ref]
             planar = any(p -> p.domain == "Planar", b.interface.ports)
+            spatial = any(p -> p.domain == "Spatial", b.interface.ports)
             if planar
                 @test b.interface.dimension == 2
+            elseif spatial
+                @test b.interface.dimension == 3
             else
                 @test get(b.interface, :dimension, nothing) === nothing
             end
