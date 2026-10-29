@@ -5,6 +5,9 @@
     "gravity-off": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "cursor_value",
           "signal": "Pivot/qrel[1]",
           "t": 0.0,
@@ -353,6 +356,9 @@
     },
     "gravity-on": {
       "checks": [
+        {
+          "kind": "scene_bindings"
+        },
         {
           "kind": "cursor_value",
           "signal": "Pivot/qrel[1]",

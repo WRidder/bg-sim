@@ -217,3 +217,7 @@ $env:BGSIM_E2E_REAL="1"; npx playwright test tests/e2e/robot-arm-2d.spec.ts --wo
 - The 1 ms controller turning the undamped 1.6 kHz pivot mode unstable is a
   physical/sampled-data effect, not a compiler bug; `bt` is the engineering
   answer and the note above records the failure without it.
+
+## 3D view
+
+`scenes/robot-arm-2d.sdf` draws the two links in the vertical X-Z plane (the model's x-y plane). Joints `shoulder` and `elbow` follow `Joint1/qout` and `Joint2/qout`; the tip sphere sits at the model's end-effector pose (`PoseTip`), which `expected.json` checks against the SDF kinematics along the whole run.

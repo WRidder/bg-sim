@@ -658,6 +658,19 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/reaction-wheel-2d.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:pivot",
+      "property": "position",
+      "signal": "Pivot/qout"
+    },
+    {
+      "target": "joint:wheel_axis",
+      "property": "position",
+      "signal": "WheelJ/qout"
+    }
+  ]
 }

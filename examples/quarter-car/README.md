@@ -210,3 +210,7 @@ The run is read-only after copy: the whole example is a template.
   interpolation between the samples instead of the hold table.
 - Change `Susp`'s `k` or `d` and rerun; `design/design.py` reproduces the new reference
   response and prints the new values.
+
+## 3D view
+
+`scenes/quarter-car.sdf` is a side view: the road block, the wheel and the car body, each on a vertical prismatic joint bound to `RoadInt/y`, `UInt/y` and `SInt/y` (metres from static equilibrium). The road bump lifts the wheel, and the body rides out the 1.2 Hz sprung-mass motion above it.

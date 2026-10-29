@@ -181,3 +181,7 @@ This directory is a **sample**: it is copied into the user's projects folder on
 import. The files here are never written by the editor (only `design/design.py`
 writes the gains, when invoked by hand). `expected.json` is the machine-readable
 acceptance used by `examples/run_checks.py` and `tools/check.py --lane x`.
+
+## 3D view
+
+`scenes/drivetrain-kalman.sdf` has the motor rotor, the gearbox output, wheel 1, the two intermediate inertias of the rod and wheel 2. The model only measures the motor angle `Theta/y`, so the gearbox output is `0.1 * Theta/y` and each rod segment is a joint bound to its twist `C1/q`, `C2/q`, `C3/q`; wheel 2 lags wheel 1 by their sum. `drivetrain-backlash` also binds the gear play `Gear/play/phi` (gain -1) between the gear output and wheel 1.

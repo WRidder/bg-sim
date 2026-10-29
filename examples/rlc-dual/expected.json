@@ -5,6 +5,9 @@
     "rlc-dual": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "max_abs",
           "signal": "Iconic/C1/p.e",
           "from_t": 0.0,

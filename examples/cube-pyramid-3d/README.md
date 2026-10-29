@@ -131,3 +131,7 @@ then **Open** → **Samples** → **cube-pyramid-3d** and press **Run**. The acc
 ```
 uv run examples/run_checks.py --only cube-pyramid-3d
 ```
+
+## 3D view
+
+`scenes/cube-pyramid-3d.sdf` shows the cube (translucent) on the ground plane with its four pyramid wheels. The cube and each wheel are bound by their world pose (quaternion first), so the face to edge to corner tipping of `sequence-contact` and the edge phase of `edge-contact` and `edge-switched` are visible directly.

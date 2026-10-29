@@ -5626,6 +5626,74 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/cube-pyramid-3d.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:cube",
+      "property": "pose",
+      "signal": [
+        "Pose/g[1]",
+        "Pose/g[2]",
+        "Pose/g[3]",
+        "Pose/g[4]",
+        "Pose/g[5]",
+        "Pose/g[6]",
+        "Pose/g[7]"
+      ]
+    },
+    {
+      "target": "link:wheel_1",
+      "property": "pose",
+      "signal": [
+        "PoseW1/g[1]",
+        "PoseW1/g[2]",
+        "PoseW1/g[3]",
+        "PoseW1/g[4]",
+        "PoseW1/g[5]",
+        "PoseW1/g[6]",
+        "PoseW1/g[7]"
+      ]
+    },
+    {
+      "target": "link:wheel_2",
+      "property": "pose",
+      "signal": [
+        "PoseW2/g[1]",
+        "PoseW2/g[2]",
+        "PoseW2/g[3]",
+        "PoseW2/g[4]",
+        "PoseW2/g[5]",
+        "PoseW2/g[6]",
+        "PoseW2/g[7]"
+      ]
+    },
+    {
+      "target": "link:wheel_3",
+      "property": "pose",
+      "signal": [
+        "PoseW3/g[1]",
+        "PoseW3/g[2]",
+        "PoseW3/g[3]",
+        "PoseW3/g[4]",
+        "PoseW3/g[5]",
+        "PoseW3/g[6]",
+        "PoseW3/g[7]"
+      ]
+    },
+    {
+      "target": "link:wheel_4",
+      "property": "pose",
+      "signal": [
+        "PoseW4/g[1]",
+        "PoseW4/g[2]",
+        "PoseW4/g[3]",
+        "PoseW4/g[4]",
+        "PoseW4/g[5]",
+        "PoseW4/g[6]",
+        "PoseW4/g[7]"
+      ]
+    }
+  ]
 }

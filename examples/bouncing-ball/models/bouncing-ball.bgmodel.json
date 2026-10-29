@@ -60,6 +60,14 @@
       "signals": ["Ball1/v"]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/bouncing-ball.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:fall",
+      "property": "position",
+      "signal": "Ball1/h"
+    }
+  ]
 }

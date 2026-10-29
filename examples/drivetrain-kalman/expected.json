@@ -5,6 +5,9 @@
     "drivetrain-kalman": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "final_value",
           "signal": "IW2/p.f",
           "t": 0.6,
@@ -62,6 +65,9 @@
     },
     "drivetrain-backlash": {
       "checks": [
+        {
+          "kind": "scene_bindings"
+        },
         {
           "kind": "no_diagnostics",
           "codes": ["E901", "E106", "W206"],

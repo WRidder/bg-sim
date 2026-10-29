@@ -296,6 +296,19 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/dc-motor.sdf"
+  },
+  "bindings": [
+    {
+      "target": "visual:rotor_disc",
+      "property": "color",
+      "signal": "IJ/p.f",
+      "colormap": "heat",
+      "range": [
+        0,
+        240
+      ]
+    }
+  ]
 }

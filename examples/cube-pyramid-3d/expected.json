@@ -5,6 +5,9 @@
     "sequence-contact": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "cursor_value",
           "signal": "Sense/tilt",
           "t": 0.0,
@@ -377,6 +380,9 @@
     "edge-contact": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "cursor_value",
           "signal": "Sense/tilt",
           "t": 0.0,
@@ -553,6 +559,9 @@
     },
     "edge-switched": {
       "checks": [
+        {
+          "kind": "scene_bindings"
+        },
         {
           "kind": "cursor_value",
           "signal": "Sense/tilt",

@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<!--
+  bouncing-ball (plan 9.2): a ball dropped from h = 1 m onto the floor.
+
+  Z-up, metres. The floor top is the plane z = 0. h is the height of the lowest point of the ball,
+  so the ball link rests with its centre one radius above the origin of the prismatic joint
+  "fall" (axis +Z), which is bound to the model's Ball1/h. A 1.1 m ruler stands beside the drop.
+-->
+<sdf version="1.9">
+  <model name="bouncing_ball">
+    <link name="floor">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="floor_slab">
+        <pose>0 0 -0.01 0 0 0</pose>
+        <geometry><box><size>0.5 0.5 0.02</size></box></geometry>
+        <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
+      </visual>
+      <visual name="ruler">
+        <pose>0.2 0 0.55 0 0 0</pose>
+        <geometry><box><size>0.01 0.01 1.1</size></box></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="ball">
+      <pose>0 0 0.05 0 0 0</pose>
+      <visual name="ball_sphere">
+        <geometry><sphere><radius>0.05</radius></sphere></geometry>
+        <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
+      </visual>
+    </link>
+
+    <joint name="fall" type="prismatic">
+      <parent>floor</parent>
+      <child>ball</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>

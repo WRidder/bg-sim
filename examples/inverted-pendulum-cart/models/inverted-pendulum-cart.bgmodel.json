@@ -554,6 +554,19 @@
       "signals": ["MSe1/p.e"]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/inverted-pendulum-cart.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:rail",
+      "property": "position",
+      "signal": "XInt/y"
+    },
+    {
+      "target": "joint:hinge",
+      "property": "position",
+      "signal": "ThetaInt/y"
+    }
+  ]
 }

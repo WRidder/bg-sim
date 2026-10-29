@@ -179,3 +179,7 @@ $env:BGSIM_E2E_REAL="1"; npx playwright test tests/e2e/reaction-wheel-2d.spec.ts
 - Set `Pivot/bt` to 0 (and `WheelJ/bt`) and rerun `balancer`: the 1 ms sampled
   drive pumps the 3.6 kHz pivot mode and the run stops with `E901` (MaxIters) at
   t = 2.29 s; the damper is part of the model, like on the arm.
+
+## 3D view
+
+`scenes/reaction-wheel-2d.sdf` draws the body bar standing on its pivot with the wheel at its top, in the vertical X-Z plane. Joint `pivot` follows the body angle `Pivot/qout` and `wheel_axis` the wheel angle relative to the body `WheelJ/qout`; the spoke makes the wheel spin visible. `expected.json` checks the body and wheel centres against the model's composed poses.

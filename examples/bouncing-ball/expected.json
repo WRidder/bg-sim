@@ -5,6 +5,9 @@
     "bouncing-ball": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "zero_crossing",
           "signal": "Ball1/h",
           "n": 1,

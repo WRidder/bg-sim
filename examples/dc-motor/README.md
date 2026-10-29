@@ -80,3 +80,7 @@ The file is read by `examples/run_checks.py` and uses three machine-readable che
 The signal ids are the plan 3.1 ids in the run manifest. The runner reads `columns.f64`
 in manifest order, behind the time column. The legend shows the rotation unit as `1/s`
 (radians are dimensionless in plan 5.3); the plan quotes the same quantity as rad/s.
+
+## 3D view
+
+`scenes/dc-motor.sdf` shows the motor housing and a rotor disc with a stripe. In `iconic` and `speed-control` the rotor joint `shaft` follows the rotor angle `Motor1/rotor/phi`, so the stripe turns at the simulated speed (about 240 rad/s, so use a slow playback speed). `bondgraph` has no angle signal, so its rotor disc is coloured by the rotor speed `IJ/p.f` (heat, 0 to 240 rad/s) instead.

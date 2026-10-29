@@ -5,6 +5,28 @@
     "inverted-pendulum-cart": {
       "checks": [
         {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "pendulum",
+              "point": [
+                0,
+                0,
+                0.5
+              ],
+              "signals": [
+                [
+                  "XInt/y",
+                  "LSin/y"
+                ],
+                null,
+                "LCos/y"
+              ],
+              "tol": 0.000001
+            }
+          ]
+        },
+        {
           "kind": "max_abs",
           "signal": "MSe1/p.e",
           "from_t": 0.0,

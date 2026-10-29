@@ -230,3 +230,7 @@ import. The files here are never written by the editor (only
 `design/design.py` writes the models, when invoked by hand). `expected.json` is
 the machine-readable acceptance used by `examples/run_checks.py` and
 `tools/check.py --lane x`.
+
+## 3D view
+
+`scenes/industrial-servo.sdf` shows the motor with its rotor disc and a load disc behind a coupling. Joint `rotor_joint` follows the motor angle `Theta/y` in all five variants; in `two-mass` and `full` the joint `coupling_joint` follows the coupling twist `Kc/q`, so the load marker lags and rings against the rotor marker. The rigid variants (`baseline`, `switching`, `encoder`) have no coupling state, so the load disc moves with the rotor.

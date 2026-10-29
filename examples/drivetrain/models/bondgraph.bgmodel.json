@@ -766,6 +766,39 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/drivetrain.sdf"
+  },
+  "bindings": [
+    {
+      "target": "visual:rotor_disc",
+      "property": "color",
+      "signal": "IJm/p.f",
+      "colormap": "heat",
+      "range": [
+        0,
+        120
+      ]
+    },
+    {
+      "target": "visual:wheel1_disc",
+      "property": "color",
+      "signal": "IW1/p.f",
+      "colormap": "heat",
+      "range": [
+        0,
+        12
+      ]
+    },
+    {
+      "target": "visual:wheel2_disc",
+      "property": "color",
+      "signal": "IW2/p.f",
+      "colormap": "heat",
+      "range": [
+        0,
+        12
+      ]
+    }
+  ]
 }

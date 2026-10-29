@@ -1,0 +1,164 @@
+<?xml version="1.0"?>
+<!--
+  drivetrain-kalman (plan 9.5): motor, 10:1 gearbox and the three-segment flexible rod between two
+  wheels, in a row along +X.
+
+  Z-up, metres, every shaft turns about +X. The only angle the model measures is the motor angle
+  Theta/y (rad), so the chain is built from relative angles:
+    rotor_joint   motor rotor                          Theta/y
+    gear_joint    gearbox output (wheel 1 side)        0.1 * Theta/y        (the 10:1 gear)
+    play_joint    backlash of the gear, zero if ideal  -Gear/play/phi       (drivetrain-backlash only)
+    seg1_joint    first rod segment, wheel 1 to mid 1  C1/q  (twist of segment 1)
+    seg2_joint    second rod segment, mid 1 to mid 2   C2/q
+    seg3_joint    third rod segment, mid 2 to wheel 2  C3/q
+  Each C_k/q is the downstream minus the upstream angle of the segment (checked against the
+  flows of the wheels). The ideal-gear model has no play state, so there play_joint stays at zero.
+  The discs carry markers so that the twist of the rod can be seen.
+-->
+<sdf version="1.9">
+  <model name="drivetrain_kalman">
+    <link name="frame">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="base_plate">
+        <pose>0.4 0 -0.1 0 0 0</pose>
+        <geometry><box><size>1.1 0.2 0.02</size></box></geometry>
+        <material><diffuse>0.3 0.3 0.33 1</diffuse></material>
+      </visual>
+      <visual name="motor_housing">
+        <pose>-0.05 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.05</radius><length>0.1</length></cylinder></geometry>
+        <material><diffuse>0.45 0.47 0.5 1</diffuse></material>
+      </visual>
+      <visual name="gearbox">
+        <pose>0.13 0 0 0 0 0</pose>
+        <geometry><box><size>0.12 0.12 0.12</size></box></geometry>
+        <material><diffuse>0.35 0.37 0.4 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="rotor">
+      <pose>0.015 0 0 0 0 0</pose>
+      <visual name="rotor_disc">
+        <pose>0 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.03</radius><length>0.03</length></cylinder></geometry>
+        <material><diffuse>0.25 0.5 0.85 1</diffuse></material>
+      </visual>
+      <visual name="rotor_marker">
+        <pose>0 0 0.03 0 0 0</pose>
+        <geometry><box><size>0.034 0.008 0.012</size></box></geometry>
+        <material><diffuse>0.95 0.95 0.95 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="gear_out">
+      <pose>0.25 0 0 0 0 0</pose>
+      <visual name="gear_shaft">
+        <pose>0 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.04</length></cylinder></geometry>
+        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="wheel1">
+      <pose>0.25 0 0 0 0 0</pose>
+      <visual name="wheel1_disc">
+        <pose>0 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.07</radius><length>0.04</length></cylinder></geometry>
+        <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
+      </visual>
+      <visual name="wheel1_marker">
+        <pose>0 0 0.07 0 0 0</pose>
+        <geometry><box><size>0.044 0.01 0.014</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+      <visual name="rod1">
+        <pose>0.1 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.006</radius><length>0.2</length></cylinder></geometry>
+        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="mid1">
+      <pose>0.45 0 0 0 0 0</pose>
+      <visual name="mid1_disc">
+        <pose>0 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.035</radius><length>0.02</length></cylinder></geometry>
+        <material><diffuse>0.35 0.7 0.45 1</diffuse></material>
+      </visual>
+      <visual name="mid1_marker">
+        <pose>0 0 0.035 0 0 0</pose>
+        <geometry><box><size>0.024 0.008 0.01</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+      <visual name="rod2">
+        <pose>0.1 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.006</radius><length>0.2</length></cylinder></geometry>
+        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="mid2">
+      <pose>0.65 0 0 0 0 0</pose>
+      <visual name="mid2_disc">
+        <pose>0 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.035</radius><length>0.02</length></cylinder></geometry>
+        <material><diffuse>0.35 0.7 0.45 1</diffuse></material>
+      </visual>
+      <visual name="mid2_marker">
+        <pose>0 0 0.035 0 0 0</pose>
+        <geometry><box><size>0.024 0.008 0.01</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+      <visual name="rod3">
+        <pose>0.1 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.006</radius><length>0.2</length></cylinder></geometry>
+        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="wheel2">
+      <pose>0.85 0 0 0 0 0</pose>
+      <visual name="wheel2_disc">
+        <pose>0 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.09</radius><length>0.05</length></cylinder></geometry>
+        <material><diffuse>0.25 0.5 0.85 1</diffuse></material>
+      </visual>
+      <visual name="wheel2_marker">
+        <pose>0 0 0.09 0 0 0</pose>
+        <geometry><box><size>0.054 0.012 0.016</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <joint name="rotor_joint" type="continuous">
+      <parent>frame</parent>
+      <child>rotor</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="gear_joint" type="continuous">
+      <parent>frame</parent>
+      <child>gear_out</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="play_joint" type="continuous">
+      <parent>gear_out</parent>
+      <child>wheel1</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="seg1_joint" type="continuous">
+      <parent>wheel1</parent>
+      <child>mid1</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="seg2_joint" type="continuous">
+      <parent>mid1</parent>
+      <child>mid2</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="seg3_joint" type="continuous">
+      <parent>mid2</parent>
+      <child>wheel2</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+  </model>
+</sdf>

@@ -1581,6 +1581,14 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/industrial-servo.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:rotor_joint",
+      "property": "position",
+      "signal": "Theta/y"
+    }
+  ]
 }

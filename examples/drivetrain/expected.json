@@ -5,6 +5,9 @@
     "drivetrain": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "final_value",
           "signal": "Motor1/shaft.f",
           "t": 2.0,
@@ -75,6 +78,9 @@
     },
     "bondgraph": {
       "checks": [
+        {
+          "kind": "scene_bindings"
+        },
         {
           "kind": "final_value",
           "signal": "IJm/p.f",

@@ -87,3 +87,7 @@ as two crossings.
   warning, and the manifest still says `done`; there is no `E901`.
 - Open `library/Ball.jl` in the code editor: it is a project block, so
   `project:Ball` resolves from the project itself, not from the standard library.
+
+## 3D view
+
+`scenes/bouncing-ball.sdf` draws the floor, a 1.1 m ruler and the ball on a prismatic joint `fall`, bound to `Ball1/h`. The ball drops from 1 m and rebounds on the floor with the restitution of the model; the bounce instants are visible as the turning points of the ball.

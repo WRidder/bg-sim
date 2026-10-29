@@ -5,6 +5,9 @@
     "hydraulic-servo": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "cursor_value",
           "signal": "XS/y",
           "t": 1.0,

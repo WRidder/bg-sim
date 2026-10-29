@@ -1329,6 +1329,14 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/hydraulic-servo.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:stroke",
+      "property": "position",
+      "signal": "XS/y"
+    }
+  ]
 }

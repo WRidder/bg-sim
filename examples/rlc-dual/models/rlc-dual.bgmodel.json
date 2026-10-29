@@ -311,6 +311,41 @@
       "signals": ["Iconic/L1/i", "Bondgraph/IL/p.f"]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/rlc-dual.sdf"
+  },
+  "bindings": [
+    {
+      "target": "visual:iconic_bar",
+      "property": "scale.z",
+      "signal": "Iconic/C1/v",
+      "offset": 0.01
+    },
+    {
+      "target": "visual:iconic_bar",
+      "property": "color",
+      "signal": "Iconic/C1/v",
+      "colormap": "heat",
+      "range": [
+        0,
+        1.2
+      ]
+    },
+    {
+      "target": "visual:bondgraph_bar",
+      "property": "scale.z",
+      "signal": "Bondgraph/C1/p.e",
+      "offset": 0.01
+    },
+    {
+      "target": "visual:bondgraph_bar",
+      "property": "color",
+      "signal": "Bondgraph/C1/p.e",
+      "colormap": "heat",
+      "range": [
+        0,
+        1.2
+      ]
+    }
+  ]
 }

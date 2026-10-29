@@ -5,6 +5,9 @@
     "baseline": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "step_response",
           "signal": "WmSens/p.f",
           "from_t": 0.05,
@@ -116,6 +119,9 @@
     },
     "two-mass": {
       "checks": [
+        {
+          "kind": "scene_bindings"
+        },
         {
           "kind": "step_response",
           "signal": "WmSens/p.f",
@@ -259,6 +265,9 @@
     "switching": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "step_response",
           "signal": "WmSens/p.f",
           "from_t": 0.05,
@@ -380,6 +389,9 @@
     },
     "encoder": {
       "checks": [
+        {
+          "kind": "scene_bindings"
+        },
         {
           "kind": "step_response",
           "signal": "WmSens/p.f",
@@ -517,6 +529,9 @@
     },
     "full": {
       "checks": [
+        {
+          "kind": "scene_bindings"
+        },
         {
           "kind": "step_response",
           "signal": "WmSens/p.f",

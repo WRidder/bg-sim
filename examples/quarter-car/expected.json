@@ -5,6 +5,9 @@
     "quarter-car": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "max_abs",
           "signal": "SInt/y",
           "from_t": 0.0,

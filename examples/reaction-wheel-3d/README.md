@@ -152,3 +152,7 @@ then **Open** → **Samples** → **reaction-wheel-3d** and press **Run**. The a
 ```
 uv run examples/run_checks.py --only reaction-wheel-3d
 ```
+
+## 3D view
+
+`scenes/reaction-wheel-3d.sdf` shows the translucent body hanging from the spherical pivot with the four pyramid wheels inside. The body and each wheel are bound by their world pose (`PoseBody`, `PoseW1..4`, quaternion first); a marker on each disc rim shows the wheel spin and the discs are drawn smaller than the 0.115 m the inertia suggests, so that they do not touch.

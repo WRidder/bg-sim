@@ -324,6 +324,14 @@
       "signals": ["Compose/g[3]", "Df/y[1]", "Df/y[2]", "Df/y[3]"]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/multibond-pendulum-2d.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:pivot",
+      "property": "position",
+      "signal": "Joint/qout"
+    }
+  ]
 }

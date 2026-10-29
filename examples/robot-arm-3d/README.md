@@ -263,3 +263,7 @@ viewer's own parser and resolver (`web/src/scene`): no diagnostics, tip at (0.7,
   `rrr-free`, `rrr-torque` and `rrr-multibond*` checks and nine `compare` entries.
 * `web/tests/e2e/robot-arm-3r.spec.ts` — opens the sample, runs `rrr`, plots `Arm/q1..q3` and reads
   the angles after each move (real worker). The 3D-playback part is added after W5.3.
+
+## 3D view
+
+`scenes/arm.sdf` draws the six-axis arm for `arm`: every link is bound by its world pose to the model's composed body pose `P<i>/g[1..7]` (quaternion first), so the viewer needs no joint axes or kinematics of its own. A hub cylinder marks each joint axis and the bars run to the next joint; the red sphere is the tool centre point. (The RRR models of X5.3 use `scenes/rrr.sdf`.)

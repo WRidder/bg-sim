@@ -5,6 +5,9 @@
     "iconic": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "final_value",
           "signal": "Motor1/shaft.f",
           "t": 1.0,
@@ -33,6 +36,9 @@
     "bondgraph": {
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "final_value",
           "signal": "IJ/p.f",
           "t": 1.0,
@@ -44,6 +50,9 @@
     },
     "speed-control": {
       "checks": [
+        {
+          "kind": "scene_bindings"
+        },
         {
           "kind": "cursor_value",
           "signal": "WmSens/y",

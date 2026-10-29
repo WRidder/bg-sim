@@ -736,6 +736,19 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/robot-arm-2d.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:shoulder",
+      "property": "position",
+      "signal": "Joint1/qout"
+    },
+    {
+      "target": "joint:elbow",
+      "property": "position",
+      "signal": "Joint2/qout"
+    }
+  ]
 }

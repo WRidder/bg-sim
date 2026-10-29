@@ -6,6 +6,9 @@
       "run_timeout": 900.0,
       "checks": [
         {
+          "kind": "scene_bindings"
+        },
+        {
           "kind": "cursor_value",
           "signal": "J1/qout",
           "t": 0.0,

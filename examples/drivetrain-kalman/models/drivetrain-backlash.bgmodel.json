@@ -1372,6 +1372,41 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/drivetrain-kalman.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:rotor_joint",
+      "property": "position",
+      "signal": "Theta/y"
+    },
+    {
+      "target": "joint:gear_joint",
+      "property": "position",
+      "signal": "Theta/y",
+      "gain": 0.1
+    },
+    {
+      "target": "joint:play_joint",
+      "property": "position",
+      "signal": "Gear/play/phi",
+      "gain": -1
+    },
+    {
+      "target": "joint:seg1_joint",
+      "property": "position",
+      "signal": "C1/q"
+    },
+    {
+      "target": "joint:seg2_joint",
+      "property": "position",
+      "signal": "C2/q"
+    },
+    {
+      "target": "joint:seg3_joint",
+      "property": "position",
+      "signal": "C3/q"
+    }
+  ]
 }

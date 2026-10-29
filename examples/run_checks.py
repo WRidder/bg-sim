@@ -17,7 +17,7 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
   ``max_abs_le``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
   ``invariant``, ``planar_fk``, ``energy_ledger``, ``compare_signals``,
   ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak`` and
-  ``no_diagnostics``), prints one
+  ``scene_bindings`` and ``no_diagnostics``), prints one
   line per check and exits non-zero when any check fails.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
@@ -1754,6 +1754,243 @@ def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Ru
 # --------------------------------------------------------------------------- scene bindings
 
 
+def _sdf_pose_matrix(text: str | None) -> np.ndarray:
+    """4x4 matrix of an SDF ``x y z roll pitch yaw`` pose, ``R = Rz(yaw) Ry(pitch) Rx(roll)``."""
+    values = [float(v) for v in (text or "0 0 0 0 0 0").split()]
+    if len(values) != 6:
+        raise ValueError(f"pose needs 6 numbers, got {text!r}")
+    x, y, z, roll, pitch, yaw = values
+    cr, sr, cp, sp, cy, sy = (
+        np.cos(roll), np.sin(roll), np.cos(pitch), np.sin(pitch), np.cos(yaw), np.sin(yaw)
+    )
+    rx = np.array([[1, 0, 0], [0, cr, -sr], [0, sr, cr]])
+    ry = np.array([[cp, 0, sp], [0, 1, 0], [-sp, 0, cp]])
+    rz = np.array([[cy, -sy, 0], [sy, cy, 0], [0, 0, 1]])
+    matrix = np.eye(4)
+    matrix[:3, :3] = rz @ ry @ rx
+    matrix[:3, 3] = [x, y, z]
+    return matrix
+
+
+def _axis_motion(kind: str, axis: np.ndarray, q: float) -> np.ndarray:
+    """Joint motion in the joint frame: a rotation (Rodrigues) or a translation along ``axis``."""
+    motion = np.eye(4)
+    unit = axis / np.linalg.norm(axis)
+    if kind == "prismatic":
+        motion[:3, 3] = unit * q
+    elif kind in {"revolute", "continuous"}:
+        cross = np.array([[0, -unit[2], unit[1]], [unit[2], 0, -unit[0]], [-unit[1], unit[0], 0]])
+        motion[:3, :3] = np.eye(3) + np.sin(q) * cross + (1 - np.cos(q)) * (cross @ cross)
+    return motion
+
+
+def _read_sdf(path: Path) -> dict[str, Any]:
+    """Links, joints, frames and visuals of a single-model SDF (the subset of plan 7.6)."""
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(path).getroot()
+    models = root.findall("model")
+    if len(models) != 1:
+        raise ValueError(f"{path.name}: expected one top-level <model>, found {len(models)}")
+    model = models[0]
+    links: dict[str, Any] = {}
+    visuals: dict[str, str] = {}
+    for link in model.findall("link"):
+        name = link.get("name", "")
+        pose = link.find("pose")
+        links[name] = {"pose": _sdf_pose_matrix(pose.text if pose is not None else None)}
+        for visual in link.findall("visual"):
+            visuals[visual.get("name", "")] = name
+    joints: dict[str, Any] = {}
+    for joint in model.findall("joint"):
+        pose = joint.find("pose")
+        axis = joint.find("axis/xyz")
+        joints[joint.get("name", "")] = {
+            "type": joint.get("type", ""),
+            "parent": (joint.findtext("parent") or "").strip(),
+            "child": (joint.findtext("child") or "").strip(),
+            "axis": (
+                np.array([float(v) for v in axis.text.split()])
+                if axis is not None and axis.text
+                else np.array([0.0, 0.0, 1.0])
+            ),
+            "pose": _sdf_pose_matrix(pose.text if pose is not None else None),
+            "relative_to": pose.get("relative_to") if pose is not None else None,
+        }
+    frames = {frame.get("name", "") for frame in model.findall("frame")}
+    return {"links": links, "joints": joints, "visuals": visuals, "frames": frames}
+
+
+def _sdf_link_worlds(sdf: dict[str, Any], q: dict[str, float]) -> dict[str, np.ndarray]:
+    """World matrix of every link for joint values ``q`` (the kinematic tree of plan 7.6)."""
+    rest = {name: link["pose"] for name, link in sdf["links"].items()}
+    world: dict[str, np.ndarray] = {}
+    children: dict[str, list[str]] = {}
+    for name, joint in sdf["joints"].items():
+        children.setdefault(joint["parent"], []).append(name)
+    child_links = {joint["child"] for joint in sdf["joints"].values()}
+
+    def place(link: str) -> None:
+        for name in children.get(link, []):
+            joint = sdf["joints"][name]
+            child = joint["child"]
+            if joint["relative_to"] in (None, child):
+                frame = joint["pose"]
+            else:
+                frame = np.linalg.inv(rest[child]) @ rest[joint["relative_to"]] @ joint["pose"]
+            motion = _axis_motion(joint["type"], joint["axis"], q.get(name, 0.0))
+            parent_rest = rest.get(link, np.eye(4))
+            parent_world = world.get(link, np.eye(4))
+            joint_in_parent = np.linalg.inv(parent_rest) @ rest[child] @ frame
+            world[child] = parent_world @ joint_in_parent @ motion @ np.linalg.inv(frame)
+            place(child)
+
+    for root in [name for name in sdf["links"] if name not in child_links]:
+        world[root] = rest[root]
+        place(root)
+    place("world")
+    return world
+
+
+#: Units a joint ``position`` binding accepts: an angle (rad is dimensionless, so ``"1"``,
+#: ``"rad"`` or a time-integrated flow) for revolute joints, a length for prismatic ones.
+_ANGLE_UNITS = {None, "", "1", "rad", "deg", "flow*s"}
+_LENGTH_UNITS = {None, "", "m", "mm", "flow*s"}
+
+
+def _scene_bindings_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The model's ``scene`` file parses and every binding resolves against it and the run.
+
+    For each binding the target must exist with the right kind (joint for ``position``, link
+    or frame for ``pose``, visual for ``scale.*``/``color``, visual or link for ``visible``),
+    every signal id must be in the run's signal list, the unit must fit the property (an
+    angle for a revolute joint, a length for a prismatic one, dimensionless then metres for
+    the seven pose signals) and a pose needs exactly seven signals. This is E301 to E304 of
+    the viewer (plan 7.6), checked without a browser.
+
+    ``fk`` entries check the sign convention of the joint axes against a model signal::
+
+        {"kind": "scene_bindings", "fk": [
+          {"link": "link2", "point": [0.3, 0, 0],
+           "signals": ["PoseTip/g[2]", null, "PoseTip/g[3]"], "tol": 1e-6}]}
+
+    ``point`` is in the link frame, ``signals`` are the world x, y, z of that point (``null``
+    skips an axis, a list of ids is summed). The joint-bound signals drive the SDF kinematic tree and the largest
+    deviation over about 60 samples of the run must stay within ``tol``.
+    """
+    label = f"{project}/{model} scene_bindings"
+    document = run.model_document or {}
+    scene = document.get("scene")
+    bindings = document.get("bindings") or []
+    if not isinstance(scene, dict) or not scene.get("file"):
+        report.check(False, label, 'the model has no scene.file; set "scene" to {"file": "scenes/<name>.sdf"}')
+        return
+    if run.project_dir is None:
+        report.check(False, label, "no project folder to read the scene from")
+        return
+    try:
+        sdf = _read_sdf(run.project_dir / str(scene["file"]))
+    except (OSError, ValueError, SyntaxError) as exc:
+        report.check(False, label, f"scene {scene['file']} unreadable: {exc}")
+        return
+    units = {str(entry["id"]): entry.get("unit") for entry in run.manifest.get("signals") or []}
+    errors: list[str] = []
+    counts = {"position": 0, "pose": 0, "visual": 0}
+    joint_signals: dict[str, tuple[str, float, float]] = {}
+    for binding in bindings:
+        target = str(binding.get("target", ""))
+        prop = binding.get("property")
+        signals = binding.get("signal")
+        signals = signals if isinstance(signals, list) else [signals]
+        kind, _, name = target.partition(":")
+        where = f"{target} {prop}"
+        for signal in signals:
+            if signal not in units:
+                errors.append(f"{where}: unknown signal {signal!r}")
+        if prop == "position":
+            counts["position"] += 1
+            joint = sdf["joints"].get(name) if kind == "joint" else None
+            if joint is None:
+                errors.append(f"{where}: no joint named {name!r}")
+            elif len(signals) != 1:
+                errors.append(f"{where}: needs 1 signal, got {len(signals)}")
+            elif signals[0] in units:
+                allowed = _LENGTH_UNITS if joint["type"] == "prismatic" else _ANGLE_UNITS
+                if units[signals[0]] not in allowed:
+                    errors.append(
+                        f"{where}: unit {units[signals[0]]!r} of {signals[0]} does not fit a {joint['type']} joint"
+                    )
+                joint_signals[name] = (
+                    str(signals[0]), float(binding.get("gain", 1.0)), float(binding.get("offset", 0.0))
+                )
+        elif prop == "pose":
+            counts["pose"] += 1
+            if not (kind == "link" and name in sdf["links"] or kind == "frame" and name in sdf["frames"]):
+                errors.append(f"{where}: no {kind} named {name!r}")
+            if len(signals) != 7:
+                errors.append(f"{where}: needs 7 signals (qw qx qy qz x y z), got {len(signals)}")
+            else:
+                for index, signal in enumerate(signals):
+                    allowed = {None, "", "1"} if index < 4 else {None, "", "m"}
+                    if signal in units and units[signal] not in allowed:
+                        errors.append(
+                            f"{where}: unit {units[signal]!r} of {signal} does not fit pose component {index}"
+                        )
+        else:
+            counts["visual"] += 1
+            known = (kind == "visual" and name in sdf["visuals"]) or (
+                prop == "visible" and kind == "link" and name in sdf["links"]
+            )
+            if not known:
+                errors.append(f"{where}: no {kind} named {name!r}")
+            if len(signals) != 1:
+                errors.append(f"{where}: needs 1 signal, got {len(signals)}")
+    if not bindings:
+        errors.append("the model has a scene but no bindings; add at least one")
+    detail = (
+        f"{len(bindings)} binding(s) ({counts['position']} joint position, {counts['pose']} pose, "
+        f"{counts['visual']} visual) against {scene['file']}"
+    )
+    report.check(not errors, label, "; ".join(errors) if errors else detail)
+    if errors:
+        return
+
+    for spec in check.get("fk") or []:
+        fk_label = f"{label} fk {spec.get('link')}"
+        try:
+            point = np.array([*[float(v) for v in spec["point"]], 1.0])
+            targets = list(spec["signals"])
+            tol = float(spec.get("tol", 1e-6))
+            if spec["link"] not in sdf["links"] or len(point) != 4 or len(targets) != 3:
+                raise ValueError("needs an existing 'link', a 3-vector 'point' and 3 'signals'")
+            targets = [[] if s is None else ([s] if isinstance(s, str) else list(s)) for s in targets]
+            missing = [s for group in targets for s in group if s not in run.signals]
+            if missing:
+                raise ValueError(f"unknown signal(s) {missing}")
+            indices = np.unique(np.linspace(0, run.time.size - 1, 60).astype(int))
+            worst = 0.0
+            for index in indices:
+                q = {
+                    joint: gain * float(run.signals[signal][index]) + offset
+                    for joint, (signal, gain, offset) in joint_signals.items()
+                }
+                position = (_sdf_link_worlds(sdf, q)[spec["link"]] @ point)[:3]
+                for axis, group in enumerate(targets):
+                    if group:
+                        value = sum(float(run.signals[signal][index]) for signal in group)
+                        worst = max(worst, abs(position[axis] - value))
+        except (KeyError, ValueError, TypeError) as exc:
+            report.check(False, fk_label, str(exc))
+            continue
+        report.check(
+            worst <= tol,
+            fk_label,
+            f"max |SDF point - model signals| = {worst:.3e} over {indices.size} samples (tol {tol:g})",
+        )
+
+
 def _compare_scaling_checks(report: Report, project: str, specs: Any, runs: dict[str, Run]) -> None:
     """X5.4: the difference to a reference model scales with a parameter ratio.
 
@@ -1849,6 +2086,8 @@ def _check_model_checks(
             _ripple_check(report, project, model, run, check)
         elif kind == "fft_peak":
             _fft_peak_check(report, project, model, run, check)
+        elif kind == "scene_bindings":
+            _scene_bindings_check(report, project, model, run, check)
         elif kind == "no_diagnostics":
             _no_diagnostics_check(report, project, model, run, check)
         else:

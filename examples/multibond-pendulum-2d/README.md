@@ -179,3 +179,7 @@ $env:BGSIM_E2E_REAL="1"; npx playwright test tests/e2e/multibond-pendulum.spec.t
   next to `Df/y[1]` (the link rate): the visible vertical reaction peaks at the
   bottom of the swing, once per half period, while the horizontal component tracks
   the tangential load — the signature of a rotating constraint force.
+
+## 3D view
+
+`scenes/multibond-pendulum-2d.sdf` draws the pendulum in the vertical X-Z plane (the model's x-y plane, gravity along -z). The revolute joint `pivot` follows the joint angle `Joint/qout`; the bob is the 0.5 m centre of mass, and `expected.json` checks the SDF kinematics against the model's composed CoM pose.

@@ -3628,6 +3628,87 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/arm.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:link_1",
+      "property": "pose",
+      "signal": [
+        "P1/g[1]",
+        "P1/g[2]",
+        "P1/g[3]",
+        "P1/g[4]",
+        "P1/g[5]",
+        "P1/g[6]",
+        "P1/g[7]"
+      ]
+    },
+    {
+      "target": "link:link_2",
+      "property": "pose",
+      "signal": [
+        "P2/g[1]",
+        "P2/g[2]",
+        "P2/g[3]",
+        "P2/g[4]",
+        "P2/g[5]",
+        "P2/g[6]",
+        "P2/g[7]"
+      ]
+    },
+    {
+      "target": "link:link_3",
+      "property": "pose",
+      "signal": [
+        "P3/g[1]",
+        "P3/g[2]",
+        "P3/g[3]",
+        "P3/g[4]",
+        "P3/g[5]",
+        "P3/g[6]",
+        "P3/g[7]"
+      ]
+    },
+    {
+      "target": "link:link_4",
+      "property": "pose",
+      "signal": [
+        "P4/g[1]",
+        "P4/g[2]",
+        "P4/g[3]",
+        "P4/g[4]",
+        "P4/g[5]",
+        "P4/g[6]",
+        "P4/g[7]"
+      ]
+    },
+    {
+      "target": "link:link_5",
+      "property": "pose",
+      "signal": [
+        "P5/g[1]",
+        "P5/g[2]",
+        "P5/g[3]",
+        "P5/g[4]",
+        "P5/g[5]",
+        "P5/g[6]",
+        "P5/g[7]"
+      ]
+    },
+    {
+      "target": "link:link_6",
+      "property": "pose",
+      "signal": [
+        "P6/g[1]",
+        "P6/g[2]",
+        "P6/g[3]",
+        "P6/g[4]",
+        "P6/g[5]",
+        "P6/g[6]",
+        "P6/g[7]"
+      ]
+    }
+  ]
 }

@@ -5,6 +5,39 @@
     "arm": {
       "checks": [
         {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.2,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 0.000001
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.3,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseTip/g[2]",
+                null,
+                "PoseTip/g[3]"
+              ],
+              "tol": 0.000001
+            }
+          ]
+        },
+        {
           "kind": "cursor_value",
           "signal": "Joint1/qout",
           "t": 0.0,
@@ -277,6 +310,39 @@
     },
     "arm-free": {
       "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.2,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 0.000001
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.3,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseTip/g[2]",
+                null,
+                "PoseTip/g[3]"
+              ],
+              "tol": 0.000001
+            }
+          ]
+        },
         {
           "kind": "cursor_value",
           "signal": "Joint1/qout",

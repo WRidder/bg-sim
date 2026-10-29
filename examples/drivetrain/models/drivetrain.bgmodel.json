@@ -648,6 +648,24 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/drivetrain.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:rotor_joint",
+      "property": "position",
+      "signal": "Motor1/rotor/phi"
+    },
+    {
+      "target": "joint:wheel1_joint",
+      "property": "position",
+      "signal": "Wheel1/phi"
+    },
+    {
+      "target": "joint:wheel2_joint",
+      "property": "position",
+      "signal": "Wheel2/phi"
+    }
+  ]
 }

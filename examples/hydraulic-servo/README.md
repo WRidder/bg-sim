@@ -145,3 +145,7 @@ tank through that sensor, and the DAE solves without an iteration failure.
 * The initial pressures and the preloaded integrator are set as described above; the
   plan does not specify them.
 * The 3D cylinder/rod binding is the M5 part of plan 9.6 and is not included here.
+
+## 3D view
+
+`scenes/hydraulic-servo.sdf` draws the cylinder barrel (translucent), the piston with its rod and the 50 kg load. The prismatic joint `stroke` follows the rod position `XS/y`, so the 0.1 m reference step at 0.1 s is a visible slide; the red tick marks the target position of the load.

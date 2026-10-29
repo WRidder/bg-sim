@@ -91,3 +91,7 @@ import (the copy gets a new project name, e.g. `drivetrain-2`, if one already
 exists). The files here are never written by the editor. `expected.json` is the
 machine-readable acceptance used by `examples/run_checks.py` and
 `tools/check.py --lane x`.
+
+## 3D view
+
+`scenes/drivetrain.sdf` lines up the motor rotor, the first wheel behind the 10:1 gear and the load wheel behind the flexible rod, each a disc with a marker. In `drivetrain` they turn with `Motor1/rotor/phi`, `Wheel1/phi` and `Wheel2/phi`; the rod twist is the angle between the two wheel markers. The `bondgraph` model has speeds only, so its three discs are coloured by speed (`IJm/p.f`, `IW1/p.f`, `IW2/p.f`).

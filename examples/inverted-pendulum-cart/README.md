@@ -149,3 +149,7 @@ inside 1 cm in well under 2 s while the angle stays below 0.5°.
   clamp: the peak becomes exactly 20.0 N and the cart still settles at 0.2 m. A design that
   demands more than the clamp *for a long time* can make the nonsmooth `clamp` chatter and
   hit the `W206` event limit, which is why the sample's own weights stay 10 % below it.
+
+## 3D view
+
+`scenes/inverted-pendulum-cart.sdf` shows the cart on its rail and the rod with the tip mass. Joint `rail` follows the cart position `XInt/y` and joint `hinge` the pendulum angle `ThetaInt/y` (positive towards +X, as in the model), so you see the 0.1 rad tilt being caught and the cart following the 0.2 m step at 1.5 s.

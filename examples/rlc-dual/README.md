@@ -67,3 +67,7 @@ merely similar.
   in both forms (it rings at 866 rad/s and reaches 0 A at the overshoot peak).
 - Change `R1.R` in the iconic subsystem and `R1.r` in the bond graph to the same
   new value, then run: the two curves still lie on top of each other.
+
+## 3D view
+
+`scenes/rlc-dual.sdf` has two gauge columns on a plate, one per subsystem. Each column's `scale.z` and heat colour follow the capacitor voltage (`Iconic/C1/v` and `Bondgraph/C1/p.e`, 0 to 1.2 V); the line on the plate marks 1 V. The two columns move together, which is the point of the example. An electrical circuit has no geometry, so this is a gauge, not a mechanism.

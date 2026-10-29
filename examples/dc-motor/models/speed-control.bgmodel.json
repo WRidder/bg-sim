@@ -455,6 +455,14 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/dc-motor.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:shaft",
+      "property": "position",
+      "signal": "Motor1/rotor/phi"
+    }
+  ]
 }

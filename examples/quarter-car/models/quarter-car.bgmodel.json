@@ -486,6 +486,24 @@
       "signals": ["IMs/p.f", "IMu/p.f"]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/quarter-car.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:road_joint",
+      "property": "position",
+      "signal": "RoadInt/y"
+    },
+    {
+      "target": "joint:wheel_joint",
+      "property": "position",
+      "signal": "UInt/y"
+    },
+    {
+      "target": "joint:body_joint",
+      "property": "position",
+      "signal": "SInt/y"
+    }
+  ]
 }

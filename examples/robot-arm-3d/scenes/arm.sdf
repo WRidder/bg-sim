@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<!--
+  robot-arm-3d (plan 9.10, X-MB3): the six-axis UR5-like arm of models/arm.bgmodel.json.
+
+  Z-up, metres, the world frame of the model (the arm base is the origin, gravity along -Z).
+  The six links are bound by their world pose: link "link_i" is the centre-of-mass frame of body i
+  and follows the model's composed pose P<i>/g[1..7] (quaternion first, then x y z), which is
+  W_i composed with the centre-of-mass offset LC_i, the same pose that feeds the body's gravity.
+  The link poses below are those poses at the home pose q = (0, -1.2, 1.2, -1.5, -1.5, 0), the
+  start of the run. The joint axis is the local z of the centre-of-mass frame (a hub cylinder marks
+  it at the joint) and each link bar runs from its own joint to the next joint (or the tool tip).
+  Link geometry (the standard-DH offsets of the UR5, d = 0.0892 0 0 0.1092 0.0947 0.0823 m,
+  a = 0 -0.425 -0.392 0 0 0 m) was read from the composed poses of the start state.
+-->
+<sdf version="1.9">
+  <model name="robot_arm_3d">
+    <link name="base">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="base_pedestal">
+        <pose>0 0 -0.05 0 0 0</pose>
+        <geometry><cylinder><radius>0.08</radius><length>0.1</length></cylinder></geometry>
+        <material><diffuse>0.3 0.3 0.33 1</diffuse></material>
+      </visual>
+      <visual name="base_floor">
+        <pose>0 0 -0.11 0 0 0</pose>
+        <geometry><box><size>1.4 1.4 0.02</size></box></geometry>
+        <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="link_1">
+      <pose>0 -0.026 0.044983 0.000001 -0.000003 0</pose>
+      <visual name="shoulder_link_hub">
+        <pose>0 0.026 -0.045 0 0 0</pose>
+        <geometry><cylinder><radius>0.058</radius><length>0.1</length></cylinder></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="shoulder_link_bar">
+        <pose>0 0.026 -0.000427 0 -1.570796 -1.570796</pose>
+        <geometry><box><size>0.089145 0.08 0.08</size></box></geometry>
+        <material><diffuse>0.45 0.47 0.5 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="link_2">
+      <pose>-0.077002 -0.113401 0.287186 1.570804 1.199997 0.000007</pose>
+      <visual name="upper_arm_hub">
+        <pose>0.2125 0 -0.1134 0 0 0</pose>
+        <geometry><cylinder><radius>0.053</radius><length>0.088</length></cylinder></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="upper_arm_bar">
+        <pose>0.000002 -0.000001 -0.1134 0 0 -3.141588</pose>
+        <geometry><box><size>0.424995 0.072 0.072</size></box></geometry>
+        <material><diffuse>0.25 0.5 0.85 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="link_3">
+      <pose>-0.350004 -0.026501 0.485238 1.570799 -0.000003 0</pose>
+      <visual name="forearm_hub">
+        <pose>0.196 0 -0.0265 0 0 0</pose>
+        <geometry><cylinder><radius>0.048</radius><length>0.076</length></cylinder></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="forearm_bar">
+        <pose>-0.000125 -0.000002 -0.0265 0 0 -3.141585</pose>
+        <geometry><box><size>0.39225 0.064 0.064</size></box></geometry>
+        <material><diffuse>0.25 0.5 0.85 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="link_4">
+      <pose>-0.548049 -0.055001 0.485107 1.570842 1.499997 0.000046</pose>
+      <visual name="wrist1_hub">
+        <pose>0 0.0018 -0.055 0 0 0</pose>
+        <geometry><cylinder><radius>0.04</radius><length>0.064</length></cylinder></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="wrist1_bar">
+        <pose>0.000001 0.0018 -0.000425 0 -1.570779 -1.570796</pose>
+        <geometry><box><size>0.10915 0.0512 0.0512</size></box></geometry>
+        <material><diffuse>0.35 0.7 0.45 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="link_5">
+      <pose>-0.593009 -0.109278 0.480117 -1.641773 0.070615 1.56578</pose>
+      <visual name="wrist2_hub">
+        <pose>0 -0.0018 -0.047 0 0 0</pose>
+        <geometry><cylinder><radius>0.04</radius><length>0.052</length></cylinder></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="wrist2_bar">
+        <pose>0 -0.0018 0.000325 0 -1.570789 -1.570796</pose>
+        <geometry><box><size>0.09465 0.0512 0.0512</size></box></geometry>
+        <material><diffuse>0.35 0.7 0.45 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="link_6">
+      <pose>-0.637759 -0.112065 0.437542 3.070616 0.070615 1.56578</pose>
+      <visual name="wrist3_hub">
+        <pose>0 0 -0.0412 0 0 0</pose>
+        <geometry><cylinder><radius>0.038</radius><length>0.04</length></cylinder></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="wrist3_bar">
+        <pose>0 0 0.04995 0 -1.570796 -1.570796</pose>
+        <geometry><box><size>0.1823 0.048 0.048</size></box></geometry>
+        <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
+      </visual>
+      <visual name="tool_tip">
+        <pose>0 0 0.1411 0 0 0</pose>
+        <geometry><sphere><radius>0.02</radius></sphere></geometry>
+        <material><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual>
+    </link>
+  </model>
+</sdf>

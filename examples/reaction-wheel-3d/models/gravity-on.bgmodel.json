@@ -2711,6 +2711,74 @@
       ]
     }
   ],
-  "scene": null,
-  "bindings": []
+  "scene": {
+    "file": "scenes/reaction-wheel-3d.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:body",
+      "property": "pose",
+      "signal": [
+        "PoseBody/g[1]",
+        "PoseBody/g[2]",
+        "PoseBody/g[3]",
+        "PoseBody/g[4]",
+        "PoseBody/g[5]",
+        "PoseBody/g[6]",
+        "PoseBody/g[7]"
+      ]
+    },
+    {
+      "target": "link:wheel_1",
+      "property": "pose",
+      "signal": [
+        "PoseW1/g[1]",
+        "PoseW1/g[2]",
+        "PoseW1/g[3]",
+        "PoseW1/g[4]",
+        "PoseW1/g[5]",
+        "PoseW1/g[6]",
+        "PoseW1/g[7]"
+      ]
+    },
+    {
+      "target": "link:wheel_2",
+      "property": "pose",
+      "signal": [
+        "PoseW2/g[1]",
+        "PoseW2/g[2]",
+        "PoseW2/g[3]",
+        "PoseW2/g[4]",
+        "PoseW2/g[5]",
+        "PoseW2/g[6]",
+        "PoseW2/g[7]"
+      ]
+    },
+    {
+      "target": "link:wheel_3",
+      "property": "pose",
+      "signal": [
+        "PoseW3/g[1]",
+        "PoseW3/g[2]",
+        "PoseW3/g[3]",
+        "PoseW3/g[4]",
+        "PoseW3/g[5]",
+        "PoseW3/g[6]",
+        "PoseW3/g[7]"
+      ]
+    },
+    {
+      "target": "link:wheel_4",
+      "property": "pose",
+      "signal": [
+        "PoseW4/g[1]",
+        "PoseW4/g[2]",
+        "PoseW4/g[3]",
+        "PoseW4/g[4]",
+        "PoseW4/g[5]",
+        "PoseW4/g[6]",
+        "PoseW4/g[7]"
+      ]
+    }
+  ]
 }
