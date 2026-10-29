@@ -107,7 +107,7 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | W5.1 | W | M5 | M2 | running | Viewer core port |
 | W5.2 | W | M5 | W5.1 | todo | SDF parser and scene builder |
 | W5.3 | W | M5 | W5.2, W2.4, W4.3 | todo | Bindings and playback |
-| P5.1 | P | M5 | M2 | running | Stream endpoint and meshes |
+| P5.1 | P | M5 | M2 | done | `stream.py`: `WS /ws/stream/{run}` (+ `/api/ws/...`), `?ids=`, `?rate=` ≤ 60, `?mode=live|playback`; contract handshake, then whole Float64 LE frames `[t, v…]` (recorded rows, sim-time gap ≥ 1/rate, first/last row always, event duplicates collapsed); playback sends the decimated run at once (the web clock owns timing), live tails `stream.f64` with ≤ 1 msg per 1/rate s and backlog for late joiners; closes 1000 done/cancelled/failed, 4400/4404/4409/4500 refusals. `meshes.py`: scene GET/PUT (atomic LF, 8 MiB), mesh GET (GLB) and POST upload STL/OBJ/DAE/GLB → GLB via trimesh (+pycollada, python-multipart). **Measured:** 10 s @ 1 kHz → ≤ 601 frames, ≤ 60 per simulated second; STL box → GLB magic `glTF` v2, 8 v / 12 f. pytest **351** passed (orchestrator re-run: 350 + the `test_decimate` 50 ms perf test, which failed once under concurrent Julia load and passed 3/3 alone), ruff clean. |
 | X5.1 | X | M5 | W5.2 | todo | Scenes for M1/M2 examples |
 | X5.2 | X | M5 | M2 | running | Example reaction-wheel-1d |
 | X5.3 | X | M5 | M2, M3 | running | Example robot-arm-3d |
