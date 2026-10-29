@@ -1,16 +1,23 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, type ReactElement } from "react";
 
 import { DiagnosticsPanel } from "../diagnostics/DiagnosticsPanel";
 import { useDiagnosticBadges } from "../diagnostics/useDiagnostics";
-import { AutoPlotPanel } from "../plot/AutoPlotPanel";
 import { useAutoDetachStore, useDetachStore } from "../plot/detachStore";
-import { PlotPanel } from "../plot/PlotPanel";
 import { SignalBrowser } from "../plot/SignalBrowser";
 import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
 
 // Babylon stays out of the main bundle: the viewer loads when the 3D View tab is first opened.
 const DockViewer = lazy(() => import("../viewer/DockViewer"));
+// uPlot loads with the first plot tab that is shown (code splitting, W5.4).
+const PlotPanel = lazy(() => import("../plot/PlotPanel").then((m) => ({ default: m.PlotPanel })));
+const AutoPlotPanel = lazy(() =>
+  import("../plot/AutoPlotPanel").then((m) => ({ default: m.AutoPlotPanel })),
+);
+
+function loading(title: string): ReactElement {
+  return <EmptyState title={title} hint="One moment." />;
+}
 
 export type DockTabId = "plots" | "auto" | "viewer" | "diagnostics" | "signals" | "log";
 
@@ -44,7 +51,7 @@ const DOCK_EMPTY_STATES: Record<DockTabId, { title: string; hint: string }> = {
   },
   log: {
     title: "No log entries",
-    hint: "Backend and worker messages appear here.",
+    hint: "Nothing has been logged yet. Run the model and the backend and worker messages appear here.",
   },
 };
 
@@ -111,7 +118,9 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
             </button>
           </div>
         ) : (
-          <PlotPanel />
+          <Suspense fallback={loading("Loading the plots")}>
+            <PlotPanel />
+          </Suspense>
         );
       case "auto":
         return autoDetached ? (
@@ -130,7 +139,9 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
             </button>
           </div>
         ) : (
-          <AutoPlotPanel />
+          <Suspense fallback={loading("Loading the automatic plot")}>
+            <AutoPlotPanel />
+          </Suspense>
         );
       case "signals":
         return <SignalBrowser />;

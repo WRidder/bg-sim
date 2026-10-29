@@ -12,7 +12,7 @@
  * * right-click an edge -> reverse a bond; right-click a node -> transform.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -75,13 +75,17 @@ import { CanvasLegend } from "./legend";
 import { HoverReadout } from "./ports/HoverReadout";
 import { ProbeLeads } from "../probe/ProbeLeads";
 import { ProbeGlyph } from "../probe/ProbeGlyph";
-import { ProbeWindow } from "../probe/ProbeWindow";
 import { probeSignalIds } from "../probe/probeSignals";
 import { activeModel, subsystemPathCrumbs } from "./subsystemPath";
 import { QuickConnectContext } from "./quickConnect";
 import { SubsystemBreadcrumbs } from "./SubsystemBreadcrumbs";
 import { requestPlotsTab } from "../app/dockBus";
 import "./editor.css";
+
+// The probe plot pulls in uPlot; it loads when a diagram has a probe (code splitting, W5.4).
+const ProbeWindow = lazy(() =>
+  import("../probe/ProbeWindow").then((m) => ({ default: m.ProbeWindow })),
+);
 
 const ZOOM = 0.85;
 const GRID_KEY = "bgsim.canvas.grid";
@@ -571,6 +575,7 @@ function CanvasInner() {
         window.removeEventListener("pointermove", move, true);
         window.removeEventListener("pointerup", finish, true);
         window.removeEventListener("pointercancel", finish, true);
+        window.removeEventListener("keydown", cancelOnEscape, true);
         const gesture = quickGesture.current;
         quickGesture.current = null;
         setQuickLine(null);
@@ -641,9 +646,18 @@ function CanvasInner() {
         }
       };
 
+      // Plan 7.8: Esc cancels the drag; it ends like a pointercancel, so nothing is connected.
+      const cancelOnEscape = (keyEvent: KeyboardEvent): void => {
+        if (keyEvent.key === "Escape") {
+          keyEvent.stopPropagation();
+          finish(new PointerEvent("pointercancel"));
+        }
+      };
+
       window.addEventListener("pointermove", move, true);
       window.addEventListener("pointerup", finish, true);
       window.addEventListener("pointercancel", finish, true);
+      window.addEventListener("keydown", cancelOnEscape, true);
     },
     [quickMode, openSuggestions, screenToFlowPosition, showTooltip],
   );
@@ -1420,14 +1434,16 @@ function CanvasInner() {
               <CanvasLegend />
             </Panel>
             <ViewportPortal>
-              {view?.diagram.probes?.map((probe) => (
-                <ProbeWindow
-                  key={probe.id}
-                  model={view}
-                  probe={probe}
-                  onProbeLeadStart={startProbeLead}
-                />
-              ))}
+              <Suspense fallback={null}>
+                {view?.diagram.probes?.map((probe) => (
+                  <ProbeWindow
+                    key={probe.id}
+                    model={view}
+                    probe={probe}
+                    onProbeLeadStart={startProbeLead}
+                  />
+                ))}
+              </Suspense>
             </ViewportPortal>
           </ReactFlow>
         </QuickConnectContext.Provider>
@@ -1459,7 +1475,8 @@ function CanvasInner() {
           <div className="editor__empty" data-testid="canvas-empty">
             <p>Drag a block from the library onto the canvas.</p>
             <p className="editor__empty-hint">
-              Power ports connect as bonds or wires; outputs connect to inputs as signals.
+              Power ports connect as bonds or wires; outputs connect to inputs as signals. Press{" "}
+              <kbd>/</kbd> to search the library, <kbd>?</kbd> for all shortcuts.
             </p>
           </div>
         ) : null}

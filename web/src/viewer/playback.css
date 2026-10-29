@@ -99,7 +99,7 @@
 }
 
 .playback__note[role="alert"] {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .bindings {
@@ -142,7 +142,7 @@
 }
 
 .bindings__problem {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .bindings__problem p {

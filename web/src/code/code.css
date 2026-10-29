@@ -99,7 +99,7 @@
 
 .code-state__title {
   font-weight: var(--font-weight-semibold);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .code-state__text {
@@ -142,7 +142,7 @@
 }
 
 .code-save[data-state="error"] {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .code-banner {
@@ -185,7 +185,7 @@
 }
 
 .code-banner__message--error {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .code-banner__message--done {
@@ -238,7 +238,7 @@
 }
 
 .code-diagnostic--request {
-  color: var(--color-error);
+  color: var(--color-error-text);
   margin: 0;
 }
 
@@ -250,11 +250,11 @@
 }
 
 .code-diagnostic--error .code-diagnostic__code {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .code-diagnostic--warning .code-diagnostic__code {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .code-diagnostic--info .code-diagnostic__code {
@@ -289,7 +289,7 @@
 .code-lint__code {
   font-family: var(--font-mono);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .code-lint__message {

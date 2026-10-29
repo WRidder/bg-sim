@@ -224,7 +224,7 @@
   padding-left: 6px;
   font-size: var(--font-size-xs);
   line-height: 1.35;
-  color: var(--color-error);
+  color: var(--color-error-text);
   border-left: 2px solid var(--color-error);
 }
 
@@ -648,11 +648,11 @@
 }
 
 .inspector-copy--done {
-  color: var(--color-ok);
+  color: var(--color-ok-text);
 }
 
 .inspector-copy--error {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 /* ---------------------------------------------------------------- source */

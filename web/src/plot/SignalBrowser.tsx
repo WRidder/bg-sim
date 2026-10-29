@@ -151,9 +151,7 @@ export function SignalBrowser() {
       data-testid="signal-item"
       data-signal-id={signal.id}
       data-kind={signal.kind}
-      aria-label={`${signal.id} (${KIND_TITLE[signal.kind]}${
-        signal.unit ? `, ${signal.unit}` : ""
-      }); double-click or press Enter to add it to ${targetName}`}
+      aria-description={`${signal.id}. Double-click or press Enter to add it to ${targetName}`}
       title={`${signal.id} — ${KIND_TITLE[signal.kind]}${
         signal.unit ? ` · ${signal.unit}` : ""
       } · ${signal.type}`}
@@ -201,12 +199,12 @@ export function SignalBrowser() {
           className="signal-tree__group"
           onClick={() => toggle(node.key)}
           style={{ paddingLeft: 6 + depth * 12 }}
-          aria-label={`${node.path || "model"}: ${countNodeSignals(node)} signals`}
+          aria-label={`${node.segment} ${countNodeSignals(node)} signals under ${node.path || "model"}`}
         >
           <span className="signal-tree__arrow" aria-hidden="true">
             {open ? "▾" : "▸"}
           </span>
-          <span className="signal-tree__segment">{node.segment}</span>
+          <span className="signal-tree__segment">{node.segment}</span>{" "}
           <span className="signal-tree__count">{countNodeSignals(node)}</span>
         </button>
         {open ? (
@@ -295,10 +293,10 @@ export function SignalBrowser() {
         {tree.length === 0 ? (
           <p className="signal-browser__no-match" data-testid="signal-no-match">
             {searching
-              ? `No signal matches “${query}”.`
+              ? `No signal matches “${query}”. Clear the search to see every recorded signal.`
               : status === "starting" || status === "running"
                 ? "The run has not published its signal list yet; it appears when the worker writes the manifest."
-                : "This run recorded no signals."}
+                : "This run recorded no signals. Check the model's output settings, then run it again."}
           </p>
         ) : (
           <ul className="signal-tree" role="tree" aria-label="Recorded signals">

@@ -1,6 +1,11 @@
-import { CodeTab } from "../code/CodeTab";
+import { lazy, Suspense } from "react";
+
 import { DiagramTab } from "../editor/DiagramTab";
+import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
+
+// CodeMirror loads when the Code tab is first opened (code splitting, W5.4).
+const CodeTab = lazy(() => import("../code/CodeTab").then((m) => ({ default: m.CodeTab })));
 
 export type CenterTabId = "diagram" | "code";
 
@@ -36,7 +41,13 @@ export function CenterTabs({ active, onSelect }: CenterTabsProps) {
         aria-labelledby={`center-tab-${active}`}
         tabIndex={0}
       >
-        {active === "diagram" ? <DiagramTab /> : <CodeTab />}
+        {active === "diagram" ? (
+          <DiagramTab />
+        ) : (
+          <Suspense fallback={<EmptyState title="Loading the code editor" hint="One moment." />}>
+            <CodeTab />
+          </Suspense>
+        )}
       </div>
     </div>
   );

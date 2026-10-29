@@ -22,5 +22,20 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: true,
     target: "es2022",
+    // The Babylon viewer chunk (~930 kB) is lazy, loaded when the 3D View first opens.
+    chunkSizeWarningLimit: 1000,
+    rolldownOptions: {
+      output: {
+        // Heavy libraries get their own chunks (W5.4): the app chunk shrinks and the vendors cache
+        // across releases. CodeMirror, uPlot and Babylon are already lazy (dynamic imports).
+        codeSplitting: {
+          groups: [
+            // Rolldown matches module ids with forward slashes on every platform.
+            { name: "vendor-react", test: /node_modules\/(react|react-dom|scheduler)\//, priority: 30 },
+            { name: "vendor-flow", test: /node_modules\/(@xyflow|d3-[a-z]+|classcat)\//, priority: 20 },
+          ],
+        },
+      },
+    },
   },
 });

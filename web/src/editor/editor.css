@@ -55,7 +55,7 @@
 
 .diagram-state__title {
   font-weight: var(--font-weight-semibold);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .diagram-state__detail {
@@ -115,11 +115,11 @@
 }
 
 .editor__save[data-state="saving"] {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .editor__save[data-state="error"] {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .editor__dirty {
@@ -984,7 +984,7 @@
   border-color: var(--color-border);
 }
 
-.model-tree__item[aria-selected="true"] {
+.model-tree__item[aria-current="true"] {
   background: var(--color-surface-raised);
   border-color: var(--color-accent);
 }
@@ -1040,7 +1040,7 @@
   padding: 1px 6px;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-error);
+  color: var(--color-error-text);
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-error);
   border-radius: var(--radius-sm);

@@ -55,10 +55,13 @@
   --color-border-strong: #3b4655;
   --color-text: #e6ebf2;
   --color-text-muted: #9aa5b4;
-  --color-text-faint: #6b7280;
+  --color-text-faint: #8691a0;
   --color-accent: #4d8bf0;
   --color-accent-hover: #6b9ff5;
   --color-focus: #8fb4f7;
+  /* Fill behind white text (primary buttons): white on --color-accent fails AA in dark. */
+  --color-accent-fill: #2f6fde;
+  --color-on-accent: #ffffff;
   --shadow-panel: 0 1px 2px rgb(0 0 0 / 45%);
 
   /* Domain colours (plan 7.3). Dark variants are the plan hues lightened for
@@ -88,12 +91,28 @@
   --color-error: #f26d63; /* plan: #D92D20 */
   --color-warning: #f5a83c; /* plan: #F79009 */
   --color-ok: #4fb477;
+  /* The same hues as text on a panel (AA); the light theme darkens them. */
+  --color-error-text: #f26d63;
+  --color-warning-text: #f5a83c;
+  --color-ok-text: #4fb477;
+  /* Ink on a filled error, warning or neutral chip. */
+  --color-on-error: #12161c;
+  --color-on-warning: #12161c;
+  --color-on-faint: #12161c;
 
   /* Worker health states (top bar indicator). */
   --status-starting: #9aa5b4;
   --status-warming: #f5a83c;
   --status-ready: #4fb477;
   --status-crashed: #f26d63;
+
+  /* Code editor syntax colours (AA on --color-surface). */
+  --code-keyword: #d2a8ff;
+  --code-string: #8fd19e;
+  --code-number: #f2b48a;
+  --code-comment: #8b97a7;
+  --code-definition: #79c0ff;
+  --code-type: #ffd479;
 
   /* Shell metrics. */
   --topbar-height: 40px;
@@ -115,11 +134,12 @@
   --color-border: #d3d9e0;
   --color-border-strong: #b3bcc7;
   --color-text: #1b2129;
-  --color-text-muted: #5a6675;
-  --color-text-faint: #8a95a3;
-  --color-accent: #2f6fde;
-  --color-accent-hover: #245cc0;
-  --color-focus: #2f6fde;
+  --color-text-muted: #4f5b6a;
+  --color-text-faint: #5f6b7a;
+  --color-accent: #2563c9;
+  --color-accent-fill: #2563c9;
+  --color-accent-hover: #1d52a8;
+  --color-focus: #2563c9;
   --shadow-panel: 0 1px 2px rgb(27 33 41 / 12%);
 
   /* Plan 7.3 domain colours, unchanged in the light theme. */
@@ -137,6 +157,20 @@
   --color-error: #d92d20;
   --color-warning: #f79009;
   --color-ok: #2e9e5b;
+  --color-error-text: #b42318;
+  --color-warning-text: #b54708;
+  --color-ok-text: #17703d;
+  --color-on-error: #ffffff;
+  --color-on-warning: #1b2129;
+  --color-on-faint: #ffffff;
+  --color-on-accent: #ffffff;
+
+  --code-keyword: #6f42c1;
+  --code-string: #1a7f37;
+  --code-number: #a84a00;
+  --code-comment: #5f6b7a;
+  --code-definition: #0b61c4;
+  --code-type: #7d5100;
 
   --status-starting: #8a95a3;
   --status-warming: #f79009;

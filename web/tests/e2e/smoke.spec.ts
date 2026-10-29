@@ -23,5 +23,7 @@ test("the app loads and the worker becomes ready", async ({ page }) => {
     await expect(workerStatus).toContainText(/fake worker/i);
   }
 
-  await expect(page.getByRole("tab", { name: "Plots" })).toBeVisible();
+  // Without a project in the URL the app shows the start page (W5.4), not the editor.
+  await expect(page.getByTestId("start-page")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Example gallery" })).toBeVisible();
 });

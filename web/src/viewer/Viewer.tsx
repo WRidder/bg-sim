@@ -37,7 +37,7 @@ const PRESETS: readonly { readonly id: CameraPreset; readonly label: string }[] 
 const NO_SELECTION: readonly string[] = [];
 
 function webglEngine(canvas: HTMLCanvasElement): AbstractEngine {
-  return new Engine(canvas, true, { useHighPrecisionMatrix: true, stencil: true, preserveDrawingBuffer: false, adaptToDeviceRatio: false });
+  return new Engine(canvas, true, { useHighPrecisionMatrix: true, stencil: true, preserveDrawingBuffer: false, adaptToDeviceRatio: false, canvasTabIndex: 0 });
 }
 
 function tokenColour(el: Element, name: string, fallback: Color3): Color3 {
@@ -126,6 +126,8 @@ export function Viewer(props: ViewerProps) {
       scheduler.invalidate();
     });
     scene.setColours(themeColours(host));
+    // Babylon tab-indexes the canvas at 1, which jumps the focus order (axe: tabindex); 0 keeps DOM order.
+    engine.canvasTabIndex = 0;
     scene.attachControl();
     sceneRef.current = scene;
     host.dataset["state"] = "rendering";

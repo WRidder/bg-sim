@@ -13,15 +13,15 @@
 }
 
 .run-bar__status[data-status="done"] {
-  color: var(--color-ok);
+  color: var(--color-ok-text);
 }
 
 .run-bar__status[data-status="failed"] {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .run-bar__status[data-status="cancelled"] {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .run-bar__progress {

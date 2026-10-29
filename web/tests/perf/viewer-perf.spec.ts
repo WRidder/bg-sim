@@ -15,6 +15,19 @@ import { expect, test, type Page } from "@playwright/test";
 const WINDOW_MS = 3000;
 const MAX_IDLE_FPS = 2;
 
+// A project in the URL opens the editor; without one the app shows the start page (W5.4).
+let project = "";
+
+test.beforeEach(() => {
+  project = `w51-perf-${Date.now()}-${test.info().workerIndex}`;
+});
+
+test.afterEach(async ({ request }) => {
+  if (project.length > 0) {
+    await request.delete(`/api/projects/${project}`);
+  }
+});
+
 async function frames(page: Page): Promise<number> {
   return Number(await page.getByTestId("viewer").getAttribute("data-frames"));
 }
@@ -29,7 +42,7 @@ async function framesOver(page: Page, ms: number, during: () => Promise<void> = 
 
 async function openViewer(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1400, height: 900 });
-  await page.goto("/");
+  await page.goto(`/?project=${encodeURIComponent(project)}&model=Perf`);
   await page.getByRole("tab", { name: "3D View" }).click();
   const viewer = page.getByTestId("viewer");
   await expect(viewer).toBeVisible({ timeout: 30_000 });

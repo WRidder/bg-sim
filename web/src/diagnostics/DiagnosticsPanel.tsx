@@ -280,7 +280,7 @@ export function DiagnosticsPanel() {
           ) : (
             <EmptyState
               title="No diagnostics"
-              hint="The model check found nothing to report. Errors and warnings appear here and mark the canvas."
+              hint="The model check found nothing to report. Edit the diagram and it is checked again automatically; errors and warnings appear here and mark the canvas."
             />
           )
         ) : filtered.length === 0 ? (

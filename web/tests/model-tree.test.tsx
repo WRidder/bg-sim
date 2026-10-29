@@ -120,11 +120,11 @@ describe("model tree subsystems", () => {
     expect(useDocumentStore.getState().activePath).toEqual(["s1", "s2"]);
     expect(useDocumentStore.getState().selection.nodes).toEqual(["g2"]);
     expect(
-      screen.getByTestId("tree-node-Gain1").getAttribute("aria-selected"),
+      screen.getByTestId("tree-node-Gain1").getAttribute("aria-current"),
     ).toBe("true");
     expect(
-      screen.getByTestId("tree-node-Motor1").getAttribute("aria-selected"),
-    ).toBe("false");
+      screen.getByTestId("tree-node-Motor1").getAttribute("aria-current"),
+    ).toBeNull();
 
     fireEvent.click(screen.getByTestId("tree-node-Subsystem1"));
     expect(useDocumentStore.getState().activePath).toEqual(["s1"]);

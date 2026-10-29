@@ -13,6 +13,7 @@ import { useState } from "react";
 import type { ConstantDecl, ParameterDecl, VariableDecl } from "../contracts/catalog";
 import type { Diagnostic } from "../contracts/diagnostic";
 import type { ModelConnection, ModelNode } from "../contracts/model";
+import { BlockHelpButton } from "../app/BlockHelp";
 import { domainLetter } from "../editor/connectionRules";
 import { domainColor } from "../editor/geometry";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
@@ -551,6 +552,8 @@ export function NodeInspector({
     }
   };
 
+  const helpRef = iface.isJunction ? `junction:${iface.junction ?? "0"}` : ref;
+
   return (
     <div className="inspector-body" data-testid="inspector-node" data-node-id={node.id}>
       <header className="inspector-header">
@@ -575,6 +578,7 @@ export function NodeInspector({
             {description}
           </p>
         </div>
+        {helpRef !== null ? <BlockHelpButton blockRef={helpRef} label={iface.title} /> : null}
       </header>
 
       {ref !== null && block === undefined ? (

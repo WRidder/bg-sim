@@ -20,6 +20,8 @@ import { resetSessionCache } from "../src/state/session";
  * loading states, not the network.
  */
 beforeEach(() => {
+  // A project in the URL selects the editor; without one the app shows the start page.
+  window.history.replaceState(null, "", "/?project=demo&model=Model1");
   resetDocumentStore();
   resetCatalogStore();
   resetSessionCache();
@@ -50,7 +52,7 @@ describe("layout shell", () => {
     expect(container.querySelectorAll(".splitter")).toHaveLength(4);
   });
 
-  it("shows guidance in every panel before a project is open (plan 7.8)", () => {
+  it("shows guidance in every panel before a project is open (plan 7.8)", async () => {
     render(<App />);
 
     for (const title of [
@@ -60,7 +62,7 @@ describe("layout shell", () => {
       "Nothing selected",
       "No run data",
     ]) {
-      expect(screen.getByText(title)).toBeTruthy();
+      expect(await screen.findByText(title)).toBeTruthy();
     }
   });
 
@@ -77,7 +79,7 @@ describe("layout shell", () => {
     expect(screen.getByLabelText("tol")).toBeTruthy();
   });
 
-  it("switches the centre tabs by click and by arrow key", () => {
+  it("switches the centre tabs by click and by arrow key", async () => {
     render(<App />);
 
     const diagram = screen.getByRole("tab", { name: "Diagram" });
@@ -86,20 +88,20 @@ describe("layout shell", () => {
 
     fireEvent.click(code);
     expect(code.getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByText("No source open")).toBeTruthy();
+    expect(await screen.findByText("No source open")).toBeTruthy();
 
     fireEvent.keyDown(code, { key: "ArrowLeft" });
     expect(diagram.getAttribute("aria-selected")).toBe("true");
     expect(screen.getByText("Opening the model…")).toBeTruthy();
   });
 
-  it("renders every dock tab and shows the Plots panel first", () => {
+  it("renders every dock tab and shows the Plots panel first", async () => {
     render(<App />);
 
     for (const name of ["Plots", "3D View", "Diagnostics", "Signals", "Log"]) {
       expect(screen.getByRole("tab", { name })).toBeTruthy();
     }
     expect(screen.getByRole("tab", { name: "Plots" }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByText("No run data")).toBeTruthy();
+    expect(await screen.findByText("No run data")).toBeTruthy();
   });
 });

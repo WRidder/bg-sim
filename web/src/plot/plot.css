@@ -50,11 +50,11 @@
 }
 
 .plot-toolbar__run[data-status="done"] {
-  color: var(--color-ok);
+  color: var(--color-ok-text);
 }
 
 .plot-toolbar__run[data-status="failed"] {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .plot-toolbar__range,
@@ -80,7 +80,7 @@
 }
 
 .plot-live[data-following="false"] {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .plot-toolbar .button.is-disabled,
@@ -233,7 +233,7 @@
 }
 
 .plot-error {
-  color: var(--color-error);
+  color: var(--color-error-text);
   background: var(--color-surface-raised);
 }
 
@@ -308,7 +308,7 @@
 }
 
 .plot-chart__warning {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   white-space: nowrap;
 }
 
@@ -648,29 +648,35 @@
   border-radius: var(--radius-sm);
 }
 
+/* The kind is the letter; the border carries the hue (colour is never the only cue). */
 .signal-kind--state {
-  color: var(--color-accent);
+  color: var(--color-text);
   border-color: var(--color-accent);
 }
 
 .signal-kind--port {
-  color: var(--domain-electrical);
+  color: var(--color-text);
+  border-color: var(--domain-electrical);
 }
 
 .signal-kind--power {
-  color: var(--color-warning);
+  color: var(--color-text);
+  border-color: var(--color-warning);
 }
 
 .signal-kind--discrete {
-  color: var(--domain-rotation);
+  color: var(--color-text);
+  border-color: var(--domain-rotation);
 }
 
 .signal-kind--input,
 .signal-kind--output {
-  color: var(--domain-translation);
+  color: var(--color-text);
+  border-color: var(--domain-translation);
 }
 
 .signal-kind--algebraic,
 .signal-kind--observed {
-  color: var(--domain-hydraulic);
+  color: var(--color-text);
+  border-color: var(--domain-hydraulic);
 }

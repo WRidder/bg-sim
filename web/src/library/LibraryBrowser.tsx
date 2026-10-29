@@ -13,6 +13,7 @@ import { useCatalogStore } from "./catalogStore";
 import { blockSummary, JUNCTION_GROUP, searchGroups } from "./catalogIndex";
 import { payloadForBlock, writeDragPayload } from "./dnd";
 import { PortGlyph, type PortGlyphProps } from "./PortGlyph";
+import { BlockHelpButton } from "../app/BlockHelp";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
 import "./library.css";
 
@@ -220,7 +221,6 @@ export function LibraryBrowser() {
                       className="library-item__main"
                       onClick={() => toggle(entry.key)}
                       aria-expanded={isOpen}
-                      aria-label={`${entry.name}: ${entry.description}`}
                     >
                       <span className="library-item__icon" aria-hidden="true">
                         <BlockIcon icon={entry.icon} name={entry.name} size={30} />
@@ -236,7 +236,10 @@ export function LibraryBrowser() {
                     {isOpen ? (
                       <div className="library-item__details">
                         <p className="library-item__description">{entry.description}</p>
-                        <p className="library-item__ref">{entry.block.ref}</p>
+                        <p className="library-item__ref">
+                          {entry.block.ref}
+                          <BlockHelpButton blockRef={entry.block.ref} label={entry.name} />
+                        </p>
                         {entry.block.parameters.length > 0 ? (
                           <dl className="library-item__params">
                             {entry.block.parameters.map((parameter) => (
@@ -303,7 +306,6 @@ export function LibraryBrowser() {
                       className="library-item__main"
                       onClick={() => toggle(entry.key)}
                       aria-expanded={isOpen}
-                      aria-label={`${entry.name}: power junction`}
                     >
                       <span className="library-item__icon" aria-hidden="true">
                         <JunctionGlyph kind={entry.junction} size={30} />
@@ -335,7 +337,7 @@ export function LibraryBrowser() {
 
         {visibleCount === 0 ? (
           <p className="library__no-match" data-testid="library-empty">
-            No block matches “{query}”.
+            No block matches “{query}”. Clear the search, or try a group name such as “Bond graph”.
           </p>
         ) : null}
       </div>

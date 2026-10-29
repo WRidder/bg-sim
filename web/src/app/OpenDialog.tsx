@@ -8,64 +8,28 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { saveCurrentModel } from "../state/persistence";
 import {
   createProject,
   listExamples,
   listProjects,
   ProjectApiError,
-  type ProjectModelEntry,
   type ProjectSummary,
 } from "../state/modelApi";
 import { useDocumentStore } from "../state/documentStore";
 import { DEFAULT_MODEL } from "../state/session";
+import {
+  errorMessage,
+  firstModel,
+  importSample as importSampleProject,
+  nameIssue,
+  openSession as openSessionRoute,
+  SampleImportError,
+} from "./openSession";
+import { useDialogFocus } from "./useDialogFocus";
 
 export interface OpenDialogProps {
   open: boolean;
   onClose: () => void;
-}
-
-const NAME_PATTERN = /^[A-Za-z0-9_.-]+$/;
-
-function nameIssue(value: string, kind: "project" | "model"): string | null {
-  const name = value.trim();
-  if (name.length === 0) {
-    return `Enter a ${kind} name.`;
-  }
-  if (!NAME_PATTERN.test(name) || name.startsWith(".") || name.endsWith(".")) {
-    return "Use letters, digits, '_', '-' or '.' (no leading or trailing dot).";
-  }
-  return null;
-}
-
-function modelNames(entries: readonly ProjectModelEntry[]): string[] {
-  return entries.filter((entry) => entry.inProject).map((entry) => entry.name);
-}
-
-function firstModel(entries: readonly ProjectModelEntry[], preferred = "iconic"): string | null {
-  const names = modelNames(entries);
-  if (names.includes(preferred)) {
-    return preferred;
-  }
-  return names[0] ?? entries[0]?.name ?? null;
-}
-
-/** A free project name for an imported sample: `dc-motor`, then `dc-motor-2`, … */
-function uniqueProjectName(base: string, taken: ReadonlySet<string>): string {
-  if (!taken.has(base)) {
-    return base;
-  }
-  for (let index = 2; index < 10_000; index += 1) {
-    const candidate = `${base}-${index}`;
-    if (!taken.has(candidate)) {
-      return candidate;
-    }
-  }
-  return `${base}-${Date.now()}`;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 export function OpenDialog({ open, onClose }: OpenDialogProps) {
@@ -117,40 +81,16 @@ export function OpenDialog({ open, onClose }: OpenDialogProps) {
     void load();
   }, [load, open]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    dialog.current?.focus();
-    const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose, open]);
+  useDialogFocus(open, dialog, onClose);
 
-  const openSession = useCallback(
-    async (project: string, model: string) => {
-      const state = useDocumentStore.getState();
-      if (state.project !== null && state.revision !== state.savedRevision) {
-        setBusy(`open:${project}/${model}`);
-        const saved = await saveCurrentModel();
-        setBusy(null);
-        if (!saved) {
-          setError("The current model could not be saved; fix the save error and try again.");
-          return;
-        }
-      }
-      const url = new URL(window.location.href);
-      url.searchParams.set("project", project);
-      url.searchParams.set("model", model);
-      window.location.assign(url.toString());
-    },
-    [],
-  );
+  const openSession = useCallback(async (project: string, model: string) => {
+    setBusy(`open:${project}/${model}`);
+    const result = await openSessionRoute(project, model);
+    setBusy(null);
+    if (!result.ok) {
+      setError(result.error);
+    }
+  }, []);
 
   const createNewProject = useCallback(async () => {
     const issue = nameIssue(newProject, "project");
@@ -196,22 +136,19 @@ export function OpenDialog({ open, onClose }: OpenDialogProps) {
       setBusy(`sample:${sample}`);
       setError(null);
       try {
-        const target = uniqueProjectName(
-          sample,
-          new Set(projects.map((entry) => entry.name)),
-        );
-        const opened = await createProject(target, sample);
-        const model = firstModel(opened.models);
-        if (model === null) {
-          setSelected(opened.name);
-          setError(`The sample “${sample}” has no models.`);
-          return;
+        const result = await importSampleProject(sample, new Set(projects.map((entry) => entry.name)));
+        if (!result.ok) {
+          setError(result.error);
         }
-        await openSession(opened.name, model);
       } catch (cause) {
-        if (cause instanceof ProjectApiError && cause.status === 409) {
-          await load();
-          setError("The project list changed while importing; try again.");
+        if (cause instanceof SampleImportError) {
+          if (cause.conflict) {
+            await load();
+          }
+          if (cause.project !== null) {
+            setSelected(cause.project);
+          }
+          setError(cause.message);
         } else {
           setError(errorMessage(cause));
         }
@@ -219,7 +156,7 @@ export function OpenDialog({ open, onClose }: OpenDialogProps) {
         setBusy(null);
       }
     },
-    [load, openSession, projects],
+    [load, projects],
   );
 
   if (!open) {

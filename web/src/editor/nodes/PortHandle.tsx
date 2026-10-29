@@ -149,6 +149,7 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
       data-strokes={isPower ? strokes : undefined}
       data-arrow-rotation={isPower || isSignalInput ? undefined : rotation}
       title={title}
+      role="button"
       aria-label={title}
     >
       {isPower && strokes > 1 ? (

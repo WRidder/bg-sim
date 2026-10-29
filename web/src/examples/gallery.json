@@ -1,0 +1,159 @@
+{
+  "bouncing-ball": {
+    "title": "Bouncing ball",
+    "description": "A continuous event with a velocity reinit.",
+    "hasScene": true,
+    "models": [
+      "bouncing-ball"
+    ]
+  },
+  "cube-3d": {
+    "title": "Cube 3d",
+    "description": "A cube balanced on one corner by three reaction wheels.",
+    "hasScene": true,
+    "models": [
+      "cube-3d",
+      "cube-3d-mb",
+      "cube-3d-mb-soft"
+    ]
+  },
+  "cube-pyramid-3d": {
+    "title": "Cube pyramid 3d",
+    "description": "A four-wheel cube that tips from a face to an edge to a corner.",
+    "hasScene": true,
+    "models": [
+      "sequence-contact",
+      "edge-contact",
+      "edge-switched"
+    ]
+  },
+  "dc-motor": {
+    "title": "DC motor",
+    "description": "The walking skeleton: one physical model, built twice — once from iconic components (voltage source, motor, ground, a damper and two fixed shafts) and once as a bond…",
+    "hasScene": true,
+    "models": [
+      "iconic",
+      "bondgraph",
+      "speed-control"
+    ]
+  },
+  "drivetrain": {
+    "title": "Drivetrain",
+    "description": "Motor, gearbox and a flexible rod between two inertias.",
+    "hasScene": true,
+    "models": [
+      "drivetrain",
+      "bondgraph"
+    ]
+  },
+  "drivetrain-kalman": {
+    "title": "Drivetrain kalman",
+    "description": "LQG on a flexible two-inertia drivetrain.",
+    "hasScene": true,
+    "models": [
+      "drivetrain-kalman",
+      "drivetrain-backlash"
+    ]
+  },
+  "hydraulic-servo": {
+    "title": "Hydraulic servo",
+    "description": "A valve-controlled hydraulic position servo: a 100 bar supply and a 1 bar tank feed a 4/3 spool valve built from four variable orifices, which drive a single-rod…",
+    "hasScene": true,
+    "models": [
+      "hydraulic-servo"
+    ]
+  },
+  "industrial-servo": {
+    "title": "Industrial servo",
+    "description": "A PMSM servo drive in five fidelity variants.",
+    "hasScene": true,
+    "models": [
+      "baseline",
+      "two-mass",
+      "switching",
+      "encoder",
+      "full"
+    ]
+  },
+  "inverted-pendulum-cart": {
+    "title": "Inverted pendulum cart",
+    "description": "A bond-graph cart-pole with an LQR balance controller.",
+    "hasScene": true,
+    "models": [
+      "inverted-pendulum-cart"
+    ]
+  },
+  "multibond-pendulum-2d": {
+    "title": "Multibond pendulum 2d",
+    "description": "The Gate A planar multibond pendulum.",
+    "hasScene": true,
+    "models": [
+      "pendulum"
+    ]
+  },
+  "quarter-car": {
+    "title": "Quarter car",
+    "description": "A bond-graph quarter-car suspension with a table-driven road.",
+    "hasScene": true,
+    "models": [
+      "quarter-car"
+    ]
+  },
+  "reaction-wheel-1d": {
+    "title": "Reaction wheel 1d",
+    "description": "A cube balanced on one edge by a reaction wheel.",
+    "hasScene": true,
+    "models": [
+      "reaction-wheel-1d"
+    ]
+  },
+  "reaction-wheel-2d": {
+    "title": "Reaction wheel 2d",
+    "description": "The planar reaction-wheel balancer.",
+    "hasScene": true,
+    "models": [
+      "balancer",
+      "balancer-free"
+    ]
+  },
+  "reaction-wheel-3d": {
+    "title": "Reaction wheel 3d",
+    "description": "A four-wheel pyramid on a spherical pivot.",
+    "hasScene": true,
+    "models": [
+      "gravity-off",
+      "gravity-on"
+    ]
+  },
+  "rlc-dual": {
+    "title": "Rlc dual",
+    "description": "The same series RLC as an iconic diagram and as a bond graph.",
+    "hasScene": true,
+    "models": [
+      "rlc-dual"
+    ]
+  },
+  "robot-arm-2d": {
+    "title": "Robot arm 2d",
+    "description": "The planar 2-link arm on the M3 multibond mechanics.",
+    "hasScene": true,
+    "models": [
+      "arm",
+      "arm-free"
+    ]
+  },
+  "robot-arm-3d": {
+    "title": "Robot arm 3d",
+    "description": "A six-axis arm with PD + gravity feedforward on the spatial multibond mechanics.",
+    "hasScene": true,
+    "models": [
+      "arm",
+      "rrr",
+      "rrr-free",
+      "rrr-torque",
+      "rrr-multibond",
+      "rrr-multibond-soft",
+      "rrr-multibond-stiff"
+    ]
+  }
+}

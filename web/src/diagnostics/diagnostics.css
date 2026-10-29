@@ -44,11 +44,11 @@
 }
 
 .diagnostics__count[data-tone="error"] {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .diagnostics__count[data-tone="warning"] {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .diagnostics__spacer {
@@ -67,11 +67,11 @@
 }
 
 .diagnostics__status[data-state="error"] {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .diagnostics__status[data-state="paused"] {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .diagnostics__dot {
@@ -266,17 +266,18 @@
   font-size: 10px;
   font-weight: var(--font-weight-semibold);
   line-height: 1;
-  color: #ffffff;
+  color: var(--color-on-faint);
   background: var(--color-text-faint);
   border-radius: 50%;
 }
 
 .diagnostic-item__severity--error {
+  color: var(--color-on-error);
   background: var(--color-error);
 }
 
 .diagnostic-item__severity--warning {
-  color: #1b2129;
+  color: var(--color-on-warning);
   background: var(--color-warning);
 }
 
@@ -412,7 +413,7 @@
   font-size: 9px;
   font-weight: var(--font-weight-semibold);
   line-height: 1;
-  color: #ffffff;
+  color: var(--color-on-error);
   background: var(--color-error);
   border: 1px solid var(--color-surface);
   border-radius: 999px;
@@ -425,7 +426,7 @@
 .block-node[data-diagnostic-severity="warning"]::after,
 .bond-node[data-diagnostic-severity="warning"]::after,
 .junction-node[data-diagnostic-severity="warning"]::after {
-  color: #1b2129;
+  color: var(--color-on-warning);
   background: var(--color-warning);
 }
 
@@ -527,13 +528,13 @@
 }
 
 .canvas-diagnostics__badge[data-tone="error"] {
-  color: #ffffff;
+  color: var(--color-on-error);
   background: var(--color-error);
   border: 1px solid var(--color-surface);
 }
 
 .canvas-diagnostics__badge[data-tone="warning"] {
-  color: #1b2129;
+  color: var(--color-on-warning);
   background: var(--color-warning);
   border: 1px solid var(--color-surface);
 }

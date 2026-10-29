@@ -40,7 +40,7 @@
   margin: 0;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .library__error-detail {

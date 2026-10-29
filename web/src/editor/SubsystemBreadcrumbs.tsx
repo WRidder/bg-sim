@@ -65,7 +65,7 @@ export function SubsystemBreadcrumbs() {
         data-testid="subsystem-back"
         onClick={() => useDocumentStore.getState().leaveSubsystem()}
         disabled={activePath.length === 0}
-        aria-label="Leave the subsystem"
+        aria-label="Up: leave the subsystem"
         title="Leave the subsystem (Esc)"
       >
         ↑ Up

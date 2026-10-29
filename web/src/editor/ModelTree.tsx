@@ -47,7 +47,7 @@ function TreeRows({
             <button
               type="button"
               className="model-tree__item"
-              aria-selected={selected}
+              aria-current={selected ? "true" : undefined}
               data-testid={`tree-node-${node.name}`}
               data-depth={depth}
               data-subsystem={subsystem !== null ? "true" : "false"}
@@ -123,7 +123,9 @@ export function ModelTree() {
         {doc.diagram.connections.length === 1 ? "connection" : "connections"}
       </div>
       {doc.diagram.nodes.length === 0 ? (
-        <p className="model-tree__empty">The diagram is empty.</p>
+        <p className="model-tree__empty">
+          The diagram is empty. Drag a block from the library onto the canvas and it is listed here.
+        </p>
       ) : (
         <TreeRows
           nodes={doc.diagram.nodes}

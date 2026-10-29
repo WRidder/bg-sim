@@ -141,7 +141,7 @@ test("builds the DC motor, saves, reloads and undoes ten operations", async ({ p
   // undos must return exactly to the loaded document.
   await node(page, "DCMotor").click();
   await expect(node(page, "DCMotor")).toHaveClass(/is-selected/);
-  await expect(page.getByTestId("tree-node-DCMotor")).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("tree-node-DCMotor")).toHaveAttribute("aria-current", "true");
   for (let step = 0; step < 10; step += 1) {
     await page.keyboard.press("r");
   }

@@ -7,7 +7,7 @@
  * decoration.
  */
 
-import { StreamLanguage, defaultHighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import { HighlightStyle, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
 import { julia } from "@codemirror/legacy-modes/mode/julia";
 import {
   Decoration,
@@ -18,7 +18,25 @@ import {
   type ViewUpdate,
 } from "@codemirror/view";
 
+import { tags } from "@lezer/highlight";
+
 import { SCOPE_MACROS } from "./completion";
+
+/**
+ * Syntax colours from the `--code-*` tokens, so the editor follows the theme
+ * with no rebuild (the default highlight style is light-only and fails contrast
+ * on the dark surface).
+ */
+export const codeHighlightStyle = HighlightStyle.define([
+  { tag: [tags.keyword, tags.controlKeyword, tags.definitionKeyword, tags.moduleKeyword], color: "var(--code-keyword)" },
+  { tag: [tags.string, tags.special(tags.string), tags.character], color: "var(--code-string)" },
+  { tag: [tags.number, tags.bool, tags.atom, tags.null], color: "var(--code-number)" },
+  { tag: [tags.comment, tags.lineComment, tags.blockComment], color: "var(--code-comment)", fontStyle: "italic" },
+  { tag: [tags.definition(tags.variableName), tags.function(tags.variableName), tags.macroName], color: "var(--code-definition)" },
+  { tag: [tags.typeName, tags.className, tags.namespace], color: "var(--code-type)" },
+  { tag: [tags.operator, tags.punctuation, tags.bracket], color: "var(--color-text-muted)" },
+  { tag: tags.invalid, color: "var(--color-error-text)" },
+]);
 
 export const juliaLanguage = StreamLanguage.define(julia);
 
@@ -110,7 +128,7 @@ export const codeTheme = EditorView.theme({
     color: "var(--color-on-accent, #fff)",
   },
   ".cm-bgsim-scope": {
-    color: "var(--code-scope-macro, var(--color-warning))",
+    color: "var(--code-scope-macro, var(--color-warning-text))",
     fontWeight: "600",
   },
   ".cm-bgsim-tilde": {
@@ -121,7 +139,7 @@ export const codeTheme = EditorView.theme({
 
 export const juliaSupport = [
   juliaLanguage,
-  syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+  syntaxHighlighting(codeHighlightStyle),
   scopeHighlighter,
   codeTheme,
 ];
