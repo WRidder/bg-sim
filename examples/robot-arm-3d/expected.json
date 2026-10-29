@@ -1,6 +1,6 @@
 {
   "project": "robot-arm-3d",
-  "description": "Plan 9.10 / X-MB3 acceptance: a UR5-like six-axis arm on the M3 spatial multibond mechanics. GroundSpatial -> Mount -> six Revolute3D joints (axis = local z, kt = kr = 1e7, 0.7-critical damping on the held directions) joined by FixedTransform3DNeutral standard-DH offsets, RigidBody3D links (J-MB10 masses and inertias). Drives: MSe torque sources from the 1 ms ArmPD6 firmware (quintic reference from home to target over 0.8 s starting at 0.1 s, PD, gravity feedforward from the same geometry, torque limits). TCP pose from the ComposePose3D chain plus a 0.1823 m tool offset. Checks: settled joint angles, TCP against the analytic forward kinematics, settled gravity torques, torque limits, tracking errors and diagnostics.",
+  "description": "Plan 9.10 / X-MB3 acceptance: a UR5-like six-axis arm on the M3 spatial multibond mechanics. GroundSpatial -> Mount -> six Revolute3D joints (axis = local z, kt = kr = 1e7, 0.7-critical damping on the held directions) joined by FixedTransform3DNeutral standard-DH offsets, RigidBody3D links (J-MB10 masses and inertias). Drives: MSe torque sources from the 1 ms ArmPD6 firmware (quintic reference from home to target over 0.8 s starting at 0.1 s, PD, gravity feedforward from the same geometry, torque limits). TCP pose from the ComposePose3D chain plus a 0.1823 m tool offset. Checks: settled joint angles, TCP against the analytic forward kinematics, settled gravity torques, torque limits, tracking errors and diagnostics. X5.3 (plan 9.8, DEC-M5-2) adds the RRR equation-block arm: models rrr (motor driven), rrr-free (energy conservation), rrr-torque (ideal torque sources) and the multibond counterparts rrr-multibond, -soft and -stiff, and the compare entries that compare q1..q3 between them.",
   "models": {
     "arm": {
       "run_timeout": 900.0,
@@ -331,6 +331,592 @@
           "note": "the compliant joints keep every state integral (no W201), the chain is connected, frame-consistent and unit-clean, and the consistent-deflection start initialises"
         }
       ]
+    },
+    "rrr": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q1",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "joint 1 starts at the home angle (released at rest)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q2",
+          "t": 0.0,
+          "value": 0.6,
+          "abs": 1e-09,
+          "note": "joint 2 starts at the home angle (released at rest)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q3",
+          "t": 0.0,
+          "value": -0.9,
+          "abs": 1e-09,
+          "note": "joint 3 starts at the home angle (released at rest)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q1",
+          "t": 0.7,
+          "value": 0.5969941838,
+          "abs": 1e-06,
+          "note": "joint 1 in the first move (0.2 .. 1.2 s): the independent numpy replica of the whole sampled closed loop (design/design.py, RK4 0.1 ms, motor electrics, 1 ms zero-order hold) agrees with the Julia run to 1e-9 rad; the bound is 1e-6"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q2",
+          "t": 0.7,
+          "value": 0.7921933045,
+          "abs": 1e-06,
+          "note": "joint 2 in the first move (0.2 .. 1.2 s): the independent numpy replica of the whole sampled closed loop (design/design.py, RK4 0.1 ms, motor electrics, 1 ms zero-order hold) agrees with the Julia run to 1e-9 rad; the bound is 1e-6"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q3",
+          "t": 0.7,
+          "value": -0.6574894549,
+          "abs": 1e-06,
+          "note": "joint 3 in the first move (0.2 .. 1.2 s): the independent numpy replica of the whole sampled closed loop (design/design.py, RK4 0.1 ms, motor electrics, 1 ms zero-order hold) agrees with the Julia run to 1e-9 rad; the bound is 1e-6"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q1",
+          "t": 2.4,
+          "value": 0.3095016204,
+          "abs": 1e-06,
+          "note": "joint 1 in the second move (1.8 .. 3.0 s): the independent numpy replica of the whole sampled closed loop (design/design.py, RK4 0.1 ms, motor electrics, 1 ms zero-order hold) agrees with the Julia run to 1e-9 rad; the bound is 1e-6"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q2",
+          "t": 2.4,
+          "value": 0.6457145728,
+          "abs": 1e-06,
+          "note": "joint 2 in the second move (1.8 .. 3.0 s): the independent numpy replica of the whole sampled closed loop (design/design.py, RK4 0.1 ms, motor electrics, 1 ms zero-order hold) agrees with the Julia run to 1e-9 rad; the bound is 1e-6"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q3",
+          "t": 2.4,
+          "value": -0.8399310635,
+          "abs": 1e-06,
+          "note": "joint 3 in the second move (1.8 .. 3.0 s): the independent numpy replica of the whole sampled closed loop (design/design.py, RK4 0.1 ms, motor electrics, 1 ms zero-order hold) agrees with the Julia run to 1e-9 rad; the bound is 1e-6"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q1",
+          "t": 1.6,
+          "value": 1.2,
+          "abs": 0.002,
+          "note": "joint 1 sits on the first move's target 0.4 s after it ended (the 20 rad/s loop has settled to < 2e-3)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q2",
+          "t": 1.6,
+          "value": 1.0,
+          "abs": 0.002,
+          "note": "joint 2 sits on the first move's target 0.4 s after it ended (the 20 rad/s loop has settled to < 2e-3)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q3",
+          "t": 1.6,
+          "value": -0.4,
+          "abs": 0.002,
+          "note": "joint 3 sits on the first move's target 0.4 s after it ended (the 20 rad/s loop has settled to < 2e-3)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q1",
+          "t": 5.0,
+          "value": -0.6,
+          "abs": 1e-06,
+          "note": "joint 1 settled on the second move's target (plan 9.8: tracking error below 0.01 rad after the moves settle; measured about 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q2",
+          "t": 5.0,
+          "value": 0.3,
+          "abs": 1e-06,
+          "note": "joint 2 settled on the second move's target (plan 9.8: tracking error below 0.01 rad after the moves settle; measured about 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q3",
+          "t": 5.0,
+          "value": -1.3,
+          "abs": 1e-06,
+          "note": "joint 3 settled on the second move's target (plan 9.8: tracking error below 0.01 rad after the moves settle; measured about 1e-8)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e1",
+          "from_t": 4.0,
+          "value": 1e-06,
+          "note": "tracking error of joint 1 after the moves settle (from 4.0 s, 1.0 s after the last move ended); the plan asks for < 0.01 rad, the gravity compensation is exact so the measured error is about 2e-8 rad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e1",
+          "from_t": 3.5,
+          "value": 0.01,
+          "note": "the plan 9.8 bound itself (0.01 rad) from 0.5 s after the last move"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e2",
+          "from_t": 4.0,
+          "value": 1e-06,
+          "note": "tracking error of joint 2 after the moves settle (from 4.0 s, 1.0 s after the last move ended); the plan asks for < 0.01 rad, the gravity compensation is exact so the measured error is about 2e-8 rad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e2",
+          "from_t": 3.5,
+          "value": 0.01,
+          "note": "the plan 9.8 bound itself (0.01 rad) from 0.5 s after the last move"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e3",
+          "from_t": 4.0,
+          "value": 1e-06,
+          "note": "tracking error of joint 3 after the moves settle (from 4.0 s, 1.0 s after the last move ended); the plan asks for < 0.01 rad, the gravity compensation is exact so the measured error is about 2e-8 rad"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e3",
+          "from_t": 3.5,
+          "value": 0.01,
+          "note": "the plan 9.8 bound itself (0.01 rad) from 0.5 s after the last move"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e1",
+          "value": 0.03,
+          "note": "tracking error of joint 1 during the moves stays under 0.03 rad (PD with reference-rate feedforward, no inertia feedforward; replica peak 0.0145 / 0.0088 / 0.0203 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e2",
+          "value": 0.03,
+          "note": "tracking error of joint 2 during the moves stays under 0.03 rad (PD with reference-rate feedforward, no inertia feedforward; replica peak 0.0145 / 0.0088 / 0.0203 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e3",
+          "value": 0.03,
+          "note": "tracking error of joint 3 during the moves stays under 0.03 rad (PD with reference-rate feedforward, no inertia feedforward; replica peak 0.0145 / 0.0088 / 0.0203 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u1",
+          "value": 48.0,
+          "note": "motor 1 voltage stays inside the +-48 V limit (peak about 14.8 / 6.6 / 6.6 V: the clamp never engages)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u2",
+          "value": 48.0,
+          "note": "motor 2 voltage stays inside the +-48 V limit (peak about 14.8 / 6.6 / 6.6 V: the clamp never engages)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u3",
+          "value": 48.0,
+          "note": "motor 3 voltage stays inside the +-48 V limit (peak about 14.8 / 6.6 / 6.6 V: the clamp never engages)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206",
+            "E901"
+          ],
+          "note": "connected, domain-consistent, balanced, unit-clean model that starts and runs to the end. W201 is expected: the motor rotors behind the rigid gears are derivative-causal with the arm inertia, and the DAE reduction handles it"
+        }
+      ]
+    },
+    "rrr-free": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q1",
+          "t": 0.0,
+          "value": 0.3,
+          "abs": 1e-12,
+          "note": "joint 1 starts at the free-motion start angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q2",
+          "t": 0.0,
+          "value": 0.6,
+          "abs": 1e-12,
+          "note": "joint 2 starts at the free-motion start angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q3",
+          "t": 0.0,
+          "value": -0.9,
+          "abs": 1e-12,
+          "note": "joint 3 starts at the free-motion start angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/E",
+          "t": 0.0,
+          "value": 1.769789283,
+          "abs": 1e-09,
+          "note": "E = T + V at the start: 1/2 qd' M(q0) qd with g = 0 (closed form in design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q1",
+          "t": 5.0,
+          "value": 10.67381331,
+          "abs": 1e-08,
+          "note": "joint 1 after 5 s of free motion against the numpy RK4 replica (measured difference about 3e-12)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q2",
+          "t": 5.0,
+          "value": -0.4452059373,
+          "abs": 1e-08,
+          "note": "joint 2 after 5 s of free motion against the numpy RK4 replica (measured difference about 3e-12)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q3",
+          "t": 5.0,
+          "value": 0.8985608605,
+          "abs": 1e-08,
+          "note": "joint 3 after 5 s of free motion against the numpy RK4 replica (measured difference about 3e-12)"
+        },
+        {
+          "kind": "invariant",
+          "tol": 1e-06,
+          "terms": [
+            {
+              "signal": "Arm/E",
+              "coeff": 1.0
+            }
+          ],
+          "note": "plan 9.8: with the motors removed and g = 0 the total energy drifts by less than 1e-6 relative over 5 s (relative to max|E|)"
+        },
+        {
+          "kind": "invariant",
+          "tol": 1e-10,
+          "terms": [
+            {
+              "signal": "Arm/E",
+              "coeff": 1.0
+            }
+          ],
+          "note": "the same drift at the regression level: measured 3e-13 relative, so a wrong Coriolis or mass term would show here long before 1e-6"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206",
+            "E901"
+          ],
+          "note": "the Hamiltonian block with zero-torque sources has integral causality (no W201) and runs to the end"
+        }
+      ]
+    },
+    "rrr-torque": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q1",
+          "t": 5.0,
+          "value": -0.6,
+          "abs": 1e-06,
+          "note": "joint 1 settled on the second move's target with ideal torque sources"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q2",
+          "t": 5.0,
+          "value": 0.3,
+          "abs": 1e-06,
+          "note": "joint 2 settled on the second move's target with ideal torque sources"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Arm/q3",
+          "t": 5.0,
+          "value": -1.3,
+          "abs": 1e-06,
+          "note": "joint 3 settled on the second move's target with ideal torque sources"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e1",
+          "from_t": 4.0,
+          "value": 1e-06,
+          "note": "tracking error of joint 1 after the moves settle (ideal torque sources)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e2",
+          "from_t": 4.0,
+          "value": 1e-06,
+          "note": "tracking error of joint 2 after the moves settle (ideal torque sources)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/e3",
+          "from_t": 4.0,
+          "value": 1e-06,
+          "note": "tracking error of joint 3 after the moves settle (ideal torque sources)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206",
+            "E901"
+          ],
+          "note": "ideal torque sources are effort-causal: integral causality throughout (no W201)"
+        }
+      ]
+    },
+    "rrr-multibond": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 5.0,
+          "value": -0.6,
+          "abs": 6e-06,
+          "note": "joint 1 of the multibond arm settled on the second move's target (kt = kr = 1e7)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J2/qout",
+          "t": 5.0,
+          "value": 0.3,
+          "abs": 6e-06,
+          "note": "joint 2 of the multibond arm settled on the second move's target (kt = kr = 1e7)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J3/qout",
+          "t": 5.0,
+          "value": -1.3,
+          "abs": 6e-06,
+          "note": "joint 3 of the multibond arm settled on the second move's target (kt = kr = 1e7)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206",
+            "E901"
+          ],
+          "note": "the compliant joints keep every state integral (no W201), the chain is connected, frame-consistent and unit-clean, and the run reaches the end"
+        }
+      ]
+    },
+    "rrr-multibond-soft": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 5.0,
+          "value": -0.6,
+          "abs": 5.1e-05,
+          "note": "joint 1 of the multibond arm settled on the second move's target (kt = kr = 1e6)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J2/qout",
+          "t": 5.0,
+          "value": 0.3,
+          "abs": 5.1e-05,
+          "note": "joint 2 of the multibond arm settled on the second move's target (kt = kr = 1e6)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J3/qout",
+          "t": 5.0,
+          "value": -1.3,
+          "abs": 5.1e-05,
+          "note": "joint 3 of the multibond arm settled on the second move's target (kt = kr = 1e6)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206",
+            "E901"
+          ],
+          "note": "the compliant joints keep every state integral (no W201), the chain is connected, frame-consistent and unit-clean, and the run reaches the end"
+        }
+      ]
+    },
+    "rrr-multibond-stiff": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 5.0,
+          "value": -0.6,
+          "abs": 1.5e-06,
+          "note": "joint 1 of the multibond arm settled on the second move's target (kt = kr = 1e8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J2/qout",
+          "t": 5.0,
+          "value": 0.3,
+          "abs": 1.5e-06,
+          "note": "joint 2 of the multibond arm settled on the second move's target (kt = kr = 1e8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J3/qout",
+          "t": 5.0,
+          "value": -1.3,
+          "abs": 1.5e-06,
+          "note": "joint 3 of the multibond arm settled on the second move's target (kt = kr = 1e8)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206",
+            "E901"
+          ],
+          "note": "the compliant joints keep every state integral (no W201), the chain is connected, frame-consistent and unit-clean, and the run reaches the end"
+        }
+      ]
     }
-  }
+  },
+  "compare": [
+    {
+      "a": "rrr-torque",
+      "b": "rrr-multibond",
+      "signal_a": "Arm/q1",
+      "signal_b": "J1/qout",
+      "from_t": 0.0,
+      "max_abs": 8.2e-05,
+      "note": "DEC-M5-2: joint 1 of the equation block against the multibond RRR arm (kt = kr = 1e+07) over the whole 5 s motion, same torque sources, controller and references. The bound is C/k with C = 820 N m/rad, 5x the measured maximum at k = 1e7; the error is the O(1/k) effect of the compliant held directions"
+    },
+    {
+      "a": "rrr-torque",
+      "b": "rrr-multibond",
+      "signal_a": "Arm/q2",
+      "signal_b": "J2/qout",
+      "from_t": 0.0,
+      "max_abs": 5e-05,
+      "note": "DEC-M5-2: joint 2 of the equation block against the multibond RRR arm (kt = kr = 1e+07) over the whole 5 s motion, same torque sources, controller and references. The bound is C/k with C = 500 N m/rad, 5x the measured maximum at k = 1e7; the error is the O(1/k) effect of the compliant held directions"
+    },
+    {
+      "a": "rrr-torque",
+      "b": "rrr-multibond",
+      "signal_a": "Arm/q3",
+      "signal_b": "J3/qout",
+      "from_t": 0.0,
+      "max_abs": 2.5e-05,
+      "note": "DEC-M5-2: joint 3 of the equation block against the multibond RRR arm (kt = kr = 1e+07) over the whole 5 s motion, same torque sources, controller and references. The bound is C/k with C = 250 N m/rad, 5x the measured maximum at k = 1e7; the error is the O(1/k) effect of the compliant held directions"
+    },
+    {
+      "a": "rrr-torque",
+      "b": "rrr-multibond-soft",
+      "signal_a": "Arm/q1",
+      "signal_b": "J1/qout",
+      "from_t": 0.0,
+      "max_abs": 0.00082,
+      "note": "DEC-M5-2: joint 1 of the equation block against the multibond RRR arm (kt = kr = 1e+06) over the whole 5 s motion, same torque sources, controller and references. The bound is C/k with C = 820 N m/rad, 5x the measured maximum at k = 1e7; the error is the O(1/k) effect of the compliant held directions"
+    },
+    {
+      "a": "rrr-torque",
+      "b": "rrr-multibond-soft",
+      "signal_a": "Arm/q2",
+      "signal_b": "J2/qout",
+      "from_t": 0.0,
+      "max_abs": 0.0005,
+      "note": "DEC-M5-2: joint 2 of the equation block against the multibond RRR arm (kt = kr = 1e+06) over the whole 5 s motion, same torque sources, controller and references. The bound is C/k with C = 500 N m/rad, 5x the measured maximum at k = 1e7; the error is the O(1/k) effect of the compliant held directions"
+    },
+    {
+      "a": "rrr-torque",
+      "b": "rrr-multibond-soft",
+      "signal_a": "Arm/q3",
+      "signal_b": "J3/qout",
+      "from_t": 0.0,
+      "max_abs": 0.00025,
+      "note": "DEC-M5-2: joint 3 of the equation block against the multibond RRR arm (kt = kr = 1e+06) over the whole 5 s motion, same torque sources, controller and references. The bound is C/k with C = 250 N m/rad, 5x the measured maximum at k = 1e7; the error is the O(1/k) effect of the compliant held directions"
+    },
+    {
+      "a": "rrr-torque",
+      "b": "rrr-multibond-stiff",
+      "signal_a": "Arm/q1",
+      "signal_b": "J1/qout",
+      "from_t": 0.0,
+      "max_abs": 8.2e-06,
+      "note": "DEC-M5-2: joint 1 of the equation block against the multibond RRR arm (kt = kr = 1e+08) over the whole 5 s motion, same torque sources, controller and references. The bound is C/k with C = 820 N m/rad, 5x the measured maximum at k = 1e7; the error is the O(1/k) effect of the compliant held directions"
+    },
+    {
+      "a": "rrr-torque",
+      "b": "rrr-multibond-stiff",
+      "signal_a": "Arm/q2",
+      "signal_b": "J2/qout",
+      "from_t": 0.0,
+      "max_abs": 5e-06,
+      "note": "DEC-M5-2: joint 2 of the equation block against the multibond RRR arm (kt = kr = 1e+08) over the whole 5 s motion, same torque sources, controller and references. The bound is C/k with C = 500 N m/rad, 5x the measured maximum at k = 1e7; the error is the O(1/k) effect of the compliant held directions"
+    },
+    {
+      "a": "rrr-torque",
+      "b": "rrr-multibond-stiff",
+      "signal_a": "Arm/q3",
+      "signal_b": "J3/qout",
+      "from_t": 0.0,
+      "max_abs": 2.5e-06,
+      "note": "DEC-M5-2: joint 3 of the equation block against the multibond RRR arm (kt = kr = 1e+08) over the whole 5 s motion, same torque sources, controller and references. The bound is C/k with C = 250 N m/rad, 5x the measured maximum at k = 1e7; the error is the O(1/k) effect of the compliant held directions"
+    }
+  ]
 }

@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!--
+  robot-arm-3d, RRR arm (plan 9.8, X5.3): a base cylinder, an upper-arm box and a forearm box.
+
+  Z-up, metres. The shoulder is the world origin. At q = (0, 0, 0) the arm lies stretched along
+  +X (the model's q2 is the elevation of the upper arm above horizontal, q3 the elbow angle
+  relative to the upper arm, positive raising the forearm).
+
+    joint1  base yaw about world +Z          bound to the model's q1
+    joint2  shoulder pitch about -Y          bound to q2 (rotating +X toward +Z is a rotation about -Y)
+    joint3  elbow pitch about -Y             bound to q3
+
+  The point masses of the model sit at the elbow (m2) and at the tip (m3); the sphere on the
+  turret and the small sphere at the tip mark them. The turret link only carries joint 1's
+  rotation between the fixed base and the shoulder (the model's base yaw inertia Jb).
+-->
+<sdf version="1.9">
+  <model name="rrr">
+    <link name="base">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="base_cylinder">
+        <pose>0 0 -0.05 0 0 0</pose>
+        <geometry><cylinder><radius>0.12</radius><length>0.1</length></cylinder></geometry>
+        <material><diffuse>0.45 0.47 0.5 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="turret">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="shoulder_housing">
+        <geometry><sphere><radius>0.05</radius></sphere></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="counterweight">
+        <pose>-0.07 0 0 0 0 0</pose>
+        <geometry><box><size>0.08 0.06 0.06</size></box></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="upper_arm">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="upper_arm_box">
+        <pose>0.2 0 0 0 0 0</pose>
+        <geometry><box><size>0.4 0.06 0.06</size></box></geometry>
+        <material><diffuse>0.25 0.5 0.85 1</diffuse></material>
+      </visual>
+      <visual name="elbow_mass">
+        <pose>0.4 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.035</radius></sphere></geometry>
+        <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="forearm">
+      <!-- the elbow, at the end of the stretched upper arm -->
+      <pose>0.4 0 0 0 0 0</pose>
+      <visual name="forearm_box">
+        <pose>0.15 0 0 0 0 0</pose>
+        <geometry><box><size>0.3 0.05 0.05</size></box></geometry>
+        <material><diffuse>0.35 0.7 0.45 1</diffuse></material>
+      </visual>
+      <visual name="tip_mass">
+        <pose>0.3 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.03</radius></sphere></geometry>
+        <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
+      </visual>
+    </link>
+
+    <joint name="joint1" type="revolute">
+      <parent>base</parent>
+      <child>turret</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit><lower>-6.2831853</lower><upper>6.2831853</upper></limit>
+      </axis>
+    </joint>
+
+    <joint name="joint2" type="revolute">
+      <parent>turret</parent>
+      <child>upper_arm</child>
+      <axis>
+        <xyz>0 -1 0</xyz>
+        <limit><lower>-3.1415927</lower><upper>3.1415927</upper></limit>
+      </axis>
+    </joint>
+
+    <joint name="joint3" type="revolute">
+      <parent>upper_arm</parent>
+      <child>forearm</child>
+      <axis>
+        <xyz>0 -1 0</xyz>
+        <limit><lower>-3.1415927</lower><upper>3.1415927</upper></limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>

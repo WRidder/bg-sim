@@ -1,0 +1,212 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "rrr-free",
+  "$comment": "X5.3 / plan 9.8 energy test: ArmDynamics3R with the motors removed (zero-torque Se on every joint) and g = 0, released with the joint rates (2, -1.5, 2.5) rad/s. Total energy E = T + V is a block output and must stay constant.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "arm",
+        "name": "Arm",
+        "block": {
+          "ref": "project:ArmDynamics3R"
+        },
+        "position": {
+          "x": 400,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "l2": "0.4",
+          "l3": "0.3",
+          "m2": "2.0",
+          "m3": "1.0",
+          "Jb": "0.05",
+          "g": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "q": "[0.3, 0.6, -0.9]",
+          "p": "[1.2966790772657797, -0.6672965980962399, -0.021889794288719608]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "se1",
+        "name": "Free1",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 160,
+          "y": 100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "se2",
+        "name": "Free2",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 160,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "se3",
+        "name": "Free3",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 160,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b01",
+        "kind": "bond",
+        "from": {
+          "node": "se1",
+          "port": "p"
+        },
+        "to": {
+          "node": "arm",
+          "port": "j1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b02",
+        "kind": "bond",
+        "from": {
+          "node": "se2",
+          "port": "p"
+        },
+        "to": {
+          "node": "arm",
+          "port": "j2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "b03",
+        "kind": "bond",
+        "from": {
+          "node": "se3",
+          "port": "p"
+        },
+        "to": {
+          "node": "arm",
+          "port": "j3"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 5.0,
+    "solver": "auto",
+    "reltol": 1e-10,
+    "abstol": 1e-12,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Joint angles (free motion)",
+      "signals": [
+        "Arm/q1",
+        "Arm/q2",
+        "Arm/q3"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Joint rates",
+      "signals": [
+        "Arm/qd1",
+        "Arm/qd2",
+        "Arm/qd3"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Total energy",
+      "signals": [
+        "Arm/E"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/rrr.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:joint1",
+      "property": "position",
+      "signal": "Arm/q1"
+    },
+    {
+      "target": "joint:joint2",
+      "property": "position",
+      "signal": "Arm/q2"
+    },
+    {
+      "target": "joint:joint3",
+      "property": "position",
+      "signal": "Arm/q3"
+    }
+  ]
+}

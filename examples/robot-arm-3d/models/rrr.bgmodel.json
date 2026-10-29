@@ -1,0 +1,1115 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "rrr",
+  "$comment": "X5.3 / plan 9.8: RRR arm as an equation block. ArmDynamics3R (point masses, Hamiltonian form, three Rotation ports) behind 3 x (DCMotor -> IdealGear n = 50). The 1 ms ArmCtrl3R is a PD + gravity compensation (dV/dq from the measured q) that turns the joint torque command into a motor voltage; the references are minimum-jerk TimeTables from design.py.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "arm",
+        "name": "Arm",
+        "block": {
+          "ref": "project:ArmDynamics3R"
+        },
+        "position": {
+          "x": 780,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "l2": "0.4",
+          "l3": "0.3",
+          "m2": "2.0",
+          "m3": "1.0",
+          "Jb": "0.05",
+          "g": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "q": "[0.0, 0.6, -0.9]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ref1",
+        "name": "Ref1",
+        "block": {
+          "ref": "stdlib:sources/TimeTable"
+        },
+        "position": {
+          "x": 60,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_start": "0.0",
+          "sample_time": "0.05",
+          "values": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0013897499999999993, 0.01027200000000001, 0.03193425000000001, 0.06950400000000002, 0.12421874999999999, 0.19569599999999995, 0.28220325, 0.38092800000000016, 0.48824775000000004, 0.6, 0.7117522500000003, 0.819072, 0.9177967500000003, 1.0043039999999996, 1.07578125, 1.1304960000000008, 1.1680657499999996, 1.189728, 1.1986102499999989, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2, 1.1987779405381944, 1.1908420138888889, 1.1711059570312499, 1.136111111111111, 1.0838636610243053, 1.013671875, 0.925983344184028, 0.8222222222222217, 0.70462646484375, 0.5760850694444437, 0.43997531467013895, 0.29999999999999905, 0.1600246853298608, 0.02391493055555549, -0.10462646484375049, -0.22222222222222165, -0.3259833441840283, -0.41367187500000013, -0.4838636610243048, -0.5361111111111121, -0.5711059570312502, -0.5908420138888899, -0.5987779405381943, -0.6, -0.6, -0.6, -0.6, -0.6]",
+          "method": "1"
+        },
+        "constants": {
+          "N": "65"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ref2",
+        "name": "Ref2",
+        "block": {
+          "ref": "stdlib:sources/TimeTable"
+        },
+        "position": {
+          "x": 60,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_start": "0.0",
+          "sample_time": "0.05",
+          "values": "[0.6, 0.6, 0.6, 0.6, 0.6, 0.60046325, 0.603424, 0.61064475, 0.6231679999999999, 0.64140625, 0.6652319999999999, 0.69406775, 0.7269760000000001, 0.7627492499999999, 0.8, 0.8372507500000002, 0.873024, 0.9059322500000001, 0.9347679999999998, 0.95859375, 0.9768320000000003, 0.9893552499999998, 0.996576, 0.9995367499999996, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.9995247546537422, 0.9964385609567901, 0.988763427734375, 0.9751543209876543, 0.9548358681761188, 0.9275390625, 0.8934379671826775, 0.8530864197530863, 0.807354736328125, 0.7573664158950615, 0.7044348445939429, 0.6499999999999997, 0.595565155406057, 0.5426335841049381, 0.4926452636718748, 0.44691358024691374, 0.4065620328173223, 0.3724609375, 0.3451641318238815, 0.3248456790123453, 0.31123657226562484, 0.30356143904320954, 0.3004752453462578, 0.3, 0.3, 0.3, 0.3, 0.3]",
+          "method": "1"
+        },
+        "constants": {
+          "N": "65"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ref3",
+        "name": "Ref3",
+        "block": {
+          "ref": "stdlib:sources/TimeTable"
+        },
+        "position": {
+          "x": 60,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_start": "0.0",
+          "sample_time": "0.05",
+          "values": "[-0.9, -0.9, -0.9, -0.9, -0.9, -0.8994209375000001, -0.8957200000000001, -0.8866940625, -0.87104, -0.8482421875, -0.8184600000000001, -0.7824153125, -0.7412799999999999, -0.6965634375, -0.65, -0.6034365624999999, -0.55872, -0.5175846874999999, -0.4815400000000002, -0.4517578125, -0.42895999999999973, -0.4133059375000002, -0.40428000000000003, -0.4005790625000005, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4, -0.4006110297309028, -0.4045789930555556, -0.41444702148437507, -0.43194444444444446, -0.4580681694878474, -0.49316406250000006, -0.537008327907986, -0.5888888888888891, -0.647686767578125, -0.7119574652777781, -0.7800123426649306, -0.8500000000000005, -0.9199876573350696, -0.9880425347222224, -1.0523132324218754, -1.1111111111111112, -1.1629916720920144, -1.2068359375000002, -1.2419318305121525, -1.2680555555555562, -1.2855529785156254, -1.2954210069444452, -1.2993889702690973, -1.3, -1.3, -1.3, -1.3, -1.3]",
+          "method": "1"
+        },
+        "constants": {
+          "N": "65"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ctrl",
+        "name": "Ctrl",
+        "block": {
+          "ref": "project:ArmCtrl3R"
+        },
+        "position": {
+          "x": 360,
+          "y": 100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Kp1": "354.0",
+          "Kd1": "35.4",
+          "Kp2": "334.0",
+          "Kd2": "33.4",
+          "Kp3": "46.0",
+          "Kd3": "4.6",
+          "l2": "0.4",
+          "l3": "0.3",
+          "m2": "2.0",
+          "m3": "1.0",
+          "g": "9.81",
+          "R": "1.0",
+          "k_t": "0.1",
+          "n": "50.0",
+          "umax": "48.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "amp1",
+        "name": "Amp1",
+        "block": {
+          "ref": "stdlib:electrical/VoltageSource"
+        },
+        "position": {
+          "x": 240,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "V": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "gnd1",
+        "name": "Gnd1",
+        "block": {
+          "ref": "stdlib:electrical/Ground"
+        },
+        "position": {
+          "x": 240,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "mot1",
+        "name": "Motor1",
+        "block": {
+          "ref": "stdlib:converters/DCMotor"
+        },
+        "position": {
+          "x": 400,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R": "1.0",
+          "L": "0.0005",
+          "k_t": "0.1",
+          "J": "1e-05",
+          "d": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "fix1",
+        "name": "Fix1",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 400,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "gear1",
+        "name": "Gear1",
+        "block": {
+          "ref": "stdlib:rotation/IdealGear"
+        },
+        "position": {
+          "x": 560,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "50.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "amp2",
+        "name": "Amp2",
+        "block": {
+          "ref": "stdlib:electrical/VoltageSource"
+        },
+        "position": {
+          "x": 240,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "V": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "gnd2",
+        "name": "Gnd2",
+        "block": {
+          "ref": "stdlib:electrical/Ground"
+        },
+        "position": {
+          "x": 240,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "mot2",
+        "name": "Motor2",
+        "block": {
+          "ref": "stdlib:converters/DCMotor"
+        },
+        "position": {
+          "x": 400,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R": "1.0",
+          "L": "0.0005",
+          "k_t": "0.1",
+          "J": "1e-05",
+          "d": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "fix2",
+        "name": "Fix2",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 400,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "gear2",
+        "name": "Gear2",
+        "block": {
+          "ref": "stdlib:rotation/IdealGear"
+        },
+        "position": {
+          "x": 560,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "50.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "amp3",
+        "name": "Amp3",
+        "block": {
+          "ref": "stdlib:electrical/VoltageSource"
+        },
+        "position": {
+          "x": 240,
+          "y": 740
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "V": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "gnd3",
+        "name": "Gnd3",
+        "block": {
+          "ref": "stdlib:electrical/Ground"
+        },
+        "position": {
+          "x": 240,
+          "y": 840
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "mot3",
+        "name": "Motor3",
+        "block": {
+          "ref": "stdlib:converters/DCMotor"
+        },
+        "position": {
+          "x": 400,
+          "y": 740
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R": "1.0",
+          "L": "0.0005",
+          "k_t": "0.1",
+          "J": "1e-05",
+          "d": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "fix3",
+        "name": "Fix3",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 400,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "gear3",
+        "name": "Gear3",
+        "block": {
+          "ref": "stdlib:rotation/IdealGear"
+        },
+        "position": {
+          "x": 560,
+          "y": 740
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "50.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "ref1",
+          "port": "y"
+        },
+        "to": {
+          "node": "ctrl",
+          "port": "ref1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": {
+          "node": "ref2",
+          "port": "y"
+        },
+        "to": {
+          "node": "ctrl",
+          "port": "ref2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": {
+          "node": "ref3",
+          "port": "y"
+        },
+        "to": {
+          "node": "ctrl",
+          "port": "ref3"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": {
+          "node": "arm",
+          "port": "q1"
+        },
+        "to": {
+          "node": "ctrl",
+          "port": "q1"
+        },
+        "route": [
+          {
+            "x": 900,
+            "y": 570
+          },
+          {
+            "x": 900,
+            "y": 110
+          },
+          {
+            "x": 440,
+            "y": 110
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": {
+          "node": "arm",
+          "port": "q2"
+        },
+        "to": {
+          "node": "ctrl",
+          "port": "q2"
+        },
+        "route": [
+          {
+            "x": 920,
+            "y": 570
+          },
+          {
+            "x": 920,
+            "y": 120
+          },
+          {
+            "x": 440,
+            "y": 120
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": {
+          "node": "arm",
+          "port": "q3"
+        },
+        "to": {
+          "node": "ctrl",
+          "port": "q3"
+        },
+        "route": [
+          {
+            "x": 940,
+            "y": 570
+          },
+          {
+            "x": 940,
+            "y": 130
+          },
+          {
+            "x": 440,
+            "y": 130
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s07",
+        "kind": "signal",
+        "from": {
+          "node": "arm",
+          "port": "qd1"
+        },
+        "to": {
+          "node": "ctrl",
+          "port": "qd1"
+        },
+        "route": [
+          {
+            "x": 960,
+            "y": 570
+          },
+          {
+            "x": 960,
+            "y": 140
+          },
+          {
+            "x": 440,
+            "y": 140
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s08",
+        "kind": "signal",
+        "from": {
+          "node": "arm",
+          "port": "qd2"
+        },
+        "to": {
+          "node": "ctrl",
+          "port": "qd2"
+        },
+        "route": [
+          {
+            "x": 980,
+            "y": 570
+          },
+          {
+            "x": 980,
+            "y": 150
+          },
+          {
+            "x": 440,
+            "y": 150
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s09",
+        "kind": "signal",
+        "from": {
+          "node": "arm",
+          "port": "qd3"
+        },
+        "to": {
+          "node": "ctrl",
+          "port": "qd3"
+        },
+        "route": [
+          {
+            "x": 1000,
+            "y": 570
+          },
+          {
+            "x": 1000,
+            "y": 160
+          },
+          {
+            "x": 440,
+            "y": 160
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "w10",
+        "kind": "wire",
+        "from": {
+          "node": "amp1",
+          "port": "p"
+        },
+        "to": {
+          "node": "mot1",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w11",
+        "kind": "wire",
+        "from": {
+          "node": "mot1",
+          "port": "n"
+        },
+        "to": {
+          "node": "gnd1",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w12",
+        "kind": "wire",
+        "from": {
+          "node": "amp1",
+          "port": "n"
+        },
+        "to": {
+          "node": "gnd1",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w13",
+        "kind": "wire",
+        "from": {
+          "node": "mot1",
+          "port": "housing"
+        },
+        "to": {
+          "node": "fix1",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w14",
+        "kind": "wire",
+        "from": {
+          "node": "mot1",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "gear1",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w15",
+        "kind": "wire",
+        "from": {
+          "node": "gear1",
+          "port": "b"
+        },
+        "to": {
+          "node": "arm",
+          "port": "j1"
+        },
+        "route": [
+          {
+            "x": 690,
+            "y": 370
+          },
+          {
+            "x": 690,
+            "y": 560
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s16",
+        "kind": "signal",
+        "from": {
+          "node": "ctrl",
+          "port": "u1"
+        },
+        "to": {
+          "node": "amp1",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 380,
+            "y": 280
+          },
+          {
+            "x": 270,
+            "y": 280
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "w17",
+        "kind": "wire",
+        "from": {
+          "node": "amp2",
+          "port": "p"
+        },
+        "to": {
+          "node": "mot2",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w18",
+        "kind": "wire",
+        "from": {
+          "node": "mot2",
+          "port": "n"
+        },
+        "to": {
+          "node": "gnd2",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w19",
+        "kind": "wire",
+        "from": {
+          "node": "amp2",
+          "port": "n"
+        },
+        "to": {
+          "node": "gnd2",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w20",
+        "kind": "wire",
+        "from": {
+          "node": "mot2",
+          "port": "housing"
+        },
+        "to": {
+          "node": "fix2",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w21",
+        "kind": "wire",
+        "from": {
+          "node": "mot2",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "gear2",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w22",
+        "kind": "wire",
+        "from": {
+          "node": "gear2",
+          "port": "b"
+        },
+        "to": {
+          "node": "arm",
+          "port": "j2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s23",
+        "kind": "signal",
+        "from": {
+          "node": "ctrl",
+          "port": "u2"
+        },
+        "to": {
+          "node": "amp2",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 380,
+            "y": 270
+          },
+          {
+            "x": 200,
+            "y": 270
+          },
+          {
+            "x": 200,
+            "y": 570
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "w24",
+        "kind": "wire",
+        "from": {
+          "node": "amp3",
+          "port": "p"
+        },
+        "to": {
+          "node": "mot3",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w25",
+        "kind": "wire",
+        "from": {
+          "node": "mot3",
+          "port": "n"
+        },
+        "to": {
+          "node": "gnd3",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w26",
+        "kind": "wire",
+        "from": {
+          "node": "amp3",
+          "port": "n"
+        },
+        "to": {
+          "node": "gnd3",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w27",
+        "kind": "wire",
+        "from": {
+          "node": "mot3",
+          "port": "housing"
+        },
+        "to": {
+          "node": "fix3",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w28",
+        "kind": "wire",
+        "from": {
+          "node": "mot3",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "gear3",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w29",
+        "kind": "wire",
+        "from": {
+          "node": "gear3",
+          "port": "b"
+        },
+        "to": {
+          "node": "arm",
+          "port": "j3"
+        },
+        "route": [
+          {
+            "x": 710,
+            "y": 770
+          },
+          {
+            "x": 710,
+            "y": 580
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s30",
+        "kind": "signal",
+        "from": {
+          "node": "ctrl",
+          "port": "u3"
+        },
+        "to": {
+          "node": "amp3",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 380,
+            "y": 260
+          },
+          {
+            "x": 170,
+            "y": 260
+          },
+          {
+            "x": 170,
+            "y": 770
+          }
+        ],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 5.0,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 2001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Joint angles and references",
+      "signals": [
+        "Arm/q1",
+        "Arm/q2",
+        "Arm/q3",
+        "Ref1/y",
+        "Ref2/y",
+        "Ref3/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Tracking errors",
+      "signals": [
+        "Ctrl/e1",
+        "Ctrl/e2",
+        "Ctrl/e3"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Motor voltages",
+      "signals": [
+        "Ctrl/u1",
+        "Ctrl/u2",
+        "Ctrl/u3"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Joint rates",
+      "signals": [
+        "Arm/qd1",
+        "Arm/qd2",
+        "Arm/qd3"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/rrr.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:joint1",
+      "property": "position",
+      "signal": "Arm/q1"
+    },
+    {
+      "target": "joint:joint2",
+      "property": "position",
+      "signal": "Arm/q2"
+    },
+    {
+      "target": "joint:joint3",
+      "property": "position",
+      "signal": "Arm/q3"
+    }
+  ]
+}

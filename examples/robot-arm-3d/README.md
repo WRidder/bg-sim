@@ -106,3 +106,160 @@ state, 2339 equation system, so the horizon is kept at 2 s; `expected.json` sets
 * `web/tests/e2e/robot-arm-3d.spec.ts` — imports the sample, asserts the three-stroke Spatial
   bonds and the single-stroke drive bonds, takes the canvas screenshot, runs the model and reads
   the settled `J2/qout` and `J5/qout` from the plot legend (real worker, about 6 minutes).
+
+---
+
+# The RRR arm as an equation block, and its multibond counterpart (X5.3, plan 9.8)
+
+The same example also holds the plan 9.8 three-joint arm: a hand-derived Hamiltonian
+equation block (`ArmDynamics3R`) behind three DC motors and 50:1 gears, a 1 ms discrete PD +
+gravity-compensation controller, and minimum-jerk `TimeTable` references. The same geometry is
+rebuilt from the M3 spatial stdlib (`rrr-multibond`) and the two are compared joint by joint
+(DEC-M5-2). The six-axis arm above (`arm`) is untouched.
+
+| model | what it is | run |
+| --- | --- | --- |
+| `rrr` | `ArmDynamics3R` + 3 x (`VoltageSource` -> `DCMotor` -> `IdealGear` n = 50) + `ArmCtrl3R` + 3 `TimeTable` | 5 s, solver `auto`, 1e-8 / 1e-10 |
+| `rrr-free` | the arm alone: zero-torque `Se` on every joint, g = 0, released with rates (2, -1.5, 2.5) rad/s; `Arm/E` is the total energy | 5 s, 1e-10 / 1e-12 |
+| `rrr-torque` | the arm driven by ideal joint-torque sources (`MSe`) from the same controller and references | 5 s |
+| `rrr-multibond` | the same RRR geometry from `Revolute3D` + `RigidBody3D` + `FixedTransform3DNeutral`, the same torque sources, controller and references; held directions `kt = kr = 1e7` | 5 s, `Rodas5P`, 1e-8 / 1e-10 |
+| `rrr-multibond-soft`, `-stiff` | the same with `kt = kr = 1e6` and `1e8` (the error-scaling measurement) | |
+
+```
+Ref1..3 (TimeTable) ──► Ctrl (ArmCtrl3R, 1 ms) ──u_i──► Amp ─ Motor ─ Gear (n = 50) ──► Arm (ArmDynamics3R: j1 j2 j3)
+                          ▲                                                               │
+                          └──────────── q1..3, qd1..3 (Arm outputs) ◄─────────────────────┘
+```
+
+## `ArmDynamics3R` (`library/ArmDynamics3R.jl`)
+
+Base yaw `q1` about world z (inertia `Jb`), shoulder `q2` = elevation of the upper arm above
+horizontal, elbow `q3` relative to the upper arm, point masses `m2` at the elbow and `m3` at the
+tip. The states are `q` and the momenta `p = M(q) qd`; every joint is a `Power{Rotation}` port
+with `j.f = qd_i` and `j.e = tau_i` into the arm, and
+
+```
+ddt(q) ~ qd,   p ~ M * qd,   ddt(p) ~ tau + dTdq - dVdq
+M11 = Jb + m2 r_e^2 + m3 r_t^2,  M22 = m2 l2^2 + m3 (l2^2 + l3^2 + 2 l2 l3 cos q3),
+M23 = m3 (l3^2 + l2 l3 cos q3),  M33 = m3 l3^2,  M12 = M13 = 0
+```
+
+with `r_e`, `z_e`, `r_t`, `z_t`, the three `dM/dq` terms and `dV/dq` exactly as in the plan
+(l2 = 0.4, l3 = 0.3, m2 = 2, m3 = 1, Jb = 0.05, g = 9.81). **The formulas were verified
+symbolically before use**: a sympy script built `T = 1/2 qd' M qd` and `V = g (m2 z_e + m3 z_t)`
+from the geometry and checked `M`, `dT/dq` and `dV/dq` against the plan's expressions: all
+differences simplify to zero. `E = 1/2 qd.p + V` is a block output.
+
+## Drives and controller (`library/ArmCtrl3R.jl`)
+
+`ArmCtrl3R` runs at Ts = 1 ms. It samples `q`, `qd` and the three references and computes the
+joint torque command
+
+```
+tc_i = Kp_i (ref_i - q_i) + Kd_i (rd_i - qd_i) + dV/dq_i(q)         rd_i = (ref_i - ref_i at the previous tick) / Ts
+u_i  = clamp(R tc_i / (n k_t) + n k_t qd_i, -48, 48)                 motor voltage: static current + back-EMF cancel
+```
+
+`dV/dq` is the plant's gravity term evaluated at the measured `q` (a code block, not a copy of the
+arm), so a settled arm sits exactly on its reference. The motors are `R = 1 Ohm`, `L = 0.5 mH`,
+`k_t = 0.1 N m/A`, `J_m = 1e-5 kg m^2` (reflected inertia `n^2 J_m = 0.025 kg m^2` per joint). The
+gains come from `design/design.py`: critical damping of the decoupled joint at the largest effective
+inertia `M_ii + n^2 J_m` over the workspace, `wn = 20 rad/s`:
+
+| joint | 1 | 2 | 3 |
+| --- | --- | --- | --- |
+| `Kp` N m/rad | 354 | 334 | 46 |
+| `Kd` N m s/rad | 35.4 | 33.4 | 4.6 |
+
+`tc_i` is also an output of the block, which is what the torque-source models use. The references
+are `TimeTable`s (linear interpolation, 50 ms, 65 samples) of two minimum-jerk point-to-point moves
+`q(t) = q0 + (q1 - q0)(10 s^3 - 15 s^4 + 6 s^5)`: from `(0, 0.6, -0.9)` to `(1.2, 1.0, -0.4)` over
+0.2 .. 1.2 s and to `(-0.6, 0.3, -1.3)` over 1.8 .. 3.0 s. `design/design.py` generates the tables
+(`uv run examples/robot-arm-3d/design/design.py` prints the design) and also integrates a numpy RK4
+**replica of the whole sampled closed loop** (plant, motor electrics, gears, controller) that the
+checks compare the Julia run with. `design/build_models.py` writes the model documents (layout,
+tables, gains, static deflections), so a changed design is
+`uv run examples/robot-arm-3d/design/build_models.py` away.
+
+## Checks and measured values
+
+| check | measured |
+| --- | --- |
+| free motion, g = 0, motors removed: `max|E - E0| / max|E|` over 5 s (plan: < 1e-6) | **3.2e-13** (E0 = 1.769789 J; absolute 5.6e-13 J) |
+| free motion vs the numpy RK4 replica after 5 s | `q` agrees to 3.1e-12 rad |
+| tracking error after the moves settle (plan: < 0.01 rad) | `max|e|` from 4.0 s: **1.5e-8, 9.1e-9, 2.0e-8 rad**; from 3.5 s: 1.2e-5, 1.5e-6, 1.5e-5 rad |
+| tracking error during the moves | 0.0145, 0.0088, 0.0203 rad |
+| peak motor voltage (limit 48 V) | 14.8, 6.6, 6.6 V |
+| Julia run vs the numpy closed-loop replica, whole run, `Arm/q1..q3` | **6.4e-11, 5.6e-11, 1.7e-9 rad** |
+| diagnostics of `rrr` | W201 only: the motor rotors behind the rigid gears are derivative-causal with the arm inertia (the reduction handles it) |
+| run times (one example run, loaded machine, including the first compile of each structure) | `rrr` 74 s, `rrr-free` 10 s, `rrr-torque` 16 s, `rrr-multibond` 224 s, `-soft` 103 s, `-stiff` 114 s |
+| `uv run examples/run_checks.py --only robot-arm-3d` | **109 passed, 0 failed in 793 s** (the 43 X-MB3 checks plus 66 new ones: 28 + 10 + 7 + 12 model checks and 9 `compare` entries) |
+
+One detail of the replica: the Julia run holds the controller output at its default (0 V) through
+the first period, so the first command (zero reference rate) lands at 1 ms. The replica does the
+same (`first_tick = 1`); with the command at t = 0 it differs by 4e-4 rad during the first 0.2 s.
+
+## The M3 comparison (DEC-M5-2)
+
+`rrr-multibond` is the same arm built from the M3 spatial stdlib, following `arm.bgmodel.json`:
+
+* a base body (1 kg at the pivot, isotropic inertia `Jb`, so its yaw inertia is the plan's `Jb`) on a
+  compliant `Revolute3D` about world z (`World` -> `Mount` -> `J1`);
+* joints 2 and 3 about world `-y`: the joint frame is `Rx(90 deg)` (local z = -y), so positive `q`
+  raises the arm; `LN2` places joint 2 at the shoulder, `LN3` places joint 3 `l2` along the upper
+  arm, `T2` and `T3` are `LN^-1 o LC`;
+* point masses as `RigidBody3D` bodies (`m2` at the elbow, `m3` at the tip, 1e-8 kg m^2 principal
+  moments because a point has none), links `l2` and `l3` as `FixedTransform3DNeutral` (`Link2`,
+  `Link3`); the body poses for gravity come from the `ComposePose3D` chain of `arm.bgmodel.json`;
+* held directions `kt = kr = 1e7` with 0.7-critical damping, released on their **static
+  deflections** (`dth`, `dl` from the weight of everything distal; `design/build_models.py`).
+
+**Why torque sources, not the motors.** Both models are driven by the same `ArmCtrl3R`, the same
+`TimeTable`s and ideal joint-torque sources (`MSe`, gain 1, the controller's `tc` output); the
+equation-block partner is `rrr-torque`. A clean comparison needs the plants to be the only
+difference, and the motors cannot be shared: a rotor inertia rigidly coupled to the multibond
+joint's rate is derivative-causal with the body inertia, and the multibond arm behind the `DCMotor`
+-> `IdealGear` chain compiled with W201 on every body momentum and then stopped at t = 0 with E901
+(retcode `Unstable`), measured. The closed loop pulls both arms to the same references, so the
+comparison is of the dynamics under the same feedback, not of two open-loop integrations.
+
+**Tolerance.** The difference between the models is the compliance of the held directions (and the
+1e-8 point-mass inertias), an O(1/k) effect: the static sag `m g / k` of the held translations (3
+to 4e-6 m at `k = 1e7`) moves the masses by a fraction of a link length. `max|dq|` over the whole
+5 s motion (`compare` entries of `expected.json`, bound `C_i / k` with `C = 820, 500, 250 N m/rad`,
+5x the measurement at `k = 1e7`):
+
+| `k` (N/m, N m/rad) | joint 1 | joint 2 | joint 3 |
+| --- | --- | --- | --- |
+| 1e6 (`rrr-multibond-soft`) | 1.11e-4 | 4.4e-5 | 2.7e-5 |
+| **1e7** (`rrr-multibond`) | **1.64e-5** | **1.00e-5** | **4.98e-6** |
+| 1e8 (`rrr-multibond-stiff`) | 1.81e-6 | 1.32e-6 | 6.7e-7 |
+
+The error falls with `k` (ratios of 4 to 9.5 per decade; the soft case carries second-order terms,
+and the largest joint-2/3 values sit in the first millisecond, when the arm is released and the
+controller's first command is still to come). From 0.1 s on, joints 2 and 3 differ by 2.4e-5 /
+2.7e-5, 4.0e-6 / 3.5e-6 and 5.4e-7 / 4.3e-7 rad at the three stiffnesses. The settled values agree
+to 1e-8 rad.
+
+## 3D scene
+
+`scenes/rrr.sdf` (SDF subset of plan 7.6, Z-up, metres): a base cylinder, a turret link (the joint-1
+rotation carrier, with a small counterweight so the yaw is visible), an upper-arm box and a forearm
+box, with small spheres marking the point masses. `joint1` axis `0 0 1`; `joint2` and `joint3` axis
+`0 -1 0` (rotating +x toward +z is a rotation about -y). Every `rrr*` model sets
+`"scene": {"file": "scenes/rrr.sdf"}` and binds `joint:joint1..3` `position` to its angles
+(`Arm/q1..q3`, or `J1..J3/qout` in the multibond models, unit rad). The scene was checked with the
+viewer's own parser and resolver (`web/src/scene`): no diagnostics, tip at (0.7, 0, 0) for q = 0,
+(0, 0, 0.7) for `q2 = pi/2` and (0, 0.7, 0) for `q1 = pi/2`.
+
+## Files (X5.3)
+
+* `models/rrr.bgmodel.json`, `rrr-free`, `rrr-torque`, `rrr-multibond`, `rrr-multibond-soft`,
+  `rrr-multibond-stiff` — the models (written by `design/build_models.py`).
+* `library/ArmDynamics3R.jl`, `library/ArmCtrl3R.jl` — the equation block and the 1 ms firmware.
+* `design/design.py`, `design/build_models.py` — references, gains, the numpy replica, model writer.
+* `scenes/rrr.sdf` — the 3D scene.
+* `expected.json` — extended additively: the 43 X-MB3 checks are unchanged; X5.3 adds the `rrr`,
+  `rrr-free`, `rrr-torque` and `rrr-multibond*` checks and nine `compare` entries.
+* `web/tests/e2e/robot-arm-3r.spec.ts` — opens the sample, runs `rrr`, plots `Arm/q1..q3` and reads
+  the angles after each move (real worker). The 3D-playback part is added after W5.3.
