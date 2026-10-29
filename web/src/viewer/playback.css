@@ -1,0 +1,209 @@
+/* Playback bar and binding table of the 3D View; colours come from the theme tokens. */
+.playback {
+  flex: 0 0 auto;
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.playback__row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  min-height: calc(var(--control-height) + var(--space-2));
+  padding: 0 var(--space-2);
+}
+
+.playback__button {
+  min-width: var(--control-height);
+  height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.playback__button:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+}
+
+.playback__button[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.playback__button:disabled {
+  color: var(--color-text-faint);
+  cursor: default;
+}
+
+.playback__button:focus-visible,
+.playback select:focus-visible,
+.playback input:focus-visible,
+.bindings select:focus-visible,
+.bindings input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.playback__speed {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.playback__label {
+  color: var(--color-text-muted);
+}
+
+.playback select,
+.bindings select,
+.bindings input[type="text"] {
+  height: var(--control-height);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.playback__slider {
+  flex: 1;
+  min-width: 6rem;
+  accent-color: var(--color-accent);
+}
+
+.playback__readout {
+  min-width: 11rem;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.playback__chip {
+  padding: 0 var(--space-2);
+  border: var(--border-width) solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.playback__note {
+  margin: 0;
+  padding: 0 var(--space-3) var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.playback__note[role="alert"] {
+  color: var(--color-error);
+}
+
+.bindings {
+  flex: 0 1 45%;
+  min-height: 0;
+  overflow: auto;
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.bindings__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bindings__table th {
+  position: sticky;
+  top: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.bindings__table td {
+  padding: var(--space-1) var(--space-2);
+  vertical-align: middle;
+}
+
+.bindings__row:hover,
+.bindings__row:focus-within {
+  background: var(--color-surface-sunken);
+}
+
+.bindings__row[data-invalid="true"] td:first-child {
+  box-shadow: inset 2px 0 0 var(--color-error);
+}
+
+.bindings__problem {
+  color: var(--color-error);
+}
+
+.bindings__problem p {
+  margin: 0;
+}
+
+.bindings__number {
+  width: 5rem;
+}
+
+.bindings__signal {
+  min-width: 10rem;
+  max-width: 16rem;
+}
+
+.bindings__pose {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.bindings__color {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.bindings__swatch {
+  display: inline-block;
+  width: 3rem;
+  height: 0.75rem;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.bindings__empty {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.bindings__add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-end;
+  padding: var(--space-2);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.bindings__add label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEventHandler, type ReactNode } from "react";
 
 import { EmptyState } from "../app/EmptyState";
 import type { Diagnostic } from "../contracts/diagnostic";
@@ -28,6 +28,14 @@ export interface SceneViewProps {
   active: boolean;
   /** Test seam, see `ViewerProps.createEngine`. */
   createEngine?: ViewerProps["createEngine"];
+  /** The built scene once it exists, null while loading, after an error and on unmount (W5.3 bindings). */
+  onBuilt?: (built: BuiltScene | null) => void;
+  /** An entity to outline besides the selection (hover in the binding table). */
+  highlight?: string | null;
+  /** Keys pressed while the 3D view has focus (space toggles playback). */
+  onKeyDown?: KeyboardEventHandler<HTMLDivElement>;
+  /** Rendered under the viewer in the stage (playback bar, binding table). */
+  extras?: ReactNode;
 }
 
 const NO_REFS: readonly string[] = [];
@@ -41,7 +49,7 @@ function describe(error: unknown): string {
  * camera, lists the scene as a tree beside the view and publishes the scene's E305/E306
  * diagnostics to the Diagnostics panel. `data-state` is `none`, `loading`, `loaded` or `error`.
  */
-export function SceneView({ active, createEngine }: SceneViewProps) {
+export function SceneView({ active, createEngine, onBuilt, highlight = null, onKeyDown, extras }: SceneViewProps) {
   const project = useDocumentStore((state) => state.project);
   const sceneFile = useDocumentStore((state) => state.doc?.scene?.file ?? null);
   const [viewer, setViewer] = useState<ViewerScene | null>(null);
@@ -94,7 +102,19 @@ export function SceneView({ active, createEngine }: SceneViewProps) {
   const current = outcome !== null && outcome.key === key ? outcome : null;
   const status: SceneStatus = key === null ? "none" : current === null ? "loading" : current.built === null ? "error" : "loaded";
   const built = current?.built ?? null;
-  const selection = useMemo(() => (built !== null && selected !== null ? built.visualsOf(selected) : NO_REFS), [built, selected]);
+  useEffect(() => {
+    onBuilt?.(built);
+    return () => {
+      onBuilt?.(null);
+    };
+  }, [built, onBuilt]);
+  const selection = useMemo(() => {
+    if (built === null) return NO_REFS;
+    const refs = new Set<string>();
+    if (selected !== null) for (const r of built.visualsOf(selected)) refs.add(r);
+    if (highlight !== null) for (const r of built.visualsOf(highlight)) refs.add(r);
+    return refs.size === 0 ? NO_REFS : [...refs];
+  }, [built, selected, highlight]);
 
   let overlay;
   if (status === "none") {
@@ -113,8 +133,11 @@ export function SceneView({ active, createEngine }: SceneViewProps) {
   return (
     <div className="scene-view" data-testid="scene-view" data-state={status} data-scene={sceneFile ?? ""}>
       {status === "loaded" && current !== null ? <SceneTree tree={current.tree} selected={selected} onSelect={setSelected} /> : null}
-      <div className="scene-view__stage">
-        <Viewer active={active} createEngine={createEngine} onReady={setViewer} onSelect={setSelected} selection={selection} overlay={overlay} />
+      <div className="scene-view__stage" tabIndex={0} role="group" aria-label="3D view" onKeyDown={onKeyDown} data-testid="scene-stage">
+        <div className="scene-view__viewer">
+          <Viewer active={active} createEngine={createEngine} onReady={setViewer} onSelect={setSelected} selection={selection} overlay={overlay} />
+        </div>
+        {extras}
       </div>
     </div>
   );

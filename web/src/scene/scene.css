@@ -7,9 +7,21 @@
 }
 
 .scene-view__stage {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
   height: 100%;
+}
+
+.scene-view__stage:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.scene-view__viewer {
+  flex: 1;
+  min-height: 0;
 }
 
 .scene-tree {

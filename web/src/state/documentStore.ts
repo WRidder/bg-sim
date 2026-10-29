@@ -22,6 +22,7 @@ import { create } from "zustand";
 
 import type { CatalogBlock } from "../contracts/catalog";
 import type {
+  Binding,
   ConnectionKind,
   JunctionType,
   Model,
@@ -185,6 +186,9 @@ export interface DocumentActions {
   removeProbeLink: (probeId: string, linkId: string) => void;
   setProbeLinkSignals: (probeId: string, linkId: string, signals: readonly string[]) => void;
   setProbePanels: (probeId: string, panels: readonly ModelProbePanel[]) => void;
+
+  /** Replace the model's viewer bindings (plan 7.6 binding editor); one undo entry, `[]` removes the field. */
+  setBindings: (bindings: readonly Binding[]) => void;
 
   connect: (a: PortDescriptor, b: PortDescriptor) => ConnectResult;
 
@@ -999,6 +1003,17 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         const probe = (draft.probes ?? []).find((entry) => entry.id === probeId);
         if (probe !== undefined) {
           probe.panels = copy;
+        }
+      });
+    },
+
+    setBindings: (bindings) => {
+      const copy = structuredClone(bindings) as Binding[];
+      commit((draft) => {
+        if (copy.length === 0) {
+          delete draft.bindings;
+        } else {
+          draft.bindings = copy;
         }
       });
     },
