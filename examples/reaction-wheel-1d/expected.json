@@ -1,0 +1,188 @@
+{
+  "project": "reaction-wheel-1d",
+  "description": "Plan 9.7 (X5.2) acceptance. A cube balanced on one edge (project block InvertedPendulumBody: J = 4e-3 kg m^2 about the edge, m = 0.6 kg, l = 0.085 m, start theta = 0.05 rad) with a reaction wheel (stdlib drives/ReactionWheel: k = 0.0335, R = 1 Ohm, L = 0.1 mH, J_w = 6e-4 kg m^2, housing on the cube) and a 2 ms discrete LQR on [theta, theta', w_rel] (library/LQR.jl, voltage clamp +-12 V) with the gains from design/design.py (Q = diag(2500, 25, 0.01), R = 1/144; K = [-446.597400, -43.875365, -0.762835] for u = -K x, discrete closed-loop poles 0.3762, 0.9802, 0.9967). The reference numbers are design.py's independent integration of the non-linear plant (Radau, with sin(theta) and the winding inductance) under the same sampled-and-held law and clamp; the model run reproduces them to better than 1e-5 rad. The first sample of the controller is at t = Ts (the declared 0 V output is held before it), and the voltage clamp is active for the first three samples only (the initial tilt asks for 22 V).",
+  "models": {
+    "reaction-wheel-1d": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Body/theta",
+          "t": 0.0,
+          "value": 0.05,
+          "abs": 1e-12,
+          "note": "the cube starts 0.05 rad (2.9 deg) off upright"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Body/theta",
+          "from_t": 2.0,
+          "to_t": 4.0,
+          "value": 0.0034906585,
+          "note": "the plan's acceptance: |theta| < 0.2 deg (0.0034907 rad) for t >= 2 s (measured 0.0223 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Body/theta",
+          "from_t": 2.0,
+          "to_t": 4.0,
+          "value": 0.00038929,
+          "abs": 2e-6,
+          "note": "design.py: 3.8929e-4 rad (0.0223 deg) over [2, 4] s, 9x under the 0.2 deg limit"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Body/theta",
+          "from_t": 0.7,
+          "to_t": 4.0,
+          "value": 0.0034906585,
+          "note": "settle behaviour: the cube is inside 0.2 deg from t = 0.654 s on, well before the 2 s of the plan"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Body/theta",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 0.050014,
+          "abs": 2e-5,
+          "note": "the tilt never grows beyond the initial 0.05 rad (peak 0.050014 rad: the 0 V first sample lets gravity add 14 urad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Body/theta",
+          "t": 0.1,
+          "value": 0.014607,
+          "abs": 2e-5,
+          "note": "design.py 0.014607 rad: the saturated first samples have pulled the tilt from 0.05 to 0.0146 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Body/theta",
+          "t": 0.5,
+          "value": -0.004185,
+          "abs": 2e-5,
+          "note": "design.py -0.004185 rad: the small overshoot to the other side (min -0.0043 rad near 0.43 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Body/theta",
+          "t": 1.0,
+          "value": -0.002021,
+          "abs": 2e-5,
+          "note": "design.py -0.002021 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Body/theta",
+          "t": 4.0,
+          "value": -1.4395e-05,
+          "abs": 2e-6,
+          "note": "design.py -1.44e-5 rad: balanced at the end of the run"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "AngleSens/y",
+          "t": 1.0,
+          "value": -0.002021,
+          "abs": 2e-5,
+          "note": "the sensor integrates the cube's speed from phi(0) = 0.05 and agrees with the body angle"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "AngleSens/y",
+          "signal_b": "Body/theta",
+          "from_t": 0.0,
+          "max_abs": 1e-6,
+          "note": "the angle sensor (an integral of the body speed) and the body's own angle agree for the whole run"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "LQR1/u",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 12.0,
+          "note": "the plan's acceptance: |u| <= 12 V"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "LQR1/u",
+          "from_t": 0.0,
+          "to_t": 0.01,
+          "value": 12.0,
+          "abs": 1e-9,
+          "note": "the +-12 V clamp is active at the first samples (the unclamped demand is 22 V)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "LQR1/u",
+          "from_t": 0.1,
+          "to_t": 4.0,
+          "value": 0.1,
+          "note": "after the first 0.1 s the voltage stays below 0.1 V (measured 0.082 V): the clamp is a start-up event only"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LQR1/u",
+          "t": 0.0,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "the declared 0 V output is held until the first 2 ms sample"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drive/wsense/y",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 300.0,
+          "note": "the plan's acceptance: the wheel's absolute speed stays under 300 rad/s (measured 4.2 rad/s)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Drive/wsense/y",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 4.1652,
+          "abs": 0.01,
+          "note": "design.py: peak absolute wheel speed 4.165 rad/s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "RelSpeed/y",
+          "from_t": 0.0,
+          "to_t": 4.0,
+          "value": 4.6839,
+          "abs": 0.01,
+          "note": "design.py: peak wheel speed relative to the cube 4.684 rad/s (at t = 0.016 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RelSpeed/y",
+          "t": 1.0,
+          "value": 0.9983,
+          "abs": 0.005,
+          "note": "design.py 0.9983 rad/s: the wheel speed bleeds off slowly (closed-loop pole -1.65 1/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RelSpeed/y",
+          "t": 4.0,
+          "value": 0.0071,
+          "abs": 0.002,
+          "note": "design.py 0.0071 rad/s: the wheel is nearly stopped at the end of the run"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Drive/phi_rel",
+          "t": 4.0,
+          "value": 3.0750,
+          "abs": 0.005,
+          "note": "the wheel angle relative to the cube (the 3D wheel_joint binding): design.py integrates the relative speed to 3.0750 rad, about half a turn"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E106", "W201", "W202", "W205", "W206"],
+          "note": "no solver failure, no causal conflict, no derivative-causal store (W201), no algebraic loop and no event-limit stop; the run reports no diagnostics at all"
+        }
+      ]
+    }
+  }
+}

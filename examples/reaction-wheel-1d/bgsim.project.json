@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "reaction-wheel-1d",
+  "models": [
+    "reaction-wheel-1d"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

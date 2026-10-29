@@ -1,0 +1,402 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "reaction-wheel-1d",
+  "$comment": "Plan 9.7 (X5.2): a cube balanced on one edge by a reaction wheel. The cube is the project-library InvertedPendulumBody (the stdlib Inertia with the gravity torque m*g*l*sin(theta)); its two ports sit on the same absolute rotation: AngleSens and SpeedSens read the first, the motor housing is on the second. The motor and wheel are the stdlib drives/ReactionWheel (R 1 ohm, L 0.1 mH, k 0.0335, absolute wheel inertia J_w = 6e-4) instead of a DCMotor plus an Inertia: the DCMotor composite has no stator reaction (STATUS NOTE-8), so a cube driven through it is pushed the wrong way and angular momentum is not conserved; ReactionWheel delivers the reaction on the housing and puts the back-EMF on the relative rate. A 2 ms discrete LQR (library/LQR.jl, gains from design/design.py) drives the voltage, clamped to +-12 V. The stdlib Sum takes one vector input that a JSON signal graph cannot assemble from scalar outputs, so the relative wheel speed is the inline RelSpeed (wheel speed minus body speed, like the ErrorSum of the dc-motor sample). The wheel angle for the 3D binding is the drive's observed Drive/phi_rel. AngleSens starts at phi = theta(0) = 0.05 rad.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "AngleSens",
+        "block": {
+          "ref": "stdlib:converters/AngleSensor"
+        },
+        "position": {
+          "x": 100,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "phi": "0.05"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "SpeedSens",
+        "block": {
+          "ref": "stdlib:converters/SpeedSensor"
+        },
+        "position": {
+          "x": 100,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "RelSpeed",
+        "block": {
+          "inline": {
+            "source": "@block RelSpeed begin\n    @inputs begin\n        u1::Real, [unit = \"rad/s\"]\n        u2::Real, [unit = \"rad/s\"]\n    end\n    @outputs y::Real, [unit = \"rad/s\"]\n    @equations y ~ u1 - u2\nend\n"
+          }
+        },
+        "position": {
+          "x": 340,
+          "y": 100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "LQR1",
+        "block": {
+          "ref": "project:LQR"
+        },
+        "position": {
+          "x": 620,
+          "y": 100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "K_theta": "-446.597400",
+          "K_thetadot": "-43.875365",
+          "K_wheel": "-0.762835",
+          "u_max": "12.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Drive",
+        "block": {
+          "ref": "stdlib:drives/ReactionWheel"
+        },
+        "position": {
+          "x": 580,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R_w": "1.0",
+          "L": "1e-4",
+          "k_t": "0.0335",
+          "J_w": "6e-4",
+          "b_m": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Body",
+        "block": {
+          "ref": "project:InvertedPendulumBody"
+        },
+        "position": {
+          "x": 340,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "J": "4e-3",
+          "m": "0.6",
+          "l": "0.085",
+          "g": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "theta": "0.05"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n05",
+          "port": "theta"
+        },
+        "route": [
+          {
+            "x": 190,
+            "y": 360
+          },
+          {
+            "x": 190,
+            "y": 250
+          },
+          {
+            "x": 560,
+            "y": 250
+          },
+          {
+            "x": 560,
+            "y": 120
+          }
+        ],
+        "label": "body angle"
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "y"
+        },
+        "to": {
+          "node": "n05",
+          "port": "thetadot"
+        },
+        "route": [
+          {
+            "x": 250,
+            "y": 500
+          },
+          {
+            "x": 250,
+            "y": 270
+          },
+          {
+            "x": 570,
+            "y": 270
+          },
+          {
+            "x": 570,
+            "y": 130
+          }
+        ],
+        "label": "body speed"
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "w_w"
+        },
+        "to": {
+          "node": "n04",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "y"
+        },
+        "to": {
+          "node": "n04",
+          "port": "u2"
+        },
+        "route": [
+          {
+            "x": 220,
+            "y": 500
+          },
+          {
+            "x": 220,
+            "y": 310
+          },
+          {
+            "x": 400,
+            "y": 310
+          },
+          {
+            "x": 400,
+            "y": 210
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": {
+          "node": "n04",
+          "port": "y"
+        },
+        "to": {
+          "node": "n05",
+          "port": "w_rel"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s07",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "u"
+        },
+        "to": {
+          "node": "n09",
+          "port": "u"
+        },
+        "route": [],
+        "label": "voltage command (+-12 V)"
+      },
+      {
+        "id": "w04",
+        "kind": "wire",
+        "from": {
+          "node": "n12",
+          "port": "b"
+        },
+        "to": {
+          "node": "n09",
+          "port": "housing"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w08",
+        "kind": "wire",
+        "from": {
+          "node": "n01",
+          "port": "a"
+        },
+        "to": {
+          "node": "n12",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w09",
+        "kind": "wire",
+        "from": {
+          "node": "n02",
+          "port": "a"
+        },
+        "to": {
+          "node": "n12",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "Reaction-wheel cube (plan 9.7): the cube tips about its edge (Body, J 4e-3 kg*m^2, m 0.6 kg, l 0.085 m, start 0.05 rad); the Drive (DC motor with its housing on the cube, wheel J_w 6e-4 kg*m^2) pushes back on it. A 2 ms LQR on [theta, theta dot, wheel speed relative to the cube] sets the motor voltage, clamped to +-12 V; its gains come from design/design.py.",
+        "x": 100,
+        "y": 640,
+        "w": 1000,
+        "h": 60
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 4.0,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 4001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Cube angle",
+      "signals": [
+        "Body/theta"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Wheel speed (relative to the cube and absolute)",
+      "signals": [
+        "RelSpeed/y",
+        "Drive/wsense/y"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Motor voltage (saturated at +-12 V)",
+      "signals": [
+        "LQR1/u"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Winding current",
+      "signals": [
+        "Drive/isense/y"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/reaction-wheel-1d.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:edge",
+      "property": "position",
+      "signal": "Body/theta"
+    },
+    {
+      "target": "joint:wheel_joint",
+      "property": "position",
+      "signal": "Drive/phi_rel"
+    }
+  ]
+}
