@@ -1,3 +1,5 @@
+import { lazy, Suspense, useState } from "react";
+
 import { DiagnosticsPanel } from "../diagnostics/DiagnosticsPanel";
 import { useDiagnosticBadges } from "../diagnostics/useDiagnostics";
 import { AutoPlotPanel } from "../plot/AutoPlotPanel";
@@ -6,6 +8,9 @@ import { PlotPanel } from "../plot/PlotPanel";
 import { SignalBrowser } from "../plot/SignalBrowser";
 import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
+
+// Babylon stays out of the main bundle: the viewer loads when the 3D View tab is first opened.
+const DockViewer = lazy(() => import("../viewer/DockViewer"));
 
 export type DockTabId = "plots" | "auto" | "viewer" | "diagnostics" | "signals" | "log";
 
@@ -79,6 +84,11 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
     { id: "log", label: "Log" },
   ];
   const empty = DOCK_EMPTY_STATES[active];
+  // The viewer mounts on first use and then stays mounted (hidden) so its camera and scene survive tab switches.
+  const [viewerSeen, setViewerSeen] = useState(active === "viewer");
+  if (active === "viewer" && !viewerSeen) {
+    setViewerSeen(true);
+  }
 
   // The Plots, Signals and Diagnostics tabs are mounted components owned by
   // W1.4 and W1.3; the rest keep the shell's empty state until their WP lands.
@@ -124,6 +134,8 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
         );
       case "signals":
         return <SignalBrowser />;
+      case "viewer":
+        return null;
       case "diagnostics":
         return <DiagnosticsPanel />;
       default:
@@ -142,6 +154,13 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
         tabIndex={0}
       >
         {panel()}
+        {viewerSeen ? (
+          <div style={{ height: "100%" }} hidden={active !== "viewer"} data-testid="dock-viewer">
+            <Suspense fallback={<EmptyState title="Loading the 3D view" hint="One moment." />}>
+              <DockViewer active={active === "viewer"} />
+            </Suspense>
+          </div>
+        ) : null}
       </div>
     </div>
   );
