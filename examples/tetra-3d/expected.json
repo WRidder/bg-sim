@@ -1,0 +1,533 @@
+{
+  "project": "tetra-3d",
+  "description": "Plan X5.6: a regular tetrahedron (edge 0.25 m, 0.4 kg shell + four 0.25 kg wheels = 1.4 kg) with one reaction wheel on each face (spin axis = outward face normal, A A^T = 4/3 I, null direction (1,1,1,1)/2), on compliant ContactPoints at its four vertices over a ContactSurface. `sequence-contact` runs a scripted face -> edge -> vertex sequence (TipSequencer, Allocator, 1 ms): rests on the base face (3 vertex loads), tips onto the edge v2-v3 (54.74 deg, 2 loads) and holds it, then lifts onto the vertex v3 (70.53 deg, 1 load) and holds it.",
+  "models": {
+    "sequence-contact": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/ph",
+          "t": 0.3,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "phase 0: the firmware holds still on the base face until t1 = 0.4 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 0.3,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "face phase: the body lies flat on its base face (identity attitude)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/zc",
+          "t": 0.35,
+          "value": 0.050656842,
+          "abs": 1e-05,
+          "note": "face phase: CoM height = inradius r = L sqrt 6/12 = 0.051031 m minus the 0.374 mm contact penetration (each of three vertices carries a third of the weight)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/nload",
+          "t": 0.35,
+          "value": 3.0,
+          "abs": 0.01,
+          "note": "face phase: exactly three vertices loaded (smooth count, measured 2.9986)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/sumfn",
+          "t": 0.35,
+          "value": 13.734,
+          "abs": 0.005,
+          "note": "face phase: sum of the normal forces = total weight m g = 1.4 x 9.81 = 13.734 N"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C1/f_n",
+          "t": 0.35,
+          "value": 4.578,
+          "abs": 0.01,
+          "note": "face phase: base vertex 1 carries a third of the weight, 4.578 N"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C2/f_n",
+          "t": 0.35,
+          "value": 4.578,
+          "abs": 0.01,
+          "note": "face phase: base vertex 2 carries a third of the weight, 4.578 N"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C3/f_n",
+          "t": 0.35,
+          "value": 4.578,
+          "abs": 0.01,
+          "note": "face phase: base vertex 3 carries a third of the weight, 4.578 N"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C4/f_n",
+          "value": 1e-06,
+          "note": "face phase: the apex contact is free",
+          "from_t": 0.0,
+          "to_t": 0.39
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/ph",
+          "t": 1.5,
+          "value": 2.0,
+          "abs": 1e-09,
+          "note": "phase 2: edge balance reached (reference move done at 1.05 s) and held"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 1.85,
+          "value": 0.955316618,
+          "abs": 0.002,
+          "note": "edge phase: base normal tilted acos(1/sqrt 3) = 54.7356 deg from the vertical (measured 0.9560 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Sense/ang_edge",
+          "value": 0.0175,
+          "note": "edge phase held: the angle between the world vertical and the edge balance direction stays within 1 deg (0.0175 rad; measured 0.29 deg at 1.4 s, 0.077 deg from 1.7 s)",
+          "from_t": 1.4,
+          "to_t": 1.9
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/zc",
+          "t": 1.85,
+          "value": 0.087898014,
+          "abs": 0.0001,
+          "note": "edge phase: the CoM sits L/(2 sqrt 2) = 0.088388 m above the edge midpoint, minus the 0.49 mm penetration (measured 0.087898)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/py",
+          "t": 1.85,
+          "value": -0.072168784,
+          "abs": 0.001,
+          "note": "edge phase: the CoM is above the edge v2-v3, i.e. above y = -rho/2 = -0.07217 m (measured -0.07223)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/px",
+          "t": 1.85,
+          "value": 0.0,
+          "abs": 0.001,
+          "note": "edge phase: the CoM is above the middle of the edge, x = 0"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/nload",
+          "t": 1.85,
+          "value": 2.0,
+          "abs": 0.01,
+          "note": "edge phase: exactly two vertices loaded (smooth count, measured 1.99958)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/sumfn",
+          "t": 1.85,
+          "value": 13.734,
+          "abs": 0.005,
+          "note": "edge phase: the two edge vertices carry the full weight"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C2/f_n",
+          "t": 1.85,
+          "value": 6.867,
+          "abs": 0.01,
+          "note": "edge phase: vertex 2 carries half the weight, 6.867 N"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C3/f_n",
+          "t": 1.85,
+          "value": 6.867,
+          "abs": 0.01,
+          "note": "edge phase: vertex 3 carries half the weight, 6.867 N"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C1/f_n",
+          "value": 1e-06,
+          "note": "edge phase: vertex 1 is free (f_n = 0 to 1e-6 N)",
+          "from_t": 1.4,
+          "to_t": 1.9
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C4/f_n",
+          "value": 1e-06,
+          "note": "edge phase: vertex 4 is free (f_n = 0 to 1e-6 N)",
+          "from_t": 1.4,
+          "to_t": 1.9
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Seq/ph",
+          "t": 3.3,
+          "value": 4.0,
+          "abs": 1e-09,
+          "note": "phase 4: vertex balance reached (reference move done at 2.75 s) and held"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/tilt",
+          "t": 3.75,
+          "value": 1.230959417,
+          "abs": 0.002,
+          "note": "vertex phase: base normal tilted acos(1/3) = 70.5288 deg from the vertical (measured 1.23113 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Sense/ang_vert",
+          "value": 0.0087,
+          "note": "vertex phase held: the angle between the world vertical and the vertex balance direction -v3/R stays within 0.5 deg (0.0087 rad) from 3.3 s (measured 0.18 deg at 3.3 s, 0.067 deg at 3.5 s)",
+          "from_t": 3.3,
+          "to_t": 3.8
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/zc",
+          "t": 3.75,
+          "value": 0.152314753,
+          "abs": 0.0001,
+          "note": "vertex phase: the CoM sits R = L sqrt 6/4 = 0.153093 m above the vertex minus the 0.78 mm penetration (measured 0.152315)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/px",
+          "t": 3.75,
+          "value": 0.125,
+          "abs": 0.001,
+          "note": "vertex phase: the CoM is above vertex v3, x = +L/2 = 0.125 m (measured 0.12506)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/py",
+          "t": 3.75,
+          "value": -0.072168784,
+          "abs": 0.001,
+          "note": "vertex phase: the CoM is above vertex v3, y = -rho/2 = -0.07217 m (measured -0.07217)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/nload",
+          "t": 3.75,
+          "value": 1.0,
+          "abs": 0.01,
+          "note": "vertex phase: exactly one vertex loaded (smooth count, measured 0.99995)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/sumfn",
+          "t": 3.75,
+          "value": 13.734,
+          "abs": 0.005,
+          "note": "vertex phase: the single vertex carries the full weight"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C3/f_n",
+          "t": 3.75,
+          "value": 13.734,
+          "abs": 0.02,
+          "note": "vertex phase: vertex 3 carries the full weight, 13.734 N"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C1/f_n",
+          "value": 1e-06,
+          "note": "vertex phase: vertex 1 is free (f_n = 0 to 1e-6 N)",
+          "from_t": 3.3,
+          "to_t": 3.8
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C2/f_n",
+          "value": 1e-06,
+          "note": "vertex phase: vertex 2 is free (f_n = 0 to 1e-6 N)",
+          "from_t": 3.3,
+          "to_t": 3.8
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C4/f_n",
+          "value": 1e-06,
+          "note": "vertex phase: vertex 4 is free (f_n = 0 to 1e-6 N)",
+          "from_t": 3.3,
+          "to_t": 3.8
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "C4/f_n",
+          "value": 1e-06,
+          "note": "the apex contact never carries load in the whole run (the apex clearance stays above 0.2 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint1/qdout",
+          "value": 340.0,
+          "note": "wheel 1 speed relative to the body stays under 340 rad/s (3250 rpm)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint2/qdout",
+          "value": 340.0,
+          "note": "wheel 2 speed relative to the body stays under 340 rad/s (3250 rpm)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint3/qdout",
+          "value": 340.0,
+          "note": "wheel 3 speed relative to the body stays under 340 rad/s (3250 rpm)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "WJoint4/qdout",
+          "value": 340.0,
+          "note": "wheel 4 speed relative to the body stays under 340 rad/s (3250 rpm)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "WJoint1/qdout",
+          "value": 314.49,
+          "abs": 1.0,
+          "note": "wheel speed peak: wheel 1 (the face opposite vertex 1) reaches 314.5 rad/s (3003 rpm) during the vertex lift (wheels 2/3/4: 119.2 / 119.3 / 212.7)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t1",
+          "value": 1.6001,
+          "note": "motor torque of wheel 1 stays at the 1.6 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t2",
+          "value": 1.6001,
+          "note": "motor torque of wheel 2 stays at the 1.6 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t3",
+          "value": 1.6001,
+          "note": "motor torque of wheel 3 stays at the 1.6 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/t4",
+          "value": 1.6001,
+          "note": "motor torque of wheel 4 stays at the 1.6 N m allocator limit (the allocator scales the request, it never exceeds the limit)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Tap/t1",
+          "value": 1.4734,
+          "abs": 0.01,
+          "note": "peak motor torque: wheel 1 reaches 1.473 N m (14.7 A at k_t = 0.1 N m/A), below the 1.6 N m limit, so the allocator never saturates (Alloc/sat = 1)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ledger/v1",
+          "value": 48.0,
+          "note": "terminal voltage of motor 1, R i + k_e w with R = 0.4 ohm and k_e = k_t = 0.1 V s/rad, stays under a 48 V supply"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ledger/v2",
+          "value": 48.0,
+          "note": "terminal voltage of motor 2, R i + k_e w with R = 0.4 ohm and k_e = k_t = 0.1 V s/rad, stays under a 48 V supply"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ledger/v3",
+          "value": 48.0,
+          "note": "terminal voltage of motor 3, R i + k_e w with R = 0.4 ohm and k_e = k_t = 0.1 V s/rad, stays under a 48 V supply"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ledger/v4",
+          "value": 48.0,
+          "note": "terminal voltage of motor 4, R i + k_e w with R = 0.4 ohm and k_e = k_t = 0.1 V s/rad, stays under a 48 V supply"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ledger/v1",
+          "value": 32.62,
+          "abs": 0.3,
+          "note": "peak terminal voltage 32.6 V (motor 1: 14.7 A x 0.4 ohm + 0.1 V s/rad x 314 rad/s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Alloc/sat",
+          "value": 1.0000001,
+          "note": "allocator scale factor stays 1 (no saturation)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Tap/nsp",
+          "t": 1.0,
+          "value": 0.005,
+          "abs": 1e-09,
+          "note": "null-space component n.tau of the four MEASURED motor torques equals the commanded lam = 0.005 N m, n = (1,1,1,1)/2"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Tap/nsp",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Lambda/y",
+              "coeff": -1.0
+            }
+          ],
+          "from_t": 0.002,
+          "scale": 0.005,
+          "tol": 1e-09,
+          "note": "n.tau - lam stays 0 for the whole run (measured max 3e-16), through every phase: the null direction (1,1,1,1) of the face-normal wheels carries no body torque"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tap/resid",
+          "value": 1e-12,
+          "note": "range and null space of the torque vector are orthogonal: |tau|^2 - |A+ A tau|^2 - (n.tau)^2 = 0 (measured 2e-15)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbx",
+          "signal_b": "Alloc/Tbx",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis x (measured 4e-16)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tby",
+          "signal_b": "Alloc/Tby",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis y (measured 4e-16)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Tap/Tbz",
+          "signal_b": "Alloc/Tbz",
+          "from_t": 0.002,
+          "max_abs": 1e-12,
+          "note": "the body torque the motors realise (measured through the drives) equals what the firmware allocated, axis z (measured 4e-16)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Sense/qerr",
+          "value": 1e-09,
+          "note": "quaternion norm drift of the pose integrator: |q|^2 - 1 stays below 1e-9 (measured 1.4e-14)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "EnBody/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnBody/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW1/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW1/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW2/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW2/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW3/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW3/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW4/Ek",
+              "coeff": 1.0
+            },
+            {
+              "signal": "EnW4/Ep",
+              "coeff": 1.0
+            },
+            {
+              "signal": "C1/Ec",
+              "coeff": 1.0
+            },
+            {
+              "signal": "C2/Ec",
+              "coeff": 1.0
+            },
+            {
+              "signal": "C3/Ec",
+              "coeff": 1.0
+            },
+            {
+              "signal": "C4/Ec",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Ledger/Es",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Ledger/Ed",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Ledger/Wm",
+              "coeff": -1.0
+            }
+          ],
+          "scale": 1.0,
+          "tol": 0.002,
+          "note": "energy ledger: kinetic + potential energy of the body and four wheels, plus the contact spring energy, plus shaft and rotor energy, plus the dissipated contact energy, minus the motor input work is constant. Measured max drift 0.95e-3 J (the wheel joints' own compliance, kr = 2e4 N m/rad, stores the rest) while the motors do 126 J of work on the wheels; the bound is 2e-3 J"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "every wheel rotor sits behind a shaft (no W201), the chain is connected, frame-consistent (no E007) and the event count stays far below the limit (no W206)"
+        }
+      ]
+    }
+  }
+}

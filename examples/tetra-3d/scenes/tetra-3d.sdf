@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!--
+  tetra-3d (X5.6): a regular tetrahedron (edge 0.25 m) with a reaction wheel on each of its four faces,
+  on the ground plane z = 0.
+
+  Z-up, metres, the world frame of the model. The body is bound by its world pose
+  (qw, qx, qy, qz, x, y, z): link "tetra" follows Pose/qw .. Pose/pz. Each wheel link wheel_k_link hangs on a revolute
+  joint "wheel_k" of the tetra link (axis z of the wheel frame = the face normal) whose position is the
+  wheel angle WJoint<k>/q relative to the body.
+  The body is the GLB mesh meshes/tetra.glb (translucent, apex up, base face down; vertices 1..4 are
+  the base vertices at azimuth 90, 210, 330 deg and the apex). The wheel frame has its z axis along the
+  spin axis (the outward face normal), so the disc (a cylinder, whose axis is z) spins in place; a marker
+  on its rim shows the rotation. The red sphere marks vertex 3 (+L/2, -rho/2, -r), the vertex the body
+  ends up balanced on; the dark sphere marks vertex 2, the other end of the balance edge. The link poses
+  below are those of sequence-contact at the start (the body lies on its base face, sunk a fraction of a
+  millimetre into the compliant ground).
+  The wheel discs are drawn with a 0.04 m radius so that they fit inside the body; the real 0.25 kg
+  wheel with J = 0.002 kg m^2 would be 0.126 m wide.
+-->
+<sdf version="1.9">
+  <model name="tetra_3d">
+    <link name="ground">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="ground_slab">
+        <pose>0 0 -0.01 0 0 0</pose>
+        <geometry><box><size>0.5 0.5 0.02</size></box></geometry>
+        <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="tetra">
+      <pose>0 0 0.050657 0 0 0</pose>
+      <visual name="tetra_body">
+        <geometry><mesh><uri>meshes/tetra.glb</uri></mesh></geometry>
+      </visual>
+      <visual name="vertex3_marker">
+        <pose>0.125000 -0.072169 -0.051031 0 0 0</pose>
+        <geometry><sphere><radius>0.01</radius></sphere></geometry>
+        <material><diffuse>0.9 0.2 0.2 1</diffuse></material>
+      </visual>
+      <visual name="vertex2_marker">
+        <pose>-0.125000 -0.072169 -0.051031 0 0 0</pose>
+        <geometry><sphere><radius>0.01</radius></sphere></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="wheel_1_link">
+      <pose>-0.000000 -0.032998 0.062324 1.230959 -0.000000 -0.000000</pose>
+      <visual name="wheel_1_disc">
+        <geometry><cylinder><radius>0.04</radius><length>0.012</length></cylinder></geometry>
+        <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
+      </visual>
+      <visual name="wheel_1_marker">
+        <pose>0.025 0 0.008 0 0 0</pose>
+        <geometry><box><size>0.025 0.008 0.005</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="wheel_2_link">
+      <pose>0.028577 0.016499 0.062324 -0.955317 0.955317 -0.523599</pose>
+      <visual name="wheel_2_disc">
+        <geometry><cylinder><radius>0.04</radius><length>0.012</length></cylinder></geometry>
+        <material><diffuse>0.35 0.7 0.45 1</diffuse></material>
+      </visual>
+      <visual name="wheel_2_marker">
+        <pose>0.025 0 0.008 0 0 0</pose>
+        <geometry><box><size>0.025 0.008 0.005</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="wheel_3_link">
+      <pose>-0.028577 0.016499 0.062324 -0.955317 -0.955317 0.523599</pose>
+      <visual name="wheel_3_disc">
+        <geometry><cylinder><radius>0.04</radius><length>0.012</length></cylinder></geometry>
+        <material><diffuse>0.9 0.3 0.3 1</diffuse></material>
+      </visual>
+      <visual name="wheel_3_marker">
+        <pose>0.025 0 0.008 0 0 0</pose>
+        <geometry><box><size>0.025 0.008 0.005</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="wheel_4_link">
+      <pose>0.000000 0.000000 0.015657 3.141593 -0.000000 0.000000</pose>
+      <visual name="wheel_4_disc">
+        <geometry><cylinder><radius>0.04</radius><length>0.012</length></cylinder></geometry>
+        <material><diffuse>0.6 0.45 0.85 1</diffuse></material>
+      </visual>
+      <visual name="wheel_4_marker">
+        <pose>0.025 0 0.008 0 0 0</pose>
+        <geometry><box><size>0.025 0.008 0.005</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <joint name="wheel_1" type="revolute">
+      <parent>tetra</parent>
+      <child>wheel_1_link</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+
+    <joint name="wheel_2" type="revolute">
+      <parent>tetra</parent>
+      <child>wheel_2_link</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+
+    <joint name="wheel_3" type="revolute">
+      <parent>tetra</parent>
+      <child>wheel_3_link</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+
+    <joint name="wheel_4" type="revolute">
+      <parent>tetra</parent>
+      <child>wheel_4_link</child>
+      <axis><xyz>0 0 1</xyz></axis>
+    </joint>
+  </model>
+</sdf>
