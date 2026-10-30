@@ -1692,7 +1692,74 @@ closed-form inverse of the chart Jacobian, and the wrench is its transpose,
 | spherical pendulum / Free3D | Lz drift 1.8e-13, |q| drift 5e-14 / identical to `PoseIntegrator3D` |
 | `test_mech_spatial.jl` | **1067 assertions, ~5 min, green** |
 
-# F5.1 / X5.9
+# PERF-1 — speed of compile, initialization and simulation (verified 2026-10-30)
+
+Numbers: `julia/BGSim/bench/RESULTS.md` (harness `bench/bench.jl`, report `bench/report.jl`).
+Start the harness with `julia --project=julia/BGSim julia/BGSim/bench/bench.jl [case ...] [--runs=N]
+[--full] [--save=dir] [--compare=dir] [--out=f.json]`; `BGSim.LAST_PROFILE[]` holds the phase
+timings and `integ.stats` of the last `simulate`.
+
+## Where the time went (measured before any change)
+
+* **The recorder's per-signal getters were 60-90 % of every run.** `getu(integ, sym)` per
+  recorded signal builds one generated function per signal (one JIT compile each) and the
+  models list *every* port variable as a signal: 2352 signals for `robot-arm-3d/arm`, 2512 for
+  `sequence-contact`, 1714 for `cube-3d-mb`. First call of the getters: 80-150 s cold; warm still
+  10 ms per output row. The solver itself was a minor part (`robot-arm-3d/arm` warm: 1 s of 11.6 s).
+* A vector-valued `getu(integ, syms)` shares sub-expressions but builds its result with
+  `create_array(Vector, nothing, Val(1), Val(2352), x1, ... x2352)` (a 2000-argument call): ≈1 ms per
+  call and 13-24 s first-call compile.
+* **Fix:** `ModelingToolkit.build_explicit_observed_function(sys, symbols; checkbounds = false,
+  return_inplace = true, compiler_options = CompilerOptions(optlevel = 0))[2]` is an in-place
+  `fn(out, u, p, t)` that fills a preallocated `Vector{Float64}` (2352 signals: 2-4 µs per call, first-call
+  compile 1.4 s at `optlevel = 0`, 3.1 s at the default, 13 s for the out-of-place variant). It accepts
+  `integ.u`, `integ.p` (a `DespecializedParameters` wrapper is unwrapped by the generated-function
+  wrapper) and `integ.t`; held discrete values are read from `p`, so a `setp` is visible. Values are
+  bit-identical to the per-signal getters (`test/test_perf.jl`). `optlevel = 1` is the worst
+  of the three (9 s); `infer = false` is not worth it (4.6 s first call and 1 ms per call).
+  `Base.Experimental.set_compile!` is absent in Julia 1.13.2, so only `optlevel` 0/1 and
+  `(optlevel 0, infer false)` exist as `CompilerOptions` combinations (MTK falls back to fixed modules).
+* The recorder wrote every Float64 with its own `write` (~100 ns each); one bulk `write` per row
+  (`_write_row_le`, same little-endian bytes) removes ~0.3 s per 1000 rows at 2500 signals.
+
+## Facts that decide further work
+
+* **Scheduler.** `run_tick!` already publishes (`setp` + `reeval_internals_due_to_modification!`) only
+  when a held value actually changed, so there is no needless integrator reset at an unchanged tick.
+  Cost is small after the reader fix (`tick` column of RESULTS.md: 0.2-3 s per run, 22 µs per tick on
+  the servo). The DAE `initialize_dae!(BrownFullBasicInit)` per published tick is cheap at the sizes measured.
+* **Callbacks.** MTK already merges all `continuous_events` into ONE `VectorContinuousCallback` (servo:
+  length 5, `rrr-multibond`: 1173 kink conditions). On the event-dense servo (852k steps) the condition
+  check is ~85 % of `step!`: each call goes through `FunctionWrappersWrapper` and the
+  `DespecializedParameters` dynamic-dispatch barrier. `ODEProblem{true, FullSpecialize}` removes that
+  (servo 15.2 -> 10.8 s warm, 19.7 -> 10.9 cold) but costs 4 s of extra JIT on the small stiff models
+  (`drivetrain-kalman` 1.1 -> 8.4 s warm because every `remake` re-specialises); not adopted. A switch by
+  the number of run targets (> ~150k) would pay off if the servo becomes a priority.
+* **Symbolic Jacobian is not viable for big models.** `ODEProblem(...; jac = true)` on `robot-arm-3d/arm`
+  (72 states) did not finish in 8 minutes. The AD Jacobian costs ~80 RHS evaluations per step
+  (`nf`/`njacs`), the RHS itself is 5 µs (arm). `compiler_options = CompilerOptions(optlevel = 0)` on the
+  ODEProblem saves ~4 s of first-run JIT (arm: 12.2 -> 8.3 s) but makes every RHS call slower, so it is
+  left at the default.
+* **`remake` on a cache hit** costs 1-2 s the first time per model (JIT, model-specific types;
+  `lower_model` column "compile" of the warm row) and 10-30 ms afterwards. A numeric-vector `remake`
+  (`u0` vector + `remake_buffer` for `p`, which takes MTK's cheap `reconstruct_fn` path) gives identical
+  `u0`/`p`/trajectories and a 0.4 s first call; not adopted (gain only on the first rerun of a model).
+* **Do not bake compiled systems into the package image.** The PrecompileTools workload used to leave
+  its `CompiledModel`s in `COMPILE_CACHE`; after loading the image, a solver path the workload did not
+  take (another integrator type, e.g. `init(problem, Rodas5P())` without tstops) failed with
+  `KeyError` from RuntimeGeneratedFunctions (`generated_callfunc_body`: the expression bodies do not
+  survive the precompile boundary). The workload now ends with `clear_compile_cache!()`.
+* **The workload also runs a clocked model** (`_warm_model_document(; discrete = true)`: RC + `ZOH`
+  of the step), so `discrete_schedule`, `run_tick!`, `setp`, the DAE re-initialisation and the in-place reader are
+  compiled in the image.
+* **Results are not bit-reproducible across process histories for chaotic models.** `cube-3d/cube-3d-mb`
+  (a balancing cube) gives 33769, 41065 or 41150 steps depending on what the process did before (the
+  same code, same inputs; MTK/Symbolics ordering depends on allocation history). Compare such models
+  with the example checks, not byte-for-byte. All other bench models are bit-identical before and after.
+* Cold start (`using BGSim` ≈ 15 s on this loaded machine, `warm_up!` ≈ 1 s) is package loading; a
+  `PackageCompiler` sysimage is the only lever left (plan 11), not required.
+* The scratchpad of one Claude session is shared by parallel agents; keep probe files in a private
+  sub-directory.
 
 ## CSV input and prescribed-motion inverse dynamics (F5.1 / X5.9)
 

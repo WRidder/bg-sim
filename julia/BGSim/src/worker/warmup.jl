@@ -72,7 +72,7 @@ and capacitor to ground. `final` is a parameter value, so two documents with dif
 `final`s share one structural compile key and the second run exercises `remake` (NOTES.md,
 API surprise 8).
 """
-function _warm_model_document(final::AbstractString = "12.0")
+function _warm_model_document(final::AbstractString = "12.0"; discrete::Bool = false)
     node(id, name, ref, params = Dict{String,Any}()) = Dict{String,Any}(
         "id" => id,
         "name" => name,
@@ -87,34 +87,34 @@ function _warm_model_document(final::AbstractString = "12.0")
         "from" => Dict{String,Any}("node" => from_node, "port" => from_port),
         "to" => Dict{String,Any}("node" => to_node, "port" => to_port),
     )
+    nodes = Any[
+        node(
+            "n1", "Step1", "stdlib:sources/Step",
+            Dict{String,Any}("t_step" => "0.0", "initial" => "0.0", "final" => final),
+        ),
+        node("n2", "V1", "stdlib:electrical/VoltageSource", Dict{String,Any}("V" => "1.0")),
+        node("n3", "R1", "stdlib:electrical/Resistor", Dict{String,Any}("R" => "1000.0")),
+        node("n4", "C1", "stdlib:electrical/Capacitor", Dict{String,Any}("C" => "1e-6")),
+        node("n5", "G1", "stdlib:electrical/Ground"),
+    ]
+    connections = Any[
+        conn("c1", "signal", "n1", "y", "n2", "u"),
+        conn("c2", "wire", "n2", "p", "n3", "p"),
+        conn("c3", "wire", "n3", "n", "n4", "p"),
+        conn("c4", "wire", "n4", "n", "n5", "p"),
+        conn("c5", "wire", "n2", "n", "n5", "p"),
+    ]
+    if discrete
+        # A clocked sample of the step: the scheduler publishes a changed held value at the
+        # first tick, which warms `run_tick!`, `setp` and the DAE re-initialisation (PERF-1).
+        push!(nodes, node("n6", "Z1", "stdlib:discrete/ZOH"))
+        push!(connections, conn("c6", "signal", "n1", "y", "n6", "u"))
+    end
     return Dict{String,Any}(
         "format" => "bgsim.model",
         "language" => "0.1.0",
         "name" => "WorkerWarmupRC",
-        "diagram" => Dict{String,Any}(
-            "nodes" => Any[
-                node(
-                    "n1", "Step1", "stdlib:sources/Step",
-                    Dict{String,Any}(
-                        "t_step" => "0.0", "initial" => "0.0", "final" => final,
-                    ),
-                ),
-                node("n2", "V1", "stdlib:electrical/VoltageSource",
-                    Dict{String,Any}("V" => "1.0")),
-                node("n3", "R1", "stdlib:electrical/Resistor",
-                    Dict{String,Any}("R" => "1000.0")),
-                node("n4", "C1", "stdlib:electrical/Capacitor",
-                    Dict{String,Any}("C" => "1e-6")),
-                node("n5", "G1", "stdlib:electrical/Ground"),
-            ],
-            "connections" => Any[
-                conn("c1", "signal", "n1", "y", "n2", "u"),
-                conn("c2", "wire", "n2", "p", "n3", "p"),
-                conn("c3", "wire", "n3", "n", "n4", "p"),
-                conn("c4", "wire", "n4", "n", "n5", "p"),
-                conn("c5", "wire", "n2", "n", "n5", "p"),
-            ],
-        ),
+        "diagram" => Dict{String,Any}("nodes" => nodes, "connections" => connections),
         "settings" => Dict{String,Any}(
             "t_start" => 0.0,
             "t_end" => 0.01,
@@ -138,11 +138,11 @@ const WARM_STARTED = Ref(false)
 const WARM_LOCK = ReentrantLock()
 
 "Flatten and simulate one warm-up model into `dir` (three output points)."
-function _warm_run!(dir::AbstractString, final::AbstractString)
-    md = IR.parse_model(_warm_model_document(final))
+function _warm_run!(dir::AbstractString, final::AbstractString; discrete::Bool = false)
+    md = IR.parse_model(_warm_model_document(final; discrete = discrete))
     flat = Compile.flatten(md)
     settings = RunSettings(md.settings)
-    return simulate(flat; run_dir = dir, run_id = "warmup-" * final, settings = settings)
+    return simulate(flat; run_dir = dir, run_id = "warmup-" * final * (discrete ? "-d" : ""), settings = settings)
 end
 
 """
@@ -198,8 +198,15 @@ end
         try
             _warm_run!(dir, "12.0")
             _warm_run!(dir, "6.0")
+            _warm_run!(dir, "12.0"; discrete = true)
+            _warm_run!(dir, "6.0"; discrete = true)
         finally
             rm(dir; recursive = true, force = true)
+            # Do not bake the compiled `System`s into the package image: their runtime-
+            # generated functions lose their bodies across a precompile boundary, so a
+            # solver path the workload did not touch (another integrator type, a Jacobian
+            # specialisation) would fail with a `KeyError` from RuntimeGeneratedFunctions.
+            clear_compile_cache!()
         end
     end
 end
@@ -231,6 +238,8 @@ function warm_up!(; log::IO = stderr, notify = nothing)
         try
             _warm_run!(dir, "12.0")
             _warm_run!(dir, "6.0")
+            _warm_run!(dir, "12.0"; discrete = true)
+            _warm_run!(dir, "6.0"; discrete = true)
         finally
             rm(dir; recursive = true, force = true)
         end

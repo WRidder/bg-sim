@@ -1,0 +1,45 @@
+== dc-motor/iconic
+  states=3 flatten=0.15 lower=0.02 system=0.02 mtkcompile=0.11 problem=0.99
+  cold: total=3.13 compile=0.03 init=0.89 loop=0.58 (step=0.16 tick=0.00 values=1.44) steps=5076 rej=64 nf=30844 njac=0 nw=0 nsolve=0 ticks=0 rows=5002 done
+  warm: total=1.70 compile=1.16 init=0.00 loop=0.51 (step=0.09 tick=0.00 values=0.37) steps=5076 rej=64 nf=30844 njac=0 nw=0 nsolve=0 ticks=0 rows=5002 done
+== drivetrain-kalman
+  states=10 flatten=2.20 lower=0.21 system=0.00 mtkcompile=0.87 problem=1.65
+  cold: total=15.63 compile=0.06 init=3.06 loop=6.18 (step=4.64 tick=0.72 values=2.60) steps=16676 rej=50 nf=317246 njac=16676 nw=16726 nsolve=133808 ticks=2000 rows=5906 done
+  warm: total=2.16 compile=1.10 init=0.00 loop=1.02 (step=0.28 tick=0.05 values=0.58) steps=16676 rej=50 nf=317246 njac=16676 nw=16726 nsolve=133808 ticks=2000 rows=5906 done
+== industrial-servo/switching
+  states=4 flatten=0.44 lower=0.02 system=0.00 mtkcompile=0.03 problem=0.78
+  cold: total=51.62 compile=0.05 init=2.62 loop=45.11 (step=11.10 tick=3.61 values=27.52) steps=852443 rej=4 nf=5234274 njac=0 nw=0 nsolve=0 ticks=124800 rows=244198 done
+  warm: total=44.41 compile=0.98 init=0.00 loop=43.18 (step=9.32 tick=3.29 values=26.81) steps=852443 rej=4 nf=5234274 njac=0 nw=0 nsolve=0 ticks=124800 rows=244198 done
+== robot-arm-2d/arm
+  states=0 flatten=0.22 lower=0.03 system=0.00 mtkcompile=0.07 problem=0.98
+  cold: total=11.37 compile=0.12 init=0.99 loop=3.74 (step=0.80 tick=0.09 values=7.20) steps=54740 rej=860 nf=336602 njac=0 nw=0 nsolve=0 ticks=3000 rows=6003 done
+  warm: total=4.12 compile=1.13 init=0.00 loop=2.94 (step=0.65 tick=0.05 values=2.01) steps=54740 rej=860 nf=336602 njac=0 nw=0 nsolve=0 ticks=3000 rows=6003 done
+== robot-arm-3d/arm (t_end 0.5)
+  states=0 flatten=0.55 lower=0.11 system=0.03 mtkcompile=0.79 problem=2.52
+  cold: total=139.18 compile=1.98 init=3.90 loop=20.07 (step=8.83 tick=0.27 values=81.38) steps=2387 rej=576 nf=197957 njac=2387 nw=2963 nsolve=23704 ticks=500 rows=1049 done
+  warm: total=13.59 compile=1.82 init=0.00 loop=11.58 (step=0.98 tick=0.05 values=10.21) steps=2387 rej=576 nf=197957 njac=2387 nw=2963 nsolve=23704 ticks=500 rows=1049 done
+== robot-arm-3d/rrr
+  states=15 flatten=0.16 lower=0.81 system=0.01 mtkcompile=0.39 problem=3.89
+  cold: total=33.30 compile=0.56 init=2.83 loop=16.58 (step=3.44 tick=0.34 values=19.84) steps=45478 rej=70 nf=1092034 njac=45478 nw=45548 nsolve=364384 ticks=5000 rows=11131 done
+  warm: total=62.02 compile=0.80 init=0.00 loop=61.11 (step=5.22 tick=1.16 values=50.62) steps=45478 rej=70 nf=1092034 njac=45478 nw=45548 nsolve=364384 ticks=5000 rows=11131 done
+== robot-arm-3d/rrr-multibond (t_end 1)
+  states=0 flatten=0.16 lower=0.20 system=0.04 mtkcompile=0.81 problem=2.71
+  cold: total=107.51 compile=2.44 init=2.62 loop=25.68 (step=4.36 tick=0.05 values=54.49) steps=15229 rej=3140 nf=710427 njac=15229 nw=18369 nsolve=146952 ticks=1000 rows=2439 done
+  warm: total=23.13 compile=1.75 init=0.00 loop=21.15 (step=1.51 tick=0.05 values=18.89) steps=15229 rej=3140 nf=710427 njac=15229 nw=18369 nsolve=146952 ticks=1000 rows=2439 done
+== cube-3d/cube-3d-mb (t_end 1)
+  states=24 flatten=0.34 lower=0.23 system=0.01 mtkcompile=0.35 problem=0.98
+  cold: total=98.15 compile=1.22 init=1.14 loop=14.49 (step=0.41 tick=0.08 values=63.28) steps=33769 rej=146 nf=203992 njac=0 nw=0 nsolve=0 ticks=500 rows=1999 done
+  warm: total=15.25 compile=1.54 init=0.00 loop=13.54 (step=0.31 tick=0.03 values=12.64) steps=33769 rej=146 nf=203992 njac=0 nw=0 nsolve=0 ticks=500 rows=1999 done
+== cube-3d/cube-3d (t_end 1)
+  states=19 flatten=0.03 lower=0.01 system=0.00 mtkcompile=0.03 problem=0.62
+  cold: total=6.55 compile=0.10 init=0.60 loop=0.78 (step=0.29 tick=0.05 values=3.04) steps=11308 rej=1283 nf=360814 njac=11308 nw=12591 nsolve=100728 ticks=500 rows=1999 done
+  warm: total=1.50 compile=0.68 init=0.00 loop=0.78 (step=0.11 tick=0.01 values=0.61) steps=11308 rej=1283 nf=360814 njac=11308 nw=12591 nsolve=100728 ticks=500 rows=1999 done
+== cube-pyramid-3d/edge-contact
+  states=19 flatten=0.10 lower=0.15 system=0.01 mtkcompile=0.40 problem=1.32
+  cold: total=120.30 compile=1.36 init=1.78 loop=20.44 (step=1.40 tick=0.16 values=70.88) steps=75309 rej=3279 nf=472730 njac=0 nw=0 nsolve=0 ticks=1200 rows=2401 done
+  warm: total=20.49 compile=1.19 init=0.00 loop=19.13 (step=1.32 tick=0.09 values=17.16) steps=75309 rej=3279 nf=472730 njac=0 nw=0 nsolve=0 ticks=1200 rows=2401 done
+== cube-pyramid-3d/sequence-contact (t_end 0.5)
+  states=21 flatten=0.07 lower=0.06 system=0.01 mtkcompile=0.43 problem=1.21
+  cold: total=155.99 compile=2.66 init=1.75 loop=12.93 (step=0.35 tick=0.05 values=91.65) steps=14575 rej=22 nf=88084 njac=0 nw=0 nsolve=0 ticks=500 rows=1099 done
+  warm: total=18.24 compile=2.01 init=0.00 loop=16.00 (step=0.42 tick=0.06 values=12.87) steps=14575 rej=22 nf=88084 njac=0 nw=0 nsolve=0 ticks=500 rows=1099 done
+FINISHED
