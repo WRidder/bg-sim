@@ -1,11 +1,15 @@
-/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.1.0).
+/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.2.0).
  *
  * One call of bg_step advances exactly BG_DT:
  *   1. integrate the continuous states over [t, t + BG_DT] with the held discrete values
  *      constant (explicit Euler, RK4, or the 2-stage L-stable Rosenbrock method ROS2);
  *      and the switching conditions frozen at their values at t (bg_modes);
- *   2. run the discrete partitions due at t + BG_DT, in topological order, with the same
+ *   2. apply the `@events` whose condition crossed zero upward in the step (bg_events,
+ *      generated; the conditions are evaluated at both ends of the step, the crossing is
+ *      not located, so an event is up to one BG_DT late);
+ *   3. run the discrete partitions due at t + BG_DT, in topological order, with the same
  *      operation order as the Julia scheduler (`run_tick!` in src/sim/scheduler.jl).
+ * Events before ticks is the simulator's order: a tick at t runs after every event up to t.
  *
  * Real-time rules: no allocation, no recursion, no I/O, every loop bounded by a compile-time
  * size. The cost of a step is fixed: Euler is 1 derivative call, RK4 4; ROS2 is 1 Jacobian, 1 LU of
@@ -154,7 +158,9 @@ int bg_step(bg_model *m) {
        stages, so each step integrates a smooth right-hand side. A switch exactly on a step
        boundary is then exact; one inside a step takes effect at the next boundary (W203). */
     if (BG_NC > 0) bg_modes(m, t0, m->x, m->c);
+    if (BG_NE > 0) bg_event_conditions(m, t0, m->x, m->ez0);
     if (bg_integrate(m, t0, t1 - t0) != 0) return -1;
+    if (BG_NE > 0) bg_events(m, t1);
     if (!bg_finite(m->x, BG_NX)) return -2;
     m->n += 1;
     m->t = t1;

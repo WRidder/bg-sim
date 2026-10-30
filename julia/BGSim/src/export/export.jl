@@ -23,8 +23,9 @@
 # example harness uses to compare the computation with simulation, and it does not change the
 # interface.
 #
-# Phase A scope: ODE systems (identity mass matrix), Euler/RK4 (ROS2 on request), frozen
-# switching conditions with W203, multi-rate `@discrete`, start values computed at export.
+# Scope: ODE systems (identity mass matrix), Euler/RK4 (ROS2 on request), frozen switching
+# conditions with W203, `@events` with `reinit` of states checked after every step with W203
+# (J-EX6, `emit_events.jl`), multi-rate `@discrete`, start values computed at export.
 # Everything else is refused with E110/E111 naming the construct.
 
 module Export
@@ -44,7 +45,7 @@ const MTK = ModelingToolkit
 
 """The hand-written C runtime copied into every export; bump `RUNTIME_VERSION` on any change."""
 const RUNTIME_DIR = normpath(joinpath(@__DIR__, "..", "..", "export", "runtime"))
-const RUNTIME_VERSION = "0.1.0"
+const RUNTIME_VERSION = "0.2.0"
 const RUNTIME_FILES = ["bg_runtime.h", "bg_solver.c", "fmi2_cs.c",
     "fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"]
 
@@ -54,6 +55,7 @@ const MARKER_PARAMETER = "stdlib:converters/ExportParameter"
 
 include("emit_c.jl")
 include("emit_discrete.jl")
+include("emit_events.jl")
 include("analysis.jl")
 include("fmi2.jl")
 
@@ -156,10 +158,6 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
     settings.method in (:auto, :euler, :rk4, :ros2) ||
         return _fail([diag("E110", "unknown export method `$(settings.method)`";
             hint = "use auto, euler, rk4 or ros2")], out_dir)
-    if !isempty(flat.events)
-        return _fail([diag("E110", "`@events` with `reinit` are not exported yet (plan J-EX6)";
-            hint = "the model has $(length(flat.events)) event(s)")], out_dir)
-    end
 
     lowered = try
         BGSim.lower_model(flat; t_start = 0.0, t_end = max(settings.t_end, settings.step))
@@ -184,6 +182,11 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
         return _export(flat, lowered, integ, String(out_dir), settings, reference_dir,
             String(name), diags)
     catch err
+        if err isa EventExportError
+            o = err.origin
+            return _fail(push!(diags, diag("E110", err.message; path = o.path, block = o.block,
+                node = o.node, source = BGSim._origin_source(o), scope = "@events")), out_dir)
+        end
         err isa ExportError || rethrow()
         return _fail(push!(diags, diag("E110", "the model uses a construct that is not exported yet";
             hint = err.message)), out_dir)
@@ -300,6 +303,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         x = Symbolics.unwrap(SymbolicUtils.arguments(lhs)[1])
         rhs[findfirst(y -> isequal(y, x), xs)] = Symbolics.unwrap(e.rhs)
     end
+    events = lower_events(flat, lowered.model, xs)
     # Method first: only ROS2 needs a Jacobian in C. `calculate_jacobian` differentiates the
     # fully substituted right-hand side, which blows up on large multibody models, so the
     # step analysis uses a numeric Jacobian of the compiled right-hand side instead.
@@ -359,9 +363,8 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     else
         round(Int64, settings.dt * 1e9)
     end
-    dt_ns > 0 && base_ns % dt_ns == 0 || return _fail(push!(diags, diag("E104",
-        "the internal step $(dt_ns / 1e9) s does not divide the communication step and every discrete period";
-        hint = "use a step that divides $(base_ns / 1e9) s")), out_dir)
+    clock_errors = _dt_clock_errors(settings.dt, dt_ns, step_ns, sched, base_ns)
+    isempty(clock_errors) || return _fail(append!(diags, clock_errors), out_dir)
     dt = dt_ns / 1e9
     if method !== :ros2 && dt > choice.stable_step
         push!(diags, diag("W207",
@@ -379,16 +382,28 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     modes = Any[]
     cbuf = IOBuffer()
     _emit_model_c(cbuf, name, xs, x0, names_x, rhs, jac, env, obs, modes, vars, params,
-        inputs, held_ids, dvals, sched, ps, names_p, flat_params)
+        inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
+    block_of = Dict(i.path => i.ref for i in flat.instances)
     for cond in modes
+        path = _condition_path(cond)
         push!(diags, diag("W203",
             "switching condition `$(cond)` is evaluated once per step, so its switch is not located between steps";
-            path = _condition_path(cond), hint = "a smaller dt moves the switch closer to the simulated instant"))
+            path, block = path === nothing ? nothing : get(block_of, path, nothing),
+            hint = "a smaller dt moves the switch closer to the simulated instant"))
+    end
+    for ev in events
+        o = ev.origin
+        push!(diags, diag("W203",
+            "event `$(ev.label)` is checked once per step, so its reinit applies at the end of the step in which the condition crosses zero (up to one dt late)";
+            path = o.path, block = o.block, node = o.node, source = BGSim._origin_source(o),
+            scope = "@events",
+            hint = "a smaller dt moves the event closer to the simulated instant"))
     end
     mkpath(joinpath(out_dir, "sources"))
     _write_model_h(joinpath(out_dir, "sources", "model.h"), name, ident, guid, nx,
         length(params), length(held_ids), has_disc ? length(sched.input_ids) : 0, length(vars),
-        length(inputs), has_disc ? length(sched.partitions) : 0, length(modes), dt, dt_ns, method)
+        length(inputs), has_disc ? length(sched.partitions) : 0, length(modes), dt, dt_ns, method;
+        ne = length(events), ner = maximum((length(ev.targets) for ev in events); init = 0))
     write(joinpath(out_dir, "sources", "model.c"), take!(cbuf))
     for f in RUNTIME_FILES
         cp(joinpath(RUNTIME_DIR, f), joinpath(out_dir, "sources", f); force = true)
@@ -401,7 +416,8 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         "runtimeVersion" => RUNTIME_VERSION, "fmiVersion" => "2.0",
         "method" => String(method), "dt" => dt, "step" => settings.step,
         "tEnd" => settings.t_end, "substeps" => base_ns ÷ dt_ns,
-        "states" => nx, "modes" => length(modes), "folded" => folded,
+        "states" => nx, "modes" => length(modes), "events" => length(events),
+        "folded" => folded,
         "heldValues" => length(held_ids), "partitions" => has_disc ? length(sched.partitions) : 0,
         "inputs" => [Dict("name" => v.name, "id" => v.id, "start" => v.start) for v in inputs],
         "outputs" => [Dict("name" => v.name, "id" => v.id) for v in vars if v.kind === :output],
@@ -435,6 +451,35 @@ function _condition_path(cond)
         i === nothing || return n[1:i - 1]
     end
     return nothing
+end
+
+"""    _dt_clock_errors(dt_setting, dt_ns, step_ns, sched, base_ns) -> Vector{Diagnostic}
+
+E104 against `dt` (D-EX5): one diagnostic for each clock the internal step does not divide,
+the communication step and every discrete period and offset, the latter at the partition's
+block. Empty when `dt` is valid."""
+function _dt_clock_errors(dt_setting, dt_ns, step_ns, sched, base_ns)
+    hint = "use a step that divides $(base_ns / 1e9) s"
+    dt = dt_ns / 1e9
+    if dt_ns <= 0 || (dt_setting !== nothing && abs(dt - dt_setting) > 1e-15 * max(1.0, dt_setting))
+        return [diag("E104", "the internal step $(something(dt_setting, dt)) s is not a positive whole number of nanoseconds";
+            hint)]
+    end
+    out = Diagnostic[]
+    step_ns % dt_ns == 0 || push!(out, diag("E104",
+        "the internal step $dt s does not divide the communication step $(step_ns / 1e9) s"; hint))
+    if sched !== nothing
+        for sp in sched.partitions
+            p = sp.partition
+            for (what, ns) in (("period", p.period_ns), ("offset", p.offset_ns))
+                ns > 0 && ns % dt_ns != 0 || continue
+                push!(out, diag("E104",
+                    "the internal step $dt s does not divide the $what $(ns / 1e9) s of the discrete clock in `$(p.path)`";
+                    hint, path = p.path, node = p.node, block = p.ref))
+            end
+        end
+    end
+    return out
 end
 
 """    _numeric_jacobian(prob, integ, sys, ps, p0) -> (x, p, t) -> Matrix
@@ -503,7 +548,7 @@ function _guid(key, settings, dt_ns, method, vars, params, inputs)
 end
 
 function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, env, obs, modes, vars, params,
-    inputs, held_ids, dvals, sched, ps, names_p, flat_params)
+    inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
     nx = length(xs)
     println(io, "/* Generated by bg-sim (C/FMU export, runtime $(RUNTIME_VERSION)) from model `$(ccomment(name))`. Do not edit. */")
     println(io, "#include <math.h>\n#include \"model.h\"\n#include \"bg_runtime.h\"\n")
@@ -549,6 +594,7 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, env, obs, modes, var
         [("c[$(k - 1)]", modes[k], string(modes[k])) for k in eachindex(modes)], env, obs)
     emit_function(io, "void bg_outputs(const bg_model *m, double t, const double *x, double *y)",
         [("y[$(k - 1)]", v.expr, v.name) for (k, v) in enumerate(vars)], env, obs)
+    emit_events(io, events, env, obs, names_x)
 
     sample = Tuple{String,Any,Any}[]
     if sched !== nothing
@@ -585,7 +631,8 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, env, obs, modes, var
     println(io, "};")
 end
 
-function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, nc, dt, dt_ns, method)
+function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, nc, dt, dt_ns, method;
+    ne = 0, ner = 0)
     open(path, "w") do io
         print(io, """
         /* Generated by bg-sim (C/FMU export, runtime $(RUNTIME_VERSION)) from model `$(ccomment(name))`. Do not edit. */
@@ -604,6 +651,8 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         #define BG_NY $(ny)        /* outputs, then locals */
         #define BG_NC $(nc)        /* switching conditions, frozen during a step */
         #define BG_NPART $(npart)  /* discrete partitions */
+        #define BG_NE $(ne)        /* @events, checked after every step */
+        #define BG_NER $(ner)       /* the most states one event writes */
         #define BG_DT $(repr(dt))
         #define BG_DT_NS INT64_C($(dt_ns))
         #define BG_METHOD_EULER 1
@@ -634,6 +683,9 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
             double dinprev[BG_SZ(BG_NI)];
             double dprev_t;
             double c[BG_SZ(BG_NC)];
+            double ez0[BG_SZ(BG_NE)];      /* event conditions at the start of the step */
+            double ez[BG_SZ(BG_NE)];       /* ... and at its end */
+            double er[BG_SZ(BG_NER)];      /* the new values of the event being applied */
             double y[BG_SZ(BG_NY)];        /* valid when y_valid */
             int y_valid;
             /* solver workspace */
@@ -666,6 +718,8 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         void bg_modes(const bg_model *m, double t, const double *x, double *c);
         void bg_outputs(const bg_model *m, double t, const double *x, double *y);
         void bg_sample(const bg_model *m, double t, const double *x, double *din);
+        void bg_event_conditions(const bg_model *m, double t, const double *x, double *z);
+        int bg_events(bg_model *m, double t);  /* after a step: apply the events that fired */
 
         /* bg_solver.c (runtime) */
         void bg_reset(bg_model *m, double t_start);

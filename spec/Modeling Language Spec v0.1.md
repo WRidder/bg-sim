@@ -515,7 +515,7 @@ A model is a hybrid system: one continuous DAE, plus clocked discrete partitions
 - Nonsmooth functions in equations (`abs`, `sign`, `min`, `max`, `ifelse`, `floor`) create zero-crossing events in Julia variable-step simulation, so switching instants are located accurately.
 - Exported fixed-step code does not locate events: it evaluates conditions once per step. The compiler reports every such site, so differences between simulation and target are visible, not silent.
 
-**Fixed-step export.** Every discrete period must be an integer multiple of the solver step `dt`. The exported step function advances exactly one `dt`, and runs any discrete blocks due at the end of that step.
+**Fixed-step export.** Every discrete period must be an integer multiple of the solver step `dt`. The exported step function advances exactly one `dt`, then applies the `reinit` of every event whose condition crossed zero upward in that step (in declaration order), and then runs any discrete blocks due at the end of that step. This is the order of Julia simulation, where a tick at `t` follows every event up to `t`.
 
 ## Compilation pipeline
 
