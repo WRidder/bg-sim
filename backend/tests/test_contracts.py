@@ -47,6 +47,9 @@ SCHEMAS: dict[str, str] = {
     "bindings": "Bindings",
     "debug": "Debug",
     "docs": "Docs",
+    "export-request": "ExportRequest",
+    "export-report": "ExportReport",
+    "export-job": "ExportJob",
 }
 
 # The M1 blocks of plan section 8, as ref -> name.

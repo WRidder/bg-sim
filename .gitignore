@@ -3,6 +3,7 @@ dist/
 .venv/
 venv/
 runs/
+exports/
 logs/
 __pycache__/
 *.pyc

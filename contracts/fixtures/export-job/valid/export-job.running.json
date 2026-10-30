@@ -1,0 +1,20 @@
+{
+  "id": "export-20261030-101500-d4e5f6",
+  "project": "panda-3d",
+  "model": "panda",
+  "scope": "Robot",
+  "status": "running",
+  "phase": "reference",
+  "created": "2026-10-30T10:15:00Z",
+  "finished": null,
+  "timings": {
+    "juliaS": 13.0,
+    "scopeS": 0.01,
+    "flattenS": 4.2
+  },
+  "error": null,
+  "diagnostics": [],
+  "notes": [],
+  "report": null,
+  "fmu": null
+}

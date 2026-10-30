@@ -1,0 +1,7 @@
+{
+  "$comment": "model is required.",
+  "scope": "Plant",
+  "settings": {
+    "method": "auto"
+  }
+}

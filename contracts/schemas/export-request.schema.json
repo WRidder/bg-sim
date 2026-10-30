@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/export-request.schema.json",
+  "title": "ExportRequest",
+  "description": "Body of POST /api/projects/{p}/models/{m}/export (plan/EXPORT_PLAN.md P-EX1, W-EX1): the model document to export as a C/FMU, an optional subsystem scope (J-EX11) and the export settings (D-EX7). The backend runs it in a Julia process of its own and then builds the FMU.",
+  "type": "object",
+  "required": ["model"],
+  "properties": {
+    "model": { "$ref": "https://bgsim.local/schemas/model.schema.json" },
+    "scope": {
+      "type": ["string", "null"],
+      "pattern": "^([A-Za-z_][A-Za-z0-9_]*/)*[A-Za-z_][A-Za-z0-9_]*$",
+      "description": "Instance path of the subsystem to export alone (D-EX9 scope): its ports become the interface and everything outside it is dropped. Null or absent exports the whole model, whose interface is its Export markers."
+    },
+    "powerInputs": {
+      "type": "object",
+      "description": "For each scalar power port of the scope, the variable the host imposes: effort (input <port>_e, output <port>_f) or flow (input <port>_f, output <port>_e). Every power port of the scope needs an entry (E112).",
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+      "additionalProperties": { "title": "ExportPowerInput", "enum": ["effort", "flow"] }
+    },
+    "inputValues": {
+      "type": "object",
+      "description": "Start value of a scope input, by port name (default 0). For a power port it is the start of the imposed variable.",
+      "propertyNames": { "pattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+      "additionalProperties": { "type": "number" }
+    },
+    "settings": { "$ref": "#/$defs/settings" },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "settings": {
+      "title": "ExportSettings",
+      "description": "The export settings of the dialog. Null or absent means automatic: the exporter chooses (D-EX7) and the report shows the numbers.",
+      "type": "object",
+      "properties": {
+        "method": {
+          "title": "ExportMethod",
+          "enum": ["auto", "euler", "rk4", "ros2", "ros34pw2", "rodas4p"],
+          "description": "The integrator; auto picks the cheapest method that meets the step rule (a Rosenbrock method for a DAE)."
+        },
+        "dt": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0,
+          "description": "Internal step in seconds (whole nanoseconds, dividing the communication step); null chooses it from the spectrum."
+        },
+        "step": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0,
+          "description": "Communication step in seconds (FMI DefaultExperiment stepSize); null is 1 ms, or finer for horizons below 0.5 s."
+        },
+        "damping": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1,
+          "description": "The Rosenbrock step rule's damping; null is the default 0.05 with the over-budget fallback to 0.5 (W214). A set value turns the fallback off."
+        },
+        "jacobian": {
+          "title": "ExportJacobian",
+          "enum": ["auto", "symbolic", "fd"],
+          "description": "Rosenbrock only: the Jacobian in C (symbolic, coloured finite differences, or auto)."
+        },
+        "linearSolver": {
+          "title": "ExportLinearSolver",
+          "enum": ["auto", "dense", "sparse"],
+          "description": "Rosenbrock only: dense LU, static sparse LU, or auto (sparse above 40 states)."
+        },
+        "exposeAll": {
+          "type": "boolean",
+          "description": "Debug option: publish every recorded signal as a read-only local variable. It does not change the interface."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

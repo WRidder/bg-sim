@@ -1,0 +1,227 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/export-report.schema.json",
+  "title": "ExportReport",
+  "description": "The export report (plan/EXPORT_PLAN.md 5.2): export.json as BGSim.Export.export_model writes it, plus the build results fmu_build.py adds (build). The export dialog shows it.",
+  "type": "object",
+  "required": [
+    "name",
+    "identifier",
+    "guid",
+    "fmiVersion",
+    "method",
+    "dt",
+    "step",
+    "tEnd",
+    "substeps",
+    "states",
+    "inputs",
+    "outputs",
+    "parameters",
+    "spectrum",
+    "diagnostics"
+  ],
+  "properties": {
+    "name": { "type": "string" },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+      "description": "The FMI model identifier (a C identifier); the FMU is <identifier>.fmu."
+    },
+    "guid": { "type": "string" },
+    "runtimeVersion": { "type": "string" },
+    "fmiVersion": { "type": "string" },
+    "method": {
+      "$ref": "#/$defs/method",
+      "description": "The integrator in the FMU (D-EX7: suggested, or the one the settings forced)."
+    },
+    "dt": { "type": "number", "exclusiveMinimum": 0, "description": "Internal step in seconds." },
+    "step": { "type": "number", "exclusiveMinimum": 0, "description": "Communication step in seconds." },
+    "tEnd": { "type": "number" },
+    "substeps": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Internal steps per communication step."
+    },
+    "states": { "type": "integer", "minimum": 0 },
+    "algebraic": { "type": "integer", "minimum": 0 },
+    "dependsOnTime": { "type": "boolean" },
+    "modes": { "type": "integer", "minimum": 0 },
+    "events": { "type": "integer", "minimum": 0 },
+    "folded": { "type": "integer", "minimum": 0 },
+    "heldValues": { "type": "integer", "minimum": 0 },
+    "partitions": { "type": "integer", "minimum": 0 },
+    "jacobian": {
+      "type": ["object", "null"],
+      "description": "Rosenbrock only: kind (symbolic or fd), terms, entries and the fallback reason (W212)."
+    },
+    "selection": {
+      "type": "array",
+      "description": "D-EX7c: every candidate method with its step and cost per communication step.",
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "inputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/input" }
+    },
+    "outputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/output" }
+    },
+    "parameters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/parameter" }
+    },
+    "locals": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Read-only variables of the expose-all debug option."
+    },
+    "spectrum": { "$ref": "#/$defs/spectrum" },
+    "linearAlgebra": {
+      "type": ["object", "null"],
+      "description": "Rosenbrock only: the linear solver, LU non-zeros, fill-in, flops and the pivot check (J-EX4)."
+    },
+    "tables": {
+      "type": ["object", "null"],
+      "description": "Interpolation tables in the generated code: count, bytes and one entry per table (J-EX5)."
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic" }
+    },
+    "build": { "$ref": "#/$defs/build" },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "method": {
+      "title": "ExportReportMethod",
+      "enum": ["euler", "rk4", "ros2", "ros34pw2", "rodas4p"]
+    },
+    "candidate": {
+      "title": "ExportCandidate",
+      "type": "object",
+      "required": ["method", "substeps", "dt", "cost", "withinBudget"],
+      "properties": {
+        "method": { "$ref": "#/$defs/method" },
+        "substeps": { "type": "integer", "minimum": 1 },
+        "dt": { "type": "number" },
+        "cost": {
+          "type": ["number", "null"],
+          "description": "Estimated flops per communication step."
+        },
+        "withinBudget": { "type": "boolean" },
+        "numericallyDamped": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many stiff undamped modes this candidate's step damps numerically (W213); ROS2 is not suggested when it is above 0."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "input": {
+      "title": "ExportInterfaceInput",
+      "type": "object",
+      "required": ["name", "id"],
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "string" },
+        "start": { "type": "number" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "output": {
+      "title": "ExportInterfaceOutput",
+      "type": "object",
+      "required": ["name", "id"],
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "parameter": {
+      "title": "ExportInterfaceParameter",
+      "type": "object",
+      "required": ["name", "id"],
+      "properties": {
+        "name": { "type": "string" },
+        "id": { "type": "string" },
+        "start": { "type": "number" },
+        "variability": { "type": "string" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "spectrum": {
+      "title": "ExportSpectrum",
+      "type": "object",
+      "description": "The eigenvalue scan behind the step choice (D-EX7, D-EX16).",
+      "required": ["maxAbsLambda", "points"],
+      "properties": {
+        "maxAbsLambda": { "type": ["number", "null"] },
+        "atT": { "type": ["number", "null"] },
+        "points": { "type": "integer", "minimum": 0 },
+        "rangedValues": { "type": "integer", "minimum": 0 },
+        "stableStep": { "type": ["number", "null"] },
+        "accurateStep": { "type": ["number", "null"] },
+        "analysisMethod": { "type": "string" },
+        "proposedDt": { "type": ["number", "null"] },
+        "damping": { "type": ["number", "null"] },
+        "relaxedDamping": { "type": ["boolean", "null"] },
+        "numericallyDamped": {
+          "title": "ExportNumericallyDamped",
+          "type": "object",
+          "properties": {
+            "modes": { "type": "integer", "minimum": 0 },
+            "minHz": { "type": ["number", "null"] },
+            "$comment": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "build": {
+      "title": "ExportBuild",
+      "type": "object",
+      "description": "What the backend's build did (fmu_build.py, D-EX15). Without a compiler the FMU holds the sources only (sourceOnly) and note says so.",
+      "required": ["compilerFound", "sourceOnly", "ok"],
+      "properties": {
+        "compilerFound": { "type": "boolean" },
+        "compiler": { "type": ["string", "null"] },
+        "sourceOnly": { "type": "boolean" },
+        "platform": { "type": ["string", "null"] },
+        "ok": {
+          "type": "boolean",
+          "description": "Every check passed: no forbidden symbol, the C++ check, 0 allocations after instantiate."
+        },
+        "forbiddenSymbols": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Allocator, stdio or exit symbols the hot-path objects import (must be empty)."
+        },
+        "symbolCheck": {
+          "type": ["boolean", "null"],
+          "description": "The hot-path symbol check passed; null when it did not run (no nm)."
+        },
+        "cxxOk": { "type": ["boolean", "null"] },
+        "harnessDoSteps": { "type": ["integer", "null"] },
+        "internalStepsPerDoStep": { "type": ["integer", "null"] },
+        "allocationsAfterInstantiate": { "type": ["integer", "null"] },
+        "doStepMeanUs": { "type": ["number", "null"] },
+        "doStepMaxUs": { "type": ["number", "null"] },
+        "buildS": { "type": ["number", "null"], "description": "Wall time of the build and the harness." },
+        "error": { "type": ["string", "null"] },
+        "note": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

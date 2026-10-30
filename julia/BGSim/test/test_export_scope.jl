@@ -16,6 +16,7 @@ using BGSim
 using .BondGraphGolden
 import BGSim.IR
 import BGSim.Compile
+import JSON3
 
 const _SC = BGSim.Export
 
@@ -155,5 +156,36 @@ _sc_codes(diags) = Set(d.code for d in diags)
             expected = first_out == "y" ? 2.0 * (1 - exp(-0.1 / 0.01)) : 1.5
             @test isapprox(y0, expected; rtol = 1e-6)
         end
+    end
+
+    # The backend's export job (P-EX1/W-EX1): scope, flatten, reference run, export.
+    @testset "export_job: the request of the export dialog" begin
+        @test _SC.default_step(1.0) == 1.0e-3
+        @test _SC.default_step(0.1) == 2.0e-4
+        es = _SC.job_settings(Dict{String,Any}("method" => "rk4", "dt" => nothing,
+            "linearSolver" => "dense", "exposeAll" => true), 0.1)
+        @test es.method === :rk4 && es.dt === nothing && es.linear_solver === :dense
+        @test es.expose_all && es.step == 2.0e-4 && es.t_end == 0.1
+
+        dir = mktempdir()
+        phases = String[]
+        req = Dict{String,Any}("model" => doc, "scope" => "Plant",
+            "powerInputs" => Dict("p" => "effort"), "inputValues" => Dict("u" => 2.0),
+            "settings" => Dict{String,Any}("method" => "auto", "dt" => nothing))
+        res = _SC.export_job(req, dir; progress = p -> push!(phases, p))
+        @test res["status"] == "exported"
+        @test phases == ["scope", "flatten", "reference", "export"]
+        @test isempty(res["notes"])                              # the reference run finished
+        @test all(haskey(res["timings"], k) for k in ("scopeS", "flattenS", "referenceS", "exportS"))
+        rep = JSON3.read(read(joinpath(res["exportDir"], "export.json"), String))
+        @test Set(String(i.name) for i in rep.inputs) == Set(["u", "p_e"])
+        @test rep.spectrum.points > 1                            # the reference widened the scan
+
+        bad = _SC.export_job(merge(req, Dict{String,Any}("powerInputs" => Dict())), mktempdir())
+        @test bad["status"] == "refused"
+        @test any(d.code == "E112" && d.path == "Plant/p" for d in bad["diagnostics"])
+        whole = _SC.export_job(Dict{String,Any}("model" => doc), mktempdir())
+        @test whole["status"] == "exported"
+        @test any(d.code == "W209" for d in whole["diagnostics"]) # no markers in the whole model
     end
 end
