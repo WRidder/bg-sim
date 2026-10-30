@@ -281,6 +281,7 @@
         "unit": { "type": ["string", "null"] },
         "node": { "type": "string" },
         "port": { "type": "string" },
+        "ui": { "$ref": "#/$defs/subsystemPortUi" },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false
@@ -327,6 +328,7 @@
         },
         "node": { "type": "string" },
         "port": { "type": "string" },
+        "ui": { "$ref": "#/$defs/subsystemPortUi" },
         "$comment": { "type": "string" }
       },
       "allOf": [
@@ -368,6 +370,17 @@
           }
         }
       ],
+      "additionalProperties": false
+    },
+    "subsystemPortUi": {
+      "title": "ModelSubsystemPortUi",
+      "description": "Editor-only presentation of an exposed port inside the subsystem: where its terminal sits on the nested diagram. The compiler ignores it; without it the editor places the terminal at the edge of the nested content.",
+      "type": "object",
+      "required": ["position"],
+      "properties": {
+        "position": { "$ref": "#/$defs/point" },
+        "$comment": { "type": "string" }
+      },
       "additionalProperties": false
     },
     "connection": {

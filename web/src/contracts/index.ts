@@ -111,6 +111,7 @@ export type { ModelProbePanel } from "./model";
 export type { ModelScene } from "./model";
 export type { ModelSettings } from "./model";
 export type { ModelSubsystemPort } from "./model";
+export type { ModelSubsystemPortUi } from "./model";
 export type { ModelSubsystemPowerPort } from "./model";
 export type { ModelSubsystemSignalPort } from "./model";
 export type { UnitArray3 } from "./model";

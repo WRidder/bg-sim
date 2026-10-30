@@ -86,6 +86,7 @@ export type ModelSubsystemPowerPort = {
   flowUnits?: UnitArray3 | UnitArray6;
   node: string;
   port: string;
+  ui?: ModelSubsystemPortUi;
   $comment?: string;
 };
 export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
@@ -342,6 +343,14 @@ export interface ModelSubsystemSignalPort {
   unit: string | null;
   node: string;
   port: string;
+  ui?: ModelSubsystemPortUi;
+  $comment?: string;
+}
+/**
+ * Editor-only presentation of an exposed port inside the subsystem: where its terminal sits on the nested diagram. The compiler ignores it; without it the editor places the terminal at the edge of the nested content.
+ */
+export interface ModelSubsystemPortUi {
+  position: ModelPoint;
   $comment?: string;
 }
 export interface ModelPoint {

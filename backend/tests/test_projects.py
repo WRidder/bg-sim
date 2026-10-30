@@ -318,6 +318,25 @@ def test_model_with_node_images_round_trips_byte_for_byte(
     ]
 
 
+def test_model_with_subsystem_port_ui_round_trips_and_rejects_a_bad_one(
+    client: TestClient, store: ProjectStore
+) -> None:
+    """A subsystem port's ui.position (the terminal inside the subsystem) is stored as sent."""
+    assert _create(client).status_code == 201
+    document = _load(FIXTURES / "model" / "valid" / "model.subsystem-port-ui.json")
+    response = client.put("/api/projects/demo/models/ports", json=document)
+    assert response.status_code == 200, response.text
+    fetched = client.get("/api/projects/demo/models/ports").json()
+    assert fetched == document
+    ports = fetched["diagram"]["nodes"][1]["block"]["subsystem"]["ports"]
+    assert ports[0]["ui"]["position"] == {"x": -140, "y": 60}
+
+    ports[0]["ui"] = {"position": {"x": "left", "y": 0}}
+    rejected = client.put("/api/projects/demo/models/ports", json=fetched)
+    assert rejected.status_code == 422, rejected.text
+    assert client.get("/api/projects/demo/models/ports").json() == document
+
+
 @pytest.mark.parametrize(
     "image",
     [

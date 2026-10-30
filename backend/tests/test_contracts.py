@@ -332,6 +332,30 @@ def test_node_image_fixture_round_trips_through_the_generated_model() -> None:
         assert (image["mime"], image["fit"]) == (mime, fit)
 
 
+def test_subsystem_port_ui_round_trips_through_the_generated_model() -> None:
+    """A subsystem port's ui.position survives pydantic; a port without ui gains none."""
+    document = _read(FIXTURE_DIR / "model" / "valid" / "model.subsystem-port-ui.json")
+    model = _generated_models()["model"].model_validate(document)
+    dumped = model.model_dump(mode="json", by_alias=True, exclude_unset=True)
+    original = document["diagram"]["nodes"][1]["block"]["subsystem"]["ports"]
+    ports = dumped["diagram"]["nodes"][1]["block"]["subsystem"]["ports"]
+    assert ports == original
+    assert ports[0]["ui"] == {"position": {"x": -140, "y": 60}}
+    assert "ui" not in ports[1]
+
+
+def test_subsystem_port_ui_requires_a_position() -> None:
+    """ui is optional on a port, but a ui without position is rejected by both lanes."""
+    from pydantic import ValidationError
+
+    document = _read(
+        FIXTURE_DIR / "model" / "invalid" / "model.subsystem-port-ui-no-position.json"
+    )
+    assert list(VALIDATORS["model"].iter_errors(document))
+    with pytest.raises(ValidationError):
+        _generated_models()["model"].model_validate(document)
+
+
 def test_bindings_pose_order_is_documented_in_the_schema() -> None:
     """C-MB2: the pose binding says quaternion first, matching the model's Vec{7} chart."""
     description = SCHEMAS_DOCS["bindings"]["$defs"]["poseBinding"]["properties"]["signal"][

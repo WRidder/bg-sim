@@ -162,6 +162,19 @@ export interface ModelSubsystemSignalPort {
   unit: string | null;
   node: string;
   port: string;
+  ui?: ModelSubsystemPortUi;
+  $comment?: string;
+}
+/**
+ * Editor-only presentation of an exposed port inside the subsystem: where its terminal sits on the nested diagram. The compiler ignores it; without it the editor places the terminal at the edge of the nested content.
+ */
+export interface ModelSubsystemPortUi {
+  position: ModelPoint;
+  $comment?: string;
+}
+export interface ModelPoint {
+  x: number;
+  y: number;
   $comment?: string;
 }
 export interface SubsystemPowerPort {
@@ -189,11 +202,7 @@ export interface SubsystemPowerPort {
   flowUnits?: UnitArray3 | UnitArray6;
   node: string;
   port: string;
-  $comment?: string;
-}
-export interface ModelPoint {
-  x: number;
-  y: number;
+  ui?: ModelSubsystemPortUi;
   $comment?: string;
 }
 export interface ModelNodeUi {
