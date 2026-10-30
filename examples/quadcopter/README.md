@@ -1,4 +1,4 @@
-# quadcopter (X5.7)
+# quadcopter — a 450 mm X quadcopter with motors, filters and a PX4-style cascaded flight controller (X5.7)
 
 A 1.35 kg, 450 mm X quadcopter with a PX4-style cascaded flight controller, flown from the ground:
 take-off to 1 m, a 2 m x 2 m mission with a 90 degree yaw turn, a landing. The airframe is a multibond

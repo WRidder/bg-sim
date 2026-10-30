@@ -1,4 +1,4 @@
-# aerial-contact (X5.8)
+# aerial-contact — a multimodal aerial manipulator: free flight, wall approach and contact control (X5.8)
 
 The multimodal aerial manipulator of H. W. Wopereis, W. W. van de Ridder, T. J. W. Lankhorst, L. Klooster,
 E. M. Bukai, D. Wuthier, G. Nikolakopoulos, S. Stramigioli, J. B. C. Engelen and M. Fumagalli, *Multimodal Aerial

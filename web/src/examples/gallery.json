@@ -1,4 +1,12 @@
 {
+  "aerial-contact": {
+    "title": "Aerial contact",
+    "description": "A multimodal aerial manipulator: free flight, wall approach and contact control.",
+    "hasScene": true,
+    "models": [
+      "aerial-contact"
+    ]
+  },
   "bouncing-ball": {
     "title": "Bouncing ball",
     "description": "A continuous event with a velocity reinit.",
@@ -91,6 +99,60 @@
       "pendulum"
     ]
   },
+  "pendulum-double-cart": {
+    "title": "Pendulum double cart",
+    "description": "A double pendulum on a belt-driven cart: swing-up, catch, balance and recovery.",
+    "hasScene": true,
+    "models": [
+      "pendulum-double-cart",
+      "pendulum-double-cart-free"
+    ]
+  },
+  "pendulum-double-fixed": {
+    "title": "Pendulum double fixed",
+    "description": "A double pendulum on a fixed pivot: swing-up, catch, balance, recovery.",
+    "hasScene": true,
+    "models": [
+      "pendulum-double-fixed",
+      "free"
+    ]
+  },
+  "pendulum-double-rotary": {
+    "title": "Pendulum double rotary",
+    "description": "A Quanser-style rotary double inverted pendulum.",
+    "hasScene": true,
+    "models": [
+      "pendulum-double-rotary",
+      "pendulum-double-rotary-free"
+    ]
+  },
+  "pendulum-triple-cart": {
+    "title": "Pendulum triple cart",
+    "description": "A triple pendulum on a belt-driven cart: swing-up, catch, balance and recovery.",
+    "hasScene": true,
+    "models": [
+      "pendulum-triple-cart",
+      "pendulum-triple-cart-free"
+    ]
+  },
+  "pendulum-triple-fixed": {
+    "title": "Pendulum triple fixed",
+    "description": "A triple pendulum on a fixed pivot: swing-up, catch, balance, recovery.",
+    "hasScene": true,
+    "models": [
+      "pendulum-triple-fixed",
+      "free"
+    ]
+  },
+  "pendulum-triple-rotary": {
+    "title": "Pendulum triple rotary",
+    "description": "A rotary triple inverted pendulum.",
+    "hasScene": true,
+    "models": [
+      "pendulum-triple-rotary",
+      "pendulum-triple-rotary-free"
+    ]
+  },
   "planar-links": {
     "title": "Planar Links",
     "description": "The 1-, 2- and 3-link planar arms of a robotics-toolbox script on planar bond-graph elements, checked against CSV reference torques.",
@@ -99,6 +161,15 @@
       "planar-links",
       "planar-links-fwd",
       "planar-links-payload"
+    ]
+  },
+  "quadcopter": {
+    "title": "Quadcopter",
+    "description": "A 450 mm X quadcopter with motors, filters and a PX4-style cascaded flight controller.",
+    "hasScene": true,
+    "models": [
+      "quadcopter",
+      "quadcopter-repeat"
     ]
   },
   "quarter-car": {
@@ -164,6 +235,14 @@
       "rrr-multibond",
       "rrr-multibond-soft",
       "rrr-multibond-stiff"
+    ]
+  },
+  "tetra-3d": {
+    "title": "Tetra 3d",
+    "description": "A tetrahedron with a reaction wheel on every face tips from a face to an edge to a vertex.",
+    "hasScene": true,
+    "models": [
+      "sequence-contact"
     ]
   }
 }

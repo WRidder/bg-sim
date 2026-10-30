@@ -112,7 +112,7 @@ function readmeInfo(example) {
   const heading = lines.find((line) => /^#\s+/.test(line));
   const title = heading
     ? plain(heading.replace(/^#\s+/, ""))
-        .replace(/\s*\((?:plan|milestone|M\d)[^)]*\)\s*$/i, "")
+        .replace(/\s*\((?:plan|milestone|M\d|[A-Z]\d+\.\d+)[^)]*\)\s*$/i, "")
         .replace(/^Example:\s*/i, "")
         .trim()
     : undefined;
