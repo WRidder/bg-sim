@@ -585,6 +585,51 @@ end
         @test r.report["spectrum"]["numericallyDamped"]["modes"] == 0
     end
 
+    @testset "over-budget fallback to a relaxed damping (D-EX7, W214)" begin
+        @test _EX.ExportSettings(Dict{String,Any}()).damping === nothing
+        @test _EX.ExportSettings(Dict("damping" => 0.05)).damping == 0.05
+        # Five lags from 1 ms down to 100 ns: every method needs more than 1000 substeps under
+        # the strict rule; with damping 0.5 the fast lags may decay unresolved in one step.
+        chain = """
+        @block LagChain begin
+            @inputs u::Real
+            @outputs y::Real
+            @variables x1::Real = 0.0
+            @variables x2::Real = 0.0
+            @variables x3::Real = 0.0
+            @variables x4::Real = 0.0
+            @variables x5::Real = 0.0
+            @equations begin
+                ddt(x1) ~ (u - x1) / 1.0e-3
+                ddt(x2) ~ (u - x2) / 1.0e-4
+                ddt(x3) ~ (u - x3) / 1.0e-5
+                ddt(x4) ~ (u - x4) / 1.0e-6
+                ddt(x5) ~ (u - x5) / 1.0e-7
+                y ~ x1 + x2 + x3 + x4 + x5
+            end
+        end
+        """
+        r = _EX.export_model(_ex_flat(_ex_lag_model(lag = chain)), mktempdir();
+            settings = _EX.ExportSettings(t_end = 0.1))
+        @test r.ok && _EX.is_rosenbrock(Symbol(r.report["method"])) && r.report["substeps"] == 1
+        w = _ex_diags(r, "W214")
+        @test length(w) == 1 && isempty(_ex_diags(r, "W207"))
+        @test occursin("no method meets the strict step rule within the budget", w[1].message)
+        @test occursin("relaxed damping (0.5)", w[1].message) && occursin("force rk4", w[1].message)
+        @test r.report["spectrum"]["damping"] == 0.5 && r.report["spectrum"]["relaxedDamping"]
+        @test all(s -> s["withinBudget"] || s["method"] == "rk4", r.report["selection"])
+        # An explicit damping disables the fallback: the strict rule and W207.
+        r = _EX.export_model(_ex_flat(_ex_lag_model(lag = chain)), mktempdir();
+            settings = _EX.ExportSettings(t_end = 0.1, damping = 0.05))
+        @test r.ok && isempty(_ex_diags(r, "W214")) && !isempty(_ex_diags(r, "W207"))
+        @test r.report["spectrum"]["damping"] == 0.05 && !r.report["spectrum"]["relaxedDamping"]
+        # A model within the budget is not touched.
+        r = _EX.export_model(_ex_flat(_ex_lag_model()), mktempdir();
+            settings = _EX.ExportSettings(t_end = 0.1))
+        @test r.ok && isempty(_ex_diags(r, "W214")) && !r.report["spectrum"]["relaxedDamping"]
+        @test r.report["spectrum"]["damping"] == 0.05
+    end
+
     @testset "an index-1 DAE exports with a Rosenbrock method" begin
         r = _EX.export_model(_ex_flat(_ex_lag_model(lag = _EX_DAE)), mktempdir();
             settings = _EX.ExportSettings(t_end = 0.2))
