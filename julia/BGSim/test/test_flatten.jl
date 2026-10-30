@@ -586,6 +586,19 @@ end
             fms.equations)
     end
 
+    @testset "node images are editor state (ui.image)" begin
+        # `model.subsystem-images.json` is the rlc-dual example with a PNG and an SVG on its
+        # two subsystem nodes. The parser drops `ui`, so the images change nothing: the
+        # flattened model equals the one without images.
+        with_images = flat_file(_fixture("model.subsystem-images.json"))
+        plain = flat_file(joinpath(_REPO, "examples", "rlc-dual", "models",
+            "rlc-dual.bgmodel.json"))
+        @test isempty(_errors(with_images))
+        @test _counts(with_images) == _counts(plain)
+        @test sort([v.id for v in with_images.variables]) == sort([v.id for v in plain.variables])
+        @test any(v -> v.id == "Iconic/C1/p.e", with_images.variables)
+    end
+
     @testset "junctions: 0, 1, junction-to-junction and dangling" begin
         # A 0-junction of two effort sources: equal efforts, flows summing to zero.
         zero_model = _model("ZeroJ", Any[

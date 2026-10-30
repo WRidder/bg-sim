@@ -650,12 +650,36 @@ class ModelAnnotation(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
-class ModelNodeUi(BaseModel):
+class ModelNodeImageMime(Enum):
+    image_png = 'image/png'
+    image_svg_xml = 'image/svg+xml'
+    image_webp = 'image/webp'
+    image_jpeg = 'image/jpeg'
+
+
+class ModelNodeImageFit(Enum):
+    contain = 'contain'
+    stretch = 'stretch'
+
+
+class ModelNodeImage(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    showLabel: bool
-    color: str | None = None
+    mime: ModelNodeImageMime = Field(..., title='ModelNodeImageMime')
+    data: constr(
+        pattern=r'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$',
+        min_length=4,
+        max_length=699052,
+    ) = Field(
+        ...,
+        description='The image file as standard base64 without line breaks: at most 699052 characters, which is 512 KiB decoded.',
+    )
+    fit: ModelNodeImageFit = Field(
+        ...,
+        description='contain keeps the aspect ratio inside the card body; stretch fills it.',
+        title='ModelNodeImageFit',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -1505,6 +1529,16 @@ class ModelConnection(BaseModel):
     to: ModelEndpoint
     route: list[ModelPoint] | None = Field(None, description='Optional waypoints.')
     label: str | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelNodeUi(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    showLabel: bool
+    color: str | None = None
+    image: ModelNodeImage | None = None
     field_comment: str | None = Field(None, alias='$comment')
 
 

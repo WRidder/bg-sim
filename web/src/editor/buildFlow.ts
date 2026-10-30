@@ -263,6 +263,7 @@ export function buildDiagram(
       portDomains,
       bond,
       compact,
+      image: "subsystem" in node.block ? (node.ui?.image ?? null) : null,
       labelSide: outsideLabel
         ? bondLabelSide(
             labelNode,

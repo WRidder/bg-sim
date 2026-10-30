@@ -252,7 +252,7 @@ Every shape below becomes `contracts/schemas/<name>.schema.json` (JSON Schema 20
       "params":    { "R": "2.0", "kt": "0.05" },             // expression strings (section 5.2.4)
       "constants": { "N": 3 },
       "starts":    { "w": "0.0" },                           // start-value overrides
-      "ui": { "showLabel": true, "color": null }
+      "ui": { "showLabel": true, "color": null }             // optional "image", below
     }],
     "connections": [{
       "id": "c3", "kind": "bond" | "wire" | "signal",
@@ -271,6 +271,13 @@ Every shape below becomes `contracts/schemas/<name>.schema.json` (JSON Schema 20
   "bindings": [ /* the spec's binding schema, section "Visualization and bindings" */ ]
 }
 ```
+- Node `ui` fields: they are editor state, and Julia drops them when it parses the model.
+  - `showLabel` (required) and `color`.
+  - `image` (optional, absent by default): `{ "mime": "image/png" | "image/svg+xml" | "image/webp" | "image/jpeg", "data": "<base64>", "fit": "contain" | "stretch" }`. It is drawn in the card body, under the header and the ports. `contain` keeps the aspect ratio (letterboxed); `stretch` fills the body.
+  - The inspector offers `image` on subsystem nodes only: choose a file, Paste (async Clipboard API), Ctrl+V on the Image area or on the selected subsystem, the fit, and Remove. Each change is one undo step.
+  - Size limit: 512 KiB decoded. The schema caps `data` at 699052 base64 characters. A larger hand-written image is a validation error on save (backend) and on load (editor).
+  - The editor shrinks a larger image instead of refusing it, and says what it did ("Compressed from 2.3 MB to 410 KB, 1024×768 PNG"). An SVG is minified (comments, metadata, whitespace, long decimals), and rasterized to PNG if that is not enough. A raster image is capped at 1024 px and then halved until it fits. It stays PNG when it has transparency; an opaque image may become WebP, then JPEG.
+  - The image is only ever shown as `<img src="data:...">`, never as inline SVG markup, so an SVG cannot run scripts. A stretched SVG is shown with `preserveAspectRatio="none"`; the stored SVG is not changed.
 - Project file `bgsim.project.json`: `{ format, language, name, models: [...], libraryDir: "library", scenesDir: "scenes" }`.
 - Project library: `library/<BlockName>.jl`, one `@block` per file, with the file name equal to the block name.
 

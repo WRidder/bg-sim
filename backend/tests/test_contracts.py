@@ -285,6 +285,50 @@ def test_explicit_null_dimension_is_a_known_pydantic_laxness() -> None:
     _generated_models()["catalog"].model_validate(mutated)
 
 
+NODE_IMAGE_MAX_BYTES = 512 * 1024
+
+
+def _with_image_data(data: str) -> dict:
+    document = _read(FIXTURE_DIR / "model" / "valid" / "model.subsystem-images.json")
+    document["diagram"]["nodes"][0]["ui"]["image"]["data"] = data
+    return document
+
+
+def test_node_image_limit_is_512_kib_decoded_in_schema_and_generated_model() -> None:
+    """ui.image.data: 512 KiB decoded (699052 base64 characters) passes, one quad more fails."""
+    import base64
+
+    from pydantic import ValidationError
+
+    limit = SCHEMAS_DOCS["model"]["$defs"]["nodeImage"]["properties"]["data"]["maxLength"]
+    assert limit == 4 * math.ceil(NODE_IMAGE_MAX_BYTES / 3) == 699052
+    at_limit = base64.b64encode(bytes(NODE_IMAGE_MAX_BYTES)).decode("ascii")
+    assert len(at_limit) == limit
+    model = _generated_models()["model"]
+
+    document = _with_image_data(at_limit)
+    VALIDATORS["model"].validate(document)
+    parsed = model.model_validate(document)
+    assert parsed.diagram.nodes[0].ui.image.data == at_limit
+
+    over = _with_image_data(base64.b64encode(bytes(NODE_IMAGE_MAX_BYTES + 3)).decode("ascii"))
+    errors = list(VALIDATORS["model"].iter_errors(over))
+    assert [list(error.path)[-1] for error in errors] == ["data"]
+    with pytest.raises(ValidationError):
+        model.model_validate(over)
+
+
+def test_node_image_fixture_round_trips_through_the_generated_model() -> None:
+    """The PNG and the SVG survive pydantic unchanged (the backend stores the raw document)."""
+    document = _read(FIXTURE_DIR / "model" / "valid" / "model.subsystem-images.json")
+    model = _generated_models()["model"].model_validate(document)
+    dumped = model.model_dump(mode="json", by_alias=True, exclude_unset=True)
+    for index, (mime, fit) in enumerate([("image/png", "contain"), ("image/svg+xml", "stretch")]):
+        image = dumped["diagram"]["nodes"][index]["ui"]["image"]
+        assert image == document["diagram"]["nodes"][index]["ui"]["image"]
+        assert (image["mime"], image["fit"]) == (mime, fit)
+
+
 def test_bindings_pose_order_is_documented_in_the_schema() -> None:
     """C-MB2: the pose binding says quaternion first, matching the model's Vec{7} chart."""
     description = SCHEMAS_DOCS["bindings"]["$defs"]["poseBinding"]["properties"]["signal"][

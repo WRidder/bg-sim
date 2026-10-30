@@ -14,6 +14,7 @@
 
 import { API_BASE } from "../api/client";
 import type { Model } from "../contracts/model";
+import { modelImageIssues } from "../editor/nodeImage";
 
 export class ProjectApiError extends Error {
   readonly status: number;
@@ -169,6 +170,16 @@ export async function getModel(
       `The model ${project}/${model} does not match the model contract.`,
       answer.status,
       answer.body,
+    );
+  }
+  // The backend returns the file as stored, so a hand-edited image over the contract's
+  // 512 KiB limit (or with a bad mime or fit) is refused here rather than on the next save.
+  const imageIssues = modelImageIssues(answer.body);
+  if (imageIssues.length > 0) {
+    throw new ProjectApiError(
+      `The model ${project}/${model} does not match the model contract: ${imageIssues.join(" ")}`,
+      422,
+      { errors: imageIssues },
     );
   }
   return answer.body;

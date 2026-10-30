@@ -26,6 +26,7 @@ import { nodeRef } from "../state/modelFactory";
 import { copyBlockToProjectLibrary } from "./copyToLibrary";
 import { CsvSourceSection } from "./CsvSourceSection";
 import { isCsvSourceRef } from "./csvSource";
+import { NodeImageSection } from "./NodeImageSection";
 import { SelectField, TextField, type SelectOption } from "./fields";
 import { LiveBanner, LiveParameterField, useLiveMode } from "./liveInspector";
 import { qualifiedFrame } from "./frames";
@@ -636,6 +637,8 @@ export function NodeInspector({
           }
         />
       </section>
+
+      {"subsystem" in node.block ? <NodeImageSection node={node} /> : null}
 
       {block !== undefined ? (
         <>

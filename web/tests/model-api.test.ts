@@ -5,6 +5,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import modelJson from "../../contracts/fixtures/model/valid/model.dcmotor.json";
+import imagesJson from "../../contracts/fixtures/model/valid/model.subsystem-images.json";
 import type { Model } from "../src/contracts/model";
 import {
   ensureProject,
@@ -79,6 +80,26 @@ describe("model documents", () => {
     vi.stubGlobal("fetch", mock);
 
     await expect(getModel("demo", "Broken")).rejects.toBeInstanceOf(ProjectApiError);
+  });
+
+  it("loads node images and refuses one over the 512 KiB contract limit", async () => {
+    const withImages = JSON.parse(JSON.stringify(imagesJson)) as Model;
+    const mock = fetchMock();
+    mock.mockResolvedValueOnce(answer(200, withImages));
+    vi.stubGlobal("fetch", mock);
+    const loaded = await getModel("demo", "RLCDualImages");
+    expect(loaded?.diagram.nodes.map((node) => node.ui?.image?.fit)).toEqual(["contain", "stretch"]);
+
+    // Hand-written data one base64 quad over the limit: 699056 characters, 524292 bytes.
+    const oversize = JSON.parse(JSON.stringify(imagesJson)) as Model;
+    oversize.diagram.nodes[1]!.ui!.image!.data = "QUJD".repeat(174_764);
+    mock.mockResolvedValueOnce(answer(200, oversize));
+    await expect(getModel("demo", "RLCDualImages")).rejects.toMatchObject({
+      name: "ProjectApiError",
+      message: expect.stringContaining(
+        "Bondgraph: ui.image.data decodes to 524292 bytes; the limit is 524288 bytes (512 KB).",
+      ),
+    });
   });
 
   it("PUTs the document and returns the backend's normalised copy", async () => {

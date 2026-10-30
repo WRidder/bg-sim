@@ -30,6 +30,7 @@ import type {
   ModelConstantValue,
   ModelDiagram,
   ModelNode,
+  ModelNodeImage,
   ModelPoint,
   ModelProbePanel,
   ProbeKind,
@@ -50,6 +51,7 @@ import {
   applyParameterChanges as applyChangesToDraft,
   type ParameterChange,
 } from "../debug/panels/editsModel";
+import { nodeImageIssue } from "../editor/nodeImage";
 import { groupSelectionIntoSubsystem } from "../editor/subsystemGroup";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { probeSignalOptions } from "../probe/probeSignals";
@@ -213,6 +215,13 @@ export interface DocumentActions {
   ) => EditResult;
   /** Set one start-value override, or remove it with null (plan 3.3 `starts`). */
   setNodeStart: (nodeId: string, name: string, value: string | null) => EditResult;
+  /**
+   * Set the image drawn in a subsystem card (plan 3.3 `ui.image`), or remove it with null.
+   * The caller has already fitted the image into the 512 KiB limit (editor/nodeImage.ts).
+   */
+  setNodeImage: (nodeId: string, image: ModelNodeImage | null) => EditResult;
+  /** Change how the image fills the card: `contain` keeps the aspect ratio, `stretch` fills. */
+  setNodeImageFit: (nodeId: string, fit: ModelNodeImage["fit"]) => EditResult;
   /** Re-point a library instance, used by "Copy to project library" (plan 7.4). */
   setNodeBlockRef: (nodeId: string, ref: string) => EditResult;
   /**
@@ -1155,6 +1164,66 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
           }
         } else {
           node.starts = { ...(node.starts ?? {}), [name]: text };
+        }
+      });
+      return { ok: true };
+    },
+
+    setNodeImage: (nodeId, image) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const node = diagram.nodes.find((entry) => entry.id === nodeId);
+      if (node === undefined) {
+        return { ok: false, error: "That block is no longer in the diagram." };
+      }
+      if (!("subsystem" in node.block)) {
+        return { ok: false, error: "Only subsystem blocks carry an image." };
+      }
+      if (image !== null) {
+        const issue = nodeImageIssue(image);
+        if (issue !== null) {
+          return { ok: false, error: issue };
+        }
+      }
+      commitActive((draft) => {
+        const target = draft.nodes.find((entry) => entry.id === nodeId);
+        if (target === undefined) {
+          return;
+        }
+        if (image === null) {
+          if (target.ui?.image !== undefined) {
+            delete target.ui.image;
+          }
+          return;
+        }
+        const copy: ModelNodeImage = { mime: image.mime, data: image.data, fit: image.fit };
+        if (target.ui === undefined) {
+          target.ui = { showLabel: true, color: null, image: copy };
+        } else {
+          target.ui.image = copy;
+        }
+      });
+      return { ok: true };
+    },
+
+    setNodeImageFit: (nodeId, fit) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const node = diagram.nodes.find((entry) => entry.id === nodeId);
+      if (node?.ui?.image === undefined) {
+        return { ok: false, error: "That block has no image." };
+      }
+      if (fit !== "contain" && fit !== "stretch") {
+        return { ok: false, error: "The fit is contain or stretch." };
+      }
+      commitActive((draft) => {
+        const image = draft.nodes.find((entry) => entry.id === nodeId)?.ui?.image;
+        if (image !== undefined) {
+          image.fit = fit;
         }
       });
       return { ok: true };
