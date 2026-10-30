@@ -25,6 +25,7 @@ import { useDocumentStore } from "../state/documentStore";
 import { cancelExport, ExportApiError, fmuUrl, getExport, isFinished, startExport } from "./exportApi";
 import {
   buildLines,
+  defaultStep,
   formatBytes,
   formatCost,
   formatStep,
@@ -52,24 +53,54 @@ function errorText(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
 
+/** Diagnostics shown in full per code; the rest of a long run (14 × W203) folds away. */
+const SHOWN_PER_CODE = 2;
+
+function DiagnosticItem({ d }: { d: Diagnostic }) {
+  return (
+    <li
+      className={`export-dialog__diagnostic is-${d.severity}`}
+      data-testid={`export-diagnostic-${d.code}`}
+    >
+      <span className="export-dialog__code">{d.code}</span>
+      <span className="export-dialog__message">
+        {d.message}
+        {d.path ? <span className="export-dialog__path"> at {d.path}</span> : null}
+        {d.hint ? <span className="export-dialog__hint">{d.hint}</span> : null}
+      </span>
+    </li>
+  );
+}
+
 function DiagnosticList({ diagnostics }: { diagnostics: Diagnostic[] }) {
   if (diagnostics.length === 0) {
     return null;
   }
+  const groups = new Map<string, Diagnostic[]>();
+  for (const d of diagnostics) {
+    groups.set(d.code, [...(groups.get(d.code) ?? []), d]);
+  }
   return (
     <ul className="export-dialog__diagnostics" data-testid="export-diagnostics">
-      {diagnostics.map((d, index) => (
-        <li
-          key={`${d.code}-${index}`}
-          className={`export-dialog__diagnostic is-${d.severity}`}
-          data-testid={`export-diagnostic-${d.code}`}
-        >
-          <span className="export-dialog__code">{d.code}</span>
-          <span className="export-dialog__message">
-            {d.message}
-            {d.path ? <span className="export-dialog__path"> at {d.path}</span> : null}
-            {d.hint ? <span className="export-dialog__hint">{d.hint}</span> : null}
-          </span>
+      {[...groups.entries()].map(([code, items]) => (
+        <li key={code} className="export-dialog__group">
+          <ul className="export-dialog__diagnostics">
+            {items.slice(0, SHOWN_PER_CODE).map((d, index) => (
+              <DiagnosticItem key={index} d={d} />
+            ))}
+          </ul>
+          {items.length > SHOWN_PER_CODE ? (
+            <details className="export-dialog__more" data-testid={`export-more-${code}`}>
+              <summary>
+                {items.length - SHOWN_PER_CODE} more {code}
+              </summary>
+              <ul className="export-dialog__diagnostics">
+                {items.slice(SHOWN_PER_CODE).map((d, index) => (
+                  <DiagnosticItem key={index} d={d} />
+                ))}
+              </ul>
+            </details>
+          ) : null}
         </li>
       ))}
     </ul>
@@ -502,7 +533,7 @@ export function ExportDialog() {
                       <input
                         className="open-dialog__input export-dialog__number"
                         data-testid="export-step"
-                        placeholder="Auto (1 ms)"
+                        placeholder={`Auto (${formatStep(defaultStep(doc.settings.t_end))})`}
                         aria-invalid={Number.isNaN(step)}
                         value={stepText}
                         onChange={(event) => setStepText(event.target.value)}

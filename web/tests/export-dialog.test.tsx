@@ -140,6 +140,29 @@ describe("ExportDialog", () => {
     });
   });
 
+  it("folds a long run of one diagnostic code", async () => {
+    const many = structuredClone(doneJob);
+    const w203 = Array.from({ length: 14 }, (_, k) => ({
+      code: "W203",
+      severity: "warning" as const,
+      message: `switching condition ${k} is evaluated once per step`,
+      path: `Robot/Limit${k}`,
+    }));
+    if (many.report) {
+      many.report.diagnostics = [...many.report.diagnostics, ...w203];
+    }
+    stubBackend([many]);
+    render(<ExportDialog />);
+    act(() => useExportDialogStore.getState().openExport(null));
+    fireEvent.click(screen.getByTestId("export-start"));
+    await screen.findByTestId("export-report");
+    expect(screen.getByTestId("export-more-W203").querySelector("summary")?.textContent).toBe(
+      "12 more W203",
+    );
+    expect(screen.getAllByTestId("export-diagnostic-W203")).toHaveLength(14);
+    expect(screen.queryByTestId("export-more-W210")).toBeNull();
+  });
+
   it("warns W209 when the whole model has no Export markers", () => {
     stubBackend([doneJob]);
     render(<ExportDialog />);

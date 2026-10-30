@@ -54,6 +54,28 @@ export function formatStep(seconds: number | null | undefined): string {
   return `${seconds} s`;
 }
 
+/**
+ * The communication step an export uses when the request leaves it open: 1 ms, or finer
+ * for horizons below 0.5 s (`Export.default_step` in Julia: t_end/500 rounded down to a
+ * 1-2-5 grid).
+ */
+export function defaultStep(tEnd: number): number {
+  if (tEnd >= 0.5) {
+    return 1e-3;
+  }
+  const target = tEnd / 500;
+  let best = 1e-9;
+  for (let e = -9; e <= -3; e += 1) {
+    for (const m of [1, 2, 5]) {
+      const v = m * 10 ** e;
+      if (v <= target * (1 + 1e-12)) {
+        best = v;
+      }
+    }
+  }
+  return Number(best.toPrecision(1));
+}
+
 /** An estimated flop count as `1240`, `4.2e6`. */
 export function formatCost(cost: number | null | undefined): string {
   return cost === null || cost === undefined ? "—" : formatNumber(Math.round(cost));

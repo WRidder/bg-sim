@@ -202,10 +202,12 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
         return result
 
     if cc is not None:
+        # Each source is compiled once (position independent), and the library and the
+        # harness link those objects: a large model.c takes minutes at -O2.
         objects = []
         for name in HOT_PATH_SOURCES:
             obj = build / (Path(name).stem + ".o")
-            res = run([cc, *C_FLAGS, "-c", src / name, "-I", src, "-o", obj])
+            res = run([cc, *C_FLAGS, "-fPIC", "-c", src / name, "-I", src, "-o", obj])
             if res.returncode != 0:
                 result.error = f"compiling {name} failed:\n{res.stdout}{res.stderr}"
                 return finish()
@@ -231,8 +233,7 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
                 for name in ("model.c", "bg_solver.c", "bg_intrinsics.c", "bg_mech.c"))
 
         library = build / (ident + _library_suffix(plat))
-        res = run([cc, *C_FLAGS, "-shared", "-fPIC", "-static-libgcc", "-I", src,
-                   *[src / n for n in HOT_PATH_SOURCES], "-o", library, "-lm"])
+        res = run([cc, "-shared", "-static-libgcc", *objects, "-o", library, "-lm"])
         if res.returncode != 0:
             result.error = f"linking the FMU binary failed:\n{res.stdout}{res.stderr}"
             return finish()
@@ -241,7 +242,7 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
 
         harness = build / ("alloc_check" + (".exe" if plat.startswith("win") else ""))
         res = run([cc, "-std=c11", "-O2", "-I", src, runtime_dir / "alloc_check.c",
-                   *[src / n for n in HOT_PATH_SOURCES], "-o", harness, "-lm"])
+                   *objects, "-o", harness, "-lm"])
         if res.returncode != 0:
             result.error = f"building the allocation harness failed:\n{res.stdout}{res.stderr}"
             return finish()

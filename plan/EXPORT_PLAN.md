@@ -118,14 +118,21 @@ julia/BGSim/export/runtime/      hand-written C, versioned, copied into every FM
   bg_model.hpp     optional header-only C++ wrapper on the C API
 backend/src/bgsim_server/fmu_build.py compile, symbol check, allocation harness, zip
 backend/src/bgsim_server/exports.py   the HTTP endpoint, store under the project (P-EX1 second half)
+backend/src/bgsim_server/fake_export.py  the export runner of the fake worker (e2e)
+julia/BGSim/src/export/job.jl     export_job: one dialog request (scope, flatten, reference run, export)
+julia/BGSim/export/export_job.jl  the per-job Julia process the backend starts
 examples/export_examples.jl, export_checks.py   the X-EX0 gate over every example
-web: an Export dialog (settings, analysis report, download)
+web/src/export/                   the Export dialog (W-EX1): scope, interface, settings, report, download
 ```
 
 ### 5.2 Flow
 
-1. `model.export` (worker RPC) flattens, lowers and compiles as for a run (the compile cache
-   applies), checks exportability (E110/E111), and runs the reference simulation.
+1. The backend starts **one Julia process per export job** (`export/export_job.jl`,
+   `Export.export_job`), not a worker RPC: an export takes minutes, and the interactive
+   worker must keep answering the supervisor's 5 s health ping. The job applies the scope
+   (J-EX11), flattens, checks exportability (E110/E111/E112), and runs the reference
+   simulation (with a time budget; its trajectory widens the spectrum scan). Its phase goes
+   to the backend as `@@bgsim {"phase": ...}` lines on stdout.
 2. The analysis proposes `dt` and the integrator (D-EX7) unless the settings fix them.
 3. The emitter writes `model.c/.h` and the model description; the runtime is copied as it is.
 4. The backend compiles for the requested platforms, runs the symbol and allocation checks and
@@ -301,7 +308,7 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 | X-EX0 | **The standing gate: every example model is exported and compared with its simulation.** `examples/export_examples.jl` + `examples/export_checks.py`: export each model (`expose_all`), run its reference simulation (the model's solver and horizon, tolerances tightened to ≤ 1e-8/1e-10), build the FMU, run it in fmpy and compare every recorded signal (error relative to the signal's peak, right limits at event instants). The result is a coverage matrix: `compared` (with the worst error), `refused` (with the E-code and reason), `build_failed`, `diverged`, `fmu_error`. Each example's `expected.json` records its expected export outcome (`"export": {"status": "compared", "max_rel_error": …}` or `{"status": "refused", "code": "E111"}`), so a phase that adds coverage flips entries visibly and a regression fails. Examples with Export markers (dc-motor speed control first) also compare the real input/output path: the same input trajectory into the FMU and into the simulation. | runs in CI next to `run_checks.py`; the matrix is recorded in `plan/STATUS.md` after every phase |
 | J-EX1 | `src/export/` with the C emitter (spike `cexpr` + CSE + modes), discrete emitter, RK4 + Euler runtime, baked initialization, interface from Export markers, folding (D-EX10), ranges (D-EX16), FMI 2.0 CS description | dc-motor `iconic`/`speed-control` and drivetrain export; generated code compiles `-std=c99 -Wall -Wextra -Werror` |
 | J-EX2 | Analysis: eigenvalue scan, RK4 stability bound, accuracy loop against the reference, export report | the dc-motor report predicts the 0.72 ms bound; the accuracy loop lands on a `dt` that meets 1e-4 |
-| P-EX1 | `exports.py`: compile, symbol check, counting harness, zip, `POST /api/projects/{p}/models/{m}/export` | the FMU passes `fmpy` validation; allocation count after instantiate is 0 |
+| P-EX1 | `exports.py`: compile, symbol check, counting harness, zip, `POST /api/projects/{p}/models/{m}/export` | the FMU passes `fmpy` validation; allocation count after instantiate is 0. **Done (branch `export-fmu-ui`):** `fmu_build.py` (objects compiled once, `-fPIC`, linked into the library and the harness; MSYS2 gcc found by default) and the endpoint in `exports.py`: `POST .../export` starts a cancellable job (one Julia process per job, `export/export_job.jl`, one job at a time), `GET /api/exports/{id}` is the `ExportJob` with the report, `DELETE` cancels, `GET /api/exports/{id}/fmu` downloads. Measured from the dialog on this machine: dc-motor speed-control RK4 62.5 µs, 56 s in all (Julia start 14 s, reference 2.9 s, analysis and C 10 s, build 28 s), 0 allocations over 20000 doSteps, fmpy validate OK, worst error 4e-5; panda scope `Robot` Rodas4P 25 µs, 224 s (reference 29 s, build 155 s, 87 s after the object reuse), 0 allocations, fmpy validate OK, worst error 9.6e-4 |
 | X-EX1 | Export markers on the first examples (dc-motor speed control: `ExportInput` speed setpoint, `ExportOutput` measured speed and current; drivetrain: torque in, load speed out) and the input-trajectory comparison in X-EX0 | the FMU driven through its inputs matches the simulation driven by the same trajectory |
 | J-EX11 | Export scope: `Export.scope_document(doc, path; power_inputs, input_values)` turns the subsystem at `path` into the exported model (markers on signal ports, an effort/flow adapter on each scalar power port, everything outside dropped); E112 for a missing scope, a node that is not a subsystem, a power port without a choice, or a vector/multibond port (later) | the subsystem's ports are exactly the interface; a harness with events outside the scope does not reach the export; the adapter's flow is the flow into the subsystem in both bond orientations; hydraulic-servo's `Valve` exports on its own |
 
@@ -327,7 +334,7 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 | J-EX7 | FMI 3.0 Co-Simulation wrapper and `buildDescription.xml` | passes FMI 3 validation (fmpy) |
 | P-EX2 | Cross builds with `zig cc`: x86_64-linux, aarch64-linux, x86_64-windows | the aarch64 binary runs under qemu-user in CI with the same results |
 | X-EX3 | Real-time measurement on PREEMPT_RT (ctrlX CORE or a PREEMPT_RT PC): a cyclic 1 kHz task calling `doStep`, latency and step-time histograms over ≥ 1 h | max step time and jitter recorded for dc-motor and robot-arm-3d; no deadline miss at 1 kHz |
-| W-EX1 | Export dialog: platforms, `dt`/integrator (auto or manual), error target, tunables, the analysis report, download | Playwright test exports dc-motor and downloads a valid FMU |
+| W-EX1 | Export dialog: platforms, `dt`/integrator (auto or manual), error target, tunables, the analysis report, download | Playwright test exports dc-motor and downloads a valid FMU. **In progress (branch `export-fmu-ui`):** done: the dialog from the toolbar (whole model) and a subsystem's context menu (J-EX11 scope preselected), the interface preview with effort/flow per power port and the W209 hint, method and `dt` (auto or manual) with step, damping, Jacobian and linear solver under Advanced, progress and cancel, the report (method, `dt`, substeps, candidate table, build and timings, diagnostics by code), refusals as a message, download; Playwright (`tests/e2e/export.spec.ts`) exports and downloads on the fake worker; the real dc-motor and panda `Robot` exports were driven from the dialog and their FMUs validated with fmpy. Not yet: platforms (P-EX2), the error target, a tunables editor, input start values, and "promote to marker" suggestions |
 
 ### Phase E: completeness
 
@@ -373,12 +380,19 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 
 ## 10. Contract and spec changes
 
-- `contracts/schemas/export-settings.schema.json` (new): platforms, FMI version, `dt` or
-  `auto`, integrator or `auto`, error target, step budget, expose-all-signals, keep-parameters.
-- `contracts/schemas/export-report.schema.json` (new): chosen `dt`/integrator, eigenvalue
-  summary, stability bound, errors per output, W203 sites, step time, file list.
-- `worker-rpc.schema.json`: a `model.export` request and its result, plus progress through
-  `run.phase`-style notifications.
+- `contracts/schemas/export-request.schema.json` (landed with W-EX1): the model, an optional
+  scope with effort/flow per power port and input start values, and `ExportSettings` (method
+  and `dt` auto or set, communication step, damping, Jacobian, linear solver, expose-all).
+  Later: platforms, FMI version, error target, step budget.
+- `contracts/schemas/export-report.schema.json` (landed): `export.json` as written by
+  `export_model` (method, `dt`, substeps, spectrum, the candidate table, interface,
+  diagnostics, linear algebra, tables) plus `build` from `fmu_build.py` (compiler, source-only
+  note, symbol check, C++ check, allocations after instantiate, `doStep` mean/max). Later:
+  errors per output (the accuracy loop).
+- `contracts/schemas/export-job.schema.json` (landed): the job document of
+  `GET /api/exports/{id}` (status, phase, timings, diagnostics, notes, report, FMU).
+- `worker-rpc.schema.json`: no `model.export` method. The export runs in its own Julia
+  process (5.2), which reports its phase on stdout.
 - New diagnostic codes, checked against `src/diagnostics.jl` before use: E110 (construct not
   exportable), E111 (structure not supported by the chosen integrator), W207 (RK4 substeps
   above the step budget), W208 (accuracy target not met at the chosen `dt`), E112 (export

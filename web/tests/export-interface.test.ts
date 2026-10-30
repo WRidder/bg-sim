@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import type { Model } from "../src/contracts/model";
 import {
   buildLines,
+  defaultStep,
   formatBytes,
   formatStep,
   methodLabel,
@@ -116,6 +117,11 @@ describe("export wording", () => {
     expect(formatStep(6.25e-5)).toBe("62.5 µs");
     expect(formatStep(4e-8)).toBe("40 ns");
     expect(formatStep(0.5)).toBe("500 ms");
+    // the same rule as BGSim.Export.default_step
+    expect(defaultStep(1)).toBe(1e-3);
+    expect(defaultStep(0.3)).toBe(5e-4);
+    expect(defaultStep(0.1)).toBe(2e-4);
+    expect(defaultStep(5.15)).toBe(1e-3);
     expect(formatBytes(512)).toBe("512 B");
     expect(formatBytes(91234)).toBe("89.1 KB");
     expect(methodLabel("rodas4p")).toBe("Rodas4P");
