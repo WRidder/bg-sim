@@ -27,6 +27,7 @@ function clit(v::Real)
     s = repr(f)
     return f < 0 ? "($s)" : s
 end
+clit(v) = throw(ExportError("the constant `$v` ($(typeof(v))) has no C literal"))
 
 function _try_const(x)
     x isa Number && return x
@@ -68,6 +69,9 @@ function cexpr(x, env::Dict{Any,String}, modes = nothing)
         k === nothing && (push!(modes, cond); k = length(modes))
         return "((m->c[$(k - 1)] != 0.0) ? $(cexpr(args[2], env, modes)) : $(cexpr(args[3], env, modes)))"
     end
+    if any(_is_array_literal, args)  # a table argument (interp1/interp2 over constant arrays)
+        throw(ExportError("`$(nameof_op(op))` with table arguments has no C implementation yet (plan J-EX5)"))
+    end
     a = String[cexpr(y, env, modes) for y in args]
     if op === (+)
         return "(" * join(a, " + ") * ")"
@@ -108,6 +112,11 @@ function cexpr(x, env::Dict{Any,String}, modes = nothing)
         return "$(C_MATH1[op])($(a[1]))"
     end
     throw(ExportError("`$(nameof_op(op))` has no C implementation yet (in `$x`)"))
+end
+
+function _is_array_literal(y)
+    y = Symbolics.unwrap(y)
+    return SymbolicUtils.iscall(y) && SymbolicUtils.operation(y) === SymbolicUtils.array_literal
 end
 
 nameof_op(op) = try

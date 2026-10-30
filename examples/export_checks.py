@@ -192,7 +192,8 @@ def main() -> int:
     for row in rows:
         rec, rep, b, c = row["rec"], row.get("report"), row.get("build"), row.get("cmp")
         if rep is None:
-            reason = "; ".join(f"{d['code']}: {d['message']}" for d in rec.get("diagnostics", []))
+            reason = "; ".join(f"{d['code']}: {d['message']}" + (f" ({d['hint']})" if d.get("hint") else "")
+                               for d in rec.get("diagnostics", []))
             reason = reason or rec.get("error", "")[:200]
             if rec["status"] == "timeout":
                 reason = f"over the {rec['budgetS']:g} s budget (logged, not investigated)"
