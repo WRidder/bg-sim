@@ -81,6 +81,7 @@ include("scope.jl")
 | `margin` | `0.5` | fraction of the stability bound the step may use (explicit methods) |
 | `accuracy` | `0.3` | largest `h·|λ|` allowed for any eigenvalue (RK4); Rosenbrock methods meet the same per-step error |
 | `damping` | `0.05` | a Rosenbrock step may leave a fast mode unresolved when both the method and the exact flow shrink it below this in one step |
+| `stiff_ratio` | `10` | a Rosenbrock step may also damp a mode the exact flow keeps (W213) when `h·|λ|` is at least this and the method shrinks it below `damping` |
 | `max_substeps` | `1000` | above this W207 is reported |
 | `fold_parameters` | `true` | fold non-tunable parameters into literals |
 | `expose_all` | `false` | publish every recorded signal as a `local` variable |
@@ -97,6 +98,7 @@ Base.@kwdef struct ExportSettings
     margin::Float64 = 0.5
     accuracy::Float64 = 0.3
     damping::Float64 = 0.05
+    stiff_ratio::Float64 = 10.0
     max_substeps::Int = 1000
     fold_parameters::Bool = true
     expose_all::Bool = false
@@ -121,6 +123,7 @@ function ExportSettings(d::AbstractDict)
         margin = Float64(get_("margin", 0.5)),
         accuracy = Float64(get_("accuracy", 0.3)),
         damping = Float64(get_("damping", 0.05)),
+        stiff_ratio = Float64(get_("stiff_ratio", 10.0)),
         max_substeps = Int(get_("max_substeps", 1000)),
         fold_parameters = Bool(get_("fold_parameters", true)),
         expose_all = Bool(get_("expose_all", false)),
@@ -494,7 +497,8 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     build_jacobian() = (jac_info[] === nothing &&
         (jac_info[] = _jacobian(rhs, xs, obs, env, modes, settings)); jac_info[])
     step_kw = (margin = settings.margin, accuracy = settings.accuracy,
-        max_substeps = settings.max_substeps, damping = settings.damping)
+        max_substeps = settings.max_substeps, damping = settings.damping,
+        stiff_ratio = settings.stiff_ratio)
     candidates = if settings.method !== :auto
         (settings.method,)
     elseif algebraic
@@ -553,6 +557,16 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             hint = is_rosenbrock(method) ?
                 "a fast mode (|λ| up to $(round(choice.max_abs_lambda; sigdigits = 3)) 1/s) is neither resolved nor damped at a larger step" :
                 "a stiff mode (|λ| = $(round(choice.max_abs_lambda; sigdigits = 3)) 1/s) limits the step; a Rosenbrock method avoids it"))
+    end
+    # Stiff modes the model keeps but the Rosenbrock step kills (D-EX7, the step rule's third
+    # case).
+    n_num, f_num = numerically_damped(method, points, dt; step_kw...)
+    if n_num > 0
+        f3 = round(f_num; sigdigits = 3)
+        f_txt = f3 >= 100 ? string(round(Int, f3)) : string(f3)
+        push!(diags, diag("W213",
+            "$(n_num) stiff undamped mode$(n_num == 1 ? "" : "s") at or above $(f_txt) Hz $(n_num == 1 ? "is" : "are") damped numerically by $(uppercase(String(method))); force rk4 to resolve them";
+            hint = "the step h = $(dt) s is at least $(settings.stiff_ratio)/|λ| for them; method = rk4 follows them, at a smaller step"))
     end
 
     # ---- the Jacobian and the linear algebra of the Rosenbrock step (D-EX12, D-EX13)
@@ -647,7 +661,10 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             "stableStep" => isfinite(choice.stable_step) ? choice.stable_step : nothing,
             "accurateStep" => isfinite(choice.accurate_step) ? choice.accurate_step : nothing,
             "analysisMethod" => String(method),
-            "proposedDt" => choice.dt_ns / 1e9),
+            "proposedDt" => choice.dt_ns / 1e9,
+            # W213: modes the exact flow keeps that the Rosenbrock step damps.
+            "numericallyDamped" => Dict("modes" => n_num,
+                "minHz" => isfinite(f_num) ? f_num : nothing)),
         "linearAlgebra" => la === nothing ? nothing : la.report,
         "tables" => intrinsics_report(intrinsics),
         "diagnostics" => [BGSim.to_namedtuple(d) for d in sort_diagnostics(diags)],

@@ -15,8 +15,13 @@
 #   every mode is either resolved, |R(hλ) - e^(hλ)| <= tol·max(1, |e^(hλ)|) with tol the RK4
 #   error at h·|λ| = accuracy (so both families resolve a mode equally well), or damped,
 #   |R(hλ)| <= damping and |e^(hλ)| <= damping: a parasitic fast mode the method kills in a
-#   step, as the exact flow does. A mode in between (a lightly damped fast oscillation, or a
-#   decay of a few steps) must be resolved.
+#   step, as the exact flow does, or damped numerically, |R(hλ)| <= damping and
+#   h·|λ| >= stiff_ratio (default 10): a stiff mode far above the step's bandwidth that the
+#   exact flow does not damp (an undamped joint stiffness), which the method kills although
+#   the model would keep it ringing. W213 reports how many and from which frequency; forcing
+#   rk4 resolves them. A mode in between (a lightly damped oscillation near the bandwidth,
+#   or a decay of a few steps) must be resolved, so an LC circuit or a pendulum in the
+#   bandwidth is still followed.
 # Both are heuristics; the example harness measures the real error.
 #
 # The internal step is the communication step (and every discrete period) divided by the
@@ -224,16 +229,17 @@ function _spectrum_summary(points)
     return worst_abs, worst_t
 end
 
-"""    choose_step(method, points, base_ns; margin, accuracy, max_substeps, damping) -> NamedTuple
+"""    choose_step(method, points, base_ns; margin, accuracy, max_substeps, damping,
+                stiff_ratio) -> NamedTuple
 
 The internal step for `method`: `base_ns` (the communication step and every discrete period
 are multiples of it) divided by the smallest admissible substep count. For Euler and RK4 that
 keeps `h <= margin * stable_step` and `h * |λ| <= accuracy` at every scanned point; for a
 Rosenbrock method every mode must be resolved or damped (file header)."""
 function choose_step(method::Symbol, points, base_ns::Int64; margin = 0.5, accuracy = 0.3,
-    max_substeps = 1000, damping = 0.05)
+    max_substeps = 1000, damping = 0.05, stiff_ratio = 10.0)
     is_rosenbrock(method) && return _choose_step_rosenbrock(method, points, base_ns;
-        accuracy, max_substeps, damping)
+        accuracy, max_substeps, damping, stiff_ratio)
     h_stable = Inf
     h_accurate = Inf
     worst_abs, worst_t = _spectrum_summary(points)
@@ -260,27 +266,57 @@ end
 """The per-step error tolerance on one mode: what RK4 makes at `h·|λ| = accuracy`."""
 mode_tolerance(accuracy) = abs(stability_function(:rk4, -accuracy) - exp(-accuracy))
 
-function _mode_ok(method, z, tol, damping)
+"""    mode_class(method, z, tol, damping, stiff_ratio) -> Symbol
+
+How a Rosenbrock step `z = hλ` treats one mode (file header): `:resolved`; `:damped` (the
+method and the exact flow both shrink it below `damping` in one step); `:numerical` (only the
+method does, and the mode is stiff, `|z| >= stiff_ratio`; W213); or `:fail`."""
+function mode_class(method, z, tol, damping, stiff_ratio)
     ez = exp(ComplexF64(z))
     r = stability_function(method, z)
-    abs(r - ez) <= tol * max(1.0, abs(ez)) && return true
-    return abs(r) <= damping && abs(ez) <= damping
+    abs(r - ez) <= tol * max(1.0, abs(ez)) && return :resolved
+    abs(r) <= damping || return :fail
+    abs(ez) <= damping && return :damped
+    return abs(z) >= stiff_ratio ? :numerical : :fail
 end
 
-function _choose_step_rosenbrock(method, points, base_ns; accuracy, max_substeps, damping)
+_mode_ok(method, z, tol, damping, stiff_ratio) =
+    mode_class(method, z, tol, damping, stiff_ratio) !== :fail
+
+"""The distinct modes of the scanned points: one per conjugate pair, none at zero (the
+samples repeat most eigenvalues)."""
+function distinct_modes(points)
+    # (`+ 0.0` maps -0.0 to 0.0, so a conjugate pair on the imaginary axis is one mode)
+    lams = unique(λ -> (round(real(λ); sigdigits = 6) + 0.0, round(abs(imag(λ)); sigdigits = 6)),
+        ComplexF64[λ for (_, ls) in points for λ in ls])
+    return filter!(λ -> abs(λ) > 1e-12, lams)
+end
+
+"""    numerically_damped(method, points, h; accuracy, damping, stiff_ratio) -> (count, min_hz)
+
+The modes a Rosenbrock step `h` accepts only because the method damps them (`:numerical`):
+how many, and the lowest of their natural frequencies `|λ|/2π` in Hz (`Inf` when none)."""
+function numerically_damped(method::Symbol, points, h::Real; accuracy = 0.3, damping = 0.05,
+    stiff_ratio = 10.0, kwargs...)
+    is_rosenbrock(method) || return (0, Inf)
+    tol = mode_tolerance(accuracy)
+    lams = filter(λ -> mode_class(method, h * λ, tol, damping, stiff_ratio) === :numerical,
+        distinct_modes(points))
+    return (length(lams), isempty(lams) ? Inf : minimum(abs, lams) / 2π)
+end
+
+function _choose_step_rosenbrock(method, points, base_ns; accuracy, max_substeps, damping,
+    stiff_ratio)
     tol = mode_tolerance(accuracy)
     worst_abs, worst_t = _spectrum_summary(points)
-    # Distinct modes only (the samples repeat most eigenvalues).
-    lams = unique(λ -> (round(real(λ); sigdigits = 6), round(abs(imag(λ)); sigdigits = 6)),
-        ComplexF64[λ for (_, ls) in points for λ in ls])
-    filter!(λ -> abs(λ) > 1e-12, lams)
+    lams = distinct_modes(points)
     h_stable = isempty(points) ? Inf : minimum(stable_step(method, ls) for (_, ls) in points)
     kmax = 10 * max_substeps
     divisors = [k for k in 1:min(kmax, base_ns) if base_ns % k == 0]
     k = 0
     for kk in divisors
         h = base_ns / kk / 1e9
-        if all(λ -> _mode_ok(method, h * λ, tol, damping), lams)
+        if all(λ -> _mode_ok(method, h * λ, tol, damping, stiff_ratio), lams)
             k = kk
             break
         end
@@ -294,15 +330,15 @@ function _choose_step_rosenbrock(method, points, base_ns; accuracy, max_substeps
     )
 end
 
-"""    step_rule_met(method, points, h; margin, accuracy, damping) -> Bool
+"""    step_rule_met(method, points, h; margin, accuracy, damping, stiff_ratio) -> Bool
 
 Whether the internal step `h` meets `method`'s rule at every scanned point."""
 function step_rule_met(method::Symbol, points, h::Real; margin = 0.5, accuracy = 0.3,
-    damping = 0.05, max_substeps = 0)
+    damping = 0.05, stiff_ratio = 10.0, max_substeps = 0)
     lams = ComplexF64[λ for (_, ls) in points for λ in ls]
     if is_rosenbrock(method)
         tol = mode_tolerance(accuracy)
-        return all(λ -> _mode_ok(method, h * λ, tol, damping), lams)
+        return all(λ -> _mode_ok(method, h * λ, tol, damping, stiff_ratio), lams)
     end
     return all(λ -> h * abs(λ) <= accuracy, lams) && h <= margin * stable_step(method, lams)
 end
