@@ -14,6 +14,7 @@ import type { ConstantDecl, ParameterDecl, VariableDecl } from "../contracts/cat
 import type { Diagnostic } from "../contracts/diagnostic";
 import type { ModelConnection, ModelNode } from "../contracts/model";
 import { BlockHelpButton } from "../app/BlockHelp";
+import { ExplainButton } from "../debug/explain/ExplainButton";
 import { domainLetter } from "../editor/connectionRules";
 import { domainColor } from "../editor/geometry";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
@@ -246,6 +247,7 @@ function StartField({ node, variable }: { node: ModelNode; variable: VariableDec
       <span className="inspector-signal" data-testid={`inspector-start-signal-${variable.name}`}>
         {signalId}
       </span>
+      <ExplainButton signalId={signalId} testId={`inspector-explain-${variable.name}`} />
     </>
   );
   return (

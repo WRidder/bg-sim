@@ -14,6 +14,7 @@ import { useMemo, useState, type DragEvent, type KeyboardEvent } from "react";
 
 import { EmptyState } from "../app/EmptyState";
 import { requestPlotsTab } from "../app/dockBus";
+import { SignalContextMenu } from "../debug/panels/SignalMenu";
 import type { RunSignal, RunSignalKind } from "../contracts/run-manifest";
 import { panelLabel, plottedSignalIds, useRunStore } from "./runStore";
 import { writeSignalDrag } from "./signalDnd";
@@ -76,6 +77,8 @@ export function SignalBrowser() {
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [targetPanelId, setTargetPanelId] = useState(activePanelId);
+  // The context menu of one signal: "Break when..." and "Explain signal" (M4 debug, plan 7.9).
+  const [menu, setMenu] = useState<{ x: number; y: number; signalId: string } | null>(null);
 
   const allSignals = manifest?.signals ?? [];
   const filtered = useMemo(
@@ -157,6 +160,10 @@ export function SignalBrowser() {
       } · ${signal.type}`}
       onDragStart={(event) => onDragStart(event, signal)}
       onDoubleClick={() => add(signal)}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        setMenu({ x: event.clientX, y: event.clientY, signalId: signal.id });
+      }}
       onKeyDown={(event) => onRowKeyDown(event, signal)}
     >
       <span
@@ -304,6 +311,15 @@ export function SignalBrowser() {
           </ul>
         )}
       </div>
+
+      {menu !== null ? (
+        <SignalContextMenu
+          x={menu.x}
+          y={menu.y}
+          signalId={menu.signalId}
+          onClose={() => setMenu(null)}
+        />
+      ) : null}
 
       <p className="signal-browser__footer" data-testid="signal-target">
         Double-click a signal to add it to <strong>{targetName}</strong>. Drag it

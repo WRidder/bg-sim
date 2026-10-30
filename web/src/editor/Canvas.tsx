@@ -73,6 +73,8 @@ import { TargetSuggestions } from "./TargetSuggestions";
 import { decorateFlow } from "./edges/decorateFlow";
 import { CanvasLegend } from "./legend";
 import { HoverReadout } from "./ports/HoverReadout";
+import { powerHoverSignalIds, signalHoverSignalId } from "./ports/hoverValues";
+import { SignalMenuItems } from "../debug/panels/SignalMenu";
 import { ProbeLeads } from "../probe/ProbeLeads";
 import { ProbeGlyph } from "../probe/ProbeGlyph";
 import { probeSignalIds } from "../probe/probeSignals";
@@ -143,6 +145,8 @@ interface MenuState {
   id: string;
   /** The click in flow coordinates, used to place a new routing vertex. */
   flow?: { x: number; y: number };
+  /** The port under the pointer when a node menu opened on one (M4: "Break when..." / "Explain signal"). */
+  port?: { name: string; power: boolean };
 }
 
 function distanceToSegment(point: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }): number {
@@ -988,7 +992,19 @@ function CanvasInner() {
     if (!store.selection.nodes.includes(node.id)) {
       store.setSelection([node.id], []);
     }
-    setMenu({ x: event.clientX, y: event.clientY, kind: "node", id: node.id });
+    const portElement =
+      event.target instanceof Element ? event.target.closest<HTMLElement>("[data-port]") : null;
+    const portName = portElement?.getAttribute("data-port") ?? "";
+    setMenu({
+      x: event.clientX,
+      y: event.clientY,
+      kind: "node",
+      id: node.id,
+      port:
+        portElement !== null && portName.length > 0
+          ? { name: portName, power: portElement.getAttribute("data-kind") === "power" }
+          : undefined,
+    });
   }, []);
 
   const menuConnection = useMemo(
@@ -1021,6 +1037,20 @@ function CanvasInner() {
         : nodeOutputIds(runSignals ?? [], menuNode, pathPrefix),
     [menuNode, runSignals, pathPrefix],
   );
+  // The signals a debug action on the menu offers: a port's e/f/P (or its one signal), else the instance outputs.
+  const menuDebugSignals = useMemo(() => {
+    if (menuNode === undefined) {
+      return [];
+    }
+    if (menu?.port !== undefined) {
+      if (menu.port.power) {
+        const ids = powerHoverSignalIds(pathPrefix, menuNode.name, menu.port.name);
+        return [ids.e, ids.f, ids.P];
+      }
+      return [signalHoverSignalId(pathPrefix, menuNode.name, menu.port.name)];
+    }
+    return menuOutputIds;
+  }, [menu, menuNode, menuOutputIds, pathPrefix]);
 
   const startProbeLead = useCallback(
     (probeId: string, event: React.PointerEvent<HTMLElement>) => {
@@ -1536,6 +1566,13 @@ function CanvasInner() {
                   {target.label}
                 </button>
               ))}
+              {menuPlotTargets[0] !== undefined ? (
+                <SignalMenuItems
+                  signalId={menuPlotTargets[0].signalId}
+                  candidates={menuPlotTargets.map((target) => target.signalId)}
+                  onDone={() => setMenu(null)}
+                />
+              ) : null}
               <button
                 type="button"
                 role="menuitem"
@@ -1647,6 +1684,18 @@ function CanvasInner() {
                 Plot all outputs
                 {menuOutputIds.length > 0 ? ` (${menuOutputIds.length})` : ""}
               </button>
+              <SignalMenuItems
+                signalId={menuDebugSignals[0] ?? ""}
+                candidates={menuDebugSignals}
+                onDone={() => setMenu(null)}
+                disabledReason={
+                  menuDebugSignals.length > 0
+                    ? null
+                    : runSignals === null
+                      ? "Run the model first; the signals of this block are known after a run"
+                      : "This run recorded no signals for this selection"
+                }
+              />
               <button
                 type="button"
                 role="menuitem"

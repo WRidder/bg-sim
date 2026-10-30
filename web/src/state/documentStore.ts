@@ -46,6 +46,10 @@ import {
   allNodeIds,
   clampPath,
 } from "../editor/subsystemPath";
+import {
+  applyParameterChanges as applyChangesToDraft,
+  type ParameterChange,
+} from "../debug/panels/editsModel";
 import { groupSelectionIntoSubsystem } from "../editor/subsystemGroup";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { probeSignalOptions } from "../probe/probeSignals";
@@ -196,6 +200,11 @@ export interface DocumentActions {
   renameNode: (nodeId: string, name: string) => EditResult;
   /** Set one parameter expression string (plan 3.3 `params`). */
   setNodeParam: (nodeId: string, name: string, value: string) => EditResult;
+  /**
+   * Write edited parameter values (by instance path) into the model as one undo
+   * entry (M4 debug: "Save parameters to model"). Returns the targets no block answers to.
+   */
+  applyParameterChanges: (changes: readonly ParameterChange[]) => string[];
   /** Set one constant override, or remove it with null (plan 3.3 `constants`). */
   setNodeConstant: (
     nodeId: string,
@@ -1092,6 +1101,14 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         }
       });
       return { ok: true };
+    },
+
+    applyParameterChanges: (changes) => {
+      let missing: string[] = [];
+      commit((draft) => {
+        missing = applyChangesToDraft(draft, changes);
+      });
+      return missing;
     },
 
     setNodeConstant: (nodeId, name, value) => {

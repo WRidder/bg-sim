@@ -53,6 +53,8 @@ export type RunEvent =
 export interface StartRunOptions {
   /** Start a debug run (plan 3.8): its breakpoints and pause-on-entry. */
   debug?: DebugStartOptions;
+  /** Follow a run the backend already created (a debug replay, W4.2) instead of creating one. */
+  followRunId?: string;
 }
 
 const runListeners = new Set<(event: RunEvent) => void>();
@@ -875,7 +877,8 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     });
 
     try {
-      const runId = await createRun(project, doc, undefined, options?.debug);
+      const runId =
+        options?.followRunId ?? (await createRun(project, doc, undefined, options?.debug));
       if (get().status !== "starting") {
         // The model changed while the POST was in flight: do not leave an
         // untracked run growing in the background.

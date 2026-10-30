@@ -15,3 +15,12 @@ export function requestPlotsTab(): void {
     window.dispatchEvent(new Event(SHOW_PLOTS_EVENT));
   }
 }
+
+export const SHOW_DOCK_TAB_EVENT = "bgsim:show-dock-tab";
+
+/** Ask the bottom dock to select a tab by id (for example `debug`; safe outside a browser). */
+export function requestDockTab(tab: string): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent<string>(SHOW_DOCK_TAB_EVENT, { detail: tab }));
+  }
+}

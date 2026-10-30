@@ -1,10 +1,13 @@
-import { lazy, Suspense, useState, type ReactElement } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactElement } from "react";
 
+import { DebugOverlays } from "../debug/panels/DebugOverlays";
+import { DebugPanel } from "../debug/panels/DebugPanel";
 import { DiagnosticsPanel } from "../diagnostics/DiagnosticsPanel";
 import { useDiagnosticBadges } from "../diagnostics/useDiagnostics";
 import { useAutoDetachStore, useDetachStore } from "../plot/detachStore";
 import { SignalBrowser } from "../plot/SignalBrowser";
 import { useViewerDetachStore } from "../viewer/detachStore";
+import { SHOW_DOCK_TAB_EVENT } from "./dockBus";
 import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
 
@@ -20,7 +23,7 @@ function loading(title: string): ReactElement {
   return <EmptyState title={title} hint="One moment." />;
 }
 
-export type DockTabId = "plots" | "auto" | "viewer" | "diagnostics" | "signals" | "log";
+export type DockTabId = "plots" | "auto" | "viewer" | "diagnostics" | "debug" | "signals" | "log";
 
 export interface DiagnosticCounts {
   error: number;
@@ -45,6 +48,10 @@ const DOCK_EMPTY_STATES: Record<DockTabId, { title: string; hint: string }> = {
   diagnostics: {
     title: "No diagnostics",
     hint: "Checks report errors and warnings here. Click one to jump to the element or the line that caused it.",
+  },
+  debug: {
+    title: "Debug",
+    hint: "Start a debug run (F5) to see variables, watch expressions, breakpoints and edits here.",
   },
   signals: {
     title: "No signals",
@@ -90,10 +97,22 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
         { count: counts.warning, tone: "warning" },
       ],
     },
+    { id: "debug", label: "Debug" },
     { id: "signals", label: "Signals" },
     { id: "log", label: "Log" },
   ];
   const empty = DOCK_EMPTY_STATES[active];
+  // Other parts of the app ("Break when...", the debug controls) ask for a tab by id.
+  useEffect(() => {
+    const onShow = (event: Event): void => {
+      const tab = (event as CustomEvent<string>).detail;
+      if (tabs.some((entry) => entry.id === tab)) {
+        onSelect(tab as DockTabId);
+      }
+    };
+    window.addEventListener(SHOW_DOCK_TAB_EVENT, onShow);
+    return () => window.removeEventListener(SHOW_DOCK_TAB_EVENT, onShow);
+  });
   // The viewer mounts on first use and then stays mounted (hidden) so its camera and scene survive tab switches.
   const [viewerSeen, setViewerSeen] = useState(active === "viewer");
   if (active === "viewer" && !viewerSeen) {
@@ -162,6 +181,8 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
         ) : null;
       case "diagnostics":
         return <DiagnosticsPanel />;
+      case "debug":
+        return <DebugPanel />;
       default:
         return <EmptyState title={empty.title} hint={empty.hint} />;
     }
@@ -186,6 +207,7 @@ export function BottomDock({ active, onSelect, diagnostics = NO_DIAGNOSTICS }: B
           </div>
         ) : null}
       </div>
+      <DebugOverlays />
     </div>
   );
 }

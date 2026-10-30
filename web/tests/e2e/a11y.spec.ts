@@ -141,6 +141,11 @@ for (const theme of ["light", "dark"] as const) {
     await page.getByRole("tab", { name: /Diagnostics/ }).click();
     await expectClean(page, "diagnostics");
 
+    // Debug dock tab (W4.2): the four sections with their empty states.
+    await page.getByRole("tab", { name: "Debug" }).click();
+    await expect(page.getByTestId("debug-panel")).toBeVisible();
+    await expectClean(page, "debug tab");
+
     // 3D view with a scene.
     await page.getByRole("tab", { name: "3D View" }).click();
     await expect(page.getByTestId("scene-view")).toHaveAttribute("data-state", "loaded", { timeout: 30_000 });
