@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "pendulum-triple-rotary",
+  "models": [
+    "pendulum-triple-rotary",
+    "pendulum-triple-rotary-free"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

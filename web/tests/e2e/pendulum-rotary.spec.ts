@@ -8,10 +8,9 @@ import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * X5.13 acceptance: `pendulum-double-rotary` (the triple is not finished, see the WP report;
- * add its case to `CASES` when it exists).
+ * X5.13 acceptance: `pendulum-double-rotary` and `pendulum-triple-rotary`.
  *
- * For the example:
+ * For each example:
  *
  * 1. create a copy through `POST /api/projects {name, example}`;
  * 2. open the model and assert the arm joint, the servo, the links and the firmware;
@@ -50,6 +49,13 @@ const CASES: Case[] = [
     tDist: 8.5,
     tEnd: 12,
     nodes: ["Ctrl", "Motor", "Gear", "J1", "J2", "J3", "Arm", "Rod1", "Rod2", "Dist"],
+  },
+  {
+    example: "pendulum-triple-rotary",
+    links: 3,
+    tDist: 8.5,
+    tEnd: 12,
+    nodes: ["Ctrl", "Motor", "Gear", "J1", "J2", "J3", "J4", "Arm", "Rod1", "Rod2", "Rod3", "Dist"],
   },
 ];
 
