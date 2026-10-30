@@ -56,6 +56,7 @@ include("emit_c.jl")
 include("emit_discrete.jl")
 include("analysis.jl")
 include("fmi2.jl")
+include("scope.jl")
 
 """
     ExportSettings(; kwargs...)
