@@ -74,17 +74,40 @@ function cexpr(x, env::Dict{Any,String}, modes = nothing)
     if any(_is_array_literal ∘ Symbolics.unwrap, args)  # a table argument (emit_intrinsics.jl) (interp1/interp2 over constant arrays)
         throw(ExportError("`$(nameof_op(op))` with table arguments has no C implementation yet (plan J-EX5)"))
     end
+    simplify = C_SIMPLIFY[]
+    simplify && op === (+) && return _c_sum(args, env, modes)
     a = String[cexpr(y, env, modes) for y in args]
     if op === (+)
         return "(" * join(a, " + ") * ")"
     elseif op === (*)
+        simplify && return _c_product(a)
         return "(" * join(a, " * ") * ")"
     elseif op === (-)
         return length(a) == 1 ? "(-$(a[1]))" : "($(a[1]) - $(a[2]))"
     elseif op === (/)
+        if simplify
+            n, d = _lit_value(a[1]), _lit_value(a[2])
+            d == 1 && return a[1]
+            n !== nothing && d !== nothing && return clit(n / d)
+        end
         return "($(a[1]) / $(a[2]))"
     elseif op === (^)
         e = _try_const(Symbolics.unwrap(args[2]))
+        if simplify
+            b, ev = _lit_value(a[1]), _lit_value(a[2])
+            e === nothing && (e = ev)              # a folded exponent reached as a literal
+            e == 1 && return a[1]
+            e == 0 && return "1.0"                 # pow(x, 0) is 1 for every x
+            if b !== nothing && ev !== nothing
+                r = try
+                    b^ev
+                catch err
+                    err isa DomainError || rethrow()
+                    nothing
+                end
+                r === nothing || return clit(r)
+            end
+        end
         e == 2 && return "($(a[1]) * $(a[1]))"
         e == -1 && return "(1.0 / $(a[1]))"
         return "pow($(a[1]), $(a[2]))"
@@ -114,6 +137,86 @@ function cexpr(x, env::Dict{Any,String}, modes = nothing)
         return "$(C_MATH1[op])($(a[1]))"
     end
     throw(ExportError("`$(nameof_op(op))` has no C implementation yet (in `$x`)"))
+end
+
+"""Whether the emitter applies its peephole rules (`_c_product`, `_c_sum`, `x / 1`, `x^1`,
+constant operands). Set from `ExportSettings.simplify` for one export; on by default."""
+const C_SIMPLIFY = Base.ScopedValues.ScopedValue(true)
+
+const _C_NUMBER = r"^\(?(-?[0-9]+(?:\.[0-9]*)?(?:e[+-]?[0-9]+)?)\)?$"
+
+"""The value of a finite C literal written by `clit` (`1.0`, `(-2.5e-3)`), else `nothing`."""
+function _lit_value(s::AbstractString)
+    m = match(_C_NUMBER, s)
+    m === nothing && return nothing
+    return parse(Float64, m.captures[1])
+end
+
+"""    _c_product(a) -> String
+
+A C product of the operand strings `a` with the leftovers of folding removed (D-EX10): the
+literal operands are multiplied into one, a zero literal makes the product `0.0` (dropping
+the NaN of an infinite operand), a unit literal is left out and `-1` becomes a negation."""
+function _c_product(a::Vector{String})
+    c = 1.0
+    rest = String[]
+    for s in a
+        v = _lit_value(s)
+        v === nothing ? push!(rest, s) : (c *= v)
+    end
+    iszero(c) && return "0.0"
+    isempty(rest) && return clit(c)
+    body = length(rest) == 1 ? rest[1] : "(" * join(rest, " * ") * ")"
+    c == 1 && return body
+    c == -1 && return "(-$body)"
+    return "(" * join([clit(c); rest], " * ") * ")"
+end
+
+"""The C of `-y` when `y` is a product with a negative numeric coefficient (how
+SymbolicUtils writes a difference: `a - b` is `a + (-1)*b`), else `nothing`."""
+function _negated_term(y, env, modes)
+    SymbolicUtils.iscall(y) && SymbolicUtils.operation(y) === (*) || return nothing
+    haskey(env, y) && return nothing
+    args = SymbolicUtils.arguments(y)
+    c = _try_const(Symbolics.unwrap(args[1]))
+    (c isa Real && !(c isa Bool) && c < 0) || return nothing
+    rest = String[cexpr(z, env, modes) for z in args[2:end]]
+    return _c_product(c == -1 ? rest : [clit(-c); rest])
+end
+
+"""    _c_sum(args, env, modes) -> String
+
+A C sum with the leftovers of folding removed (D-EX10): literal terms are added into one
+and a zero is left out (`x + 0.0` is `x`, except for the sign of a negative zero); a term
+with a negative coefficient is subtracted (`a - b` instead of `a + (-1.0) * b`, the same
+value). The order of the other terms is kept, so the rounding is that of the sum as
+written."""
+function _c_sum(args, env, modes)
+    terms = Tuple{Bool,String}[]
+    lit = 0.0
+    for y in args
+        y = Symbolics.unwrap(y)
+        neg = _negated_term(y, env, modes)
+        if neg !== nothing
+            neg == "0.0" || push!(terms, (true, neg))
+            continue
+        end
+        s = cexpr(y, env, modes)
+        v = _lit_value(s)
+        v === nothing ? push!(terms, (false, s)) : (lit += v)
+    end
+    iszero(lit) || pushfirst!(terms, (false, clit(lit)))
+    isempty(terms) && return "0.0"
+    # (-a) + b is b - a exactly, so a leading subtraction moves behind the next term.
+    length(terms) >= 2 && terms[1][1] && !terms[2][1] && ((terms[1], terms[2]) = (terms[2], terms[1]))
+    length(terms) == 1 && return terms[1][1] ? "(-$(terms[1][2]))" : terms[1][2]
+    io = IOBuffer()
+    print(io, "(", terms[1][1] ? "-" : "", terms[1][2])
+    for (neg, s) in terms[2:end]
+        print(io, neg ? " - " : " + ", s)
+    end
+    print(io, ")")
+    return String(take!(io))
 end
 
 nameof_op(op) = try
@@ -341,6 +444,7 @@ function jacobian_c(rhs, xs, obs, env::Dict{Any,String}, modes; max_terms::Real 
     lines = CLine[]
     jentries = Tuple{Int,Int,String}[]
     terms = 0
+    simplify = C_SIMPLIFY[]
     begin_intrinsic_scope()
     try
         local_env = copy(env)
@@ -361,7 +465,8 @@ function jacobian_c(rhs, xs, obs, env::Dict{Any,String}, modes; max_terms::Real 
                     pc = name
                 end
                 for (j, dj) in src
-                    push!(get!(acc, j, String[]), pc == "1.0" ? dj : dj == "1.0" ? pc : "$pc * $dj")
+                    push!(get!(acc, j, String[]), pc == "1.0" ? dj : dj == "1.0" ? pc :
+                        simplify && pc == "(-1.0)" ? "(-$dj)" : "$pc * $dj")
                 end
                 terms += length(src)
                 terms > max_terms &&
