@@ -9,15 +9,15 @@ One small language, written in a restricted subset of Julia syntax, describes ev
 1. **One language, one intermediate representation.** Bond graphs, blocks and equations all compile to the same hybrid DAE. Nothing downstream knows which editor view a model came from.
 2. **Julia syntax, not Julia semantics.** User code is parsed with Julia's parser and translated by our compiler. It is never evaluated.
 3. **Whitelist, not blacklist.** Every syntax node, type and function must be explicitly allowed for the scope it appears in. Anything else is a compile error.
-4. **The whitelist is the target build's vocabulary.** A construct is admitted only once it compiles into a trimmed, allocation-free Julia step library and has a golden test.
+4. **The whitelist is the target build's vocabulary.** A construct is admitted only once it compiles into allocation-free C for the fixed-step target build and has a golden test.
 5. **Static and deterministic.** Types and array sizes are known at compile time. No heap allocation, no unbounded loops, no recursion, no I/O.
 6. **Errors point at the user's code.** Every diagnostic carries the block path, scope, line and column.
 
 Non-goals: general-purpose programming, strings, user-defined types, file or network access, and calling arbitrary Julia packages.
 
-**Target platform.** Targets are (real-time) Linux controllers, such as ctrlX CORE, which run Julia directly. A model is deployed as a fixed-step step function, compiled ahead of time with `juliac` into a trimmed shared library and called by the controller app through a C ABI. Throughout this spec, "export" and "exported code" mean this target build.
+**Target platform.** Targets are (hard) real-time controllers: real-time Linux controllers such as ctrlX CORE, PLC runtimes, a vendor RTOS or a bare-metal microcontroller. A model is deployed as a fixed-step step function, generated as C99 source with no heap allocation after instantiation and a fixed cost per step. It is packaged as an FMU (FMI Co-Simulation, with its sources so it can be cross-compiled) and also usable directly through a small C API. No Julia runtime is needed on the target. Throughout this spec, "export" and "exported code" mean this target build (`plan/EXPORT_PLAN.md`).
 
-**Future option: C++ export.** Generating C++ for targets without a Julia runtime (bare-metal microcontrollers, vendor RTOS) is a possible later feature. The whitelist rules (static sizes, no allocation, a small function set) keep that option open.
+**Exported interface.** The user defines what an export exposes, with the export markers (see *Domain converters, sensors and export interfaces*): inputs, outputs and tunable parameters. Every runtime-settable value that affects the continuous dynamics declares a `min`/`max` range; the export chooses its step for that whole range and refuses values outside it. There is no separate C++ export: the generated C also compiles as C++, and a thin C++ wrapper on the C API is optional.
 
 ## Block structure and scopes
 
@@ -521,7 +521,7 @@ A model is a hybrid system: one continuous DAE, plus clocked discrete partitions
 
 &#91;embedded content: compilation pipeline · 6 stages, 3 outputs\]
 
-Every editor view passes through the same validation and reduction, so simulation and the target build always model the same system. The dashed link is the CI check that the fixed-step target build matches variable-step simulation within tolerance. C++ export is shown as a possible future output.
+Every editor view passes through the same validation and reduction, so simulation and the target build always model the same system. The dashed link is the CI check that the fixed-step target build matches variable-step simulation within tolerance. The target build is generated C99, packaged as an FMU.
 
 ## Validation rules and error reporting
 
@@ -751,7 +751,7 @@ Every saved model and library block records the language version it was written 
 - Is `~` acceptable to users coming from 20-sim, who write `=` for equations? Alternative: accept `=` in `@equations` and translate it.
 - Units: adopt Unitful.jl for checking, or keep a small dimension checker of our own that stays trim-compatible in the target build?
 - Discrete scheduling: use ModelingToolkit clocks, or run our own scheduler around the continuous part? Needs a multi-rate prototype.
-- Bit-exact results across CPU architectures (x86 and ARM64 targets): required, or is repeatability per target enough?
+- ~~Bit-exact results across CPU architectures~~ Decided: exported continuous results match simulation within tolerance (the C math library differs from Julia's in the last bit); discrete code, being plain arithmetic in the same operation order, is bit-exact (`plan/EXPORT_PLAN.md` D-EX14).
 - Matrix size limits in equations: is a cap needed to keep symbolic reduction fast?
 - Should `delay` be offered in variable-step simulation, or stay export-only?
 
@@ -760,6 +760,6 @@ Every saved model and library block records the language version it was written 
 - [ ] Write the formal grammar as a whitelist over Julia syntax nodes, per scope
 - [ ] Define the JSON model schema the web editor saves
 - [ ] Prototype parser and validator on five library elements: `C`, `I`, `R`, `Se`, PI controller
-- [ ] Implement the whitelist as allocation-free, trim-compatible Julia, with golden tests per function
+- [ ] Implement the whitelist as allocation-free C in the export runtime, with golden tests per function against the Julia implementation
 - [ ] Prototype multi-rate discrete scheduling and decide the clock question
 - [ ] Run an end-to-end DC motor model through simulation and the target build on real-time Linux, and compare outputs

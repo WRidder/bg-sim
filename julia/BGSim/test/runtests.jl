@@ -314,3 +314,6 @@ include("test_edits.jl")
 
 # Work package J4.5: the worker debug methods.
 include("test_worker_debug.jl")
+
+# Work package J-EX1: the C/FMU export (plan/EXPORT_PLAN.md).
+include("test_export.jl")

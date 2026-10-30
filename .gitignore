@@ -24,3 +24,6 @@ background/
 media/video/frames/
 media/video/*.log
 media/video/*.mp4
+
+# C/FMU export harness output (X-EX1)
+examples/export-out/

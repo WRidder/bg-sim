@@ -1,6 +1,6 @@
 # C export and FMU: assessment and implementation plan
 
-Status: v0.1 draft, 2026-10-30. Input: `spec/Modeling Language Spec v0.1.md` (target platform,
+Status: v0.2, 2026-10-30 (J-EX1 in progress on branch `export-fmu`). Input: `spec/Modeling Language Spec v0.1.md` (target platform,
 fixed-step semantics, W203/E104), `plan/IMPLEMENTATION_PLAN.md` section 12 (export deferred),
 the spike in `spike/fmu/` (results in `spike/fmu/README.md`), and the codebase at `3b84ce8`.
 
@@ -16,7 +16,7 @@ and checks).
 
 The plan changes **one** decision in the spec. The spec's target is a `juliac`-trimmed Julia
 library behind a C ABI, with generated C++ as a later option. This plan makes **generated C99
-the target**:
+the target** (C only; a thin C++ wrapper on top, no separate C++ export):
 
 - it needs no Julia runtime or GC on the controller, so it also reaches microcontrollers, a
   vendor RTOS and PLC runtimes;
@@ -42,7 +42,6 @@ plus a 1 ms discrete PI with anti-windup and clamp). FMI 2.0 Co-Simulation, Wind
 | Valid FMU | `fmpy` validation passes; it simulates in `fmpy` |
 | Matches simulation | RK4 at 0.1 ms: max error 2.4e-5 of peak on the motor current, 3.5e-6 on speed, every output within 1.1e-4; steady state to 4.5e-15 |
 | Cheap and fixed cost | < 1 µs per 1 ms tick (3 states, 10 substeps) |
-| Portable | the generated and runtime sources compile as C++17 too |
 
 Four findings shape this plan:
 
@@ -80,7 +79,7 @@ Four findings shape this plan:
 
 | id | topic | decision | why |
 | --- | --- | --- | --- |
-| D-EX1 | Target | Generated **C99**, from the `mtkcompile`d system. A header-only C++ wrapper (RAII class owning the instance) is a thin extra. `juliac` is dropped as the target. | Section 1. |
+| D-EX1 | Target | Generated **C99**, from the `mtkcompile`d system. There is no separate C++ export: an optional header-only C++ wrapper (a class owning the instance) sits on the C API, and CI checks that the sources also compile as C++. `juliac` is dropped as the target. | Section 1. One generated language keeps the build, review and certification surface small; the wrapper and the check make embedding in a C++ application easy. |
 | D-EX2 | Layers | Three layers: generated `model.c/.h` (the model), a hand-written versioned runtime (solver, tick, helpers), and a hand-written FMI wrapper. The plain C API (`bg_reset`, `bg_step`, get/set) is usable without FMI. | ctrlX apps and MCU firmware call the C API directly; FMI tools use the wrapper. Generated code stays minimal. |
 | D-EX3 | Packaging | FMI **2.0 Co-Simulation** first, **3.0 Co-Simulation** second. Every FMU carries its sources (source FMU; FMI 3 adds `buildDescription.xml`) plus a binary for each platform built. Model Exchange is not offered. Scheduled Execution (FMI 3) is deferred. | Co-Simulation keeps our solver and our fixed step; Model Exchange hands integration to the host and gives up the real-time guarantees. Sources make cross-compiling for the target possible. |
 | D-EX4 | Memory | One instance struct with every array sized at generation time. FMI allocates it once in `Instantiate` through the host's callback. A `BG_STATIC_INSTANCE` build option uses one static instance and no callback, for MCUs. | "No allocation after construction", provable. |
@@ -88,12 +87,13 @@ Four findings shape this plan:
 | D-EX6 | Integrators | Explicit Euler, RK4, and fixed-step linearly implicit Rosenbrock methods with mass-matrix support: ROS2 (spike), then a 3rd/4th-order L-stable method (ROS3P or a Rodas-type method). No method with an inner Newton iteration in the hot path. | Section 2, finding 3. Rosenbrock needs one Jacobian and one LU per step, a fixed cost, and handles index-1 DAEs directly. |
 | D-EX7 | Step and integrator selection | The exporter proposes `dt` and the integrator: (a) a **stability** bound from the Jacobian's eigenvalues sampled along a reference run, (b) an **accuracy** check that runs the generated code against the reference and refines `dt` until a user error target is met, (c) a **cost** comparison (RK4 substeps vs one Rosenbrock step). The user can override every choice; the report shows the numbers. | Findings 1–3. A stability-only rule gave a 9 % error. |
 | D-EX8 | Switching | Every `ifelse` condition in continuous code (including the rewritten `abs`/`min`/`max`/`clamp`/...) becomes a mode value, evaluated once at the start of each step and held through all stages. `@events` conditions are checked after each step; `reinit` is applied then. Each site is reported as W203 with its origin. | Finding 4; the spec's fixed-step semantics. |
-| D-EX9 | Interface | `ExportInput` → FMU input (its `value` parameter becomes the input slot), `ExportOutput` → output, `ExportParameter` → tunable parameter, named by the marker's `name` attribute. An option "expose all signals" adds every recorded signal as a `local` (debugging, SIL comparison). Without markers, the export has no inputs and exposes outputs only through that option. | The spec's interface contract. |
+| D-EX9 | Interface | **The user defines the interface; the exporter never publishes "the whole model".** `ExportInput` → FMU input (its `value` parameter becomes the input slot; in simulation it is a constant, later also a table source), `ExportOutput` → output (the signal on its input), `ExportParameter` or `tunable = true` → tunable parameter. Names are the marker's instance name (a `name` attribute later). Where the markers sit also decides *what* is exported: to export only the plant for SIL, a model variant replaces the controller by an `ExportInput` on its output. Without markers the export warns W209. The export dialog suggests candidates (sources as inputs, sensors as outputs) with a one-click "promote to marker". "Expose all signals" is a separate debug option that adds every recorded signal as a read-only `local`; it does not change the interface. Later: export a subsystem directly, with its boundary as the interface; for a power port the causality analysis decides which of effort/flow is the input (as 20-sim does). | The spec's interface contract; the interface is a design decision of the user, not something the compiler can infer. |
 | D-EX10 | Parameters | Non-tunable parameters are **folded** into constants by default. `tunable = true` parameters stay fields, settable at any time. An option keeps all parameters as fields (settable before initialization). | D4 left folding to export; folding shrinks code and lets the compiler simplify. |
 | D-EX11 | Initialization | Phase 1: start values computed in Julia at export with the current parameters, and baked in. Phase 2: MTK's initialization system is generated as C and solved with a bounded Newton iteration in `ExitInitializationMode`, which is outside the hot path. | Phase 1 suffices for fixed parameters; phase 2 is needed when initialization depends on parameters that are set before init. |
 | D-EX12 | Jacobian | Symbolic (`calculate_jacobian`) with common-subexpression elimination, emitted as a sparse pattern (static triplet list) when it pays off. Fallback for expressions that blow up: finite differences with column colouring (fixed cost of `ncolours` derivative calls). | Rosenbrock needs J every step. |
 | D-EX13 | Linear algebra | Dense in-place LU with partial pivoting for small systems; generated static sparse LU (symbolic factorization at export, fixed fill-in) above a size threshold (start at nx > 40). | Fixed cost, no allocation; the 72-state arm makes this real. |
 | D-EX14 | Numerics | `-std=c99 -O2 -fno-math-errno`, no `-ffast-math`. Non-finite state → error status, never silently continued. Subnormal flush is a documented target setting. Results match simulation **within tolerance**, not bit-exact (answers the spec's open question: repeatability per target, not across targets). | libm differs from Julia in the last bit; bit-exact output would forbid every libm. |
+| D-EX16 | Values that move the spectrum | Every runtime-settable value the Jacobian depends on (tunable parameters, inputs) needs a declared range (`min`/`max`). The step is chosen over that range (each end, and every corner of the box for up to 6 values), not only at the start values. The FMU refuses `SetReal` outside the range, so the stability proof holds for every accepted value; the range is also published as FMI `min`/`max`. A settable value without a complete range gets W210 (stable only for the scanned values). Gains that only discrete code reads are not scanned: they change the closed loop, which simulation shows as well. When ranges are wide or unknown, an L-stable Rosenbrock export is the robust choice (stable for any value on linear(ised) dynamics). Later: an eigenvalue bound recomputed when a value changes, outside the hot path. | A step proven stable at the start values says nothing about a raised stiffness or gain at runtime. |
 | D-EX15 | Toolchain | The backend builds binaries with a gcc/clang on PATH, or with `zig cc` from the PyPI `ziglang` package (`uv`-installable) for cross targets: x86_64-linux, aarch64-linux (ctrlX CORE), x86_64-windows. Without a compiler the export still produces a source FMU. | Fits the repo's `uv` rule; one cross-compiler for all targets. Note: the `cl` on this machine is Open Watcom, not MSVC. |
 
 ## 5. Target architecture
@@ -106,7 +106,7 @@ julia/BGSim/src/export/
   emit_c.jl        SymbolicUtils tree -> C (from spike gen.jl cexpr), CSE, modes
   emit_discrete.jl step_expression Expr -> C (from spike dstmt/dval)
   analysis.jl      eigenvalue scan, stability bound, accuracy loop, cost model
-  interface.jl     Export markers -> value references, folding, variability
+  (export.jl)      Export markers -> value references, folding, ranges (D-EX9, D-EX10, D-EX16)
   fmi.jl           modelDescription.xml (2.0 and 3.0), buildDescription.xml
 julia/BGSim/export/runtime/      hand-written C, versioned, copied into every FMU
   bg_runtime.h     language semantics (sign, round, clamp, deadzone, mod, ...)
@@ -114,8 +114,10 @@ julia/BGSim/export/runtime/      hand-written C, versioned, copied into every FM
   bg_intrinsics.c  interp1/interp2, CSV tables, delay ring buffer, noise
   bg_mech.c        SE2/SE3 exp/log, quaternion functions, spatial inertia
   fmi2_cs.c, fmi3_cs.c
-  bg_model.hpp     optional C++ wrapper
-backend/src/bgsim_server/exports.py   compile, symbol check, zip, store under the project
+  bg_model.hpp     optional header-only C++ wrapper on the C API
+backend/src/bgsim_server/fmu_build.py compile, symbol check, allocation harness, zip
+backend/src/bgsim_server/exports.py   the HTTP endpoint, store under the project (P-EX1 second half)
+examples/export_examples.jl, export_checks.py   the X-EX0 gate over every example
 web: an Export dialog (settings, analysis report, download)
 ```
 
@@ -164,10 +166,11 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 
 | WP | scope | acceptance |
 | --- | --- | --- |
-| J-EX1 | `src/export/` with the C emitter (spike `cexpr` + CSE + modes), discrete emitter, RK4 + Euler runtime, baked initialization, interface from Export markers, folding (D-EX10), FMI 2.0 CS description | dc-motor `iconic`/`speed-control` and drivetrain export; generated code compiles `-Wall -Wextra -Werror` as C99 and C++17 |
+| X-EX0 | **The standing gate: every example model is exported and compared with its simulation.** `examples/export_examples.jl` + `examples/export_checks.py`: export each model (`expose_all`), run its reference simulation (the model's solver and horizon, tolerances tightened to ≤ 1e-8/1e-10), build the FMU, run it in fmpy and compare every recorded signal (error relative to the signal's peak, right limits at event instants). The result is a coverage matrix: `compared` (with the worst error), `refused` (with the E-code and reason), `build_failed`, `diverged`, `fmu_error`. Each example's `expected.json` records its expected export outcome (`"export": {"status": "compared", "max_rel_error": …}` or `{"status": "refused", "code": "E111"}`), so a phase that adds coverage flips entries visibly and a regression fails. Examples with Export markers (dc-motor speed control first) also compare the real input/output path: the same input trajectory into the FMU and into the simulation. | runs in CI next to `run_checks.py`; the matrix is recorded in `plan/STATUS.md` after every phase |
+| J-EX1 | `src/export/` with the C emitter (spike `cexpr` + CSE + modes), discrete emitter, RK4 + Euler runtime, baked initialization, interface from Export markers, folding (D-EX10), ranges (D-EX16), FMI 2.0 CS description | dc-motor `iconic`/`speed-control` and drivetrain export; generated code compiles `-std=c99 -Wall -Wextra -Werror` |
 | J-EX2 | Analysis: eigenvalue scan, RK4 stability bound, accuracy loop against the reference, export report | the dc-motor report predicts the 0.72 ms bound; the accuracy loop lands on a `dt` that meets 1e-4 |
 | P-EX1 | `exports.py`: compile, symbol check, counting harness, zip, `POST /api/projects/{p}/models/{m}/export` | the FMU passes `fmpy` validation; allocation count after instantiate is 0 |
-| X-EX1 | Check kind `fmu_compare` in `expected.json` and the runner; first examples: dc-motor (3 models), drivetrain, rlc-dual, quarter-car | every listed example's FMU within its stated tolerance |
+| X-EX1 | Export markers on the first examples (dc-motor speed control: `ExportInput` speed setpoint, `ExportOutput` measured speed and current; drivetrain: torque in, load speed out) and the input-trajectory comparison in X-EX0 | the FMU driven through its inputs matches the simulation driven by the same trajectory |
 
 ### Phase B: stiff systems and DAEs
 
@@ -199,19 +202,22 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 | --- | --- | --- |
 | J-EX8 | Initialization in C (D-EX11 phase 2): MTK's initialization system, bounded Newton at `ExitInitializationMode` | changing a parameter before init gives the same start as a Julia run with that parameter |
 | J-EX9 | `delay` (constant delay, ring buffer) and `noise_normal` (PRNG specified once, implemented in Julia and C) | bit-identical noise sequence in Julia and C |
-| J-EX10 | Optional C++ wrapper `bg_model.hpp`; `BG_STATIC_INSTANCE` MCU build | builds with `-fno-exceptions -fno-rtti`; static build has no undefined allocation symbol |
+| J-EX10 | Optional C++ wrapper `bg_model.hpp` on the C API; `BG_STATIC_INSTANCE` MCU build (one static instance, no allocation callback) | the wrapper builds with `-fno-exceptions -fno-rtti`; the static build has no undefined allocation symbol |
 
 ## 8. Validation and gates
 
-- **Accuracy:** every exported example has an `fmu_compare` check: the FMU in `fmpy` against
-  the variable-step reference, max error per output relative to its peak, threshold in
-  `expected.json`. This is the spec's dashed "target build matches simulation" link.
+- **Accuracy (X-EX0):** every example model is exported and compared with its simulation:
+  the FMU in `fmpy` against the variable-step reference, max error per signal relative to its
+  peak, the expected outcome and threshold in `expected.json`. A model that cannot be exported
+  yet must be refused with the expected code. This is the spec's dashed "target build matches
+  simulation" link, applied to the whole example set rather than to a few models.
 - **No allocation:** (a) `nm -u` on the hot-path objects contains no `malloc`, `calloc`,
   `realloc`, `free`, stdio or `exit`/`abort`; (b) the counting harness reports 0 memory
   callbacks after instantiate over ≥ 1e5 `doStep` calls; (c) the static MCU build links without
   any allocator.
-- **Standard:** `fmpy` validation for FMI 2.0 and 3.0; the generated sources compile as C99 and
-  C++17 with `-Wall -Wextra -Werror`.
+- **Standard:** `fmpy` validation for FMI 2.0 and 3.0; the generated sources compile as C99
+  with `-Wall -Wextra -Werror`, and also as C++17 (a compatibility check for embedding in a
+  C++ application, not a target).
 - **Semantics:** golden tests of each C runtime function against its Julia twin; the discrete
   goldens (`test/golden/discrete/`) also run through the C partitions and must be **bit-exact**
   (the discrete code is plain arithmetic in the same operation order; the spike's PI matched).
@@ -223,6 +229,7 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 | risk | impact | mitigation |
 | --- | --- | --- |
 | Expression blow-up of large multibody systems in `observed` and in the symbolic Jacobian | huge `model.c`, long C compile | CSE; observed locals as subexpressions (proven in the spike); finite-difference Jacobian fallback (D-EX12) |
+| A runtime value (tunable parameter, input) moves the eigenvalues out of the stable region | divergence after a parameter change in the field | D-EX16: declared ranges scanned at export and enforced by the FMU; W210 when a range is missing |
 | Very stiff parasitic modes (joint stiffness 1e7) need tiny RK4 steps | step budget exceeded | the cost model picks Rosenbrock; W207 when RK4 substeps exceed the budget |
 | The eigenvalue scan misses states the reference run never visited | instability in the field | safety margin; the report states the scanned range; Rosenbrock (L-stable) as the robust default for models with W201/W202 |
 | Frozen conditions delay a switch by up to one step | contact/friction timing differs from simulation | W203 per site; the accuracy loop reduces `dt`; documented semantics (spec) |
@@ -250,7 +257,7 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 
 ## 11. Recommended landing path
 
-1. **J-EX1 + P-EX1 + X-EX1 together**: the spike's generator moved into `src/export/` with
+1. **J-EX1 + P-EX1 + X-EX0 together**: the spike's generator moved into `src/export/` with
    tests, the backend build, and `fmu_compare` on dc-motor. This is a vertical slice from
    model to validated FMU.
 2. **J-EX2**: the analysis and the export report, so every later model shows its stability

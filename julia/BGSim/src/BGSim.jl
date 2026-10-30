@@ -63,6 +63,8 @@ include("sim/hooks.jl")
 include("sim/watch.jl")
 include("compile/explain.jl")
 include("sim/edits.jl")
+# C/FMU export (plan/EXPORT_PLAN.md): `BGSim.Export.export_model`.
+include("export/export.jl")
 
 include("precompile.jl")
 include("worker/server.jl")
