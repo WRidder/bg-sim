@@ -13,12 +13,15 @@ import { EmptyState } from "../app/EmptyState";
 import { useDiagnosticsStore } from "../diagnostics/store";
 import { interfaceForNode } from "../editor/nodeInterface";
 import { activeModel, subsystemPathCrumbs } from "../editor/subsystemPath";
+import { outsideLinks, requestPortReveal, terminalPortName } from "../editor/subsystemBoundary";
+import { subsystemAtPath } from "../editor/subsystemPorts";
 import { useCatalogStore } from "../library/catalogStore";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { useDocumentStore } from "../state/documentStore";
 import { ProbeInspector } from "../probe/ProbeInspector";
 import { ConnectionInspector } from "./ConnectionInspector";
 import { NodeInspector } from "./NodeInspector";
+import { PortInspector } from "./PortInspector";
 import "./inspector.css";
 
 export interface InspectorProps {
@@ -160,6 +163,31 @@ export function Inspector({ diagnostics }: InspectorProps) {
       : undefined;
   if (selectedProbe !== undefined) {
     return <ProbeInspector model={active} probe={selectedProbe} />;
+  }
+  // Inside a subsystem: one selected port terminal shows the exposed port.
+  const terminal =
+    selection.nodes.length === 1 && selection.connections.length === 0
+      ? terminalPortName(selection.nodes[0] ?? "")
+      : null;
+  const subsystem = terminal === null ? null : subsystemAtPath(doc, activePath);
+  const port = subsystem?.node.block.subsystem.ports.find((entry) => entry.name === terminal);
+  if (subsystem !== null && subsystem !== undefined && port !== undefined) {
+    const outside = outsideLinks(subsystem.parent, subsystem.node.id, port.name);
+    return (
+      <PortInspector
+        key={port.name}
+        port={port}
+        ports={subsystem.node.block.subsystem.ports}
+        subsystemName={subsystem.node.name}
+        nodes={diagram.nodes}
+        outside={outside}
+        onReveal={() => {
+          if (!requestPortReveal(port.name)) {
+            useDocumentStore.getState().revealSubsystemPort(port.name);
+          }
+        }}
+      />
+    );
   }
   if (selectedNodes.length > 1) {
     return (

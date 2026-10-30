@@ -99,6 +99,23 @@ import { QuickConnectContext } from "./quickConnect";
 import { SubsystemBreadcrumbs } from "./SubsystemBreadcrumbs";
 import { requestPlotsTab } from "../app/dockBus";
 import { useExportDialogStore } from "../export/exportStore";
+import {
+  ghostId,
+  ghostKind,
+  isBoundaryElementId,
+  REVEAL_PORT_EVENT,
+  subsystemBoundary,
+  terminalId,
+  terminalPortName,
+} from "./subsystemBoundary";
+import { exposeIssue, type TerminalKind } from "./subsystemPorts";
+import { TerminalActionsContext } from "./nodes/PortTerminal";
+import {
+  PortDeleteConfirm,
+  requestSubsystemPortDelete,
+  selectedTerminalPorts,
+  usePortDeleteStore,
+} from "./PortDeleteConfirm";
 import "./editor.css";
 
 // The probe plot pulls in uPlot; it loads when a diagram has a probe (code splitting, W5.4).
@@ -241,6 +258,54 @@ function soleSelectedSubsystem(): string | null {
   return node !== undefined && "subsystem" in node.block ? node.id : null;
 }
 
+/** After a port is exposed (or "Rename port"), the inspector's name field takes the focus. */
+function focusPortNameField(): void {
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      const input = document.querySelector<HTMLInputElement>('[data-testid="inspector-port-name"]');
+      input?.focus();
+      input?.select();
+    }),
+  );
+}
+
+/** The canvas menu of a subsystem port terminal. */
+function TerminalMenuItems({
+  portName,
+  onReveal,
+  onRename,
+  onDelete,
+}: {
+  portName: string;
+  onReveal: (name: string) => void;
+  onRename: (name: string) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        role="menuitem"
+        data-testid="terminal-reveal"
+        onClick={() => onReveal(portName)}
+      >
+        Show outside connection
+      </button>
+      <button
+        type="button"
+        role="menuitem"
+        data-testid="terminal-rename"
+        onClick={() => onRename(portName)}
+      >
+        Rename port…
+      </button>
+      <button type="button" role="menuitem" data-testid="terminal-delete" onClick={onDelete}>
+        Delete port (Del)
+      </button>
+    </>
+  );
+}
+
 function saveLabel(saveState: string, dirty: boolean): string {
   switch (saveState) {
     case "saving":
@@ -334,6 +399,11 @@ function CanvasInner() {
     () => (doc === null ? null : activeModel(doc, activePath)),
     [doc, activePath],
   );
+  // Inside a subsystem: its exposed ports, drawn as terminals on this canvas.
+  const boundary = useMemo(
+    () => (doc === null || index === null ? null : subsystemBoundary(doc, activePath, index)),
+    [doc, activePath, index],
+  );
 
   // The diagram is built without a selection: the analysis and the node
   // layouts are the expensive part, and a click must not redo them. The
@@ -342,7 +412,7 @@ function CanvasInner() {
     () =>
       view === null || index === null
         ? null
-        : decorateFlow(buildDiagram(view, index, NO_SELECTION, dragOrigin, snap), {
+        : decorateFlow(buildDiagram(view, index, NO_SELECTION, dragOrigin, snap, boundary), {
             domains: checkedDomains,
             causality: checkedCausality,
             unitFactors: checkedUnitFactors,
@@ -353,6 +423,7 @@ function CanvasInner() {
       index,
       dragOrigin,
       snap,
+      boundary,
       inlineRevision,
       checkedDomains,
       checkedCausality,
@@ -375,6 +446,14 @@ function CanvasInner() {
               : { node: internal.internals.userNode, measured: internal.measured };
           }),
     [unselectedFlow, shownSelection, flowStore],
+  );
+  // The boundary wires are drawn after the connections and never selected.
+  const flowEdges = useMemo(
+    () =>
+      (unselectedFlow?.boundaryEdges ?? []).length === 0
+        ? flow.edges
+        : [...flow.edges, ...(unselectedFlow?.boundaryEdges ?? [])],
+    [flow.edges, unselectedFlow],
   );
   // A rebuilt node keeps the size xyflow measured (`applySelection`), so it
   // stays visible; its ports can still have moved, which xyflow measures here.
@@ -438,6 +517,83 @@ function CanvasInner() {
     },
     [],
   );
+
+  /**
+   * Expose an internal port of the open subsystem; the new terminal is
+   * selected and the inspector's name field takes the focus for a rename.
+   */
+  const exposePort = useCallback(
+    (internal: PortDescriptor, wanted: TerminalKind | undefined, point: { x: number; y: number }) => {
+      const indexNow = useCatalogStore.getState().index;
+      if (indexNow === null) {
+        return;
+      }
+      const result = useDocumentStore.getState().exposeSubsystemPort(indexNow, internal, wanted);
+      if (!result.ok) {
+        showTooltip(point, result.error ?? "The port cannot be exposed.");
+        return;
+      }
+      focusPortNameField();
+    },
+    [showTooltip],
+  );
+
+  // A terminal's outside link leaves the subsystem; the view then frames the
+  // subsystem node and the peers of the revealed connections.
+  const pendingFocus = useRef<string[] | null>(null);
+  const revealPort = useCallback((portName: string) => {
+    const store = useDocumentStore.getState();
+    const result = store.revealSubsystemPort(portName);
+    if (result === null) {
+      return;
+    }
+    const after = useDocumentStore.getState();
+    const parent = after.doc === null ? null : activeDiagram(after.doc, after.activePath);
+    const ids = new Set([result.nodeId]);
+    for (const connection of parent?.connections ?? []) {
+      if (result.connections.includes(connection.id)) {
+        ids.add(connection.from.node);
+        ids.add(connection.to.node);
+      }
+    }
+    pendingFocus.current = [...ids];
+  }, []);
+  const terminalActions = useMemo(() => ({ reveal: revealPort }), [revealPort]);
+  // The inspector's "Show on the parent diagram" asks through an event.
+  useEffect(() => {
+    const onReveal = (event: Event): void => {
+      const name = (event as CustomEvent<string>).detail;
+      if (typeof name === "string") {
+        event.preventDefault();
+        revealPort(name);
+      }
+    };
+    window.addEventListener(REVEAL_PORT_EVENT, onReveal);
+    return () => window.removeEventListener(REVEAL_PORT_EVENT, onReveal);
+  }, [revealPort]);
+  useEffect(() => {
+    const ids = pendingFocus.current;
+    if (ids === null || ids.some((id) => !flow.nodes.some((node) => node.id === id))) {
+      return;
+    }
+    pendingFocus.current = null;
+    void fitView({ nodes: ids.map((id) => ({ id })), padding: 0.35, maxZoom: 1.1, duration: 250 });
+  }, [flow, fitView]);
+
+  // Delete with selected terminals: a port connected outside asks first.
+  const requestDelete = useCallback(() => {
+    const ports = selectedTerminalPorts();
+    if (ports.length === 0) {
+      useDocumentStore.getState().deleteSelection();
+      return;
+    }
+    const refusal = requestSubsystemPortDelete(ports, "selection");
+    if (refusal !== null) {
+      showTooltip({ x: window.innerWidth / 2, y: 120 }, refusal);
+    }
+  }, [showTooltip]);
+  const requestDeleteRef = useRef(requestDelete);
+  requestDeleteRef.current = requestDelete;
 
   /**
    * Offer the compatible elements at an empty release point. The list is
@@ -696,6 +852,14 @@ function CanvasInner() {
         let targetNodeId: string | null = null;
         let targetPort: string | null = null;
         let autoTarget = false;
+        const ghost = element?.closest<HTMLElement>("[data-terminal-ghost]") ?? null;
+        if (ghost !== null) {
+          const kind = ghostKind(ghostId(ghost.getAttribute("data-terminal-ghost") as TerminalKind));
+          if (kind !== null) {
+            exposePort(gesture.origin, kind, { x: upEvent.clientX, y: upEvent.clientY });
+          }
+          return;
+        }
         if (element instanceof Element) {
           const portElement = element.closest<HTMLElement>("[data-port]");
           if (portElement !== null) {
@@ -759,7 +923,7 @@ function CanvasInner() {
       window.addEventListener("pointercancel", finish, true);
       window.addEventListener("keydown", cancelOnEscape, true);
     },
-    [quickMode, openSuggestions, screenToFlowPosition, showTooltip],
+    [exposePort, quickMode, openSuggestions, screenToFlowPosition, showTooltip],
   );
 
   // --------------------------------------------------------------- shortcuts
@@ -784,6 +948,10 @@ function CanvasInner() {
     };
     const onKeyDown = (event: KeyboardEvent): void => {
       if (editableTarget(event.target) || imagePasteTarget(event.target)) {
+        return;
+      }
+      // The port-delete confirmation is modal.
+      if (usePortDeleteStore.getState().request !== null) {
         return;
       }
       const store = useDocumentStore.getState();
@@ -843,7 +1011,7 @@ function CanvasInner() {
       if (key === "delete" || key === "backspace") {
         if (store.selection.nodes.length > 0 || store.selection.connections.length > 0) {
           event.preventDefault();
-          store.deleteSelection();
+          requestDeleteRef.current();
         }
         return;
       }
@@ -898,9 +1066,44 @@ function CanvasInner() {
     [view, index],
   );
 
+  /**
+   * A connection between an internal port and a "+ input" / "+ output" /
+   * "+ power" ghost: the internal port's descriptor and the ghost's kind.
+   */
+  const ghostConnection = useCallback(
+    (
+      connection: Pick<Connection, "source" | "target" | "sourceHandle" | "targetHandle">,
+    ): { kind: TerminalKind; internal: PortDescriptor | null } | null => {
+      const sourceGhost = ghostKind(connection.source);
+      const targetGhost = ghostKind(connection.target);
+      const kind = sourceGhost ?? targetGhost;
+      if (kind === null) {
+        return null;
+      }
+      const [nodeId, handle] =
+        sourceGhost !== null
+          ? [connection.target, connection.targetHandle]
+          : [connection.source, connection.sourceHandle];
+      if (nodeId === null || isBoundaryElementId(nodeId)) {
+        return { kind, internal: null };
+      }
+      return { kind, internal: descriptorFor(nodeId, handle ?? null) };
+    },
+    [descriptorFor],
+  );
+  // The "+ kind" ghost a connection drag started from, if any.
+  const ghostDragRef = useRef<TerminalKind | null>(null);
+
   const onConnect: OnConnect = useCallback(
     (connection: Connection) => {
       if (probeDragRef.current !== null) {
+        return;
+      }
+      const ghost = ghostConnection(connection);
+      if (ghost !== null) {
+        if (ghost.internal !== null) {
+          exposePort(ghost.internal, ghost.kind, { x: window.innerWidth / 2, y: 120 });
+        }
         return;
       }
       const from = descriptorFor(connection.source, connection.sourceHandle);
@@ -913,13 +1116,19 @@ function CanvasInner() {
         showTooltip({ x: window.innerWidth / 2, y: 120 }, result.reason);
       }
     },
-    [descriptorFor, showTooltip],
+    [descriptorFor, exposePort, ghostConnection, showTooltip],
   );
 
   const onConnectStart: OnConnectStart = useCallback(
     (_event, params) => {
       setMenu(null);
       setSuggestions(null);
+      ghostDragRef.current = ghostKind(params.nodeId);
+      if (ghostDragRef.current !== null) {
+        probeDragRef.current = null;
+        setDragOrigin(null);
+        return;
+      }
       const probe = view?.diagram.probes?.find(
         (entry) => entry.id === params.nodeId && entry.kind === "block",
       );
@@ -961,10 +1170,43 @@ function CanvasInner() {
       }
       const origin = dragOrigin;
       setDragOrigin(null);
+      const fromGhost = ghostDragRef.current;
+      ghostDragRef.current = null;
+      const nodeId = state.toHandle?.nodeId ?? state.toNode?.id ?? null;
+      // A drag between an internal port and a "+ kind" ghost exposes the port;
+      // a refused drop says why (`onConnect` handles the accepted one).
+      if (fromGhost !== null || ghostKind(nodeId) !== null) {
+        if (state.isValid !== false || nodeId === null) {
+          return;
+        }
+        const ghost =
+          fromGhost !== null
+            ? ghostConnection({
+                source: ghostId(fromGhost),
+                sourceHandle: "g",
+                target: nodeId,
+                targetHandle: state.toHandle?.id ?? null,
+              })
+            : ghostConnection({
+                source: origin?.nodeId ?? "",
+                sourceHandle: origin?.portName ?? null,
+                target: nodeId,
+                targetHandle: "g",
+              });
+        const current = useDocumentStore.getState();
+        const inner = current.doc === null ? null : activeDiagram(current.doc, current.activePath);
+        if (ghost === null || ghost.internal === null || inner === null || boundary === null) {
+          return;
+        }
+        const issue = exposeIssue(inner, boundary.ports, ghost.internal, ghost.kind);
+        if (issue !== null) {
+          showTooltip(eventPoint(event), issue);
+        }
+        return;
+      }
       if (origin === null) {
         return;
       }
-      const nodeId = state.toHandle?.nodeId ?? state.toNode?.id ?? null;
       // A release on the bare canvas is not a refusal: it offers compatible
       // elements to add at that point.
       if (nodeId === null) {
@@ -990,12 +1232,28 @@ function CanvasInner() {
         showTooltip(eventPoint(event), result.reason);
       }
     },
-    [descriptorFor, dragOrigin, openSuggestions, showTooltip],
+    [boundary, descriptorFor, dragOrigin, ghostConnection, openSuggestions, showTooltip],
   );
 
   const isValidConnection = useCallback(
     (connection: Connection | Edge) => {
       if (view === null) {
+        return false;
+      }
+      const ghost = ghostConnection({
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle ?? null,
+        targetHandle: connection.targetHandle ?? null,
+      });
+      if (ghost !== null) {
+        return (
+          ghost.internal !== null &&
+          boundary !== null &&
+          exposeIssue(view.diagram, boundary.ports, ghost.internal, ghost.kind) === null
+        );
+      }
+      if (isBoundaryElementId(connection.source) || isBoundaryElementId(connection.target)) {
         return false;
       }
       const from = descriptorFor(connection.source, connection.sourceHandle ?? null);
@@ -1005,7 +1263,7 @@ function CanvasInner() {
       }
       return checkConnection(view, from, to).ok;
     },
-    [descriptorFor, view],
+    [boundary, descriptorFor, ghostConnection, view],
   );
 
   // ------------------------------------------------------------------- drop
@@ -1174,6 +1432,16 @@ function CanvasInner() {
       suppressClick.current = false;
       return;
     }
+    const ghost = ghostKind(node.id);
+    if (ghost !== null) {
+      showTooltip(
+        { x: event.clientX, y: event.clientY },
+        ghost === "power"
+          ? "Drag a connection from an internal power port or junction onto + power to expose it."
+          : `Drag a connection from an internal signal ${ghost} onto + ${ghost} to expose it.`,
+      );
+      return;
+    }
     const store = useDocumentStore.getState();
     const additive = event.ctrlKey || event.metaKey;
     if (!additive) {
@@ -1185,7 +1453,7 @@ function CanvasInner() {
       ? current.filter((id) => id !== node.id)
       : [...current, node.id];
     store.setSelection(next, []);
-  }, []);
+  }, [showTooltip]);
 
   const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
     const store = useDocumentStore.getState();
@@ -1206,6 +1474,15 @@ function CanvasInner() {
    * double-click on an inline node opens its source in the Code tab.
    */
   const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    // A terminal leaves the subsystem and shows its outside connection.
+    const terminal = terminalPortName(node.id);
+    if (terminal !== null) {
+      revealPort(terminal);
+      return;
+    }
+    if (ghostKind(node.id) !== null) {
+      return;
+    }
     const doc = useDocumentStore.getState().doc;
     const path = useDocumentStore.getState().activePath;
     const view = doc === null ? null : activeModel(doc, path);
@@ -1225,7 +1502,7 @@ function CanvasInner() {
     if ("inline" in target.block) {
       requestSource({ kind: "inline", ref: target.id, line: 1, col: 1 }, { reveal: true });
     }
-  }, []);
+  }, [revealPort]);
 
   const onEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();
@@ -1244,6 +1521,10 @@ function CanvasInner() {
 
   const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
     event.preventDefault();
+    if (ghostKind(node.id) !== null) {
+      setMenu(null);
+      return;
+    }
     const store = useDocumentStore.getState();
     if (!store.selection.nodes.includes(node.id)) {
       store.setSelection([node.id], []);
@@ -1307,6 +1588,18 @@ function CanvasInner() {
     }
     return menuOutputIds;
   }, [menu, menuNode, menuOutputIds, pathPrefix]);
+
+  // Inside a subsystem, a right-click on an internal port (or a junction)
+  // offers to expose it as a subsystem port.
+  const menuExpose = useMemo((): PortDescriptor | null => {
+    if (menu?.kind !== "node" || boundary === null || menuNode === undefined) {
+      return null;
+    }
+    if ("junction" in menuNode.block) {
+      return descriptorFor(menuNode.id, null);
+    }
+    return menu.port === undefined ? null : descriptorFor(menuNode.id, menu.port.name);
+  }, [boundary, descriptorFor, menu, menuNode]);
 
   const startProbeLead = useCallback(
     (probeId: string, event: React.PointerEvent<HTMLElement>) => {
@@ -1642,114 +1935,125 @@ function CanvasInner() {
         <QuickConnectContext.Provider
           value={{ enabled: quickMode, start: startQuickConnect }}
         >
-          <ReactFlow
-            className={quickMode ? "is-quick-connect" : undefined}
-            nodes={flow.nodes}
-            edges={flow.edges}
-            nodeTypes={NODE_TYPES}
-            edgeTypes={EDGE_TYPES}
-            connectionMode={ConnectionMode.Loose}
-            connectionLineType={ConnectionLineType.SmoothStep}
-            connectionLineStyle={{ stroke: "var(--color-accent)", strokeWidth: 1.6 }}
-            connectionRadius={20}
-            defaultViewport={{ x: 0, y: 0, zoom: ZOOM }}
-            minZoom={0.1}
-            maxZoom={2}
-            nodesDraggable={!quickMode}
-            snapToGrid={snap}
-            snapGrid={[GRID_SIZE, GRID_SIZE]}
-            deleteKeyCode={null}
-            selectionKeyCode="Shift"
-            multiSelectionKeyCode={["Meta", "Control"]}
-            // A left drag on empty canvas draws a selection rectangle; panning
-            // moves to the middle and right buttons (and Space+drag).
-            selectionOnDrag
-            selectionMode={SelectionMode.Partial}
-            panOnDrag={[1, 2]}
-            onSelectionStart={onSelectionStart}
-            onSelectionEnd={onSelectionEnd}
-            nodeClickDistance={CLICK_DISTANCE}
-            paneClickDistance={CLICK_DISTANCE}
-            onConnect={onConnect}
-            onConnectStart={onConnectStart}
-            onConnectEnd={onConnectEnd}
-            isValidConnection={isValidConnection}
-            onNodeDragStart={(event, _node, nodes) => {
-              const store = useDocumentStore.getState();
-              const ids = nodes.map((dragged) => dragged.id);
-              if (!ids.every((id) => store.selection.nodes.includes(id))) {
-                if (event.ctrlKey || event.metaKey) {
-                  store.setSelection([...new Set([...store.selection.nodes, ...ids])], []);
-                } else {
-                  store.setSelection(ids, []);
+          <TerminalActionsContext.Provider value={terminalActions}>
+            <ReactFlow
+              className={quickMode ? "is-quick-connect" : undefined}
+              nodes={flow.nodes}
+              edges={flowEdges}
+              nodeTypes={NODE_TYPES}
+              edgeTypes={EDGE_TYPES}
+              connectionMode={ConnectionMode.Loose}
+              connectionLineType={ConnectionLineType.SmoothStep}
+              connectionLineStyle={{ stroke: "var(--color-accent)", strokeWidth: 1.6 }}
+              connectionRadius={20}
+              defaultViewport={{ x: 0, y: 0, zoom: ZOOM }}
+              minZoom={0.1}
+              maxZoom={2}
+              nodesDraggable={!quickMode}
+              snapToGrid={snap}
+              snapGrid={[GRID_SIZE, GRID_SIZE]}
+              deleteKeyCode={null}
+              selectionKeyCode="Shift"
+              multiSelectionKeyCode={["Meta", "Control"]}
+              // A left drag on empty canvas draws a selection rectangle; panning
+              // moves to the middle and right buttons (and Space+drag).
+              selectionOnDrag
+              selectionMode={SelectionMode.Partial}
+              panOnDrag={[1, 2]}
+              onSelectionStart={onSelectionStart}
+              onSelectionEnd={onSelectionEnd}
+              nodeClickDistance={CLICK_DISTANCE}
+              paneClickDistance={CLICK_DISTANCE}
+              onConnect={onConnect}
+              onConnectStart={onConnectStart}
+              onConnectEnd={onConnectEnd}
+              isValidConnection={isValidConnection}
+              onNodeDragStart={(event, _node, nodes) => {
+                const store = useDocumentStore.getState();
+                const ids = nodes.map((dragged) => dragged.id);
+                if (!ids.every((id) => store.selection.nodes.includes(id))) {
+                  if (event.ctrlKey || event.metaKey) {
+                    store.setSelection([...new Set([...store.selection.nodes, ...ids])], []);
+                  } else {
+                    store.setSelection(ids, []);
+                  }
                 }
-              }
-              store.beginGesture("node-drag");
-            }}
-            onNodeDrag={(_event, _node, nodes) => {
-              const positions: Record<string, { x: number; y: number }> = {};
-              for (const dragged of nodes) {
-                positions[dragged.id] = { x: dragged.position.x, y: dragged.position.y };
-              }
-              const store = useDocumentStore.getState();
-              store.setNodePositions(positions, true);
-              for (const dragged of nodes) {
-                store.setProbePosition(
-                  dragged.id,
-                  { x: dragged.position.x, y: dragged.position.y },
-                  true,
-                );
-              }
-            }}
-            onNodeDragStop={() => useDocumentStore.getState().endGesture()}
-            onSelectionChange={onSelectionChange}
-            onNodeClick={onNodeClick}
-            onNodeDoubleClick={onNodeDoubleClick}
-            onEdgeClick={onEdgeClick}
-            onEdgeContextMenu={onEdgeContextMenu}
-            onNodeContextMenu={onNodeContextMenu}
-            onPaneClick={() => {
-              // The release that opened the suggestion palette also produces a
-              // pane click; it must not close the palette it just opened.
-              if (Date.now() < suppressPaneClickUntil.current) {
-                return;
-              }
-              setMenu(null);
-              setTooltip(null);
-              setSuggestions(null);
-              useDocumentStore.getState().setSelection([], []);
-            }}
-            onPaneContextMenu={(event) => {
-              event.preventDefault();
-              setMenu(null);
-            }}
-            proOptions={{ hideAttribution: true }}
-          >
-            <CanvasZoomVariable />
-            {showGrid ? (
-              <Background
-                variant={BackgroundVariant.Lines}
-                gap={GRID_SIZE}
-                size={1}
-                color="var(--color-border)"
-              />
-            ) : null}
-            <Panel position="bottom-left">
-              <CanvasLegend />
-            </Panel>
-            <ViewportPortal>
-              <Suspense fallback={null}>
-                {view?.diagram.probes?.map((probe) => (
-                  <ProbeWindow
-                    key={probe.id}
-                    model={view}
-                    probe={probe}
-                    onProbeLeadStart={startProbeLead}
-                  />
-                ))}
-              </Suspense>
-            </ViewportPortal>
-          </ReactFlow>
+                store.beginGesture("node-drag");
+              }}
+              onNodeDrag={(_event, _node, nodes) => {
+                const positions: Record<string, { x: number; y: number }> = {};
+                const terminals: Record<string, { x: number; y: number }> = {};
+                for (const dragged of nodes) {
+                  const port = terminalPortName(dragged.id);
+                  const point = { x: dragged.position.x, y: dragged.position.y };
+                  if (port !== null) {
+                    terminals[port] = point;
+                  } else {
+                    positions[dragged.id] = point;
+                  }
+                }
+                const store = useDocumentStore.getState();
+                // Both coalesce into the drag gesture: one undo step.
+                store.setNodePositions(positions, true);
+                store.setSubsystemPortPositions(terminals, true);
+                for (const dragged of nodes) {
+                  store.setProbePosition(
+                    dragged.id,
+                    { x: dragged.position.x, y: dragged.position.y },
+                    true,
+                  );
+                }
+              }}
+              onNodeDragStop={() => useDocumentStore.getState().endGesture()}
+              onSelectionChange={onSelectionChange}
+              onNodeClick={onNodeClick}
+              onNodeDoubleClick={onNodeDoubleClick}
+              onEdgeClick={onEdgeClick}
+              onEdgeContextMenu={onEdgeContextMenu}
+              onNodeContextMenu={onNodeContextMenu}
+              onPaneClick={() => {
+                // The release that opened the suggestion palette also produces a
+                // pane click; it must not close the palette it just opened.
+                if (Date.now() < suppressPaneClickUntil.current) {
+                  return;
+                }
+                setMenu(null);
+                setTooltip(null);
+                setSuggestions(null);
+                useDocumentStore.getState().setSelection([], []);
+              }}
+              onPaneContextMenu={(event) => {
+                event.preventDefault();
+                setMenu(null);
+              }}
+              proOptions={{ hideAttribution: true }}
+            >
+              <CanvasZoomVariable />
+              {showGrid ? (
+                <Background
+                  variant={BackgroundVariant.Lines}
+                  gap={GRID_SIZE}
+                  size={1}
+                  color="var(--color-border)"
+                />
+              ) : null}
+              <Panel position="bottom-left">
+                <CanvasLegend />
+              </Panel>
+              <ViewportPortal>
+                <Suspense fallback={null}>
+                  {view?.diagram.probes?.map((probe) => (
+                    <ProbeWindow
+                      key={probe.id}
+                      model={view}
+                      probe={probe}
+                      onProbeLeadStart={startProbeLead}
+                    />
+                  ))}
+                </Suspense>
+              </ViewportPortal>
+            </ReactFlow>
+          </TerminalActionsContext.Provider>
         </QuickConnectContext.Provider>
         {view !== null && index !== null ? (
           <ProbeLeads model={view} index={index} />
@@ -1798,6 +2102,10 @@ function CanvasInner() {
           {tooltip.message}
         </div>
       ) : null}
+
+      <PortDeleteConfirm
+        onRefused={(message) => showTooltip({ x: window.innerWidth / 2, y: 120 }, message)}
+      />
 
       {menu !== null ? (
         <div
@@ -1916,8 +2224,34 @@ function CanvasInner() {
               </button>
             </>
           ) : null}
-          {menu.kind === "node" ? (
+          {menu.kind === "node" && terminalPortName(menu.id) !== null ? (
+            <TerminalMenuItems
+              portName={terminalPortName(menu.id) ?? ""}
+              onReveal={(name) => runMenuAction(() => revealPort(name))}
+              onRename={(name) =>
+                runMenuAction(() => {
+                  useDocumentStore.getState().setSelection([terminalId(name)], []);
+                  focusPortNameField();
+                })
+              }
+              onDelete={() => runMenuAction(requestDelete)}
+            />
+          ) : null}
+          {menu.kind === "node" && terminalPortName(menu.id) === null ? (
             <>
+              {menuExpose !== null ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  data-testid="expose-port"
+                  title="Add a subsystem port that maps to this internal port; the outer block gets it at once"
+                  onClick={() =>
+                    runMenuAction(() => exposePort(menuExpose, undefined, { x: menu.x, y: menu.y }))
+                  }
+                >
+                  Expose as subsystem port
+                </button>
+              ) : null}
               <button
                 type="button"
                 role="menuitem"
@@ -1991,7 +2325,7 @@ function CanvasInner() {
                 type="button"
                 role="menuitem"
                 data-testid="delete-selection"
-                onClick={() => runMenuAction(() => useDocumentStore.getState().deleteSelection())}
+                onClick={() => runMenuAction(requestDelete)}
               >
                 Delete (Del)
               </button>

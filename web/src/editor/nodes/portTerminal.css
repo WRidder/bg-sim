@@ -1,0 +1,192 @@
+/* ------------------------------------------------- subsystem port terminals */
+
+.port-terminal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  box-sizing: border-box;
+  padding: 2px 12px;
+  background: var(--color-surface-raised);
+  /* An inset stroke in the port colour (currentColor), like the block cards. */
+  box-shadow:
+    inset 0 0 0 1.5px currentColor,
+    var(--shadow-panel);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  cursor: grab;
+}
+
+.port-terminal.is-selected {
+  box-shadow:
+    inset 0 0 0 1.5px currentColor,
+    0 0 0 2px var(--color-accent);
+}
+
+.port-terminal.is-broken {
+  box-shadow:
+    inset 0 0 0 1.5px var(--color-error),
+    var(--shadow-panel);
+}
+
+.port-terminal__name {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.15;
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.port-terminal__link {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.port-terminal__link:hover,
+.port-terminal__link:focus-visible {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.port-terminal__link.is-unconnected {
+  color: var(--color-warning-text);
+}
+
+.port-terminal--input {
+  text-align: right;
+}
+
+.react-flow__handle.port-terminal__handle {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  min-height: 6px;
+  background: currentColor;
+  border: none;
+  pointer-events: none;
+}
+
+.port-ghost {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 76px;
+  height: 24px;
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--color-text-faint);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  opacity: 0.75;
+  transition:
+    opacity var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.port-ghost:hover,
+.port-ghost.is-compatible {
+  opacity: 1;
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.port-ghost.is-incompatible {
+  opacity: 0.35;
+}
+
+.port-ghost__label {
+  pointer-events: none;
+}
+
+/* The whole ghost is the drop target of a connection drag. */
+.react-flow__handle.port-ghost__handle {
+  inset: -2px;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  transform: none;
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: crosshair;
+}
+
+/* An internal port that a subsystem port exposes: a ring around its glyph. */
+.port-exposed-ring {
+  position: absolute;
+  inset: -3px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--color-surface);
+  pointer-events: none;
+}
+
+.junction-node.is-exposed {
+  outline: 1.5px dashed var(--color-accent);
+  outline-offset: 3px;
+}
+
+.editor-edge--boundary {
+  pointer-events: none;
+}
+
+.port-delete-dialog__list {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-4);
+  font-size: var(--font-size-sm);
+}
+
+/* ---------------------------------------------- the inspector of a terminal */
+
+.inspector-port-swatch {
+  display: block;
+  width: 22px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+}
+
+.inspector-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.inspector-facts dt {
+  color: var(--color-text-muted);
+}
+
+.inspector-facts dd {
+  margin: 0;
+}
+
+.inspector-port-letter {
+  font-weight: var(--font-weight-medium);
+}
+
+.inspector-port-unconnected {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-warning-text);
+}

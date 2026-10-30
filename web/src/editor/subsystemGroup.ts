@@ -18,14 +18,15 @@ import type {
   ModelEndpoint,
   ModelNode,
   ModelSubsystemPort,
-  ModelSubsystemSignalPort,
-  ModelSubsystemPowerPort,
   ModelPoint,
 } from "../contracts/model";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { analyseDiagram } from "./connectionAnalysis";
 import { descriptorForPort } from "./nodeInterface";
+import { portNameFor, powerDomainFor, powerPortFor, signalPortFor } from "./subsystemPorts";
 import { uniqueName } from "../state/ids";
+
+export { portNameFor };
 
 export interface SubsystemGroupInput {
   /** The diagram to group in; for a nested diagram this is the active view. */
@@ -54,13 +55,6 @@ function round(value: number): number {
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
-}
-
-/** `Motor1_shaft` style: identifier-safe, with a leading `_` if needed. */
-export function portNameFor(nodeName: string, portName: string | null): string {
-  const raw = portName === null || portName.length === 0 ? nodeName : `${nodeName}_${portName}`;
-  const cleaned = raw.replace(/[^A-Za-z0-9_]/g, "_");
-  return /^[A-Za-z_]/.test(cleaned) ? cleaned : `_${cleaned}`;
 }
 
 function endpoint(node: string, port: string | null): ModelEndpoint {
@@ -158,41 +152,27 @@ export function groupSelectionIntoSubsystem(
       const direction = endpointKey(internalEnd) === endpointKey(connection.from)
         ? "output"
         : "input";
-      const port: ModelSubsystemSignalPort = {
-        name: portName,
-        kind: "signal",
-        direction,
-        type: internalDescriptor?.type ?? externalDescriptor?.type ?? "Real",
-        size: [...(internalDescriptor?.size ?? externalDescriptor?.size ?? [])],
-        unit: internalDescriptor?.unit ?? externalDescriptor?.unit ?? null,
-        node: internalEnd.node,
-        port: internalPort ?? "junction",
-      };
-      ports.push(port);
+      ports.push(
+        signalPortFor({
+          name: portName,
+          direction,
+          internal: internalDescriptor,
+          external: externalDescriptor,
+          node: internalEnd.node,
+          port: internalPort,
+        }),
+      );
     } else {
       const adopted = analysis.connections.get(connection.id)?.domain;
-      const concrete =
-        internalDescriptor !== null && internalDescriptor.domain !== "Generic"
-          ? internalDescriptor.domain
-          : externalDescriptor !== null && externalDescriptor.domain !== "Generic"
-            ? externalDescriptor.domain
-            : undefined;
-      const domain = adopted ?? concrete ?? "Generic";
-      // A power port's shape is one axis (catalog `domain.size`): [1] scalar,
-      // [3] Planar, [6] Spatial. The descriptor size is the block's array shape,
-      // which is empty for a scalar port.
-      const portSize = index.domains.get(domain)?.size ?? 1;
-      const port: ModelSubsystemPowerPort = {
-        name: portName,
-        kind: "power",
-        domain,
-        size: [portSize],
-        node: internalEnd.node,
-        // A junction has no named port; the worker ignores this field for a
-        // junction face, and the schema still requires a string.
-        port: internalPort ?? "junction",
-      };
-      ports.push(port);
+      ports.push(
+        powerPortFor({
+          name: portName,
+          domain: powerDomainFor(adopted, internalDescriptor, externalDescriptor),
+          index,
+          node: internalEnd.node,
+          port: internalPort,
+        }),
+      );
     }
 
     const copy = clone(connection);

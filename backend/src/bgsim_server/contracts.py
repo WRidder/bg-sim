@@ -812,21 +812,6 @@ class SignalDirection(Enum):
     output = 'output'
 
 
-class ModelSubsystemSignalPort(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
-    kind: Literal['signal']
-    direction: SignalDirection = Field(..., title='SignalDirection')
-    type: ValueType = Field(..., title='ValueType')
-    size: list[conint(ge=1)]
-    unit: str | None
-    node: str
-    port: str
-    field_comment: str | None = Field(None, alias='$comment')
-
-
 class DomainName2(Enum):
     Electrical = 'Electrical'
     Translation = 'Translation'
@@ -1722,33 +1707,11 @@ class ModelProbe(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
-class ModelSubsystemPowerPort(BaseModel):
+class ModelSubsystemPortUi(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
-    kind: Literal['power']
-    domain: DomainName2 = Field(..., title='DomainName')
-    size: list[SizeEnum] = Field(
-        ...,
-        description='Port shape; a power port has one axis: [1] for a scalar domain, [3] for Planar and [6] for Spatial. The allOf below pins it to the declared domain.',
-        max_length=1,
-        min_length=1,
-    )
-    frame: constr(min_length=1) | None = Field(
-        None,
-        description="Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007; E007 reports the bond with the reported port in `path` and the other end in `related`.",
-    )
-    effortUnits: UnitArray3 | UnitArray6 | None = Field(
-        None,
-        description="Per-component effort units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.effort for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.",
-    )
-    flowUnits: UnitArray3 | UnitArray6 | None = Field(
-        None,
-        description="Per-component flow units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.flow for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.",
-    )
-    node: str
-    port: str
+    position: ModelPoint
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -2170,12 +2133,51 @@ class ExportReport(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
-class ModelSubsystemPort(RootModel[ModelSubsystemSignalPort | ModelSubsystemPowerPort]):
-    root: ModelSubsystemSignalPort | ModelSubsystemPowerPort = Field(
-        ...,
-        description='A port exposed by a subsystem: the outside face plus the internal node and port it attaches to.',
-        title='ModelSubsystemPort',
+class ModelSubsystemSignalPort(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
     )
+    name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
+    kind: Literal['signal']
+    direction: SignalDirection = Field(..., title='SignalDirection')
+    type: ValueType = Field(..., title='ValueType')
+    size: list[conint(ge=1)]
+    unit: str | None
+    node: str
+    port: str
+    ui: ModelSubsystemPortUi | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelSubsystemPowerPort(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
+    kind: Literal['power']
+    domain: DomainName2 = Field(..., title='DomainName')
+    size: list[SizeEnum] = Field(
+        ...,
+        description='Port shape; a power port has one axis: [1] for a scalar domain, [3] for Planar and [6] for Spatial. The allOf below pins it to the declared domain.',
+        max_length=1,
+        min_length=1,
+    )
+    frame: constr(min_length=1) | None = Field(
+        None,
+        description="Reference frame in which the exposed port's twist/wrench are expressed (D-MB5). This port's frame is authoritative for the exposed port; it may differ from the internal port's catalog frame only through an internal FixedTransform/JointTransform, which the flattener accepts. Null or absent is frame-neutral: it unifies with any adjacent frame and never causes E007. A bond or wire joining two different named frames is E007; E007 reports the bond with the reported port in `path` and the other end in `related`.",
+    )
+    effortUnits: UnitArray3 | UnitArray6 | None = Field(
+        None,
+        description="Per-component effort units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.effort for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.",
+    )
+    flowUnits: UnitArray3 | UnitArray6 | None = Field(
+        None,
+        description="Per-component flow units carried through the subsystem boundary, angular first. Must equal the catalog domain's components.flow for the port's domain; derivation from the domain is preferred, so these fields exist only when a subsystem overrides a Generic port. Exactly 3 for Planar, 6 for Spatial.",
+    )
+    node: str
+    port: str
+    ui: ModelSubsystemPortUi | None = None
+    field_comment: str | None = Field(None, alias='$comment')
 
 
 class RunManifest(BaseModel):
@@ -2417,6 +2419,14 @@ class ExportJob(BaseModel):
         None, description='The built FMU, downloadable at GET /api/exports/{id}/fmu.'
     )
     field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelSubsystemPort(RootModel[ModelSubsystemSignalPort | ModelSubsystemPowerPort]):
+    root: ModelSubsystemSignalPort | ModelSubsystemPowerPort = Field(
+        ...,
+        description='A port exposed by a subsystem: the outside face plus the internal node and port it attaches to.',
+        title='ModelSubsystemPort',
+    )
 
 
 class CatalogGetResponse(BaseModel):

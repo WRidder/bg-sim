@@ -31,6 +31,8 @@ export interface PortHandleProps {
   /** The domain actually drawn (Generic ports adopt their bond island). */
   domain: DomainName;
   state: PortDragState;
+  /** Inside a subsystem: the subsystem port(s) exposing this port, or null. */
+  exposed?: string | null;
 }
 
 const DOMAIN_LETTER: Record<DomainName, string> = {
@@ -69,7 +71,7 @@ function arrowRotation(side: PortPosition["side"], direction: string): number {
   }
 }
 
-export function PortHandle({ nodeId, port, position, domain, state }: PortHandleProps) {
+export function PortHandle({ nodeId, port, position, domain, state, exposed = null }: PortHandleProps) {
   const side = position.side;
   const isPower = port.kind === "power";
   const colour = isPower ? domainColor(domain) : signalColor(port.type);
@@ -80,9 +82,10 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
   // A multibond port stays one logical point (plan 7.2): the port glyph shows
   // N parallel ticks for the N strokes, and no second port is created.
   const strokes = isPower ? multibondStrokes(domain) : 1;
-  const title = isPower
+  const base = isPower
     ? `${port.name} · power · ${domain}${vector ? ` · ${port.size.join("x")}` : ""}`
     : `${port.name} · ${direction} · ${port.type}${vector ? ` · ${port.size.join("x")}` : ""} · ${SIGNAL_TYPE_LABEL[port.type] ?? ""}`;
+  const title = exposed === null ? base : `${base} · exposed as subsystem port ${exposed}`;
   const isSignalInput = !isPower && port.kind === "input";
   const rotation = isPower ? 0 : arrowRotation(side, direction);
   // Place an output arrow outside the block border, with its base on the
@@ -128,6 +131,7 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
         port.type === "Bool" ? "is-bool" : "",
         port.type === "Int" ? "is-int" : "",
         `is-${state}`,
+        exposed !== null ? "is-exposed" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -144,6 +148,7 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
       data-domain={domain}
       data-type={port.type}
       data-state={state}
+      data-exposed={exposed ?? undefined}
       data-side={side}
       data-glyph={isPower ? (strokes > 1 ? "multibond" : "square") : isSignalInput ? "dot" : "arrow"}
       data-strokes={isPower ? strokes : undefined}
@@ -182,6 +187,13 @@ export function PortHandle({ nodeId, port, position, domain, state }: PortHandle
           />
         </svg>
       )}
+      {exposed !== null ? (
+        <span
+          className="port-exposed-ring"
+          data-testid={`port-exposed-${nodeId}-${port.name}`}
+          aria-hidden="true"
+        />
+      ) : null}
       <span className="port-letter" aria-hidden="true">
         {DOMAIN_LETTER[domain]}
       </span>

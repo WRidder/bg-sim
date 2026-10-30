@@ -53,6 +53,15 @@ import {
 } from "../debug/panels/editsModel";
 import { nodeImageIssue } from "../editor/nodeImage";
 import { groupSelectionIntoSubsystem } from "../editor/subsystemGroup";
+import { terminalId, terminalPortName } from "../editor/subsystemBoundary";
+import {
+  exposedOneLevelUp,
+  exposedPortFor,
+  outsideConnections,
+  subsystemAtPath,
+  subsystemPortNameIssue,
+  type TerminalKind,
+} from "../editor/subsystemPorts";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { probeSignalOptions } from "../probe/probeSignals";
 import {
@@ -235,8 +244,58 @@ export interface DocumentActions {
     options?: { coalesce?: boolean },
   ) => EditResult;
 
+  /**
+   * Inside a subsystem: expose an internal port as a new subsystem port (one
+   * undo entry). Kind, direction, type, size, unit and domain come from the
+   * internal port; the name is proposed from it and made unique. `wanted` is
+   * the "+ input" / "+ output" / "+ power" target the port was dropped on.
+   * The new port's terminal is selected.
+   */
+  exposeSubsystemPort: (
+    index: CatalogIndex,
+    internal: PortDescriptor,
+    wanted?: TerminalKind,
+  ) => EditResult & { name?: string };
+  /** Rename an exposed port of the open subsystem; outside connections follow. */
+  renameSubsystemPort: (name: string, next: string) => EditResult;
+  /** Remove exposed ports of the open subsystem and their outside connections (one undo entry). */
+  deleteSubsystemPorts: (names: readonly string[]) => EditResult;
+  /** Store where the terminals of exposed ports sit (`ui.position`); a drag coalesces. */
+  setSubsystemPortPositions: (positions: Record<string, ModelPoint>, coalesce?: boolean) => void;
+  /**
+   * Leave the subsystem and select the outside connections of exposed port
+   * `name` (or the subsystem node when it has none). Returns the selected ids.
+   */
+  revealSubsystemPort: (name: string) => { nodeId: string; connections: string[] } | null;
+
   undo: () => void;
   redo: () => void;
+}
+
+/**
+ * The outside connections deleting exposed ports `names` of the subsystem at
+ * `path` removes; the canvas confirms first when there are any.
+ */
+export function subsystemPortDeleteImpact(
+  doc: Model,
+  path: readonly string[],
+  names: readonly string[],
+): ModelConnection[] {
+  const found = subsystemAtPath(doc, path);
+  if (found === null) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const result: ModelConnection[] = [];
+  for (const name of names) {
+    for (const connection of outsideConnections(found.parent, found.node.id, name)) {
+      if (!seen.has(connection.id)) {
+        seen.add(connection.id);
+        result.push(connection);
+      }
+    }
+  }
+  return result;
 }
 
 export interface DocumentState {
@@ -310,6 +369,10 @@ function pruneSelection(doc: Model, path: readonly string[], selection: Selectio
   const nodeIds = new Set([
     ...diagram.nodes.map((node) => node.id),
     ...(diagram.probes ?? []).map((probe) => probe.id),
+    // Inside a subsystem the exposed ports' terminals are selectable too.
+    ...(subsystemAtPath(doc, path)?.node.block.subsystem.ports ?? []).map((port) =>
+      terminalId(port.name),
+    ),
   ]);
   const connectionIds = new Set(diagram.connections.map((connection) => connection.id));
   const nodes = selection.nodes.filter((id) => nodeIds.has(id));
@@ -322,6 +385,32 @@ function pruneSelection(doc: Model, path: readonly string[], selection: Selectio
 
 function isJunction(node: ModelNode): boolean {
   return "junction" in node.block;
+}
+
+/**
+ * Remove exposed ports `names` of the subsystem at `path` from a draft, with
+ * every parent-diagram connection on them and the probe links on those.
+ */
+function removeSubsystemPorts(root: Model, path: readonly string[], names: readonly string[]): void {
+  const found = subsystemAtPath(root, path);
+  if (found === null) {
+    return;
+  }
+  const { node, parent } = found;
+  const removed = new Set(names);
+  node.block.subsystem.ports = node.block.subsystem.ports.filter((port) => !removed.has(port.name));
+  const dropped = new Set(
+    names.flatMap((name) => outsideConnections(parent, node.id, name).map((connection) => connection.id)),
+  );
+  if (dropped.size === 0) {
+    return;
+  }
+  parent.connections = parent.connections.filter((connection) => !dropped.has(connection.id));
+  if (parent.probes !== undefined) {
+    for (const probe of parent.probes) {
+      probe.links = probe.links.filter((link) => !dropped.has(link.connection));
+    }
+  }
 }
 
 /** A free grid slot for a new code node when the caller does not give one. */
@@ -691,7 +780,24 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       if (nodes.size === 0 && connections.size === 0) {
         return;
       }
-      commitActive((draft) => {
+      const path = [...get().activePath];
+      // Selected terminals delete their exposed ports in the same undo entry,
+      // except a port the next level up exposes again (the canvas says why).
+      const doc = get().doc;
+      const portNames = selection.nodes
+        .map(terminalPortName)
+        .filter(
+          (name): name is string =>
+            name !== null && doc !== null && exposedOneLevelUp(doc, path, name) === null,
+        );
+      commit((root) => {
+        if (portNames.length > 0) {
+          removeSubsystemPorts(root, path, portNames);
+        }
+        const draft = activeDiagram(root, path);
+        if (draft === null) {
+          return;
+        }
         draft.nodes = draft.nodes.filter((node) => !nodes.has(node.id));
         draft.connections = draft.connections.filter(
           (connection) =>
@@ -1285,6 +1391,170 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         return { ok: false, error: "No model is open." };
       }
       return { ok: true };
+    },
+
+    exposeSubsystemPort: (index, internal, wanted) => {
+      const state = get();
+      const doc = state.doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const path = [...state.activePath];
+      const found = subsystemAtPath(doc, path);
+      const inner = activeModel(doc, path);
+      if (found === null || inner === null) {
+        return { ok: false, error: "Open a subsystem to expose one of its ports." };
+      }
+      const result = exposedPortFor({
+        inner,
+        ports: found.node.block.subsystem.ports,
+        descriptor: internal,
+        index,
+        wanted,
+      });
+      if (!result.ok) {
+        return { ok: false, error: result.reason };
+      }
+      const port = result.port;
+      commit((root) => {
+        subsystemAtPath(root, path)?.node.block.subsystem.ports.push(clone(port));
+      });
+      set({ selection: { nodes: [terminalId(port.name)], connections: [] } });
+      return { ok: true, name: port.name };
+    },
+
+    renameSubsystemPort: (name, next) => {
+      const state = get();
+      const doc = state.doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const path = [...state.activePath];
+      const found = subsystemAtPath(doc, path);
+      const ports = found?.node.block.subsystem.ports ?? [];
+      if (found === null || !ports.some((port) => port.name === name)) {
+        return { ok: false, error: "That port is no longer on the subsystem." };
+      }
+      const text = next.trim();
+      const issue = subsystemPortNameIssue(ports, name, text);
+      if (issue !== null) {
+        return { ok: false, error: issue };
+      }
+      if (text === name) {
+        return { ok: true };
+      }
+      const subsystemId = found.node.id;
+      const wasSelected = state.selection.nodes.includes(terminalId(name));
+      commit((root) => {
+        const target = subsystemAtPath(root, path);
+        if (target === null) {
+          return;
+        }
+        const port = target.node.block.subsystem.ports.find((entry) => entry.name === name);
+        if (port !== undefined) {
+          port.name = text;
+        }
+        // Outside connections keep their port: they name it.
+        for (const connection of target.parent.connections) {
+          for (const end of [connection.from, connection.to]) {
+            if (end.node === subsystemId && end.port === name) {
+              end.port = text;
+            }
+          }
+        }
+        // A port one level up that exposes this one follows the rename.
+        const outer = path.length >= 2 ? subsystemAtPath(root, path.slice(0, -1)) : null;
+        for (const entry of outer?.node.block.subsystem.ports ?? []) {
+          if (entry.node === subsystemId && entry.port === name) {
+            entry.port = text;
+          }
+        }
+      });
+      if (wasSelected) {
+        const selection = get().selection;
+        set({
+          selection: {
+            nodes: [...selection.nodes.filter((id) => id !== terminalId(name)), terminalId(text)],
+            connections: selection.connections,
+          },
+        });
+      }
+      return { ok: true };
+    },
+
+    deleteSubsystemPorts: (names) => {
+      const state = get();
+      const doc = state.doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const path = [...state.activePath];
+      const found = subsystemAtPath(doc, path);
+      if (found === null) {
+        return { ok: false, error: "Open a subsystem to delete its ports." };
+      }
+      for (const name of names) {
+        const up = exposedOneLevelUp(doc, path, name);
+        if (up !== null) {
+          return {
+            ok: false,
+            error: `${name} is exposed again by ${up.owner} as ${up.port.name}; delete that port first.`,
+          };
+        }
+      }
+      const known = names.filter((name) =>
+        found.node.block.subsystem.ports.some((port) => port.name === name),
+      );
+      if (known.length === 0) {
+        return { ok: false, error: "That port is no longer on the subsystem." };
+      }
+      commit((root) => removeSubsystemPorts(root, path, known));
+      return { ok: true };
+    },
+
+    setSubsystemPortPositions: (positions, coalesce = true) => {
+      const entries = Object.entries(positions);
+      const path = [...get().activePath];
+      if (entries.length === 0 || path.length === 0) {
+        return;
+      }
+      commit(
+        (root) => {
+          const ports = subsystemAtPath(root, path)?.node.block.subsystem.ports ?? [];
+          for (const [name, position] of entries) {
+            const port = ports.find((entry) => entry.name === name);
+            if (port !== undefined) {
+              port.ui = { ...(port.ui ?? {}), position: roundPosition(position) };
+            }
+          }
+        },
+        coalesce ? { coalesce: "node-drag" } : {},
+      );
+    },
+
+    revealSubsystemPort: (name) => {
+      const state = get();
+      const doc = state.doc;
+      if (doc === null) {
+        return null;
+      }
+      const found = subsystemAtPath(doc, state.activePath);
+      if (found === null || !found.node.block.subsystem.ports.some((port) => port.name === name)) {
+        return null;
+      }
+      const connections = outsideConnections(found.parent, found.node.id, name).map(
+        (connection) => connection.id,
+      );
+      set({
+        activePath: state.activePath.slice(0, -1),
+        selection:
+          connections.length > 0
+            ? { nodes: [], connections }
+            : { nodes: [found.node.id], connections: [] },
+        gestureKey: null,
+        lastHistKey: null,
+      });
+      return { nodeId: found.node.id, connections };
     },
 
     undo: () => {

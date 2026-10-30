@@ -599,6 +599,29 @@ end
         @test any(v -> v.id == "Iconic/C1/p.e", with_images.variables)
     end
 
+    @testset "subsystem port terminals are editor state (port ui.position)" begin
+        # `model.subsystem-port-ui.json` stores where the editor draws the terminal of the
+        # exposed port `u` inside `Plant`. The parser ignores the port's `ui`, so the model
+        # flattens exactly like the same document without it.
+        path = _fixture("model.subsystem-port-ui.json")
+        with_ui = flat_file(path)
+        document = JSON3.read(read(path, String), Dict{String,Any})
+        ports = document["diagram"]["nodes"][2]["block"]["subsystem"]["ports"]
+        @test haskey(ports[1], "ui")
+        for port in ports
+            delete!(port, "ui")
+        end
+        plain = flat(document)
+        sub = IR.parse_model(path).diagram.nodes[2]
+        @test [p.name for p in sub.subsystem_ports] == [:u, :vc]
+        @test isempty(_errors(with_ui))
+        @test _counts(with_ui) == _counts(plain)
+        @test sort([v.id for v in with_ui.variables]) == sort([v.id for v in plain.variables])
+        @test sort([string(e) for e in with_ui.equations]) ==
+              sort([string(e) for e in plain.equations])
+        @test _has_signal(with_ui, "Plant/C1/p.e") == _has_signal(plain, "Plant/C1/p.e")
+    end
+
     @testset "junctions: 0, 1, junction-to-junction and dangling" begin
         # A 0-junction of two effort sources: equal efforts, flows summing to zero.
         zero_model = _model("ZeroJ", Any[
