@@ -4,7 +4,8 @@
 # ///
 """Export every example model to an FMU and compare it with simulation (plan X-EX1).
 
-    uv run examples/export_checks.py [--out DIR] [--skip-julia] [project[/model] ...]
+    uv run examples/export_checks.py [--out DIR] [--skip-julia] [--settings JSON]
+                                     [project[/model] ...]
 
 1. ``examples/export_examples.jl`` (one Julia process) exports each model, runs its reference
    simulation and writes ``results.jsonl`` (a refused model records its E110/E111 reason);
@@ -14,7 +15,8 @@
    with the reference (right limits at event instants): the error relative to the signal's
    peak, signals with a peak below 1e-9 compared absolutely.
 
-The summary table goes to stdout and ``<out>/EXPORT_RESULTS.md``. The exit code is non-zero
+The summary table goes to stdout and ``<out>/EXPORT_RESULTS.md``; Rosenbrock exports add a
+second table with the Jacobian, the LU (non-zeros, fill-in, flops) and the step time. The exit code is non-zero
 when an exported model fails a check: a forbidden symbol, an allocation after
 instantiate, a failed build, or a diverged FMU. Accuracy is reported, not yet gated: the
 per-example thresholds become ``fmu_compare`` checks in ``expected.json``.
@@ -106,7 +108,7 @@ def _kill_tree(process: subprocess.Popen) -> None:
     process.wait()
 
 
-def run_julia(out: Path, only: list[str], budget: float) -> int:
+def run_julia(out: Path, only: list[str], budget: float, settings: str | None = None) -> int:
     """Run the Julia driver; kill and log a model that exceeds ``budget``, then resume."""
     out.mkdir(parents=True, exist_ok=True)
     results = out / "results.jsonl"
@@ -116,7 +118,8 @@ def run_julia(out: Path, only: list[str], budget: float) -> int:
         current.unlink(missing_ok=True)
         cmd = ["julia", f"--project={ROOT / 'julia' / 'BGSim'}",
                str(ROOT / "examples" / "export_examples.jl"), str(out),
-               *(["--resume"] if resume else []), *only]
+               *(["--resume"] if resume else []),
+               *([f"--settings={settings}"] if settings else []), *only]
         print("+", " ".join(cmd), flush=True)
         process = subprocess.Popen(cmd)
         timed_out = None
@@ -150,10 +153,15 @@ def main() -> int:
     parser.add_argument("--budget", type=float, default=600.0,
                         help="seconds one model may take (export + reference); a model over "
                              "budget is killed and logged as 'timeout'")
+    parser.add_argument("--settings", default=None,
+                        help="export settings as JSON for every model, e.g. "
+                             "'{\"method\": \"ros2\", \"linear_solver\": \"sparse\"}'")
     args = parser.parse_args()
     out = args.out.resolve()
+    if args.settings is not None:
+        args.settings = json.dumps(json.loads(args.settings), separators=(",", ":"))
 
-    if not args.skip_julia and run_julia(out, args.only, args.budget) != 0:
+    if not args.skip_julia and run_julia(out, args.only, args.budget, args.settings) != 0:
         print("FAIL: the Julia export run crashed")
         return 2
 
@@ -211,6 +219,30 @@ def main() -> int:
         lines.append(f"| {row['key']} | {row['status']} | {rep['states']} | {rep['dt']:.3g} | "
                      f"{rep['substeps']} | {worst} | {sig} | {timing} | {note} |")
     table = "\n".join(lines)
+    step_rows = [row for row in rows if (row.get("report") or {}).get("linearAlgebra")]
+    if step_rows:
+        lines = [
+            "",
+            "Linear algebra and step time (Rosenbrock exports; LU flops per factorization):",
+            "",
+            "| model | method | Jacobian | colours | nnz J | LU | nnz LU | fill-in | LU flops "
+            "(dense) | pivot ratio | doStep mean / max µs |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        ]
+        for row in step_rows:
+            rep, b = row["report"], row.get("build")
+            la = rep["linearAlgebra"]
+            timing = (f"{b.step_time_mean_us:.2f} / {b.step_time_max_us:.0f}"
+                      if b is not None and b.step_time_mean_us is not None else "")
+            jac = la["jacobian"] + (f" ({la['fdDerivativeCalls']} calls)"
+                                    if la.get("fdDerivativeCalls") else "")
+            sparse = la["linearSolver"] == "sparse"
+            lines.append(
+                f"| {row['key']} | {rep['method']}, dt {rep['dt']:.3g} | {jac} | {la['colours']} | "
+                f"{la['nnzJ']} | {la['linearSolver']} | {la['nnzLU'] if sparse else ''} | "
+                f"{la['fillIn'] if sparse else ''} | {la['luFlops']} ({la['denseLuFlops']}) | "
+                f"{la['pivotCheck']['minPivotRatio']:.2e} | {timing} |")
+        table += "\n" + "\n".join(lines)
     (out / "EXPORT_RESULTS.md").write_text(table + "\n", encoding="utf-8")
     print()
     print(table)

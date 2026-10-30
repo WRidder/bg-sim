@@ -139,6 +139,38 @@ loop bounded by a generated constant, logging only through the host callback and
 error. One step costs a fixed number of derivative/Jacobian evaluations and LU solves. CI
 enforces this by symbol inspection and the counting harness (section 8).
 
+### 5.4 Sparse Jacobian and static sparse LU (J-EX4)
+
+`src/export/sparse.jl`. Every Rosenbrock solve goes through two functions declared in
+`model.h`: `bg_w_factor(m, hg)` forms and factors W = M − hg·J, and `bg_w_solve(m, b)`
+solves in place. The dense versions are in `bg_solver.c`. With `#define BG_SPARSE_LU` in
+`model.h`, `model.c` holds generated sparse versions instead.
+
+- **Pattern.** The dependency sets of the right-hand side, followed through `observed`. It is
+  structural, not the numeric zeros of one point. The export adds any numeric non-zero of the
+  Jacobian at the start point and reports the count (`patternAddedFromNumeric`, expected 0).
+- **Ordering and factors.** Exact minimum degree on the symmetric pattern of W, then a
+  symbolic LU of P·W·Pᵀ with a fixed fill-in. C runs the factorization from static index
+  tables: row-compressed factors, one destination per multiply-add. Every loop runs over
+  these tables, so the cost is fixed.
+- **Static pivoting.** The pivots are the diagonal of P·W·Pᵀ in a fixed order. This is safe
+  when W is diagonally dominant (small hγ, W → I) or when its symmetric part is positive
+  definite (J dissipative); every pivot is then at least 1. Neither holds in general. So
+  `bg_w_factor` returns an error when a pivot is below 1e-12 of the largest entry of its row,
+  and the export factors W at the start point and at reference rows. A failed check (small
+  pivot ratio, or a residual above 1e-8 against a pivoted dense solve) gives W211 and falls
+  back to the dense LU, unless the sparse LU was forced.
+- **Jacobian.** Symbolic (`calculate_jacobian`) while the substituted right-hand side has at
+  most `symbolic_jacobian_limit` nodes (1e5). Above it, forward differences in C with a greedy
+  distance-2 column colouring: `ncolours + 1` derivative calls, workspace on the stack.
+- **Settings.** `linear_solver` (`auto` = sparse above `sparse_threshold` = 40 states,
+  `dense`, `sparse`) and `jacobian` (`auto`, `symbolic`, `fd`). `export.json` reports
+  `linearAlgebra`: non-zeros of J and of the factors, fill-in, colours, flops of the sparse and
+  dense LU, and the pivot check. The gate takes `--settings JSON` and prints a step-time table.
+- **Mass matrix (J-EX3).** The forming step adds M on the diagonal positions `bg_lu_mpos`
+  (M = I today). A zero mass entry (algebraic row) leaves −hγ·J_ii as the pivot; the pivot
+  check then decides whether the static order holds.
+
 ## 6. Exportability rules
 
 | construct | export status |
@@ -248,7 +280,8 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
   `run.phase`-style notifications.
 - New diagnostic codes, checked against `src/diagnostics.jl` before use: E110 (construct not
   exportable), E111 (structure not supported by the chosen integrator), W207 (RK4 substeps
-  above the step budget), W208 (accuracy target not met at the chosen `dt`). W203 and the `dt`
+  above the step budget), W208 (accuracy target not met at the chosen `dt`), W211 (the static
+  sparse LU failed its pivot check at export). W203 and the `dt`
   part of E104 become active.
 - Spec: the target-platform paragraph (generated C, FMU, C API; ctrlX runs it without Julia),
   the "Future option: C++ export" paragraph (superseded), the pipeline figure (C/FMU output),

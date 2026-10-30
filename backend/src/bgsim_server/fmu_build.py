@@ -9,7 +9,8 @@ and ``export.json`` into an export directory. This module turns that into an ``.
    C++ application; C is the only target);
 3. link the shared library for the host platform;
 4. run the counting harness (``alloc_check.c`` from the runtime): 0 memory callbacks after
-   ``fmi2Instantiate`` over ``harness_steps`` ``fmi2DoStep`` calls, and the step time;
+   ``fmi2Instantiate`` over ``harness_steps`` ``fmi2DoStep`` calls, and the step time, which
+   is written back into ``export.json`` as ``build``;
 5. zip ``modelDescription.xml``, ``binaries/<platform>/`` and ``sources/``.
 
 A source-only FMU is still written when no compiler is found. Cross targets (``zig cc``,
@@ -175,6 +176,13 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
             result.step_time_max_us = float(match.group(2))
         if res.returncode not in (0, 1):
             result.error = f"the harness failed (a step diverged?):\n{res.stdout}{res.stderr}"
+        # The measured step time joins the export report (plan 5.2, step 4).
+        report["build"] = {
+            "platform": plat, "harnessDoSteps": harness_steps, "internalStepsPerDoStep": per,
+            "allocationsAfterInstantiate": result.allocations_after_instantiate,
+            "doStepMeanUs": result.step_time_mean_us, "doStepMaxUs": result.step_time_max_us,
+        }
+        (export_dir / "export.json").write_text(json.dumps(report, indent=4), encoding="utf-8")
 
     fmu = export_dir / f"{ident}.fmu"
     with zipfile.ZipFile(fmu, "w", zipfile.ZIP_DEFLATED) as archive:

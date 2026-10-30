@@ -317,3 +317,6 @@ include("test_worker_debug.jl")
 
 # Work package J-EX1: the C/FMU export (plan/EXPORT_PLAN.md).
 include("test_export.jl")
+
+# Work package J-EX4: sparse Jacobian pattern, static sparse LU, coloured finite differences.
+include("test_export_sparse.jl")

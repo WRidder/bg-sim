@@ -25,7 +25,9 @@
 #
 # Phase A scope: ODE systems (identity mass matrix), Euler/RK4 (ROS2 on request), frozen
 # switching conditions with W203, multi-rate `@discrete`, start values computed at export.
-# Everything else is refused with E110/E111 naming the construct.
+# Everything else is refused with E110/E111 naming the construct. The Jacobian and the linear
+# solver of the Rosenbrock step (sparse pattern, static sparse LU, coloured finite
+# differences, J-EX4) are chosen in `sparse.jl`.
 
 module Export
 
@@ -44,7 +46,7 @@ const MTK = ModelingToolkit
 
 """The hand-written C runtime copied into every export; bump `RUNTIME_VERSION` on any change."""
 const RUNTIME_DIR = normpath(joinpath(@__DIR__, "..", "..", "export", "runtime"))
-const RUNTIME_VERSION = "0.1.0"
+const RUNTIME_VERSION = "0.2.0"
 const RUNTIME_FILES = ["bg_runtime.h", "bg_solver.c", "fmi2_cs.c",
     "fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"]
 
@@ -55,6 +57,7 @@ const MARKER_PARAMETER = "stdlib:converters/ExportParameter"
 include("emit_c.jl")
 include("emit_discrete.jl")
 include("analysis.jl")
+include("sparse.jl")
 include("fmi2.jl")
 
 """
@@ -71,6 +74,10 @@ include("fmi2.jl")
 | `max_substeps` | `1000` | above this W207 is reported |
 | `fold_parameters` | `true` | fold non-tunable parameters into literals |
 | `expose_all` | `false` | publish every recorded signal as a `local` variable |
+| `jacobian` | `:auto` | Rosenbrock only: `:symbolic` (`calculate_jacobian`), `:fd` (coloured finite differences in C), `:auto` (symbolic up to `symbolic_jacobian_limit`) |
+| `symbolic_jacobian_limit` | `1e5` | node count of the substituted right-hand side above which `:auto` uses `:fd` |
+| `linear_solver` | `:auto` | Rosenbrock only: `:dense` (LU with partial pivoting), `:sparse` (static sparse LU), `:auto` (sparse above `sparse_threshold` states) |
+| `sparse_threshold` | `40` | `:auto` uses the sparse LU when the model has more states than this |
 """
 Base.@kwdef struct ExportSettings
     step::Float64 = 1.0e-3
@@ -82,6 +89,10 @@ Base.@kwdef struct ExportSettings
     max_substeps::Int = 1000
     fold_parameters::Bool = true
     expose_all::Bool = false
+    jacobian::Symbol = :auto
+    symbolic_jacobian_limit::Float64 = 1.0e5
+    linear_solver::Symbol = :auto
+    sparse_threshold::Int = 40
 end
 
 function ExportSettings(d::AbstractDict)
@@ -97,6 +108,10 @@ function ExportSettings(d::AbstractDict)
         max_substeps = Int(get_("max_substeps", 1000)),
         fold_parameters = Bool(get_("fold_parameters", true)),
         expose_all = Bool(get_("expose_all", false)),
+        jacobian = Symbol(lowercase(String(get_("jacobian", "auto")))),
+        symbolic_jacobian_limit = Float64(get_("symbolic_jacobian_limit", 1.0e5)),
+        linear_solver = Symbol(lowercase(String(get_("linear_solver", "auto")))),
+        sparse_threshold = Int(get_("sparse_threshold", 40)),
     )
 end
 
@@ -156,6 +171,12 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
     settings.method in (:auto, :euler, :rk4, :ros2) ||
         return _fail([diag("E110", "unknown export method `$(settings.method)`";
             hint = "use auto, euler, rk4 or ros2")], out_dir)
+    settings.jacobian in (:auto, :symbolic, :fd) ||
+        return _fail([diag("E110", "unknown Jacobian setting `$(settings.jacobian)`";
+            hint = "use auto, symbolic or fd")], out_dir)
+    settings.linear_solver in (:auto, :dense, :sparse) ||
+        return _fail([diag("E110", "unknown linear solver `$(settings.linear_solver)`";
+            hint = "use auto, dense or sparse")], out_dir)
     if !isempty(flat.events)
         return _fail([diag("E110", "`@events` with `reinit` are not exported yet (plan J-EX6)";
             hint = "the model has $(length(flat.events)) event(s)")], out_dir)
@@ -303,8 +324,11 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     # Method first: only ROS2 needs a Jacobian in C. `calculate_jacobian` differentiates the
     # fully substituted right-hand side, which blows up on large multibody models, so the
     # step analysis uses a numeric Jacobian of the compiled right-hand side instead.
+    # The size guard (`symbolic_jacobian_limit`) sends large models to the coloured
+    # finite-difference Jacobian in C instead (D-EX12).
     method = settings.method === :auto ? :rk4 : settings.method
-    jac = (nx == 0 || method !== :ros2) ? Matrix{Any}(undef, 0, 0) : MTK.calculate_jacobian(sys)
+    jplan = (nx > 0 && method === :ros2) ? _plan_jacobian(sys, rhs, obs, xs, settings) : nothing
+    jac = jplan === nothing ? Matrix{Any}(undef, 0, 0) : jplan.jac
 
     # ---- the step
     step_ns = round(Int64, settings.step * 1e9)
@@ -323,6 +347,13 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     # only discrete code reads changes the closed loop, which simulation shows as well.
     in_rhs = _rhs_dependencies(rhs, obs)
     J0 = nx == 0 ? zeros(0, 0) : jac_fn(x0, p0, 0.0)
+    if jplan !== nothing
+        # The structural pattern must cover every numeric non-zero; a miss would be a bug in
+        # the dependency walk, so it is added and counted rather than lost.
+        miss = (J0 .!= 0) .& .!jplan.pattern
+        jplan.pattern .|= miss
+        jplan.stats["patternAddedFromNumeric"] = count(miss)
+    end
     # A value the right-hand side reads only linearly (an input added to a derivative) does
     # not move the Jacobian: perturb it and look.
     function moves_jacobian(k)
@@ -367,18 +398,22 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         push!(diags, diag("W207",
             "the internal step $(dt) s is above the $(uppercase(String(method))) stability limit $(round(choice.stable_step; sigdigits = 3)) s; the export will diverge";
             hint = "use dt <= $(round(choice.dt_ns / 1e9; sigdigits = 3)) s or method ros2"))
-    elseif choice.over_budget && settings.dt === nothing
+    elseif method !== :ros2 && choice.over_budget && settings.dt === nothing
         push!(diags, diag("W207",
             "the step needs $(choice.substeps) substeps per $(base_ns / 1e9) s, above the budget of $(settings.max_substeps)";
             hint = "a stiff mode (|λ| = $(round(choice.max_abs_lambda; sigdigits = 3)) 1/s) limits the step; a Rosenbrock export (plan J-EX3) avoids it"))
     end
+
+    # ---- the linear algebra of the Rosenbrock step (D-EX12, D-EX13)
+    la = jplan === nothing ? nothing : _plan_linear_algebra(jplan, settings, nx, dt,
+        _check_jacobians(jac_fn, x0, p0, names_x, names_p, reference_dir), diags)
 
     # ---- emit
     ident = c_identifier(name)
     guid = _guid(lowered.key, settings, dt_ns, method, vars, params, inputs)
     modes = Any[]
     cbuf = IOBuffer()
-    _emit_model_c(cbuf, name, xs, x0, names_x, rhs, jac, env, obs, modes, vars, params,
+    _emit_model_c(cbuf, name, xs, x0, names_x, rhs, jac, la, env, obs, modes, vars, params,
         inputs, held_ids, dvals, sched, ps, names_p, flat_params)
     for cond in modes
         push!(diags, diag("W203",
@@ -388,7 +423,8 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     mkpath(joinpath(out_dir, "sources"))
     _write_model_h(joinpath(out_dir, "sources", "model.h"), name, ident, guid, nx,
         length(params), length(held_ids), has_disc ? length(sched.input_ids) : 0, length(vars),
-        length(inputs), has_disc ? length(sched.partitions) : 0, length(modes), dt, dt_ns, method)
+        length(inputs), has_disc ? length(sched.partitions) : 0, length(modes), dt, dt_ns, method,
+        la)
     write(joinpath(out_dir, "sources", "model.c"), take!(cbuf))
     for f in RUNTIME_FILES
         cp(joinpath(RUNTIME_DIR, f), joinpath(out_dir, "sources", f); force = true)
@@ -415,6 +451,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             "accurateStep" => isfinite(choice.accurate_step) ? choice.accurate_step : nothing,
             "analysisMethod" => String(analysis_method),
             "proposedDt" => choice.dt_ns / 1e9),
+        "linearAlgebra" => la === nothing ? nothing : la.report,
         "diagnostics" => [BGSim.to_namedtuple(d) for d in sort_diagnostics(diags)],
     )
     open(joinpath(out_dir, "export.json"), "w") do io
@@ -502,7 +539,7 @@ function _guid(key, settings, dt_ns, method, vars, params, inputs)
     return "{" * h[1:8] * "-" * h[9:12] * "-" * h[13:16] * "-" * h[17:20] * "-" * h[21:32] * "}"
 end
 
-function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, env, obs, modes, vars, params,
+function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, la, env, obs, modes, vars, params,
     inputs, held_ids, dvals, sched, ps, names_p, flat_params)
     nx = length(xs)
     println(io, "/* Generated by bg-sim (C/FMU export, runtime $(RUNTIME_VERSION)) from model `$(ccomment(name))`. Do not edit. */")
@@ -535,16 +572,8 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, env, obs, modes, var
 
     emit_function(io, "void bg_derivatives(const bg_model *m, double t, const double *x, double *dx)",
         [("dx[$(i - 1)]", rhs[i], "d/dt " * names_x[i]) for i in 1:nx], env, obs; modes = modes)
-    jt = Tuple{String,Any,Any}[]
-    for i in 1:size(jac, 1), j in 1:size(jac, 2)
-        e = Symbolics.unwrap(jac[i, j])
-        c = _try_const(e)
-        c !== nothing && iszero(c) && continue
-        push!(jt, ("J[$((i - 1) * nx + (j - 1))]", e, nothing))
-    end
-    println(io, "/* Row-major; the caller zeroes J, so only the structural non-zeros are written. */")
-    emit_function(io, "void bg_jacobian(const bg_model *m, double t, const double *x, double *J)",
-        jt, env, obs; modes = modes)
+    emit_jacobian(io, la, jac, env, obs, modes)
+    la === nothing || la.lu === nothing || emit_sparse_lu(io, la.lu)
     emit_function(io, "void bg_modes(const bg_model *m, double t, const double *x, double *c)",
         [("c[$(k - 1)]", modes[k], string(modes[k])) for k in eachindex(modes)], env, obs)
     emit_function(io, "void bg_outputs(const bg_model *m, double t, const double *x, double *y)",
@@ -585,7 +614,22 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, env, obs, modes, var
     println(io, "};")
 end
 
-function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, nc, dt, dt_ns, method)
+function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, nc, dt, dt_ns, method,
+    la = nothing)
+    sparse = la !== nothing && la.lu !== nothing
+    lu_defs = sparse ? """
+        #define BG_SPARSE_LU 1     /* the static sparse LU in model.c replaces the dense one */
+        #define BG_LU_NNZ $(lu_nnz(la.lu))    /* non-zeros of the LU factors (pattern of W plus fill-in) */
+        #define BG_LU_NUPD $(length(la.lu.upd))   /* multiply-adds of one factorization */
+        """ : ""
+    w_fields = sparse ? """
+            double lu[BG_LU_NNZ];          /* W = M - hg J, then its LU factors, on the static pattern */
+            double lu_inv[BG_SZ(BG_NX)];   /* 1 / pivot */
+            double lu_y[BG_SZ(BG_NX)];     /* solve workspace */
+        """ : """
+            double w[BG_SZ(BG_NX * BG_NX)];
+            int piv[BG_SZ(BG_NX)];
+        """
     open(path, "w") do io
         print(io, """
         /* Generated by bg-sim (C/FMU export, runtime $(RUNTIME_VERSION)) from model `$(ccomment(name))`. Do not edit. */
@@ -610,7 +654,7 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         #define BG_METHOD_RK4 2
         #define BG_METHOD_ROS2 3
         #define BG_METHOD BG_METHOD_$(uppercase(String(method)))
-
+        $(lu_defs)
         /* Value references: y [0, BG_NY), p [BG_VR_P0, +BG_NP), u [BG_VR_U0, +BG_NU). */
         #define BG_VR_P0 $(ny)
         #define BG_VR_U0 $(ny + np)
@@ -639,9 +683,7 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
             /* solver workspace */
             double k1[BG_SZ(BG_NX)], k2[BG_SZ(BG_NX)], k3[BG_SZ(BG_NX)], k4[BG_SZ(BG_NX)];
             double xs[BG_SZ(BG_NX)];
-            double w[BG_SZ(BG_NX * BG_NX)];
-            int piv[BG_SZ(BG_NX)];
-        } bg_model;
+        $(w_fields)} bg_model;
 
         typedef struct {
             int64_t period_ns;
@@ -666,6 +708,12 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         void bg_modes(const bg_model *m, double t, const double *x, double *c);
         void bg_outputs(const bg_model *m, double t, const double *x, double *y);
         void bg_sample(const bg_model *m, double t, const double *x, double *din);
+
+        /* The linear algebra of the Rosenbrock methods: W = M - hg J at (m->t, m->x), factored
+           in place (non-zero on a bad pivot), and an in-place solve with it. Dense in
+           bg_solver.c, or the static sparse LU in model.c when BG_SPARSE_LU is defined. */
+        int bg_w_factor(bg_model *m, double hg);
+        void bg_w_solve(bg_model *m, double *b);
 
         /* bg_solver.c (runtime) */
         void bg_reset(bg_model *m, double t_start);

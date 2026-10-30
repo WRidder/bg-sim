@@ -113,8 +113,10 @@ function emit_partition(io, k::Int, p, sched, param::Dict{Int,String})
     println(io, "/* $(ccomment(p.label)): Ts = $(p.period_ns) ns, offset = $(p.offset_ns) ns */")
     println(io, "static void bg_part_$(k)(bg_model *m, double t) {")
     println(io, "    (void)t;")
+    # A temporary may be written and never read (a dead component of a vector expression);
+    # the (void) keeps -Werror=unused-but-set-variable quiet.
     for s in p.temp_slots
-        println(io, "    double $(ctemp(s)) = 0.0;")
+        println(io, "    double $(ctemp(s)) = 0.0; (void)$(ctemp(s));")
     end
     dstmt(io, ex.args[2], param, 4)
     println(io, "}\n")
