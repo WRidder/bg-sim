@@ -318,7 +318,7 @@ export function RunBar() {
       <span
         className="run-bar__status"
         data-testid="run-status"
-        data-status={debugPaused && pausedInfo !== null ? "paused" : status}
+        data-status={status === "running" && debugPaused && pausedInfo !== null ? "paused" : status}
         role="status"
         aria-live="polite"
         title={error ?? statusText}

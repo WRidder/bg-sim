@@ -241,7 +241,7 @@ test("opens the bond-graph cart-pole, runs it and reads the angle and force at 3
   await page.mouse.move(box.x + box.width * 0.75, box.y + box.height * 0.45);
 
   const legendTime = page.getByTestId("legend-time");
-  await expect.poll(async () => legendTime.textContent()).toMatch(/t = (2\.[4-9]|3\.[0-6])/);
+  await expect.poll(async () => legendTime.textContent()).toMatch(/t = (2\.[4-9]\d*|3(\.[0-6]\d*)?) s/);
 
   const angle = await legendNumber(page, "ThetaInt/y");
   const force = await legendNumber(page, "MSe1/p.e");

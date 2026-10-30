@@ -112,7 +112,7 @@ async function waitForWorker(url: string, child: ChildProcess | null): Promise<v
 test.beforeAll(async () => {
   test.setTimeout(300_000);
   if (process.env.BGSIM_E2E_REAL === "1") {
-    serverUrl = `http://127.0.0.1:${process.env.BGSIM_E2E_PORT ?? "8800"}`;
+    serverUrl = `http://127.0.0.1:${process.env.BGSIM_E2E_PORT ?? "8765"}`;
     await waitForWorker(serverUrl, null);
     return;
   }

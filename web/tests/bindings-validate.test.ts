@@ -70,19 +70,17 @@ describe("validateBindings", () => {
     expect(codes([{ target: "joint:shoulder", property: "position", signal: "P/v" }])).toEqual(["E303"]);
   });
 
-  it("an unknown unit is unchecked: no E303 for a length or an angle", () => {
-    for (const s of ["P/none", "P/empty"]) {
+  it("an unknown unit (none, or a Generic flow*s) is unchecked: no E303 for a length or an angle", () => {
+    for (const s of ["P/none", "P/empty", "P/gen"]) {
       expect(codes([{ target: "joint:shoulder", property: "position", signal: s }])).toEqual([]);
       expect(codes([{ target: "joint:slide", property: "position", signal: s }])).toEqual([]);
     }
     expect(codes([{ target: "link:cart", property: "pose", signal: ["P/qw", "P/qx", "P/qy", "P/qz", "P/none", "P/none", "P/empty"] }])).toEqual([]);
   });
 
-  it("a reported wrong unit still raises E303: N and flow*s for a length or an angle", () => {
-    for (const s of ["P/F", "P/gen"]) {
-      expect(codes([{ target: "joint:slide", property: "position", signal: s }])).toEqual(["E303"]);
-      expect(codes([{ target: "joint:shoulder", property: "position", signal: s }])).toEqual(["E303"]);
-    }
+  it("a reported wrong physical unit still raises E303: N for a length or an angle", () => {
+    expect(codes([{ target: "joint:slide", property: "position", signal: "P/F" }])).toEqual(["E303"]);
+    expect(codes([{ target: "joint:shoulder", property: "position", signal: "P/F" }])).toEqual(["E303"]);
   });
 
   it("accepts deg and mm only when the gain converts", () => {

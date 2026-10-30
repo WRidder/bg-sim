@@ -149,6 +149,24 @@ test.afterEach(async ({ request }) => {
   }
 });
 
+/** Fit the diagram and wait until the viewport transform stops changing. */
+async function fitAndSettle(page: Page): Promise<void> {
+  await page.getByTestId("fit-view").click();
+  const viewport = page.locator(".react-flow__viewport");
+  let previous = "";
+  await expect
+    .poll(
+      async () => {
+        const current = await viewport.evaluate((element) => element.getAttribute("style") ?? "");
+        const stable = current.length > 0 && current === previous;
+        previous = current;
+        return stable;
+      },
+      { intervals: [100, 100, 100, 100, 100, 100, 100, 100], timeout: 8_000 },
+    )
+    .toBe(true);
+}
+
 function node(page: Page, name: string) {
   return page.locator(`[data-testid="diagram-node"][data-node-name="${name}"]`);
 }
@@ -200,7 +218,9 @@ test("compares the planar arms with the CSV reference and plays them in 3D", asy
   await expect(page.getByTestId("canvas-surface")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("run-button")).toBeEnabled();
 
-  // Select the 3-link CSV source: the data-file section previews the header and rows.
+  // Select the 3-link CSV source: the data-file section previews the header and rows. Fit the
+  // diagram first: before the initial fit settles the node can sit outside the viewport.
+  await fitAndSettle(page);
   await node(page, "A3_Csv").click({ force: true });
   const csv = page.getByTestId("inspector-csv");
   await expect(csv).toBeVisible();
