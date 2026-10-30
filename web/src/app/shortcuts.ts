@@ -56,6 +56,13 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     entries: [{ keys: [["Space"]], description: "Play or pause the playback (3D view focused)" }],
   },
   {
+    title: "Docs tab",
+    entries: [
+      { keys: [["Ctrl", "S"]], description: "Save the selected docs page (focus inside the Docs tab)" },
+      { keys: [["Ctrl", "E"]], description: "Switch the docs page between view and edit" },
+    ],
+  },
+  {
     title: "Plots",
     entries: [
       { keys: [["drag"]], description: "Zoom to a time range" },

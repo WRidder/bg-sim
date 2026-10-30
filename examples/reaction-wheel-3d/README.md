@@ -92,7 +92,7 @@ the world origin (the pivot): `H = R P_ang + p × (R P_lin)`, the gravity torque
 | start | upright, spin `(0.3, −0.2, 0.5) rad/s` (consistent CoM velocity) | released 0.5 rad off the vertical about `(1, 1, 0)`, at rest |
 | wheels | at rest relative to the body, driven by the same scripted torques | same |
 
-Both run 4 s, 8001 output points, `reltol 1e-9`, `abstol 1e-11`, solver `auto`.
+Both run 4 s, 801 output points, `reltol 1e-9`, `abstol 1e-11`, solver `auto`.
 
 ## Measured (this example, the real worker)
 
@@ -110,7 +110,7 @@ Both run 4 s, 8001 output points, `reltol 1e-9`, `abstol 1e-11`, solver `auto`.
 | quaternion norm drift | 2.3e-14 (off), 1.0e-14 (on) |
 | pivot deflection `max|dl|` | 1.5e-10 m (off), 3.6e-8 m (on) |
 | states | 79 by count: pivot 7 (quaternion 4, dl 3), body momentum 6, per wheel 14 (momentum 6, q, dth 2, dl 3, shaft angle, rotor momentum), 10 gravity-impulse integrals |
-| run cost | 8001 rows, 2088 recorded signals; both runs plus the backend start in **168 s** wall time (`run_checks.py --only reaction-wheel-3d`) |
+| run cost | 801 rows, 2088 recorded signals; both runs plus the backend start in **168 s** wall time (`run_checks.py --only reaction-wheel-3d`) |
 | diagnostics | none (`W201`, `E101`, `E102`, `E103`, `E106`, `E007`, `W206` absent) |
 
 **Momentum tolerance.** The checks use `tol = 1e-9` of the invariant's own scale. The

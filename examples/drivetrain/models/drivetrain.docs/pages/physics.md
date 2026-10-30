@@ -36,7 +36,7 @@ The undamped mode of the rod between the two inertias, with the motor rotor free
 
 $$\omega_n = \sqrt{k\left(\frac{1}{J_1^{\mathrm{eff}}} + \frac{1}{J_2}\right)} = \sqrt{5\,(166.7 + 500)} = 57.7\ \mathrm{rad/s} \approx 9.2\ \mathrm{Hz}.$$
 
-In the model the motor is not free: the voltage source holds the armature, so the back-EMF acts as a viscous damper $k_t^2/R = 0.01$ N·m·s/rad at the motor shaft, which is $n^2 k_t^2/R = 1$ N·m·s/rad at wheel 1. That damps the mode strongly and lowers its frequency. The run shows it directly: the twist peaks at 0.0448, 0.1716, 0.2985 and 0.4253 s with heights 0.1865, 0.0722, 0.0279 and 0.0108 rad, a **period of 0.1268 s (7.9 Hz)** and a decay of 0.39 per period. The README quotes about 29 Hz; that is what an undamped rod of $k = 50$ N·m/rad would give ($\sqrt{50 \cdot 666.7} = 182.6$ rad/s), not the model value ($k = 5$ N·m/rad).
+In the model the motor is not free: the voltage source holds the armature, so the back-EMF acts as a viscous damper $k_t^2/R = 0.01$ N·m·s/rad at the motor shaft, which is $n^2 k_t^2/R = 1$ N·m·s/rad at wheel 1. That damps the mode strongly and lowers its frequency. The run shows it directly: the twist peaks at 0.0448, 0.1716, 0.2985 and 0.4253 s with heights 0.1865, 0.0722, 0.0279 and 0.0108 rad, a **period of 0.1268 s (7.9 Hz)** and a decay of 0.39 per period. An earlier README text quoted about 29 Hz; that is what an undamped rod of $k = 50$ N·m/rad would give ($\sqrt{50 \cdot 666.7} = 182.6$ rad/s), not the model value ($k = 5$ N·m/rad).
 
 ## Steady states
 

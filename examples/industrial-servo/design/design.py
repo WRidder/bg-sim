@@ -287,7 +287,7 @@ def build(name: str, *, two_mass: bool, switching: bool, encoder: bool) -> dict:
     load_step = g.node("LoadStep", ref("stdlib:sources/Step"), 1140, 620 + y,
                        params={"t_step": _num(T_LOAD), "initial": "0.0",
                                "final": _num(-LOAD)})
-    g.signal((load_step, "y"), (load, "u"), "2 N m resisting load at 0.95 s")
+    g.signal((load_step, "y"), (load, "u"), "2 N m resisting load at 0.9 s")
 
     # --- sensors: angle, encoder, speed estimate --------------------------------------
     enc = None
@@ -324,7 +324,7 @@ def build(name: str, *, two_mass: bool, switching: bool, encoder: bool) -> dict:
     g.signal((posref, "y"), (posloop, "pos_ref"))
     g.signal(pos_src, (posloop, "pos_meas"), "position feedback")
     g.signal((refspeed, "y"), (posloop, "w_ref"), "speed step")
-    g.signal((mode, "y"), (posloop, "mode"), "speed mode -> position mode at 0.4 s")
+    g.signal((mode, "y"), (posloop, "mode"), "speed mode -> position mode at 0.15 s")
 
     # speed feedback path: optional notch (two-mass) after an optional encoder estimate
     speed_meas = speed_src

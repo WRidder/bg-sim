@@ -1035,7 +1035,7 @@
           "port": "u"
         },
         "route": [],
-        "label": "2 N m resisting load at 0.95 s"
+        "label": "2 N m resisting load at 0.9 s"
       },
       {
         "id": "b22",
@@ -1113,7 +1113,7 @@
             "y": 140
           }
         ],
-        "label": "speed mode -> position mode at 0.4 s"
+        "label": "speed mode -> position mode at 0.15 s"
       },
       {
         "id": "b26",

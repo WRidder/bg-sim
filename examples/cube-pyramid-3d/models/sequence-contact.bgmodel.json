@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "sequence-contact",
-  "$comment": "Face -> edge -> corner on eight vertex contacts: the pyramid cube starts on a face, the scripted torque profile (TipSequencer + Allocator, 1 ms) tips it onto an edge, holds it, then onto a corner and holds it.",
+  "$comment": "Face -> edge -> corner on four vertex contacts: the pyramid cube starts on a face, the scripted torque profile (TipSequencer + Allocator, 1 ms) tips it onto an edge, holds it, then onto a corner and holds it.",
   "diagram": {
     "nodes": [
       {
@@ -5599,11 +5599,7 @@
         "C1/f_n",
         "C2/f_n",
         "C3/f_n",
-        "C4/f_n",
-        "C5/f_n",
-        "C6/f_n",
-        "C7/f_n",
-        "C8/f_n"
+        "C4/f_n"
       ]
     },
     {

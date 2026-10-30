@@ -166,9 +166,12 @@ and the swing being the potential drop from the start pose to the hanging pose,
 below 1e-6 rad over the last second and below 1 mrad from 0.9 s; the drive
 efforts stay inside 30 / 10 N·m; `planar_fk` holds to 1e-6 m over all 6 003
 samples; the tip passes through the measured cursor points at 0.3 / 0.5 / 1.0 s
-(2 mm) and lands on the analytic FK at 3 s (1e-6 m); no diagnostics.
+(2 mm) and lands on the analytic FK at 3 s (1e-6 m); no diagnostics; and an `energy_ledger`
+(X-MB6 port-power ledger, `tol 2e-4`): the two joint drives deliver 6.1242 J net, the arm's
+stored energy rises by 6.1238 J, and both balances close at every sample.
 `arm-free`: the start pose, the same FK check, the multi-body energy drift
-(`tol 1e-6` of the swing) and no diagnostics.
+(`tol 1e-6` of the swing), no diagnostics and an `energy_ledger` (`tol 2e-6`: no source
+delivers energy and the arm-free energy budget closes both balances).
 
 ## Run it
 

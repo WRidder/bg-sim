@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "edge-contact",
-  "$comment": "Edge phase on the eight vertex contacts: the cube starts 0.70 rad tilted about the edge (balance point 0.785 rad) and the controller brings it to the edge balance and holds it.",
+  "$comment": "Edge phase on the four bottom-vertex contacts: the cube starts 0.70 rad tilted about the edge (balance point 0.785 rad) and the controller brings it to the edge balance and holds it.",
   "diagram": {
     "nodes": [
       {
@@ -4017,11 +4017,7 @@
         "C1/f_n",
         "C2/f_n",
         "C3/f_n",
-        "C4/f_n",
-        "C5/f_n",
-        "C6/f_n",
-        "C7/f_n",
-        "C8/f_n"
+        "C4/f_n"
       ]
     },
     {

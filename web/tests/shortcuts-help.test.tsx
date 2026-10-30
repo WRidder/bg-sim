@@ -71,6 +71,8 @@ describe("shortcuts overlay", () => {
       "Focus the library search",
       "Undo",
       "Play or pause",
+      "Save the selected docs page",
+      "Switch the docs page between view and edit",
     ]) {
       expect(text).toContain(description);
     }

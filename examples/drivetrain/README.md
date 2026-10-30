@@ -44,7 +44,7 @@ wheel.
 - **The gearbox is algebraic**: `Motor1/shaft.f = 10 × Gear1/b.f` at every
   instant, not only at steady state (`ratio` check).
 - **The flexible rod is visible**: the 12 V voltage step at t = 0.01 s excites
-  the two-inertia mode at about **29 Hz** (J₁ = 6e-3 kg·m² including the motor
+  the two-inertia mode at about **7.9 Hz** (J₁ = 6e-3 kg·m² including the motor
   rotor reflected through the gear, J₂ = 2e-3 kg·m², k = 5 N·m/rad). The rod
   twist `Rod/phi` overshoots to **0.186 rad** (`max_abs` check) before the
   damper settles it.

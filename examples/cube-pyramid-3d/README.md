@@ -88,7 +88,7 @@ guard never fires.
 | quantity | value |
 | --- | --- |
 | initial rest on the face | `Σ f_n / (m g)` − 1 = **1.3e-5** at 0.25 s and **5e-8** at 0.49 s; each bottom vertex 3.4335 N, top four 0 |
-| edge phase reached | tilt 0.8271 rad at 1.17 s (first reaching phase 2), settles to **0.7857 rad** at 2.2 s (45.02 deg; 45° = 0.7854); exactly two loaded vertices (`nload = 1.99958`), `f_n = 6.867 N` each, the other six `≤ 1e-17 N` |
+| edge phase reached | tilt 0.8271 rad at 1.17 s (first reaching phase 2), settles to **0.7857 rad** at 2.2 s (45.02 deg; 45° = 0.7854); exactly two loaded vertices (`nload = 1.99958`), `f_n = 6.867 N` each, the other two `≤ 1e-17 N` |
 | corner phase reached | tilt **0.95535 rad** at 4.2 s (54.74 deg; atan √2 = 0.95532), within 0.0003 rad of it from 3.15 s on, one loaded vertex (`nload = 0.99995`), `f_n = 13.734 N`; centre-of-mass height 0.17243 m (= √3/2·a − 0.76 mm penetration) |
 | wheel speeds | peak **307.9 rad/s** (wheel 4, at 2.99 s; wheels 1/2/3: 205.9 / 101.4 / 175.0), limit stated 320 rad/s |
 | motor torque | at the 1.2 N m limit during the two tip-up moves; allocator scale factor down to 0.738 |
@@ -106,9 +106,9 @@ than the contact penetration of 0.5 mm, so the two models are the same rocking e
 ## Checks (`expected.json`)
 
 `sequence-contact`: initial attitude; rest on the face (sum of the normal forces = weight at
-0.25 s and 0.49 s, each bottom vertex a quarter, top vertices ≤ 1e-9); edge hold (tilt 45 deg to
-2e-3, two loaded vertices, each carrying half the weight, the other six ≤ 1e-6 N); corner hold
-(tilt atan √2 to 1e-3, one loaded vertex carrying the weight, the other seven ≤ 1e-6 N, height);
+0.25 s and 0.49 s, each bottom vertex a quarter); edge hold (tilt 45 deg to
+2e-3, two loaded vertices, each carrying half the weight, the other two ≤ 1e-6 N); corner hold
+(tilt atan √2 to 1e-3, one loaded vertex carrying the weight, the other three ≤ 1e-6 N, height);
 null-space tap (`nsp − λ`, `resid`, realised body torque vs allocation); wheel speed and motor
 torque limits; the energy ledger (`tol 1.5e-3` on scale 1.4); no diagnostics (W201, E101, E102,
 E103, E106, E007, W206).

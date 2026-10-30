@@ -41,7 +41,7 @@ at its scale) and ``R = 1/sigma_u^2``:
     sigma_omega = 0.32 rad/s q_omega = 10
     sigma_u     = 1 N       R       = 1     - 1 N^2 per newton^2 of force;
 
-The resulting force demand peaks at 17.9 N (at the initial 0.1 rad tilt), inside the
+The resulting force demand peaks at 17.86 N (at the t = 1.5 s reference step; 17.5 N at the initial 0.1 rad tilt), inside the
 +-20 N clamp of the firmware; the clamp therefore stays inactive in the nominal run, and
 the reference integration below includes it anyway so the two agree if K changes.
 
