@@ -59,6 +59,7 @@ include("sim/debug.jl")
 include("sim/hooks.jl")
 include("sim/watch.jl")
 include("compile/explain.jl")
+include("sim/edits.jl")
 
 include("precompile.jl")
 include("worker/server.jl")

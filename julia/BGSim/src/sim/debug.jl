@@ -231,6 +231,8 @@ mutable struct DebugCtx
     session::Any
     run_task::Union{Task,Nothing}
     ext::Dict{Symbol,Any}
+    replay::Any   # M4 debug (J4.4): the ReplayPlan of a replay or branch run (src/sim/edits.jl)
+    at::Symbol    # M4 debug (J4.4): the checkpoint of the current pause: :entry, :step or :target
 end
 
 function DebugCtx(; breakpoints = [], pause_on_entry::Bool = false, on_paused = nothing,
@@ -242,7 +244,7 @@ function DebugCtx(; breakpoints = [], pause_on_entry::Bool = false, on_paused = 
         false, :none, Inf, Inf, Tuple{String,Float64}[], Set{Tuple{String,Float64}}(),
         Breakpoint[], Breakpoint[], Any[], Int[],
         NamedTuple{(:t, :reason),Tuple{Float64,String}}[], Any[], Any[], nothing, nothing,
-        nothing, Dict{Symbol,Any}(),
+        nothing, Dict{Symbol,Any}(), nothing, :entry,
     )
 end
 
@@ -798,6 +800,8 @@ end
 # After every internal integrator step. Fast path: a few atomic loads and compares.
 function dbg_after_step!(s::DebugSession)
     ctx = s.ctx
+    ctx.at = :step  # M4 debug (J4.4): where an edit made at a pause here sits in the loop
+    ctx.replay === nothing || _replay_checkpoint!(s, :step)  # M4 debug (J4.4)
     ctx.pending[] > 0 && _drain_commands!(s)
     ctx.cancel_flag[] && return nothing
     integ = s.integ
@@ -874,6 +878,8 @@ end
 # After a tick/grid target was executed and its row recorded.
 function _dbg_target!(ctx::DebugCtx, s::DebugSession, target::RunTarget)
     target.tick && (s.tick = target.tick_index)
+    ctx.at = :target  # M4 debug (J4.4)
+    ctx.replay === nothing || _replay_checkpoint!(s, :target)  # M4 debug (J4.4)
     ctx.pending[] > 0 && _drain_commands!(s)
     ctx.cancel_flag[] && return nothing
     reason = nothing
@@ -974,6 +980,8 @@ end
 _dbg_entry!(::Nothing, ::Nothing) = nothing
 
 function _dbg_entry!(ctx::DebugCtx, s::DebugSession)
+    ctx.at = :entry  # M4 debug (J4.4)
+    ctx.replay === nothing || _replay_checkpoint!(s, :entry)  # M4 debug (J4.4)
     ctx.pause_on_entry && dbg_pause!(s, "entry")
     return nothing
 end
