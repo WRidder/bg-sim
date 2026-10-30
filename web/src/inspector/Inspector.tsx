@@ -140,7 +140,10 @@ export function Inspector({ diagnostics }: InspectorProps) {
   const current = checkedRevision === revision;
   const effectiveDiagnostics = diagnostics ?? (current ? liveDiagnostics : []);
 
-  if (doc === null) {
+  // The selection lives in the diagram open on the canvas: the root, or a
+  // nested subsystem diagram when the path is not empty.
+  const active = doc === null ? null : activeModel(doc, activePath);
+  if (doc === null || active === null) {
     return (
       <EmptyState
         title="Nothing selected"
@@ -149,17 +152,13 @@ export function Inspector({ diagnostics }: InspectorProps) {
     );
   }
 
-  const selectedNodes = doc.diagram.nodes.filter((node) =>
-    selection.nodes.includes(node.id),
-  );
-  const active = activeModel(doc, activePath);
+  const diagram = active.diagram;
+  const selectedNodes = diagram.nodes.filter((node) => selection.nodes.includes(node.id));
   const selectedProbe =
     selection.nodes.length === 1
-      ? (active?.diagram.probes ?? []).find(
-          (probe) => probe.id === selection.nodes[0],
-        )
+      ? (diagram.probes ?? []).find((probe) => probe.id === selection.nodes[0])
       : undefined;
-  if (selectedProbe !== undefined && active !== null) {
+  if (selectedProbe !== undefined) {
     return <ProbeInspector model={active} probe={selectedProbe} />;
   }
   if (selectedNodes.length > 1) {
@@ -173,7 +172,7 @@ export function Inspector({ diagnostics }: InspectorProps) {
   }
   if (selectedNodes.length === 0) {
     if (selection.connections.length > 0) {
-      const selectedConnections = doc.diagram.connections.filter((connection) =>
+      const selectedConnections = diagram.connections.filter((connection) =>
         selection.connections.includes(connection.id),
       );
       const pathNames = subsystemPathCrumbs(doc, activePath).map((crumb) => crumb.name);
@@ -183,7 +182,7 @@ export function Inspector({ diagnostics }: InspectorProps) {
           return (
             <ConnectionInspector
               connection={connection}
-              nodes={doc.diagram.nodes}
+              nodes={diagram.nodes}
               index={index}
               frames={current ? liveFrames : {}}
               domains={current ? liveDomains : {}}
@@ -193,7 +192,7 @@ export function Inspector({ diagnostics }: InspectorProps) {
           );
         }
       }
-      return <ConnectionSelection connections={selectedConnections} nodes={doc.diagram.nodes} />;
+      return <ConnectionSelection connections={selectedConnections} nodes={diagram.nodes} />;
     }
     return (
       <EmptyState
@@ -226,8 +225,8 @@ export function Inspector({ diagnostics }: InspectorProps) {
     <NodeInspector
       key={node.id}
       node={node}
-      siblings={doc.diagram.nodes}
-      connections={doc.diagram.connections}
+      siblings={diagram.nodes}
+      connections={diagram.connections}
       index={index}
       project={project}
       diagnostics={effectiveDiagnostics}

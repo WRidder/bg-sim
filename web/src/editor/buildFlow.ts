@@ -343,6 +343,90 @@ export function buildDiagram(
   return { nodes, edges, analysis };
 }
 
+/**
+ * The node each selection copy was made from: a node of the unselected
+ * flow. `applySelection` uses it to recognise the objects xyflow
+ * already holds for the current flow.
+ */
+export type SelectionOrigins = WeakMap<object, object>;
+
+/** What xyflow currently holds for a node: the user node and its measured size. */
+export interface HeldNode {
+  node: object;
+  measured?: { width?: number; height?: number };
+}
+
+/** Selected copies of edges, keyed by the unselected edge. */
+const edgeCopies = new WeakMap<EditorEdge, EditorEdge>();
+
+function edgeWithSelected(edge: EditorEdge, selected: boolean): EditorEdge {
+  if ((edge.selected ?? false) === selected) {
+    return edge;
+  }
+  const cached = edgeCopies.get(edge);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const copy = { ...edge, selected };
+  edgeCopies.set(edge, copy);
+  return copy;
+}
+
+/**
+ * `flow` with the `selected` flags of `selection`. A selection change costs a
+ * pass over the elements instead of a `buildDiagram` (the diagram analysis
+ * and every node layout), and an element whose flag does not change keeps
+ * the object xyflow already holds, so xyflow re-renders just the changed ones.
+ *
+ * A node xyflow re-adopts gets a copy that carries the size xyflow measured,
+ * also when the document changed. xyflow keeps sizes only on its internal
+ * records; a user node without `measured` is hidden until it is measured
+ * again, so a click in that window fell through to the pane, and a selection
+ * rectangle counted it as inside (`getNodesInside` "forceInitialRender").
+ * After a document change the canvas re-measures the handles itself
+ * (`updateNodeInternals`), since a port can move without the node resizing.
+ */
+export function applySelection(
+  flow: DiagramFlow,
+  selection: { nodes: readonly string[]; connections: readonly string[] },
+  origins: SelectionOrigins,
+  held: (id: string) => HeldNode | undefined = () => undefined,
+): DiagramFlow {
+  const selectedNodes = new Set(selection.nodes);
+  const selectedConnections = new Set(selection.connections);
+  const nodes = flow.nodes.map((node): DiagramNode => {
+    const selected = selectedNodes.has(node.id);
+    const current = held(node.id);
+    if (current !== undefined && (current.node === node || origins.get(current.node) === node)) {
+      // xyflow holds this flow's node: keep it while its flag is right.
+      const heldNode = current.node as DiagramNode;
+      if ((heldNode.selected ?? false) === selected) {
+        return heldNode;
+      }
+    }
+    const { width, height } = current?.measured ?? {};
+    if (width !== undefined && height !== undefined) {
+      const copy = { ...node, selected, measured: { width, height } } as DiagramNode;
+      origins.set(copy, node);
+      return copy;
+    }
+    // A node xyflow has not measured yet.
+    if ((node.selected ?? false) === selected) {
+      return node;
+    }
+    const copy = { ...node, selected } as DiagramNode;
+    origins.set(copy, node);
+    return copy;
+  });
+  return {
+    ...flow,
+    nodes,
+    edges: flow.edges.map((edge) =>
+      edgeWithSelected(edge, selectedConnections.has(edge.id)),
+    ),
+  };
+}
+
 /** Selected node ids for the traffic from xyflow back into the store. */
 export function selectedIds(elements: readonly { id: string }[]): string[] {
   return elements.map((element) => element.id);

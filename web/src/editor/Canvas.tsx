@@ -8,7 +8,8 @@
  * * release a connection on empty canvas -> a filterable list of compatible
  *   elements to add at that point and connect automatically;
  * * drag nodes -> move (one undo entry per drag);
- * * drag on empty canvas -> a selection rectangle (every node it touches);
+ * * drag on empty canvas -> a selection rectangle (every node it touches),
+ *   committed to the document store once, on release;
  *   pan with the middle or right mouse button, Space+drag or the arrow keys
  *   (Shift: larger steps); the wheel zooms;
  * * Del, R, F, Ctrl+C/V, Ctrl+Z/Y;
@@ -26,6 +27,8 @@ import {
   ReactFlowProvider,
   SelectionMode,
   useReactFlow,
+  useStoreApi,
+  useUpdateNodeInternals,
   useViewport,
   ViewportPortal,
   type Connection,
@@ -52,7 +55,13 @@ import {
 } from "../plot/plotTargets";
 import { useRunStore } from "../plot/runStore";
 import { useDiagnosticsStore } from "../diagnostics/store";
-import { buildDiagram, EDGE_TYPES, NODE_TYPES } from "./buildFlow";
+import {
+  applySelection,
+  buildDiagram,
+  EDGE_TYPES,
+  NODE_TYPES,
+  type SelectionOrigins,
+} from "./buildFlow";
 import { imageFromDataTransfer } from "./nodeImage";
 import { applyNodeImage } from "./nodeImageApply";
 import { activeDiagram } from "./subsystemPath";
@@ -100,6 +109,14 @@ const ProbeWindow = lazy(() =>
 const ZOOM = 0.85;
 const GRID_KEY = "bgsim.canvas.grid";
 const SNAP_KEY = "bgsim.canvas.snap";
+const NO_SELECTION = { nodes: [], connections: [] } as const;
+/**
+ * Pointer travel (px) between press and release that still counts as a click
+ * on a node or on empty canvas. xyflow's node default is 0: d3-drag then
+ * swallows the click after any movement, while a drag only starts beyond 1 px,
+ * so a 1 px jitter neither selected nor moved the node.
+ */
+const CLICK_DISTANCE = 5;
 
 function readPreference(key: string, fallback: boolean): boolean {
   try {
@@ -296,6 +313,16 @@ function CanvasInner() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const quickGesture = useRef<QuickGesture | null>(null);
   const suppressClick = useRef(false);
+  // While a selection rectangle is drawn, the nodes it touches are shown from
+  // this local state; the document store gets the result once, on release, so
+  // the inspector, the plots and the dock do not re-render per pointer move.
+  const [boxSelection, setBoxSelection] = useState<readonly string[] | null>(null);
+  const boxing = useRef(false);
+  // From a pointer press on the canvas to one frame after its release.
+  const pointerGesture = useRef(false);
+  const repairFrame = useRef(0);
+  const selectionOrigins = useRef<SelectionOrigins>(new WeakMap());
+  const flowStore = useStoreApi();
   const { fitView, screenToFlowPosition, getViewport, setViewport } = useReactFlow();
   // The shortcut handler is registered once; it reads the viewport API here.
   const viewportApi = useRef({ getViewport, setViewport });
@@ -308,11 +335,14 @@ function CanvasInner() {
     [doc, activePath],
   );
 
-  const flow = useMemo(
+  // The diagram is built without a selection: the analysis and the node
+  // layouts are the expensive part, and a click must not redo them. The
+  // selection is applied on top, copying only the elements it changes.
+  const unselectedFlow = useMemo(
     () =>
       view === null || index === null
-        ? { nodes: [], edges: [], analysis: null }
-        : decorateFlow(buildDiagram(view, index, selection, dragOrigin, snap), {
+        ? null
+        : decorateFlow(buildDiagram(view, index, NO_SELECTION, dragOrigin, snap), {
             domains: checkedDomains,
             causality: checkedCausality,
             unitFactors: checkedUnitFactors,
@@ -321,7 +351,6 @@ function CanvasInner() {
     [
       view,
       index,
-      selection,
       dragOrigin,
       snap,
       inlineRevision,
@@ -331,6 +360,30 @@ function CanvasInner() {
       checkedFrames,
     ],
   );
+  const shownSelection = useMemo(
+    () => (boxSelection === null ? selection : { nodes: boxSelection, connections: [] }),
+    [boxSelection, selection],
+  );
+  const flow = useMemo(
+    () =>
+      unselectedFlow === null
+        ? { nodes: [], edges: [], analysis: null }
+        : applySelection(unselectedFlow, shownSelection, selectionOrigins.current, (id) => {
+            const internal = flowStore.getState().nodeLookup.get(id);
+            return internal === undefined
+              ? undefined
+              : { node: internal.internals.userNode, measured: internal.measured };
+          }),
+    [unselectedFlow, shownSelection, flowStore],
+  );
+  // A rebuilt node keeps the size xyflow measured (`applySelection`), so it
+  // stays visible; its ports can still have moved, which xyflow measures here.
+  const updateNodeInternals = useUpdateNodeInternals();
+  useEffect(() => {
+    if (unselectedFlow !== null && unselectedFlow.nodes.length > 0) {
+      updateNodeInternals(unselectedFlow.nodes.map((node) => node.id));
+    }
+  }, [unselectedFlow, updateNodeInternals]);
 
   const pathPrefix = useMemo(
     () =>
@@ -992,12 +1045,26 @@ function CanvasInner() {
   // --------------------------------------------------------------- xyflow
   const onSelectionChange: OnSelectionChangeFunc = useCallback(
     ({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) => {
+      // During a box selection the touched nodes only feed the canvas's own
+      // highlight (`boxSelection`); `onSelectionEnd` commits the result.
+      if (boxing.current) {
+        setBoxSelection(nodes.map((node) => node.id));
+        return;
+      }
+      // A pointer gesture mirrors its own result (`onNodeClick`, `onEdgeClick`,
+      // `onNodeDragStart`, `onPaneClick`). The event trails it by a render and
+      // reports xyflow's view, which can differ: xyflow toggles with Ctrl only
+      // when it saw the key itself, so it would undo a Ctrl-click.
+      // What is left is keyboard selection (Enter or Space on a focused node).
+      if (pointerGesture.current) {
+        return;
+      }
       // React Flow can emit an empty selection while it adopts a replaced
       // `nodes` prop (for example when the Code tab hands the canvas a new
-      // inline interface). That is not a user action: clearing on every pane
-      // click is done by `onPaneClick`, and a box selection that ends empty
-      // also goes through the pane. Ignoring the transient keeps the document
-      // selection from oscillating with the canvas's internal one.
+      // inline interface). That is not a user action: clearing on a pane click
+      // is done by `onPaneClick`, and on an empty rectangle by
+      // `onSelectionEnd`. Ignoring the transient keeps the document selection
+      // from oscillating with the canvas's internal one.
       if (nodes.length === 0 && edges.length === 0) {
         return;
       }
@@ -1012,10 +1079,95 @@ function CanvasInner() {
   );
 
   /**
+   * xyflow selects nodes by mutating its internal node records ("the
+   * onNodesChange callback comes too late", in its source) and, with
+   * controlled nodes and no `onNodesChange`, nothing re-renders them. When the
+   * store's selection then does not change, for example a click on a node the
+   * store already has selected, the canvas shows a selection the document does
+   * not have. Re-adopting just the diverged nodes resynchronises the two; it
+   * runs one frame after a pointer release, once React has applied the store.
+   * The release is caught on the window: a drag can end outside the canvas.
+   */
+  const repairSelection = useCallback(() => {
+    cancelAnimationFrame(repairFrame.current);
+    repairFrame.current = requestAnimationFrame(() => {
+      pointerGesture.current = false;
+      if (boxing.current) {
+        return;
+      }
+      const { nodes, nodeLookup, setNodes } = flowStore.getState();
+      let diverged = false;
+      const next = nodes.map((node) => {
+        const internal = nodeLookup.get(node.id);
+        if (internal !== undefined && (internal.selected ?? false) !== (node.selected ?? false)) {
+          diverged = true;
+          // The measured size keeps xyflow from hiding and re-measuring it.
+          const { width, height } = internal.measured;
+          const copy =
+            width !== undefined && height !== undefined
+              ? { ...node, measured: { width, height } }
+              : { ...node };
+          selectionOrigins.current.set(copy, selectionOrigins.current.get(node) ?? node);
+          return copy;
+        }
+        return node;
+      });
+      if (diverged) {
+        setNodes(next);
+      }
+    });
+  }, [flowStore]);
+  useEffect(
+    () => () => {
+      window.removeEventListener("pointerup", repairSelection, true);
+      window.removeEventListener("pointercancel", repairSelection, true);
+      cancelAnimationFrame(repairFrame.current);
+    },
+    [repairSelection],
+  );
+
+  const onSelectionStart = useCallback(() => {
+    boxing.current = true;
+    setBoxSelection([]);
+  }, []);
+
+  const onSelectionEnd = useCallback(() => {
+    boxing.current = false;
+    const ids: string[] = [];
+    for (const [id, internal] of flowStore.getState().nodeLookup) {
+      if (internal.selected === true) {
+        ids.push(id);
+      }
+    }
+    setBoxSelection(null);
+    // One store update per rectangle; an empty rectangle clears, as xyflow
+    // has already cleared its own selection when the rectangle started.
+    useDocumentStore.getState().setSelection(ids, []);
+    repairSelection();
+  }, [flowStore, repairSelection]);
+
+  /**
+   * xyflow follows a box selection with a persistent `NodesSelection` box
+   * around the selected nodes. It lingers until a pane click and sits on top
+   * of the nodes, so the next click on one of them hit the box instead. The
+   * editor drags a selection by any of its nodes, so the box is switched off
+   * whenever xyflow turns it on.
+   */
+  useEffect(
+    () =>
+      flowStore.subscribe((state) => {
+        if (state.nodesSelectionActive) {
+          flowStore.setState({ nodesSelectionActive: false });
+        }
+      }),
+    [flowStore],
+  );
+
+  /**
    * React Flow's `onSelectionChange` is driven by an effect and can trail the
    * pointer by one interaction with controlled nodes. Clicking is therefore
-   * mirrored into the store directly; `onSelectionChange` still covers box
-   * selection.
+   * mirrored into the store directly; a box selection is committed by
+   * `onSelectionEnd`.
    */
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     if (suppressClick.current) {
@@ -1477,6 +1629,15 @@ function CanvasInner() {
         ref={canvasRef}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onPointerDownCapture={() => {
+          pointerGesture.current = true;
+          // The same listener twice is one listener; `once` removes it.
+          window.addEventListener("pointerup", repairSelection, { capture: true, once: true });
+          window.addEventListener("pointercancel", repairSelection, {
+            capture: true,
+            once: true,
+          });
+        }}
       >
         <QuickConnectContext.Provider
           value={{ enabled: quickMode, start: startQuickConnect }}
@@ -1505,6 +1666,10 @@ function CanvasInner() {
             selectionOnDrag
             selectionMode={SelectionMode.Partial}
             panOnDrag={[1, 2]}
+            onSelectionStart={onSelectionStart}
+            onSelectionEnd={onSelectionEnd}
+            nodeClickDistance={CLICK_DISTANCE}
+            paneClickDistance={CLICK_DISTANCE}
             onConnect={onConnect}
             onConnectStart={onConnectStart}
             onConnectEnd={onConnectEnd}
