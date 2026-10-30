@@ -76,21 +76,19 @@ const title = path.join(clips, "01-title.mp4"); still(titlePng, 5, title); items
   writeFileSync(list, lines.join("\n") + "\n");
   const CAP = { pan: "The model: fuselage, wings, flapping drive, aerodynamics and controller", crank: "Flapping drive: motor, gear and crank", body: "Fuselage: a free spatial rigid body", aero: "StripAero: strip-theory aerodynamics on a wing segment", ctrl: "FlightCtrl: the discrete cycle-averaged flight controller", docs: "The Docs tab: documentation next to the model", docs2: "Structure, wing and aerodynamics pages with math and figures" };
   const filters = ["scale=1920:950:force_original_aspect_ratio=decrease", "pad=1920:1080:(ow-iw)/2:(950-ih)/2:0x0d1117", "drawbox=x=0:y=950:w=1920:h=130:color=0x080b10:t=fill", "drawbox=x=0:y=950:w=1920:h=4:color=0xf5a524:t=fill"];
-  let prev = 0, k = 0;
-  const marks = tl.marks.map((m) => ({ ...m, vt: m.vt - base })).sort((a, b) => a.vt - b.vt);
-  for (const m of marks) {
-    const e = Math.min(end, m.vt + (m.hold ?? 1.4) * 1000) / 1000;
-    if (CAP[m.name]) {
-      const f1 = path.join(root, "ui", `cap${k}-a.txt`), f2 = path.join(root, "ui", `cap${k}-b.txt`);
-      writeFileSync(f1, "THE MODEL"); writeFileSync(f2, CAP[m.name]);
-      const st = Math.max(prev, m.vt / 1000 - 5.5);
-      const en = `enable='between(t,${st.toFixed(3)},${e.toFixed(3)})'`;
-      filters.push(`drawtext=fontfile='${FONTB}':textfile='${escF(f1)}':fontcolor=0xf5a524:fontsize=24:x=60:y=966:${en}`);
-      filters.push(`drawtext=fontfile='${FONTB}':textfile='${escF(f2)}':fontcolor=0xe6edf3:fontsize=44:x=60:y=1000:${en}`);
-      k++;
-    }
-    prev = e;
-  }
+  let k = 0;
+  const marks = tl.marks.map((m) => ({ ...m, vt: m.vt - base })).sort((a, b) => a.vt - b.vt).filter((m) => CAP[m.name]);
+  // a caption starts when its block comes into view (about 3 s before its mark) and stays until the next one starts
+  const starts = marks.map((m, i) => (i === 0 ? 0 : Math.max(0, m.vt / 1000 - 3.0)));
+  marks.forEach((m, i) => {
+    const e = i + 1 < marks.length ? starts[i + 1] : Math.min(end, m.vt + (m.hold ?? 1.4) * 1000) / 1000;
+    const f1 = path.join(root, "ui", `cap${k}-a.txt`), f2 = path.join(root, "ui", `cap${k}-b.txt`);
+    writeFileSync(f1, "THE MODEL"); writeFileSync(f2, CAP[m.name]);
+    const en = `enable='between(t,${starts[i].toFixed(3)},${e.toFixed(3)})'`;
+    filters.push(`drawtext=fontfile='${FONTB}':textfile='${escF(f1)}':fontcolor=0xf5a524:fontsize=24:x=60:y=966:${en}`);
+    filters.push(`drawtext=fontfile='${FONTB}':textfile='${escF(f2)}':fontcolor=0xe6edf3:fontsize=44:x=60:y=1000:${en}`);
+    k++;
+  });
   const tail = Math.max(0, (end - frames[frames.length - 1].vt) / 1000 - 0.04);
   filters.push(`tpad=stop_mode=clone:stop_duration=${tail.toFixed(3)}`, "fps=60", "format=yuv420p");
   const out = path.join(clips, "02-ui.mp4");
@@ -99,7 +97,7 @@ const title = path.join(clips, "01-title.mp4"); still(titlePng, 5, title); items
 }
 
 // 3a. the whole figure (top view): diagram | plots | 3D
-async function playClip(seg, sub, layout) {
+async function playClip(seg, sub, layout, outName, decim = 1, rightLab = "Flap angle and motor current") {
   const dir = path.join(root, seg);
   const meta = JSON.parse(readFileSync(dir + "/meta.json", "utf8"));
   const diag = path.join(framesDir, "examples", "robird", "diagram.png");
@@ -107,9 +105,12 @@ async function playClip(seg, sub, layout) {
   const files = [dir + "/p/00000.jpg", dir + "/v/00000.jpg"].concat(hasDiag ? [diag] : []);
   const sz = await sizes(files);
   const [pw, ph] = sz[0];
-  const S = meta.s.toFixed(6);
+  const S = (meta.s * decim).toFixed(6);
+  const NN = Math.floor(meta.N / decim);
+  const dec = decim > 1 ? `select='not(mod(n,${decim}))',setpts=N/FRAME_RATE/TB,` : "";
   const t0 = meta.t0 ?? 0;
-  const spTxt = meta.s >= 0.95 ? `${+meta.s.toFixed(1)}x` : `${meta.s.toFixed(2)}x`;
+  const sp = meta.s * decim;
+  const spTxt = sp >= 0.95 ? `${+sp.toFixed(1)}x` : `${sp.toFixed(2)}x`;
   let bgBody, filt;
   const tText = `drawtext=fontfile='${FONT}':fontcolor=0xc9d4df:fontsize=34:x=w-tw-40:y=24:text='t = %{eif\\:floor(${t0}+n*${S}/60)\\:d}.%{eif\\:mod(floor((${t0}+n*${S}/60)*100),100)\\:d\\:2} s  ·  ${spTxt}'`;
   if (layout === "lap") {
@@ -117,41 +118,42 @@ async function playClip(seg, sub, layout) {
     const dBoxH = 956 - plotH - 16;
     bgBody = `${hdr(sub)}<div class="pn" style="left:20px;top:104px;width:1060px;height:${dBoxH}px"><span class="lab">Model</span></div><div class="pn" style="left:20px;top:${104 + dBoxH + 16}px;width:1060px;height:${plotH}px"></div><div class="pn" style="left:1100px;top:104px;width:800px;height:956px"><span class="lab">3D view (top)</span></div>`;
     filt = [
-      `[1:v]scale=1056:${dBoxH - 4}:force_original_aspect_ratio=decrease[dg]`, `[2:v]scale=1056:${plotH - 4}[pl]`, `[3:v]scale=796:952:force_original_aspect_ratio=decrease[vw]`,
+      `[1:v]scale=1056:${dBoxH - 4}:force_original_aspect_ratio=decrease[dg]`, `[2:v]${dec}scale=1056:${plotH - 4}[pl]`, `[3:v]${dec}scale=796:952:force_original_aspect_ratio=decrease[vw]`,
       `color=c=0xf5a524:s=1920x5:r=60[bar]`,
       `[0:v][dg]overlay=x=22+(1056-w)/2:y=106+(${dBoxH - 4}-h)/2[a]`, `[a][pl]overlay=x=22:y=${104 + dBoxH + 16 + 2}[b]`, `[b][vw]overlay=x=1102+(796-w)/2:y=106+(952-h)/2[c]`,
-      `[c][bar]overlay=x='-1920+1920*n/${meta.N}':y=84:shortest=1[d]`, `[d]${tText}[o]`,
+      `[c][bar]overlay=x='-1920+1920*n/${NN}':y=84:shortest=1[d]`, `[d]${tText}[o]`,
     ].join(";\n");
   } else {
     const plotW = 840, plotH = Math.round((plotW * ph) / pw);
-    bgBody = `${hdr(sub)}<div class="pn" style="left:20px;top:104px;width:1020px;height:956px"><span class="lab">3D view (close-up)</span></div><div class="pn" style="left:1060px;top:104px;width:840px;height:956px"><span class="lab">Flap angle and motor current</span></div>`;
+    bgBody = `${hdr(sub)}<div class="pn" style="left:20px;top:104px;width:1020px;height:956px"><span class="lab">3D view (chase camera)</span></div><div class="pn" style="left:1060px;top:104px;width:840px;height:956px"><span class="lab">${rightLab}</span></div>`;
     filt = [
-      `[1:v]scale=1016:952:force_original_aspect_ratio=decrease[vw]`, `[2:v]scale=${plotW - 4}:-2[pl]`, `color=c=0xf5a524:s=1920x5:r=60[bar]`,
+      `[1:v]${dec}scale=1016:952:force_original_aspect_ratio=decrease[vw]`, `[2:v]${dec}scale=${plotW - 4}:-2[pl]`, `color=c=0xf5a524:s=1920x5:r=60[bar]`,
       `[0:v][vw]overlay=x=22+(1016-w)/2:y=106+(952-h)/2[a]`, `[a][pl]overlay=x=1062:y=${104 + Math.round((956 - plotH) / 2)}[c]`,
-      `[c][bar]overlay=x='-1920+1920*n/${meta.N}':y=84:shortest=1[d]`, `[d]${tText}[o]`,
+      `[c][bar]overlay=x='-1920+1920*n/${NN}':y=84:shortest=1[d]`, `[d]${tText}[o]`,
     ].join(";\n");
   }
   const bg = await shot(`bg-${seg}`, bgBody);
   const fscript = path.join(clips, `f-${seg}.txt`);
   writeFileSync(fscript, filt);
-  const out = path.join(clips, seg === "lap" ? "03-lap.mp4" : "04-close.mp4");
+  const out = path.join(clips, outName);
   const inputs = ["-y", "-loop", "1", "-framerate", "60", "-i", bg, "-framerate", "60", "-i", dir + "/v/%05d.jpg", "-framerate", "60", "-i", dir + "/p/%05d.jpg"];
   if (hasDiag) { inputs.splice(1, 0); }
   const args = layout === "lap"
     ? ["-y", "-loop", "1", "-framerate", "60", "-i", bg, "-loop", "1", "-framerate", "60", "-i", diag, "-framerate", "60", "-i", dir + "/p/%05d.jpg", "-framerate", "60", "-i", dir + "/v/%05d.jpg"]
     : inputs;
-  run([...args, "-filter_complex_script", fscript, "-map", "[o]", "-frames:v", String(meta.N), ...ENC, out]);
+  run([...args, "-filter_complex_script", fscript, "-map", "[o]", "-frames:v", String(NN), ...ENC, out]);
   items.push(out);
   console.log("clip", seg, meta.N, "frames", spTxt);
 }
-await playClip("lap", "whole figure of eight from above, fast forward", "lap");
-await playClip("close", "close-up in slow motion: about three flap cycles", "close");
+await playClip("lap", "whole figure of eight from above, 7x", "lap", "03-lap.mp4", 2);
+await playClip("iso", "chase camera, real time (1x), a turn", "close", "04-iso.mp4", 1, "Bank command, flap angle, cross-track error");
+await playClip("close", "close-up, slow motion: three flap cycles", "close", "05-close.mp4");
 
 // 4. end card
 const endPng = await shot("end", `<div class="card"><div class="bar"></div><div class="num">Results</div><h2>A closed-loop flapping flight, nothing kinematic</h2>
 <div class="kv"><div><b>0.42 m</b>cross-track error, RMS</div><div><b>220 x 84 m</b>figure of eight</div><div><b>12 m/s</b>flight speed</div><div><b>about 4 Hz</b>flapping</div></div>
 <p class="note">Assumed parameters, quasi-steady aerodynamics: a feasibility model, not a validated model of the real Robird.</p></div>`);
-const endMp4 = path.join(clips, "05-end.mp4"); still(endPng, 8, endMp4); items.push(endMp4);
+const endMp4 = path.join(clips, "06-end.mp4"); still(endPng, 8, endMp4); items.push(endMp4);
 await browser.close();
 const listFile = path.join(clips, "list.txt");
 writeFileSync(listFile, items.map((f) => `file '${fwd(f)}'`).join("\n") + "\n");
