@@ -529,6 +529,72 @@ end
 
 _has_algebraic(prob) = !_identity_mass(prob.f.mass_matrix)
 
+"""The blocks built to be reduced by `mtkcompile`'s index reduction. Such a block declares
+its joint rate as a `state = :prefer` variable whose derivative appears in an original
+equation; see `stdlib/spatial/Revolute3DRigid.jl`."""
+const _INDEX_REDUCED_BLOCKS = Set(["stdlib:spatial/Revolute3DRigid"])
+
+"""    _needs_index_reduction(flat) -> Bool
+
+Whether the model is a higher-index DAE built for index reduction. That means two things:
+
+* the causality analysis put a storage element in derivative causality (W201), so
+  `mtkcompile` reduces it with Pantelides and dummy derivatives (D-MB7);
+* the model contains a block of `_INDEX_REDUCED_BLOCKS`.
+
+Such a model is compiled **conservatively**. The `state = :prefer` / `:avoid` hints become
+MTK state priorities, so the dummy-derivative selection keeps the joint rates. Neither the
+tearing of the system nor that of its initialization system may divide by a parameter
+expression (`allow_parameter = false`). Every bg-sim parameter stays a symbolic runtime
+parameter (D4). An expression that is structurally non-zero can then be numerically zero,
+such as a rotation entry of a mount pose or an armature inertia. The index-reduced
+constraint equations are full of them, and dividing by one gives a NaN/Inf start.
+
+Every other model keeps MTK's default compile, unchanged, including W201 models such as a
+clamped inertia or the rigid planar joints. The conservative compile is not enough on its
+own, because it needs a block that declares its rate state. The rigid planar 2-link chain
+(`Revolute2DRigid`, without such a state) shows why: under it, the static dummy-derivative
+selection keeps body twist components as states, and under gravity the run completes with
+angles 0.5 rad off in 0.2 s. With the default compile the chain fails to initialize, which
+is the documented limit (DEC-MB-2) and the safer failure."""
+function _needs_index_reduction(flat::Flat.FlatModel)
+    any(d -> d.code == "W201", flat.diagnostics) || return false
+    return any(v -> v.origin.block in _INDEX_REDUCED_BLOCKS, flat.variables)
+end
+
+# The spec's `state = :prefer` / `:avoid` (a hint for state selection during index
+# reduction) as MTK state priorities, so the dummy-derivative selection keeps a preferred
+# variable as the state of its constraint group (a rigid joint's rate) instead of an arbitrary
+# body twist component. Applied to index-reduced models only: elsewhere MTK's tearing would
+# also read the priorities, and those models are left exactly as they were.
+const _STATE_PRIORITY = Dict(:prefer => 10, :avoid => -10)
+
+function _state_priorities!(vars::Vector{Num}, flat::Flat.FlatModel)
+    for (i, v) in enumerate(flat.variables)
+        p = get(_STATE_PRIORITY, get(v.attrs, :state, nothing), nothing)
+        p === nothing && continue
+        vars[i] = Symbolics.setmetadata(vars[i], ModelingToolkit.VariableStatePriority, p)
+    end
+    return vars
+end
+
+# The `ODEProblem` of a compiled system with the starts, parameters and guesses of `flat`. A
+# conservative (index-reduced) model builds its initialization system with the same tearing
+# rule as the system itself. MTK's `remake` with symbolic maps rebuilds the initialization
+# without that keyword, so a cache hit of such a model rebuilds the problem here too (the
+# compiled `System` is still reused).
+function _new_problem(flat::Flat.FlatModel, csys, int_states, params, tspan)
+    op = Pair{Num,Any}[]
+    append!(op, _u0_pairs(flat, csys, int_states))
+    append!(op, _p_pairs(flat, params))
+    guesses = _guess_pairs(flat, csys)
+    if _needs_index_reduction(flat)
+        return ODEProblem(csys, op, tspan; guesses = guesses,
+            initsys_mtkcompile_kwargs = (; allow_parameter = false))
+    end
+    return ODEProblem(csys, op, tspan; guesses = guesses)
+end
+
 function _build_compiled(flat::Flat.FlatModel, key::String, tspan::Tuple{Float64,Float64})
     lowered = lower_flat(flat)
     vars = Num[lowered.vars[v.id] for v in flat.variables]
@@ -549,13 +615,11 @@ function _build_compiled(flat::Flat.FlatModel, key::String, tspan::Tuple{Float64
         kwargs = merge(kwargs, (; continuous_events = lowered.events))
     end
 
+    conservative = _needs_index_reduction(flat)
+    conservative && _state_priorities!(vars, flat)
     sys = System(lowered.eqs, t, vars, pars; kwargs...)
-    csys = mtkcompile(sys)
-    op = Pair{Num,Any}[]
-    append!(op, _u0_pairs(flat, csys, lowered.int_states))
-    append!(op, _p_pairs(flat, lowered.params))
-    guesses = _guess_pairs(flat, csys)
-    prob = ODEProblem(csys, op, tspan; guesses = guesses)
+    csys = conservative ? mtkcompile(sys; allow_parameter = false) : mtkcompile(sys)
+    prob = _new_problem(flat, csys, lowered.int_states, lowered.params, tspan)
     return CompiledModel(key, csys, prob, lowered.vars, lowered.params,
         lowered.int_states, _has_algebraic(prob))
 end
@@ -587,12 +651,16 @@ function lower_model(flat::Flat.FlatModel; t_start::Real = 0.0, t_end::Real = 1.
         end
         if cached !== nothing
             _cache_touch!(key)
-            prob = remake(
-                cached.problem;
-                u0 = _u0_pairs(flat, cached.system, cached.int_states),
-                p = _p_pairs(flat, cached.params),
-                tspan = tspan,
-            )
+            prob = if _needs_index_reduction(flat)
+                _new_problem(flat, cached.system, cached.int_states, cached.params, tspan)
+            else
+                remake(
+                    cached.problem;
+                    u0 = _u0_pairs(flat, cached.system, cached.int_states),
+                    p = _p_pairs(flat, cached.params),
+                    tspan = tspan,
+                )
+            end
             return (; key = key, model = cached, problem = prob, cache_hit = true)
         end
         model = _build_compiled(flat, key, tspan)

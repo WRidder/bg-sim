@@ -281,6 +281,129 @@ This is the mechanism behind "signal taps on any junction flow or effort and any
 It is a small extension of the existing `@inputs`/`@outputs`/`@observables` machinery, but it
 must be designed into the primitives from the start, not added later.
 
+### 5.7 Rigid joints through index reduction (D-MB7 experiment, results)
+
+Branch `rigid-joints-experiment`. Question: can a 3D serial chain use **rigid** joints and let
+`mtkcompile`'s index reduction remove the dependent states, so that the arm ends up close to
+minimal coordinates? Stays within D-MB7: no custom articulated-body backend.
+
+**Verdict: yes, for simulation.** A fixed-base chain of `n` rigid revolutes compiles to
+exactly `2n` differential states (`q`, `qdot` per joint) and matches the independent rigid
+references to 1e-9..1e-12 rad, where the compliant joints (`k = 1e7`) are off by 1e-5 (and
+4e-3 rad after 0.5 s of the chaotic Panda fall). Simulation is not faster than the compliant
+version: the index-reduced DAE keeps every body twist, momentum and reaction as an algebraic
+unknown (about 20 per body). **For export it is not real time on the Panda yet:** the
+algebraic block forces the dense LU (the static sparse LU has zero pivots on the algebraic
+rows, W211), 647 µs mean / 2.3 ms max per 1 ms step for `panda-free`.
+
+**The element.** `stdlib:spatial/Revolute3DRigid`: the `kr, kt -> Inf` limit of `Revolute3D`.
+The five off-axis relative twist components are velocity-level constraints whose Lagrange
+multipliers are the reactions (`F`, `Fl`, outputs `mout`/`fout`). The poses are composed from
+`q` (D-MB6), so there is no position constraint and no drift. The body inertia becomes
+derivative-causal (W201), which is expected. Three changes make MTK pick the joint
+coordinates:
+
+1. **State choice.** `qdot` carries `state = :prefer`, mapped to MTK's state priority (W201
+   models only). In addition, `D(qdot)` must appear in an original equation, through the
+   armature term `Ja * qdd` (`Ja = 0` by default). Without that term MTK alias-eliminates
+   `qdot` before it reads the priorities. The structural dummy-derivative selection then
+   keeps a body twist component that is identically zero for the geometry (`Body/flow/p.f[6]`
+   of the pendulum), and the initialization is singular.
+2. **Conservative tearing.** Every bg-sim parameter stays symbolic (D4), so a structurally
+   non-zero divisor can be numerically zero: `Ja = 0`, or a zero entry of a mount rotation.
+   A W201 model that contains a `Revolute3DRigid` is therefore compiled with
+   `allow_parameter = false` and the state priorities. This covers both the system and its
+   initialization system (`initsys_mtkcompile_kwargs`). A compile-cache hit rebuilds the
+   `ODEProblem`, because `remake` would drop that keyword.
+
+   The gate is deliberately narrow. Every other model keeps the default compile, including
+   the planar `Revolute2DRigid`, which has no declared rate state. Under the conservative
+   compile, the rigid planar 2-link chain with gravity completes with angles 0.5 rad off in
+   0.2 s, a silently wrong answer. With the default compile it fails to initialize, the
+   documented DEC-MB-2 limit and the safer failure.
+3. **Re-initialization after a held-output change** (`reinit_algebraic!`, scheduler). Brown's
+   absolute residual test (1e-10) is not scale-invariant. The acceleration rows of the 3R
+   arm's `J = 1e-8` point masses have a round-off floor around 1e-8, so the polyalgorithm ran
+   to its iteration limits on every 1 ms tick, about 0.2 s per tick and 250 s per simulated
+   second. The replacement is a chord Newton on the algebraic rows: one finite-difference
+   Jacobian and a step test. It converges in 2 or 3 iterations. If it does not converge, the
+   code falls back to Brown, as before.
+
+**Results** (Windows 11; other agents were loading the CPU, so the times are medians of 2 or 3
+warm runs; "alg" counts the algebraic unknowns):
+
+| model | states / alg (compliant) | mtkcompile | sim (compliant) | accuracy rigid (compliant) |
+| --- | --- | --- | --- | --- |
+| single 3D pendulum, 2 s | 2 / 19 (12 / 0) | 0.15 s warm | 0.13 s, 437 steps (3504 steps) | 4.2e-12 rad vs RNE/RK4 (6.8e-6) |
+| double 3D pendulum, 1.5 s | 4 / 39 (24 / 0) | 0.9 s | 0.65 s, 1290 steps (3079 steps) | 6e-13 rad (2.7e-5) |
+| `rrr-multibond`, 5 s, 1 ms controller | 6 / 59 (36 / 0) | 1.3 s | 3.5 s, 6632 steps (10.4 s, 49571 steps) | 1.5e-9 rad vs `rrr-torque` (1.6e-5) |
+| `panda-free`, 1 s | 14 / 139 (84 / 0) | 4.2 s | 4.3 s, 5266 steps (3.4 s, 10790 steps) | vs MuJoCo at 0.1/0.25/0.5/1 s: 1.7e-12/1.2e-13/1.4e-12/3.9e-11 rad (8.4e-6/1.3e-4/4.0e-3/0.18) |
+| `panda` (elastic gear drives), 5.15 s | 28 / 139 (98 / 0) | 4.6 s | 27.6 s, 26660 steps (22.0 s, 23328 steps) | 2.7e-6 rad from compliant; settled flange 5.5e-6 m (5.5e-5 m) |
+
+C/FMU export with the default `method = :auto` (`expose_all`, compared with the simulation by
+`export_checks.py`). Every model exports, builds and passes. All of them use the dense LU
+(W211):
+
+| model | method, dt | states (alg) | nnz J | LU flops dense (sparse) | doStep mean / max | joint angles vs reference |
+| --- | --- | --- | --- | --- | --- | --- |
+| double pendulum | ros2, 1 ms | 44 (40) | 485 | 56k (4.4k) | 18 / 530 µs | 2.3e-4 rad |
+| `rrr-multibond` | ros2, 1 ms | 66 (60) | 815 | 190k (9.2k) | 102 / 831 µs | 1.6e-5 rad |
+| `panda-free` | ros34pw2, 1 ms | 154 (140) | 2165 | 2.42M (65k) | 647 / 2347 µs | 3.0e-4 rad, flange 2.2e-5 m |
+| `panda` | rodas4p, 0.25 ms x 4 | 168 (140) | 2317 | 3.15M (75k) | 3912 / 14795 µs | 2.3e-11 rad |
+
+Forcing `method = ros2` makes it worse. The step rule then resolves the lightly damped gear and
+link modes with the second-order method:
+
+* `panda-free` runs at 0.25 ms x 4, 2.2 / 9.6 ms per step;
+* `panda` (`max |λ|` 1617 1/s, from the elastic drives) runs at 12.5 µs x 80. Its harness
+  ran for minutes and was stopped.
+
+For comparison, the compliant Panda exports with RK4 at dt 8e-8 s (12500 substeps, 46 to
+70 ms per step). With `ros2` and the sparse LU it takes 92 µs per step for `panda`, while the
+`panda-free` export diverges. The rigid chain removes the stiff held-direction modes
+(`max |λ|` drops from 3.2e6 to 52 1/s for `panda-free`), so a 1 ms Rosenbrock step is
+accurate. The remaining cost is linear algebra.
+
+**Watch list, as observed:**
+
+* **Drift.** None, by construction.
+* **Orientation states.** No quaternion is chosen: the fixed-base poses are algebraic.
+* **Compile time.** Grows mildly, 4.6 s for the Panda.
+* **Initialization.** It fails without items 1 and 2 above (NaN from a singular start or a
+  division by zero); with them, no Newton failures were seen.
+* **Dummies.** The dummy-derivative list is one momentum or twist component per body
+  (`B1/inertia/P[1]`, `Bk/flow/p.f[1..3]`). It is not a fault.
+* **Post-compile W201.** It still lists the body momenta.
+* **Singularities.** None tested: the Panda never passes through a kinematic singularity, and
+  the velocity constraints do not degenerate there. The joint-space mass matrix does not
+  either.
+
+**Limits, and what option 2 needs.** The index-reduced DAE is
+`O(20 n)` unknowns, because every body twist, momentum and reaction stays algebraic. Its
+Jacobian has zero diagonal entries on the algebraic rows, so:
+
+* the static, unpivoted sparse LU of the export fails and the dense LU is `O(n^3)` in 140
+  unknowns;
+* the simulation pays the same price in `Rodas5P`.
+
+There are two ways forward:
+
+* **Export side.** A pivoting sparse LU, or a static row permutation from a maximum
+  transversal so that the diagonal is non-zero, would bring the Panda LU from 2.4 Mflop to
+  about 65 kflop. That is in the export area, which this experiment did not touch.
+* **Option 2: a joint-coordinate chain element.** One block per serial chain, with states
+  `q, qdot` (2n), an internal recursive Newton-Euler for the bias and CRBA for `M(q)`, and
+  `qdd = M \ (tau - c)` as an `n x n` solve. Its interface would be per-joint drive ports, the
+  base and tip wrench/twist ports, and the pose outputs. It needs:
+  * `Mat`/`Vec` intrinsics or a generated unrolled RNEA (the controller blocks already unroll
+    `panda.gravity`);
+  * an explicit ODE with no algebraic block, so RK4 or ros2 export with a 14x14 LU;
+  * a power-balance proof at the ports;
+  * a way to keep the bond-graph view (the chain as one multiport `I`-field).
+
+  It is the articulated backend that D-MB7 rules out, unless it is accepted as an ordinary
+  block.
+
 ---
 
 ## 6. Work packages

@@ -4,7 +4,9 @@
   "name": "panda-3d",
   "models": [
     "panda",
-    "panda-free"
+    "panda-free",
+    "panda-free-rigid",
+    "panda-rigid"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"
