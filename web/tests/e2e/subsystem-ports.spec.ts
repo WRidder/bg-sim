@@ -128,6 +128,14 @@ test("terminals show the subsystem interface inside it and edit it in place", as
   await expect(u).toHaveAttribute("data-maps-to", "V1.u");
   await expect(page.getByTestId("boundary-wire-u")).toHaveCount(1);
   await expect(page.getByTestId("boundary-wire-vc")).toHaveCount(1);
+  // The shape tells the kind: u is a tag pointing toward its wire, vc a hexagon.
+  await expect(u).toHaveAttribute("data-shape", "tag-in");
+  await expect(u).toHaveAttribute("data-handle-side", "right");
+  await expect(u).toHaveAttribute("data-point", "right");
+  await expect(vc).toHaveAttribute("data-shape", "hexagon");
+  await expect(page.getByTestId("boundary-mark-u")).toHaveAttribute("data-mark-at", "internal");
+  await expect(page.getByTestId("boundary-mark-vc")).toHaveAttribute("data-mark", "half-arrow");
+  await expect(page.getByTestId("port-ghost-output")).toHaveAttribute("data-shape", "tag-out");
   await expect(page.getByTestId("port-exposed-p1-u")).toHaveCount(1);
   await expect(page.getByTestId("port-exposed-p3-p")).toHaveCount(1);
   // The terminal is selectable and the inspector shows the port.
@@ -155,6 +163,8 @@ test("terminals show the subsystem interface inside it and edit it in place", as
   await expect(page.getByTestId("port-ghost-output")).toHaveAttribute("data-state", "compatible");
   await page.mouse.up();
   await expect(page.getByTestId("port-terminal-y")).toBeVisible();
+  await expect(page.getByTestId("port-terminal-y")).toHaveAttribute("data-shape", "tag-out");
+  await expect(page.getByTestId("boundary-mark-y")).toHaveAttribute("data-mark-at", "terminal");
   await expect(page.getByTestId("port-terminal-link-y")).toHaveText("unconnected");
   await expect(page.getByTestId("port-exposed-p9-y")).toHaveCount(1);
   expect((await plantPorts(page)).map((port) => port.name)).toEqual(["u", "vc", "y"]);

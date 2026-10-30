@@ -2,20 +2,24 @@
  * Subsystem port terminals on the inner canvas (virtual xyflow nodes; the
  * model stores only the subsystem's `ports`).
  *
- * * `PortTerminalNode` — a pill with the port name, coloured like the port
- *   glyphs, and a second line naming the outside connection (`← Traj.q_ref`,
+ * * `PortTerminalNode` — the port name, outlined in the port glyph colour,
+ *   and a second line naming the outside connection (`← Traj.q_ref`,
  *   `→ PD.q +1`, or `unconnected` in the warning colour). Clicking that line
- *   leaves the subsystem and selects the outside connection(s).
- * * `PortGhostNode` — "+ input" / "+ output" / "+ power": drop a connection
- *   from an internal port on it to expose that port.
+ *   leaves the subsystem and selects the outside connection(s). The outline's
+ *   shape tells the kind (`terminalShape.ts`): an input points into the
+ *   diagram, an output out of it, a power port is a hexagon.
+ * * `PortGhostNode` — "+ input" / "+ output" / "+ power", the same outlines,
+ *   dashed: drop a connection from an internal port on it to expose that port.
  */
 
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
-import { createContext, useContext } from "react";
+import { createContext, useContext, type CSSProperties } from "react";
 
 import type { DomainName, ValueType } from "../../contracts/catalog";
 import type { Side } from "../geometry";
+import { GHOST_HEIGHT, GHOST_WIDTH } from "../subsystemBoundary";
 import type { TerminalKind } from "../subsystemPorts";
+import { terminalInsets, terminalOutline, terminalShape, type TerminalShape } from "./terminalShape";
 import "./portTerminal.css";
 
 export interface TerminalActions {
@@ -72,6 +76,42 @@ function handlePosition(side: Side): Position {
   }
 }
 
+/** The outline (and, when selected, the accent ring around it), drawn behind the text. */
+function TerminalOutline({
+  shape,
+  width,
+  height,
+  selected = false,
+}: {
+  shape: TerminalShape;
+  width: number;
+  height: number;
+  selected?: boolean;
+}) {
+  const d = terminalOutline(shape, width, height);
+  return (
+    <svg
+      className="terminal-outline"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      aria-hidden="true"
+      focusable="false"
+    >
+      {selected ? <path className="terminal-outline__ring" d={d} /> : null}
+      <path className="terminal-outline__shape" d={d} />
+    </svg>
+  );
+}
+
+/** `data-shape` / `data-point`: the drawn shape, for tests and styling. */
+function shapeAttributes(shape: TerminalShape): Record<string, string> {
+  return {
+    "data-shape": shape.point === null ? "hexagon" : shape.kind === "input" ? "tag-in" : "tag-out",
+    "data-point": shape.point ?? "none",
+  };
+}
+
 const KIND_TITLE: Record<TerminalKind, string> = {
   input: "signal input",
   output: "signal output",
@@ -83,6 +123,14 @@ export function PortTerminalNode({ data, selected }: NodeProps<TerminalNodeType>
   const title = `${data.portName} · exposed ${KIND_TITLE[data.kind]}${
     data.kind === "power" ? ` · ${data.domain}` : ` · ${data.type}`
   } · maps to ${data.mapsTo}${data.broken ? " (missing)" : ""}. Double-click to show the outside connection.`;
+  const shape = terminalShape(data.kind, data.handleSide);
+  const insets = terminalInsets(shape, data.height);
+  const style: CSSProperties = {
+    width: data.width,
+    height: data.height,
+    color: data.colour,
+    padding: `${insets.top}px ${insets.right}px ${insets.bottom}px ${insets.left}px`,
+  };
   return (
     <div
       className={[
@@ -93,16 +141,18 @@ export function PortTerminalNode({ data, selected }: NodeProps<TerminalNodeType>
       ]
         .filter(Boolean)
         .join(" ")}
-      style={{ width: data.width, height: data.height, color: data.colour }}
+      style={style}
       data-testid={`port-terminal-${data.portName}`}
       data-port-name={data.portName}
       data-kind={data.kind}
       data-domain={data.domain}
       data-handle-side={data.handleSide}
+      {...shapeAttributes(shape)}
       data-maps-to={data.mapsTo}
       data-connected={data.connected ? "true" : "false"}
       title={title}
     >
+      <TerminalOutline shape={shape} width={data.width} height={data.height} selected={selected} />
       <span className="port-terminal__name">{data.portName}</span>
       <button
         type="button"
@@ -137,14 +187,19 @@ const GHOST_TITLE: Record<TerminalKind, string> = {
 };
 
 export function PortGhostNode({ data }: NodeProps<GhostNodeType>) {
+  const shape = terminalShape(data.kind, data.handleSide);
+  const insets = terminalInsets(shape, GHOST_HEIGHT);
   return (
     <div
       className={`port-ghost port-ghost--${data.kind} is-${data.state}`}
+      style={{ width: GHOST_WIDTH, height: GHOST_HEIGHT, paddingLeft: insets.left, paddingRight: insets.right }}
       data-testid={`port-ghost-${data.kind}`}
       data-state={data.state}
       data-terminal-ghost={data.kind}
+      {...shapeAttributes(shape)}
       title={GHOST_TITLE[data.kind]}
     >
+      <TerminalOutline shape={shape} width={GHOST_WIDTH} height={GHOST_HEIGHT} />
       <span className="port-ghost__label" aria-hidden="true">
         + {data.kind}
       </span>

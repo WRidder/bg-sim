@@ -159,9 +159,10 @@ export const TERMINAL_GAP = 80;
 /** Vertical pitch of a terminal column. */
 export const TERMINAL_PITCH = 48;
 
+/** The text plus the padding that keeps it clear of the shape's point or hexagon ends. */
 export function terminalWidth(name: string, second: string): number {
-  const text = Math.max(name.length * 7.4 + 26, second.length * 6.4 + 28);
-  return Math.round(Math.min(200, Math.max(76, text)));
+  const text = Math.max(name.length * 7.4 + 34, second.length * 6.4 + 36);
+  return Math.round(Math.min(208, Math.max(84, text)));
 }
 
 export const GHOST_WIDTH = 76;
