@@ -33,7 +33,6 @@ import {
   sideToward,
   signalColor,
   SIGNAL_ARROW_SIZE,
-  SIGNAL_DOT_RADIUS,
   type Anchor,
   type NodeLayout,
   type Point,
@@ -414,6 +413,12 @@ export function buildDiagram(
 
 const NO_EXPOSED: Record<string, string> = {};
 
+/**
+ * The outer radius of the ring around an exposed port glyph
+ * (`.port-exposed-ring`: the 15 px handle, inset -3 px, a 1.5 px stroke).
+ */
+const EXPOSED_RING_RADIUS = 11.5;
+
 function terminalAnchor(position: Point, width: number, height: number, side: Side): Anchor {
   switch (side) {
     case "left":
@@ -470,8 +475,9 @@ function boundaryElements(
       y: place.position.y + place.height / 2,
     };
 
-    // The internal end: the port's anchor (outside the arrow tip or the input
-    // dot, like a signal edge), or the junction rim facing the terminal.
+    // The internal end: outside the output arrow tip, or on the exposed ring
+    // around an input dot or power square (so the wire's arrowhead or half
+    // arrow stays clear of it), or the junction rim facing the terminal.
     let internal: Anchor | null = null;
     if (internalNode !== undefined && layout !== undefined) {
       const offset = nodeVisualOffset(internalNode, index);
@@ -485,8 +491,7 @@ function boundaryElements(
         const anchor = portAnchor(internalNode, layout, port.port);
         if (anchor !== null) {
           const point = { x: anchor.point.x + offset.x, y: anchor.point.y + offset.y };
-          const gap =
-            kind === "output" ? SIGNAL_ARROW_SIZE : kind === "input" ? SIGNAL_DOT_RADIUS : 0;
+          const gap = kind === "output" ? SIGNAL_ARROW_SIZE : EXPOSED_RING_RADIUS;
           internal = { point: offsetPoint(point, anchor.side, gap), side: anchor.side };
         }
       }
