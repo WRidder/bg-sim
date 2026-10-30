@@ -63,6 +63,16 @@
       "drivetrain-backlash"
     ]
   },
+  "drivetrain-position": {
+    "title": "Drivetrain position",
+    "description": "Load-position servo on a compliant drivetrain.",
+    "hasScene": true,
+    "models": [
+      "drivetrain-position",
+      "naive",
+      "drivetrain-position-open-loop"
+    ]
+  },
   "hydraulic-servo": {
     "title": "Hydraulic servo",
     "description": "A valve-controlled hydraulic position servo: a 100 bar supply and a 1 bar tank feed a 4/3 spool valve built from four variable orifices, which drive a single-rod…",

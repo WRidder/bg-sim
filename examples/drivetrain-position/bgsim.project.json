@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "drivetrain-position",
+  "models": [
+    "drivetrain-position",
+    "naive",
+    "drivetrain-position-open-loop"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

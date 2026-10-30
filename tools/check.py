@@ -167,6 +167,7 @@ def example_steps() -> list[Step] | None:
                     "tests/e2e/planar-links.spec.ts",
                     "tests/e2e/pendulum-cart.spec.ts",
                     "tests/e2e/pendulum-rotary.spec.ts",
+                    "tests/e2e/drivetrain-position.spec.ts",
                     "tests/e2e/walkthrough.spec.ts",
                 ],
                 cwd=ROOT / "web",

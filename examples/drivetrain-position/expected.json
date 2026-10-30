@@ -1,0 +1,373 @@
+{
+  "project": "drivetrain-position",
+  "description": "X5.14: load-position servo of a compliant drivetrain (first shaft mode ~3.9 Hz, damping ~0.04). The plant is a pure bond graph (MSe, I, R, GY, TF, C, 0/1-junctions). `drivetrain-position` is a 1 kHz firmware (smooth trajectory, Kalman filter on two encoders, feedforward, LQR with integral action); `naive` is a textbook PID on the motor-side position; `drivetrain-position-open-loop` compares the plant with the ODE of design/design.py.",
+  "models": {
+    "drivetrain-position": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "ThetaL/y",
+          "from_t": 0.0,
+          "to_t": 0.19,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "rest before the step: the load angle stays at zero (the reference and the estimator start at zero, so nothing moves)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IW2/p.f",
+          "from_t": 0.0,
+          "to_t": 0.19,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "rest before the step: the load speed stays at zero"
+        },
+        {
+          "kind": "step_response",
+          "signal": "ThetaL/y",
+          "from_t": 0.15,
+          "to_t": 2.15,
+          "step_t": 0.2,
+          "initial": 0.0,
+          "value": 1.0,
+          "settle_abs": 0.02,
+          "max_overshoot": 0.02,
+          "max_settling_time": 0.9,
+          "note": "load position settles in the 0.02 rad (2 %) band by 0.9 s after the step (predicted 0.661 s: the 0.8 s trajectory plus the tail) with overshoot below 2 % (predicted 0.60 %); limits are about 1.3 times the prediction"
+        },
+        {
+          "kind": "final_value",
+          "signal": "ThetaL/y",
+          "t": 2.15,
+          "value": 1.0,
+          "abs": 0.005,
+          "note": "just before the disturbance the load is at 1 rad within 5 mrad (the load encoder LSB is 0.38 mrad)"
+        },
+        {
+          "kind": "ripple",
+          "signal": "ThetaL/y",
+          "from_t": 1.4,
+          "to_t": 2.15,
+          "measure": "pp",
+          "value": 0.004,
+          "note": "residual oscillation after settling: peak-to-peak below 4 mrad (predicted 0.33 mrad, about 10 encoder LSB of the load; the shaft mode is damped, not ringing)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "ThetaL/y",
+          "from_t": 2.2,
+          "to_t": 3.2,
+          "value": 0.908,
+          "note": "the 0.2 N m load torque (a 0.17 rad static twist) dips the load by at most 0.092 rad (predicted dip 0.057 rad)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "ThetaL/y",
+          "t": 3.2,
+          "value": 1.0,
+          "abs": 0.01,
+          "note": "the disturbance is rejected: the load is back within 10 mrad of 1 rad 1 s after it (predicted recovery into the 20 mrad band after 0.130 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "V/p.e",
+          "from_t": 0.0,
+          "to_t": 3.2,
+          "value": 24.0,
+          "note": "the motor voltage stays inside the 24 V supply limit (predicted peak 13.6 V)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Ctrl/T_hat",
+          "t": 3.2,
+          "value": 0.2,
+          "rtol": 0.05,
+          "note": "the Kalman filter has learned the 0.2 N m load torque (5 %)"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "Ctrl/theta_L_hat",
+          "signal_b": "ThetaL/y",
+          "from_t": 0.3,
+          "to_t": 3.2,
+          "value": 0.003,
+          "note": "the estimate follows the load angle within 3 mrad RMS over the whole move"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.5,
+          "value": 0.242946,
+          "abs": 0.004,
+          "note": "closed-loop prediction of design.py (exact 5-state truth with the 1 mH inductance, 12/14-bit encoders); 4 mrad tolerance for the solver and the encoder phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.7,
+          "value": 0.756816,
+          "abs": 0.004,
+          "note": "closed-loop prediction of design.py (exact 5-state truth with the 1 mH inductance, 12/14-bit encoders); 4 mrad tolerance for the solver and the encoder phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.9,
+          "value": 0.993846,
+          "abs": 0.004,
+          "note": "closed-loop prediction of design.py (exact 5-state truth with the 1 mH inductance, 12/14-bit encoders); 4 mrad tolerance for the solver and the encoder phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 1.5,
+          "value": 0.999877,
+          "abs": 0.004,
+          "note": "closed-loop prediction of design.py (exact 5-state truth with the 1 mH inductance, 12/14-bit encoders); 4 mrad tolerance for the solver and the encoder phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 2.3,
+          "value": 0.971211,
+          "abs": 0.004,
+          "note": "closed-loop prediction of design.py (exact 5-state truth with the 1 mH inductance, 12/14-bit encoders); 4 mrad tolerance for the solver and the encoder phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 2.5,
+          "value": 1.003457,
+          "abs": 0.004,
+          "note": "closed-loop prediction of design.py (exact 5-state truth with the 1 mH inductance, 12/14-bit encoders); 4 mrad tolerance for the solver and the encoder phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 3.0,
+          "value": 1.004195,
+          "abs": 0.004,
+          "note": "closed-loop prediction of design.py (exact 5-state truth with the 1 mH inductance, 12/14-bit encoders); 4 mrad tolerance for the solver and the encoder phase"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E003",
+            "E006",
+            "E102",
+            "E106",
+            "E303",
+            "E901",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, event-limit stop or invalid unit. W201 (IW1/IJm in derivative causality: the ideal gear welds the two inertias) and W205 (dimensionless bond island) are expected bond-graph causality"
+        }
+      ]
+    },
+    "naive": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "ThetaL/y",
+          "from_t": 0.353,
+          "to_t": 0.373,
+          "value": 1.835,
+          "note": "the contrast is real: the first load peak is at least 1.835 rad, an overshoot of 84 % or more (predicted 2.044 rad at 0.363 s; the showcase overshoots by 0.60 %)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "ThetaL/y",
+          "from_t": 1.922,
+          "to_t": 1.942,
+          "value": 1.281,
+          "note": "and it is still ringing 1.6 s later: the peak near 1.93 s is above 1.281 rad (predicted 1.468); the showcase is still inside 5 mrad"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "ThetaL/y",
+          "from_t": 0.5,
+          "to_t": 2.1500000000000004,
+          "min_hz": 1.0,
+          "max_hz": 12.0,
+          "value": 3.83,
+          "rtol": 0.06,
+          "note": "the load rings at the shaft mode, about 3.83 Hz (open-loop mode 3.91 Hz, motor held 3.90 Hz)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "V/p.e",
+          "from_t": 0.0,
+          "to_t": 3.2,
+          "value": 24.0,
+          "note": "the naive loop saturates on the step but stays inside 24 V"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E003",
+            "E006",
+            "E102",
+            "E106",
+            "E303",
+            "E901",
+            "W206"
+          ],
+          "note": "same diagnostics policy as the showcase"
+        }
+      ]
+    },
+    "drivetrain-position-open-loop": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.1,
+          "value": 0.017056862,
+          "abs": 1e-06,
+          "note": "load angle of the plant ODE (5 states: rotor, inductance, load; exact ZOH): the bond-graph plant agrees to 1e-8 rad; the check allows 1 urad (solver reltol 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Theta/y",
+          "t": 0.1,
+          "value": 0.854972203,
+          "abs": 1e-05,
+          "note": "motor angle of the plant ODE, 10 urad absolute (the motor angle is ten times the load angle; the difference is 1e-8 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.2,
+          "value": 0.305304982,
+          "abs": 1e-06,
+          "note": "load angle of the plant ODE (5 states: rotor, inductance, load; exact ZOH): the bond-graph plant agrees to 1e-8 rad; the check allows 1 urad (solver reltol 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Theta/y",
+          "t": 0.2,
+          "value": 2.779986188,
+          "abs": 1e-05,
+          "note": "motor angle of the plant ODE, 10 urad absolute (the motor angle is ten times the load angle; the difference is 1e-8 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.3,
+          "value": 0.501262512,
+          "abs": 1e-06,
+          "note": "load angle of the plant ODE (5 states: rotor, inductance, load; exact ZOH): the bond-graph plant agrees to 1e-8 rad; the check allows 1 urad (solver reltol 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Theta/y",
+          "t": 0.3,
+          "value": 4.822200783,
+          "abs": 1e-05,
+          "note": "motor angle of the plant ODE, 10 urad absolute (the motor angle is ten times the load angle; the difference is 1e-8 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.45,
+          "value": 0.787609786,
+          "abs": 1e-06,
+          "note": "load angle of the plant ODE (5 states: rotor, inductance, load; exact ZOH): the bond-graph plant agrees to 1e-8 rad; the check allows 1 urad (solver reltol 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Theta/y",
+          "t": 0.45,
+          "value": 7.736037879,
+          "abs": 1e-05,
+          "note": "motor angle of the plant ODE, 10 urad absolute (the motor angle is ten times the load angle; the difference is 1e-8 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.6,
+          "value": 1.039382368,
+          "abs": 1e-06,
+          "note": "load angle of the plant ODE (5 states: rotor, inductance, load; exact ZOH): the bond-graph plant agrees to 1e-8 rad; the check allows 1 urad (solver reltol 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Theta/y",
+          "t": 0.6,
+          "value": 10.75362289,
+          "abs": 1e-05,
+          "note": "motor angle of the plant ODE, 10 urad absolute (the motor angle is ten times the load angle; the difference is 1e-8 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.7,
+          "value": 0.979172002,
+          "abs": 1e-06,
+          "note": "load angle of the plant ODE (5 states: rotor, inductance, load; exact ZOH): the bond-graph plant agrees to 1e-8 rad; the check allows 1 urad (solver reltol 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Theta/y",
+          "t": 0.7,
+          "value": 12.563300949,
+          "abs": 1e-05,
+          "note": "motor angle of the plant ODE, 10 urad absolute (the motor angle is ten times the load angle; the difference is 1e-8 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 0.9,
+          "value": 1.474625251,
+          "abs": 1e-06,
+          "note": "load angle of the plant ODE (5 states: rotor, inductance, load; exact ZOH): the bond-graph plant agrees to 1e-8 rad; the check allows 1 urad (solver reltol 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Theta/y",
+          "t": 0.9,
+          "value": 16.140613596,
+          "abs": 1e-05,
+          "note": "motor angle of the plant ODE, 10 urad absolute (the motor angle is ten times the load angle; the difference is 1e-8 rad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ThetaL/y",
+          "t": 1.0,
+          "value": 1.540794793,
+          "abs": 1e-06,
+          "note": "load angle of the plant ODE (5 states: rotor, inductance, load; exact ZOH): the bond-graph plant agrees to 1e-8 rad; the check allows 1 urad (solver reltol 1e-8)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Theta/y",
+          "t": 1.0,
+          "value": 17.854993617,
+          "abs": 1e-05,
+          "note": "motor angle of the plant ODE, 10 urad absolute (the motor angle is ten times the load angle; the difference is 1e-8 rad)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E003",
+            "E006",
+            "E102",
+            "E106",
+            "E303",
+            "E901",
+            "W206"
+          ]
+        }
+      ]
+    }
+  }
+}
