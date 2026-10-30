@@ -1,0 +1,43 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "architecture",
+          "title": "Architecture",
+          "file": "pages/architecture.md",
+          "children": []
+        },
+        {
+          "id": "controller",
+          "title": "Flight controller and design",
+          "file": "pages/controller.md",
+          "children": []
+        },
+        {
+          "id": "estimator",
+          "title": "Sensors and navigation filter",
+          "file": "pages/estimator.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results and checks",
+          "file": "pages/results.md",
+          "children": []
+        },
+        {
+          "id": "notes",
+          "title": "Notes and reuse",
+          "file": "pages/notes.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

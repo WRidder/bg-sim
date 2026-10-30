@@ -45,6 +45,9 @@ include("units/units.jl")
 include("library/library.jl")
 include("syntax/watch.jl")
 
+# Work package F5.1: CSV input sources (project data files as signals).
+include("library/csvdata.jl")
+
 # Work package J1.4: the IR and the flattening pipeline (plan 5.2, 5.4, 5.5, 5.6).
 include("compile/pipeline.jl")
 

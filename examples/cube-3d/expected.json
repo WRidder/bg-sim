@@ -1,6 +1,6 @@
 {
   "project": "cube-3d",
-  "description": "Plan 9.9 (X5.4) acceptance. A 0.15 m cube balanced on one corner by three body-axis reaction wheels: the plant is the hand-derived equation block library/CornerCube.jl (quaternion + body rates + relative wheel rates, m = 0.42 kg, Thcm = 3e-3, Thw = 6e-4), driven by three ElectricDrive motors (R = 1 Ohm, L = 0.1 mH, k = 0.0335, rotor 1e-6) and a 2 ms discrete LQR (library/CubeLQR.jl, +-12 V) whose gain K (3 x 8) comes from design/design.py (finite-difference linearisation of an independent numpy replica, reduced state [tilt(2), omega(3), wheel(3)], DARE on (A/rho, B/rho), rho = 1.0005). Start: 2 degrees off the vertical. The reference numbers are design.py's non-linear closed loop (Radau, ZOH, clamp). DEC-M5-3: cube-3d-mb / cube-3d-mb-soft are the same cube built from the M3 spatial stdlib (Spherical3D pivot with kt = 1e8 / 1e6 N/m, RigidBody3D cube and wheels, Revolute3D, ElectricDrive) under the same controller; the compare entries bound the difference by the pivot compliance and compare_scaling shows that the quasi-static part scales as 1/kt.",
+  "description": "Plan 9.9 (X5.4, X5.4b) acceptance. A 0.15 m cube balanced on one corner by three body-axis reaction wheels, each mounted on the inside of the face opposite the pivot corner (wheel i centred on the face x_i = a, its centre d = 0.01 m inside it; wheel 0.08 kg, radius 0.055 m, thickness 0.012 m, axial inertia 1.9e-4, structure 0.18 kg): the plant is the hand-derived equation block library/CornerCube.jl (quaternion + body rates + relative wheel rates; total m = 0.42 kg, CoM (0.08738 m)(1,1,1), inertia about the pivot diag 8.278e-3 / off -3.1425e-3), driven by three ElectricDrive motors (R = 1 Ohm, L = 0.1 mH, k = 0.0335, rotor 1e-6) and a 2 ms discrete LQR (library/CubeLQR.jl, +-12 V) whose gain K (3 x 8) comes from design/design.py (finite-difference linearisation of an independent numpy replica, reduced state [tilt(2), omega(3), wheel(3)], DARE on (A/rho, B/rho), rho = 1.0005). Start: 2 degrees off the vertical. The reference numbers are design.py's non-linear closed loop (Radau, ZOH, clamp). DEC-M5-3: cube-3d-mb / cube-3d-mb-soft are the same cube built from the M3 spatial stdlib (Spherical3D pivot with kt = 1e8 / 1e6 N/m, RigidBody3D structure and wheels at their face positions, Revolute3D, ElectricDrive) under the same controller; the compare entries bound the difference by the pivot compliance and compare_scaling shows that the quasi-static part scales with 1/kt.",
   "models": {
     "cube-3d": {
       "checks": [
@@ -47,7 +47,7 @@
           "from_t": 3.0,
           "to_t": 4.0,
           "value": 0.008726646,
-          "note": "plan 9.9 acceptance: tilt < 0.5 degrees after 3 s (measured 0.0270 degrees)"
+          "note": "plan 9.9 acceptance: tilt < 0.5 degrees after 3 s (measured 0.00605 degrees)"
         },
         {
           "kind": "max_abs_le",
@@ -55,71 +55,71 @@
           "from_t": 0.15,
           "to_t": 4.0,
           "value": 0.008726646,
-          "note": "the cube is inside 0.5 degrees from 0.141 s on, well before the 3 s of the plan"
+          "note": "the cube is inside 0.5 degrees from 0.120 s on, well before the 3 s of the plan (peak 0.307 degrees over [0.15, 4] s)"
         },
         {
           "kind": "max_abs",
           "signal": "Cube/tilt",
           "from_t": 3.0,
           "to_t": 4.0,
-          "value": 0.00047194,
+          "value": 0.00010552,
           "abs": 1e-06,
-          "note": "design.py: 4.718e-4 rad (0.02703 deg) over [3, 4] s; the independent numpy replica and the model agree to 1e-7 rad"
+          "note": "design.py: 1.0552e-4 rad (0.006046 degrees) over [3, 4] s; the independent numpy replica and the model agree to 1e-7 rad"
         },
         {
           "kind": "max_abs",
           "signal": "Cube/tilt",
-          "value": 0.0349103,
+          "value": 0.0349104,
           "abs": 1e-06,
-          "note": "the tilt never grows beyond the initial 2 degrees (0.0349066 rad; peak 0.0349103 rad before the first 2 ms sample)"
+          "note": "the tilt never grows beyond the initial 2 degrees (0.0349066 rad; peak 0.0349104 rad before the first 2 ms sample)"
         },
         {
           "kind": "cursor_value",
           "signal": "Cube/tilt",
           "t": 0.1,
-          "value": 0.013581803,
+          "value": 0.011493734,
           "abs": 2e-06,
-          "note": "design.py: 0.77818 degrees at t = 0.1 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
+          "note": "design.py: 0.65854 degrees at t = 0.1 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
         },
         {
           "kind": "cursor_value",
           "signal": "Cube/tilt",
           "t": 0.25,
-          "value": 0.00241187,
+          "value": 0.00046222,
           "abs": 2e-06,
-          "note": "design.py: 0.13819 degrees at t = 0.25 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
+          "note": "design.py: 0.02648 degrees at t = 0.25 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
         },
         {
           "kind": "cursor_value",
           "signal": "Cube/tilt",
           "t": 0.5,
-          "value": 0.00061296,
+          "value": 0.00280424,
           "abs": 2e-06,
-          "note": "design.py: 0.03512 degrees at t = 0.5 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
+          "note": "design.py: 0.16067 degrees at t = 0.5 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
         },
         {
           "kind": "cursor_value",
           "signal": "Cube/tilt",
           "t": 1.0,
-          "value": 0.000794997,
+          "value": 0.00159829,
           "abs": 2e-06,
-          "note": "design.py: 0.04555 degrees at t = 1.0 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
+          "note": "design.py: 0.09158 degrees at t = 1.0 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
         },
         {
           "kind": "cursor_value",
           "signal": "Cube/tilt",
           "t": 2.0,
-          "value": 0.000613309,
+          "value": 0.00041119,
           "abs": 2e-06,
-          "note": "design.py: 0.03514 degrees at t = 2.0 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
+          "note": "design.py: 0.02356 degrees at t = 2.0 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
         },
         {
           "kind": "cursor_value",
           "signal": "Cube/tilt",
           "t": 4.0,
-          "value": 0.000363203,
+          "value": 2.712e-05,
           "abs": 2e-06,
-          "note": "design.py: 0.02081 degrees at t = 4.0 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
+          "note": "design.py: 0.00155 degrees at t = 4.0 s (non-linear closed loop, Radau, ZOH 2 ms, +-12 V clamp)"
         },
         {
           "kind": "max_abs_le",
@@ -130,9 +130,9 @@
         {
           "kind": "max_abs",
           "signal": "Cube/wheel[1]",
-          "value": 4.6855,
+          "value": 17.6933,
           "abs": 0.005,
-          "note": "design.py: peak wheel 1 rate relative to the cube 4.6855 rad/s"
+          "note": "design.py: peak wheel 1 rate relative to the cube 17.6933 rad/s"
         },
         {
           "kind": "max_abs_le",
@@ -142,9 +142,9 @@
         {
           "kind": "max_abs",
           "signal": "Cube/wheel[2]",
-          "value": 1.257,
+          "value": 4.7584,
           "abs": 0.005,
-          "note": "design.py: peak wheel 2 rate relative to the cube 1.257 rad/s"
+          "note": "design.py: peak wheel 2 rate relative to the cube 4.7584 rad/s"
         },
         {
           "kind": "max_abs_le",
@@ -154,44 +154,44 @@
         {
           "kind": "max_abs",
           "signal": "Cube/wheel[3]",
-          "value": 3.4286,
+          "value": 12.936,
           "abs": 0.005,
-          "note": "design.py: peak wheel 3 rate relative to the cube 3.4286 rad/s"
+          "note": "design.py: peak wheel 3 rate relative to the cube 12.9361 rad/s"
         },
         {
           "kind": "cursor_value",
           "signal": "Cube/wheel[1]",
           "t": 4.0,
-          "value": 0.97347,
+          "value": 0.04988,
           "abs": 0.005,
-          "note": "design.py: 0.973 rad/s: the wheel momentum bleeds off slowly (closed-loop pole -0.262 1/s)"
+          "note": "design.py: 0.0499 rad/s: the wheel momentum bleeds off slowly (closed-loop pole -1.359 1/s)"
         },
         {
           "kind": "cursor_value",
           "signal": "Cube/phi1",
           "t": 4.0,
-          "value": 7.101,
+          "value": 9.1459,
           "abs": 0.02,
-          "note": "the integrated wheel angle int(wr[1], 0), the 3D wheel_x binding: 7.10 rad (about 1.1 turns) after 4 s"
+          "note": "the integrated wheel angle int(wr[1], 0), the 3D wheel_x binding: 9.15 rad (about 1.5 turns) after 4 s"
         },
         {
           "kind": "max_abs_le",
           "signal": "Cube/qerr",
           "value": 1e-06,
-          "note": "plan 9.9 acceptance: quaternion norm error < 1e-6 (measured 2.6e-14: the quaternion kinematics keep |q| a first integral)"
+          "note": "plan 9.9 acceptance: quaternion norm error < 1e-6 (measured 1.8e-14: the quaternion kinematics keep |q| a first integral)"
         },
         {
           "kind": "max_abs_le",
           "signal": "Cube/Hz",
           "value": 1e-12,
-          "note": "the vertical angular momentum about the pivot is conserved by any controller (gravity has no torque about a vertical axis through the pivot): measured 1.7e-16"
+          "note": "the vertical angular momentum about the pivot is conserved by any controller (gravity has no torque about a vertical axis through the pivot): measured 4.7e-17"
         },
         {
           "kind": "max_abs",
           "signal": "Cube/Hzw",
-          "value": 7.605e-05,
+          "value": 0.00015978,
           "abs": 2e-07,
-          "note": "...while the wheels carry up to 7.6e-5 N m s of it (the cube carries the opposite), so the conservation above is not trivial"
+          "note": "...while the wheels carry up to 1.6e-4 N m s of it (the cube carries the opposite), so the conservation above is not trivial"
         },
         {
           "kind": "invariant",
@@ -201,9 +201,9 @@
               "coeff": 1.0
             }
           ],
-          "scale": 7.6e-05,
+          "scale": 0.00016,
           "tol": 1e-09,
-          "note": "Hz is constant against the 7.6e-5 N m s the wheels exchange (measured ratio 2e-12)"
+          "note": "Hz is constant against the 1.6e-4 N m s the wheels exchange (measured ratio 3e-13)"
         },
         {
           "kind": "max_abs_le",
@@ -235,8 +235,8 @@
           "signal": "Ctrl/u1",
           "from_t": 0.1,
           "to_t": 4.0,
-          "value": 0.1,
-          "note": "after 0.1 s the voltage stays below 0.1 V (measured 0.068 V): the clamp is a start-up event only"
+          "value": 0.25,
+          "note": "after 0.1 s the voltage stays below 0.25 V (measured 0.201 V): the clamp is a start-up event only"
         },
         {
           "kind": "cursor_value",
@@ -284,7 +284,7 @@
           "from_t": 3.0,
           "to_t": 4.0,
           "value": 0.008726646,
-          "note": "the same controller balances the multibond cube: tilt < 0.5 degrees after 3 s (measured 0.0270 degrees)"
+          "note": "the same controller balances the multibond cube: tilt < 0.5 degrees after 3 s (measured 0.00605 degrees)"
         },
         {
           "kind": "max_abs_le",
@@ -305,7 +305,7 @@
           "kind": "max_abs_le",
           "signal": "Tilt/qerr",
           "value": 1e-06,
-          "note": "quaternion norm error of the composed pose (measured 7e-15)"
+          "note": "quaternion norm error of the composed pose (measured 1e-14)"
         },
         {
           "kind": "invariant",
@@ -327,15 +327,15 @@
               "coeff": 1.0
             }
           ],
-          "scale": 6e-05,
+          "scale": 0.00016,
           "tol": 3e-09,
-          "note": "vertical angular momentum about the pivot (body + 3 wheels) is conserved; the wheels exchange up to 6.0e-5 N m s with the body; measured drift/scale 9.3e-10, bound by the pivot compliance (kt = 1e8 N/m)"
+          "note": "vertical angular momentum about the pivot (body + 3 wheels) is conserved; the wheels exchange up to 1.6e-4 N m s with the body; measured drift/scale 5.7e-10, bound by the pivot compliance (kt = 1e8 N/m)"
         },
         {
           "kind": "max_abs_le",
           "signal": "Pivot/dlin[1]",
           "value": 1e-07,
-          "note": "the pivot sags by about m g / kt = 4.1e-08 m (measured max 5.3e-8): the only source of difference to the rigid cube-3d"
+          "note": "the pivot sags by about m g / kt = 4.1e-08 m (measured max 2.4e-8): the only source of difference to the rigid cube-3d"
         },
         {
           "kind": "max_abs_le",
@@ -379,7 +379,7 @@
           "from_t": 3.0,
           "to_t": 4.0,
           "value": 0.008726646,
-          "note": "the same controller balances the multibond cube: tilt < 0.5 degrees after 3 s (measured 0.0270 degrees)"
+          "note": "the same controller balances the multibond cube: tilt < 0.5 degrees after 3 s (measured 0.00605 degrees)"
         },
         {
           "kind": "max_abs_le",
@@ -400,7 +400,7 @@
           "kind": "max_abs_le",
           "signal": "Tilt/qerr",
           "value": 1e-06,
-          "note": "quaternion norm error of the composed pose (measured 7e-15)"
+          "note": "quaternion norm error of the composed pose (measured 1e-14)"
         },
         {
           "kind": "invariant",
@@ -422,15 +422,15 @@
               "coeff": 1.0
             }
           ],
-          "scale": 6e-05,
+          "scale": 0.00016,
           "tol": 3e-06,
-          "note": "vertical angular momentum about the pivot (body + 3 wheels) is conserved; the wheels exchange up to 6.0e-5 N m s with the body; measured drift/scale 6.8e-7, bound by the pivot compliance (kt = 1e6 N/m)"
+          "note": "vertical angular momentum about the pivot (body + 3 wheels) is conserved; the wheels exchange up to 1.6e-4 N m s with the body; measured drift/scale 6.8e-7, bound by the pivot compliance (kt = 1e6 N/m)"
         },
         {
           "kind": "max_abs_le",
           "signal": "Pivot/dlin[1]",
           "value": 1e-05,
-          "note": "the pivot sags by about m g / kt = 4.1e-06 m (measured max 5.9e-6): the only source of difference to the rigid cube-3d"
+          "note": "the pivot sags by about m g / kt = 4.1e-06 m (measured max 4.0e-6): the only source of difference to the rigid cube-3d"
         },
         {
           "kind": "max_abs_le",
@@ -465,8 +465,8 @@
       "signal_a": "Cube/tilt",
       "signal_b": "Tilt/tilt",
       "from_t": 0.0,
-      "max_abs": 3e-06,
-      "note": "tilt: equation block vs multibond over the whole run; measured 2.1e-6 rad = 6e-5 of the 2 degrees (kt = 1e8 N/m)"
+      "max_abs": 1e-06,
+      "note": "tilt: equation block vs multibond over the whole run; measured 4.2e-7 rad = 1.2e-5 of the 2 degrees (kt = 1e8 N/m)"
     },
     {
       "a": "cube-3d",
@@ -474,7 +474,7 @@
       "signal_a": "Ctrl/pose[1]",
       "signal_b": "Ctrl/pose[1]",
       "from_t": 0.0,
-      "max_abs": 1.5e-06
+      "max_abs": 5e-07
     },
     {
       "a": "cube-3d",
@@ -482,7 +482,7 @@
       "signal_a": "Ctrl/pose[2]",
       "signal_b": "Ctrl/pose[2]",
       "from_t": 0.0,
-      "max_abs": 1.5e-06
+      "max_abs": 5e-07
     },
     {
       "a": "cube-3d",
@@ -490,7 +490,7 @@
       "signal_a": "Ctrl/pose[3]",
       "signal_b": "Ctrl/pose[3]",
       "from_t": 0.0,
-      "max_abs": 1.5e-06
+      "max_abs": 5e-07
     },
     {
       "a": "cube-3d",
@@ -498,7 +498,7 @@
       "signal_a": "Ctrl/pose[4]",
       "signal_b": "Ctrl/pose[4]",
       "from_t": 0.0,
-      "max_abs": 1.5e-06
+      "max_abs": 5e-07
     },
     {
       "a": "cube-3d",
@@ -506,7 +506,7 @@
       "signal_a": "Ctrl/wheel[1]",
       "signal_b": "Ctrl/wheel[1]",
       "from_t": 0.05,
-      "max_abs": 5e-05,
+      "max_abs": 2e-05,
       "note": "wheel rates from 50 ms on, after the pivot ringing excited by the first voltage step (2 ms) has decayed"
     },
     {
@@ -515,7 +515,7 @@
       "signal_a": "Ctrl/wheel[2]",
       "signal_b": "Ctrl/wheel[2]",
       "from_t": 0.05,
-      "max_abs": 5e-05
+      "max_abs": 5e-06
     },
     {
       "a": "cube-3d",
@@ -523,7 +523,7 @@
       "signal_a": "Ctrl/wheel[3]",
       "signal_b": "Ctrl/wheel[3]",
       "from_t": 0.05,
-      "max_abs": 5e-05
+      "max_abs": 1.5e-05
     },
     {
       "a": "cube-3d",
@@ -531,7 +531,7 @@
       "signal_a": "Ctrl/omega[1]",
       "signal_b": "Ctrl/omega[1]",
       "from_t": 0.05,
-      "max_abs": 4e-06
+      "max_abs": 1.5e-07
     },
     {
       "a": "cube-3d",
@@ -539,7 +539,7 @@
       "signal_a": "Ctrl/omega[2]",
       "signal_b": "Ctrl/omega[2]",
       "from_t": 0.05,
-      "max_abs": 2e-06
+      "max_abs": 5e-08
     },
     {
       "a": "cube-3d",
@@ -547,7 +547,7 @@
       "signal_a": "Ctrl/omega[3]",
       "signal_b": "Ctrl/omega[3]",
       "from_t": 0.05,
-      "max_abs": 3e-06
+      "max_abs": 1e-07
     },
     {
       "a": "cube-3d",
@@ -556,7 +556,7 @@
       "signal_b": "Tilt/tilt",
       "from_t": 0.0,
       "max_abs": 3e-05,
-      "note": "tilt: equation block vs multibond over the whole run; measured 2.1e-5 rad = 6e-4 of the 2 degrees (soft kt = 1e6 N/m)"
+      "note": "tilt: equation block vs multibond over the whole run; measured 2.4e-5 rad = 6.9e-4 of the 2 degrees (soft kt = 1e6 N/m)"
     },
     {
       "a": "cube-3d",
@@ -564,7 +564,7 @@
       "signal_a": "Ctrl/pose[1]",
       "signal_b": "Ctrl/pose[1]",
       "from_t": 0.0,
-      "max_abs": 1.0500000000000001e-05
+      "max_abs": 1e-05
     },
     {
       "a": "cube-3d",
@@ -572,7 +572,7 @@
       "signal_a": "Ctrl/pose[2]",
       "signal_b": "Ctrl/pose[2]",
       "from_t": 0.0,
-      "max_abs": 1.0500000000000001e-05
+      "max_abs": 2e-05
     },
     {
       "a": "cube-3d",
@@ -580,7 +580,7 @@
       "signal_a": "Ctrl/pose[3]",
       "signal_b": "Ctrl/pose[3]",
       "from_t": 0.0,
-      "max_abs": 1.0500000000000001e-05
+      "max_abs": 4e-06
     },
     {
       "a": "cube-3d",
@@ -588,7 +588,7 @@
       "signal_a": "Ctrl/pose[4]",
       "signal_b": "Ctrl/pose[4]",
       "from_t": 0.0,
-      "max_abs": 1.0500000000000001e-05
+      "max_abs": 1e-05
     },
     {
       "a": "cube-3d",
@@ -596,7 +596,7 @@
       "signal_a": "Ctrl/wheel[1]",
       "signal_b": "Ctrl/wheel[1]",
       "from_t": 0.05,
-      "max_abs": 0.00015000000000000001,
+      "max_abs": 0.005,
       "note": "wheel rates from 50 ms on, after the pivot ringing excited by the first voltage step (2 ms) has decayed"
     },
     {
@@ -605,7 +605,7 @@
       "signal_a": "Ctrl/wheel[2]",
       "signal_b": "Ctrl/wheel[2]",
       "from_t": 0.05,
-      "max_abs": 0.00015000000000000001
+      "max_abs": 0.003
     },
     {
       "a": "cube-3d",
@@ -613,7 +613,7 @@
       "signal_a": "Ctrl/wheel[3]",
       "signal_b": "Ctrl/wheel[3]",
       "from_t": 0.05,
-      "max_abs": 0.00015000000000000001
+      "max_abs": 0.003
     },
     {
       "a": "cube-3d",
@@ -621,7 +621,7 @@
       "signal_a": "Ctrl/omega[1]",
       "signal_b": "Ctrl/omega[1]",
       "from_t": 0.05,
-      "max_abs": 3.9999999999999996e-05
+      "max_abs": 8e-05
     },
     {
       "a": "cube-3d",
@@ -629,7 +629,7 @@
       "signal_a": "Ctrl/omega[2]",
       "signal_b": "Ctrl/omega[2]",
       "from_t": 0.05,
-      "max_abs": 1.9999999999999998e-05
+      "max_abs": 4e-05
     },
     {
       "a": "cube-3d",
@@ -637,7 +637,7 @@
       "signal_a": "Ctrl/omega[3]",
       "signal_b": "Ctrl/omega[3]",
       "from_t": 0.05,
-      "max_abs": 3e-05
+      "max_abs": 4e-05
     }
   ],
   "compare_scaling": {
@@ -647,21 +647,21 @@
     "k_ratio": 100,
     "signals": [
       [
-        "Ctrl/wheel[1]",
-        "Ctrl/wheel[1]"
+        "Ctrl/omega[1]",
+        "Ctrl/omega[1]"
       ],
       [
-        "Ctrl/wheel[2]",
-        "Ctrl/wheel[2]"
+        "Ctrl/omega[2]",
+        "Ctrl/omega[2]"
       ],
       [
-        "Ctrl/wheel[3]",
-        "Ctrl/wheel[3]"
+        "Ctrl/omega[3]",
+        "Ctrl/omega[3]"
       ]
     ],
-    "from_t": 1.0,
+    "from_t": 0.5,
     "ratio_min": 50.0,
     "ratio_max": 150.0,
-    "note": "the quasi-static part of the difference (the wheel rates from 1 s on) scales as 1/kt: measured ratios 95 / 78 / 100 for a stiffness ratio of 100"
+    "note": "the quasi-static part of the difference (the body rates from 0.5 s on) scales as 1/kt: measured ratios 75 / 122 / 59 for a stiffness ratio of 100. The wheel rates are not used: the stiff run reaches a floor of about 1e-6 rad/s that does not shrink with a stiffer shaft or stiffer wheel joints, so the 1/kt part is partly hidden there"
   }
 }

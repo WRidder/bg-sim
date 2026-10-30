@@ -1749,3 +1749,107 @@ Code: `src/sim/edits.jl`; marked `M4 debug (J4.4)` lines in `src/sim/debug.jl` (
 * **Model for replay/branch:** `write_run_model(run_dir, model, project_dir)` writes `<run_dir>/model.json`; `replay_run`/`branch_run` use it unless `flat` is passed.
 * **Watch pause replay:** max relative column error 3.9e-8 (dc-motor, `Motor1/i > 5`, edit of R) at reltol 1e-6; the test asserts < 1e-5.
 * Test gotcha: a single top-level `@testset` prints nothing until the end; a helper that waits for a notification while the run is paused hangs (resume first).
+
+# PERF-1 — speed of compile, initialization and simulation (verified 2026-10-30)
+
+Numbers: `julia/BGSim/bench/RESULTS.md` (harness `bench/bench.jl`, report `bench/report.jl`).
+Start the harness with `julia --project=julia/BGSim julia/BGSim/bench/bench.jl [case ...] [--runs=N]
+[--full] [--save=dir] [--compare=dir] [--out=f.json]`; `BGSim.LAST_PROFILE[]` holds the phase
+timings and `integ.stats` of the last `simulate`.
+
+## Where the time went (measured before any change)
+
+* **The recorder's per-signal getters were 60-90 % of every run.** `getu(integ, sym)` per
+  recorded signal builds one generated function per signal (one JIT compile each) and the
+  models list *every* port variable as a signal: 2352 signals for `robot-arm-3d/arm`, 2512 for
+  `sequence-contact`, 1714 for `cube-3d-mb`. First call of the getters: 80-150 s cold; warm still
+  10 ms per output row. The solver itself was a minor part (`robot-arm-3d/arm` warm: 1 s of 11.6 s).
+* A vector-valued `getu(integ, syms)` shares sub-expressions but builds its result with
+  `create_array(Vector, nothing, Val(1), Val(2352), x1, ... x2352)` (a 2000-argument call): ≈1 ms per
+  call and 13-24 s first-call compile.
+* **Fix:** `ModelingToolkit.build_explicit_observed_function(sys, symbols; checkbounds = false,
+  return_inplace = true, compiler_options = CompilerOptions(optlevel = 0))[2]` is an in-place
+  `fn(out, u, p, t)` that fills a preallocated `Vector{Float64}` (2352 signals: 2-4 µs per call, first-call
+  compile 1.4 s at `optlevel = 0`, 3.1 s at the default, 13 s for the out-of-place variant). It accepts
+  `integ.u`, `integ.p` (a `DespecializedParameters` wrapper is unwrapped by the generated-function
+  wrapper) and `integ.t`; held discrete values are read from `p`, so a `setp` is visible. Values are
+  bit-identical to the per-signal getters (`test/test_perf.jl`). `optlevel = 1` is the worst
+  of the three (9 s); `infer = false` is not worth it (4.6 s first call and 1 ms per call).
+  `Base.Experimental.set_compile!` is absent in Julia 1.13.2, so only `optlevel` 0/1 and
+  `(optlevel 0, infer false)` exist as `CompilerOptions` combinations (MTK falls back to fixed modules).
+* The recorder wrote every Float64 with its own `write` (~100 ns each); one bulk `write` per row
+  (`_write_row_le`, same little-endian bytes) removes ~0.3 s per 1000 rows at 2500 signals.
+
+## Facts that decide further work
+
+* **Scheduler.** `run_tick!` already publishes (`setp` + `reeval_internals_due_to_modification!`) only
+  when a held value actually changed, so there is no needless integrator reset at an unchanged tick.
+  Cost is small after the reader fix (`tick` column of RESULTS.md: 0.2-3 s per run, 22 µs per tick on
+  the servo). The DAE `initialize_dae!(BrownFullBasicInit)` per published tick is cheap at the sizes measured.
+* **Callbacks.** MTK already merges all `continuous_events` into ONE `VectorContinuousCallback` (servo:
+  length 5, `rrr-multibond`: 1173 kink conditions). On the event-dense servo (852k steps) the condition
+  check is ~85 % of `step!`: each call goes through `FunctionWrappersWrapper` and the
+  `DespecializedParameters` dynamic-dispatch barrier. `ODEProblem{true, FullSpecialize}` removes that
+  (servo 15.2 -> 10.8 s warm, 19.7 -> 10.9 cold) but costs 4 s of extra JIT on the small stiff models
+  (`drivetrain-kalman` 1.1 -> 8.4 s warm because every `remake` re-specialises); not adopted. A switch by
+  the number of run targets (> ~150k) would pay off if the servo becomes a priority.
+* **Symbolic Jacobian is not viable for big models.** `ODEProblem(...; jac = true)` on `robot-arm-3d/arm`
+  (72 states) did not finish in 8 minutes. The AD Jacobian costs ~80 RHS evaluations per step
+  (`nf`/`njacs`), the RHS itself is 5 µs (arm). `compiler_options = CompilerOptions(optlevel = 0)` on the
+  ODEProblem saves ~4 s of first-run JIT (arm: 12.2 -> 8.3 s) but makes every RHS call slower, so it is
+  left at the default.
+* **`remake` on a cache hit** costs 1-2 s the first time per model (JIT, model-specific types;
+  `lower_model` column "compile" of the warm row) and 10-30 ms afterwards. A numeric-vector `remake`
+  (`u0` vector + `remake_buffer` for `p`, which takes MTK's cheap `reconstruct_fn` path) gives identical
+  `u0`/`p`/trajectories and a 0.4 s first call; not adopted (gain only on the first rerun of a model).
+* **Do not bake compiled systems into the package image.** The PrecompileTools workload used to leave
+  its `CompiledModel`s in `COMPILE_CACHE`; after loading the image, a solver path the workload did not
+  take (another integrator type, e.g. `init(problem, Rodas5P())` without tstops) failed with
+  `KeyError` from RuntimeGeneratedFunctions (`generated_callfunc_body`: the expression bodies do not
+  survive the precompile boundary). The workload now ends with `clear_compile_cache!()`.
+* **The workload also runs a clocked model** (`_warm_model_document(; discrete = true)`: RC + `ZOH`
+  of the step), so `discrete_schedule`, `run_tick!`, `setp`, the DAE re-initialisation and the in-place reader are
+  compiled in the image.
+* **Results are not bit-reproducible across process histories for chaotic models.** `cube-3d/cube-3d-mb`
+  (a balancing cube) gives 33769, 41065 or 41150 steps depending on what the process did before (the
+  same code, same inputs; MTK/Symbolics ordering depends on allocation history). Compare such models
+  with the example checks, not byte-for-byte. All other bench models are bit-identical before and after.
+* Cold start (`using BGSim` ≈ 15 s on this loaded machine, `warm_up!` ≈ 1 s) is package loading; a
+  `PackageCompiler` sysimage is the only lever left (plan 11), not required.
+* The scratchpad of one Claude session is shared by parallel agents; keep probe files in a private
+  sub-directory.
+
+## CSV input and prescribed-motion inverse dynamics (F5.1 / X5.9)
+
+Probed and measured on the Planar Links example, not read:
+
+1. **A registered opaque function with registered derivatives is differentiated by MTK.**
+   `bg_csv(table, k, order, t)` is `Symbolics.@register_symbolic`, and
+   `Symbolics.@register_derivative bg_csv(id, k, order, t) 4 bg_csv(id, k, order + 1, t)`
+   makes the time derivative of order n the function of order n + 1 (orders 0 to 3 exist, 4 and
+   up are 0). Without the rule `Differential(t)(bg_csv(...))` stays unevaluated; with it the
+   Mass-driven-by-CSV-velocity test (`test_csv.jl`) reproduces `m dv/dt` to 1e-5 and the 3-link
+   inverse-dynamics model (every inertia in derivative causality, `W201`) compiles in 3 s.
+2. **Inverse dynamics with flow sources works with the compliant planar joint, not with
+   `Revolute2DRigid`.** Prescribing every joint speed with an `MSf` driven by the cubic CSV
+   speed gives the joint torque at the source (a `TorqueSensor` in series). `Revolute2DRigid`
+   (hard pivot constraints on a 3-DOF body) fails at t = 0 with `retcode = Unstable` and NaN
+   states even when all speeds are prescribed (the index-3 structure of its header comment);
+   `Revolute2DCompliant` with `kt = 1e8 N/m`, `bt = 1e5 N s/m` runs. The pivot compliance
+   shows up as a ring in the first millisecond (up to 0.13 N m on a 131 N m peak) and as
+   1e-3 N m afterwards.
+3. **The cubic must be C2 and accurate at the ends.** A natural spline forces a zero second
+   derivative that a trajectory such as the quintic speed does not have (60 rad/s^3 at t = 0),
+   so `csv_eval` uses a **not-a-knot** spline: the interpolation error of a 1 kHz sampled
+   quintic speed is 2e-11 rad/s and the spline derivative matches the sampled acceleration
+   column to 8e-8 rad/s^2.
+4. **A model without a state cannot be simulated** (`NullODEIntegrator` has no `stats`): a
+   CSV source alone needs something to integrate. Not changed here.
+5. **The data identity is part of the equations.** The table id (48 bits of the SHA-256 of the
+   file bytes and the settings) is a literal in the flat equations, so `compile_key` changes
+   when the file or a setting changes; a mere re-run of an unchanged file is a cache hit.
+   Tables are looked up at run time in a copy-on-write registry (`CSV_TABLES`, 64 entries).
+6. **tstops.** `csv_model_tstops(flat, t0, t1)` scans the flat equations for `csv_value`
+   calls: hold/linear tables add every breakpoint in the run window, cubic tables only the
+   first and last (the extrapolation corner). It is merged with the discrete tick times in
+   `simulate` (`init_kwargs`).

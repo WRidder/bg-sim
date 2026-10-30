@@ -265,6 +265,7 @@ mutable struct Recorder
     last_flush_ns::UInt64
     first_row_ns::UInt64
     manifest::NamedTuple
+    rowbuf::Vector{Float64}
 end
 
 """    open_recorder(run_dir, run_id, model, model_hash, settings, signals, diagnostics;
@@ -306,12 +307,25 @@ function open_recorder(
     write_manifest_atomic(joinpath(run_dir, "manifest.json"), manifest)
     return Recorder(
         String(run_dir), stream, columns, length(entries), 0, cap, time_ns(), 0,
-        manifest,
+        manifest, Vector{Float64}(undef, length(entries) + 1),
     )
 end
 
 # Explicit little-endian Float64, independent of the host byte order.
 _write_f64_le(io::IO, value::Float64) = write(io, htol(reinterpret(UInt64, value)))
+
+# One bulk write per row (PERF-1: a per-value `write` was ~100 ns per value, 0.3 s per 1000
+# rows of a 2500-signal model). The bytes are the same: little-endian Float64.
+function _write_row_le(io::IO, row::Vector{Float64})
+    if ENDIAN_BOM == 0x04030201
+        write(io, row)
+    else
+        for value in row
+            _write_f64_le(io, value)
+        end
+    end
+    return nothing
+end
 
 """
     record_row!(rec, t, values)
@@ -334,12 +348,14 @@ function record_row!(rec::Recorder, t::Real, values)
     rec.nrows += 1
     tf = Float64(t)
     rec.columns[1][rec.nrows] = tf
-    _write_f64_le(rec.stream, tf)
+    rowbuf = rec.rowbuf
+    rowbuf[1] = tf
     for j in 1:rec.nsignals
         value = Float64(values[j])
         rec.columns[j + 1][rec.nrows] = value
-        _write_f64_le(rec.stream, value)
+        rowbuf[j + 1] = value
     end
+    _write_row_le(rec.stream, rowbuf)
     now = time_ns()
     rec.first_row_ns == 0 && (rec.first_row_ns = now)
     if now - rec.last_flush_ns >= 100_000_000

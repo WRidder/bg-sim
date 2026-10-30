@@ -1,0 +1,8 @@
+{
+  "$comment": "Invalid: a page file must be pages/<id>.md; a path that climbs out of pages/ is refused.",
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    { "id": "plant", "title": "Plant", "file": "../model.md", "children": [] }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "block",
+          "title": "Equation block",
+          "file": "pages/block.md",
+          "children": []
+        },
+        {
+          "id": "design",
+          "title": "Motors and LQR design",
+          "file": "pages/design.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results and checks",
+          "file": "pages/results.md",
+          "children": []
+        },
+        {
+          "id": "multibond",
+          "title": "Multibond comparison",
+          "file": "pages/multibond.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

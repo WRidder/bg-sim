@@ -1,0 +1,630 @@
+{
+  "project": "pendulum-triple-cart",
+  "description": "X5.12 acceptance. The pendulum-double-cart rig with a third link: a cart on a +-0.40 m rail carries a triple pendulum (planar multibond bond graph: Prismatic2D rail, three Revolute2DCompliant joints with 1e8 N/m pivots, three RigidBody2D rods of 0.25 m, 0.10/0.08/0.06 kg), driven by a 24 V DC motor through a 3:1 gearbox, a 16 mm pulley and an elastic belt; the pendulum joints are passive. The 1 kHz firmware (library/TripleCartCtrl.jl with the tables of library/TripleCartTraj.jl, both written by design/design.py) holds 0 V until 1 s, then tracks a direct-collocation swing-up trajectory (T_s = 3.5 s, |x| <= 0.30 m, |V| <= 16 V) with a time-varying LQR, switches to the discrete LQR at 4.5 s and is hit by a 40 ms, 0.065 N force pulse on the tip link at 8 s. The reference numbers are design.py's closed loop of the Lagrangian design model under the same sampled firmware (RK4). The -free model releases the plant from rest at a non-trivial pose with the motor shorted (V = 0) and is compared with the design ODE sample by sample.",
+  "models": {
+    "pendulum-triple-cart": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.125,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.125,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB2/g[2]",
+                null,
+                "PoseB2/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link3",
+              "point": [
+                0.125,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB3/g[2]",
+                null,
+                "PoseB3/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qdout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "nothing moves before t_on = 1 s: the cart is at rest (measured 1.3e-17 m/s)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Joint1/qdout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "link 1 hangs motionless before t_on (the pivot deflections start at their static values)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Joint2/qdout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "link 2 hangs motionless before t_on (the pivot deflections start at their static values)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Joint3/qdout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "link 3 hangs motionless before t_on (the pivot deflections start at their static values)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th1",
+          "t": 0.5,
+          "value": -3.141592653589793,
+          "abs": 1e-06,
+          "note": "link 1 hangs straight down (-180 deg from the upward vertical) at 0.5 s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "the motor voltage is 0 before the swing-up"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.5,
+          "value": 0,
+          "abs": 1e-09,
+          "note": "hold phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 2.0,
+          "value": 1,
+          "abs": 1e-09,
+          "note": "swing-up (TVLQR) phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 5.1,
+          "value": 2,
+          "abs": 1e-09,
+          "note": "balance (LQR) phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th1",
+          "t": 2.0,
+          "value": -3.42317,
+          "abs": 0.01,
+          "note": "swing-up, link 1 angle from upright at t = 2 s; the design model's closed loop gives -3.4233 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th2",
+          "t": 2.0,
+          "value": -4.19528,
+          "abs": 0.01,
+          "note": "swing-up, link 2 angle from upright at t = 2 s; the design model's closed loop gives -4.1952 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th3",
+          "t": 2.0,
+          "value": -5.02632,
+          "abs": 0.01,
+          "note": "swing-up, link 3 angle from upright at t = 2 s; the design model's closed loop gives -5.0261 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th1",
+          "t": 2.6,
+          "value": -1.06331,
+          "abs": 0.01,
+          "note": "swing-up, link 1 angle from upright at t = 2.6 s; the design model's closed loop gives -1.0632 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th2",
+          "t": 2.6,
+          "value": -0.78711,
+          "abs": 0.01,
+          "note": "swing-up, link 2 angle from upright at t = 2.6 s; the design model's closed loop gives -0.7871 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th3",
+          "t": 2.6,
+          "value": -2.29613,
+          "abs": 0.01,
+          "note": "swing-up, link 3 angle from upright at t = 2.6 s; the design model's closed loop gives -2.2964 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th1",
+          "t": 4.5,
+          "value": -0.00179351,
+          "abs": 0.01,
+          "note": "swing-up, link 1 angle from upright at t = 4.5 s; the design model's closed loop gives -0.0018 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th2",
+          "t": 4.5,
+          "value": -0.0017055,
+          "abs": 0.01,
+          "note": "swing-up, link 2 angle from upright at t = 4.5 s; the design model's closed loop gives -0.0017 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th3",
+          "t": 4.5,
+          "value": -0.00163769,
+          "abs": 0.01,
+          "note": "swing-up, link 3 angle from upright at t = 4.5 s; the design model's closed loop gives -0.0016 rad"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 4.6,
+          "to_t": 7.99,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "upright reached: link 1 stays within 0.2 deg of upright from t_on + T_s + 0.1 s to the pulse (measured 0.0970 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 4.6,
+          "to_t": 7.99,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "upright reached: link 2 stays within 0.2 deg of upright from t_on + T_s + 0.1 s to the pulse (measured 0.0943 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th3",
+          "from_t": 4.6,
+          "to_t": 7.99,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "upright reached: link 3 stays within 0.2 deg of upright from t_on + T_s + 0.1 s to the pulse (measured 0.0916 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 4.6,
+          "to_t": 7.99,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "the cart is back within 1 cm of the rail centre (measured 8.4 mm)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 8.0,
+          "to_t": 10.0,
+          "value": 0.258357,
+          "abs": 0.02,
+          "note": "the pulse is real: link 1 deflects by 14.80 deg (design closed loop 14.84 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 8.0,
+          "to_t": 10.0,
+          "value": 0.117212,
+          "abs": 0.01,
+          "note": "the pulse is real: link 2 deflects by 6.72 deg (design closed loop 6.73 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th3",
+          "from_t": 8.0,
+          "to_t": 10.0,
+          "value": 0.0705482,
+          "abs": 0.01,
+          "note": "the pulse is real: link 3 deflects by 4.04 deg (design closed loop 4.05 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 8.0,
+          "to_t": 10.0,
+          "value": 0.226433,
+          "abs": 0.02,
+          "note": "the cart travel while the controller catches the pulse"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/th1",
+          "from_t": 10.499,
+          "to_t": 14.5,
+          "value": 0.008726646259971648,
+          "note": "link 1 is back inside 0.5 deg from t = 10.45 s on (2.45 s after the pulse)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 13.5,
+          "to_t": 14.5,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "recovered: link 1 within 0.2 deg of upright over the last second (measured 0.0025 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 13.5,
+          "to_t": 14.5,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "recovered: link 2 within 0.2 deg of upright over the last second (measured 0.0027 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th3",
+          "from_t": 13.5,
+          "to_t": 14.5,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "recovered: link 3 within 0.2 deg of upright over the last second (measured 0.0029 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 13.5,
+          "to_t": 14.5,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "the cart is back at the rail centre by the end"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 14.5,
+          "value": 24.0,
+          "note": "the motor voltage stays inside the +-24 V supply (the firmware clamps it)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 14.5,
+          "value": 19.3626,
+          "abs": 1.5,
+          "note": "peak voltage 19.36 V of 24 V (design closed loop 18.89 V), so the clamp is never active in the nominal run"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 14.5,
+          "value": 0.4,
+          "note": "the cart stays inside the rail limit of +-0.4 m"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 14.5,
+          "value": 0.300023,
+          "abs": 0.02,
+          "note": "peak cart travel 0.300 m (the optimisation bounds the swing-up to +-0.3 m; design closed loop 0.300 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, no causal conflict, no derivative-causal store, no algebraic loop, no event-limit stop: the run reports no diagnostics at all"
+        }
+      ]
+    },
+    "pendulum-triple-cart-free": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.125,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.125,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB2/g[2]",
+                null,
+                "PoseB2/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link3",
+              "point": [
+                0.125,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB3/g[2]",
+                null,
+                "PoseB3/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 0.25,
+          "value": 0.0571505,
+          "abs": 0.0002,
+          "note": "design ODE value at t = 0.25 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.25,
+          "value": -1.02468,
+          "abs": 0.003,
+          "note": "design ODE value at t = 0.25 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 0.25,
+          "value": -0.089609,
+          "abs": 0.003,
+          "note": "design ODE value at t = 0.25 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 0.25,
+          "value": 0.911033,
+          "abs": 0.003,
+          "note": "design ODE value at t = 0.25 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 0.5,
+          "value": 0.0647114,
+          "abs": 0.0002,
+          "note": "design ODE value at t = 0.5 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.5,
+          "value": -1.87796,
+          "abs": 0.003,
+          "note": "design ODE value at t = 0.5 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 0.5,
+          "value": -0.515795,
+          "abs": 0.003,
+          "note": "design ODE value at t = 0.5 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 0.5,
+          "value": 0.0830781,
+          "abs": 0.003,
+          "note": "design ODE value at t = 0.5 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 0.75,
+          "value": 0.0528364,
+          "abs": 0.0002,
+          "note": "design ODE value at t = 0.75 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.75,
+          "value": -2.69076,
+          "abs": 0.003,
+          "note": "design ODE value at t = 0.75 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 0.75,
+          "value": 0.121293,
+          "abs": 0.003,
+          "note": "design ODE value at t = 0.75 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 0.75,
+          "value": -0.328003,
+          "abs": 0.003,
+          "note": "design ODE value at t = 0.75 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.0,
+          "value": 0.0407055,
+          "abs": 0.0002,
+          "note": "design ODE value at t = 1 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 1.0,
+          "value": -1.76775,
+          "abs": 0.003,
+          "note": "design ODE value at t = 1 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 1.0,
+          "value": -0.454913,
+          "abs": 0.003,
+          "note": "design ODE value at t = 1 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 1.0,
+          "value": -0.733523,
+          "abs": 0.003,
+          "note": "design ODE value at t = 1 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.25,
+          "value": 0.03774,
+          "abs": 0.0002,
+          "note": "design ODE value at t = 1.25 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 1.25,
+          "value": -1.31508,
+          "abs": 0.003,
+          "note": "design ODE value at t = 1.25 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 1.25,
+          "value": 0.430212,
+          "abs": 0.003,
+          "note": "design ODE value at t = 1.25 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 1.25,
+          "value": 0.822155,
+          "abs": 0.003,
+          "note": "design ODE value at t = 1.25 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.5,
+          "value": 0.0464584,
+          "abs": 0.0002,
+          "note": "design ODE value at t = 1.5 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 1.5,
+          "value": -0.522445,
+          "abs": 0.003,
+          "note": "design ODE value at t = 1.5 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 1.5,
+          "value": 0.00983907,
+          "abs": 0.003,
+          "note": "design ODE value at t = 1.5 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 1.5,
+          "value": 0.0311216,
+          "abs": 0.003,
+          "note": "design ODE value at t = 1.5 s (free swing from rest, V = 0); the bond graph agrees to the compliance of the pivots"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "the free swing reports no diagnostics"
+        }
+      ]
+    }
+  }
+}

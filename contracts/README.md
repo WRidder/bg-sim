@@ -3,7 +3,7 @@
 `schemas/*.schema.json` (JSON Schema 2020-12) is the single source of truth for the shapes the
 Julia worker, the Python backend and the TypeScript web app exchange. Every schema carries
 `"$id": "https://bgsim.local/schemas/<name>.schema.json"`, cross-schema references use that
-absolute id, and both test suites register all nine schemas by `$id` before validating.
+absolute id, and both test suites register all ten schemas by `$id` before validating.
 
 `fixtures/<name>/valid/**/*.json` must validate (the walkers use a recursive glob, so
 `run.synthetic/` counts); `fixtures/<name>/invalid/*.json` must fail for the reason written in

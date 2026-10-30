@@ -384,13 +384,13 @@ register_breakpoint_kind!("watch", _resolve_watches!; validate = _validate_watch
 # Reading values at a pause
 # ---------------------------------------------------------------------------------------
 
+# Per-signal getters, built on first use with the recorder's lookup (`vars`, then `params`).
+# The recorder itself reads all signals at once through PERF-1's `SignalReader`, which has no
+# per-signal entry points.
 function _getter_cache(s::DebugSession)
     cache = get(s.ctx.ext, :watch_getters, nothing)
     cache === nothing || return cache
     cache = Dict{String,Any}()
-    for (i, id) in enumerate(s.signal_ids)
-        cache[id] = s.getters[i]
-    end
     s.ctx.ext[:watch_getters] = cache
     return cache
 end

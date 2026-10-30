@@ -1,0 +1,388 @@
+{
+  "project": "quadcopter",
+  "description": "X5.7. A 1.35 kg, 450 mm X quadcopter (GroundSpatial - Free3D - RigidBody3D, Z up) flies a take-off, a square-ish mission with a 90 degree yaw turn and a landing in 18 s under a PX4-style cascade (position P 50 Hz -> velocity PID 50 Hz -> thrust vector -> attitude P 250 Hz -> body-rate PID 500 Hz -> mixer 500 Hz -> ESC speed loop 500 Hz -> ElectricDrive + Propeller on every rotor, 3S pack). The controller sees only the sensors: a 500 Hz IMU (bias + noise + Butterworth low-pass), a 50 Hz position/velocity/heading fix and the library/NavFilter.jl observer; the plant sits on four Hertz ContactPoint legs and flies in a 0.4 / -0.2 m/s wind with 0.5 m/s gusts. Every number below is a measurement of this model on the real worker (reltol 1e-4); design/design.py derives the gains and checks the loops. The quadcopter-repeat twin is the same document stopped at 9 s on the same grid: the deterministic discrete parts (hash noise, ticks) must reproduce the 18 s run bit for bit.",
+  "models": {
+    "quadcopter": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 0.0,
+          "value": 0.085,
+          "abs": 1e-09,
+          "note": "the airframe starts at rest on its four legs, the CoM 0.085 m above the ground plane"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RW/fc",
+          "t": 0.3,
+          "value": 13.2435,
+          "abs": 0.05,
+          "note": "disarmed on the ground: the four ContactPoint legs carry the whole weight m g = 1.35 * 9.81 N (measured 13.2546)"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Truth/z",
+          "initial": 0.085,
+          "value": 1.085,
+          "from_t": 1.0,
+          "to_t": 5.0,
+          "step_t": 1.0,
+          "settle_abs": 0.02,
+          "max_overshoot": 0.01,
+          "max_settling_time": 3.2,
+          "note": "take-off to the 1 m hover (set-point: minimum-jerk climb from t = 1 s over 3 s): overshoot 0.2 %, within +-2 cm from 2.7 s after the start of the climb"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 4.9,
+          "value": 1.085,
+          "abs": 0.01,
+          "note": "hover altitude reached: 1.0859 m (set-point 1.085 m)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Truth/z",
+          "signal_b": "Mission/p_sp[3]",
+          "from_t": 4.5,
+          "to_t": 5.0,
+          "max_abs": 0.02,
+          "note": "the hover is held inside a 2 cm band (measured 1.1 cm: wind gusts and the velocity integrator catching the 4 % mass error of the thrust feedforward)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Drv1/rotor/w",
+          "t": 4.8,
+          "value": 482.4,
+          "abs": 8.0,
+          "note": "hover rotor speed sqrt(m g / (4 kT)) = 482.4 rad/s (4607 rpm), measured 482.15"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Bat/I",
+          "t": 4.8,
+          "value": 7.96,
+          "abs": 1.5,
+          "note": "hover current of the pack: 99 W electrical for 13.3 N of thrust at 12.4 V"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/x",
+          "t": 7.9,
+          "value": 2.0,
+          "abs": 0.03,
+          "note": "waypoint (2, 0): reached at the end of leg 1 (measured 2.0013)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/y",
+          "t": 10.9,
+          "value": 2.0,
+          "abs": 0.04,
+          "note": "waypoint (2, 2): reached at the end of leg 2 (measured 2.016)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/yaw",
+          "t": 10.9,
+          "value": 1.5707963,
+          "abs": 0.06,
+          "note": "the 90 degree yaw turn flown during leg 2 (measured 1.6026 rad)"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "Truth/x",
+          "signal_b": "Mission/p_sp[1]",
+          "from_t": 5.0,
+          "to_t": 14.4,
+          "value": 0.06,
+          "note": "waypoint tracking in x over the three legs: RMS 4.6 cm (limit 6 cm) against 2 m moves in 2.5 to 3 s"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "Truth/y",
+          "signal_b": "Mission/p_sp[2]",
+          "from_t": 5.0,
+          "to_t": 14.4,
+          "value": 0.065,
+          "note": "waypoint tracking in y: RMS 5.0 cm"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "Truth/z",
+          "signal_b": "Mission/p_sp[3]",
+          "from_t": 5.0,
+          "to_t": 14.4,
+          "value": 0.015,
+          "note": "altitude held while the airframe tilts and turns: RMS 0.84 cm"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/track",
+          "from_t": 5.0,
+          "to_t": 14.4,
+          "value": 0.15,
+          "note": "distance to the set-point never exceeds 15 cm during the mission (measured 12.0 cm)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/tilt",
+          "value": 0.3,
+          "note": "attitude bounded: the tilt stays below 17 degrees (measured 0.247 rad = 14.2 degrees, the thrust-vector limit of the position controller is 25 degrees)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Truth/tilt",
+          "value": 0.247,
+          "abs": 0.03,
+          "note": "peak tilt of the acceleration phase of the legs"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/roll",
+          "value": 0.3
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/pitch",
+          "value": 0.3
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/qerr",
+          "value": 1e-09,
+          "note": "the quaternion kinematics keep |q| = 1 (measured 7e-13)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 18.0,
+          "value": 0.085,
+          "abs": 0.005,
+          "note": "landed: back on the legs, CoM at 0.0847 m"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RW/fc",
+          "t": 18.0,
+          "value": 13.2435,
+          "abs": 0.05,
+          "note": "after the landing the four legs carry m g again (measured 13.2435)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv1/rotor/w",
+          "value": 774.6,
+          "note": "rotor speed below the 774.6 rad/s of the 8.5 N thrust limit of the mixer (measured peak 557.6 rad/s = 5325 rpm)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv2/rotor/w",
+          "value": 774.6
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv3/rotor/w",
+          "value": 774.6
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv4/rotor/w",
+          "value": 774.6
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Drv1/rotor/w",
+          "value": 557.6,
+          "abs": 25.0,
+          "note": "peak rotor speed of the mission (the rotors never get near the thrust limit)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Esc1/u",
+          "value": 12.6,
+          "note": "the ESC command never exceeds the open-circuit voltage of the 3S pack (measured peak 8.4 V)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv1/isense/y",
+          "value": 50.0,
+          "note": "motor current peak at the spin-up from standstill (measured 44 A; the ESC current limit is 25 A of voltage headroom)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Bat/I",
+          "value": 70.0,
+          "note": "pack current peak 62 A at arming"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Bat/soc",
+          "t": 18.0,
+          "value": 0.9865,
+          "abs": 0.002,
+          "note": "the 18 s flight used 1.35 % of the 3 Ah pack"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/att",
+          "from_t": 1.0,
+          "value": 0.03,
+          "note": "the navigation filter attitude error stays below 1.7 degrees (measured 1.08 degrees) with a 0.2 deg/s gyro bias and noise"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Err/att",
+          "from_t": 1.0,
+          "value": 0.0188,
+          "abs": 0.006,
+          "note": "the estimate is not the truth: the controller flies on a 0.5 degree RMS attitude error"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/pos",
+          "from_t": 1.0,
+          "value": 0.05,
+          "note": "position estimate error (measured 2.9 cm; the fix has 2 cm noise per sample)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/vel",
+          "from_t": 1.0,
+          "value": 0.2,
+          "note": "velocity estimate error (measured 0.108 m/s; the fix has 0.05 m/s noise per sample)"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "Imu/gyro[1]",
+          "signal_b": "Truth/wb[1]",
+          "value": 0.0075,
+          "note": "the raw gyro is the truth plus a 0.004 rad/s bias and 0.003 rad/s noise: RMS 0.0069 rad/s"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "Att/w_sp[1]",
+          "signal_b": "Nav/w[1]",
+          "from_t": 1.0,
+          "value": 0.07,
+          "note": "the rate loop follows its set-point (RMS 0.049 rad/s on a 0.9 rad/s peak rate)"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "E007",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, no causal conflict, no frame mismatch, no derivative-causal store, no algebraic loop and no event-limit stop"
+        }
+      ]
+    },
+    "quadcopter-repeat": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 4.9,
+          "value": 1.0859,
+          "abs": 0.001,
+          "note": "same hover altitude as the 18 s run (the twin only stops earlier)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "E007",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ]
+        }
+      ]
+    }
+  },
+  "compare": [
+    {
+      "a": "quadcopter",
+      "b": "quadcopter-repeat",
+      "signal_a": "Imu/gyro[1]",
+      "signal_b": "Imu/gyro[1]",
+      "from_t": 0.0,
+      "max_abs": 1e-12,
+      "note": "determinism of the sampled sensors: the hash-noise sequence of the IMU is a pure function of the tick counter, so a second run reproduces it exactly"
+    },
+    {
+      "a": "quadcopter",
+      "b": "quadcopter-repeat",
+      "signal_a": "Imu/acc[3]",
+      "signal_b": "Imu/acc[3]",
+      "from_t": 0.0,
+      "max_abs": 1e-12
+    },
+    {
+      "a": "quadcopter",
+      "b": "quadcopter-repeat",
+      "signal_a": "Gps/pm[1]",
+      "signal_b": "Gps/pm[1]",
+      "from_t": 0.0,
+      "max_abs": 1e-12
+    },
+    {
+      "a": "quadcopter",
+      "b": "quadcopter-repeat",
+      "signal_a": "Nav/q[2]",
+      "signal_b": "Nav/q[2]",
+      "from_t": 0.0,
+      "max_abs": 1e-12,
+      "note": "determinism of the discrete filter and controller chain (500 Hz navigation filter)"
+    },
+    {
+      "a": "quadcopter",
+      "b": "quadcopter-repeat",
+      "signal_a": "Pos/F",
+      "signal_b": "Pos/F",
+      "from_t": 0.0,
+      "max_abs": 1e-12,
+      "note": "50 Hz position controller output"
+    },
+    {
+      "a": "quadcopter",
+      "b": "quadcopter-repeat",
+      "signal_a": "Rate/tau[1]",
+      "signal_b": "Rate/tau[1]",
+      "from_t": 0.0,
+      "max_abs": 1e-12,
+      "note": "500 Hz rate controller output"
+    },
+    {
+      "a": "quadcopter",
+      "b": "quadcopter-repeat",
+      "signal_a": "Mix/w_cmd[1]",
+      "signal_b": "Mix/w_cmd[1]",
+      "from_t": 0.0,
+      "max_abs": 1e-12,
+      "note": "mixer speed command"
+    },
+    {
+      "a": "quadcopter",
+      "b": "quadcopter-repeat",
+      "signal_a": "Truth/z",
+      "signal_b": "Truth/z",
+      "from_t": 0.0,
+      "max_abs": 1e-9,
+      "note": "and the closed-loop plant trajectory (the continuous part reproduces to the integrator's determinism)"
+    }
+  ]
+}

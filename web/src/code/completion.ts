@@ -76,6 +76,7 @@ export const WHITELIST_FUNCTIONS = [
   "interp1",
   "interp2",
   "noise_normal",
+  "csv_value",
   "reinit",
   "ifelse",
   // Spatial-mechanics additions (J-MB3, `MECH_FUNCTION_RULES` in the Julia table).

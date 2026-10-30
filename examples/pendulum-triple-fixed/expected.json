@@ -1,0 +1,594 @@
+{
+  "project": "pendulum-triple-fixed",
+  "description": "X5.11 acceptance of pendulum-triple-fixed. The reference numbers are design/design.py's independent sampled-data integration (CVODES on the non-linear design model with the winding current) of the same control law and tables, with the disturbance; the bond-graph run reproduces its link angles to about 1e-4 rad over the whole scenario. Model `free` is the plant without the controller, started away from the hanging position: its joint angles are compared with the design ODE, which proves that the design model is the bond graph.",
+  "models": {
+    "pendulum-triple-fixed": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a1",
+          "t": 0.0,
+          "value": -3.141592653589793,
+          "abs": 1e-09,
+          "note": "link 1 hangs straight down at t = 0 (absolute angle from upright: -pi)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a2",
+          "t": 0.0,
+          "value": -3.141592653589793,
+          "abs": 1e-09,
+          "note": "link 2 hangs straight down at t = 0 (absolute angle from upright: -pi)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a3",
+          "t": 0.0,
+          "value": -3.141592653589793,
+          "abs": 1e-09,
+          "note": "link 3 hangs straight down at t = 0 (absolute angle from upright: -pi)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Joint1/qdout",
+          "from_t": 0.0,
+          "to_t": 0.998,
+          "value": 1e-06,
+          "note": "joint 1 stays at rest until the swing-up starts (measured 0; 1e-6 rad/s is far above the solver noise)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Joint2/qdout",
+          "from_t": 0.0,
+          "to_t": 0.998,
+          "value": 1e-06,
+          "note": "joint 2 stays at rest until the swing-up starts (measured 0; 1e-6 rad/s is far above the solver noise)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Joint3/qdout",
+          "from_t": 0.0,
+          "to_t": 0.998,
+          "value": 1e-06,
+          "note": "joint 3 stays at rest until the swing-up starts (measured 0; 1e-6 rad/s is far above the solver noise)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 0.998,
+          "value": 1e-09,
+          "note": "the motor voltage is 0 until t_on"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.9,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "phase 0: hanging"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 2.0,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "phase 1: swing-up along the optimised trajectory"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Ctrl/phase",
+          "level": 1.5,
+          "direction": "up",
+          "n": 1,
+          "value": 4.3,
+          "abs": 0.02,
+          "note": "the LQR catches the chain at t = 4.300 s (design.py; the trajectory ends at 4.5 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 7.9,
+          "value": 2.0,
+          "abs": 1e-09,
+          "note": "phase 2: balance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a1",
+          "t": 1.875,
+          "value": -4.046421492662642,
+          "abs": 0.002,
+          "note": "design.py: swing-up state of link 1 at t = 1.875 s (tolerance 2 mrad; the swing-up is open-loop unstable, so a plant mismatch would grow, not stay small)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a2",
+          "t": 1.875,
+          "value": -3.1432029438098206,
+          "abs": 0.002,
+          "note": "design.py: swing-up state of link 2 at t = 1.875 s (tolerance 2 mrad; the swing-up is open-loop unstable, so a plant mismatch would grow, not stay small)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a3",
+          "t": 1.875,
+          "value": -2.1570731108112744,
+          "abs": 0.002,
+          "note": "design.py: swing-up state of link 3 at t = 1.875 s (tolerance 2 mrad; the swing-up is open-loop unstable, so a plant mismatch would grow, not stay small)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a1",
+          "t": 2.75,
+          "value": 0.10905502756219354,
+          "abs": 0.002,
+          "note": "design.py: swing-up state of link 1 at t = 2.75 s (tolerance 2 mrad; the swing-up is open-loop unstable, so a plant mismatch would grow, not stay small)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a2",
+          "t": 2.75,
+          "value": -0.7475325828546375,
+          "abs": 0.002,
+          "note": "design.py: swing-up state of link 2 at t = 2.75 s (tolerance 2 mrad; the swing-up is open-loop unstable, so a plant mismatch would grow, not stay small)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a3",
+          "t": 2.75,
+          "value": -0.6417301345531257,
+          "abs": 0.002,
+          "note": "design.py: swing-up state of link 3 at t = 2.75 s (tolerance 2 mrad; the swing-up is open-loop unstable, so a plant mismatch would grow, not stay small)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a1",
+          "t": 3.625,
+          "value": -0.001552575474675466,
+          "abs": 0.002,
+          "note": "design.py: swing-up state of link 1 at t = 3.625 s (tolerance 2 mrad; the swing-up is open-loop unstable, so a plant mismatch would grow, not stay small)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a2",
+          "t": 3.625,
+          "value": -0.009302711337791703,
+          "abs": 0.002,
+          "note": "design.py: swing-up state of link 2 at t = 3.625 s (tolerance 2 mrad; the swing-up is open-loop unstable, so a plant mismatch would grow, not stay small)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Upright/a3",
+          "t": 3.625,
+          "value": -0.01347735708300668,
+          "abs": 0.002,
+          "note": "design.py: swing-up state of link 3 at t = 3.625 s (tolerance 2 mrad; the swing-up is open-loop unstable, so a plant mismatch would grow, not stay small)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Upright/a1",
+          "from_t": 4.5,
+          "to_t": 7.99,
+          "value": 0.003490658503988659,
+          "note": "upright reached by t_on + T_s = 4.5 s: link 1 stays within 0.2 deg of upright until the disturbance"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Upright/a1",
+          "from_t": 4.8,
+          "to_t": 7.99,
+          "value": 0.00018942619108419656,
+          "abs": 0.0002,
+          "note": "design.py: link 1 holds upright within 1.89e-04 rad (0.0109 deg) before the disturbance"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Upright/a2",
+          "from_t": 4.5,
+          "to_t": 7.99,
+          "value": 0.003490658503988659,
+          "note": "upright reached by t_on + T_s = 4.5 s: link 2 stays within 0.2 deg of upright until the disturbance"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Upright/a2",
+          "from_t": 4.8,
+          "to_t": 7.99,
+          "value": 5.1271469336144904e-05,
+          "abs": 0.0002,
+          "note": "design.py: link 2 holds upright within 5.13e-05 rad (0.0029 deg) before the disturbance"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Upright/a3",
+          "from_t": 4.5,
+          "to_t": 7.99,
+          "value": 0.003490658503988659,
+          "note": "upright reached by t_on + T_s = 4.5 s: link 3 stays within 0.2 deg of upright until the disturbance"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Upright/a3",
+          "from_t": 4.8,
+          "to_t": 7.99,
+          "value": 1.9893562757555827e-05,
+          "abs": 0.0002,
+          "note": "design.py: link 3 holds upright within 1.99e-05 rad (0.0011 deg) before the disturbance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DistForce/y",
+          "t": 8.025,
+          "value": 0.1,
+          "abs": 1e-09,
+          "note": "the tip force pulse of 0.1 N lasts 50 ms from t = 8 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DistForce/y",
+          "t": 8.100000000000001,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "the pulse is over"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Upright/a1",
+          "from_t": 8.0,
+          "to_t": 11.0,
+          "value": 0.27422491314412323,
+          "rtol": 0.05,
+          "note": "design.py: peak deflection of link 1 after the pulse, 15.71 deg (the disturbance is real: the value is checked, not bounded)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Upright/a2",
+          "from_t": 8.0,
+          "to_t": 11.0,
+          "value": 0.125108395204103,
+          "rtol": 0.05,
+          "note": "design.py: peak deflection of link 2 after the pulse, 7.17 deg (the disturbance is real: the value is checked, not bounded)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Upright/a3",
+          "from_t": 8.0,
+          "to_t": 11.0,
+          "value": 0.04425385076593291,
+          "rtol": 0.05,
+          "note": "design.py: peak deflection of link 3 after the pulse, 2.54 deg (the disturbance is real: the value is checked, not bounded)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 8.0,
+          "to_t": 12.25,
+          "value": 10.237345975361077,
+          "rtol": 0.03,
+          "note": "design.py: the voltage peak of the recovery"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Upright/a1",
+          "from_t": 11.25,
+          "to_t": 12.25,
+          "value": 0.001,
+          "note": "link 1 is back at upright within 1e-3 rad (0.057 deg) over the last second (measured below 1e-4)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Upright/a2",
+          "from_t": 11.25,
+          "to_t": 12.25,
+          "value": 0.001,
+          "note": "link 2 is back at upright within 1e-3 rad (0.057 deg) over the last second (measured below 1e-4)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Upright/a3",
+          "from_t": 11.25,
+          "to_t": 12.25,
+          "value": 0.001,
+          "note": "link 3 is back at upright within 1e-3 rad (0.057 deg) over the last second (measured below 1e-4)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Upright/a1",
+          "from_t": 9.389,
+          "to_t": 12.25,
+          "value": 0.017453292519943295,
+          "note": "recovered: link 1 is inside 1 deg from t = 9.37 s on (1.37 s after the pulse starts)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Upright/a2",
+          "from_t": 9.389,
+          "to_t": 12.25,
+          "value": 0.017453292519943295,
+          "note": "recovered: link 2 is inside 1 deg from t = 9.37 s on (1.37 s after the pulse starts)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Upright/a3",
+          "from_t": 9.389,
+          "to_t": 12.25,
+          "value": 0.017453292519943295,
+          "note": "recovered: link 3 is inside 1 deg from t = 9.37 s on (1.37 s after the pulse starts)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 12.25,
+          "value": 12.0,
+          "note": "the motor voltage stays inside the 12 V supply (clamp in the controller; design.py peak 12.000 V)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 12.25,
+          "value": 12.0,
+          "abs": 0.05,
+          "note": "design.py: peak motor voltage of the whole run"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Motor/isense/y",
+          "from_t": 0.0,
+          "to_t": 12.25,
+          "value": 4.8,
+          "note": "the winding current stays below the stall current 4.8 A"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Joint1/qdout",
+          "from_t": 0.0,
+          "to_t": 12.25,
+          "value": 13.217475273723897,
+          "rtol": 0.03,
+          "note": "design.py: peak rate of joint 1 over the run (rad/s)"
+        },
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.13,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.15,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB2/g[2]",
+                null,
+                "PoseB2/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link3",
+              "point": [
+                0.17,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB3/g[2]",
+                null,
+                "PoseB3/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link3",
+              "point": [
+                0.34,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseTip/g[2]",
+                null,
+                "PoseTip/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "W201",
+            "W202",
+            "W205",
+            "W206",
+            "E101",
+            "E103"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ],
+      "run_timeout": 900
+    },
+    "free": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.5,
+          "value": -1.702928426216993,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 1 at t = 0.5 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 0.5,
+          "value": -0.25177867086991457,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 2 at t = 0.5 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 0.5,
+          "value": -0.7261612942241773,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 3 at t = 0.5 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 1.0,
+          "value": -2.2344825695233763,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 1 at t = 1 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 1.0,
+          "value": -0.7309852463053673,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 2 at t = 1 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 1.0,
+          "value": -0.2897695428480248,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 3 at t = 1 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 1.5,
+          "value": -0.829871623731565,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 1 at t = 1.5 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 1.5,
+          "value": 0.661517809139051,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 2 at t = 1.5 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 1.5,
+          "value": 0.19329865065281032,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 3 at t = 1.5 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 2.0,
+          "value": -1.3855171049442792,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 1 at t = 2 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 2.0,
+          "value": 0.013498755293540454,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 2 at t = 2 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 2.0,
+          "value": 0.40059293522752754,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 3 at t = 2 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 2.5,
+          "value": -2.5518139379322586,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 1 at t = 2.5 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 2.5,
+          "value": -0.4256908941988168,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 2 at t = 2.5 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 2.5,
+          "value": -0.1559021019845151,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 3 at t = 2.5 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 3.0,
+          "value": -1.3520498875163083,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 1 at t = 3 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 3.0,
+          "value": 0.5938334997244763,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 2 at t = 3 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 3.0,
+          "value": 0.41603628616750865,
+          "abs": 0.0001,
+          "note": "design ODE (u = 0, Radau 1e-11) vs the bond graph, joint 3 at t = 3 s; the whole 3 s swing agrees to 8.4e-06 rad"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E106",
+            "W201",
+            "W202",
+            "W205",
+            "W206",
+            "E101",
+            "E103"
+          ]
+        }
+      ]
+    }
+  }
+}

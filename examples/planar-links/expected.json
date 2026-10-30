@@ -1,0 +1,524 @@
+{
+  "project": "planar-links",
+  "description": "X5.9 acceptance: the 1-, 2- and 3-link planar arms of planar_robot.py on the planar multibond elements, compared with the closed-form model and Peter Corke's Robotics Toolbox through CsvSource. planar-links: inverse dynamics (joint speeds from the CSV, required torque out); planar-links-fwd: forward dynamics (CSV torque in, angle drift out); planar-links-payload: the 3-link arm with the 1 kg payload against the 4-link RTB robot.",
+  "models": {
+    "planar-links": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "a1_link1",
+              "point": [
+                0.675,
+                0,
+                0
+              ],
+              "signals": [
+                "A1_PoseTip/g[2]",
+                null,
+                "A1_PoseTip/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "a2_link2",
+              "point": [
+                0.525,
+                0,
+                0
+              ],
+              "signals": [
+                [
+                  "A2_BaseX/y",
+                  "A2_PoseTip/g[2]"
+                ],
+                null,
+                "A2_PoseTip/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "a3_link3",
+              "point": [
+                0.37,
+                0,
+                0
+              ],
+              "signals": [
+                [
+                  "A3_BaseX/y",
+                  "A3_PoseTip/g[2]"
+                ],
+                null,
+                "A3_PoseTip/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A1_TauErr1/e_rtb",
+          "value": 0.0006,
+          "note": "required torque of the bond-graph joint 1 of the 1-link arm vs Robotics Toolbox"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A1_TauErr1/e_rtb",
+          "from_t": 0.02,
+          "value": 1e-05,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A1_TauErr1/e_an",
+          "value": 0.0006,
+          "note": "required torque of the bond-graph joint 1 of the 1-link arm vs the analytical model"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A1_TauErr1/e_an",
+          "from_t": 0.02,
+          "value": 1e-05,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A1_Joint1/qout",
+          "t": 1.0,
+          "value": -2.5707963267948966,
+          "abs": 1e-06,
+          "note": "the integrated CSV joint speed reaches the CSV end angle"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_TauErr1/e_rtb",
+          "value": 0.017,
+          "note": "required torque of the bond-graph joint 1 of the 2-link arm vs Robotics Toolbox"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_TauErr1/e_rtb",
+          "from_t": 0.02,
+          "value": 0.00025,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_TauErr1/e_an",
+          "value": 0.017,
+          "note": "required torque of the bond-graph joint 1 of the 2-link arm vs the analytical model"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_TauErr1/e_an",
+          "from_t": 0.02,
+          "value": 0.00025,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_TauErr2/e_rtb",
+          "value": 0.0045,
+          "note": "required torque of the bond-graph joint 2 of the 2-link arm vs Robotics Toolbox"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_TauErr2/e_rtb",
+          "from_t": 0.02,
+          "value": 7e-05,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_TauErr2/e_an",
+          "value": 0.0045,
+          "note": "required torque of the bond-graph joint 2 of the 2-link arm vs the analytical model"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_TauErr2/e_an",
+          "from_t": 0.02,
+          "value": 7e-05,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A2_Joint1/qout",
+          "t": 1.0,
+          "value": -2.5707963267948966,
+          "abs": 1e-06,
+          "note": "the integrated CSV joint speed reaches the CSV end angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A2_Joint2/qout",
+          "t": 1.0,
+          "value": -1.0,
+          "abs": 1e-06,
+          "note": "the integrated CSV joint speed reaches the CSV end angle"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr1/e_rtb",
+          "value": 0.1,
+          "note": "required torque of the bond-graph joint 1 of the 3-link arm vs Robotics Toolbox"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr1/e_rtb",
+          "from_t": 0.02,
+          "value": 0.0012,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr1/e_an",
+          "value": 0.1,
+          "note": "required torque of the bond-graph joint 1 of the 3-link arm vs the analytical model"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr1/e_an",
+          "from_t": 0.02,
+          "value": 0.0012,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr2/e_rtb",
+          "value": 0.038,
+          "note": "required torque of the bond-graph joint 2 of the 3-link arm vs Robotics Toolbox"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr2/e_rtb",
+          "from_t": 0.02,
+          "value": 0.00045,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr2/e_an",
+          "value": 0.038,
+          "note": "required torque of the bond-graph joint 2 of the 3-link arm vs the analytical model"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr2/e_an",
+          "from_t": 0.02,
+          "value": 0.00045,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr3/e_rtb",
+          "value": 0.0005,
+          "note": "required torque of the bond-graph joint 3 of the 3-link arm vs Robotics Toolbox"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr3/e_rtb",
+          "from_t": 0.02,
+          "value": 6e-06,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr3/e_an",
+          "value": 0.0005,
+          "note": "required torque of the bond-graph joint 3 of the 3-link arm vs the analytical model"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr3/e_an",
+          "from_t": 0.02,
+          "value": 6e-06,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A3_Joint1/qout",
+          "t": 1.0,
+          "value": -2.5707963267948966,
+          "abs": 1e-06,
+          "note": "the integrated CSV joint speed reaches the CSV end angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A3_Joint2/qout",
+          "t": 1.0,
+          "value": -1.0,
+          "abs": 1e-06,
+          "note": "the integrated CSV joint speed reaches the CSV end angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A3_Joint3/qout",
+          "t": 1.0,
+          "value": -1.0,
+          "abs": 1e-06,
+          "note": "the integrated CSV joint speed reaches the CSV end angle"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E108",
+            "E900",
+            "E901",
+            "W206"
+          ]
+        }
+      ]
+    },
+    "planar-links-payload": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "a3_link3",
+              "point": [
+                0.47,
+                0,
+                0
+              ],
+              "signals": [
+                "A3_PoseTip/g[2]",
+                null,
+                "A3_PoseTip/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr1/e_rtb",
+          "value": 0.17,
+          "note": "required torque of the bond-graph joint 1 of the 3-link arm vs Robotics Toolbox"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr1/e_rtb",
+          "from_t": 0.02,
+          "value": 0.0018,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr1/e_an",
+          "value": 0.17,
+          "note": "required torque of the bond-graph joint 1 of the 3-link arm vs the analytical model"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr1/e_an",
+          "from_t": 0.02,
+          "value": 0.0018,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr2/e_rtb",
+          "value": 0.07,
+          "note": "required torque of the bond-graph joint 2 of the 3-link arm vs Robotics Toolbox"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr2/e_rtb",
+          "from_t": 0.02,
+          "value": 0.00075,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr2/e_an",
+          "value": 0.07,
+          "note": "required torque of the bond-graph joint 2 of the 3-link arm vs the analytical model"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr2/e_an",
+          "from_t": 0.02,
+          "value": 0.00075,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr3/e_rtb",
+          "value": 0.009,
+          "note": "required torque of the bond-graph joint 3 of the 3-link arm vs Robotics Toolbox"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr3/e_rtb",
+          "from_t": 0.02,
+          "value": 0.0001,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr3/e_an",
+          "value": 0.009,
+          "note": "required torque of the bond-graph joint 3 of the 3-link arm vs the analytical model"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_TauErr3/e_an",
+          "from_t": 0.02,
+          "value": 0.0001,
+          "note": "after the start-up transient of the compliant pivots"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A3_Joint1/qout",
+          "t": 1.0,
+          "value": -2.5707963267948966,
+          "abs": 1e-06,
+          "note": "the integrated CSV joint speed reaches the CSV end angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A3_Joint2/qout",
+          "t": 1.0,
+          "value": -1.0,
+          "abs": 1e-06,
+          "note": "the integrated CSV joint speed reaches the CSV end angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A3_Joint3/qout",
+          "t": 1.0,
+          "value": -1.0,
+          "abs": 1e-06,
+          "note": "the integrated CSV joint speed reaches the CSV end angle"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E108",
+            "E900",
+            "E901",
+            "W206"
+          ]
+        }
+      ]
+    },
+    "planar-links-fwd": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "a1_link1",
+              "point": [
+                0.675,
+                0,
+                0
+              ],
+              "signals": [
+                "A1_PoseTip/g[2]",
+                null,
+                "A1_PoseTip/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "a2_link2",
+              "point": [
+                0.525,
+                0,
+                0
+              ],
+              "signals": [
+                [
+                  "A2_BaseX/y",
+                  "A2_PoseTip/g[2]"
+                ],
+                null,
+                "A2_PoseTip/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "a3_link3",
+              "point": [
+                0.37,
+                0,
+                0
+              ],
+              "signals": [
+                [
+                  "A3_BaseX/y",
+                  "A3_PoseTip/g[2]"
+                ],
+                null,
+                "A3_PoseTip/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A1_QErr1/e",
+          "value": 3e-07,
+          "note": "open-loop angle drift of joint 1 of the 1-link arm over 1 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_QErr1/e",
+          "value": 2e-06,
+          "note": "open-loop angle drift of joint 1 of the 2-link arm over 1 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A2_QErr2/e",
+          "value": 3e-06,
+          "note": "open-loop angle drift of joint 2 of the 2-link arm over 1 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_QErr1/e",
+          "value": 5e-06,
+          "note": "open-loop angle drift of joint 1 of the 3-link arm over 1 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_QErr2/e",
+          "value": 7e-06,
+          "note": "open-loop angle drift of joint 2 of the 3-link arm over 1 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "A3_QErr3/e",
+          "value": 1.2e-06,
+          "note": "open-loop angle drift of joint 3 of the 3-link arm over 1 s"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E108",
+            "E900",
+            "E901",
+            "W206"
+          ]
+        }
+      ]
+    }
+  }
+}

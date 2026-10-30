@@ -487,6 +487,16 @@ class RelatedDiagnostic(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class DocsPage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[a-z0-9][a-z0-9-]{0,63}$')
+    title: constr(min_length=1, max_length=200)
+    file: constr(pattern=r'^pages/[a-z0-9][a-z0-9-]{0,63}[.]md$')
+    children: list[DocsPage]
+
+
 class ProbeKind(Enum):
     block = 'block'
     window = 'window'
@@ -1422,6 +1432,16 @@ class DiagnosticSource(BaseModel):
     kind: SourceKind = Field(..., title='SourceKind')
     ref: str = Field(..., description='Block ref or file path of the source.')
     range: SourceRange
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class Docs(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    format: Literal['bgsim.docs']
+    version: Literal[1]
+    pages: list[DocsPage]
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -2448,6 +2468,7 @@ class Contracts(
         | Catalog
         | Debug
         | Diagnostics
+        | Docs
         | Model
         | Project
         | RunManifest
@@ -2460,6 +2481,7 @@ class Contracts(
         | Catalog
         | Debug
         | Diagnostics
+        | Docs
         | Model
         | Project
         | RunManifest
@@ -2472,6 +2494,7 @@ class Contracts(
     )
 
 
+DocsPage.model_rebuild()
 Model.model_rebuild()
 ModelDiagram.model_rebuild()
 ModelNode.model_rebuild()

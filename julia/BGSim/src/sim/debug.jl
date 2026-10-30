@@ -255,7 +255,7 @@ The live objects of a running debug run, handed to every [`with_paused`](@ref) c
 the checkpoints. All fields are only touched on the run task.
 
   * `ctx`, `run_id`, `settings` (`RunSettings`), `flat` (`Flat.FlatModel`), `lowered`
-    (`CompiledModel`), `integ`, `rec` (`Recorder`), `getters` (one per recorded signal),
+    (`CompiledModel`), `integ`, `rec` (`Recorder`), `getters` (the PERF-1 `SignalReader` of the recorded signals),
     `signal_ids` (their ids), `schedule` (`DiscreteSchedule` or `nothing`), `run`
     (`DiscreteRun` or `nothing`), `targets`, `record_event`, `event_counter` (`Ref{Int}`);
   * `tick`: ticks executed so far; `event_cursor`: the recorder's event cursor;
@@ -268,7 +268,7 @@ mutable struct DebugSession
     lowered::Any
     integ::Any
     rec::Recorder
-    getters::Vector{Any}
+    getters::Any
     signal_ids::Vector{String}
     schedule::Any
     run::Any
@@ -963,7 +963,7 @@ _dbg_begin!(::Nothing; kwargs...) = nothing
 function _dbg_begin!(ctx::DebugCtx; run_id, settings, flat, lowered, integ, rec, getters,
     run, schedule, targets, record_event, event_counter)
     s = DebugSession(
-        ctx, String(run_id), settings, flat, lowered, integ, rec, Any[getters...],
+        ctx, String(run_id), settings, flat, lowered, integ, rec, getters,
         String[String(sig.id) for sig in flat.signals], schedule, run, targets,
         record_event, event_counter, 0, 0, nothing,
     )

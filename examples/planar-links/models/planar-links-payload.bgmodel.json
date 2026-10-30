@@ -1,0 +1,1883 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "PlanarLinksPayload",
+  "$comment": "",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n001",
+        "name": "A3_Ground",
+        "block": {
+          "ref": "stdlib:multibond/GroundPlanar"
+        },
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n002",
+        "name": "A3_Csv",
+        "block": {
+          "ref": "stdlib:sources/CsvSource"
+        },
+        "position": {
+          "x": 0,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "file": "data/arm3p.csv",
+          "columns": "qd1,qd2,qd3,tau_rtb1,tau_rtb2,tau_rtb3,tau_analytical1,tau_analytical2,tau_analytical3,q1,q2,q3",
+          "method": 2,
+          "extrapolation": 0
+        },
+        "starts": {}
+      },
+      {
+        "id": "n003",
+        "name": "A3_Joint1",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 150,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.0",
+          "ry": "0.0",
+          "q0": "-1.5707963267948966",
+          "kt": "1e8",
+          "bt": "1e5",
+          "k": "0.0",
+          "b": "0.0",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "d": "[1.2267405e-06, 0.0]"
+        }
+      },
+      {
+        "id": "n004",
+        "name": "A3_Link1",
+        "block": {
+          "ref": "stdlib:planar/FixedJoint2D"
+        },
+        "position": {
+          "x": 310,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.38400000000000006",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n005",
+        "name": "A3_Body1",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 470,
+          "y": 330
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "3.815",
+          "J": "0.31",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n006",
+        "name": "A3_N1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 470,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n007",
+        "name": "A3_CoM1",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 310,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.38400000000000006"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n008",
+        "name": "A3_PoseB1",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 470,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n009",
+        "name": "A3_Drive1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 150,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n010",
+        "name": "A3_Gear1",
+        "block": {
+          "ref": "stdlib:rotation/IdealGear"
+        },
+        "position": {
+          "x": 280,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "12.0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n011",
+        "name": "A3_Motor1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 410,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n012",
+        "name": "A3_Jm1",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 510,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "0.000492"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n013",
+        "name": "A3_Bm1",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 510,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.02"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n014",
+        "name": "A3_Speed1",
+        "block": {
+          "ref": "stdlib:bondgraph/MSf"
+        },
+        "position": {
+          "x": -110,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n015",
+        "name": "A3_Torque1",
+        "block": {
+          "ref": "stdlib:converters/TorqueSensor"
+        },
+        "position": {
+          "x": 20,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n016",
+        "name": "A3_qd1",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": -110,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": 12,
+          "index": 1
+        },
+        "starts": {}
+      },
+      {
+        "id": "n017",
+        "name": "A3_tau_rtb1",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 20,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": 12,
+          "index": 4
+        },
+        "starts": {}
+      },
+      {
+        "id": "n018",
+        "name": "A3_tau_an1",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 150,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": 12,
+          "index": 7
+        },
+        "starts": {}
+      },
+      {
+        "id": "n019",
+        "name": "A3_TauErr1",
+        "block": {
+          "ref": "project:TorqueError"
+        },
+        "position": {
+          "x": 280,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n020",
+        "name": "A3_Joint2",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 670,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.291",
+          "ry": "0.0",
+          "q0": "0.0",
+          "kt": "1e8",
+          "bt": "1e5",
+          "k": "0.0",
+          "b": "0.0",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "d": "[8.524890000000001e-07, 0.0]"
+        }
+      },
+      {
+        "id": "n021",
+        "name": "A3_Link2",
+        "block": {
+          "ref": "stdlib:planar/FixedJoint2D"
+        },
+        "position": {
+          "x": 830,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.343",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n022",
+        "name": "A3_Body2",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 990,
+          "y": 330
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "3.69",
+          "J": "0.146",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n023",
+        "name": "A3_N2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 990,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n024",
+        "name": "A3_CoM2",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 830,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.343"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n025",
+        "name": "A3_PoseJ2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 670,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n026",
+        "name": "A3_PoseB2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 990,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n027",
+        "name": "A3_Drive2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 670,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n028",
+        "name": "A3_Gear2",
+        "block": {
+          "ref": "stdlib:rotation/IdealGear"
+        },
+        "position": {
+          "x": 800,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "9.33"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n029",
+        "name": "A3_Motor2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 930,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n030",
+        "name": "A3_Jm2",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1030,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "0.0004845"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n031",
+        "name": "A3_Bm2",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 1030,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.02"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n032",
+        "name": "A3_Speed2",
+        "block": {
+          "ref": "stdlib:bondgraph/MSf"
+        },
+        "position": {
+          "x": 410,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n033",
+        "name": "A3_Torque2",
+        "block": {
+          "ref": "stdlib:converters/TorqueSensor"
+        },
+        "position": {
+          "x": 540,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n034",
+        "name": "A3_qd2",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 410,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": 12,
+          "index": 2
+        },
+        "starts": {}
+      },
+      {
+        "id": "n035",
+        "name": "A3_tau_rtb2",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 540,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": 12,
+          "index": 5
+        },
+        "starts": {}
+      },
+      {
+        "id": "n036",
+        "name": "A3_tau_an2",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 670,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": 12,
+          "index": 8
+        },
+        "starts": {}
+      },
+      {
+        "id": "n037",
+        "name": "A3_TauErr2",
+        "block": {
+          "ref": "project:TorqueError"
+        },
+        "position": {
+          "x": 800,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n038",
+        "name": "A3_Joint3",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 1190,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.182",
+          "ry": "0.0",
+          "q0": "0.0",
+          "kt": "1e8",
+          "bt": "1e5",
+          "k": "0.0",
+          "b": "0.0",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "d": "[4.905e-07, 0.0]"
+        }
+      },
+      {
+        "id": "n039",
+        "name": "A3_Link3",
+        "block": {
+          "ref": "stdlib:planar/FixedJoint2D"
+        },
+        "position": {
+          "x": 1350,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.10200000000000001",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n040",
+        "name": "A3_Body3",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 1510,
+          "y": 330
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "5.0",
+          "J": "0.18528",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n041",
+        "name": "A3_CoM3",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 1350,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.10200000000000001"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n042",
+        "name": "A3_PoseJ3",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 1190,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n043",
+        "name": "A3_PoseB3",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 1510,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n044",
+        "name": "A3_TipOffset",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 1670,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.47"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n045",
+        "name": "A3_PoseTip",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 1670,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n046",
+        "name": "A3_Drive3",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1190,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n047",
+        "name": "A3_Gear3",
+        "block": {
+          "ref": "stdlib:rotation/IdealGear"
+        },
+        "position": {
+          "x": 1320,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "n": "9.25"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n048",
+        "name": "A3_Motor3",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1450,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n049",
+        "name": "A3_Jm3",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1550,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "0.0001859"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n050",
+        "name": "A3_Bm3",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 1550,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.01"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n051",
+        "name": "A3_Speed3",
+        "block": {
+          "ref": "stdlib:bondgraph/MSf"
+        },
+        "position": {
+          "x": 930,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n052",
+        "name": "A3_Torque3",
+        "block": {
+          "ref": "stdlib:converters/TorqueSensor"
+        },
+        "position": {
+          "x": 1060,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n053",
+        "name": "A3_qd3",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 930,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": 12,
+          "index": 3
+        },
+        "starts": {}
+      },
+      {
+        "id": "n054",
+        "name": "A3_tau_rtb3",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 1060,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": 12,
+          "index": 6
+        },
+        "starts": {}
+      },
+      {
+        "id": "n055",
+        "name": "A3_tau_an3",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 1190,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": 12,
+          "index": 9
+        },
+        "starts": {}
+      },
+      {
+        "id": "n056",
+        "name": "A3_TauErr3",
+        "block": {
+          "ref": "project:TorqueError"
+        },
+        "position": {
+          "x": 1320,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      }
+    ],
+    "connections": [
+      {
+        "id": "c001",
+        "kind": "bond",
+        "from": {
+          "node": "n001",
+          "port": "p"
+        },
+        "to": {
+          "node": "n003",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "c002",
+        "kind": "bond",
+        "from": {
+          "node": "n003",
+          "port": "child"
+        },
+        "to": {
+          "node": "n004",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "c003",
+        "kind": "bond",
+        "from": {
+          "node": "n004",
+          "port": "child"
+        },
+        "to": {
+          "node": "n006"
+        }
+      },
+      {
+        "id": "c004",
+        "kind": "bond",
+        "from": {
+          "node": "n005",
+          "port": "p"
+        },
+        "to": {
+          "node": "n006"
+        }
+      },
+      {
+        "id": "c005",
+        "kind": "signal",
+        "from": {
+          "node": "n003",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n008",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c006",
+        "kind": "signal",
+        "from": {
+          "node": "n007",
+          "port": "g"
+        },
+        "to": {
+          "node": "n008",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c007",
+        "kind": "signal",
+        "from": {
+          "node": "n008",
+          "port": "g"
+        },
+        "to": {
+          "node": "n005",
+          "port": "g"
+        }
+      },
+      {
+        "id": "c008",
+        "kind": "bond",
+        "from": {
+          "node": "n009"
+        },
+        "to": {
+          "node": "n003",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "c009",
+        "kind": "bond",
+        "from": {
+          "node": "n009"
+        },
+        "to": {
+          "node": "n010",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c010",
+        "kind": "bond",
+        "from": {
+          "node": "n010",
+          "port": "a"
+        },
+        "to": {
+          "node": "n011"
+        }
+      },
+      {
+        "id": "c011",
+        "kind": "bond",
+        "from": {
+          "node": "n011"
+        },
+        "to": {
+          "node": "n012",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c012",
+        "kind": "bond",
+        "from": {
+          "node": "n011"
+        },
+        "to": {
+          "node": "n013",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c013",
+        "kind": "bond",
+        "from": {
+          "node": "n014",
+          "port": "p"
+        },
+        "to": {
+          "node": "n015",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c014",
+        "kind": "bond",
+        "from": {
+          "node": "n015",
+          "port": "a"
+        },
+        "to": {
+          "node": "n009"
+        }
+      },
+      {
+        "id": "c015",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "y"
+        },
+        "to": {
+          "node": "n016",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c016",
+        "kind": "signal",
+        "from": {
+          "node": "n016",
+          "port": "y"
+        },
+        "to": {
+          "node": "n014",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c017",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "y"
+        },
+        "to": {
+          "node": "n017",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c018",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "y"
+        },
+        "to": {
+          "node": "n018",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c019",
+        "kind": "signal",
+        "from": {
+          "node": "n015",
+          "port": "y"
+        },
+        "to": {
+          "node": "n019",
+          "port": "tau"
+        }
+      },
+      {
+        "id": "c020",
+        "kind": "signal",
+        "from": {
+          "node": "n017",
+          "port": "y"
+        },
+        "to": {
+          "node": "n019",
+          "port": "ref_rtb"
+        }
+      },
+      {
+        "id": "c021",
+        "kind": "signal",
+        "from": {
+          "node": "n018",
+          "port": "y"
+        },
+        "to": {
+          "node": "n019",
+          "port": "ref_an"
+        }
+      },
+      {
+        "id": "c022",
+        "kind": "bond",
+        "from": {
+          "node": "n020",
+          "port": "parent"
+        },
+        "to": {
+          "node": "n006"
+        }
+      },
+      {
+        "id": "c023",
+        "kind": "bond",
+        "from": {
+          "node": "n020",
+          "port": "child"
+        },
+        "to": {
+          "node": "n021",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "c024",
+        "kind": "bond",
+        "from": {
+          "node": "n021",
+          "port": "child"
+        },
+        "to": {
+          "node": "n023"
+        }
+      },
+      {
+        "id": "c025",
+        "kind": "bond",
+        "from": {
+          "node": "n022",
+          "port": "p"
+        },
+        "to": {
+          "node": "n023"
+        }
+      },
+      {
+        "id": "c026",
+        "kind": "signal",
+        "from": {
+          "node": "n008",
+          "port": "g"
+        },
+        "to": {
+          "node": "n025",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c027",
+        "kind": "signal",
+        "from": {
+          "node": "n020",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n025",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c028",
+        "kind": "signal",
+        "from": {
+          "node": "n025",
+          "port": "g"
+        },
+        "to": {
+          "node": "n026",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c029",
+        "kind": "signal",
+        "from": {
+          "node": "n024",
+          "port": "g"
+        },
+        "to": {
+          "node": "n026",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c030",
+        "kind": "signal",
+        "from": {
+          "node": "n026",
+          "port": "g"
+        },
+        "to": {
+          "node": "n022",
+          "port": "g"
+        }
+      },
+      {
+        "id": "c031",
+        "kind": "bond",
+        "from": {
+          "node": "n027"
+        },
+        "to": {
+          "node": "n020",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "c032",
+        "kind": "bond",
+        "from": {
+          "node": "n027"
+        },
+        "to": {
+          "node": "n028",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c033",
+        "kind": "bond",
+        "from": {
+          "node": "n028",
+          "port": "a"
+        },
+        "to": {
+          "node": "n029"
+        }
+      },
+      {
+        "id": "c034",
+        "kind": "bond",
+        "from": {
+          "node": "n029"
+        },
+        "to": {
+          "node": "n030",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c035",
+        "kind": "bond",
+        "from": {
+          "node": "n029"
+        },
+        "to": {
+          "node": "n031",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c036",
+        "kind": "bond",
+        "from": {
+          "node": "n032",
+          "port": "p"
+        },
+        "to": {
+          "node": "n033",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c037",
+        "kind": "bond",
+        "from": {
+          "node": "n033",
+          "port": "a"
+        },
+        "to": {
+          "node": "n027"
+        }
+      },
+      {
+        "id": "c038",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "y"
+        },
+        "to": {
+          "node": "n034",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c039",
+        "kind": "signal",
+        "from": {
+          "node": "n034",
+          "port": "y"
+        },
+        "to": {
+          "node": "n032",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c040",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "y"
+        },
+        "to": {
+          "node": "n035",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c041",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "y"
+        },
+        "to": {
+          "node": "n036",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c042",
+        "kind": "signal",
+        "from": {
+          "node": "n033",
+          "port": "y"
+        },
+        "to": {
+          "node": "n037",
+          "port": "tau"
+        }
+      },
+      {
+        "id": "c043",
+        "kind": "signal",
+        "from": {
+          "node": "n035",
+          "port": "y"
+        },
+        "to": {
+          "node": "n037",
+          "port": "ref_rtb"
+        }
+      },
+      {
+        "id": "c044",
+        "kind": "signal",
+        "from": {
+          "node": "n036",
+          "port": "y"
+        },
+        "to": {
+          "node": "n037",
+          "port": "ref_an"
+        }
+      },
+      {
+        "id": "c045",
+        "kind": "bond",
+        "from": {
+          "node": "n038",
+          "port": "parent"
+        },
+        "to": {
+          "node": "n023"
+        }
+      },
+      {
+        "id": "c046",
+        "kind": "bond",
+        "from": {
+          "node": "n038",
+          "port": "child"
+        },
+        "to": {
+          "node": "n039",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "c047",
+        "kind": "bond",
+        "from": {
+          "node": "n039",
+          "port": "child"
+        },
+        "to": {
+          "node": "n040",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c048",
+        "kind": "signal",
+        "from": {
+          "node": "n026",
+          "port": "g"
+        },
+        "to": {
+          "node": "n042",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c049",
+        "kind": "signal",
+        "from": {
+          "node": "n038",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n042",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c050",
+        "kind": "signal",
+        "from": {
+          "node": "n042",
+          "port": "g"
+        },
+        "to": {
+          "node": "n043",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c051",
+        "kind": "signal",
+        "from": {
+          "node": "n041",
+          "port": "g"
+        },
+        "to": {
+          "node": "n043",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c052",
+        "kind": "signal",
+        "from": {
+          "node": "n043",
+          "port": "g"
+        },
+        "to": {
+          "node": "n040",
+          "port": "g"
+        }
+      },
+      {
+        "id": "c053",
+        "kind": "signal",
+        "from": {
+          "node": "n042",
+          "port": "g"
+        },
+        "to": {
+          "node": "n045",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c054",
+        "kind": "signal",
+        "from": {
+          "node": "n044",
+          "port": "g"
+        },
+        "to": {
+          "node": "n045",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c055",
+        "kind": "bond",
+        "from": {
+          "node": "n046"
+        },
+        "to": {
+          "node": "n038",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "c056",
+        "kind": "bond",
+        "from": {
+          "node": "n046"
+        },
+        "to": {
+          "node": "n047",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c057",
+        "kind": "bond",
+        "from": {
+          "node": "n047",
+          "port": "a"
+        },
+        "to": {
+          "node": "n048"
+        }
+      },
+      {
+        "id": "c058",
+        "kind": "bond",
+        "from": {
+          "node": "n048"
+        },
+        "to": {
+          "node": "n049",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c059",
+        "kind": "bond",
+        "from": {
+          "node": "n048"
+        },
+        "to": {
+          "node": "n050",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c060",
+        "kind": "bond",
+        "from": {
+          "node": "n051",
+          "port": "p"
+        },
+        "to": {
+          "node": "n052",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c061",
+        "kind": "bond",
+        "from": {
+          "node": "n052",
+          "port": "a"
+        },
+        "to": {
+          "node": "n046"
+        }
+      },
+      {
+        "id": "c062",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "y"
+        },
+        "to": {
+          "node": "n053",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c063",
+        "kind": "signal",
+        "from": {
+          "node": "n053",
+          "port": "y"
+        },
+        "to": {
+          "node": "n051",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c064",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "y"
+        },
+        "to": {
+          "node": "n054",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c065",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "y"
+        },
+        "to": {
+          "node": "n055",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c066",
+        "kind": "signal",
+        "from": {
+          "node": "n052",
+          "port": "y"
+        },
+        "to": {
+          "node": "n056",
+          "port": "tau"
+        }
+      },
+      {
+        "id": "c067",
+        "kind": "signal",
+        "from": {
+          "node": "n054",
+          "port": "y"
+        },
+        "to": {
+          "node": "n056",
+          "port": "ref_rtb"
+        }
+      },
+      {
+        "id": "c068",
+        "kind": "signal",
+        "from": {
+          "node": "n055",
+          "port": "y"
+        },
+        "to": {
+          "node": "n056",
+          "port": "ref_an"
+        }
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-09,
+    "abstol": 1e-11,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "tau3",
+      "title": "3-link: joint torque error vs RTB",
+      "signals": [
+        "A3_TauErr1/e_rtb",
+        "A3_TauErr2/e_rtb",
+        "A3_TauErr3/e_rtb"
+      ]
+    },
+    {
+      "id": "tauan3",
+      "title": "3-link: joint torque error vs analytical",
+      "signals": [
+        "A3_TauErr1/e_an",
+        "A3_TauErr2/e_an",
+        "A3_TauErr3/e_an"
+      ]
+    },
+    {
+      "id": "torque3",
+      "title": "3-link: required joint torque",
+      "signals": [
+        "A3_Torque1/y",
+        "A3_Torque2/y",
+        "A3_Torque3/y"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/planar-links-payload.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:a3_joint1",
+      "property": "position",
+      "signal": "A3_Joint1/qout"
+    },
+    {
+      "target": "joint:a3_joint2",
+      "property": "position",
+      "signal": "A3_Joint2/qout"
+    },
+    {
+      "target": "joint:a3_joint3",
+      "property": "position",
+      "signal": "A3_Joint3/qout"
+    }
+  ]
+}

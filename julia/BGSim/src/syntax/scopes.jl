@@ -1671,7 +1671,7 @@ function _check_call!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
             end
         end
         return REAL
-    elseif name === :interp1 || name === :interp2
+    elseif name === :interp1 || name === :interp2 || name === :csv_value
         return REAL
     elseif name === :noise_normal
         for (i, t) in enumerate(st)

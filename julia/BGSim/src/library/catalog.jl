@@ -478,6 +478,18 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:sources/Constant" => (
         description = "Constant signal source.", icon = "src-constant",
     ),
+    "stdlib:continuous/Select" => (
+        description = "One element (index, 1-based) of a vector signal as a scalar; use it to split the columns of a CsvSource.",
+        icon = "cont-select",
+    ),
+    "stdlib:sources/CsvSource" => (
+        description = "Columns of a project CSV file as continuous signals (data/<name>.csv; hold, linear or C2 cubic interpolation); the file is read at compile time, not unrolled.",
+        icon = "src-csv",
+    ),
+    "stdlib:sources/CsvSourceSampled" => (
+        description = "Columns of a project CSV file sampled at every tick of sample_period and held in between (a discrete partition).",
+        icon = "src-csv-sampled",
+    ),
     "stdlib:sources/Noise" => (
         description = "Seeded normal noise on a fixed sample clock; the same seed repeats the run.",
         icon = "src-noise",

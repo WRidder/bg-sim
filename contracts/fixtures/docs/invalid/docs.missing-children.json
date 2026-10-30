@@ -1,0 +1,13 @@
+{
+  "$comment": "Invalid: every page lists its children, also nested ones; the child 'b' has no children array.",
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "a",
+      "title": "A",
+      "file": "pages/a.md",
+      "children": [{ "id": "b", "title": "B", "file": "pages/b.md" }]
+    }
+  ]
+}

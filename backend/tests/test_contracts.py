@@ -46,6 +46,7 @@ SCHEMAS: dict[str, str] = {
     "stream-handshake": "StreamHandshake",
     "bindings": "Bindings",
     "debug": "Debug",
+    "docs": "Docs",
 }
 
 # The M1 blocks of plan section 8, as ref -> name.

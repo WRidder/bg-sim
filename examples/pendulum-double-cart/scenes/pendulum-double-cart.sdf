@@ -1,0 +1,123 @@
+<?xml version="1.0"?>
+<!--
+  pendulum-double-cart (X5.12): a cart on a rail carrying a double pendulum, in the vertical X-Z plane.
+
+  The model is planar in its x-y plane with gravity along -y. The scene uses the SDF X-Z plane:
+  model x is SDF x, model y is SDF z, and the model's counter-clockwise angles are rotations about
+  -Y (rotating +X towards +Z). The origin is the cart centre at the pivot height, the rail is
+  along X. Joint "rail" (prismatic, +X) is bound to the cart position Rail/qout; joint "hinge1" to
+  the angle of link 1 from the world +X axis (Joint1/qout, -pi/2 hanging, +pi/2 upright) and joint "hinge2" to the
+  relative angle of link 2 (Joint2/qout). At q = 0 the links lie along +X; each link is 0.25 m. The rail carries the end stops at +-0.40 m (the limit the swing-up
+  trajectory is kept inside), the motor and the belt pulley sit at the left end.
+-->
+<sdf version="1.9">
+  <model name="pendulum_double_cart">
+    <link name="rail_base">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="rail_bar">
+        <pose>0 0 -0.055 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.008</radius><length>0.92</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="rail_beam">
+        <pose>0 0 -0.095 0 0 0</pose>
+        <geometry><box><size>0.96 0.07 0.02</size></box></geometry>
+        <material><diffuse>0.3 0.32 0.36 1</diffuse></material>
+      </visual>
+      <visual name="stop_left">
+        <pose>-0.46 0 -0.05 0 0 0</pose>
+        <geometry><box><size>0.03 0.08 0.09</size></box></geometry>
+        <material><diffuse>0.85 0.25 0.2 1</diffuse></material>
+      </visual>
+      <visual name="stop_right">
+        <pose>0.46 0 -0.05 0 0 0</pose>
+        <geometry><box><size>0.03 0.08 0.09</size></box></geometry>
+        <material><diffuse>0.85 0.25 0.2 1</diffuse></material>
+      </visual>
+      <visual name="motor">
+        <pose>-0.53 0 -0.06 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.03</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>0.15 0.15 0.17 1</diffuse></material>
+      </visual>
+      <visual name="pulley_left">
+        <pose>-0.48 0 -0.06 1.5707963 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.03</length></cylinder></geometry>
+        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
+      </visual>
+      <visual name="pulley_right">
+        <pose>0.48 0 -0.06 1.5707963 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.03</length></cylinder></geometry>
+        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="cart">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="cart_body">
+        <pose>0 0 -0.035 0 0 0</pose>
+        <geometry><box><size>0.14 0.1 0.07</size></box></geometry>
+        <material><diffuse>0.25 0.5 0.85 1</diffuse></material>
+      </visual>
+      <visual name="belt_clamp">
+        <pose>0 0 -0.078 0 0 0</pose>
+        <geometry><box><size>0.04 0.03 0.016</size></box></geometry>
+        <material><diffuse>0.1 0.1 0.12 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="link1">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="link1_bar">
+        <pose>0.125 0 0 0 0 0</pose>
+        <geometry><box><size>0.25 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
+      </visual>
+      <visual name="joint1_hub">
+        <pose>0 0 0 1.5707963 0 0</pose>
+        <geometry><cylinder><radius>0.026</radius><length>0.07</length></cylinder></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="link2">
+      <pose>0.25 0 0 0 0 0</pose>
+      <visual name="link2_bar">
+        <pose>0.125 0 0 0 0 0</pose>
+        <geometry><box><size>0.25 0.022 0.022</size></box></geometry>
+        <material><diffuse>0.35 0.75 0.45 1</diffuse></material>
+      </visual>
+      <visual name="joint2_hub">
+        <pose>0 0 0 1.5707963 0 0</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.06</length></cylinder></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="tip_mass">
+        <pose>0.25 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.02</radius></sphere></geometry>
+        <material><diffuse>0.85 0.2 0.25 1</diffuse></material>
+      </visual>
+    </link>
+
+    <joint name="rail" type="prismatic">
+      <parent>rail_base</parent>
+      <child>cart</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+      </axis>
+    </joint>
+    <joint name="hinge1" type="revolute">
+      <parent>cart</parent>
+      <child>link1</child>
+      <axis>
+        <xyz>0 -1 0</xyz>
+      </axis>
+    </joint>
+    <joint name="hinge2" type="revolute">
+      <parent>link1</parent>
+      <child>link2</child>
+      <axis>
+        <xyz>0 -1 0</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>

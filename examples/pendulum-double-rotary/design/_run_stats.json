@@ -1,0 +1,12 @@
+{
+  "pendulum-double-rotary-free": {
+    "seconds": 85.0264476999946,
+    "points": 6023,
+    "diagnostics": []
+  },
+  "pendulum-double-rotary": {
+    "seconds": 43.721688900004665,
+    "points": 22457,
+    "diagnostics": []
+  }
+}

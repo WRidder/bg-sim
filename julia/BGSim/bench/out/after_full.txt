@@ -1,0 +1,16 @@
+== robot-arm-3d/arm (t_end 0.5)
+  states=0 flatten=1.01 lower=0.09 system=0.02 mtkcompile=0.54 problem=1.77
+  cold: total=16.46 compile=1.61 init=2.72 loop=9.46 (step=7.59 tick=1.14 values=1.80) steps=8973 rej=2309 nf=745287 njac=8973 nw=11282 nsolve=90256 ticks=2000 rows=4001 done
+  warm: total=6.77 compile=1.72 init=0.00 loop=4.20 (step=2.84 tick=0.10 values=0.62) steps=8973 rej=2309 nf=745287 njac=8973 nw=11282 nsolve=90256 ticks=2000 rows=4001 done
+== robot-arm-3d/rrr-multibond (t_end 1)
+  states=0 flatten=0.15 lower=0.56 system=0.01 mtkcompile=0.23 problem=0.98
+  cold: total=21.59 compile=1.05 init=1.88 loop=11.47 (step=7.54 tick=1.22 values=6.82) steps=49575 rej=10395 nf=2314037 njac=49575 nw=59970 nsolve=479760 ticks=5000 rows=11131 done
+  warm: total=8.19 compile=1.01 init=0.00 loop=6.97 (step=4.96 tick=0.18 values=0.16) steps=49575 rej=10395 nf=2314037 njac=49575 nw=59970 nsolve=479760 ticks=5000 rows=11131 done
+== cube-3d/cube-3d-mb (t_end 1)
+  states=24 flatten=0.50 lower=0.27 system=0.02 mtkcompile=1.17 problem=0.91
+  cold: total=6.81 compile=0.93 init=1.15 loop=3.28 (step=1.25 tick=0.42 values=0.94) steps=159146 rej=1464 nf=965662 njac=0 nw=0 nsolve=0 ticks=2000 rows=6001 done
+  warm: total=3.60 compile=1.38 init=0.00 loop=2.00 (step=1.05 tick=0.07 values=0.09) steps=159146 rej=1464 nf=965662 njac=0 nw=0 nsolve=0 ticks=2000 rows=6001 done
+== cube-pyramid-3d/sequence-contact (t_end 0.5)
+  states=21 flatten=0.97 lower=0.22 system=0.01 mtkcompile=0.52 problem=1.36
+  cold: total=13.72 compile=1.70 init=2.33 loop=6.95 (step=3.23 tick=0.63 values=2.84) steps=194915 rej=7586 nf=1219508 njac=0 nw=0 nsolve=0 ticks=4500 rows=9001 done
+  warm: total=7.69 compile=1.26 init=0.00 loop=6.18 (step=3.09 tick=0.17 values=0.17) steps=194915 rej=7586 nf=1219508 njac=0 nw=0 nsolve=0 ticks=4500 rows=9001 done

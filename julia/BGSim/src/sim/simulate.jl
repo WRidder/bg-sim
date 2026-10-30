@@ -225,6 +225,34 @@ _record_event!(::Nothing, rec::Recorder, t, side::Symbol, values) =
 _record_event!(record_event, ::Recorder, t, side::Symbol, values) =
     record_event(t, side, values)
 
+# ONE in-place generated function for the whole signal list (PERF-1). Per-signal `getu`
+# getters cost one generated function (and one JIT compile) per recorded signal, which was
+# 60-90 % of every run on the 2000+ signal multibond models; a vector-valued `getu` shares the
+# sub-expressions but builds its result with a 2000-argument `create_array` call (≈1 ms per
+# row). `build_explicit_observed_function(...; return_inplace)` returns an in-place variant that
+# fills a preallocated vector in a few microseconds, and `optlevel = 0` cuts its first-call
+# compile by 2-10x while the per-row cost stays negligible.
+struct SignalReader{F}
+    fn::F
+    buffer::Vector{Float64}
+end
+
+function _signal_reader(model::CompiledModel, symbols::Vector{Num})
+    isempty(symbols) && return nothing
+    fn = ModelingToolkit.build_explicit_observed_function(
+        model.system, symbols;
+        checkbounds = false, return_inplace = true,
+        compiler_options = ModelingToolkit.CompilerOptions(optlevel = 0),
+    )[2]
+    return SignalReader(fn, zeros(Float64, length(symbols)))
+end
+
+_signal_values(::Nothing, integ) = Float64[]
+function _signal_values(reader::SignalReader, integ)
+    reader.fn(reader.buffer, integ.u, integ.p, integ.t)
+    return copy(reader.buffer)
+end
+
 # Evaluate every recorded signal at the saved left/right state of an event instant. The
 # saved `sol.u` vector holds the unknowns only; observed values are recomputed from it and
 # the current parameters, exactly as the recorder reads them during the grid rows.
@@ -234,7 +262,7 @@ function _values_at_state!(integ, getters, state, t::Float64)
     try
         copyto!(integ.u, state)
         integ.t = t
-        return Float64[Float64(getter(integ)) for getter in getters]
+        return _signal_values(getters, integ)
     finally
         copyto!(integ.u, saved_u)
         integ.t = saved_t
@@ -394,6 +422,9 @@ end
 # ---------------------------------------------------------------------------------------
 # The public entry point
 # ---------------------------------------------------------------------------------------
+
+"Benchmark hook (PERF-1): phase timings and solver statistics of the last `simulate`."
+const LAST_PROFILE = Ref{Any}(nothing)
 
 """
     simulate(flat; run_dir, run_id, model_hash, settings, cancel, progress, phase,
@@ -596,7 +627,14 @@ function _simulate_flat(flat::Flat.FlatModel;
     if schedule !== nothing && !isempty(schedule.tick_times)
         init_kwargs = merge(init_kwargs, (; tstops = schedule.tick_times))
     end
+    # F5.1 insertion point: the breakpoints of every CSV table the model reads are tstops.
+    csv_stops = csv_model_tstops(flat, run_settings.t_start, run_settings.t_end)
+    if !isempty(csv_stops)
+        merged = haskey(init_kwargs, :tstops) ? vcat(init_kwargs.tstops, csv_stops) : csv_stops
+        init_kwargs = merge(init_kwargs, (; tstops = sort!(unique!(Float64.(merged)))))
+    end
     init_kwargs = _dbg_init_kwargs(debug, init_kwargs)  # M4 debug: the watch pool (src/sim/watch.jl)
+    init_ns = time_ns()
     integ = try
         init(solver_problem, alg; init_kwargs...)
     catch err
@@ -614,6 +652,7 @@ function _simulate_flat(flat::Flat.FlatModel;
         )
     end
 
+    prof_init_s = (time_ns() - init_ns) / 1.0e9
     retcode = integ.sol.retcode
     if retcode == ReturnCode.InitialFailure
         diagnostic = diag(
@@ -662,11 +701,16 @@ function _simulate_flat(flat::Flat.FlatModel;
         end
         push!(symbols, x)
     end
-    getters = [
-        ModelingToolkit.isparameter(sym) ? getp(integ, sym) : getu(integ, sym) for
-        sym in symbols
-    ]
-    values = () -> [Float64(getter(integ)) for getter in getters]
+    getters = _signal_reader(lowered.model, symbols)
+    prof_values_ns = Ref(UInt64(0))
+    prof_tick_ns = Ref(UInt64(0))
+    prof_step_ns = Ref(UInt64(0))
+    values = function ()
+        t0 = time_ns()
+        out = _signal_values(getters, integ)
+        prof_values_ns[] += time_ns() - t0
+        return out
+    end
 
     # Plan 5.9: the discrete runtime (getters, held-value setter, generated steps). Built
     # before the first row so a failure leaves a failed manifest rather than a half run.
@@ -728,7 +772,9 @@ function _simulate_flat(flat::Flat.FlatModel;
             before = nothing
             if target.tick && run !== nothing
                 before = values()
+                tk0 = time_ns()
                 changed = run_tick!(run, integ, tt, target.tick_index)
+                prof_tick_ns[] += time_ns() - tk0
             end
             if changed
                 _record_event!(record_event, rec, tt, :left, before)
@@ -758,7 +804,9 @@ function _simulate_flat(flat::Flat.FlatModel;
             continue
         end
         before = integ.t
+        sp0 = time_ns()
         step_ok = _dbg_step!(debug, session, integ, dt, event_cursor)  # M4 debug:
+        prof_step_ns[] += time_ns() - sp0
         event_cursor = _dbg_cursor(debug, session, event_cursor)  # M4 debug:
         # Record every event instant that this step crossed, twice (left and right limits)
         # before the row for `tt` is written.
@@ -804,6 +852,13 @@ function _simulate_flat(flat::Flat.FlatModel;
         end
     end
     sim_s = (time_ns() - loop_ns) / 1.0e9
+    LAST_PROFILE[] = (;
+        init_s = prof_init_s, loop_s = sim_s, step_s = prof_step_ns[] / 1.0e9,
+        tick_s = prof_tick_ns[] / 1.0e9, values_s = prof_values_ns[] / 1.0e9,
+        stats = hasproperty(integ, :stats) ? integ.stats : nothing,  # a stateless model has a NullODEIntegrator
+        ticks = run === nothing ? 0 : length(schedule.tick_times),
+        targets = length(targets),
+    )
 
     steps = try
         Int(integ.stats.naccept)

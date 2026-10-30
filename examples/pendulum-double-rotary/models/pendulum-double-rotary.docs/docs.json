@@ -1,0 +1,43 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "structure",
+          "title": "Multibond structure",
+          "file": "pages/structure.md",
+          "children": []
+        },
+        {
+          "id": "equations",
+          "title": "Equations of motion",
+          "file": "pages/equations.md",
+          "children": []
+        },
+        {
+          "id": "trajectory",
+          "title": "Trajectory optimisation",
+          "file": "pages/trajectory.md",
+          "children": []
+        },
+        {
+          "id": "control",
+          "title": "TVLQR and LQR",
+          "file": "pages/control.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results and checks",
+          "file": "pages/results.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

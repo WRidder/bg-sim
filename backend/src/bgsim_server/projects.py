@@ -22,7 +22,7 @@ Endpoint summary (all under ``/api``)::
     DELETE /projects/{p}                          remove the project directory
     GET    /projects/{p}/models/{m}               the model document (JSON)
     PUT    /projects/{p}/models/{m}               validate, write and return it
-    DELETE /projects/{p}/models/{m}               remove it and its tab entry
+    DELETE /projects/{p}/models/{m}               remove it, its docs folder and its tab entry
     GET    /projects/{p}/library/{block}          the block source (text/plain)
     PUT    /projects/{p}/library/{block}          write the source
     DELETE /projects/{p}/library/{block}          remove it
@@ -73,6 +73,8 @@ router = APIRouter()
 PROJECT_FILE = "bgsim.project.json"
 MODEL_SUFFIX = ".bgmodel.json"
 LIBRARY_SUFFIX = ".jl"
+#: The docs folder of a model lives next to its file: ``models/<m>.docs/`` (work package W5.6).
+DOCS_SUFFIX = ".docs"
 
 _NAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 _BLOCK_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -693,6 +695,16 @@ class ProjectStore:
             path.unlink()
         except OSError as exc:
             raise ProjectError(500, f"could not delete {path}: {exc}") from exc
+        docs_dir = path.parent / f"{model_name}{DOCS_SUFFIX}"
+        if docs_dir.is_symlink() or docs_dir.is_file():
+            docs_dir.unlink()
+        elif docs_dir.is_dir():
+            try:
+                shutil.rmtree(docs_dir)
+            except OSError as exc:
+                raise ProjectError(
+                    500, f"the model was deleted, but its docs folder {docs_dir} was not: {exc}"
+                ) from exc
         if model_name in project.models:
             project.models = [entry for entry in project.models if entry != model_name]
             self._write_project(project_dir, project)

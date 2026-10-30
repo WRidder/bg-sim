@@ -35,6 +35,7 @@ const schemaNames = [
   "stream-handshake",
   "bindings",
   "debug",
+  "docs",
 ] as const;
 type SchemaName = (typeof schemaNames)[number];
 

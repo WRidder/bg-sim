@@ -1,0 +1,8 @@
+{
+  "$comment": "Invalid: page ids are lower-case slugs; 'Plant Model' has a capital and a space.",
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    { "id": "Plant Model", "title": "Plant", "file": "pages/plant.md", "children": [] }
+  ]
+}

@@ -8,8 +8,10 @@
   position, which stays at the origin). The cube visual is offset by (a/2, a/2, a/2) = 0.075 m
   inside the link, so the body diagonal (1,1,1) is vertical at the equilibrium.
 
-  The three wheels are discs on the cube centre with their axes along the body x, y and z
-  (joints "wheel_x", "wheel_y", "wheel_z", bound to the integrated wheel angles of the model,
+  The three wheels are discs of radius 0.055 m and thickness 0.012 m, one on the inside of each
+  face opposite the pivot corner (x = a, y = a, z = a), centred on the face and 0.01 m inside it:
+  wheel x at (0.14, 0.075, 0.075), y at (0.075, 0.14, 0.075), z at (0.075, 0.075, 0.14), their axes
+  along the body x, y and z (joints "wheel_x", "wheel_y", "wheel_z", bound to the integrated wheel angles of the model,
   relative to the cube). Each has a dark spoke that makes the rotation visible.
 -->
 <sdf version="1.9">
@@ -38,10 +40,10 @@
 
     <!-- wheel about the body x axis: the cylinder axis (z) is turned onto x -->
     <link name="wheel_x_link">
-      <pose>0.075 0.075 0.075 0 0 0</pose>
+      <pose>0.14 0.075 0.075 0 0 0</pose>
       <visual name="wheel_x_disk">
         <pose>0 0 0 0 1.5707963 0</pose>
-        <geometry><cylinder><radius>0.05</radius><length>0.012</length></cylinder></geometry>
+        <geometry><cylinder><radius>0.055</radius><length>0.012</length></cylinder></geometry>
         <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
       </visual>
       <visual name="wheel_x_spoke">
@@ -53,10 +55,10 @@
 
     <!-- wheel about the body y axis -->
     <link name="wheel_y_link">
-      <pose>0.075 0.075 0.075 0 0 0</pose>
+      <pose>0.075 0.14 0.075 0 0 0</pose>
       <visual name="wheel_y_disk">
         <pose>0 0 0 1.5707963 0 0</pose>
-        <geometry><cylinder><radius>0.05</radius><length>0.012</length></cylinder></geometry>
+        <geometry><cylinder><radius>0.055</radius><length>0.012</length></cylinder></geometry>
         <material><diffuse>0.35 0.7 0.35 1</diffuse></material>
       </visual>
       <visual name="wheel_y_spoke">
@@ -68,9 +70,9 @@
 
     <!-- wheel about the body z axis -->
     <link name="wheel_z_link">
-      <pose>0.075 0.075 0.075 0 0 0</pose>
+      <pose>0.075 0.075 0.14 0 0 0</pose>
       <visual name="wheel_z_disk">
-        <geometry><cylinder><radius>0.05</radius><length>0.012</length></cylinder></geometry>
+        <geometry><cylinder><radius>0.055</radius><length>0.012</length></cylinder></geometry>
         <material><diffuse>0.8 0.3 0.3 1</diffuse></material>
       </visual>
       <visual name="wheel_z_spoke">

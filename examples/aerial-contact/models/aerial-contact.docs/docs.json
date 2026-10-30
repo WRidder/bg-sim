@@ -1,0 +1,49 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "system",
+          "title": "The system and its conventions",
+          "file": "pages/system.md",
+          "children": []
+        },
+        {
+          "id": "phases",
+          "title": "The phase machine",
+          "file": "pages/phases.md",
+          "children": []
+        },
+        {
+          "id": "flight",
+          "title": "The free-flight controller",
+          "file": "pages/flight.md",
+          "children": []
+        },
+        {
+          "id": "contact",
+          "title": "The contact controller",
+          "file": "pages/contact.md",
+          "children": []
+        },
+        {
+          "id": "manipulator",
+          "title": "The manipulator and the end-effector",
+          "file": "pages/manipulator.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results and checks",
+          "file": "pages/results.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

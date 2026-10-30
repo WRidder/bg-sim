@@ -893,6 +893,12 @@ function lower_call(fn::Symbol, args, ctx::LowerCtx, node)
         )
         return fn === :interp1 ? bg_interp1(values...) : bg_interp2(values...)
     end
+    if fn === :csv_value
+        # F5.1: `csv_value(table, k, t)` is the opaque `bg_csv(table, k, 0, t)` (src/library/csvdata.jl).
+        values = lower_args(args, ctx)
+        length(values) == 3 || return _lower_error("`csv_value` takes 3 arguments", ctx)
+        return bg_csv(values[1], values[2], 0, values[3])
+    end
     fn in (:delay, :noise_normal) && return _lower_error(
         "`$fn` is an intrinsic that this build does not lower yet", ctx
     )

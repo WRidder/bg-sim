@@ -14,11 +14,14 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
 * starts each model's run through ``POST /api/projects/{p}/runs``, waits for
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
 * evaluates every check kind (``final_value``, ``cursor_value``, ``max_abs``,
-  ``max_abs_le``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
+  ``max_abs_le``, ``min_ge``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
   ``invariant``, ``planar_fk``, ``energy_ledger``, ``compare_signals``,
   ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak`` and
   ``scene_bindings`` and ``no_diagnostics``), prints one
-  line per check and exits non-zero when any check fails.
+  line per check and exits non-zero when any check fails;
+* for every model with a ``models/<model>.docs`` folder, runs one docs check (X5.10): the
+  manifest, pages, assets, ``page:``/``block:``/``signal:`` links and every KaTeX math span
+  (``tools/example_docs/docs_lint.py``), reporting ``file:line: problem; fix``.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
 (``n`` Float64 values), then one contiguous column per manifest signal, in
@@ -76,6 +79,11 @@ the largest absolute value over the window is at most ``value``::
     {"kind": "max_abs_le", "signal": "V/p.e", "value": 24.0},
     {"kind": "rms_difference", "signal": "LQG/w_load_hat",
      "signal_b": "IW2/p.f", "from_t": 0.5, "to_t": 2.0, "value": 0.2},
+
+``min_ge`` is the lower-bound counterpart (a contact force that must stay positive): it passes when
+the smallest value over ``[from_t, to_t]`` is at least ``value``::
+
+    {"kind": "min_ge", "signal": "Wheel1/f_n", "from_t": 8.5, "to_t": 28.5, "value": 0.5},
 
 ``no_diagnostics`` takes ``codes`` and fails when any of them appears in the run
 manifest; other codes (such as the expected W205 of a pure bond-graph island) are
@@ -314,9 +322,88 @@ def _start_backend(projects_root: Path, log_path: Path) -> tuple[subprocess.Pope
     return process, port
 
 
+_JOB_HANDLE: int | None = None
+
+
+def _kill_children_with_me() -> None:
+    """On Windows, put this process in a kill-on-close job object.
+
+    `uv run bgsim` is a wrapper: terminating it leaves the bgsim server and its Julia worker
+    running, and a runner killed by a timeout never reaches `_stop_backend` at all. Every
+    process started after this call inherits the job, so the whole backend tree dies with
+    the runner however it ends.
+    """
+    global _JOB_HANDLE
+    if os.name != "nt" or _JOB_HANDLE is not None:
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    class _BasicLimits(ctypes.Structure):
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_int64),
+            ("PerJobUserTimeLimit", ctypes.c_int64),
+            ("LimitFlags", wintypes.DWORD),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", wintypes.DWORD),
+            ("Affinity", ctypes.c_size_t),
+            ("PriorityClass", wintypes.DWORD),
+            ("SchedulingClass", wintypes.DWORD),
+        ]
+
+    class _IoCounters(ctypes.Structure):
+        _fields_ = [(name, ctypes.c_uint64) for name in (
+            "ReadOperationCount", "WriteOperationCount", "OtherOperationCount",
+            "ReadTransferCount", "WriteTransferCount", "OtherTransferCount",
+        )]
+
+    class _ExtendedLimits(ctypes.Structure):
+        _fields_ = [
+            ("BasicLimitInformation", _BasicLimits),
+            ("IoInfo", _IoCounters),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    job = kernel32.CreateJobObjectW(None, None)
+    if not job:
+        print(f"warning: no job object ({ctypes.get_last_error()}); a killed run may leave a backend behind")
+        return
+    limits = _ExtendedLimits()
+    limits.BasicLimitInformation.LimitFlags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+    extended_limit_information = 9
+    ok = kernel32.SetInformationJobObject(
+        wintypes.HANDLE(job), extended_limit_information, ctypes.byref(limits), ctypes.sizeof(limits)
+    ) and kernel32.AssignProcessToJobObject(wintypes.HANDLE(job), wintypes.HANDLE(kernel32.GetCurrentProcess()))
+    if not ok:
+        print(f"warning: no job object ({ctypes.get_last_error()}); a killed run may leave a backend behind")
+        kernel32.CloseHandle(wintypes.HANDLE(job))
+        return
+    _JOB_HANDLE = job  # kept open for the life of the runner; the OS closes it on exit
+
+
 def _stop_backend(process: subprocess.Popen) -> None:
     if process.poll() is not None:
         return
+    if os.name == "nt":
+        # Terminating `uv` alone leaves bgsim and its Julia worker running: end the whole tree.
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        try:
+            process.wait(timeout=20.0)
+            return
+        except subprocess.TimeoutExpired:
+            pass
     process.terminate()
     try:
         process.wait(timeout=20.0)
@@ -835,6 +922,36 @@ def _max_abs_le_check(
         f"at t={times[index]:.6g}, limit {limit:.12g}"
     )
     report.check(measured <= limit, label, detail)
+
+
+def _min_ge_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The smallest value of a signal over a time window is at least ``value`` (a lower bound)."""
+    signal = str(check.get("signal", ""))
+    label = f"{project}/{model} {signal} min_ge"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value'")
+        return
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    limit = float(check["value"])
+    from_t = float(check.get("from_t", float(run.time[0])))
+    to_t = float(check.get("to_t", float(run.time[-1])))
+    mask = (run.time >= from_t) & (run.time <= to_t)
+    if not mask.any():
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    values = run.signals[signal][mask]
+    times = run.time[mask]
+    index = int(np.argmin(values))
+    measured = float(values[index])
+    detail = (
+        f"min {signal} over [{from_t:g}, {to_t:g}] measured {measured:.12g} "
+        f"at t={times[index]:.6g}, lower bound {limit:.12g}"
+    )
+    report.check(measured >= limit, label, detail)
 
 
 def _signal_id(value: Any) -> str:
@@ -2062,6 +2179,8 @@ def _check_model_checks(
             _max_abs_check(report, project, model, run, check)
         elif kind == "max_abs_le":
             _max_abs_le_check(report, project, model, run, check)
+        elif kind == "min_ge":
+            _min_ge_check(report, project, model, run, check)
         elif kind == "rms_difference":
             _rms_difference_check(report, project, model, run, check)
         elif kind == "ratio":
@@ -2096,6 +2215,47 @@ def _check_model_checks(
 
 
 # --------------------------------------------------------------------------- examples
+
+
+def _check_docs(
+    client: httpx.Client,
+    report: Report,
+    example: str,
+    project: str,
+    runs: dict[str, Run],
+) -> None:
+    """X5.10: lint ``models/<model>.docs`` of every documented model of the example.
+
+    The manifest is also read through ``GET /api/projects/{p}/docs/{model}``, so the backend's own
+    schema and tree validation judges it; the page, link, asset and KaTeX rules live in
+    ``tools/example_docs/docs_lint.py`` and report ``file:line: problem; fix``.
+    """
+    sys.path.insert(0, str(ROOT / "tools" / "example_docs"))
+    from docs_lint import lint_model_docs  # only the docs check needs it
+
+    models_dir = EXAMPLES / example / "models"
+    for docs_dir in sorted(models_dir.glob("*.docs")):
+        model = docs_dir.name[: -len(".docs")]
+        label = f"{example}/{model} docs"
+        problems: list[str] = []
+        response = client.get(f"/api/projects/{project}/docs/{model}")
+        if response.status_code != 200:
+            problems.append(
+                f"{docs_dir.as_posix()}/docs.json:1: the backend refuses the manifest "
+                f"({response.status_code}: {response.text[:300]}); fix docs.json"
+            )
+        run = next((r for r in runs.values() if r.model == model), None)
+        document = run.model_document if run is not None else None
+        if document is None:
+            document = json.loads((models_dir / f"{model}.bgmodel.json").read_text(encoding="utf-8"))
+        signal_ids = set(run.signals) if run is not None else None
+        problems.extend(lint_model_docs(docs_dir, document, signal_ids, docs_dir.relative_to(ROOT).as_posix()))
+        pages = len(list((docs_dir / "pages").glob("*.md")))
+        assets = len(list((docs_dir / "assets").glob("*"))) if (docs_dir / "assets").is_dir() else 0
+        if problems:
+            for problem in problems:
+                print(f"      {problem}", flush=True)
+        report.check(not problems, label, f"{pages} pages, {assets} assets" if not problems else f"{len(problems)} problem(s)")
 
 
 def _check_example(client: httpx.Client, expected_path: Path, report: Report) -> None:
@@ -2146,6 +2306,7 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
                 flush=True,
             )
             _check_model_checks(report, project, model, run, checks)
+        _check_docs(client, report, example, project, runs)
         compare = document.get("compare")
         if compare:
             _compare_checks(report, project, compare, runs)
@@ -2157,6 +2318,10 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
 
 
 def main() -> int:
+    if {"-h", "--help"} & set(sys.argv[1:]):
+        print("usage: uv run examples/run_checks.py [--only name[,name...]]")
+        return 0
+    _kill_children_with_me()
     expected_files = sorted(EXAMPLES.glob("*/expected.json"))
     # `--only name[,name...]` restricts the run to those example directories (for
     # iterating on one example); the gate always runs every example.

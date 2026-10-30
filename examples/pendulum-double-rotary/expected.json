@@ -1,0 +1,268 @@
+{
+  "project": "pendulum-double-rotary",
+  "description": "X5.13: Quanser-style rotary double inverted pendulum on the spatial multibond stdlib. World -> Mount -> J1 (Revolute3D about world z, the arm) -> arm bar (RigidBody3D) -> J2 (Revolute3D about the arm axis, the lower link) -> J3 (upper link), every body a RigidBody3D with a distributed mass (COM at the bar middle). The arm is driven by an SRV02-like servo: Motor (ElectricDrive, voltage input) -> Shaft (ElasticShaft) -> Gear (IdealGear, 70:1) -> J1.drive. The 1 kHz firmware Ctrl (phases: idle, TVLQR swing-up along the collocation trajectory, latched LQR balance) reads the joint angles and rates. Dist is a force pulse on the tip of the upper link. Joint compliance kt = kr = 1e6 (N/m, N m/rad); every state is integral.",
+  "models": {
+    "pendulum-double-rotary": {
+      "run_timeout": 1500.0,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative-causality warning, no event-loop warning, no solver failure"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "J1/qdout",
+          "from_t": 0.05,
+          "to_t": 0.99,
+          "value": 0.002,
+          "note": "at rest before t_on: the arm does not move (motor voltage 0). Bound: 5x the measured start-up residual of the released joint compliance"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J2/qout",
+          "t": 0.95,
+          "value": 3.141592653589793,
+          "abs": 0.002,
+          "note": "hanging straight down before t_on (link 1 at pi); 2 mrad is larger than the measured joint sag"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.95,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "controller idle before t_on"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1e-12,
+          "note": "motor voltage 0 before t_on"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 6.0,
+          "value": 2.0,
+          "abs": 1e-09,
+          "note": "the balance controller has taken over one second after t_on + T_s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/dev",
+          "t": 5.5,
+          "value": 0.0,
+          "abs": 0.017453292519943295,
+          "note": "upright reached by t_on + T_s + 0.5 s = 5.5 s: every link within 1.0 deg (measured settled band 0.05 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Angles/dev",
+          "from_t": 6.5,
+          "to_t": 8.49,
+          "value": 0.017453292519943295,
+          "note": "all link angles inside 1.0 deg of upright between catch + 1.5 s and the disturbance (measured max 0.05 deg; the bound is 2x, at least 1 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Angles/phi2",
+          "from_t": 8.5,
+          "to_t": 10.5,
+          "value": 0.12598907423248584,
+          "rtol": 0.3,
+          "note": "the disturbance is real: the tip link deflects by 7.2 deg (design.py: 7.3 deg); accepted band +-30 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Angles/dev",
+          "from_t": 11.0,
+          "to_t": 12.0,
+          "value": 0.017453292519943295,
+          "note": "recovered: back inside 1.0 deg from 11 s (measured: inside 0.5 deg after 1.93 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "value": 10.000000001,
+          "note": "the motor voltage never exceeds the +-10 V amplifier limit (clamped in the firmware)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "J1/qout",
+          "value": 2.0,
+          "note": "the arm stays inside +-2 rad (the swing-up trajectory is bounded by 2 rad)"
+        }
+      ]
+    },
+    "pendulum-double-rotary-free": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 0.5,
+          "value": 0.1935399683776588,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 0.5,
+          "value": 4.052050671182898,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 0.5,
+          "value": 3.748481723409493,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 1.0,
+          "value": 0.31637162339972247,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 1.0,
+          "value": 3.3493622002771506,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 1.0,
+          "value": 2.5535379558016196,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 1.5,
+          "value": 0.1787664870610593,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 1.5,
+          "value": 3.176619385320554,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 1.5,
+          "value": 2.466765747408834,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 2.0,
+          "value": 0.26941757964585616,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 2.0,
+          "value": 3.9064715453541377,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 2.0,
+          "value": 3.7802728340821186,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 2.5,
+          "value": 0.265992415632055,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 2.5,
+          "value": 2.4776861285269622,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 2.5,
+          "value": 2.1824797501389925,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 3.0,
+          "value": 0.20646552869765167,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 3.0,
+          "value": 3.6398424317695457,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 3.0,
+          "value": 3.838043338674732,
+          "abs": 0.004754457950252089,
+          "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        }
+      ]
+    }
+  }
+}

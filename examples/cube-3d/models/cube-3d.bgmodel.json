@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "cube-3d",
-  "$comment": "Plan 9.9 (X5.4): a 0.15 m cube balanced on one corner by three body-axis reaction wheels, equation-block plant (library/CornerCube.jl) and a 2 ms discrete LQR (library/CubeLQR.jl, K from design/design.py). The motors are the stdlib drives/ElectricDrive with the stator fixed (the reaction torque is inside the block); the motor rotor inertia J_m = 1e-6 kg m^2 (rotating relative to the cube) is the smallest value that keeps the solver robust, J_m <= 1e-8 makes the re-initialisation at the controller ticks fail (derivative causality of the rotor against the rate-imposed wheel). The position of the 3D pose binding comes from the three constant blocks PosX/Y/Z (inline, output unit m, which the pose binding requires) (the pivot corner is the world origin).",
+  "$comment": "Plan 9.9 (X5.4): a 0.15 m cube balanced on one corner by three body-axis reaction wheels, each mounted on the inside of a face (the faces opposite the pivot corner), equation-block plant (library/CornerCube.jl) and a 2 ms discrete LQR (library/CubeLQR.jl, K from design/design.py). The motors are the stdlib drives/ElectricDrive with the stator fixed (the reaction torque is inside the block); the motor rotor inertia J_m = 1e-6 kg m^2 (rotating relative to the cube) is the smallest value that keeps the solver robust, J_m <= 1e-8 makes the re-initialisation at the controller ticks fail (derivative causality of the rotor against the rate-imposed wheel). The position of the 3D pose binding comes from the three constant blocks PosX/Y/Z (inline, output unit m, which the pose binding requires) (the pivot corner is the world origin).",
   "diagram": {
     "nodes": [
       {
@@ -18,7 +18,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "K": "[206.848968 -358.272922 -47.0030541 7.45310376 7.45310376 -0.125318573 0.0483532841 0.0483532841; 206.848968 358.272922 7.45310376 -47.0030541 7.45310376 0.0483532841 -0.125318573 0.0483532841; -413.697936 -1.80216087e-09 7.45310376 7.45310376 -47.0030541 0.0483532841 0.0483532841 -0.125318573]",
+          "K": "[243.436142 -421.643766 -53.9547345 14.5328372 14.5328372 -0.169790443 0.0717678091 0.0717678091; 243.436142 421.643766 14.5328372 -53.9547345 14.5328372 0.0717678091 -0.169790443 0.0717678091; -486.872283 -2.5527019e-09 14.5328372 14.5328372 -53.9547345 0.0717678091 0.0717678091 -0.169790443]",
           "u_max": "12.0"
         },
         "constants": {},
@@ -41,10 +41,13 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "0.42",
+          "ms": "0.18",
+          "mw": "0.08",
           "a": "0.15",
-          "Thcm": "3e-3",
-          "Thw": "6e-4",
+          "d": "0.01",
+          "Ths": "1.125e-3",
+          "Thw": "1.9e-4",
+          "Thwt": "9.6e-5",
           "g": "9.81"
         },
         "constants": {},

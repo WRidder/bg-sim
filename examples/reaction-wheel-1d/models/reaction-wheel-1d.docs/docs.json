@@ -1,0 +1,31 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "plant",
+          "title": "Plant",
+          "file": "pages/plant.md",
+          "children": []
+        },
+        {
+          "id": "controller",
+          "title": "Discrete LQR design",
+          "file": "pages/controller.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results and checks",
+          "file": "pages/results.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

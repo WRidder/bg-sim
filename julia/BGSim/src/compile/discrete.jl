@@ -1027,6 +1027,10 @@ function _step_call(
         return Expr(:call, GlobalRef(helpers, :__sign), args[1])
     elseif fn in _STEP_BASE_FUNCS
         return Expr(:call, GlobalRef(Base, fn), args...)
+    elseif fn === :csv_value
+        # F5.1: the CSV source's sampled variant; the table id and column are literals.
+        length(args) == 3 || throw(LowerError("`csv_value` takes 3 arguments", nothing))
+        return Expr(:call, GlobalRef(BGSim, :bg_csv), args[1], args[2], 0, args[3])
     elseif fn === :delay || fn === :interp1 || fn === :interp2 || fn === :noise_normal
         throw(LowerError(
             "`$fn` is an intrinsic that the discrete scheduler does not lower (J2.7b)", nothing

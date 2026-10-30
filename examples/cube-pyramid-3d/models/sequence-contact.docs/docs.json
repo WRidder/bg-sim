@@ -1,0 +1,31 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "construction",
+          "title": "Construction",
+          "file": "pages/construction.md",
+          "children": []
+        },
+        {
+          "id": "firmware",
+          "title": "Firmware",
+          "file": "pages/firmware.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results and checks",
+          "file": "pages/results.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

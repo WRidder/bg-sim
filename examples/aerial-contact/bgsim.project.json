@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "aerial-contact",
+  "models": [
+    "aerial-contact"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

@@ -1,0 +1,31 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "block",
+          "title": "ArmDynamics3R",
+          "file": "pages/block.md",
+          "children": []
+        },
+        {
+          "id": "controller",
+          "title": "Drives and controller",
+          "file": "pages/controller.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results and checks",
+          "file": "pages/results.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
