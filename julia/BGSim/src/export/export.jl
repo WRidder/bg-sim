@@ -23,12 +23,14 @@
 # example harness uses to compare the computation with simulation, and it does not change the
 # interface.
 #
-# Scope: ODE systems (identity mass matrix), Euler/RK4 (ROS2 on request), frozen switching
-# conditions with W203, `@events` with `reinit` of states checked after every step with W203
-# (J-EX6, `emit_events.jl`), multi-rate `@discrete`, start values computed at export.
-# Everything else is refused with E110/E111 naming the construct. The Jacobian and the linear
-# solver of the Rosenbrock step (sparse pattern, static sparse LU, coloured finite
-# differences, J-EX4) are chosen in `sparse.jl`.
+# Scope: ODE systems and index-1 DAEs with a constant diagonal mass matrix, Euler/RK4 (ODEs
+# only) and the Rosenbrock methods ROS2/ROS34PW2/Rodas4P (D-EX6), the integrator and step
+# chosen by cost (D-EX7), frozen switching conditions with W203, `@events` with `reinit` of
+# states checked after every step with W203 (J-EX6, `emit_events.jl`), multi-rate
+# `@discrete`, start values computed at export. Everything else is refused with E110/E111
+# naming the construct. The Jacobian of the Rosenbrock step is symbolic with common
+# subexpressions (`jacobian_c`) or coloured finite differences (D-EX12); its pattern and the
+# linear solver (static sparse LU or dense LU, J-EX4) are chosen in `sparse.jl`.
 
 module Export
 
@@ -42,6 +44,7 @@ const SymbolicUtils = Symbolics.SymbolicUtils
 import JSON3
 import SHA
 using OrdinaryDiffEqTsit5: Tsit5
+using OrdinaryDiffEqRosenbrock: Rodas5P
 
 const MTK = ModelingToolkit
 
@@ -73,15 +76,16 @@ include("scope.jl")
 | --- | --- | --- |
 | `step` | `1e-3` | communication step (FMI `DefaultExperiment/stepSize`); `doStep` sizes are multiples of `dt` |
 | `dt` | `nothing` | internal step in seconds; `nothing` chooses it from the spectrum (D-EX7) |
-| `method` | `:auto` | `:auto` (RK4 in phase A), `:euler`, `:rk4`, `:ros2` |
+| `method` | `:auto` | `:auto` (the cheapest method that meets the step rule; a Rosenbrock method for a DAE), `:euler`, `:rk4`, `:ros2`, `:ros34pw2`, `:rodas4p` |
 | `t_end` | `1.0` | `DefaultExperiment/stopTime` and the start-value horizon |
-| `margin` | `0.5` | fraction of the stability bound the step may use |
-| `accuracy` | `0.3` | largest `h·|λ|` allowed for any eigenvalue |
+| `margin` | `0.5` | fraction of the stability bound the step may use (explicit methods) |
+| `accuracy` | `0.3` | largest `h·|λ|` allowed for any eigenvalue (RK4); Rosenbrock methods meet the same per-step error |
+| `damping` | `0.05` | a Rosenbrock step may leave a fast mode unresolved when both the method and the exact flow shrink it below this in one step |
 | `max_substeps` | `1000` | above this W207 is reported |
 | `fold_parameters` | `true` | fold non-tunable parameters into literals |
 | `expose_all` | `false` | publish every recorded signal as a `local` variable |
-| `jacobian` | `:auto` | Rosenbrock only: `:symbolic` (`calculate_jacobian`), `:fd` (coloured finite differences in C), `:auto` (symbolic up to `symbolic_jacobian_limit`) |
-| `symbolic_jacobian_limit` | `1e5` | node count of the substituted right-hand side above which `:auto` uses `:fd` |
+| `jacobian` | `:auto` | Rosenbrock only: `:symbolic` (`jacobian_c`, chain rule through the observed equations), `:fd` (coloured finite differences in C), `:auto` (symbolic within its guard, else `:fd`) |
+| `symbolic_jacobian_limit` | `2e5` | the guard of `:auto`: the largest number of derivative terms the symbolic Jacobian may build (counted while it is built, W212 above it); a 120 s time limit applies as well |
 | `linear_solver` | `:auto` | Rosenbrock only: `:dense` (LU with partial pivoting), `:sparse` (static sparse LU), `:auto` (sparse above `sparse_threshold` states) |
 | `sparse_threshold` | `40` | `:auto` uses the sparse LU when the model has more states than this |
 """
@@ -92,14 +96,19 @@ Base.@kwdef struct ExportSettings
     t_end::Float64 = 1.0
     margin::Float64 = 0.5
     accuracy::Float64 = 0.3
+    damping::Float64 = 0.05
     max_substeps::Int = 1000
     fold_parameters::Bool = true
     expose_all::Bool = false
     jacobian::Symbol = :auto
-    symbolic_jacobian_limit::Float64 = 1.0e5
+    symbolic_jacobian_limit::Float64 = 2.0e5
     linear_solver::Symbol = :auto
     sparse_threshold::Int = 40
 end
+
+"""The time guard of the symbolic Jacobian (`jacobian = :auto`); the size guard is
+`symbolic_jacobian_limit` (terms)."""
+const JACOBIAN_MAX_SECONDS = 120.0
 
 function ExportSettings(d::AbstractDict)
     get_(k, default) = haskey(d, k) ? d[k] : haskey(d, Symbol(k)) ? d[Symbol(k)] : default
@@ -111,11 +120,12 @@ function ExportSettings(d::AbstractDict)
         t_end = Float64(get_("t_end", 1.0)),
         margin = Float64(get_("margin", 0.5)),
         accuracy = Float64(get_("accuracy", 0.3)),
+        damping = Float64(get_("damping", 0.05)),
         max_substeps = Int(get_("max_substeps", 1000)),
         fold_parameters = Bool(get_("fold_parameters", true)),
         expose_all = Bool(get_("expose_all", false)),
         jacobian = Symbol(lowercase(String(get_("jacobian", "auto")))),
-        symbolic_jacobian_limit = Float64(get_("symbolic_jacobian_limit", 1.0e5)),
+        symbolic_jacobian_limit = Float64(get_("symbolic_jacobian_limit", 2.0e5)),
         linear_solver = Symbol(lowercase(String(get_("linear_solver", "auto")))),
         sparse_threshold = Int(get_("sparse_threshold", 40)),
     )
@@ -174,9 +184,9 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
     if any(d -> d.severity == "error", flat.diagnostics)
         return _fail(collect(Diagnostic, flat.diagnostics), out_dir)
     end
-    settings.method in (:auto, :euler, :rk4, :ros2) ||
+    settings.method in (:auto, EXPORT_METHODS...) ||
         return _fail([diag("E110", "unknown export method `$(settings.method)`";
-            hint = "use auto, euler, rk4 or ros2")], out_dir)
+            hint = "use auto, euler, rk4, ros2, ros34pw2 or rodas4p")], out_dir)
     settings.jacobian in (:auto, :symbolic, :fd) ||
         return _fail([diag("E110", "unknown Jacobian setting `$(settings.jacobian)`";
             hint = "use auto, symbolic or fd")], out_dir)
@@ -198,21 +208,32 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
         return _fail([diag("E110", "the model uses a construct that is not exported yet";
             hint = sprint(showerror, err))], out_dir)
     end
-    if lowered.model.algebraic
+    algebraic = lowered.model.algebraic
+    if algebraic && settings.method in EXPLICIT_METHODS
         return _fail([diag("E111",
             "the compiled system keeps algebraic equations (a mass-matrix DAE); Euler and RK4 cannot step it";
-            hint = "DAE export arrives with the Rosenbrock integrator (plan J-EX3)")], out_dir)
+            hint = "use method auto or a Rosenbrock method (ros2, ros34pw2, rodas4p)")], out_dir)
+    end
+    if algebraic && _mass_diagonal(lowered.problem.f.mass_matrix) === nothing
+        return _fail([diag("E111",
+            "the mass matrix of the compiled system is not a constant diagonal";
+            hint = "only index-1 DAEs with a diagonal mass matrix are exported")], out_dir)
     end
     integ = try
-        MTK.SciMLBase.init(lowered.problem, Tsit5())
+        # The consistent start of a DAE comes from MTK's initialization, run by `init`.
+        MTK.SciMLBase.init(lowered.problem, algebraic ? Rodas5P() : Tsit5())
     catch err
         return _fail([diag("E111", "the initial values could not be computed for the export";
             hint = sprint(showerror, err))], out_dir)
     end
 
     try
-        return _export(flat, lowered, integ, String(out_dir), settings, reference_dir,
-            String(name), diags)
+        # One intrinsics context for the whole export: the symbolic Jacobian is built before
+        # model.c is emitted and registers its tables in the same place (emit_intrinsics.jl).
+        return task_local_storage(_INTRINSIC_KEY, IntrinsicContext()) do
+            _export(flat, lowered, integ, String(out_dir), settings, reference_dir,
+                String(name), diags)
+        end
     catch err
         if err isa EventExportError
             o = err.origin
@@ -225,8 +246,30 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
     end
 end
 
+"""The diagonal of a constant diagonal mass matrix, or `nothing`."""
+function _mass_diagonal(mm)
+    mm === nothing && return nothing
+    mm isa LinearAlgebra.UniformScaling && return nothing
+    mm isa AbstractMatrix || return nothing
+    n = size(mm, 1)
+    size(mm, 2) == n || return nothing
+    for i in 1:n, j in 1:n
+        i == j && continue
+        v = mm[i, j]
+        v isa Number && iszero(v) || return nothing
+    end
+    d = Float64[]
+    for i in 1:n
+        v = mm[i, i]
+        v isa Number || return nothing
+        push!(d, Float64(v))
+    end
+    return d
+end
+
 function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, diags)
     sys = lowered.model.system
+    algebraic = lowered.model.algebraic
     iv = Symbolics.unwrap(MTK.get_iv(sys))
     xs = Any[Symbolics.unwrap(x) for x in MTK.unknowns(sys)]
     nx = length(xs)
@@ -326,26 +369,54 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             hint = "place ExportInput blocks where the controller supplies a signal and ExportOutput blocks on the signals to publish"))
     end
 
-    # ---- the continuous right-hand side and its Jacobian
+    # ---- the continuous right-hand side `M x' = f(t, x)`
+    # Row i of a differential equation is its state's index (mass 1); the algebraic
+    # equations `0 = g` fill the rows of the unknowns no equation differentiates (mass 0).
     rhs = Vector{Any}(undef, nx)
-    for e in MTK.equations(sys)
+    mass = zeros(nx)
+    algebraic_eqs = Any[]
+    alg_eq_rows = Int[]            # the compiled problem's row of each algebraic equation
+    rowmap = zeros(Int, nx)        # rowmap[r]: the C row of the compiled problem's row r
+    for (r, e) in enumerate(MTK.equations(sys))
         lhs = Symbolics.unwrap(e.lhs)
-        (SymbolicUtils.iscall(lhs) && SymbolicUtils.operation(lhs) isa Symbolics.Differential) ||
-            throw(ExportError("the compiled system has a non-differential equation `$e`"))
-        x = Symbolics.unwrap(SymbolicUtils.arguments(lhs)[1])
-        rhs[findfirst(y -> isequal(y, x), xs)] = Symbolics.unwrap(e.rhs)
+        if SymbolicUtils.iscall(lhs) && SymbolicUtils.operation(lhs) isa Symbolics.Differential
+            x = Symbolics.unwrap(SymbolicUtils.arguments(lhs)[1])
+            i = findfirst(y -> isequal(y, x), xs)
+            (i === nothing || mass[i] != 0) &&
+                throw(ExportError("the compiled system has an unexpected differential equation `$e`"))
+            rhs[i] = Symbolics.unwrap(e.rhs)
+            mass[i] = 1.0
+            r <= nx && (rowmap[r] = i)
+        else
+            c = _try_const(lhs)
+            push!(algebraic_eqs, c !== nothing && iszero(c) ? Symbolics.unwrap(e.rhs) :
+                Symbolics.unwrap(e.rhs - e.lhs))
+            push!(alg_eq_rows, r)
+        end
     end
+    free_rows = findall(iszero, mass)
+    length(free_rows) == length(algebraic_eqs) ||
+        throw(ExportError("the compiled system has $(length(algebraic_eqs)) algebraic equations for $(length(free_rows)) algebraic unknowns"))
+    for (k, (i, g)) in enumerate(zip(free_rows, algebraic_eqs))
+        rhs[i] = g
+        alg_eq_rows[k] <= nx && (rowmap[alg_eq_rows[k]] = i)
+    end
+    nalg = length(free_rows)
+    sort(rowmap) == collect(1:nx) ||
+        throw(ExportError("internal: the compiled system's equations do not map one-to-one to its unknowns"))
+    # A numeric Jacobian of the compiled problem in the rows of the C code.
+    c_rows(J) = (Jc = similar(J); for r in 1:nx; Jc[rowmap[r], :] = J[r, :]; end; Jc)
+    # The right-hand side reads t outside the frozen conditions: Rosenbrock needs df/dt.
+    iv_used = e -> any(v -> isequal(v, iv), Symbolics.get_variables(e))
+    rhs_need = needed_observed(rhs, obs)
+    has_t = any(iv_used, rhs) || any(k -> rhs_need[k] && iv_used(obs.rhs[k]), eachindex(obs.rhs))
+    f_ops = op_count(rhs, obs)
     events = lower_events(flat, lowered.model, xs)
-    # Method first: only ROS2 needs a Jacobian in C. `calculate_jacobian` differentiates the
-    # fully substituted right-hand side, which blows up on large multibody models, so the
-    # step analysis uses a numeric Jacobian of the compiled right-hand side instead.
-    # The size guard (`symbolic_jacobian_limit`) sends large models to the coloured
-    # finite-difference Jacobian in C instead (D-EX12).
-    method = settings.method === :auto ? :rk4 : settings.method
-    jplan = (nx > 0 && method === :ros2) ? _plan_jacobian(sys, rhs, obs, xs, settings) : nothing
-    jac = jplan === nothing ? Matrix{Any}(undef, 0, 0) : jplan.jac
 
     # ---- the step
+    # The analysis uses a numeric Jacobian of the compiled right-hand side, which is cheap at
+    # any size; the C Jacobian (symbolic or finite differences) is built only for a
+    # Rosenbrock export.
     step_ns = round(Int64, settings.step * 1e9)
     abs(step_ns / 1e9 - settings.step) < 1e-15 * max(1.0, settings.step) && step_ns > 0 ||
         throw(ExportError("the communication step must be a positive whole number of nanoseconds"))
@@ -362,12 +433,18 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     # only discrete code reads changes the closed loop, which simulation shows as well.
     in_rhs = _rhs_dependencies(rhs, obs)
     J0 = nx == 0 ? zeros(0, 0) : jac_fn(x0, p0, 0.0)
-    if jplan !== nothing
-        # The structural pattern must cover every numeric non-zero; a miss would be a bug in
-        # the dependency walk, so it is added and counted rather than lost.
-        miss = (J0 .!= 0) .& .!jplan.pattern
-        jplan.pattern .|= miss
-        jplan.stats["patternAddedFromNumeric"] = count(miss)
+    # The structural pattern of J (D-EX12), for the Rosenbrock methods' cost and linear
+    # algebra. It must cover every numeric non-zero; a miss would be a bug in the dependency
+    # walk, so it is added and counted rather than lost.
+    pattern = nothing
+    pattern_stats = Dict{String,Any}()
+    if nx > 0 && !(settings.method in EXPLICIT_METHODS)
+        t0 = time()
+        pattern = jacobian_pattern(rhs, obs, xs)
+        pattern_stats["patternS"] = time() - t0
+        miss = (c_rows(J0) .!= 0) .& .!pattern
+        pattern .|= miss
+        pattern_stats["patternAddedFromNumeric"] = count(miss)
     end
     # A value the right-hand side reads only linearly (an input added to a derivative) does
     # not move the Jacobian: perturb it and look.
@@ -395,42 +472,124 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
                 hint = "declare min and max on `$(v.id)`; the FMU then refuses values outside them"))
         end
     end
-    points = spectrum_scan(jac_fn, x0, p0, names_x, names_p, 0.0; reference_dir = reference_dir,
-        ranges = ranged)
-    analysis_method = method === :ros2 ? :rk4 : method
-    choice = choose_step(analysis_method, points, base_ns; margin = settings.margin,
-        accuracy = settings.accuracy, max_substeps = settings.max_substeps)
-    dt_ns = if settings.dt === nothing
-        method === :ros2 ? base_ns : choice.dt_ns
-    else
-        round(Int64, settings.dt * 1e9)
+    # A DAE's spectrum is that of the pencil (J, M) in the compiled problem's row order; an
+    # algebraic block that is singular at the start is not index 1.
+    mass_an = algebraic ? _mass_diagonal(lowered.problem.f.mass_matrix) : nothing
+    if mass_an !== nothing && nx > 0
+        try
+            pencil_eigvals(J0, mass_an)
+        catch err
+            err isa LinearAlgebra.SingularException || rethrow()
+            return _fail(push!(diags, diag("E111",
+                "the algebraic equations cannot be solved for the algebraic unknowns at the start (index > 1, or a singular algebraic block)";
+                hint = "the Rosenbrock methods step index-1 DAEs only")), out_dir)
+        end
     end
+    points = spectrum_scan(jac_fn, x0, p0, names_x, names_p, 0.0; reference_dir = reference_dir,
+        ranges = ranged, mass = mass_an)
+
+    # ---- the method and the step (D-EX7): the cheapest candidate that meets the step rule
+    modes = Any[]
+    jac_info = Ref{Any}(nothing)
+    build_jacobian() = (jac_info[] === nothing &&
+        (jac_info[] = _jacobian(rhs, xs, obs, env, modes, settings)); jac_info[])
+    step_kw = (margin = settings.margin, accuracy = settings.accuracy,
+        max_substeps = settings.max_substeps, damping = settings.damping)
+    candidates = if settings.method !== :auto
+        (settings.method,)
+    elseif algebraic
+        ROSENBROCK_METHODS
+    elseif settings.dt !== nothing
+        (:rk4,)                     # a fixed step on an ODE keeps the explicit default
+    else
+        (:rk4, ROSENBROCK_METHODS...)
+    end
+    # The Rosenbrock step's linear algebra and finite-difference Jacobian are priced from the
+    # pattern (the symbolic factorization and the colouring take milliseconds); the symbolic
+    # Jacobian by its terms once it is built.
+    sparse_lu = pattern !== nothing && _use_sparse(settings, nx)
+    lu_kw = if sparse_lu
+        slu0 = static_lu(pattern)
+        (lu_ops = lu_flops(slu0), solve_ops = lu_solve_flops(slu0))
+    else
+        (lu_ops = nx^2 + nx^3 / 3, solve_ops = 2nx^2)
+    end
+    ncolour = pattern === nothing ? 0 : maximum(colour_columns(pattern); init = 0)
+    fd_ops = pattern === nothing ? 0.0 :
+        (ncolour + 1) * derivative_call_cost(f_ops, nx) + 3 * count(pattern)
+    jac_ops(m) = !is_rosenbrock(m) ? 0.0 :
+        settings.jacobian === :fd ? fd_ops :
+        jac_info[] === nothing ? 0.0 :
+        jac_info[].kind === :fd ? fd_ops : f_ops + 3 * jac_info[].terms
+    choice, table = choose_method(candidates, points, base_ns, nx; f_ops, jac_ops, has_t,
+        lu_kw..., step_kw...)
+    if is_rosenbrock(choice.method) && length(candidates) > 1 && settings.jacobian !== :fd
+        # The first pass priced the symbolic Jacobian at zero; with its real cost RK4 may win
+        # again.
+        build_jacobian()
+        choice, table = choose_method(candidates, points, base_ns, nx; f_ops, jac_ops, has_t,
+            lu_kw..., step_kw...)
+    end
+    dt_ns = settings.dt === nothing ? choice.dt_ns : round(Int64, settings.dt * 1e9)
     clock_errors = _dt_clock_errors(settings.dt, dt_ns, step_ns, sched, base_ns)
     isempty(clock_errors) || return _fail(append!(diags, clock_errors), out_dir)
+    if settings.dt !== nothing && length(candidates) > 1
+        # A fixed step on a DAE: the cheapest Rosenbrock method that meets the rule at it.
+        met = [r for r in table if step_rule_met(r.method, points, dt_ns / 1e9; step_kw...)]
+        pick = isempty(met) ? :rodas4p :
+            met[argmin([step_cost(r.method, nx; f_ops, jac_ops = jac_ops(r.method), has_t,
+                lu_kw...) for r in met])].method
+        choice = first(r.choice for r in table if r.method === pick)
+    end
+    method = choice.method
     dt = dt_ns / 1e9
-    if method !== :ros2 && dt > choice.stable_step
+    if !is_rosenbrock(method) && dt > choice.stable_step
         push!(diags, diag("W207",
             "the internal step $(dt) s is above the $(uppercase(String(method))) stability limit $(round(choice.stable_step; sigdigits = 3)) s; the export will diverge";
-            hint = "use dt <= $(round(choice.dt_ns / 1e9; sigdigits = 3)) s or method ros2"))
-    elseif method !== :ros2 && choice.over_budget && settings.dt === nothing
+            hint = "use dt <= $(round(choice.dt_ns / 1e9; sigdigits = 3)) s or a Rosenbrock method (ros2, ros34pw2, rodas4p)"))
+    elseif choice.over_budget && settings.dt === nothing
         push!(diags, diag("W207",
             "the step needs $(choice.substeps) substeps per $(base_ns / 1e9) s, above the budget of $(settings.max_substeps)";
-            hint = "a stiff mode (|λ| = $(round(choice.max_abs_lambda; sigdigits = 3)) 1/s) limits the step; a Rosenbrock export (plan J-EX3) avoids it"))
+            hint = is_rosenbrock(method) ?
+                "a fast mode (|λ| up to $(round(choice.max_abs_lambda; sigdigits = 3)) 1/s) is neither resolved nor damped at a larger step" :
+                "a stiff mode (|λ| = $(round(choice.max_abs_lambda; sigdigits = 3)) 1/s) limits the step; a Rosenbrock method avoids it"))
     end
 
-    # ---- the linear algebra of the Rosenbrock step (D-EX12, D-EX13)
-    la = jplan === nothing ? nothing : _plan_linear_algebra(jplan, settings, nx, dt,
-        _check_jacobians(jac_fn, x0, p0, names_x, names_p, reference_dir), diags)
+    # ---- the Jacobian and the linear algebra of the Rosenbrock step (D-EX12, D-EX13)
+    jac = is_rosenbrock(method) ? build_jacobian() : nothing
+    la = nothing
+    if jac !== nothing
+        if jac.reason !== nothing
+            push!(diags, diag("W212",
+                "the symbolic Jacobian is replaced by coloured finite differences ($(ncolour + 1) derivative calls per step): $(jac.reason)";
+                hint = "jacobian = fd skips the attempt; symbolic_jacobian_limit raises the size guard"))
+        end
+        S = copy(pattern)
+        stats = copy(pattern_stats)
+        if jac.kind === :symbolic
+            # The symbolic entries are structural too; one outside the pattern is added.
+            added = 0
+            for (i, j, _) in jac.jc.jentries
+                S[i, j] || (S[i, j] = true; added += 1)
+            end
+            stats["patternAddedFromSymbolic"] = added
+            stats["symbolicTerms"] = jac.terms
+        end
+        hg = ROSENBROCK_TABLEAUS[method].gamma * dt
+        Js = [c_rows(J) for J in _check_jacobians(jac_fn, x0, p0, names_x, names_p, reference_dir)]
+        la = _plan_linear_algebra((pattern = S, kind = jac.kind, stats = stats), settings, nx,
+            hg, mass, Js, diags)
+    end
 
     # ---- emit
     ident = c_identifier(name)
     guid = _guid(lowered.key, settings, dt_ns, method, vars, params, inputs)
-    modes = Any[]
     cbuf = IOBuffer()
-    intrinsics = with_intrinsics() do
-        _emit_model_c(cbuf, name, xs, x0, names_x, rhs, jac, la, env, obs, modes, vars, params,
-            inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
-    end
+    # The intrinsics' context is the one `export_model` opened: the symbolic Jacobian above
+    # already registered its tables there.
+    intrinsics = _intrinsic_context()
+    _emit_model_c(cbuf, name, xs, x0, names_x, rhs, mass, jac, la, env, obs, modes, vars,
+        params, inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
     block_of = Dict(i.path => i.ref for i in flat.instances)
     for cond in modes
         path = _condition_path(cond)
@@ -451,7 +610,8 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     _write_model_h(joinpath(out_dir, "sources", "model.h"), name, ident, guid, nx,
         length(params), length(held_ids), has_disc ? length(sched.input_ids) : 0, length(vars),
         length(inputs), has_disc ? length(sched.partitions) : 0, length(modes), dt, dt_ns, method;
-        la = la, ne = length(events), ner = maximum((length(ev.targets) for ev in events); init = 0))
+        nalg, has_t, la, ne = length(events),
+        ner = maximum((length(ev.targets) for ev in events); init = 0))
     write(joinpath(out_dir, "sources", "model.c"), splice_intrinsics(String(take!(cbuf)), intrinsics))
     for f in RUNTIME_FILES
         cp(joinpath(RUNTIME_DIR, f), joinpath(out_dir, "sources", f); force = true)
@@ -464,8 +624,17 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         "runtimeVersion" => RUNTIME_VERSION, "fmiVersion" => "2.0",
         "method" => String(method), "dt" => dt, "step" => settings.step,
         "tEnd" => settings.t_end, "substeps" => base_ns ÷ dt_ns,
-        "states" => nx, "modes" => length(modes), "events" => length(events),
-        "folded" => folded,
+        "states" => nx, "algebraic" => nalg, "dependsOnTime" => has_t,
+        "modes" => length(modes), "events" => length(events), "folded" => folded,
+        "jacobian" => jac === nothing ? nothing : Dict("kind" => String(jac.kind),
+            "terms" => jac.terms,
+            "entries" => jac.kind === :symbolic ? jac.entries : count(la.pattern),
+            "fallbackReason" => jac.reason),
+        # D-EX7c: every candidate with its step and estimated cost per communication step
+        # (flops; derivative calls, Jacobian, LU and solves).
+        "selection" => [Dict("method" => String(r.method), "substeps" => r.choice.substeps,
+            "dt" => r.choice.dt_ns / 1e9, "cost" => r.cost,
+            "withinBudget" => !r.choice.over_budget) for r in table],
         "heldValues" => length(held_ids), "partitions" => has_disc ? length(sched.partitions) : 0,
         "inputs" => [Dict("name" => v.name, "id" => v.id, "start" => v.start) for v in inputs],
         "outputs" => [Dict("name" => v.name, "id" => v.id) for v in vars if v.kind === :output],
@@ -477,7 +646,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             "points" => length(points), "rangedValues" => length(ranged),
             "stableStep" => isfinite(choice.stable_step) ? choice.stable_step : nothing,
             "accurateStep" => isfinite(choice.accurate_step) ? choice.accurate_step : nothing,
-            "analysisMethod" => String(analysis_method),
+            "analysisMethod" => String(method),
             "proposedDt" => choice.dt_ns / 1e9),
         "linearAlgebra" => la === nothing ? nothing : la.report,
         "tables" => intrinsics_report(intrinsics),
@@ -569,6 +738,35 @@ function _numeric_jacobian(prob, integ, sys, ps, p0)
     end
 end
 
+"""    _jacobian(rhs, xs, obs, env, modes, settings) -> NamedTuple
+
+The Jacobian of a Rosenbrock export (D-EX12): symbolic with common subexpressions
+(`jacobian_c`), or coloured finite differences (`kind = :fd`, emitted from the pattern by
+`emit_fd_jacobian`) when asked (`jacobian = :fd`) or when the symbolic one exceeds its guard
+(`symbolic_jacobian_limit` terms, `JACOBIAN_MAX_SECONDS`) or meets a partial without a C
+form, such as an intrinsic without a symbolic derivative (`reason` says which; W212). A
+forced `jacobian = :symbolic` has no guard and fails instead of falling back."""
+function _jacobian(rhs, xs, obs, env, modes, settings)
+    option = settings.jacobian
+    fd(reason) = (kind = :fd, jc = nothing, terms = 0, entries = 0, reason = reason)
+    option === :fd && return fd(nothing)
+    n0 = length(modes)
+    try
+        jc = jacobian_c(rhs, xs, obs, env, modes;
+            max_terms = option === :symbolic ? Inf : settings.symbolic_jacobian_limit,
+            max_seconds = option === :symbolic ? Inf : JACOBIAN_MAX_SECONDS)
+        return (kind = :symbolic, jc = jc, terms = jc.terms, entries = jc.entries,
+            reason = nothing)
+    catch err
+        err isa InterruptException && rethrow()
+        option === :symbolic && rethrow()
+        resize!(modes, n0)       # conditions met only in the abandoned Jacobian
+        reason = err isa JacobianTooBig ? err.reason :
+            err isa ExportError ? err.message : sprint(showerror, err)
+        return fd(first(reason, 300))
+    end
+end
+
 """    _rhs_dependencies(rhs, obs) -> Set{String}
 
 The names every derivative depends on, through the observed equations, without substituting
@@ -597,14 +795,21 @@ function _guid(key, settings, dt_ns, method, vars, params, inputs)
     return "{" * h[1:8] * "-" * h[9:12] * "-" * h[13:16] * "-" * h[17:20] * "-" * h[21:32] * "}"
 end
 
-function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, la, env, obs, modes, vars, params,
-    inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
+function _emit_model_c(io, name, xs, x0, names_x, rhs, mass, jac, la, env, obs, modes, vars,
+    params, inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
     nx = length(xs)
     println(io, "/* Generated by bg-sim (C/FMU export, runtime $(RUNTIME_VERSION)) from model `$(ccomment(name))`. Do not edit. */")
     println(io, "#include <math.h>\n#include \"model.h\"\n#include \"bg_runtime.h\"\n")
     arr(cname, vals) = println(io, "const double $cname[BG_SZ($(length(vals)))] = {",
         isempty(vals) ? "0.0" : join(clit.(vals), ", "), "};")
     arr("bg_x0", x0)
+    arr("bg_mass", mass)
+    alg = [i - 1 for i in eachindex(mass) if mass[i] == 0]
+    println(io, "const int bg_alg[BG_SZ($(length(alg)))] = {", isempty(alg) ? "0" : join(alg, ", "), "};")
+    # Where dg/dz of the algebraic block sits in m->jac (-1: structurally zero), for the
+    # re-solve after a tick or an event.
+    jpos = la === nothing ? Int[] : [la.targets[i + 1, j + 1] for i in alg for j in alg]
+    println(io, "const int bg_alg_jpos[BG_SZ($(length(jpos)))] = {", isempty(jpos) ? "0" : join(jpos, ", "), "};")
     arr("bg_p0", Float64[v.start for v in params])
     arr("bg_u0", Float64[v.start for v in inputs])
     arr("bg_d0", dvals)
@@ -628,9 +833,12 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, la, env, obs, modes,
     end
     println(io)
 
+    println(io, "/* M x' = f(t, x) with M = diag(bg_mass): row i is d/dt x[i] (mass 1) or an algebraic")
+    println(io, "   residual 0 = g (mass 0). */")
     emit_function(io, "void bg_derivatives(const bg_model *m, double t, const double *x, double *dx)",
-        [("dx[$(i - 1)]", rhs[i], "d/dt " * names_x[i]) for i in 1:nx], env, obs; modes = modes)
-    emit_jacobian(io, la, jac, env, obs, modes)
+        [("dx[$(i - 1)]", rhs[i], mass[i] != 0 ? "d/dt " * names_x[i] : "0 = residual (algebraic, solves " * names_x[i] * ")")
+         for i in 1:nx], env, obs; modes = modes)
+    emit_jacobian(io, la, jac === nothing ? nothing : jac.jc)
     la === nothing || la.lu === nothing || emit_sparse_lu(io, la.lu)
     emit_function(io, "void bg_modes(const bg_model *m, double t, const double *x, double *c)",
         [("c[$(k - 1)]", modes[k], string(modes[k])) for k in eachindex(modes)], env, obs)
@@ -674,19 +882,25 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, la, env, obs, modes,
 end
 
 function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, nc, dt, dt_ns, method;
-    la = nothing, ne = 0, ner = 0)
+    nalg = 0, has_t = false, la = nothing, ne = 0, ner = 0)
+    nstage = is_rosenbrock(method) ? method_stages(method) : 0
     sparse = la !== nothing && la.lu !== nothing
     lu_defs = sparse ? """
         #define BG_SPARSE_LU 1     /* the static sparse LU in model.c replaces the dense one */
         #define BG_LU_NNZ $(lu_nnz(la.lu))    /* non-zeros of the LU factors (pattern of W plus fill-in) */
         #define BG_LU_NUPD $(length(la.lu.upd))   /* multiply-adds of one factorization */
-        """ : ""
+        #define BG_NJ BG_LU_NNZ    /* m->jac holds J on the static pattern */
+        #define BG_NW 0
+        """ : """
+        #define BG_NJ $(nstage > 0 ? "(BG_NX * BG_NX)" : "0")   /* m->jac holds J row-major (dense LU) */
+        #define BG_NW BG_NJ        /* the dense W */
+        """
     w_fields = sparse ? """
             double lu[BG_LU_NNZ];          /* W = M - hg J, then its LU factors, on the static pattern */
             double lu_inv[BG_SZ(BG_NX)];   /* 1 / pivot */
             double lu_y[BG_SZ(BG_NX)];     /* solve workspace */
         """ : """
-            double w[BG_SZ(BG_NX * BG_NX)];
+            double w[BG_SZ(BG_NW)];        /* W = M - hg J, factored in place */
             int piv[BG_SZ(BG_NX)];
         """
     open(path, "w") do io
@@ -714,7 +928,12 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         #define BG_METHOD_EULER 1
         #define BG_METHOD_RK4 2
         #define BG_METHOD_ROS2 3
+        #define BG_METHOD_ROS34PW2 4
+        #define BG_METHOD_RODAS4P 5
         #define BG_METHOD BG_METHOD_$(uppercase(String(method)))
+        #define BG_NSTAGE $(nstage)    /* Rosenbrock stages (0: explicit method) */
+        #define BG_NALG $(nalg)      /* algebraic equations: zero rows of the mass matrix */
+        #define BG_HAS_T $(has_t ? 1 : 0)     /* the right-hand side reads t (Rosenbrock adds df/dt) */
         $(lu_defs)
         /* Value references: y [0, BG_NY), p [BG_VR_P0, +BG_NP), u [BG_VR_U0, +BG_NU). */
         #define BG_VR_P0 $(ny)
@@ -747,7 +966,14 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
             /* solver workspace */
             double k1[BG_SZ(BG_NX)], k2[BG_SZ(BG_NX)], k3[BG_SZ(BG_NX)], k4[BG_SZ(BG_NX)];
             double xs[BG_SZ(BG_NX)];
-        $(w_fields)} bg_model;
+            /* Rosenbrock workspace: the Jacobian (in the layout of the LU), the linear algebra,
+               the stages, f and df/dt */
+            double jac[BG_SZ(BG_NJ)];
+        $(w_fields)    double ks[BG_SZ(BG_NSTAGE)][BG_SZ(BG_NX)];
+            double fx[BG_SZ(BG_NX)], ft[BG_SZ(BG_NX)];
+            /* re-solving the algebraic unknowns after a tick or an event: dg/dz and the Newton step */
+            double wa[BG_SZ(BG_NALG * BG_NALG)], ga[BG_SZ(BG_NALG)];
+        } bg_model;
 
         typedef struct {
             int64_t period_ns;
@@ -756,6 +982,9 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         } bg_partition;
 
         extern const double bg_x0[BG_SZ(BG_NX)];
+        extern const double bg_mass[BG_SZ(BG_NX)];  /* the mass matrix diagonal */
+        extern const int bg_alg[BG_SZ(BG_NALG)];    /* the algebraic rows (= their unknowns) */
+        extern const int bg_alg_jpos[BG_SZ(BG_NALG * BG_NALG)];  /* dg/dz in m->jac, -1: zero */
         extern const double bg_p0[BG_SZ(BG_NP)];
         extern const double bg_u0[BG_SZ(BG_NU)];
         extern const double bg_d0[BG_SZ(BG_ND)];
@@ -775,9 +1004,10 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         void bg_event_conditions(const bg_model *m, double t, const double *x, double *z);
         int bg_events(bg_model *m, double t);  /* after a step: apply the events that fired */
 
-        /* The linear algebra of the Rosenbrock methods: W = M - hg J at (m->t, m->x), factored
-           in place (non-zero on a bad pivot), and an in-place solve with it. Dense in
-           bg_solver.c, or the static sparse LU in model.c when BG_SPARSE_LU is defined. */
+        /* The linear algebra of the Rosenbrock methods: W = M - hg J with M = diag(bg_mass) and
+           J from m->jac (filled by bg_jacobian), factored in place (non-zero on a bad pivot),
+           and an in-place solve with it. Dense in bg_solver.c, or the static sparse LU in
+           model.c when BG_SPARSE_LU is defined. */
         int bg_w_factor(bg_model *m, double hg);
         void bg_w_solve(bg_model *m, double *b);
 

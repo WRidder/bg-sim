@@ -248,8 +248,10 @@ end
                     #define BG_SZ(n) ((n) > 0 ? (n) : 1)
                     #define BG_LU_NNZ $(_SP.lu_nnz(lu))
                     #define BG_LU_NUPD $(length(lu.upd))
-                    typedef struct { double t; double x[BG_NX]; double lu[BG_LU_NNZ];
-                                     double lu_inv[BG_NX]; double lu_y[BG_NX]; } bg_model;
+                    typedef struct { double t; double x[BG_NX]; double jac[BG_LU_NNZ];
+                                     double lu[BG_LU_NNZ]; double lu_inv[BG_NX];
+                                     double lu_y[BG_NX]; } bg_model;
+                    static const double bg_mass[BG_NX] = {$(join(fill("1.0", n), ", "))};
                     void bg_jacobian(const bg_model *m, double t, const double *x, double *J);
                     int bg_w_factor(bg_model *m, double hg);
                     void bg_w_solve(bg_model *m, double *b);
@@ -270,6 +272,7 @@ end
                         static bg_model m;
                         double b[BG_NX];
                         for (int i = 0; i < BG_NX; ++i) b[i] = 1.0 + i;
+                        bg_jacobian(&m, m.t, m.x, m.jac);
                         if (bg_w_factor(&m, $(repr(hg))) != 0) { printf("pivot\\n"); return 1; }
                         bg_w_solve(&m, b);
                         for (int i = 0; i < BG_NX; ++i) printf("%.17g\\n", b[i]);
@@ -292,7 +295,7 @@ end
             for solver in (:dense, :sparse), jac in (:symbolic, :fd)
                 dir = mktempdir()
                 r = _SP.export_model(flat, dir; settings = _SP.ExportSettings(t_end = 0.1,
-                    method = :ros2, linear_solver = solver, jacobian = jac))
+                    dt = 1e-3, method = :ros2, linear_solver = solver, jacobian = jac))
                 @test r.ok
                 src = joinpath(dir, "sources")
                 model_h = read(joinpath(src, "model.h"), String)
@@ -344,6 +347,7 @@ end
                         static bg_model m;
                         double b[BG_NX];
                         for (int i = 0; i < BG_NX; ++i) b[i] = 1.0 + i;
+                        bg_jacobian(&m, m.t, m.x, m.jac);
                         if (bg_w_factor(&m, 1.0) != 0) { printf("singular\\n"); return 1; }
                         bg_w_solve(&m, b);
                         for (int i = 0; i < BG_NX; ++i) printf("%.17g\\n", b[i]);
@@ -366,7 +370,7 @@ end
             for solver in (:dense, :sparse)
                 dir = mktempdir()
                 r = _SP.export_model(flat, dir; settings = _SP.ExportSettings(t_end = 0.1,
-                    method = :ros2, linear_solver = solver))
+                    dt = 1e-3, method = :ros2, linear_solver = solver))
                 @test r.ok
                 @test r.report["linearAlgebra"]["pivotCheck"]["ok"]
                 src = joinpath(dir, "sources")

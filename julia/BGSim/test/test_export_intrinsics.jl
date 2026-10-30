@@ -213,6 +213,24 @@ const _EXI_LAG = """
 end
 """
 
+# A table in the loop: the lag's state goes through Lookup1D and back into its derivative,
+# so the Jacobian needs the derivative of `bg_interp1`, which has no symbolic rule.
+function _exi_feedback_model()
+    nodes = Any[
+        bg_node("n1", "Ramp", bg_ref("stdlib:sources/Ramp")),
+        bg_node("n2", "L1", bg_ref("stdlib:continuous/Lookup1D")),
+        bg_node("n5", "P", Dict{String,Any}("inline" => Dict{String,Any}("source" => _EXI_LAG))),
+        bg_node("n6", "Y", bg_ref("stdlib:converters/ExportOutput")),
+    ]
+    conns = Any[
+        bg_conn("c1", "signal", "n1", "y", "n5", "v"),
+        bg_conn("c2", "signal", "n5", "y", "n2", "u"),
+        bg_conn("c3", "signal", "n2", "y", "n5", "u"),
+        bg_conn("c4", "signal", "n5", "y", "n6", "u"),
+    ]
+    return bg_model("ExportTableLoop", nodes, conns; t_end = 1.0, points = 11)
+end
+
 function _exi_model()
     nodes = Any[
         bg_node("n1", "Ramp", bg_ref("stdlib:sources/Ramp")),
@@ -237,10 +255,10 @@ end
 """Export `flat`, compile the sources with -Werror (and model.c as C++17), step the C model
 to `t_end` and compare every recorded signal with the simulation `columns` at `t_end`."""
 function _exi_export_and_compare(cc, dir, flat, columns; t_end = 1.0, dt = 1.0e-4,
-    min_compared = 1, rtol = 1.0e-7)
+    min_compared = 1, rtol = 1.0e-7, method = :auto)
     out = joinpath(dir, "model")
     r = _EXI.export_model(flat, out;
-        settings = _EXI.ExportSettings(t_end = t_end, dt = dt, expose_all = true))
+        settings = _EXI.ExportSettings(t_end = t_end, dt = dt, expose_all = true, method = method))
     @test r.ok
     r.ok || return r, ""
     src = joinpath(out, "sources")
@@ -376,6 +394,21 @@ end
             @test tabs["bytes"] == sum(t["bytes"] for t in tabs["tables"]) == 8 * (3 + 3 + 6 + 9)
             @test count("static const double bg_tab", model_c) == 4
             @test occursin("bg_interp1(", model_c) && occursin("bg_interp2(", model_c)
+        end
+
+        # J-EX5 open issue 3: an opaque intrinsic has no symbolic derivative, so a Rosenbrock
+        # export of a table in the loop falls back to the coloured finite-difference
+        # Jacobian (W212) instead of failing, and still matches the simulation.
+        @testset "a table in the loop exports with Rodas4P and a finite-difference Jacobian" begin
+            columns, result, flat = bg_run(_exi_feedback_model())
+            @test result.status == "done"
+            r, model_c = _exi_export_and_compare(cc, mktempdir(), flat, columns; dt = 1.0e-3,
+                method = :rodas4p, rtol = 1.0e-5)
+            @test r.report["method"] == "rodas4p"
+            @test r.report["jacobian"]["kind"] == "fd"
+            @test occursin("symbolic derivative", r.report["jacobian"]["fallbackReason"])
+            @test any(d -> d.code == "W212", r.diagnostics)
+            @test occursin("bg_fd_cols", model_c) && occursin("bg_interp1(", model_c)
         end
 
         @testset "a CSV source is refused at its block" begin

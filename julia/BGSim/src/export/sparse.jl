@@ -17,11 +17,12 @@
 #               Jacobian entries (`emit_fd_jacobian`, the D-EX12 fallback).
 #
 # Static pivoting. The pivots are the diagonal of P·W·Pᵀ in a fixed order, so a step never
-# searches for a pivot or moves a row. This is safe when W is diagonally dominant, which
-# holds for small hγ (W → M = I), and when the symmetric part of W is positive definite,
-# which holds when J is dissipative (J + Jᵀ ≤ 0): every pivot is then at least 1. Neither is
-# guaranteed in general, so (a) `bg_w_factor` checks every pivot against the largest entry
-# of its row and returns an error status on a tiny or non-finite one, and (b) the export
+# searches for a pivot or moves a row. For an ODE this is safe when W is diagonally
+# dominant, which holds for small hγ (W → M = I), and when the symmetric part of W is
+# positive definite, which holds when J is dissipative (J + Jᵀ ≤ 0): every pivot is then at
+# least 1. An algebraic row of a DAE has mass 0, so its pivot comes from J alone and small
+# hγ does not help. Neither is guaranteed in general, so (a) `bg_w_factor` checks every
+# pivot against the largest entry of its row and returns an error status on a tiny or non-finite one, and (b) the export
 # factors W at the scanned points and reports the smallest pivot ratio, the growth and the
 # residual against a pivoted dense solve (`static_lu_check`); a failed check falls back to
 # the dense LU with partial pivoting (W211).
@@ -301,20 +302,20 @@ function lu_solve!(b::AbstractVector{Float64}, a::Vector{Float64}, lu::StaticLU,
     return b
 end
 
-"""    static_lu_check(lu, Js, hg) -> NamedTuple
+"""    static_lu_check(lu, Js, hg; mass = ones(n)) -> NamedTuple
 
-Factor `W = I - hg·J` for every Jacobian in `Js` with the static pivots and report the
-smallest pivot ratio |u_kk| / (largest entry of its row of W), the growth (largest entry of
-the factors over the largest entry of W) and the relative residual of a solve against a
-pivoted dense solve. `ok` is false when a factorization failed or the residual is above
-1e-8."""
-function static_lu_check(lu::StaticLU, Js, hg::Float64)
+Factor `W = M - hg·J` (`M = diag(mass)`; an algebraic row has mass 0, so its pivot comes
+from J alone) for every Jacobian in `Js` with the static pivots and report the smallest
+pivot ratio |u_kk| / (largest entry of its row of W), the growth (largest entry of the
+factors over the largest entry of W) and the relative residual of a solve against a pivoted
+dense solve. `ok` is false when a factorization failed or the residual is above 1e-8."""
+function static_lu_check(lu::StaticLU, Js, hg::Float64; mass::AbstractVector = ones(lu.n))
     n = lu.n
     min_ratio, growth, residual, points = Inf, 0.0, 0.0, 0
     ok = true
     for J in Js
         all(isfinite, J) || continue
-        W = Matrix{Float64}(LinearAlgebra.I, n, n) .- hg .* J
+        W = Matrix{Float64}(LinearAlgebra.Diagonal(Float64.(mass))) .- hg .* J
         a = lu_values(lu, W)
         rowmax = zeros(n)
         for r in 1:n, p in lu.rowptr[r]:lu.rowptr[r + 1] - 1
@@ -332,7 +333,7 @@ function static_lu_check(lu::StaticLU, Js, hg::Float64)
             min_ratio = min(min_ratio, abs(a[lu.diag[r]]) / max(rowmax[r], floatmin()))
         end
         growth = max(growth, maximum(abs, a) / max(wmax, floatmin()))
-        b = collect(range(1.0, 2.0; length = n))
+        b = [1.0 + (k - 1) / max(n - 1, 1) for k in 1:n]    # 1 .. 2 (n = 1 included)
         x = lu_solve!(copy(b), a, lu, inv)
         xd = W \ b
         residual = max(residual, maximum(abs, x .- xd) / max(maximum(abs, xd), floatmin()))
@@ -359,9 +360,10 @@ end
 """    emit_sparse_lu(io, lu)
 
 The static index tables and the sparse side of the linear-algebra seam:
-`bg_w_factor(m, hg)` forms W = M - hg·J on the static pattern (M = I for ODEs) and factors
-it in place; `bg_w_solve(m, b)` solves in place. `bg_jacobian` writes J at its positions in
-the value array `m->lu` (see `jacobian_targets`)."""
+`bg_w_factor(m, hg)` forms W = M - hg·J on the static pattern from `m->jac` (which
+`bg_jacobian` fills at the positions of the value array, see `jacobian_targets`) and the
+mass diagonal `bg_mass`, and factors it in place in `m->lu`; `bg_w_solve(m, b)` solves in
+place."""
 function emit_sparse_lu(io, lu::StaticLU)
     n = lu.n
     ip = invperm(lu.perm)
@@ -385,10 +387,8 @@ function emit_sparse_lu(io, lu::StaticLU)
     int bg_w_factor(bg_model *m, double hg) {
         double *a = m->lu;
         int u = 0;
-        for (int p = 0; p < BG_LU_NNZ; ++p) a[p] = 0.0;
-        bg_jacobian(m, m->t, m->x, a);
-        for (int p = 0; p < BG_LU_NNZ; ++p) a[p] *= -hg;
-        for (int i = 0; i < BG_NX; ++i) a[bg_lu_mpos[i]] += 1.0; /* M = I */
+        for (int p = 0; p < BG_LU_NNZ; ++p) a[p] = -hg * m->jac[p];
+        for (int i = 0; i < BG_NX; ++i) a[bg_lu_mpos[i]] += bg_mass[i];
         for (int i = 0; i < BG_NX; ++i) {
             double s = 0.0;
             for (int p = bg_lu_rowptr[i]; p < bg_lu_rowptr[i + 1]; ++p) {
@@ -509,40 +509,16 @@ function emit_fd_jacobian(io, S::AbstractMatrix{Bool}, colour::Vector{Int}, targ
     """)
 end
 
-"""    substituted_size(rhs, obs) -> Float64
-
-The node count of the right-hand side with every observed variable substituted, computed
-without substituting (each observed equation's size once, by dynamic programming). This is
-the size `MTK.calculate_jacobian` differentiates, so it is the guard for the symbolic
-Jacobian (`symbolic_jacobian_limit`)."""
-function substituted_size(rhs, obs)
-    sizes = zeros(Float64, length(obs.rhs))
-    function tree(x)
-        x = Symbolics.unwrap(x)
-        k = get(obs.index, x, 0)
-        k > 0 && return sizes[k]
-        SymbolicUtils.iscall(x) || return 1.0
-        s = 1.0
-        for a in SymbolicUtils.arguments(x)
-            s += tree(a)
-        end
-        return s
-    end
-    for k in eachindex(obs.rhs)
-        sizes[k] = tree(obs.rhs[k])
-    end
-    return sum(tree, rhs; init = 0.0)
-end
-
-"""    emit_jacobian(io, la, jac, env, obs, modes)
+"""    emit_jacobian(io, la, jc)
 
 `bg_jacobian` for the plan `la` (`nothing` when no method needs a Jacobian: an empty
-function): the symbolic entries of `jac` on the pattern, or the coloured finite differences.
-Each entry goes to its index in `la.targets`; the caller zeroes J first."""
-function emit_jacobian(io, la, jac, env, obs, modes)
+function): the symbolic entries of `jc` (`jacobian_c`) at `la.targets`, or the coloured
+finite differences. The caller zeroes J first."""
+function emit_jacobian(io, la, jc)
     sig = "void bg_jacobian(const bg_model *m, double t, const double *x, double *J)"
     if la === nothing
-        emit_function(io, sig, Tuple{String,Any,Any}[], env, obs; modes = modes)
+        println(io, "/* Empty: an explicit method needs no Jacobian. */")
+        println(io, sig, " {\n    (void)m; (void)t; (void)x; (void)J;\n}\n")
         return
     end
     layout = la.lu === nothing ? "row-major (dense LU)" : "at its position in the static LU's value array"
@@ -551,52 +527,15 @@ function emit_jacobian(io, la, jac, env, obs, modes)
         emit_fd_jacobian(io, la.pattern, la.colour, la.targets)
         return
     end
-    nx = size(la.pattern, 1)
-    jt = Tuple{String,Any,Any}[]
-    for i in 1:nx, j in 1:nx
-        la.pattern[i, j] || continue
-        e = Symbolics.unwrap(jac[i, j])
-        c = _try_const(e)
-        c !== nothing && iszero(c) && continue
-        push!(jt, ("J[$(la.targets[i, j])]", e, nothing))
-    end
-    println(io, "/* Symbolic Jacobian; J[i][j] is written $layout. The caller zeroes J, so only the structural non-zeros are written. */")
-    emit_function(io, sig, jt, env, obs; modes = modes)
+    println(io, "/* Symbolic Jacobian, every partial of every observed local computed once; J[i][j] is written $layout. The caller zeroes J, so only the structural non-zeros are written. */")
+    println(io, sig, " {")
+    println(io, "    (void)m; (void)t; (void)x; (void)J;")
+    print(io, render_jacobian(jc, la.targets))
+    println(io, "}\n")
 end
 
 # ---------------------------------------------------------------------------------------
 # Choosing the Jacobian and the linear solver
-
-"""γ of ROS2 (bg_solver.c): W = I - γ h J."""
-const ROS2_GAMMA = 1.0 + 1.0 / sqrt(2.0)
-
-"""    _plan_jacobian(sys, rhs, obs, xs, settings) -> NamedTuple
-
-The structural pattern and the Jacobian kind (D-EX12): symbolic when the substituted
-right-hand side is at most `settings.symbolic_jacobian_limit` nodes (or when forced), else
-coloured finite differences. The symbolic Jacobian's non-zeros are added to the pattern."""
-function _plan_jacobian(sys, rhs, obs, xs, settings)
-    t0 = time()
-    S = jacobian_pattern(rhs, obs, xs)
-    nodes = substituted_size(rhs, obs)
-    stats = Dict{String,Any}("patternS" => time() - t0, "substitutedSize" => nodes)
-    kind = settings.jacobian === :auto ?
-        (nodes <= settings.symbolic_jacobian_limit ? :symbolic : :fd) : settings.jacobian
-    jac = Matrix{Any}(undef, 0, 0)
-    if kind === :symbolic
-        t1 = time()
-        jac = MTK.calculate_jacobian(sys)
-        stats["symbolicJacobianS"] = time() - t1
-        added = 0
-        for j in 1:size(jac, 2), i in 1:size(jac, 1)
-            c = _try_const(Symbolics.unwrap(jac[i, j]))
-            (c !== nothing && iszero(c)) && continue
-            S[i, j] || (S[i, j] = true; added += 1)
-        end
-        stats["patternAddedFromSymbolic"] = added
-    end
-    return (pattern = S, kind = kind, jac = jac, stats = stats)
-end
 
 """    _check_jacobians(jac_fn, x0, p0, names_x, names_p, reference_dir; samples = 5)
 
@@ -619,14 +558,22 @@ end
 
 _dense_lu_flops(n) = sum((n - k) + 2 * (n - k)^2 for k in 1:n; init = 0) + n
 
-"""    _plan_linear_algebra(jplan, settings, nx, dt, Js, diags) -> NamedTuple
+"""    _use_sparse(settings, nx) -> Bool
 
-The linear solver (D-EX13): the static sparse LU above `settings.sparse_threshold` states
-(or when forced), else the dense LU. The sparse LU must pass `static_lu_check` at the
-Jacobians `Js` with the ROS2 `hγ`; when it does not, `:auto` falls back to dense and a forced
-`:sparse` keeps it, both with W211. Returns the pattern, colouring, targets, the `StaticLU`
-(or `nothing`) and the report entry."""
-function _plan_linear_algebra(jplan, settings, nx, dt, Js, diags)
+The linear solver before the pivot check (D-EX13): the static sparse LU above
+`settings.sparse_threshold` states, or when forced."""
+_use_sparse(settings, nx) = settings.linear_solver === :auto ?
+    nx > settings.sparse_threshold : settings.linear_solver === :sparse
+
+"""    _plan_linear_algebra(jplan, settings, nx, hg, mass, Js, diags) -> NamedTuple
+
+The linear solver (D-EX13) for the pattern and Jacobian kind of `jplan`: the static sparse
+LU when `_use_sparse`, else the dense LU. The sparse LU must pass `static_lu_check` for
+W = M - hg·J at the Jacobians `Js` (in the rows of the C code), with `hg` = γh of the chosen
+method; when it does not, `:auto` falls back to dense and a forced `:sparse` keeps it, both
+with W211. Returns the pattern, colouring, targets, the `StaticLU` (or `nothing`) and the
+report entry."""
+function _plan_linear_algebra(jplan, settings, nx, hg, mass, Js, diags)
     S = jplan.pattern
     colour = colour_columns(S)
     colouring_valid(S, colour) ||
@@ -635,10 +582,8 @@ function _plan_linear_algebra(jplan, settings, nx, dt, Js, diags)
     t0 = time()
     slu = static_lu(S)
     symbolic_s = time() - t0
-    hg = ROS2_GAMMA * dt
-    check = static_lu_check(slu, Js, hg)
-    solver = settings.linear_solver === :auto ?
-        (nx > settings.sparse_threshold ? :sparse : :dense) : settings.linear_solver
+    check = static_lu_check(slu, Js, hg; mass)
+    solver = _use_sparse(settings, nx) ? :sparse : :dense
     if solver === :sparse && !check.ok
         forced = settings.linear_solver === :sparse
         push!(diags, diag("W211",
@@ -646,7 +591,7 @@ function _plan_linear_algebra(jplan, settings, nx, dt, Js, diags)
             (forced ? "; it is kept because the sparse solver was forced" :
                 ", so the dense LU with partial pivoting is used");
             hint = forced ? "use linear_solver = auto or dense, or a smaller dt" :
-                "a smaller dt makes W = I - hγJ more diagonally dominant"))
+                "a smaller dt makes W = M - hγJ more diagonally dominant (an algebraic row has no M to help)"))
         forced || (solver = :dense)
     end
     lu = solver === :sparse ? slu : nothing

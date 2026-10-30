@@ -84,13 +84,13 @@ Four findings shape this plan:
 | D-EX3 | Packaging | FMI **2.0 Co-Simulation** first, **3.0 Co-Simulation** second. Every FMU carries its sources (source FMU; FMI 3 adds `buildDescription.xml`) plus a binary for each platform built. Model Exchange is not offered. Scheduled Execution (FMI 3) is deferred. | Co-Simulation keeps our solver and our fixed step; Model Exchange hands integration to the host and gives up the real-time guarantees. Sources make cross-compiling for the target possible. |
 | D-EX4 | Memory | One instance struct with every array sized at generation time. FMI allocates it once in `Instantiate` through the host's callback. A `BG_STATIC_INSTANCE` build option uses one static instance and no callback, for MCUs. | "No allocation after construction", provable. |
 | D-EX5 | Time base | A fixed internal step `dt` (whole nanoseconds). Time is `t_start + n·dt` from an integer step counter, never accumulated. `doStep(h)` requires `h` to be a whole multiple of `dt`. Discrete periods and offsets must be multiples of `dt` (E104). | Deterministic, drift-free, matches the scheduler's integer-ns ticks. |
-| D-EX6 | Integrators | Explicit Euler, RK4, and fixed-step linearly implicit Rosenbrock methods with mass-matrix support: ROS2 (spike), then a 3rd/4th-order L-stable method (ROS3P or a Rodas-type method). No method with an inner Newton iteration in the hot path. | Section 2, finding 3. Rosenbrock needs one Jacobian and one LU per step, a fixed cost, and handles index-1 DAEs directly. |
+| D-EX6 | Integrators | Explicit Euler, RK4, and fixed-step linearly implicit Rosenbrock methods with mass-matrix support: ROS2 (spike; order 2), ROS34PW2 (Rang and Angermann 2005; order 3, 4 stages, a W-method) and Rodas4P (Steinebach 1995; order 4, 6 stages). All three are L-stable; the last two are stiffly accurate and keep their order on index-1 DAEs and on the Prothero-Robinson problem. ROS3P is not used: it is not L-stable (R(∞) = 0.73). Rodas4 and Rodas3 lose an order to order reduction on stiff, time-dependent components (measured in J-EX3). No method with an inner Newton iteration in the hot path. | Section 2, finding 3. Rosenbrock needs one Jacobian and one LU per step, a fixed cost, and handles index-1 DAEs directly. |
 | D-EX7 | Step and integrator selection | The exporter proposes `dt` and the integrator: (a) a **stability** bound from the Jacobian's eigenvalues sampled along a reference run, (b) an **accuracy** check that runs the generated code against the reference and refines `dt` until a user error target is met, (c) a **cost** comparison (RK4 substeps vs one Rosenbrock step). The user can override every choice; the report shows the numbers. | Findings 1–3. A stability-only rule gave a 9 % error. |
 | D-EX8 | Switching | Every `ifelse` condition in continuous code (including the rewritten `abs`/`min`/`max`/`clamp`/...) becomes a mode value, evaluated once at the start of each step and held through all stages. `@events` conditions are checked after each step; `reinit` is applied then. Each site is reported as W203 with its origin. | Finding 4; the spec's fixed-step semantics. |
 | D-EX9 | Interface | **The user defines the interface; the exporter never publishes "the whole model".** `ExportInput` → FMU input (its `value` parameter becomes the input slot; in simulation it is a constant, later also a table source), `ExportOutput` → output (the signal on its input), `ExportParameter` or `tunable = true` → tunable parameter. Names are the marker's instance name (a `name` attribute later). Where the markers sit also decides *what* is exported: to export only the plant for SIL, a model variant replaces the controller by an `ExportInput` on its output. Without markers the export warns W209. The export dialog suggests candidates (sources as inputs, sensors as outputs) with a one-click "promote to marker". "Expose all signals" is a separate debug option that adds every recorded signal as a read-only `local`; it does not change the interface. **Scope (J-EX11):** the export can be limited to one subsystem, with its ports as the interface: a signal port becomes an input or output marker, and a power port gets an adapter that imposes the variable the user picks (effort or flow) and publishes its conjugate (`<port>_e`, `<port>_f`, the flow counted into the subsystem). Everything outside the subsystem is dropped, so a test harness or an unsupported element (a CSV source, an event the export cannot take) can stay in the model as long as it sits outside the scope. Later: the causality analysis proposes effort or flow per power port (as 20-sim does), and a library block can be the scope directly. | The spec's interface contract; the interface is a design decision of the user, not something the compiler can infer. |
 | D-EX10 | Parameters | Non-tunable parameters are **folded** into constants by default. `tunable = true` parameters stay fields, settable at any time. An option keeps all parameters as fields (settable before initialization). | D4 left folding to export; folding shrinks code and lets the compiler simplify. |
 | D-EX11 | Initialization | Phase 1: start values computed in Julia at export with the current parameters, and baked in. Phase 2: MTK's initialization system is generated as C and solved with a bounded Newton iteration in `ExitInitializationMode`, which is outside the hot path. | Phase 1 suffices for fixed parameters; phase 2 is needed when initialization depends on parameters that are set before init. |
-| D-EX12 | Jacobian | Symbolic (`calculate_jacobian`) with common-subexpression elimination, emitted as a sparse pattern (static triplet list) when it pays off. Fallback for expressions that blow up: finite differences with column colouring (fixed cost of `ncolours` derivative calls). | Rosenbrock needs J every step. |
+| D-EX12 | Jacobian | Symbolic by the chain rule through the observed equations (each partial of each observed local once, so common subexpressions by construction; `calculate_jacobian` substitutes everything and blows up), written on the sparse pattern. Fallback for expressions that blow up: finite differences with column colouring (fixed cost of `ncolours` derivative calls). | Rosenbrock needs J every step. |
 | D-EX13 | Linear algebra | Dense in-place LU with partial pivoting for small systems; generated static sparse LU (symbolic factorization at export, fixed fill-in) above a size threshold (start at nx > 40). | Fixed cost, no allocation; the 72-state arm makes this real. |
 | D-EX14 | Numerics | `-std=c99 -O2 -fno-math-errno`, no `-ffast-math`. Non-finite state → error status, never silently continued. Subnormal flush is a documented target setting. Results match simulation **within tolerance**, not bit-exact (answers the spec's open question: repeatability per target, not across targets). | libm differs from Julia in the last bit; bit-exact output would forbid every libm. |
 | D-EX16 | Values that move the spectrum | Every runtime-settable value the Jacobian depends on (tunable parameters, inputs) needs a declared range (`min`/`max`). The step is chosen over that range (each end, and every corner of the box for up to 6 values), not only at the start values. The FMU refuses `SetReal` outside the range, so the stability proof holds for every accepted value; the range is also published as FMI `min`/`max`. A settable value without a complete range gets W210 (stable only for the scanned values). Gains that only discrete code reads are not scanned: they change the closed loop, which simulation shows as well. When ranges are wide or unknown, an L-stable Rosenbrock export is the robust choice (stable for any value on linear(ised) dynamics). Later: an eigenvalue bound recomputed when a value changes, outside the hot path. | A step proven stable at the start values says nothing about a raised stiffness or gain at runtime. |
@@ -143,9 +143,11 @@ enforces this by symbol inspection and the counting harness (section 8).
 ### 5.4 Sparse Jacobian and static sparse LU (J-EX4)
 
 `src/export/sparse.jl`. Every Rosenbrock solve goes through two functions declared in
-`model.h`: `bg_w_factor(m, hg)` forms and factors W = M − hg·J, and `bg_w_solve(m, b)`
-solves in place. The dense versions are in `bg_solver.c`. With `#define BG_SPARSE_LU` in
-`model.h`, `model.c` holds generated sparse versions instead.
+`model.h`: `bg_w_factor(m, hg)` forms W = M − hg·J from `m->jac` and `bg_mass` and factors
+it, and `bg_w_solve(m, b)` solves in place. The Rosenbrock step fills `m->jac` with
+`bg_jacobian` in the layout of the LU (row-major, or the positions of the static pattern).
+The dense versions are in `bg_solver.c`. With `#define BG_SPARSE_LU` in `model.h`,
+`model.c` holds generated sparse versions instead.
 
 - **Pattern.** The dependency sets of the right-hand side, followed through `observed`. It is
   structural, not the numeric zeros of one point. The export adds any numeric non-zero of the
@@ -161,16 +163,20 @@ solves in place. The dense versions are in `bg_solver.c`. With `#define BG_SPARS
   and the export factors W at the start point and at reference rows. A failed check (small
   pivot ratio, or a residual above 1e-8 against a pivoted dense solve) gives W211 and falls
   back to the dense LU, unless the sparse LU was forced.
-- **Jacobian.** Symbolic (`calculate_jacobian`) while the substituted right-hand side has at
-  most `symbolic_jacobian_limit` nodes (1e5). Above it, forward differences in C with a greedy
-  distance-2 column colouring: `ncolours + 1` derivative calls, workspace on the stack.
+- **Jacobian.** Symbolic by the chain rule through `observed` (`jacobian_c`, J-EX3), while it
+  needs at most `symbolic_jacobian_limit` terms (2e5) and 120 s. Above that, or when a partial
+  has no C form (an intrinsic has no symbolic derivative), forward differences in C with a
+  greedy distance-2 column colouring: `ncolours + 1` derivative calls, workspace on the stack
+  (W212 unless `jacobian = fd` was asked). The cost model prices both, and the LU, from the
+  pattern before it picks the method.
 - **Settings.** `linear_solver` (`auto` = sparse above `sparse_threshold` = 40 states,
   `dense`, `sparse`) and `jacobian` (`auto`, `symbolic`, `fd`). `export.json` reports
   `linearAlgebra`: non-zeros of J and of the factors, fill-in, colours, flops of the sparse and
   dense LU, and the pivot check. The gate takes `--settings JSON` and prints a step-time table.
-- **Mass matrix (J-EX3).** The forming step adds M on the diagonal positions `bg_lu_mpos`
-  (M = I today). A zero mass entry (algebraic row) leaves −hγ·J_ii as the pivot; the pivot
-  check then decides whether the static order holds.
+- **Mass matrix (J-EX3).** The forming step adds `bg_mass[i]` on the diagonal positions
+  `bg_lu_mpos`. A zero mass entry (algebraic row) leaves −hγ·J_ii as the pivot; the pivot
+  check, which forms W with M and the chosen method's γ, then decides whether the static
+  order holds.
 
 ### 5.5 Intrinsics in C (J-EX5)
 
@@ -303,7 +309,7 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 
 | WP | scope | acceptance |
 | --- | --- | --- |
-| J-EX3 | Rosenbrock with mass matrix: ROS2 and a 3rd/4th-order L-stable method; symbolic Jacobian with CSE; the cost model in the analysis | drivetrain-kalman (keeps a linear algebraic equation), hydraulic-servo export; FIX-M2-3's DAE fixture matches |
+| J-EX3 | Rosenbrock with mass matrix: ROS2, ROS34PW2 and Rodas4P (D-EX6); symbolic Jacobian with CSE (forward accumulation through the observed equations, a size guard, J-EX4's coloured finite differences as the fallback); the cost model in the analysis | drivetrain-kalman (keeps a linear algebraic equation), hydraulic-servo export; FIX-M2-3's DAE fixture matches |
 | J-EX4 | Sparse Jacobian pattern and generated static sparse LU; finite-difference fallback with colouring | `robot-arm-2d` and the 72-state `robot-arm-3d` export; step-time table in the report |
 
 ### Phase C: language coverage
@@ -375,9 +381,10 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
   `run.phase`-style notifications.
 - New diagnostic codes, checked against `src/diagnostics.jl` before use: E110 (construct not
   exportable), E111 (structure not supported by the chosen integrator), W207 (RK4 substeps
-  above the step budget), W208 (accuracy target not met at the chosen `dt`), E112 (export scope unusable),
-  W211 (the static sparse LU failed its pivot check at export). W203 and the `dt`
-  part of E104 become active.
+  above the step budget), W208 (accuracy target not met at the chosen `dt`), E112 (export
+  scope unusable), W211 (the static sparse LU failed its pivot check at export), W212 (the
+  symbolic Jacobian exceeded its guard or has a partial without a C form; coloured finite
+  differences instead). W203 and the `dt` part of E104 become active.
 - Spec: the target-platform paragraph (generated C, FMU, C API; ctrlX runs it without Julia),
   the "Future option: C++ export" paragraph (superseded), the pipeline figure (C/FMU output),
   and the open question on bit-exactness (answered by D-EX14).
