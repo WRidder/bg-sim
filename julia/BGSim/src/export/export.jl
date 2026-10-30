@@ -33,6 +33,7 @@ using ..BGSim
 import ..BGSim: Flat, Compile, IR, Diagnostic, diag, sort_diagnostics, LowerError
 using ModelingToolkit
 using SymbolicIndexingInterface: getname, getu, getp
+import SymbolicIndexingInterface
 import Symbolics
 const SymbolicUtils = Symbolics.SymbolicUtils
 import JSON3
@@ -299,7 +300,11 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         x = Symbolics.unwrap(SymbolicUtils.arguments(lhs)[1])
         rhs[findfirst(y -> isequal(y, x), xs)] = Symbolics.unwrap(e.rhs)
     end
-    jac = nx == 0 ? Matrix{Any}(undef, 0, 0) : MTK.calculate_jacobian(sys)
+    # Method first: only ROS2 needs a Jacobian in C. `calculate_jacobian` differentiates the
+    # fully substituted right-hand side, which blows up on large multibody models, so the
+    # step analysis uses a numeric Jacobian of the compiled right-hand side instead.
+    method = settings.method === :auto ? :rk4 : settings.method
+    jac = (nx == 0 || method !== :ros2) ? Matrix{Any}(undef, 0, 0) : MTK.calculate_jacobian(sys)
 
     # ---- the step
     step_ns = round(Int64, settings.step * 1e9)
@@ -312,22 +317,28 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             sp.partition.offset_ns > 0 && (base_ns = gcd(base_ns, sp.partition.offset_ns))
         end
     end
-    method = settings.method === :auto ? :rk4 : settings.method
-    jac_fn = _jacobian_function(jac, xs, ps, iv)
+    jac_fn = _numeric_jacobian(lowered.problem, integ, sys, ps, p0)
     # Runtime-settable values move the eigenvalues: scan their declared ranges too (D-EX16).
     # Only values the Jacobian depends on can move the integrator's eigenvalues; a gain that
     # only discrete code reads changes the closed loop, which simulation shows as well.
-    in_jac = Set{String}()
-    for e in jac
-        for v in Symbolics.get_variables(Symbolics.unwrap(e))
-            push!(in_jac, String(getname(v)))
-        end
+    in_rhs = _rhs_dependencies(rhs, obs)
+    J0 = nx == 0 ? zeros(0, 0) : jac_fn(x0, p0, 0.0)
+    # A value the right-hand side reads only linearly (an input added to a derivative) does
+    # not move the Jacobian: perturb it and look.
+    function moves_jacobian(k)
+        nx == 0 && return false
+        p = copy(p0)
+        p[k] = p0[k] == 0 ? 1.0 : 1.5 * p0[k]
+        J = jac_fn(x0, p, 0.0)
+        scale = max(1.0, maximum(abs, J0))
+        return maximum(abs, J .- J0) > 1e-6 * scale
     end
     ranged = Tuple{Int,Float64,Float64}[]
     for v in vcat(params, inputs)
         v.variability == "fixed" && continue
-        v.id in in_jac || continue
+        v.id in in_rhs || continue
         k = findfirst(==(v.id), names_p)
+        moves_jacobian(k) || continue
         if isfinite(v.lo) && isfinite(v.hi)
             push!(ranged, (k, v.lo, v.hi))
         else
@@ -426,10 +437,63 @@ function _condition_path(cond)
     return nothing
 end
 
-function _jacobian_function(jac, xs, ps, iv)
-    isempty(xs) && return (x, p, t) -> zeros(0, 0)
-    f = Symbolics.build_function(jac, xs, ps, iv; expression = Val{false})[1]
-    return (x, p, t) -> Float64.(f(x, p, t))
+"""    _numeric_jacobian(prob, integ, sys, ps, p0) -> (x, p, t) -> Matrix
+
+A central-difference Jacobian of the compiled right-hand side `prob.f`, for the step analysis.
+`p` is a full value vector in the order of `ps`; only the entries that differ from `p0` are
+written into a copy of the integrator's parameter object."""
+function _numeric_jacobian(prob, integ, sys, ps, p0)
+    f = prob.f
+    base = deepcopy(integ.p)
+    setters = Dict{Int,Any}()
+    return function (x, p, t)
+        n = length(x)
+        n == 0 && return zeros(0, 0)
+        pobj = deepcopy(base)
+        for k in eachindex(p)
+            p[k] == p0[k] && continue
+            setter = get!(() -> SymbolicIndexingInterface.setp(sys, ps[k]), setters, k)
+            setter(pobj, p[k])
+        end
+        J = zeros(n, n)
+        fp = zeros(n)
+        fm = zeros(n)
+        xp = copy(x)
+        for j in 1:n
+            h = 6.0e-6 * max(1.0, abs(x[j]))
+            xp[j] = x[j] + h
+            f(fp, xp, pobj, t)
+            xp[j] = x[j] - h
+            f(fm, xp, pobj, t)
+            xp[j] = x[j]
+            for i in 1:n
+                J[i, j] = (fp[i] - fm[i]) / (2h)
+            end
+        end
+        return J
+    end
+end
+
+"""    _rhs_dependencies(rhs, obs) -> Set{String}
+
+The names every derivative depends on, through the observed equations, without substituting
+them (the cheap stand-in for "the Jacobian depends on it")."""
+function _rhs_dependencies(rhs, obs)
+    need = needed_observed(rhs, obs)
+    names = Set{String}()
+    add(e) = for v in Symbolics.get_variables(e)
+        n = try
+            String(getname(v))
+        catch
+            continue
+        end
+        push!(names, n)
+    end
+    foreach(add, rhs)
+    for k in eachindex(obs.rhs)
+        need[k] && add(obs.rhs[k])
+    end
+    return names
 end
 
 function _guid(key, settings, dt_ns, method, vars, params, inputs)
@@ -472,7 +536,7 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, jac, env, obs, modes, var
     emit_function(io, "void bg_derivatives(const bg_model *m, double t, const double *x, double *dx)",
         [("dx[$(i - 1)]", rhs[i], "d/dt " * names_x[i]) for i in 1:nx], env, obs; modes = modes)
     jt = Tuple{String,Any,Any}[]
-    for i in 1:nx, j in 1:nx
+    for i in 1:size(jac, 1), j in 1:size(jac, 2)
         e = Symbolics.unwrap(jac[i, j])
         c = _try_const(e)
         c !== nothing && iszero(c) && continue

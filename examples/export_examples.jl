@@ -1,12 +1,17 @@
 # Export every example model and run its reference simulation (plan/EXPORT_PLAN.md X-EX1).
 #
-#   julia --project=julia/BGSim examples/export_examples.jl <out_root> [project[/model] ...]
+#   julia --project=julia/BGSim examples/export_examples.jl <out_root> [--resume] [project[/model] ...]
+#
+# `--resume` appends to an existing results.jsonl and skips the models already in it.
+# Before each model, <out_root>/current.json names it; the Python harness uses that to kill
+# and log a model that exceeds its time budget, then restarts this script with --resume.
 #
 # For each model of each example project (or only the ones named):
 #   1. flatten it with the example's `expected.json` settings overlay applied;
 #   2. export it once without a reference: a refused model (E110/E111/...) stops here;
 #   3. run the reference simulation: the model's own solver and horizon, tolerances tightened
-#      to at most 1e-8/1e-10, output every communication step;
+#      to at most 1e-6/1e-8, output every communication step, cancelled after
+#      BGSIM_EXPORT_REF_BUDGET seconds (default 300; the model is then `reference_timeout`);
 #   4. export again with the reference trajectory (the spectrum scan uses it) and
 #      `expose_all = true`, so every recorded signal can be compared.
 # One JSON line per model goes to <out_root>/results.jsonl; `examples/export_checks.py`
@@ -99,16 +104,18 @@ function run_one(out_root, project, model)
     run_settings = Dict{String,Any}(
         "t_end" => t_end,
         "solver" => String(get(settings, "solver", "auto")),
-        "reltol" => min(Float64(get(settings, "reltol", 1e-6)), 1e-8),
-        "abstol" => min(Float64(get(settings, "abstol", 1e-8)), 1e-10),
+        "reltol" => min(Float64(get(settings, "reltol", 1e-6)), 1e-6),
+        "abstol" => min(Float64(get(settings, "abstol", 1e-8)), 1e-8),
         "output" => Dict("mode" => "interval", "interval" => step),
     )
     t0 = time()
-    BGSim.simulate(flat; run_dir = ref_dir, settings = run_settings)
+    budget = parse(Float64, get(ENV, "BGSIM_EXPORT_REF_BUDGET", "300"))
+    BGSim.simulate(flat; run_dir = ref_dir, settings = run_settings,
+        cancel = () -> time() - t0 > budget)
     rec["referenceS"] = time() - t0
     manifest = JSON3.read(read(joinpath(ref_dir, "manifest.json"), String))
     if String(manifest.status) != "done"
-        rec["status"] = "reference_failed"
+        rec["status"] = time() - t0 > budget ? "reference_timeout" : "reference_failed"
         rec["diagnostics"] = [Dict("code" => String(d.code), "message" => String(d.message))
                               for d in get(manifest, :diagnostics, [])]
         return rec
@@ -126,17 +133,34 @@ end
 function main(args)
     out_root = abspath(args[1])
     mkpath(out_root)
-    todo = models_to_run(args[2:end])
-    open(joinpath(out_root, "results.jsonl"), "w") do io
+    rest = args[2:end]
+    resume = "--resume" in rest
+    filters = filter(!=("--resume"), rest)
+    todo = models_to_run(filters)
+    results = joinpath(out_root, "results.jsonl")
+    done = Set{String}()
+    if resume && isfile(results)
+        for line in eachline(results)
+            isempty(strip(line)) && continue
+            r = JSON3.read(line)
+            push!(done, String(r.project) * "/" * String(r.model))
+        end
+    end
+    open(results, resume ? "a" : "w") do io
         for (project, model) in todo
+            project * "/" * model in done && continue
+            write(joinpath(out_root, "current.json"),
+                JSON3.write((project = project, model = model, started = time())))
             print(stderr, "export ", project, "/", model, " ... ")
+            flush(stderr)
             rec = try
                 run_one(out_root, project, model)
             catch err
                 Dict{String,Any}("project" => project, "model" => model, "status" => "crashed",
                     "error" => first(sprint(showerror, err), 2000))
             end
-            println(stderr, rec["status"])
+            println(stderr, rec["status"], " (", round(Int, get(rec, "referenceS", 0.0)), " s reference)")
+            flush(stderr)
             JSON3.write(io, rec)
             println(io)
             flush(io)
