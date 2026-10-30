@@ -264,7 +264,9 @@ end
         @test bm.status == "paused"
         @test bm.parentRun == "ed"
         @test bm.branchAt == 0.1
-        @test isempty(bm.debug.edits)              # the parent's edit (0.2) is after the branch
+        # The branch's time stop is a complete breakpoint object (the manifest contract needs `enabled`).
+        @test all(bp -> haskey(bp, :enabled) && bp.enabled === true, bm.debug.breakpoints)
+        @test isempty(bm.debug.edits)             # the parent's edit (0.2) is after the branch
         # The rows on disk at the pause are the parent's rows, bit for bit.
         stream = reshape(collect(reinterpret(Float64, read(joinpath(bdir, "stream.f64")))),
             Int(size(parent, 2)), :)'

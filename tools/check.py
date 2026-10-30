@@ -148,6 +148,7 @@ def example_steps() -> list[Step] | None:
                     "tests/e2e/domain-visual.spec.ts",
                     "tests/e2e/inverted-pendulum-cart.spec.ts",
                     "tests/e2e/drivetrain-kalman.spec.ts",
+                    "tests/e2e/debug.spec.ts",
                     "tests/e2e/quarter-car.spec.ts",
                     "tests/e2e/multibond-pendulum.spec.ts",
                     "tests/e2e/industrial-servo.spec.ts",

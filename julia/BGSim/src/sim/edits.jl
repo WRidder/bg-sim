@@ -555,7 +555,8 @@ function prepare_replay!(ctx::DebugCtx, parent::ParentRun; branch_at = nothing)
     if branch_at !== nothing
         bps = Any[bp.raw for bp in ctx.breakpoints]
         push!(bps, Dict{String,Any}(
-            "id" => "branch", "kind" => "time", "time" => Dict{String,Any}("t" => branch_at),
+            "id" => "branch", "enabled" => true, "kind" => "time",
+            "time" => Dict{String,Any}("t" => branch_at),
         ))
         debug_set_breakpoints!(ctx, bps)
     end

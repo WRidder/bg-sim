@@ -37,7 +37,7 @@ export default defineConfig({
       // The real-worker acceptance specs are skipped in the fake-worker pass.
       testIgnore: realWorker
         ? [/perf[\\/]/, /multibond\.spec\.ts/]
-        : [/perf[\\/]/, /multibond-pendulum\.spec\.ts/, /dcmotor\.spec\.ts/, /subsystems\.spec\.ts/, /rlc-dual\.spec\.ts/, /domain-visual\.spec\.ts/, /inverted-pendulum-cart\.spec\.ts/, /drivetrain-kalman\.spec\.ts/, /quarter-car\.spec\.ts/, /industrial-servo\.spec\.ts/, /hydraulic-servo\.spec\.ts/, /speed-control\.spec\.ts/, /robot-arm-2d\.spec\.ts/, /reaction-wheel-2d\.spec\.ts/, /robot-arm-3d\.spec\.ts/, /robot-arm-3r\.spec\.ts/, /reaction-wheel-1d\.spec\.ts/, /cube-3d\.spec\.ts/],
+        : [/perf[\\/]/, /multibond-pendulum\.spec\.ts/, /dcmotor\.spec\.ts/, /subsystems\.spec\.ts/, /rlc-dual\.spec\.ts/, /domain-visual\.spec\.ts/, /inverted-pendulum-cart\.spec\.ts/, /drivetrain-kalman\.spec\.ts/, /quarter-car\.spec\.ts/, /industrial-servo\.spec\.ts/, /hydraulic-servo\.spec\.ts/, /speed-control\.spec\.ts/, /robot-arm-2d\.spec\.ts/, /reaction-wheel-2d\.spec\.ts/, /robot-arm-3d\.spec\.ts/, /robot-arm-3r\.spec\.ts/, /reaction-wheel-1d\.spec\.ts/, /cube-3d\.spec\.ts/, /debug\.spec\.ts/],
     },
     {
       name: "perf",

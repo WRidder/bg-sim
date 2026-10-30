@@ -247,6 +247,9 @@ function isPausedInfo(value: Record<string, unknown>): value is Record<string, u
   );
 }
 
+/** The run whose breakpoint statuses were re-requested at its first stale pause. */
+let resyncedRun: string | null = null;
+
 /** Route a run event into the reducers. */
 export function handleRunEvent(event: RunEvent): void {
   const store = useDebugStore.getState();
@@ -267,6 +270,17 @@ export function handleRunEvent(event: RunEvent): void {
       if (method === "debug.paused") {
         if (isPausedInfo(params)) {
           store.applyPaused({ ...params, diagnostics: params.diagnostics ?? [] });
+          // The sync at `started` can reach the worker before the run is built (the real worker then
+          // answers every breakpoint unverified, without a diagnostic). The first pause is the first
+          // moment the statuses are final: ask again when one is missing or unverified.
+          const current = useDebugStore.getState().statuses;
+          const stale = useBreakpointStore
+            .getState()
+            .breakpoints.some((entry) => entry.enabled && current[entry.id]?.verified !== true);
+          if (stale && resyncedRun !== params.runId) {
+            resyncedRun = params.runId;
+            void useDebugStore.getState().syncBreakpoints();
+          }
         }
       } else if (method === "debug.resumed" && typeof params.runId === "string") {
         store.applyResumed(params.runId);
