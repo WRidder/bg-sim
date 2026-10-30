@@ -1,7 +1,7 @@
 # Multibond mechanics (2D/3D): assessment and implementation plan
 
 Status: v1.0, 2026-10-27. Input: `design/multi-bond-graph.md` (the design),
-`spec/Modeling Language Spec v0.1.md` (the spec), the M2 codebase at commit `bcc5641`.
+`spec/Modeling Language Spec v0.1.md` (the spec), the M2 codebase at commit `36a654b`.
 
 > **Visual requirement (from the reference image).**
 > A **planar multibond** is drawn as **two parallel strokes**; a **spatial multibond** as

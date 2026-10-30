@@ -16,3 +16,6 @@ test-results/
 *.log
 .DS_Store
 Thumbs.db
+
+# Background literature (read-only, local only: not redistributable)
+background/
