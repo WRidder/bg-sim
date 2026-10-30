@@ -1,0 +1,69 @@
+/*
+ * Breakpoint gutter and pause line of the Code tab (plan 7.9). Colour is never
+ * the only cue: filled = verified, hollow = unverified, dashed = disabled,
+ * `?` / `#` = condition / hit count, arrow = paused here.
+ */
+
+.cm-bp-gutter {
+  width: 18px;
+  cursor: pointer;
+}
+
+.cm-bp-gutter .cm-gutterElement {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cm-bp-marker {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}
+
+.cm-bp-marker--spacer {
+  visibility: hidden;
+}
+
+.cm-bp-marker--verified {
+  color: var(--debug-on-breakpoint);
+  background: var(--debug-breakpoint);
+  border: 1.5px solid var(--debug-breakpoint);
+}
+
+.cm-bp-marker--unverified {
+  color: var(--debug-breakpoint);
+  background: transparent;
+  border: 1.5px solid var(--debug-breakpoint);
+}
+
+.cm-bp-marker--disabled {
+  color: var(--debug-breakpoint-disabled);
+  background: transparent;
+  border: 1.5px dashed var(--debug-breakpoint-disabled);
+}
+
+.cm-bp-marker--pause {
+  width: 14px;
+  border-radius: 0;
+  font-size: 11px;
+  color: var(--debug-pause-arrow);
+}
+
+.cm-bp-marker--paused:not(.cm-bp-marker--pause) {
+  box-shadow: 0 0 0 2px var(--debug-pause-arrow);
+}
+
+/* The statement the run is paused at: distinct from the active line and from lint squiggles. */
+.cm-line.cm-paused-line {
+  background: var(--debug-pause-line);
+  box-shadow: inset 3px 0 0 var(--debug-pause-arrow);
+}

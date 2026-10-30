@@ -12,6 +12,7 @@
  */
 
 import { API_BASE } from "../api/client";
+import type { DebugStartOptions } from "../contracts/debug";
 import type { Model } from "../contracts/model";
 import type { RunManifest } from "../contracts/run-manifest";
 import type { SeriesWindow } from "./runCache";
@@ -84,7 +85,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-const RUN_STATUSES = new Set(["running", "done", "failed", "cancelled"]);
+const RUN_STATUSES = new Set(["running", "paused", "done", "failed", "cancelled"]);
 
 /** A narrow boundary check; a malformed manifest must not crash the plot UI. */
 function isRunManifest(value: unknown): value is RunManifest {
@@ -121,6 +122,7 @@ export async function createRun(
   project: string,
   model: Model,
   signal?: AbortSignal,
+  debug?: DebugStartOptions,
 ): Promise<string> {
   const url = `${API_BASE}${projectRunsPath(project)}`;
   let response: Response;
@@ -131,7 +133,7 @@ export async function createRun(
         accept: "application/json",
         "content-type": "application/json",
       },
-      body: JSON.stringify({ model }),
+      body: JSON.stringify(debug === undefined ? { model } : { model, debug }),
       signal,
     });
   } catch (cause) {

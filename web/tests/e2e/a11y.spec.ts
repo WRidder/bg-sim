@@ -21,6 +21,10 @@ let project = "";
 test.beforeEach(async ({ page }) => {
   project = `w54-a11y-${Date.now()}-${test.info().workerIndex}`;
   await page.setViewportSize({ width: 1600, height: 1000 });
+  // Axe measures colours as rendered: a button caught in its 120 ms enable transition
+  // reports an intermediate background (FIX-M4-1, intermittent `.button--primary`
+  // contrast). The app honours prefers-reduced-motion, so the check sees the final state.
+  await page.emulateMedia({ reducedMotion: "reduce" });
 });
 
 test.afterEach(async ({ request }) => {

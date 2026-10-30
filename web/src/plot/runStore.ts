@@ -21,6 +21,7 @@
 
 import { create } from "zustand";
 
+import type { DebugStartOptions } from "../contracts/debug";
 import type {
   Diagnostic,
   RunManifest,
@@ -42,6 +43,33 @@ import {
   canAddSignalToPanel,
   groupSignalsByUnit,
 } from "./units";
+
+/** What the run lifecycle and the run WebSocket tell other stores (the debug store, W4.1). */
+export type RunEvent =
+  | { type: "reset" }
+  | { type: "started"; runId: string; debug: boolean }
+  | { type: "message"; method: string; params: Record<string, unknown> };
+
+export interface StartRunOptions {
+  /** Start a debug run (plan 3.8): its breakpoints and pause-on-entry. */
+  debug?: DebugStartOptions;
+}
+
+const runListeners = new Set<(event: RunEvent) => void>();
+
+/** Subscribe to the run lifecycle and the `debug.*` / `run.done` socket messages. */
+export function subscribeRunEvents(listener: (event: RunEvent) => void): () => void {
+  runListeners.add(listener);
+  return () => {
+    runListeners.delete(listener);
+  };
+}
+
+function emitRunEvent(event: RunEvent): void {
+  for (const listener of [...runListeners]) {
+    listener(event);
+  }
+}
 
 /** `idle` and `starting` extend the contract's run statuses. */
 export type RunUiStatus = "idle" | "starting" | RunStatus;
@@ -131,7 +159,7 @@ export interface RunStoreState {
   /** Bumped whenever a live tail is appended. */
   liveVersion: number;
 
-  startRun: () => Promise<void>;
+  startRun: (options?: StartRunOptions) => Promise<void>;
   stopRun: () => Promise<void>;
   addSignal: (
     signalId: string,
@@ -538,7 +566,8 @@ function ingestManifest(manifest: RunManifest): void {
     stats: manifest.stats ?? state.stats,
   });
 
-  if (manifest.status === "running") {
+  // A paused debug run is still active: its manifest ends at the pause row.
+  if (manifest.status === "running" || manifest.status === "paused") {
     if (manifest.time.n > 0) {
       const current = useRunStore.getState();
       if (
@@ -621,7 +650,7 @@ function startPolling(runId: string): void {
         return;
       }
       ingestManifest(manifest);
-      if (manifest.status !== "running") {
+      if (manifest.status !== "running" && manifest.status !== "paused") {
         return;
       }
     } catch {
@@ -683,6 +712,10 @@ function handleSocketMessage(raw: unknown): void {
     case "run.tail":
       mergeTail(params);
       break;
+    case "debug.paused":
+    case "debug.resumed":
+      emitRunEvent({ type: "message", method: message.method, params });
+      break;
     case "run.done": {
       if (params.runId !== state.runId || state.runId === null) {
         return;
@@ -696,6 +729,7 @@ function handleSocketMessage(raw: unknown): void {
       ) {
         return;
       }
+      emitRunEvent({ type: "message", method: message.method, params });
       const stats = isRecord(params.stats)
         ? (params.stats as unknown as RunStats)
         : undefined;
@@ -800,10 +834,11 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
   cursorTime: null,
   liveVersion: 0,
 
-  startRun: async () => {
+  startRun: async (options) => {
     if (get().status === "starting" || get().status === "running") {
       return;
     }
+    emitRunEvent({ type: "reset" });
     const { project, doc } = useDocumentStore.getState();
     if (project === null || doc === null) {
       set({ status: "failed", error: "Open a model before running it." });
@@ -840,7 +875,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     });
 
     try {
-      const runId = await createRun(project, doc);
+      const runId = await createRun(project, doc, undefined, options?.debug);
       if (get().status !== "starting") {
         // The model changed while the POST was in flight: do not leave an
         // untracked run growing in the background.
@@ -848,6 +883,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
         return;
       }
       set({ runId, status: "running" });
+      emitRunEvent({ type: "started", runId, debug: options?.debug !== undefined });
       openSocket(runId);
       startPolling(runId);
       try {
@@ -1446,6 +1482,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
   },
 
   reset: () => {
+    emitRunEvent({ type: "reset" });
     stopPolling();
     closeSocket();
     resetLive();

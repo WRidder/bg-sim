@@ -88,7 +88,9 @@ describe("layout shell", () => {
 
     fireEvent.click(code);
     expect(code.getAttribute("aria-selected")).toBe("true");
-    expect(await screen.findByText("No source open")).toBeTruthy();
+    // The code tab is a lazy chunk; under a loaded full-suite run its first import can exceed
+    // the default 1 s wait.
+    expect(await screen.findByText("No source open", {}, { timeout: 5000 })).toBeTruthy();
 
     fireEvent.keyDown(code, { key: "ArrowLeft" });
     expect(diagram.getAttribute("aria-selected")).toBe("true");

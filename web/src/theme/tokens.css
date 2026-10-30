@@ -114,6 +114,14 @@
   --code-definition: #79c0ff;
   --code-type: #ffd479;
 
+  /* Debugging (plan 7.9): gutter breakpoints and the paused line. */
+  --debug-breakpoint: #f0647a;
+  --debug-breakpoint-disabled: #8691a0;
+  --debug-on-breakpoint: #12161c;
+  --debug-pause-arrow: #f5c842;
+  --debug-pause-line: rgb(245 200 66 / 18%);
+  --debug-pause-text: #f5c842;
+
   /* Shell metrics. */
   --topbar-height: 40px;
   --tab-height: 30px;
@@ -171,6 +179,13 @@
   --code-comment: #5f6b7a;
   --code-definition: #0b61c4;
   --code-type: #7d5100;
+
+  --debug-breakpoint: #c8203f;
+  --debug-breakpoint-disabled: #6b7280;
+  --debug-on-breakpoint: #ffffff;
+  --debug-pause-arrow: #9a6700;
+  --debug-pause-line: rgb(250 204 21 / 30%);
+  --debug-pause-text: #8a5a00;
 
   --status-starting: #8a95a3;
   --status-warming: #f79009;

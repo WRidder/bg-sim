@@ -42,6 +42,7 @@ import {
 
 import type { BlockCheckResult } from "../contracts/worker-rpc";
 import { checkBlockSource } from "./blockCheck";
+import { attachBreakpointSync, breakpointGutter, storeHandlers } from "./breakpoints";
 import { blockCompletionSource } from "./completion";
 import { juliaSupport } from "./juliaSupport";
 import {
@@ -68,6 +69,8 @@ export interface CodeEditorProps {
   onRedo?: () => void;
   onFocus?: () => void;
   onBlur?: () => void;
+  /** Right-click on a breakpoint marker (W4.1): edit its condition and hit count. */
+  onEditBreakpoint?: (id: string, point: { x: number; y: number }) => void;
 }
 
 function renderLintMessage(view: EditorView, entry: MappedDiagnostic): Node {
@@ -147,11 +150,14 @@ export function CodeEditor({
   onRedo,
   onFocus,
   onBlur,
+  onEditBreakpoint,
 }: CodeEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const callbacks = useRef({ onChange, onCheck, onDiagnostics, onUndo, onRedo });
   callbacks.current = { onChange, onCheck, onDiagnostics, onUndo, onRedo };
+  const editBreakpoint = useRef(onEditBreakpoint);
+  editBreakpoint.current = onEditBreakpoint;
 
   const jumpKey = `${targetKey}:${line}:${col}`;
   const lastJump = useRef("");
@@ -203,6 +209,12 @@ export function CodeEditor({
       doc: source,
       selection: EditorSelection.cursor(offsetAt(source, line, col)),
       extensions: [
+        breakpointGutter(() =>
+          storeHandlers({
+            ref: checkRef,
+            onEdit: (id, point) => editBreakpoint.current?.(id, point),
+          }),
+        ),
         lineNumbers(),
         highlightActiveLineGutter(),
         highlightSpecialChars(),
@@ -249,6 +261,7 @@ export function CodeEditor({
     const view = new EditorView({ state, parent: host });
     viewRef.current = view;
     view.focus();
+    const detachBreakpoints = attachBreakpointSync(view, checkRef);
     lastJump.current = `${line}:${col}`;
     view.dispatch({
       effects: EditorView.scrollIntoView(offsetAt(source, line, col), { y: "center" }),
@@ -263,6 +276,7 @@ export function CodeEditor({
       disposed = true;
       abort.abort();
       clearTimeout(timer);
+      detachBreakpoints();
       view.destroy();
       viewRef.current = null;
     };

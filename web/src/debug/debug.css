@@ -1,0 +1,157 @@
+/*
+ * Debug controls of the run bar and the breakpoint popover (plan 7.9).
+ * Colours are the --debug-* tokens of theme/tokens.css, so both themes work.
+ */
+
+.debug-controls__start .button__glyph {
+  color: var(--debug-breakpoint);
+}
+
+.debug-controls {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-left: var(--space-2);
+  margin-left: var(--space-1);
+  border-left: var(--border-width) solid var(--color-border-strong);
+}
+
+.debug-controls__button {
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-xs);
+}
+
+.debug-controls__menu {
+  position: relative;
+}
+
+.debug-controls__popup {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  min-width: 168px;
+  padding: var(--space-1);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+}
+
+.debug-controls__item {
+  display: block;
+  padding: var(--space-1) var(--space-2);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  color: var(--color-text);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.debug-controls__item:hover,
+.debug-controls__item:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+.debug-controls__runto {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.debug-controls__runto .setting__value {
+  width: 64px;
+}
+
+/* The settings are locked while a debug run is active (they went to the run at its start). */
+.top-bar__settings[hidden] {
+  display: none;
+}
+
+.debug-controls__error {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-xs);
+  color: var(--color-error-text);
+}
+
+.run-bar__status[data-status="paused"] {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 440px;
+  color: var(--debug-pause-text);
+}
+
+/* The breakpoint popover of the Code tab gutter. */
+
+.bp-popover {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 300px;
+  padding: var(--space-3);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.bp-popover__title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.bp-popover__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.bp-popover__field input {
+  height: var(--control-height);
+  padding: 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.bp-popover__error {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-error-text);
+}
+
+.bp-popover__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.bp-popover__check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.bp-popover__spacer {
+  flex: 1 1 auto;
+}

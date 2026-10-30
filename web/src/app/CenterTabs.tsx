@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 
+import { useDebugStore } from "../debug/debugStore";
 import { DiagramTab } from "../editor/DiagramTab";
 import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
@@ -9,10 +10,13 @@ const CodeTab = lazy(() => import("../code/CodeTab").then((m) => ({ default: m.C
 
 export type CenterTabId = "diagram" | "code";
 
-const CENTER_TABS: readonly TabDefinition<CenterTabId>[] = [
-  { id: "diagram", label: "Diagram" },
-  { id: "code", label: "Code" },
-];
+function centerTabs(pausedPath: string | null): readonly TabDefinition<CenterTabId>[] {
+  return [
+    { id: "diagram", label: "Diagram" },
+    // W4.1: a statement pause shows its instance path in the tab title.
+    { id: "code", label: pausedPath === null ? "Code" : `Code · paused in ${pausedPath}` },
+  ];
+}
 
 export interface CenterTabsProps {
   active: CenterTabId;
@@ -25,10 +29,17 @@ export interface CenterTabsProps {
  * independently).
  */
 export function CenterTabs({ active, onSelect }: CenterTabsProps) {
+  const pausedPath = useDebugStore((state) => {
+    const location = state.pausedInfo?.location;
+    return location !== null && location !== undefined && location.scope !== "watch"
+      ? location.path
+      : null;
+  });
+  const tabs = centerTabs(pausedPath);
   return (
     <div className="center-tabs" data-testid="center-tabs">
       <TabStrip
-        tabs={CENTER_TABS}
+        tabs={tabs}
         active={active}
         onSelect={onSelect}
         ariaLabel="Editor"

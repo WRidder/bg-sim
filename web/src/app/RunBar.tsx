@@ -11,6 +11,10 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
+import { useBreakpointStore } from "../debug/breakpointStore";
+import { DebugControls } from "../debug/DebugControls";
+import { isDebugging, useDebugStore } from "../debug/debugStore";
+import { pausedStatusText } from "../debug/format";
 import { useDocumentStore } from "../state/documentStore";
 import { formatDuration, formatProgress } from "../plot/format";
 import { useRunStore } from "../plot/runStore";
@@ -47,6 +51,10 @@ export function RunBar() {
   const error = useRunStore((state) => state.error);
   const stopping = useRunStore((state) => state.stopping);
   const runId = useRunStore((state) => state.runId);
+  const debugPaused = useDebugStore((state) => state.status === "paused");
+  const debugging = useDebugStore((state) => isDebugging(state));
+  const pausedInfo = useDebugStore((state) => state.pausedInfo);
+  const debugBreakpoints = useBreakpointStore((state) => state.breakpoints);
   const startRun = useRunStore((state) => state.startRun);
   const stopRun = useRunStore((state) => state.stopRun);
 
@@ -167,6 +175,8 @@ export function RunBar() {
     statusText = "open a model to run";
   } else if (status === "starting") {
     statusText = "starting…";
+  } else if (status === "running" && debugPaused && pausedInfo !== null) {
+    statusText = pausedStatusText(pausedInfo, debugBreakpoints, doc);
   } else if (status === "running") {
     statusText = `${phase ?? "running"} · ${formatProgress(t, tEnd)}`;
   } else if (status === "done") {
@@ -200,6 +210,7 @@ export function RunBar() {
           </span>
           Run
         </button>
+        <DebugControls canStart={canRun} />
         <button
           type="button"
           className="button"
@@ -207,7 +218,13 @@ export function RunBar() {
           disabled={!canStop}
           aria-label="Stop simulation"
           data-testid="stop-button"
-          title={canStop ? "Stop the run" : "Stop is available while a run is active"}
+          title={
+            canStop
+              ? debugPaused || status === "running"
+                ? "Stop the run (Shift+F5 while debugging)"
+                : "Stop the run"
+              : "Stop is available while a run is active"
+          }
         >
           <span className="button__glyph" aria-hidden="true">
             ■
@@ -216,7 +233,7 @@ export function RunBar() {
         </button>
       </div>
 
-      <div className="top-bar__settings">
+      <div className="top-bar__settings" hidden={debugging}>
         <label className="setting">
           <span className="setting__label">t_end</span>
           <input
@@ -283,7 +300,7 @@ export function RunBar() {
         </label>
       </div>
 
-      {status === "starting" || status === "running" ? (
+      {status === "starting" || (status === "running" && !debugPaused) ? (
         <span
           className="run-bar__progress"
           data-testid="run-progress"
@@ -301,7 +318,7 @@ export function RunBar() {
       <span
         className="run-bar__status"
         data-testid="run-status"
-        data-status={status}
+        data-status={debugPaused && pausedInfo !== null ? "paused" : status}
         role="status"
         aria-live="polite"
         title={error ?? statusText}

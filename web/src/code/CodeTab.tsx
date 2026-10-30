@@ -18,6 +18,7 @@ import { copyBlockToProjectLibrary } from "../inspector/copyToLibrary";
 import { useCatalogStore } from "../library/catalogStore";
 import { fetchCatalog } from "../library/catalogClient";
 import { useDocumentStore } from "../state/documentStore";
+import { BreakpointPopover } from "./breakpointsPopover";
 import { CodeEditor } from "./CodeEditor";
 import {
   openTarget,
@@ -109,6 +110,10 @@ export function CodeTab() {
   const [diagnostics, setDiagnostics] = useState<MappedDiagnostic[]>([]);
   const [checkError, setCheckError] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
+  const [breakpointEdit, setBreakpointEdit] = useState<{
+    id: string;
+    point: { x: number; y: number };
+  } | null>(null);
 
   // A different source starts clean: no diagnostics, draft or save status
   // from the previous block may leak into it.
@@ -121,6 +126,7 @@ export function CodeTab() {
     setDiagnostics([]);
     setCheckError(null);
     setChecked(false);
+    setBreakpointEdit(null);
   }, [targetKey]);
 
   const draftSource = draft?.key === targetKey ? draft.source : null;
@@ -508,7 +514,15 @@ export function CodeTab() {
                   : undefined
               }
               onBlur={() => useDocumentStore.getState().endGesture()}
+              onEditBreakpoint={(id, point) => setBreakpointEdit({ id, point })}
             />
+            {breakpointEdit !== null ? (
+              <BreakpointPopover
+                id={breakpointEdit.id}
+                point={breakpointEdit.point}
+                onClose={() => setBreakpointEdit(null)}
+              />
+            ) : null}
           </div>
 
           <div

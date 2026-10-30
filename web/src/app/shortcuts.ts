@@ -29,6 +29,17 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     ],
   },
   {
+    title: "Debugging",
+    entries: [
+      { keys: [["F5"]], description: "Start a debug run, or continue a paused one" },
+      { keys: [["Shift", "F5"]], description: "Stop the debug run" },
+      { keys: [["F6"]], description: "Pause the running debug run" },
+      { keys: [["F10"]], description: "Step statement (starts paused at the entry when idle)" },
+      { keys: [["F11"]], description: "Step tick (starts paused at the entry when idle)" },
+      { keys: [["F9"]], description: "Toggle a breakpoint on the current line of the Code tab" },
+    ],
+  },
+  {
     title: "Diagram",
     entries: [
       { keys: [["Ctrl", "Z"]], description: "Undo" },
