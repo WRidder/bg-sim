@@ -433,6 +433,43 @@ describe("inspector fields", () => {
     expect(screen.queryByTestId("inspector-source")).toBeNull();
   });
 
+  it("inspects and edits the selected node of an entered subsystem", () => {
+    open([node("DCMotor", "n1", "Motor1"), node("C", "n2", "Cap1")]);
+    const index = useCatalogStore.getState().index;
+    if (index === null) {
+      throw new Error("the catalog index is not ready");
+    }
+    useDocumentStore.getState().setSelection(["n1"], []);
+    expect(useDocumentStore.getState().createSubsystem(index)).toEqual({ ok: true });
+    const subsystemId = useDocumentStore.getState().selection.nodes[0] ?? "";
+    expect(useDocumentStore.getState().enterSubsystem(subsystemId)).toBe(true);
+    render(<Inspector />);
+    expect(screen.getByText("Nothing selected")).toBeTruthy();
+
+    // The nested Motor1 is not in the root diagram; the inspector still finds it.
+    expect(docNode("n1")).toBeUndefined();
+    act(() => useDocumentStore.getState().setSelection(["n1"], []));
+    expect(input("inspector-name").value).toBe("Motor1");
+    const field = input("inspector-param-R");
+    expect(field.value).toBe("2.0");
+    fireEvent.change(field, { target: { value: "4.5" } });
+    fireEvent.blur(field);
+
+    const subsystem = useDocumentStore
+      .getState()
+      .doc?.diagram.nodes.find((entry) => entry.id === subsystemId);
+    const nested =
+      subsystem !== undefined && "subsystem" in subsystem.block
+        ? subsystem.block.subsystem.diagram.nodes.find((entry) => entry.id === "n1")
+        : undefined;
+    expect(nested?.params?.R).toBe("4.5");
+    expect(input("inspector-param-R").value).toBe("4.5");
+
+    // Leaving the subsystem prunes the nested selection.
+    act(() => useDocumentStore.getState().leaveSubsystem());
+    expect(screen.getByText("Nothing selected")).toBeTruthy();
+  });
+
   it("keeps the documented empty state before a model is open", () => {
     render(<Inspector />);
     expect(screen.getByText("Nothing selected")).toBeTruthy();
