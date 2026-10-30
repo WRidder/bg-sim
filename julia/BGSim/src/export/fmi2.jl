@@ -29,6 +29,8 @@ function write_fmi2_description(path; name, ident, guid, vars, params, inputs, t
               <File name="model.c"/>
               <File name="bg_solver.c"/>
               <File name="fmi2_cs.c"/>
+              <File name="bg_intrinsics.c"/>
+              <File name="bg_mech.c"/>
             </SourceFiles>
           </CoSimulation>
           <DefaultExperiment startTime="0" stopTime="$(_xml_num(Float64(t_end)))" stepSize="$(_xml_num(Float64(step)))"/>

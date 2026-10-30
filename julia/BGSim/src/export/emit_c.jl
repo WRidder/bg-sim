@@ -62,6 +62,8 @@ function cexpr(x, env::Dict{Any,String}, modes = nothing)
         throw(ExportError("`$x` is not a state, parameter, input or observed variable of the compiled system"))
     op = SymbolicUtils.operation(x)
     args = SymbolicUtils.arguments(x)
+    r = cexpr_intrinsic(op, args, env, modes)  # interp, CSV, mechanics (emit_intrinsics.jl)
+    r === nothing || return r
     if op === ifelse && modes !== nothing
         cond = Symbolics.unwrap(args[1])
         k = findfirst(c -> isequal(c, cond), modes)
@@ -146,16 +148,21 @@ function emit_function(io, signature, targets, env, obs; modes = nothing)
     println(io, signature, " {")
     println(io, "    (void)m; (void)t; (void)x;")
     local_env = copy(env)
+    begin_intrinsic_scope()
     for k in eachindex(obs.rhs)
         need[k] || continue
         cname = "o$(k - 1)"
-        println(io, "    const double $cname = $(cexpr(obs.rhs[k], local_env, modes)); /* $(ccomment(obs.names[k])) */")
+        rhs = cexpr(obs.rhs[k], local_env, modes)
+        flush_intrinsic_statements(io)
+        println(io, "    const double $cname = $rhs; /* $(ccomment(obs.names[k])) */")
         local_env[obs.lhs[k]] = cname
     end
     for (target, e, comment) in targets
-        println(io, "    $target = $(cexpr(e, local_env, modes));",
-            comment === nothing ? "" : " /* $(ccomment(comment)) */")
+        rhs = cexpr(e, local_env, modes)
+        flush_intrinsic_statements(io)
+        println(io, "    $target = $rhs;", comment === nothing ? "" : " /* $(ccomment(comment)) */")
     end
+    end_intrinsic_scope()
     println(io, "}\n")
 end
 

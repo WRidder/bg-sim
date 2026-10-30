@@ -317,3 +317,6 @@ include("test_worker_debug.jl")
 
 # Work package J-EX1: the C/FMU export (plan/EXPORT_PLAN.md).
 include("test_export.jl")
+
+# Work package J-EX5: the C twins of the intrinsics, golden against Julia.
+include("test_export_intrinsics.jl")

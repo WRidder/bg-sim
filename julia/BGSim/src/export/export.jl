@@ -44,15 +44,18 @@ const MTK = ModelingToolkit
 
 """The hand-written C runtime copied into every export; bump `RUNTIME_VERSION` on any change."""
 const RUNTIME_DIR = normpath(joinpath(@__DIR__, "..", "..", "export", "runtime"))
-const RUNTIME_VERSION = "0.1.0"
+const RUNTIME_VERSION = "0.2.0"
 const RUNTIME_FILES = ["bg_runtime.h", "bg_solver.c", "fmi2_cs.c",
-    "fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"]
+    "fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h",
+    "bg_intrinsics.h", "bg_intrinsics.c", "bg_mech.h", "bg_mech.c"]
 
 const MARKER_INPUT = "stdlib:converters/ExportInput"
 const MARKER_OUTPUT = "stdlib:converters/ExportOutput"
 const MARKER_PARAMETER = "stdlib:converters/ExportParameter"
+const CSV_SOURCES = ("stdlib:sources/CsvSource", "stdlib:sources/CsvSourceSampled")
 
 include("emit_c.jl")
+include("emit_intrinsics.jl")
 include("emit_discrete.jl")
 include("analysis.jl")
 include("fmi2.jl")
@@ -156,6 +159,13 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
     settings.method in (:auto, :euler, :rk4, :ros2) ||
         return _fail([diag("E110", "unknown export method `$(settings.method)`";
             hint = "use auto, euler, rk4 or ros2")], out_dir)
+    # A CSV source is simulation data (stimulus or comparison); the host supplies such a
+    # signal through an ExportInput, so the export refuses it at the block (J-EX5).
+    csv_nodes = [i.path for i in flat.instances if i.ref in CSV_SOURCES]
+    if !isempty(csv_nodes)
+        return _fail([diag("E110", "`$p` reads a CSV file, which is not exported"; path = p,
+            hint = CSV_EXPORT_HINT) for p in csv_nodes], out_dir)
+    end
     if !isempty(flat.events)
         return _fail([diag("E110", "`@events` with `reinit` are not exported yet (plan J-EX6)";
             hint = "the model has $(length(flat.events)) event(s)")], out_dir)
@@ -378,8 +388,10 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     guid = _guid(lowered.key, settings, dt_ns, method, vars, params, inputs)
     modes = Any[]
     cbuf = IOBuffer()
-    _emit_model_c(cbuf, name, xs, x0, names_x, rhs, jac, env, obs, modes, vars, params,
-        inputs, held_ids, dvals, sched, ps, names_p, flat_params)
+    intrinsics = with_intrinsics() do
+        _emit_model_c(cbuf, name, xs, x0, names_x, rhs, jac, env, obs, modes, vars, params,
+            inputs, held_ids, dvals, sched, ps, names_p, flat_params)
+    end
     for cond in modes
         push!(diags, diag("W203",
             "switching condition `$(cond)` is evaluated once per step, so its switch is not located between steps";
@@ -389,7 +401,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     _write_model_h(joinpath(out_dir, "sources", "model.h"), name, ident, guid, nx,
         length(params), length(held_ids), has_disc ? length(sched.input_ids) : 0, length(vars),
         length(inputs), has_disc ? length(sched.partitions) : 0, length(modes), dt, dt_ns, method)
-    write(joinpath(out_dir, "sources", "model.c"), take!(cbuf))
+    write(joinpath(out_dir, "sources", "model.c"), splice_intrinsics(String(take!(cbuf)), intrinsics))
     for f in RUNTIME_FILES
         cp(joinpath(RUNTIME_DIR, f), joinpath(out_dir, "sources", f); force = true)
     end
@@ -415,6 +427,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             "accurateStep" => isfinite(choice.accurate_step) ? choice.accurate_step : nothing,
             "analysisMethod" => String(analysis_method),
             "proposedDt" => choice.dt_ns / 1e9),
+        "tables" => intrinsics_report(intrinsics),
         "diagnostics" => [BGSim.to_namedtuple(d) for d in sort_diagnostics(diags)],
     )
     open(joinpath(out_dir, "export.json"), "w") do io

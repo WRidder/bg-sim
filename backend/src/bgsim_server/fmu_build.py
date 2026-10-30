@@ -3,8 +3,9 @@
 The Julia side (``BGSim.Export.export_model``) writes ``sources/``, ``modelDescription.xml``
 and ``export.json`` into an export directory. This module turns that into an ``.fmu``:
 
-1. compile the hot-path objects (``model.c``, ``bg_solver.c``, ``fmi2_cs.c``) and check their
-   undefined symbols: no allocator, no stdio, no ``exit``/``abort`` (D-EX4, plan 8);
+1. compile the hot-path objects (``model.c``, ``bg_solver.c``, ``fmi2_cs.c``,
+   ``bg_intrinsics.c``, ``bg_mech.c``) and check their undefined symbols: no allocator, no
+   stdio, no ``exit``/``abort`` (D-EX4, plan 8);
 2. check that the sources also compile as C++17 (a compatibility check for embedding in a
    C++ application; C is the only target);
 3. link the shared library for the host platform;
@@ -35,7 +36,7 @@ FORBIDDEN_SYMBOLS = frozenset({
 })
 
 #: The objects that run inside ``fmi2DoStep``.
-HOT_PATH_SOURCES = ("model.c", "bg_solver.c", "fmi2_cs.c")
+HOT_PATH_SOURCES = ("model.c", "bg_solver.c", "fmi2_cs.c", "bg_intrinsics.c", "bg_mech.c")
 
 C_FLAGS = ("-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
            "-fno-math-errno")
@@ -150,7 +151,7 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
             result.cxx_ok = all(
                 _run([cxx, "-x", "c++", "-std=c++17", "-fsyntax-only", "-Wall", "-Werror",
                       "-I", src, src / name], result).returncode == 0
-                for name in ("model.c", "bg_solver.c"))
+                for name in ("model.c", "bg_solver.c", "bg_intrinsics.c", "bg_mech.c"))
 
         binary = build / (ident + _library_suffix(plat))
         res = _run([cc, *C_FLAGS, "-shared", "-fPIC", "-static-libgcc", "-I", src,
