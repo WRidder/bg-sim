@@ -17,7 +17,7 @@ import { expect, test, type Page } from "@playwright/test";
  *    second CSV through the inspector and see it in the picker;
  * 3. press Run, wait for `done`;
  * 4. plot the joint-1 torque error against the Robotics Toolbox torque of the 3-link arm and
- *    read its legend: it must stay far below the 99 N m peak torque;
+ *    read its legend: it must stay far below the 88 N m peak torque;
  * 5. open the 3D view: the six joint bindings validate and drive the scene. *
  * The fake worker answers every run from its fixed `Synthetic/*` fixture, so this spec uses
  * the real worker: it starts one on a free port when the suite was not already started with
@@ -269,7 +269,7 @@ test("compares the planar arms with the CSV reference and plays them in 3D", asy
     .toBeGreaterThan(0);
 
   // Past the first milliseconds the torque error is below 1.2e-3 N m (expected.json); the
-  // peak torque of joint 1 is 99 N m.
+  // peak torque of joint 1 is 88 N m.
   const over = page.locator('[data-testid="plot-chart"] .u-over');
   await expect(over).toBeVisible();
   const box = await over.boundingBox();

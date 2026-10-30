@@ -4,7 +4,7 @@ The tolerances are measured, not guessed. Whole-run torque bounds are about 1.25
 largest error of the real run, which occurs in the first millisecond (the compliant pivots,
 kt = 1e8 N/m, ring once when the jerk steps from 0); the settled bounds hold from t = 0.02 s.
 Both are below 0.15 % of the peak joint torque. The forward drift bounds are the measured
-open-loop drift over 1 s (it grows with the gravity dynamics) with about 1.5x margin.
+open-loop drift over 1 s (no gravity, X5.9b) with about 1.5x margin.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ INV = {(1, 1): (6e-4, 1e-5),
        (2, 1): (0.017, 2.5e-4), (2, 2): (0.0045, 7e-5),
        (3, 1): (0.10, 1.2e-3), (3, 2): (0.038, 4.5e-4), (3, 3): (5e-4, 6e-6)}
 PAY = {(3, 1): (0.17, 1.8e-3), (3, 2): (0.07, 7.5e-4), (3, 3): (0.009, 1e-4)}
-FWD = {(1, 1): 3e-7, (2, 1): 2e-6, (2, 2): 3e-6, (3, 1): 5e-6, (3, 2): 7e-6, (3, 3): 1.2e-6}
+FWD = {(1, 1): 3e-7, (2, 1): 2e-6, (2, 2): 1.2e-6, (3, 1): 5e-6, (3, 2): 3.5e-6, (3, 3): 6e-7}
 
 
 def fk_entries(arms, payload=False):
@@ -32,7 +32,7 @@ def fk_entries(arms, payload=False):
         if len(arms) > 1 and n > 1:
             sig_x.insert(0, f"A{n}_BaseX/y")
         out.append({"link": f"a{n}_link{n}", "point": [tip, 0, 0],
-                    "signals": [sig_x if len(sig_x) > 1 else sig_x[0], None, f"A{n}_PoseTip/g[3]"],
+                    "signals": [sig_x if len(sig_x) > 1 else sig_x[0], f"A{n}_PoseTip/g[3]", None],
                     "tol": 1e-6})
     return out
 

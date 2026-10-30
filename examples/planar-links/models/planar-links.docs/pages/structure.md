@@ -13,8 +13,8 @@ Ground ── Joint1 ── Link1 ── N1 (1-junction) ── Joint2 ── Li
 | [A3_Joint1](block:A3_Joint1) | `stdlib:planar/Revolute2DCompliant` | revolute joint: exact angle $q$, pivot translations as stiff springs ($k_t = 10^8$ N/m) |
 | [A3_Link1](block:A3_Link1) | `stdlib:planar/FixedJoint2D` | frame bridge from the joint to the centre of mass at $c_i = a_i + r_i$ |
 | [A3_N1](block:A3_N1) | 1-junction | the common twist of link 1: its body and the next joint |
-| [A3_Body1](block:A3_Body1) | `stdlib:planar/RigidBody2D` | 3-DOF body with $m_i$ and $J_i$ about the centre of mass; its port is the body 1-junction with `IPlanar`, `CoriolisPlanar` and `GravityPlanar` |
-| `A3_PoseJ*`, `A3_PoseB*`, `A3_CoM*` | `ComposePose2D`, `LocalPose2D` | the pose chain, composed from the joint angles (never integrated), which feeds `GravityPlanar` |
+| [A3_Body1](block:A3_Body1) | `stdlib:planar/RigidBody2D` | 3-DOF body with $m_i$ and $J_i$ about the centre of mass; its port is the body 1-junction with `IPlanar`, `CoriolisPlanar` and `GravityPlanar` (here with `g0 = 0`) |
+| `A3_PoseJ*`, `A3_PoseB*`, `A3_CoM*` | `ComposePose2D`, `LocalPose2D` | the pose chain, composed from the joint angles (never integrated), which would feed `GravityPlanar` (zero gravity here) |
 
 The elbow of link $j+1$ sits at $-r_j$ in the centre-of-mass frame of link $j$ (the script's COM offset $r$ is measured from the link *end*, so the next joint is $a_j - c_j = -r_j$ behind the centre of mass).
 
@@ -33,6 +33,6 @@ The speed source imposes the joint speed $\dot q_j$ (inverse model), or an effor
 
 ## Why the compliant joint
 
-`Revolute2DRigid` is the exact joint, but a rigid revolute on a 3-DOF planar body is index 3 (two hard pivot constraints): on this arm it fails at $t = 0$ with an unstable initialisation (probed, see `julia/BGSim/NOTES.md`). `Revolute2DCompliant` with $k_t = 10^8$ N/m, $b_t = 10^5$ N·s/m keeps every state integral. The pivot moves by about $m g / k_t \approx 10^{-6}$ m; the rotation is exact. Its cost shows in the results as a ring of the first millisecond.
+`Revolute2DRigid` is the exact joint, but a rigid revolute on a 3-DOF planar body is index 3 (two hard pivot constraints): on this arm it fails at $t = 0$ with an unstable initialisation (probed, see `julia/BGSim/NOTES.md`). `Revolute2DCompliant` with $k_t = 10^8$ N/m, $b_t = 10^5$ N·s/m keeps every state integral. The pivot moves by about $10^{-6}$ m (the inertial load of the motion); the rotation is exact. Its cost shows in the results as a ring of the first millisecond.
 
 In the inverse model every inertia is in **derivative causality** (the speeds are prescribed), so the compiler reports `W201` for the bodies and the motor inertias, as expected. MTK differentiates the cubic CSV speed through the registered derivatives of `csv_value` ([the CSV source](page:csv)).

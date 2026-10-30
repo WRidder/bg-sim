@@ -12,9 +12,16 @@ zeros to ones, 1 s), sampled at 1 kHz, and writes one CSV per arm to ``../data``
 Convention. The columns are the joint angles, rates and accelerations *after*
 ``transform_joint_data`` (q -> -q, joint 1 offset -pi/2), i.e. exactly the arguments the
 analytical ``tau(q, qd, qdd)`` and ``rne_python`` receive. That is also the bond-graph
-model's convention: a counter-clockwise angle from +x in the x-y plane, gravity along -y,
-joint 1 hanging down (-pi/2) at t = 0. Torques are joint-side torques including the
+model's convention: a counter-clockwise angle from +x in the x-y plane, which is the
+horizontal plane of the scene (joint axes along z), with NO gravity for any arm (X5.9b);
+joint 1 starts at -pi/2 (the trajectory is kept). Torques are joint-side torques including the
 reflected motor terms G^2 Jm qdd + B G^2 qd.
+
+Deviation from the script (user decision 2026-10-30, X5.9b): the arms lie in the
+horizontal plane, so every arm has gravity = 0. ``main()`` of planar_robot.py uses
+gravity = 9.81 for the 2- and 3-link analytical classes and the RTB robots (along -y); here
+the analytical classes get ``gravity=0`` and every RTB robot ``gravity = [0, 0, 0]``.
+planar_robot.py itself is unchanged.
 
 Run: ``uv run reference/generate.py`` (pinned to Python < 3.13 for roboticstoolbox-python).
 """
@@ -44,10 +51,10 @@ def build():
     l2 = link(0.525, 3.690, -0.182, 0.146, 0.02, 9.33, 0.0004845)
     l3 = link(0.370, 4.0, -0.360, 0.016, 0.01, 9.25, 0.0001859)
     l4 = DHLink(a=0.1, m=1.0, r=np.array([0, 0, 0]), I=np.zeros((3, 3)))
-    g = 9.81
+    g = 0.0  # X5.9b: horizontal plane, no gravity (the script uses 9.81 for 2/3-link)
     r1, r2, r3, r4 = DHRobot([l1]), DHRobot([l1, l2]), DHRobot([l1, l2, l3]), DHRobot([l1, l2, l3, l4])
-    for r in (r2, r3, r4):
-        r.gravity = [0, -g, 0]
+    for r in (r1, r2, r3, r4):
+        r.gravity = [0, 0, 0]
     pay = dict(pay_m=1, pay_I=0, pay_r=[0.1, 0])
     a1 = pr.OneLinkRobot(link1=l1, gravity=0, **pay)
     a2 = pr.TwoLinkRobot(link1=l1, link2=l2, gravity=g, **pay)
@@ -85,7 +92,7 @@ def main():
     # transform_joint_data adds the -pi/2 offset to element 0 only for a 1-D array (a quirk of
     # the original script: q[0] += offset), i.e. to the first *sample* of the 1-link
     # trajectory. The intended convention is the offset on the whole joint-1 trajectory, as in
-    # the 2D case; the torque does not depend on it (the 1-link robot has no gravity).
+    # the 2D case; the torque does not depend on it (no gravity).
     tau_user = np.asarray(a1.tau(q, qd, qdd))
     q = -np.asarray(tg.q) - np.pi / 2
     tau_a = np.asarray(a1.tau(q, qd, qdd)).reshape(-1, 1)

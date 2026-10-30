@@ -30,7 +30,7 @@ LINKS = [
     dict(a=0.370, m=4.0, r=-0.360, I=0.016, B=0.01, G=9.25, Jm=0.0001859),
 ]
 PAYLOAD = dict(m=1.0, I=0.0, r=0.1)  # point mass 0.1 m beyond the end of link 3
-G0 = 9.81
+G0 = 0.0  # X5.9b: the arms lie in the horizontal plane, no gravity for any arm (RigidBody2D g0)
 ARMS_IN_MODEL = ()  # set by build(); the base offsets only exist when several arms share a scene
 BASE_X = [0.0, 2.0, 4.2]  # arm base x in the scene (m), by arm position in the model
 
@@ -139,17 +139,12 @@ def build_arm(M, n, mode, variant, payload, col, csvfile):
         jp = {"rx": num(px), "ry": "0.0", "q0": num(q0)}
         if variant == "compliant":
             jp.update({"kt": "1e8", "bt": "1e5", "k": "0.0", "b": "0.0", "qrest": "0.0"})
-        starts = {}
-        if variant == "compliant" and n > 1:
-            # static pivot deflection of the hanging arm (child +x points down): the link-j
-            # pivot carries the weight of links j..n, so the model starts in equilibrium
-            carried = sum(link_params(k, payload)[0] for k in range(j, n + 1))
-            starts = {"d": f"[{carried * G0 / 1e8!r}, 0.0]"}
+        starts = {}  # no gravity: the compliant pivots carry no static load, d starts at 0
         jn = M.node(f"{tag}_Joint{j}", joint_ref, params=jp, starts=starts, pos=(bx, y0 + 200))
         ln = M.node(f"{tag}_Link{j}", "stdlib:planar/FixedJoint2D",
                     params={"x": num(c), "y": "0.0", "theta": "0.0"}, pos=(bx + 160, y0 + 200))
         bn = M.node(f"{tag}_Body{j}", "stdlib:planar/RigidBody2D",
-                    params={"m": num(m), "J": num(J), "g0": num(G0 if n > 1 else 0.0)}, pos=(bx + 320, y0 + 330))
+                    params={"m": num(m), "J": num(J), "g0": num(G0)}, pos=(bx + 320, y0 + 330))
         # power chain
         if j == 1:
             M.bond(prev_node, prev_port, jn, "parent")       # ground -> shoulder
@@ -257,12 +252,13 @@ def build(name, mode, variant, arms, payload, scene):
 
 
 def sdf_scene(arms, payload, title):
-    """An SDF scene (x right, z up; the model's x-y plane is the SDF x-z plane)."""
+    """An SDF scene (Z up; the model's x-y plane is the horizontal SDF x-y plane)."""
     out = ['<?xml version="1.0"?>', "<!--",
            f"  {title}",
-           "  The model is planar in its x-y plane with gravity along -y; the scene uses the SDF X-Z",
-           "  plane (model x is SDF x, model y is SDF z). Counter-clockwise joint angles are rotations",
-           "  about -Y. Each joint is bound to the relative angle of its joint (qout, rad); the scene",
+           "  The model is planar in its x-y plane without gravity (X5.9b); the arms lie in the horizontal",
+           "  x-y plane of the Z-up SDF world (model x is SDF x, model y is SDF y). Counter-clockwise joint",
+           "  angles are rotations about +Z, the base column and plate lie below the arm.",
+           "  Each joint is bound to the relative angle of its joint (qout, rad); the scene",
            "  pose is the stretched arm (all angles 0), the model starts with joint 1 at -pi/2.",
            "-->", '<sdf version="1.9">', '  <model name="planar_links">']
     joints = []
@@ -270,11 +266,11 @@ def sdf_scene(arms, payload, title):
         x0 = BASE_X[col] if len(arms) > 1 else 0.0
         out += [f'    <link name="a{n}_base">', f"      <pose>{x0} 0 0 0 0 0</pose>",
                 '      <visual name="a%d_pedestal">' % n,
-                "        <pose>0 0 -0.12 0 0 0</pose>",
+                "        <pose>0 0 -0.155 0 0 0</pose>",
                 "        <geometry><cylinder><radius>0.07</radius><length>0.24</length></cylinder></geometry>",
                 "        <material><diffuse>0.45 0.47 0.5 1</diffuse></material>", "      </visual>",
-                '      <visual name="a%d_floor">' % n, "        <pose>0 0 -0.25 0 0 0</pose>",
-                "        <geometry><box><size>0.9 0.4 0.02</size></box></geometry>",
+                '      <visual name="a%d_floor">' % n, "        <pose>0 0 -0.285 0 0 0</pose>",
+                "        <geometry><box><size>0.5 0.5 0.02</size></box></geometry>",
                 "        <material><diffuse>0.3 0.3 0.33 1</diffuse></material>", "      </visual>",
                 "    </link>"]
         reach = 0.0
@@ -287,7 +283,7 @@ def sdf_scene(arms, payload, title):
                     f'      <visual name="a{n}_bar{j}">', f"        <pose>{a / 2!r} 0 0 0 0 0</pose>",
                     f"        <geometry><box><size>{a!r} {0.05 - 0.008 * (j - 1)!r} {0.05 - 0.008 * (j - 1)!r}</size></box></geometry>",
                     f"        <material><diffuse>{colors[j - 1]}</diffuse></material>", "      </visual>",
-                    f'      <visual name="a{n}_hub{j}">', "        <pose>0 0 0 1.5707963 0 0</pose>",
+                    f'      <visual name="a{n}_hub{j}">', "        <pose>0 0 0 0 0 0</pose>",
                     "        <geometry><cylinder><radius>0.04</radius><length>0.07</length></cylinder></geometry>",
                     "        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>", "      </visual>",
                     f'      <visual name="a{n}_com{j}">', f"        <pose>{c!r} 0 0 0 0 0</pose>",
@@ -304,7 +300,7 @@ def sdf_scene(arms, payload, title):
             reach += a
     for name, par, ch in joints:
         out += [f'    <joint name="{name}" type="revolute">', f"      <parent>{par}</parent>",
-                f"      <child>{ch}</child>", "      <axis>", "        <xyz>0 -1 0</xyz>",
+                f"      <child>{ch}</child>", "      <axis>", "        <xyz>0 0 1</xyz>",
                 "      </axis>", "    </joint>"]
     out += ["  </model>", "</sdf>", ""]
     return "\n".join(out)

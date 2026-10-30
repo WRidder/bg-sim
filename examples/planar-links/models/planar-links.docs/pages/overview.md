@@ -2,15 +2,15 @@
 
 The 1-, 2- and 3-link planar robot arms of the script `reference/planar_robot.py` (closed-form inverse dynamics, checked there against Peter Corke's *Robotics Toolbox*), built here **three times, side by side, from proper planar (2D) bond-graph elements** and compared with the reference through CSV files.
 
-![Torque of the 3-link arm: bond graph against the Robotics Toolbox|760](assets/cc1f6022f7c4.png)
+![Torque of the 3-link arm: bond graph against the Robotics Toolbox|760](assets/70f58a76e596.png)
 
 ## What is in the model
 
 | arm | joints | gravity | CSV file |
 | --- | --- | --- | --- |
-| `A1` | 1 | none (as in the script) | `data/arm1.csv` |
-| `A2` | 2 | 9.81 m/s² along $-y$ | `data/arm2.csv` |
-| `A3` | 3 | 9.81 m/s² along $-y$ | `data/arm3.csv` |
+| `A1` | 1 | none | `data/arm1.csv` |
+| `A2` | 2 | none (the script has 9.81 m/s²; see [conventions](page:convention)) | `data/arm2.csv` |
+| `A3` | 3 | none (the script has 9.81 m/s²; see [conventions](page:convention)) | `data/arm3.csv` |
 
 Every arm is the chain *ground → joint → link frame → rigid body* per link, with the drive train of the reference at every joint: motor inertia $J_m$ and viscous friction $B$ on the motor side, an ideal gear of ratio $G$ to the joint. See [the planar bond-graph structure](page:structure).
 
@@ -22,7 +22,7 @@ Three models share the project:
 
 ## Result in one paragraph
 
-Over the 1 s trajectories the torque the bond-graph arms need agrees with the Robotics Toolbox and with the analytical model to **0.13 N·m or better in the first millisecond** (a one-off ring of the compliant pivots) and **1.4e-3 N·m afterwards**, on peak torques up to 131 N·m. Driven open loop by the CSV torques, the arms follow the CSV angles within **5e-6 rad** over 1 s. The analytical class and the Robotics Toolbox agree with each other to **8.5e-14 N·m**. Details and tolerances: [results](page:results).
+Over the 1 s trajectories the torque the bond-graph arms need agrees with the Robotics Toolbox and with the analytical model to **0.13 N·m or better in the first millisecond** (a one-off ring of the compliant pivots) and **1.4e-3 N·m afterwards**, on peak torques up to 131 N·m. Driven open loop by the CSV torques, the arms follow the CSV angles within **5e-6 rad** over 1 s. The analytical class and the Robotics Toolbox agree with each other to **5.7e-14 N·m**. Details and tolerances: [results](page:results).
 
 ## How it was made
 
@@ -33,5 +33,5 @@ Over the 1 s trajectories the torque the bond-graph arms need agrees with the Ro
 ## What to try
 
 - Select [A3_Csv](block:A3_Csv) and look at the data-file section of the inspector: the file picker, the preview and the 12 columns it outputs.
-- Open the **3D View**: the three arms swing from hanging ($q_1 = -\pi/2$) while the angles come from the model.
+- Open the **3D View**: the three arms lie in the horizontal plane (base column and plate below them) and swing from $q_1 = -\pi/2$ (link 1 along $-y$) while the angles come from the model.
 - Change `method` of a CsvSource to `linear`: the solver then stops at every data row and the torque error grows with the interpolation error of the linear speed.

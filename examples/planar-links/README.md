@@ -32,8 +32,10 @@ Ground ─ Joint (Revolute2DCompliant) ─ Link (FixedJoint2D) ─ 1-junction �
 
 The CSV files and the model use the joint data **after** the script's `transform_joint_data`
 (`q -> -q`, joint 1 offset `-pi/2`, `qd -> -qd`, `qdd -> -qdd`): the angle is counter-clockwise
-from +x in the x-y plane, gravity acts along -y, joint 1 hangs straight down at `t = 0` and the
-arm swings clockwise by 1 rad per joint. Torques are joint-side torques with the reflected
+from +x in the x-y plane, which is the **horizontal** plane of the 3D scene (joint axes along world
+z, base column and plate below the arm), there is **no gravity for any arm** (X5.9b), joint 1 starts
+at `-pi/2` (along -y; the trajectory is kept, it no longer means "hanging") and the arm swings
+clockwise by 1 rad per joint. Torques are joint-side torques with the reflected
 motor terms `G^2 Jm qdd + B G^2 qd`, so the bond graph has the motor inertia `Jm` and the viscous
 friction `B` on the motor side of an ideal gear `G`. Link parameters are the script's; the COM
 offset `r` is measured from the link end, so the COM sits at `a + r` from the joint.
@@ -43,8 +45,11 @@ Details of the script worth knowing:
 - `get_total_mass` adds a list to a number; it is unused. The copy is unchanged.
 - `transform_joint_data` on a 1-D array (the 1-link case) adds the offset to element 0 only. The
   generator writes the intended full offset (the 1-link torque is independent of it, asserted).
-- The 1-link arm has no gravity (`gravity=0`; the RTB default points along z). The 2-link
-  analytical class ignores the payload.
+- **Deviation (user decision 2026-10-30):** the script uses `gravity=0` for the 1-link arm only and
+  9.81 m/s2 along -y for the 2- and 3-link arms. Here every arm lies in the horizontal plane with no
+  gravity: `generate.py` passes `gravity=0` to the analytical classes and sets
+  `r.gravity = [0, 0, 0]` on every RTB robot (`planar_robot.py` is unchanged), the models have
+  `g0 = 0` in every `RigidBody2D`. The 2-link analytical class ignores the payload.
 
 ## Why `Revolute2DCompliant`
 
@@ -61,15 +66,15 @@ spline), so every inertia is in derivative causality (`W201`, expected) and Mode
 differentiates the interpolant through the registered derivatives of `csv_value`. No numerical
 differentiation and no workaround were needed; the probes are in `julia/BGSim/NOTES.md`.
 
-## Measured (real worker, `uv run examples/run_checks.py --only planar-links`: 64 checks)
+## Measured (real worker, `uv run examples/run_checks.py --only planar-links`: 67 checks)
 
 | quantity | value |
 | --- | --- |
-| analytical vs RTB (the script's own comparison, 1 kHz) | 3.6e-15 / 2.8e-14 / 8.5e-14 N m (1/2/3-link), payload 5.7e-14 |
+| analytical vs RTB (the script's own comparison, 1 kHz) | 3.6e-15 / 2.8e-14 / 5.7e-14 N m (1/2/3-link), payload 5.7e-14 |
 | torque error bond graph vs RTB, whole run (first ms) | 4.9e-4 (1-link); 1.3e-2, 3.6e-3 (2-link); 8.1e-2, 3.0e-2, 3.9e-4 (3-link); 0.13, 5.3e-2, 6.6e-3 (payload) N m |
 | the same from t = 0.02 s | 7.8e-6; 1.8e-4, 5.0e-5; 9.5e-4, 3.5e-4, 4.5e-6; 1.4e-3, 6.0e-4, 7.4e-5 N m |
-| peak torques | 8.6; 45, 17; 99, 43, 2.3; 131, 62, 12 N m |
-| forward dynamics, max angle drift over 1 s | 1.7e-7; 1.3e-6, 1.9e-6; 3.4e-6, 4.8e-6, 7.0e-7 rad |
+| peak torques | 8.6; 39, 13.5; 88, 35, 2.0; 118, 53, 10 N m |
+| forward dynamics, max angle drift over 1 s | 1.7e-7; 1.2e-6, 7.6e-7; 3.3e-6, 2.2e-6, 3.4e-7 rad |
 | scene tips vs model signals | 1e-15 m |
 | compile / run (inverse, 3 arms) | about 3 s / 0.3 s; forward 5 s / 5 s |
 
