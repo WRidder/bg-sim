@@ -116,10 +116,8 @@ function cexpr(x, env::Dict{Any,String}, modes = nothing)
     throw(ExportError("`$(nameof_op(op))` has no C implementation yet (in `$x`)"))
 end
 
-function _is_array_literal(y)
-    y = Symbolics.unwrap(y)
-    return SymbolicUtils.iscall(y) && SymbolicUtils.operation(y) === SymbolicUtils.array_literal
-end
+# `_is_array_literal` is defined once, in emit_intrinsics.jl (a second definition here made
+# the module fail to precompile: method overwriting).
 
 nameof_op(op) = try
     string(nameof(op))
