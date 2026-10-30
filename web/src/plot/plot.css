@@ -83,6 +83,14 @@
   color: var(--color-warning-text);
 }
 
+/* M4 debug: the paused badge (the dashed marker itself is drawn by pauseMarker.ts) */
+.plot-paused {
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-warning-text);
+}
+
 .plot-toolbar .button.is-disabled,
 .plot-toolbar .button[aria-disabled="true"] {
   opacity: 0.45;

@@ -16,6 +16,7 @@ import { useDocumentStore } from "../state/documentStore";
 import { autoPlotSelection } from "./autoPlotSelection";
 import { groupSignalsForAuto } from "./autoPlotGroups";
 import { useAutoDetachStore } from "./detachStore";
+import { usePausedSeries } from "./pauseState";
 import { panelConfiguration, PLOT_SYNC_KEY } from "./PlotPanel";
 import {
   liveSeriesFor,
@@ -119,7 +120,8 @@ export function AutoPlotPanel({ detached = false }: { detached?: boolean }) {
     return null;
   }, [status, view, manifest?.id, liveVersion, data]);
 
-  const chartData = live ?? data;
+  // M4 debug: while paused the series end at the pause time (plan 7.9)
+  const chartData = usePausedSeries(live, data);
   const handleZoom = (next: { t0: number; t1: number } | null, px: number) => {
     useRunStore.getState().setView(next, px);
   };

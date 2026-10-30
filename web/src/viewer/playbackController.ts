@@ -12,6 +12,7 @@
 
 import { BindingApplier, type ApplyTarget } from "./bindingsApply";
 import type { Binding } from "../contracts/model";
+import { clampToPause, pausedHead } from "./pauseClamp";
 import { PlaybackClock, liveHead } from "./playbackClock";
 import { browserClock, type FrameClock } from "./renderScheduler";
 import type { SignalBuffer } from "./timeline";
@@ -37,6 +38,8 @@ export interface PlaybackSnapshot {
   readonly loop: boolean;
   /** Joint position (after gain and offset) each position binding last set, by target. */
   readonly applied: Readonly<Record<string, number>>;
+  /** M4 debug: the time the run is paused at (the playback ends there), or null. */
+  readonly pauseTime: number | null;
 }
 
 export interface PlaybackDeps {
@@ -69,6 +72,8 @@ export class ViewerPlayback {
   private readonly unsubscribe: (() => void)[] = [];
   private disposed = false;
   private active = true;
+  /** M4 debug: the pause time of a paused debug run; the head never goes beyond it. */
+  private pauseTime: number | null = null;
 
   constructor(
     private readonly cursor: CursorPort,
@@ -116,13 +121,24 @@ export class ViewerPlayback {
     this.dataChanged();
   }
 
+  /**
+   * M4 debug (DEC-M4-1): the run is paused at `t` (null: it is not). The head ends at `t`: a live head shows
+   * the pause time, and the clock cannot play or seek beyond it.
+   */
+  setPauseTime(t: number | null): void {
+    if (this.pauseTime === t) return;
+    this.pauseTime = t;
+    // the clock range ends at the pause time, which also holds the head and any seek inside it
+    this.dataChanged();
+  }
+
   /** Frames were appended to the buffer. */
   dataChanged(): void {
     const span = this.buffer?.span ?? null;
     if (span !== null && !this.live) {
       // a longer range is not a seek of the user: it must not move the plot cursor
       this.fromCursor = true;
-      this.clock.setRange(span.t0, span.t1, this.now());
+      this.clock.setRange(span.t0, clampToPause(span.t1, this.pauseTime), this.now());
       if (this.pendingCursor !== null) this.clock.seek(this.pendingCursor, this.now());
       this.fromCursor = false;
     }
@@ -233,7 +249,10 @@ export class ViewerPlayback {
   private headTime(now: number): number | null {
     const buffer = this.buffer;
     if (buffer === null || buffer.length === 0) return null;
-    return this.live ? liveHead(buffer.span, buffer.interval) : this.clock.time(now);
+    if (this.live) {
+      return this.pauseTime === null ? liveHead(buffer.span, buffer.interval) : pausedHead(buffer.span, this.pauseTime);
+    }
+    return clampToPause(this.clock.time(now), this.pauseTime);
   }
 
   private tick(): void {
@@ -259,10 +278,11 @@ export class ViewerPlayback {
       playing: mode === "playback" && this.clock.playing(now),
       time: this.head,
       start: this.live ? (span?.t0 ?? 0) : this.clock.start,
-      end: this.live ? (span?.t1 ?? 0) : this.clock.end,
+      end: this.live ? (this.pauseTime ?? span?.t1 ?? 0) : this.clock.end,
       speed: this.clock.speed,
       loop: this.clock.loop,
       applied: Object.fromEntries(this.applier?.applied ?? []),
+      pauseTime: this.pauseTime,
     };
   }
 }

@@ -27,6 +27,8 @@ import {
   formatCursorTime,
   formatLegendValue,
 } from "./format";
+import { pauseMarkerPlugin } from "./pauseMarker";
+import { usePauseTime } from "./pauseState";
 import type { ChartSeriesData } from "./runStore";
 import type { SeriesWindow } from "./runCache";
 
@@ -178,6 +180,10 @@ export function UPlotChart({
   const onCursorTimeRef = useRef(onCursorTime);
   const cursorTimeRef = useRef(cursorTime);
   const renderSeqRef = useRef(0);
+  // M4 debug: the "paused" marker of a paused debug run (plan 7.9)
+  const pauseTime = usePauseTime();
+  const pauseTimeRef = useRef(pauseTime);
+  pauseTimeRef.current = pauseTime;
 
   const [chartEpoch, setChartEpoch] = useState(0);
   const [legendIndex, setLegendIndex] = useState<number | null>(null);
@@ -303,6 +309,7 @@ export function UPlotChart({
         y2: { auto: true },
       },
       legend: { show: false },
+      plugins: [pauseMarkerPlugin({ getTime: () => pauseTimeRef.current })],
       cursor: {
         show: true,
         x: true,
@@ -486,9 +493,19 @@ export function UPlotChart({
       cursorFrame = requestAnimationFrame(reportCursor);
     };
 
+    // M4 debug: a right click (the "Rewind to here" menu) acts on the time under the pointer, so write the
+    // cursor now instead of waiting for the next animation frame
+    const onContextMenu = (): void => {
+      if (cursorFrame !== null) {
+        cancelAnimationFrame(cursorFrame);
+      }
+      reportCursor();
+    };
+
     chart.over.addEventListener("wheel", onWheel, { passive: false });
     chart.over.addEventListener("dblclick", onDoubleClick);
     chart.over.addEventListener("mousemove", onMouseMove);
+    chart.over.addEventListener("contextmenu", onContextMenu);
     window.addEventListener("keydown", onKeyDown);
 
     const observer = new ResizeObserver(() => {
@@ -507,6 +524,7 @@ export function UPlotChart({
       chart.over.removeEventListener("wheel", onWheel);
       chart.over.removeEventListener("dblclick", onDoubleClick);
       chart.over.removeEventListener("mousemove", onMouseMove);
+      chart.over.removeEventListener("contextmenu", onContextMenu);
       if (cursorFrame !== null) {
         cancelAnimationFrame(cursorFrame);
         cursorFrame = null;
@@ -625,6 +643,15 @@ export function UPlotChart({
     queueMicrotask(apply);
   }, [cursorTime, data, view, chartEpoch]);
 
+
+  // The marker appears and disappears with the pause: redraw (the draw hook reads the ref).
+  // (only after uPlot's first commit has laid out the axes; before that the first draw includes the marker)
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (chart !== null && chart.status === 1) {
+      chart.redraw(false, false);
+    }
+  }, [pauseTime]);
 
   const legendTime = valueAt(dataRef.current, 0, legendIndex ?? -1);
 

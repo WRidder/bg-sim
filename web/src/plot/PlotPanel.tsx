@@ -33,6 +33,8 @@ import {
   formatNumber,
   formatProgress,
 } from "./format";
+import { RewindMenu } from "./pauseRewind";
+import { usePauseTime, usePausedSeries } from "./pauseState";
 import { runExportUrl } from "./runApi";
 import {
   useRunStore,
@@ -270,9 +272,16 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
 
   // The live tail replaces the fetched window while running at "show all";
   // a zoomed view reads `/data` from the stream instead.
-  const chartData = live ?? data;
+  // M4 debug: while paused the series end at the pause time (plan 7.9)
+  const chartData = usePausedSeries(live, data);
   const following = status === "running" && view === null;
   const livePoints = status === "running" ? livePointCount() : 0;
+  // M4 debug: the pause badge and the "Rewind to here" menu (plan 7.9)
+  const pauseTime = usePauseTime();
+  const [plotMenu, setPlotMenu] = useState<{ x: number; y: number; time: number | null } | null>(
+    null,
+  );
+  const closePlotMenu = useCallback(() => setPlotMenu(null), []);
 
   // Measure the charts area once it exists (a run with at least one signal).
   useEffect(() => {
@@ -435,7 +444,17 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
           inspect t ={" "}
           {cursorTime === null ? "—" : formatCursorTime(cursorTime)}
         </span>
-        {status === "running" ? (
+        {pauseTime !== null ? (
+          <span
+            className="plot-paused"
+            data-testid="plot-pause-badge"
+            data-pause-time={pauseTime}
+            title="The run is paused: the plots end at the pause time (dashed marker)"
+          >
+            ‖ paused at t = {formatCursorTime(pauseTime)}
+          </span>
+        ) : null}
+        {status === "running" && pauseTime === null ? (
           <span
             className="plot-live"
             data-testid="live-badge"
@@ -610,7 +629,25 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
           />
         </div>
       ) : (
-        <div className="plot-panel__charts" ref={chartsRef} data-testid="plot-charts">
+        <div
+          className="plot-panel__charts"
+          ref={chartsRef}
+          data-testid="plot-charts"
+          onContextMenu={(event) => {
+            if (
+              !(event.target instanceof Element) ||
+              event.target.closest('[data-testid="plot-chart"]') === null
+            ) {
+              return;
+            }
+            event.preventDefault();
+            setPlotMenu({
+              x: event.clientX,
+              y: event.clientY,
+              time: useRunStore.getState().cursorTime,
+            });
+          }}
+        >
           {panels.map((panel, index) => {
             const configuration = panelConfiguration(
               panel.signals,
@@ -687,6 +724,9 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
           })}
         </div>
       )}
+      {plotMenu !== null ? (
+        <RewindMenu x={plotMenu.x} y={plotMenu.y} time={plotMenu.time} onClose={closePlotMenu} />
+      ) : null}
     </div>
   );
 }

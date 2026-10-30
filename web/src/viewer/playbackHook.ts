@@ -195,7 +195,7 @@ export function useViewerPlayback(
   }, [playback, streamRun, ids, idsKey, httpRun]);
 
   const idle = useMemo<PlaybackSnapshot>(
-    () => ({ mode: "empty", playing: false, time: null, start: 0, end: 0, speed: 1, loop: false, applied: {} }),
+    () => ({ mode: "empty", playing: false, time: null, start: 0, end: 0, speed: 1, loop: false, applied: {}, pauseTime: null }),
     [],
   );
   const snapshot = useSyncExternalStore(

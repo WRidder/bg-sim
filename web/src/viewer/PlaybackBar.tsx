@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent, type ReactElement } from "react";
 
+import { PauseChip, PauseMarker, usePlaybackPause } from "./pauseMarker";
 import { PLAYBACK_SPEEDS } from "./playbackClock";
 import type { ViewerPlayback, PlaybackSnapshot } from "./playbackController";
 import "./playback.css";
@@ -44,6 +45,8 @@ export function playbackKeyHandler(playback: ViewerPlayback | null): (event: Key
  */
 export function PlaybackBar({ playback, snapshot, streamError, streamNote = null, hasBindings, bindingsOpen, onToggleBindings }: PlaybackBarProps): ReactElement {
   const { mode, playing, time, start, end, speed, loop, applied } = snapshot;
+  // M4 debug (DEC-M4-1): at a pause the bar marks the pause time and the playback ends there
+  const pauseTime = usePlaybackPause(playback);
   // the slider shows what the user just chose until the next frame reports the new head; a controlled range
   // that waited for that frame would snap back under the thumb
   const [scrub, setScrub] = useState<number | null>(null);
@@ -66,6 +69,7 @@ export function PlaybackBar({ playback, snapshot, streamError, streamNote = null
       data-mode={mode}
       data-playing={playing ? "true" : "false"}
       data-time={time === null ? "" : String(time)}
+      data-pause-time={pauseTime === null ? "" : String(pauseTime)}
       data-applied={JSON.stringify(applied)}
     >
       <div className="playback__row">
@@ -123,27 +127,31 @@ export function PlaybackBar({ playback, snapshot, streamError, streamNote = null
         >
           <span aria-hidden="true">{"↻"}</span>
         </button>
-        <input
-          type="range"
-          className="playback__slider"
-          aria-label="Time"
-          aria-valuetext={formatTime(time)}
-          min={start}
-          max={end > start ? end : start + 1}
-          step="any"
-          value={scrub ?? time ?? start}
-          disabled={!enabled}
-          data-testid="playback-time"
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            setScrub(v);
-            playback?.seek(v);
-          }}
-        />
+        <div className="playback__track">
+          <input
+            type="range"
+            className="playback__slider"
+            aria-label="Time"
+            aria-valuetext={formatTime(time)}
+            min={start}
+            max={end > start ? end : start + 1}
+            step="any"
+            value={scrub ?? time ?? start}
+            disabled={!enabled}
+            data-testid="playback-time"
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              setScrub(v);
+              playback?.seek(v);
+            }}
+          />
+          <PauseMarker pauseTime={pauseTime} start={start} end={end} />
+        </div>
         <span className="playback__readout" data-testid="playback-readout" aria-live="off">
           {formatTime(time)} / {formatTime(end)}
         </span>
-        {live ? (
+        <PauseChip pauseTime={pauseTime} />
+        {live && pauseTime === null ? (
           <span className="playback__chip" data-testid="playback-live">
             Live
           </span>

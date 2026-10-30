@@ -77,6 +77,28 @@
   accent-color: var(--color-accent);
 }
 
+/* M4 debug: the slider with the pause marker (DEC-M4-1) */
+.playback__track {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 6rem;
+}
+
+.playback__pause-marker {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 0;
+  border-left: 2px dashed var(--color-warning-text);
+  pointer-events: none;
+}
+
+.playback__chip--paused {
+  color: var(--color-warning-text);
+}
+
 .playback__readout {
   min-width: 11rem;
   color: var(--color-text-muted);

@@ -25,6 +25,7 @@ import { nodeNameIssue, useDocumentStore } from "../state/documentStore";
 import { nodeRef } from "../state/modelFactory";
 import { copyBlockToProjectLibrary } from "./copyToLibrary";
 import { SelectField, TextField, type SelectOption } from "./fields";
+import { LiveBanner, LiveParameterField, useLiveMode } from "./liveInspector";
 import { qualifiedFrame } from "./frames";
 import { portComponentUnits, unitArrayText } from "./units";
 import {
@@ -68,7 +69,20 @@ function signalSuffix(size: readonly number[]): string {
   return size.map((count) => `[1..${count}]`).join("");
 }
 
-function ParameterField({ node, decl }: { node: ModelNode; decl: ParameterDecl }) {
+function ParameterField({
+  node,
+  decl,
+  path,
+}: {
+  node: ModelNode;
+  decl: ParameterDecl;
+  path: readonly string[];
+}) {
+  // M4 debug: at a pause the field edits the paused run, not the model (plan 7.9)
+  const live = useLiveMode();
+  if (live !== null) {
+    return <LiveParameterField node={node} decl={decl} path={path} live={live} />;
+  }
   const stored = node.params?.[decl.name];
   const value = stored ?? decl.default;
   const onReset =
@@ -583,6 +597,8 @@ export function NodeInspector({
         {helpRef !== null ? <BlockHelpButton blockRef={helpRef} label={iface.title} /> : null}
       </header>
 
+      <LiveBanner />
+
       {ref !== null && block === undefined ? (
         <p className="inspector-warning" role="alert" data-testid="inspector-unknown-ref">
           The block <code>{ref}</code> is not in the current catalog, so its declarations and
@@ -630,7 +646,7 @@ export function NodeInspector({
               <p className="inspector-none">This block has no parameters.</p>
             ) : (
               block.parameters.map((decl) => (
-                <ParameterField key={decl.name} node={node} decl={decl} />
+                <ParameterField key={decl.name} node={node} decl={decl} path={path} />
               ))
             )}
           </section>

@@ -528,6 +528,25 @@
   border-bottom: var(--border-width) solid var(--color-error);
 }
 
+/* M4 debug: live mode at a pause (plan 7.9) */
+.inspector-live {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-warning) 16%, var(--color-surface));
+  border-bottom: var(--border-width) solid var(--color-warning);
+}
+
+.inspector-tag--live {
+  color: var(--color-warning-text);
+}
+
+.inspector-field--live .inspector-input {
+  border-color: var(--color-warning);
+}
+
 .inspector-warning code {
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
