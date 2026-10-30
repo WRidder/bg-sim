@@ -80,7 +80,7 @@ include("scope.jl")
 | `t_end` | `1.0` | `DefaultExperiment/stopTime` and the start-value horizon |
 | `margin` | `0.5` | fraction of the stability bound the step may use (explicit methods) |
 | `accuracy` | `0.3` | largest `h·|λ|` allowed for any eigenvalue (RK4); Rosenbrock methods meet the same per-step error |
-| `damping` | `0.05` | a Rosenbrock step may leave a fast mode unresolved when both the method and the exact flow shrink it below this in one step |
+| `damping` | `nothing` (0.05) | a Rosenbrock step may leave a fast mode unresolved when both the method and the exact flow shrink it below this in one step. Unset, `:auto` falls back to `RELAXED_DAMPING` (0.5) once when no method meets the rule within `max_substeps` (W214); set, there is no fallback |
 | `stiff_ratio` | `10` | a Rosenbrock step may also damp a mode the exact flow keeps (W213) when `h·|λ|` is at least this and the method shrinks it below `damping` |
 | `max_substeps` | `1000` | above this W207 is reported |
 | `fold_parameters` | `true` | fold non-tunable parameters into literals |
@@ -97,7 +97,7 @@ Base.@kwdef struct ExportSettings
     t_end::Float64 = 1.0
     margin::Float64 = 0.5
     accuracy::Float64 = 0.3
-    damping::Float64 = 0.05
+    damping::Union{Nothing,Float64} = nothing
     stiff_ratio::Float64 = 10.0
     max_substeps::Int = 1000
     fold_parameters::Bool = true
@@ -112,6 +112,11 @@ end
 `symbolic_jacobian_limit` (terms)."""
 const JACOBIAN_MAX_SECONDS = 120.0
 
+"""The step rule's `damping` when the setting is unset, and the relaxed value `:auto` falls
+back to when no method meets the strict rule within the substep budget (D-EX7, W214)."""
+const DEFAULT_DAMPING = 0.05
+const RELAXED_DAMPING = 0.5
+
 function ExportSettings(d::AbstractDict)
     get_(k, default) = haskey(d, k) ? d[k] : haskey(d, Symbol(k)) ? d[Symbol(k)] : default
     dt = get_("dt", nothing)
@@ -122,7 +127,7 @@ function ExportSettings(d::AbstractDict)
         t_end = Float64(get_("t_end", 1.0)),
         margin = Float64(get_("margin", 0.5)),
         accuracy = Float64(get_("accuracy", 0.3)),
-        damping = Float64(get_("damping", 0.05)),
+        damping = get_("damping", nothing) === nothing ? nothing : Float64(get_("damping", 0.05)),
         stiff_ratio = Float64(get_("stiff_ratio", 10.0)),
         max_substeps = Int(get_("max_substeps", 1000)),
         fold_parameters = Bool(get_("fold_parameters", true)),
@@ -497,8 +502,8 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     build_jacobian() = (jac_info[] === nothing &&
         (jac_info[] = _jacobian(rhs, xs, obs, env, modes, settings)); jac_info[])
     step_kw = (margin = settings.margin, accuracy = settings.accuracy,
-        max_substeps = settings.max_substeps, damping = settings.damping,
-        stiff_ratio = settings.stiff_ratio)
+        max_substeps = settings.max_substeps,
+        damping = something(settings.damping, DEFAULT_DAMPING), stiff_ratio = settings.stiff_ratio)
     candidates = if settings.method !== :auto
         (settings.method,)
     elseif algebraic
@@ -525,14 +530,32 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         settings.jacobian === :fd ? fd_ops :
         jac_info[] === nothing ? 0.0 :
         jac_info[].kind === :fd ? fd_ops : f_ops + 3 * jac_info[].terms
-    choice, table = choose_method(candidates, points, base_ns, nx; f_ops, jac_ops, has_t,
-        lu_kw..., step_kw...)
-    if is_rosenbrock(choice.method) && length(candidates) > 1 && settings.jacobian !== :fd
-        # The first pass priced the symbolic Jacobian at zero; with its real cost RK4 may win
-        # again.
-        build_jacobian()
-        choice, table = choose_method(candidates, points, base_ns, nx; f_ops, jac_ops, has_t,
-            lu_kw..., step_kw...)
+    function select(kw)
+        c, t = choose_method(candidates, points, base_ns, nx; f_ops, jac_ops, has_t,
+            lu_kw..., kw...)
+        if is_rosenbrock(c.method) && length(candidates) > 1 && settings.jacobian !== :fd
+            # The first pass priced the symbolic Jacobian at zero; with its real cost RK4 may
+            # win again.
+            build_jacobian()
+            c, t = choose_method(candidates, points, base_ns, nx; f_ops, jac_ops, has_t,
+                lu_kw..., kw...)
+        end
+        return c, t
+    end
+    choice, table = select(step_kw)
+    # The over-budget fallback (D-EX7, W214): with `damping` unset and no method within the
+    # substep budget, `:auto` tries the relaxed damping once and suggests its pick if it fits.
+    relaxed = false
+    if choice.over_budget && settings.method === :auto && settings.damping === nothing &&
+       settings.dt === nothing
+        relaxed_kw = merge(step_kw, (damping = RELAXED_DAMPING,))
+        c2, t2 = select(relaxed_kw)
+        if !c2.over_budget
+            choice, table, step_kw, relaxed = c2, t2, relaxed_kw, true
+            push!(diags, diag("W214",
+                "no method meets the strict step rule within the budget; suggested $(uppercase(String(c2.method))) at $(c2.dt_ns / 1e9) s with relaxed damping ($(RELAXED_DAMPING)); force rk4 to resolve all modes";
+                hint = "a mode that decays to $(RELAXED_DAMPING) of itself in one step may be left unresolved; set damping to choose the rule yourself"))
+        end
     end
     dt_ns = settings.dt === nothing ? choice.dt_ns : round(Int64, settings.dt * 1e9)
     clock_errors = _dt_clock_errors(settings.dt, dt_ns, step_ns, sched, base_ns)
@@ -665,6 +688,8 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             "accurateStep" => isfinite(choice.accurate_step) ? choice.accurate_step : nothing,
             "analysisMethod" => String(method),
             "proposedDt" => choice.dt_ns / 1e9,
+            # W214: the step rule's damping, and whether the over-budget fallback set it.
+            "damping" => step_kw.damping, "relaxedDamping" => relaxed,
             # W213: modes the exact flow keeps that the Rosenbrock step damps.
             "numericallyDamped" => Dict("modes" => n_num,
                 "minHz" => isfinite(f_num) ? f_num : nothing)),

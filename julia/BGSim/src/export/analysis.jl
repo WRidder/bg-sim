@@ -23,6 +23,8 @@
 #   accurate, so ROS34PW2 or Rodas4P take it. A mode in between (a lightly damped oscillation near the bandwidth,
 #   or a decay of a few steps) must be resolved, so an LC circuit or a pendulum in the
 #   bandwidth is still followed.
+# When no method meets the rule within the substep budget and `damping` is not set, the
+# export runs the selection once more with damping 0.5 (export.jl, W214).
 # Both are heuristics; the example harness measures the real error.
 #
 # The internal step is the communication step (and every discrete period) divided by the
