@@ -67,8 +67,8 @@ Four findings shape this plan:
   partitions in topological order, integer-nanosecond periods and offsets, held/input/parameter
   index maps. E104 against `dt` is a one-line check on `period_ns`.
 - The intrinsics are already opaque registered functions with plain numeric bodies
-  (`bg_interp1/2`, `bg_csv`, the `bg_*` mechanics functions in `src/lower/fnmap.jl`), so each
-  needs exactly one hand-written C twin.
+  (`bg_interp1/2`, the `bg_*` mechanics functions in `src/lower/fnmap.jl`), so each
+  needs exactly one hand-written C twin. (`bg_csv` is not exported: see section 6.)
 - `ExportInput`/`ExportOutput`/`ExportParameter` blocks (`stdlib/converters/`) and stable signal
   IDs: the interface names.
 - `tunable = true` on parameters, and D4 (all parameters are runtime parameters in simulation,
@@ -111,7 +111,7 @@ julia/BGSim/src/export/
 julia/BGSim/export/runtime/      hand-written C, versioned, copied into every FMU
   bg_runtime.h     language semantics (sign, round, clamp, deadzone, mod, ...)
   bg_solver.c      Euler / RK4 / Rosenbrock, LU, modes, tick, events
-  bg_intrinsics.c  interp1/interp2, CSV tables, delay ring buffer, noise
+  bg_intrinsics.c  interp1/interp2 over constant tables, delay ring buffer, noise
   bg_mech.c        SE2/SE3 exp/log, quaternion functions, spatial inertia
   fmi2_cs.c, fmi3_cs.c
   bg_model.hpp     optional header-only C++ wrapper on the C API
@@ -149,7 +149,8 @@ enforces this by symbol inspection and the counting harness (section 8).
 | `ifelse`, `abs`, `sign`, `min`, `max`, `clamp`, `saturate`, `deadzone`, `floor`, `ceil`, `round` | supported, frozen per step, W203 per site |
 | `@events` with `reinit` | supported, checked after each step, W203 (phase C) |
 | `@discrete`, `previous`, `hold`, multi-rate | supported; E104 when a period is not a multiple of `dt` |
-| `interp1`, `interp2`, `csv_value` | supported; tables become `static const` arrays (phase C); W-level size report |
+| `interp1`, `interp2` over constant tables of the model | supported; each table becomes one `static const` array (phase C); W-level size report |
+| `csv_value` (`CsvSource`) | not exported (E110): a CSV source is simulation data (stimulus or comparison). In an export variant an `ExportInput` replaces it, so the host supplies the signal |
 | mechanics functions (`exp`/`log` on SE2/SE3, quaternions, `spatial_inertia`) | supported through `bg_mech.c` (phase C) |
 | `delay` | supported only with a constant delay; a ring buffer of `ceil(T/dt)` slots (phase E; also missing in simulation) |
 | `noise_normal` | phase E, with a specified PRNG shared with simulation |
@@ -183,7 +184,7 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 
 | WP | scope | acceptance |
 | --- | --- | --- |
-| J-EX5 | `bg_intrinsics.c` (`interp1/2`, CSV tables), `bg_mech.c` (all `bg_*` mechanics functions); golden tests of every C function against its Julia twin on random inputs | max deviation ≤ 4 ulp, or documented per function |
+| J-EX5 | `bg_intrinsics.c` (`interp1/2` over constant tables; `csv_value` refused with E110), `bg_mech.c` (all `bg_*` mechanics functions); golden tests of every C function against its Julia twin on random inputs | max deviation ≤ 4 ulp, or documented per function |
 | J-EX6 | `@events` + `reinit` per step, W203 per site with origin; E104 against `dt` active | bouncing-ball and the hard-stop goldens export, with W203 at the expected sites |
 | X-EX2 | Extend `fmu_compare` to the mechanics examples (pendulums, robot arms, reaction wheels) | within the stated tolerances |
 
@@ -236,7 +237,7 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 | Quaternion norm drift in long runs | pose error | renormalize after each step in exported code (the spec's open decision: decide in J-EX5) |
 | MTK version changes the compiled-system API | emitter breaks | the emitter uses only documented accessors (`unknowns`, `equations`, `observed`, `parameters`, `calculate_jacobian`); a golden of the generated C for dc-motor catches changes |
 | libm differences across targets | tiny numeric differences | tolerance-based gate (D-EX14); discrete code bit-exact |
-| Large CSV tables on MCUs | flash size | size report in the export; downsampling is the user's choice |
+| Large interpolation tables on MCUs | flash size | size report in the export; downsampling is the user's choice |
 
 ## 10. Contract and spec changes
 
