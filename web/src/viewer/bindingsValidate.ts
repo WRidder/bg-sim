@@ -6,6 +6,11 @@
  *  - E302 unknown signal;
  *  - E303 unit mismatch (joint `position`: rad / dimensionless for revolute and continuous, m for prismatic;
  *    pose: quaternion dimensionless, position m);
+ *    Rule for a signal with NO unit (null, undefined or empty: plain block-diagram signals such as integrator
+ *    outputs, pose matrix entries, or bond-graph quantities of a Generic island with no concrete domain): the
+ *    unit is unknown, and an unknown unit is not evidence of a mismatch. It is unchecked for every target (angle,
+ *    length, quaternion) and raises no E303. A unit that IS reported and does not fit (`N`, `flow*s`, `1` on a
+ *    length, `m` on an angle) still raises E303.
  *  - E304 wrong signal count (pose needs exactly 7, every other property 1).
  *
  * Diagnostics have the shape of plan 3.4; `path` is the binding target.
@@ -74,6 +79,8 @@ type Need = "angle" | "length" | "quaternion";
 
 /** The problem of a signal against what the property needs, or null when it fits. */
 function unitProblem(need: Need, unit: string | null | undefined, gain: number): string | null {
+  // no declared unit: unchecked, not a mismatch (see the header rule)
+  if ((unit ?? "").trim() === "") return null;
   const rule = unitRule(unit);
   if (need === "angle" || need === "quaternion") {
     // angles and quaternion parts are dimensionless (rad is dimensionless); deg needs the factor in gain

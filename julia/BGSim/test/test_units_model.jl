@@ -181,6 +181,23 @@ end
         @test _um_signal(rot, "C1/p.P").unit == "W"
     end
 
+    @testset "a C on a Generic island reports no unit instead of flow*s (FIX-M5-1)" begin
+        gen = _um_flat(_um_model("CGeneric", Any[
+            _um_node("n1", "S1", _um_ref("stdlib:bondgraph/Se")),
+            _um_node("n2", "J1", Dict{String,Any}("junction" => "1")),
+            _um_node("n3", "C1", _um_ref("stdlib:bondgraph/C")),
+        ], Any[
+            _um_conn("c1", "bond", "n1", "p", "n2"),
+            _um_conn("c2", "bond", "n2", nothing, "n3", "p"),
+        ]))
+        @test gen.domains == Dict("c1" => "Generic", "c2" => "Generic")
+        # the variable keeps the symbolic unit for the checker; the signal entry has none
+        @test _um_var(gen, "C1/q").unit == UM.parse_unit("flow*s")
+        @test _um_signal(gen, "C1/q").unit === nothing
+        @test _um_signal(gen, "C1/p.e").unit === nothing
+        @test _um_signal(gen, "C1/p.P").unit === nothing
+    end
+
     @testset "an mm output into an m input scales by 0.001" begin
         doc = _um_model("MmToM", Any[
             _um_node("n1", "MmOut", _um_inline(UM_MM_SOURCE)),

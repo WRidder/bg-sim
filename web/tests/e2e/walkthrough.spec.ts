@@ -248,21 +248,9 @@ for (const example of examples) {
 
     await page.getByTestId("bindings-toggle").click();
     await expect(page.getByTestId("bindings-editor")).toBeVisible();
-    // E303 (the unit of a bound signal is not the unit of the target: integrator outputs and
-    // the g[5] pose entries carry no unit in the real worker's signal list) is reported as a
-    // known finding instead of failing the gate; any other binding diagnostic fails.
+    // plan X5.1: every scene loads with zero binding diagnostics (E301 to E304)
     const problems = await page.locator('[data-testid^="binding-problem-"]').allInnerTexts();
-    const unitProblems = problems.filter((text) => text.startsWith("E303"));
-    if (unitProblems.length > 0) {
-      test.info().annotations.push({
-        type: "known-E303",
-        description: `${String(unitProblems.length)} binding(s) report a signal unit mismatch`,
-      });
-    }
-    expect(
-      problems.filter((text) => !text.startsWith("E303")),
-      "binding diagnostics other than E303",
-    ).toEqual([]);
+    expect(problems, "binding diagnostics").toEqual([]);
     await page.getByTestId("bindings-toggle").click();
 
     const slider = page.getByTestId("playback-time");

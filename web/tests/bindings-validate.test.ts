@@ -23,6 +23,8 @@ const signals: SignalUnits = new Map<string, string | null>([
   ["P/py", "m"],
   ["P/pz", "m"],
   ["P/F", "N"],
+  ["P/gen", "flow*s"],
+  ["P/empty", ""],
 ]);
 
 const codes = (b: Binding[], s: SignalUnits | null = signals): string[] => validateBindings(b, scene, s).map((d) => d.code);
@@ -68,9 +70,19 @@ describe("validateBindings", () => {
     expect(codes([{ target: "joint:shoulder", property: "position", signal: "P/v" }])).toEqual(["E303"]);
   });
 
-  it("treats a missing unit as dimensionless", () => {
-    expect(codes([{ target: "joint:shoulder", property: "position", signal: "P/none" }])).toEqual([]);
-    expect(codes([{ target: "joint:slide", property: "position", signal: "P/none" }])).toEqual(["E303"]);
+  it("an unknown unit is unchecked: no E303 for a length or an angle", () => {
+    for (const s of ["P/none", "P/empty"]) {
+      expect(codes([{ target: "joint:shoulder", property: "position", signal: s }])).toEqual([]);
+      expect(codes([{ target: "joint:slide", property: "position", signal: s }])).toEqual([]);
+    }
+    expect(codes([{ target: "link:cart", property: "pose", signal: ["P/qw", "P/qx", "P/qy", "P/qz", "P/none", "P/none", "P/empty"] }])).toEqual([]);
+  });
+
+  it("a reported wrong unit still raises E303: N and flow*s for a length or an angle", () => {
+    for (const s of ["P/F", "P/gen"]) {
+      expect(codes([{ target: "joint:slide", property: "position", signal: s }])).toEqual(["E303"]);
+      expect(codes([{ target: "joint:shoulder", property: "position", signal: s }])).toEqual(["E303"]);
+    }
   });
 
   it("accepts deg and mm only when the gain converts", () => {

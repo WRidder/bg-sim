@@ -27,7 +27,7 @@ module Flat
 import ..BGSim
 import ..BGSim: SourceRange, Diagnostic, diag
 import ..BGSim.Units
-import ..BGSim.Units: Dims, unit_string
+import ..BGSim.Units: Dims, unit_string, has_pseudo_dimensions
 
 """    Origin(path, block, range, node, connection, kind)
 
@@ -262,6 +262,18 @@ flat_id(e::BGSim.Name) = String(e.name)
 flat_id(e::BGSim.Field) = flat_id(e.base) * "." * String(e.field)
 flat_id(e::Any) = sprint(show, e)
 
+"""    _signal_unit_string(u) -> Union{String,Nothing}
+
+The unit text a signal entry carries. A unit that still holds the `effort`/`flow` pseudo-dimensions
+(`flow*s`, `effort*flow`) belongs to a bond island without a concrete domain (a pure `Generic`
+bond graph, W205): nothing resolves it to a physical unit, so the entry reports none instead of
+leaking the symbolic expression. A concrete domain has substituted them already.
+"""
+function _signal_unit_string(u)
+    (u === nothing || has_pseudo_dimensions(u)) && return nothing
+    return unit_string(u)
+end
+
 """    signal_namedtuple(v::FlatVar) -> NamedTuple
 
 The plan 3.5 signal entry of one flat variable: `id`, `unit` (a string or `nothing`), `kind`,
@@ -277,7 +289,7 @@ function signal_namedtuple(v::FlatVar)
     unit = if label isa AbstractString
         String(label)
     else
-        v.unit === nothing ? nothing : unit_string(v.unit)
+        _signal_unit_string(v.unit)
     end
     return (
         id = v.id,
@@ -294,7 +306,7 @@ The plan 3.5 signal entry of a derived signal (the power of a port)."""
 function signal_namedtuple(d::DerivedSignal)
     return (
         id = d.id,
-        unit = d.unit === nothing ? nothing : unit_string(d.unit),
+        unit = _signal_unit_string(d.unit),
         kind = String(d.kind),
         path = d.path,
         type = String(d.type),
