@@ -62,6 +62,7 @@ const CSV_SOURCES = ("stdlib:sources/CsvSource", "stdlib:sources/CsvSourceSample
 
 include("emit_c.jl")
 include("emit_intrinsics.jl")
+include("simplify.jl")
 include("emit_discrete.jl")
 include("emit_events.jl")
 include("analysis.jl")
@@ -85,6 +86,7 @@ include("job.jl")
 | `stiff_ratio` | `10` | a Rosenbrock step may also damp a mode the exact flow keeps (W213) when `h·|λ|` is at least this and the method shrinks it below `damping` |
 | `max_substeps` | `1000` | above this W207 is reported |
 | `fold_parameters` | `true` | fold non-tunable parameters into literals |
+| `simplify` | `true` | substitute the folded values into the symbolic system and simplify it (`simplify.jl`: constant subtrees, `0*x`, `1*x`, `x+0`, `x^1`, constant `ifelse` conditions) before the Jacobian pattern, the symbolic Jacobian and the C code, and drop the same leftovers in the emitter; `false` keeps the expressions as compiled (for comparison) |
 | `expose_all` | `false` | publish every recorded signal as a `local` variable |
 | `jacobian` | `:auto` | Rosenbrock only: `:symbolic` (`jacobian_c`, chain rule through the observed equations), `:fd` (coloured finite differences in C), `:auto` (symbolic within its guard, else `:fd`) |
 | `symbolic_jacobian_limit` | `2e5` | the guard of `:auto`: the largest number of derivative terms the symbolic Jacobian may build (counted while it is built, W212 above it); a 120 s time limit applies as well |
@@ -102,6 +104,7 @@ Base.@kwdef struct ExportSettings
     stiff_ratio::Float64 = 10.0
     max_substeps::Int = 1000
     fold_parameters::Bool = true
+    simplify::Bool = true
     expose_all::Bool = false
     jacobian::Symbol = :auto
     symbolic_jacobian_limit::Float64 = 2.0e5
@@ -132,6 +135,7 @@ function ExportSettings(d::AbstractDict)
         stiff_ratio = Float64(get_("stiff_ratio", 10.0)),
         max_substeps = Int(get_("max_substeps", 1000)),
         fold_parameters = Bool(get_("fold_parameters", true)),
+        simplify = Bool(get_("simplify", true)),
         expose_all = Bool(get_("expose_all", false)),
         jacobian = Symbol(lowercase(String(get_("jacobian", "auto")))),
         symbolic_jacobian_limit = Float64(get_("symbolic_jacobian_limit", 2.0e5)),
@@ -239,9 +243,12 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
     try
         # One intrinsics context for the whole export: the symbolic Jacobian is built before
         # model.c is emitted and registers its tables in the same place (emit_intrinsics.jl).
+        # The emitter's peephole rules follow `simplify` (emit_c.jl, `C_SIMPLIFY`).
         return task_local_storage(_INTRINSIC_KEY, IntrinsicContext()) do
-            _export(flat, lowered, integ, String(out_dir), settings, reference_dir,
-                String(name), diags)
+            Base.ScopedValues.with(C_SIMPLIFY => settings.simplify) do
+                _export(flat, lowered, integ, String(out_dir), settings, reference_dir,
+                    String(name), diags)
+            end
         end
     catch err
         if err isa EventExportError
@@ -311,6 +318,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     inputs = ExportVar[]
     dvals = zeros(length(held_ids))
     folded = 0
+    fold_subs = Dict{Any,Any}()    # folded parameter => value, substituted when `simplify`
     for (i, p) in enumerate(ps)
         id = names_p[i]
         k = findfirst(==(id), held_ids)
@@ -331,7 +339,10 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
                 nothing, _range(fp)...))
             env[p] = "m->p[$(length(params) - 1)]"
         elseif settings.fold_parameters
+            # The literal stays the fallback for every place the substitution does not reach
+            # (tables, the discrete partitions).
             env[p] = clit(p0[i])
+            fold_subs[p] = p0[i]
             folded += 1
         else
             push!(params, ExportVar(id, id, :parameter, "fixed", p0[i], nothing, _range(fp)...))
@@ -415,12 +426,35 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         throw(ExportError("internal: the compiled system's equations do not map one-to-one to its unknowns"))
     # A numeric Jacobian of the compiled problem in the rows of the C code.
     c_rows(J) = (Jc = similar(J); for r in 1:nx; Jc[rowmap[r], :] = J[r, :]; end; Jc)
+    events = lower_events(flat, lowered.model, xs)
+
+    # ---- the folded values substituted and simplified (D-EX10), before the pattern, the
+    # symbolic Jacobian and the C code, so all three see the smaller expressions
+    f_ops_before = op_count(rhs, obs)
+    simp_stats = nothing
+    pattern_before = nothing
+    if settings.simplify
+        nx > 0 && !(settings.method in EXPLICIT_METHODS) &&
+            (pattern_before = jacobian_pattern(rhs, obs, xs))
+        vexprs = Any[v.expr === nothing ? nothing : Symbolics.unwrap(v.expr) for v in vars]
+        vidx = findall(!isnothing, vexprs)
+        vsub = Any[vexprs[k] for k in vidx]
+        econd = Any[ev.condition for ev in events]
+        evals = [Any[v for v in ev.values] for ev in events]
+        simp_stats = simplify_system!(fold_subs, rhs, obs, (vsub, econd, evals...))
+        for (j, k) in enumerate(vidx)
+            v = vars[k]
+            vars[k] = ExportVar(v.name, v.id, v.kind, v.variability, v.start, vsub[j], v.lo, v.hi)
+        end
+        for (k, ev) in enumerate(events)
+            events[k] = ExportEvent(econd[k], ev.targets, evals[k], ev.label, ev.origin)
+        end
+    end
     # The right-hand side reads t outside the frozen conditions: Rosenbrock needs df/dt.
     iv_used = e -> any(v -> isequal(v, iv), Symbolics.get_variables(e))
     rhs_need = needed_observed(rhs, obs)
     has_t = any(iv_used, rhs) || any(k -> rhs_need[k] && iv_used(obs.rhs[k]), eachindex(obs.rhs))
     f_ops = op_count(rhs, obs)
-    events = lower_events(flat, lowered.model, xs)
 
     # ---- the step
     # The analysis uses a numeric Jacobian of the compiled right-hand side, which is cheap at
@@ -659,8 +693,25 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     write_fmi2_description(joinpath(out_dir, "modelDescription.xml"); name, ident, guid,
         vars, params, inputs, t_end = settings.t_end, step = settings.step)
 
+    # D-EX10: what the substitution and simplification saved. The Jacobian and LU counts are
+    # structural (the pattern of the right-hand side before and after, each with its own
+    # static LU), so they compare like with like.
+    simp_report = Dict{String,Any}("enabled" => settings.simplify,
+        "rhsOpsBefore" => f_ops_before, "rhsOps" => f_ops)
+    if simp_stats !== nothing
+        simp_report["seconds"] = simp_stats.seconds
+        simp_report["constantObserved"] = simp_stats.constant_observed
+    end
+    if pattern_before !== nothing && pattern !== nothing
+        lb, la_ = static_lu(pattern_before), static_lu(pattern)
+        merge!(simp_report, Dict{String,Any}(
+            "jacobianNnzBefore" => count(pattern_before), "jacobianNnz" => count(pattern),
+            "luNnzBefore" => lu_nnz(lb), "luNnz" => lu_nnz(la_),
+            "luFlopsBefore" => lu_flops(lb), "luFlops" => lu_flops(la_)))
+    end
     report = Dict{String,Any}(
         "name" => name, "identifier" => ident, "guid" => guid,
+        "simplify" => simp_report,
         "runtimeVersion" => RUNTIME_VERSION, "fmiVersion" => "2.0",
         "method" => String(method), "dt" => dt, "step" => settings.step,
         "tEnd" => settings.t_end, "substeps" => base_ns ÷ dt_ns,
@@ -837,7 +888,8 @@ end
 
 function _guid(key, settings, dt_ns, method, vars, params, inputs)
     h = bytes2hex(SHA.sha256(string(key, "|", RUNTIME_VERSION, "|", dt_ns, "|", method, "|",
-        settings.fold_parameters, "|", join([v.name for v in vcat(vars, params, inputs)], ","))))
+        settings.fold_parameters, "|", settings.simplify, "|",
+        join([v.name for v in vcat(vars, params, inputs)], ","))))
     return "{" * h[1:8] * "-" * h[9:12] * "-" * h[13:16] * "-" * h[17:20] * "-" * h[21:32] * "}"
 end
 

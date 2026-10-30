@@ -69,6 +69,9 @@ function dval(ex, param::Dict{Int,String})
             end
             throw(ExportError("discrete code: `$(f.name)` has no C implementation yet"))
         elseif f isa Symbol
+            # Folded parameters reach this code as literals; with `simplify` the exact
+            # peephole drops `1.0` factors and turns `(-1.0)` into a negation (D-EX10).
+            f === :* && C_SIMPLIFY[] && return _c_product(a; exact = true)
             f in (:+, :*) && return "(" * join(a, " $f ") * ")"
             f === :- && return length(a) == 1 ? "(-$(a[1]))" : "($(a[1]) - $(a[2]))"
             f === :/ && return "($(a[1]) / $(a[2]))"
