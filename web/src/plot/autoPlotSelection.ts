@@ -1,7 +1,9 @@
 /**
  * Which recorded signals the automatic plot tab shows for the current canvas
- * selection: every signal owned by the selected block (or subsystem), or the
- * port variables / source signal of the selected connection.
+ * selection: every signal owned by the selected block (or subsystem), the
+ * port variables / source signal of the selected connection, or the signals an
+ * oscilloscope probe taps (its inline plot is the simple one; this tab is the
+ * full plot of the same signals).
  */
 
 import type { Model, ModelConnection } from "../contracts/model";
@@ -12,6 +14,7 @@ import {
   endpointPort,
 } from "../plot/plotTargets";
 import { activeModel, subsystemPathCrumbs } from "../editor/subsystemPath";
+import { probeSignalIds } from "../probe/probeSignals";
 
 export interface Selection {
   nodes: readonly string[];
@@ -84,7 +87,19 @@ export function autoPlotSelection(
   if (nodeId !== undefined) {
     const node = model.diagram.nodes.find((entry) => entry.id === nodeId);
     if (node === undefined) {
-      return null;
+      const probe = (model.diagram.probes ?? []).find((entry) => entry.id === nodeId);
+      if (probe === undefined) {
+        return null;
+      }
+      const known = new Set(signals.map((signal) => signal.id));
+      const ids = probeSignalIds(model, probe)
+        .map((id) => prefixPath(prefix, id))
+        .filter((id) => known.has(id));
+      return {
+        key: `probe:${nodeId}:${ids.join(",")}`,
+        label: probe.name,
+        signalIds: ids,
+      };
     }
     const path = prefixPath(prefix, node.name);
     const ids = nodeSignals(path, node, signals).map((signal) => signal.id);

@@ -8,6 +8,9 @@
  * * release a connection on empty canvas -> a filterable list of compatible
  *   elements to add at that point and connect automatically;
  * * drag nodes -> move (one undo entry per drag);
+ * * drag on empty canvas -> a selection rectangle (every node it touches);
+ *   pan with the middle or right mouse button, Space+drag or the arrow keys
+ *   (Shift: larger steps); the wheel zooms;
  * * Del, R, F, Ctrl+C/V, Ctrl+Z/Y;
  * * right-click an edge -> reverse a bond; right-click a node -> transform.
  */
@@ -21,6 +24,7 @@ import {
   Panel,
   ReactFlow,
   ReactFlowProvider,
+  SelectionMode,
   useReactFlow,
   useViewport,
   ViewportPortal,
@@ -171,6 +175,16 @@ function eventPoint(event: MouseEvent | TouchEvent): { x: number; y: number } {
   return { x: touch?.clientX ?? 0, y: touch?.clientY ?? 0 };
 }
 
+/** Arrow key -> the direction the view moves over the diagram (screen pixels). */
+const ARROW_PAN: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+};
+const PAN_STEP = 40;
+const PAN_STEP_LARGE = 200;
+
 function editableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -256,7 +270,10 @@ function CanvasInner() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const quickGesture = useRef<QuickGesture | null>(null);
   const suppressClick = useRef(false);
-  const { fitView, screenToFlowPosition } = useReactFlow();
+  const { fitView, screenToFlowPosition, getViewport, setViewport } = useReactFlow();
+  // The shortcut handler is registered once; it reads the viewport API here.
+  const viewportApi = useRef({ getViewport, setViewport });
+  viewportApi.current = { getViewport, setViewport };
 
   // Commands mutate the active diagram; rendering reads the same document
   // view, so entering a subsystem shows its nested diagram.
@@ -726,6 +743,27 @@ function CanvasInner() {
       if (!mod && !event.altKey && key === "f") {
         event.preventDefault();
         store.flipSelection();
+        return;
+      }
+      const pan = ARROW_PAN[event.key];
+      if (pan !== undefined && !mod && !event.altKey) {
+        // Arrows pan the canvas (Shift: a larger step). Only when focus is on
+        // the canvas, on a container of it (the diagram tab) or nowhere, so
+        // lists and panels keep their own arrow keys, and not on a focused
+        // selected node, where React Flow moves the selection.
+        const target = event.target as Element | null;
+        const canvas = canvasRef.current;
+        const onCanvas =
+          target === document.body ||
+          (target !== null && canvas !== null && (canvas.contains(target) || target.contains(canvas)));
+        if (!onCanvas || target?.closest(".react-flow__node.selected") != null) {
+          return;
+        }
+        event.preventDefault();
+        const step = event.shiftKey ? PAN_STEP_LARGE : PAN_STEP;
+        const { getViewport: get, setViewport: set } = viewportApi.current;
+        const viewport = get();
+        void set({ ...viewport, x: viewport.x - pan[0] * step, y: viewport.y - pan[1] * step });
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -1388,7 +1426,7 @@ function CanvasInner() {
             connectionLineStyle={{ stroke: "var(--color-accent)", strokeWidth: 1.6 }}
             connectionRadius={20}
             defaultViewport={{ x: 0, y: 0, zoom: ZOOM }}
-            minZoom={0.2}
+            minZoom={0.1}
             maxZoom={2}
             nodesDraggable={!quickMode}
             snapToGrid={snap}
@@ -1396,6 +1434,11 @@ function CanvasInner() {
             deleteKeyCode={null}
             selectionKeyCode="Shift"
             multiSelectionKeyCode={["Meta", "Control"]}
+            // A left drag on empty canvas draws a selection rectangle; panning
+            // moves to the middle and right buttons (and Space+drag).
+            selectionOnDrag
+            selectionMode={SelectionMode.Partial}
+            panOnDrag={[1, 2]}
             onConnect={onConnect}
             onConnectStart={onConnectStart}
             onConnectEnd={onConnectEnd}

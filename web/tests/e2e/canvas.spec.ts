@@ -231,6 +231,89 @@ test("reverses a bond from the context menu and deletes it with Del", async ({ p
   expect(await readDocument(page)).toEqual(beforeMove);
 });
 
+test("a drag on empty canvas selects with a rectangle; the middle button pans", async ({
+  page,
+}) => {
+  await openModel(page, "BoxSelect");
+  await dropBlock(page, "Se", 100, 240);
+  await dropBlock(page, "junction-0", 360, 240);
+  await dropBlock(page, "Resistor", 620, 240);
+  await expect(page.getByTestId("diagram-node")).toHaveCount(3);
+
+  const seBox = await node(page, "Se").boundingBox();
+  const junctionBox = await node(page, "Junction0").boundingBox();
+  const resistorBox = await node(page, "Resistor").boundingBox();
+  if (seBox === null || junctionBox === null || resistorBox === null) {
+    throw new Error("the blocks are not visible");
+  }
+
+  // A rectangle from above-left of Se into the junction selects both (partial
+  // overlap counts), not the resistor.
+  await page.mouse.move(seBox.x - 30, seBox.y - 40);
+  await page.mouse.down();
+  await page.mouse.move(junctionBox.x + junctionBox.width / 2, junctionBox.y + junctionBox.height + 30, {
+    steps: 10,
+  });
+  await page.mouse.up();
+  await expect(node(page, "Se")).toHaveClass(/is-selected/);
+  await expect(node(page, "Junction0")).toHaveClass(/is-selected/);
+  await expect(node(page, "Resistor")).not.toHaveClass(/is-selected/);
+
+  // The selection moves as one: one undo step.
+  const beforeMove = await readDocument(page);
+  await page.mouse.move(seBox.x + 24, seBox.y + 12);
+  await page.mouse.down();
+  await page.mouse.move(seBox.x + 84, seBox.y + 52, { steps: 6 });
+  await page.mouse.up();
+  const after = (await readDocument(page)).diagram as {
+    nodes: { name: string; position: { x: number; y: number } }[];
+  };
+  const before = beforeMove.diagram as typeof after;
+  const shifted = (name: string) => {
+    const a = after.nodes.find((n) => n.name === name)?.position;
+    const b = before.nodes.find((n) => n.name === name)?.position;
+    return a !== undefined && b !== undefined && (a.x !== b.x || a.y !== b.y);
+  };
+  expect(shifted("Se")).toBe(true);
+  expect(shifted("Junction0")).toBe(true);
+  expect(shifted("Resistor")).toBe(false);
+  await page.getByTestId("undo").click();
+  expect(await readDocument(page)).toEqual(beforeMove);
+
+  // A middle-button drag pans the viewport and selects nothing new.
+  await page.locator(".react-flow__pane").click({ position: { x: 700, y: 100 } });
+  await expect(node(page, "Se")).not.toHaveClass(/is-selected/);
+  const pane = await page.locator(".react-flow__pane").boundingBox();
+  if (pane === null) {
+    throw new Error("the pane is not visible");
+  }
+  const viewport = page.locator(".react-flow__viewport");
+  const transform = await viewport.getAttribute("style");
+  await page.mouse.move(pane.x + 700, pane.y + 100);
+  await page.mouse.down({ button: "middle" });
+  await page.mouse.move(pane.x + 600, pane.y + 160, { steps: 8 });
+  await page.mouse.up({ button: "middle" });
+  const panned = await viewport.getAttribute("style");
+  expect(panned).not.toEqual(transform);
+  await expect(page.locator('[data-testid="diagram-node"].is-selected')).toHaveCount(0);
+
+  // The arrow keys pan too (Shift: a larger step).
+  const seBefore = await node(page, "Se").boundingBox();
+  await page.keyboard.press("ArrowRight");
+  const seAfter = await node(page, "Se").boundingBox();
+  expect(seAfter?.x).toBeCloseTo((seBefore?.x ?? 0) - 40, 0);
+  await page.keyboard.press("Shift+ArrowDown");
+  const seLower = await node(page, "Se").boundingBox();
+  expect(seLower?.y).toBeCloseTo((seAfter?.y ?? 0) - 200, 0);
+
+  // Zooming out goes down to 0.1x for an overview, and stops there.
+  await page.mouse.move(pane.x + 700, pane.y + 300);
+  for (let i = 0; i < 40; i += 1) {
+    await page.mouse.wheel(0, 400);
+  }
+  await expect(viewport).toHaveAttribute("style", /scale\(0\.1\)/);
+});
+
 test("refuses Electrical to Rotation with the plan's tooltip", async ({ page }) => {
   await openModel(page, "Refusal");
   await dropBlock(page, "VoltageSource", 120, 220);

@@ -2,15 +2,19 @@
  * The plots inside an oscilloscope probe. A window shows every selected signal
  * together; a block uses its user-defined panels, or one panel with everything
  * when no panel was configured.
+ *
+ * These are the simple inline plots (`MiniPlot`: automatic limits, no zoom, no
+ * cursor). Selecting the probe shows the same signals in the Auto Plot tab with
+ * the full plot.
  */
 
 import { useEffect, useMemo } from "react";
 
 import type { Model, ModelProbe } from "../contracts/model";
 import type { RunSignal } from "../contracts/run-manifest";
-import { panelConfiguration, PLOT_SYNC_KEY } from "../plot/PlotPanel";
+import { panelConfiguration } from "../plot/PlotPanel";
 import { liveSeriesFor, useRunStore } from "../plot/runStore";
-import { UPlotChart } from "../plot/UPlotChart";
+import { MiniPlot } from "./MiniPlot";
 import { probeSignalIds } from "./probeSignals";
 import "./probe.css";
 
@@ -38,13 +42,18 @@ export function probePanelPlans(model: Model, probe: ModelProbe): PanelPlan[] {
   return panels;
 }
 
+/** The last two path segments: `Motor1/shaft.f` rather than the full instance path. */
+function shortLabel(id: string): string {
+  const parts = id.split("/");
+  return parts.slice(-2).join("/");
+}
+
 export function ProbePlot({ model, probe }: { model: Model; probe: ModelProbe }) {
   const manifest = useRunStore((state) => state.manifest);
   const status = useRunStore((state) => state.status);
   const progress = useRunStore((state) => state.progress);
   const data = useRunStore((state) => state.data);
   const view = useRunStore((state) => state.view);
-  const cursorTime = useRunStore((state) => state.cursorTime);
   const liveVersion = useRunStore((state) => state.liveVersion);
   const plans = useMemo(() => probePanelPlans(model, probe), [model, probe]);
   const idsKey = plans.map((plan) => plan.signals.join(",")).join("|");
@@ -85,6 +94,9 @@ export function ProbePlot({ model, probe }: { model: Model; probe: ModelProbe })
     return null;
   }, [status, manifest?.id, liveVersion, data]);
   const chartData = live ?? data;
+  // The time axis follows the dock's zoom window when one is set (the data only
+  // covers it then); otherwise the whole run, growing while it runs.
+  const range = view === null ? fullRange : { t0: view.t0, t1: view.t1 };
 
   if (manifest === null) {
     return (
@@ -110,18 +122,15 @@ export function ProbePlot({ model, probe }: { model: Model; probe: ModelProbe })
                 No recorded signals for this probe lead.
               </div>
             ) : (
-              <UPlotChart
-                signals={configuration.current}
-                compareSignals={[]}
+              <MiniPlot
+                series={configuration.current.map((entry) => ({
+                  id: entry.id,
+                  label: shortLabel(entry.id),
+                  color: entry.color,
+                }))}
                 data={chartData}
-                compare={null}
-                view={view}
-                fullRange={fullRange}
-                syncKey={PLOT_SYNC_KEY}
-                cursorTime={cursorTime}
-                onZoom={(next, px) => useRunStore.getState().setView(next, px)}
-                onReset={() => useRunStore.getState().setView(null)}
-                onCursorTime={(time) => useRunStore.getState().setCursorTime(time)}
+                t0={range.t0}
+                t1={range.t1}
               />
             )}
           </section>

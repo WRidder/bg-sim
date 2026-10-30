@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useViewport } from "@xyflow/react";
 
+import { requestDockTab } from "../app/dockBus";
 import type { Model, ModelProbe } from "../contracts/model";
 import { useDocumentStore } from "../state/documentStore";
 import { ProbeGlyph } from "./ProbeGlyph";
@@ -38,6 +39,9 @@ export function ProbeWindow({
   onProbeLeadStart: (probeId: string, event: React.PointerEvent<HTMLElement>) => void;
 }) {
   const { zoom } = useViewport();
+  const selected = useDocumentStore(
+    (state) => state.selection.nodes.length === 1 && state.selection.nodes[0] === probe.id,
+  );
   const [frame, setFrame] = useState<Frame>(() => initialFrame(probe));
   const latestFrame = useRef(frame);
   latestFrame.current = frame;
@@ -112,6 +116,20 @@ export function ProbeWindow({
     window.addEventListener("pointercancel", finish, true);
   };
 
+  // Selecting the window selects its probe: the inspector shows the probe, and
+  // the Auto Plot tab shows the same signals with the full plot (zoom, cursor).
+  const select = (event: React.PointerEvent<HTMLElement>): void => {
+    event.stopPropagation();
+    if (event.button !== 0 || event.ctrlKey || event.metaKey) {
+      return;
+    }
+    const store = useDocumentStore.getState();
+    if (store.selection.nodes.length !== 1 || store.selection.nodes[0] !== probe.id) {
+      store.setSelection([probe.id], []);
+    }
+    requestDockTab("auto");
+  };
+
   const headerPointerDown = (event: React.PointerEvent<HTMLElement>): void => {
     if (event.ctrlKey || event.metaKey) {
       event.preventDefault();
@@ -119,12 +137,13 @@ export function ProbeWindow({
       onProbeLeadStart(probe.id, event);
       return;
     }
+    select(event);
     start("move", event);
   };
 
   return (
     <section
-      className={`probe-window probe-window--${probe.kind}`}
+      className={`probe-window probe-window--${probe.kind}${selected ? " is-selected" : ""}`}
       data-testid={`probe-window-${probe.id}`}
       style={{
         left: frame.x,
@@ -132,7 +151,7 @@ export function ProbeWindow({
         width: frame.width,
         height: frame.height,
       }}
-      onPointerDown={(event) => event.stopPropagation()}
+      onPointerDown={select}
     >
       <header
         className="probe-window__header"

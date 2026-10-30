@@ -113,4 +113,26 @@ describe("autoPlotSelection", () => {
     expect(selection?.label).toBe("R1");
     expect(selection?.signalIds).toEqual([]);
   });
+
+  it("plots the tapped signals of a selected probe (the full plot of its inline window)", () => {
+    const model = structuredClone(doc);
+    model.diagram.probes = [
+      {
+        id: "pr1",
+        name: "Scope1",
+        kind: "window",
+        position: { x: 0, y: 0 },
+        links: [{ id: "l1", connection: "c1", signals: ["Se1/p.e", "Se1/p.f"] }],
+      },
+    ];
+    const selection = autoPlotSelection(
+      model,
+      [],
+      { nodes: ["pr1"], connections: [] },
+      manifest,
+    );
+    expect(selection?.label).toBe("Scope1");
+    expect(selection?.signalIds).toEqual(["Se1/p.e", "Se1/p.f"]);
+    expect(selection?.key.startsWith("probe:pr1:")).toBe(true);
+  });
 });

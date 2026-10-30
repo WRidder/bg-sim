@@ -385,6 +385,32 @@ test("plots a bond's effort/flow/power and an instance's outputs from the canvas
   await expect(page.getByTestId("auto-plot-selection")).toHaveText("R");
   await expect(page.getByText(/No recorded signals for R/)).toBeVisible();
   await expect(page.getByTestId("legend-item")).toHaveCount(0);
+
+  // A probe window on the bond draws the simple inline plot (no uPlot)...
+  await page
+    .locator('[data-testid^="edge-"]')
+    .first()
+    .dispatchEvent("contextmenu", { bubbles: true, button: 2, clientX: 600, clientY: 400 });
+  await page.getByTestId("new-probe-window").click();
+  const window = page.locator('[data-testid^="probe-window-"]').first();
+  await expect(window.getByTestId("mini-plot")).toBeVisible();
+  await expect(window.locator(".uplot")).toHaveCount(0);
+  const lines = window.locator(".mini-plot__line");
+  await expect.poll(async () => lines.count()).toBeGreaterThan(0);
+  const tapped = await lines.count();
+  expect(await lines.first().getAttribute("d")).toMatch(/^M/);
+
+  // ...and selecting it shows the same signals in the Auto Plot tab, full plot.
+  await page.getByRole("tab", { name: "Plots" }).click();
+  const probeName = (await window.locator(".probe-window__name").textContent()) ?? "";
+  await window.locator(".probe-window__body").click();
+  await expect(window).toHaveClass(/is-selected/);
+  await expect(page.getByRole("tab", { name: "Auto Plot" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.getByTestId("auto-plot-selection")).toHaveText(probeName);
+  await expect(page.getByTestId("legend-item")).toHaveCount(tapped);
 });
 
 test("live tails autoscroll, pause on zoom and stop on run.done", async ({
