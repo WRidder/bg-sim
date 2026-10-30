@@ -172,23 +172,24 @@ test("navigates every fixture diagnostic to its node and marks the canvas", asyn
   await openModel(page, fixtureModel());
 
   const rows = page.locator('[data-testid^="diagnostic-item-"]');
-  await expect(rows).toHaveCount(30);
-  await expect(page.getByTestId("diagnostics-count-error")).toContainText("24");
-  await expect(page.getByTestId("diagnostics-count-warning")).toContainText("6");
+  // 33 items: the M2 sample plus the M4 debugger codes E401, E402 and W401 (C4.0).
+  await expect(rows).toHaveCount(33);
+  await expect(page.getByTestId("diagnostics-count-error")).toContainText("26");
+  await expect(page.getByTestId("diagnostics-count-warning")).toContainText("7");
 
-  // Grouping by instance path: 23 groups, Ctrl/PI1 holds four diagnostics.
-  await expect(page.locator('[data-testid="diagnostics-group"]')).toHaveCount(23);
+  // Grouping by instance path: 24 groups (E401 adds `Ctrl`), Ctrl/PI1 holds four diagnostics.
+  await expect(page.locator('[data-testid="diagnostics-group"]')).toHaveCount(24);
   const controller = page.locator('[data-testid="diagnostics-group"][data-path="Ctrl/PI1"]');
   await expect(controller.locator('[data-testid^="diagnostic-item-"]')).toHaveCount(4);
   await expect(controller).toContainText("E001");
 
-  // Filter by severity: hiding errors leaves the six warnings.
+  // Filter by severity: hiding errors leaves the seven warnings.
   await page.getByTestId("diagnostics-filter-error").click();
-  await expect(rows).toHaveCount(6);
+  await expect(rows).toHaveCount(7);
   await page.getByTestId("diagnostics-filter-warning").click();
   await expect(page.getByTestId("diagnostics-filter-empty")).toBeVisible();
   await page.getByTestId("diagnostics-show-all").click();
-  await expect(rows).toHaveCount(30);
+  await expect(rows).toHaveCount(33);
 
   // Canvas markers: Motor1 carries E103 and E900, and c9 carries E102.
   const motor = nodeCard(page, "n3");
@@ -217,7 +218,8 @@ test("navigates every fixture diagnostic to its node and marks the canvas", asyn
   await expect(page.getByTestId("canvas-surface")).toHaveAttribute("data-focused-node", "n31");
   await expectInsideCanvas(page, "n31");
 
-  // Every item with a node navigates; the binding diagnostics have no target.
+  // Every item with a node navigates; W401 (no node id) navigates by its instance path, E401
+  // (no node at its path) to its source range; the binding diagnostics have no target.
   const count = await rows.count();
   for (let index = 0; index < count; index += 1) {
     const row = rows.nth(index);
@@ -229,6 +231,17 @@ test("navigates every fixture diagnostic to its node and marks the canvas", asyn
       const node = nodeCard(page, nodeId);
       await expect(node).toHaveClass(/is-selected/);
       await expectInsideCanvas(page, nodeId);
+    } else if (target === "node") {
+      expect(await row.getAttribute("data-code")).toBe("W401");
+      await row.click();
+      await expect(nodeCard(page, "n7")).toHaveClass(/is-selected/);
+      await expectInsideCanvas(page, "n7");
+    } else if (target === "source") {
+      expect(await row.getAttribute("data-code")).toBe("E401");
+      await row.click();
+      await expect(page.getByTestId("diagnostics-source-focus")).toContainText(
+        "project:LQGController",
+      );
     } else {
       await row.click();
       expect(target).toBe("none");

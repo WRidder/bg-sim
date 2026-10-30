@@ -21,7 +21,12 @@ using BGSim
 import BGSim.IR
 import BGSim.Compile
 import JSON3
-using Statistics: median
+# The median of a sample (no Statistics dependency: it is not a test target of the package).
+function median(v)
+    s = sort(collect(Float64, v))
+    n = length(s)
+    return isodd(n) ? s[(n + 1) ÷ 2] : (s[n ÷ 2] + s[n ÷ 2 + 1]) / 2
+end
 
 const _DBG_EXAMPLES = normpath(joinpath(@__DIR__, "..", "..", "..", "examples"))
 

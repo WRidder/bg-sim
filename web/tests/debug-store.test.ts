@@ -149,6 +149,28 @@ describe("debug store reducers", () => {
     expect(debug().status).toBe("idle");
   });
 
+  it("sends a followed branch's breakpoints at its first pause, not at its start", () => {
+    useBreakpointStore.setState({
+      breakpoints: [
+        {
+          id: "w1",
+          kind: "watch",
+          enabled: true,
+          watch: { expr: 's"Synthetic/sine" > 0.5', context: null },
+          hitCount: null,
+        } satisfies Breakpoint,
+      ],
+    });
+    const calls = mockFetch(() => ({ body: { breakpoints: [] } }));
+    handleRunEvent({ type: "started", runId: "b1", debug: true, followed: true });
+    expect(debug()).toMatchObject({ runId: "b1", status: "running" });
+    expect(calls.filter((call) => call.url.includes("/breakpoints"))).toHaveLength(0);
+
+    handleRunEvent({ type: "message", method: "debug.paused", params: { ...info({ runId: "b1" }) } });
+    expect(debug().status).toBe("paused");
+    expect(calls.filter((call) => call.url.includes("/runs/b1/breakpoints"))).toHaveLength(1);
+  });
+
   it("rejects a malformed paused message", () => {
     debug().begin("r1");
     handleRunEvent({ type: "message", method: "debug.paused", params: { runId: "r1" } });

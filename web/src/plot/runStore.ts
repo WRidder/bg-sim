@@ -47,7 +47,13 @@ import {
 /** What the run lifecycle and the run WebSocket tell other stores (the debug store, W4.1). */
 export type RunEvent =
   | { type: "reset" }
-  | { type: "started"; runId: string; debug: boolean }
+  | {
+      type: "started";
+      runId: string;
+      debug: boolean;
+      /** A run the backend already created (a replay or a branch): it carries its own breakpoints. */
+      followed?: boolean;
+    }
   | { type: "message"; method: string; params: Record<string, unknown> };
 
 export interface StartRunOptions {
@@ -886,7 +892,12 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
         return;
       }
       set({ runId, status: "running" });
-      emitRunEvent({ type: "started", runId, debug: options?.debug !== undefined });
+      emitRunEvent({
+        type: "started",
+        runId,
+        debug: options?.debug !== undefined,
+        followed: options?.followRunId !== undefined,
+      });
       openSocket(runId);
       startPolling(runId);
       try {

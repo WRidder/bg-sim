@@ -260,7 +260,12 @@ export function handleRunEvent(event: RunEvent): void {
     case "started":
       if (event.debug) {
         store.begin(event.runId);
-        void useDebugStore.getState().syncBreakpoints();
+        // A branch ("Rewind to here") fast-forwards to its branch time with only its own time
+        // breakpoint; sending the user's breakpoints now would race the fast-forward and could
+        // pause it early. Its breakpoints are sent at its first pause (below).
+        if (event.followed !== true) {
+          void useDebugStore.getState().syncBreakpoints();
+        }
       } else {
         store.reset();
       }
@@ -271,8 +276,9 @@ export function handleRunEvent(event: RunEvent): void {
         if (isPausedInfo(params)) {
           store.applyPaused({ ...params, diagnostics: params.diagnostics ?? [] });
           // The sync at `started` can reach the worker before the run is built (the real worker then
-          // answers every breakpoint unverified, without a diagnostic). The first pause is the first
-          // moment the statuses are final: ask again when one is missing or unverified.
+          // answers every breakpoint unverified, without a diagnostic), and a followed branch is
+          // not synced at `started` at all. The first pause is the first moment the statuses are
+          // final: send the breakpoints again when one is missing or unverified.
           const current = useDebugStore.getState().statuses;
           const stale = useBreakpointStore
             .getState()
