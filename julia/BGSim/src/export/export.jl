@@ -539,7 +539,9 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     isempty(clock_errors) || return _fail(append!(diags, clock_errors), out_dir)
     if settings.dt !== nothing && length(candidates) > 1
         # A fixed step on a DAE: the cheapest Rosenbrock method that meets the rule at it.
-        met = [r for r in table if step_rule_met(r.method, points, dt_ns / 1e9; step_kw...)]
+        # ROS2 is not suggested when it would damp a mode numerically (`ros2_ok`).
+        met = [r for r in table if step_rule_met(r.method, points, dt_ns / 1e9; step_kw...) &&
+               (r.method !== :ros2 || numerically_damped(:ros2, points, dt_ns / 1e9; step_kw...)[1] == 0)]
         pick = isempty(met) ? :rodas4p :
             met[argmin([step_cost(r.method, nx; f_ops, jac_ops = jac_ops(r.method), has_t,
                 lu_kw...) for r in met])].method
@@ -648,7 +650,8 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         # (flops; derivative calls, Jacobian, LU and solves).
         "selection" => [Dict("method" => String(r.method), "substeps" => r.choice.substeps,
             "dt" => r.choice.dt_ns / 1e9, "cost" => r.cost,
-            "withinBudget" => !r.choice.over_budget) for r in table],
+            "withinBudget" => !r.choice.over_budget,
+            "numericallyDamped" => r.numerical) for r in table],
         "heldValues" => length(held_ids), "partitions" => has_disc ? length(sched.partitions) : 0,
         "inputs" => [Dict("name" => v.name, "id" => v.id, "start" => v.start) for v in inputs],
         "outputs" => [Dict("name" => v.name, "id" => v.id) for v in vars if v.kind === :output],

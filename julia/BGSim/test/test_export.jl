@@ -542,6 +542,16 @@ end
             @test !_EX.step_rule_met(:rk4, joint, 1e-3; stiff_ratio = sr)
         end
         @test _EX.numerically_damped(:rk4, joint, 1e-3) == (0, Inf)
+        # ROS2 (not stiffly accurate) is never suggested when it damps a mode numerically,
+        # even when it is the cheapest; forced, it is kept.
+        best, table = _EX.choose_method(_EX.ROSENBROCK_METHODS, joint, ms, 3;
+            f_ops = 30, jac_ops = m -> 20.0)
+        r2 = only(r for r in table if r.method === :ros2)
+        @test r2.numerical == 1 && !r2.choice.over_budget
+        @test r2.cost < minimum(r.cost for r in table if r.method !== :ros2)
+        @test best.method !== :ros2 && !best.over_budget
+        best, _ = _EX.choose_method((:ros2,), joint, ms, 3; f_ops = 30, jac_ops = m -> 20.0)
+        @test best.method === :ros2
 
         # In the export: W213 and the report entry.
         stiff_lag = """

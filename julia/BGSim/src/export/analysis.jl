@@ -19,7 +19,8 @@
 #   h·|λ| >= stiff_ratio (default 10): a stiff mode far above the step's bandwidth that the
 #   exact flow does not damp (an undamped joint stiffness), which the method kills although
 #   the model would keep it ringing. W213 reports how many and from which frequency; forcing
-#   rk4 resolves them. A mode in between (a lightly damped oscillation near the bandwidth,
+#   rk4 resolves them. When this case is used, ROS2 is not suggested: it is not stiffly
+#   accurate, so ROS34PW2 or Rodas4P take it. A mode in between (a lightly damped oscillation near the bandwidth,
 #   or a decay of a few steps) must be resolved, so an LC circuit or a pendulum in the
 #   bandwidth is still followed.
 # Both are heuristics; the example harness measures the real error.
@@ -378,7 +379,9 @@ end
 Of `candidates`, the method with the lowest estimated cost per `base_ns` (substeps × step
 cost) whose step rule is met within the substep budget; when none is, the cheapest.
 `jac_ops` is a function of the method (the Jacobian is only built when a Rosenbrock method
-can win). `table` lists every candidate for the report."""
+can win). ROS2 is not suggested when its step damps a mode numerically (`numerical > 0`,
+W213): it is not stiffly accurate, so ROS34PW2 or Rodas4P take that case (`ros2_ok`).
+`table` lists every candidate for the report."""
 function choose_method(candidates, points, base_ns::Int64, n::Integer; f_ops, jac_ops,
     has_t = false, lu_ops::Real = n^2 + n^3 / 3, solve_ops::Real = 2n^2, kwargs...)
     table = NamedTuple[]
@@ -386,10 +389,15 @@ function choose_method(candidates, points, base_ns::Int64, n::Integer; f_ops, ja
         c = choose_step(m, points, base_ns; kwargs...)
         cost = c.substeps * step_cost(m, n; f_ops, jac_ops = jac_ops(m), has_t, lu_ops,
             solve_ops)
-        push!(table, (method = m, choice = c, cost = cost))
+        numerical = numerically_damped(m, points, c.dt_ns / 1e9; kwargs...)[1]
+        push!(table, (method = m, choice = c, cost = cost, numerical = numerical))
     end
-    ok = filter(r -> !r.choice.over_budget, table)
-    pool = isempty(ok) ? table : ok
+    eligible = length(table) == 1 ? table : filter(ros2_ok, table)
+    ok = filter(r -> !r.choice.over_budget, eligible)
+    pool = !isempty(ok) ? ok : !isempty(eligible) ? eligible : table
     best = pool[argmin([r.cost for r in pool])]
     return best.choice, table
 end
+
+"""Whether a candidate row may be suggested: not ROS2 with a numerically damped mode."""
+ros2_ok(r) = !(r.method === :ros2 && r.numerical > 0)
