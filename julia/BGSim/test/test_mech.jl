@@ -481,7 +481,7 @@ const PLANAR_IDX = [3, 4, 5]
     @testset "whitelist rows (spec function additions)" begin
         # The base table is unchanged (one row per spec line of the M1 function table);
         # the spatial-mechanics additions live in their own table, as in the spec.
-        @test length(BGSim.FUNCTION_RULES) == 23
+        @test length(BGSim.FUNCTION_RULES) == 24
         @test length(BGSim.MECH_FUNCTION_RULES) == 18
         for name in (:hat, :vee, :Ad, :ad, :compose, :inv, :spatial_inertia, :SE3,
             :rotation, :translation, :quat_compose, :quat_inv, :quat_normalise,

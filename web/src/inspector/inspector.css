@@ -737,3 +737,37 @@
   color: var(--color-text-faint);
   white-space: nowrap;
 }
+
+.inspector-csv-scroll {
+  max-height: 11rem;
+  overflow: auto;
+  border: 1px solid var(--border, currentColor);
+  border-radius: 4px;
+}
+
+.inspector-csv-scroll table {
+  border-collapse: collapse;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  width: max-content;
+  min-width: 100%;
+}
+
+.inspector-csv-scroll th,
+.inspector-csv-scroll td {
+  padding: 0.15rem 0.45rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.inspector-csv-scroll th {
+  position: sticky;
+  top: 0;
+  background: var(--surface, Canvas);
+}
+
+.inspector-csv-outputs {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+}

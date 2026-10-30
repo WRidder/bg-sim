@@ -23,6 +23,8 @@ import { useCatalogStore } from "../library/catalogStore";
 import { nodeNameIssue, useDocumentStore } from "../state/documentStore";
 import { nodeRef } from "../state/modelFactory";
 import { copyBlockToProjectLibrary } from "./copyToLibrary";
+import { CsvSourceSection } from "./CsvSourceSection";
+import { isCsvSourceRef } from "./csvSource";
 import { SelectField, TextField, type SelectOption } from "./fields";
 import { qualifiedFrame } from "./frames";
 import { portComponentUnits, unitArrayText } from "./units";
@@ -632,6 +634,8 @@ export function NodeInspector({
               ))
             )}
           </section>
+
+          {isCsvSourceRef(ref) ? <CsvSourceSection node={node} project={project} /> : null}
 
           <section className="inspector-section" aria-labelledby="inspector-constants-title">
             <h4 className="inspector-section__title" id="inspector-constants-title">

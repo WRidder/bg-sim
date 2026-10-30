@@ -360,7 +360,8 @@ function _bind_constants!(
     node::IR.ModelNode,
 )
     consts = constant_env(st.pb)
-    for (key, value) in node.constants
+    # F5.1 insertion point: a CSV source's file settings become its `N` and `table` constants.
+    for (key, value) in _csv_node_constants(b, st, node)
         name = Symbol(key)
         if !haskey(consts, name)
             _report!(
@@ -389,6 +390,40 @@ function _bind_constants!(
 end
 
 block_name_safe(st::BlockState) = String(st.block.name)
+
+# F5.1: the CSV source blocks. Their `constants` carry the data-file settings (file, columns,
+# method, ...); the compiler reads the file and passes the block only the two structural
+# constants it declares: `N` (the number of selected columns) and `table` (the id of the
+# registered table, a hash of the file content and the settings, see `src/library/csvdata.jl`).
+const CSV_SOURCE_REFS = ("stdlib:sources/CsvSource", "stdlib:sources/CsvSourceSampled")
+const CSV_SETTING_KEYS = (
+    "file", "time_column", "columns", "method", "extrapolation", "time_offset", "scale",
+)
+
+function _csv_node_constants(b::Builder, st::BlockState, node::IR.ModelNode)
+    st.ref in CSV_SOURCE_REFS || return node.constants
+    rest = Dict{String,Any}(
+        k => v for (k, v) in node.constants if !(k in CSV_SETTING_KEYS) && k != "N" && k != "table"
+    )
+    try
+        tab = BGSim.load_csv_table(b.project_dir, node.constants)
+        rest["N"] = length(tab.values)
+        rest["table"] = tab.id
+    catch err
+        err isa BGSim.CsvError || rethrow()
+        _report!(
+            b,
+            st;
+            code = "E108",
+            message = err.message,
+            hint = isempty(err.hint) ? nothing : err.hint,
+            scope = "@constants",
+        )
+        rest["N"] = 1
+        rest["table"] = 0
+    end
+    return rest
+end
 
 function _constant_value(
     b::Builder,
@@ -1556,7 +1591,7 @@ function _qualify_node(q::QCtx, e::Call)
            fn === :ceil || fn === :round || fn === :hypot || fn === :mod ||
            fn === :rem || fn === :deadzone || fn === :saturate ||
            fn === :previous || fn === :hold || fn === :delay ||
-           fn === :noise_normal || fn === :reinit
+           fn === :noise_normal || fn === :reinit || fn === :csv_value
         # A scalar function: every argument must be scalar. `min`/`max`/`clamp`/`abs` also
         # work on the same-shaped arrays in the language, so lift them element-wise when all
         # arguments have one common array shape.

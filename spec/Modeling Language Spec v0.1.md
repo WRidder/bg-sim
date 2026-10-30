@@ -138,6 +138,7 @@ This table is the contract between the language, the simulator and the target bu
 | `int(x, x0)` | Integral with start value | Equations | Sugar for a new state with `ddt` |
 | `deadzone(x, a, b)`, `saturate(x, lo, hi)` | Library | All | Nonsmooth |
 | `delay(x, T)` | Transport delay | Equations | T constant; ring buffer sized `ceil(T / dt)`; fixed-step only |
+| `csv_value(table, k, t)` | Column `k` of a registered CSV table at time `t` | All, stdlib blocks only | Opaque registered function with derivatives up to order 3; used by `CsvSource` |
 | `previous(x)` | Value at last tick | Discrete | Breaks loops between discrete blocks |
 | `hold(x)` | Sampled value at tick | Discrete | Explicit zero-order sample of a continuous signal |
 | `t`, `Ts` | Time, clock period | `t` all, `Ts` discrete | Read only |
@@ -245,6 +246,19 @@ Nonlinear variants (for example a C with a user-defined constitutive law) are ma
 | Recorder | inputs `u[]` | decimation | v0.1 |
 
 Noise is seeded and sampled on a fixed clock, so runs repeat bit for bit, in simulation and on the target.
+
+**CSV input (`CsvSource`, `CsvSourceSampled`).** A project data file can drive a model. The block's output `y` is a `Vec{N}` holding the selected columns; `N` and the table identity are filled in by the compiler, so the language stays free of strings: the file settings are plain JSON entries of the node's `constants` (structural, like array sizes), never expressions.
+
+| Setting (node `constants`) | Meaning | Default |
+| --- | --- | --- |
+| `file` | Project-relative path of the CSV file, e.g. `data/trajectory.csv`; a path outside the project is refused | required |
+| `time_column` | Header name of the strictly increasing time column | first column |
+| `columns` | Comma separated header names of the outputs, in output order | all other columns |
+| `method` | `0` hold, `1` linear, `2` cubic (not-a-knot spline, C2, so derivatives are continuous) | `2` |
+| `extrapolation` | `0` hold the end values, `1` error past the data | `0` |
+| `time_offset`, `scale` | Seconds added to the time column; factor on every value | `0`, `1` |
+
+The file has a header row (`name` or `name [unit]` per column) and numeric rows; the delimiter is the one of `, ; <tab>` that the header uses. `CsvSource` is continuous; `CsvSourceSampled` has the constant `sample_period` and outputs the table value at every tick, held in between (a discrete partition, so CSV data drives discrete controllers deterministically). The compiler reads the file once while it instantiates the node and registers the table under an id derived from the file content and the settings. The id is a literal in the flattened equations, so editing the file or a setting invalidates the compile cache, and an unchanged file reuses it. The data is never unrolled into equations: the stdlib-only intrinsic `csv_value(table, k, t)` is an opaque registered function (value of column `k`) that binary-searches the breakpoints, whose time derivatives are registered up to the third order so structural analysis can differentiate a CSV signal (for example a velocity that prescribes an inertia). For hold and linear tables the data breakpoints are passed to the solver as `tstops`. `Select` splits one element off a vector signal.
 
 ### Continuous blocks
 
@@ -526,6 +540,7 @@ Validation runs in two passes: per block right after parsing (fast, runs as the 
 | `E103` | Model | Unbalanced system | 14 unknowns, 13 equations; check `Motor1` |
 | `E104` | Model | Discrete clock not a multiple of base tick or `dt` | `Ts = 0.0015` with `dt = 0.001` |
 | `E105` | Model | Cycle between discrete blocks | Add `previous()` on one link |
+| `E108` | Model | CSV data file or its settings unusable | `data/a.csv`, data row 12, column `q1` (line 14): `abc` is not a finite number |
 | `W201` | Model | Derivative causality | `I2` is in derivative causality; DAE index raised |
 | `W202` | Model | Algebraic loop torn | Loop through `R1`, `R3` solved iteratively |
 | `W203` | Model | Event not located in fixed-step export | `abs` in `Friction1` switches between steps |

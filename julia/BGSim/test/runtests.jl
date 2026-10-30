@@ -275,6 +275,7 @@ include("test_switched_joint.jl")
 # Work packages J-MB11/J-MB12: electric and current-controlled drives and their golden tests.
 include("test_drives.jl")
 include("test_loader.jl")
+include("test_csv.jl")
 
 # Milestone M2 scaffolding: each WP creates exactly one of these files, and the M2 gate
 # replaces these guards with plain includes (the same pattern DEC-5 used for M1).

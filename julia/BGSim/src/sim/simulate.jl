@@ -584,6 +584,12 @@ function simulate(flat::Flat.FlatModel;
     if schedule !== nothing && !isempty(schedule.tick_times)
         init_kwargs = merge(init_kwargs, (; tstops = schedule.tick_times))
     end
+    # F5.1 insertion point: the breakpoints of every CSV table the model reads are tstops.
+    csv_stops = csv_model_tstops(flat, run_settings.t_start, run_settings.t_end)
+    if !isempty(csv_stops)
+        merged = haskey(init_kwargs, :tstops) ? vcat(init_kwargs.tstops, csv_stops) : csv_stops
+        init_kwargs = merge(init_kwargs, (; tstops = sort!(unique!(Float64.(merged)))))
+    end
     integ = try
         init(solver_problem, alg; init_kwargs...)
     catch err

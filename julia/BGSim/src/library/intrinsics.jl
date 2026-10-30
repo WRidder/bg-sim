@@ -15,6 +15,7 @@ describes them.
 const INTRINSIC_DESCRIPTIONS = Dict{Symbol,String}(
     :interp1 => "Piecewise-linear 1-D lookup table; lowered to an opaque function.",
     :interp2 => "Bilinear 2-D lookup table; lowered to an opaque function.",
+    :csv_value => "Column of a project CSV file at time t (value of the registered data table, F5.1); lowered to an opaque function with registered time derivatives.",
     :noise_normal => "Seeded normal noise sample on the discrete clock; lowered to an opaque function.",
     :delay => "Transport delay by a constant time; lowered to an opaque function with a history buffer (M2, experimental).",
 )

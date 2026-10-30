@@ -18,7 +18,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 
-from . import docs, meshes, projects, proxy, runs, stream
+from . import data, docs, meshes, projects, proxy, runs, stream
 from .config import BACKEND_VERSION, Settings
 from .proxy import CatalogCache, WorkerRpcFailure
 from .worker import WorkerLauncher, WorkerSupervisor
@@ -91,6 +91,7 @@ def create_app(
     app.include_router(projects.router, prefix="/api", tags=["projects"])
     app.include_router(runs.router, prefix="/api", tags=["runs"])
     app.include_router(meshes.router, prefix="/api", tags=["meshes"])
+    app.include_router(data.router, prefix="/api", tags=["data"])
     app.include_router(docs.router, prefix="/api", tags=["docs"])
     app.include_router(stream.router, prefix="/api", tags=["stream"])
     app.include_router(stream.alias_router)  # WS /ws/stream/{id}, as in the plan's API table

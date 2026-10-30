@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "planar-links",
+  "models": [
+    "planar-links",
+    "planar-links-fwd",
+    "planar-links-payload"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

@@ -1691,3 +1691,40 @@ closed-form inverse of the chart Jacobian, and the wrench is its transpose,
 | spatial pendulum | period rel 6.3e-8, energy 7.2e-12; composed vs integrated pose 6.7e-8 |
 | spherical pendulum / Free3D | Lz drift 1.8e-13, |q| drift 5e-14 / identical to `PoseIntegrator3D` |
 | `test_mech_spatial.jl` | **1067 assertions, ~5 min, green** |
+
+# F5.1 / X5.9
+
+## CSV input and prescribed-motion inverse dynamics (F5.1 / X5.9)
+
+Probed and measured on the Planar Links example, not read:
+
+1. **A registered opaque function with registered derivatives is differentiated by MTK.**
+   `bg_csv(table, k, order, t)` is `Symbolics.@register_symbolic`, and
+   `Symbolics.@register_derivative bg_csv(id, k, order, t) 4 bg_csv(id, k, order + 1, t)`
+   makes the time derivative of order n the function of order n + 1 (orders 0 to 3 exist, 4 and
+   up are 0). Without the rule `Differential(t)(bg_csv(...))` stays unevaluated; with it the
+   Mass-driven-by-CSV-velocity test (`test_csv.jl`) reproduces `m dv/dt` to 1e-5 and the 3-link
+   inverse-dynamics model (every inertia in derivative causality, `W201`) compiles in 3 s.
+2. **Inverse dynamics with flow sources works with the compliant planar joint, not with
+   `Revolute2DRigid`.** Prescribing every joint speed with an `MSf` driven by the cubic CSV
+   speed gives the joint torque at the source (a `TorqueSensor` in series). `Revolute2DRigid`
+   (hard pivot constraints on a 3-DOF body) fails at t = 0 with `retcode = Unstable` and NaN
+   states even when all speeds are prescribed (the index-3 structure of its header comment);
+   `Revolute2DCompliant` with `kt = 1e8 N/m`, `bt = 1e5 N s/m` runs. The pivot compliance
+   shows up as a ring in the first millisecond (up to 0.13 N m on a 131 N m peak) and as
+   1e-3 N m afterwards.
+3. **The cubic must be C2 and accurate at the ends.** A natural spline forces a zero second
+   derivative that a trajectory such as the quintic speed does not have (60 rad/s^3 at t = 0),
+   so `csv_eval` uses a **not-a-knot** spline: the interpolation error of a 1 kHz sampled
+   quintic speed is 2e-11 rad/s and the spline derivative matches the sampled acceleration
+   column to 8e-8 rad/s^2.
+4. **A model without a state cannot be simulated** (`NullODEIntegrator` has no `stats`): a
+   CSV source alone needs something to integrate. Not changed here.
+5. **The data identity is part of the equations.** The table id (48 bits of the SHA-256 of the
+   file bytes and the settings) is a literal in the flat equations, so `compile_key` changes
+   when the file or a setting changes; a mere re-run of an unchanged file is a cache hit.
+   Tables are looked up at run time in a copy-on-write registry (`CSV_TABLES`, 64 entries).
+6. **tstops.** `csv_model_tstops(flat, t0, t1)` scans the flat equations for `csv_value`
+   calls: hold/linear tables add every breakpoint in the run window, cubic tables only the
+   first and last (the extrapolation corner). It is merged with the discrete tick times in
+   `simulate` (`init_kwargs`).

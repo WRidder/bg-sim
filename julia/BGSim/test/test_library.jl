@@ -289,7 +289,14 @@ const M3_DRIVES_REFS = [
     "stdlib:drives/ReactionWheel",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS))
+# F5.1: the CSV input sources and the vector element selector that splits their columns.
+const F5_CSV_REFS = [
+    "stdlib:continuous/Select",
+    "stdlib:sources/CsvSource",
+    "stdlib:sources/CsvSourceSampled",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -1930,8 +1937,11 @@ const INTERFACE_FIELDS = [
 
     @testset "intrinsics (D12)" begin
         rows = intrinsics()
-        @test [r.name for r in rows] == ["delay", "interp1", "interp2", "noise_normal"]
+        @test [r.name for r in rows] == ["csv_value", "delay", "interp1", "interp2", "noise_normal"]
         by = Dict(r.name => r for r in rows)
+        @test by["csv_value"].arity == 3
+        @test by["csv_value"].stdlib_only == true
+        @test by["csv_value"].lowering == :intrinsic
         @test by["interp1"].arity == 3
         @test by["interp2"].arity == 4
         @test by["noise_normal"].arity == 2
@@ -1943,7 +1953,7 @@ const INTERFACE_FIELDS = [
         @test by["delay"].lowering == :delay
         @test all(
             r -> r.lowering == :intrinsic,
-            [by["interp1"], by["interp2"], by["noise_normal"]],
+            [by["interp1"], by["interp2"], by["noise_normal"], by["csv_value"]],
         )
         @test all(r -> !isempty(r.description), rows)
 

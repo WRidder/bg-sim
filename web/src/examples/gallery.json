@@ -91,6 +91,16 @@
       "pendulum"
     ]
   },
+  "planar-links": {
+    "title": "Planar Links",
+    "description": "The 1-, 2- and 3-link planar arms of a robotics-toolbox script on planar bond-graph elements, checked against CSV reference torques.",
+    "hasScene": true,
+    "models": [
+      "planar-links",
+      "planar-links-fwd",
+      "planar-links-payload"
+    ]
+  },
   "quarter-car": {
     "title": "Quarter car",
     "description": "A bond-graph quarter-car suspension with a table-driven road.",
