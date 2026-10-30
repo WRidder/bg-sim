@@ -81,9 +81,9 @@ export interface ExportCandidate {
   cost: number | null;
   withinBudget: boolean;
   /**
-   * The step damps a stiff undamped mode numerically (W213).
+   * How many stiff undamped modes this candidate's step damps numerically (W213); ROS2 is not suggested when it is above 0.
    */
-  numericallyDamped?: boolean;
+  numericallyDamped?: number;
   $comment?: string;
 }
 export interface ExportInterfaceInput {

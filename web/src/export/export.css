@@ -1,0 +1,295 @@
+/* The Export dialog (W-EX1); the header and inputs reuse the Open dialog's classes. */
+
+.export-dialog {
+  width: min(760px, 94vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  outline: none;
+}
+
+.export-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  font-size: var(--font-size-sm);
+}
+
+.export-dialog__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.export-dialog__heading {
+  margin: 0;
+  padding-bottom: 2px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.export-dialog__subheading {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+}
+
+.export-dialog__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.export-dialog__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-2) var(--space-3);
+  padding-top: var(--space-2);
+}
+
+.export-dialog__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.export-dialog__field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--color-text-muted);
+}
+
+.export-dialog__select,
+.export-dialog__number {
+  min-width: 140px;
+  padding: 3px var(--space-2);
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.export-dialog__number[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.export-dialog__power {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.export-dialog__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.export-dialog__vars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.export-dialog__vars code {
+  font-family: var(--font-mono);
+}
+
+.export-dialog__faint {
+  color: var(--color-text-faint);
+}
+
+.export-dialog__note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.export-dialog__warning {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-warning) 12%, var(--color-surface-raised));
+  border-left: 3px solid var(--color-warning);
+}
+
+.export-dialog__error {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-error-text);
+  background: color-mix(in srgb, var(--color-error) 12%, var(--color-surface-raised));
+  border-left: 3px solid var(--color-error);
+}
+
+.export-dialog__advanced > summary {
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.export-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.export-dialog__progress {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.export-dialog__spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: export-spin 0.9s linear infinite;
+}
+
+@keyframes export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .export-dialog__spinner {
+    animation: none;
+  }
+}
+
+.export-dialog__summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px var(--space-3);
+  margin: 0;
+}
+
+.export-dialog__summary dt {
+  color: var(--color-text-muted);
+}
+
+.export-dialog__summary dd {
+  margin: 0;
+}
+
+.export-dialog__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.export-dialog__table caption {
+  text-align: left;
+  color: var(--color-text-muted);
+  padding-bottom: 2px;
+}
+
+.export-dialog__table th,
+.export-dialog__table td {
+  padding: 2px var(--space-2);
+  text-align: left;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.export-dialog__table th {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.export-dialog__table tr.is-chosen td {
+  font-weight: var(--font-weight-semibold);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.export-dialog__lines {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.export-dialog__diagnostics {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.export-dialog__diagnostic {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-left: 3px solid var(--color-border-strong);
+  background: var(--color-surface);
+}
+
+.export-dialog__diagnostic.is-error {
+  border-left-color: var(--color-error);
+}
+
+.export-dialog__diagnostic.is-warning {
+  border-left-color: var(--color-warning);
+}
+
+.export-dialog__code {
+  flex: none;
+  font-family: var(--font-mono);
+  font-weight: var(--font-weight-semibold);
+}
+
+.export-dialog__diagnostic.is-error .export-dialog__code {
+  color: var(--color-error-text);
+}
+
+.export-dialog__diagnostic.is-warning .export-dialog__code {
+  color: var(--color-warning-text);
+}
+
+.export-dialog__message {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.export-dialog__message .export-dialog__path {
+  display: inline;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+}
+
+.export-dialog__hint {
+  color: var(--color-text-muted);
+}
+
+.export-dialog__download {
+  align-self: flex-start;
+  text-decoration: none;
+}
+
+.export-dialog__log {
+  max-height: 200px;
+  margin: 0;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  white-space: pre-wrap;
+}

@@ -10,21 +10,26 @@ and ``export.json`` into an export directory. This module turns that into an ``.
    C++ application; C is the only target);
 3. link the shared library for the host platform;
 4. run the counting harness (``alloc_check.c`` from the runtime): 0 memory callbacks after
-   ``fmi2Instantiate`` over ``harness_steps`` ``fmi2DoStep`` calls, and the step time, which
-   is written back into ``export.json`` as ``build``;
+   ``fmi2Instantiate`` over ``harness_steps`` ``fmi2DoStep`` calls, and the step time;
 5. zip ``modelDescription.xml``, ``binaries/<platform>/`` and ``sources/``.
 
-A source-only FMU is still written when no compiler is found. Cross targets (``zig cc``,
-P-EX2) are not part of this module yet.
+A source-only FMU is still written when no compiler is found (D-EX15). Either way the build
+results go into ``export.json`` as ``build`` (the ``ExportBuild`` contract in
+``contracts/schemas/export-report.schema.json``). The compiler is ``BGSIM_CC``, a gcc or
+clang on PATH, or MSYS2's gcc in its default place; its folder is put first on PATH for the
+build commands, so MSYS2's gcc finds its DLLs. Cross targets (``zig cc``, P-EX2) are not part
+of this module yet.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import platform
 import re
 import shutil
 import subprocess
+import time
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -42,6 +47,13 @@ HOT_PATH_SOURCES = ("model.c", "bg_solver.c", "fmi2_cs.c", "bg_intrinsics.c", "b
 C_FLAGS = ("-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
            "-fno-math-errno")
 
+#: Where MSYS2 installs a compiler on Windows; tried after ``BGSIM_CC`` and PATH.
+WINDOWS_COMPILERS = ("C:/msys64/mingw64/bin/gcc.exe", "C:/msys64/ucrt64/bin/gcc.exe",
+                     "C:/msys64/clang64/bin/clang.exe")
+
+SOURCE_ONLY_NOTE = ("no C compiler was found (BGSIM_CC, gcc or clang on PATH, or MSYS2 in "
+                    "C:/msys64), so the FMU holds the sources only; compile them for the target")
+
 
 @dataclass
 class BuildResult:
@@ -53,6 +65,7 @@ class BuildResult:
     compiler: str | None = None
     undefined_symbols: list[str] = field(default_factory=list)
     forbidden_symbols: list[str] = field(default_factory=list)
+    symbol_check_ran: bool = False
     cxx_ok: bool | None = None
     allocations_after_instantiate: int | None = None
     step_time_mean_us: float | None = None
@@ -73,18 +86,46 @@ def host_platform() -> str:
 
 
 def find_compiler() -> str | None:
-    """A gcc or clang on PATH (the ``cl`` on PATH may be Open Watcom, so it is not used)."""
+    """``BGSIM_CC``, a gcc or clang on PATH, or MSYS2's compiler on Windows.
+
+    The ``cl`` on PATH may be Open Watcom (D-EX15), so it is never used."""
+    override = os.environ.get("BGSIM_CC")
+    if override:
+        return shutil.which(override) or (override if Path(override).is_file() else None)
     for name in ("gcc", "clang", "cc"):
         path = shutil.which(name)
         if path:
             return path
+    if platform.system() == "Windows":
+        for candidate in WINDOWS_COMPILERS:
+            if Path(candidate).is_file():
+                return candidate
     return None
+
+
+def harness_steps_for(substeps: int) -> int:
+    """``doStep`` calls of the counting harness: 20000, fewer when one ``doStep`` takes many
+    internal steps (at least 200), as the X-EX0 gate does."""
+    return max(200, min(20_000, 20_000_000 // max(1, int(substeps))))
+
+
+def _tool_env(cc: str | None) -> dict[str, str] | None:
+    """The environment with the compiler's folder first on PATH (MSYS2 needs its DLLs)."""
+    if cc is None:
+        return None
+    env = dict(os.environ)
+    env["PATH"] = str(Path(cc).parent) + os.pathsep + env.get("PATH", "")
+    return env
 
 
 def _cxx_for(cc: str) -> str | None:
     base = Path(cc).name.lower()
-    candidates = ["g++"] if base.startswith("gcc") else ["clang++"] if "clang" in base else []
-    for name in candidates + ["c++"]:
+    names = ["g++"] if base.startswith("gcc") else ["clang++"] if "clang" in base else []
+    suffix = Path(cc).suffix
+    for name in names + ["c++"]:
+        sibling = Path(cc).with_name(name + suffix)
+        if sibling.exists():
+            return str(sibling)
         path = shutil.which(name)
         if path:
             return path
@@ -98,9 +139,10 @@ def _nm_for(cc: str) -> str | None:
     return shutil.which("nm") or shutil.which("llvm-nm")
 
 
-def _run(cmd: list, result: BuildResult) -> subprocess.CompletedProcess:
+def _run(cmd: list, result: BuildResult, env: dict[str, str] | None = None
+         ) -> subprocess.CompletedProcess:
     result.log.append(" ".join(str(c) for c in cmd))
-    return subprocess.run([str(c) for c in cmd], text=True, capture_output=True)
+    return subprocess.run([str(c) for c in cmd], text=True, capture_output=True, env=env)
 
 
 def _library_suffix(plat: str) -> str:
@@ -111,7 +153,8 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
               compiler: str | None = None) -> BuildResult:
     """Compile, check and zip the export in ``export_dir`` into ``<identifier>.fmu``.
 
-    ``runtime_dir`` is ``julia/BGSim/export/runtime`` (it holds the harness).
+    ``runtime_dir`` is ``julia/BGSim/export/runtime`` (it holds the harness). The build
+    results are written into ``export.json`` as ``build``.
     """
     export_dir = Path(export_dir)
     report = json.loads((export_dir / "export.json").read_text(encoding="utf-8"))
@@ -122,53 +165,88 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
     result = BuildResult()
     cc = compiler or find_compiler()
     result.compiler = cc
-    binary: Path | None = None
     plat = host_platform()
+    env = _tool_env(cc)
+    started = time.monotonic()
+    binary: Path | None = None
+    per: int | None = None
+
+    def run(cmd: list) -> subprocess.CompletedProcess:
+        return _run(cmd, result, env)
+
+    def finish() -> BuildResult:
+        result.ok = (
+            result.error is None
+            and not result.forbidden_symbols
+            and result.cxx_ok is not False
+            and (cc is None or result.allocations_after_instantiate == 0)
+        )
+        # The build results join the export report (plan 5.2, step 4; ExportBuild).
+        report["build"] = {
+            "compilerFound": cc is not None, "compiler": cc,
+            "sourceOnly": result.fmu is not None and binary is None,
+            "platform": result.platform, "ok": result.ok,
+            "forbiddenSymbols": result.forbidden_symbols,
+            "symbolCheck": (not result.forbidden_symbols) if result.symbol_check_ran else None,
+            "cxxOk": result.cxx_ok,
+            "harnessDoSteps": harness_steps if result.allocations_after_instantiate is not None
+            else None,
+            "internalStepsPerDoStep": per,
+            "allocationsAfterInstantiate": result.allocations_after_instantiate,
+            "doStepMeanUs": result.step_time_mean_us, "doStepMaxUs": result.step_time_max_us,
+            "buildS": time.monotonic() - started,
+            "error": result.error,
+            "note": SOURCE_ONLY_NOTE if cc is None else None,
+        }
+        (export_dir / "export.json").write_text(json.dumps(report, indent=4), encoding="utf-8")
+        return result
 
     if cc is not None:
-        result.platform = plat
         objects = []
         for name in HOT_PATH_SOURCES:
             obj = build / (Path(name).stem + ".o")
-            res = _run([cc, *C_FLAGS, "-c", src / name, "-I", src, "-o", obj], result)
+            res = run([cc, *C_FLAGS, "-c", src / name, "-I", src, "-o", obj])
             if res.returncode != 0:
                 result.error = f"compiling {name} failed:\n{res.stdout}{res.stderr}"
-                return result
+                return finish()
             objects.append(obj)
 
         nm = _nm_for(cc)
         if nm is not None:
             undefined: set[str] = set()
             for obj in objects:
-                res = _run([nm, "-u", obj], result)
+                res = run([nm, "-u", obj])
                 for token in res.stdout.split():
                     if token != "U":
                         undefined.add(re.sub(r"^_+", "", token))
+            result.symbol_check_ran = True
             result.undefined_symbols = sorted(undefined)
             result.forbidden_symbols = sorted(undefined & FORBIDDEN_SYMBOLS)
 
         cxx = _cxx_for(cc)
         if cxx is not None:
             result.cxx_ok = all(
-                _run([cxx, "-x", "c++", "-std=c++17", "-fsyntax-only", "-Wall", "-Werror",
-                      "-I", src, src / name], result).returncode == 0
+                run([cxx, "-x", "c++", "-std=c++17", "-fsyntax-only", "-Wall", "-Werror",
+                     "-I", src, src / name]).returncode == 0
                 for name in ("model.c", "bg_solver.c", "bg_intrinsics.c", "bg_mech.c"))
 
-        binary = build / (ident + _library_suffix(plat))
-        res = _run([cc, *C_FLAGS, "-shared", "-fPIC", "-static-libgcc", "-I", src,
-                    *[src / n for n in HOT_PATH_SOURCES], "-o", binary, "-lm"], result)
+        library = build / (ident + _library_suffix(plat))
+        res = run([cc, *C_FLAGS, "-shared", "-fPIC", "-static-libgcc", "-I", src,
+                   *[src / n for n in HOT_PATH_SOURCES], "-o", library, "-lm"])
         if res.returncode != 0:
             result.error = f"linking the FMU binary failed:\n{res.stdout}{res.stderr}"
-            return result
+            return finish()
+        binary = library
+        result.platform = plat
 
         harness = build / ("alloc_check" + (".exe" if plat.startswith("win") else ""))
-        res = _run([cc, "-std=c11", "-O2", "-I", src, runtime_dir / "alloc_check.c",
-                    *[src / n for n in HOT_PATH_SOURCES], "-o", harness, "-lm"], result)
+        res = run([cc, "-std=c11", "-O2", "-I", src, runtime_dir / "alloc_check.c",
+                   *[src / n for n in HOT_PATH_SOURCES], "-o", harness, "-lm"])
         if res.returncode != 0:
             result.error = f"building the allocation harness failed:\n{res.stdout}{res.stderr}"
-            return result
+            return finish()
         per = max(1, round(report["step"] / report["dt"]))
-        res = _run([harness, per, harness_steps], result)
+        res = run([harness, per, harness_steps])
         match = re.search(r"after instantiate (\d+)", res.stdout)
         result.allocations_after_instantiate = int(match.group(1)) if match else None
         match = re.search(r"mean ([0-9.]+) us, max ([0-9.]+) us", res.stdout)
@@ -177,13 +255,6 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
             result.step_time_max_us = float(match.group(2))
         if res.returncode not in (0, 1):
             result.error = f"the harness failed (a step diverged?):\n{res.stdout}{res.stderr}"
-        # The measured step time joins the export report (plan 5.2, step 4).
-        report["build"] = {
-            "platform": plat, "harnessDoSteps": harness_steps, "internalStepsPerDoStep": per,
-            "allocationsAfterInstantiate": result.allocations_after_instantiate,
-            "doStepMeanUs": result.step_time_mean_us, "doStepMaxUs": result.step_time_max_us,
-        }
-        (export_dir / "export.json").write_text(json.dumps(report, indent=4), encoding="utf-8")
 
     fmu = export_dir / f"{ident}.fmu"
     with zipfile.ZipFile(fmu, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -193,10 +264,4 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
         for path in sorted(src.iterdir()):
             archive.write(path, f"sources/{path.name}")
     result.fmu = fmu
-    result.ok = (
-        result.error is None
-        and not result.forbidden_symbols
-        and result.cxx_ok is not False
-        and (cc is None or result.allocations_after_instantiate == 0)
-    )
-    return result
+    return finish()

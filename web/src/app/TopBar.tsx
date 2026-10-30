@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { ExportDialog } from "../export/ExportDialog";
+import { useExportDialogStore } from "../export/exportStore";
 import { useDocumentStore } from "../state/documentStore";
 import type { Theme } from "../theme/theme";
 import { OpenDialog } from "./OpenDialog";
@@ -20,6 +22,8 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
   const nextTheme = theme === "dark" ? "light" : "dark";
   const project = useDocumentStore((state) => state.project);
   const modelName = useDocumentStore((state) => state.modelName);
+  const hasDoc = useDocumentStore((state) => state.doc !== null);
+  const openExport = useExportDialogStore((state) => state.openExport);
   const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
@@ -57,6 +61,18 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
 
       <RunBar />
 
+      <button
+        type="button"
+        className="button"
+        data-testid="open-export"
+        aria-haspopup="dialog"
+        disabled={!hasDoc || project === null}
+        title="Export the model as a C/FMU (right-click a subsystem to export only that subsystem)"
+        onClick={() => openExport(null)}
+      >
+        Export FMU…
+      </button>
+
       <div className="top-bar__status">
         <WorkerStatus />
         <button
@@ -72,6 +88,7 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
       </div>
 
       <OpenDialog open={openDialog} onClose={() => setOpenDialog(false)} />
+      <ExportDialog />
     </header>
   );
 }

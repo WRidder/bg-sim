@@ -570,8 +570,9 @@ class ExportCandidate(BaseModel):
         ..., description='Estimated flops per communication step.'
     )
     withinBudget: bool
-    numericallyDamped: bool | None = Field(
-        None, description='The step damps a stiff undamped mode numerically (W213).'
+    numericallyDamped: conint(ge=0) | None = Field(
+        None,
+        description="How many stiff undamped modes this candidate's step damps numerically (W213); ROS2 is not suggested when it is above 0.",
     )
     field_comment: str | None = Field(None, alias='$comment')
 

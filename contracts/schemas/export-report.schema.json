@@ -113,8 +113,9 @@
         },
         "withinBudget": { "type": "boolean" },
         "numericallyDamped": {
-          "type": "boolean",
-          "description": "The step damps a stiff undamped mode numerically (W213)."
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many stiff undamped modes this candidate's step damps numerically (W213); ROS2 is not suggested when it is above 0."
         },
         "$comment": { "type": "string" }
       },

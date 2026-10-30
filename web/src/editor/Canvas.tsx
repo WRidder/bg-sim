@@ -89,6 +89,7 @@ import { activeModel, subsystemPathCrumbs } from "./subsystemPath";
 import { QuickConnectContext } from "./quickConnect";
 import { SubsystemBreadcrumbs } from "./SubsystemBreadcrumbs";
 import { requestPlotsTab } from "../app/dockBus";
+import { useExportDialogStore } from "../export/exportStore";
 import "./editor.css";
 
 // The probe plot pulls in uPlot; it loads when a diagram has a probe (code splitting, W5.4).
@@ -1804,6 +1805,23 @@ function CanvasInner() {
                       : "This run recorded no signals for this selection"
                 }
               />
+              {menuNode !== undefined && "subsystem" in menuNode.block ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  data-testid="export-subsystem"
+                  title="Export this subsystem alone as a C/FMU; its ports are the interface"
+                  onClick={() =>
+                    runMenuAction(() =>
+                      useExportDialogStore
+                        .getState()
+                        .openExport(pathPrefix.length > 0 ? `${pathPrefix}/${menuNode.name}` : menuNode.name),
+                    )
+                  }
+                >
+                  Export subsystem…
+                </button>
+              ) : null}
               <button
                 type="button"
                 role="menuitem"

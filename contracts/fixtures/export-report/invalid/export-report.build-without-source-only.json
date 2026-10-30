@@ -23,7 +23,7 @@
       "dt": 6.25e-05,
       "cost": 1240.0,
       "withinBudget": true,
-      "numericallyDamped": false
+      "numericallyDamped": 0
     },
     {
       "method": "ros2",
@@ -31,7 +31,7 @@
       "dt": 0.000125,
       "cost": 2210.0,
       "withinBudget": true,
-      "numericallyDamped": false
+      "numericallyDamped": 0
     },
     {
       "method": "rodas4p",
@@ -39,7 +39,7 @@
       "dt": 0.0005,
       "cost": 1630.0,
       "withinBudget": true,
-      "numericallyDamped": false
+      "numericallyDamped": 0
     }
   ],
   "heldValues": 3,
