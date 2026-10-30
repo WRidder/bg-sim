@@ -1,8 +1,11 @@
 # Export every example model and run its reference simulation (plan/EXPORT_PLAN.md X-EX1).
 #
-#   julia --project=julia/BGSim examples/export_examples.jl <out_root> [--resume] [project[/model] ...]
+#   julia --project=julia/BGSim examples/export_examples.jl <out_root> [--resume]
+#         [--settings=<json>] [project[/model] ...]
 #
 # `--resume` appends to an existing results.jsonl and skips the models already in it.
+# `--settings` overrides export settings for every model, e.g.
+# `{"method": "ros2", "linear_solver": "sparse"}` (see `BGSim.Export.ExportSettings`).
 # Before each model, <out_root>/current.json names it; the Python harness uses that to kill
 # and log a model that exceeds its time budget, then restarts this script with --resume.
 #
@@ -67,7 +70,7 @@ function models_to_run(filters)
     return out
 end
 
-function run_one(out_root, project, model)
+function run_one(out_root, project, model; overrides = Dict{String,Any}())
     proj = joinpath(EXAMPLES, project)
     doc = todict(JSON3.read(read(joinpath(proj, "models", model * ".bgmodel.json"), String)))
     expected_path = joinpath(proj, "expected.json")
@@ -88,7 +91,8 @@ function run_one(out_root, project, model)
         "tEnd" => t_end, "step" => step)
 
     flat = BGSim.Compile.flatten(BGSim.IR.parse_model(doc); project_dir = proj)
-    es = BGSim.Export.ExportSettings(t_end = t_end, step = step, expose_all = true)
+    es = BGSim.Export.ExportSettings(merge(Dict{String,Any}("t_end" => t_end, "step" => step,
+        "expose_all" => true), overrides))
     t0 = time()
     first = BGSim.Export.export_model(flat, joinpath(dir, "export"); settings = es,
         name = replace(model, "-" => "_"))
@@ -135,7 +139,12 @@ function main(args)
     mkpath(out_root)
     rest = args[2:end]
     resume = "--resume" in rest
-    filters = filter(!=("--resume"), rest)
+    overrides = Dict{String,Any}()
+    for a in rest
+        startswith(a, "--settings=") || continue
+        merge!(overrides, todict(JSON3.read(a[length("--settings=") + 1:end])))
+    end
+    filters = filter(a -> a != "--resume" && !startswith(a, "--settings="), rest)
     todo = models_to_run(filters)
     results = joinpath(out_root, "results.jsonl")
     done = Set{String}()
@@ -154,7 +163,7 @@ function main(args)
             print(stderr, "export ", project, "/", model, " ... ")
             flush(stderr)
             rec = try
-                run_one(out_root, project, model)
+                run_one(out_root, project, model; overrides)
             catch err
                 Dict{String,Any}("project" => project, "model" => model, "status" => "crashed",
                     "error" => first(sprint(showerror, err), 2000))

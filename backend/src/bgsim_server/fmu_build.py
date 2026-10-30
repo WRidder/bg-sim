@@ -3,13 +3,15 @@
 The Julia side (``BGSim.Export.export_model``) writes ``sources/``, ``modelDescription.xml``
 and ``export.json`` into an export directory. This module turns that into an ``.fmu``:
 
-1. compile the hot-path objects (``model.c``, ``bg_solver.c``, ``fmi2_cs.c``) and check their
-   undefined symbols: no allocator, no stdio, no ``exit``/``abort`` (D-EX4, plan 8);
+1. compile the hot-path objects (``model.c``, ``bg_solver.c``, ``fmi2_cs.c``,
+   ``bg_intrinsics.c``, ``bg_mech.c``) and check their undefined symbols: no allocator, no
+   stdio, no ``exit``/``abort`` (D-EX4, plan 8);
 2. check that the sources also compile as C++17 (a compatibility check for embedding in a
    C++ application; C is the only target);
 3. link the shared library for the host platform;
 4. run the counting harness (``alloc_check.c`` from the runtime): 0 memory callbacks after
-   ``fmi2Instantiate`` over ``harness_steps`` ``fmi2DoStep`` calls, and the step time;
+   ``fmi2Instantiate`` over ``harness_steps`` ``fmi2DoStep`` calls, and the step time, which
+   is written back into ``export.json`` as ``build``;
 5. zip ``modelDescription.xml``, ``binaries/<platform>/`` and ``sources/``.
 
 A source-only FMU is still written when no compiler is found. Cross targets (``zig cc``,
@@ -35,7 +37,7 @@ FORBIDDEN_SYMBOLS = frozenset({
 })
 
 #: The objects that run inside ``fmi2DoStep``.
-HOT_PATH_SOURCES = ("model.c", "bg_solver.c", "fmi2_cs.c")
+HOT_PATH_SOURCES = ("model.c", "bg_solver.c", "fmi2_cs.c", "bg_intrinsics.c", "bg_mech.c")
 
 C_FLAGS = ("-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
            "-fno-math-errno")
@@ -150,7 +152,7 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
             result.cxx_ok = all(
                 _run([cxx, "-x", "c++", "-std=c++17", "-fsyntax-only", "-Wall", "-Werror",
                       "-I", src, src / name], result).returncode == 0
-                for name in ("model.c", "bg_solver.c"))
+                for name in ("model.c", "bg_solver.c", "bg_intrinsics.c", "bg_mech.c"))
 
         binary = build / (ident + _library_suffix(plat))
         res = _run([cc, *C_FLAGS, "-shared", "-fPIC", "-static-libgcc", "-I", src,
@@ -175,6 +177,13 @@ def build_fmu(export_dir: Path, *, runtime_dir: Path, harness_steps: int = 100_0
             result.step_time_max_us = float(match.group(2))
         if res.returncode not in (0, 1):
             result.error = f"the harness failed (a step diverged?):\n{res.stdout}{res.stderr}"
+        # The measured step time joins the export report (plan 5.2, step 4).
+        report["build"] = {
+            "platform": plat, "harnessDoSteps": harness_steps, "internalStepsPerDoStep": per,
+            "allocationsAfterInstantiate": result.allocations_after_instantiate,
+            "doStepMeanUs": result.step_time_mean_us, "doStepMaxUs": result.step_time_max_us,
+        }
+        (export_dir / "export.json").write_text(json.dumps(report, indent=4), encoding="utf-8")
 
     fmu = export_dir / f"{ident}.fmu"
     with zipfile.ZipFile(fmu, "w", zipfile.ZIP_DEFLATED) as archive:

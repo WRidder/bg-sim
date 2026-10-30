@@ -307,34 +307,42 @@ function step_rule_met(method::Symbol, points, h::Real; margin = 0.5, accuracy =
     return all(λ -> h * abs(λ) <= accuracy, lams) && h <= margin * stable_step(method, lams)
 end
 
-"""    step_cost(method, n; f_ops, jac_ops, has_t) -> Float64
+"""    derivative_call_cost(f_ops, n) -> Float64
+
+The cost model's price of one derivative call: the right-hand side's operations plus the
+loads, stores and call overhead."""
+derivative_call_cost(f_ops::Real, n::Integer) = f_ops + 2n + 10
+
+"""    step_cost(method, n; f_ops, jac_ops, has_t, lu_ops, solve_ops) -> Float64
 
 Estimated floating-point work of one internal step on `n` states: `f_ops` per derivative
-call, `jac_ops` per Jacobian. A Rosenbrock step forms and factors `W` (n² + n³/3), solves
-once per stage (2n² each) and combines the stages; with `has_t` it spends one more
-derivative call on `df/dt`."""
+call, `jac_ops` per Jacobian. A Rosenbrock step forms and factors `W` (`lu_ops`, dense
+n² + n³/3 by default), solves once per stage (`solve_ops`, dense 2n²) and combines the
+stages; with `has_t` it spends one more derivative call on `df/dt`. The sparse LU passes its
+own counts (`lu_flops`, `lu_solve_flops`)."""
 function step_cost(method::Symbol, n::Integer; f_ops::Real, jac_ops::Real = 0.0,
-    has_t::Bool = false)
-    call = f_ops + 2n + 10                  # one derivative call, with its overhead
+    has_t::Bool = false, lu_ops::Real = n^2 + n^3 / 3, solve_ops::Real = 2n^2)
+    call = derivative_call_cost(f_ops, n)
     method === :euler && return call + 2n
     method === :rk4 && return 4call + 12n
     s = method_stages(method)
-    return jac_ops + n^2 + n^3 / 3 + s * (call + 2n^2 + 2s * n) + (has_t ? call + 2n : 0)
+    return jac_ops + lu_ops + s * (call + solve_ops + 2s * n) + (has_t ? call + 2n : 0)
 end
 
-"""    choose_method(candidates, points, base_ns, n; f_ops, jac_ops, has_t, kwargs...)
-        -> (choice, table)
+"""    choose_method(candidates, points, base_ns, n; f_ops, jac_ops, has_t, lu_ops,
+                  solve_ops, kwargs...) -> (choice, table)
 
 Of `candidates`, the method with the lowest estimated cost per `base_ns` (substeps × step
 cost) whose step rule is met within the substep budget; when none is, the cheapest.
 `jac_ops` is a function of the method (the Jacobian is only built when a Rosenbrock method
 can win). `table` lists every candidate for the report."""
 function choose_method(candidates, points, base_ns::Int64, n::Integer; f_ops, jac_ops,
-    has_t = false, kwargs...)
+    has_t = false, lu_ops::Real = n^2 + n^3 / 3, solve_ops::Real = 2n^2, kwargs...)
     table = NamedTuple[]
     for m in candidates
         c = choose_step(m, points, base_ns; kwargs...)
-        cost = c.substeps * step_cost(m, n; f_ops, jac_ops = jac_ops(m), has_t)
+        cost = c.substeps * step_cost(m, n; f_ops, jac_ops = jac_ops(m), has_t, lu_ops,
+            solve_ops)
         push!(table, (method = m, choice = c, cost = cost))
     end
     ok = filter(r -> !r.choice.over_budget, table)

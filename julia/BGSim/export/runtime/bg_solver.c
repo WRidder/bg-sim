@@ -4,20 +4,24 @@
  *   1. integrate the continuous states over [t, t + BG_DT] with the held discrete values
  *      constant (explicit Euler, RK4, or a linearly implicit Rosenbrock method), and the
  *      switching conditions frozen at their values at t (bg_modes);
- *   2. run the discrete partitions due at t + BG_DT, in topological order, with the same
+ *   2. apply the `@events` whose condition crossed zero upward in the step (bg_events,
+ *      generated; the conditions are evaluated at both ends of the step, the crossing is
+ *      not located, so an event is up to one BG_DT late);
+ *   3. run the discrete partitions due at t + BG_DT, in topological order, with the same
  *      operation order as the Julia scheduler (`run_tick!` in src/sim/scheduler.jl).
+ * Events before ticks is the simulator's order: a tick at t runs after every event up to t.
  *
  * Real-time rules: no allocation, no recursion, no I/O, every loop bounded by a compile-time
  * size. The cost of a step is fixed: Euler is 1 derivative call, RK4 4. A Rosenbrock step is
- * 1 Jacobian, 1 LU of BG_NX x BG_NX, BG_NSTAGE derivative calls and BG_NSTAGE solves, plus
- * 1 derivative call for df/dt when the right-hand side depends on t (BG_HAS_T). A DAE
- * (BG_NALG > 0) re-solves its algebraic unknowns after a tick by Newton: at most 8 Jacobians and 8
- * derivative calls, fewer once it has converged.
+ * 1 Jacobian, 1 LU (dense, or the static sparse LU of model.c with BG_SPARSE_LU),
+ * BG_NSTAGE derivative calls and BG_NSTAGE solves, plus 1 derivative call for df/dt when the
+ * right-hand side depends on t (BG_HAS_T). A DAE (BG_NALG > 0) re-solves its algebraic
+ * unknowns after a tick or a fired event by Newton: at most 8 Jacobians and 8 derivative
+ * calls, fewer once it has converged.
  */
 #include <math.h>
 #include <string.h>
 #include "model.h"
-#include "bg_runtime.h"
 
 static int bg_finite(const double *v, int n) {
     for (int i = 0; i < n; ++i) {
@@ -52,6 +56,9 @@ static int bg_integrate(bg_model *m, double t, double h) {
 
 #else /* Rosenbrock: BG_METHOD_ROS2, BG_METHOD_ROS34PW2, BG_METHOD_RODAS4P */
 
+/* The linear algebra goes through bg_w_factor / bg_w_solve (model.h). These are the dense
+   versions; with BG_SPARSE_LU, model.c holds a generated static sparse LU instead. Both
+   form W from m->jac, which bg_jacobian fills in the layout of the LU (BG_NJ entries). */
 #ifndef BG_SPARSE_LU
 
 /* In-place LU with partial pivoting of the row-major BG_NX x BG_NX matrix a. */
@@ -232,7 +239,8 @@ static int bg_integrate(bg_model *m, double t, double h) {
 /* After a discrete tick the held values have changed, so the algebraic unknowns no longer
    solve their equations at the current differential state. They are re-solved as the
    simulation does (FIX-M2-3): Newton iterations on 0 = g(x_d, z) with x_d fixed, by Gaussian
-   elimination with partial pivoting on the BG_NALG x BG_NALG block dg/dz. A held input can
+   elimination with partial pivoting on the BG_NALG x BG_NALG block dg/dz (read from m->jac
+   through bg_alg_jpos, so it works with either layout of J). A held input or an event can
    jump, so the Jacobian is evaluated again in every iteration (a frozen one diverges on the
    FIX-M2-3 fixture). At most BG_NEWTON iterations, so the worst case is bounded: BG_NEWTON
    Jacobians and derivative calls per tick. A singular block leaves z as it is; the next step
@@ -246,8 +254,10 @@ static void bg_project(bg_model *m, double t) {
         bg_derivatives(m, t, m->x, m->fx);
         for (int i = 0; i < BG_NALG; ++i) {
             g[i] = -m->fx[bg_alg[i]];
-            for (int j = 0; j < BG_NALG; ++j)
-                a[i * BG_NALG + j] = m->jac[bg_alg[i] * BG_NX + bg_alg[j]];
+            for (int j = 0; j < BG_NALG; ++j) {
+                const int q = bg_alg_jpos[i * BG_NALG + j];
+                a[i * BG_NALG + j] = q < 0 ? 0.0 : m->jac[q];
+            }
         }
         for (int k = 0; k < BG_NALG; ++k) {
             int p = k;
@@ -333,7 +343,14 @@ int bg_step(bg_model *m) {
        stages, so each step integrates a smooth right-hand side. A switch exactly on a step
        boundary is then exact; one inside a step takes effect at the next boundary (W203). */
     if (BG_NC > 0) bg_modes(m, t0, m->x, m->c);
+    if (BG_NE > 0) bg_event_conditions(m, t0, m->x, m->ez0);
     if (bg_integrate(m, t0, t1 - t0) != 0) return -1;
+    if (BG_NE > 0 && bg_events(m, t1) > 0) {
+#if BG_NALG > 0 && BG_NSTAGE > 0
+        /* A reinit moved the states, so the algebraic unknowns are re-solved as after a tick. */
+        bg_project(m, t1);
+#endif
+    }
     if (!bg_finite(m->x, BG_NX)) return -2;
     m->n += 1;
     m->t = t1;
