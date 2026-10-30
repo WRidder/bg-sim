@@ -38,6 +38,8 @@ export interface BlockNodeData extends Record<string, unknown> {
   labelSide: Side;
   /** A subsystem's `ui.image`, drawn in the card body instead of the icon; null for none. */
   image: ModelNodeImage | null;
+  /** Inside a subsystem: internal port name -> the subsystem port(s) exposing it. */
+  exposed: Readonly<Record<string, string>>;
 }
 
 export type BlockNodeType = Node<BlockNodeData, "block" | "subsystem">;
@@ -47,6 +49,8 @@ export interface JunctionNodeData extends Record<string, unknown> {
   name: string;
   junction: "0" | "1";
   position: ModelPoint;
+  /** The subsystem port(s) exposing this junction, or null. */
+  exposed: string | null;
 }
 
 export type JunctionNodeType = Node<JunctionNodeData, "junction">;
@@ -120,6 +124,7 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
         position={position}
         domain={data.portDomains[port.name] ?? port.domain}
         state={data.portStates[port.name] ?? "idle"}
+        exposed={data.exposed[port.name] ?? null}
       />
     );
   });
@@ -250,14 +255,15 @@ export function JunctionNode({ data, selected }: NodeProps<JunctionNodeType>) {
   const state = nodeState(data.nodeId, data.name, null, data.junction, data.position, 0, false);
   return (
     <div
-      className={`junction-node${selected ? " is-selected" : ""}`}
+      className={`junction-node${selected ? " is-selected" : ""}${data.exposed !== null ? " is-exposed" : ""}`}
       style={{ width: JUNCTION_NODE_SIZE, height: JUNCTION_NODE_SIZE }}
       data-testid="diagram-node"
       data-node-id={data.nodeId}
       data-node-name={data.name}
       data-node-junction={data.junction}
       data-state={state}
-      title={`${data.junction} junction (${data.name})`}
+      data-exposed={data.exposed ?? undefined}
+      title={`${data.junction} junction (${data.name})${data.exposed !== null ? ` · exposed as ${data.exposed}` : ""}`}
       onPointerDown={(event) => {
         if (quick.enabled) {
           quick.start(event, data.nodeId);

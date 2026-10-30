@@ -17,13 +17,26 @@ import {
 } from "./connectionAnalysis";
 import type { PortDescriptor } from "./connectionRules";
 import {
+  circleAnchor,
   connectionAnchors,
+  domainColor,
   isBondGraph,
   isCompactBlock,
+  JUNCTION_BOND_GAP,
+  JUNCTION_RADIUS,
   layoutNode,
+  nodeCentre,
   nodeLayouts,
   nodeVisualOffset,
+  offsetPoint,
+  portAnchor,
+  sideToward,
+  signalColor,
+  SIGNAL_ARROW_SIZE,
+  SIGNAL_DOT_RADIUS,
+  type Anchor,
   type NodeLayout,
+  type Point,
   type Side,
 } from "./geometry";
 import {
@@ -32,27 +45,63 @@ import {
   type BlockNodeData,
   type JunctionNodeData,
 } from "./nodes/BlockNode";
+import {
+  PortGhostNode,
+  PortTerminalNode,
+  type GhostNodeData,
+  type TerminalNodeData,
+} from "./nodes/PortTerminal";
 import { interfaceForNode, missingPortFor } from "./nodeInterface";
 import type { EditorEdge, EditorEdgeData } from "./edges/EditorEdges";
 import { BondEdge, SignalEdge, WireEdge } from "./edges/EditorEdges";
+import { BoundaryEdge, type BoundaryEdgeType } from "./edges/BoundaryEdge";
 import { ProbeNode, type ProbeNodeData } from "../probe/ProbeNode";
+import {
+  contentBox,
+  ghostId,
+  outsideText,
+  outsideTitle,
+  placeTerminals,
+  terminalId,
+  terminalWidth,
+  type SubsystemBoundary,
+} from "./subsystemBoundary";
+import { endpointLabel, exposeIssue, JUNCTION_PORT, terminalKindOf } from "./subsystemPorts";
 
 export type DiagramNode =
   | Node<BlockNodeData, "block" | "subsystem">
   | Node<JunctionNodeData, "junction">
-  | Node<ProbeNodeData, "probe">;
+  | Node<ProbeNodeData, "probe">
+  | Node<TerminalNodeData, "terminal">
+  | Node<GhostNodeData, "terminalGhost">;
 
 export const NODE_TYPES = {
   block: BlockNode,
   subsystem: BlockNode,
   junction: JunctionNode,
   probe: ProbeNode,
+  terminal: PortTerminalNode,
+  terminalGhost: PortGhostNode,
 };
-export const EDGE_TYPES = { bond: BondEdge, wire: WireEdge, signal: SignalEdge };
+export const EDGE_TYPES = {
+  bond: BondEdge,
+  wire: WireEdge,
+  signal: SignalEdge,
+  boundary: BoundaryEdge,
+};
+
+/** A model connection, or the drawn boundary wire of a subsystem port terminal. */
+export type DiagramEdge = EditorEdge | BoundaryEdgeType;
 
 export interface DiagramFlow {
   nodes: DiagramNode[];
+  /** The model connections. */
   edges: EditorEdge[];
+  /**
+   * Inside a subsystem: the drawn boundary wires from the port terminals to
+   * the internal ports. They never take part in selection or decoration.
+   */
+  boundaryEdges?: BoundaryEdgeType[];
   analysis: DiagramAnalysis;
 }
 
@@ -181,6 +230,7 @@ export function buildDiagram(
   selection: { nodes: readonly string[]; connections: readonly string[] },
   dragOrigin: PortDescriptor | null = null,
   snap = true,
+  boundary: SubsystemBoundary | null = null,
 ): DiagramFlow {
   const analysis = analyseDiagram(doc, index);
   const dragStates = dragCompatibility(doc, index, dragOrigin);
@@ -210,6 +260,14 @@ export function buildDiagram(
     return missingPortFor(node, interfaceForNode(node, index), endpoint.port);
   };
 
+  // Internal ports a subsystem port exposes carry a badge naming the port.
+  const exposed = new Map<string, Record<string, string>>();
+  for (const port of boundary?.ports ?? []) {
+    const ports = exposed.get(port.node) ?? {};
+    ports[port.port] = ports[port.port] === undefined ? port.name : `${ports[port.port]}, ${port.name}`;
+    exposed.set(port.node, ports);
+  }
+
   const nodes: DiagramNode[] = doc.diagram.nodes.map((node) => {
     const iface = interfaceForNode(node, index);
     const layout = layouts.get(node.id) ?? layoutNode(iface);
@@ -220,6 +278,7 @@ export function buildDiagram(
         name: node.name,
         junction: iface.junction ?? "0",
         position,
+        exposed: exposed.get(node.id)?.[JUNCTION_PORT] ?? null,
       };
       return {
         id: node.id,
@@ -264,6 +323,7 @@ export function buildDiagram(
       bond,
       compact,
       image: "subsystem" in node.block ? (node.ui?.image ?? null) : null,
+      exposed: exposed.get(node.id) ?? NO_EXPOSED,
       labelSide: outsideLabel
         ? bondLabelSide(
             labelNode,
@@ -340,7 +400,192 @@ export function buildDiagram(
     };
   });
 
-  return { nodes, edges, analysis };
+  if (boundary === null) {
+    return { nodes, edges, analysis };
+  }
+  const terminals = boundaryElements(doc, index, boundary, analysis, layouts, nodeRects, dragOrigin);
+  return {
+    nodes: [...nodes, ...terminals.nodes],
+    edges,
+    boundaryEdges: terminals.edges,
+    analysis,
+  };
+}
+
+const NO_EXPOSED: Record<string, string> = {};
+
+function terminalAnchor(position: Point, width: number, height: number, side: Side): Anchor {
+  switch (side) {
+    case "left":
+      return { point: { x: position.x, y: position.y + height / 2 }, side };
+    case "right":
+      return { point: { x: position.x + width, y: position.y + height / 2 }, side };
+    case "top":
+      return { point: { x: position.x + width / 2, y: position.y }, side };
+    case "bottom":
+    default:
+      return { point: { x: position.x + width / 2, y: position.y + height }, side: "bottom" };
+  }
+}
+
+const INWARD: Record<Side, Side> = { left: "right", right: "left", top: "bottom", bottom: "top" };
+
+/**
+ * The terminals of the open subsystem's exposed ports, their boundary wires
+ * to the internal ports and the three "+ kind" ghosts (plan: port terminals).
+ */
+function boundaryElements(
+  doc: Model,
+  index: CatalogIndex,
+  boundary: SubsystemBoundary,
+  analysis: DiagramAnalysis,
+  layouts: Map<string, NodeLayout>,
+  rects: readonly { x: number; y: number; w: number; h: number }[],
+  dragOrigin: PortDescriptor | null,
+): { nodes: DiagramNode[]; edges: BoundaryEdgeType[] } {
+  const box = contentBox(rects);
+  const texts = new Map<string, string>();
+  const widths = new Map<string, number>();
+  for (const port of boundary.ports) {
+    const text = outsideText(terminalKindOf(port), boundary.outside.get(port.name) ?? []);
+    texts.set(port.name, text);
+    widths.set(port.name, terminalWidth(port.name, text));
+  }
+  const placement = placeTerminals(boundary, box, widths);
+  const nodes: DiagramNode[] = [];
+  const edges: BoundaryEdgeType[] = [];
+
+  for (const port of boundary.ports) {
+    const place = placement.terminals.get(port.name);
+    if (place === undefined) {
+      continue;
+    }
+    const kind = terminalKindOf(port);
+    const links = boundary.outside.get(port.name) ?? [];
+    const internalNode = doc.diagram.nodes.find((node) => node.id === port.node);
+    const layout = internalNode === undefined ? undefined : layouts.get(internalNode.id);
+    const junction = internalNode !== undefined && "junction" in internalNode.block;
+    const centre = {
+      x: place.position.x + place.width / 2,
+      y: place.position.y + place.height / 2,
+    };
+
+    // The internal end: the port's anchor (outside the arrow tip or the input
+    // dot, like a signal edge), or the junction rim facing the terminal.
+    let internal: Anchor | null = null;
+    if (internalNode !== undefined && layout !== undefined) {
+      const offset = nodeVisualOffset(internalNode, index);
+      if (junction) {
+        const middle = nodeCentre(internalNode, layout, offset);
+        internal = {
+          point: circleAnchor(middle, centre, JUNCTION_RADIUS + JUNCTION_BOND_GAP),
+          side: sideToward(middle, centre),
+        };
+      } else {
+        const anchor = portAnchor(internalNode, layout, port.port);
+        if (anchor !== null) {
+          const point = { x: anchor.point.x + offset.x, y: anchor.point.y + offset.y };
+          const gap =
+            kind === "output" ? SIGNAL_ARROW_SIZE : kind === "input" ? SIGNAL_DOT_RADIUS : 0;
+          internal = { point: offsetPoint(point, anchor.side, gap), side: anchor.side };
+        }
+      }
+    }
+    // A stacked terminal's wire leaves from its edge facing the content (a
+    // left/right stack keeps to its two sides, so the wires stay out of the
+    // stack); a placed one faces the internal port.
+    let handleSide: Side = INWARD[place.side];
+    if (internal !== null) {
+      if (place.stored) {
+        handleSide = sideToward(centre, internal.point);
+      } else if (place.side === "left" || place.side === "right") {
+        handleSide = internal.point.x >= centre.x ? "right" : "left";
+      } else {
+        handleSide = internal.point.y >= centre.y ? "bottom" : "top";
+      }
+    }
+    const domain =
+      port.kind === "power"
+        ? port.domain === "Generic"
+          ? (analysis.portDomains.get(`${port.node}\u0000${junction ? "" : port.port}`) ?? "Generic")
+          : port.domain
+        : "Generic";
+    const colour = port.kind === "power" ? domainColor(domain) : signalColor(port.type);
+    const id = terminalId(port.name);
+    const data: TerminalNodeData = {
+      portName: port.name,
+      kind,
+      domain,
+      type: port.kind === "signal" ? port.type : "Real",
+      colour,
+      handleSide,
+      width: place.width,
+      height: place.height,
+      outside: texts.get(port.name) ?? "unconnected",
+      outsideTitle: outsideTitle(kind, links, boundary.nodeName),
+      connected: links.length > 0,
+      mapsTo: endpointLabel(doc.diagram.nodes, port.node, junction ? null : port.port),
+      broken: internal === null,
+    };
+    nodes.push({
+      id,
+      type: "terminal",
+      position: { x: place.position.x, y: place.position.y },
+      data,
+      selected: false,
+      connectable: false,
+      deletable: false,
+    });
+    if (internal !== null && internalNode !== undefined) {
+      edges.push({
+        id: `boundary:${port.name}`,
+        type: "boundary",
+        source: id,
+        sourceHandle: "t",
+        target: internalNode.id,
+        targetHandle: junction ? junctionHandle(internal.side) : port.port,
+        data: {
+          portName: port.name,
+          terminalKind: kind,
+          colour,
+          terminal: terminalAnchor(place.position, place.width, place.height, handleSide),
+          internal,
+        },
+        selected: false,
+        selectable: false,
+        focusable: false,
+        deletable: false,
+        reconnectable: false,
+        interactionWidth: 0,
+      });
+    }
+  }
+
+  for (const [kind, position] of placement.ghosts) {
+    nodes.push({
+      id: ghostId(kind),
+      type: "terminalGhost",
+      position,
+      data: {
+        kind,
+        handleSide: kind === "input" ? "right" : "left",
+        // While a connection is dragged from an internal port, the ghost it
+        // may land on lights up (the same refusal rules as the drop).
+        state:
+          dragOrigin === null
+            ? "idle"
+            : exposeIssue(doc.diagram, boundary.ports, dragOrigin, kind) === null
+              ? "compatible"
+              : "incompatible",
+      },
+      selected: false,
+      selectable: false,
+      draggable: false,
+      connectable: true,
+      deletable: false,
+    });
+  }
+  return { nodes, edges };
 }
 
 /**
