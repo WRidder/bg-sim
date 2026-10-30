@@ -30,4 +30,12 @@ static inline double bg_mod(double x, double y) {
     return (r != 0.0 && ((r < 0.0) != (y < 0.0))) ? r + y : r;
 }
 
+/* The linear algebra of the Rosenbrock methods. bg_w_factor forms W = M - hg J from the
+   Jacobian the generated bg_jacobian wrote into m->jac and the mass diagonal bg_mass, and
+   factors it in place (non-zero on a singular pivot); bg_w_solve solves W v = b in place.
+   bg_solver.c has the dense versions; a build with BG_SPARSE_LU supplies its own. */
+#include "model.h"
+int bg_w_factor(bg_model *m, double hg);
+void bg_w_solve(bg_model *m, double *b);
+
 #endif

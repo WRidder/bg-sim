@@ -117,5 +117,10 @@ function emit_partition(io, k::Int, p, sched, param::Dict{Int,String})
         println(io, "    double $(ctemp(s)) = 0.0;")
     end
     dstmt(io, ex.args[2], param, 4)
+    # A temporary the block writes but never reads (one component of a vector local) is
+    # legal, but -Werror=unused-but-set-variable would reject it.
+    for s in p.temp_slots
+        println(io, "    (void)$(ctemp(s));")
+    end
     println(io, "}\n")
 end
