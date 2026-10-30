@@ -265,6 +265,9 @@ include("test_spatial_slice.jl")
 # Work package J-MB9: the spatial body and joint composites (Phase C).
 include("test_mech_spatial.jl")
 
+# D-MB7 experiment: the rigid spatial revolute joint through index reduction.
+include("test_rigid_spatial.jl")
+
 # Work package J-MB13: compliant plane contact (ContactSurface, ContactPoint).
 include("test_contact.jl")
 

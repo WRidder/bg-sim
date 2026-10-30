@@ -26,6 +26,7 @@
 
 import RuntimeGeneratedFunctions
 import OrdinaryDiffEqNonlinearSolve
+import LinearAlgebra
 
 """
     DiscreteRuntime
@@ -281,6 +282,75 @@ function prepare_discrete!(
     )
 end
 
+"""    reinit_algebraic!(integ)
+
+Re-solve the algebraic unknowns of a mass-matrix DAE at the current differential state after a
+parameter modification, keeping the differential variables fixed (what SciML's Brown
+full-basic initialization does).
+
+This is a chord Newton on the algebraic rows of the (diagonal) mass matrix, with one
+finite-difference Jacobian and a *step* test, rather than `BrownFullBasicInit`, whose test is
+an absolute 1e-10 on the residual. That test is not scale-invariant: an index-reduced rigid
+chain (`stdlib:spatial/Revolute3DRigid`) carries acceleration-level rows scaled by `1/J` (1e8
+for a point mass with `J = 1e-8`), whose round-off floor is ~1e-8. Brown's polyalgorithm then
+runs every member to its iteration limit (about 0.2 s per tick on the 3R arm) before it
+reports a failure. A held output enters these rows linearly, so the chord iteration converges
+in two or three steps. An already consistent state (residual below 1e-10) returns at once.
+
+A chord iteration that does not converge (a strongly nonlinear algebraic loop, a singular
+Jacobian) restores the algebraic unknowns and falls back to `BrownFullBasicInit()`, the
+previous behaviour; its failure marks the solution `InitialFailure`."""
+function reinit_algebraic!(integ; maxiters::Int = 8)
+    SB = ModelingToolkit.SciMLBase
+    M = integ.f.mass_matrix
+    M isa LinearAlgebra.UniformScaling && return nothing
+    ia = findall(iszero, LinearAlgebra.diag(M))
+    isempty(ia) && return nothing
+    x0 = integ.u[ia]
+    _chord_algebraic!(integ, ia, maxiters) && return nothing
+    integ.u[ia] .= x0
+    SB.initialize_dae!(integ, OrdinaryDiffEqNonlinearSolve.BrownFullBasicInit())
+    return nothing
+end
+
+# The chord Newton of `reinit_algebraic!`; `true` when it converged.
+function _chord_algebraic!(integ, ia::Vector{Int}, maxiters::Int)
+    SB = ModelingToolkit.SciMLBase
+    u, p, t = integ.u, integ.p, integ.t
+    f = SB.unwrapped_f(integ.f)
+    r = similar(u)
+    f(r, u, p, t)
+    ra = r[ia]
+    maximum(abs, ra) <= 1.0e-10 && return true
+    na = length(ia)
+    J = Matrix{Float64}(undef, na, na)
+    rp = similar(u)
+    for (k, j) in enumerate(ia)
+        xj = u[j]
+        h = sqrt(eps(Float64)) * max(1.0, abs(xj))
+        u[j] = xj + h
+        f(rp, u, p, t)
+        u[j] = xj
+        for (i, e) in enumerate(ia)
+            J[i, k] = (rp[e] - ra[i]) / h
+        end
+    end
+    F = LinearAlgebra.lu!(J; check = false)
+    LinearAlgebra.issuccess(F) || return false
+    for _ in 1:maxiters
+        dx = F \ ra
+        all(isfinite, dx) || return false
+        xa = view(u, ia)
+        xa .-= dx
+        f(r, u, p, t)
+        ra .= view(r, ia)
+        if maximum(abs, dx) <= 1.0e-12 * (1.0 + maximum(abs, xa)) || maximum(abs, ra) <= 1.0e-10
+            return all(isfinite, ra)
+        end
+    end
+    return false
+end
+
 """    run_tick!(run, integ, t, tick_index) -> Bool
 
 Execute every partition due at the tick `t` (index `tick_index` in the schedule), in
@@ -340,17 +410,12 @@ function run_tick!(run::DiscreteRun, integ, t::Float64, tick_index::Int)
             # `prob.u0` (the `OverrideInit` guesses are the t = 0 operating point and its
             # map writes every unknown), so the state jumped back to its t = 0 value at
             # every published tick. Instead, re-solve only the *algebraic* unknowns at the
-            # current differential state with SciML's Brown full-basic initialization: it
-            # keeps the differential variables fixed and Newton-solves the algebraic rows
-            # of the mass matrix, which is exactly the consistency the new parameter
-            # needs. (`initialize_dae!` is the documented hook the solver itself calls
-            # after a modification; passing the algorithm here leaves the problem's
-            # default t = 0 initialization untouched.)
-            if run.dae
-                ModelingToolkit.SciMLBase.initialize_dae!(
-                    integ, OrdinaryDiffEqNonlinearSolve.BrownFullBasicInit()
-                )
-            end
+            # current differential state (`reinit_algebraic!`: a chord Newton with a
+            # step test, falling back to SciML's Brown full-basic initialization). It
+            # keeps the differential variables fixed and solves the algebraic rows of the
+            # mass matrix, which is exactly the consistency the new parameter needs. The
+            # problem's default t = 0 initialization is left untouched.
+            run.dae && reinit_algebraic!(integ)
             # `reeval_internals_due_to_modification!` is what DiffEqBase runs after a
             # callback affect: it marks the derivative/FSAL data stale and clears the
             # discontinuity flag. `NoInit()` makes its DAE step a no-op, so the algebraic

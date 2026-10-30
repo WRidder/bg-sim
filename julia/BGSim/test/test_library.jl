@@ -266,6 +266,7 @@ const M3_SPATIAL_REFS = [
     "stdlib:spatial/Revolute3D",
     "stdlib:spatial/Revolute3DCompliant",
     "stdlib:spatial/Revolute3DFriction",
+    "stdlib:spatial/Revolute3DRigid",
     "stdlib:spatial/Revolute3DLimit",
     "stdlib:spatial/RigidBody3D",
     "stdlib:spatial/Spherical3D",

@@ -55,6 +55,7 @@ const COMPOSITE_IDS = [
   "sp-revolute-3d-compliant",
   "sp-revolute-3d-friction",
   "sp-revolute-3d-limit",
+  "sp-revolute-3d-rigid",
   "sp-rigid-body-3d",
   "sp-spherical-3d",
   "sp-universal-3d",

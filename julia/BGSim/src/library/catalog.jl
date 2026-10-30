@@ -852,6 +852,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Compliant spatial revolute joint: Revolute3D plus a torsional spring-damper on the joint angle (k, b, qrest).",
         icon = "sp-revolute-3d-compliant",
     ),
+    "stdlib:spatial/Revolute3DRigid" => (
+        description = "Rigid spatial revolute joint: exact rotation about the local z of the joint frame with a Rotation drive; the other five relative twist directions are hard velocity constraints whose reactions are Lagrange multipliers, left to mtkcompile's index reduction (D-MB7); q/qdot/pose and reaction outputs.",
+        icon = "sp-revolute-3d-rigid",
+    ),
     "stdlib:spatial/Revolute3DFriction" => (
         description = "Spatial revolute joint with viscous plus regularised-Coulomb friction on the joint rate (stick/slip); dissipative by construction.",
         icon = "sp-revolute-3d-friction",

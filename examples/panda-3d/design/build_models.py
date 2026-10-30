@@ -11,7 +11,10 @@
 * `panda`       the two-layer model: the `Robot` subsystem (mechanics, seven elastic drives with
                 rotor inertia, gear, Gaz friction and torque limit, encoders, rate and torque
                 sensors) driven by the 1 kHz outer layer (Cartesian trajectory -> analytical IK
-                -> PD + gravity feedforward).
+                -> PD + gravity feedforward);
+* `panda-free-rigid`, `panda-rigid`  the same two models on the rigid joint `Revolute3DRigid`
+                (hard held directions, reduced by `mtkcompile`'s index reduction to two
+                states per joint; plan/MULTIBOND_PLAN.md section 5.7).
 
 Every number comes from `panda.py` (parameters, kinematics, drives) and `design.py` (gains,
 waypoints, start state).
@@ -46,13 +49,15 @@ def held_damping(k: float, i: int) -> tuple[float, float]:
     return 1.4 * math.sqrt(k * distal), 1.4 * math.sqrt(k * 0.3)
 
 
-def add_chain(d: Diagram, q0, k_joint: float, qdd0=None, y0: int = STAIR_Y) -> list[tuple[str, str]]:
+def add_chain(d: Diagram, q0, k_joint: float, qdd0=None, y0: int = STAIR_Y,
+              rigid: bool = False) -> list[tuple[str, str]]:
     """World -> Mount -> J1 -> Link1 -> BJ1 -> B1, T2 -> J2 -> ... -> B7 and the pose band.
 
     Returns the seven joint drive ports. Body i sits at its principal centre-of-mass frame
     (LC_i), so RigidBody3D gets the diagonal principal inertia. The held directions start on
     the deflections of the joint loads at the start (`qdd0`: the rigid-body acceleration there,
-    None for rest).
+    None for rest). With `rigid` the joints are `Revolute3DRigid`: no held-direction parameters
+    and no deflection starts.
     """
     wrench = pz.joint_wrenches(q0, qdd0)
     bx = [STAIR_X + STAIR_DX * i for i in range(pz.NJ)]
@@ -69,11 +74,14 @@ def add_chain(d: Diagram, q0, k_joint: float, qdd0=None, y0: int = STAIR_Y) -> l
         x0 = bx[i]
         bt, br = held_damping(k_joint, i)
         force, moment = wrench[i]
-        d.ref(
-            f"j{k}", f"J{k}", "stdlib:spatial/Revolute3D", x0 + 80, y0,
-            params={"kt": fmt(k_joint), "kr": fmt(k_joint), "bt": fmt(bt), "br": fmt(br), "q0": fmt(q0[i])},
-            starts={"dth": vec(moment[:2] / k_joint), "dl": vec(force / k_joint)},
-        )  # fmt: skip
+        if rigid:
+            d.ref(f"j{k}", f"J{k}", "stdlib:spatial/Revolute3DRigid", x0 + 80, y0, params={"q0": fmt(q0[i])})
+        else:
+            d.ref(
+                f"j{k}", f"J{k}", "stdlib:spatial/Revolute3D", x0 + 80, y0,
+                params={"kt": fmt(k_joint), "kr": fmt(k_joint), "bt": fmt(bt), "br": fmt(br), "q0": fmt(q0[i])},
+                starts={"dth": vec(moment[:2] / k_joint), "dl": vec(force / k_joint)},
+            )  # fmt: skip
         d.ref(f"link{k}", f"Link{k}", "stdlib:multibond/FixedTransform3DNeutral", x0 + 200, y0,
               params=pose_params(pz.com_frame(i)))  # fmt: skip
         d.junction(f"bj{k}", f"BJ{k}", "1", x0 + 320, y0 + 10)
@@ -144,10 +152,18 @@ def pose_binding(target: str, signal: str) -> dict:
 # ------------------------------------------------------------------ panda-free
 
 
-def build_free() -> dict:
+RIGID_NOTE = (
+    " Rigid variant: the seven joints are Revolute3DRigid (the held directions are hard velocity "
+    "constraints with Lagrange-multiplier reactions, so the link inertias are derivative-causal, W201 "
+    "by design), and mtkcompile's index reduction keeps q and qdot per joint as the states "
+    "(plan/MULTIBOND_PLAN.md section 5.7)."
+)
+
+
+def build_free(rigid: bool = False) -> dict:
     d = Diagram()
     qdd0 = pz.forward_dynamics(dz.Q_FREE, np.zeros(pz.NJ), np.zeros(pz.NJ))
-    drives = add_chain(d, dz.Q_FREE, dz.K_HELD, qdd0)
+    drives = add_chain(d, dz.Q_FREE, dz.K_HELD, qdd0, rigid=rigid)
     for i, port in enumerate(drives):
         x = STAIR_X + STAIR_DX * i + 80
         d.ref(f"se{i + 1}", f"Free{i + 1}", "stdlib:bondgraph/Se", x, STAIR_Y + 130, params={"e": "0.0"})
@@ -155,7 +171,7 @@ def build_free() -> dict:
     return {
         "format": "bgsim.model",
         "language": "0.1.0",
-        "name": "panda-free",
+        "name": "panda-free-rigid" if rigid else "panda-free",
         "$comment": (
             "The bare Franka Emika Panda on the spatial multibond mechanics: seven compliant Revolute3D "
             "joints (held directions kt = kr = " + f"{dz.K_HELD:g}" + ") joined by the modified-DH joint "
@@ -163,7 +179,7 @@ def build_free() -> dict:
             "with the physically feasible Gaz et al. 2019 masses, centres of mass and inertias. No drives, "
             "no friction: zero-torque Se on every joint. Released at rest from q0, the held "
             "directions on the deflections of the released motion's joint loads and swinging under gravity; compared with Pinocchio (design/validate.py)."
-        ),
+        ) + (RIGID_NOTE if rigid else ""),
         "diagram": d.document(),
         "settings": settings("Rodas5P", 1e-8, 1e-10, 1001, dz.T_FREE),
         "plots": [
@@ -228,9 +244,9 @@ def add_drives(d: Diagram, drives: list[tuple[str, str]], q0) -> None:
         d.signal_port(f"tauJ{k}", "output", f"tq{k}", "y", "N*m")
 
 
-def build_robot() -> dict:
+def build_robot(rigid: bool = False) -> dict:
     d = Diagram()
-    drives = add_chain(d, pz.Q_READY, dz.K_HELD)
+    drives = add_chain(d, pz.Q_READY, dz.K_HELD, rigid=rigid)
     add_drives(d, drives, pz.Q_READY)
     # the subsystem ports: inputs first, then the three sensor groups
     order = {"tau": 0, "q": 1, "dq": 2, "tauJ": 3}
@@ -238,9 +254,9 @@ def build_robot() -> dict:
     return {"ports": d.ports, "diagram": d.document()}
 
 
-def build_panda() -> dict:
+def build_panda(rigid: bool = False) -> dict:
     d = Diagram()
-    d.node("robot", "Robot", {"subsystem": build_robot()}, 900, 300)
+    d.node("robot", "Robot", {"subsystem": build_robot(rigid)}, 900, 300)
     d.ref("clock", "Clock", "stdlib:sources/Time", 40, 120)
     d.ref("traj", "Traj", "project:PandaTrajectory", 160, 120)
     d.ref("ik", "IK", "project:PandaIK", 380, 160)
@@ -258,7 +274,7 @@ def build_panda() -> dict:
     return {
         "format": "bgsim.model",
         "language": "0.1.0",
-        "name": "panda",
+        "name": "panda-rigid" if rigid else "panda",
         "$comment": (
             "Franka Emika Panda, two layers. Robot (subsystem, signal ports only): the spatial multibond "
             "arm of panda-free (Gaz et al. 2019 feasible parameters) at the ready pose, and per joint a "
@@ -269,7 +285,7 @@ def build_panda() -> dict:
             "(1 kHz): PandaTrajectory (Cartesian flange waypoints, quintic rest-to-rest) -> PandaIK "
             "(He & Liu 2021 analytical IK, q7 fixed, branch from the measured q, holds the last solution "
             "and raises flag) -> PandaPD (PD + Gaz gravity and friction feedforward, torque limits)."
-        ),
+        ) + (RIGID_NOTE if rigid else ""),
         "diagram": d.document(),
         "settings": settings("Rodas5P", 1e-6, 1e-8, 1031, dz.T_END),
         "plots": [
@@ -300,6 +316,8 @@ def write(model: dict) -> None:
 def main() -> None:
     write(build_free())
     write(build_panda())
+    write(build_free(rigid=True))
+    write(build_panda(rigid=True))
 
 
 if __name__ == "__main__":

@@ -152,6 +152,7 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
   "sp-revolute-3d-compliant": () => withMarker(revolute(3), "compliant"),
   "sp-revolute-3d-friction": () => withMarker(revolute(3), "friction"),
   "sp-revolute-3d-limit": () => withMarker(revolute(3), "limit"),
+  "sp-revolute-3d-rigid": () => withMarker(revolute(3), "rigid"),
   "pl-prismatic-2d": () => prismatic(2),
   "sp-prismatic-3d": () => prismatic(3),
   "sp-prismatic-3d-compliant": () => withMarker(prismatic(3), "compliant"),
