@@ -9,6 +9,7 @@ A bond-graph / block-diagram / equation modeling and simulation tool:
 - Language and semantics spec: `spec/Modeling Language Spec v0.1.md`
 - Implementation plan (milestones, work packages, contracts): `plan/IMPLEMENTATION_PLAN.md`
 - M3 multibond mechanics detail (2D/3D elements, WPs, visual contract): `plan/MULTIBOND_PLAN.md`
+- C/FMU export (real-time target, WPs, spike results): `plan/EXPORT_PLAN.md`, spike in `spike/fmu/`
 - Background literature (PDFs, read-only): `background/`
 
 ## Toolchain (this machine: Windows 11)
