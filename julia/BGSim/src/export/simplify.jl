@@ -24,7 +24,8 @@
 # still become literals through `env`.
 #
 # The semantic difference is accepted and documented: `0 * x -> 0` drops the NaN of an
-# infinite or NaN `x`, and `x + 0 -> x` keeps the sign of a negative zero.
+# infinite or NaN `x` and the sign of a zero product, and `x + 0 -> x` keeps the sign of a
+# negative zero.
 
 """Operations `fold_simplify` evaluates when every argument is a number. Their Julia
 definitions match the C runtime's (`bg_runtime.h`); `round` is left out (the C twin rounds

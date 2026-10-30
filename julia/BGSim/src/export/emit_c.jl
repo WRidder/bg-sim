@@ -157,7 +157,8 @@ end
 A C product of the operand strings `a` with the leftovers of folding removed (D-EX10): the
 literal operands are multiplied into one, a zero literal makes the product `0.0` (dropping
 the NaN of an infinite operand), a unit literal is left out and `-1` becomes a negation."""
-function _c_product(a::Vector{String})
+function _c_product(a::Vector{String}; exact::Bool = false)
+    exact && return _c_product_exact(a)
     c = 1.0
     rest = String[]
     for s in a
@@ -170,6 +171,33 @@ function _c_product(a::Vector{String})
     c == 1 && return body
     c == -1 && return "(-$body)"
     return "(" * join([clit(c); rest], " * ") * ")"
+end
+
+"""    _c_product_exact(a) -> String
+
+The bit-exact subset of `_c_product`, for the discrete partitions (whose C must match the
+Julia scheduler bit for bit): a `1.0` factor is left out and a `(-1.0)` factor becomes a
+negation (both exact anywhere in a left-to-right product), and a product of literals only
+is evaluated left to right as C would. A zero factor stays (`0.0 * x` is `-0.0` or NaN for
+some `x`)."""
+function _c_product_exact(a::Vector{String})
+    vals = [_lit_value(s) for s in a]
+    if all(!isnothing, vals)
+        c = vals[1]
+        for v in vals[2:end]
+            c *= v
+        end
+        return clit(c)
+    end
+    neg = false
+    rest = String[]
+    for (s, v) in zip(a, vals)
+        v == 1 && continue
+        v == -1 && (neg = !neg; continue)
+        push!(rest, s)
+    end
+    body = length(rest) == 1 ? rest[1] : "(" * join(rest, " * ") * ")"
+    return neg ? "(-$body)" : body
 end
 
 """The C of `-y` when `y` is a product with a negative numeric coefficient (how

@@ -113,6 +113,12 @@ end
         @test _SI._c_product(["2.0", "x[0]"]) == "(2.0 * x[0])"
         @test _SI._c_product(["NAN", "x[0]"]) == "(NAN * x[0])"   # not a finite literal
         @test _SI._lit_value("(-2.5e-3)") == -2.5e-3 && _SI._lit_value("x[0]") === nothing
+        # The discrete partitions' exact subset: 1.0 and -1.0 factors only, zero stays.
+        @test _SI._c_product(["tmp_a", "1.0"]; exact = true) == "tmp_a"
+        @test _SI._c_product(["tmp_a", "(-1.0)", "tmp_b"]; exact = true) == "(-(tmp_a * tmp_b))"
+        @test _SI._c_product(["0.0", "tmp_a"]; exact = true) == "(0.0 * tmp_a)"
+        @test _SI._c_product(["2.0", "tmp_a", "3.0"]; exact = true) == "(2.0 * tmp_a * 3.0)"
+        @test _SI._c_product(["1.0", "1.0"]; exact = true) == "1.0"
         @test c(X - Y) == "(x[0] - x[1])"
         @test c(-X - Y) in ("(-x[0] - x[1])", "(-x[1] - x[0])")
         @test c(2.0 - 3.0 * X) == "(2.0 - (3.0 * x[0]))"
