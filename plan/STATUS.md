@@ -398,7 +398,7 @@ vertices for orthogonal wires and feedback lanes.
 - Inline-block wires inside the hydraulic valve subsystem only render after a worker check, so
   the render tool cannot lint them.
 
-### M4 — debugging (branch `m4`)
+### M4 — debugging (branch `m4`; gate: green before and after the master merge, 2026-10-30)
 
 **Works.** Plan 5.13 end to end:
 - A debug run (`simulate(...; debug)`, opt-in, DEC-M4-8) pauses on entry, time, event,
@@ -448,6 +448,36 @@ The two failed lanes were then re-run green:
 - Examples **649/649** in **1369 s**.
 - Playwright: **66/66** fake-worker specs, and **22/22** real-worker specs in 7.0 min, including
   `debug.spec.ts` (3/3, re-run after the branch fix).
+
+**Merge of master** (M5, F5.1, PERF-1, X5.13; `a35829b`). Conflicts, all resolved keeping both
+sides:
+- `simulate.jl`: F5.1's CSV `tstops` are merged before the watch pool, and PERF-1's step
+  timing wraps `_dbg_step!`.
+- `DebugSession.getters` holds PERF-1's `SignalReader`; the watch/values getters are built
+  lazily.
+- `app.py` routers, the contracts tests (ten schemas), CenterTabs (Docs tab and the paused
+  label), the Playwright ignore list, and NOTES.md.
+
+**Gate (post-merge).** The first run gave **10 passed, 1 failed**: Vitest still asserted nine
+schemas, and debug + docs make ten (`4bf6686`). Re-run green:
+- Julia `Pkg.test()`: **964.5 s**, **129** testsets, **161 655** assertions.
+- pytest **591** + **11** julia-marked, ruff.
+- tsc, ESLint, Vitest **911**, Vite build.
+- Examples **1213/1213** in **468 s**.
+- Playwright: **74/74** fake-worker specs, and **31/31** real-worker specs in 7.4 min, including
+  `debug.spec.ts`.
+
+5.13 after the merge:
+- pause latency 14.0 ms (max 25.6);
+- tick step 3.3 ms (max 5.4);
+- explain 25–36 ms;
+- watch crossing 4.29e-11 s;
+- overhead **1.20** (dc-motor) and **1.19** (drivetrain-kalman).
+
+The overhead ratios rose because PERF-1 made the normal runs about 20× faster (dc-motor 0.054 s,
+drivetrain-kalman 0.22 s). The debug loop's fixed per-step cost (single `step!` calls, the
+checkpoints and the 16-slot watch callback) is now a larger share, but it stays within the 1.3×
+target.
 
 **Determinism.**
 - A debug run without breakpoints, and paused-and-continued sessions, are byte-identical to
