@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "robird",
+  "models": [
+    "robird",
+    "robird-trim"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

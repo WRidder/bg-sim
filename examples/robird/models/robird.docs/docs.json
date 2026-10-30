@@ -1,0 +1,43 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "structure",
+          "title": "The multibond structure",
+          "file": "pages/structure.md",
+          "children": []
+        },
+        {
+          "id": "aero",
+          "title": "The aerodynamic model",
+          "file": "pages/aero.md",
+          "children": []
+        },
+        {
+          "id": "wing",
+          "title": "Flapping drive and aeroelastic wing",
+          "file": "pages/wing.md",
+          "children": []
+        },
+        {
+          "id": "controller",
+          "title": "Controller design",
+          "file": "pages/controller.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results",
+          "file": "pages/results.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

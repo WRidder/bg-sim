@@ -224,6 +224,15 @@
       "rlc-dual"
     ]
   },
+  "robird": {
+    "title": "Robird",
+    "description": "A flapping-wing robotic falcon flying a Lissajous figure of eight.",
+    "hasScene": true,
+    "models": [
+      "robird",
+      "robird-trim"
+    ]
+  },
   "robot-arm-2d": {
     "title": "Robot arm 2d",
     "description": "The planar 2-link arm on the M3 multibond mechanics.",
