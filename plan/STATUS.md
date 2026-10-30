@@ -93,17 +93,17 @@ States: `todo`, `running`, `done`, `failed`, `rescoped`.
 | W-MB3 | W | M3 | W-MB2 | done | Connection inspector (domain, strokes, components, per-component units, `model.check.frames`, both port frames, E007 explanation), block inspector (per-port frame, unit arrays, `e[k]`/`f[k]` signals), library groups "2D multibond"/"3D multibond" from catalog `dimension` (unknown groups such as Drives stay separate), 1/2/3-tick port glyphs with aria-labels ("Planar multibond port p, 3 components, 2 strokes, frame body"). **Measured:** vitest **452**, Playwright `multibond-inspector` + `multibond` 4/4 ×3; typecheck/lint/build green. Real-worker specs pending (worker load time while the Julia tree was being edited). |
 | X-MB6 | X | M3 | all | done | `tools/energy_balance.py` (CLI + importable): port-power ledger from recorded signals only — resolves each `*.P` owner through the model document and stdlib/project composites to a class (storage / dissipation / source / mixed / conversion / measure, `--override GLOB=CLASS`), Tellegen residual, running storage/supply balance against a named stored energy (`stored`, `stored_from: "energy"`, `stored_spec`), normalised by throughput; additive `energy_ledger` kind in `examples/run_checks.py`, appended to `multibond-pendulum-2d`, `robot-arm-2d`, `reaction-wheel-3d`; `docs/multibond.md` (stroke convention, frames, units, joint conventions, drives, contact, switched pivot, chain loader, example index). Runner `RUN_TIMEOUT` 180 → 600 s (the 3D models take minutes under load). **Measured:** pytest 9 synthetic + 1 real-worker (Tellegen 5.0e-18, balance 6.5e-13, a 1 % mass error caught; trapezoid order ratio 4.0); ledgers: pendulum 2.6e-13 of 6.89e-3 J, arm 4.96e-5 of 11.97 J (0.5 ms grid under 1 ms PD steps), arm-free 4.9e-13 of 153.8 J, reaction-wheel-3d gravity-on 8.0e-7 of 13.39 J, gravity-off 5.9e-6 of 2.556 J (damper heat inside storage-class joints). |
 | C-MB2 | C | M3 | all | done | Generated bindings were in sync (no diff on regeneration); the worker's real `catalog.get` validates against `catalog.schema.json` with 0 errors (14 groups incl. Spatial mechanics 16, Drives 4, Contact 5; every Planar/Spatial port size 3/6 with per-component units and block `dimension` 2/3) — new `backend/tests/test_catalog_contract.py` (julia-marked, 5). **Pose binding order fixed:** `bindings.schema.json`/`bindings.robot.json` and the spec now say 7 signals quaternion first `(q_w,q_x,q_y,q_z,x,y,z)` = the model's `Vec{7}` chart (the fixture had position first). `catalog.min.json` ports carry `"frame": null` like the emitter. Mutation tests: schema and pydantic reject wrong `dimension`, Spatial size 3, Planar size 6, wrong-length `components`, integer `frame`. ADR-MB1 "M3 final" lists every shipped deviation (vector signal units stay one slot — per-component units are authoritative on the power port; pydantic accepts explicit null for absent-only optionals). **Measured:** contracts pytest 144 (+9), vitest contracts 71, backend 298 passed (1 known load-sensitive decimation perf flake). Open for M5: planar pose binding count `(θ,x,y)`. |
-| C4.0 | C | M4 | M3 | todo | Debug contracts |
-| J4.1 | J | M4 | C4.0 | todo | Debug run engine |
-| J4.2 | J | M4 | J4.1 | todo | Statement hooks and line breakpoints |
-| J4.3 | J | M4 | J4.1, J2.8 | todo | Watch pool, evaluate and explain |
-| J4.4 | J | M4 | J4.1 | todo | Edits, replay and branch |
-| J4.5 | J | M4 | J4.2, J4.3, J4.4 | todo | Worker debug methods |
-| P4.1 | P | M4 | C4.0 | todo | Debug API and fake debugger |
-| W4.1 | W | M4 | P4.1, W2.1 | todo | Debug controls and gutter breakpoints |
-| W4.2 | W | M4 | W4.1 | todo | Debug panels, watches and explain |
-| W4.3 | W | M4 | W4.1, W2.4 | todo | Pause-aware plots and live inspector |
-| X4.1 | X | M4 | J4.5, P4.1, W4.1–W4.3 | todo | Debugging walkthrough e2e |
+| C4.0 | C | M4 | M3 | done | `debug.schema.json` (`breakpoint` = `oneOf` of the five kinds, each requiring its kind object; `pausedInfo`, `frame`/`frameValue` (≤ 3 array levels: the generators reject recursive `$ref`s), `edit`, `runDebugInfo`, `breakpointStatus`, `evaluateResult`, `valuesResult`, `explainResult`, …), the 3.8 worker methods/notifications in `worker-rpc`, manifest `status: paused` + optional `debug`/`parentRun`/`branchAt`; E401/E402/W401 in the diagnostics sample (the diagnostics-panel counts were updated to 26/7/33, not filtered). Fixtures: 20 valid + 10 invalid debug, 25 worker-rpc, 4 manifest. pytest 483, vitest 722. |
+| J4.1 | J | M4 | C4.0 | done | `src/sim/debug.jl`: `DebugCtx`, commands executed on the run task (`with_paused`), pause/continue, step tick/solverStep/event, runTo + time/event/exception breakpoints (a breakpoint-kind registry and a step-granularity registry for J4.2/J4.3), pause on entry, cancel while paused, recorder flush + manifest `paused`/`debug` at every pause. `simulate(...; debug = nothing)` is the unchanged normal loop; the debug step loop replicates SciMLBase 7.21.4 `step!(integ, dt, true)` one internal step at a time, so a debug run without breakpoints and paused-and-continued sessions are **byte-identical** to normal runs (dc-motor, drivetrain-kalman, bouncing-ball). Event breakpoint at the first bounce = `sqrt(2/9.81)` = 0.4515236 s (the plan's 0.45152 rounded) within 1e-6. Targets: see the M4 summary. test_debug **351**. |
+| J4.2 | J | M4 | J4.1 | done | Debug variant of the discrete partitions (5-argument generated step with one hook per source statement; a normal run's expression is unchanged and tested), hook table (LQG: 9 hooks), line resolution (verified / **E401** with the scope-specific hint / **W401** `verified = false`), conditions parsed with the front end and evaluated by the constant-folding interpreter over the frame (never `eval`), hit counts (n-th hit), step statement, frames (locals incl. D18 temporaries, held, previous). Fixed a stale event cursor at statement/tick pauses (double-recorded event rows). LQG line 41 paused at 40 ticks with `xhat` equal to the normal run's row; 100 hits byte-identical. test_hooks **1276**. Open: vector assignments lower per element (existing J2.2 semantics). |
+| J4.3 | J | M4 | J4.1, J2.8 | done | `syntax/watch.jl` (watch scope: `s"..."`, context-relative names, whitelist, E001–E006 with `scope = "watch"`), `sim/watch.jl` (one 16-slot `VectorContinuousCallback` passed to `init`, merged with MTK's callbacks (probed), upward crossings only, conditions via `SymbolicIndexingInterface.observed`; installed in every debug run and still byte-identical without watches), `debug_evaluate`/`debug_values`, `compile/explain.jl` (`model_explain`: state/algebraic/observed/alias/parameter/discrete, expression in our ids, origins, W201/W202). dc-motor `Motor1/i > 5` (an eliminated alias) pauses at 0.010471103608 s vs reference 0.010471103651 s (**4.3e-11 s**); 50 random pool changes while paused: 0 spurious pauses; 17th watch refused; explain **25–37 ms** warm. test_watch **321**, test_explain **79**. Limitation: a watch crossing at the same instant as another callback's event is not seen (DiffEqBase applies the earliest callback per step; NOTES.md). |
+| J4.4 | J | M4 | J4.1 | done | `sim/edits.jl`: `debug_set_parameter!` (setp + the held-output discontinuity handling), `debug_set_state!` (**E402**), `debug.edits` in the manifest (each edit records its loop checkpoint in `$comment`), `replay_run` (a never-pausing debug run that re-adds the parent's time stops) and `branch_run`. dc-motor runTo 0.2 + R edit → replay **byte-identical** (replay of the replay too); branch at 0.1 matches the parent's rows before 0.1 byte for byte and pauses (`parentRun`, `branchAt`); drivetrain-kalman edits at entry/tick/step/pause/time/statement pauses replay byte-identically; watch-pause replay within **3.9e-8** relative. Deviation DEC-M4-9 (E402 rule). test_edits **143** (1 and 2 threads). |
+| J4.5 | J | M4 | J4.2, J4.3, J4.4 | done | `worker/server.jl`: `run.start` with `debug`, every 3.8 method, `debug.paused`/`debug.resumed`, `run.replay`/`run.branch` (parent = sibling run folder, `model.json` written by every run, so it works after a worker restart), `model.explain`; `DebugStateError` → RPC error "run is not paused"; `run.cancel`/`_shutdown_runs` call `debug_cancel!` (a paused run does not see the cancel flag); `block.check` answers while a run is paused with a command in flight. test_worker_debug **66**; backend julia-marked **11** passed incl. P4.1's dc-motor debug test. |
+| P4.1 | P | M4 | C4.0 | done | `debug.py` (3.8 endpoints; a worker "run is not paused" error → **409**), run WS forwards `debug.paused`/`debug.resumed` (tail flushed first; a late socket gets the current pause), paused manifests in `/data`/CSV/tails, replay/branch create sibling runs, pruning keeps parents of kept runs; `fake_debug.py`: a scripted fake debug run (10 ms ticks, line breakpoints resolved against the real block sources with E401/W401, conditions, hit counts, stepping, watches on the synthetic signals with the 16-slot limit, evaluate, edits, replay/branch, explain). pytest **537** (+54). |
+| W4.1 | W | M4 | P4.1, W2.1 | done | `web/src/debug/` (breakpoint store per model in `localStorage` with try/catch, debug session store fed by the run WS), run-bar Debug/Continue/Pause/Step statement/tick/event/solver step/Run to/Stop with F5/F6/F9/F10/F11/Shift+F5, CodeMirror gutter (filled = verified, hollow + W401/E401 tooltip, right-click condition/hit count), paused-line highlight and "Code · paused in <path>". e2e: gutter bp on LQG line 41, pause, 3 × F10 → lines 42/43/44, continue to done. **FIX-M4-1** (pre-existing flake, also on the pre-M4 baseline): the a11y spec emulates reduced motion so axe never samples the Run button mid-transition; the lazy code-tab wait in `app.test.tsx` is 5 s. |
+| W4.2 | W | M4 | W4.1 | done | Debug dock tab: Variables (frame, selected-instance and watched signals via `/values`), Watch expressions (re-evaluated at every pause), Breakpoints (kinds, verified state, "n / 16 watch slots", break on events/E901/W206), Edits (Replay, "Save parameters to model" as one undo step); "Break when…" from the signal browser and the canvas menus (comparison dialog + Advanced with `s"` completion); Explain popover from the signal browser, bond menu and inspector with links to the code tab. vitest +30, e2e debug-panels (watch pause at 0.084 s, evaluate, explain) + a11y with the Debug tab. |
+| W4.3 | W | M4 | W4.1, W2.4 | done | uPlot pause marker (dashed, labelled), series clipped to and refreshed at the pause, inspect time jumps to the pause; **3D playback pause marker and clamp** (DEC-M4-1); live inspector (`setParameter` while paused, listed under Edits, document and undo untouched, server diagnostics inline); "Rewind to here" → branch run followed and paused. vitest +31, e2e debug-pause 3/3 (plot ends at 0.084 s with the marker, live edit `R1/R = 25`, model unchanged, branch paused with `parentRun`/`branchAt`). |
+| X4.1 | X | M4 | J4.5, P4.1, W4.1–W4.3 | done | `web/tests/e2e/debug.spec.ts` against the real worker (added to the real-worker list in `tools/check.py` and the fake-pass ignore list), 3/3 twice in a row (~1 min). drivetrain-kalman: LQG line 41 pauses at 0.0010 s, `xhat` in Variables, 3 × F10 → lines 42/43/45 (line 44 is the `for` header, no statement), F5 → done. bouncing-ball: event pause at 0.4515 s, live `Ball1/e = 0.6` (second apex 0.2304 m vs 0.4096 m), Replay's `Ball1/h` equals the session's bit for bit (3560 samples). dc-motor: Break when `Motor1/i > 5` pauses at 0.0105 s, Rewind to here → branch paused at the cursor with `parentRun`/`branchAt`, Explain on the eliminated `Motor1/i` (alias → state with origin). Fixed on the way: the branch's time breakpoint lacked `enabled` (every branch manifest failed the contract in `GET /api/runs/{id}`; test_edits 144) and the web re-syncs breakpoint statuses at the first pause when the start-time sync reached the worker before the run was built. |
 | W5.1 | W | M5 | M2 | done | `web/src/viewer/`: `renderScheduler.ts` and `toon.ts` verbatim from the HMI, `picking.ts`, `viewerScene.ts` (`ViewerScene` handle: `root` = `sdf_root` rot.x −π/2, `invalidate`, `fit(preset)`, ortho, pick/highlight, `tagEntity`), `Viewer.tsx` (injectable `createEngine`, StrictMode-safe lifecycle, ResizeObserver, visibility/IntersectionObserver/active-tab gating, no-WebGL fallback, `data-state`/`data-frames`), lazy `DockViewer` in the 3D View tab with Iso/Top/Front/Side/Fit/Ortho. Deviations: Babylon's own wheel zoom instead of the HMI's `zoomAt`; toon plugin re-registered per scene (Babylon drops global plugins with the last engine); one `executeWhenReady` redraw for async shader compile; `fit()` on an empty scene guarded. **Measured:** stationary 0–0.33 fps (limit 2), hidden 0 fps, inactive tab 0 fps; main chunk +2.2 kB, Babylon in a 1.18 MB lazy chunk (289 kB gzip). Orchestrator re-run: typecheck/lint clean, vitest **497**, build ok, perf 4/4, smoke 1/1. |
 | W5.2 | W | M5 | W5.1 | done | `web/src/scene/`: `sdf.ts` (DOMParser, plan 7.6 subset, SDF 1.7 defaults, `relative_to` model/link/frame), `pose.ts` (pure 4×4 math), `resolve.ts` (kinematic tree jointFrame → jointMotion → child), `build.ts` (Babylon primitives with Z-axis cylinders, GLB via `LoadAssetContainerAsync`, toon, entity tags, clean dispose), `SceneView`/`SceneTree` (collapsible scene tree in the 3D View, two-way selection). `BuiltScene` setters for W5.3: `setJointPosition`, `setPose` (world pose in the SDF frame, `(qw,qx,qy,qz,x,y,z)`), `setVisualScale`, `setVisualColor`, `setVisible`, `reset`. New viewer codes **E305** (scene not built: file/XML/numbers/duplicates/`relative_to`/loops; per-visual for a failed mesh) and **E306** (unsupported element skipped; severity `error` because the contract test requires E-codes to be errors, the rest still draws); diagnostic `path` is the scene target. The diagnostics sample grew 28 → 30 (fixture + both known-code lists + panel counts). **Measured:** two-joint chain vs hand-computed world matrices ≤ 1e-9 (pure and Babylon), SDF (0,0,1) → world (0,1,0), idle 0.33 fps with a scene. Orchestrator re-run: vitest **534**, build ok, contracts 144, scene-view + diagnostics e2e 5/5; tsc/eslint clean except X5.3's in-progress spec. |
 | W5.3 | W | M5 | W5.2, W2.4, W4.3 | done | `web/src/viewer/`: `timeline.ts` (binary search, lerp, shortest-path slerp, held ends), `playbackClock.ts` (wall × speed, seek re-anchor, loop), `playbackStream.ts` (P5.1 `/ws/stream` client, multi-frame messages), `playbackController`/`playbackHook`, `bindingsValidate` (E301 target/kind/fixed joint, E302 signal, E303 unit — `1`/`rad`/empty = angle, prismatic m, deg/mm/cm only with the factor in `gain` — E304 count), `bindingsApply` + colormaps heat/viridis/coolwarm, `PlaybackBar` (play/pause/rewind/speed/loop/slider, space key, `data-time`/`data-applied` test hooks), `BindingsEditor` (table, add form, row hover highlights in 3D); store action `setBindings` (one undo entry). Two-way plot-cursor sync for finished runs (cursor writes ≤ every 50 ms while playing); live runs follow the newest data 1.5 intervals behind. **No debug pause marker (DEC-M5-1, moves to W4.3).** Signal list = model.check signals overridden by the run manifest; with neither (the fake worker), E302/E303 are skipped. Orchestrator re-run: typecheck/lint clean, vitest **609**, build ok, bindings-playback + scene-view e2e 7/7 (cursor 0.55 s → joint 0.5 rad), viewer perf 4/4 (stationary 0.33 fps, hidden 0). |
@@ -388,6 +388,73 @@ vertices for orthogonal wires and feedback lanes.
 - Inline-block wires inside the hydraulic valve subsystem only render after a worker check, so
   the render tool cannot lint them.
 
+### M4 — debugging (branch `m4`)
+
+**Works.** Plan 5.13 end to end:
+- A debug run (`simulate(...; debug)`, opt-in, DEC-M4-8) pauses on entry, time, event,
+  exception, line (with condition and hit count) and watch breakpoints.
+- It steps by statement, tick, event and solver step, and runs to a time.
+- While paused it shows frames, evaluates expressions, edits parameters and states (E402),
+  explains a signal, and replays or branches from any pause.
+- The web app drives all of it: run-bar controls with F5–F11 and gutter breakpoints; a Debug
+  dock tab with Variables, Watch, Breakpoints and Edits; "Break when…" and Explain; plots and
+  3D playback that end at the pause; a live inspector and "Rewind to here".
+- The backend forwards every call, and its fake debugger mirrors the real one for the
+  fake-worker e2e.
+
+**Measured (plan 5.13 targets).**
+
+| Target | Measured | Limit |
+| --- | --- | --- |
+| Pause latency | 10–53 ms | < 100 ms |
+| Tick step round trip | 3.3–23 ms (median of 25; max 28 ms) | < 50 ms |
+| Overhead, dc-motor (no breakpoints, `minimum` of 11 interleaved GC'd samples) | 0.91–1.10× | ≤ 1.3× |
+| Overhead, drivetrain-kalman | 0.93–1.09× | ≤ 1.3× |
+| Explain, warm | 25–37 ms | < 300 ms |
+| Watch crossing, dc-motor `Motor1/i > 5` | 4.3e-11 s | 1e-8 s |
+
+Measured with every load the machine had at the time, so the ranges are wide. In the pre-merge
+gate's `Pkg.test` (machine shared with M5 runs): pause latency median 44.8 ms (max 52.8), tick
+step median 23.3 ms (max 28.4), overhead 1.021 (dc-motor) and 1.051 (drivetrain-kalman),
+explain 24–26 ms, watch crossing 4.29e-11 s.
+
+**Gate (pre-merge, branch `m4`).** `uv run tools/check.py --lane all` with
+`BGSIM_E2E_PORT=8795`. The first run gave **9 passed, 2 failed**:
+- **Julia lane:** `test_debug.jl` imported `Statistics`, which is not a test target of the
+  package; focused runs with `--project` had hidden this. Fixed with a local `median`.
+- **Fake-worker Playwright, 64/66:**
+  - `diagnostics.spec.ts` still counted the M2 sample (30 items). It now expects 33 items,
+    26 errors, 7 warnings and 24 groups. W401 navigates by its instance path and E401 to its
+    source range.
+  - The `debug-pause` Rewind test was flaky under parallel load (5 of 8 failed when
+    reproduced). The web sent the user's breakpoints to a branch run at its start, racing the
+    branch's fast-forward, so a watch before the branch time could pause it early. A followed
+    branch now gets its breakpoints at its first pause instead: 10/10 under load.
+
+The two failed lanes were then re-run green:
+- Julia `Pkg.test()`: **1936.1 s**, **127** testsets, **161 377** assertions.
+- pytest **537** + **11** julia-marked, ruff.
+- tsc, ESLint, Vitest **829**, Vite build.
+- Examples **649/649** in **1369 s**.
+- Playwright: **66/66** fake-worker specs, and **22/22** real-worker specs in 7.0 min, including
+  `debug.spec.ts` (3/3, re-run after the branch fix).
+
+**Determinism.**
+- A debug run without breakpoints, and paused-and-continued sessions, are byte-identical to
+  normal runs.
+- Replays are byte-identical, including edits at every kind of pause.
+- A branch's rows before `branchAt` are the parent's rows bit for bit.
+- Watch-pause replay is within 3.9e-8 relative.
+
+**Deviations / open.**
+- E402 rule (DEC-M4-9).
+- A watch crossing at the same instant as another callback's event is not seen (DiffEqBase
+  applies only the earliest callback per step).
+- An edit made at a statement pause replays before that tick's partitions.
+- "Rewind to here" cancels the paused parent run before it starts the branch.
+- Vector assignments hook per element.
+- J4.2 and J4.3 share one commit.
+
 
 
 
@@ -429,6 +496,14 @@ vertices for orthogonal wires and feedback lanes.
 | DEC-M5-3 | comparison | X5.4 compares the plan 9.9 cube with a multibond counterpart (compliant spherical corner pivot, three body-axis `ReactionWheel`s) built inside `examples/cube-3d/`; the M3 pyramid cube has four pyramid wheels and contacts. |
 | DEC-M5-4 | scope | X5.1 adds scenes for every pre-M5 example (M1, M2 and M3), because plan 9.10 defers the M3 3D cross-checks to M5. |
 | DEC-M5-5..7 | process | Scenes at `examples/<name>/scenes/*.sdf`; additive-only shared edits (`BottomDock.tsx` viewer tab, `playwright.config.ts` ignore list, `tools/check.py` real list, new `run_checks.py` kinds); one e2e port per WP. See `plan/wps/M5-RULES.md`. |
+| DEC-M4-1 | scope | W4.3 delivers the 3D playback pause marker and the playback clamp at the pause time (moved from W5.3 by DEC-M5-1). |
+| DEC-M4-2 | process | M4 is built in its own worktree/branch `m4` and merged with master (which carries M5 and PERF-1) before the gate is re-run; master is never merged into by the M4 lead. |
+| DEC-M4-3 | process | M4 e2e ports 8790–8799: C4.0/P4.1 8790, W4.1 8791, W4.2 8792, W4.3 8793, X4.1 8794, gate 8795 (M5 uses 8771–8783). |
+| DEC-M4-4 | process | Every backend/Julia process a WP starts is stopped with `taskkill /T /F`; at most two Julia-heavy test runs at once. |
+| DEC-M4-5 | merge | The debug insertion points in `simulate.jl`, `scheduler.jl` and `discrete.jl` are localized `# M4 debug:` lines and `debug` keywords whose `nothing` path is the old code, so PERF-1/F5.1 merge cleanly. |
+| DEC-M4-6..8 | process | Shared mount-point files are edited additively; one Julia test file per WP (`test_debug`, `test_hooks`, `test_watch`, `test_explain`, `test_edits`, `test_worker_debug`); the debug engine is opt-in via `simulate(...; debug = nothing)` so a normal run is the unchanged loop. See `plan/wps/M4-RULES.md`. |
+| DEC-M4-9 | semantics | `debug.setState` (E402) rejects a variable that is not a differential state of the compiled system (alias, algebraic unknown, observed, parameter, held output), and a state of a system that keeps a **nonlinear** algebraic equation depending on a differential state. drivetrain-kalman keeps one linear algebraic equation after `mtkcompile`, so D24's literal "no algebraic equations" would forbid every state edit in the plan 9.5 model; with linear algebraic equations the Brown full basic initialization (differential states fixed) restores consistency exactly. |
+| FIX-M4-1 | test | Pre-existing flake (also on the pre-M4 baseline): the a11y spec emulates `prefers-reduced-motion` so axe never samples a button mid colour transition; the lazily loaded code-tab wait in `app.test.tsx` is 5 s. |
 
 ## Measured numbers
 
