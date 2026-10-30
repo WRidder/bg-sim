@@ -498,9 +498,6 @@ target.
 - Vector assignments hook per element.
 - J4.2 and J4.3 share one commit.
 
-
-
-
 ### M5 — 3D view, examples and polish (gate: green, 2026-10-30)
 
 **Works.**
