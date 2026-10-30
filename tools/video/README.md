@@ -40,3 +40,18 @@ and ffmpeg is on PATH (otherwise `uv run --with imageio-ffmpeg` supplies the bin
 
 Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Segoe UI), `encode.mjs` (ffmpeg),
 `_sheet.mjs` (debugging helper, e.g. `node tools/video/_sheet.mjs v-3` makes a contact sheet).
+
+## Real-motion pipeline (v2: 30 fps intro, 60 fps examples)
+
+- Intro (30 fps): `capture-intro30.mjs` records each scene in real time with the CDP screencast (`rec.mjs`: JPEG q92 at 1920x1080,
+  every frame, a virtual clock that is paused during page loads and long waits, an injected cursor overlay and paced, smooth mouse
+  and keyboard actions). `compose-intro30.mjs` resamples the variable-rate frames to a constant 30 fps with ffmpeg (concat list with
+  per-frame durations plus `fps=30`), burns the caption bar in (marks of the capture script and captions of `intro-plan.mjs`) and
+  joins the title cards. Pop-out windows are inserted as short stills.
+- Examples (60 fps): `capture-sim60.mjs` runs the model, detaches the 3D viewer into a pop-out window and, for frame k, sets the
+  playback time to k*s/60 on the slider of the viewer (the plot cursor of the main window follows), waits two animation frames and
+  screenshots the 3D canvas and the plot panels. It is resumable (cached per example in `frames/sim60/<example>/done.json`).
+  Playback speed s = T/L with L = clamp(T, 6, 10) seconds of video. `compose-sim60.mjs` lays out diagram, plots and 3D with one
+  ffmpeg filter graph per example (t and speed in the header, progress bar), then joins the cards and clips.
+- Order: `compose-examples.mjs --no-encode` (cards, comparison frames), `compose-intro.mjs --no-encode` (title and scene cards), then
+  the two v2 composers. `capture-examples.mjs` still provides the diagram images and the plotted signals per example.
