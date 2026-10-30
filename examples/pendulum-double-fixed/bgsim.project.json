@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "pendulum-double-fixed",
+  "models": [
+    "pendulum-double-fixed",
+    "free"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

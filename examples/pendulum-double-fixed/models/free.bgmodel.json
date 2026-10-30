@@ -1,0 +1,969 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "free",
+  "$comment": "The same plant as the main model with the motor terminals at 0 V and a non-trivial start (joint angles -0.3708, 1.0000 rad), used to prove that design/design.py has the plant of the bond graph (free swing, design ODE versus this run).",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Ground",
+        "block": {
+          "ref": "stdlib:multibond/GroundPlanar"
+        },
+        "position": {
+          "x": 80.0,
+          "y": 320.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Joint1",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 270.0,
+          "y": 320.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.0",
+          "ry": "0.0",
+          "kt": "100000000.0",
+          "bt": "2000.0",
+          "k": "0.0",
+          "b": "0.002",
+          "q0": "-0.3707963267948966",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Link1",
+        "block": {
+          "ref": "stdlib:planar/FixedJoint2D"
+        },
+        "position": {
+          "x": 460.0,
+          "y": 320.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.15",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "BodyJ1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 650.0,
+          "y": 320.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Body1",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 650.0,
+          "y": 170.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.22",
+          "J": "0.0016500000000000002",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "Joint2",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 650.0,
+          "y": 320.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.15",
+          "ry": "0.0",
+          "kt": "100000000.0",
+          "bt": "2000.0",
+          "k": "0.0",
+          "b": "0.0008",
+          "q0": "1.0",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Link2",
+        "block": {
+          "ref": "stdlib:planar/FixedJoint2D"
+        },
+        "position": {
+          "x": 840.0,
+          "y": 320.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.18",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "BodyJ2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1030.0,
+          "y": 320.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Body2",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 1030.0,
+          "y": 170.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.14",
+          "J": "0.001512",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Free2",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 650.0,
+          "y": 170.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "PoseJ1",
+        "block": {
+          "ref": "stdlib:planar/JointPose2D"
+        },
+        "position": {
+          "x": 270.0,
+          "y": 650.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.0",
+          "ry": "0.0",
+          "theta0": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "CoM1",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 270.0,
+          "y": 780.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.15",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "PoseB1",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 460.0,
+          "y": 780.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "PoseJ2rel",
+        "block": {
+          "ref": "stdlib:planar/JointPose2D"
+        },
+        "position": {
+          "x": 650.0,
+          "y": 650.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.15",
+          "ry": "0.0",
+          "theta0": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "PoseJ2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 840.0,
+          "y": 650.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "CoM2",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 650.0,
+          "y": 780.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.18",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "PoseB2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 840.0,
+          "y": 780.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "TipOffset",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 1030.0,
+          "y": 650.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.36",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "PoseTip",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 1220.0,
+          "y": 650.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "Motor",
+        "block": {
+          "ref": "stdlib:drives/ElectricDrive"
+        },
+        "position": {
+          "x": 270.0,
+          "y": -10.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R_w": "2.5",
+          "L": "0.0005",
+          "k_t": "0.03",
+          "J_m": "5e-06",
+          "b_m": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "Shaft",
+        "block": {
+          "ref": "stdlib:rotation/ElasticShaft"
+        },
+        "position": {
+          "x": 460.0,
+          "y": -10.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "5000.0",
+          "d": "0.2"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "Gear",
+        "block": {
+          "ref": "stdlib:drives/Gearbox"
+        },
+        "position": {
+          "x": 650.0,
+          "y": -10.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "N": "5.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "Upright",
+        "block": {
+          "inline": {
+            "source": "@block Upright begin\n    # Absolute angle of every link from the upright (+y) direction: a_k = q1 + ... + qk - pi/2.\n    @inputs begin\n        q1::Real\n        q2::Real\n    end\n    @outputs begin\n        a1::Real, [unit = \"rad\"]\n        a2::Real, [unit = \"rad\"]\n    end\n    @equations begin\n        a1 ~ q1 - 1.5707963267948966\n        a2 ~ q1 + q2 - 1.5707963267948966\n    end\nend\n"
+          }
+        },
+        "position": {
+          "x": 1030.0,
+          "y": 780.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "V0",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 460.0,
+          "y": 120.0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c01",
+        "kind": "bond",
+        "from": {
+          "node": "n01",
+          "port": "p"
+        },
+        "to": {
+          "node": "n02",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c02",
+        "kind": "bond",
+        "from": {
+          "node": "n02",
+          "port": "child"
+        },
+        "to": {
+          "node": "n03",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c03",
+        "kind": "bond",
+        "from": {
+          "node": "n03",
+          "port": "child"
+        },
+        "to": {
+          "node": "n04"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c04",
+        "kind": "bond",
+        "from": {
+          "node": "n05",
+          "port": "p"
+        },
+        "to": {
+          "node": "n04"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c05",
+        "kind": "bond",
+        "from": {
+          "node": "n06",
+          "port": "parent"
+        },
+        "to": {
+          "node": "n04"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c06",
+        "kind": "bond",
+        "from": {
+          "node": "n10",
+          "port": "p"
+        },
+        "to": {
+          "node": "n06",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c07",
+        "kind": "bond",
+        "from": {
+          "node": "n06",
+          "port": "child"
+        },
+        "to": {
+          "node": "n07",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c08",
+        "kind": "bond",
+        "from": {
+          "node": "n07",
+          "port": "child"
+        },
+        "to": {
+          "node": "n08"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c09",
+        "kind": "bond",
+        "from": {
+          "node": "n09",
+          "port": "p"
+        },
+        "to": {
+          "node": "n08"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c10",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n11",
+          "port": "q"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c11",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "g"
+        },
+        "to": {
+          "node": "n13",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c12",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "g"
+        },
+        "to": {
+          "node": "n13",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c13",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "g"
+        },
+        "to": {
+          "node": "n05",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c14",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n14",
+          "port": "q"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c15",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "g"
+        },
+        "to": {
+          "node": "n15",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c16",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "g"
+        },
+        "to": {
+          "node": "n15",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c17",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "g"
+        },
+        "to": {
+          "node": "n17",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c18",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "g"
+        },
+        "to": {
+          "node": "n17",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c19",
+        "kind": "signal",
+        "from": {
+          "node": "n17",
+          "port": "g"
+        },
+        "to": {
+          "node": "n09",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c20",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "g"
+        },
+        "to": {
+          "node": "n19",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c21",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "g"
+        },
+        "to": {
+          "node": "n19",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c22",
+        "kind": "wire",
+        "from": {
+          "node": "n20",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "n21",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c23",
+        "kind": "wire",
+        "from": {
+          "node": "n21",
+          "port": "b"
+        },
+        "to": {
+          "node": "n22",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c24",
+        "kind": "wire",
+        "from": {
+          "node": "n22",
+          "port": "b"
+        },
+        "to": {
+          "node": "n02",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c25",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n23",
+          "port": "q1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c26",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n23",
+          "port": "q2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c27",
+        "kind": "signal",
+        "from": {
+          "node": "n24",
+          "port": "y"
+        },
+        "to": {
+          "node": "n20",
+          "port": "u"
+        },
+        "route": [],
+        "label": "motor terminals at 0 V"
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 3.0,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 3001
+    },
+    "event_limit": 200000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Joint angles",
+      "signals": [
+        "Joint1/qout",
+        "Joint2/qout"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Joint rates",
+      "signals": [
+        "Joint1/qdout",
+        "Joint2/qdout"
+      ]
+    }
+  ]
+}
