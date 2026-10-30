@@ -131,8 +131,11 @@ function _need_scope(what)
     return ctx
 end
 
-_is_array_literal(x) = isdefined(SymbolicUtils, :array_literal) && SymbolicUtils.iscall(x) &&
-    SymbolicUtils.operation(x) === SymbolicUtils.array_literal
+function _is_array_literal(x)
+    y = Symbolics.unwrap(x)
+    return isdefined(SymbolicUtils, :array_literal) && SymbolicUtils.iscall(y) &&
+           SymbolicUtils.operation(y) === SymbolicUtils.array_literal
+end
 
 _is_c_literal(s::AbstractString) =
     occursin(r"^\(?-?(\d[\d.]*(e[+-]?\d+)?|INFINITY)\)?$|^NAN$", s)

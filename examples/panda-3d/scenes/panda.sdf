@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+<!--
+  panda-3d (panda): the Franka Emika Panda of franka_description (Apache-2.0, meshes/LICENSE),
+  written by design/build_scene.py. Z-up, metres; the world frame is the robot base (panda_link0).
+  Link poses are the rest poses (all joints at zero) of the URDF / modified-DH link frames; every
+  joint frame is its child link frame and the axis is the child z, so the bound joint angle
+  J<i>/qout turns link i exactly as the multibond Revolute3D does. Visuals: meshes/link<i>.glb.
+-->
+<sdf version="1.9">
+  <model name="panda">
+    <link name="floor">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="floor_slab">
+        <pose>0.2 0 -0.006 0 0 0</pose>
+        <geometry><box><size>1.6 1.4 0.012</size></box></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="panda_link0">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="link0_mesh">
+        <geometry><mesh><uri>meshes/link0.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="panda_link1">
+      <pose>0 0 0.333 0 0 0</pose>
+      <visual name="link1_mesh">
+        <geometry><mesh><uri>meshes/link1.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="panda_link2">
+      <pose>0 0 0.333 -1.57079633 0 0</pose>
+      <visual name="link2_mesh">
+        <geometry><mesh><uri>meshes/link2.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="panda_link3">
+      <pose>0 0 0.649 0 0 0</pose>
+      <visual name="link3_mesh">
+        <geometry><mesh><uri>meshes/link3.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="panda_link4">
+      <pose>0.0825 0 0.649 1.57079633 0 0</pose>
+      <visual name="link4_mesh">
+        <geometry><mesh><uri>meshes/link4.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="panda_link5">
+      <pose>0 0 1.033 0 0 0</pose>
+      <visual name="link5_mesh">
+        <geometry><mesh><uri>meshes/link5.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="panda_link6">
+      <pose>0 0 1.033 1.57079633 0 0</pose>
+      <visual name="link6_mesh">
+        <geometry><mesh><uri>meshes/link6.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="panda_link7">
+      <pose>0.088 0 1.033 3.14159265 0 0</pose>
+      <visual name="link7_mesh">
+        <geometry><mesh><uri>meshes/link7.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <joint name="panda_base" type="fixed">
+      <parent>floor</parent>
+      <child>panda_link0</child>
+    </joint>
+    <joint name="panda_joint1" type="revolute">
+      <parent>panda_link0</parent>
+      <child>panda_link1</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.8973</lower><upper>2.8973</upper></limit></axis>
+    </joint>
+    <joint name="panda_joint2" type="revolute">
+      <parent>panda_link1</parent>
+      <child>panda_link2</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.7628</lower><upper>1.7628</upper></limit></axis>
+    </joint>
+    <joint name="panda_joint3" type="revolute">
+      <parent>panda_link2</parent>
+      <child>panda_link3</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.8973</lower><upper>2.8973</upper></limit></axis>
+    </joint>
+    <joint name="panda_joint4" type="revolute">
+      <parent>panda_link3</parent>
+      <child>panda_link4</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-3.0718</lower><upper>-0.0698</upper></limit></axis>
+    </joint>
+    <joint name="panda_joint5" type="revolute">
+      <parent>panda_link4</parent>
+      <child>panda_link5</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.8973</lower><upper>2.8973</upper></limit></axis>
+    </joint>
+    <joint name="panda_joint6" type="revolute">
+      <parent>panda_link5</parent>
+      <child>panda_link6</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-0.0175</lower><upper>3.7525</upper></limit></axis>
+    </joint>
+    <joint name="panda_joint7" type="revolute">
+      <parent>panda_link6</parent>
+      <child>panda_link7</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.8973</lower><upper>2.8973</upper></limit></axis>
+    </joint>
+    <link name="tcp_target">
+      <pose>0.306890567 0 0.590282052 3.14159265 0 -0.785398163</pose>
+      <visual name="target_x">
+        <pose>0.03 0 0 0 0 0</pose>
+        <geometry><box><size>0.06 0.006 0.006</size></box></geometry>
+        <material><diffuse>0.9 0.15 0.15 1</diffuse></material>
+      </visual>
+      <visual name="target_y">
+        <pose>0 0.03 0 0 0 0</pose>
+        <geometry><box><size>0.006 0.06 0.006</size></box></geometry>
+        <material><diffuse>0.15 0.75 0.2 1</diffuse></material>
+      </visual>
+      <visual name="target_z">
+        <pose>0 0 0.03 0 0 0</pose>
+        <geometry><box><size>0.006 0.006 0.06</size></box></geometry>
+        <material><diffuse>0.2 0.35 0.95 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="tcp_actual">
+      <pose>0.306890567 0 0.590282052 3.14159265 0 -0.785398163</pose>
+      <visual name="actual_ball">
+        <geometry><sphere><radius>0.012</radius></sphere></geometry>
+        <material><diffuse>1.0 0.55 0.05 0.9</diffuse></material>
+      </visual>
+    </link>
+  </model>
+</sdf>

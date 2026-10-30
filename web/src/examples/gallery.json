@@ -109,6 +109,15 @@
       "pendulum"
     ]
   },
+  "panda-3d": {
+    "title": "Panda 3d",
+    "description": "The Franka Emika Panda on bond-graph joint drives, with a Cartesian trajectory, analytical IK and PD.",
+    "hasScene": true,
+    "models": [
+      "panda",
+      "panda-free"
+    ]
+  },
   "pendulum-double-cart": {
     "title": "Pendulum double cart",
     "description": "A double pendulum on a belt-driven cart: swing-up, catch, balance and recovery.",
