@@ -82,8 +82,8 @@ const invalidFixtures = fixtureFiles("invalid");
 const semanticFixtures = fixtureFiles("semantic");
 
 describe("schemas", () => {
-  it("registers all nine schemas", () => {
-    expect(schemaNames).toHaveLength(9);
+  it("registers all ten schemas", () => {
+    expect(schemaNames).toHaveLength(10);
     for (const name of schemaNames) {
       expect(validator(name)).toBeTypeOf("function");
     }
