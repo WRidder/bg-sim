@@ -310,3 +310,6 @@ include("test_explain.jl")
 
 # Work package J4.4: parameter and state edits, replay and branch.
 include("test_edits.jl")
+
+# Work package J4.5: the worker debug methods.
+include("test_worker_debug.jl")

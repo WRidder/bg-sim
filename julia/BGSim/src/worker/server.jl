@@ -290,10 +290,20 @@ mutable struct RunHandle
     id::String
     cancel::Threads.Atomic{Bool}
     task::Union{Task,Nothing}
+    ctx::Union{BGSim.DebugCtx,Nothing}   # M4 debug (J4.5): the debug context of a debug run
 end
+
+RunHandle(id::AbstractString, cancel, task) = RunHandle(String(id), cancel, task, nothing)
 
 const RUNS = Dict{String,RunHandle}()
 const RUNS_LOCK = ReentrantLock()
+
+# Run id -> run folder of every run this worker started or derived. `run.replay` and
+# `run.branch` look the parent up by the *sibling folder* `<dirname(runDir)>/<runId>` first
+# (the backend keeps all runs of a project under `<project>/runs/<id>/`, and the parent's
+# `manifest.json` + `model.json` there survive a worker restart); this registry is the
+# fallback for runs that live elsewhere.
+const RUN_DIRS = Dict{String,String}()
 
 "All live run handles (a snapshot, so the lock is not held while waiting)."
 function _live_runs()
@@ -330,6 +340,8 @@ function _dispatch(conn::Connection, method::AbstractString, params)
         return _run_start(conn, params)
     elseif method == "run.cancel"
         return _run_cancel(params)
+    elseif startswith(method, "debug.") || method in ("run.replay", "run.branch", "model.explain")
+        return _dispatch_debug(conn, method, params)
     elseif method == "cache.clear"
         Library.clear_cache()
         clear_compile_cache!()
@@ -343,6 +355,37 @@ end
 # run.start / run.cancel
 # ---------------------------------------------------------------------------------------
 
+function _parse_debug_params(params)
+    debug = _jsonfield(params, :debug, nothing)
+    debug === nothing && return nothing
+    debug isa AbstractDict || throw(RpcError("`run.start` parameter `debug` must be an object or null"))
+    breakpoints = _jsonfield(debug, :breakpoints, nothing)
+    breakpoints === nothing && (breakpoints = Any[])
+    breakpoints isa AbstractVector ||
+        throw(RpcError("`run.start` `debug.breakpoints` must be an array"))
+    pause_on_entry = _jsonfield(debug, :pauseOnEntry, false)
+    pause_on_entry === nothing && (pause_on_entry = false)
+    pause_on_entry isa Bool ||
+        throw(RpcError("`run.start` `debug.pauseOnEntry` must be a boolean"))
+    return (breakpoints, pause_on_entry)
+end
+
+"A `DebugCtx` whose pause notifications go to the backend; a malformed breakpoint is an RPC error."
+function _make_debug_ctx(conn::Connection, breakpoints, pause_on_entry::Bool,
+    method::AbstractString)
+    try
+        return BGSim.DebugCtx(
+            breakpoints = breakpoints,
+            pause_on_entry = pause_on_entry,
+            on_paused = info -> notify!(conn, "debug.paused", info),
+            on_resumed = id -> notify!(conn, "debug.resumed", (; runId = String(id))),
+        )
+    catch err
+        err isa ArgumentError || rethrow()
+        throw(RpcError("`$method`: invalid breakpoint: " * err.msg))
+    end
+end
+
 function _run_start(conn::Connection, params)
     run_id = _required_string(params, :runId, "run.start")
     run_dir = _required_string(params, :runDir, "run.start")
@@ -350,6 +393,9 @@ function _run_start(conn::Connection, params)
     model_value = _jsonfield(params, :model, nothing)
     md = _parse_model_document(model_value, "run.start")
     settings = _run_settings(md)
+    debug = _parse_debug_params(params)
+    ctx = debug === nothing ? nothing :
+          _make_debug_ctx(conn, debug[1], debug[2], "run.start")
 
     log_line(conn.log, "run ", run_id, " preparing `", md.name, "`")
     flat = Compile.flatten(md; project_dir = project_dir)
@@ -359,22 +405,30 @@ function _run_start(conn::Connection, params)
     # it, so the worker can write the running manifest and only then accept the run.
     try
         _write_running_manifest(flat, settings, run_id, run_dir, model_hash)
+        # The model the run used, so `run.replay` / `run.branch` work after this worker is gone.
+        BGSim.write_run_model(run_dir, model_value, project_dir)
     catch err
         throw(RpcError(
             "could not prepare the run folder `$run_dir`: " * sprint(showerror, err)
         ))
     end
 
-    handle = RunHandle(run_id, Threads.Atomic{Bool}(false), nothing)
-    lock(RUNS_LOCK) do
-        haskey(RUNS, run_id) && throw(RpcError("run `$run_id` is already running"))
-        RUNS[run_id] = handle
-    end
+    handle = RunHandle(run_id, Threads.Atomic{Bool}(false), nothing, ctx)
+    _register_run!(handle, run_dir)
 
     return Deferred(
         (; accepted = true),
         () -> _spawn_run(conn, handle, flat, settings, run_dir, model_hash),
     )
+end
+
+function _register_run!(handle::RunHandle, run_dir::AbstractString)
+    lock(RUNS_LOCK) do
+        haskey(RUNS, handle.id) && throw(RpcError("run `$(handle.id)` is already running"))
+        RUNS[handle.id] = handle
+        RUN_DIRS[handle.id] = String(run_dir)
+    end
+    return nothing
 end
 
 function _run_cancel(params)
@@ -384,21 +438,14 @@ function _run_cancel(params)
     end
     handle === nothing && return (; ok = false)
     handle.cancel[] = true
+    # A paused debug run blocks on its command channel and never looks at the flag above.
+    handle.ctx === nothing || BGSim.debug_cancel!(handle.ctx)
     return (; ok = true)
 end
 
-function _spawn_run(conn::Connection, handle::RunHandle, flat, settings::RunSettings,
-    run_dir::AbstractString, model_hash::AbstractString)
-    run_id = handle.id
-    log_event(conn, "info", "run $run_id started for `$(flat.name)`")
-    # These stages already ran inside `run.start` (they give REQ-1 the signal list); report
-    # them now so the plan 3.6 phase sequence stays accepted-then-notifications.
-    for phase in ("parse", "flatten", "causality")
-        notify!(conn, "run.phase", (; runId = run_id, phase = phase, t_s = 0.0))
-    end
-
+function _progress_callback(conn::Connection, run_id::String)
     last_progress_ns = Ref(UInt64(0))
-    progress = function (t, rows)
+    return function (t, rows)
         now = time_ns()
         if last_progress_ns[] != 0 && now - last_progress_ns[] < PROGRESS_MIN_INTERVAL_NS
             return nothing
@@ -408,26 +455,30 @@ function _spawn_run(conn::Connection, handle::RunHandle, flat, settings::RunSett
             (; runId = run_id, t = Float64(t), rows = Int(rows)))
         return nothing
     end
+end
 
+function _phase_callback(conn::Connection, run_id::String)
+    return (name, t_s) -> notify!(
+        conn, "run.phase", (; runId = run_id, phase = String(name), t_s = Float64(t_s)),
+    )
+end
+
+# The body shared by `run.start`, `run.replay` and `run.branch`: run `runner(; cancel,
+# progress, phase)` on its own task and always finish with `run.done` and the registry cleanup.
+function _spawn_task(conn::Connection, handle::RunHandle, name::AbstractString, stats0,
+    runner, on_crash)
+    run_id = handle.id
     task = Threads.@spawn begin
         status = "failed"
-        stats = _zero_run_stats(flat)
+        stats = stats0
         diagnostics = Any[]
         try
-            result = simulate(
-                flat;
-                run_dir = run_dir,
-                run_id = run_id,
-                model_hash = model_hash,
-                settings = settings,
+            result = runner(
                 # Yielding inside the cancellation check is what lets requests (and the
                 # socket reader) run while the simulation loop is stepping.
                 cancel = () -> (yield(); handle.cancel[]),
-                progress = progress,
-                phase = (name, t_s) -> notify!(
-                    conn, "run.phase",
-                    (; runId = run_id, phase = String(name), t_s = Float64(t_s)),
-                ),
+                progress = _progress_callback(conn, run_id),
+                phase = _phase_callback(conn, run_id),
             )
             status = result.status
             stats = result.stats
@@ -441,14 +492,11 @@ function _spawn_run(conn::Connection, handle::RunHandle, flat, settings::RunSett
             message = sprint(showerror, err)
             log_line(conn.log, "run ", run_id, " crashed: ", message)
             diagnostic = diag(
-                "E900", "internal worker error while running `$(flat.name)`";
-                hint = message,
+                "E900", "internal worker error while running `$name`"; hint = message,
             )
             diagnostics = Any[to_namedtuple(diagnostic)]
             try
-                _write_failed_manifest(
-                    flat, settings, run_id, run_dir, model_hash, [diagnostic]
-                )
+                on_crash(diagnostic)
             catch write_err
                 log_line(
                     conn.log, "could not write the failed manifest of run ", run_id, ": ",
@@ -469,12 +517,41 @@ function _spawn_run(conn::Connection, handle::RunHandle, flat, settings::RunSett
     return nothing
 end
 
-"Cancel every live run and give the run tasks a moment to write their final state."
+function _spawn_run(conn::Connection, handle::RunHandle, flat, settings::RunSettings,
+    run_dir::AbstractString, model_hash::AbstractString)
+    run_id = handle.id
+    log_event(conn, "info", "run $run_id started for `$(flat.name)`")
+    # These stages already ran inside `run.start` (they give REQ-1 the signal list); report
+    # them now so the plan 3.6 phase sequence stays accepted-then-notifications.
+    for phase in ("parse", "flatten", "causality")
+        notify!(conn, "run.phase", (; runId = run_id, phase = phase, t_s = 0.0))
+    end
+    runner = function (; cancel, progress, phase)
+        return simulate(
+            flat;
+            run_dir = run_dir,
+            run_id = run_id,
+            model_hash = model_hash,
+            settings = settings,
+            cancel = cancel,
+            progress = progress,
+            phase = phase,
+            debug = handle.ctx,
+        )
+    end
+    on_crash = diagnostic -> _write_failed_manifest(
+        flat, settings, run_id, run_dir, model_hash, [diagnostic]
+    )
+    return _spawn_task(conn, handle, flat.name, _zero_run_stats(flat), runner, on_crash)
+end
+
+"Cancel every live run (waking paused debug runs) and give the tasks a moment to finish."
 function _shutdown_runs()
     handles = _live_runs()
     isempty(handles) && return nothing
     for handle in handles
         handle.cancel[] = true
+        handle.ctx === nothing || BGSim.debug_cancel!(handle.ctx)
     end
     deadline = time_ns() + 5_000_000_000
     for handle in handles
@@ -485,6 +562,162 @@ function _shutdown_runs()
         end
     end
     return nothing
+end
+
+# ---------------------------------------------------------------------------------------
+# Debug methods (plan 3.8)
+# ---------------------------------------------------------------------------------------
+
+const NOT_PAUSED = "run is not paused"
+
+"The debug context of a live debug run; anything else is the `run is not paused` error."
+function _debug_ctx(params, method::AbstractString)
+    run_id = _required_string(params, :runId, method)
+    handle = lock(RUNS_LOCK) do
+        get(RUNS, run_id, nothing)
+    end
+    (handle === nothing || handle.ctx === nothing) && throw(RpcError(NOT_PAUSED))
+    return handle.ctx
+end
+
+# Run a debug command: the engine's state error is the `run is not paused` RPC error and its
+# argument errors (unknown id, bad runTo time, bad granularity) are RPC errors with their text.
+function _debug_command(f)
+    try
+        return f()
+    catch err
+        err isa BGSim.DebugStateError && throw(RpcError(NOT_PAUSED))
+        err isa ArgumentError && throw(RpcError(err.msg))
+        rethrow()
+    end
+end
+
+function _number_param(params, key::Symbol, method::AbstractString)
+    t = _jsonfield(params, key, nothing)
+    (t isa Real && !(t isa Bool) && isfinite(t)) ||
+        throw(RpcError("`$method` requires the numeric `$key` parameter"))
+    return Float64(t)
+end
+
+function _dispatch_debug(conn::Connection, method::AbstractString, params)
+    if method == "model.explain"
+        value = _jsonfield(params, :model, nothing)
+        value isa AbstractDict || throw(RpcError("`model.explain` requires a model document object"))
+        signal = _required_string(params, :signal, method)
+        project_dir = _optional_string(params, :projectDir, nothing)
+        return try
+            BGSim.model_explain(value, project_dir, signal)
+        catch err
+            err isa ArgumentError && throw(RpcError("`model.explain`: " * err.msg))
+            rethrow()
+        end
+    elseif method == "run.replay"
+        return _run_derive(conn, params, method, nothing)
+    elseif method == "run.branch"
+        return _run_derive(conn, params, method, _number_param(params, :t, method))
+    end
+    ctx = _debug_ctx(params, method)
+    if method == "debug.setBreakpoints"
+        bps = _jsonfield(params, :breakpoints, nothing)
+        bps isa AbstractVector ||
+            throw(RpcError("`debug.setBreakpoints` requires the `breakpoints` array"))
+        statuses = _debug_command(() -> BGSim.debug_set_breakpoints!(ctx, bps))
+        return (; breakpoints = statuses)
+    elseif method == "debug.pause"
+        _debug_command(() -> BGSim.debug_pause!(ctx))
+        return (; ok = true)
+    elseif method == "debug.continue"
+        _debug_command(() -> BGSim.debug_continue!(ctx))
+        return (; ok = true)
+    elseif method == "debug.step"
+        granularity = _required_string(params, :granularity, method)
+        _debug_command(() -> BGSim.debug_step!(ctx, granularity))
+        return (; ok = true)
+    elseif method == "debug.runTo"
+        t = _number_param(params, :t, method)
+        _debug_command(() -> BGSim.debug_run_to!(ctx, t))
+        return (; ok = true)
+    elseif method == "debug.evaluate"
+        expr = _required_string(params, :expr, method)
+        context = _optional_string(params, :context, nothing)
+        return _debug_command(() -> BGSim.debug_evaluate(ctx, expr, context))
+    elseif method == "debug.values"
+        ids = _jsonfield(params, :ids, nothing)
+        (ids isa AbstractVector && all(i -> i isa AbstractString, ids)) ||
+            throw(RpcError("`debug.values` requires the `ids` array of strings"))
+        return _debug_command(() -> BGSim.debug_values(ctx, ids))
+    elseif method == "debug.setParameter"
+        name = _required_string(params, :name, method)
+        value = _jsonfield(params, :value, nothing)
+        return _debug_command(() -> BGSim.debug_set_parameter!(ctx, name, value))
+    elseif method == "debug.setState"
+        id = _required_string(params, :id, method)
+        value = _jsonfield(params, :value, nothing)
+        return _debug_command(() -> BGSim.debug_set_state!(ctx, id, value))
+    end
+    throw(RpcError("method `$method` is not implemented"))
+end
+
+# The parent run folder: the sibling `<dirname(runDir)>/<runId>` (durable: the backend keeps
+# all runs of a project side by side), else the folder this worker recorded for the run.
+function _parent_run_dir(parent_id::String, run_dir::String)
+    sibling = joinpath(dirname(rstrip(run_dir, ['/', '\\'])), parent_id)
+    isfile(joinpath(sibling, "manifest.json")) && return sibling
+    known = lock(RUNS_LOCK) do
+        get(RUN_DIRS, parent_id, nothing)
+    end
+    known !== nothing && isfile(joinpath(known, "manifest.json")) && return known
+    throw(RpcError("run `$parent_id` has no run folder with a manifest (looked in `$sibling`)"))
+end
+
+# `run.replay` and `run.branch`: a new run of the parent's stored model. A branch is a debug run
+# registered under the new id (it pauses at `t` and takes debug commands).
+function _run_derive(conn::Connection, params, method::AbstractString, branch_at)
+    parent_id = _required_string(params, :runId, method)
+    run_id = _required_string(params, :newRunId, method)
+    run_dir = _required_string(params, :runDir, method)
+    parent_dir = _parent_run_dir(parent_id, run_dir)
+    # Validate the parent and rebuild its model before the run is accepted.
+    flat = try
+        BGSim.load_parent_run(parent_dir)
+        BGSim.load_run_flat(parent_dir)
+    catch err
+        throw(RpcError("`$method`: " * sprint(showerror, err)))
+    end
+    ctx = branch_at === nothing ? nothing : _make_debug_ctx(conn, Any[], false, method)
+    try
+        mkpath(run_dir)
+        cp(joinpath(parent_dir, "model.json"), joinpath(run_dir, "model.json"); force = true)
+    catch err
+        throw(RpcError("could not prepare the run folder `$run_dir`: " * sprint(showerror, err)))
+    end
+    handle = RunHandle(run_id, Threads.Atomic{Bool}(false), nothing, ctx)
+    _register_run!(handle, run_dir)
+    return Deferred(
+        (; accepted = true),
+        () -> _spawn_derived(conn, handle, method, parent_dir, parent_id, flat, run_dir, branch_at),
+    )
+end
+
+function _spawn_derived(conn::Connection, handle::RunHandle, method::AbstractString,
+    parent_dir::String, parent_id::String, flat, run_dir::String, branch_at)
+    run_id = handle.id
+    log_event(conn, "info", "run $run_id started ($method of $parent_id)")
+    runner = function (; cancel, progress, phase)
+        return if branch_at === nothing
+            BGSim.replay_run(
+                parent_dir; run_dir = run_dir, run_id = run_id, flat = flat,
+                cancel = cancel, progress = progress, phase = phase,
+            )
+        else
+            BGSim.branch_run(
+                parent_dir, branch_at; ctx = handle.ctx, run_dir = run_dir, run_id = run_id,
+                flat = flat, cancel = cancel, progress = progress, phase = phase,
+            )
+        end
+    end
+    return _spawn_task(conn, handle, flat.name, _zero_run_stats(flat), runner,
+        diagnostic -> nothing)
 end
 
 # ---------------------------------------------------------------------------------------
