@@ -54,6 +54,7 @@ include("lower/mtk.jl")
 include("sim/recorder.jl")
 include("sim/simulate.jl")
 include("sim/scheduler.jl")
+include("sim/debug.jl")
 
 include("precompile.jl")
 include("worker/server.jl")

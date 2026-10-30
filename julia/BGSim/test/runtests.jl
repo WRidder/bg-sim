@@ -297,3 +297,6 @@ let golden = joinpath(@__DIR__, "golden")
     end
 end
 include("test_causality.jl")
+
+# Work package J4.1: the debug run engine (pause, step, breakpoints, cancel while paused).
+include("test_debug.jl")

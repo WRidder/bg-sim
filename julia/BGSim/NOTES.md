@@ -1691,3 +1691,15 @@ closed-form inverse of the chart Jacobian, and the wrench is its transpose,
 | spatial pendulum | period rel 6.3e-8, energy 7.2e-12; composed vs integrated pose 6.7e-8 |
 | spherical pendulum / Free3D | Lz drift 1.8e-13, |q| drift 5e-14 / identical to `PoseIntegrator3D` |
 | `test_mech_spatial.jl` | **1067 assertions, ~5 min, green** |
+
+# J4.1 - debug run engine (verified 2026-10-30)
+
+Code: `src/sim/debug.jl`; `# M4 debug:` insertion points in `src/sim/simulate.jl`; tests `test/test_debug.jl`.
+
+* **`step!(integ, dt, stop_at_tdt)`** (SciMLBase 7.21.4, `src/integrator_interface.jl`): checks `dt*tdir >= 0`, `next_t = t + dt`, `add_tstop!(integ, next_t)` when `stop_at_tdt`, then `while integ.t*tdir < next_t*tdir; step!(integ); retcode in (Default, Success) || break; end`. `_dbg_step!` replicates exactly this with the checkpoint after each single `step!(integ)`; `columns.f64` is byte-identical to a normal run (dc-motor, drivetrain-kalman, bouncing-ball).
+* **MTK callbacks of the problem.** `prob.kwargs[:callback]` is ONE `VectorContinuousCallback` (`len` = number of callbacks) when there is more than one; its `affect!` is a `VectorAffect(eq2affect, affects, affect_negs)`. Slot order = the `continuous_events` order of the lowering: the `@events` entries in `flat.events` order, then the condition-only nonsmooth kinks (`EMPTY_AFFECT`). `@events` affects are positive-edge only. So slot `i <= length(flat.events)` with non-empty `flat.events[i].actions` is the firing of that event; the debug run wraps `affects[i]` (like `_with_event_limit`) to push `i` to `ctx.fired`. Verified with a two-`@events` relay: the pause location is the entry that fired.
+* **Events at a pause.** `dbg_pause!` first calls `_record_new_events!` (cursor in `session.event_cursor`, synced with the loop's local cursor), so paused data includes the left/right event rows and no row is written twice.
+* `add_tstop!` on a live integrator works for `runTo` and time breakpoints (results after such a stop match a normal run only within tolerances).
+* `--compiled-modules=existing` loads the stale BGSim from source without re-precompiling (start about 20 s instead of 4.5 min).
+* Closures posted to the run task (`with_paused`) are called with `invokelatest` (the run task's world age is older than a closure defined later at top level).
+* t1 of the bouncing ball is `sqrt(2/9.81) = 0.4515236...` (the plan's 0.45152 is rounded).

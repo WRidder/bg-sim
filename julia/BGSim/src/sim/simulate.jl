@@ -408,7 +408,15 @@ loop and the plan sections it implements.
 recorder directly. A discrete tick that changes a held output uses the same seam, so a step
 in a held value renders as a vertical edge too.
 """
-function simulate(flat::Flat.FlatModel;
+function simulate(flat::Flat.FlatModel; debug = nothing, kwargs...)
+    # M4 debug: a debug run (`debug = ctx::DebugCtx`, src/sim/debug.jl) is bracketed so its
+    # context is always finished; with `debug = nothing` this is the normal run (DEC-M4-8).
+    return _dbg_run(debug) do
+        _simulate_flat(flat; debug = debug, kwargs...)
+    end
+end
+
+function _simulate_flat(flat::Flat.FlatModel;
     run_dir::Union{AbstractString,Nothing} = nothing,
     run_id::Union{AbstractString,Nothing} = nothing,
     model_hash::Union{AbstractString,Nothing} = nothing,
@@ -417,7 +425,9 @@ function simulate(flat::Flat.FlatModel;
     progress = nothing,
     phase = nothing,
     record_event = nothing,
+    debug = nothing,
 )
+    cancel = _dbg_cancel(debug, cancel)  # M4 debug:
     start_ns = time_ns()
     run_settings = settings isa RunSettings ? settings : RunSettings(settings)
     dir = run_dir === nothing ? mktempdir() : String(run_dir)
@@ -491,6 +501,7 @@ function simulate(flat::Flat.FlatModel;
         limited = _with_event_limit(
             lowered.problem.kwargs[:callback], event_counter, run_settings.event_limit
         )
+        limited = _dbg_wrap_callback(debug, limited, flat)  # M4 debug:
         solver_problem = remake(lowered.problem; callback = limited)
     end
 
@@ -677,6 +688,12 @@ function simulate(flat::Flat.FlatModel;
         end
     end
     targets = discrete_targets(grid, run)
+    # M4 debug: the session holds the live run objects for the debug checkpoints and commands.
+    session = _dbg_begin!(
+        debug; run_id = id, settings = run_settings, flat = flat, lowered = lowered.model,
+        integ = integ, rec = rec, getters = getters, run = run, schedule = schedule,
+        targets = targets, record_event = record_event, event_counter = event_counter,
+    )
 
     # Row zero. `init` has run the initialization, so the state at t_start is valid. A tick at
     # exactly `t_start` is the initial state, not an execution (the loop steps, then ticks).
@@ -685,6 +702,7 @@ function simulate(flat::Flat.FlatModel;
     first_data_s = (time_ns() - start_ns) / 1.0e9
     _phase(phase, "simulate", 0.0)
     _progress(progress, run_settings.t_start, rec.nrows)
+    _dbg_entry!(debug, session)  # M4 debug: pause on entry
 
     status = "done"
     diagnostic = nothing
@@ -726,6 +744,7 @@ function simulate(flat::Flat.FlatModel;
                 flush_recorder!(rec)
                 last_flush_ns = now
             end
+            _dbg_target!(debug, session, target)  # M4 debug: tick checkpoint
             continue
         end
         dt = tt - integ.t
@@ -737,12 +756,8 @@ function simulate(flat::Flat.FlatModel;
             continue
         end
         before = integ.t
-        step_ok = try
-            step!(integ, dt, true)
-            true
-        catch err
-            false
-        end
+        step_ok = _dbg_step!(debug, session, integ, dt, event_cursor)  # M4 debug:
+        event_cursor = _dbg_cursor(debug, session, event_cursor)  # M4 debug:
         # Record every event instant that this step crossed, twice (left and right limits)
         # before the row for `tt` is written.
         event_cursor = _record_new_events!(
@@ -753,11 +768,19 @@ function simulate(flat::Flat.FlatModel;
                 flat, integ.t, event_counter[], run_settings.event_limit
             )
             status = "done"
+            if _dbg_failure!(debug, session, diagnostic)  # M4 debug: pause before the end
+                status = "cancelled"
+                diagnostic = nothing
+            end
             break
         end
         if !step_ok || !_ok_retcode(integ.sol.retcode)
             diagnostic = _solver_diagnostic(integ, lowered.model, flat)
             status = "failed"
+            if _dbg_failure!(debug, session, diagnostic)  # M4 debug: pause before the end
+                status = "cancelled"
+                diagnostic = nothing
+            end
             break
         end
         if integ.t <= before && next_index <= length(targets)
@@ -766,6 +789,10 @@ function simulate(flat::Flat.FlatModel;
                 hint = "retcode = $(integ.sol.retcode)", path = _last_path(flat),
             )
             status = "failed"
+            if _dbg_failure!(debug, session, diagnostic)  # M4 debug: pause before the end
+                status = "cancelled"
+                diagnostic = nothing
+            end
             break
         end
         if _cancelled(cancel)
@@ -791,6 +818,7 @@ function simulate(flat::Flat.FlatModel;
     diagnostics = diagnostic === nothing ? flat_diagnostics :
                   sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
     _phase(phase, "write", integ.t)
+    _dbg_finalize!(debug, session)  # M4 debug: the manifest keeps `debug`
     manifest = finish_recorder!(rec, status, stats, diagnostics)
     elapsed = (time_ns() - start_ns) / 1.0e9
     return SimResult(
