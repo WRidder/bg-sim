@@ -167,6 +167,7 @@ def example_steps() -> list[Step] | None:
                     "tests/e2e/planar-links.spec.ts",
                     "tests/e2e/pendulum-cart.spec.ts",
                     "tests/e2e/pendulum-rotary.spec.ts",
+                    "tests/e2e/walkthrough.spec.ts",
                 ],
                 cwd=ROOT / "web",
                 env={"BGSIM_E2E_REAL": "1"},

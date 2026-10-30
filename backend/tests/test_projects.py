@@ -646,6 +646,10 @@ def test_create_from_example_unknown_names_the_available_examples(
     assert response.status_code == 404
     assert "available examples: dc-motor" in response.json()["detail"]
 
+    (store.examples_root / "__pycache__").mkdir()
+    response = client.post("/api/projects", json={"name": "x", "example": "nope"})
+    assert "available examples: dc-motor" in response.json()["detail"]
+
     unsafe = client.post("/api/projects", json={"name": "x", "example": "../dc-motor"})
     assert unsafe.status_code == 400
     assert not (store.projects_root / "x").exists()

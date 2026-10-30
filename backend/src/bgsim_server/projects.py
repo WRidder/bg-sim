@@ -632,7 +632,11 @@ class ProjectStore:
             (
                 path.name
                 for path in root.iterdir()
-                if path.is_dir() and not path.is_symlink() and _is_safe_name(path.name)
+                if path.is_dir()
+                and not path.is_symlink()
+                and _is_safe_name(path.name)
+                # tool folders such as __pycache__ or .ipynb_checkpoints are not examples
+                and not path.name.startswith(("__", "."))
             ),
             key=str.lower,
         )
