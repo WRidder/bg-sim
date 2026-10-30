@@ -504,6 +504,87 @@ end
             [-2.0 1.0; 1.0 0.0], [1.0, 0.0])
     end
 
+    @testset "stiff undamped modes are damped numerically (D-EX7, W213)" begin
+        tol = _EX.mode_tolerance(0.3)
+        # An undamped mode (z on the imaginary axis): accepted only when the method damps it
+        # and it is stiff relative to the step.
+        @test _EX.mode_class(:rodas4p, 1000im, tol, 0.05, 10.0) === :numerical  # |R| = 0.009
+        @test _EX.mode_class(:rodas4p, 100im, tol, 0.05, 10.0) === :fail        # |R| = 0.093
+        @test _EX.mode_class(:ros2, 12im, tol, 0.1, 10.0) === :numerical        # |R| = 0.069
+        @test _EX.mode_class(:ros2, 12im, tol, 0.1, 20.0) === :fail             # |z| below the threshold
+        @test _EX.mode_class(:rodas4p, -1e4, tol, 0.05, 10.0) === :damped
+        @test _EX.mode_class(:rodas4p, -0.01 + 0.0im, tol, 0.05, 10.0) === :resolved
+        # A 1e6 rad/s joint stiffness next to a slow lag: one Rodas4P step per millisecond,
+        # one mode at 159 kHz damped numerically.
+        ms = Int64(1_000_000)
+        joint = [(0.0, ComplexF64[1e6im, -1e6im, -20.0])]
+        c = _EX.choose_step(:rodas4p, joint, ms)
+        @test c.substeps == 1 && !c.over_budget
+        @test _EX.step_rule_met(:rodas4p, joint, 1e-3)
+        n, f = _EX.numerically_damped(:rodas4p, joint, 1e-3)
+        @test n == 1 && isapprox(f, 1e6 / 2π; rtol = 1e-9)
+        # The threshold: with stiff_ratio above h·|λ| the mode must be resolved again.
+        c = _EX.choose_step(:rodas4p, joint, ms; stiff_ratio = 2000.0)
+        @test c.substeps > 1 && !_EX.step_rule_met(:rodas4p, joint, 1e-3; stiff_ratio = 2000.0)
+        @test _EX.numerically_damped(:rodas4p, joint, c.dt_ns / 1e9; stiff_ratio = 2000.0)[1] == 0
+        # An undamped mode in the bandwidth (a 1 kHz LC circuit, h·|λ| = 6.3 at 1 ms) is still
+        # resolved by Rodas4P: more substeps, nothing damped numerically.
+        lc = [(0.0, ComplexF64[2π * 1000im, -2π * 1000im])]
+        c = _EX.choose_step(:rodas4p, lc, ms)
+        @test c.substeps > 1 && !c.over_budget
+        @test !_EX.step_rule_met(:rodas4p, lc, 1e-3)
+        @test abs(2π * 1000 * c.dt_ns / 1e9) < 1
+        @test _EX.numerically_damped(:rodas4p, lc, c.dt_ns / 1e9) == (0, Inf)
+        # RK4 is unchanged: it resolves the joint, whatever stiff_ratio says.
+        for sr in (10.0, 1e9)
+            c = _EX.choose_step(:rk4, joint, ms; stiff_ratio = sr)
+            @test c.dt_ns / 1e9 <= 0.3 / 1e6 && c.over_budget
+            @test !_EX.step_rule_met(:rk4, joint, 1e-3; stiff_ratio = sr)
+        end
+        @test _EX.numerically_damped(:rk4, joint, 1e-3) == (0, Inf)
+        # ROS2 (not stiffly accurate) is never suggested when it damps a mode numerically,
+        # even when it is the cheapest; forced, it is kept.
+        best, table = _EX.choose_method(_EX.ROSENBROCK_METHODS, joint, ms, 3;
+            f_ops = 30, jac_ops = m -> 20.0)
+        r2 = only(r for r in table if r.method === :ros2)
+        @test r2.numerical == 1 && !r2.choice.over_budget
+        @test r2.cost < minimum(r.cost for r in table if r.method !== :ros2)
+        @test best.method !== :ros2 && !best.over_budget
+        best, _ = _EX.choose_method((:ros2,), joint, ms, 3; f_ops = 30, jac_ops = m -> 20.0)
+        @test best.method === :ros2
+
+        # In the export: W213 and the report entry.
+        stiff_lag = """
+        @block StiffLag begin
+            @inputs u::Real
+            @outputs y::Real
+            @parameters tau::Real = 0.05
+            @parameters w0::Real = 1.0e6
+            @variables x::Real = 0.0
+            @variables q::Real = 0.0
+            @variables p::Real = 0.0
+            @equations begin
+                ddt(x) ~ (u - x) / tau
+                ddt(q) ~ p
+                ddt(p) ~ -w0^2 * q + x
+                y ~ x + q
+            end
+        end
+        """
+        r = _EX.export_model(_ex_flat(_ex_lag_model(lag = stiff_lag)), mktempdir();
+            settings = _EX.ExportSettings(method = :rodas4p, t_end = 0.1))
+        @test r.ok && r.report["method"] == "rodas4p" && r.report["dt"] == 1e-3
+        w = _ex_diags(r, "W213")
+        @test length(w) == 1 && occursin("1 stiff undamped mode at or above 159000 Hz", w[1].message)
+        @test occursin("RODAS4P", w[1].message) && occursin("force rk4", w[1].message)
+        nd = r.report["spectrum"]["numericallyDamped"]
+        @test nd["modes"] == 1 && isapprox(nd["minHz"], 1e6 / 2π; rtol = 1e-6)
+        r = _EX.export_model(_ex_flat(_ex_lag_model(lag = stiff_lag)), mktempdir();
+            settings = _EX.ExportSettings(method = :rk4, t_end = 0.1))
+        @test r.ok && isempty(_ex_diags(r, "W213"))
+        @test r.report["spectrum"]["numericallyDamped"]["modes"] == 0
+    end
+
     @testset "an index-1 DAE exports with a Rosenbrock method" begin
         r = _EX.export_model(_ex_flat(_ex_lag_model(lag = _EX_DAE)), mktempdir();
             settings = _EX.ExportSettings(t_end = 0.2))
