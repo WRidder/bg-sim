@@ -147,8 +147,8 @@ enforces this by symbol inspection and the counting harness (section 8).
 | Index-1 DAE (mass matrix), torn algebraic loops (W202) | supported with Rosenbrock (phase B); RK4/Euler refuse it with E111 |
 | Index > 1 after `mtkcompile` | E111 (MTK's index reduction normally prevents this) |
 | `ifelse`, `abs`, `sign`, `min`, `max`, `clamp`, `saturate`, `deadzone`, `floor`, `ceil`, `round` | supported, frozen per step, W203 per site |
-| `@events` with `reinit` | supported, checked after each step, W203 (phase C) |
-| `@discrete`, `previous`, `hold`, multi-rate | supported; E104 when a period is not a multiple of `dt` |
+| `@events` with `reinit` | supported for state targets (J-EX6), checked after each step, W203 per event; an event that writes a parameter gets E110 |
+| `@discrete`, `previous`, `hold`, multi-rate | supported; E104 at the clock's block when a period or an offset is not a multiple of `dt` |
 | `interp1`, `interp2` over constant tables of the model | supported; each table becomes one `static const` array (phase C); W-level size report |
 | `csv_value` (`CsvSource`) | not exported (E110): a CSV source is simulation data (stimulus or comparison). In an export variant an `ExportInput` replaces it, so the host supplies the signal |
 | mechanics functions (`exp`/`log` on SE2/SE3, quaternions, `spatial_inertia`) | supported through `bg_mech.c` (phase C) |
@@ -158,6 +158,24 @@ enforces this by symbol inspection and the counting harness (section 8).
 
 Unsupported constructs fail with **E110** naming the block path and source range, as every
 other diagnostic does.
+
+**One internal step, in order (J-EX6).** `bg_step` advances one `dt` from `t` to `t + dt`:
+
+1. evaluate the frozen switching conditions (`bg_modes`) and every `@events` condition `z`
+   at `t`;
+2. integrate the step;
+3. apply each event whose `z` crossed upward in the step (`z < 0` at `t`, `z >= 0` at
+   `t + dt`), in declaration order. All assignments of one event read the state before it;
+   a later event reads what the earlier ones wrote;
+4. run the discrete partitions due at `t + dt`. They sample the state after the `reinit`.
+
+This is the simulator's order and edge rule. There, an event fires on DiffEq's upward edge
+(`prev < 0`, `next >= 0`), and a tick at `t` runs after every event up to and including `t`.
+A condition that is zero or positive at the start of a step never fires in that step. So a
+condition that is already true at `t_start`, or still true after its own `reinit`, fires again
+only after it has gone negative. The export does not locate the crossing: an event is up to
+one `dt` late, and events that cross in the same step fire in declaration order, not in the
+order of their instants. W203 reports each event at its block and source range.
 
 ## 7. Work packages
 
