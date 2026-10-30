@@ -264,6 +264,21 @@ class FakeWorker:
         self._run_tasks: dict[str, asyncio.Task] = {}
         self._cancelled: set[str] = set()
         self._stopping = False
+        # fake_debug imports this module's synthetic data, so it is imported here, not above.
+        from .fake_debug import FakeDebugger
+
+        self._debugger = FakeDebugger(settings, self._notify, self._spawn_run)
+
+    def _spawn_run(self, run_id: str, coroutine: Any) -> None:
+        """Run a debug/replay/branch session as the run task of ``run_id`` (see fake_debug)."""
+
+        async def guarded() -> None:
+            try:
+                await coroutine
+            finally:
+                self._run_tasks.pop(run_id, None)
+
+        self._run_tasks[run_id] = asyncio.create_task(guarded(), name=f"fake-run-{run_id}")
 
     @property
     def alive(self) -> bool:
@@ -370,16 +385,27 @@ class FakeWorker:
             if not run_id or not run_dir:
                 raise _FakeError("run.start needs runId and runDir")
             self._cancelled.discard(run_id)
+            self._debugger.remember(run_id, params.get("model"), params.get("projectDir"))
+            if params.get("debug") is not None:
+                Path(run_dir).mkdir(parents=True, exist_ok=True)
+                self._debugger.start_debug(run_id, params)  # a scripted debug run (fake_debug)
+                return {"accepted": True}
             self._run_tasks[run_id] = asyncio.create_task(
                 self._run_synthetic(run_id, params), name=f"fake-run-{run_id}"
             )
             return {"accepted": True}
+        if method in self._debugger.METHODS:
+            try:
+                return await self._debugger.dispatch(str(method), params)
+            except self._debugger.DebugError as exc:
+                raise _FakeError(str(exc)) from None
         if method == "run.cancel":
             run_id = params.get("runId")
             task = self._run_tasks.get(run_id)
             if task is None or task.done():
                 return {"ok": False}
-            self._cancelled.add(run_id)
+            if not self._debugger.cancel(run_id):
+                self._cancelled.add(run_id)
             return {"ok": True}
         if method == "cache.clear":
             return {"ok": True}

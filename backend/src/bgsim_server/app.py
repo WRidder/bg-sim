@@ -18,7 +18,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 
-from . import meshes, projects, proxy, runs, stream
+from . import debug, meshes, projects, proxy, runs, stream
 from .config import BACKEND_VERSION, Settings
 from .proxy import CatalogCache, WorkerRpcFailure
 from .worker import WorkerLauncher, WorkerSupervisor
@@ -72,6 +72,18 @@ def create_app(
             content={"message": exc.message, "diagnostics": exc.diagnostics},
         )
 
+    @app.exception_handler(debug.DebugConflict)
+    async def debug_conflict(_request: Request, exc: debug.DebugConflict) -> JSONResponse:
+        """Plan 3.8: a worker error on a debug call (``run is not paused``) is HTTP 409."""
+        return JSONResponse(
+            status_code=409,
+            content={
+                "detail": exc.message,
+                "message": exc.message,
+                "diagnostics": exc.diagnostics,
+            },
+        )
+
     @app.get("/api/health")
     async def health() -> dict[str, Any]:
         """Plan 3.7: ``{ backend, worker, versions }``."""
@@ -90,6 +102,7 @@ def create_app(
     app.include_router(proxy.router, prefix="/api", tags=["proxy"])
     app.include_router(projects.router, prefix="/api", tags=["projects"])
     app.include_router(runs.router, prefix="/api", tags=["runs"])
+    app.include_router(debug.router, prefix="/api", tags=["debug"])
     app.include_router(meshes.router, prefix="/api", tags=["meshes"])
     app.include_router(stream.router, prefix="/api", tags=["stream"])
     app.include_router(stream.alias_router)  # WS /ws/stream/{id}, as in the plan's API table

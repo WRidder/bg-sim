@@ -73,7 +73,7 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, ValidationError
 from starlette.routing import WebSocketRoute
 
 from .config import Settings
-from .contracts import Model, RunManifest
+from .contracts import DebugStartOptions, Model, RunManifest
 from .decimate import DEFAULT_POINTS, decimate, open_columns, open_stream
 from .proxy import BlockCheckBody, WorkerRpcFailure
 from .proxy import check_block as proxy_check_block
@@ -106,11 +106,15 @@ router = APIRouter()
 
 
 class RunCreateBody(BaseModel):
-    """``POST /api/projects/{p}/runs`` body: the model document to simulate."""
+    """``POST /api/projects/{p}/runs`` body: the model document to simulate.
+
+    ``debug`` (plan 3.8) makes it a debug run: its breakpoints and ``pauseOnEntry``.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     model: Model
+    debug: DebugStartOptions | None = None
 
 
 # --------------------------------------------------------------------------- helpers
@@ -215,11 +219,19 @@ def _model_document(model: Model) -> dict[str, Any]:
     return _strip_comments(model.model_dump(by_alias=True, mode="json"))
 
 
-def _skeleton(model: dict[str, Any], run_id: str, settings: Settings) -> dict[str, Any]:
-    """The manifest of a run that has not published one yet (plan 3.5)."""
+def _skeleton(
+    model: dict[str, Any],
+    run_id: str,
+    settings: Settings,
+    debug: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """The manifest of a run that has not published one yet (plan 3.5).
+
+    A debug run (``debug`` = its start options) records its breakpoints (plan 3.8).
+    """
     model_settings = model["settings"]
     signals = [dict(signal) for signal in _SYNTHETIC_SIGNALS] if settings.fake_worker else []
-    return {
+    skeleton = {
         "id": run_id,
         "model": str(model["name"]),
         "modelHash": hashlib.sha256(
@@ -233,6 +245,13 @@ def _skeleton(model: dict[str, Any], run_id: str, settings: Settings) -> dict[st
         "diagnostics": [],
         "layout": "columnar-f64-v1",
     }
+    if debug is not None:
+        skeleton["debug"] = {
+            "breakpoints": debug.get("breakpoints") or [],
+            "edits": [],
+            "pauses": [],
+        }
+    return skeleton
 
 
 def _prune_runs(
@@ -241,13 +260,18 @@ def _prune_runs(
     keep: int,
     active: set[str],
 ) -> None:
-    """Delete older runs of ``model_name`` beyond ``keep - 1`` (the new run is the last)."""
+    """Delete older runs of ``model_name`` beyond ``keep - 1`` (the new run is the last).
+
+    Running and paused runs are never deleted, and neither is a run that is the
+    ``parentRun`` of a run that stays (a branch needs its parent, transitively, plan 3.5).
+    """
     runs_dir = project_dir / "runs"
     if not runs_dir.is_dir():
         return
     entries: list[tuple[str, str, Path]] = []
+    parent_of: dict[str, str] = {}
     for candidate in runs_dir.iterdir():
-        if not candidate.is_dir() or candidate.name in active:
+        if not candidate.is_dir():
             continue
         path = candidate / "manifest.json"
         if not path.is_file():
@@ -256,13 +280,26 @@ def _prune_runs(
             manifest = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if manifest.get("model") != model_name or manifest.get("status") == "running":
+        if isinstance(manifest.get("parentRun"), str):
+            parent_of[candidate.name] = manifest["parentRun"]
+        if candidate.name in active:
+            continue
+        if manifest.get("model") != model_name or manifest.get("status") in ("running", "paused"):
             continue
         created = str(manifest.get("created") or "")
         entries.append((created, candidate.name, candidate))
     entries.sort(reverse=True)
-    for _, _, directory in entries[max(keep - 1, 0) :]:
-        shutil.rmtree(directory, ignore_errors=True)
+    doomed = {name for _, name, _ in entries[max(keep - 1, 0) :]}
+    # Everything that is not doomed stays; a stayed run keeps its parent, which keeps its own.
+    stay = [name for name in parent_of if name not in doomed]
+    while stay:
+        parent = parent_of.get(stay.pop())
+        if parent in doomed:
+            doomed.discard(parent)
+            stay.append(parent)
+    for _, name, directory in entries:
+        if name in doomed:
+            shutil.rmtree(directory, ignore_errors=True)
 
 
 # --------------------------------------------------------------------------- run store
@@ -278,6 +315,8 @@ class _RunState:
     rows: int = 0
     last_phase: dict[str, Any] | None = None
     last_progress: dict[str, Any] | None = None
+    #: The ``debug.paused`` notification while the run is paused (a late socket gets it).
+    last_paused: dict[str, Any] | None = None
     done: dict[str, Any] | None = None
     subscribers: set[asyncio.Queue] = field(default_factory=set)
     queue: asyncio.Queue | None = None
@@ -351,7 +390,14 @@ class RunStore:
                 elif method == "run.progress":
                     state.last_progress = message
                     state.rows = int(params.get("rows") or 0)
+                elif method == "debug.paused":
+                    state.last_paused = message
+                    state.status = "paused"
+                elif method == "debug.resumed":
+                    state.last_paused = None
+                    state.status = "running"
                 elif method == "run.done":
+                    state.last_paused = None
                     state.done = params
                     state.status = str(params.get("status") or "done")
                 for subscriber in list(state.subscribers):
@@ -681,7 +727,7 @@ def _read_series(
     The window is applied while reading so a zoomed request copies only its
     slice of the (possibly huge) run file.
     """
-    running = document.get("status") == "running"
+    running = document.get("status") in ("running", "paused")  # a paused run is still live
     columns_path = run_dir / "columns.f64"
     stream_path = run_dir / "stream.f64"
 
@@ -728,6 +774,44 @@ def _validate_window(t0: float | None, t1: float | None) -> None:
 # --------------------------------------------------------------------------- routes
 
 
+def allocate_run_dir(runs_dir: Path) -> Path:
+    """Create a fresh ``<runs>/run-<time>-<rand>`` folder; HTTP 500 if none can be made."""
+    for _attempt in range(10):
+        run_id = f"run-{datetime.now(UTC):%Y%m%d-%H%M%S}-{secrets.token_hex(3)}"
+        candidate = runs_dir / run_id
+        try:
+            candidate.mkdir()
+        except FileExistsError:
+            continue
+        return candidate
+    raise HTTPException(status_code=500, detail="could not allocate a unique run id")
+
+
+async def begin_run(
+    request: Request,
+    project_dir: Path,
+    run_dir: Path,
+    manifest: dict[str, Any],
+    method: str,
+    params: dict[str, Any],
+) -> None:
+    """Register a run with the store and start it through ``method`` (``run.start`` etc.).
+
+    The monitor subscribes *before* the worker call so no notification is lost; a failed
+    call forgets the run and removes its folder.
+    """
+    store = _store_for(request.app)
+    run_id = run_dir.name
+    state = _RunState(run_id=run_id, project_dir=project_dir, run_dir=run_dir, manifest=manifest)
+    await store.start(state)
+    try:
+        await _worker_call(request, method, params)
+    except (HTTPException, WorkerRpcFailure):
+        store.forget(run_id)
+        shutil.rmtree(run_dir, ignore_errors=True)
+        raise
+
+
 @router.post("/projects/{project}/runs", status_code=201)
 async def start_run(project: str, body: RunCreateBody, request: Request) -> dict[str, str]:
     """Plan 3.7: start a run and return ``{runId}``."""
@@ -740,39 +824,29 @@ async def start_run(project: str, body: RunCreateBody, request: Request) -> dict
     runs_dir.mkdir(parents=True, exist_ok=True)
     _prune_runs(project_dir, str(model["name"]), run_history_limit(), store.active_ids())
 
-    run_dir: Path | None = None
-    for _attempt in range(10):
-        run_id = f"run-{datetime.now(UTC):%Y%m%d-%H%M%S}-{secrets.token_hex(3)}"
-        candidate = runs_dir / run_id
-        try:
-            candidate.mkdir()
-        except FileExistsError:
-            continue
-        run_dir = candidate
-        break
-    if run_dir is None:
-        raise HTTPException(status_code=500, detail="could not allocate a unique run id")
+    run_dir = allocate_run_dir(runs_dir)
     run_id = run_dir.name
-
-    state = _RunState(
-        run_id=run_id,
-        project_dir=project_dir,
-        run_dir=run_dir,
-        manifest=_skeleton(model, run_id, settings),
+    debug = (
+        _strip_comments(body.debug.model_dump(by_alias=True, mode="json"))
+        if body.debug is not None
+        else None
     )
-    await store.start(state)
-    params = {
+    params: dict[str, Any] = {
         "runId": run_id,
         "model": model,
         "projectDir": str(project_dir.resolve()),
         "runDir": str(run_dir.resolve()),
     }
-    try:
-        await _worker_call(request, "run.start", params)
-    except (HTTPException, WorkerRpcFailure):
-        store.forget(run_id)
-        shutil.rmtree(run_dir, ignore_errors=True)
-        raise
+    if debug is not None:
+        params["debug"] = debug
+    await begin_run(
+        request,
+        project_dir,
+        run_dir,
+        _skeleton(model, run_id, settings, debug),
+        "run.start",
+        params,
+    )
     return {"runId": run_id}
 
 
@@ -975,12 +1049,18 @@ async def _serve_run_socket(websocket: WebSocket, run_id: str) -> None:
         await websocket.close(code=4404)
         return
 
+    # Subscribe before the snapshot so a pause that lands meanwhile is not missed; the
+    # snapshot's paused message is skipped when it arrives a second time (same object).
+    queue = _store_for(websocket.app).subscribe(state) if state and state.done is None else None
+    snapshot_paused = state.last_paused if state is not None else None
     if state is not None:
         if state.last_phase is not None:
             await _safe_send(websocket, state.last_phase)
         if state.last_progress is not None:
             await _safe_send(websocket, state.last_progress)
-    if state is None and document.get("status") == "running":
+        if snapshot_paused is not None:
+            await _safe_send(websocket, snapshot_paused)
+    if state is None and document.get("status") in ("running", "paused"):
         # This backend did not start the run and has no notification stream for
         # it (for example after a backend restart); no live data will arrive.
         await _safe_send(
@@ -991,6 +1071,8 @@ async def _serve_run_socket(websocket: WebSocket, run_id: str) -> None:
         return
     if state is None or state.done is not None:
         # The run is over (or this backend did not start it): replay what is known.
+        if state is not None and queue is not None:
+            _store_for(websocket.app).unsubscribe(state, queue)
         tail = await asyncio.to_thread(
             _tail_payload,
             run_dir,
@@ -1006,13 +1088,21 @@ async def _serve_run_socket(websocket: WebSocket, run_id: str) -> None:
         await websocket.close()
         return
 
-    assert state is not None
-    queue = _store_for(websocket.app).subscribe(state)
+    assert state is not None and queue is not None
     subscription = _Subscription()
     send_lock = asyncio.Lock()
     try:
         sender = asyncio.create_task(
-            _send_loop(websocket, state, run_dir, signals, queue, subscription, send_lock),
+            _send_loop(
+                websocket,
+                state,
+                run_dir,
+                signals,
+                queue,
+                subscription,
+                send_lock,
+                snapshot_paused,
+            ),
             name=f"run-ws-send-{run_id}",
         )
         receiver = asyncio.create_task(
@@ -1087,9 +1177,12 @@ async def _send_loop(
     queue: asyncio.Queue,
     subscription: _Subscription,
     send_lock: asyncio.Lock,
+    snapshot_paused: dict[str, Any] | None = None,
 ) -> None:
     while True:
         message = await queue.get()
+        if message is snapshot_paused:
+            continue  # already sent as part of the snapshot
         method = message.get("method")
         if method == "run.done":
             # The final tail reads to the end of the file, not just the last
@@ -1106,6 +1199,18 @@ async def _send_loop(
             )
             await _safe_send(websocket, message, send_lock)
             return
+        if method == "debug.paused":
+            # The worker flushed the recorder before pausing: send every row up to the
+            # pause (unthrottled) so the live plots end exactly at the pause time.
+            await _send_tail(
+                websocket,
+                run_dir,
+                signals,
+                subscription,
+                None,
+                throttle=False,
+                send_lock=send_lock,
+            )
         if not await _safe_send(websocket, message, send_lock):
             return
         if method == "run.progress":
