@@ -289,3 +289,36 @@ describe("generated TypeScript", () => {
     expect(binding.property).toBe("position");
   });
 });
+
+describe("node images (ui.image)", () => {
+  const file = path.join(fixtureDir, "model", "valid", "model.subsystem-images.json");
+  const withData = (data: string): Model => {
+    const document = readJson(file) as Model;
+    const image = document.diagram.nodes[0]?.ui?.image;
+    if (image === undefined) {
+      throw new Error("the fixture has no image on its first node");
+    }
+    image.data = data;
+    return document;
+  };
+
+  it("allows 512 KiB decoded (699052 base64 characters) and refuses one quad more", () => {
+    const validate = validator("model");
+    const atLimit = Buffer.alloc(512 * 1024).toString("base64");
+    expect(atLimit).toHaveLength(699052);
+    expect(validate(withData(atLimit))).toBe(true);
+    expect(validate(withData(Buffer.alloc(512 * 1024 + 3).toString("base64")))).toBe(false);
+    expect(validate.errors?.map((error) => error.instancePath)).toContain(
+      "/diagram/nodes/0/ui/image/data",
+    );
+  });
+
+  it("types the PNG and SVG fixture images", () => {
+    const document = readJson(file) as Model;
+    const images = document.diagram.nodes.map((node) => node.ui?.image);
+    expect(images.map((image) => [image?.mime, image?.fit])).toEqual([
+      ["image/png", "contain"],
+      ["image/svg+xml", "stretch"],
+    ]);
+  });
+});

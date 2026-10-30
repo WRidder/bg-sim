@@ -49,6 +49,9 @@ import {
 import { useRunStore } from "../plot/runStore";
 import { useDiagnosticsStore } from "../diagnostics/store";
 import { buildDiagram, EDGE_TYPES, NODE_TYPES } from "./buildFlow";
+import { imageFromDataTransfer } from "./nodeImage";
+import { applyNodeImage } from "./nodeImageApply";
+import { activeDiagram } from "./subsystemPath";
 import { checkConnection, type PortDescriptor } from "./connectionRules";
 import {
   descriptorForPort,
@@ -182,6 +185,28 @@ function editableTarget(target: EventTarget | null): boolean {
     tag === "SELECT" ||
     target.isContentEditable
   );
+}
+
+/** Inside the inspector's image paste area, which handles Ctrl+V itself. */
+function imagePasteTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("[data-node-image-paste]") !== null;
+}
+
+/**
+ * How long Ctrl+V on a selected subsystem waits for the browser's `paste` event before it
+ * falls back to the node paste (a browser that fires no paste event outside text fields).
+ */
+const PASTE_EVENT_WAIT_MS = 300;
+
+/** The id of the only selected element when it is a subsystem node, else null. */
+function soleSelectedSubsystem(): string | null {
+  const state = useDocumentStore.getState();
+  if (state.doc === null || state.selection.nodes.length !== 1 || state.selection.connections.length > 0) {
+    return null;
+  }
+  const id = state.selection.nodes[0];
+  const node = activeDiagram(state.doc, state.activePath)?.nodes.find((entry) => entry.id === id);
+  return node !== undefined && "subsystem" in node.block ? node.id : null;
 }
 
 function saveLabel(saveState: string, dirty: boolean): string {
@@ -668,8 +693,26 @@ function CanvasInner() {
 
   // --------------------------------------------------------------- shortcuts
   useEffect(() => {
+    // Ctrl+V on a selected subsystem: the browser's paste event decides. An image on the
+    // clipboard becomes the subsystem's image (ui.image); anything else is the node paste.
+    let pendingImagePaste: { nodeId: string; timer: number } | null = null;
+    const onPaste = (event: ClipboardEvent): void => {
+      const pending = pendingImagePaste;
+      if (pending === null) {
+        return;
+      }
+      pendingImagePaste = null;
+      window.clearTimeout(pending.timer);
+      const load = imageFromDataTransfer(event.clipboardData);
+      if (load === null) {
+        useDocumentStore.getState().paste();
+        return;
+      }
+      event.preventDefault();
+      void applyNodeImage(pending.nodeId, load);
+    };
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (editableTarget(event.target)) {
+      if (editableTarget(event.target) || imagePasteTarget(event.target)) {
         return;
       }
       const store = useDocumentStore.getState();
@@ -707,6 +750,21 @@ function CanvasInner() {
         return;
       }
       if (mod && key === "v") {
+        const subsystem = soleSelectedSubsystem();
+        if (subsystem !== null) {
+          // No preventDefault: that would cancel the paste event and its clipboard data.
+          if (pendingImagePaste !== null) {
+            window.clearTimeout(pendingImagePaste.timer);
+          }
+          pendingImagePaste = {
+            nodeId: subsystem,
+            timer: window.setTimeout(() => {
+              pendingImagePaste = null;
+              useDocumentStore.getState().paste();
+            }, PASTE_EVENT_WAIT_MS),
+          };
+          return;
+        }
         event.preventDefault();
         store.paste();
         return;
@@ -729,7 +787,14 @@ function CanvasInner() {
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("paste", onPaste);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("paste", onPaste);
+      if (pendingImagePaste !== null) {
+        window.clearTimeout(pendingImagePaste.timer);
+      }
+    };
   }, []);
 
   // --------------------------------------------------------------- connect

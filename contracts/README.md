@@ -21,6 +21,12 @@ diagnostic `path` is an instance path or a scene target (`joint:`/`link:`/`frame
 Multibond fixture equations are component-wise (`p.e[k]`, `p.f[k]`) by contract (D-MB10); a
 whole-field write on a multibond port is E006, so do not reintroduce one in a fixture.
 
+Node images (plan 3.3): `ui.image` is `{ mime, data, fit }`, where `data` is bare standard base64
+of at most 699052 characters (512 KiB decoded). `model.subsystem-images.json` carries a PNG
+(`contain`) and an SVG (`stretch`). The invalid fixtures `model.image-*.json` cover a bad mime, a bad
+fit and a `data:` URL in `data`. The size limit is tested in code (`test_contracts.py`,
+`contracts.test.ts`) rather than with a 700 KB fixture.
+
 Data files (plan 3.5): `columns.f64` is the time column followed by one column per manifest signal,
 `stream.f64` is row-major `[t, v1 ... vn]`, both little-endian Float64 and gitignored, written by
 `fixtures/run-manifest/valid/run.synthetic/generate.py`; event instants are recorded twice with the

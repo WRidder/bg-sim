@@ -1,0 +1,49 @@
+{
+  "$comment": "Invalid: ui.image.data is a data: URL, not bare base64; the mime type belongs in ui.image.mime.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "BadNodeImage",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Motor1",
+        "block": {
+          "ref": "stdlib:converters/DCMotor"
+        },
+        "position": {
+          "x": 100,
+          "y": 100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null,
+          "image": {
+            "mime": "image/png",
+            "data": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAGElEQVR42mNgwAZUk1///zqP+z9uAWQAAFUCCh/iCdU/AAAAAElFTkSuQmCC",
+            "fit": "contain"
+          }
+        }
+      }
+    ],
+    "connections": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1000
+    },
+    "event_limit": 10000
+  }
+}

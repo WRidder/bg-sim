@@ -301,6 +301,43 @@ def test_model_crud_tracks_the_project_tab_list(
     assert client.get("/api/projects/demo/models/second").json() == second
 
 
+def test_model_with_node_images_round_trips_byte_for_byte(
+    client: TestClient, store: ProjectStore
+) -> None:
+    """ui.image (a PNG and an SVG on two subsystems) is stored and served unchanged."""
+    assert _create(client).status_code == 201
+    document = _load(FIXTURES / "model" / "valid" / "model.subsystem-images.json")
+    response = client.put("/api/projects/demo/models/images", json=document)
+    assert response.status_code == 200, response.text
+    fetched = client.get("/api/projects/demo/models/images").json()
+    assert fetched == document
+    images = [node["ui"]["image"] for node in fetched["diagram"]["nodes"]]
+    assert [(image["mime"], image["fit"]) for image in images] == [
+        ("image/png", "contain"),
+        ("image/svg+xml", "stretch"),
+    ]
+
+
+@pytest.mark.parametrize(
+    "image",
+    [
+        pytest.param({"mime": "image/gif", "data": "R0lGODlh", "fit": "contain"}, id="bad-mime"),
+        pytest.param({"mime": "image/png", "data": "iVBORw0K", "fit": "cover"}, id="bad-fit"),
+        pytest.param({"mime": "image/png", "data": "QUJD" * 174_764, "fit": "contain"}, id="over-512-kib"),
+        pytest.param({"mime": "image/png", "data": "not base64!", "fit": "contain"}, id="not-base64"),
+    ],
+)
+def test_model_put_rejects_a_bad_node_image(
+    client: TestClient, store: ProjectStore, image: dict[str, Any]
+) -> None:
+    assert _create(client).status_code == 201
+    document = _load(FIXTURES / "model" / "valid" / "model.subsystem-images.json")
+    document["diagram"]["nodes"][0]["ui"]["image"] = image
+    response = client.put("/api/projects/demo/models/images", json=document)
+    assert response.status_code == 422, response.text
+    assert not (_model_dir(store, "demo") / "images.bgmodel.json").exists()
+
+
 @pytest.mark.parametrize(
     "mutate",
     [

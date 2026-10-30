@@ -8,12 +8,14 @@
  */
 
 import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import { useMemo } from "react";
 
 import type { DomainName } from "../../contracts/catalog";
-import type { ModelPoint } from "../../contracts/model";
+import type { ModelNodeImage, ModelPoint } from "../../contracts/model";
 import type { PortDragState } from "../connectionAnalysis";
 import { JUNCTION_NODE_SIZE, type NodeLayout, type Side } from "../geometry";
 import { BlockIcon, BondLetterText, bondLetterFor, dimDescription } from "../icons";
+import { nodeImageFitStyle, nodeImageSrc } from "../nodeImage";
 import type { NodeInterface } from "../nodeInterface";
 import { useQuickConnect } from "../quickConnect";
 import { PortHandle } from "./PortHandle";
@@ -34,6 +36,8 @@ export interface BlockNodeData extends Record<string, unknown> {
   compact: boolean;
   /** Which side of the element the instance name hangs on. */
   labelSide: Side;
+  /** A subsystem's `ui.image`, drawn in the card body instead of the icon; null for none. */
+  image: ModelNodeImage | null;
 }
 
 export type BlockNodeType = Node<BlockNodeData, "block" | "subsystem">;
@@ -66,6 +70,28 @@ export function nodeState(
     rotation,
     flipX,
   });
+}
+
+/**
+ * The image of a subsystem card. Only ever an `<img>` with a data: URL: an SVG shown this
+ * way cannot run scripts or fetch anything, which inline SVG markup could.
+ */
+function NodeImage({ nodeId, image }: { nodeId: string; image: ModelNodeImage }) {
+  const src = useMemo(() => nodeImageSrc(image), [image]);
+  return (
+    <div className="block-node__body block-node__body--image">
+      <img
+        className="block-node__image"
+        src={src}
+        alt=""
+        draggable={false}
+        style={nodeImageFitStyle(image.fit)}
+        data-testid={`node-image-${nodeId}`}
+        data-fit={image.fit}
+        data-mime={image.mime}
+      />
+    </div>
+  );
 }
 
 export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
@@ -192,14 +218,18 @@ export function BlockNode({ data, selected }: NodeProps<BlockNodeType>) {
         <span className="block-node__name">{data.name}</span>
         <span className="block-node__kind">{iface.title}</span>
       </div>
-      <div
-        className="block-node__body"
-        style={{
-          transform: `rotate(${data.rotation}deg) scaleX(${data.flipX ? -1 : 1})`,
-        }}
-      >
-        <BlockIcon icon={iface.icon} name={iface.title} size={38} />
-      </div>
+      {data.image !== null ? (
+        <NodeImage nodeId={data.nodeId} image={data.image} />
+      ) : (
+        <div
+          className="block-node__body"
+          style={{
+            transform: `rotate(${data.rotation}deg) scaleX(${data.flipX ? -1 : 1})`,
+          }}
+        >
+          <BlockIcon icon={iface.icon} name={iface.title} size={38} />
+        </div>
+      )}
       {portHandles}
     </div>
   );

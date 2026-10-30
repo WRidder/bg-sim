@@ -84,6 +84,7 @@ export type { ModelConstantValue } from "./model";
 export type { ModelDiagram } from "./model";
 export type { ModelEndpoint } from "./model";
 export type { ModelNode } from "./model";
+export type { ModelNodeImage } from "./model";
 export type { ModelNodeUi } from "./model";
 export type { ModelOutput } from "./model";
 export type { ModelPlot } from "./model";

@@ -32,6 +32,11 @@ export type UnitArray6 = [string, string, string, string, string, string];
  * A constant override: number, boolean, expression string or array (vector, matrix).
  */
 export type ModelConstantValue = number | boolean | string | (number | number[])[];
+export type ModelNodeImageMime = "image/png" | "image/svg+xml" | "image/webp" | "image/jpeg";
+/**
+ * contain keeps the aspect ratio inside the card body; stretch fills it.
+ */
+export type ModelNodeImageFit = "contain" | "stretch";
 /**
  * Connection kind (D7): bond (half arrow at "to", power from -> to), wire (node of concrete-domain power ports) or signal (one output to many inputs).
  */
@@ -194,6 +199,19 @@ export interface ModelPoint {
 export interface ModelNodeUi {
   showLabel: boolean;
   color?: string | null;
+  image?: ModelNodeImage;
+  $comment?: string;
+}
+/**
+ * An image drawn inside the node's card (the editor offers it on subsystem nodes). The editor compresses an image to fit 512 KiB decoded before it stores it; the schema limit is the base64 length of 512 KiB.
+ */
+export interface ModelNodeImage {
+  mime: ModelNodeImageMime;
+  /**
+   * The image file as standard base64 without line breaks: at most 699052 characters, which is 512 KiB decoded.
+   */
+  data: string;
+  fit: ModelNodeImageFit;
   $comment?: string;
 }
 export interface ModelConnection {
