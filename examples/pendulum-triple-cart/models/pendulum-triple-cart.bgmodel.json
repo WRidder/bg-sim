@@ -1,0 +1,1640 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "pendulum-triple-cart",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n001",
+        "name": "Ground",
+        "block": {
+          "ref": "stdlib:multibond/GroundPlanar"
+        },
+        "position": {
+          "x": 80,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n002",
+        "name": "Rail",
+        "block": {
+          "ref": "stdlib:planar/Prismatic2D"
+        },
+        "position": {
+          "x": 270,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "phi": "0.0",
+          "kr": "100000.0",
+          "br": "2.0",
+          "kd": "100000000.0",
+          "bd": "2000.0",
+          "q0": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "d": "-1.0202400000000001e-07"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n003",
+        "name": "CartJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 460,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n004",
+        "name": "Cart",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 460,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.8",
+          "J": "0.0015",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n005",
+        "name": "Joint1",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 650,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.0",
+          "ry": "0.0",
+          "kt": "100000000.0",
+          "bt": "1000.0",
+          "k": "0.0",
+          "b": "0.0002",
+          "q0": "-1.5707963267948966",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "d": "[2.3544e-08, -1.4416542119562642e-24]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n006",
+        "name": "Link1",
+        "block": {
+          "ref": "stdlib:planar/FixedJoint2D"
+        },
+        "position": {
+          "x": 760,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.125",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n007",
+        "name": "N1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 870,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n008",
+        "name": "Body1",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 870,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.1",
+          "J": "0.0005208333333333333",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n009",
+        "name": "Passive1",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 650,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n010",
+        "name": "CoM1",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 760,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.125"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n011",
+        "name": "PoseJ1",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 650,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n012",
+        "name": "PoseB1",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 870,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n013",
+        "name": "Joint2",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 1030,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.125",
+          "ry": "0.0",
+          "kt": "100000000.0",
+          "bt": "1000.0",
+          "k": "0.0",
+          "b": "0.0002",
+          "q0": "0.0",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "d": "[1.3734000000000002e-08, -8.409649569744876e-25]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n014",
+        "name": "Link2",
+        "block": {
+          "ref": "stdlib:planar/FixedJoint2D"
+        },
+        "position": {
+          "x": 1140,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.125",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n015",
+        "name": "N2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1250,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n016",
+        "name": "Body2",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 1250,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.08",
+          "J": "0.0004166666666666667",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n017",
+        "name": "Passive2",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 1030,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n018",
+        "name": "CoM2",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 1140,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.125"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n019",
+        "name": "PoseJ2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 1030,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n020",
+        "name": "PoseB2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 1250,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n021",
+        "name": "Joint3",
+        "block": {
+          "ref": "stdlib:planar/Revolute2DCompliant"
+        },
+        "position": {
+          "x": 1410,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "rx": "0.125",
+          "ry": "0.0",
+          "kt": "100000000.0",
+          "bt": "1000.0",
+          "k": "0.0",
+          "b": "0.0002",
+          "q0": "0.0",
+          "qrest": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "d": "[5.886e-09, -3.6041355298906604e-25]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n022",
+        "name": "Link3",
+        "block": {
+          "ref": "stdlib:planar/FixedJoint2D"
+        },
+        "position": {
+          "x": 1520,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.125",
+          "y": "0.0",
+          "theta": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n023",
+        "name": "N3",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1630,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n024",
+        "name": "Body3",
+        "block": {
+          "ref": "stdlib:planar/RigidBody2D"
+        },
+        "position": {
+          "x": 1630,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.06",
+          "J": "0.0003125",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n025",
+        "name": "Passive3",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 1410,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n026",
+        "name": "CoM3",
+        "block": {
+          "ref": "stdlib:planar/LocalPose2D"
+        },
+        "position": {
+          "x": 1520,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.125"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n027",
+        "name": "PoseJ3",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 1410,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n028",
+        "name": "PoseB3",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose2D"
+        },
+        "position": {
+          "x": 1630,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n029",
+        "name": "Push",
+        "block": {
+          "ref": "stdlib:multibond/ExternalWrenchPlanar"
+        },
+        "position": {
+          "x": 1790,
+          "y": 360
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n030",
+        "name": "PushPulse",
+        "block": {
+          "ref": "stdlib:sources/Pulse"
+        },
+        "position": {
+          "x": 1790,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "amplitude": "0.065",
+          "period": "1000.0",
+          "duty": "4e-05",
+          "t_start": "8.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n031",
+        "name": "PushLever",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 1900,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "0.125"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n032",
+        "name": "PushZero",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1900,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n033",
+        "name": "Motor",
+        "block": {
+          "ref": "stdlib:drives/ElectricDrive"
+        },
+        "position": {
+          "x": 270,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R_w": "1.5",
+          "L": "0.0005",
+          "k_t": "0.0302",
+          "J_m": "1.4e-05",
+          "b_m": "2e-06"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n034",
+        "name": "Gear",
+        "block": {
+          "ref": "stdlib:drives/Gearbox"
+        },
+        "position": {
+          "x": 460,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "N": "3.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n035",
+        "name": "Pulley",
+        "block": {
+          "ref": "stdlib:converters/RackAndPinion"
+        },
+        "position": {
+          "x": 630,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.016"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n036",
+        "name": "Belt",
+        "block": {
+          "ref": "stdlib:translation/SpringDamper"
+        },
+        "position": {
+          "x": 820,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "400000.0",
+          "d": "60.0"
+        },
+        "constants": {},
+        "starts": {
+          "x": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n037",
+        "name": "Clock",
+        "block": {
+          "ref": "stdlib:sources/Time"
+        },
+        "position": {
+          "x": 80,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n038",
+        "name": "Traj",
+        "block": {
+          "ref": "project:TripleCartTraj"
+        },
+        "position": {
+          "x": 80,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n039",
+        "name": "Ctrl",
+        "block": {
+          "ref": "project:TripleCartCtrl"
+        },
+        "position": {
+          "x": 80,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b001",
+        "kind": "bond",
+        "from": {
+          "node": "n001",
+          "port": "p"
+        },
+        "to": {
+          "node": "n002",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "b002",
+        "kind": "bond",
+        "from": {
+          "node": "n002",
+          "port": "child"
+        },
+        "to": {
+          "node": "n003"
+        }
+      },
+      {
+        "id": "b003",
+        "kind": "bond",
+        "from": {
+          "node": "n004",
+          "port": "p"
+        },
+        "to": {
+          "node": "n003"
+        }
+      },
+      {
+        "id": "b004",
+        "kind": "bond",
+        "from": {
+          "node": "n005",
+          "port": "parent"
+        },
+        "to": {
+          "node": "n003"
+        }
+      },
+      {
+        "id": "b005",
+        "kind": "bond",
+        "from": {
+          "node": "n005",
+          "port": "child"
+        },
+        "to": {
+          "node": "n006",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "b006",
+        "kind": "bond",
+        "from": {
+          "node": "n006",
+          "port": "child"
+        },
+        "to": {
+          "node": "n007"
+        }
+      },
+      {
+        "id": "b007",
+        "kind": "bond",
+        "from": {
+          "node": "n008",
+          "port": "p"
+        },
+        "to": {
+          "node": "n007"
+        }
+      },
+      {
+        "id": "b008",
+        "kind": "bond",
+        "from": {
+          "node": "n009",
+          "port": "p"
+        },
+        "to": {
+          "node": "n005",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "s001",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n011",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "s002",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n011",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "s003",
+        "kind": "signal",
+        "from": {
+          "node": "n011",
+          "port": "g"
+        },
+        "to": {
+          "node": "n012",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "s004",
+        "kind": "signal",
+        "from": {
+          "node": "n010",
+          "port": "g"
+        },
+        "to": {
+          "node": "n012",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "s005",
+        "kind": "signal",
+        "from": {
+          "node": "n012",
+          "port": "g"
+        },
+        "to": {
+          "node": "n008",
+          "port": "g"
+        }
+      },
+      {
+        "id": "b009",
+        "kind": "bond",
+        "from": {
+          "node": "n013",
+          "port": "parent"
+        },
+        "to": {
+          "node": "n007"
+        }
+      },
+      {
+        "id": "b010",
+        "kind": "bond",
+        "from": {
+          "node": "n013",
+          "port": "child"
+        },
+        "to": {
+          "node": "n014",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "b011",
+        "kind": "bond",
+        "from": {
+          "node": "n014",
+          "port": "child"
+        },
+        "to": {
+          "node": "n015"
+        }
+      },
+      {
+        "id": "b012",
+        "kind": "bond",
+        "from": {
+          "node": "n016",
+          "port": "p"
+        },
+        "to": {
+          "node": "n015"
+        }
+      },
+      {
+        "id": "b013",
+        "kind": "bond",
+        "from": {
+          "node": "n017",
+          "port": "p"
+        },
+        "to": {
+          "node": "n013",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "s006",
+        "kind": "signal",
+        "from": {
+          "node": "n012",
+          "port": "g"
+        },
+        "to": {
+          "node": "n019",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "s007",
+        "kind": "signal",
+        "from": {
+          "node": "n013",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n019",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "s008",
+        "kind": "signal",
+        "from": {
+          "node": "n019",
+          "port": "g"
+        },
+        "to": {
+          "node": "n020",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "s009",
+        "kind": "signal",
+        "from": {
+          "node": "n018",
+          "port": "g"
+        },
+        "to": {
+          "node": "n020",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "s010",
+        "kind": "signal",
+        "from": {
+          "node": "n020",
+          "port": "g"
+        },
+        "to": {
+          "node": "n016",
+          "port": "g"
+        }
+      },
+      {
+        "id": "b014",
+        "kind": "bond",
+        "from": {
+          "node": "n021",
+          "port": "parent"
+        },
+        "to": {
+          "node": "n015"
+        }
+      },
+      {
+        "id": "b015",
+        "kind": "bond",
+        "from": {
+          "node": "n021",
+          "port": "child"
+        },
+        "to": {
+          "node": "n022",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "b016",
+        "kind": "bond",
+        "from": {
+          "node": "n022",
+          "port": "child"
+        },
+        "to": {
+          "node": "n023"
+        }
+      },
+      {
+        "id": "b017",
+        "kind": "bond",
+        "from": {
+          "node": "n024",
+          "port": "p"
+        },
+        "to": {
+          "node": "n023"
+        }
+      },
+      {
+        "id": "b018",
+        "kind": "bond",
+        "from": {
+          "node": "n025",
+          "port": "p"
+        },
+        "to": {
+          "node": "n021",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "s011",
+        "kind": "signal",
+        "from": {
+          "node": "n020",
+          "port": "g"
+        },
+        "to": {
+          "node": "n027",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "s012",
+        "kind": "signal",
+        "from": {
+          "node": "n021",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n027",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "s013",
+        "kind": "signal",
+        "from": {
+          "node": "n027",
+          "port": "g"
+        },
+        "to": {
+          "node": "n028",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "s014",
+        "kind": "signal",
+        "from": {
+          "node": "n026",
+          "port": "g"
+        },
+        "to": {
+          "node": "n028",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "s015",
+        "kind": "signal",
+        "from": {
+          "node": "n028",
+          "port": "g"
+        },
+        "to": {
+          "node": "n024",
+          "port": "g"
+        }
+      },
+      {
+        "id": "s016",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n004",
+          "port": "g"
+        }
+      },
+      {
+        "id": "b019",
+        "kind": "bond",
+        "from": {
+          "node": "n029",
+          "port": "p"
+        },
+        "to": {
+          "node": "n023"
+        }
+      },
+      {
+        "id": "s017",
+        "kind": "signal",
+        "from": {
+          "node": "n030",
+          "port": "y"
+        },
+        "to": {
+          "node": "n029",
+          "port": "wy"
+        }
+      },
+      {
+        "id": "s018",
+        "kind": "signal",
+        "from": {
+          "node": "n030",
+          "port": "y"
+        },
+        "to": {
+          "node": "n031",
+          "port": "u"
+        }
+      },
+      {
+        "id": "s019",
+        "kind": "signal",
+        "from": {
+          "node": "n031",
+          "port": "y"
+        },
+        "to": {
+          "node": "n029",
+          "port": "wr"
+        }
+      },
+      {
+        "id": "s020",
+        "kind": "signal",
+        "from": {
+          "node": "n032",
+          "port": "y"
+        },
+        "to": {
+          "node": "n029",
+          "port": "wx"
+        }
+      },
+      {
+        "id": "w001",
+        "kind": "wire",
+        "from": {
+          "node": "n033",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "n034",
+          "port": "a"
+        }
+      },
+      {
+        "id": "w002",
+        "kind": "wire",
+        "from": {
+          "node": "n034",
+          "port": "b"
+        },
+        "to": {
+          "node": "n035",
+          "port": "a"
+        }
+      },
+      {
+        "id": "w003",
+        "kind": "wire",
+        "from": {
+          "node": "n035",
+          "port": "b"
+        },
+        "to": {
+          "node": "n036",
+          "port": "a"
+        }
+      },
+      {
+        "id": "w004",
+        "kind": "wire",
+        "from": {
+          "node": "n036",
+          "port": "b"
+        },
+        "to": {
+          "node": "n002",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "s021",
+        "kind": "signal",
+        "from": {
+          "node": "n037",
+          "port": "y"
+        },
+        "to": {
+          "node": "n038",
+          "port": "tm"
+        }
+      },
+      {
+        "id": "s022",
+        "kind": "signal",
+        "from": {
+          "node": "n038",
+          "port": "ff"
+        },
+        "to": {
+          "node": "n039",
+          "port": "ff"
+        }
+      },
+      {
+        "id": "s023",
+        "kind": "signal",
+        "from": {
+          "node": "n038",
+          "port": "xs"
+        },
+        "to": {
+          "node": "n039",
+          "port": "xs"
+        }
+      },
+      {
+        "id": "s024",
+        "kind": "signal",
+        "from": {
+          "node": "n038",
+          "port": "Ks"
+        },
+        "to": {
+          "node": "n039",
+          "port": "Ks"
+        }
+      },
+      {
+        "id": "s025",
+        "kind": "signal",
+        "from": {
+          "node": "n037",
+          "port": "y"
+        },
+        "to": {
+          "node": "n039",
+          "port": "tm"
+        }
+      },
+      {
+        "id": "s026",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n039",
+          "port": "x"
+        }
+      },
+      {
+        "id": "s027",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n039",
+          "port": "v"
+        }
+      },
+      {
+        "id": "s028",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n039",
+          "port": "q1"
+        }
+      },
+      {
+        "id": "s029",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n039",
+          "port": "wq1"
+        }
+      },
+      {
+        "id": "s030",
+        "kind": "signal",
+        "from": {
+          "node": "n013",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n039",
+          "port": "q2"
+        }
+      },
+      {
+        "id": "s031",
+        "kind": "signal",
+        "from": {
+          "node": "n013",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n039",
+          "port": "wq2"
+        }
+      },
+      {
+        "id": "s032",
+        "kind": "signal",
+        "from": {
+          "node": "n021",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n039",
+          "port": "q3"
+        }
+      },
+      {
+        "id": "s033",
+        "kind": "signal",
+        "from": {
+          "node": "n021",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n039",
+          "port": "wq3"
+        }
+      },
+      {
+        "id": "s034",
+        "kind": "signal",
+        "from": {
+          "node": "n039",
+          "port": "u"
+        },
+        "to": {
+          "node": "n033",
+          "port": "u"
+        }
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 14.5,
+    "solver": "Rodas5P",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 2901
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p_angles",
+      "title": "Link angles from upright (rad)",
+      "signals": [
+        "Ctrl/th1",
+        "Ctrl/th2",
+        "Ctrl/th3"
+      ]
+    },
+    {
+      "id": "p_cart",
+      "title": "Cart position (m)",
+      "signals": [
+        "Rail/qout"
+      ]
+    },
+    {
+      "id": "p_volt",
+      "title": "Motor voltage (V) and phase",
+      "signals": [
+        "Ctrl/u",
+        "Ctrl/phase"
+      ]
+    },
+    {
+      "id": "p_cur",
+      "title": "Motor current (A)",
+      "signals": [
+        "Motor/isense/y"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/pendulum-triple-cart.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:rail",
+      "property": "position",
+      "signal": "Rail/qout"
+    },
+    {
+      "target": "joint:hinge1",
+      "property": "position",
+      "signal": "Joint1/qout"
+    },
+    {
+      "target": "joint:hinge2",
+      "property": "position",
+      "signal": "Joint2/qout"
+    },
+    {
+      "target": "joint:hinge3",
+      "property": "position",
+      "signal": "Joint3/qout"
+    }
+  ]
+}
