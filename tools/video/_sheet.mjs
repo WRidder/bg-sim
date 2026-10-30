@@ -1,0 +1,13 @@
+import { chromium, framesDir } from "./lib.mjs";
+import { readdirSync, writeFileSync, existsSync } from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+const pick = process.argv[2] ?? "v-3";
+const only = process.argv[3]?.split(",");
+const root = path.join(framesDir, "examples");
+const names = readdirSync(root).filter((n) => existsSync(`${root}/${n}/${pick}.png`) && (!only || only.includes(n)));
+const html = `<body style="margin:0;background:#222;color:#fff;font:16px sans-serif;display:grid;grid-template-columns:repeat(4,480px);gap:6px">${names.map((n) => `<div><div>${n}</div><img style="width:480px;height:400px;object-fit:contain;background:#000" src="${pathToFileURL(`${root}/${n}/${pick}.png`).href}"></div>`).join("")}</body>`;
+const f = path.join(framesDir, "_sheet.html"); writeFileSync(f, html);
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1950, height: 440 * Math.ceil(names.length / 4) } });
+await p.goto(pathToFileURL(f).href); await p.waitForTimeout(800);
+await p.screenshot({ path: path.join(framesDir, `_sheet-${pick}.png`) }); await b.close();

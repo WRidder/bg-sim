@@ -19,3 +19,7 @@ Thumbs.db
 
 # Background literature (read-only, local only: not redistributable)
 background/
+
+# video frames (X5.V)
+media/video/frames/
+media/video/*.log

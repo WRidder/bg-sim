@@ -1,0 +1,370 @@
+[
+ {
+  "id": "dc-motor",
+  "title": "DC motor",
+  "lines": [
+   "The walking skeleton: one physical model, built twice, as iconic components and as a bond graph.",
+   "R = 2 ohm, k_t = 0.05 N·m/A, a 12 V supply step at t = 0.01 s.",
+   "The run: rotor speed rises to a steady state; both forms agree."
+  ],
+  "tags": [
+   "iconic",
+   "bond graph",
+   "3D"
+  ]
+ },
+ {
+  "id": "rlc-dual",
+  "title": "Series RLC, twice",
+  "lines": [
+   "One model, two independent subsystems: an iconic circuit and the same circuit as a pure bond graph.",
+   "Both are driven by a 1 V step.",
+   "The run: the capacitor voltage rings and settles; the two forms overlap."
+  ],
+  "tags": [
+   "subsystems",
+   "causality"
+  ]
+ },
+ {
+  "id": "bouncing-ball",
+  "title": "Bouncing ball",
+  "lines": [
+   "A single equation block from the project library with a continuous event.",
+   "Released from rest at h = 1 m; each impact reverses the velocity and loses 20 % of the speed.",
+   "The run: height curve with a kink at every bounce."
+  ],
+  "tags": [
+   "equation block",
+   "events"
+  ]
+ },
+ {
+  "id": "quarter-car",
+  "title": "Quarter-car suspension",
+  "lines": [
+   "Bond graph: 300 kg sprung mass, 40 kg unsprung mass, a one-sided tyre and a ±0.08 m hard stop.",
+   "A table-driven road with a 5 cm plateau bump at t = 0.5 s.",
+   "The run: 4 s of body and wheel motion over the bump."
+  ],
+  "tags": [
+   "bond graph",
+   "table input"
+  ]
+ },
+ {
+  "id": "drivetrain",
+  "title": "Drivetrain",
+  "lines": [
+   "Motor, gearbox and a flexible rod between two inertias, as an iconic model and as a pure bond graph.",
+   "A 12 V step at t = 0.01 s, a 0.5 N·m load step at t = 1 s.",
+   "The run: 2 s; both forms give the same numbers."
+  ],
+  "tags": [
+   "iconic",
+   "bond graph"
+  ]
+ },
+ {
+  "id": "drivetrain-kalman",
+  "title": "Drivetrain with LQG",
+  "lines": [
+   "A bond-graph plant under a 1 ms discrete LQG firmware: LQR with integral action plus a Kalman filter.",
+   "The filter reconstructs the load speed from the motor encoder alone.",
+   "The run: a 10 rad/s reference step at 0.1 s, a −0.5 N·m load step at 1 s."
+  ],
+  "tags": [
+   "@discrete",
+   "Kalman",
+   "LQR"
+  ]
+ },
+ {
+  "id": "drivetrain-position",
+  "compare": "drivetrain-position-naive",
+  "title": "Position control of a compliant drivetrain",
+  "lines": [
+   "The same drivetrain with a shaft 40x softer: a 3.9 Hz torsional mode.",
+   "A 1 rad step of the load wheel, then a load-torque step.",
+   "A textbook PID overshoots by 104 % and rings at 3.8 Hz. Trajectory, Kalman filter on both encoders and LQR with integral action: 0.02 % overshoot, settling in 0.66 s."
+  ],
+  "tags": [
+   "@discrete",
+   "Kalman",
+   "LQR",
+   "vs. naive PID"
+  ]
+ },
+ {
+  "id": "hydraulic-servo",
+  "title": "Hydraulic servo",
+  "lines": [
+   "A 100 bar supply and a 1 bar tank feed a 4/3 spool valve built from four variable orifices.",
+   "The valve drives a cylinder with a 50 kg mass; a 1 ms discrete PID closes the position loop.",
+   "The run: the piston follows its position command."
+  ],
+  "tags": [
+   "hydraulic",
+   "PID"
+  ]
+ },
+ {
+  "id": "industrial-servo",
+  "title": "Industrial servo drive",
+  "lines": [
+   "A PMSM drive: bond-graph dq plant, sampled cascaded current, speed and position firmware, and an inverter.",
+   "Five fidelity variants; the first is the baseline with an averaged inverter and a rigid inertia.",
+   "The run: the speed response of the cascaded loops."
+  ],
+  "tags": [
+   "PMSM",
+   "cascaded control"
+  ]
+ },
+ {
+  "id": "inverted-pendulum-cart",
+  "title": "Cart-pole balancer",
+  "lines": [
+   "A pure bond-graph cart with a rod and tip mass, balanced by a 1 ms discrete LQR.",
+   "It starts with a 0.1 rad tilt and follows a 0.2 m cart-position step at t = 1.5 s.",
+   "The run: the pole is stabilised and the cart moves."
+  ],
+  "tags": [
+   "bond graph",
+   "LQR"
+  ]
+ },
+ {
+  "id": "multibond-pendulum-2d",
+  "title": "Planar multibond pendulum",
+  "lines": [
+   "A rigid link on a compliant-pivot planar revolute joint, built from Power{Planar} multibonds.",
+   "Shown with the two-stroke bond convention end to end.",
+   "The run: a 10 s swing; the energy drift stays at numerical noise."
+  ],
+  "tags": [
+   "2D multibond"
+  ]
+ },
+ {
+  "id": "robot-arm-2d",
+  "title": "Planar 2-link arm",
+  "lines": [
+   "Two rigid links and a payload on compliant pivots, built from planar multibond composites.",
+   "A 1 ms PD controller with gravity feedforward drives both joints.",
+   "The run: the joints move to their targets."
+  ],
+  "tags": [
+   "2D multibond",
+   "PD control"
+  ]
+ },
+ {
+  "id": "planar-links",
+  "title": "Planar links vs. a toolbox",
+  "lines": [
+   "The 1-, 2- and 3-link planar arms, built side by side from planar bond-graph elements.",
+   "CSV input sources drive them with reference trajectories.",
+   "The run: the arms follow the reference, compared with a robotics-toolbox model."
+  ],
+  "tags": [
+   "CSV sources",
+   "2D multibond"
+  ]
+ },
+ {
+  "id": "reaction-wheel-1d",
+  "title": "Reaction-wheel cube, 1D",
+  "lines": [
+   "A 0.12 m cube on one edge, balanced by a DC motor spinning a wheel inside it.",
+   "A 2 ms discrete LQR sets the motor voltage, clamped to ±12 V.",
+   "The run: starting 0.05 rad off upright, the cube is held up."
+  ],
+  "tags": [
+   "@discrete",
+   "LQR"
+  ]
+ },
+ {
+  "id": "reaction-wheel-2d",
+  "title": "Planar reaction-wheel balancer",
+  "lines": [
+   "An inverted planar body on a compliant pivot with a reaction wheel on its axis.",
+   "A 1 ms PD on the body angle commands the wheel torque.",
+   "The run: the wheel spins up while the body stays upright."
+  ],
+  "tags": [
+   "2D multibond",
+   "PD control"
+  ]
+ },
+ {
+  "id": "pendulum-double-fixed",
+  "title": "Double pendulum, fixed pivot",
+  "lines": [
+   "A planar double pendulum; a gearmotor drives the first joint only.",
+   "Hanging at rest, then a trajectory-optimised swing-up tracked by a time-varying LQR.",
+   "The run: swing-up, catch, balance, then a force pulse and the recovery."
+  ],
+  "tags": [
+   "swing-up",
+   "LQR"
+  ]
+ },
+ {
+  "id": "pendulum-triple-fixed",
+  "title": "Triple pendulum, fixed pivot",
+  "lines": [
+   "A planar triple pendulum; a gearmotor drives the first joint, the other two are passive.",
+   "Swing-up along a trajectory-optimised feed-forward, tracked by a time-varying LQR.",
+   "The run: swing-up, catch, balance, recovery."
+  ],
+  "tags": [
+   "swing-up",
+   "LQR"
+  ]
+ },
+ {
+  "id": "pendulum-double-cart",
+  "title": "Double pendulum on a cart",
+  "lines": [
+   "A cart on a ±0.40 m rail, driven through a gearbox and a belt; both pendulum joints are passive.",
+   "Everything starts hanging at rest; swing-up, LQR catch, then a force pulse on the tip.",
+   "The run: swing-up, catch, balance, recovery."
+  ],
+  "tags": [
+   "cart",
+   "swing-up"
+  ]
+ },
+ {
+  "id": "pendulum-triple-cart",
+  "title": "Triple pendulum on a cart",
+  "lines": [
+   "The double-pendulum cart rig with a third link, on the same ±0.40 m belt-driven rail.",
+   "Swing-up from hanging, catch with an LQR, balance, then a force pulse on the tip link.",
+   "The run: swing-up, catch, balance, recovery."
+  ],
+  "tags": [
+   "cart",
+   "swing-up"
+  ]
+ },
+ {
+  "id": "pendulum-double-rotary",
+  "title": "Rotary double pendulum",
+  "lines": [
+   "A Quanser-style rotary arm (70:1 gearbox, ±10 V) with a two-link pendulum, as a spatial multibond.",
+   "Swing-up at 1 s, catch at 5.02 s, a 0.35 N pulse at 8.5 s.",
+   "The run: 12 s from hanging to balance and recovery."
+  ],
+  "tags": [
+   "3D multibond",
+   "swing-up"
+  ]
+ },
+ {
+  "id": "pendulum-triple-rotary",
+  "title": "Rotary triple pendulum",
+  "lines": [
+   "The rotary arm with a three-link chain (70:1 gearbox, ±15 V), a spatial multibond bond graph.",
+   "Swing-up at 1 s, LQR catch at about 5 s, a 0.1 N pulse at 8.5 s.",
+   "The run: 12 s from hanging to balance and recovery."
+  ],
+  "tags": [
+   "3D multibond",
+   "swing-up"
+  ]
+ },
+ {
+  "id": "robot-arm-3d",
+  "title": "Six-axis arm",
+  "lines": [
+   "A UR5-like serial arm on spatial multibonds; every joint bond is a three-stroke bundle.",
+   "A 1 ms PD controller with gravity feedforward.",
+   "The run: the arm moves from a home pose to a target pose."
+  ],
+  "tags": [
+   "3D multibond",
+   "PD control"
+  ]
+ },
+ {
+  "id": "reaction-wheel-3d",
+  "title": "Four-wheel pyramid on a spherical pivot",
+  "lines": [
+   "A rigid body on a compliant spherical pivot carrying four reaction wheels in a pyramid.",
+   "Gyroscopic coupling is physical: every wheel is a real rigid body on a revolute joint.",
+   "The run: gravity off, so the total angular momentum about the pivot stays constant."
+  ],
+  "tags": [
+   "3D multibond",
+   "momentum"
+  ]
+ },
+ {
+  "id": "cube-3d",
+  "title": "Cube on a corner",
+  "lines": [
+   "A 0.15 m cube on one corner, body diagonal vertical, starting 2° off, with three reaction wheels.",
+   "A 2 ms discrete LQR sets the three motor voltages, clamped to ±12 V.",
+   "The run: the three wheels hold the cube balanced."
+  ],
+  "tags": [
+   "@discrete",
+   "LQR"
+  ]
+ },
+ {
+  "id": "cube-pyramid-3d",
+  "title": "Cube tipping on four wheels",
+  "lines": [
+   "A free 0.2 m cube with four reaction wheels in a pyramid on a compliant ground.",
+   "A scripted torque profile tips it from a face to an edge (45°) to a corner (54.74°).",
+   "The run: the contact phases are emergent, nothing is switched by hand."
+  ],
+  "tags": [
+   "contact",
+   "3D multibond"
+  ]
+ },
+ {
+  "id": "tetra-3d",
+  "title": "Tetrahedron with wheels",
+  "lines": [
+   "A regular tetrahedron (edge 0.25 m) with a reaction wheel on every face, lying on a ground plane.",
+   "A scripted torque profile spins the wheels.",
+   "The run: the body tips from a face to an edge to a single vertex."
+  ],
+  "tags": [
+   "contact",
+   "3D multibond"
+  ]
+ },
+ {
+  "id": "quadcopter",
+  "title": "Quadcopter",
+  "lines": [
+   "A 1.35 kg, 450 mm X quadcopter with motor and propeller chains and a PX4-style cascaded flight controller.",
+   "The plant stands on four compliant contact legs.",
+   "The run: the 18 s mission: take-off to 1 m, a 2 m x 2 m square with a 90° yaw turn, landing."
+  ],
+  "tags": [
+   "contact",
+   "cascaded control"
+  ]
+ },
+ {
+  "id": "aerial-contact",
+  "title": "Aerial manipulator",
+  "lines": [
+   "A 2.1 kg hexarotor with a servo-driven tube, a rubber shock mount and a three-wheel end-effector.",
+   "Free flight, wall approach, engage at 5.08 s, a contact-controlled climb along the wall, disengage.",
+   "The run: the 34 s scenario with a gain-scheduled LQR contact controller."
+  ],
+  "tags": [
+   "contact",
+   "LQR"
+  ]
+ }
+]
