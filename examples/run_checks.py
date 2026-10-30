@@ -14,7 +14,7 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
 * starts each model's run through ``POST /api/projects/{p}/runs``, waits for
   the run to finish and reads ``<project>/runs/<id>/columns.f64`` with numpy;
 * evaluates every check kind (``final_value``, ``cursor_value``, ``max_abs``,
-  ``max_abs_le``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
+  ``max_abs_le``, ``min_ge``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
   ``invariant``, ``planar_fk``, ``energy_ledger``, ``compare_signals``,
   ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak`` and
   ``scene_bindings`` and ``no_diagnostics``), prints one
@@ -79,6 +79,11 @@ the largest absolute value over the window is at most ``value``::
     {"kind": "max_abs_le", "signal": "V/p.e", "value": 24.0},
     {"kind": "rms_difference", "signal": "LQG/w_load_hat",
      "signal_b": "IW2/p.f", "from_t": 0.5, "to_t": 2.0, "value": 0.2},
+
+``min_ge`` is the lower-bound counterpart (a contact force that must stay positive): it passes when
+the smallest value over ``[from_t, to_t]`` is at least ``value``::
+
+    {"kind": "min_ge", "signal": "Wheel1/f_n", "from_t": 8.5, "to_t": 28.5, "value": 0.5},
 
 ``no_diagnostics`` takes ``codes`` and fails when any of them appears in the run
 manifest; other codes (such as the expected W205 of a pure bond-graph island) are
@@ -917,6 +922,36 @@ def _max_abs_le_check(
         f"at t={times[index]:.6g}, limit {limit:.12g}"
     )
     report.check(measured <= limit, label, detail)
+
+
+def _min_ge_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """The smallest value of a signal over a time window is at least ``value`` (a lower bound)."""
+    signal = str(check.get("signal", ""))
+    label = f"{project}/{model} {signal} min_ge"
+    if "value" not in check:
+        report.check(False, label, "the check needs 'value'")
+        return
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    limit = float(check["value"])
+    from_t = float(check.get("from_t", float(run.time[0])))
+    to_t = float(check.get("to_t", float(run.time[-1])))
+    mask = (run.time >= from_t) & (run.time <= to_t)
+    if not mask.any():
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    values = run.signals[signal][mask]
+    times = run.time[mask]
+    index = int(np.argmin(values))
+    measured = float(values[index])
+    detail = (
+        f"min {signal} over [{from_t:g}, {to_t:g}] measured {measured:.12g} "
+        f"at t={times[index]:.6g}, lower bound {limit:.12g}"
+    )
+    report.check(measured >= limit, label, detail)
 
 
 def _signal_id(value: Any) -> str:
@@ -2144,6 +2179,8 @@ def _check_model_checks(
             _max_abs_check(report, project, model, run, check)
         elif kind == "max_abs_le":
             _max_abs_le_check(report, project, model, run, check)
+        elif kind == "min_ge":
+            _min_ge_check(report, project, model, run, check)
         elif kind == "rms_difference":
             _rms_difference_check(report, project, model, run, check)
         elif kind == "ratio":

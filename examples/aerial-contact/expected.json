@@ -1,0 +1,535 @@
+{
+  "project": "aerial-contact",
+  "description": "X5.8. The multimodal aerial manipulator of Wopereis et al., IEEE Robotics & Automation Magazine 2018: a 2.1 kg hexarotor (6 x ESC + ElectricDrive + Propeller, 950 Kv, 10x4.5 in, 16 V, 78 N maximum thrust) with a servo-driven carbon tube (0.23 kg, L_m = 0.6 m), a rubber shock mount (a compliant spherical joint) and a 0.15 kg end-effector on three omnidirectional wheels that roll on a wall at x = 1.6 m. A discrete phase machine switches the PX4-style free-flight cascade, the engage controller and the gain-scheduled LQR contact controller (design/design.py derives K(theta_sp) from the constrained dynamics). The 34 s run starts in hover, approaches in free flight, engages with theta_sp ramping 12 -> 20 deg, holds contact with theta_sp -> 27 deg, climbs 0.30 m and returns by open-loop wheel commands, disengages by C = 0.75 m and hovers. Every number below is a measurement of this model on the real worker (reltol 1e-4); the tolerances are justified in the notes.",
+  "models": {
+    "aerial-contact": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 1e-06,
+          "note": "the run starts in hover: the multirotor centre of mass is at 1 m"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Drv1/rotor/w",
+          "t": 0.0,
+          "value": 534.368,
+          "abs": 0.01,
+          "note": "rotors start at the hover speed sqrt(m g / (6 kT)) = 534.4 rad/s (2.48 kg, 4.06 N per rotor)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RW/fz",
+          "t": 3.0,
+          "value": 24.33,
+          "abs": 0.6,
+          "note": "free-flight hover: the total thrust carries the whole system, m g = 2.48 * 9.81 = 24.33 N (measured 24.41 N)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Truth/z",
+          "signal_b": "Sup/p_sp[3]",
+          "from_t": 1.0,
+          "to_t": 4.4,
+          "max_abs": 0.02,
+          "note": "free-flight hover and approach: the multirotor height follows the set-point inside 2 cm (measured 0.9 cm; the static CoM-correction torque and the velocity integrator do the work)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Truth/x",
+          "signal_b": "Sup/p_sp[1]",
+          "from_t": 1.0,
+          "to_t": 4.4,
+          "max_abs": 0.05,
+          "note": "free-flight approach: x follows the minimum-jerk move 0.45 -> 0.75 m inside 5 cm (measured 3.5 cm at the peak speed of the move)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sup/phase",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "phase 0 (free flight) before the engage request"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sup/d_ee",
+          "t": 4.5,
+          "value": 0.19,
+          "abs": 0.05,
+          "note": "engage is allowed only within 30 cm: the wheel plane is 0.19 m from the wall when the engage is requested"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sup/phase",
+          "t": 5.5,
+          "value": 1.0,
+          "abs": 0.01,
+          "note": "phase 1 (engage) while the multirotor pushes into the wall"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sup/phase",
+          "t": 8.0,
+          "value": 2.0,
+          "abs": 0.01,
+          "note": "phase 2 (contact) once the wall has stopped the multirotor"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sup/phase",
+          "t": 30.0,
+          "value": 3.0,
+          "abs": 0.01,
+          "note": "phase 3 (disengage) after the request at 28.5 s"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Sup/phase",
+          "level": 0.5,
+          "direction": "up",
+          "n": 1,
+          "value": 4.5,
+          "abs": 0.05,
+          "note": "engage request at 4.5 s (the 30 cm guard is already satisfied)"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Sup/phase",
+          "level": 1.5,
+          "direction": "up",
+          "n": 1,
+          "value": 6.12,
+          "abs": 0.3,
+          "note": "the contact phase starts when the wheel plane has been within 2 cm of the wall at rest for 0.3 s (measured 6.12 s; the first wheel touches at 5.07 s)"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Sup/phase",
+          "level": 2.5,
+          "direction": "up",
+          "n": 1,
+          "value": 28.5,
+          "abs": 0.05,
+          "note": "disengage request at 28.5 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sup/theta_sp",
+          "t": 4.6,
+          "value": 0.21293,
+          "abs": 0.003,
+          "note": "pitch reference theta_sp = 12.2 deg (0.1 s into the 4 s ramp of 8 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sup/theta_sp",
+          "t": 8.5,
+          "value": 0.34907,
+          "abs": 0.003,
+          "note": "pitch reference theta_sp = 20 deg (end of the 4 s engage ramp)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sup/theta_sp",
+          "t": 12.0,
+          "value": 0.47124,
+          "abs": 0.003,
+          "note": "pitch reference theta_sp = 27 deg (end of the contact ramp)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Wheel1/f_n",
+          "from_t": 6.9,
+          "to_t": 28.4,
+          "value": 0.5,
+          "note": "contact established and kept: the normal force on wheel 1 stays positive through the contact phase (measured minimum 1.55 N)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Wheel2/f_n",
+          "from_t": 6.9,
+          "to_t": 28.4,
+          "value": 0.5,
+          "note": "contact established and kept: the normal force on wheel 2 stays positive through the contact phase (measured minimum 2.29 N)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Wheel3/f_n",
+          "from_t": 6.9,
+          "to_t": 28.4,
+          "value": 0.5,
+          "note": "contact established and kept: the normal force on wheel 3 stays positive through the contact phase (measured minimum 2.24 N)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WallForce/N",
+          "t": 8.5,
+          "value": 8.32,
+          "abs": 0.5,
+          "note": "quasi-static normal force at theta_sp = 20 deg: m g tan(theta_sp) = 2.33 * 9.81 * tan(20 deg) = 8.32 N (measured 8.29 N)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "WallForce/N",
+          "t": 14.0,
+          "value": 11.65,
+          "abs": 0.6,
+          "note": "quasi-static normal force at theta_sp = 27 deg: 2.33 * 9.81 * tan(27 deg) = 11.65 N (measured 11.41 N, 2 % low: the pitch settles 0.5 deg short of the reference and the end-effector's weight is carried by the wall)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "WallForce/N",
+          "signal_b": "WallForce/Npred",
+          "from_t": 8.5,
+          "to_t": 28.4,
+          "max_abs": 0.85,
+          "note": "measured wall force vs the prediction m g tan(theta_sp) while theta_sp ramps and the end-effector climbs: at most 0.85 N (7 %) apart (measured 0.68 N). The formula ignores the 0.38 kg of arm and end-effector and the wheel geometry, as the paper notes"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/roll",
+          "from_t": 6.5,
+          "to_t": 28.4,
+          "value": 0.1309,
+          "note": "|roll| below the paper's 7.5 deg (0.1309 rad) bound during contact (measured 0.84 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/yaw",
+          "from_t": 6.5,
+          "to_t": 28.4,
+          "value": 0.1309,
+          "note": "|yaw| below the paper's 7.5 deg bound during contact (measured 0.91 deg)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Truth/pitch",
+          "signal_b": "Sup/theta_sp",
+          "from_t": 12.0,
+          "to_t": 28.4,
+          "max_abs": 0.026,
+          "note": "the pitch follows the reference theta_sp inside 1.5 deg after the ramps (measured 0.84 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ServoCtl/mu",
+          "t": 14.0,
+          "value": 0.4712,
+          "abs": 0.02,
+          "note": "the arm follows mu_c = theta_sp = 27 deg = 0.471 rad (0.467 rad measured: the servo droops under the arm and end-effector weight)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TruthE/z",
+          "t": 12.5,
+          "value": 0.977,
+          "abs": 0.03,
+          "note": "end-effector height before the locomotion (it rests on the wall by wheel friction)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TruthE/z",
+          "t": 19.5,
+          "value": 1.27,
+          "abs": 0.03,
+          "note": "end-effector height after 6 s at command 0.125: 0.125 * 0.4 m/s * 6 s = 0.30 m up (measured +0.294 m: the wheels slip a little)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TruthE/z",
+          "t": 28.4,
+          "value": 0.9645,
+          "abs": 0.03,
+          "note": "after the 2 s pause and 6 s at -0.125 it is back where it started (travel 2 x 0.30 m; measured -0.305 m)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Truth/z",
+          "signal_b": "TruthE/z",
+          "from_t": 13.0,
+          "to_t": 28.4,
+          "max_abs": 0.015,
+          "note": "position independence: the multirotor follows the end-effector up and down inside 1.5 cm with no change of its set-points (measured 0.7 cm)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "TruthE/y",
+          "from_t": 6.9,
+          "to_t": 28.4,
+          "value": 0.03,
+          "note": "the end-effector does not drift sideways while climbing: |y| below 3 cm (measured 1.5 cm, constant)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Sup/p_sp[3]",
+              "coeff": 1.0
+            }
+          ],
+          "from_t": 8.0,
+          "to_t": 28.0,
+          "tol": 1e-09,
+          "scale": 1.0,
+          "note": "the controller set-points are untouched in contact: the position set-point z is constant from 8 s to 28 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/x",
+          "t": 34.0,
+          "value": 0.1912,
+          "abs": 0.02,
+          "note": "disengage: the multirotor ends at x_b(t_d) - C = 0.9412 - 0.75 = 0.1912 m (the latched set-point is 0.1943 m; measured 0.1872 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sup/d_ee",
+          "t": 34.0,
+          "value": 0.75,
+          "abs": 0.03,
+          "note": "disengage: the wheel plane is C = 0.75 m from the wall (measured 0.7497 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/vw[1]",
+          "from_t": 33.0,
+          "to_t": 34.0,
+          "value": 0.05,
+          "note": "stable hover after the disengage: speed below 5 cm/s over the last second (measured 1.9 cm/s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/pitch",
+          "from_t": 33.0,
+          "to_t": 34.0,
+          "value": 0.0175,
+          "note": "stable hover after the disengage: |pitch| below 1 deg over the last second (measured 0.5 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Drv1/rotor/w",
+          "value": 957.0,
+          "note": "rotor speed stays below the 957 rad/s of the 13 N (78 N total) limit (measured peak 729 rad/s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ServoCtl/tau",
+          "value": 8.4,
+          "note": "the servo stays below its 8.4 N m stall torque (measured 4.4 N m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Con/kzero",
+          "value": 1e-09,
+          "note": "the scheduled gain has the paper's structure for every theta_sp of the run: roll/yaw rows only in the phi, psi columns, thrust and pitch rows only in theta, theta-dot (sum of the twelve forbidden entries)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[1]",
+          "t": 3.0,
+          "value": 19.48892,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_x, phi] at theta_sp = 12 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[5]",
+          "t": 3.0,
+          "value": 8.88258,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_x, psi] at theta_sp = 12 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[9]",
+          "t": 3.0,
+          "value": 6.90519,
+          "abs": 0.0005,
+          "note": "LQR gain K[F, theta] at theta_sp = 12 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[17]",
+          "t": 3.0,
+          "value": 0.66626,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_z, psi] at theta_sp = 12 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[21]",
+          "t": 3.0,
+          "value": 8.17837,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_y, theta] at theta_sp = 12 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[22]",
+          "t": 3.0,
+          "value": 3.34383,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_y, theta-dot] at theta_sp = 12 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[1]",
+          "t": 8.5,
+          "value": 17.54683,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_x, phi] at theta_sp = 20 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[5]",
+          "t": 8.5,
+          "value": 8.80734,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_x, psi] at theta_sp = 20 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[9]",
+          "t": 8.5,
+          "value": 6.72445,
+          "abs": 0.0005,
+          "note": "LQR gain K[F, theta] at theta_sp = 20 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[17]",
+          "t": 8.5,
+          "value": 0.70514,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_z, psi] at theta_sp = 20 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[21]",
+          "t": 8.5,
+          "value": 8.28242,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_y, theta] at theta_sp = 20 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[22]",
+          "t": 8.5,
+          "value": 3.40399,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_y, theta-dot] at theta_sp = 20 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[1]",
+          "t": 14.0,
+          "value": 15.97788,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_x, phi] at theta_sp = 27 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[5]",
+          "t": 14.0,
+          "value": 8.68312,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_x, psi] at theta_sp = 27 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[9]",
+          "t": 14.0,
+          "value": 6.4744,
+          "abs": 0.0005,
+          "note": "LQR gain K[F, theta] at theta_sp = 27 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[17]",
+          "t": 14.0,
+          "value": 0.76381,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_z, psi] at theta_sp = 27 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[21]",
+          "t": 14.0,
+          "value": 8.41904,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_y, theta] at theta_sp = 27 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/K[22]",
+          "t": 14.0,
+          "value": 3.48358,
+          "abs": 0.0005,
+          "note": "LQR gain K[tau_y, theta-dot] at theta_sp = 27 deg from design.py (linear interpolation of the 5 deg grid)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/sa",
+          "t": 3.0,
+          "value": -2.6793,
+          "abs": 0.001,
+          "note": "the closed loop A - B K is stable at theta_sp = 12 deg: spectral abscissa -2.68 1/s (on the whole grid between -2.75 and -1.59 1/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/sa",
+          "t": 8.5,
+          "value": -2.3915,
+          "abs": 0.001,
+          "note": "the closed loop A - B K is stable at theta_sp = 20 deg: spectral abscissa -2.39 1/s (on the whole grid between -2.75 and -1.59 1/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Con/sa",
+          "t": 14.0,
+          "value": -2.1393,
+          "abs": 0.001,
+          "note": "the closed loop A - B K is stable at theta_sp = 27 deg: spectral abscissa -2.14 1/s (on the whole grid between -2.75 and -1.59 1/s)"
+        },
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "arm_link",
+              "point": [
+                0.6,
+                0.0,
+                0.0
+              ],
+              "signals": [
+                "RelTip/g[5]",
+                "RelTip/g[6]",
+                "RelTip/g[7]"
+              ],
+              "tol": 0.003
+            }
+          ],
+          "note": "scenes/aerial-contact.sdf resolves against the run; the arm tip (0.6, 0, 0) of the link arm_link follows the pose chain of the model, which proves the sign of the arm joint axis; 3 mm tolerance for the compliant held rotations of the servo joint (kr = 500 N m/rad under the 1.6 N m arm weight moment)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "W203",
+            "W204",
+            "W205",
+            "W206",
+            "E106"
+          ],
+          "note": "no solver, structure or unit warnings and no event-limit W206: all storage elements are integral and the 4 ms ticks never chatter"
+        }
+      ]
+    }
+  }
+}
