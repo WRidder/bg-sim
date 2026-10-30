@@ -295,14 +295,21 @@ end
 """    numerically_damped(method, points, h; accuracy, damping, stiff_ratio) -> (count, min_hz)
 
 The modes a Rosenbrock step `h` accepts only because the method damps them (`:numerical`):
-how many, and the lowest of their natural frequencies `|λ|/2π` in Hz (`Inf` when none)."""
+how many (the most at one scanned point; a conjugate pair is one mode), and the lowest of
+their natural frequencies `|λ|/2π` in Hz over all points (`Inf` when none)."""
 function numerically_damped(method::Symbol, points, h::Real; accuracy = 0.3, damping = 0.05,
     stiff_ratio = 10.0, kwargs...)
     is_rosenbrock(method) || return (0, Inf)
     tol = mode_tolerance(accuracy)
-    lams = filter(λ -> mode_class(method, h * λ, tol, damping, stiff_ratio) === :numerical,
-        distinct_modes(points))
-    return (length(lams), isempty(lams) ? Inf : minimum(abs, lams) / 2π)
+    count, f = 0, Inf
+    for (t, ls) in points
+        lams = filter(λ -> mode_class(method, h * λ, tol, damping, stiff_ratio) === :numerical,
+            distinct_modes([(t, ls)]))
+        isempty(lams) && continue
+        count = max(count, length(lams))
+        f = min(f, minimum(abs, lams) / 2π)
+    end
+    return (count, f)
 end
 
 function _choose_step_rosenbrock(method, points, base_ns; accuracy, max_substeps, damping,
