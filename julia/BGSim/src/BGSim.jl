@@ -43,6 +43,7 @@ include("syntax/scopes.jl")
 # replaces the temporary `isfile` guard of DEC-5 with these plain includes.
 include("units/units.jl")
 include("library/library.jl")
+include("syntax/watch.jl")
 
 # Work package J1.4: the IR and the flattening pipeline (plan 5.2, 5.4, 5.5, 5.6).
 include("compile/pipeline.jl")
@@ -55,6 +56,9 @@ include("sim/recorder.jl")
 include("sim/simulate.jl")
 include("sim/scheduler.jl")
 include("sim/debug.jl")
+include("sim/hooks.jl")
+include("sim/watch.jl")
+include("compile/explain.jl")
 
 include("precompile.jl")
 include("worker/server.jl")

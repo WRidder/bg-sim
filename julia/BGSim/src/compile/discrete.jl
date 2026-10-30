@@ -51,14 +51,20 @@
 One scalar assignment in a discrete body. `kind` is `:held` (a declared `@variables`/`@outputs`
 value, held in `dstate`) or `:temp` (a D18 block-local temporary). `target` is the held signal
 id or the temporary's local-slot symbol; `value` is the qualified scalar AST; `op` is
-`:assign` or a compound operator (`:+`, `:-`, `:*`, `:/`)."""
+`:assign` or a compound operator (`:+`, `:-`, `:*`, `:/`). `group` (M4 debug) is non-zero for the
+scalar elements that one source statement broadcast over a vector/matrix target; the debug
+variant emits one statement hook per group, not per element."""
 struct DiscreteAssign
     kind::Symbol
     target::Any
     value::BGSim.Expr
     op::Symbol
     range::SourceRange
+    group::Int
 end
+
+DiscreteAssign(kind, target, value, op, range) =
+    DiscreteAssign(kind, target, value, op, range, 0)
 
 function Base.show(io::IO, a::DiscreteAssign)
     print(io, a.kind === :held ? a.target : string(a.target), ' ', a.op === :assign ? '=' : string(a.op, '='), ' ')
@@ -244,9 +250,10 @@ function _emit_scalar_assign!(
     value::BGSim.Expr,
     op::Symbol,
     range,
+    group::Int = 0,  # M4 debug: see DiscreteAssign
 )
     kind === :held && target isa String && _push_unique!(w.writes, target)
-    push!(w.stmts, DiscreteAssign(kind, target, value, op, range))
+    push!(w.stmts, DiscreteAssign(kind, target, value, op, range, group))
     return nothing
 end
 
@@ -272,8 +279,9 @@ function _broadcast_values(
         )
         return false
     end
+    group = length(w.stmts) + 1  # M4 debug: the elements of one source statement
     for (k, tv) in enumerate(target)
-        _emit_scalar_assign!(w, kind, tv, values[k], op, range)
+        _emit_scalar_assign!(w, kind, tv, values[k], op, range, group)
     end
     return true
 end
@@ -664,6 +672,12 @@ continuous unknown list to the parameter list (D4), check the clock (E104) and o
 partitions (E105). Called once by `_flatten`, after `instantiate!`.
 """
 function collect_discrete!(b::Builder)
+    parts = _collect_discrete!(b)
+    _register_block_info!(parts, b)  # M4 debug: line breakpoints need the block sources
+    return parts
+end
+
+function _collect_discrete!(b::Builder)
     raw = Any[]
     for st in b.states
         for (k, ds) in enumerate(BGSim.discrete_scopes(st.pb))
@@ -1123,22 +1137,236 @@ end
 Build the anonymous function `(dstate, inputs, params, t) -> ...` of one partition. `held`,
 `inputs` and `params` map a signal id to its index in the shared runtime vectors; `helpers` is
 the module holding the `__truthy`/`__ifelse`/... helpers (a `GlobalRef` is emitted, so no
-user name can ever resolve through this module)."""
+user name can ever resolve through this module).
+
+`debug` (M4, D20) is `nothing` for a normal run, which produces exactly the expression above.
+A [`DebugEmit`](@ref) makes the debug variant: the function takes a fifth argument `dbg` (the
+hook state) and every source statement is preceded by
+`if dbg.armed[k] | stepping(dbg); hook(dbg, k, (assigned temporaries...)) end`, `k` indexing
+`debug.sites`. The statements themselves are the same expressions in the same order."""
 function step_expression(
     p::DiscretePartition,
     held::Dict{String,Int},
     inputs::Dict{String,Int},
     params::Dict{String,Int},
-    helpers::Module,
+    helpers::Module;
+    debug = nothing,
 )
     temp_set = Set{Symbol}(p.temp_slots)
     preamble = Any[Expr(:local, Expr(:(=), slot, 0.0)) for slot in p.temp_slots]
-    body = Any[
-        _step_statement(s, held, inputs, params, temp_set, helpers) for s in p.statements
-    ]
+    body = if debug === nothing
+        Any[
+            _step_statement(s, held, inputs, params, temp_set, helpers) for s in p.statements
+        ]
+    else  # M4 debug: statement hooks
+        _debug_statements(
+            p, p.statements, held, inputs, params, temp_set, helpers, debug,
+            Pair{String,Vector{Symbol}}[],
+        )
+    end
     block = Expr(:block, preamble..., body..., :(return nothing))
-    return Expr(:->, Expr(:tuple, :dstate, :inputs, :params, :t), block)
+    args = debug === nothing ? Expr(:tuple, :dstate, :inputs, :params, :t) :
+           Expr(:tuple, :dstate, :inputs, :params, :t, :dbg)
+    return Expr(:->, args, block)
+end
+
+# ---------------------------------------------------------------------------------------
+# The debug variant: statement hooks (plan 5.13, D20/D21; work package J4.2)
+# ---------------------------------------------------------------------------------------
+
+"""    HookSite(label, path, ref, scope, kind, range, temps)
+
+One entry of the static hook table of a debug run: the statement that hook `k` precedes.
+`label` is the partition (`DiscretePartition.label`), `path`/`ref` its instance and block,
+`scope` is `"@discrete"`, `kind` is `:assign` (a source assignment, which may broadcast over
+several scalar elements) or `:if`, and `range` the statement's source range (an `if`: from the
+keyword to the end of its first condition). `temps` are the D18 temporaries assigned before
+this statement, as `name => local slot symbols`, in first-assignment order; the generated code
+passes their values to the hook in that order."""
+struct HookSite
+    label::String
+    path::String
+    ref::String
+    scope::String
+    kind::Symbol
+    range::SourceRange
+    temps::Vector{Pair{String,Vector{Symbol}}}
+end
+
+"""    DebugEmit(hook, stepping)
+
+What the generator needs to emit hooks: `hook` and `stepping` are the `GlobalRef`s of the
+runtime functions `hook(dbg, k, temps)` and `stepping(dbg)::Bool`; `sites` is filled with one
+[`HookSite`](@ref) per emitted hook, in emission order (hook index = position)."""
+struct DebugEmit
+    hook::Any
+    stepping::Any
+    sites::Vector{HookSite}
+end
+
+DebugEmit(hook, stepping) = DebugEmit(hook, stepping, HookSite[])
+
+const _TEMP_SLOT = r"^__d\d+_(.+)_(\d+)$"
+
+# Remember that the statement just emitted assigned the temporary slot `slot`.
+function _note_temp!(assigned::Vector{Pair{String,Vector{Symbol}}}, slot::Symbol)
+    m = match(_TEMP_SLOT, String(slot))
+    m === nothing && return nothing
+    name = String(m.captures[1])
+    for (n, slots) in assigned
+        if n == name
+            slot in slots || push!(slots, slot)
+            return nothing
+        end
+    end
+    push!(assigned, name => Symbol[slot])
+    return nothing
+end
+
+function _hook_call(dbg::DebugEmit, p::DiscretePartition, kind::Symbol, range::SourceRange,
+    assigned::Vector{Pair{String,Vector{Symbol}}})
+    push!(dbg.sites, HookSite(
+        p.label, p.path, p.ref, "@discrete", kind, range,
+        Pair{String,Vector{Symbol}}[n => copy(s) for (n, s) in assigned],
+    ))
+    k = length(dbg.sites)
+    slots = Any[slot for (_, ss) in assigned for slot in ss]
+    armed = Expr(:ref, Expr(:., :dbg, QuoteNode(:armed)), k)
+    fire = Expr(:call, :|, armed, Expr(:call, dbg.stepping, :dbg))
+    return Expr(:if, fire, Expr(:block, Expr(:call, dbg.hook, :dbg, k, Expr(:tuple, slots...))))
+end
+
+function _debug_statements(p, stmts, held, inputs, params, temp_slots, helpers, dbg, assigned)
+    out = Any[]
+    n = length(stmts)
+    i = 1
+    while i <= n
+        s = stmts[i]
+        if s isa DiscreteAssign
+            # The scalar elements of one broadcast assignment are one source statement.
+            j = i
+            if s.group != 0
+                while j < n && stmts[j + 1] isa DiscreteAssign && stmts[j + 1].group == s.group
+                    j += 1
+                end
+            end
+            push!(out, _hook_call(dbg, p, :assign, s.range, assigned))
+            for q in i:j
+                a = stmts[q]
+                push!(out, _step_statement(a, held, inputs, params, temp_slots, helpers))
+                a.kind === :temp && _note_temp!(assigned, a.target::Symbol)
+            end
+            i = j + 1
+        elseif s isa DiscreteIf
+            push!(out, _hook_call(dbg, p, :if, _if_head_range(s), assigned))
+            push!(out, _debug_if(
+                p, s, held, inputs, params, temp_slots, helpers, dbg, assigned
+            ))
+            i += 1
+        else
+            push!(out, _step_statement(s, held, inputs, params, temp_slots, helpers))
+            i += 1
+        end
+    end
+    return out
+end
+
+# From the `if` keyword to the end of its first condition.
+function _if_head_range(s::DiscreteIf)
+    r = s.range
+    cond = s.branches[1][1]
+    cond === nothing && return r
+    c = BGSim.expr_range(cond)
+    return SourceRange(r.file, r.line, r.col, c.endLine, c.endCol)
+end
+
+# The elseif chain of `_step_statement`, with hooks inside every branch.
+function _debug_if(p, stmt::DiscreteIf, held, inputs, params, temp_slots, helpers, dbg, assigned)
+    blocks = Any[]
+    for (_, body) in stmt.branches
+        push!(blocks, Expr(:block, _debug_statements(
+            p, body, held, inputs, params, temp_slots, helpers, dbg, assigned
+        )...))
+    end
+    otherwise = Expr(:block)
+    for (bi, (cond, _)) in reverse(collect(enumerate(stmt.branches)))
+        if cond === nothing
+            otherwise = blocks[bi]
+        else
+            c = _step_value(cond, false, held, inputs, params, temp_slots, helpers)
+            otherwise = Expr(:if, Expr(:call, GlobalRef(helpers, :__truthy), c),
+                blocks[bi], otherwise)
+        end
+    end
+    return otherwise
+end
+
+# ---------------------------------------------------------------------------------------
+# Block sources for line breakpoints
+# ---------------------------------------------------------------------------------------
+
+"""    BlockLineItem(scope, range)
+
+One top-level item of a block's source (a declaration, an equation, an event, a `@discrete`
+scope, ...), with the scope it belongs to (`"@equations"`, `"@parameters"`, ...)."""
+struct BlockLineItem
+    scope::String
+    range::SourceRange
+end
+
+"""    BlockInfo(items, shapes)
+
+What a debug run needs from the instantiated blocks: `items` maps a block ref to its source
+items (to tell E401 hints apart), `shapes` maps `"<instance path>/<declared name>"` to the
+declared shape (`()`, `(5,)`, `(5, 5)`) for the frame."""
+struct BlockInfo
+    items::Dict{String,Vector{BlockLineItem}}
+    shapes::Dict{String,Tuple{Vararg{Int}}}
+end
+
+# The block info lives beside the flat model, keyed by its `discrete` vector (the same object
+# survives `set_parameter_values`/`set_start_values`), so `FlatModel` keeps the plan 5.1 shape.
+const BLOCK_INFO = WeakKeyDict{Vector{Any},BlockInfo}()
+
+"""    block_info(flat) -> Union{Nothing,BlockInfo}"""
+block_info(flat) = get(BLOCK_INFO, flat.discrete, nothing)
+
+function _block_line_items(pb::BGSim.ParsedBlock)
+    items = BlockLineItem[]
+    for scope in (:constants, :parameters, :inputs, :outputs, :ports, :variables)
+        for d in BGSim.declarations(pb, scope)
+            push!(items, BlockLineItem(BGSim.scope_string(scope), BGSim.decl_range(d)))
+        end
+    end
+    for (scope, list) in (
+        (:equations, BGSim.equations(pb)),
+        (:initial, BGSim.initial_equations(pb)),
+        (:events, BGSim.events(pb)),
+        (:discrete, BGSim.discrete_scopes(pb)),
+        (:causality, BGSim.causality(pb)),
+        (:components, BGSim.components(pb)),
+        (:connections, BGSim.connections(pb)),
+        (:observables, BGSim.observations(pb)),
+    )
+        for item in list
+            push!(items, BlockLineItem(BGSim.scope_string(scope), BGSim.source_range(item)))
+        end
+    end
+    return items
+end
+
+function _register_block_info!(parts::Vector{Any}, b::Builder)
+    items = Dict{String,Vector{BlockLineItem}}()
+    shapes = Dict{String,Tuple{Vararg{Int}}}()
+    for st in b.states
+        haskey(items, st.ref) || (items[st.ref] = _block_line_items(st.pb))
+        for (name, shape) in st.shapes
+            shapes[st.path * "/" * String(name)] = shape
+        end
+    end
+    BLOCK_INFO[parts] = BlockInfo(items, shapes)
+    return nothing
 end
 
 export DiscretePartition, DiscreteAssign, DiscreteIf, collect_discrete!, step_expression,
-    discrete_signal_namedtuple
+    discrete_signal_namedtuple, HookSite, DebugEmit, BlockLineItem, BlockInfo, block_info

@@ -833,6 +833,13 @@ function dbg_after_step!(s::DebugSession)
             bp_id = timed
         end
     end
+    # M4 debug (J4.3): a watch crossing marked by the pool's affect (src/sim/watch.jl).
+    watch = _watch_hit(ctx)
+    if watch !== nothing && reason === nothing
+        reason = "breakpoint"
+        bp_id = watch.id
+        location = watch.location
+    end
     if reason === nothing && ctx.step_mode === :solverStep
         reason = "step"
     end

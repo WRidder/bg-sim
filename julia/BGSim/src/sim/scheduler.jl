@@ -117,6 +117,7 @@ function discrete_schedule(
     flat::Flat.FlatModel;
     t_start::Real = 0.0,
     t_end::Real = 1.0,
+    debug = nothing,  # M4 debug: a hook state (src/sim/hooks.jl) makes the debug variant
 )
     parts = Compile.DiscretePartition[flat.discrete...]
     isempty(parts) && throw(ArgumentError("the model has no discrete partitions"))
@@ -148,11 +149,13 @@ function discrete_schedule(
     scheduled = ScheduledPartition[]
     for p in parts
         ex = Compile.step_expression(
-            p, held_index, input_index, param_index, DiscreteRuntime
+            p, held_index, input_index, param_index, DiscreteRuntime;
+            debug = _dbg_emitter(debug),  # M4 debug:
         )
         fn = RuntimeGeneratedFunctions.RuntimeGeneratedFunction(
             DiscreteRuntime, DiscreteRuntime, ex
         )
+        fn = _dbg_step(debug, fn)  # M4 debug: binds the hook state as the fifth argument
         own_inputs = Int[
             input_index[id] for id in Iterators.flatten((p.reads, p.previous_reads)) if
             haskey(input_index, id)

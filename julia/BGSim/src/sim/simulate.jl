@@ -562,7 +562,8 @@ function _simulate_flat(flat::Flat.FlatModel;
     if !isempty(flat.discrete)
         schedule = try
             discrete_schedule(
-                flat; t_start = run_settings.t_start, t_end = run_settings.t_end
+                flat; t_start = run_settings.t_start, t_end = run_settings.t_end,
+                debug = _dbg_hooks(debug),  # M4 debug: the statement-hook variant
             )
         catch err
             diagnostic = _compile_diagnostic(err, flat)
@@ -595,6 +596,7 @@ function _simulate_flat(flat::Flat.FlatModel;
     if schedule !== nothing && !isempty(schedule.tick_times)
         init_kwargs = merge(init_kwargs, (; tstops = schedule.tick_times))
     end
+    init_kwargs = _dbg_init_kwargs(debug, init_kwargs)  # M4 debug: the watch pool (src/sim/watch.jl)
     integ = try
         init(solver_problem, alg; init_kwargs...)
     catch err
@@ -763,6 +765,7 @@ function _simulate_flat(flat::Flat.FlatModel;
         event_cursor = _record_new_events!(
             integ, rec, record_event, event_cursor, getters
         )
+        _dbg_sync_cursor!(debug, session, event_cursor)  # M4 debug: a statement pause follows
         if _event_limit_reached(event_counter, run_settings.event_limit)
             diagnostic = _event_limit_diagnostic(
                 flat, integ.t, event_counter[], run_settings.event_limit

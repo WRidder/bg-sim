@@ -595,7 +595,7 @@ end
             e
         end
         @test err isa DebugStateError && err.message == "run is not paused"
-        @test_throws ArgumentError debug_step!(ctx, "statement")
+        @test_throws ArgumentError debug_step!(ctx, "probe-unknown")
 
         # While the run is running.
         m = _DBG_KALMAN
@@ -701,8 +701,8 @@ end
 
     @testset "breakpoint parsing and the kind registry" begin
         @test_throws ArgumentError parse_breakpoint(Dict(
-            "id" => "l", "enabled" => true, "kind" => "line",
-            "line" => Dict("ref" => "project:X", "line" => 3, "path" => nothing),
+            "id" => "l", "enabled" => true, "kind" => "probe-unknown",
+            "probe-unknown" => Dict("ref" => "project:X", "line" => 3, "path" => nothing),
         ))
         @test_throws ArgumentError parse_breakpoint(Dict("id" => "k", "kind" => "nonsense"))
         @test_throws ArgumentError parse_breakpoint(Dict("kind" => "time"))

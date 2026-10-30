@@ -300,3 +300,10 @@ include("test_causality.jl")
 
 # Work package J4.1: the debug run engine (pause, step, breakpoints, cancel while paused).
 include("test_debug.jl")
+
+# Work package J4.2: statement hooks and line breakpoints.
+include("test_hooks.jl")
+
+# Work package J4.3: the watch pool, debug.evaluate/values and model.explain.
+include("test_watch.jl")
+include("test_explain.jl")
