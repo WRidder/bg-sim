@@ -1,0 +1,3 @@
+# Solver and tolerance
+
+The solver is set to `Rodas5P`. With `solver = "auto"` (automatic stiff/non-stiff switching) the run exhausts its $10^6$ steps at $t = 0.485$ s (E901, MaxIters): the $k_t = 10^7$ held directions make the system stiff and the default switching algorithm does not get through it. `Rodas5P` takes 8973 steps for the 2 s run. At `reltol` 1e-9 / `abstol` 1e-11 (the J-MB10 setting) a 2.5 s run took 43711 steps and 178 s of solve time; 1e-6 / 1e-8 is enough here because the checks are at the 1e-4 level. The cost per step (about 13 ms) is the Jacobian of the 72-state, 2339-equation system, so the horizon is kept at 2 s; `expected.json` sets `run_timeout` to 900 s.

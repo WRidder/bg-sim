@@ -18,7 +18,10 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
   ``invariant``, ``planar_fk``, ``energy_ledger``, ``compare_signals``,
   ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak`` and
   ``scene_bindings`` and ``no_diagnostics``), prints one
-  line per check and exits non-zero when any check fails.
+  line per check and exits non-zero when any check fails;
+* for every model with a ``models/<model>.docs`` folder, runs one docs check (X5.10): the
+  manifest, pages, assets, ``page:``/``block:``/``signal:`` links and every KaTeX math span
+  (``tools/example_docs/docs_lint.py``), reporting ``file:line: problem; fix``.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
 (``n`` Float64 values), then one contiguous column per manifest signal, in
@@ -2177,6 +2180,47 @@ def _check_model_checks(
 # --------------------------------------------------------------------------- examples
 
 
+def _check_docs(
+    client: httpx.Client,
+    report: Report,
+    example: str,
+    project: str,
+    runs: dict[str, Run],
+) -> None:
+    """X5.10: lint ``models/<model>.docs`` of every documented model of the example.
+
+    The manifest is also read through ``GET /api/projects/{p}/docs/{model}``, so the backend's own
+    schema and tree validation judges it; the page, link, asset and KaTeX rules live in
+    ``tools/example_docs/docs_lint.py`` and report ``file:line: problem; fix``.
+    """
+    sys.path.insert(0, str(ROOT / "tools" / "example_docs"))
+    from docs_lint import lint_model_docs  # only the docs check needs it
+
+    models_dir = EXAMPLES / example / "models"
+    for docs_dir in sorted(models_dir.glob("*.docs")):
+        model = docs_dir.name[: -len(".docs")]
+        label = f"{example}/{model} docs"
+        problems: list[str] = []
+        response = client.get(f"/api/projects/{project}/docs/{model}")
+        if response.status_code != 200:
+            problems.append(
+                f"{docs_dir.as_posix()}/docs.json:1: the backend refuses the manifest "
+                f"({response.status_code}: {response.text[:300]}); fix docs.json"
+            )
+        run = next((r for r in runs.values() if r.model == model), None)
+        document = run.model_document if run is not None else None
+        if document is None:
+            document = json.loads((models_dir / f"{model}.bgmodel.json").read_text(encoding="utf-8"))
+        signal_ids = set(run.signals) if run is not None else None
+        problems.extend(lint_model_docs(docs_dir, document, signal_ids, docs_dir.relative_to(ROOT).as_posix()))
+        pages = len(list((docs_dir / "pages").glob("*.md")))
+        assets = len(list((docs_dir / "assets").glob("*"))) if (docs_dir / "assets").is_dir() else 0
+        if problems:
+            for problem in problems:
+                print(f"      {problem}", flush=True)
+        report.check(not problems, label, f"{pages} pages, {assets} assets" if not problems else f"{len(problems)} problem(s)")
+
+
 def _check_example(client: httpx.Client, expected_path: Path, report: Report) -> None:
     example = expected_path.parent.name
     try:
@@ -2225,6 +2269,7 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
                 flush=True,
             )
             _check_model_checks(report, project, model, run, checks)
+        _check_docs(client, report, example, project, runs)
         compare = document.get("compare")
         if compare:
             _compare_checks(report, project, compare, runs)
