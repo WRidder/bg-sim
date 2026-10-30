@@ -366,5 +366,19 @@
    "contact",
    "LQR"
   ]
+ },
+ {
+  "id": "robird",
+  "title": "Flapping-wing robotic falcon",
+  "lines": [
+   "A 0.70 kg, 1.1 m span Robird after the University of Twente thesis (van der Grinten et al. 2015): a spatial multibond body, four compliant wing segments, motor and crank flapping drive, strip-theory aerodynamics, elevons and rudder.",
+   "It flies a 220 m x 84 m figure of eight at 12 m/s, flapping at about 4 Hz, under a discrete flight controller.",
+   "The run: 60 s, 3 s straight then 1.2 laps; cross-track error 0.42 m RMS."
+  ],
+  "tags": [
+   "flapping wing",
+   "3D multibond",
+   "@discrete"
+  ]
  }
 ]

@@ -61,8 +61,18 @@ async function capture(browser, id) {
     await pop.addStyleTag({ content: '[data-testid^="viewer-preset"], [data-testid="viewer-fit"], [data-testid="viewer-ortho"], [data-testid="dock-viewer-button"] { visibility: hidden !important; }' });
     const cb = await canvas.boundingBox();
     await pop.mouse.move(cb.x + cb.width / 2, cb.y + cb.height / 2);
+    if (ov.view) { await pop.getByTestId("viewer-preset-" + ov.view).dispatchEvent("click"); await sleep(500); }
+    { let rest = ov.orbitX ?? 0; const cx = cb.x + cb.width / 2, cy = cb.y + cb.height / 2;
+      while (Math.abs(rest) > 1) { const d = Math.sign(rest) * Math.min(Math.abs(rest), 400); await pop.mouse.move(cx - d / 2, cy); await pop.mouse.down(); await pop.mouse.move(cx + d / 2, cy, { steps: 12 }); await pop.mouse.up(); rest -= d; await sleep(200); }
+      if (ov.orbitY) { await pop.mouse.move(cx, cy - ov.orbitY / 2); await pop.mouse.down(); await pop.mouse.move(cx, cy + ov.orbitY / 2, { steps: 10 }); await pop.mouse.up(); }
+    }
+    await sleep(400);
+    if (process.argv.includes("--scan")) {
+      await slider.fill(sv(ov.scanT ?? T * 0.55));
+      for (let z = 0; z <= (ov.scanMax ?? 40); z += 5) { await canvas.screenshot({ path: `${outRoot}/scan-${String(z).padStart(2, "0")}.jpg` }); for (let q = 0; q < 5; q++) { await pop.mouse.wheel(0, -300); await sleep(120); } await sleep(400); }
+      process.exit(0);
+    }
     for (let z = 0; z < (ov.zoom ?? 0); z++) { await pop.mouse.wheel(0, -300); await sleep(120); }
-    if (ov.view) await pop.getByTestId("viewer-preset-" + ov.view).dispatchEvent("click");
     await sleep(600);
     // plots in the main window
     await page.getByRole("tab", { name: "Plots" }).click();

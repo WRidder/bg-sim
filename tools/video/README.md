@@ -55,3 +55,11 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
   ffmpeg filter graph per example (t and speed in the header, progress bar), then joins the cards and clips.
 - Order: `compose-examples.mjs --no-encode` (cards, comparison frames), `compose-intro.mjs --no-encode` (title and scene cards), then
   the two v2 composers. `capture-examples.mjs` still provides the diagram images and the plotted signals per example.
+
+## Robird video and extras
+
+- `capture-robird.mjs --seg lap|close` (60 fps playback segments of the `robird` model, parametrised at the top; `--scan` writes a camera zoom scan),
+  `capture-robird-ui.mjs` (30 fps UI recording of the diagram and the Docs tab), `compose-robird.mjs` -> `media/video/robird.mp4`.
+- `capture-sim60.mjs` accepts per-example camera settings in `examples.json`: `view` (preset), `orbitX` (pixels of horizontal orbit drag), `zoom` (wheel notches), `--scan` (zoom scan).
+  aerial-contact uses the iso preset orbited to the drone side (orbitX 3000, zoom 11) so the hexarotor and the wall contact fill the panel.
+- `_sheet2.mjs <dir> [regex]` makes a contact sheet of scan images.
