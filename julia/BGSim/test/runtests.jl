@@ -323,3 +323,6 @@ include("test_export_scope.jl")
 
 # Work package J-EX4: sparse Jacobian pattern, static sparse LU, coloured finite differences.
 include("test_export_sparse.jl")
+
+# Work package J-EX5: the C twins of the intrinsics, golden against Julia.
+include("test_export_intrinsics.jl")

@@ -94,6 +94,7 @@ Four findings shape this plan:
 | D-EX13 | Linear algebra | Dense in-place LU with partial pivoting for small systems; generated static sparse LU (symbolic factorization at export, fixed fill-in) above a size threshold (start at nx > 40). | Fixed cost, no allocation; the 72-state arm makes this real. |
 | D-EX14 | Numerics | `-std=c99 -O2 -fno-math-errno`, no `-ffast-math`. Non-finite state → error status, never silently continued. Subnormal flush is a documented target setting. Results match simulation **within tolerance**, not bit-exact (answers the spec's open question: repeatability per target, not across targets). | libm differs from Julia in the last bit; bit-exact output would forbid every libm. |
 | D-EX16 | Values that move the spectrum | Every runtime-settable value the Jacobian depends on (tunable parameters, inputs) needs a declared range (`min`/`max`). The step is chosen over that range (each end, and every corner of the box for up to 6 values), not only at the start values. The FMU refuses `SetReal` outside the range, so the stability proof holds for every accepted value; the range is also published as FMI `min`/`max`. A settable value without a complete range gets W210 (stable only for the scanned values). Gains that only discrete code reads are not scanned: they change the closed loop, which simulation shows as well. When ranges are wide or unknown, an L-stable Rosenbrock export is the robust choice (stable for any value on linear(ised) dynamics). Later: an eigenvalue bound recomputed when a value changes, outside the hot path. | A step proven stable at the start values says nothing about a raised stiffness or gain at runtime. |
+| D-EX17 | Quaternion norm | Exported code does **not** renormalize quaternion states (decided in J-EX5, section 5.4). | The spec asks for one choice in simulation and the target build, and simulation does not project. The pose blocks are norm-invariant (`R(q)` is the quadratic form over `|q|²`), so a drifting norm does not change the motion. The solver cannot tell quaternion states from others, and a projection would make the FMU differ from simulation. |
 | D-EX15 | Toolchain | The backend builds binaries with a gcc/clang on PATH, or with `zig cc` from the PyPI `ziglang` package (`uv`-installable) for cross targets: x86_64-linux, aarch64-linux (ctrlX CORE), x86_64-windows. Without a compiler the export still produces a source FMU. | Fits the repo's `uv` rule; one cross-compiler for all targets. Note: the `cl` on this machine is Open Watcom, not MSVC. |
 
 ## 5. Target architecture
@@ -111,7 +112,7 @@ julia/BGSim/src/export/
 julia/BGSim/export/runtime/      hand-written C, versioned, copied into every FMU
   bg_runtime.h     language semantics (sign, round, clamp, deadzone, mod, ...)
   bg_solver.c      Euler / RK4 / Rosenbrock, LU, modes, tick, events
-  bg_intrinsics.c  interp1/interp2 over constant tables, delay ring buffer, noise
+  bg_intrinsics.c  interp1/interp2 over constant tables (later: delay ring buffer, noise)
   bg_mech.c        SE2/SE3 exp/log, quaternion functions, spatial inertia
   fmi2_cs.c, fmi3_cs.c
   bg_model.hpp     optional header-only C++ wrapper on the C API
@@ -170,6 +171,80 @@ solves in place. The dense versions are in `bg_solver.c`. With `#define BG_SPARS
 - **Mass matrix (J-EX3).** The forming step adds M on the diagonal positions `bg_lu_mpos`
   (M = I today). A zero mass entry (algebraic row) leaves −hγ·J_ii as the pivot; the pivot
   check then decides whether the static order holds.
+
+### 5.5 Intrinsics in C (J-EX5)
+
+Every opaque registered function of the lowering except `bg_csv` has one hand-written C
+twin: `bg_intrinsics.c` (`bg_interp1`, `bg_interp2`) and `bg_mech.c` (`bg_exp2`, `bg_log2`,
+`bg_exp3`, `bg_log3`, `bg_quat_exp`, `bg_quat_log`, `bg_quat_from_rotation`, `bg_inertia2`,
+`bg_inertia3`). Each follows its Julia body branch for branch and in the same operation
+order. The emitter maps the calls in `src/export/emit_intrinsics.jl`.
+
+- **CSV sources are not exported.** A `CsvSource` or `CsvSourceSampled` is simulation data
+  (a stimulus or comparison data). In an exported model the host supplies such a signal
+  through an `ExportInput`. The export refuses the block with E110 at its path, with the
+  hint to replace it with an `ExportInput` in an export variant (or remove it).
+- **Tables.** An `interp1`/`interp2` table arrives as an `array_literal` of parameters. When
+  all of them are folded, the table is one file-scope `static const double bg_tab<k>[]`,
+  shared by every call with the same content (the gain-scheduled cart pendulums read one
+  table from many observed equations). A table with a tunable element becomes a local array
+  in each function that reads it. `export.json` lists every table with its bytes
+  (`tables`); the double cart pendulum has 14 tables (one shared breakpoint vector) for 26
+  calls, 27 KB.
+- **Several results.** The Julia mechanics functions return one component per call (a
+  selector `k`). The C twins write all components into an array. Within one generated
+  function, each distinct argument tuple is called once into a local `double bg_mv<k>[n]`,
+  declared just before the first statement that needs it, and each component is a read
+  `bg_mv<k>[k - 1]`. So the seven components of one `exp` cost one call, the same
+  common-subexpression property as the observed locals. The inertia entries are cheap
+  polynomials and keep the scalar form `(..., i, j)`. No example reaches these calls today:
+  the stdlib writes the pose algebra component-wise, and the language checker does not yet
+  accept vector arguments to `exp`/`log`/`quat_*` in a block (E004). The emitter test builds
+  the symbolic calls of `lower_mech` directly.
+- **No error exits.** Where Julia throws (a zero quaternion, a matrix that is not a
+  rotation), the C function returns NaN or computes on. A NaN that reaches a state makes the
+  step fail with an error status.
+- **Interval search.** `interp1`/`interp2` use a binary search, a bounded loop of
+  `ceil(log2 n)` steps. For strictly increasing breakpoints it picks the same interval as the
+  Julia linear scan.
+- **Golden tests** (`test/test_export_intrinsics.jl`, gcc only): every C function against
+  its Julia twin on 2 000 random inputs per function that cover every branch (series
+  switches, angles near pi, all four Shepperd branches, non-unit quaternions, table edges).
+  Numbers travel as bit patterns, so the transport is exact. The error is norm-wise, in ulp
+  of the group's scale: the largest component of the group, and for a translation part also
+  its largest input (`exp([w; v])` scales with `|v|`); the folded angle of `log2` in ulp of
+  pi. Measured with gcc 14 (MSYS2) against Julia 1.13, on the test's 2 000 cases and on
+  20 000 (seed 7); a bound above 4 is the 20 000-case maximum with a margin:
+
+  | function | 2 000 | 20 000 | bound | why |
+  | --- | --- | --- | --- | --- |
+  | `bg_interp1`, `bg_interp2` | 0 | 0 | 4 | bit-identical: same interval, same operations |
+  | `bg_inertia2`, `bg_inertia3` | 0 | 0 | 4 | bit-identical |
+  | `bg_quat_from_rotation` | 0 | 0 | 4 | |
+  | `bg_quat_exp` | 2 | 2 | 4 | libm `sin`/`cos` |
+  | `bg_quat_log` | 3 | 4 | 6 | libm `atan2` |
+  | `bg_log2` | 4 | 4 | 6 | libm `sin`/`cos`/`tan`/`atan2` |
+  | `bg_log3` | 4 | 4 | 6 | as `quat_log`, plus StaticArrays' `muladd` chains (FMA in Julia) against plain C arithmetic |
+  | `bg_exp2` | 2 | 6 | 8 | libm's last bit of `cos`, amplified by `1 - cos θ` just above the 1e-2 series switch |
+  | `bg_exp3` | 5 | 8.9 | 12 | the same cancellation in `(1 - cos θ)/θ²`; the quaternion passes three rounding stages as in Julia's `chart(exp(V))` (exponential, rotation matrix, Shepperd back) |
+
+  The C and Julia bodies do the same operations, so the remaining difference is the libm
+  against Julia's own elementary functions. Matching Julia bit for bit would need its
+  `sin`/`cos` in C; a different target libm moves these numbers by about an ulp.
+
+- **Quaternion norm (D-EX17).** Exported code does not renormalize. Simulation does not
+  either: no `ManifoldProjection` is attached, and the pose blocks (`PoseIntegrator3D`,
+  `Free3D`, `Spherical3D`, the transforms) divide the rotation's quadratic form by
+  `s = |q|²`, so the motion does not depend on the norm. The kinematics
+  `ddt(q) = 0.5 q ⊗ [0, ω]` keep `|q|` exactly; only the integrator changes it. Per step,
+  RK4 shrinks it by about `(hω/2)⁶/144` (`|R(iy)|² = 1 - y⁶/72 + ...`, `ω` the body rate):
+  1e-16 at 10 rad/s and 1 ms, 4e-10 per hour at 1 kHz; 1e-10 per step at 100 rad/s,
+  4e-4 per hour. So the norm stays far from zero for any realistic run, and the result
+  matches simulation. A projection inside
+  the solver would need to know which states form a quaternion (the solver does not), and
+  it would make the FMU differ from simulation. Revisit with the spec's open decision on pose
+  states (Lie-group integrators, section 12): if it ever changes, it changes in simulation
+  and export together.
 
 ## 6. Exportability rules
 
@@ -285,10 +360,10 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 | Very stiff parasitic modes (joint stiffness 1e7) need tiny RK4 steps | step budget exceeded | the cost model picks Rosenbrock; W207 when RK4 substeps exceed the budget |
 | The eigenvalue scan misses states the reference run never visited | instability in the field | safety margin; the report states the scanned range; Rosenbrock (L-stable) as the robust default for models with W201/W202 |
 | Frozen conditions delay a switch by up to one step | contact/friction timing differs from simulation | W203 per site; the accuracy loop reduces `dt`; documented semantics (spec) |
-| Quaternion norm drift in long runs | pose error | renormalize after each step in exported code (the spec's open decision: decide in J-EX5) |
+| Quaternion norm drift in long runs | pose error | decided in J-EX5 (D-EX17): no renormalization, as in simulation; the pose blocks are norm-invariant and RK4 drift is about 4e-10 per hour at 10 rad/s and 1 ms (section 5.4) |
 | MTK version changes the compiled-system API | emitter breaks | the emitter uses only documented accessors (`unknowns`, `equations`, `observed`, `parameters`, `calculate_jacobian`); a golden of the generated C for dc-motor catches changes |
 | libm differences across targets | tiny numeric differences | tolerance-based gate (D-EX14); discrete code bit-exact |
-| Large interpolation tables on MCUs | flash size | size report in the export; downsampling is the user's choice |
+| Large interpolation tables on MCUs | flash size | size report in the export (`tables` in export.json); downsampling is the user's choice; CSV data is not exported (an ExportInput instead) |
 
 ## 10. Contract and spec changes
 

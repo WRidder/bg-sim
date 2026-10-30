@@ -49,13 +49,16 @@ const MTK = ModelingToolkit
 const RUNTIME_DIR = normpath(joinpath(@__DIR__, "..", "..", "export", "runtime"))
 const RUNTIME_VERSION = "0.2.0"
 const RUNTIME_FILES = ["bg_runtime.h", "bg_solver.c", "fmi2_cs.c",
-    "fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h"]
+    "fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h",
+    "bg_intrinsics.h", "bg_intrinsics.c", "bg_mech.h", "bg_mech.c"]
 
 const MARKER_INPUT = "stdlib:converters/ExportInput"
 const MARKER_OUTPUT = "stdlib:converters/ExportOutput"
 const MARKER_PARAMETER = "stdlib:converters/ExportParameter"
+const CSV_SOURCES = ("stdlib:sources/CsvSource", "stdlib:sources/CsvSourceSampled")
 
 include("emit_c.jl")
+include("emit_intrinsics.jl")
 include("emit_discrete.jl")
 include("emit_events.jl")
 include("analysis.jl")
@@ -180,6 +183,13 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
     settings.linear_solver in (:auto, :dense, :sparse) ||
         return _fail([diag("E110", "unknown linear solver `$(settings.linear_solver)`";
             hint = "use auto, dense or sparse")], out_dir)
+    # A CSV source is simulation data (stimulus or comparison); the host supplies such a
+    # signal through an ExportInput, so the export refuses it at the block (J-EX5).
+    csv_nodes = [i.path for i in flat.instances if i.ref in CSV_SOURCES]
+    if !isempty(csv_nodes)
+        return _fail([diag("E110", "`$p` reads a CSV file, which is not exported"; path = p,
+            hint = CSV_EXPORT_HINT) for p in csv_nodes], out_dir)
+    end
 
     lowered = try
         BGSim.lower_model(flat; t_start = 0.0, t_end = max(settings.t_end, settings.step))
@@ -417,8 +427,10 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     guid = _guid(lowered.key, settings, dt_ns, method, vars, params, inputs)
     modes = Any[]
     cbuf = IOBuffer()
-    _emit_model_c(cbuf, name, xs, x0, names_x, rhs, jac, la, env, obs, modes, vars, params,
-        inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
+    intrinsics = with_intrinsics() do
+        _emit_model_c(cbuf, name, xs, x0, names_x, rhs, jac, la, env, obs, modes, vars, params,
+            inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
+    end
     block_of = Dict(i.path => i.ref for i in flat.instances)
     for cond in modes
         path = _condition_path(cond)
@@ -440,7 +452,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         length(params), length(held_ids), has_disc ? length(sched.input_ids) : 0, length(vars),
         length(inputs), has_disc ? length(sched.partitions) : 0, length(modes), dt, dt_ns, method;
         la = la, ne = length(events), ner = maximum((length(ev.targets) for ev in events); init = 0))
-    write(joinpath(out_dir, "sources", "model.c"), take!(cbuf))
+    write(joinpath(out_dir, "sources", "model.c"), splice_intrinsics(String(take!(cbuf)), intrinsics))
     for f in RUNTIME_FILES
         cp(joinpath(RUNTIME_DIR, f), joinpath(out_dir, "sources", f); force = true)
     end
@@ -468,6 +480,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             "analysisMethod" => String(analysis_method),
             "proposedDt" => choice.dt_ns / 1e9),
         "linearAlgebra" => la === nothing ? nothing : la.report,
+        "tables" => intrinsics_report(intrinsics),
         "diagnostics" => [BGSim.to_namedtuple(d) for d in sort_diagnostics(diags)],
     )
     open(joinpath(out_dir, "export.json"), "w") do io
