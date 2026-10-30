@@ -12,8 +12,8 @@
  * Events before ticks is the simulator's order: a tick at t runs after every event up to t.
  *
  * Real-time rules: no allocation, no recursion, no I/O, every loop bounded by a compile-time
- * size. The cost of a step is fixed: Euler is 1 derivative call, RK4 4; ROS2 is 1 Jacobian, 1 LU of
- * BG_NX x BG_NX and 2 derivative calls.
+ * size. The cost of a step is fixed: Euler is 1 derivative call, RK4 4; ROS2 is 1 Jacobian,
+ * 1 LU (dense, or the static sparse LU of model.c with BG_SPARSE_LU) and 2 derivative calls.
  */
 #include <math.h>
 #include <string.h>
@@ -52,6 +52,10 @@ static int bg_integrate(bg_model *m, double t, double h) {
 
 #else /* BG_METHOD_ROS2 */
 
+/* The linear algebra goes through bg_w_factor / bg_w_solve (model.h). These are the dense
+   versions; with BG_SPARSE_LU, model.c holds a generated static sparse LU instead. */
+#ifndef BG_SPARSE_LU
+
 /* In-place LU with partial pivoting of the row-major BG_NX x BG_NX matrix a. */
 static int bg_lu(double *a, int *piv) {
     for (int k = 0; k < BG_NX; ++k) {
@@ -63,8 +67,10 @@ static int bg_lu(double *a, int *piv) {
         }
         piv[k] = p;
         if (best == 0.0) return -1;
+        /* Exchange only columns k.. : the multipliers of earlier columns stay where they were
+           computed, which is the order bg_lu_solve applies the exchanges in (LINPACK). */
         if (p != k) {
-            for (int j = 0; j < BG_NX; ++j) {
+            for (int j = k; j < BG_NX; ++j) {
                 double tmp = a[k * BG_NX + j];
                 a[k * BG_NX + j] = a[p * BG_NX + j];
                 a[p * BG_NX + j] = tmp;
@@ -93,25 +99,36 @@ static void bg_lu_solve(const double *a, const int *piv, double *b) {
     }
 }
 
+/* W = M - hg J at (m->t, m->x) with M = I (ODEs), factored in place. */
+int bg_w_factor(bg_model *m, double hg) {
+    double *w = m->w;
+    for (int i = 0; i < BG_NX * BG_NX; ++i) w[i] = 0.0;
+    bg_jacobian(m, m->t, m->x, w);
+    for (int i = 0; i < BG_NX * BG_NX; ++i) w[i] *= -hg;
+    for (int i = 0; i < BG_NX; ++i) w[i * BG_NX + i] += 1.0;
+    return bg_lu(w, m->piv);
+}
+
+void bg_w_solve(bg_model *m, double *b) { bg_lu_solve(m->w, m->piv, b); }
+
+#endif /* BG_SPARSE_LU */
+
 /* ROS2 (Verwer, Spee, Blom, Hundsdorfer 1999), gamma = 1 + 1/sqrt(2):
  *   W = I - gamma h J,  W k1 = f(t, x),  W k2 = f(t + h, x + h k1) - 2 k1,
  *   x+ = x + 3/2 h k1 + 1/2 h k2.
  * Second order, L-stable; the explicit time derivative of f is neglected (the spike's
- * sources are piecewise constant in t). */
+ * sources are piecewise constant in t). bg_step calls this with t == m->t, where
+ * bg_w_factor evaluates J. */
 static int bg_integrate(bg_model *m, double t, double h) {
     const double gamma = 1.7071067811865475;
-    double *x = m->x, *xs = m->xs, *w = m->w;
-    for (int i = 0; i < BG_NX * BG_NX; ++i) w[i] = 0.0;
-    bg_jacobian(m, t, x, w);
-    for (int i = 0; i < BG_NX * BG_NX; ++i) w[i] *= -gamma * h;
-    for (int i = 0; i < BG_NX; ++i) w[i * BG_NX + i] += 1.0;
-    if (bg_lu(w, m->piv) != 0) return -1;
+    double *x = m->x, *xs = m->xs;
+    if (bg_w_factor(m, gamma * h) != 0) return -1;
     bg_derivatives(m, t, x, m->k1);
-    bg_lu_solve(w, m->piv, m->k1);
+    bg_w_solve(m, m->k1);
     for (int i = 0; i < BG_NX; ++i) xs[i] = x[i] + h * m->k1[i];
     bg_derivatives(m, t + h, xs, m->k2);
     for (int i = 0; i < BG_NX; ++i) m->k2[i] -= 2.0 * m->k1[i];
-    bg_lu_solve(w, m->piv, m->k2);
+    bg_w_solve(m, m->k2);
     for (int i = 0; i < BG_NX; ++i) x[i] += 1.5 * h * m->k1[i] + 0.5 * h * m->k2[i];
     return 0;
 }
