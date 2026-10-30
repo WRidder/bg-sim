@@ -77,7 +77,7 @@ Simulation: `t_end = 2 s`, 5000 points, solver `auto`, reltol 1e-6.
 ## What to try
 
 - Open the **Plots** tab: “Speeds” and “Flexible rod” are preconfigured.
-- Raise `Rod.k` to 50 N·m/rad and watch the oscillation move to ~90 Hz and the
+- Raise `Rod.k` to 50 N·m/rad and watch the oscillation move up to just under 29 Hz (the undamped value for k = 50) and the
   transient twist shrink; lower it to 1 and watch the two wheels drift apart.
 - Set `RodDamper.d` to 0 to see the mode ring for the whole run.
 - Plot `Motor1/shaft.f`, `Wheel1/a.f` and `Wheel2/a.f` together: the far wheel
