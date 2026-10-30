@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import Enum, IntEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import (
     AwareDatetime,
@@ -495,6 +495,242 @@ class DocsPage(BaseModel):
     title: constr(min_length=1, max_length=200)
     file: constr(pattern=r'^pages/[a-z0-9][a-z0-9-]{0,63}[.]md$')
     children: list[DocsPage]
+
+
+class ExportJobStatus(Enum):
+    queued = 'queued'
+    running = 'running'
+    done = 'done'
+    refused = 'refused'
+    failed = 'failed'
+    cancelled = 'cancelled'
+
+
+class ExportJobPhase1(Enum):
+    starting = 'starting'
+    scope = 'scope'
+    flatten = 'flatten'
+    reference = 'reference'
+    export = 'export'
+    build = 'build'
+
+
+class ExportJobPhase(RootModel[ExportJobPhase1 | None]):
+    root: ExportJobPhase1 | None = Field(
+        ...,
+        description='What a running job does now: starting (Julia loads BGSim), scope, flatten, reference (the reference run), export (analysis and C), build (compile, checks, zip).',
+        title='ExportJobPhase',
+    )
+
+
+class ExportTimings(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    juliaS: float | None = Field(None, description='Julia start-up and loading BGSim.')
+    scopeS: float | None = None
+    flattenS: float | None = None
+    referenceS: float | None = None
+    exportS: float | None = Field(
+        None, description='Lowering, spectrum analysis, Jacobian and C emission.'
+    )
+    buildS: float | None = Field(
+        None, description='Compile, symbol and C++ checks, allocation harness, zip.'
+    )
+    totalS: float | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportFmu(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    file: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*\.fmu$')
+    bytes: conint(ge=0)
+    sourceOnly: bool
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportReportMethod(Enum):
+    euler = 'euler'
+    rk4 = 'rk4'
+    ros2 = 'ros2'
+    ros34pw2 = 'ros34pw2'
+    rodas4p = 'rodas4p'
+
+
+class ExportCandidate(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    method: ExportReportMethod
+    substeps: conint(ge=1)
+    dt: float
+    cost: float | None = Field(
+        ..., description='Estimated flops per communication step.'
+    )
+    withinBudget: bool
+    numericallyDamped: bool | None = Field(
+        None, description='The step damps a stiff undamped mode numerically (W213).'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportInterfaceInput(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+    id: str
+    start: float | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportInterfaceOutput(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+    id: str
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportInterfaceParameter(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+    id: str
+    start: float | None = None
+    variability: str | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportNumericallyDamped(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    modes: conint(ge=0) | None = None
+    minHz: float | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportSpectrum(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    maxAbsLambda: float | None
+    atT: float | None = None
+    points: conint(ge=0)
+    rangedValues: conint(ge=0) | None = None
+    stableStep: float | None = None
+    accurateStep: float | None = None
+    analysisMethod: str | None = None
+    proposedDt: float | None = None
+    damping: float | None = None
+    relaxedDamping: bool | None = None
+    numericallyDamped: ExportNumericallyDamped | None = Field(
+        None, title='ExportNumericallyDamped'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportBuild(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    compilerFound: bool
+    compiler: str | None = None
+    sourceOnly: bool
+    platform: str | None = None
+    ok: bool = Field(
+        ...,
+        description='Every check passed: no forbidden symbol, the C++ check, 0 allocations after instantiate.',
+    )
+    forbiddenSymbols: list[str] | None = Field(
+        None,
+        description='Allocator, stdio or exit symbols the hot-path objects import (must be empty).',
+    )
+    symbolCheck: bool | None = Field(
+        None,
+        description='The hot-path symbol check passed; null when it did not run (no nm).',
+    )
+    cxxOk: bool | None = None
+    harnessDoSteps: int | None = None
+    internalStepsPerDoStep: int | None = None
+    allocationsAfterInstantiate: int | None = None
+    doStepMeanUs: float | None = None
+    doStepMaxUs: float | None = None
+    buildS: float | None = Field(
+        None, description='Wall time of the build and the harness.'
+    )
+    error: str | None = None
+    note: str | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportPowerInput(Enum):
+    effort = 'effort'
+    flow = 'flow'
+
+
+class ExportMethod(Enum):
+    auto = 'auto'
+    euler = 'euler'
+    rk4 = 'rk4'
+    ros2 = 'ros2'
+    ros34pw2 = 'ros34pw2'
+    rodas4p = 'rodas4p'
+
+
+class ExportJacobian(Enum):
+    auto = 'auto'
+    symbolic = 'symbolic'
+    fd = 'fd'
+
+
+class ExportLinearSolver(Enum):
+    auto = 'auto'
+    dense = 'dense'
+    sparse = 'sparse'
+
+
+class ExportSettings(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    method: ExportMethod | None = Field(
+        None,
+        description='The integrator; auto picks the cheapest method that meets the step rule (a Rosenbrock method for a DAE).',
+        title='ExportMethod',
+    )
+    dt: PositiveFloat | None = Field(
+        None,
+        description='Internal step in seconds (whole nanoseconds, dividing the communication step); null chooses it from the spectrum.',
+    )
+    step: PositiveFloat | None = Field(
+        None,
+        description='Communication step in seconds (FMI DefaultExperiment stepSize); null is 1 ms, or finer for horizons below 0.5 s.',
+    )
+    damping: confloat(lt=1.0, gt=0.0) | None = Field(
+        None,
+        description="The Rosenbrock step rule's damping; null is the default 0.05 with the over-budget fallback to 0.5 (W214). A set value turns the fallback off.",
+    )
+    jacobian: ExportJacobian | None = Field(
+        None,
+        description='Rosenbrock only: the Jacobian in C (symbolic, coloured finite differences, or auto).',
+        title='ExportJacobian',
+    )
+    linearSolver: ExportLinearSolver | None = Field(
+        None,
+        description='Rosenbrock only: dense LU, static sparse LU, or auto (sparse above 40 states).',
+        title='ExportLinearSolver',
+    )
+    exposeAll: bool | None = Field(
+        None,
+        description='Debug option: publish every recorded signal as a read-only local variable. It does not change the interface.',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
 
 
 class ProbeKind(Enum):
@@ -1875,6 +2111,64 @@ class Diagnostic(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ExportReport(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+    identifier: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$') = Field(
+        ...,
+        description='The FMI model identifier (a C identifier); the FMU is <identifier>.fmu.',
+    )
+    guid: str
+    runtimeVersion: str | None = None
+    fmiVersion: str
+    method: ExportReportMethod = Field(
+        ...,
+        description='The integrator in the FMU (D-EX7: suggested, or the one the settings forced).',
+    )
+    dt: PositiveFloat = Field(..., description='Internal step in seconds.')
+    step: PositiveFloat = Field(..., description='Communication step in seconds.')
+    tEnd: float
+    substeps: conint(ge=1) = Field(
+        ..., description='Internal steps per communication step.'
+    )
+    states: conint(ge=0)
+    algebraic: conint(ge=0) | None = None
+    dependsOnTime: bool | None = None
+    modes: conint(ge=0) | None = None
+    events: conint(ge=0) | None = None
+    folded: conint(ge=0) | None = None
+    heldValues: conint(ge=0) | None = None
+    partitions: conint(ge=0) | None = None
+    jacobian: dict[str, Any] | None = Field(
+        None,
+        description='Rosenbrock only: kind (symbolic or fd), terms, entries and the fallback reason (W212).',
+    )
+    selection: list[ExportCandidate] | None = Field(
+        None,
+        description='D-EX7c: every candidate method with its step and cost per communication step.',
+    )
+    inputs: list[ExportInterfaceInput]
+    outputs: list[ExportInterfaceOutput]
+    parameters: list[ExportInterfaceParameter]
+    locals: list[str] | None = Field(
+        None, description='Read-only variables of the expose-all debug option.'
+    )
+    spectrum: ExportSpectrum
+    linearAlgebra: dict[str, Any] | None = Field(
+        None,
+        description='Rosenbrock only: the linear solver, LU non-zeros, fill-in, flops and the pivot check (J-EX4).',
+    )
+    tables: dict[str, Any] | None = Field(
+        None,
+        description='Interpolation tables in the generated code: count, bytes and one entry per table (J-EX5).',
+    )
+    diagnostics: list[Diagnostic]
+    build: ExportBuild | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class ModelSubsystemPort(RootModel[ModelSubsystemSignalPort | ModelSubsystemPowerPort]):
     root: ModelSubsystemSignalPort | ModelSubsystemPowerPort = Field(
         ...,
@@ -2086,6 +2380,44 @@ class Diagnostics(RootModel[list[Diagnostic]]):
     )
 
 
+class ExportJob(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9][A-Za-z0-9._-]*$')
+    project: str
+    model: str = Field(..., description='The model name in the project.')
+    scope: str | None = Field(
+        None,
+        description="The exported subsystem's instance path; null for the whole model.",
+    )
+    status: ExportJobStatus = Field(..., title='ExportJobStatus')
+    phase: ExportJobPhase | None = Field(
+        None,
+        description='What a running job does now: starting (Julia loads BGSim), scope, flatten, reference (the reference run), export (analysis and C), build (compile, checks, zip).',
+        title='ExportJobPhase',
+    )
+    created: AwareDatetime
+    finished: AwareDatetime | None = None
+    timings: ExportTimings | None = None
+    error: str | None = Field(
+        None, description='A user-facing message for a refused or failed job.'
+    )
+    diagnostics: list[Diagnostic] = Field(
+        ...,
+        description="The refusal's diagnostics (E110, E111, E112, ...) or the report's warnings.",
+    )
+    notes: list[str] | None = Field(
+        None,
+        description='Plain sentences about the job (a reference run that did not finish, a source-only FMU).',
+    )
+    report: ExportReport | None = None
+    fmu: ExportFmu | None = Field(
+        None, description='The built FMU, downloadable at GET /api/exports/{id}/fmu.'
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class CatalogGetResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2232,6 +2564,33 @@ class DebugSetBreakpointsResponse(BaseModel):
     )
     id: int
     result: DebugSetBreakpointsResult
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    model: Model
+    scope: (
+        constr(pattern=r'^([A-Za-z_][A-Za-z0-9_]*/)*[A-Za-z_][A-Za-z0-9_]*$') | None
+    ) = Field(
+        None,
+        description='Instance path of the subsystem to export alone (D-EX9 scope): its ports become the interface and everything outside it is dropped. Null or absent exports the whole model, whose interface is its Export markers.',
+    )
+    powerInputs: (
+        dict[constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$'), ExportPowerInput] | None
+    ) = Field(
+        None,
+        description='For each scalar power port of the scope, the variable the host imposes: effort (input <port>_e, output <port>_f) or flow (input <port>_f, output <port>_e). Every power port of the scope needs an entry (E112).',
+    )
+    inputValues: dict[constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$'), float] | None = (
+        Field(
+            None,
+            description='Start value of a scope input, by port name (default 0). For a power port it is the start of the imposed variable.',
+        )
+    )
+    settings: ExportSettings | None = None
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -2503,6 +2862,9 @@ class Contracts(
         | Debug
         | Diagnostics
         | Docs
+        | ExportJob
+        | ExportReport
+        | ExportRequest
         | Model
         | Project
         | RunManifest
@@ -2516,6 +2878,9 @@ class Contracts(
         | Debug
         | Diagnostics
         | Docs
+        | ExportJob
+        | ExportReport
+        | ExportRequest
         | Model
         | Project
         | RunManifest
@@ -2529,6 +2894,7 @@ class Contracts(
 
 
 DocsPage.model_rebuild()
+ExportRequest.model_rebuild()
 Model.model_rebuild()
 ModelDiagram.model_rebuild()
 ModelNode.model_rebuild()

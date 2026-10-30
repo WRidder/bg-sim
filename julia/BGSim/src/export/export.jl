@@ -68,6 +68,7 @@ include("analysis.jl")
 include("sparse.jl")
 include("fmi2.jl")
 include("scope.jl")
+include("job.jl")
 
 """
     ExportSettings(; kwargs...)

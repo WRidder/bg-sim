@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/export-job.schema.json",
+  "title": "ExportJob",
+  "description": "An export job (plan/EXPORT_PLAN.md P-EX1): GET /api/exports/{id}, stored as <project>/exports/<id>/job.json. Statuses: queued (waiting for the one export slot), running, done (report and FMU), refused (the model or the scope cannot be exported: diagnostics say why), failed (an internal error), cancelled.",
+  "type": "object",
+  "required": ["id", "project", "model", "status", "created", "diagnostics"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "project": { "type": "string" },
+    "model": { "type": "string", "description": "The model name in the project." },
+    "scope": {
+      "type": ["string", "null"],
+      "description": "The exported subsystem's instance path; null for the whole model."
+    },
+    "status": {
+      "title": "ExportJobStatus",
+      "enum": ["queued", "running", "done", "refused", "failed", "cancelled"]
+    },
+    "phase": {
+      "title": "ExportJobPhase",
+      "anyOf": [
+        { "enum": ["starting", "scope", "flatten", "reference", "export", "build"] },
+        { "type": "null" }
+      ],
+      "description": "What a running job does now: starting (Julia loads BGSim), scope, flatten, reference (the reference run), export (analysis and C), build (compile, checks, zip)."
+    },
+    "created": { "type": "string", "format": "date-time" },
+    "finished": { "type": ["string", "null"], "format": "date-time" },
+    "timings": { "$ref": "#/$defs/timings" },
+    "error": {
+      "type": ["string", "null"],
+      "description": "A user-facing message for a refused or failed job."
+    },
+    "diagnostics": {
+      "type": "array",
+      "description": "The refusal's diagnostics (E110, E111, E112, ...) or the report's warnings.",
+      "items": { "$ref": "https://bgsim.local/schemas/diagnostic.schema.json#/$defs/diagnostic" }
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Plain sentences about the job (a reference run that did not finish, a source-only FMU)."
+    },
+    "report": {
+      "anyOf": [
+        { "$ref": "https://bgsim.local/schemas/export-report.schema.json" },
+        { "type": "null" }
+      ]
+    },
+    "fmu": {
+      "anyOf": [{ "$ref": "#/$defs/fmu" }, { "type": "null" }],
+      "description": "The built FMU, downloadable at GET /api/exports/{id}/fmu."
+    },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "timings": {
+      "title": "ExportTimings",
+      "type": "object",
+      "description": "Wall time in seconds of each step that ran.",
+      "properties": {
+        "juliaS": { "type": "number", "description": "Julia start-up and loading BGSim." },
+        "scopeS": { "type": "number" },
+        "flattenS": { "type": "number" },
+        "referenceS": { "type": "number" },
+        "exportS": { "type": "number", "description": "Lowering, spectrum analysis, Jacobian and C emission." },
+        "buildS": { "type": "number", "description": "Compile, symbol and C++ checks, allocation harness, zip." },
+        "totalS": { "type": "number" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "fmu": {
+      "title": "ExportFmu",
+      "type": "object",
+      "required": ["file", "bytes", "sourceOnly"],
+      "properties": {
+        "file": { "type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_]*\\.fmu$" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "sourceOnly": { "type": "boolean" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

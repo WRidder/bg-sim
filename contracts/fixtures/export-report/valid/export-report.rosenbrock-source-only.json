@@ -1,0 +1,207 @@
+{
+  "name": "panda_Robot",
+  "identifier": "panda_Robot",
+  "guid": "{a5f8053c-62d0-b9c4-7bd1-de94715f5d0a}",
+  "runtimeVersion": "0.2.0",
+  "fmiVersion": "2.0",
+  "method": "rodas4p",
+  "dt": 0.0005,
+  "step": 0.001,
+  "tEnd": 5.15,
+  "substeps": 2,
+  "states": 56,
+  "algebraic": 0,
+  "dependsOnTime": false,
+  "modes": 0,
+  "events": 0,
+  "folded": 11,
+  "jacobian": {
+    "kind": "fd",
+    "terms": null,
+    "entries": 812,
+    "fallbackReason": "symbolic Jacobian above 200000 terms"
+  },
+  "selection": [
+    {
+      "method": "rk4",
+      "substeps": 12500,
+      "dt": 8e-08,
+      "cost": 910000000.0,
+      "withinBudget": false,
+      "numericallyDamped": false
+    },
+    {
+      "method": "ros34pw2",
+      "substeps": 4,
+      "dt": 0.00025,
+      "cost": 4200000.0,
+      "withinBudget": true,
+      "numericallyDamped": true
+    },
+    {
+      "method": "rodas4p",
+      "substeps": 2,
+      "dt": 0.0005,
+      "cost": 3100000.0,
+      "withinBudget": true,
+      "numericallyDamped": true
+    }
+  ],
+  "heldValues": 3,
+  "partitions": 1,
+  "inputs": [
+    {
+      "name": "tau1",
+      "id": "tau1/value",
+      "start": 0.0
+    },
+    {
+      "name": "tau2",
+      "id": "tau2/value",
+      "start": 0.0
+    },
+    {
+      "name": "tau3",
+      "id": "tau3/value",
+      "start": 0.0
+    },
+    {
+      "name": "tau4",
+      "id": "tau4/value",
+      "start": 0.0
+    },
+    {
+      "name": "tau5",
+      "id": "tau5/value",
+      "start": 0.0
+    },
+    {
+      "name": "tau6",
+      "id": "tau6/value",
+      "start": 0.0
+    },
+    {
+      "name": "tau7",
+      "id": "tau7/value",
+      "start": 0.0
+    }
+  ],
+  "outputs": [
+    {
+      "name": "q1",
+      "id": "q1/u"
+    },
+    {
+      "name": "q2",
+      "id": "q2/u"
+    },
+    {
+      "name": "q3",
+      "id": "q3/u"
+    },
+    {
+      "name": "q4",
+      "id": "q4/u"
+    },
+    {
+      "name": "q5",
+      "id": "q5/u"
+    },
+    {
+      "name": "q6",
+      "id": "q6/u"
+    },
+    {
+      "name": "q7",
+      "id": "q7/u"
+    }
+  ],
+  "parameters": [],
+  "locals": [],
+  "spectrum": {
+    "maxAbsLambda": 12000000.0,
+    "atT": 0.0,
+    "points": 26,
+    "rangedValues": 0,
+    "stableStep": 2.4e-07,
+    "accurateStep": 2.5e-08,
+    "analysisMethod": "rodas4p",
+    "proposedDt": 0.0005,
+    "damping": 0.5,
+    "relaxedDamping": true,
+    "numericallyDamped": {
+      "modes": 7,
+      "minHz": 3150.2
+    }
+  },
+  "linearAlgebra": {
+    "jacobian": "fd",
+    "linearSolver": "sparse",
+    "nnzJ": 812,
+    "nnzLU": 1270
+  },
+  "tables": {
+    "count": 0,
+    "bytes": 0,
+    "tables": []
+  },
+  "diagnostics": [
+    {
+      "code": "W207",
+      "severity": "warning",
+      "message": "the step needs 12500 substeps per 0.001 s, above the budget of 1000",
+      "hint": null,
+      "path": null,
+      "block": null,
+      "scope": null,
+      "source": null,
+      "node": null,
+      "connection": null,
+      "related": []
+    },
+    {
+      "code": "W213",
+      "severity": "warning",
+      "message": "7 stiff undamped modes at or above 3150 Hz are damped numerically by rodas4p; force rk4 to resolve them",
+      "hint": null,
+      "path": null,
+      "block": null,
+      "scope": null,
+      "source": null,
+      "node": null,
+      "connection": null,
+      "related": []
+    },
+    {
+      "code": "W214",
+      "severity": "warning",
+      "message": "no method meets the strict step rule within the budget; suggested rodas4p at 0.0005 s with relaxed damping (0.5); force rk4 to resolve all modes",
+      "hint": null,
+      "path": null,
+      "block": null,
+      "scope": null,
+      "source": null,
+      "node": null,
+      "connection": null,
+      "related": []
+    }
+  ],
+  "build": {
+    "compilerFound": false,
+    "compiler": null,
+    "sourceOnly": true,
+    "platform": null,
+    "ok": true,
+    "forbiddenSymbols": [],
+    "symbolCheck": null,
+    "cxxOk": null,
+    "harnessDoSteps": null,
+    "internalStepsPerDoStep": null,
+    "allocationsAfterInstantiate": null,
+    "doStepMeanUs": null,
+    "doStepMaxUs": null,
+    "buildS": 0.4,
+    "error": null,
+    "note": "no C compiler was found (gcc or clang on PATH, or BGSIM_CC), so the FMU holds the sources only"
+  }
+}

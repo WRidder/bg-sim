@@ -1,0 +1,128 @@
+{
+  "name": "speed_control",
+  "identifier": "speed_control",
+  "guid": "{a5f8053c-62d0-b9c4-7bd1-de94715f5d0a}",
+  "runtimeVersion": "0.2.0",
+  "fmiVersion": "2.0",
+  "method": "rk4",
+  "dt": 6.25e-05,
+  "step": 0.0005,
+  "tEnd": 0.3,
+  "substeps": 8,
+  "states": 3,
+  "algebraic": 0,
+  "dependsOnTime": false,
+  "modes": 0,
+  "events": 0,
+  "folded": 11,
+  "jacobian": null,
+  "selection": [
+    {
+      "method": "rk4",
+      "substeps": 8,
+      "dt": 6.25e-05,
+      "cost": 1240.0,
+      "withinBudget": true,
+      "numericallyDamped": false
+    },
+    {
+      "method": "ros2",
+      "substeps": 4,
+      "dt": 0.000125,
+      "cost": 2210.0,
+      "withinBudget": true,
+      "numericallyDamped": false
+    },
+    {
+      "method": "rodas4p",
+      "substeps": 1,
+      "dt": 0.0005,
+      "cost": 1630.0,
+      "withinBudget": true,
+      "numericallyDamped": false
+    }
+  ],
+  "heldValues": 3,
+  "partitions": 1,
+  "inputs": [
+    {
+      "name": "setpoint",
+      "id": "setpoint/value",
+      "start": 100.0
+    }
+  ],
+  "outputs": [
+    {
+      "name": "speed",
+      "id": "speed/u"
+    },
+    {
+      "name": "current",
+      "id": "current/u"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "PID1/Kp",
+      "id": "PID1/Kp",
+      "start": 0.28,
+      "variability": "tunable"
+    }
+  ],
+  "locals": [],
+  "spectrum": {
+    "maxAbsLambda": 3870.8252411622516,
+    "atT": 0.1885,
+    "points": 26,
+    "rangedValues": 0,
+    "stableStep": 0.0007195606595168764,
+    "accurateStep": 7.750285308926067e-05,
+    "analysisMethod": "rk4",
+    "proposedDt": 6.25e-05,
+    "damping": 0.05,
+    "relaxedDamping": false,
+    "numericallyDamped": {
+      "modes": 0,
+      "minHz": null
+    }
+  },
+  "linearAlgebra": null,
+  "tables": {
+    "count": 0,
+    "bytes": 0,
+    "tables": []
+  },
+  "diagnostics": [
+    {
+      "code": "W210",
+      "severity": "warning",
+      "message": "the tunable parameter `PID1/Kp` has no range, so the step is stable only for the scanned value",
+      "hint": "declare min and max",
+      "path": "PID1",
+      "block": null,
+      "scope": null,
+      "source": null,
+      "node": null,
+      "connection": null,
+      "related": []
+    }
+  ],
+  "build": {
+    "compilerFound": true,
+    "compiler": "C:/msys64/mingw64/bin/gcc.exe",
+    "sourceOnly": false,
+    "platform": "win64",
+    "ok": true,
+    "forbiddenSymbols": [],
+    "symbolCheck": true,
+    "cxxOk": true,
+    "harnessDoSteps": 10000,
+    "internalStepsPerDoStep": 8,
+    "allocationsAfterInstantiate": 0,
+    "doStepMeanUs": 0.41,
+    "doStepMaxUs": 12.3,
+    "buildS": 3.2,
+    "error": null,
+    "note": null
+  }
+}

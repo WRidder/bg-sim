@@ -1,0 +1,46 @@
+{
+  "id": "export-20261030-101500-0a0b0c",
+  "project": "hydraulic-servo",
+  "model": "hydraulic-servo",
+  "scope": "Valve",
+  "status": "refused",
+  "phase": null,
+  "created": "2026-10-30T10:15:00Z",
+  "finished": "2026-10-30T10:15:20Z",
+  "timings": {
+    "juliaS": 13.0,
+    "scopeS": 0.01
+  },
+  "error": "the power port `P` needs the variable the host imposes",
+  "diagnostics": [
+    {
+      "code": "E112",
+      "severity": "error",
+      "message": "the power port `P` needs the variable the host imposes",
+      "hint": "set power_inputs[\"P\"] to \"effort\" or \"flow\"",
+      "path": "Valve/P",
+      "block": null,
+      "scope": null,
+      "source": null,
+      "node": null,
+      "connection": null,
+      "related": []
+    },
+    {
+      "code": "E110",
+      "severity": "error",
+      "message": "`Valve/Table` reads a CSV file, which is not exported",
+      "hint": "replace it by an ExportInput in an export variant",
+      "path": "Valve/Table",
+      "block": null,
+      "scope": null,
+      "source": null,
+      "node": null,
+      "connection": null,
+      "related": []
+    }
+  ],
+  "notes": [],
+  "report": null,
+  "fmu": null
+}
