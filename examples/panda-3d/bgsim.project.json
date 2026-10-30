@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "panda-3d",
+  "models": [
+    "panda",
+    "panda-free"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
