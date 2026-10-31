@@ -17,11 +17,12 @@ import type { ModelDashboardCard } from "../contracts/model";
 import { parseLiveValue } from "../inspector/liveEdit";
 import { formatNumber } from "../plot/format";
 import { useRunStore } from "../plot/runStore";
-import { beginValueGesture, endValueGesture, setCardValue } from "./actions";
+import { beginValueGesture, endValueGesture, setCardParameter, setCardValue } from "./actions";
 import {
   clampToRange,
   effectiveInputValue,
   fractionOf,
+  GLOBAL_TARGET_PREFIX,
   inputRange,
   snapToStep,
   typedValue,
@@ -59,6 +60,36 @@ function useOverrideState(card: ModelDashboardCard, info: ParameterInfo | null):
   return used === wanted ? null : "applies at the next run";
 }
 
+/**
+ * A block parameter whose model expression reads global parameters (`Ref/final = h_step`):
+ * say so, with the value the globals give it, and offer to bind the card to the global itself
+ * when the expression is just that global's name (a card on the global moves every parameter
+ * that uses it; an override of the block parameter replaces the expression for one block).
+ */
+function GlobalNote({ card, info }: { card: ModelDashboardCard; info: ParameterInfo }) {
+  const single = info.drivenBy.length === 1 && info.modelText.trim() === info.drivenBy[0] ? info.drivenBy[0] : null;
+  const value = info.modelValue === null ? "" : ` = ${formatNumber(info.modelValue)}`;
+  return (
+    <span className="dash-input__driven" data-testid={`dash-driven-${card.id}`}>
+      <span title="This block parameter is an expression of global parameters; the card overrides the block parameter only">
+        driven by {info.drivenBy.map((name) => `global ${name}`).join(", ")}
+        {value}
+      </span>
+      {single !== null ? (
+        <button
+          type="button"
+          className="dash-link"
+          data-testid={`dash-bind-global-${card.id}`}
+          onClick={() => setCardParameter(card.id, `${GLOBAL_TARGET_PREFIX}${single}`)}
+          aria-label={`Bind this card to the global parameter ${single}`}
+        >
+          Bind to global {single}
+        </button>
+      ) : null}
+    </span>
+  );
+}
+
 function Footer({ card, info }: { card: ModelDashboardCard; info: ParameterInfo | null }) {
   const pending = useOverrideState(card, info);
   return (
@@ -66,6 +97,9 @@ function Footer({ card, info }: { card: ModelDashboardCard; info: ParameterInfo 
       <span className="dash-input__model" title="The value written in the model">
         model {info?.modelText ?? "—"}
       </span>
+      {info !== null && info.kind === "block" && info.drivenBy.length > 0 ? (
+        <GlobalNote card={card} info={info} />
+      ) : null}
       {pending !== null ? <span className="dash-input__pending">{pending}</span> : null}
       {card.value !== undefined ? (
         <button
