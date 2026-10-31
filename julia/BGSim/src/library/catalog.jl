@@ -412,6 +412,43 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Signal-controlled voltage source; feed it a Constant for a constant source.",
         icon = "elec-voltage-source",
     ),
+    # Common electrical components (Simscape Foundation level).
+    "stdlib:electrical/OpAmp" => (
+        description = "Operational amplifier with the output to ground: ideal (inputs held equal, no input current) or finite gain A with an output lag T_o, limited to the rails V_neg..V_pos.",
+        icon = "elec-opamp",
+    ),
+    "stdlib:electrical/VCVS" => (
+        description = "Voltage-controlled voltage source: v2 = gain*v1, the p1-n1 side draws no current.",
+        icon = "elec-vcvs",
+    ),
+    "stdlib:electrical/VCCS" => (
+        description = "Voltage-controlled current source: p2.f = transconductance*v1, the p1-n1 side draws no current.",
+        icon = "elec-vccs",
+    ),
+    "stdlib:electrical/CCVS" => (
+        description = "Current-controlled voltage source: v2 = transresistance*i1, the p1-n1 side is a short that senses i1.",
+        icon = "elec-ccvs",
+    ),
+    "stdlib:electrical/CCCS" => (
+        description = "Current-controlled current source: p2.f = gain*i1, the p1-n1 side is a short that senses i1.",
+        icon = "elec-cccs",
+    ),
+    "stdlib:electrical/MutualInductance" => (
+        description = "Two coupled inductors L1 and L2 with coupling k < 1 (M = k*sqrt(L1*L2)); the winding currents are the states.",
+        icon = "elec-mutual-inductance",
+    ),
+    "stdlib:electrical/Battery" => (
+        description = "Battery equivalent circuit: OCV(SOC) table, series R0 and one R1-C1 pair; the state of charge integrates the current over the capacity in A*h.",
+        icon = "elec-battery",
+    ),
+    "stdlib:electrical/MOSFET" => (
+        description = "MOSFET as an ideal switch: R_on both ways while the Bool gate is true, G_off otherwise, plus an antiparallel body diode.",
+        icon = "elec-mosfet",
+    ),
+    "stdlib:electrical/IGBT" => (
+        description = "IGBT as an ideal one-way switch: conducts c to e above V_ce0 through R_on while the Bool gate is true, plus an antiparallel freewheeling diode.",
+        icon = "elec-igbt",
+    ),
     "stdlib:rotation/ElasticShaft" => (
         description = "Elastic shaft with torsional stiffness and damping; the twist angle is the state.",
         icon = "rot-elastic-shaft",
@@ -458,6 +495,31 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:rotation/TorsionSpring" => (
         description = "Linear torsional spring between two rotation ports.",
         icon = "rot-torsion-spring",
+    ),
+    # Common rotational components (20-sim / Simscape Foundation level).
+    "stdlib:rotation/RotationalHardStop" => (
+        description = "Rotational end stop: free between lower and upper (angle a minus b), a torsional spring-damper contact outside.",
+        icon = "rot-hard-stop",
+    ),
+    "stdlib:rotation/Clutch" => (
+        description = "Disc friction clutch: torque n_faces*r_eff*mu(w)*f_n from the normal-force input, Stribeck coefficient, tanh-smoothed or switched.",
+        icon = "rot-clutch",
+    ),
+    "stdlib:rotation/Brake" => (
+        description = "Disc brake to the housing: the Clutch with its second flange fixed; the braking torque follows the normal-force input.",
+        icon = "rot-brake",
+    ),
+    "stdlib:rotation/PlanetaryGear" => (
+        description = "Ideal planetary gear set: sun, ring and carrier with ratio = z_ring/z_sun (w_sun + ratio*w_ring = (1 + ratio)*w_carrier).",
+        icon = "rot-planetary-gear",
+    ),
+    "stdlib:rotation/BeltDrive" => (
+        description = "Two pulleys with radii r_a and r_b joined by a compliant belt (stiffness k, damping d) without slip; the belt stretch is the state.",
+        icon = "rot-belt-drive",
+    ),
+    "stdlib:rotation/WormGear" => (
+        description = "Worm gear with ratio n, forward efficiency eta and back-driving efficiency eta_back; eta_back <= 0 is self-locking.",
+        icon = "rot-worm-gear",
     ),
     "stdlib:hydraulic/FlowSource" => (
         description = "Signal-controlled volume-flow source; Q*u enters a and returns through b.",

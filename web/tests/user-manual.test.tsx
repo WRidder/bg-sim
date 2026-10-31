@@ -38,6 +38,7 @@ const EXPECTED_PAGES = [
   "signal-sources",
   "background-tasks",
   "keyboard-shortcuts",
+  "mechanical-electrical",
 ];
 
 const LINKS: LinkContext = { pageIds: MANUAL_PAGE_IDS, model: null, signalIds: null };

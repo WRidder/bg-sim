@@ -316,7 +316,27 @@ const SIGNAL_SOURCE_REFS = [
     "stdlib:sources/UniformNoise",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS))
+# The common 1D mechanical (rotation) and electrical components (20-sim / Simscape
+# Foundation level).
+const MECH_ELEC_REFS = [
+    "stdlib:electrical/Battery",
+    "stdlib:electrical/CCCS",
+    "stdlib:electrical/CCVS",
+    "stdlib:electrical/IGBT",
+    "stdlib:electrical/MOSFET",
+    "stdlib:electrical/MutualInductance",
+    "stdlib:electrical/OpAmp",
+    "stdlib:electrical/VCCS",
+    "stdlib:electrical/VCVS",
+    "stdlib:rotation/BeltDrive",
+    "stdlib:rotation/Brake",
+    "stdlib:rotation/Clutch",
+    "stdlib:rotation/PlanetaryGear",
+    "stdlib:rotation/RotationalHardStop",
+    "stdlib:rotation/WormGear",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MECH_ELEC_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -1189,6 +1209,76 @@ const INTERFACE_FIELDS = [
         @test length(connections(gwb.ast)) == 3
         @test occursin("@components", gwb.source)
         @test occursin("connect(gear.b, play.a)", gwb.source)
+    end
+
+    @testset "the common rotation and electrical components" begin
+        # The golden tests (test/golden/rotation, test/golden/electrical) check the
+        # equations, power balance and dissipation; this pins the interfaces.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        for ref in MECH_ELEC_REFS
+            b = blocks[ref]
+            group, domain = startswith(ref, "stdlib:rotation/") ?
+                            ("Rotation", "Rotation") : ("Electrical", "Electrical")
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test b.group == group
+            @test all(p -> p.domain == domain, b.interface.ports)
+            @test all(p -> p.description !== nothing && !isempty(p.description),
+                b.interface.parameters)
+        end
+        ports(ref) = [p.name for p in blocks[ref].interface.ports]
+        params(ref) = [(p.name, p.unit) for p in blocks[ref].interface.parameters]
+        inputs(ref) = [(i.name, i.type) for i in blocks[ref].interface.inputs]
+
+        @test ports("stdlib:rotation/RotationalHardStop") == ["a", "b"]
+        @test params("stdlib:rotation/RotationalHardStop") ==
+              [("lower", "rad"), ("upper", "rad"), ("k", "N*m/rad"), ("d", "N*m*s/rad")]
+        @test ports("stdlib:rotation/Clutch") == ["a", "b"]
+        @test inputs("stdlib:rotation/Clutch") == [("f_n", "Real")]
+        @test blocks["stdlib:rotation/Clutch"].interface.inputs[1].unit == "N"
+        @test ports("stdlib:rotation/Brake") == ["a"]
+        @test inputs("stdlib:rotation/Brake") == [("f_n", "Real")]
+        @test [p.name for p in blocks["stdlib:rotation/Brake"].interface.parameters] ==
+              [p.name for p in blocks["stdlib:rotation/Clutch"].interface.parameters]
+        @test ports("stdlib:rotation/PlanetaryGear") == ["sun", "ring", "carrier"]
+        @test params("stdlib:rotation/PlanetaryGear") == [("ratio", "1")]
+        @test ports("stdlib:rotation/BeltDrive") == ["a", "b"]
+        @test params("stdlib:rotation/BeltDrive") ==
+              [("r_a", "m"), ("r_b", "m"), ("k", "N/m"), ("d", "N*s/m")]
+        @test [(v.name, v.state) for v in blocks["stdlib:rotation/BeltDrive"].interface.variables] ==
+              [("x", "prefer"), ("F", nothing)]
+        @test params("stdlib:rotation/WormGear") ==
+              [("n", "1"), ("eta", "1"), ("eta_back", "1"), ("w_eps", "rad/s")]
+        @test blocks["stdlib:rotation/WormGear"].interface.causality ==
+              [(ports = ["a", "b"], kind = "transformer", value = nothing)]
+
+        @test ports("stdlib:electrical/OpAmp") == ["in_p", "in_n", "out"]
+        @test [c.name for c in blocks["stdlib:electrical/OpAmp"].interface.constants] == ["ideal"]
+        @test params("stdlib:electrical/OpAmp") ==
+              [("A", "1"), ("T_o", "s"), ("V_pos", "V"), ("V_neg", "V")]
+        for (name, param, unit) in (("VCVS", "gain", "1"), ("VCCS", "transconductance", "1/Ohm"),
+            ("CCVS", "transresistance", "Ohm"), ("CCCS", "gain", "1"))
+            ref = "stdlib:electrical/" * name
+            @test ports(ref) == ["p1", "n1", "p2", "n2"]
+            @test params(ref) == [(param, unit)]
+            @test isempty(blocks[ref].interface.variables)
+        end
+        @test ports("stdlib:electrical/MutualInductance") == ["p1", "n1", "p2", "n2"]
+        @test params("stdlib:electrical/MutualInductance") == [("L1", "H"), ("L2", "H"), ("k", "1")]
+        @test [(v.name, v.state) for v in blocks["stdlib:electrical/MutualInductance"].interface.variables] ==
+              [("i1", "prefer"), ("i2", "prefer")]
+        @test ports("stdlib:electrical/Battery") == ["p", "n"]
+        @test [p.name for p in blocks["stdlib:electrical/Battery"].interface.parameters] ==
+              ["capacity", "soc_table", "ocv_table", "R0", "R1", "C1"]
+        @test blocks["stdlib:electrical/Battery"].interface.parameters[1].unit == "A*h"
+        @test [(v.name, v.state) for v in blocks["stdlib:electrical/Battery"].interface.variables] ==
+              [("soc", "prefer"), ("v1", "prefer"), ("ocv", nothing)]
+        @test ports("stdlib:electrical/MOSFET") == ["d", "s"]
+        @test inputs("stdlib:electrical/MOSFET") == [("gate", "Bool")]
+        @test ports("stdlib:electrical/IGBT") == ["c", "e"]
+        @test inputs("stdlib:electrical/IGBT") == [("gate", "Bool")]
+        @test [p.name for p in blocks["stdlib:electrical/IGBT"].interface.parameters] ==
+              ["R_on", "V_ce0", "G_off", "V_f", "R_d"]
     end
 
     @testset "the M2 hydraulic rows (J2.7g)" begin

@@ -352,9 +352,16 @@ All ports are `Electrical`: voltage \[V\] and current \[A\].
 | Ideal diode | `p`, `n` | `R_on`, `G_off`, `V_knee` | v0.1 |
 | Ideal switch | `p`, `n`, input `ctrl` (Bool) | `R_on`, `G_off` | v0.1 |
 | Ideal transformer | `p1`, `n1`, `p2`, `n2` | turns ratio | v0.1 |
-| Ideal op-amp | `in_p`, `in_n`, `out` | none | v0.2 |
+| Op-amp (`OpAmp`; output to ground) | `in_p`, `in_n`, `out` | constant `ideal` (1: nullor, inputs held equal; 0: finite gain with output lag), `A`, `T_o`, rails `V_pos`, `V_neg` | v0.1 |
+| Voltage-controlled voltage source (`VCVS`) | `p1`, `n1` (open, senses v1), `p2`, `n2` | `gain`: v2 = gain·v1 | v0.1 |
+| Voltage-controlled current source (`VCCS`) | `p1`, `n1` (open), `p2`, `n2` | `transconductance` \[1/Ohm\]: `p2.f` = g·v1 | v0.1 |
+| Current-controlled voltage source (`CCVS`) | `p1`, `n1` (short, senses i1), `p2`, `n2` | `transresistance` \[Ohm\]: v2 = r·i1 | v0.1 |
+| Current-controlled current source (`CCCS`) | `p1`, `n1` (short), `p2`, `n2` | `gain`: `p2.f` = gain·i1 | v0.1 |
+| Mutual inductance (`MutualInductance`) | `p1`, `n1`, `p2`, `n2` | `L1`, `L2` \[H\], coupling `k` < 1; initial currents `i1`, `i2` | v0.1 |
+| Battery (`Battery`, equivalent circuit) | `p`, `n` | `capacity` \[A\*h\], OCV table over SOC, `R0`, one `R1`-`C1` pair; initial `soc` | v0.1 |
+| MOSFET (`MOSFET`, ideal switch) | `d`, `s`, input `gate` (Bool) | `R_on`, `G_off`, body diode `V_f`, `R_d` | v0.1 |
+| IGBT (`IGBT`, ideal one-way switch) | `c`, `e`, input `gate` (Bool) | `R_on`, `V_ce0`, `G_off`, freewheeling diode `V_f`, `R_d` | v0.1 |
 | Averaged H-bridge | `dc_p`, `dc_n`, `out_p`, `out_n`, input `duty` | none | v0.2 |
-| Battery (equivalent circuit) | `p`, `n` | capacity, `R_internal`, OCV table | v0.2 |
 
 ### Mechanical translation and rotation
 
@@ -381,6 +388,12 @@ Translation ports carry force \[N\] and velocity \[m/s\]; rotation ports carry t
 | Ideal gear | Rotation | `a`, `b` | ratio | v0.1 |
 | Gear with efficiency and backlash | Rotation | `a`, `b` | ratio, efficiency, backlash | v0.2 |
 | Elastic shaft | Rotation | `a`, `b` | stiffness, damping | v0.1 |
+| Rotational hard stop (`RotationalHardStop`) | Rotation | `a`, `b` | angle limits, contact stiffness, damping | v0.1 |
+| Clutch (`Clutch`) | Rotation | `a`, `b`, input `f_n` \[N\] | static and kinetic friction coefficients, effective radius, faces, Stribeck speed, smoothing | v0.1 |
+| Brake (`Brake`) | Rotation | `a` (to the housing), input `f_n` \[N\] | as the clutch | v0.1 |
+| Planetary gear (`PlanetaryGear`) | Rotation | `sun`, `ring`, `carrier` | `ratio` = z_ring/z_sun (ideal) | v0.1 |
+| Belt drive (`BeltDrive`) | Rotation | `a`, `b` | pulley radii, belt stiffness and damping | v0.1 |
+| Worm gear (`WormGear`) | Rotation | `a` (worm), `b` (wheel) | ratio, forward and back-driving efficiency (≤ 0 is self-locking) | v0.1 |
 | 3D rigid body and joints | Multibody (`Vec{3}` ports) | frames | mass, inertia tensor | v0.3, see Spatial mechanics |
 
 Multibody components are specified in the Spatial mechanics section.
