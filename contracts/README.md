@@ -41,3 +41,10 @@ Debugging (M4, plan 3.8): `debug.schema.json` holds the shared debug shapes (`br
 notifications, and `run-manifest` for the optional `debug`, `parentRun` and `branchAt` fields
 (status `paused`). `frameValue.value` nests at most three array levels (a Mat of Vecs), because
 the code generators reject recursive `$ref`s.
+
+Sticky notes: `diagram.annotations` (on every diagram level, a subsystem's nested diagram
+included) are the canvas notes, `kind: "text"` with Markdown `text`, a frame `x`/`y`/`w`/`h` and
+an optional `color` (`yellow`, `blue`, `green`, `pink`, `grey`; absent means yellow, so the editor
+never writes `yellow`). They are editor state like positions: the Julia parser drops them, so
+compile, simulation, the compile key and the C/FMU export do not change
+(`model.sticky-notes.json` flattens exactly like `model.subsystem-port-ui.json`).

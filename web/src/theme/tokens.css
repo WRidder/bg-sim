@@ -122,6 +122,24 @@
   --debug-pause-line: rgb(245 200 66 / 18%);
   --debug-pause-text: #f5c842;
 
+  /* Sticky notes on the canvas: muted cards with light text (AA on each card). */
+  --note-yellow-bg: #4a4224;
+  --note-yellow-fold: #6b6034;
+  --note-yellow-text: #f5edcf;
+  --note-blue-bg: #223650;
+  --note-blue-fold: #33507a;
+  --note-blue-text: #dce9fa;
+  --note-green-bg: #213f2c;
+  --note-green-fold: #315e41;
+  --note-green-text: #d8f1df;
+  --note-pink-bg: #4b2539;
+  --note-pink-fold: #6e3854;
+  --note-pink-text: #f8dceb;
+  --note-grey-bg: #31363f;
+  --note-grey-fold: #4a515d;
+  --note-grey-text: #e4e8ee;
+  --note-shadow: drop-shadow(0 2px 4px rgb(0 0 0 / 55%));
+
   /* Shell metrics. */
   --topbar-height: 40px;
   --tab-height: 30px;
@@ -186,6 +204,23 @@
   --debug-pause-arrow: #9a6700;
   --debug-pause-line: rgb(250 204 21 / 30%);
   --debug-pause-text: #8a5a00;
+
+  --note-yellow-bg: #fff2a8;
+  --note-yellow-fold: #e9d672;
+  --note-yellow-text: #3b3210;
+  --note-blue-bg: #d9e9fd;
+  --note-blue-fold: #aac9f1;
+  --note-blue-text: #13304f;
+  --note-green-bg: #d9f3e1;
+  --note-green-fold: #a7d9b5;
+  --note-green-text: #153b22;
+  --note-pink-bg: #fcdfeb;
+  --note-pink-fold: #efaecb;
+  --note-pink-text: #4b1530;
+  --note-grey-bg: #eceff3;
+  --note-grey-fold: #c9cfd7;
+  --note-grey-text: #262c34;
+  --note-shadow: drop-shadow(0 2px 3px rgb(27 33 41 / 22%));
 
   --status-starting: #8a95a3;
   --status-warming: #f79009;

@@ -622,6 +622,29 @@ end
         @test _has_signal(with_ui, "Plant/C1/p.e") == _has_signal(plain, "Plant/C1/p.e")
     end
 
+    @testset "sticky notes are editor state (diagram.annotations)" begin
+        # `model.sticky-notes.json` is `model.subsystem-port-ui.json` plus three notes: two
+        # on the root diagram (one with a colour) and one inside `Plant`. The parser drops
+        # annotations at every level, so the model flattens exactly like the one without.
+        path = _fixture("model.sticky-notes.json")
+        with_notes = flat_file(path)
+        document = JSON3.read(read(path, String), Dict{String,Any})
+        plant = document["diagram"]["nodes"][2]["block"]["subsystem"]["diagram"]
+        @test length(document["diagram"]["annotations"]) == 2
+        @test document["diagram"]["annotations"][2]["color"] == "blue"
+        @test length(plant["annotations"]) == 1
+        delete!(document["diagram"], "annotations")
+        delete!(plant, "annotations")
+        plain = flat(document)
+        reference = flat_file(_fixture("model.subsystem-port-ui.json"))
+        @test isempty(_errors(with_notes))
+        @test _counts(with_notes) == _counts(plain) == _counts(reference)
+        @test sort([v.id for v in with_notes.variables]) == sort([v.id for v in plain.variables])
+        @test sort([string(e) for e in with_notes.equations]) ==
+              sort([string(e) for e in plain.equations])
+        @test BGSim.compile_key(with_notes) == BGSim.compile_key(plain)
+    end
+
     @testset "junctions: 0, 1, junction-to-junction and dangling" begin
         # A 0-junction of two effort sources: equal efforts, flows summing to zero.
         zero_model = _model("ZeroJ", Any[

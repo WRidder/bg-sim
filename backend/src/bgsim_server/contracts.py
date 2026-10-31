@@ -858,17 +858,33 @@ class AnnotationKind(Enum):
     text = 'text'
 
 
+class AnnotationColor(Enum):
+    yellow = 'yellow'
+    blue = 'blue'
+    green = 'green'
+    pink = 'pink'
+    grey = 'grey'
+
+
 class ModelAnnotation(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     id: constr(pattern=r'^[A-Za-z0-9_.-]+$')
     kind: AnnotationKind = Field(..., title='AnnotationKind')
-    text: str
+    text: str = Field(
+        ...,
+        description='Markdown (no images, no tables; headings render as bold text).',
+    )
     x: float
     y: float
     w: float
     h: float
+    color: AnnotationColor | None = Field(
+        None,
+        description='The card colour; absent means yellow. The editor themes each colour for dark and light mode.',
+        title='AnnotationColor',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 

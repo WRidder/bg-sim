@@ -1,0 +1,362 @@
+/*
+ * Sticky notes on the canvas (diagram.annotations). Each colour is a token
+ * pair per theme (src/theme/tokens.css): a card background and its text, both
+ * AA or better. The card sits behind blocks and wires (NOTE_Z_INDEX).
+ */
+
+.sticky-note {
+  --note-bg: var(--note-yellow-bg);
+  --note-fold: var(--note-yellow-fold);
+  --note-text: var(--note-yellow-text);
+  --note-fold-size: 16px;
+
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  color: var(--note-text);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+  /* The shadow follows the clipped card, folded corner included. */
+  filter: var(--note-shadow);
+}
+
+.sticky-note--blue {
+  --note-bg: var(--note-blue-bg);
+  --note-fold: var(--note-blue-fold);
+  --note-text: var(--note-blue-text);
+}
+
+.sticky-note--green {
+  --note-bg: var(--note-green-bg);
+  --note-fold: var(--note-green-fold);
+  --note-text: var(--note-green-text);
+}
+
+.sticky-note--pink {
+  --note-bg: var(--note-pink-bg);
+  --note-fold: var(--note-pink-fold);
+  --note-text: var(--note-pink-text);
+}
+
+.sticky-note--grey {
+  --note-bg: var(--note-grey-bg);
+  --note-fold: var(--note-grey-fold);
+  --note-text: var(--note-grey-text);
+}
+
+.sticky-note__paper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--note-bg);
+  border-radius: var(--radius-sm);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - var(--note-fold-size)),
+    calc(100% - var(--note-fold-size)) 100%,
+    0 100%
+  );
+}
+
+/* The folded-over corner: the back of the paper, a shade darker. */
+.sticky-note__fold {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: var(--note-fold-size);
+  height: var(--note-fold-size);
+  background: var(--note-fold);
+  border-top-left-radius: var(--radius-sm);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  pointer-events: none;
+}
+
+.sticky-note.is-selected {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.sticky-note__content {
+  box-sizing: border-box;
+  height: 100%;
+  overflow: hidden;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  overflow-wrap: anywhere;
+}
+
+.sticky-note__content.is-scrollable {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--note-text) 35%, transparent) transparent;
+}
+
+.sticky-note__markdown > :first-child {
+  margin-top: 0;
+}
+
+.sticky-note__markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.sticky-note__markdown p,
+.sticky-note__markdown ul,
+.sticky-note__markdown ol,
+.sticky-note__markdown blockquote,
+.sticky-note__markdown pre {
+  margin: 0 0 0.6em;
+}
+
+.sticky-note__markdown ul,
+.sticky-note__markdown ol {
+  padding-left: 1.3em;
+}
+
+.sticky-note__markdown li + li {
+  margin-top: 0.15em;
+}
+
+.sticky-note__markdown .contains-task-list {
+  padding-left: 0.2em;
+  list-style: none;
+}
+
+/* Headings are bold body text: a note keeps one text size. */
+.sticky-note__markdown .note-markdown__heading {
+  font-size: inherit;
+}
+
+.sticky-note__markdown code {
+  padding: 0 0.25em;
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: color-mix(in srgb, var(--note-text) 12%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.sticky-note__markdown pre {
+  padding: var(--space-1) var(--space-2);
+  overflow: auto;
+  background: color-mix(in srgb, var(--note-text) 10%, transparent);
+  border-radius: var(--radius-sm);
+}
+
+.sticky-note__markdown pre code {
+  padding: 0;
+  background: none;
+}
+
+.sticky-note__markdown blockquote {
+  padding-left: var(--space-2);
+  border-left: 3px solid color-mix(in srgb, var(--note-text) 35%, transparent);
+}
+
+.sticky-note__markdown hr {
+  border: 0;
+  border-top: var(--border-width) solid color-mix(in srgb, var(--note-text) 30%, transparent);
+}
+
+.sticky-note__markdown .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Links keep the note's text colour (the accent fails contrast on some cards). */
+.sticky-note .docs-link {
+  color: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sticky-note .docs-link--broken {
+  text-decoration: underline wavy;
+  cursor: help;
+}
+
+.sticky-note .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.sticky-note__plain {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.sticky-note__placeholder,
+.note-markdown__omitted,
+.note-markdown__alt {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.sticky-note__placeholder {
+  margin: 0;
+}
+
+.sticky-note__editor {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  color: inherit;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  background: color-mix(in srgb, var(--note-text) 6%, transparent);
+  border: 0;
+  outline: none;
+  resize: none;
+  cursor: text;
+}
+
+.sticky-note__editor::placeholder {
+  color: inherit;
+  opacity: 0.6;
+}
+
+.sticky-note.is-editing {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* The resize handles of a selected note: small accent squares on the corners. */
+.sticky-note .sticky-note__handle.react-flow__resize-control.handle {
+  width: 9px;
+  height: 9px;
+  background: var(--color-accent);
+  border: 1px solid var(--color-surface);
+  border-radius: 2px;
+}
+
+.sticky-note .sticky-note__resize-line.react-flow__resize-control.line {
+  border-color: transparent;
+}
+
+.react-flow__node-note {
+  /* The note card draws its own outline; xyflow's focus ring would double it. */
+  outline: none;
+}
+
+/* The note inspector. */
+.note-inspector__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.note-inspector__section h4 {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+  color: var(--color-text-muted);
+}
+
+.note-inspector__section .note-swatches {
+  padding: 0;
+}
+
+.note-inspector__text {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 120px;
+  padding: var(--space-2);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  resize: vertical;
+}
+
+.note-inspector__text:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -1px;
+}
+
+.note-inspector__hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.note-inspector__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* Colour swatches: in the note's canvas menu and in the note inspector. */
+.editor-menu__swatches,
+.note-swatches {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+}
+
+.editor-menu .note-swatch,
+.note-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: var(--swatch-bg);
+  border: var(--border-width) solid var(--swatch-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.editor-menu .note-swatch:hover,
+.note-swatch:hover {
+  background: var(--swatch-bg);
+  box-shadow: 0 0 0 2px var(--color-border-strong);
+}
+
+.editor-menu .note-swatch.is-current,
+.note-swatch.is-current {
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.note-swatch:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.note-swatch--yellow {
+  --swatch-bg: var(--note-yellow-bg);
+  --swatch-border: var(--note-yellow-fold);
+}
+
+.note-swatch--blue {
+  --swatch-bg: var(--note-blue-bg);
+  --swatch-border: var(--note-blue-fold);
+}
+
+.note-swatch--green {
+  --swatch-bg: var(--note-green-bg);
+  --swatch-border: var(--note-green-fold);
+}
+
+.note-swatch--pink {
+  --swatch-bg: var(--note-pink-bg);
+  --swatch-border: var(--note-pink-fold);
+}
+
+.note-swatch--grey {
+  --swatch-bg: var(--note-grey-bg);
+  --swatch-border: var(--note-grey-fold);
+}

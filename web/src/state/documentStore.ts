@@ -22,10 +22,12 @@ import { create } from "zustand";
 
 import type { CatalogBlock } from "../contracts/catalog";
 import type {
+  AnnotationColor,
   Binding,
   ConnectionKind,
   JunctionType,
   Model,
+  ModelAnnotation,
   ModelConnection,
   ModelConstantValue,
   ModelDiagram,
@@ -72,6 +74,13 @@ import {
   endpoint,
 } from "./modelFactory";
 import { nextId, uniqueName } from "./ids";
+import {
+  NOTE_DEFAULT_SIZE,
+  NOTE_MIN_SIZE,
+  noteFlowId,
+  noteIdOf,
+  selectedNoteIds,
+} from "../editor/notes";
 
 enablePatches();
 
@@ -96,6 +105,8 @@ export interface HistoryEntry {
 export interface Clipboard {
   nodes: ModelNode[];
   connections: ModelConnection[];
+  /** Sticky notes (diagram.annotations) of the copied selection. */
+  annotations: ModelAnnotation[];
 }
 
 export interface ConnectResult {
@@ -268,6 +279,29 @@ export interface DocumentActions {
    */
   revealSubsystemPort: (name: string) => { nodeId: string; connections: string[] } | null;
 
+  /**
+   * Add a sticky note (a `diagram.annotations` entry) to the active diagram at
+   * `position` (its top-left corner) and select it. Returns its canvas id
+   * (`note:<id>`), or null when no model is open.
+   */
+  addNote: (
+    position: ModelPoint,
+    options?: { text?: string; color?: AnnotationColor; size?: { w: number; h: number } },
+  ) => string | null;
+  /**
+   * Replace a note's Markdown text. Pass `coalesce` while an editing session
+   * has a `note-text:<id>` gesture open, so one session is one undo step.
+   */
+  setNoteText: (id: string, text: string, options?: { coalesce?: boolean }) => void;
+  /** Colour notes by annotation id (yellow removes the field: absent means yellow). */
+  setNoteColor: (ids: readonly string[], color: AnnotationColor) => void;
+  /** Move and resize a note; a resize drag coalesces into one undo step. */
+  setNoteFrame: (
+    id: string,
+    frame: { x: number; y: number; w: number; h: number },
+    coalesce?: boolean,
+  ) => void;
+
   undo: () => void;
   redo: () => void;
 }
@@ -324,7 +358,7 @@ export interface DocumentState {
 export type DocumentStore = DocumentState & DocumentActions;
 
 const EMPTY_SELECTION: Selection = { nodes: [], connections: [] };
-const EMPTY_CLIPBOARD: Clipboard = { nodes: [], connections: [] };
+const EMPTY_CLIPBOARD: Clipboard = { nodes: [], connections: [], annotations: [] };
 
 const INITIAL_STATE: DocumentState = {
   project: null,
@@ -373,6 +407,8 @@ function pruneSelection(doc: Model, path: readonly string[], selection: Selectio
     ...(subsystemAtPath(doc, path)?.node.block.subsystem.ports ?? []).map((port) =>
       terminalId(port.name),
     ),
+    // Sticky notes are canvas nodes `note:<id>`.
+    ...(diagram.annotations ?? []).map((note) => noteFlowId(note.id)),
   ]);
   const connectionIds = new Set(diagram.connections.map((connection) => connection.id));
   const nodes = selection.nodes.filter((id) => nodeIds.has(id));
@@ -628,6 +664,17 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       commitActive(
         (diagram) => {
           for (const [id, position] of entries) {
+            // A dragged sticky note (`note:<id>`) moves its annotation.
+            const noteId = noteIdOf(id);
+            if (noteId !== null) {
+              const note = (diagram.annotations ?? []).find((entry) => entry.id === noteId);
+              if (note !== undefined) {
+                const rounded = roundPosition(position);
+                note.x = rounded.x;
+                note.y = rounded.y;
+              }
+              continue;
+            }
             const node = diagram.nodes.find((entry) => entry.id === id);
             if (node !== undefined) {
               node.position = roundPosition(position);
@@ -780,6 +827,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       if (nodes.size === 0 && connections.size === 0) {
         return;
       }
+      const notes = new Set(selectedNoteIds(selection.nodes));
       const path = [...get().activePath];
       // Selected terminals delete their exposed ports in the same undo entry,
       // except a port the next level up exposes again (the canvas says why).
@@ -813,6 +861,9 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
               draft.connections.some((connection) => connection.id === link.connection),
             ),
           }));
+        if (notes.size > 0 && draft.annotations !== undefined) {
+          draft.annotations = draft.annotations.filter((note) => !notes.has(note.id));
+        }
       });
       set({ selection: EMPTY_SELECTION });
     },
@@ -864,16 +915,38 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
             nodeIds.has(connection.from.node) && nodeIds.has(connection.to.node),
         )
         .map((connection) => clone(connection));
-      set({ clipboard: { nodes, connections } });
+      const noteIds = new Set(selectedNoteIds(selection.nodes));
+      const annotations = (diagram.annotations ?? [])
+        .filter((note) => noteIds.has(note.id))
+        .map((note) => clone(note));
+      if (nodes.length === 0 && annotations.length === 0) {
+        return;
+      }
+      set({ clipboard: { nodes, connections, annotations } });
     },
 
     paste: () => {
       const doc = get().doc;
       const diagram = currentDiagram();
       const { clipboard } = get();
-      if (doc === null || diagram === null || clipboard.nodes.length === 0) {
+      if (doc === null || diagram === null) {
         return;
       }
+      const clipNotes = clipboard.annotations ?? [];
+      if (clipboard.nodes.length === 0 && clipNotes.length === 0) {
+        return;
+      }
+      const existingNoteIds = new Set((diagram.annotations ?? []).map((note) => note.id));
+      const pastedNotes: ModelAnnotation[] = clipNotes.map((note) => {
+        const id = nextId("a", existingNoteIds);
+        existingNoteIds.add(id);
+        return {
+          ...clone(note),
+          id,
+          x: Math.round((note.x + PASTE_OFFSET) * 10) / 10,
+          y: Math.round((note.y + PASTE_OFFSET) * 10) / 10,
+        };
+      });
       const existingNodeIds = new Set(allNodeIds(doc));
       const existingConnectionIds = new Set(allConnectionIds(doc));
       const existingNames = new Set(diagram.nodes.map((node) => node.name));
@@ -917,9 +990,19 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       commitActive((draft) => {
         draft.nodes.push(...pastedNodes);
         draft.connections.push(...pastedConnections);
+        if (pastedNotes.length > 0) {
+          draft.annotations ??= [];
+          draft.annotations.push(...pastedNotes);
+        }
       });
       set({
-        selection: { nodes: pastedNodes.map((node) => node.id), connections: [] },
+        selection: {
+          nodes: [
+            ...pastedNodes.map((node) => node.id),
+            ...pastedNotes.map((note) => noteFlowId(note.id)),
+          ],
+          connections: [],
+        },
       });
     },
 
@@ -1555,6 +1638,102 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         lastHistKey: null,
       });
       return { nodeId: found.node.id, connections };
+    },
+
+    addNote: (position, options = {}) => {
+      const diagram = currentDiagram();
+      if (diagram === null || !Number.isFinite(position.x) || !Number.isFinite(position.y)) {
+        return null;
+      }
+      const id = nextId("a", (diagram.annotations ?? []).map((note) => note.id));
+      const at = roundPosition(position);
+      const size = options.size ?? NOTE_DEFAULT_SIZE;
+      const note: ModelAnnotation = {
+        id,
+        kind: "text",
+        text: options.text ?? "",
+        x: at.x,
+        y: at.y,
+        w: Math.max(NOTE_MIN_SIZE.w, Math.round(size.w)),
+        h: Math.max(NOTE_MIN_SIZE.h, Math.round(size.h)),
+      };
+      if (options.color !== undefined && options.color !== "yellow") {
+        note.color = options.color;
+      }
+      const next = commitActive((draft) => {
+        draft.annotations ??= [];
+        draft.annotations.push(note);
+      });
+      if (next === null) {
+        return null;
+      }
+      const flowId = noteFlowId(id);
+      set({ selection: { nodes: [flowId], connections: [] } });
+      return flowId;
+    },
+
+    setNoteText: (id, text, options = {}) => {
+      const note = (currentDiagram()?.annotations ?? []).find((entry) => entry.id === id);
+      if (note === undefined || note.text === text) {
+        return;
+      }
+      commitActive(
+        (draft) => {
+          const target = (draft.annotations ?? []).find((entry) => entry.id === id);
+          if (target !== undefined) {
+            target.text = text;
+          }
+        },
+        options.coalesce === true ? { coalesce: `note-text:${id}` } : {},
+      );
+    },
+
+    setNoteColor: (ids, color) => {
+      const wanted = new Set(ids);
+      if (wanted.size === 0 || currentDiagram() === null) {
+        return;
+      }
+      commitActive((draft) => {
+        for (const note of draft.annotations ?? []) {
+          if (!wanted.has(note.id)) {
+            continue;
+          }
+          // Absent means yellow: the default colour leaves no field behind.
+          if (color === "yellow") {
+            if (note.color !== undefined) {
+              delete note.color;
+            }
+          } else if (note.color !== color) {
+            note.color = color;
+          }
+        }
+      });
+    },
+
+    setNoteFrame: (id, frame, coalesce = true) => {
+      if (
+        currentDiagram() === null ||
+        ![frame.x, frame.y, frame.w, frame.h].every((value) => Number.isFinite(value))
+      ) {
+        return;
+      }
+      const at = roundPosition({ x: frame.x, y: frame.y });
+      const w = Math.max(NOTE_MIN_SIZE.w, Math.round(frame.w));
+      const h = Math.max(NOTE_MIN_SIZE.h, Math.round(frame.h));
+      commitActive(
+        (draft) => {
+          const note = (draft.annotations ?? []).find((entry) => entry.id === id);
+          if (note === undefined) {
+            return;
+          }
+          // Immer records only real changes, so an unchanged frame adds no history.
+          note.x = at.x;
+          note.y = at.y;
+          note.w = w;
+          note.h = h;
+        },
+        coalesce ? { coalesce: "note-resize" } : {},
+      );
     },
 
     undo: () => {

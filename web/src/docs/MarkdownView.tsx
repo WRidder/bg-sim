@@ -32,6 +32,11 @@ export interface MarkdownViewProps {
   model: string;
   links: LinkContext;
   actions: LinkActions;
+  /**
+   * `page` (the default) is a docs page. `note` is a sticky note on the canvas: the same
+   * Markdown, links and math, but no images or tables, and headings no bigger than bold text.
+   */
+  variant?: "page" | "note";
 }
 
 const MATH_CLASSES = ["math-inline", "math-display"];
@@ -193,7 +198,35 @@ const COMPONENTS: Components = {
   img: ({ src, alt }) => <Image key={typeof src === "string" ? src : ""} src={typeof src === "string" ? src : undefined} alt={alt} />,
 };
 
-export function MarkdownView({ text, project, model, links, actions }: MarkdownViewProps) {
+/** A heading inside a sticky note: bold body text, so a note keeps one text size. */
+function NoteHeading({ children }: { children?: ReactNode }) {
+  return (
+    <p className="note-markdown__heading">
+      <strong>{children}</strong>
+    </p>
+  );
+}
+
+/** The sticky-note restrictions: no images, no tables, flat headings. */
+const NOTE_COMPONENTS: Components = {
+  a: ({ href, children }) => <Link href={href}>{children}</Link>,
+  // An image shows its alt text, if any; a note never loads an image.
+  img: ({ alt }) =>
+    typeof alt === "string" && alt.trim() !== "" ? <span className="note-markdown__alt">{parseImageAlt(alt).alt}</span> : null,
+  table: () => (
+    <p className="note-markdown__omitted" data-testid="note-table-omitted">
+      (Tables are not shown in notes.)
+    </p>
+  ),
+  h1: NoteHeading,
+  h2: NoteHeading,
+  h3: NoteHeading,
+  h4: NoteHeading,
+  h5: NoteHeading,
+  h6: NoteHeading,
+};
+
+export function MarkdownView({ text, project, model, links, actions, variant = "page" }: MarkdownViewProps) {
   const value = useMemo(() => ({ project, model, links, actions }), [project, model, links, actions]);
   const source = useMemo(() => normalizeDisplayMath(text), [text]);
   return (
@@ -202,7 +235,7 @@ export function MarkdownView({ text, project, model, links, actions }: MarkdownV
         remarkPlugins={REMARK_PLUGINS}
         rehypePlugins={REHYPE_PLUGINS}
         urlTransform={urlTransform}
-        components={COMPONENTS}
+        components={variant === "note" ? NOTE_COMPONENTS : COMPONENTS}
       >
         {source}
       </ReactMarkdown>

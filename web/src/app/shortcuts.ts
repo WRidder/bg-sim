@@ -48,6 +48,8 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
       { keys: [["Del"]], description: "Delete the selection" },
       { keys: [["R"]], description: "Rotate the selection" },
       { keys: [["F"]], description: "Flip the selection" },
+      { keys: [["N"]], description: "Add a sticky note at the pointer (right-click the canvas: Add note)" },
+      { keys: [["double-click"]], description: "Edit a sticky note's text (Esc or a click outside ends)" },
       { keys: [["Ctrl", "drag"]], description: "Connect from the nearest port of a block" },
     ],
   },
