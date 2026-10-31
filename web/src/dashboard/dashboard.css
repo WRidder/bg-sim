@@ -39,6 +39,11 @@
   flex: 1 1 auto;
 }
 
+/* Edit mode: each row is taller by the card toolbar, so the content keeps its use-mode room. */
+.dashboard[data-mode="edit"] .dashboard__grid {
+  grid-auto-rows: 164px;
+}
+
 .dashboard__grid.is-drop-target {
   outline: 2px dashed var(--color-accent);
   outline-offset: -6px;
@@ -222,6 +227,7 @@
 /* --------------------------------------------------------------------- cards */
 
 .dash-card {
+  container: dash-card / inline-size;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -276,12 +282,15 @@
   border-radius: 999px;
 }
 
+/* In edit mode the toolbar takes its own row above the title, so it never covers content. */
 .dash-card__edit {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  z-index: 2;
+  order: -1;
+  align-self: flex-end;
+  max-width: 100%;
+  margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-1)) var(--space-1) 0;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 2px;
   padding: 2px;
@@ -291,13 +300,26 @@
 }
 
 .dash-card__grip {
-  padding: 0 4px;
+  padding: 0 1px;
   color: var(--color-text-faint);
   cursor: grab;
 }
 
+/* One-column cards: the toolbar keeps to one row (the whole card is the drag handle anyway). */
+@container dash-card (max-width: 200px) {
+  .dash-card__grip {
+    display: none;
+  }
+
+  .dash-card__edit .dash-icon-button {
+    min-width: 20px;
+    padding: 0 2px;
+  }
+}
+
 .dash-card__size {
   height: 22px;
+  padding: 0 2px;
   font: inherit;
   font-size: var(--font-size-xs);
   color: var(--color-text);
@@ -443,8 +465,6 @@
   stroke: var(--dash-tone);
   stroke-width: 3px;
   opacity: 0.85;
-  transform: scale(1.18);
-  transform-origin: 60px 60px;
 }
 
 .dash-gauge__value {
@@ -957,6 +977,8 @@
 .dash-settings__field select,
 .dash-settings__field textarea,
 .dash-settings__search {
+  width: 100%;
+  min-width: 0;
   height: var(--control-height);
   padding: 0 var(--space-2);
   font: inherit;
@@ -977,6 +999,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
   margin: 0;
   padding: var(--space-2);
   border: var(--border-width) solid var(--color-border);
@@ -1050,6 +1073,14 @@
   display: flex;
   align-items: flex-end;
   gap: var(--space-2);
+}
+
+.dash-settings__zone .dash-settings__field {
+  min-width: 0;
+}
+
+.dash-settings__group > .dash-button {
+  align-self: flex-start;
 }
 
 .dash-settings__check {

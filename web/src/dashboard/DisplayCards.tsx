@@ -203,12 +203,12 @@ export function GaugeCard({ card, series }: DisplayCardProps) {
       aria-label={`${sample.id} at ${at(series)}`}
       data-testid={`dash-gauge-${card.id}`}
     >
-      <svg viewBox="0 0 120 104" className="dash-gauge__svg" aria-hidden="true">
+      <svg viewBox="0 0 120 110" className="dash-gauge__svg" aria-hidden="true">
         <path d={gaugeArc(60, 60, 46, 0, 1)} className="dash-gauge__track" />
         {(card.options?.zones ?? []).map((zone, index) => (
           <path
             key={index}
-            d={gaugeArc(60, 60, 46, fractionOf(Math.min(zone.from, zone.to), min, max), fractionOf(Math.max(zone.from, zone.to), min, max))}
+            d={gaugeArc(60, 60, 54, fractionOf(Math.min(zone.from, zone.to), min, max), fractionOf(Math.max(zone.from, zone.to), min, max))}
             className={`dash-gauge__zone dash-zone--${zone.tone}`}
           />
         ))}
@@ -224,10 +224,10 @@ export function GaugeCard({ card, series }: DisplayCardProps) {
         <text x={60} y={98} textAnchor="middle" className="dash-gauge__unit">
           {sample.unit}
         </text>
-        <text x={22} y={102} textAnchor="middle" className="dash-gauge__limit">
+        <text x={27} y={108} textAnchor="middle" className="dash-gauge__limit">
           {formatNumber(min)}
         </text>
-        <text x={98} y={102} textAnchor="middle" className="dash-gauge__limit">
+        <text x={93} y={108} textAnchor="middle" className="dash-gauge__limit">
           {formatNumber(max)}
         </text>
       </svg>

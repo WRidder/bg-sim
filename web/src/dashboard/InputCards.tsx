@@ -72,7 +72,7 @@ function Footer({ card, info }: { card: ModelDashboardCard; info: ParameterInfo 
           type="button"
           className="dash-link"
           onClick={() => setCardValue(card.id, null)}
-          aria-label={`Use the model value for ${card.parameter ?? "the parameter"}`}
+          aria-label={`Use model value for ${card.parameter ?? "the parameter"}`}
         >
           Use model value
         </button>
