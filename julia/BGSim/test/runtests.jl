@@ -278,6 +278,11 @@ include("test_switched_joint.jl")
 
 # Work packages J-MB11/J-MB12: electric and current-controlled drives and their golden tests.
 include("test_drives.jl")
+
+# Flexible bodies: the mode shapes shared with the 3D viewer and the assumed-modes beams
+# (FlexibleBeam2D/3D: energy, Southwell, statics, the two-disk torsion shaft).
+include("test_flex_modes.jl")
+include("test_flex_beam.jl")
 include("test_loader.jl")
 include("test_csv.jl")
 
@@ -353,6 +358,8 @@ include("test_export_sources.jl")
 include("test_export_motion.jl")
 # The Thermal domain (heated resistor, convection, radiation) in the C export.
 include("test_export_thermal.jl")
+# The rolling wheel contact and the flywheel rotor (RollingDisk, Rotor3D) in the C export.
+include("test_export_rolling.jl")
 # The common rotation and electrical components (clutch, gears, op-amp, switches, ...) in the
 # C export.
 include("test_export_components.jl")
@@ -360,6 +367,10 @@ include("test_export_components.jl")
 include("test_export_hydraulic.jl")
 # The moving-face contact (MovingPlaneContact, a jaw clamp) in the C export.
 include("test_export_contact.jl")
+# The vacuum gripping blocks (SuctionCup, VacuumGenerator) in the C export.
+include("test_export_suction.jl")
 # The signal and control blocks (filters, routing, observers, StopSimulation, Assertion, ...)
 # in the C export, and the run monitors in bg_step and fmi2DoStep.
 include("test_export_signal_blocks.jl")
+# The flexible beams (FlexibleBeam3D, FlexibleBeam2D) in the C export.
+include("test_export_flex.jl")

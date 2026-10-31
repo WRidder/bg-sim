@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "flex-rotary-pendulum",
+  "models": [
+    "flex-rotary-pendulum",
+    "flex-rotary-pendulum-rigid"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

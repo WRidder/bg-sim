@@ -15,6 +15,14 @@
       "bouncing-ball"
     ]
   },
+  "cantilever-modes": {
+    "title": "Cantilever modes",
+    "description": "A cantilever in two eigenmodes as a scalar bond graph, with global parameters and a tip force step.",
+    "hasScene": false,
+    "models": [
+      "cantilever-modes"
+    ]
+  },
   "cube-3d": {
     "title": "Cube 3d",
     "description": "A cube balanced on one corner by three reaction wheels.",
@@ -90,6 +98,41 @@
       "block-gripper"
     ]
   },
+  "gyrover": {
+    "title": "Gyrover",
+    "description": "A single-wheel robot balanced and steered by a tilting flywheel.",
+    "hasScene": true,
+    "models": [
+      "gyrover",
+      "gyrover-ref",
+      "free",
+      "reference",
+      "steady-turn",
+      "steady-turn-ref",
+      "spin",
+      "no-spin",
+      "fig3",
+      "fig3-ref",
+      "fig3-drill"
+    ]
+  },
+  "flex-rotary-pendulum": {
+    "title": "Flex rotary pendulum",
+    "description": "A Furuta pendulum whose rod bends (FlexibleBeam3D, 2 + 2 modes), next to its rigid twin.",
+    "hasScene": true,
+    "models": [
+      "flex-rotary-pendulum",
+      "flex-rotary-pendulum-rigid"
+    ]
+  },
+  "flex-torsion": {
+    "title": "Flex torsion",
+    "description": "Two disks on a flexible shaft (FlexibleBeam3D, three torsion modes) against the exact torsion frequency.",
+    "hasScene": true,
+    "models": [
+      "flex-torsion"
+    ]
+  },
   "hydraulic-circuit": {
     "title": "Hydraulic circuit",
     "description": "A motor-driven pump with relief valve, check valve, hose and accumulator; a 4/3 proportional valve extends and retracts a loaded cylinder.",
@@ -124,6 +167,16 @@
     "hasScene": true,
     "models": [
       "inverted-pendulum-cart"
+    ]
+  },
+  "maglev": {
+    "title": "Maglev",
+    "description": "A steel ball levitated below an electromagnet: a gain-scheduled PID on the LPV model, and a bond graph with an energy-conserving coil field.",
+    "hasScene": true,
+    "models": [
+      "maglev-current-driven",
+      "maglev-open-loop-and-linear",
+      "maglev-bondgraph"
     ]
   },
   "motor-thermal": {
@@ -296,6 +349,21 @@
       "rrr-multibond",
       "rrr-multibond-soft",
       "rrr-multibond-stiff"
+    ]
+  },
+  "suction-gripper": {
+    "title": "Suction gripper",
+    "description": "A six-cup vacuum gripper moves a carton: profiles, yaw, tilt, porosity and supply layouts decide when cups peel off.",
+    "hasScene": true,
+    "models": [
+      "transfer",
+      "aggressive-trapezoid",
+      "aggressive-scurve",
+      "tilt-tray",
+      "porous-undersized",
+      "edge-leak",
+      "edge-leak-valves",
+      "separate-generators"
     ]
   },
   "tetra-3d": {

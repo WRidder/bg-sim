@@ -1,0 +1,422 @@
+{
+  "project": "maglev",
+  "description": "Maglev showcase (after the MathWorks 'maglev LPV model from batch linearization' example). Numbers come from design/design.json, an independent scipy calculation.",
+  "models": {
+    "maglev-current-driven": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality everywhere, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Ball/h",
+          "from_t": 0.2,
+          "to_t": 1.4,
+          "step_t": 0.2,
+          "value": 0.1875,
+          "initial": 0.15,
+          "max_rise_time": 0.18,
+          "max_overshoot": 0.005,
+          "max_settling_time": 0.45,
+          "note": "the MathWorks scenario 0.15 -> 0.1875 m (scipy design: rise 0.1671 s, overshoot 0.00%, settling 0.4086 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ball/h",
+          "t": 1.4,
+          "value": 0.18749899410781165,
+          "abs": 1e-08,
+          "note": "the gap at 1.4 s equals the scipy simulation of the same loop"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "PID/u",
+          "value": 18.409863305820725,
+          "rtol": 0.0001,
+          "note": "peak coil current (scipy)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "PID/u",
+          "value": 0.5912074568960541,
+          "note": "the current stays positive (scipy minimum 1.1824 A): the magnet only pulls"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Ball/h",
+          "value": 0.149999999,
+          "note": "no undershoot below the start gap"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ball/F_c",
+          "value": 0.0,
+          "note": "the ball never touches the magnet or the pedestal: it stays levitated"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Statics/PID05/u",
+          "t": 1.4,
+          "value": 4.444405292281731,
+          "rtol": 1e-06,
+          "note": "integral action finds the trim current sqrt(m g/alpha)*0.05 m"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Statics/Ball05/h",
+          "t": 1.4,
+          "value": 0.05,
+          "rtol": 1e-06,
+          "note": "and holds the gap"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Statics/PID15/u",
+          "t": 1.4,
+          "value": 13.333215876845191,
+          "rtol": 1e-06,
+          "note": "integral action finds the trim current sqrt(m g/alpha)*0.15 m"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Statics/Ball15/h",
+          "t": 1.4,
+          "value": 0.15,
+          "rtol": 1e-06,
+          "note": "and holds the gap"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Statics/PID25/u",
+          "t": 1.4,
+          "value": 22.222026461408653,
+          "rtol": 1e-06,
+          "note": "integral action finds the trim current sqrt(m g/alpha)*0.25 m"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Statics/Ball25/h",
+          "t": 1.4,
+          "value": 0.25,
+          "rtol": 1e-06,
+          "note": "and holds the gap"
+        }
+      ]
+    },
+    "maglev-open-loop-and-linear": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality everywhere, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Grow05/lambda",
+          "t": 0.353,
+          "value": 19.80797736303081,
+          "rtol": 1e-07,
+          "note": "v/(h - p) of the released ball at p = 0.05 m (scipy, same equation)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Grow05/lambda",
+          "t": 0.353,
+          "value": 19.809088823063014,
+          "rtol": 0.0002,
+          "note": "= the LPV pole sqrt(2 g/p) = 19.8091 1/s, up to tanh(7) and the nonlinearity of a 5.5 um deviation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Grow15/lambda",
+          "t": 0.612,
+          "value": 11.436554837899426,
+          "rtol": 1e-07,
+          "note": "v/(h - p) of the released ball at p = 0.15 m (scipy, same equation)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Grow15/lambda",
+          "t": 0.612,
+          "value": 11.436782764396638,
+          "rtol": 0.0002,
+          "note": "= the LPV pole sqrt(2 g/p) = 11.4368 1/s, up to tanh(7) and the nonlinearity of a 5.5 um deviation"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Grow25/lambda",
+          "t": 0.79,
+          "value": 8.858782055562038,
+          "rtol": 1e-07,
+          "note": "v/(h - p) of the released ball at p = 0.25 m (scipy, same equation)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Grow25/lambda",
+          "t": 0.79,
+          "value": 8.858893836140041,
+          "rtol": 0.0002,
+          "note": "= the LPV pole sqrt(2 g/p) = 8.8589 1/s, up to tanh(7) and the nonlinearity of a 5.5 um deviation"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "DiffS/y",
+          "value": 2.4478450287857e-05,
+          "rtol": 0.002,
+          "note": "nonlinear - frozen linear gap: 0.49% of the small step (scipy)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BallS/h",
+          "t": 1.5,
+          "value": 0.155,
+          "abs": 1e-05,
+          "note": "both loops reach the setpoint"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LinS/h",
+          "t": 1.5,
+          "value": 0.155,
+          "abs": 1e-05
+        },
+        {
+          "kind": "max_abs",
+          "signal": "DiffL/y",
+          "value": 0.010567264958616707,
+          "rtol": 0.002,
+          "note": "nonlinear - frozen linear gap: 17.61% of the large step (scipy)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BallL/h",
+          "t": 1.5,
+          "value": 0.21,
+          "abs": 1e-05,
+          "note": "both loops reach the setpoint"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LinL/h",
+          "t": 1.5,
+          "value": 0.21,
+          "abs": 1e-05
+        },
+        {
+          "kind": "min_ge",
+          "signal": "PIDL/u",
+          "value": -6.960037123516999,
+          "note": "the large step asks for a negative current"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "PIDL/u",
+          "value": 23.025870842532072,
+          "rtol": 0.001,
+          "note": "peak current of the large step (scipy)"
+        }
+      ]
+    },
+    "maglev-bondgraph": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality everywhere, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "step_response",
+          "signal": "BallPos/y",
+          "from_t": 0.2,
+          "to_t": 1.4,
+          "step_t": 0.2,
+          "value": 0.1875,
+          "initial": 0.15,
+          "max_rise_time": 0.18,
+          "max_overshoot": 0.01,
+          "max_settling_time": 0.35,
+          "note": "cascade with the noisy, sampled IR sensor; the scipy design is continuous and noise-free (scipy design: rise 0.1650 s, overshoot 0.14%, settling 0.2867 s)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "EM/W",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Eel/y",
+              "coeff": -1.0
+            },
+            {
+              "signal": "Emech/y",
+              "coeff": -1.0
+            }
+          ],
+          "tol": 1e-07,
+          "scale": 2.6960496842783503,
+          "note": "the IC-field stores exactly what flows in: W(t) - integral(v i) - integral(F dh/dt) = W(0)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/W",
+          "t": 0.0,
+          "value": 2.6960496842783503,
+          "rtol": 1e-09,
+          "note": "W(0) = L(h0) i0^2 / 2"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Sat/y",
+          "value": 60.0,
+          "note": "the amplifier rail"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "EM/i",
+          "value": 1.0,
+          "note": "the coil current stays positive"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "EM/h",
+          "signal_b": "BallPos/y",
+          "max_abs": 1e-09,
+          "note": "the field's gap state and the ball position sensor integrate the same velocity"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "EM/F",
+          "signal_b": "Fmag/y",
+          "max_abs": 1e-12,
+          "note": "the effort detector on the 0-junction reads the field force"
+        }
+      ]
+    },
+    "maglev-bondgraph-ideal-sensor": {
+      "model": "maglev-bondgraph",
+      "settings": {
+        "t_end": 6.0,
+        "output": {
+          "points": 12001
+        }
+      },
+      "overrides": [
+        {
+          "target": "IR/Noise/std",
+          "value": 0.0
+        },
+        {
+          "target": "IR/ADC/bits",
+          "value": 52
+        }
+      ],
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality everywhere, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "EM/W",
+          "t": 0.0,
+          "value": 2.6960496842783503,
+          "rtol": 1e-09
+        },
+        {
+          "kind": "ratio",
+          "signal": "EM/i",
+          "signal_b": "EM/h",
+          "t": 6.0,
+          "value": 88.88810584563461,
+          "rtol": 1e-06,
+          "note": "the same statics as maglev-current-driven: i = sqrt(m g/alpha) h at rest"
+        },
+        {
+          "kind": "final_value",
+          "signal": "EM/F",
+          "t": 6.0,
+          "value": 0.1962,
+          "rtol": 1e-06,
+          "note": "the field carries the weight"
+        },
+        {
+          "kind": "final_value",
+          "signal": "BallPos/y",
+          "t": 6.0,
+          "value": 0.1875,
+          "rtol": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BallPos/y",
+          "t": 1.4,
+          "value": 0.18747798239183044,
+          "abs": 2e-06,
+          "note": "the slow integral tail at 1.4 s (scipy, continuous)"
+        },
+        {
+          "kind": "step_response",
+          "signal": "BallPos/y",
+          "from_t": 0.2,
+          "to_t": 1.4,
+          "step_t": 0.2,
+          "value": 0.1875,
+          "initial": 0.15,
+          "max_rise_time": 0.18,
+          "max_overshoot": 0.005,
+          "max_settling_time": 0.32,
+          "note": "ideal sensor (sampled at 1 kHz, no noise, 52-bit ADC) (scipy design: rise 0.1650 s, overshoot 0.14%, settling 0.2867 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Sat/y",
+          "value": 60.0
+        }
+      ]
+    }
+  },
+  "compare": [
+    {
+      "a": "maglev-current-driven",
+      "b": "maglev-bondgraph-ideal-sensor",
+      "signal_a": "Ball/h",
+      "signal_b": "BallPos/y",
+      "from_t": 0.0,
+      "max_abs": 0.003,
+      "note": "the cascade (other PID, 1 kHz sensor, coil dynamics) tracks the current-driven loop within 3 mm (8 % of the step)"
+    }
+  ]
+}

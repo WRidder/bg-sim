@@ -1,0 +1,43 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "plant",
+          "title": "Gripper, cups and motion",
+          "file": "pages/plant.md",
+          "children": []
+        },
+        {
+          "id": "air",
+          "title": "Air: generator, leaks, supply",
+          "file": "pages/air.md",
+          "children": []
+        },
+        {
+          "id": "sizing",
+          "title": "Sizing: analytic derivation",
+          "file": "pages/sizing.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results and checks",
+          "file": "pages/results.md",
+          "children": []
+        },
+        {
+          "id": "notes",
+          "title": "Notes and limitations",
+          "file": "pages/notes.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

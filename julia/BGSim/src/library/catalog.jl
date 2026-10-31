@@ -415,6 +415,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Ideal electromagnetic gyrator: back-EMF -k*shaft.f and shaft torque k*p.f, power conserving.",
         icon = "conv-em-converter",
     ),
+    "stdlib:converters/Electromagnet" => (
+        description = "Variable-reluctance actuator (lifting magnet): a power-conserving IC-field from the coil p/n to the gap between stator a and armature b, L(h) = L_inf + 2*alpha/(h + h0), attraction alpha*i^2/(h + h0)^2.",
+        icon = "conv-electromagnet",
+    ),
     "stdlib:converters/ExportInput" => (
         description = "Export interface input marker; in simulation it supplies the constant parameter value.",
         icon = "conv-export-input",
@@ -1101,6 +1105,14 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Planar rigid body (m, J) with one planar port: the flat graph is the 1-junction with IPlanar, CoriolisPlanar fed by IPlanar/Pm and GravityPlanar fed by the world pose (plan 5.2).",
         icon = "pl-rigid-body-2d",
     ),
+    "stdlib:planar/FlexibleBeam2D" => (
+        description = "Flexible planar beam (rod, tube or rectangle; E, rho, L) by the assumed-modes method: a floating reference frame plus up to three in-plane bending modes (clamped-free or free-free basis) with modal damping, own mass and inertia included; end ports A and B are 1-junctions like a body port; outputs the reference pose, the modal coordinates eta_y and the eigenfrequencies f_y.",
+        icon = "pl-flexible-beam-2d",
+    ),
+    "stdlib:planar/ModalBeam2D" => (
+        description = "Atomic core of FlexibleBeam2D: the modal bond graph of a planar beam (frame inertia, modal I and C, R by zeta, the slope and foreshortening transformers at the ends) as explicit energy-consistent equations.",
+        icon = "pl-modal-beam-2d",
+    ),
     # J-MB11: the drives (composites of the electrical/rotation primitives).
     "stdlib:drives/CurrentControlledDrive" => (
         description = "Current/torque-controlled drive: a signal current reference gives the motor torque k_t*i_ref through an ideal current source and a gyrator, with rotor inertia and viscous loss; taps for current, speed, torque and power.",
@@ -1230,6 +1242,18 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Spatial rigid body (diagonal J, m) with one spatial port: the flat graph is the 1-junction with ISpatial, CoriolisSpatial fed by ISpatial/Pm and GravitySpatial fed by the world pose (plan 5.2).",
         icon = "sp-rigid-body-3d",
     ),
+    "stdlib:spatial/Rotor3D" => (
+        description = "Axisymmetric rotor (flywheel, gyro or reaction-wheel rotor) about the z axis of its carrier body: only the axial momentum is a state (no spin-angle frame to resolve), the gyroscopic torque and the motor reaction act on the carrier port, the motor drives the Rotation port.",
+        icon = "sp-rotor-3d",
+    ),
+    "stdlib:spatial/FlexibleBeam3D" => (
+        description = "Flexible spatial beam (rod, tube or rectangle; E, rho, nu, L) by the assumed-modes method: a floating reference frame plus up to three bending modes about y and z and three torsion modes (axial rigid), clamped-free or free-free basis, modal damping, centrifugal (geometric) stiffening, own mass and inertia; it replaces a RigidBody3D. Outputs the reference pose, eta_y, eta_z, eta_t and the eigenfrequencies.",
+        icon = "sp-flexible-beam-3d",
+    ),
+    "stdlib:spatial/ModalBeam3D" => (
+        description = "Atomic core of FlexibleBeam3D: the floating-frame modal bond graph (frame momentum with Euler-Poincare gyroscopics, modal I/C/R, the end-port slope transformers and the foreshortening terms that give geometric stiffening) as explicit energy-consistent equations.",
+        icon = "sp-modal-beam-3d",
+    ),
     "stdlib:spatial/Spherical3D" => (
         description = "Spatial spherical (ball) joint (n = 3): three Rotation ports carrying the relative body-frame angular velocity, the relative orientation stored as an integrated unit quaternion (no gimbal lock), and a compliant pivot translation.",
         icon = "sp-spherical-3d",
@@ -1252,6 +1276,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Compliant contact of a sphere (or point) on a spatial body against a finite face that moves: carried in translation by a prescribed carrier and slid along an axis by a Translation port (a gripper jaw, a pusher). ContactPoint's Hunt-Crossley normal law with an edge gate, isotropic regularised Coulomb friction, the wrench on the body and the slide force on the port.",
         icon = "ct-moving-plane-contact",
     ),
+    "stdlib:contact/RollingDisk" => (
+        description = "Compliant rolling contact of a wheel (disc, optional toroidal crown) on a ContactSurface plane: the contact point is recomputed as the lowest rim point, smooth Hunt-Crossley normal force, isotropic regularised Coulomb friction on the slip of the rim material point, optional drilling damping; slip, forces, contact point and dissipated power as outputs.",
+        icon = "ct-rolling-disk",
+    ),
     # J-MB14: mode-switched pivot and the impact map.
     "stdlib:contact/ImpactBody3D" => (
         description = "Spatial rigid body whose port is the pivot frame of a SwitchedPivot3D (CoM offset r mounted inside): ImpactInertia3D, CoriolisSpatial and GravitySpatial on the CoM 1-junction, with the impact map applied to the body momentum at a mode switch.",
@@ -1264,6 +1292,15 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:contact/SwitchedPivot3D" => (
         description = "Mode-switched spatial pivot between ground and one body (free, corner, edge about the local z axis, face): the relative pose is integrated as in Free3D and the held directions are pulled back to an anchor by a mask-multiplied stiff spring-damper, re-anchored at each switch.",
         icon = "ct-switched-pivot-3d",
+    ),
+    # Vacuum gripping (examples/suction-gripper): a bellows suction cup and its generator.
+    "stdlib:contact/SuctionCup" => (
+        description = "Bellows suction cup between a gripper (spatial port a) and a part (b), with its vacuum chamber on a Hydraulic port: axial, lateral and tilt bellows compliance, a seal that pushes freely but pulls only up to A_eff times the vacuum, lip slip at mu times the lip force, a lip lift that opens a leak (pull-off, peeling), Darcy leakage through a porous part and a seal-lost latch.",
+        icon = "ct-suction-cup",
+    ),
+    "stdlib:contact/VacuumGenerator" => (
+        description = "Vacuum generator (ejector or pump) on a Hydraulic port by its suction capacity curve: free-air flow Q_max at zero vacuum falling to zero at dp_max (linear for an ejector, exponent n for a pump), with an on/release input that vents or blows off.",
+        icon = "ct-vacuum-generator",
     ),
 )
 

@@ -270,6 +270,7 @@ const M3_SPATIAL_REFS = [
     "stdlib:spatial/Revolute3DRigid",
     "stdlib:spatial/Revolute3DLimit",
     "stdlib:spatial/RigidBody3D",
+    "stdlib:spatial/Rotor3D",
     "stdlib:spatial/Spherical3D",
     "stdlib:spatial/Universal3D",
 ]
@@ -281,7 +282,10 @@ const M3_CONTACT_REFS = [
     "stdlib:contact/ImpactBody3D",
     "stdlib:contact/ImpactInertia3D",
     "stdlib:contact/MovingPlaneContact",
+    "stdlib:contact/RollingDisk",
     "stdlib:contact/SwitchedPivot3D",
+    "stdlib:contact/SuctionCup",
+    "stdlib:contact/VacuumGenerator",
 ]
 
 # The M3 drives of J-MB11 (plan 6, row J-MB11): composites in the new `drives` group.
@@ -416,7 +420,22 @@ const SIGNAL_CONTROL_REFS = [
     "stdlib:sources/StopSimulation",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS))
+# Electromechanical field converters (the maglev example): the variable-reluctance
+# electromagnet, a two-port IC-field between the coil and the gap.
+const EM_FIELD_REFS = [
+    "stdlib:converters/Electromagnet",
+]
+
+# Flexible bodies: the assumed-modes beams (planar and spatial composites and their atomic
+# modal cores; mode shapes in `src/mech/modes.jl`).
+const FLEX_REFS = [
+    "stdlib:planar/FlexibleBeam2D",
+    "stdlib:planar/ModalBeam2D",
+    "stdlib:spatial/FlexibleBeam3D",
+    "stdlib:spatial/ModalBeam3D",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS, EM_FIELD_REFS, FLEX_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -1744,6 +1763,31 @@ const INTERFACE_FIELDS = [
         @test isempty(em.interface.causality)
         @test occursin("p.e - n.e ~ -k * shaft.f", em.source)
         @test occursin("shaft.e ~ k * p.f", em.source)
+
+        # Electromagnet: electrical p/n plus the translation stator a and armature b, a
+        # two-port IC-field (states i and h) with preferred integral causality: the coil takes a
+        # voltage and gives the current (flow out), the gap takes a velocity and gives the force.
+        for ref in EM_FIELD_REFS
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test b.icon == "conv-electromagnet"
+            @test b.group == "Converters and sensors"
+        end
+        mag = blocks["stdlib:converters/Electromagnet"]
+        @test [(p.name, p.domain) for p in mag.interface.ports] ==
+              [("p", "Electrical"), ("n", "Electrical"), ("a", "Translation"), ("b", "Translation")]
+        @test [(p.name, p.unit) for p in mag.interface.parameters] ==
+              [("alpha", "H*m"), ("L_inf", "H"), ("h0", "m")]
+        @test [(v.name, v.state) for v in mag.interface.variables if v.state !== nothing] ==
+              [("i", "prefer"), ("h", "prefer")]
+        @test isempty(mag.interface.inputs)
+        @test mag.interface.causality == [
+            (ports = ["p"], kind = "preferred", value = "flow_out"),
+            (ports = ["n"], kind = "preferred", value = "flow_out"),
+            (ports = ["a"], kind = "preferred", value = "effort_out"),
+            (ports = ["b"], kind = "preferred", value = "effort_out"),
+        ]
+        @test occursin("F ~ alpha * i * i / ((h + h0) * (h + h0))", mag.source)
 
         # Rack and pinion and wheel: rotation a -> translation b, radius r, transformer.
         for (name, radius) in (("RackAndPinion", "0.02"), ("Wheel", "0.3"))

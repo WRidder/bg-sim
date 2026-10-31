@@ -530,6 +530,7 @@ Hydraulic ports carry pressure \[Pa\] and volume flow \[m^3/s\]. Thermal ports u
 | Proportional valve (4/3, `DirectionalValve43`) | Hydraulic | `P`, `T`, `A`, `B`, input `u` (spool, −1 to 1) | edge area, lap, leakage area | v0.1 |
 | Pressure-compensated flow control valve | Hydraulic | `a`, `b`, input `u` | regulated flow, compensator pressure | v0.1 |
 | Gas-charged accumulator | Hydraulic | `a` | precharge pressure, gas volume, polytropic index, dead volume | v0.1 |
+| Vacuum generator (`VacuumGenerator`, ejector or pump) | Hydraulic | `a`, input `u` (on / release) | `dp_max`, `Q_max` (free air), curve exponent `n`, release conductance and pressure | v0.1 |
 | Heat capacitor (`HeatCapacitor`) | Thermal | `a` | `C` \[J/K\] (= m·c_p), initial temperature `T` | v0.1 |
 | Thermal conductor (`ThermalConductor`) | Thermal | `a`, `b` | `G` \[W/K\] | v0.1 |
 | Thermal resistor (`ThermalResistor`) | Thermal | `a`, `b` | `R` \[K/W\] | v0.1 |
@@ -555,6 +556,7 @@ Converters are the only components with ports in two domains, which is what lets
 | DC motor | Electrical `p`, `n`; Rotation `shaft`, `housing` | `R`, `L`, `k_t`, `J`, `d` | v0.1 |
 | DC motor with winding heat port (`DCMotorThermal`) | Electrical `p`, `n`; Rotation `shaft`, `housing`; Thermal `winding` | `R`, `alpha`, `T_ref`, `L`, `k_t`, `J`, `d` | v0.1 |
 | Ideal EM converter (gyrator) | Electrical `p`, `n`; Rotation `shaft` | `k` \[N\*m/A\] | v0.1 |
+| Electromagnet, variable reluctance (`Electromagnet`): a two-port IC-field, `L(h) = L_inf + 2*alpha/(h + h0)`, attraction `alpha*i^2/(h + h0)^2` | Electrical `p`, `n`; Translation `a` (stator), `b` (armature) | `alpha` \[H\*m\], `L_inf` \[H\], `h0` \[m\] | v0.1 |
 | Rack and pinion | Rotation `a`; Translation `b` | pinion radius | v0.1 |
 | Ball screw | Rotation `a`; Translation `b` | lead \[m/rev\], efficiency | v0.1 |
 | Wheel | Rotation `a`; Translation `b` | radius | v0.1 |
@@ -856,9 +858,31 @@ Each element is the matrix-valued counterpart of a bond graph element. Planar ve
 | Compliant joint | Joint plus stiff spatial spring | `parent`, `child` | stiffness, damping | v0.3 |
 | Point contact (compliant) | Nonlinear `C` and `R` | `a`, `b` | stiffness, damping, friction | Later |
 | Moving face contact (`stdlib:contact/MovingPlaneContact`) | Nonlinear `C` and `R` between a body and a finite face on a moving carrier; the face slides along an axis through a Translation port (a gripper jaw pad, a pusher, a belt) | Spatial `p`, Translation `j`; inputs pose `g`, carrier position `pc` and velocity `vc`, slide position `xs` | sphere radius, face origin, normal, tangent and slide axis, half-widths and edge smoothing, Hunt-Crossley stiffness and damping, isotropic regularised Coulomb friction | v0.3 |
+| Rolling disk contact (`RollingDisk`, compliant) | Nonlinear `C` and `R` at the moving lowest rim point | `p`; inputs pose, plane | radius, crown, stiffness, damping, friction, drilling damping | v0.3 |
+| Axisymmetric rotor (`Rotor3D`) | `I` on the axial momentum plus gyroscopic `GY` on the carrier | `p`, Rotation `drive` | axial inertia | v0.3 |
+| Suction cup (`SuctionCup`, bellows and seal) | Nonlinear `C`/`R` two-port plus a vacuum chamber `C` | `a` (gripper), `b` (part), Hydraulic `vac` | `A_eff`, bellows `k_ax`, `k_lat`, `k_tilt`, `mu`, lip `D_lip`, `A_lip0`, part `perm`, chamber `V`; pushes freely, pulls up to `A_eff`·vacuum, lip lift opens a leak, held `lost` latch | v0.1 |
 | Pose, twist, wrench sensors | Detectors | `p`; output `SE3` / `Vec{6}` | frame to report in | v0.2 |
+| Flexible beam, planar (`FlexibleBeam2D`) | Floating-frame `I` plus modal `I`, `C`, `R` per mode, `MTF` to the ends | `A`, `B` (1-junctions), input `gA` (`Vec{3}`); outputs `pose`, `poseB`, `V`, `eta_y`, `f_y`, `dB`, `Ek`, `Ee`, `Eg` | constants `ny` (0..3), `basis`, `section`; `L`, `E`, `rho`, `d`, `di`, `b`, `h`, `zeta_y`, `g0` | v0.3 |
+| Flexible beam, spatial (`FlexibleBeam3D`) | as the planar beam, bending in y and z and torsion | `A`, `B` (1-junctions), input `gA` (`Vec{7}`); outputs `pose`, `poseB`, `V`, `eta_y`, `eta_z`, `eta_t`, `f_y`, `f_z`, `f_t`, `twist`, `dB`, `Ek`, `Ee`, `Eg` | constants `ny`, `nz`, `nt` (0..3), `basis`, `section`; `L`, `E`, `nu`, `rho`, `d`, `di`, `b`, `h`, `zeta_y`, `zeta_z`, `zeta_t`, `g0` | v0.3 |
+| Modal beam cores (`ModalBeam2D`, `ModalBeam3D`) | the equations of the flexible beams | `pa`, `pb`, input `gA` | as the flexible beams | v0.3 |
 
 Actuation needs no special component: a DC motor's Rotation port connects to a revolute joint's `drive` port, through a gear if needed.
+
+### Flexible bodies (assumed modes)
+
+A flexible beam is a floating frame of reference plus up to three closed-form Euler–Bernoulli modes per family (bending along local y and z, torsion about the axis; axial is rigid). End A is at s = 0 with the beam axis along local +x, end B at s = L.
+
+- **Shapes.** `basis = 0` uses clamped-free shapes (the frame is the end-A frame), `basis = 1` uses free-free shapes (mean-axis frame). Shapes are normalised to (1/L)∫φ² ds = 1, so every bending mode has the modal mass ρAL and the stiffness λ⁴EI/L³; torsion uses ψ_n = √2 sin((2n−1)πs/2L) (clamped-free) or √2 cos(nπs/L) (free-free) with the stiffness G I_p ((2n−1)π/2)²/L or G I_p (nπ)²/L. The tables are in `src/mech/modes.jl` and the shared viewer fixture `contracts/fixtures/modes/mode_shapes.json`.
+- **Equations.** T is taken to second order in the modal coordinates, including the foreshortening of a bent beam. The frame momentum obeys Ṗ = ad(V)ᵀP + the end wrenches, and each modal momentum p_i = m_i η̇_i + C_i(η)V obeys ṗ_i = ∂T/∂η_i − k_i η_i − c_i η̇_i + J_iᵀ e + Q_g,i. The mass matrix is inverted in closed form (Schur complement), so the beam is an explicit ODE and exports without a linear solve. H = T + V_elastic + U_gravity is conserved without damping.
+- **Geometric stiffening.** The second-order terms G2 (centrifugal: Southwell coefficients 1.193 and 0.193 for the first clamped-free mode), G0 (axial load at the tip) and G1 (self-weight) enter through T and the end-wrench work, so the stiffening is energy-consistent.
+- **End rotations.** The end frames turn by the Gibbs vector g = (tan(θ/2), −w_z′/2, w_y′/2), with θ the end twist; the end twist is exact for large angles, the slopes to second order.
+- **Outputs.** `pose` is the world pose of the reference frame (the frame the viewer deforms), `poseB` the world pose of end B. `f_*` are the eigenfrequencies of the beam alone in the chosen basis.
+
+**Composite rules used by these blocks.**
+
+- A composite may pass its own `@constants` to a child as keyword arguments (`ModalBeam3D(ny = ny, ...)`); they are folded before the child is instantiated, so they may set array sizes and select equations.
+- An `@observables` entry may carry the name of one of the composite's own `@outputs`, and it may be a vector: each entry `k` is recorded as `Block/name[k]`.
+- A port of a composite that is backed by an internal junction (`connect(A, nodeA)` with `nodeA = Junction(1)`) may stay unconnected; the junction then has one bond less. A free beam end therefore needs no termination.
 
 ### Function additions
 

@@ -198,6 +198,20 @@ describe("block icons", () => {
     expect(glyphs.size).toBe(hydraulicIcons.length);
   });
 
+  it("draws an explicit glyph for the electromagnet", () => {
+    // stdlib:converters/Electromagnet (src/library/catalog.jl): a cored coil above its armature,
+    // not the generic converter glyph and not the EM converter's.
+    const ids = new Set(svgIconIds());
+    expect(ids.has("conv-electromagnet")).toBe(true);
+    const strip = (icon: string) =>
+      renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />).replace(/(aria-label|data-icon)="[^"]*"/g, "");
+    const html = strip("conv-electromagnet");
+    expect(html).toContain("<svg");
+    for (const other of ["conv-em-converter", "conv-dc-motor", "conv-position-sensor", "elec-mutual-inductance"]) {
+      expect(html, other).not.toBe(strip(other));
+    }
+  });
+
   it("draws a distinct glyph for every signal and control block", () => {
     // The icon ids of the signal and control blocks (src/library/catalog.jl): linear
     // systems, filters, routing, nonlinearities, simulation control and observers.
@@ -236,6 +250,37 @@ describe("block icons", () => {
       glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
     }
     expect(glyphs.size).toBe(controlIcons.length);
+  });
+
+  it("draws four distinct flexible-beam glyphs", () => {
+    // The assumed-modes beams of stdlib/planar and stdlib/spatial (src/library/catalog.jl).
+    const beamIcons = [
+      "pl-flexible-beam-2d",
+      "pl-modal-beam-2d",
+      "sp-flexible-beam-3d",
+      "sp-modal-beam-3d",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of beamIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(beamIcons.length);
+  });
+
+  it("draws distinct glyphs for the vacuum gripping blocks", () => {
+    // stdlib/contact SuctionCup and VacuumGenerator (src/library/catalog.jl).
+    const vacuumIcons = ["ct-suction-cup", "ct-vacuum-generator", "hyd-pressure-source", "hyd-orifice"];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of vacuumIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(vacuumIcons.length);
   });
 
   it("falls back to a placeholder for an unknown icon id", () => {

@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "maglev",
+  "models": [
+    "maglev-current-driven",
+    "maglev-open-loop-and-linear",
+    "maglev-bondgraph"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

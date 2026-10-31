@@ -1,0 +1,390 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "steady-turn-ref",
+  "$comment": "Model `steady-turn` on the reference model.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Gyrover",
+        "block": {
+          "ref": "project:GyroverRef"
+        },
+        "position": {
+          "x": 600,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "bsp": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "psi": "0.0",
+          "phi": "0.1",
+          "gam": "0.0",
+          "beta": "0.00012009396906107173",
+          "tlt": "-0.0",
+          "u1": "-0.16047900211096539",
+          "u2": "0.0",
+          "u3": "7.630234365050353",
+          "u4": "0.0",
+          "u5": "-0.0",
+          "u6": "1570.7963267948965",
+          "x": "0.0",
+          "y": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Vref",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 380,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "1.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "PsiRef",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 380,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Ctrl",
+        "block": {
+          "ref": "project:GyroCtrl"
+        },
+        "position": {
+          "x": 600,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R": "0.197",
+          "mgh": "10.413243387000001",
+          "Ls": "4.7280969436526386",
+          "mh": "1.1878886390862944",
+          "w3_ref": "1570.7963267948965",
+          "kp_t": "40000.0",
+          "kd_t": "20.0",
+          "bal": "1.0",
+          "servo": "1.0",
+          "spin": "1.0",
+          "head": "0.0",
+          "lat": "1.0",
+          "lean0": "0.12"
+        },
+        "constants": {},
+        "starts": {
+          "r": "-0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c001",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "lean"
+        },
+        "to": {
+          "node": "n04",
+          "port": "lean"
+        },
+        "label": null
+      },
+      {
+        "id": "c002",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "heading"
+        },
+        "to": {
+          "node": "n04",
+          "port": "heading"
+        },
+        "label": null
+      },
+      {
+        "id": "c003",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "th1"
+        },
+        "to": {
+          "node": "n04",
+          "port": "th1"
+        },
+        "label": null
+      },
+      {
+        "id": "c004",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "w1"
+        },
+        "to": {
+          "node": "n04",
+          "port": "w1"
+        },
+        "label": null
+      },
+      {
+        "id": "c005",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "wz"
+        },
+        "to": {
+          "node": "n04",
+          "port": "wz"
+        },
+        "label": null
+      },
+      {
+        "id": "c006",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "th2"
+        },
+        "to": {
+          "node": "n04",
+          "port": "th2"
+        },
+        "label": null
+      },
+      {
+        "id": "c007",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "w2"
+        },
+        "to": {
+          "node": "n04",
+          "port": "w2"
+        },
+        "label": null
+      },
+      {
+        "id": "c008",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "wx"
+        },
+        "to": {
+          "node": "n04",
+          "port": "wx"
+        },
+        "label": null
+      },
+      {
+        "id": "c009",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "wy"
+        },
+        "to": {
+          "node": "n04",
+          "port": "wy"
+        },
+        "label": null
+      },
+      {
+        "id": "c010",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "w3"
+        },
+        "to": {
+          "node": "n04",
+          "port": "w3"
+        },
+        "label": null
+      },
+      {
+        "id": "c011",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "y"
+        },
+        "to": {
+          "node": "n04",
+          "port": "v_ref"
+        },
+        "label": null
+      },
+      {
+        "id": "c012",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "y"
+        },
+        "to": {
+          "node": "n04",
+          "port": "psi_ref"
+        },
+        "label": null
+      },
+      {
+        "id": "c013",
+        "kind": "signal",
+        "from": {
+          "node": "n04",
+          "port": "tau1"
+        },
+        "to": {
+          "node": "n01",
+          "port": "tau1"
+        },
+        "label": null
+      },
+      {
+        "id": "c014",
+        "kind": "signal",
+        "from": {
+          "node": "n04",
+          "port": "tau2"
+        },
+        "to": {
+          "node": "n01",
+          "port": "tau2"
+        },
+        "label": null
+      },
+      {
+        "id": "c015",
+        "kind": "signal",
+        "from": {
+          "node": "n04",
+          "port": "tau3"
+        },
+        "to": {
+          "node": "n01",
+          "port": "tau3"
+        },
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 10.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-07,
+    "abstol": 1e-09,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "lean",
+      "title": "Lean and tilt (paper theta0 - pi/2, theta2)",
+      "signals": [
+        "Gyrover/lean",
+        "Gyrover/th2",
+        "Ctrl/lean_ref"
+      ]
+    },
+    {
+      "id": "heading",
+      "title": "Heading",
+      "signals": [
+        "Gyrover/heading"
+      ]
+    },
+    {
+      "id": "speeds",
+      "title": "Wheel rate and forward speed",
+      "signals": [
+        "Gyrover/wz",
+        "Gyrover/v"
+      ]
+    },
+    {
+      "id": "path",
+      "title": "Path of the wheel centre (y against x)",
+      "signals": [
+        "Gyrover/yc",
+        "Gyrover/xc"
+      ]
+    },
+    {
+      "id": "torques",
+      "title": "Actuator torques",
+      "signals": [
+        "Ctrl/tau1",
+        "Ctrl/tau2",
+        "Ctrl/tau3"
+      ]
+    },
+    {
+      "id": "energy",
+      "title": "Energy",
+      "signals": [
+        "Gyrover/E",
+        "Gyrover/Ek",
+        "Gyrover/Ep"
+      ]
+    }
+  ]
+}
