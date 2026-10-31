@@ -1,0 +1,10 @@
+{
+  "$comment": "Invalid: edit position \"middle\" is not entry, step, target or statement.",
+  "t": 0.5,
+  "kind": "parameter",
+  "target": "Ctrl/aw",
+  "value": 1.0,
+  "position": {
+    "at": "middle"
+  }
+}

@@ -378,7 +378,9 @@ WP C4.0 adds `debug.schema.json`. It defines `Breakpoint`, `PausedInfo`, `Frame`
              "previous": [] } | null,              // statement pauses only
   "diagnostics": [] }
 // Edit (also stored in the manifest's debug.edits)
-{ "t": 0.2, "kind": "parameter" | "state", "target": "Motor1/R", "value": 2.5 }
+{ "t": 0.2, "kind": "parameter" | "state", "target": "Motor1/R", "value": 2.5,
+  "position": { "at": "entry" | "step" | "target" | "statement",
+                "tick": 49, "hook": 5 } }               // where in the loop; tick and hook: statement only
 ```
 
 **Worker methods** (added to `worker-rpc.schema.json`):
@@ -660,6 +662,7 @@ end
 - `setParameter` applies `setp(sys, name)(integ, value)` and `u_modified!(integ, true)`, then appends an `Edit` and rewrites the manifest's `debug.edits`.
 - `setState` first checks that the name is a differential state and that the system has no algebraic equations (E402 otherwise).
 - `run.replay` builds a normal run whose loop applies each edit at its `t`, through `add_tstop!` and the same calls.
+- Every `Edit` records its `position` in the loop (`entry`, `step`, `target`, or `statement` with `tick` and `hook`), and the replay applies it at that same place. An edit at a statement pause takes effect at that statement. The statements already executed in that tick used the old value. The paused partition's remaining statements, the partitions after it and the continuous part use the new one. The partition's sampled continuous inputs stay as sampled. The replay arms that hook and applies the edit when the hook is reached in that tick.
 - `run.branch` replays the parent's edits before `t`, pauses at `t`, and records `parentRun` and `branchAt`.
 
 **Determinism requirements** (tested in J4.1 to J4.4):

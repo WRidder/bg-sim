@@ -175,6 +175,117 @@ const _ED_LOOP = _ed_inline_model("Loop", """
 end
 """)
 
+# A sampled controller with a few statements around a first-order plant, and a ramp with an
+# `@events` reset (event pauses). `g` is read before and after the `F = clamp(...)` statement,
+# `aw` and `umax` only after `z += ...`.
+const _ED_STMT_CTL = """
+@block StmtCtl begin
+    @parameters begin
+        g::Real = 2.0
+        aw::Real = 0.0
+        umax::Real = 1.5
+    end
+    @inputs x::Real
+    @outputs begin
+        F::Real = 0.0
+        y::Real = 0.0
+    end
+    @variables begin
+        k::Int = 0
+        z::Real = 0.0
+    end
+    @discrete Ts = 0.01 begin
+        k += 1
+        e = 1.0 - x
+        z += Ts * g * e
+        u = g * e + z
+        F = clamp(u, -umax, umax)
+        if aw > 0.5 && abs(u) > umax
+            z -= Ts * g * e
+        end
+        y = g * e
+    end
+end
+"""
+
+const _ED_STMT_PLANT = """
+@block Lag begin
+    @parameters tau::Real = 0.05
+    @inputs u::Real
+    @outputs x::Real
+    @variables s::Real = 0.0
+    @equations begin
+        ddt(s) ~ (u - s) / tau
+        x ~ s
+    end
+end
+"""
+
+const _ED_STMT_RAMP = """
+@block Ramp begin
+    @outputs r::Real
+    @variables q::Real = 0.0
+    @equations begin
+        ddt(q) ~ 1.0
+        r ~ q
+    end
+    @events begin
+        q > 0.0705 => begin
+            reinit(q, 0.0)
+        end
+    end
+end
+"""
+
+function _ed_stmt_model()
+    node(id, name, source) = Dict{String,Any}(
+        "id" => id, "name" => name,
+        "block" => Dict{String,Any}("inline" => Dict{String,Any}("source" => source)),
+        "position" => Dict{String,Any}("x" => 0.0, "y" => 0.0),
+        "params" => Dict{String,Any}(), "constants" => Dict{String,Any}(),
+        "starts" => Dict{String,Any}(),
+    )
+    conn(id, a, ap, b, bp) = Dict{String,Any}(
+        "id" => id, "kind" => "signal",
+        "from" => Dict{String,Any}("node" => a, "port" => ap),
+        "to" => Dict{String,Any}("node" => b, "port" => bp),
+    )
+    doc = Dict{String,Any}(
+        "format" => "bgsim.model", "language" => "0.1.0", "name" => "Stmt",
+        "diagram" => Dict{String,Any}(
+            "nodes" => Any[
+                node("ctl", "Ctl", _ED_STMT_CTL), node("plant", "Plant", _ED_STMT_PLANT),
+                node("ramp", "Ramp", _ED_STMT_RAMP),
+            ],
+            "connections" => Any[
+                conn("c1", "ctl", "F", "plant", "u"), conn("c2", "plant", "x", "ctl", "x"),
+            ],
+            "subsystemPorts" => Any[], "annotations" => Any[],
+        ),
+        "settings" => Dict{String,Any}(
+            "t_start" => 0.0, "t_end" => 0.5, "solver" => "Rodas5P", "reltol" => 1.0e-8,
+            "abstol" => 1.0e-10, "max_step" => nothing,
+            "output" => Dict{String,Any}("mode" => "points", "points" => 101),
+            "event_limit" => 10000,
+        ),
+        "plots" => Any[], "scene" => nothing, "bindings" => Any[],
+    )
+    md = IR.parse_model(doc)
+    flat = Compile.flatten(md)
+    @assert isempty([d for d in flat.diagnostics if d.severity == "error"]) string(flat.diagnostics)
+    return _EdModel(flat, BGSim.RunSettings(md.settings), "", "")
+end
+
+const _ED_STMT = _ed_stmt_model()
+
+_ed_line(source, text) = first(i for (i, l) in enumerate(split(source, '\n')) if occursin(text, l))
+
+_ed_line_bp(id, line; hit = nothing, ref = "inline:ctl") = Dict{String,Any}(
+    "id" => id, "enabled" => true, "kind" => "line",
+    "line" => Dict{String,Any}("ref" => ref, "line" => line, "path" => nothing),
+    "hitCount" => hit,
+)
+
 @testset "edits, replay and branch (J4.4)" begin
     @testset "dc-motor: runTo 0.2, change R, continue; the replay is bit-identical (acceptance)" begin
         m = _ED_DC
@@ -434,7 +545,7 @@ end
         info = _ed_next(run)
         @test info.reason == "step" && info.tick == 2
         res = debug_set_parameter!(run.ctx, "D1/r", 0.9 * _ed_value(run.ctx, "D1/r"))
-        @test res.ok && endswith(res.edit.var"$comment", "at=target")
+        @test res.ok && res.edit.position.at == "target"
         _ed_finish!(run)
         parent = _ed_bytes(run.dir)
         @test parent != _ed_bytes(_ed_normal(m))
@@ -449,7 +560,7 @@ end
             @test _ed_next(run).reason == "step"
         end
         res = debug_set_parameter!(run.ctx, "C2/c", 1.1 * _ed_value(run.ctx, "C2/c"))
-        @test res.ok && endswith(res.edit.var"$comment", "at=step")
+        @test res.ok && res.edit.position.at == "step"
         for _ in 1:4
             debug_step!(run.ctx, "solverStep")
             _ed_next(run)
@@ -497,7 +608,7 @@ end
         run = _ed_spawn(m; pause_on_entry = true)
         _ed_next(run)
         res = debug_set_parameter!(run.ctx, "Motor1/J", 2.0e-5)
-        @test res.ok && endswith(res.edit.var"$comment", "at=entry")
+        @test res.ok && res.edit.position.at == "entry"
         _ed_finish!(run)
         _, rdir = _ed_replay(m, run.dir)
         @test _ed_bytes(rdir) == _ed_bytes(run.dir)
@@ -516,12 +627,178 @@ end
         info = _ed_next(run)
         @test info.reason == "breakpoint" && info.location.range.line == line
         res = debug_set_parameter!(run.ctx, "D1/r", 1.25 * _ed_value(run.ctx, "D1/r"))
-        @test res.ok && endswith(res.edit.var"$comment", "at=statement")
+        @test res.ok && res.edit.position.at == "statement"
         _ed_finish!(run)
         parent = _ed_bytes(run.dir)
         @test parent != _ed_bytes(_ed_normal(m))
         _, rdir = _ed_replay(m, run.dir)
         @test _ed_bytes(rdir) == parent
+    end
+
+    @testset "an edit at a statement pause takes effect mid-tick and replays bit-identically" begin
+        m = _ED_STMT
+        normal = _ed_matrix(_ed_normal(m))
+        line_f = _ed_line(_ED_STMT_CTL, "F = clamp(u")
+        run = _ed_spawn(m; breakpoints = [_ed_line_bp("bp1", line_f; hit = 20)])
+        info = _ed_next(run)
+        @test info.reason == "breakpoint" && info.location.range.line == line_f
+        @test info.t == 0.2 && info.tick == 19
+        e = only(l.value for l in info.frame.locals if l.name == "e")
+        # Two edits at the same statement pause: `g` is read before and after the paused
+        # statement, `aw` only after it.
+        res = debug_set_parameter!(run.ctx, "Ctl/g", 3.0)
+        @test res.ok && res.edit.position.at == "statement"
+        @test res.edit.position.tick == 19 && res.edit.position.hook >= 1
+        @test debug_set_parameter!(run.ctx, "Ctl/aw", 1.0).ok
+        # The rest of the paused partition sees the new values (frame, evaluate).
+        @test debug_evaluate(run.ctx, "g").value == 3.0
+        @test debug_evaluate(run.ctx, "aw").value == 1.0
+        # The breakpoint fires every tick; the second pause is one tick later.
+        debug_set_breakpoints!(run.ctx, [])
+        debug_step!(run.ctx, "statement")
+        stepped = _ed_next(run)
+        @test stepped.reason == "step" && stepped.location.range.line == line_f + 1
+        @test debug_evaluate(run.ctx, "g").value == 3.0
+        result = _ed_finish!(run)
+        @test result.status == "done"
+        parent = _ed_matrix(run.dir)
+        @test parent != normal
+        # The statements after the pause used the new `g` in the paused tick: the right row of
+        # t = 0.2 holds `y = g * e` with g = 3, and the rows before it are the normal run's.
+        ids = [String(sig.id) for sig in _ed_manifest(run.dir).signals]
+        col_y = 1 + findfirst(==("Ctl/y"), ids)
+        row = findlast(==(0.2), parent[:, 1])
+        @test parent[row, col_y] == 3.0 * e
+        before = findfirst(==(0.2), parent[:, 1])
+        @test parent[1:before, :] == normal[1:before, :]
+
+        manifest = _ed_manifest(run.dir)
+        @test [String(x.position.at) for x in manifest.debug.edits] == ["statement", "statement"]
+        replay, rdir = _ed_replay(m, run.dir)
+        @test replay.status == "done"
+        @test _ed_matrix(rdir) == parent                  # bitwise on the recorded arrays
+        @test _ed_bytes(rdir) == _ed_bytes(run.dir)
+        @test [x.position for x in _ed_manifest(rdir).debug.edits] ==
+              [x.position for x in manifest.debug.edits]
+        # A replay of the replay is the same again.
+        _, adir = _ed_replay(m, rdir; id = "replay2")
+        @test _ed_bytes(adir) == _ed_bytes(run.dir)
+
+        # Applying the same edits before the tick (what replays did before the edit kept its
+        # statement position) is a different run: the statements before the pause would have
+        # read the new `g`.
+        legacy = mktempdir()
+        doc = JSON3.read(read(joinpath(run.dir, "manifest.json"), String), Dict{String,Any})
+        for x in doc["debug"]["edits"]
+            delete!(x, "position")
+            x["\$comment"] = "at=statement"
+        end
+        open(io -> JSON3.write(io, doc), joinpath(legacy, "manifest.json"), "w")
+        @test all(x -> x.at === :step, BGSim.load_parent_run(legacy).edits)
+        _, ldir = _ed_replay(m, legacy; id = "legacy")
+        @test _ed_matrix(ldir) != parent
+    end
+
+    @testset "statement edits in two ticks and at two statements replay bit-identically" begin
+        m = _ED_STMT
+        line_z = _ed_line(_ED_STMT_CTL, "z += Ts")
+        run = _ed_spawn(m; breakpoints = [_ed_line_bp("bp1", line_z; hit = 7)])
+        info = _ed_next(run)
+        @test info.reason == "breakpoint" && info.tick == 6
+        @test debug_set_parameter!(run.ctx, "Ctl/g", 2.5).ok
+        debug_step!(run.ctx, "statement")
+        @test _ed_next(run).reason == "step"
+        debug_step!(run.ctx, "statement")
+        @test _ed_next(run).reason == "step"
+        @test debug_set_parameter!(run.ctx, "Ctl/umax", 1.2).ok
+        # A state edit at a statement pause of a later tick, then a parameter edit.
+        debug_set_breakpoints!(run.ctx, [_ed_line_bp("bp2", line_z; hit = 5)])
+        debug_continue!(run.ctx)
+        later = _ed_next(run)
+        @test later.reason == "breakpoint" && later.tick > info.tick
+        # The plant's differential state: alias elimination keeps `Ctl/x` (`Plant/s` and
+        # `Plant/x` are its aliases).
+        res = debug_set_state!(run.ctx, "Ctl/x", 0.1)
+        @test res.ok
+        res.ok || println("  setState(Ctl/x): ", res.diagnostics)
+        @test debug_set_parameter!(run.ctx, "Ctl/g", 4.0).ok
+        debug_set_breakpoints!(run.ctx, [])
+        _ed_finish!(run)
+        edits = _ed_manifest(run.dir).debug.edits
+        @test length(edits) == 4
+        @test all(x -> x.position.at == "statement", edits)
+        @test edits[1].position.hook != edits[2].position.hook
+        @test edits[1].position.tick == edits[2].position.tick != edits[3].position.tick
+        _, rdir = _ed_replay(m, run.dir)
+        @test _ed_bytes(rdir) == _ed_bytes(run.dir)
+        # A branch after the first tick's edits replays them at their statements.
+        bdir = mktempdir()
+        bctx = DebugCtx()
+        btask = Threads.@spawn branch_run(
+            run.dir, 0.15; ctx = bctx, flat = m.flat, run_dir = bdir, run_id = "branch",
+        )
+        timedwait(() -> is_paused(bctx) || istaskdone(btask), 240.0)
+        @test is_paused(bctx)
+        debug_continue!(bctx)
+        fetch(btask)
+        branch = _ed_matrix(bdir)
+        parent = _ed_matrix(run.dir)
+        n = findfirst(>(0.15), parent[:, 1]) - 1
+        @test branch[1:n, :] == parent[1:n, :]
+    end
+
+    @testset "edits at a time and an event pause still replay bit-identically" begin
+        m = _ED_STMT
+        run = _ed_spawn(m; pause_on_entry = true)
+        _ed_next(run)
+        debug_run_to!(run.ctx, 0.1234)
+        @test _ed_next(run).reason == "time"
+        res = debug_set_parameter!(run.ctx, "Ctl/g", 2.5)
+        @test res.ok && res.edit.position.at == "step"
+        _ed_finish!(run)
+        _, rdir = _ed_replay(m, run.dir)
+        @test _ed_bytes(rdir) == _ed_bytes(run.dir)
+
+        ev = Dict{String,Any}(
+            "id" => "ev", "enabled" => true, "kind" => "event",
+            "event" => Dict{String,Any}("path" => nothing),
+        )
+        run = _ed_spawn(m; breakpoints = [ev])
+        info = _ed_next(run)
+        @test info.reason == "event"
+        res = debug_set_parameter!(run.ctx, "Ctl/g", 3.5)
+        @test res.ok && res.edit.position.at == "step"
+        debug_set_breakpoints!(run.ctx, [])
+        _ed_finish!(run)
+        parent = _ed_bytes(run.dir)
+        @test parent != _ed_bytes(_ed_normal(m))
+        _, rdir = _ed_replay(m, run.dir)
+        @test _ed_bytes(rdir) == parent
+    end
+
+    @testset "debug-tour: aw = 1 at the line 30 pause, Replay equals the session" begin
+        m = _ed_model("debug-tour", "debug-tour.bgmodel.json")
+        bp = Dict{String,Any}(
+            "id" => "bp30", "enabled" => true, "kind" => "line",
+            "line" => Dict{String,Any}("ref" => "project:CartPID", "line" => 30, "path" => nothing),
+            "condition" => "abs(u) > umax",
+        )
+        run = _ed_spawn(m; breakpoints = [bp])
+        info = _ed_next(run)
+        @test info.reason == "breakpoint" && info.t == 0.5
+        @test debug_set_parameter!(run.ctx, "Ctrl/aw", 1.0).ok
+        debug_set_breakpoints!(run.ctx, [])
+        _ed_finish!(run)
+        parent = _ed_matrix(run.dir)
+        ids = [String(sig.id) for sig in _ed_manifest(run.dir).signals]
+        peak = maximum(parent[:, 1 + findfirst(==("Pos/y"), ids)])
+        # The fix from the first saturated tick on: the overshoot of the walkthrough's fixed
+        # run (1.044 m), and no limit-switch trip.
+        @test isapprox(peak, 1.044; atol = 1.0e-3)
+        println("  debug-tour statement-pause fix: peak Pos/y = ", peak)
+        _, rdir = _ed_replay(m, run.dir)
+        @test _ed_matrix(rdir) == parent
+        @test _ed_bytes(rdir) == _ed_bytes(run.dir)
     end
 
     @testset "an edit at a watch pause replays within the solver tolerances" begin

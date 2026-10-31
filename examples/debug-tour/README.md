@@ -80,6 +80,14 @@ press Enter while paused); **More step commands → Step event / Step solver ste
 a **Hit count** on the line breakpoint (for example 10 for the tenth saturated tick);
 and the **Break on** switches for solver failure (E901) and the event limit (W206).
 
+Fix it without rewinding: set `aw` to 1 in the live inspector while the run is paused
+on line 30 (step 3). The edit takes effect at that statement. The lines that already
+ran in this tick used `aw = 0`, and the rest of the tick uses `aw = 1`. **Step
+statement** therefore goes from line 31 into the anti-windup branch (line 32) in the
+same tick. Remove the breakpoint and **Continue**: the cart overshoots only to
+1.044 m, as after the Rewind fix. **Replay** applies the edit at the same statement of
+the same tick, so its result is bit-identical to the session.
+
 ## Checks
 
 `expected.json` checks the shipped (buggy) run through the real Julia worker

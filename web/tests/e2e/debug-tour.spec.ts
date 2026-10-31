@@ -15,10 +15,15 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
  *    event pause, the cart never reaches the switch.
  * 4. Replay equals the session bit for bit; Save parameters to model.
  *
+ * A second test makes the same fix at the line 30 statement pause itself: the edit takes effect at that
+ * statement (line 31 already runs the anti-windup branch in the paused tick), and Replay reproduces the
+ * session bit for bit, because the edit records its statement position.
+ *
  * Needs the real worker: `$env:BGSIM_E2E_PORT="8794"; $env:BGSIM_E2E_REAL="1"; npx playwright test tests/e2e/debug-tour.spec.ts`.
  */
 
-test.describe.configure({ timeout: 420_000 });
+// In order, one at a time: both tests drive debug sessions of the example on the one Julia worker.
+test.describe.configure({ mode: "default", timeout: 420_000 });
 
 let project = "";
 
@@ -245,4 +250,86 @@ test("debug-tour: event pause, conditional line breakpoint, steps, Rewind to her
   await page.getByRole("tab", { name: "Debug" }).click();
   await page.getByTestId("edits-save").click();
   await expect(page.getByTestId("edits-message")).toContainText("Saved 1 parameter");
+});
+
+test("debug-tour: the live fix at the line 30 statement pause, Replay equals the session", async ({
+  page,
+  request,
+}) => {
+  await waitForWorker(request);
+  project = `debug-tour-stmt-${Date.now()}-${test.info().workerIndex}`;
+  const created = await request.post("/api/projects", { data: { name: project, example: "debug-tour" } });
+  expect(created.status(), await created.text()).toBe(201);
+  await page.setViewportSize({ width: 1700, height: 1000 });
+  await page.goto(`/?project=${encodeURIComponent(project)}&model=debug-tour`);
+  await expect(page.getByTestId("run-button")).toBeEnabled({ timeout: 60_000 });
+
+  // The conditional line breakpoint: the first saturated tick.
+  await page.getByRole("tab", { name: "Code" }).click();
+  await page.getByTestId("code-source-select").selectOption("project:CartPID");
+  await expect(page.locator(".cm-content")).toContainText("the drive saturates");
+  await clickGutter(page, "the drive saturates");
+  const marker = page.locator('[data-testid="bp-marker"][data-line="30"]');
+  await expect(marker).toHaveCount(1);
+  await clickGutter(page, "the drive saturates", "right");
+  await expect(page.getByTestId("bp-popover")).toBeVisible();
+  await page.getByTestId("bp-condition").fill("abs(u) > umax");
+  await page.getByTestId("bp-apply").click();
+  await expect(page.getByTestId("bp-popover")).toHaveCount(0);
+
+  await page.getByTestId("debug-button").click();
+  await expect(STATUS(page)).toHaveAttribute("data-status", "paused", { timeout: 180_000 });
+  await expect(STATUS(page)).toContainText("Paused at t = 0.5000 s: CartPID line 30 (Ctrl)");
+  const session = await runId(page);
+
+  // The live fix at the statement pause.
+  await page.getByRole("tab", { name: "Diagram", exact: true }).click();
+  await page.locator('[data-testid="diagram-node"][data-node-name="Ctrl"]').click();
+  await expect(page.getByTestId("inspector-live-banner")).toBeVisible();
+  const aw = page.getByTestId("inspector-param-aw");
+  await expect(aw).toHaveAttribute("data-live", "true");
+  await aw.fill("1");
+  await aw.press("Enter");
+  await page.getByRole("tab", { name: "Debug" }).click();
+  await expect(page.getByTestId("edit-row")).toHaveCount(1);
+  await expect(page.getByTestId("edit-row").first()).toContainText("Ctrl/aw = 1");
+
+  // The edit takes effect at the paused statement: line 31 now enters the anti-windup branch (line 32).
+  await page.getByRole("tab", { name: "Code" }).click();
+  const paused = page.locator(".cm-line.cm-paused-line");
+  await page.keyboard.press("F10");
+  await expect(STATUS(page)).toContainText("CartPID line 31 (Ctrl)", { timeout: 30_000 });
+  await page.keyboard.press("F10");
+  await expect(STATUS(page)).toContainText("Paused at t = 0.5000 s: CartPID line 32 (Ctrl)", { timeout: 30_000 });
+  await expect(paused).toContainText("z -= Ts * err");
+
+  const put = page.waitForResponse((r) => r.url().includes("/breakpoints") && r.request().method() === "PUT");
+  await clickGutter(page, "the drive saturates");
+  await put;
+  await expect(marker).toHaveCount(0);
+
+  await page.getByRole("tab", { name: "Debug" }).click();
+  await page.getByTestId("debug-continue").click();
+  await expect(STATUS(page)).toHaveAttribute("data-status", "done", { timeout: 120_000 });
+  const fixed = await series(request, session, "Pos/y");
+  const tripped = await series(request, session, "Limit/tripped");
+  console.warn(`debug-tour statement-pause fix: peak ${maxOf(fixed.y).toFixed(4)} m, tripped ${maxOf(tripped.y)}`);
+  // The fix from the first saturated tick on: the same overshoot as the walkthrough's Rewind fix.
+  expect(Math.abs(maxOf(fixed.y) - 1.044)).toBeLessThan(0.001);
+  expect(maxOf(tripped.y)).toBe(0);
+
+  // Replay equals the session bit for bit (the edit was made at a statement pause).
+  const replay = page.getByTestId("edits-replay");
+  await expect(replay).toBeEnabled({ timeout: 20_000 });
+  await replay.click();
+  await expect.poll(() => runId(page), { timeout: 60_000 }).not.toBe(session);
+  await expect(STATUS(page)).toHaveAttribute("data-status", "done", { timeout: 120_000 });
+  const replayed = await series(request, await runId(page), "Pos/y");
+  expect(replayed.t.length).toBe(fixed.t.length);
+  let differing = 0;
+  for (let i = 0; i < fixed.t.length; i += 1) {
+    if (replayed.t[i] !== fixed.t[i] || replayed.y[i] !== fixed.y[i]) differing += 1;
+  }
+  console.warn(`debug-tour statement-pause replay vs session: ${fixed.t.length} samples, ${differing} differing`);
+  expect(differing).toBe(0);
 });

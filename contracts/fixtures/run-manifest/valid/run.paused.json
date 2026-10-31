@@ -61,7 +61,21 @@
         "t": 0.2,
         "kind": "parameter",
         "target": "Motor1/R",
-        "value": 2.5
+        "value": 2.5,
+        "position": {
+          "at": "step"
+        }
+      },
+      {
+        "t": 0.4123,
+        "kind": "parameter",
+        "target": "Motor1/J",
+        "value": 2.0e-5,
+        "position": {
+          "at": "statement",
+          "tick": 412,
+          "hook": 3
+        }
       }
     ],
     "pauses": [

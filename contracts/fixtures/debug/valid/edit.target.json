@@ -1,0 +1,9 @@
+{
+  "t": 0.002,
+  "kind": "state",
+  "target": "C3/q",
+  "value": 0.0001,
+  "position": {
+    "at": "target"
+  }
+}
