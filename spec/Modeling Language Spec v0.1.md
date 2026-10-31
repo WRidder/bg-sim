@@ -137,13 +137,35 @@ This table is the contract between the language, the simulator and the target bu
 | `ddt(x)` | Derivative operator | Equations | Bond graph integral causality uses it |
 | `int(x, x0)` | Integral with start value | Equations | Sugar for a new state with `ddt` |
 | `deadzone(x, a, b)`, `saturate(x, lo, hi)` | Library | All | Nonsmooth |
-| `delay(x, T)` | Transport delay | Equations | T constant; ring buffer sized `ceil(T / dt)`; fixed-step only |
+| `delay(x, T)` | Value of `x` from `T / Ts` executions ago | Discrete, stdlib blocks only | `T` constant, a whole number of ticks (E104); a ring buffer of `T / Ts` slots, zero until filled; see "Seeded noise and delay" |
+| `noise_normal(seed, k)`, `noise_uniform(seed, k)` | Sample `k` of a seeded stream | Discrete, stdlib blocks only | Integer `seed`, `k`; counter-based, bit-identical in simulation and exported C; see "Seeded noise and delay" |
 | `csv_value(table, k, t)` | Column `k` of a registered CSV table at time `t` | All, stdlib blocks only | Opaque registered function with derivatives up to order 3; used by `CsvSource` |
 | `previous(x)` | Value at last tick | Discrete | Breaks loops between discrete blocks |
 | `hold(x)` | Sampled value at tick | Discrete | Explicit zero-order sample of a continuous signal |
 | `t`, `Ts` | Time, clock period | `t` all, `Ts` discrete | Read only |
 
 Determinism note: simulation and the target build run the same Julia function implementations. With the same Julia version, package manifest and CPU target, fixed-step results repeat bit for bit. They can differ across CPU architectures (for example in FMA use), so reference results are generated on the target itself.
+
+### Seeded noise and delay
+
+These intrinsics are discrete code: they run once per tick of their block's clock, which is what makes them exactly reproducible. Simulation (`src/library/random.jl`) and the exported C runtime (`bg_intrinsics.c`) implement the same specification, operation for operation; the golden tests compare them bit for bit.
+
+**Noise is counter-based.** Sample `k` of stream `seed` is a pure function of the two integers, so a noise source keeps no generator state besides its tick counter, an ordinary held value. Nothing extra is reset, saved or restored, and any sample can be computed on its own.
+
+1. `seed` and `k` are integer-valued; a value that is not finite, not an integer or outside [-2^63, 2^63) gives NaN. Both become 64-bit two's-complement words `S` and `K`.
+2. Bits, by SplitMix64 (Steele, Lea and Flood 2014): with `mix(z)` = `z ^= z >> 30; z *= 0xBF58476D1CE4E5B9; z ^= z >> 27; z *= 0x94D049BB133111EB; z ^= z >> 31` (all modulo 2^64) and `G = 0x9E3779B97F4A7C15`: `key = mix(S + G)` and `bits = mix(key + (K + 1) G)`. So `key` is the first output of a SplitMix64 generator started at the seed, and `bits` is output `K` of one started at `key`.
+3. `noise_uniform(seed, k)` = `(2j + 1) 2^-53` with `j = bits >> 12`. It lies in (0, 1), never 0 or 1, and is computed exactly.
+4. `noise_normal(seed, k)` is Wichura's AS 241 (PPND16) inverse normal CDF of that uniform, with a relative accuracy of about 1e-16. Its largest magnitude is 8.21.
+
+**Why this transform.** Bit-identity between Julia and C rules out the platform `log`, `sin` and `cos`: they are not correctly rounded, so their last bit differs between libm implementations, and Box–Muller would differ there. AS 241 is a pair of rational polynomials. Its tail branch needs `log(r)` for `r` ≥ 2^-53 and `sqrt`. `sqrt` is correctly rounded under IEEE 754. The logarithm is a fixed polynomial of our own (`frexp`, then `2 atanh(s)` as an 11-term series, then `e ln2` in two parts), within 2 ulp. So every operation of the transform is exactly rounded and specified. The constants are hex-float literals that are identical in both languages. Neither Julia nor ISO C fuses `a*b + c` into an FMA; the C file disables contraction for clang and MSVC, and the export compiles with `-std=c99`. The transform is also constant-time, unlike the Ziggurat's rejection loop, and needs no tables. A uniform sum (Irwin–Hall) would be exact too but only approximately normal.
+
+**Seeding.** The stream is the block's `seed` parameter alone, so the same seed repeats the run, and an exported FMU or an exported subsystem draws exactly what simulation drew. Blocks with the same seed draw the same sequence: give each noise source its own seed. The instance path is deliberately not mixed in, so that renaming or re-scoping a block does not change its noise.
+
+**Sampling.** The `Noise` source draws on its own clock (`sample_time`, a structural constant). Tick `n` (at `t = n · sample_time`, `n` ≥ 1) draws sample `n - 1`, and the output `y = mean + std · z` holds between ticks. Before the first tick, `z = 0`, so `y = mean`. Uniform noise, PRBS and band-limited white noise blocks can be built on `noise_uniform` and `noise_normal` the same way.
+
+**`delay(x, T)` in discrete code** returns `x` from `T / Ts` executions of the call ago, and 0 until it has executed that often. `T` must fold to a constant that is a whole number of ticks; at most 10^6 ticks per call, E104 otherwise. Each call site (each element of a vector call, each unrolled loop iteration) owns a ring buffer of `T / Ts` slots in the model's discrete state. That state is zero at the start of a run, and in the FMU it is zeroed at instantiate and at `fmi2Reset`. `T = 0` is `x` itself. A call inside an `if` branch advances only when it runs. The ring is plain data movement, so an exported discrete delay is bit-exact.
+
+**Continuous transport delay** is the `TransportDelay` block, written with that intrinsic. It stores the input at every tick of `sample_period` and outputs the linear interpolation, at `t - delay_time`, between the two stored samples around it. Simulation and the exported code run the same buffer and the same interpolation, so the delayed signal matches within the tolerance of the continuous signal it samples. Against an ideal delay, the error is at most `sample_period² / 8 · max|u''|`, and it is exact for an input that is linear between ticks. `delay_time` must be a whole multiple of `sample_period`, at least one period. Until the line has filled, the output is `initial`, and the input at `t = 0` counts as `initial` because the first sample is taken at the first tick. The block works in variable-step simulation and in the fixed-step export alike. The export requires `dt` to divide `sample_period` (E104), as for every clock, and refuses more than 2^20 ring slots (8 MiB) per model (E110).
 
 ## Ports, connections and bond graph elements
 
@@ -241,11 +263,11 @@ Nonlinear variants (for example a C with a user-defined constitutive law) are ma
 | Chirp | output `y` | `f_start`, `f_end`, `duration` | v0.1 |
 | Time | output `y` | none | v0.1 |
 | Time table | output `y` | data table, interpolation (`hold`, `linear`) | v0.1 |
-| Noise | output `y` | `mean`, `std`, `seed`, sample `Ts` | v0.1 |
+| Noise | output `y` | `mean`, `std`, `seed`; clock `sample_time` (structural constant) | v0.1 |
 | Plot / scope sink | inputs `u[]` | none; marks signals for recording | v0.1 |
 | Recorder | inputs `u[]` | decimation | v0.1 |
 
-Noise is seeded and sampled on a fixed clock, so runs repeat bit for bit, in simulation and on the target.
+Noise is seeded and sampled on a fixed clock, so runs repeat bit for bit, in simulation and on the target (counter-based SplitMix64 and AS 241; see "Seeded noise and delay").
 
 **CSV input (`CsvSource`, `CsvSourceSampled`).** A project data file can drive a model. The block's output `y` is a `Vec{N}` holding the selected columns; `N` and the table identity are filled in by the compiler, so the language stays free of strings: the file settings are plain JSON entries of the node's `constants` (structural, like array sizes), never expressions.
 
@@ -280,7 +302,7 @@ The file has a header row (`name` or `name [unit]` per column) and numeric rows;
 | Backlash | `u`, `y` | width, initial output | v0.2 |
 | Relay with hysteresis | `u`, `y` | on/off thresholds, on/off values | v0.1 |
 | Lookup table 1D / 2D | `u` (or `u1`, `u2`), `y` | breakpoints, table, interpolation | v0.1 |
-| Transport delay | `u`, `y` | delay `T` (constant) | v0.1 |
+| Transport delay | `u`, `y` | `delay_time`, `sample_period` (constants), `initial`; stored per tick, linearly interpolated | v0.1 |
 | Switch | `u1`, `u2`, `ctrl`, `y` | threshold | v0.1 |
 | Min / max, abs, sign | `u[]`, `y` | none | v0.1 |
 | Math function | `u`, `y` | one whitelisted function | v0.1 |
@@ -296,6 +318,7 @@ Every discrete block takes a sample period `Ts`, and optionally an `offset`; the
 | Block | Ports | Key parameters | Release |
 | --- | --- | --- | --- |
 | Unit delay (z⁻¹) | `u`, `y` | initial value | v0.1 |
+| Integer delay (z⁻ᴺ) | `u`, `y` | `N` (constant), initial value; a ring buffer | v0.1 |
 | Zero-order hold | `u`, `y` | `Ts` | v0.1 |
 | Rate transition | `u`, `y` | input and output periods | v0.1 |
 | Discrete integrator | `u`, `y`, optional `reset` | method (forward, backward, trapezoidal), limits | v0.1 |
@@ -789,7 +812,7 @@ Every saved model and library block records the language version it was written 
 - Discrete scheduling: use ModelingToolkit clocks, or run our own scheduler around the continuous part? Needs a multi-rate prototype.
 - ~~Bit-exact results across CPU architectures~~ Decided: exported continuous results match simulation within tolerance (the C math library differs from Julia's in the last bit); discrete code, being plain arithmetic in the same operation order, is bit-exact (`plan/EXPORT_PLAN.md` D-EX14).
 - Matrix size limits in equations: is a cap needed to keep symbolic reduction fast?
-- Should `delay` be offered in variable-step simulation, or stay export-only?
+- ~~Should `delay` be offered in variable-step simulation, or stay export-only?~~ Decided (J-EX9): `delay` is a discrete intrinsic (a ring buffer per tick), and `TransportDelay` samples its input on its own clock and interpolates. Both run identically in variable-step simulation and in the fixed-step export.
 
 **Next steps**
 

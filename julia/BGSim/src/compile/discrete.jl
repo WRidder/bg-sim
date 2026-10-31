@@ -622,7 +622,145 @@ function _instance_clock(st::BlockState, expr, fallback::Union{Float64,Nothing})
     return fallback
 end
 
-function _collect_partition!(b::Builder, st::BlockState, ds, k::Int, index::Int)
+# ---------------------------------------------------------------------------------------
+# J-EX9: `delay(x, T)` rings
+# ---------------------------------------------------------------------------------------
+#
+# `delay(x, T)` in discrete code returns the value `x` had `T / Ts` executions of the call
+# ago (0.0 until the ring has filled). `T` must fold to a constant that is a whole number of
+# ticks of the partition's clock (E104 otherwise), at most `DELAY_MAX_TICKS`. Each call site
+# (each element of a lifted vector call, each unrolled loop iteration) owns one ring of
+# `k = T / Ts` slots in the model-wide ring storage: after qualification the call is rewritten
+# to `__delay_ring(x, id, off, k)` with its literal ring id (1-based, in collection order) and
+# slot offset, so the simulator (`DiscreteState.ring`) and the export (`m->ring`) lay the
+# rings out identically. `T = 0` is `x` itself. The ring advances only when the call runs,
+# so a `delay` inside an `if` branch counts its own executions, not ticks.
+
+"""The largest `delay` in ticks of the partition clock (J-EX9): 1e6 slots, 8 MB."""
+const DELAY_MAX_TICKS = 1_000_000
+
+"""    discrete_rings(parts) -> Vector{Int}
+
+The slot count of every `delay` ring of the partitions, indexed by ring id (J-EX9). The
+rings are laid out back to back in id order, so ring `id` starts at
+`sum(sizes[1:id-1])`."""
+function discrete_rings(parts)
+    found = Dict{Int,Int}()
+    visit(e) = begin
+        if e isa BGSim.Call
+            if e.fn.name === :__delay_ring
+                found[e.args[2].value::Int] = e.args[4].value::Int
+            end
+            foreach(visit, e.args)
+        elseif e isa BGSim.BinOp || e isa BGSim.Comparison
+            visit(e.lhs)
+            visit(e.rhs)
+        elseif e isa BGSim.UnOp
+            visit(e.operand)
+        elseif e isa BGSim.IfElse
+            visit(e.cond)
+            visit(e.then)
+            visit(e.otherwise)
+        elseif e isa BGSim.BoolOp
+            foreach(visit, e.operands)
+        end
+        nothing
+    end
+    stmt(s) = if s isa DiscreteAssign
+        visit(s.value)
+    elseif s isa DiscreteIf
+        for (c, body) in s.branches
+            c === nothing || visit(c)
+            foreach(stmt, body)
+        end
+    end
+    for p in parts
+        foreach(stmt, p.statements)
+    end
+    sizes = zeros(Int, maximum(keys(found); init = 0))
+    for (id, k) in found
+        sizes[id] = k
+    end
+    return sizes
+end
+
+function _assign_rings!(w::DiscreteWalk, period_ns::Int64, rings::Vector{Int})
+    for (i, s) in enumerate(w.stmts)
+        w.stmts[i] = _ring_stmt(w, s, period_ns, rings)
+    end
+    return nothing
+end
+
+function _ring_stmt(w::DiscreteWalk, s, period_ns::Int64, rings::Vector{Int})
+    if s isa DiscreteAssign
+        return DiscreteAssign(s.kind, s.target, _ring_expr(w, s.value, period_ns, rings),
+            s.op, s.range, s.group)
+    elseif s isa DiscreteIf
+        branches = Tuple{Union{Nothing,BGSim.Expr},Vector{Any}}[
+            (c === nothing ? nothing : _ring_expr(w, c, period_ns, rings),
+                Any[_ring_stmt(w, x, period_ns, rings) for x in body])
+            for (c, body) in s.branches
+        ]
+        return DiscreteIf(branches, s.range)
+    end
+    return s
+end
+
+function _ring_expr(w::DiscreteWalk, e, period_ns::Int64, rings::Vector{Int})
+    rec(x) = _ring_expr(w, x, period_ns, rings)
+    if e isa BGSim.Call
+        args = BGSim.Expr[rec(a) for a in e.args]
+        e.fn.name === :delay || return BGSim.Call(e.fn, args, e.range)
+        return _ring_call(w, e, args, period_ns, rings)
+    elseif e isa BGSim.BinOp
+        return BGSim.BinOp(e.op, rec(e.lhs), rec(e.rhs), e.range)
+    elseif e isa BGSim.UnOp
+        return BGSim.UnOp(e.op, rec(e.operand), e.range)
+    elseif e isa BGSim.IfElse
+        return BGSim.IfElse(rec(e.cond), rec(e.then), rec(e.otherwise), e.range)
+    elseif e isa BGSim.Comparison
+        return BGSim.Comparison(e.op, rec(e.lhs), rec(e.rhs), e.range)
+    elseif e isa BGSim.BoolOp
+        return BGSim.BoolOp(e.op, BGSim.Expr[rec(a) for a in e.operands], e.range)
+    end
+    return e
+end
+
+function _ring_call(w::DiscreteWalk, e::BGSim.Call, args, period_ns::Int64,
+    rings::Vector{Int})
+    length(args) == 2 || return e
+    x = args[1]
+    period_ns > 0 || return x   # an invalid clock is already E104 and never scheduled
+    T = BGSim.eval_const_number(args[2])
+    bad(msg, hint) = (_disc_report!(w; code = "E104", message = msg, range = e.range,
+        hint = hint); x)
+    T === nothing && return bad("the time of `delay` is not a constant",
+        "the delay (in seconds) must be a `@constants` expression")
+    ns = Float64(T) * 1.0e9
+    rounded = round(ns)
+    rounded >= 0 || return bad("the delay $(T) s is negative",
+        "a delay looks back in time; TransportDelay needs delay_time >= sample_period")
+    abs(ns - rounded) <= 1.0e-6 ||
+        return bad("the delay $(T) s is not a whole number of nanoseconds",
+            "use a delay that is a whole number of ticks of the clock")
+    tns = Int64(rounded)
+    tns % period_ns == 0 || return bad(
+        "the delay $(T) s is not a whole number of ticks of the $(period_ns * 1.0e-9) s clock",
+        "use a delay that is a multiple of the sample period")
+    k = Int(tns ÷ period_ns)
+    k == 0 && return x
+    k <= DELAY_MAX_TICKS || return bad(
+        "the delay $(T) s is $(k) ticks, more than the $(DELAY_MAX_TICKS) a ring may hold",
+        "use a longer sample period")
+    off = sum(rings; init = 0)
+    push!(rings, k)
+    r = e.range
+    return BGSim.Call(BGSim.Name(:__delay_ring, e.fn.range),
+        BGSim.Expr[x, BGSim.Lit(length(rings), r), BGSim.Lit(off, r), BGSim.Lit(k, r)], r)
+end
+
+function _collect_partition!(b::Builder, st::BlockState, ds, k::Int, index::Int,
+    rings::Vector{Int} = Int[])
     period = _instance_clock(st, ds.period, BGSim.discrete_period(ds))
     period === nothing && return nothing
     offset = ds.offset === nothing ? 0.0 :
@@ -644,6 +782,7 @@ function _collect_partition!(b::Builder, st::BlockState, ds, k::Int, index::Int)
     # 0.001 (and 0.005 for an instance that overrode `sample_period`).
     w.locals[:Ts] = _qscalar(BGSim.Lit(period, BGSim.source_range(ds)))
     _disc_body!(w, ds.body)
+    _assign_rings!(w, period_ns, rings)
 
     origin = Flat.Origin(; path = st.path, block = st.ref, node = st.node,
         range = BGSim.source_range(ds), kind = :block)
@@ -679,9 +818,10 @@ end
 
 function _collect_discrete!(b::Builder)
     raw = Any[]
+    rings = Int[]   # J-EX9: the size of every `delay` ring of the model, in id order
     for st in b.states
         for (k, ds) in enumerate(BGSim.discrete_scopes(st.pb))
-            part = _collect_partition!(b, st, ds, k, length(raw) + 1)
+            part = _collect_partition!(b, st, ds, k, length(raw) + 1, rings)
             part === nothing || push!(raw, part)
         end
     end
@@ -1031,7 +1171,17 @@ function _step_call(
         # F5.1: the CSV source's sampled variant; the table id and column are literals.
         length(args) == 3 || throw(LowerError("`csv_value` takes 3 arguments", nothing))
         return Expr(:call, GlobalRef(BGSim, :bg_csv), args[1], args[2], 0, args[3])
-    elseif fn === :delay || fn === :interp1 || fn === :interp2 || fn === :noise_normal
+    elseif fn === :noise_normal || fn === :noise_uniform
+        # J-EX9: counter-based draws, pure functions of (seed, k) (src/library/random.jl).
+        length(args) == 2 || throw(LowerError("`$fn` takes two arguments", nothing))
+        f = fn === :noise_normal ? :bg_noise_normal : :bg_noise_uniform
+        return Expr(:call, GlobalRef(BGSim, f), args...)
+    elseif fn === :__delay_ring
+        # J-EX9: `delay(x, T)` after `_assign_rings!`: (x, ring id, slot offset, slots).
+        x, id, off, k = args
+        return Expr(:call, GlobalRef(BGSim, :bg_delay_ring!), _fld(:dstate, :ring),
+            _fld(:dstate, :ring_pos), id, off, k, x)
+    elseif fn === :delay || fn === :interp1 || fn === :interp2
         throw(LowerError(
             "`$fn` is an intrinsic that the discrete scheduler does not lower (J2.7b)", nothing
         ))

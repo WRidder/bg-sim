@@ -70,7 +70,13 @@ mutable struct DiscreteState
     values::Vector{Float64}
     prev::Vector{Float64}
     prev_t::Float64
+    # J-EX9: the slots of every `delay` ring, back to back, and each ring's write position
+    # (0-based); zero at the start of a run (`Compile.discrete_rings`).
+    ring::Vector{Float64}
+    ring_pos::Vector{Int}
 end
+
+DiscreteState(values, prev, prev_t) = DiscreteState(values, prev, prev_t, Float64[], Int[])
 
 mutable struct DiscreteValues
     values::Vector{Float64}
@@ -107,6 +113,7 @@ struct DiscreteSchedule
     tick_times::Vector{Float64}
     due::Vector{Vector{Int}}
     base_ns::Int64
+    ring_sizes::Vector{Int}   # J-EX9: slots per `delay` ring, by ring id
 end
 
 """    discrete_schedule(flat; t_start = 0.0, t_end = 1.0) -> DiscreteSchedule
@@ -182,7 +189,7 @@ function discrete_schedule(
     end
     return DiscreteSchedule(
         scheduled, held_ids, held_index, input_ids, input_index, param_ids,
-        param_index, tick_ns, tick_times, due, base,
+        param_index, tick_ns, tick_times, due, base, Compile.discrete_rings(parts),
     )
 end
 
@@ -272,7 +279,9 @@ function prepare_discrete!(
         push!(held_symbols, sym)
     end
     values = Float64[Float64(getp(integ, sym)(integ)) for sym in held_symbols]
-    state = DiscreteState(copy(values), copy(values), t_start)
+    rs = schedule.ring_sizes
+    state = DiscreteState(copy(values), copy(values), t_start, zeros(sum(rs; init = 0)),
+        zeros(Int, length(rs)))
     inputs = DiscreteValues(zeros(length(schedule.input_ids)), zeros(length(schedule.input_ids)))
     params = zeros(length(schedule.param_ids))
     setter = isempty(held_symbols) ? nothing : setp(integ, held_symbols)

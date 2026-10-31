@@ -16,8 +16,9 @@ const INTRINSIC_DESCRIPTIONS = Dict{Symbol,String}(
     :interp1 => "Piecewise-linear 1-D lookup table; lowered to an opaque function.",
     :interp2 => "Bilinear 2-D lookup table; lowered to an opaque function.",
     :csv_value => "Column of a project CSV file at time t (value of the registered data table, F5.1); lowered to an opaque function with registered time derivatives.",
-    :noise_normal => "Seeded normal noise sample on the discrete clock; lowered to an opaque function.",
-    :delay => "Transport delay by a constant time; lowered to an opaque function with a history buffer (M2, experimental).",
+    :noise_normal => "Standard normal sample k of the stream seed (counter-based SplitMix64 + AS 241, bit-identical in simulation and exported C; J-EX9).",
+    :noise_uniform => "Uniform sample k in (0, 1) of the stream seed (the draw noise_normal transforms; J-EX9).",
+    :delay => "Delay of the discrete code by T seconds, a whole number of ticks: a ring buffer, zero before it has filled (J-EX9).",
 )
 
 """

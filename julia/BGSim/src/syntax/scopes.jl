@@ -1673,13 +1673,13 @@ function _check_call!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
         return REAL
     elseif name === :interp1 || name === :interp2 || name === :csv_value
         return REAL
-    elseif name === :noise_normal
+    elseif name === :noise_normal || name === :noise_uniform
         for (i, t) in enumerate(st)
             if t.kind !== :Int
                 _report!(
                     ck,
                     "E004",
-                    "`noise_normal` needs integer `seed, k` arguments, got `$(type_name(t))`",
+                    "`$name` needs integer `seed, k` arguments, got `$(type_name(t))`",
                     e.args[i];
                 )
                 return nothing

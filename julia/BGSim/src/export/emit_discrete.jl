@@ -47,6 +47,11 @@ function dval(ex, param::Dict{Int,String})
         return "((($(dval(ex.args[1], param))) != 0.0 || ($(dval(ex.args[2], param))) != 0.0) ? 1.0 : 0.0)"
     elseif h === :call
         f = ex.args[1]
+        if f isa GlobalRef && f.name === :bg_delay_ring!
+            # J-EX9: (ring, ring_pos, id, off, k, x); ring `id` (1-based) at slot `off`.
+            _, _, id, off, k, x = ex.args[2:end]
+            return "bg_delay_ring(m->ring + $(off), &m->ring_pos[$(id - 1)], $(k), $(dval(x, param)))"
+        end
         a = String[dval(y, param) for y in ex.args[2:end]]
         if f isa GlobalRef
             n = f.name
@@ -56,6 +61,9 @@ function dval(ex, param::Dict{Int,String})
             n === :__clamp && length(a) == 2 && return "bg_clamp($(a[1]), -($(a[2])), $(a[2]))"
             n === :__deadzone && length(a) == 2 && return "bg_deadzone($(a[1]), -($(a[2])), $(a[2]))"
             haskey(_DISC_HELPERS, n) && return "$(_DISC_HELPERS[n])(" * join(a, ", ") * ")"
+            # J-EX9: the counter-based draws, bit-identical twins in bg_intrinsics.c.
+            f.mod === BGSim && n in (:bg_noise_normal, :bg_noise_uniform) &&
+                return "$(n)(" * join(a, ", ") * ")"
             if f.mod === Base
                 n === :abs && return "fabs($(a[1]))"
                 n === :min && return "bg_min($(a[1]), $(a[2]))"

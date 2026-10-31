@@ -95,6 +95,12 @@ int main(void) {
             if (!read_n(buf_a, 2 * n) || !read_n(buf_b, n * n)) return 2;
             out[0] = bg_interp2(a[1], a[2], buf_a, buf_b, n);
             put_n(out, 1);
+        } else if (strcmp(name, "bg_noise_uniform") == 0 && read_n(a, 2)) {
+            out[0] = bg_noise_uniform(a[0], a[1]);
+            put_n(out, 1);
+        } else if (strcmp(name, "bg_noise_normal") == 0 && read_n(a, 2)) {
+            out[0] = bg_noise_normal(a[0], a[1]);
+            put_n(out, 1);
         } else {
             fprintf(stderr, "bad input at `%s`\n", name);
             return 2;

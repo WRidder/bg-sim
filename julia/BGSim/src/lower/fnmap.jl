@@ -27,7 +27,8 @@
 # * `interp1`/`interp2` are **opaque registered functions** (plan D12): the numeric
 #   implementations live below, `Symbolics.@register_symbolic` makes the lowering emit one
 #   `bg_interp1(...)` term instead of an unrolled table search, and the generated RHS calls
-#   the numeric method at run time. `delay` and `noise_normal` still raise a `LowerError`
+#   the numeric method at run time. `delay`, `noise_normal` and `noise_uniform` are discrete-only
+#   (J-EX9, `src/compile/discrete.jl`) and raise a `LowerError` here
 #   (see `lower_call`).
 # * J-MB3 adds the screw algebra: the `bg_*` functions below are the scalar interface to
 #   `src/mech/` for the branchy pieces, and `lower_mech` expands the rest into plain
@@ -899,8 +900,8 @@ function lower_call(fn::Symbol, args, ctx::LowerCtx, node)
         length(values) == 3 || return _lower_error("`csv_value` takes 3 arguments", ctx)
         return bg_csv(values[1], values[2], 0, values[3])
     end
-    fn in (:delay, :noise_normal) && return _lower_error(
-        "`$fn` is an intrinsic that this build does not lower yet", ctx
+    fn in (:delay, :noise_normal, :noise_uniform) && return _lower_error(
+        "`$fn` is an intrinsic of discrete code (`@discrete`), not of equations", ctx
     )
     return _lower_error("function `$fn` cannot be lowered", ctx)
 end

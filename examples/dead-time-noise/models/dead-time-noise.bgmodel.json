@@ -1,0 +1,394 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "dead-time-noise",
+  "$comment": "J-EX9 example: a first-order process with dead time (K = 1, tau = 1 s, 0.2 s TransportDelay) under a 10 ms discrete PI (Kp = 2, Ti = 1 s, +-5 limits) whose command reaches the process through a 2-sample IntegerDelay (communication delay). The measurement adds seeded normal noise (std 0.02, seed 42, 1 ms clock), the counter-based stream that the exported FMU reproduces bit for bit. The setpoint steps to 1 at 0.5 s; the process cannot respond before 0.5 + 0.02 + 0.2 = 0.72 s.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "SP",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.5",
+          "initial": "0.0",
+          "final": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n2",
+        "name": "Err",
+        "block": {
+          "inline": {
+            "source": "@block ErrorSum begin\n    @inputs begin\n        u1::Real\n        u2::Real\n    end\n    @outputs y::Real\n    @equations y ~ u1 - u2\nend\n"
+          }
+        },
+        "position": {
+          "x": 220,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n3",
+        "name": "PI",
+        "block": {
+          "ref": "stdlib:discrete/DiscretePID"
+        },
+        "position": {
+          "x": 400,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "method": "1",
+          "Kp": "2.0",
+          "Ti": "1.0",
+          "Td": "0.0",
+          "lower": "-5.0",
+          "upper": "5.0"
+        },
+        "constants": {
+          "sample_period": 0.01
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n4",
+        "name": "Comm",
+        "block": {
+          "ref": "stdlib:discrete/IntegerDelay"
+        },
+        "position": {
+          "x": 580,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "initial": "0.0"
+        },
+        "constants": {
+          "N": 2,
+          "sample_period": 0.01
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n5",
+        "name": "DeadTime",
+        "block": {
+          "ref": "stdlib:continuous/TransportDelay"
+        },
+        "position": {
+          "x": 760,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "initial": "0.0"
+        },
+        "constants": {
+          "delay_time": 0.2,
+          "sample_period": 0.001
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n6",
+        "name": "Plant",
+        "block": {
+          "ref": "stdlib:continuous/FirstOrder"
+        },
+        "position": {
+          "x": 940,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0",
+          "tau": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n7",
+        "name": "Noise",
+        "block": {
+          "ref": "stdlib:sources/Noise"
+        },
+        "position": {
+          "x": 940,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "mean": "0.0",
+          "std": "0.02",
+          "seed": "42"
+        },
+        "constants": {
+          "sample_time": 0.001
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n8",
+        "name": "Meas",
+        "block": {
+          "inline": {
+            "source": "@block SensorSum begin\n    @inputs begin\n        u1::Real\n        u2::Real\n    end\n    @outputs y::Real\n    @equations y ~ u1 + u2\nend\n"
+          }
+        },
+        "position": {
+          "x": 1120,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n9",
+        "name": "PV",
+        "block": {
+          "ref": "stdlib:converters/ExportOutput"
+        },
+        "position": {
+          "x": 1120,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "n1",
+          "port": "y"
+        },
+        "to": {
+          "node": "n2",
+          "port": "u1"
+        },
+        "route": [],
+        "label": "setpoint step at 0.5 s"
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": {
+          "node": "n8",
+          "port": "y"
+        },
+        "to": {
+          "node": "n2",
+          "port": "u2"
+        },
+        "route": [],
+        "label": "noisy measurement"
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": {
+          "node": "n2",
+          "port": "y"
+        },
+        "to": {
+          "node": "n3",
+          "port": "u"
+        },
+        "route": []
+      },
+      {
+        "id": "s04",
+        "kind": "signal",
+        "from": {
+          "node": "n3",
+          "port": "y"
+        },
+        "to": {
+          "node": "n4",
+          "port": "u"
+        },
+        "route": [],
+        "label": "10 ms PI"
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": {
+          "node": "n4",
+          "port": "y"
+        },
+        "to": {
+          "node": "n5",
+          "port": "u"
+        },
+        "route": [],
+        "label": "2-sample communication delay"
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": {
+          "node": "n5",
+          "port": "y"
+        },
+        "to": {
+          "node": "n6",
+          "port": "u"
+        },
+        "route": [],
+        "label": "0.2 s dead time"
+      },
+      {
+        "id": "s07",
+        "kind": "signal",
+        "from": {
+          "node": "n6",
+          "port": "y"
+        },
+        "to": {
+          "node": "n8",
+          "port": "u1"
+        },
+        "route": []
+      },
+      {
+        "id": "s08",
+        "kind": "signal",
+        "from": {
+          "node": "n7",
+          "port": "y"
+        },
+        "to": {
+          "node": "n8",
+          "port": "u2"
+        },
+        "route": []
+      },
+      {
+        "id": "s09",
+        "kind": "signal",
+        "from": {
+          "node": "n6",
+          "port": "y"
+        },
+        "to": {
+          "node": "n9",
+          "port": "u"
+        },
+        "route": []
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0,
+    "t_end": 6,
+    "solver": "auto",
+    "reltol": 1.0e-8,
+    "abstol": 1.0e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 6001
+    },
+    "event_limit": 100000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Process value, measurement and setpoint",
+      "signals": [
+        "Plant/y",
+        "Meas/y",
+        "SP/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "PI command and the delayed command at the process",
+      "signals": [
+        "PI/y",
+        "Comm/y",
+        "DeadTime/y"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Measurement noise",
+      "signals": [
+        "Noise/y"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

@@ -113,6 +113,7 @@ const LANG_ROW_OVERRIDES = Dict{Symbol,NamedTuple}(
         rettype = "Real",
     ),
     :noise_normal => (nargs = 2, argtypes = ["Int", "Int"], rettype = "Real"),
+    :noise_uniform => (nargs = 2, argtypes = ["Int", "Int"], rettype = "Real"),
     :csv_value => (nargs = 3, argtypes = ["Int", "Int", "Real"], rettype = "Real"),
     :reinit => (nargs = 2, argtypes = ["Real", "Real"], rettype = "Real", decl = "variables"),
 )
@@ -1354,11 +1355,11 @@ end
             :log10, :sqrt, :abs, :sign, :min, :max, :clamp, :floor, :ceil, :round, :mod,
             :rem, :hypot, :dot, :norm, :cross, :transpose, :ddt, :int, :deadzone,
             :saturate, :delay, :previous, :hold, :reinit, :interp1, :interp2,
-            :noise_normal, :csv_value,
+            :noise_normal, :noise_uniform, :csv_value,
         ])
         @test Set(keys(BGSim.FUNCTION_LOOKUP)) == expected
-        @test length(BGSim.FUNCTION_RULES) == 24
-        @test length(BGSim.INTRINSIC_RULES) == 5
+        @test length(BGSim.FUNCTION_RULES) == 25
+        @test length(BGSim.INTRINSIC_RULES) == 6
 
         for rule in BGSim.FUNCTION_RULES
             name = rule.names[1]
@@ -1425,8 +1426,8 @@ end
 
         # The D12 intrinsics table is the same single source as FUNCTION_RULES.
         names = [r.name for r in BGSim.INTRINSIC_RULES]
-        @test names == [:interp1, :interp2, :noise_normal, :csv_value, :delay]
-        @test [r.stdlib_only for r in BGSim.INTRINSIC_RULES] == [false, false, true, true, true]
+        @test names == [:interp1, :interp2, :noise_normal, :noise_uniform, :csv_value, :delay]
+        @test [r.stdlib_only for r in BGSim.INTRINSIC_RULES] == [false, false, true, true, true, true]
         for r in BGSim.INTRINSIC_RULES
             fr = BGSim.function_rule(r.name)
             @test fr !== nothing

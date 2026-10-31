@@ -1,0 +1,51 @@
+{
+  "project": "dead-time-noise",
+  "description": "J-EX9 example. A first-order process (K = 1, tau = 1 s) behind a 0.2 s TransportDelay, under a 10 ms DiscretePI (Kp = 2, Ti = 1 s, +-5) whose command passes a 2-sample IntegerDelay; the measurement adds seeded normal noise (std 0.02, seed 42, 1 ms). The setpoint steps to 1 at 0.5 s, so the step reaches the process at 0.72 s. Before that the process only sees the controller's reaction to the noise.",
+  "models": {
+    "dead-time-noise": {
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "Plant/y",
+          "from_t": 0.0,
+          "to_t": 0.715,
+          "value": 0.01,
+          "note": "dead time: before 0.5 + 0.02 + 0.2 s the process only follows the PI's reaction to the measurement noise (measured max 0.0027)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Plant/y",
+          "from_t": 0.725,
+          "to_t": 6.0,
+          "value": 0.005,
+          "note": "the delayed step has arrived: 0.0082 at 0.725 s, 0.16 at 0.8 s"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Plant/y",
+          "t": 6.0,
+          "value": 1.0,
+          "rtol": 0.02,
+          "note": "the PI settles the process at the setpoint despite the noise (measured 0.9943; 1.0061 at 2 s, peak 1.0134)"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "Meas/y",
+          "signal_b": "Plant/y",
+          "from_t": 0.0,
+          "to_t": 6.0,
+          "value": 0.021,
+          "note": "the measurement noise has the configured std 0.02 (measured RMS 0.0200008 over 6000 samples)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Noise/y",
+          "t": 1.0005,
+          "value": -0.025822999540779032,
+          "abs": 1e-15,
+          "note": "bit-exact noise: tick 1000 draws sample 999 of stream 42, std * noise_normal(42, 999) (spec 'Seeded noise and delay'); the exported FMU draws the same double"
+        }
+      ]
+    }
+  }
+}
