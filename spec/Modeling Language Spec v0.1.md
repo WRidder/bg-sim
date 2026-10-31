@@ -200,6 +200,8 @@ Power ports carry a domain tag so connections are checked and units come for fre
 
 A block may mix `Generic` ports with concrete ones (the `RS` element: a Generic resistive port and a `Thermal` heat port). Such a block is Generic for adoption: the `effort`/`flow` pseudo-units of its declarations follow the island of its Generic ports, and its concrete ports keep their own domain.
 
+A Generic block adopts one domain for all its Generic ports, so it also passes a domain between the islands it joins. An island that has only Generic ports (a 1-junction between an `Se` and a `PowerSensor`) takes the concrete domain of the islands linked to it through Generic blocks, when they have exactly one. When the linked islands have two different concrete domains, the block that joins them is `E102`.
+
 A capacitor-type element, as it would appear in the standard library:
 
 ```julia

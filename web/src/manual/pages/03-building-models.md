@@ -44,6 +44,8 @@ The canvas toolbar has **Show legend** (domain colours and port glyphs, bottom l
 
 Colour is never the only cue: hover a port to see its domain letter.
 
+A Generic port takes the domain of the bonds around it. A Generic two-port such as `PowerSensor` passes a domain through: a bond graph island that has only Generic ports takes the domain of the island on the other side of the sensor. When the two sides already have different domains, the block reports E102.
+
 ## Subsystems
 
 - **Create:** select blocks and click **⧉ Subsystem** in the canvas toolbar. The selected blocks and the connections between them move into the subsystem.
