@@ -306,7 +306,7 @@ def scene() -> str:
         <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
       </visual>
       <visual name="disk2_mark">
-        <pose>0.012 0 {R_DISK - 0.015} 0 0 0</pose>
+        <pose>-0.012 0 {R_DISK - 0.015} 0 0 0</pose>
         <geometry><box><size>0.006 0.012 0.03</size></box></geometry>
         <material><diffuse>0.95 0.95 0.95 1</diffuse></material>
       </visual>

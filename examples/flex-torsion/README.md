@@ -17,7 +17,7 @@ The disks are welded to the shaft by stiff compliant joints (a `Revolute3D` whos
 | `link:disk2` pose | `PDisk2/g` |
 | `visual:shaft_rod` deformation | torsion, clamped-free, beam axis `+z`, length 1 m, signals `Shaft/eta_t[1..3]` |
 
-The shaft is drawn with a 12 mm radius (the real shaft is 6 mm) so its twist stripes are easy to see. The largest twist is about 0.27 rad (15°).
+The shaft is drawn with a 12 mm radius (the real shaft is 6 mm) so its twist stripes are easy to see. The largest twist is about 0.27 rad (15°, at t = 0.16 s); at the ×10 deformation exaggeration the stripes wind visibly around the shaft.
 
 ## Numbers
 
