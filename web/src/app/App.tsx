@@ -64,7 +64,13 @@ export function App() {
   useEffect(() => {
     const showCenter = (event: Event): void => {
       const tab = (event as CustomEvent<unknown>).detail;
-      if (tab === "diagram" || tab === "code" || tab === "docs" || tab === "parameters") {
+      if (
+        tab === "diagram" ||
+        tab === "code" ||
+        tab === "docs" ||
+        tab === "parameters" ||
+        tab === "dashboard"
+      ) {
         setCenterTab(tab);
       }
     };

@@ -30,6 +30,7 @@ import type {
   ModelAnnotation,
   ModelConnection,
   ModelConstantValue,
+  ModelDashboard,
   ModelDiagram,
   ModelGlobalParameter,
   ModelNode,
@@ -227,6 +228,14 @@ export interface DocumentActions {
 
   /** Replace the model's viewer bindings (plan 7.6 binding editor); one undo entry, `[]` removes the field. */
   setBindings: (bindings: readonly Binding[]) => void;
+  /**
+   * Edit the dashboard (DASHBOARD_PLAN.md) in one undo entry; an empty dashboard is removed.
+   * `coalesce` merges a gesture (a slider drag) into one entry, like node moves.
+   */
+  editDashboard: (
+    recipe: (dashboard: ModelDashboard) => void,
+    options?: { coalesce?: string },
+  ) => void;
 
   connect: (a: PortDescriptor, b: PortDescriptor) => ConnectResult;
 
@@ -1249,6 +1258,18 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
           probe.panels = copy;
         }
       });
+    },
+
+    editDashboard: (recipe, options = {}) => {
+      commit((draft) => {
+        const dashboard = draft.dashboard ?? { cards: [] };
+        recipe(dashboard);
+        if (dashboard.cards.length === 0 && dashboard.autoRerun !== true) {
+          delete draft.dashboard;
+        } else {
+          draft.dashboard = dashboard;
+        }
+      }, options);
     },
 
     setBindings: (bindings) => {

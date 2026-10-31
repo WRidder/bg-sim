@@ -29,6 +29,8 @@ import type {
   RunStatus,
   RunStats,
 } from "../contracts/run-manifest";
+import { dashboardRunInputs } from "../dashboard/model";
+import { useCatalogStore } from "../library/catalogStore";
 import { useDocumentStore } from "../state/documentStore";
 import {
   cancelRun,
@@ -147,6 +149,8 @@ export interface RunStoreState {
   autoLayout: AutoPlotLayout;
   /** Signals of visible oscilloscope probes, unioned into /data and the live tail. */
   scopeSignals: string[];
+  /** Signals of the open dashboard's display cards, unioned like the probe signals. */
+  dashboardSignals: string[];
 
   /** The shared x window; null means "show all" (raw, px=0). */
   view: SeriesWindow | null;
@@ -188,6 +192,7 @@ export interface RunStoreState {
   setAutoSignals: (signalIds: readonly string[]) => void;
   setAutoLayout: (layout: AutoPlotLayout) => void;
   setScopeSignals: (signalIds: readonly string[]) => void;
+  setDashboardSignals: (signalIds: readonly string[]) => void;
   setView: (view: SeriesWindow | null, px?: number) => void;
   /** Return to the live tail after a zoom (plan 7.5: autoscroll unless zoomed). */
   followLive: () => void;
@@ -239,10 +244,16 @@ export function activeSignalIds(
   panels: readonly PlotPanelState[],
   autoSignals: readonly string[],
   scopeSignals: readonly string[] = [],
+  dashboardSignals: readonly string[] = [],
 ): string[] {
   const seen = new Set<string>();
   const ids: string[] = [];
-  for (const id of [...plottedSignalIds(panels), ...autoSignals, ...scopeSignals]) {
+  for (const id of [
+    ...plottedSignalIds(panels),
+    ...autoSignals,
+    ...scopeSignals,
+    ...dashboardSignals,
+  ]) {
     if (!seen.has(id)) {
       seen.add(id);
       ids.push(id);
@@ -458,7 +469,7 @@ function syncSubscription(force: boolean): void {
   const available = new Set(
     (state.manifest?.signals ?? []).map((signal) => signal.id),
   );
-  const ids = activeSignalIds(state.panels, state.autoSignals, state.scopeSignals).filter((id) =>
+  const ids = activeSignalIds(state.panels, state.autoSignals, state.scopeSignals, state.dashboardSignals).filter((id) =>
     available.has(id),
   );
   const key = ids.join(",");
@@ -552,6 +563,7 @@ function ingestManifest(manifest: RunManifest): void {
   let panels = state.panels;
   let autoSignals = state.autoSignals;
   let scopeSignals = state.scopeSignals;
+  let dashboardSignals = state.dashboardSignals;
   if (manifest.signals.length > 0) {
     const available = new Set(manifest.signals.map((signal) => signal.id));
     panels = panels.map((panel) => ({
@@ -560,6 +572,7 @@ function ingestManifest(manifest: RunManifest): void {
     }));
     autoSignals = autoSignals.filter((id) => available.has(id));
     scopeSignals = scopeSignals.filter((id) => available.has(id));
+    dashboardSignals = dashboardSignals.filter((id) => available.has(id));
   }
   const activePanelId = panels.some((panel) => panel.id === state.activePanelId)
     ? state.activePanelId
@@ -571,6 +584,7 @@ function ingestManifest(manifest: RunManifest): void {
     activePanelId,
     autoSignals,
     scopeSignals,
+    dashboardSignals,
     stats: manifest.stats ?? state.stats,
   });
 
@@ -809,6 +823,32 @@ function openSocket(runId: string): void {
 
 const firstPanels = initialPanels();
 
+/** Replace one of the extra signal lists (probe or dashboard signals) and refresh the data. */
+function setExtraSignals(
+  key: "scopeSignals" | "dashboardSignals",
+  signalIds: readonly string[],
+): void {
+  const state = useRunStore.getState();
+  const available = new Set((state.manifest?.signals ?? []).map((signal) => signal.id));
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const id of signalIds) {
+    if (available.has(id) && !seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  const current = state[key];
+  if (ids.length === current.length && ids.every((id, index) => id === current[index])) {
+    return;
+  }
+  useRunStore.setState({ [key]: ids });
+  const updated = useRunStore.getState();
+  updated.syncSocketSubscription();
+  void updated.ensureData();
+  void updated.ensureCompareData();
+}
+
 export const useRunStore = create<RunStoreState>()((set, get) => ({
   runId: null,
   manifest: null,
@@ -826,6 +866,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
   autoSignals: [],
   autoLayout: "single",
   scopeSignals: [],
+  dashboardSignals: [],
 
   view: null,
   pixelWidth: 0,
@@ -850,6 +891,19 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     const { project, doc } = useDocumentStore.getState();
     if (project === null || doc === null) {
       set({ status: "failed", error: "Open a model before running it." });
+      return;
+    }
+    // DASHBOARD_PLAN.md: the dashboard's input cards and schedule tables become the run's
+    // parameter overrides and schedule; a dashboard problem refuses the run with its message.
+    const inputs = options?.followRunId === undefined
+      ? dashboardRunInputs(doc, useCatalogStore.getState().index)
+      : null;
+    if (inputs !== null && inputs.issues.length > 0) {
+      set({
+        status: "failed",
+        error: `Dashboard: ${inputs.issues[0]!.message}`,
+        stopping: false,
+      });
       return;
     }
 
@@ -884,7 +938,8 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
 
     try {
       const runId =
-        options?.followRunId ?? (await createRun(project, doc, undefined, options?.debug));
+        options?.followRunId ??
+        (await createRun(project, doc, undefined, options?.debug, inputs ?? undefined));
       if (get().status !== "starting") {
         // The model changed while the POST was in flight: do not leave an
         // untracked run growing in the background.
@@ -1165,29 +1220,11 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
   setAutoLayout: (layout) => set({ autoLayout: layout }),
 
   setScopeSignals: (signalIds) => {
-    const state = get();
-    const available = new Set(
-      (state.manifest?.signals ?? []).map((signal) => signal.id),
-    );
-    const seen = new Set<string>();
-    const ids: string[] = [];
-    for (const id of signalIds) {
-      if (available.has(id) && !seen.has(id)) {
-        seen.add(id);
-        ids.push(id);
-      }
-    }
-    if (
-      ids.length === state.scopeSignals.length &&
-      ids.every((id, index) => id === state.scopeSignals[index])
-    ) {
-      return;
-    }
-    set({ scopeSignals: ids });
-    const updated = get();
-    updated.syncSocketSubscription();
-    void updated.ensureData();
-    void updated.ensureCompareData();
+    setExtraSignals("scopeSignals", signalIds);
+  },
+
+  setDashboardSignals: (signalIds) => {
+    setExtraSignals("dashboardSignals", signalIds);
   },
 
   removePanel: (panelId) => {
@@ -1242,7 +1279,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       return;
     }
     const available = new Set(manifest.signals.map((signal) => signal.id));
-    const ids = activeSignalIds(state.panels, state.autoSignals, state.scopeSignals).filter((id) =>
+    const ids = activeSignalIds(state.panels, state.autoSignals, state.scopeSignals, state.dashboardSignals).filter((id) =>
     available.has(id),
   );
     if (ids.length === 0) {
@@ -1366,7 +1403,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     const available = new Set(
       pinned.manifest.signals.map((signal) => signal.id),
     );
-    const ids = activeSignalIds(state.panels, state.autoSignals, state.scopeSignals).filter((id) =>
+    const ids = activeSignalIds(state.panels, state.autoSignals, state.scopeSignals, state.dashboardSignals).filter((id) =>
     available.has(id),
   );
     if (ids.length === 0) {
@@ -1529,6 +1566,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       activePanelId: panels.activePanelId,
       autoSignals: [],
       scopeSignals: [],
+  dashboardSignals: [],
       autoLayout: "single",
       view: null,
       pixelWidth: 0,

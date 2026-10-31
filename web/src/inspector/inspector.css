@@ -828,3 +828,12 @@
   padding-left: 1.1rem;
   font-size: 0.78rem;
 }
+
+/* DASHBOARD_PLAN.md: the dashboard overrides this parameter for the next run. */
+.inspector-tag--dashboard {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--color-warning-text);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-warning) 45%, transparent);
+}
