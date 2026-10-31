@@ -110,6 +110,64 @@ end
         @test maximum(abs.(E .- E[1])) < 1.0e-8 * maximum(ke)
     end
 
+    # D-EX13: the index-reduced DAE keeps every body twist and reaction algebraic, and MTK's
+    # order of the algebraic equations leaves zeros on the diagonal of W = M - hγJ. The row
+    # matching gives every algebraic row a structural pivot, so the static sparse LU passes
+    # its check (no W211), and the C code follows the simulation.
+    @testset "the rigid double pendulum exports with the row-matched sparse LU" begin
+        q1, q2 = 0.4, 0.6
+        doc = _rsp_rigidify!(_msp_double(1.0e7; q1 = q1, q2 = q2, t_end = 0.5, points = 51))
+        flat = Compile.flatten(IR.parse_model(doc))
+        X = BGSim.Export
+        dir = mktempdir()
+        r = X.export_model(flat, dir; settings = X.ExportSettings(t_end = 0.5, step = 1.0e-2,
+            dt = 1.0e-3, method = :rodas4p, sparse_threshold = 4, expose_all = true))
+        @test r.ok
+        la = r.report["linearAlgebra"]
+        @test r.report["algebraic"] > 0
+        @test !la["matching"]["structuralDiagonal"]           # the identity has zero pivots
+        @test la["matching"]["used"] && la["matching"]["rowsPermuted"] > 0
+        @test la["linearSolver"] == "sparse" && la["pivotCheck"]["ok"]
+        @test !any(d -> d.code == "W211", r.diagnostics)
+        @test la["luFlops"] < la["denseLuFlops"] / 4
+        @test la["projection"]["sparse"]       # dg/dz factors on the same tables too
+        cc = Sys.which("gcc")
+        if cc === nothing
+            @info "rigid export: no gcc on PATH, the C run is skipped"
+        else
+            src = joinpath(dir, "sources")
+            write(joinpath(dir, "driver.c"), """
+                #include <stdio.h>
+                #include <stdlib.h>
+                #include "model.h"
+                static bg_model g_m;
+                int main(int argc, char **argv) {
+                    long n = argc > 1 ? atol(argv[1]) : 0;
+                    bg_reset(&g_m, 0.0);
+                    for (long k = 0; k < n; ++k)
+                        if (bg_step(&g_m) != 0) { printf("step failed at %ld\\n", k); return 3; }
+                    bg_update_outputs(&g_m);
+                    for (int i = 0; i < BG_NY; ++i) printf("%.17g\\n", g_m.y[i]);
+                    return 0;
+                }
+                """)
+            exe = joinpath(dir, Sys.iswindows() ? "driver.exe" : "driver")
+            files = [joinpath(src, f) for f in ("model.c", "bg_solver.c")]
+            @test success(`$cc -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-parameter -c $(files[1]) -I $src -o $(joinpath(dir, "m.o"))`)
+            @test success(`$cc -std=c99 -O2 -I $src $(joinpath(dir, "driver.c")) $files -o $exe -lm`)
+            y = parse.(Float64, split(strip(read(`$exe 500`, String))))
+            names = r.report["locals"]
+            columns, result, _ = bg_run(doc)
+            @test result.status == "done"
+            for name in ("J1/qout", "J2/qout", "J1/qdout", "J2/qdout")
+                k = findfirst(==(name), names)
+                @test k !== nothing
+                # Rodas4P at 1 ms against the simulation's adaptive solve
+                @test abs(y[k] - columns[name][end]) < 1.0e-5 * max(1.0, abs(columns[name][end]))
+            end
+        end
+    end
+
     @testset "the compliant joint converges to the rigid one (with a drive torque)" begin
         for tau in (0.0, 1.5)
             efforts = Dict("drive" => tau)

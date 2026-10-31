@@ -1,4 +1,4 @@
-/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.2.0).
+/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.3.0).
  *
  * One call of bg_step advances exactly BG_DT:
  *   1. integrate the continuous states over [t, t + BG_DT] with the held discrete values
@@ -244,48 +244,68 @@ static int bg_integrate(bg_model *m, double t, double h) {
    jump, so the Jacobian is evaluated again in every iteration (a frozen one diverges on the
    FIX-M2-3 fixture). At most BG_NEWTON iterations, so the worst case is bounded: BG_NEWTON
    Jacobians and derivative calls per tick. A singular block leaves z as it is; the next step
-   then solves the constraint linearised. */
+   then solves the constraint linearised.
+   With BG_SPARSE_PROJECT (the static sparse LU, and dg/dz passed its pivot check at export)
+   the Newton step is factored on the static tables instead (bg_alg_factor, bg_w_solve), in
+   the workspace of the step's LU; a bad pivot falls back to the dense elimination. */
 #define BG_NEWTON 8
-static void bg_project(bg_model *m, double t) {
+/* One Newton step on the algebraic block by Gaussian elimination with partial pivoting:
+   m->ga receives dz with dg/dz dz = -g. Non-zero on a singular block. */
+static int bg_alg_dense(bg_model *m) {
     double *a = m->wa, *g = m->ga;
+    for (int i = 0; i < BG_NALG; ++i) {
+        g[i] = -m->fx[bg_alg[i]];
+        for (int j = 0; j < BG_NALG; ++j) {
+            const int q = bg_alg_jpos[i * BG_NALG + j];
+            a[i * BG_NALG + j] = q < 0 ? 0.0 : m->jac[q];
+        }
+    }
+    for (int k = 0; k < BG_NALG; ++k) {
+        int p = k;
+        double best = fabs(a[k * BG_NALG + k]);
+        for (int i = k + 1; i < BG_NALG; ++i) {
+            double v = fabs(a[i * BG_NALG + k]);
+            if (v > best) { best = v; p = i; }
+        }
+        if (best == 0.0) return -1;
+        if (p != k) {
+            for (int j = k; j < BG_NALG; ++j) {
+                double tmp = a[k * BG_NALG + j];
+                a[k * BG_NALG + j] = a[p * BG_NALG + j];
+                a[p * BG_NALG + j] = tmp;
+            }
+            double tmp = g[k]; g[k] = g[p]; g[p] = tmp;
+        }
+        for (int i = k + 1; i < BG_NALG; ++i) {
+            double f = a[i * BG_NALG + k] / a[k * BG_NALG + k];
+            for (int j = k + 1; j < BG_NALG; ++j) a[i * BG_NALG + j] -= f * a[k * BG_NALG + j];
+            g[i] -= f * g[k];
+        }
+    }
+    for (int k = BG_NALG - 1; k >= 0; --k) {
+        double s = g[k];
+        for (int j = k + 1; j < BG_NALG; ++j) s -= a[k * BG_NALG + j] * g[j];
+        g[k] = s / a[k * BG_NALG + k];
+    }
+    return 0;
+}
+
+static void bg_project(bg_model *m, double t) {
+    double *g = m->ga;
     for (int it = 0; it < BG_NEWTON; ++it) {
         memset(m->jac, 0, sizeof m->jac);
         bg_jacobian(m, t, m->x, m->jac);
         bg_derivatives(m, t, m->x, m->fx);
-        for (int i = 0; i < BG_NALG; ++i) {
-            g[i] = -m->fx[bg_alg[i]];
-            for (int j = 0; j < BG_NALG; ++j) {
-                const int q = bg_alg_jpos[i * BG_NALG + j];
-                a[i * BG_NALG + j] = q < 0 ? 0.0 : m->jac[q];
-            }
-        }
-        for (int k = 0; k < BG_NALG; ++k) {
-            int p = k;
-            double best = fabs(a[k * BG_NALG + k]);
-            for (int i = k + 1; i < BG_NALG; ++i) {
-                double v = fabs(a[i * BG_NALG + k]);
-                if (v > best) { best = v; p = i; }
-            }
-            if (best == 0.0) return;
-            if (p != k) {
-                for (int j = k; j < BG_NALG; ++j) {
-                    double tmp = a[k * BG_NALG + j];
-                    a[k * BG_NALG + j] = a[p * BG_NALG + j];
-                    a[p * BG_NALG + j] = tmp;
-                }
-                double tmp = g[k]; g[k] = g[p]; g[p] = tmp;
-            }
-            for (int i = k + 1; i < BG_NALG; ++i) {
-                double f = a[i * BG_NALG + k] / a[k * BG_NALG + k];
-                for (int j = k + 1; j < BG_NALG; ++j) a[i * BG_NALG + j] -= f * a[k * BG_NALG + j];
-                g[i] -= f * g[k];
-            }
-        }
-        for (int k = BG_NALG - 1; k >= 0; --k) {
-            double s = g[k];
-            for (int j = k + 1; j < BG_NALG; ++j) s -= a[k * BG_NALG + j] * g[j];
-            g[k] = s / a[k * BG_NALG + k];
-        }
+#ifdef BG_SPARSE_PROJECT
+        if (bg_alg_factor(m) == 0) {
+            double *r = m->xs;   /* the stage workspace is free between steps */
+            for (int i = 0; i < BG_NX; ++i) r[i] = 0.0;
+            for (int i = 0; i < BG_NALG; ++i) r[bg_alg[i]] = -m->fx[bg_alg[i]];
+            bg_w_solve(m, r);
+            for (int i = 0; i < BG_NALG; ++i) g[i] = r[bg_alg[i]];
+        } else
+#endif
+        if (bg_alg_dense(m) != 0) return;
         int done = 1;
         for (int i = 0; i < BG_NALG; ++i) {
             double *z = &m->x[bg_alg[i]];
