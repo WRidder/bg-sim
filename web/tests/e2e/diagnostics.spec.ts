@@ -179,24 +179,25 @@ test("navigates every fixture diagnostic to its node and marks the canvas", asyn
   await openModel(page, fixtureModel());
 
   const rows = page.locator('[data-testid^="diagnostic-item-"]');
-  // 34 items: the M2 sample, the M4 debugger codes E401, E402 and W401 (C4.0) and the globals cycle E113.
-  await expect(rows).toHaveCount(34);
+  // 35 items: the M2 sample, the M4 debugger codes E401, E402 and W401 (C4.0), the globals cycle E113
+  // and the shared seed W216.
+  await expect(rows).toHaveCount(35);
   await expect(page.getByTestId("diagnostics-count-error")).toContainText("27");
-  await expect(page.getByTestId("diagnostics-count-warning")).toContainText("7");
+  await expect(page.getByTestId("diagnostics-count-warning")).toContainText("8");
 
-  // Grouping by instance path: 25 groups (E401 adds `Ctrl`, E113 the model-level group), Ctrl/PI1 holds four diagnostics.
-  await expect(page.locator('[data-testid="diagnostics-group"]')).toHaveCount(25);
+  // Grouping by instance path: 26 groups (E401 adds `Ctrl`, E113 the model-level group, W216 `Plant/Noise1`), Ctrl/PI1 holds four diagnostics.
+  await expect(page.locator('[data-testid="diagnostics-group"]')).toHaveCount(26);
   const controller = page.locator('[data-testid="diagnostics-group"][data-path="Ctrl/PI1"]');
   await expect(controller.locator('[data-testid^="diagnostic-item-"]')).toHaveCount(4);
   await expect(controller).toContainText("E001");
 
-  // Filter by severity: hiding errors leaves the seven warnings.
+  // Filter by severity: hiding errors leaves the eight warnings.
   await page.getByTestId("diagnostics-filter-error").click();
-  await expect(rows).toHaveCount(7);
+  await expect(rows).toHaveCount(8);
   await page.getByTestId("diagnostics-filter-warning").click();
   await expect(page.getByTestId("diagnostics-filter-empty")).toBeVisible();
   await page.getByTestId("diagnostics-show-all").click();
-  await expect(rows).toHaveCount(34);
+  await expect(rows).toHaveCount(35);
 
   // Canvas markers: Motor1 carries E103 and E900, and c9 carries E102.
   const motor = nodeCard(page, "n3");
