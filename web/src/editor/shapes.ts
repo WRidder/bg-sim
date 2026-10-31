@@ -13,7 +13,13 @@
  * it, so its menu and inspector can unlock it.
  */
 
-import type { ModelShape, ShapeColor, ShapeKind, ShapeStrokeStyle } from "../contracts/model";
+import type {
+  ModelShape,
+  ShapeColor,
+  ShapeKind,
+  ShapeLabelPosition,
+  ShapeStrokeStyle,
+} from "../contracts/model";
 import { GRID_SIZE } from "./geometry";
 import { NOTE_Z_INDEX } from "./notes";
 
@@ -62,6 +68,29 @@ export const SHAPE_STROKE_STYLE_LABELS: Record<ShapeStrokeStyle, string> = {
   dashed: "Dashed",
   dotted: "Dotted",
 };
+/** The nine label positions, row by row (the inspector lays them out as a 3x3 grid). */
+export const SHAPE_LABEL_POSITIONS: readonly ShapeLabelPosition[] = [
+  "topLeft",
+  "top",
+  "topRight",
+  "left",
+  "center",
+  "right",
+  "bottomLeft",
+  "bottom",
+  "bottomRight",
+];
+export const SHAPE_LABEL_POSITION_LABELS: Record<ShapeLabelPosition, string> = {
+  topLeft: "Top left",
+  top: "Top",
+  topRight: "Top right",
+  left: "Left",
+  center: "Centre",
+  right: "Right",
+  bottomLeft: "Bottom left",
+  bottom: "Bottom",
+  bottomRight: "Bottom right",
+};
 export const SHAPE_STROKE_WIDTHS: readonly number[] = [1, 2, 3, 4, 6, 8];
 export const SHAPE_STROKE_WIDTH_RANGE = { min: 0.5, max: 24 } as const;
 
@@ -72,12 +101,14 @@ export const SHAPE_DEFAULTS = {
   strokeWidth: 2,
   strokeStyle: "solid",
   opacity: 1,
+  labelPosition: "center",
 } as const satisfies {
   fill: ShapeColor;
   stroke: ShapeColor;
   strokeWidth: number;
   strokeStyle: ShapeStrokeStyle;
   opacity: number;
+  labelPosition: ShapeLabelPosition;
 };
 
 /** A new shape's size (flow units); a line's `w`/`h` is its direction. */
@@ -151,6 +182,7 @@ export interface ResolvedShapeStyle {
   strokeWidth: number;
   strokeStyle: ShapeStrokeStyle;
   opacity: number;
+  labelPosition: ShapeLabelPosition;
 }
 
 /** A shape's style with every absent field at its default. */
@@ -161,6 +193,7 @@ export function shapeStyle(shape: ModelShape): ResolvedShapeStyle {
     strokeWidth: shape.strokeWidth ?? SHAPE_DEFAULTS.strokeWidth,
     strokeStyle: shape.strokeStyle ?? SHAPE_DEFAULTS.strokeStyle,
     opacity: shape.opacity ?? SHAPE_DEFAULTS.opacity,
+    labelPosition: shape.labelPosition ?? SHAPE_DEFAULTS.labelPosition,
   };
 }
 
@@ -196,6 +229,7 @@ export function applyShapeStyle(shape: ModelShape, patch: ShapeStylePatch): void
   if (patch.opacity !== undefined && Number.isFinite(patch.opacity)) {
     set("opacity", Math.min(1, Math.max(0, Math.round(patch.opacity * 100) / 100)));
   }
+  set("labelPosition", patch.labelPosition);
 }
 
 /** A shape's canvas node box (flow units): the frame, or a line's padded bounds. */

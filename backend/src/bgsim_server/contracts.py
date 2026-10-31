@@ -987,6 +987,18 @@ class ShapeStrokeStyle(Enum):
     dotted = 'dotted'
 
 
+class ShapeLabelPosition(Enum):
+    topLeft = 'topLeft'
+    top = 'top'
+    topRight = 'topRight'
+    left = 'left'
+    center = 'center'
+    right = 'right'
+    bottomLeft = 'bottomLeft'
+    bottom = 'bottom'
+    bottomRight = 'bottomRight'
+
+
 class ShapeColor(Enum):
     none = 'none'
     ink = 'ink'
@@ -2050,7 +2062,12 @@ class ModelShape(BaseModel):
         description='The opacity of the whole shape, label included; absent means 1.',
     )
     text: str | None = Field(
-        None, description='An optional plain-text label, centred on the shape.'
+        None, description='An optional plain-text label, placed by `labelPosition`.'
+    )
+    labelPosition: ShapeLabelPosition | None = Field(
+        None,
+        description="Where the label sits inside the shape's box: a corner, the middle of an edge, or the centre; absent means center. A line or arrow always centres its label.",
+        title='ShapeLabelPosition',
     )
     locked: bool | None = Field(
         None,

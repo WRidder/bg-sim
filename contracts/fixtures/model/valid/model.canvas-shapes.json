@@ -226,7 +226,8 @@
                   "h": 200,
                   "fill": "green",
                   "strokeStyle": "dotted",
-                  "text": "Plant internals"
+                  "text": "Plant internals",
+                  "labelPosition": "topLeft"
                 }
               ]
             }

@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import type { ModelShape, ShapeColor, ShapeStrokeStyle } from "../contracts/model";
+import type { ModelShape, ShapeColor, ShapeLabelPosition, ShapeStrokeStyle } from "../contracts/model";
 import {
   canReorder,
   FOCUS_SHAPE_LABEL_EVENT,
@@ -15,6 +15,8 @@ import {
   SHAPE_COLOR_LABELS,
   SHAPE_COLORS,
   SHAPE_KIND_LABELS,
+  SHAPE_LABEL_POSITION_LABELS,
+  SHAPE_LABEL_POSITIONS,
   SHAPE_ORDER_LABELS,
   SHAPE_STROKE_STYLE_LABELS,
   SHAPE_STROKE_STYLES,
@@ -24,6 +26,45 @@ import {
 } from "../editor/shapes";
 import { useDocumentStore } from "../state/documentStore";
 import "../editor/nodes/shape.css";
+
+/**
+ * The label position as a 3x3 grid of radio buttons (corners, edge middles,
+ * centre): native radios, so the arrow keys move between them.
+ */
+function LabelPositionPicker({
+  current,
+  onPick,
+}: {
+  current: ShapeLabelPosition | null;
+  onPick: (position: ShapeLabelPosition) => void;
+}) {
+  return (
+    <fieldset className="shape-label-position" data-testid="shape-label-position">
+      <legend>Label position</legend>
+      <div className="shape-label-position__grid">
+        {SHAPE_LABEL_POSITIONS.map((position) => (
+          <label
+            key={position}
+            className="shape-label-position__cell"
+            title={SHAPE_LABEL_POSITION_LABELS[position]}
+          >
+            <input
+              type="radio"
+              name="shape-label-position"
+              className="shape-label-position__input"
+              data-testid={`shape-label-position-${position}`}
+              aria-label={SHAPE_LABEL_POSITION_LABELS[position]}
+              value={position}
+              checked={current === position}
+              onChange={() => onPick(position)}
+            />
+            <span className="shape-label-position__dot" aria-hidden="true" />
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 
 /** The common value of `pick` over the shapes, or null when they differ. */
 function common<T>(shapes: readonly ModelShape[], pick: (shape: ModelShape) => T): T | null {
@@ -153,6 +194,7 @@ export function ShapeInspector({
   const strokeWidth = common(shapes, (shape) => shapeStyle(shape).strokeWidth);
   const strokeStyle = common(shapes, (shape) => shapeStyle(shape).strokeStyle);
   const opacity = common(shapes, (shape) => shapeStyle(shape).opacity);
+  const labelPosition = common(shapes, (shape) => shapeStyle(shape).labelPosition);
   const locked = common(shapes, isLocked);
   const allLines = shapes.every((shape) => isLineKind(shape.kind));
   const allLocked = shapes.every(isLocked);
@@ -269,6 +311,12 @@ export function ShapeInspector({
         <section className="shape-inspector__section">
           <h4>Label</h4>
           <ShapeLabelField key={first.id} shape={first} />
+          {allLines ? null : (
+            <LabelPositionPicker
+              current={labelPosition}
+              onPick={(position) => store().setShapeStyle(ids, { labelPosition: position })}
+            />
+          )}
         </section>
       ) : null}
 

@@ -15,6 +15,7 @@ import type { Model, ModelShape } from "../src/contracts/model";
 import { buildDiagram, shapeNodes } from "../src/editor/buildFlow";
 import { NOTE_Z_INDEX } from "../src/editor/notes";
 import { ShapeMenuItems } from "../src/editor/ShapeMenu";
+import { ShapeInspector } from "../src/inspector/ShapeInspector";
 import {
   applyShapeStyle,
   canReorder,
@@ -102,6 +103,7 @@ describe("shape ids and geometry", () => {
       strokeWidth: 2,
       strokeStyle: "solid",
       opacity: 1,
+      labelPosition: "center",
     });
     applyShapeStyle(shape, { fill: "blue", strokeWidth: 99, opacity: 0.333, strokeStyle: "dashed" });
     expect(shape).toMatchObject({ fill: "blue", strokeWidth: 24, opacity: 0.33, strokeStyle: "dashed" });
@@ -317,6 +319,33 @@ describe("canvas nodes", () => {
     });
     const inner = activeModel(fixture, ["plant"]);
     expect(inner === null ? [] : shapeNodes(inner).map((node) => node.id)).toEqual(["shape:s1"]);
+  });
+});
+
+describe("label position", () => {
+  it("stores only a non-centre position and sets it from the inspector", () => {
+    const shape: ModelShape = { id: "s1", kind: "rectangle", x: 0, y: 0, w: 10, h: 10, text: "Plant" };
+    applyShapeStyle(shape, { labelPosition: "topLeft" });
+    expect(shape.labelPosition).toBe("topLeft");
+    applyShapeStyle(shape, { labelPosition: "center" });
+    expect("labelPosition" in shape).toBe(false);
+
+    store().addShape("rectangle", { x: 0, y: 0 });
+    store().setShapeText("s1", "Plant");
+    const { rerender } = render(<ShapeInspector shapes={shapes()} all={shapes()} />);
+    const picker = screen.getByTestId("shape-label-position");
+    expect(picker.querySelectorAll("input[type=radio]")).toHaveLength(9);
+    expect((screen.getByTestId("shape-label-position-center") as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByTestId("shape-label-position-bottomRight"));
+    expect(shapes()[0]?.labelPosition).toBe("bottomRight");
+    rerender(<ShapeInspector shapes={shapes()} all={shapes()} />);
+    expect((screen.getByLabelText("Bottom right") as HTMLInputElement).checked).toBe(true);
+
+    // A line centres its label: no picker.
+    store().addShape("line", { x: 0, y: 200 });
+    const line = shapes().filter((item) => item.kind === "line");
+    rerender(<ShapeInspector shapes={line} all={shapes()} />);
+    expect(screen.queryByTestId("shape-label-position")).toBeNull();
   });
 });
 

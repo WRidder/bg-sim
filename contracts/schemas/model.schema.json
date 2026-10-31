@@ -507,7 +507,12 @@
           "maximum": 1,
           "description": "The opacity of the whole shape, label included; absent means 1."
         },
-        "text": { "type": "string", "description": "An optional plain-text label, centred on the shape." },
+        "text": { "type": "string", "description": "An optional plain-text label, placed by `labelPosition`." },
+        "labelPosition": {
+          "title": "ShapeLabelPosition",
+          "enum": ["topLeft", "top", "topRight", "left", "center", "right", "bottomLeft", "bottom", "bottomRight"],
+          "description": "Where the label sits inside the shape's box: a corner, the middle of an edge, or the centre; absent means center. A line or arrow always centres its label."
+        },
         "locked": {
           "type": "boolean",
           "description": "A locked shape cannot be moved, resized or deleted on the canvas, and a selection rectangle skips it; absent means false."

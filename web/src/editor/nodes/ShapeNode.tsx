@@ -23,7 +23,7 @@ import {
   type OnResize,
 } from "@xyflow/react";
 
-import type { ShapeColor, ShapeKind, ShapeStrokeStyle } from "../../contracts/model";
+import type { ShapeColor, ShapeKind, ShapeLabelPosition, ShapeStrokeStyle } from "../../contracts/model";
 import { useDocumentStore } from "../../state/documentStore";
 import { LINE_PAD, SHAPE_MIN_SIZE } from "../shapes";
 import { activeDiagram } from "../subsystemPath";
@@ -43,6 +43,8 @@ export interface ShapeNodeData extends Record<string, unknown> {
   strokeWidth: number;
   strokeStyle: ShapeStrokeStyle;
   opacity: number;
+  /** Where a frame shape puts its label; a line always centres it. */
+  labelPosition: ShapeLabelPosition;
 }
 
 export type ShapeNodeType = Node<ShapeNodeData, "shape">;
@@ -326,7 +328,10 @@ function ShapeNodeView({ data, selected, width, height }: NodeProps<ShapeNodeTyp
           )}
         </svg>
         {data.text.length > 0 ? (
-          <div className={`canvas-shape__label${line ? " canvas-shape__label--line" : ""}`}>
+          <div
+            className={`canvas-shape__label${line ? " canvas-shape__label--line" : ""}`}
+            data-position={line ? "center" : data.labelPosition}
+          >
             <span data-testid="canvas-shape-label">{data.text}</span>
           </div>
         ) : null}

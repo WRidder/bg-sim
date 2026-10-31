@@ -55,6 +55,11 @@ export type ShapeColor = "none" | "ink" | "yellow" | "blue" | "green" | "pink" |
  * Absent means solid.
  */
 export type ShapeStrokeStyle = "solid" | "dashed" | "dotted";
+/**
+ * Where the label sits inside the shape's box: a corner, the middle of an edge, or the centre; absent means center. A line or arrow always centres its label.
+ */
+export type ShapeLabelPosition =
+  "topLeft" | "top" | "topRight" | "left" | "center" | "right" | "bottomLeft" | "bottom" | "bottomRight";
 export type ProbeKind = "block" | "window";
 /**
  * The recording grid: a fixed number of points over [t_start, t_end], or a fixed interval.
@@ -333,9 +338,10 @@ export interface ModelShape {
    */
   opacity?: number;
   /**
-   * An optional plain-text label, centred on the shape.
+   * An optional plain-text label, placed by `labelPosition`.
    */
   text?: string;
+  labelPosition?: ShapeLabelPosition;
   /**
    * A locked shape cannot be moved, resized or deleted on the canvas, and a selection rectangle skips it; absent means false.
    */

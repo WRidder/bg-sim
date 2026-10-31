@@ -101,6 +101,27 @@
   cursor: move;
 }
 
+/* The nine label positions: corners, edge middles and the centre of the box. */
+.canvas-shape__label[data-position^="top"] {
+  align-items: flex-start;
+}
+
+.canvas-shape__label[data-position^="bottom"] {
+  align-items: flex-end;
+}
+
+.canvas-shape__label[data-position$="Left"],
+.canvas-shape__label[data-position="left"] {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.canvas-shape__label[data-position$="Right"],
+.canvas-shape__label[data-position="right"] {
+  justify-content: flex-end;
+  text-align: right;
+}
+
 /* A line's label sits on the line's middle, on a patch of canvas. */
 .canvas-shape__label--line {
   inset: auto;
@@ -474,4 +495,74 @@
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-label);
+}
+
+/* The label position picker: a small 3x3 grid standing for the shape's box. */
+.shape-label-position {
+  display: grid;
+  grid-template-columns: 96px auto;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.shape-label-position legend {
+  float: left;
+  padding: 0;
+}
+
+.shape-label-position__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 20px);
+  grid-template-rows: repeat(3, 20px);
+  gap: 2px;
+  padding: 3px;
+  width: max-content;
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.shape-label-position__cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.shape-label-position__cell:hover {
+  background: var(--color-surface-raised);
+}
+
+.shape-label-position__input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.shape-label-position__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.shape-label-position__input:checked + .shape-label-position__dot {
+  width: 10px;
+  height: 10px;
+  background: var(--color-accent);
+}
+
+.shape-label-position__cell:has(.shape-label-position__input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }
