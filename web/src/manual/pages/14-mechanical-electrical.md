@@ -44,3 +44,16 @@ Notes:
 - **Battery.** `soc` is the state of charge (1 full, 0 empty); its start value is the initial charge. Charging current (into `p`) raises it. The OCV is interpolated linearly in the table and held at the edge values outside it. The constant `N` sets the table length.
 - **MOSFET and IGBT.** The Boolean `gate` comes from a logic block, for example a `Compare` on a PWM carrier. The MOSFET channel conducts both ways while on; the IGBT only from `c` to `e` above `V_ce0`. Both have an antiparallel diode (forward voltage `V_f`, resistance `R_d`). Every switching instant is located exactly in a simulation; an [export](page:export) checks the switching once per step.
 - **Losses.** Clutch, brake, worm gear, battery and the switches lose power as heat. There is no thermal port yet; the heat only shows up as the power balance of the block.
+
+## Wheels and flywheels (3D)
+
+Two blocks of the 3D mechanics categories model a wheel that rolls on the ground and a fast flywheel. The **gyrover** example uses both.
+
+| Block | Category | Ports | What it does | Key parameters |
+| --- | --- | --- | --- | --- |
+| `RollingDisk` | Contact | `p` (spatial), inputs `g`, `o`, `fr` | rolling contact of a wheel on a `ContactSurface` plane: the contact point is the lowest rim point at every instant | `radius`, `crown`, `k`, `xref`, `c`, `mu`, `vs`, `bsp` |
+| `Rotor3D` | Spatial mechanics | `p` (spatial), `drive` (rotation) | a rotor spinning about the z axis of the body that carries it | `Ja` |
+
+- **Mounting.** Bond the wheel body's port `p` straight to the block's `p`, with the body frame at the wheel centre and the axle along body z. Feed `RollingDisk` the body pose (`g`) and the plane (`o`, `fr` from a `ContactSurface`). Put the rotor's mass and transverse inertia into the carrier body; only the axial inertia `Ja` belongs to `Rotor3D`.
+- **Rolling.** The normal force is the smooth Hertz/Hunt-Crossley law of `ContactPoint`. Friction is isotropic regularised Coulomb friction on the slip of the rim point: a wheel rolling under a side force `F` creeps at about `vs F / (mu f_n)`. The block outputs `f_n`, `s_lon`/`s_lat` (slip), `f_lon`/`f_lat`, the contact point, `camber`, the spring energy `Ec` and the dissipated power `Pd`.
+- **Rotor.** Only the axial momentum `h` is a state, so a flywheel at 15 000 rpm costs no more than one at rest. The motor between carrier and rotor bonds to `drive`, and its reaction acts on the carrier. `w_rel`, `w_abs`, `H` and `Ek` are outputs.

@@ -853,6 +853,8 @@ Each element is the matrix-valued counterpart of a bond graph element. Planar ve
 | Spherical, universal, planar joints | Multi-DOF `MTF` | `parent`, `child`, drives | axes | v0.3 |
 | Compliant joint | Joint plus stiff spatial spring | `parent`, `child` | stiffness, damping | v0.3 |
 | Point contact (compliant) | Nonlinear `C` and `R` | `a`, `b` | stiffness, damping, friction | Later |
+| Rolling disk contact (`RollingDisk`, compliant) | Nonlinear `C` and `R` at the moving lowest rim point | `p`; inputs pose, plane | radius, crown, stiffness, damping, friction, drilling damping | v0.3 |
+| Axisymmetric rotor (`Rotor3D`) | `I` on the axial momentum plus gyroscopic `GY` on the carrier | `p`, Rotation `drive` | axial inertia | v0.3 |
 | Pose, twist, wrench sensors | Detectors | `p`; output `SE3` / `Vec{6}` | frame to report in | v0.2 |
 
 Actuation needs no special component: a DC motor's Rotation port connects to a revolute joint's `drive` port, through a gear if needed.
