@@ -16,14 +16,21 @@ import type { Model } from "../src/contracts/model";
 import { ExportDialog } from "../src/export/ExportDialog";
 import { useExportDialogStore } from "../src/export/exportStore";
 import { resetDocumentStore, useDocumentStore } from "../src/state/documentStore";
+import { exportTaskId, stopExportPolling } from "../src/tasks/exportTasks";
+import { resetTaskStore, useTaskStore } from "../src/tasks/taskStore";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const fixture = <T,>(...parts: string[]): T =>
   JSON.parse(readFileSync(path.join(repoRoot, "contracts", "fixtures", ...parts), "utf8")) as T;
 
 const model = fixture<{ model: Model }>("export-request", "valid", "export-request.scope.json").model;
-const doneJob = fixture<ExportJob>("export-job", "valid", "export-job.done.json");
-const refusedJob = fixture<ExportJob>("export-job", "valid", "export-job.refused.json");
+// The jobs of the open model (demo/plant), so the dialog shows its form beside them.
+const doneJob = { ...fixture<ExportJob>("export-job", "valid", "export-job.done.json"), project: "demo", model: "plant" };
+const refusedJob = {
+  ...fixture<ExportJob>("export-job", "valid", "export-job.refused.json"),
+  project: "demo",
+  model: "plant",
+};
 
 interface Call {
   url: string;
@@ -56,16 +63,63 @@ function running(job: ExportJob): ExportJob {
 
 beforeEach(() => {
   resetDocumentStore();
+  resetTaskStore();
   useDocumentStore.getState().openDocument("demo", "plant", structuredClone(model));
 });
 
 afterEach(() => {
-  act(() => useExportDialogStore.getState().closeExport());
+  act(() => {
+    useExportDialogStore.getState().closeExport();
+    useExportDialogStore.getState().setJobId(null);
+  });
+  stopExportPolling();
   vi.unstubAllGlobals();
   resetDocumentStore();
+  resetTaskStore();
 });
 
 describe("ExportDialog", () => {
+  it("keeps the job running when the dialog closes, and shows it again on reopen", async () => {
+    const calls = stubBackend([running(doneJob), running(doneJob), running(doneJob), running(doneJob), doneJob]);
+    render(<ExportDialog />);
+    act(() => useExportDialogStore.getState().openExport(null));
+    fireEvent.click(screen.getByTestId("export-start"));
+    await screen.findByTestId("export-progress");
+    expect(screen.getByTestId("export-background-note")).toBeTruthy();
+
+    act(() => useExportDialogStore.getState().closeExport());
+    expect(screen.queryByTestId("export-dialog")).toBeNull();
+    expect(calls.some((c) => c.method === "DELETE")).toBe(false);
+    const task = useTaskStore.getState().tasks[0];
+    expect(task?.id).toBe(exportTaskId(doneJob.id));
+    expect(task?.status).toBe("running");
+
+    // The top bar's Export button again: the running job is still on screen.
+    act(() => useExportDialogStore.getState().openExport(null));
+    expect(screen.getByTestId("export-progress")).toBeTruthy();
+    await waitFor(() => expect(useTaskStore.getState().tasks[0]?.status).toBe("done"), { timeout: 4000 });
+    expect(screen.getByTestId("export-report")).toBeTruthy();
+    expect(screen.getByTestId("export-start").textContent).toBe("Export again");
+
+    // A fresh open after the job finished starts with an empty form again.
+    act(() => useExportDialogStore.getState().closeExport());
+    act(() => useExportDialogStore.getState().openExport(null));
+    expect(screen.queryByTestId("export-report")).toBeNull();
+    // ... while Show details brings the finished job back.
+    act(() => useExportDialogStore.getState().showExport(doneJob.id));
+    expect(screen.getByTestId("export-report")).toBeTruthy();
+  });
+
+  it("cancels the running job from the dialog", async () => {
+    const calls = stubBackend([running(doneJob), running(doneJob), { ...doneJob, status: "cancelled", report: null, fmu: null }]);
+    render(<ExportDialog />);
+    act(() => useExportDialogStore.getState().openExport(null));
+    fireEvent.click(screen.getByTestId("export-start"));
+    fireEvent.click(await screen.findByTestId("export-cancel"));
+    await screen.findByTestId("export-cancelled");
+    expect(calls.some((c) => c.method === "DELETE")).toBe(true);
+  });
+
   it("exports a subsystem with automatic settings and shows the report", async () => {
     const calls = stubBackend([running(doneJob), running(doneJob), doneJob]);
     render(<ExportDialog />);

@@ -419,6 +419,8 @@ def test_export_csv_all_signals_and_a_subset(fake_settings) -> None:
         rows = list(csv.reader(io.StringIO(response.text)))
         assert rows[0] == ["t", *SYNTHETIC_IDS]
         assert len(rows) == 1002
+        # The data rows, for the web app's progress of the streamed download.
+        assert response.headers["x-bgsim-rows"] == "1001"
         assert float(rows[1][0]) == 0.0
         assert float(rows[251][2]) == 2.0, "the step at t=0.25"
         assert float(rows[1001][3]) == 10.0, "the counter at t=1.0"

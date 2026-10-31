@@ -2,6 +2,7 @@
  * The export endpoints (plan/EXPORT_PLAN.md P-EX1):
  *
  *     POST   /api/projects/{p}/models/{m}/export   ExportRequest -> { exportId }
+ *     GET    /api/exports?project={p}[&model={m}]  ExportJob[] (newest first)
  *     GET    /api/exports/{id}                     ExportJob (status, report, fmu)
  *     DELETE /api/exports/{id}                     cancel
  *     GET    /api/exports/{id}/fmu                 the FMU file
@@ -104,6 +105,20 @@ export function getExport(exportId: string, signal?: AbortSignal): Promise<Expor
     { signal },
     "Reading the export status",
   );
+}
+
+/** The project's jobs (optionally one model's), newest first. */
+export async function listExports(
+  project: string,
+  model?: string,
+  signal?: AbortSignal,
+): Promise<ExportJob[]> {
+  const params = new URLSearchParams({ project });
+  if (model !== undefined) {
+    params.set("model", model);
+  }
+  const body = await call<unknown>(`/api/exports?${params.toString()}`, { signal }, "Listing the exports");
+  return Array.isArray(body) ? (body as ExportJob[]) : [];
 }
 
 export async function cancelExport(exportId: string): Promise<boolean> {

@@ -4,6 +4,9 @@ Routes (``app.py`` includes the router under ``/api``):
 
 * ``POST /api/projects/{p}/models/{m}/export`` with an ``ExportRequest`` body starts a job
   and answers ``201 {"exportId"}``;
+* ``GET /api/exports?project={p}[&model={m}]`` lists the project's jobs as a JSON array of
+  ``ExportJob`` documents, newest first (the web app's background tasks indicator reads it on
+  load, so a running or finished export survives closing the dialog and reloading the page);
 * ``GET /api/exports/{id}`` is the ``ExportJob`` document: status, phase, timings,
   diagnostics and, once done, the report (``ExportReport``) and the FMU's name and size;
 * ``GET /api/exports/{id}/fmu`` downloads the FMU;
@@ -20,7 +23,9 @@ Julia process of its own (``julia/BGSim/export/export_job.jl``, ``BGSim.Export.e
 which reports its phase on stdout; the backend then builds the FMU with
 :mod:`bgsim_server.fmu_build` in a thread. One job runs at a time; later ones wait as
 ``queued``. With ``BGSIM_FAKE_WORKER`` the :class:`~bgsim_server.fake_export.FakeExportRunner`
-answers instead (no Julia, no compiler).
+answers instead (no Julia, no compiler); there, and only there, an ``X-BGSim-Fake-Export-S``
+request header on the POST sets that job's phase duration, so an end-to-end test can hold a
+job in ``running`` long enough to close the dialog, reload the page and cancel it.
 
 Environment: ``BGSIM_EXPORT_REF_BUDGET`` (seconds for the reference run, default 120) and
 ``BGSIM_EXPORT_TIMEOUT`` (seconds for the Julia process, default 3600).
@@ -62,6 +67,8 @@ _PROJECT_NAME = re.compile(r"^[A-Za-z0-9_.-]+$")
 _MODEL_NAME = re.compile(r"^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)*$")
 _PHASE_LINE = "@@bgsim "
 _TERMINAL = frozenset({"done", "refused", "failed", "cancelled"})
+#: The fake runner's per-job phase duration (``BGSIM_FAKE_WORKER`` only; see the docstring).
+FAKE_DELAY_HEADER = "x-bgsim-fake-export-s"
 
 
 def _utc_now() -> str:
@@ -389,11 +396,40 @@ async def start_export(project: str, model: str, body: ExportRequest,
     document = _strip_comments(body.model_dump(by_alias=True, mode="json"))
     document["projectDir"] = str(project_dir)
     document["referenceBudgetS"] = _env_seconds("BGSIM_EXPORT_REF_BUDGET", 120.0)
+    fake_delay = request.headers.get(FAKE_DELAY_HEADER)
+    if settings.fake_worker and fake_delay is not None:
+        with suppress(ValueError):
+            document["fakeDelayS"] = max(0.0, min(float(fake_delay), 60.0))
     (job_dir / "request.json").write_text(json.dumps(document, indent=2), encoding="utf-8")
     job = _Job(id=job_dir.name, project=project, model=model, scope=body.scope or None,
                job_dir=job_dir, created=_utc_now())
     store.start(job, document)
     return {"exportId": job.id}
+
+
+@router.get("/exports")
+async def list_exports(project: str, request: Request,
+                       model: str | None = None) -> list[dict[str, Any]]:
+    """The ``ExportJob`` documents of ``project`` (optionally one model), newest first."""
+    project_dir = _project_dir(request.app.state.settings, project)
+    store = _store_for(request.app)
+    exports_dir = project_dir / "exports"
+    entries: list[tuple[str, int, dict[str, Any]]] = []
+    if exports_dir.is_dir():
+        for candidate in exports_dir.iterdir():
+            if not (candidate / "job.json").is_file() or not _EXPORT_ID.fullmatch(candidate.name):
+                continue
+            job = store.jobs.get(candidate.name)
+            try:
+                doc = _job_document(candidate, job)
+                # ``created`` has whole seconds; the request's write time orders a burst.
+                written = (candidate / "request.json").stat().st_mtime_ns
+            except (OSError, ValueError):
+                continue  # a job.json being replaced or damaged: the next poll sees it
+            if model is None or doc.get("model") == model:
+                entries.append((str(doc.get("created") or ""), written, doc))
+    entries.sort(key=lambda entry: entry[:2], reverse=True)
+    return [doc for _, _, doc in entries]
 
 
 @router.get("/exports/{export_id}")

@@ -49,6 +49,7 @@ vi.mock("uplot", () => {
 
 import { PlotPanel } from "../src/plot/PlotPanel";
 import { resetRunStore, useRunStore } from "../src/plot/runStore";
+import { resetTaskStore, useTaskStore } from "../src/tasks/taskStore";
 import { runManifest, runSignal } from "./plotFixtures";
 
 const SIGNALS = [
@@ -116,6 +117,19 @@ describe("PlotPanel chrome", () => {
     expect(url.pathname).toBe("/api/runs/run-panel/export.csv");
     expect(url.searchParams.get("ids")).toBe("Motor/w,Motor/i,Motor/v");
     expect(link.getAttribute("aria-disabled")).toBe("false");
+  });
+
+  it("runs a plain click on CSV as a background task", () => {
+    resetTaskStore();
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => undefined)));
+    render(<PlotPanel />);
+    const link = screen.getByTestId("export-csv");
+    expect(fireEvent.click(link)).toBe(false); // the browser's own download is prevented
+    const task = useTaskStore.getState().tasks[0];
+    expect(task?.kind).toBe("csv-export");
+    expect(task?.title).toBe(`CSV export · ${useRunStore.getState().manifest?.model} (3 signals)`);
+    expect(vi.mocked(fetch).mock.calls.map((call) => call[0])).toContain(link.getAttribute("href"));
+    resetTaskStore();
   });
 
   it("shows the global inspect time in seconds", async () => {

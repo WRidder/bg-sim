@@ -7,9 +7,14 @@
  * damping, Jacobian and linear solver under Advanced), the Export button with progress, and
  * the backend's report with the Download button. A refused export (E110, E112, ...) is a
  * message with its diagnostics, never a crash.
+ *
+ * The job is a background task (`tasks/exportTasks.ts` polls it): closing the dialog does
+ * not cancel it, and the top bar's tasks indicator re-opens the dialog on it ("Show
+ * details"), also after a reload and also for another model's export (progress and report
+ * only, without the form).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { useDialogFocus } from "../app/useDialogFocus";
 import type { ExportJob } from "../contracts/export-job";
@@ -22,7 +27,9 @@ import type {
   ExportSettings,
 } from "../contracts/export-request";
 import { useDocumentStore } from "../state/documentStore";
-import { cancelExport, ExportApiError, fmuUrl, getExport, isFinished, startExport } from "./exportApi";
+import { exportTaskId, trackExportJob } from "../tasks/exportTasks";
+import { cancelTask, useTaskStore } from "../tasks/taskStore";
+import { ExportApiError, fmuUrl, getExport, isFinished, startExport } from "./exportApi";
 import {
   buildLines,
   defaultStep,
@@ -46,7 +53,8 @@ import {
 import { useExportDialogStore } from "./exportStore";
 import "./export.css";
 
-const POLL_MS = 500;
+/** The elapsed seconds of a running job tick this often. */
+const TICK_MS = 500;
 const METHODS = Object.keys(METHOD_LABELS) as ExportMethod[];
 
 function errorText(cause: unknown): string {
@@ -221,6 +229,14 @@ export function ExportDialog() {
   const openScope = useExportDialogStore((state) => state.scope);
   const openCount = useExportDialogStore((state) => state.openCount);
   const closeExport = useExportDialogStore((state) => state.closeExport);
+  const jobId = useExportDialogStore((state) => state.jobId);
+  const setJobId = useExportDialogStore((state) => state.setJobId);
+  const task = useTaskStore((state) =>
+    jobId === null ? undefined : state.tasks.find((entry) => entry.id === exportTaskId(jobId)),
+  );
+  const connectionError = useTaskStore((state) => state.connectionError);
+  const setViewing = useTaskStore((state) => state.setViewing);
+  const job = task?.exportJob ?? null;
   const doc = useDocumentStore((state) => state.doc);
   const project = useDocumentStore((state) => state.project);
   const modelName = useDocumentStore((state) => state.modelName);
@@ -235,45 +251,67 @@ export function ExportDialog() {
   const [jacobian, setJacobian] = useState<ExportJacobian>("auto");
   const [linearSolver, setLinearSolver] = useState<ExportLinearSolver>("auto");
   const [exposeAll, setExposeAll] = useState(false);
-  const [job, setJob] = useState<ExportJob | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const startedAt = useRef(0);
 
   const subsystems = useMemo(() => (doc === null ? [] : listSubsystems(doc)), [doc]);
   const running = job !== null && !isFinished(job);
+  // An attached job of another model (or project) shows its progress and report only.
+  const foreign = job !== null && (job.project !== project || job.model !== modelName);
 
-  // A new open resets the form to the opener's scope; a running job stays on screen.
+  // A new open resets the form to the opener's scope and keeps a running job on screen;
+  // "Show details" (attached) shows its job, with the job's scope when it is this model's.
   useEffect(() => {
     if (openCount === 0) {
       return;
     }
+    const dialogState = useExportDialogStore.getState();
     const current = useDocumentStore.getState().doc;
-    const valid = openScope !== null && current !== null && findSubsystem(current, openScope);
-    const next = valid ? openScope : null;
+    const shown = dialogState.jobId === null
+      ? undefined
+      : useTaskStore.getState().tasks.find((entry) => entry.id === exportTaskId(dialogState.jobId as string));
+    const shownJob = shown?.exportJob ?? null;
+    let wanted = openScope;
+    const documentState = useDocumentStore.getState();
+    if (dialogState.attached) {
+      wanted = shownJob?.scope ?? null;
+    } else if (
+      shownJob !== null &&
+      (isFinished(shownJob) ||
+        shownJob.project !== documentState.project ||
+        shownJob.model !== documentState.modelName)
+    ) {
+      // A fresh form; another model's running job stays in the tasks indicator.
+      dialogState.setJobId(null);
+    }
+    const valid = wanted !== null && current !== null && findSubsystem(current, wanted);
+    const next = valid ? wanted : null;
     setScope(next);
     setPowerInputs(current === null ? {} : defaultPowerInputs(current, next));
     setRequestError(null);
-    setJob((previous) => (previous !== null && !isFinished(previous) ? previous : null));
   }, [openCount, openScope]);
 
   useDialogFocus(open, dialog, closeExport);
 
-  // Poll the job while it runs.
+  // The job the open dialog shows is "being watched": its end is no unseen task.
   useEffect(() => {
-    if (job === null || isFinished(job)) {
+    if (!open || jobId === null) {
       return;
     }
-    const id = job.id;
-    const timer = window.setInterval(() => {
-      setNow(Date.now());
-      getExport(id)
-        .then((next) => setJob((previous) => (previous?.id === id ? next : previous)))
-        .catch((cause: unknown) => setRequestError(errorText(cause)));
-    }, POLL_MS);
+    setViewing(exportTaskId(jobId));
+    return () => setViewing(null);
+  }, [jobId, open, setViewing]);
+
+  // The elapsed seconds tick while the job runs (the task registry polls the job).
+  useEffect(() => {
+    if (!open || !running) {
+      return;
+    }
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), TICK_MS);
     return () => window.clearInterval(timer);
-  }, [job]);
+  }, [open, running]);
 
   const preview = useMemo(
     () => (doc === null ? null : previewInterface(doc, scope, powerInputs)),
@@ -312,9 +350,10 @@ export function ExportDialog() {
     setRequestError(null);
     try {
       const id = await startExport(project, modelName, request);
-      startedAt.current = Date.now();
       setNow(Date.now());
-      setJob(await getExport(id));
+      // The job is a background task from here on: closing the dialog does not stop it.
+      trackExportJob(await getExport(id));
+      setJobId(id);
     } catch (cause) {
       setRequestError(
         cause instanceof ExportApiError ? cause.message : `The export could not start: ${errorText(cause)}`,
@@ -322,24 +361,83 @@ export function ExportDialog() {
     } finally {
       setStarting(false);
     }
-  }, [damping, dt, exposeAll, jacobian, linearSolver, method, modelName, powerInputs, project, scope, step]);
+  }, [damping, dt, exposeAll, jacobian, linearSolver, method, modelName, powerInputs, project, scope, setJobId, step]);
 
   const onCancel = useCallback(async () => {
-    if (job === null) {
+    if (jobId === null) {
       return;
     }
     try {
-      await cancelExport(job.id);
-      setJob(await getExport(job.id));
+      await cancelTask(exportTaskId(jobId));
     } catch (cause) {
       setRequestError(errorText(cause));
     }
-  }, [job]);
+  }, [jobId]);
 
   if (!open) {
     return null;
   }
-  const elapsed = Math.max(0, Math.round((now - startedAt.current) / 1000));
+  const elapsed = Math.max(0, Math.round((now - (task?.started ?? now)) / 1000));
+  const shownModel = foreign ? job.model : modelName;
+  const pollError = running ? connectionError : null;
+
+  /** The Export button (when given), the progress with Cancel, errors and the report. */
+  const jobStatus = (startButton: ReactNode) => (
+    <>
+      <div className="export-dialog__actions">
+        {startButton}
+        {running ? (
+          <>
+            <span className="export-dialog__progress" data-testid="export-progress" role="status">
+              <span className="export-dialog__spinner" aria-hidden="true" />
+              {progressLabel(job.status, job.phase)}… {elapsed} s
+            </span>
+            <button
+              type="button"
+              className="button"
+              data-testid="export-cancel"
+              onClick={() => void onCancel()}
+            >
+              Cancel
+            </button>
+          </>
+        ) : null}
+        {job?.status === "cancelled" ? (
+          <span className="export-dialog__faint" data-testid="export-cancelled">
+            The export was cancelled.
+          </span>
+        ) : null}
+      </div>
+      {running ? (
+        <p className="export-dialog__faint" data-testid="export-background-note">
+          You can close this dialog: the export goes on in the background, and the tasks
+          indicator in the top bar brings it back.
+        </p>
+      ) : null}
+
+      {requestError !== null || pollError !== null ? (
+        <p className="export-dialog__error" role="alert" data-testid="export-error">
+          {requestError ?? pollError}
+        </p>
+      ) : null}
+
+      {job?.status === "refused" ? (
+        <section className="export-dialog__section" data-testid="export-refused" role="alert">
+          <p className="export-dialog__error">
+            The model cannot be exported as it is: {job.error ?? "see the diagnostics"}.
+          </p>
+          <DiagnosticList diagnostics={job.diagnostics} />
+        </section>
+      ) : null}
+      {job?.status === "failed" ? (
+        <section className="export-dialog__section" data-testid="export-failed" role="alert">
+          <p className="export-dialog__error">The export failed.</p>
+          <pre className="export-dialog__log">{job.error}</pre>
+        </section>
+      ) : null}
+      {job?.status === "done" && job.report ? <ReportView job={job} report={job.report} /> : null}
+    </>
+  );
 
   return (
     <div
@@ -361,7 +459,7 @@ export function ExportDialog() {
       >
         <header className="open-dialog__header">
           <h2 className="open-dialog__title" id="export-dialog-title">
-            Export FMU{modelName ? ` · ${modelName}` : ""}
+            Export FMU{shownModel ? ` · ${shownModel}` : ""}
           </h2>
           <button
             type="button"
@@ -376,7 +474,15 @@ export function ExportDialog() {
         </header>
 
         <div className="export-dialog__body">
-          {doc === null || preview === null ? (
+          {foreign ? (
+            <>
+              <p className="export-dialog__note" data-testid="export-foreign">
+                This export is of {job.scope ? `${job.scope} in ` : ""}
+                {job.model} (project {job.project}). Open that model to export it again.
+              </p>
+              {jobStatus(null)}
+            </>
+          ) : doc === null || preview === null ? (
             <p className="open-dialog__empty">Open a model to export it.</p>
           ) : (
             <>
@@ -595,7 +701,7 @@ export function ExportDialog() {
                 ) : null}
               </section>
 
-              <div className="export-dialog__actions">
+              {jobStatus(
                 <button
                   type="button"
                   className="button button--primary"
@@ -604,51 +710,8 @@ export function ExportDialog() {
                   onClick={() => void onExport()}
                 >
                   {job !== null && isFinished(job) ? "Export again" : "Export"}
-                </button>
-                {running ? (
-                  <>
-                    <span className="export-dialog__progress" data-testid="export-progress" role="status">
-                      <span className="export-dialog__spinner" aria-hidden="true" />
-                      {progressLabel(job.status, job.phase)}… {elapsed} s
-                    </span>
-                    <button
-                      type="button"
-                      className="button"
-                      data-testid="export-cancel"
-                      onClick={() => void onCancel()}
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : null}
-                {job?.status === "cancelled" ? (
-                  <span className="export-dialog__faint" data-testid="export-cancelled">
-                    The export was cancelled.
-                  </span>
-                ) : null}
-              </div>
-
-              {requestError !== null ? (
-                <p className="export-dialog__error" role="alert" data-testid="export-error">
-                  {requestError}
-                </p>
-              ) : null}
-
-              {job?.status === "refused" ? (
-                <section className="export-dialog__section" data-testid="export-refused" role="alert">
-                  <p className="export-dialog__error">
-                    The model cannot be exported as it is: {job.error ?? "see the diagnostics"}.
-                  </p>
-                  <DiagnosticList diagnostics={job.diagnostics} />
-                </section>
-              ) : null}
-              {job?.status === "failed" ? (
-                <section className="export-dialog__section" data-testid="export-failed" role="alert">
-                  <p className="export-dialog__error">The export failed.</p>
-                  <pre className="export-dialog__log">{job.error}</pre>
-                </section>
-              ) : null}
-              {job?.status === "done" && job.report ? <ReportView job={job} report={job.report} /> : null}
+                </button>,
+              )}
             </>
           )}
         </div>

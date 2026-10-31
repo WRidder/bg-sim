@@ -26,6 +26,7 @@ import {
 
 import { EmptyState } from "../app/EmptyState";
 import type { RunManifest, RunSignal } from "../contracts/run-manifest";
+import { startCsvExport } from "../tasks/csvTask";
 import { signalColor } from "./colors";
 import {
   formatCursorTime,
@@ -585,6 +586,20 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
           onClick={(event) => {
             if (exportIds.length === 0) {
               event.preventDefault();
+              return;
+            }
+            // A plain click runs as a background task (progress, Cancel); a modified click
+            // (new tab, save link as) stays the browser's own download.
+            if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+              event.preventDefault();
+              void startCsvExport({
+                url: exportUrl,
+                fileName: `${manifest.id}.csv`,
+                title: `CSV export · ${manifest.model} (${exportIds.length} signal${
+                  exportIds.length === 1 ? "" : "s"
+                })`,
+                model: manifest.model,
+              });
             }
           }}
         >

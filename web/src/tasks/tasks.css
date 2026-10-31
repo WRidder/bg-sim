@@ -1,0 +1,316 @@
+/* The background tasks indicator of the top bar, its popover and the finish toast. */
+
+.tasks {
+  position: relative;
+  display: inline-flex;
+}
+
+.tasks-indicator {
+  position: relative;
+}
+
+.tasks-indicator:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.tasks-indicator__bars rect {
+  fill: currentColor;
+}
+
+.tasks-indicator.is-idle {
+  color: var(--color-text-faint);
+}
+
+.tasks-indicator__track {
+  fill: none;
+  stroke: var(--color-border-strong);
+  stroke-width: 2.25;
+}
+
+.tasks-indicator__arc {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.3s ease;
+}
+
+.tasks-indicator__ring.is-spinning {
+  animation: tasks-spin 1s linear infinite;
+}
+
+@keyframes tasks-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tasks-indicator__count {
+  position: absolute;
+  top: -3px;
+  right: -4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 14px;
+  text-align: center;
+  color: var(--color-on-accent);
+  background: var(--color-accent-fill);
+  border-radius: 7px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tasks-indicator__dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-ok);
+}
+
+.tasks-indicator__dot.is-error {
+  background: var(--color-error);
+}
+
+/* ------------------------------------------------------------- popover */
+
+.tasks__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(520px, calc(100vh - 80px));
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+}
+
+.tasks__panel:focus {
+  outline: none;
+}
+
+.tasks__panel:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.tasks__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.tasks__heading {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.tasks__summary {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.tasks__empty,
+.tasks__warning {
+  margin: 0;
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text-muted);
+}
+
+.tasks__warning {
+  color: var(--color-warning-text);
+}
+
+.tasks__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.tasks__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.tasks__item.is-unseen {
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+
+.tasks__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.tasks__title {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tasks__status {
+  flex: none;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.tasks__status.is-running,
+.tasks__status.is-queued {
+  color: var(--color-accent);
+}
+
+.tasks__status.is-done {
+  color: var(--color-ok-text);
+}
+
+.tasks__status.is-failed {
+  color: var(--color-error-text);
+}
+
+.tasks__status.is-refused {
+  color: var(--color-warning-text);
+}
+
+.tasks__phase {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.tasks__phase.is-error {
+  color: var(--color-error-text);
+}
+
+.tasks__bar {
+  position: relative;
+  height: 4px;
+  overflow: hidden;
+  background: var(--color-surface-sunken);
+  border-radius: 2px;
+}
+
+.tasks__bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--color-accent);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+.tasks__bar.is-indeterminate > span {
+  width: 35%;
+  animation: tasks-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes tasks-slide {
+  from {
+    left: -35%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+.tasks__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.tasks__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.tasks__actions .button {
+  text-decoration: none;
+}
+
+.tasks__dismiss {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+}
+
+.tasks__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* --------------------------------------------------------------- toast */
+
+.tasks-toast {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 160;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: min(420px, calc(100vw - 32px));
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-left: 3px solid var(--color-ok);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+}
+
+.tasks-toast.is-error {
+  border-left-color: var(--color-error);
+}
+
+.tasks-toast__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tasks-indicator__ring.is-spinning,
+  .tasks__bar.is-indeterminate > span {
+    animation: none;
+  }
+
+  .tasks__bar.is-indeterminate > span {
+    left: 0;
+    width: 100%;
+    opacity: 0.5;
+  }
+}
