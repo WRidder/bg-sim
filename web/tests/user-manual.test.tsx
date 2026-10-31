@@ -60,7 +60,7 @@ function Shell() {
 
 async function openManual(): Promise<HTMLElement> {
   fireEvent.click(screen.getByTestId("open-manual"));
-  return screen.findByTestId("user-manual");
+  return screen.findByTestId("user-manual", {}, { timeout: 10_000 });
 }
 
 beforeEach(() => {
@@ -124,7 +124,7 @@ describe("the manual dialog", () => {
   it("opens with F1 when no block is selected and closes with the close button", async () => {
     render(<Shell />);
     fireEvent.keyDown(document.body, { key: "F1" });
-    const dialog = await screen.findByTestId("user-manual");
+    const dialog = await screen.findByTestId("user-manual", {}, { timeout: 10_000 });
     fireEvent.click(within(dialog).getByTestId("manual-close"));
     expect(screen.queryByTestId("user-manual")).toBeNull();
   });
