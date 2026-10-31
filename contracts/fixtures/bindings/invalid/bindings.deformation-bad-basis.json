@@ -1,0 +1,13 @@
+{
+  "$comment": "Invalid: the basis must be clamped-free or free-free.",
+  "bindings": [
+    {
+      "target": "visual:beam_box",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "pinned-pinned",
+      "beam": { "axis": "+x" },
+      "signal": ["Plant/Beam/eta_t[1]"]
+    }
+  ]
+}

@@ -92,6 +92,48 @@
   pointer-events: none;
 }
 
+/* The deformation exaggeration (beam bindings): in the view, so it shows in screenshots and full screen. */
+.viewer__badge {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 2px var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+}
+
+.viewer__badge[data-exaggerated="true"] {
+  border-color: var(--color-warning);
+  box-shadow: inset 3px 0 0 var(--color-warning), var(--shadow-panel);
+}
+
+.viewer__badge-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.viewer__badge-select {
+  font: inherit;
+  font-weight: 600;
+}
+
+.viewer__badge-note {
+  color: var(--color-text-muted);
+}
+
+.viewer__badge[data-exaggerated="true"] .viewer__badge-note {
+  color: var(--color-warning-text);
+  font-weight: 600;
+}
+
 .viewer__failure {
   position: absolute;
   inset: 0;

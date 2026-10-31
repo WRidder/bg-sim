@@ -11,18 +11,29 @@
  *    with no concrete domain (`flow*s`; W205 treats the island as dimensionless). An unknown unit is not
  *    evidence of a mismatch: it is unchecked for every target (angle, length, quaternion) and raises no E303.
  *    A physical unit that does not fit (`N`, `1` on a length, `m` on an angle) still raises E303.
- *  - E304 wrong signal count (pose needs exactly 7, every other property 1).
+ *  - E304 wrong signal count (pose needs exactly 7, deformation 1 to 3 modal coordinates, every other
+ *    property 1).
+ *
+ * Deformation bindings (elastic beams) also raise E301 when the visual is no beam (a sphere or mesh, a
+ * cylinder bent across its own axis, a beam y along the beam axis), when a visual has two bindings of one
+ * family, or when two bindings of one visual give different beam mappings. Bending coordinates are lengths
+ * (m), torsion coordinates angles (rad) for E303.
  *
  * Diagnostics have the shape of plan 3.4; `path` is the binding target.
  */
 
-import type { Binding } from "../contracts/model";
+import type { BeamMapping, Binding, DeformationBinding } from "../contracts/model";
 import type { Diagnostic } from "../contracts/diagnostic";
+import { beamFrame } from "../scene/beamMesh";
+import type { SdfGeometry } from "../scene/sdf";
+import { MAX_MODES } from "./beamModes";
 
 /** What validation needs from the built scene. */
 export interface SceneLookup {
   has(ref: string): boolean;
   joint(ref: string): { readonly type: string } | null;
+  /** The geometry of a visual (deformation bindings need a box or cylinder); absent: not checked. */
+  visualGeometry?(ref: string): SdfGeometry | null;
 }
 
 /** Signal id -> unit (null: the model gives none). */
@@ -112,6 +123,11 @@ export function signalsOf(binding: Binding): string[] {
   return typeof s === "string" && s !== "" ? [s] : [];
 }
 
+/** How many signals a property takes: [min, max]. */
+export function signalCount(property: string): readonly [number, number] {
+  return property === "pose" ? [7, 7] : property === "deformation" ? [1, MAX_MODES] : [1, 1];
+}
+
 /** The kind prefixes a property can target. */
 export function allowedKinds(property: string): readonly string[] {
   switch (property) {
@@ -130,81 +146,139 @@ function diag(code: string, binding: Binding, message: string, hint: string): Di
   return { code, severity: "error", message, hint, path: binding.target };
 }
 
+function sameMapping(a: BeamMapping, b: BeamMapping): boolean {
+  return a.axis === b.axis && (a.y ?? null) === (b.y ?? null) && (a.length ?? null) === (b.length ?? null);
+}
+
+/** E301 problems of a deformation binding against its shape and the deformation bindings before it. */
+function deformationProblems(binding: DeformationBinding, scene: SceneLookup, earlier: readonly Binding[]): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  const geometry = scene.visualGeometry?.(binding.target);
+  if (geometry !== undefined && geometry !== null) {
+    const frame = beamFrame(geometry, binding.beam);
+    if (typeof frame === "string") {
+      out.push(diag("E301", binding, `visual "${binding.target}" cannot deform as a beam: ${frame}`, "bind a box or cylinder visual, and set the beam axis along its length"));
+    }
+  }
+  for (const other of earlier) {
+    if (other.property !== "deformation" || other.target !== binding.target) continue;
+    if (other.family === binding.family) {
+      out.push(diag("E301", binding, `visual "${binding.target}" has two ${binding.family} deformation bindings`, "list all modes of a family in one binding (up to three signals), and remove the other"));
+      break;
+    }
+    if (!sameMapping(other.beam, binding.beam)) {
+      out.push(diag("E301", binding, `the beam mapping of this ${binding.family} binding differs from the ${other.family} binding of "${binding.target}"`, "give every deformation binding of a visual the same beam axis, y axis and length"));
+      break;
+    }
+  }
+  return out;
+}
+
 /**
  * Validate all bindings. `signals` null skips the signal checks (E302, E303): no check or run has told
  * the viewer which signals exist yet, and a missing list must not turn every binding red.
  */
 export function validateBindings(bindings: readonly Binding[], scene: SceneLookup, signals: SignalUnits | null): Diagnostic[] {
+  return validateBindingRows(bindings, scene, signals).flat();
+}
+
+/** The diagnostics of each binding, in order (the binding table shows them under their row). */
+export function validateBindingRows(bindings: readonly Binding[], scene: SceneLookup, signals: SignalUnits | null): Diagnostic[][] {
+  return bindings.map((binding, index) => validateOne(binding, scene, signals, bindings.slice(0, index)));
+}
+
+function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits | null, earlier: readonly Binding[]): Diagnostic[] {
   const out: Diagnostic[] = [];
-  for (const binding of bindings) {
-    const target = typeof binding.target === "string" ? binding.target : "";
-    const property: string = binding.property;
-    const kind = target.split(":")[0] ?? "";
-    const names = signalsOf(binding);
-    const gain = typeof binding.gain === "number" ? binding.gain : 1;
+  const target = typeof binding.target === "string" ? binding.target : "";
+  const property: string = binding.property;
+  const kind = target.split(":")[0] ?? "";
+  const names = signalsOf(binding);
+  const gain = typeof binding.gain === "number" ? binding.gain : 1;
 
-    let targetOk = true;
-    if (!scene.has(target)) {
-      targetOk = false;
-      out.push(diag("E301", binding, `binding target "${target}" is not in the scene`, "pick an existing joint, link, frame or visual in the Bindings table, or add it to the scene file"));
-    } else if (!allowedKinds(property).includes(kind)) {
-      targetOk = false;
-      out.push(
-        diag(
-          "E301",
-          binding,
-          `property "${property}" cannot drive ${kind} "${target}"`,
-          `"${property}" needs a ${allowedKinds(property).join(" or ")} target; pick another target or change the property`,
-        ),
-      );
-    } else if (property === "position" && scene.joint(target)?.type === "fixed") {
-      targetOk = false;
-      out.push(diag("E301", binding, `joint "${target}" is fixed and has no position`, "bind a revolute, continuous or prismatic joint, or remove this binding"));
-    }
-
-    const want = property === "pose" ? 7 : 1;
-    const countOk = names.length === want && Array.isArray(binding.signal) === (property === "pose");
-    if (!countOk) {
-      out.push(
-        diag(
-          "E304",
-          binding,
-          `property "${property}" needs ${String(want)} signal${want === 1 ? "" : "s"}, got ${String(names.length)}`,
-          property === "pose" ? "list exactly 7 signals: q_w, q_x, q_y, q_z, x, y, z" : "bind exactly one signal",
-        ),
-      );
-    }
-
-    if (signals === null) continue;
-    let allKnown = true;
-    for (const name of names) {
-      if (!signals.has(name)) {
-        allKnown = false;
-        out.push(diag("E302", binding, `signal "${name}" is not a signal of the model`, "pick a signal from the list, or run Check after renaming blocks"));
-      }
-    }
-    if (!allKnown || !targetOk || !countOk) continue;
-
-    let need: (index: number) => Need | null = () => null;
-    if (property === "position") {
-      const type = scene.joint(target)?.type;
-      need = () => (type === "prismatic" ? "length" : "angle");
-    } else if (property === "pose") {
-      need = (i) => (i < 4 ? "quaternion" : "length");
-    }
-    names.forEach((name, i) => {
-      const wanted = need(i);
-      if (wanted === null) return;
-      // gain scales the position only; the quaternion is applied unscaled
-      const problem = unitProblem(wanted, signals.get(name), wanted === "quaternion" ? 1 : gain);
-      if (problem !== null) {
-        const expect =
-          property === "position" ? (wanted === "length" ? "m (prismatic joint)" : "rad (revolute or continuous joint)") : wanted === "length" ? "m" : "dimensionless";
-        out.push(
-          diag("E303", binding, `signal "${name}" ${problem}; "${property}" on ${target} expects ${expect}`, "bind a signal with the right unit, or convert it in the model with an output of the expected unit"),
-        );
-      }
-    });
+  let targetOk = true;
+  if (!scene.has(target)) {
+    targetOk = false;
+    out.push(diag("E301", binding, `binding target "${target}" is not in the scene`, "pick an existing joint, link, frame or visual in the Bindings table, or add it to the scene file"));
+  } else if (!allowedKinds(property).includes(kind)) {
+    targetOk = false;
+    out.push(
+      diag(
+        "E301",
+        binding,
+        `property "${property}" cannot drive ${kind} "${target}"`,
+        `"${property}" needs a ${allowedKinds(property).join(" or ")} target; pick another target or change the property`,
+      ),
+    );
+  } else if (property === "position" && scene.joint(target)?.type === "fixed") {
+    targetOk = false;
+    out.push(diag("E301", binding, `joint "${target}" is fixed and has no position`, "bind a revolute, continuous or prismatic joint, or remove this binding"));
+  } else if (binding.property === "deformation") {
+    const problems = deformationProblems(binding, scene, earlier);
+    if (problems.length > 0) targetOk = false;
+    out.push(...problems);
   }
+
+  const isList = property === "pose" || property === "deformation";
+  const [min, max] = signalCount(property);
+  const countOk = names.length >= min && names.length <= max && Array.isArray(binding.signal) === isList;
+  if (!countOk) {
+    const want = min === max ? String(min) : `${String(min)} to ${String(max)}`;
+    out.push(
+      diag(
+        "E304",
+        binding,
+        `property "${property}" needs ${want} signal${max === 1 ? "" : "s"}, got ${String(names.length)}`,
+        property === "pose"
+          ? "list exactly 7 signals: q_w, q_x, q_y, q_z, x, y, z"
+          : property === "deformation"
+            ? "list the modal coordinates of the family, one signal per mode (1 to 3 modes)"
+            : "bind exactly one signal",
+      ),
+    );
+  }
+
+  if (signals === null) return out;
+  let allKnown = true;
+  for (const name of names) {
+    if (!signals.has(name)) {
+      allKnown = false;
+      out.push(diag("E302", binding, `signal "${name}" is not a signal of the model`, "pick a signal from the list, or run Check after renaming blocks"));
+    }
+  }
+  if (!allKnown || !targetOk || !countOk) return out;
+
+  let need: (index: number) => Need | null = () => null;
+  if (property === "position") {
+    const type = scene.joint(target)?.type;
+    need = () => (type === "prismatic" ? "length" : "angle");
+  } else if (property === "pose") {
+    need = (i) => (i < 4 ? "quaternion" : "length");
+  } else if (binding.property === "deformation") {
+    const torsion = binding.family === "torsion";
+    need = () => (torsion ? "angle" : "length");
+  }
+  names.forEach((name, i) => {
+    const wanted = need(i);
+    if (wanted === null) return;
+    // gain scales the position only; the quaternion is applied unscaled
+    const problem = unitProblem(wanted, signals.get(name), wanted === "quaternion" ? 1 : gain);
+    if (problem !== null) {
+      const expect =
+        property === "position"
+          ? wanted === "length"
+            ? "m (prismatic joint)"
+            : "rad (revolute or continuous joint)"
+          : property === "deformation"
+            ? wanted === "length"
+              ? "m (bending modal coordinate)"
+              : "rad (torsion modal coordinate)"
+            : wanted === "length"
+              ? "m"
+              : "dimensionless";
+      out.push(
+        diag("E303", binding, `signal "${name}" ${problem}; "${property}" on ${target} expects ${expect}`, "bind a signal with the right unit, or convert it in the model with an output of the expected unit"),
+      );
+    }
+  });
   return out;
 }

@@ -10,7 +10,7 @@
  *   data, bindings), so the render scheduler stays idle.
  */
 
-import { BindingApplier, type ApplyTarget } from "./bindingsApply";
+import { beamConfigs, BindingApplier, type ApplyTarget } from "./bindingsApply";
 import type { Binding } from "../contracts/model";
 import { clampToPause, pausedHead } from "./pauseClamp";
 import { PlaybackClock, liveHead } from "./playbackClock";
@@ -207,6 +207,7 @@ export class ViewerPlayback {
 
   private rebuild(resetScene: boolean): void {
     if (resetScene) this.target?.reset();
+    this.target?.configureBeams?.(beamConfigs(this.bindings));
     this.applier = this.target !== null && this.buffer !== null ? new BindingApplier(this.target, this.bindings, this.buffer.ids) : null;
     this.requestFrame();
   }
