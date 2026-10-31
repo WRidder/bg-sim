@@ -170,11 +170,13 @@ end
 The eigenvalues of the numeric Jacobian at the initial point and at `samples` rows of the
 reference run (states and held values read from the recorded signals when present). With a
 `mass` diagonal they are the finite eigenvalues of the pencil (`pencil_eigvals`); a sample
-where the algebraic block is singular is skipped. Returns a vector of `(t, eigenvalues)`."""
+where the algebraic block is singular is skipped. Returns a vector of `(t, eigenvalues)`;
+the Jacobian of every kept point is pushed to `jacobians` when given (the static LU's pivot
+check runs on the same points)."""
 function spectrum_scan(jac_fn, x0::Vector{Float64}, p0::Vector{Float64},
     names_x::Vector{String}, names_p::Vector{String}, t0::Float64;
     reference_dir = nothing, samples::Int = 25, ranges = Tuple{Int,Float64,Float64}[],
-    mass = nothing)
+    mass = nothing, jacobians = nothing)
     points = Tuple{Float64,Vector{ComplexF64}}[]
     eig(J) = mass === nothing ? ComplexF64.(LinearAlgebra.eigvals(J)) : pencil_eigvals(J, mass)
     function add!(t, J)
@@ -186,6 +188,7 @@ function spectrum_scan(jac_fn, x0::Vector{Float64}, p0::Vector{Float64},
             return
         end
         push!(points, (t, lams))
+        jacobians === nothing || push!(jacobians, J)
     end
     isempty(x0) && return points
     add!(t0, jac_fn(x0, p0, t0))

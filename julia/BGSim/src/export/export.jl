@@ -528,8 +528,9 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
                 hint = "the Rosenbrock methods step index-1 DAEs only")), out_dir)
         end
     end
+    scanned_jacobians = Matrix{Float64}[]
     points = spectrum_scan(jac_fn, x0, p0, names_x, names_p, 0.0; reference_dir = reference_dir,
-        ranges = ranged, mass = mass_an)
+        ranges = ranged, mass = mass_an, jacobians = scanned_jacobians)
 
     # ---- the method and the step (D-EX7): the cheapest candidate that meets the step rule
     modes = Any[]
@@ -553,7 +554,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     # Jacobian by its terms once it is built.
     sparse_lu = pattern !== nothing && _use_sparse(settings, nx)
     lu_kw = if sparse_lu
-        slu0 = static_lu(pattern)
+        slu0 = structural_lu(pattern, mass)
         (lu_ops = lu_flops(slu0), solve_ops = lu_solve_flops(slu0))
     else
         (lu_ops = nx^2 + nx^3 / 3, solve_ops = 2nx^2)
@@ -650,7 +651,9 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             stats["symbolicTerms"] = jac.terms
         end
         hg = ROSENBROCK_TABLEAUS[method].gamma * dt
-        Js = [c_rows(J) for J in _check_jacobians(jac_fn, x0, p0, names_x, names_p, reference_dir)]
+        # The pivot check and the row matching run on the scanned points (the start, the
+        # ranges of D-EX16 and the reference rows), in the rows of the C code.
+        Js = [c_rows(J) for J in scanned_jacobians]
         la = _plan_linear_algebra((pattern = S, kind = jac.kind, stats = stats), settings, nx,
             hg, mass, Js, diags)
     end
@@ -703,7 +706,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         simp_report["constantObserved"] = simp_stats.constant_observed
     end
     if pattern_before !== nothing && pattern !== nothing
-        lb, la_ = static_lu(pattern_before), static_lu(pattern)
+        lb, la_ = structural_lu(pattern_before, mass), structural_lu(pattern, mass)
         merge!(simp_report, Dict{String,Any}(
             "jacobianNnzBefore" => count(pattern_before), "jacobianNnz" => count(pattern),
             "luNnzBefore" => lu_nnz(lb), "luNnz" => lu_nnz(la_),
@@ -937,7 +940,7 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, mass, jac, la, env, obs, 
         [("dx[$(i - 1)]", rhs[i], mass[i] != 0 ? "d/dt " * names_x[i] : "0 = residual (algebraic, solves " * names_x[i] * ")")
          for i in 1:nx], env, obs; modes = modes)
     emit_jacobian(io, la, jac === nothing ? nothing : jac.jc)
-    la === nothing || la.lu === nothing || emit_sparse_lu(io, la.lu)
+    la === nothing || la.lu === nothing || emit_sparse_lu(io, la.lu; mass)
     emit_function(io, "void bg_modes(const bg_model *m, double t, const double *x, double *c)",
         [("c[$(k - 1)]", modes[k], string(modes[k])) for k in eachindex(modes)], env, obs)
     emit_function(io, "void bg_outputs(const bg_model *m, double t, const double *x, double *y)",
