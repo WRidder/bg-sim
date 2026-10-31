@@ -238,9 +238,10 @@ function resolve_type(t::TypeSpec, env::AbstractDict)::TypeSpec
         if a isa Symbol && haskey(env, a) && env[a] isa Integer
             return Int(env[a])
         elseif a isa Expr
-            # A size written as `ifelse(cond, a, b)` (the spec allows it in sizes).
+            # A size written as `ifelse(cond, a, b)` or as integer `+ - *` of constants
+            # (`n + 1`); a result below 1 stays unresolved, which the checker reports (E005).
             ok, value = try_eval_const(a, env)
-            return ok && value isa Integer ? Int(value) : a
+            return ok && value isa Integer && value >= 1 ? Int(value) : a
         end
         return a
     end

@@ -1,4 +1,4 @@
-/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.4.0).
+/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.6.0).
  *
  * One call of bg_step advances exactly BG_DT:
  *   1. integrate the continuous states over [t, t + BG_DT] with the held discrete values
@@ -10,6 +10,8 @@
  *   3. run the discrete partitions due at t + BG_DT, in topological order, with the same
  *      operation order as the Julia scheduler (`run_tick!` in src/sim/scheduler.jl).
  * Events before ticks is the simulator's order: a tick at t runs after every event up to t.
+ * Then the run monitors (StopSimulation, Assertion; BG_NMON > 0) are checked: bg_step returns
+ * BG_STEP_STOP or BG_STEP_ASSERT, with m->monitor naming the block, when one has triggered.
  *
  * Real-time rules: no allocation, no recursion, no I/O, every loop bounded by a compile-time
  * size. The cost of a step is fixed: Euler is 1 derivative call, RK4 4. A Rosenbrock step is
@@ -399,6 +401,16 @@ int bg_step(bg_model *m) {
     m->t = t1;
     if (BG_NPART > 0) bg_tick(m, t1, ns1);
     m->y_valid = 0;
+#if BG_NMON > 0
+    /* StopSimulation / Assertion: checked once per step, after its events and tick. */
+    {
+        int k = bg_monitor(m);
+        if (k > 0) {
+            m->monitor = k;
+            return bg_monitor_kind[k - 1];
+        }
+    }
+#endif
     return 0;
 }
 

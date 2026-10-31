@@ -348,3 +348,7 @@ include("test_export_tunables.jl")
 
 # The signal sources (Sawtooth, Triangle, Trapezoid, RepeatingTable, ...) in the C export.
 include("test_export_sources.jl")
+
+# The signal and control blocks (filters, routing, observers, StopSimulation, Assertion, ...)
+# in the C export, and the run monitors in bg_step and fmi2DoStep.
+include("test_export_signal_blocks.jl")

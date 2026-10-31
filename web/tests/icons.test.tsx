@@ -69,6 +69,8 @@ describe("block icons", () => {
       "src-triangle",
       "src-uniform-noise",
       "src-white-noise",
+      "src-stop",
+      "src-assertion",
     ];
     const ids = new Set(svgIconIds());
     const glyphs = new Set<string>();
@@ -80,6 +82,46 @@ describe("block icons", () => {
     }
     // No two sources share a drawing.
     expect(glyphs.size).toBe(sourceIcons.length);
+  });
+
+  it("draws a distinct glyph for every signal and control block", () => {
+    // The icon ids of the signal and control blocks (src/library/catalog.jl): linear
+    // systems, filters, routing, nonlinearities, simulation control and observers.
+    const controlIcons = [
+      "cont-transfer-function",
+      "cont-zero-pole",
+      "cont-notch",
+      "cont-butterworth",
+      "cont-bessel",
+      "cont-band-pass",
+      "cont-mux2",
+      "cont-mux3",
+      "cont-mux4",
+      "cont-demux2",
+      "cont-demux3",
+      "cont-demux4",
+      "cont-multiport-switch",
+      "cont-backlash",
+      "cont-variable-delay",
+      "cont-wrap-to-pi",
+      "cont-polynomial",
+      "cont-rounding",
+      "cont-hit-crossing",
+      "cont-luenberger",
+      "disc-memory",
+      "disc-derivative",
+      "disc-kalman",
+      "src-stop",
+      "src-assertion",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of controlIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(controlIcons.length);
   });
 
   it("falls back to a placeholder for an unknown icon id", () => {

@@ -18,7 +18,7 @@ const INTRINSIC_DESCRIPTIONS = Dict{Symbol,String}(
     :csv_value => "Column of a project CSV file at time t (value of the registered data table, F5.1); lowered to an opaque function with registered time derivatives.",
     :noise_normal => "Standard normal sample k of the stream seed (counter-based SplitMix64 + AS 241, bit-identical in simulation and exported C; J-EX9).",
     :noise_uniform => "Uniform sample k in (0, 1) of the stream seed (the draw noise_normal transforms; J-EX9).",
-    :delay => "Delay of the discrete code by T seconds, a whole number of ticks: a ring buffer, zero before it has filled (J-EX9).",
+    :delay => "Delay of the discrete code: `delay(x, T)` by T seconds, a whole number of ticks; `delay(x, Tmax, tau)` by a variable tau in [0, Tmax], linearly interpolated between ticks. A ring buffer, zero before it has filled (J-EX9).",
 )
 
 """

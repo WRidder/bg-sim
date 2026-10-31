@@ -289,6 +289,102 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Zero-order hold: samples the input on the clock and holds it until the next tick.",
         icon = "disc-zoh",
     ),
+    # Signal and control blocks (Simulink / 20-sim style): linear systems, filters, routing,
+    # nonlinearities, simulation control and observers.
+    "stdlib:continuous/TransferFunction" => (
+        description = "Transfer function num(s)/den(s) of order n (proper), coefficients in descending powers of s, in controllable canonical form.",
+        icon = "cont-transfer-function",
+    ),
+    "stdlib:continuous/ZeroPole" => (
+        description = "Zero-pole-gain model gain*prod(s - z)/prod(s - p): m zeros and n poles as real and imaginary parts, complex ones in conjugate pairs.",
+        icon = "cont-zero-pole",
+    ),
+    "stdlib:continuous/Notch" => (
+        description = "Second-order notch (band-stop) filter at w0 (rad/s) with bandwidth and depth (0: full rejection).",
+        icon = "cont-notch",
+    ),
+    "stdlib:continuous/LowPassButterworth" => (
+        description = "Butterworth low-pass filter of order n (1..8) with -3 dB cutoff wc (rad/s), cascaded second-order sections.",
+        icon = "cont-butterworth",
+    ),
+    "stdlib:continuous/LowPassBessel" => (
+        description = "Bessel (linear-phase) low-pass filter of order n (1..8) with -3 dB cutoff wc (rad/s), cascaded second-order sections.",
+        icon = "cont-bessel",
+    ),
+    "stdlib:continuous/BandPass" => (
+        description = "Second-order band-pass filter: unit gain k at the centre frequency w0 (rad/s), -3 dB bandwidth (rad/s).",
+        icon = "cont-band-pass",
+    ),
+    "stdlib:continuous/Mux2" => (
+        description = "Mux: two scalar signals as one 2-vector (for Sum, MultiportSwitch, Scope, ...).",
+        icon = "cont-mux2",
+    ),
+    "stdlib:continuous/Mux3" => (
+        description = "Mux: three scalar signals as one 3-vector.", icon = "cont-mux3",
+    ),
+    "stdlib:continuous/Mux4" => (
+        description = "Mux: four scalar signals as one 4-vector.", icon = "cont-mux4",
+    ),
+    "stdlib:continuous/Demux2" => (
+        description = "Demux: a 2-vector as two scalar signals.", icon = "cont-demux2",
+    ),
+    "stdlib:continuous/Demux3" => (
+        description = "Demux: a 3-vector as three scalar signals.", icon = "cont-demux3",
+    ),
+    "stdlib:continuous/Demux4" => (
+        description = "Demux: a 4-vector as four scalar signals.", icon = "cont-demux4",
+    ),
+    "stdlib:continuous/MultiportSwitch" => (
+        description = "Multiport switch: y = u[index] of N data inputs, index rounded to the nearest integer and clamped to 1..N; exact switch events.",
+        icon = "cont-multiport-switch",
+    ),
+    "stdlib:continuous/Backlash" => (
+        description = "Backlash (play, hysteresis): the output follows the input only when pushed from either end of a deadband of width; held position updated every sample_period.",
+        icon = "cont-backlash",
+    ),
+    "stdlib:continuous/VariableTransportDelay" => (
+        description = "Variable transport delay y = u(t - d) with the delay d as an input up to max_delay; a ring buffer read with interpolation, also in exported code.",
+        icon = "cont-variable-delay",
+    ),
+    "stdlib:continuous/WrapToPi" => (
+        description = "Wraps an angle into (-pi, pi].", icon = "cont-wrap-to-pi",
+    ),
+    "stdlib:continuous/Polynomial" => (
+        description = "Polynomial p[1]*u^(N-1) + ... + p[N] of the input (Horner), coefficients in descending powers.",
+        icon = "cont-polynomial",
+    ),
+    "stdlib:continuous/Rounding" => (
+        description = "Rounding function: floor, ceil, round (halves away from zero) or fix (towards zero); exact jump events.",
+        icon = "cont-rounding",
+    ),
+    "stdlib:continuous/HitCrossing" => (
+        description = "Hit crossing: detects the input crossing level (rising, falling or either) as an exact event, with a 0/1 flag and a crossing count.",
+        icon = "cont-hit-crossing",
+    ),
+    "stdlib:continuous/Luenberger" => (
+        description = "Luenberger state observer for x' = A*x + B*u, y = C*x + D*u with observer gain L; estimates the state from u and the measured y.",
+        icon = "cont-luenberger",
+    ),
+    "stdlib:discrete/Memory" => (
+        description = "Memory: the input value of the previous tick (initial at the first tick); reads previous(u), so it breaks a cycle between discrete blocks.",
+        icon = "disc-memory",
+    ),
+    "stdlib:discrete/DiscreteDerivative" => (
+        description = "Discrete derivative: gain*(u[k] - u[k-1])/Ts, the backward difference of the sampled input.",
+        icon = "disc-derivative",
+    ),
+    "stdlib:discrete/KalmanFilter" => (
+        description = "Time-varying discrete Kalman filter for x[k+1] = A*x + B*u + w, y = C*x + D*u + v with noise covariances Q and R; filtered state estimate and gain.",
+        icon = "disc-kalman",
+    ),
+    "stdlib:sources/StopSimulation" => (
+        description = "Stops the run when the input rises above threshold (exact event, W217 warning with the time); in an FMU fmi2DoStep returns fmi2Discard and fmi2Terminated.",
+        icon = "src-stop",
+    ),
+    "stdlib:sources/Assertion" => (
+        description = "Assertion: fails the run (E902 error with the block path and time) when the input falls below threshold; in an FMU fmi2DoStep returns fmi2Error.",
+        icon = "src-assertion",
+    ),
     "stdlib:converters/AccelerationSensor" => (
         description = "Translational acceleration sensor; differentiates the velocity of its port without drawing force.",
         icon = "conv-acceleration-sensor",

@@ -41,6 +41,23 @@ function label(text: string, size = 8): ReactNode {
   );
 }
 
+/** A small text mark centred at (x, y), for fractions and corner tags. */
+function small(text: string, x: number, y: number, size = 6): ReactNode {
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      fontSize={size}
+      fontFamily="var(--font-ui)"
+      fill="currentColor"
+      stroke="none"
+    >
+      {text}
+    </text>
+  );
+}
+
 const GLYPHS: Record<string, Glyph> = {
   ...MULTIBOND_GLYPHS,
   // ---------------------------------------------------------- sources & sinks
@@ -193,6 +210,19 @@ const GLYPHS: Record<string, Glyph> = {
       <circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none" />
     </>
   ),
+  "src-stop": () => (
+    <>
+      <path d="M8.7 3.5h6.6l4.7 4.7v6.6l-4.7 4.7H8.7L4 14.8V8.2z" />
+      <rect x="9" y="9" width="6" height="5" fill="currentColor" stroke="none" />
+    </>
+  ),
+  "src-assertion": () => (
+    <>
+      <path d="M12 3.5l9 16H3z" />
+      <path d="M12 9.5v5" />
+      <circle cx="12" cy="17" r="0.6" fill="currentColor" />
+    </>
+  ),
 
   // ---------------------------------------------------------------- continuous
   "cont-gain": () => (
@@ -217,6 +247,155 @@ const GLYPHS: Record<string, Glyph> = {
     <>
       <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
       {label("PI", 7)}
+    </>
+  ),
+
+  // ------------------------------------------------ signal & control blocks
+  "cont-transfer-function": () => (
+    <>
+      {small("N(s)", 12, 9.5)}
+      <path d="M5 12h14" />
+      {small("D(s)", 12, 19)}
+    </>
+  ),
+  "cont-zero-pole": () => (
+    <>
+      <path d="M2 12h20M14 3v18" opacity="0.35" />
+      <circle cx="10" cy="12" r="1.8" />
+      <path d="M4 6.5l3 3M7 6.5l-3 3M4 14.5l3 3M7 14.5l-3 3" />
+    </>
+  ),
+  "cont-notch": () => (
+    <>
+      <path d="M2 7h7.5l2.5 11 2.5-11H22" />
+      <path d="M2 21h20" opacity="0.35" />
+    </>
+  ),
+  "cont-butterworth": () => (
+    <>
+      <path d="M2 7h9c3 0 5 3 8 11" />
+      <path d="M2 21h20" opacity="0.35" />
+      {small("Bw", 18, 10)}
+    </>
+  ),
+  "cont-bessel": () => (
+    <>
+      <path d="M2 7h5c4 0 7 4 13 11" />
+      <path d="M2 21h20" opacity="0.35" />
+      {small("Bs", 18, 10)}
+    </>
+  ),
+  "cont-band-pass": () => (
+    <>
+      <path d="M2 18c4 0 6-11 10-11s6 11 10 11" />
+      <path d="M2 21h20" opacity="0.35" />
+    </>
+  ),
+  "cont-mux2": () => (
+    <>
+      <path d="M2 8h10M2 16h10M16 12h6" />
+      <rect x="12" y="4" width="4" height="16" rx="1" fill="currentColor" />
+    </>
+  ),
+  "cont-mux3": () => (
+    <>
+      <path d="M2 7h10M2 12h10M2 17h10M16 12h6" />
+      <rect x="12" y="4" width="4" height="16" rx="1" fill="currentColor" />
+    </>
+  ),
+  "cont-mux4": () => (
+    <>
+      <path d="M2 6h10M2 10h10M2 14h10M2 18h10M16 12h6" />
+      <rect x="12" y="4" width="4" height="16" rx="1" fill="currentColor" />
+    </>
+  ),
+  "cont-demux2": () => (
+    <>
+      <path d="M2 12h6M12 8h10M12 16h10" />
+      <rect x="8" y="4" width="4" height="16" rx="1" fill="currentColor" />
+    </>
+  ),
+  "cont-demux3": () => (
+    <>
+      <path d="M2 12h6M12 7h10M12 12h10M12 17h10" />
+      <rect x="8" y="4" width="4" height="16" rx="1" fill="currentColor" />
+    </>
+  ),
+  "cont-demux4": () => (
+    <>
+      <path d="M2 12h6M12 6h10M12 10h10M12 14h10M12 18h10" />
+      <rect x="8" y="4" width="4" height="16" rx="1" fill="currentColor" />
+    </>
+  ),
+  "cont-multiport-switch": () => (
+    <>
+      <path d="M2 6h6M2 12h6M2 18h6M16 12h6" />
+      <path d="M16 12L8.5 6.5" />
+      <circle cx="16" cy="12" r="1.2" fill="currentColor" />
+      <path d="M12 21v-4" opacity="0.5" />
+    </>
+  ),
+  "cont-backlash": () => (
+    <>
+      <path d="M2 12h20M12 2v20" opacity="0.35" />
+      <path d="M5 18.5l6-13h8l-6 13z" />
+    </>
+  ),
+  "cont-variable-delay": () => (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      {label("τ(t)", 7)}
+      <path d="M12 21v-2.5" />
+    </>
+  ),
+  "cont-wrap-to-pi": () => (
+    <>
+      <path d="M2 18l7-12v12l7-12v12l6-10" />
+      <path d="M2 6h20M2 18h20" opacity="0.35" strokeDasharray="2 2" />
+    </>
+  ),
+  "cont-polynomial": () => (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      {label("p(u)", 7)}
+    </>
+  ),
+  "cont-rounding": () => (
+    <>
+      <path d="M3 20L21 4" opacity="0.35" strokeDasharray="2 2" />
+      <path d="M3 20h4v-4h4v-4h4V8h4V4" />
+    </>
+  ),
+  "cont-hit-crossing": () => (
+    <>
+      <path d="M2 12h20" opacity="0.35" />
+      <path d="M2 19c5 0 7-14 12-14 3 0 5 3 8 3" />
+      <circle cx="9.3" cy="12" r="1.8" fill="currentColor" stroke="none" />
+    </>
+  ),
+  "cont-luenberger": () => (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      {label("x̂ L", 7)}
+    </>
+  ),
+  "disc-memory": () => (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      {label("mem", 7)}
+    </>
+  ),
+  "disc-derivative": () => (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      {label("Δu/T", 6.5)}
+    </>
+  ),
+  "disc-kalman": () => (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      {label("KF", 7)}
+      <path d="M6 21h3v-1.5h3V21h3v-1.5h3" opacity="0.5" />
     </>
   ),
 

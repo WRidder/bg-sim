@@ -199,3 +199,26 @@ double bg_delay_ring(double *ring, int *pos, int k, double x) {
     *pos = p == k ? 0 : p;
     return out;
 }
+
+/* The variable read `delay(x, Tmax, tau)`: d = tau / Ts calls back, clamped to [0, k] (NaN
+   reads 0 back), linearly interpolated between the stored values; then x is stored as in
+   bg_delay_ring. The Julia twin is bg_delay_ring_at! in src/library/random.jl. */
+double bg_delay_ring_at(double *ring, int *pos, int k, double x, double d) {
+    double dd = d > 0.0 ? (d < (double)k ? d : (double)k) : 0.0;
+    int n = (int)dd;
+    double f = dd - (double)n;
+    int p = *pos;
+    int ia = (p - n) % k;
+    if (ia < 0) ia += k;
+    double a = n == 0 ? x : ring[ia];
+    double out = a;
+    if (n < k) {
+        int ib = (p - n - 1) % k;
+        if (ib < 0) ib += k;
+        out = a + f * (ring[ib] - a);
+    }
+    ring[p] = x;
+    p += 1;
+    *pos = p == k ? 0 : p;
+    return out;
+}

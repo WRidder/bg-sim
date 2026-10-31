@@ -73,7 +73,7 @@ Five types cover v0.1, and every size is fixed at compile time.
 | `Real` | `Float64` | Default for all variables; `Float32` target option later |
 | `Int` | `Int32` | Discrete scopes, counters, array indices |
 | `Bool` | `Bool` | Not allowed as a continuous state |
-| `Vec{N}` | `SVector{N,Float64}` | N is a literal or a `@constants` value |
+| `Vec{N}` | `SVector{N,Float64}` | N is a literal, a `@constants` value, or integer `+`, `-`, `*` arithmetic of them (`Vec{n + 1}`); it must fold to at least 1 |
 | `Mat{N,M}` | `SMatrix{N,M,Float64}` | Same size rule as `Vec` |
 
 Declaration form: `name::Type = default, [attributes]`. The type defaults to `Real` when omitted.
@@ -107,7 +107,7 @@ Equations are declarative and order-free; discrete code is imperative and bounde
 | `if / elseif / else` | Only around whole equations, with equal equation counts per branch | Yes | No |
 | `for i in 1:N` | Yes, N static; unrolled | Yes, N static | No |
 | `while`, `break`, `continue` | No | No | No |
-| Array literals and indexing `v[i]` | Yes, static indices | Yes, index checked against size | Yes |
+| Array literals and indexing `v[i]` | Yes, static indices; an index expression of loop variables and constants (`w[i + 1]`) is checked for every iteration (E005) | Yes, index checked against size | Yes |
 | `ddt(x)`, `int(x)` | Yes | No | No |
 | `previous(x)`, `hold(x)` | No | Yes | No |
 | `reinit(x, value)` | No | `@events` only | No |
@@ -137,7 +137,7 @@ This table is the contract between the language, the simulator and the target bu
 | `ddt(x)` | Derivative operator | Equations | Bond graph integral causality uses it |
 | `int(x, x0)` | Integral with start value | Equations | Sugar for a new state with `ddt` |
 | `deadzone(x, a, b)`, `saturate(x, lo, hi)` | Library | All | Nonsmooth |
-| `delay(x, T)` | Value of `x` from `T / Ts` executions ago | Discrete, stdlib blocks only | `T` constant, a whole number of ticks (E104); a ring buffer of `T / Ts` slots, zero until filled; see "Seeded noise and delay" |
+| `delay(x, T)`, `delay(x, Tmax, tau)` | Value of `x` from `T / Ts` executions ago; with three arguments from `tau / Ts` executions ago, `tau` variable in `[0, Tmax]` and interpolated | Discrete, stdlib blocks only | `T`, `Tmax` constant, a whole number of ticks (E104); a ring buffer of `T / Ts` slots, zero until filled; see "Seeded noise and delay" |
 | `noise_normal(seed, k)`, `noise_uniform(seed, k)` | Sample `k` of a seeded stream | Discrete, stdlib blocks only | Integer `seed`, `k`; counter-based, bit-identical in simulation and exported C; see "Seeded noise and delay" |
 | `csv_value(table, k, t)` | Column `k` of a registered CSV table at time `t` | All, stdlib blocks only | Opaque registered function with derivatives up to order 3; used by `CsvSource` |
 | `previous(x)` | Value at last tick | Discrete | Breaks loops between discrete blocks |
@@ -165,7 +165,11 @@ These intrinsics are discrete code: they run once per tick of their block's cloc
 
 **`delay(x, T)` in discrete code** returns `x` from `T / Ts` executions of the call ago, and 0 until it has executed that often. `T` must fold to a constant that is a whole number of ticks; at most 10^6 ticks per call, E104 otherwise. Each call site (each element of a vector call, each unrolled loop iteration) owns a ring buffer of `T / Ts` slots in the model's discrete state. That state is zero at the start of a run, and in the FMU it is zeroed at instantiate and at `fmi2Reset`. `T = 0` is `x` itself. A call inside an `if` branch advances only when it runs. The ring is plain data movement, so an exported discrete delay is bit-exact.
 
+**`delay(x, Tmax, tau)`** reads the same kind of ring at a variable position. The ring holds `k = Tmax / Ts` slots (`Tmax` constant, a whole number of ticks, as `T` above). At each execution, `d = tau / Ts` is clamped to `[0, k]` and split into `n = floor(d)` and `f = d - n`; the result is `a + f·(b - a)`, where `a` is the value from `n` executions ago (`x` itself for `n = 0`) and `b` the value from `n + 1` executions ago (`a` when `n = k`). Then `x` is stored, as in the two-argument form. Unfilled slots read as 0. The C twin `bg_delay_ring_at` performs the same operations in the same order, so the exported result is bit-exact.
+
 **Continuous transport delay** is the `TransportDelay` block, written with that intrinsic. It stores the input at every tick of `sample_period` and outputs the linear interpolation, at `t - delay_time`, between the two stored samples around it. Simulation and the exported code run the same buffer and the same interpolation, so the delayed signal matches within the tolerance of the continuous signal it samples. Against an ideal delay, the error is at most `sample_period² / 8 · max|u''|`, and it is exact for an input that is linear between ticks. `delay_time` must be a whole multiple of `sample_period`, at least one period. Until the line has filled, the output is `initial`, and the input at `t = 0` counts as `initial` because the first sample is taken at the first tick. The block works in variable-step simulation and in the fixed-step export alike. The export requires `dt` to divide `sample_period` (E104), as for every clock, and refuses more than 2^20 ring slots (8 MiB) per model (E110).
+
+**Variable transport delay** is the `VariableTransportDelay` block, on `delay(x, Tmax, tau)`. Its input `d` (the delay, in seconds) is sampled at every tick and clamped to `[sample_period, max_delay]`. At tick `t_k` the block reads `u(t_k + sample_period - d)` from the ring, and between ticks it interpolates linearly from the previous tick's reading to this one, so the output is continuous. For a constant `d` it equals `TransportDelay`, and a change of `d` takes effect over one sample period. `max_delay` must be a whole multiple of `sample_period`, at least two periods.
 
 ## Ports, connections and bond graph elements
 
@@ -266,6 +270,10 @@ Nonlinear variants (for example a C with a user-defined constitutive law) are ma
 | Noise | output `y` | `mean`, `std`, `seed`; clock `sample_time` (structural constant) | v0.1 |
 | Plot / scope sink | inputs `u[]` | none; marks signals for recording | v0.1 |
 | Recorder | inputs `u[]` | decimation | v0.1 |
+| Stop simulation | input `u` | `threshold`; the run ends when `u` rises above it (W217) | v0.1 |
+| Assertion | input `u` | `threshold`; the run fails when `u` falls below it (E902) | v0.1 |
+
+**Run monitors (`StopSimulation`, `Assertion`).** The compiler recognises the two blocks by their library reference (a copy under another name is an ordinary block). Each one has a latch state set by its event (`stopped`, `failed`) and a margin `z` (`u - threshold`, `threshold - u`). In simulation the event is located exactly: the run records the instant and ends there, with status `done` and a W217 warning for a stop, or status `failed` and an E902 error for an assertion; both name the block path and the time (strings are not part of the language, so the path is the message: name the block after what it checks). A margin already positive at the start ends the run at once. In the exported C code `bg_step` checks every monitor after each step (after its events and ticks) and returns `BG_STEP_STOP` (1) or `BG_STEP_ASSERT` (2), with `m->monitor` naming the block; the check is once per step, so the stop is up to one `dt` late. In the FMU, `fmi2DoStep` returns `fmi2Discard` and `fmi2GetBooleanStatus(fmi2Terminated)` reads true after a stop (the outputs at the stop time stay readable), and logs the block path and returns `fmi2Error` after a failed assertion.
 
 Noise is seeded and sampled on a fixed clock, so runs repeat bit for bit, in simulation and on the target (counter-based SplitMix64 and AS 241; see "Seeded noise and delay").
 
@@ -291,7 +299,11 @@ The file has a header row (`name` or `name [unit]` per column) and numeric rows;
 | Product / divide | `u[]`, `y` | operations | v0.1 |
 | Integrator | `u`, `y`, optional `reset` | initial value, `lower`, `upper` limits | v0.1 |
 | Filtered derivative | `u`, `y` | time constant | v0.1 |
-| Transfer function | `u`, `y` | numerator, denominator | v0.1 |
+| Transfer function | `u`, `y` | `num`, `den` (`Vec{n + 1}`, descending powers of s, proper); order `n` (constant); controllable canonical form | v0.1 |
+| Zero-pole | `u`, `y` | `gain`, `zero_re`, `zero_im`, `pole_re`, `pole_im`; `n` poles, `m` zeros (constants), conjugate pairs from an odd index | v0.1 |
+| Butterworth / Bessel low-pass | `u`, `y` | `k`, `wc` (rad/s, -3 dB); order `n` 1..8 (constant); cascaded second-order sections | v0.1 |
+| Notch / band-pass | `u`, `y` | `k`, `w0` (rad/s), `bandwidth` (rad/s); notch `depth` | v0.1 |
+| Luenberger observer | `u`, `y`, `x_hat`, `y_hat` | `A`, `B`, `C`, `D`, observer gain `L`; `N` (constant) | v0.1 |
 | State space | `u`, `y` | `A`, `B`, `C`, `D`, initial state | v0.1 |
 | First order / second order | `u`, `y` | `k`, `tau` / `k`, `w0`, `zeta` | v0.1 |
 | Lead-lag | `u`, `y` | zero, pole, gain | v0.1 |
@@ -299,7 +311,14 @@ The file has a header row (`name` or `name [unit]` per column) and numeric rows;
 | Saturation | `u`, `y` | `lower`, `upper` | v0.1 |
 | Dead zone | `u`, `y` | `lower`, `upper` | v0.1 |
 | Rate limiter | `u`, `y` | rising, falling rate | v0.1 |
-| Backlash | `u`, `y` | width, initial output | v0.2 |
+| Backlash | `u`, `y` | `width`, `initial` output; held position updated every `sample_period` (constant) | v0.1 |
+| Wrap to pi | `u`, `y` | none; `y` in (-π, π] | v0.1 |
+| Polynomial | `u`, `y` | `p` (`Vec{N}`, descending powers), Horner | v0.1 |
+| Rounding | `u`, `y` | `mode`: floor, ceil, round, fix | v0.1 |
+| Hit crossing | `u`, `y`, `n` | `level`, `direction` (either, rising, falling); exact event | v0.1 |
+| Mux / demux | `u1..uN`, `y` (`Vec{N}`) / `u` (`Vec{N}`), `y1..yN` | none; N = 2, 3, 4 (one block per arity) | v0.1 |
+| Multiport switch | `index`, `u` (`Vec{N}`), `y` | `N` (constant); `index` rounded and clamped to 1..N | v0.1 |
+| Variable transport delay | `u`, `d`, `y` | `max_delay`, `sample_period` (constants), `initial`; a ring read at a variable position | v0.1 |
 | Relay with hysteresis | `u`, `y` | on/off thresholds, on/off values | v0.1 |
 | Lookup table 1D / 2D | `u` (or `u1`, `u2`), `y` | breakpoints, table, interpolation | v0.1 |
 | Transport delay | `u`, `y` | `delay_time`, `sample_period` (constants), `initial`; stored per tick, linearly interpolated | v0.1 |
@@ -318,6 +337,9 @@ Every discrete block takes a sample period `Ts`, and optionally an `offset`; the
 | Block | Ports | Key parameters | Release |
 | --- | --- | --- | --- |
 | Unit delay (z⁻¹) | `u`, `y` | initial value | v0.1 |
+| Memory | `u`, `y` | initial value; reads `previous(u)`, so it breaks a cycle between discrete blocks | v0.1 |
+| Discrete derivative | `u`, `y` | `gain`, `initial`; `gain·(u[k] - u[k-1]) / Ts` | v0.1 |
+| Kalman filter | `u`, `y`, `x_hat`, `y_hat` | `A`, `B`, `C`, `D`, `Q`, `R`; time-varying covariance `P` and gain `K` | v0.1 |
 | Integer delay (z⁻ᴺ) | `u`, `y` | `N` (constant), initial value; a ring buffer | v0.1 |
 | Zero-order hold | `u`, `y` | `Ts` | v0.1 |
 | Rate transition | `u`, `y` | input and output periods | v0.1 |
@@ -605,6 +627,8 @@ Validation runs in two passes: per block right after parsing (fast, runs as the 
 | `W203` | Model | Event not located in fixed-step export | `abs` in `Friction1` switches between steps |
 | `W204` | Block | Unused declaration | `x` is declared but never used |
 | `W216` | Model | Random sources share a seed, so they draw the same sequence | `Noise1`, `Prbs1` share seed 1; give each its own `seed` |
+| `W217` | Run | A `StopSimulation` block ended the run | the run was stopped by `Stop1` at t = 1.25 s |
+| `E902` | Run | An `Assertion` block failed: its input fell below `threshold` | assertion `PressureOk` failed at t = 0.8 s |
 
 Every diagnostic carries the block path (for example `Plant/Motor1`), scope, line and column in the user's source, the code, the message, and a fix hint where one exists. The editor highlights the element on the canvas and the line in the code view.
 

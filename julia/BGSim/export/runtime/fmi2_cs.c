@@ -1,4 +1,4 @@
-/* bg-sim FMI 2.0 Co-Simulation wrapper (hand-written, model independent; runtime 0.4.0).
+/* bg-sim FMI 2.0 Co-Simulation wrapper (hand-written, model independent; runtime 0.6.0).
  *
  * Memory: fmi2Instantiate allocates the one instance struct through the environment's
  * allocateMemory callback; nothing else is ever allocated. fmi2DoStep, fmi2GetReal and
@@ -181,7 +181,26 @@ fmi2Status fmi2DoStep(fmi2Component c, fmi2Real tc, fmi2Real h, fmi2Boolean noSe
     if (n < 0 || fabs(steps - (double)n) > 1e-6)
         return bg_fail(INST, fmi2Error, "fmi2DoStep: h must be a whole multiple of the internal step");
     for (long long i = 0; i < n; ++i) {
-        if (bg_step(m) != 0) return bg_fail(INST, fmi2Error, "fmi2DoStep: the state became non-finite or the iteration matrix is singular");
+        int rc = bg_step(m);
+        if (rc == 0) continue;
+        if (rc < 0) return bg_fail(INST, fmi2Error, "fmi2DoStep: the state became non-finite or the iteration matrix is singular");
+#if BG_NMON > 0
+        /* A StopSimulation block ends the run (fmi2Discard, fmi2Terminated reads true; the
+           outputs at the stop time stay readable); a failed Assertion is an error. */
+        const char *who = bg_monitor_name[m->monitor - 1];
+        if (rc == BG_STEP_STOP) {
+            if (INST->cb.logger != NULL)
+                INST->cb.logger(INST->cb.componentEnvironment, INST->name, fmi2Discard, "terminate",
+                                "the run was stopped by %s at t = %g", who, m->t);
+            INST->state = ST_TERMINATED;
+            return fmi2Discard;
+        }
+        if (INST->cb.logger != NULL)
+            INST->cb.logger(INST->cb.componentEnvironment, INST->name, fmi2Error, "error",
+                            "assertion %s failed at t = %g", who, m->t);
+        INST->state = ST_ERROR;
+        return fmi2Error;
+#endif
     }
     return fmi2OK;
 }
@@ -209,5 +228,8 @@ fmi2Status fmi2GetRealStatus(fmi2Component c, const fmi2StatusKind k, fmi2Real *
     return bg_fail(INST, fmi2Discard, "fmi2GetRealStatus: not supported");
 }
 fmi2Status fmi2GetIntegerStatus(fmi2Component c, const fmi2StatusKind k, fmi2Integer *v) { (void)k; (void)v; return bg_fail(INST, fmi2Discard, "not supported"); }
-fmi2Status fmi2GetBooleanStatus(fmi2Component c, const fmi2StatusKind k, fmi2Boolean *v) { (void)k; (void)v; return bg_fail(INST, fmi2Discard, "not supported"); }
+fmi2Status fmi2GetBooleanStatus(fmi2Component c, const fmi2StatusKind k, fmi2Boolean *v) {
+    if (k == fmi2Terminated) { *v = INST->state == ST_TERMINATED ? fmi2True : fmi2False; return fmi2OK; }
+    return bg_fail(INST, fmi2Discard, "fmi2GetBooleanStatus: not supported");
+}
 fmi2Status fmi2GetStringStatus(fmi2Component c, const fmi2StatusKind k, fmi2String *v) { (void)k; (void)v; return bg_fail(INST, fmi2Discard, "not supported"); }

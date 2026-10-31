@@ -36,6 +36,7 @@ const EXPECTED_PAGES = [
   "diagnostics",
   "export",
   "signal-sources",
+  "control-blocks",
   "background-tasks",
   "keyboard-shortcuts",
 ];

@@ -2023,6 +2023,12 @@ function _check_one_index!(ck::Checker, e::Index, node, n::Int, k::Int, base::Ty
         return nothing
     end
     ok, value = try_eval_const(node, ck.consts)
+    if !ok && _loop_index_expr(ck, node)
+        # An expression of `for` loop variables and constants (`x[i + 1]`, `c[p - 1]`) is
+        # static after unrolling: check it at every value of the loop ranges.
+        _check_loop_index!(ck, e, node, n, where, base)
+        return nothing
+    end
     if !ok
         # Equations need static indices (spec table: "Yes, static indices"); discrete code
         # may use a runtime index and J2.3 emits the bounds check.
@@ -2047,6 +2053,53 @@ function _check_one_index!(ck::Checker, e::Index, node, n::Int, k::Int, base::Ty
             e;
             hint = "use an index between 1 and $n, or raise the structural constant",
         )
+    end
+    return nothing
+end
+
+# True when `node` reads only `for` loop variables and constants, and at least one loop
+# variable: an index that is static once the loops are unrolled.
+function _loop_index_expr(ck::Checker, node)
+    names = Set{Symbol}()
+    _collect_expr_refs!(names, node)
+    any(n -> haskey(ck.loopvars, n), names) || return false
+    return all(n -> haskey(ck.loopvars, n) || haskey(ck.consts, n), names)
+end
+
+# Range-check an index expression of loop variables at every combination of their values
+# (a loop whose range is unknown was reported already; an empty loop never indexes). The
+# values between a stepped loop's ends are included, which is exact for the usual monotone
+# index expressions such as `p + 1`.
+function _check_loop_index!(ck::Checker, e::Index, node, n::Int, where, base::TypeSpec)
+    names = Set{Symbol}()
+    _collect_expr_refs!(names, node)
+    vars = sort!([v for v in names if haskey(ck.loopvars, v)])
+    ranges = UnitRange{Int}[]
+    for v in vars
+        r = get(ck.loop_ranges, v, nothing)
+        r === nothing && return nothing
+        r[2] < r[1] && return nothing
+        push!(ranges, r[1]:r[2])
+    end
+    prod(length, ranges; init = 1) <= 4096 || return nothing
+    env = Dict{Symbol,Any}(ck.consts)
+    for combo in Iterators.product(ranges...)
+        for (v, x) in zip(vars, combo)
+            env[v] = x
+        end
+        ok, value = try_eval_const(node, env)
+        if !(ok && value isa Integer)
+            _report!(ck, "E005", "the index of `$(_show(e))` is not an integer", node;
+                hint = "use integer arithmetic of `for` loop variables and `@constants` values")
+            return nothing
+        end
+        if !(1 <= value <= n)
+            at = join(["$v = $x" for (v, x) in zip(vars, combo)], ", ")
+            _report!(ck, "E005",
+                "index out of range: `$(_show(e))` is $(value) at $(at), but `$(_show(e.base))` is `$(type_name(base))`$where",
+                e; hint = "make the loop range fit the array: the index must stay within 1:$(n)")
+            return nothing
+        end
     end
     return nothing
 end

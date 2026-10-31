@@ -206,6 +206,129 @@ end
 
 _with_event_limit(cb, ::Base.RefValue{Int}, ::Int) = cb
 
+# ---------------------------------------------------------------------------------------
+# StopSimulation and Assertion: the run monitors
+# ---------------------------------------------------------------------------------------
+#
+# An instance of `stdlib:sources/StopSimulation` or `stdlib:sources/Assertion` (recognised by
+# its library reference) ends the run when it triggers: its latched flag (`stopped`/`failed`,
+# set by the block's exact event) is 1, or its margin `z` is positive. The flags are read
+# after initialization, after every discrete tick and integrator step, and inside every event
+# affect, where a trigger calls `terminate!` so the run ends at the event instant itself.
+# A stop ends the run as "done" with W217; a failed assertion as "failed" with E902.
+
+const STOP_BLOCK = "stdlib:sources/StopSimulation"
+const ASSERT_BLOCK = "stdlib:sources/Assertion"
+
+struct RunMonitor
+    kind::Symbol      # :stop or :assert
+    path::String
+    node::String
+    latch::Any        # getter of the latched flag
+    margin::Any       # getter of `z`
+end
+
+function run_monitors(flat::Flat.FlatModel, model::CompiledModel)
+    out = RunMonitor[]
+    for inst in flat.instances
+        kind = inst.ref == STOP_BLOCK ? :stop : inst.ref == ASSERT_BLOCK ? :assert : nothing
+        kind === nothing && continue
+        latch = get(model.vars, inst.path * (kind === :stop ? "/stopped" : "/failed"), nothing)
+        margin = get(model.vars, inst.path * "/z", nothing)
+        (latch === nothing || margin === nothing) && continue
+        push!(out, RunMonitor(kind, inst.path, inst.node, getu(model.system, latch),
+            getu(model.system, margin)))
+    end
+    return out
+end
+
+"""The first monitor that has triggered at the integrator's current state, or `nothing`."""
+function monitor_hit(monitors::Vector{RunMonitor}, integ)
+    for m in monitors
+        (m.latch(integ) >= 0.5 || m.margin(integ) > 0.0) && return m
+    end
+    return nothing
+end
+
+function _monitor_diagnostic(m::RunMonitor, t)
+    if m.kind === :stop
+        return diag("W217", "the run was stopped by `$(m.path)` at t = $t";
+            hint = "StopSimulation ends the run when its input rises above threshold",
+            path = m.path, node = m.node, block = STOP_BLOCK)
+    end
+    return diag("E902", "assertion `$(m.path)` failed at t = $t";
+        hint = "the input of the Assertion fell below its threshold",
+        path = m.path, node = m.node, block = ASSERT_BLOCK)
+end
+
+# Wrap every event affect so that a monitor triggered by it ends the integration at the event
+# instant (`terminate!` makes `step!` return there).
+function _monitor_affect(affect, check)
+    _is_empty_affect(affect) && return affect
+    return function (integ, args...)
+        affect(integ, args...)
+        check(integ) && ModelingToolkit.SciMLBase.terminate!(integ)
+        return nothing
+    end
+end
+
+function _with_monitors(cb::ModelingToolkit.SciMLBase.ContinuousCallback, check)
+    return ModelingToolkit.SciMLBase.ContinuousCallback(
+        cb.condition,
+        _monitor_affect(cb.affect!, check),
+        _monitor_affect(cb.affect_neg!, check);
+        initialize = cb.initialize,
+        finalize = cb.finalize,
+        idxs = cb.idxs,
+        rootfind = cb.rootfind,
+        interp_points = cb.interp_points,
+        save_positions = cb.save_positions,
+        dtrelax = cb.dtrelax,
+        abstol = cb.abstol,
+        reltol = cb.reltol,
+        repeat_nudge = cb.repeat_nudge,
+        initializealg = cb.initializealg,
+        saved_clock_partitions = cb.saved_clock_partitions,
+        maybe_discontinuity = cb.maybe_discontinuity,
+        initialize_save_discretes = cb.initialize_save_discretes,
+    )
+end
+
+function _with_monitors(cb::ModelingToolkit.SciMLBase.VectorContinuousCallback, check)
+    va = cb.affect!
+    wrapped_affect = ModelingToolkit.ModelingToolkitBase.VectorAffect(
+        va.eq2affect,
+        Any[_monitor_affect(a, check) for a in va.affects],
+        Any[_monitor_affect(a, check) for a in va.affect_negs],
+    )
+    return ModelingToolkit.SciMLBase.VectorContinuousCallback(
+        cb.condition,
+        wrapped_affect,
+        cb.len;
+        initialize = cb.initialize,
+        finalize = cb.finalize,
+        idxs = cb.idxs,
+        rootfind = cb.rootfind,
+        interp_points = cb.interp_points,
+        save_positions = cb.save_positions,
+        dtrelax = cb.dtrelax,
+        abstol = cb.abstol,
+        reltol = cb.reltol,
+        repeat_nudge = cb.repeat_nudge,
+        initializealg = cb.initializealg,
+        saved_clock_partitions = cb.saved_clock_partitions,
+        maybe_discontinuity = cb.maybe_discontinuity,
+        initialize_save_discretes = cb.initialize_save_discretes,
+    )
+end
+
+function _with_monitors(cb::ModelingToolkit.SciMLBase.CallbackSet, check)
+    continuous = [_with_monitors(c, check) for c in cb.continuous_callbacks]
+    return ModelingToolkit.SciMLBase.CallbackSet(continuous, collect(cb.discrete_callbacks))
+end
+
+_with_monitors(cb, check) = cb
+
 _event_limit_reached(counter::Base.RefValue{Int}, limit::Int) = counter[] > limit
 
 function _event_limit_diagnostic(flat::Flat.FlatModel, t, count::Int, limit::Int)
@@ -540,10 +663,15 @@ function _simulate_flat(flat::Flat.FlatModel;
     # callback kwarg with the problem's own callbacks instead of replacing them.
     event_counter = Ref(0)
     solver_problem = lowered.problem
+    # StopSimulation / Assertion: an event that triggers one ends the integration there.
+    monitors = run_monitors(flat, lowered.model)
     if haskey(lowered.problem.kwargs, :callback)
         limited = _with_event_limit(
             lowered.problem.kwargs[:callback], event_counter, run_settings.event_limit
         )
+        if !isempty(monitors)
+            limited = _with_monitors(limited, integ -> monitor_hit(monitors, integ) !== nothing)
+        end
         limited = _dbg_wrap_callback(debug, limited, flat)  # M4 debug:
         solver_problem = remake(lowered.problem; callback = limited)
     end
@@ -804,11 +932,26 @@ function _simulate_flat(flat::Flat.FlatModel;
     last_flush_ns = time_ns()
     next_index = 1
     event_cursor = 0
+    # StopSimulation / Assertion: checked at the start (and so after every tick) and after
+    # every integrator step; the run ends at the instant the monitor triggered.
+    function monitor_end!()
+        isempty(monitors) && return false
+        hit = monitor_hit(monitors, integ)
+        hit === nothing && return false
+        tm = Float64(integ.t)
+        if rec.nrows == 0 || rec.columns[1][rec.nrows] < tm
+            record_row!(rec, tm, values())
+        end
+        diagnostic = _monitor_diagnostic(hit, tm)
+        status = hit.kind === :stop ? "done" : "failed"
+        return true
+    end
     while next_index <= length(targets)
         if _cancelled(cancel)
             status = "cancelled"
             break
         end
+        monitor_end!() && break
         target = targets[next_index]
         tt = target.t
         tolerance = 1.0e-12 * max(1.0, abs(tt))
@@ -879,6 +1022,7 @@ function _simulate_flat(flat::Flat.FlatModel;
             integ, rec, record_event, event_cursor, getters
         )
         _dbg_sync_cursor!(debug, session, event_cursor)  # M4 debug: a statement pause follows
+        monitor_end!() && break
         if _event_limit_reached(event_counter, run_settings.event_limit)
             diagnostic = _event_limit_diagnostic(
                 flat, integ.t, event_counter[], run_settings.event_limit

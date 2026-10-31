@@ -648,7 +648,7 @@ function discrete_rings(parts)
     found = Dict{Int,Int}()
     visit(e) = begin
         if e isa BGSim.Call
-            if e.fn.name === :__delay_ring
+            if e.fn.name === :__delay_ring || e.fn.name === :__delay_ring_at
                 found[e.args[2].value::Int] = e.args[4].value::Int
             end
             foreach(visit, e.args)
@@ -728,7 +728,7 @@ end
 
 function _ring_call(w::DiscreteWalk, e::BGSim.Call, args, period_ns::Int64,
     rings::Vector{Int})
-    length(args) == 2 || return e
+    (length(args) == 2 || length(args) == 3) || return e
     x = args[1]
     period_ns > 0 || return x   # an invalid clock is already E104 and never scheduled
     T = BGSim.eval_const_number(args[2])
@@ -755,8 +755,13 @@ function _ring_call(w::DiscreteWalk, e::BGSim.Call, args, period_ns::Int64,
     off = sum(rings; init = 0)
     push!(rings, k)
     r = e.range
-    return BGSim.Call(BGSim.Name(:__delay_ring, e.fn.range),
-        BGSim.Expr[x, BGSim.Lit(length(rings), r), BGSim.Lit(off, r), BGSim.Lit(k, r)], r)
+    ring = BGSim.Expr[x, BGSim.Lit(length(rings), r), BGSim.Lit(off, r), BGSim.Lit(k, r)]
+    length(args) == 2 && return BGSim.Call(BGSim.Name(:__delay_ring, e.fn.range), ring, r)
+    # `delay(x, Tmax, tau)`: the ring holds Tmax / Ts samples and is read `tau / Ts`
+    # executions back, interpolated linearly (`bg_delay_ring_at!`). The tick count is the
+    # runtime quotient by the literal period, the same operation in the exported C code.
+    ticks = BGSim.BinOp(:/, args[3], BGSim.Lit(Float64(period_ns) / 1.0e9, r), r)
+    return BGSim.Call(BGSim.Name(:__delay_ring_at, e.fn.range), vcat(ring, ticks), r)
 end
 
 function _collect_partition!(b::Builder, st::BlockState, ds, k::Int, index::Int,
@@ -1181,6 +1186,11 @@ function _step_call(
         x, id, off, k = args
         return Expr(:call, GlobalRef(BGSim, :bg_delay_ring!), _fld(:dstate, :ring),
             _fld(:dstate, :ring_pos), id, off, k, x)
+    elseif fn === :__delay_ring_at
+        # `delay(x, Tmax, tau)`: (x, ring id, slot offset, slots, tau / Ts).
+        x, id, off, k, d = args
+        return Expr(:call, GlobalRef(BGSim, :bg_delay_ring_at!), _fld(:dstate, :ring),
+            _fld(:dstate, :ring_pos), id, off, k, x, d)
     elseif fn === :delay || fn === :interp1 || fn === :interp2
         throw(LowerError(
             "`$fn` is an intrinsic that the discrete scheduler does not lower (J2.7b)", nothing

@@ -887,18 +887,21 @@ function _dims!(ctx::_Ctx, e::Call)
             return nothing
         end
         return result
-    elseif name === :delay && nargs == 2
+    elseif name === :delay && (nargs == 2 || nargs == 3)
+        # `delay(x, T)` and the variable read `delay(x, Tmax, tau)`: every time is [s].
         d = _dims!(ctx, args[1])
-        delay_dims = _dims!(ctx, args[2])
-        if delay_dims !== nothing && delay_dims.exps != UNIT_S.exps
-            _report!(
-                ctx,
-                "E006",
-                "the delay time must be [s], got [" * _label(ctx, args[2], delay_dims) *
-                "]" * _in_equation(ctx),
-                args[2];
-                hint = "the delay is a time; declare the parameter with `[unit = \"s\"]`",
-            )
+        for k in 2:nargs
+            delay_dims = _dims!(ctx, args[k])
+            if delay_dims !== nothing && delay_dims.exps != UNIT_S.exps
+                _report!(
+                    ctx,
+                    "E006",
+                    "the delay time must be [s], got [" * _label(ctx, args[k], delay_dims) *
+                    "]" * _in_equation(ctx),
+                    args[k];
+                    hint = "the delay is a time; declare the parameter with `[unit = \"s\"]`",
+                )
+            end
         end
         return d
     elseif (name === :noise_normal || name === :noise_uniform) && nargs == 2
