@@ -41,6 +41,24 @@ function label(text: string, size = 8): ReactNode {
   );
 }
 
+/** A small letter in the top-left corner (the controlling quantity of a controlled source). */
+function cornerLabel(text: string): ReactNode {
+  return (
+    <text
+      x="3.5"
+      y="7"
+      textAnchor="middle"
+      fontSize={6.5}
+      fontStyle="italic"
+      fontFamily="var(--font-ui)"
+      fill="currentColor"
+      stroke="none"
+    >
+      {text}
+    </text>
+  );
+}
+
 const GLYPHS: Record<string, Glyph> = {
   ...MULTIBOND_GLYPHS,
   // ---------------------------------------------------------- sources & sinks
@@ -237,6 +255,77 @@ const GLYPHS: Record<string, Glyph> = {
       <path d="M6 4l-3 3M18 4l3 3" opacity="0.35" />
     </>
   ),
+  "elec-opamp": () => (
+    <>
+      <path d="M6 3.5v17L20 12z" />
+      <path d="M2 8h4M2 16h4M20 12h2.5" />
+      <path d="M7.5 8h2.5M7.5 16h2.5M8.75 14.75v2.5" />
+    </>
+  ),
+  // Controlled sources: the diamond, the controlled quantity inside (+/- a voltage, an
+  // arrow a current) and the controlling quantity (v or i) in the corner.
+  "elec-vcvs": () => (
+    <>
+      <path d="M12 3l8 9-8 9-8-9z" />
+      <path d="M12 7.5v4M10 9.5h4M10 15h4" />
+      {cornerLabel("v")}
+    </>
+  ),
+  "elec-vccs": () => (
+    <>
+      <path d="M12 3l8 9-8 9-8-9z" />
+      <path d="M12 16.5v-9M9.5 10L12 7.5 14.5 10" />
+      {cornerLabel("v")}
+    </>
+  ),
+  "elec-ccvs": () => (
+    <>
+      <path d="M12 3l8 9-8 9-8-9z" />
+      <path d="M12 7.5v4M10 9.5h4M10 15h4" />
+      {cornerLabel("i")}
+    </>
+  ),
+  "elec-cccs": () => (
+    <>
+      <path d="M12 3l8 9-8 9-8-9z" />
+      <path d="M12 16.5v-9M9.5 10L12 7.5 14.5 10" />
+      {cornerLabel("i")}
+    </>
+  ),
+  "elec-mutual-inductance": () => (
+    <>
+      <path d="M3 9.5a3 3 0 0 1 6 0 3 3 0 0 1 6 0 3 3 0 0 1 6 0" />
+      <path d="M3 14.5a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
+      <path d="M3 12h18" opacity="0.35" />
+      <circle cx="3" cy="5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="3" cy="19" r="1.1" fill="currentColor" stroke="none" />
+    </>
+  ),
+  "elec-battery": () => (
+    <>
+      <path d="M2 12h7.5M15 12h7M9.5 5v14" />
+      <path d="M14 8.5v7" strokeWidth={3} />
+      <path d="M4 6.5h3M5.5 5v3" />
+    </>
+  ),
+  "elec-mosfet": () => (
+    <>
+      <path d="M2 17h6M8 7v10" />
+      <path d="M10.5 6v3M10.5 10.5v3M10.5 15v3" />
+      <path d="M10.5 7.5H16V2.5M10.5 16.5H16V21.5M10.5 12H16v4.5" />
+      <path d="M12.5 10.5L10.8 12l1.7 1.5" />
+      <path d="M19 9v6M17.5 13l1.5-2 1.5 2M17.5 11h3" opacity="0.6" />
+    </>
+  ),
+  "elec-igbt": () => (
+    <>
+      <path d="M2 16h5M7 8v10" />
+      <path d="M9.5 6.5v11" />
+      <path d="M9.5 9.5l6-4V2.5M9.5 14.5l6 4v3" />
+      <path d="M13 18.8l2.5-.3-1-2.3" />
+      <path d="M19.5 9v6M18 13l1.5-2 1.5 2M18 11h3" opacity="0.6" />
+    </>
+  ),
 
   // --------------------------------------------------------------- translation
   "mech-mass": () => (
@@ -293,6 +382,56 @@ const GLYPHS: Record<string, Glyph> = {
     <>
       <path d="M12 3l1.4 2.1 2.4-.8.5 2.5 2.5.5-.8 2.4L20 12l-2.1 1.4.8 2.4-2.5.5-.5 2.5-2.4-.8L12 20l-1.4-2.1-2.4.8-.5-2.5-2.5-.5.8-2.4L4 12l2.1-1.4-.8-2.4 2.5-.5.5-2.5 2.4.8z" />
       <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  "rot-hard-stop": () => (
+    <>
+      <path d="M5.5 17a6.5 6.5 0 0 1 13 0" opacity="0.5" />
+      <path d="M3 13.5l4.5 2M21 13.5l-4.5 2" />
+      <path d="M12 17l2.5-6" />
+      <circle cx="12" cy="17" r="1.4" fill="currentColor" stroke="none" />
+    </>
+  ),
+  "rot-clutch": () => (
+    <>
+      <path d="M2 12h5M17 12h5" />
+      <rect x="7" y="4.5" width="3" height="15" rx="0.8" />
+      <rect x="14" y="4.5" width="3" height="15" rx="0.8" />
+      <path d="M12 9.5v5" opacity="0.35" />
+    </>
+  ),
+  "rot-brake": () => (
+    <>
+      <path d="M2 12h7" />
+      <rect x="9" y="4" width="3" height="16" rx="0.8" />
+      <path d="M14 8v8" strokeWidth={2.4} />
+      <path d="M18 4v16M18 6l3-3M18 11l3-3M18 16l3-3M14 12h4" />
+    </>
+  ),
+  "rot-planetary-gear": () => (
+    <>
+      <circle cx="12" cy="12" r="9.5" />
+      <circle cx="12" cy="12" r="2.6" />
+      <circle cx="12" cy="5.8" r="2.2" />
+      <circle cx="17.4" cy="15.1" r="2.2" />
+      <circle cx="6.6" cy="15.1" r="2.2" />
+    </>
+  ),
+  "rot-belt-drive": () => (
+    <>
+      <circle cx="6" cy="12" r="3.5" />
+      <circle cx="17" cy="12" r="5.5" />
+      <path d="M6 8.5l11-2M6 15.5l11 2" />
+      <circle cx="6" cy="12" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="17" cy="12" r="0.9" fill="currentColor" stroke="none" />
+    </>
+  ),
+  "rot-worm-gear": () => (
+    <>
+      <circle cx="12" cy="8.5" r="6" />
+      <circle cx="12" cy="8.5" r="1.4" fill="currentColor" stroke="none" />
+      <path d="M2 19h20" opacity="0.35" />
+      <path d="M5 16.5l2 5M9 16.5l2 5M13 16.5l2 5M17 16.5l2 5" />
     </>
   ),
 

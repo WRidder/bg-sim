@@ -113,6 +113,37 @@ describe("block icons", () => {
     }
   });
 
+  it("draws an explicit glyph for every common mechanical and electrical component", () => {
+    // The icon ids of the rotation and electrical components on top of the M1/M2 rows
+    // (src/library/catalog.jl); each has its own drawing.
+    const componentIcons = [
+      "rot-hard-stop",
+      "rot-clutch",
+      "rot-brake",
+      "rot-planetary-gear",
+      "rot-belt-drive",
+      "rot-worm-gear",
+      "elec-opamp",
+      "elec-vcvs",
+      "elec-vccs",
+      "elec-ccvs",
+      "elec-cccs",
+      "elec-mutual-inductance",
+      "elec-battery",
+      "elec-mosfet",
+      "elec-igbt",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of componentIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      expect(html, icon).toContain("<svg");
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(componentIcons.length);
+  });
+
   it("falls back to a placeholder for an unknown icon id", () => {
     expect(hasIcon("no-such-icon")).toBe(false);
     const html = renderToStaticMarkup(<BlockIcon icon="no-such-icon" name="Mystery" />);
