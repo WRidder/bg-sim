@@ -475,6 +475,24 @@
     "connection": null
   },
   {
+    "code": "W216",
+    "severity": "warning",
+    "message": "random sources `Plant/Noise1`, `Plant/Prbs1` share seed 1, so they draw the same sequence",
+    "hint": "give each random source its own `seed`",
+    "path": "Plant/Noise1",
+    "block": "stdlib:sources/Noise",
+    "scope": null,
+    "source": null,
+    "node": "n12",
+    "connection": null,
+    "related": [
+      {
+        "path": "Plant/Prbs1",
+        "message": "also uses seed 1"
+      }
+    ]
+  },
+  {
     "code": "E401",
     "severity": "error",
     "message": "no statement on line 14 of project:LQGController",

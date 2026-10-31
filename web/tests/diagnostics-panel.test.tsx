@@ -75,10 +75,10 @@ describe("the diagnostics panel", () => {
     render(<DiagnosticsPanel />);
 
     expect(screen.getByTestId("diagnostics-count-error").textContent).toContain("27");
-    expect(screen.getByTestId("diagnostics-count-warning").textContent).toContain("7");
+    expect(screen.getByTestId("diagnostics-count-warning").textContent).toContain("8");
     expect(screen.getByTestId("diagnostics-count-info").textContent).toContain("0");
-    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(34);
-    expect(screen.getAllByTestId("diagnostics-group")).toHaveLength(25);
+    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(35);
+    expect(screen.getAllByTestId("diagnostics-group")).toHaveLength(26);
     expect(screen.getByTestId("diagnostics-status").textContent).toContain("Revision 1 checked");
   });
 
@@ -125,7 +125,7 @@ describe("the diagnostics panel", () => {
     render(<DiagnosticsPanel />);
 
     fireEvent.click(screen.getByTestId("diagnostics-filter-error"));
-    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(7);
+    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(8);
     expect(screen.getByTestId("diagnostics-filter-error").getAttribute("aria-pressed")).toBe(
       "false",
     );
@@ -137,7 +137,7 @@ describe("the diagnostics panel", () => {
     );
 
     fireEvent.click(screen.getByTestId("diagnostics-show-all"));
-    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(34);
+    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(35);
     expect(screen.getByTestId("diagnostics-filter-error").getAttribute("aria-pressed")).toBe(
       "true",
     );
@@ -217,6 +217,6 @@ describe("the diagnostics panel", () => {
 
     const tab = screen.getByRole("tab", { name: /^Diagnostics/ });
     expect(within(tab).getByLabelText("27 errors")).toBeTruthy();
-    expect(within(tab).getByLabelText("7 warnings")).toBeTruthy();
+    expect(within(tab).getByLabelText("8 warnings")).toBeTruthy();
   });
 });

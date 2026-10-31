@@ -41,6 +41,47 @@ describe("block icons", () => {
     }
   });
 
+  it("draws an explicit glyph for every signal source and sink", () => {
+    // The catalog fixture holds only the M1 blocks; these are the icon ids of every block
+    // in stdlib/sources (src/library/catalog.jl), each of which must have its own glyph.
+    const sourceIcons = [
+      "src-chirp",
+      "src-constant",
+      "src-csv",
+      "src-csv-sampled",
+      "src-exp-sine",
+      "src-exponentials",
+      "src-multi-sine",
+      "src-noise",
+      "src-prbs",
+      "src-random-walk",
+      "src-pulse",
+      "src-ramp",
+      "src-recorder",
+      "src-repeating-table",
+      "src-sawtooth",
+      "src-scope",
+      "src-sine",
+      "src-step",
+      "src-time",
+      "src-time-table",
+      "src-trapezoid",
+      "src-triangle",
+      "src-uniform-noise",
+      "src-white-noise",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of sourceIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      expect(html, icon).toContain("<svg");
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    // No two sources share a drawing.
+    expect(glyphs.size).toBe(sourceIcons.length);
+  });
+
   it("falls back to a placeholder for an unknown icon id", () => {
     expect(hasIcon("no-such-icon")).toBe(false);
     const html = renderToStaticMarkup(<BlockIcon icon="no-such-icon" name="Mystery" />);

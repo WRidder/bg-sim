@@ -345,3 +345,6 @@ include("test_export_simplify.jl")
 
 # J-EX8: parameters and global parameters set before initialization (bg_init in C).
 include("test_export_tunables.jl")
+
+# The signal sources (Sawtooth, Triangle, Trapezoid, RepeatingTable, ...) in the C export.
+include("test_export_sources.jl")
