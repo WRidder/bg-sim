@@ -53,6 +53,8 @@ describe("block icons", () => {
       "src-exponentials",
       "src-multi-sine",
       "src-noise",
+      "src-prbs",
+      "src-random-walk",
       "src-pulse",
       "src-ramp",
       "src-recorder",
@@ -65,6 +67,8 @@ describe("block icons", () => {
       "src-time-table",
       "src-trapezoid",
       "src-triangle",
+      "src-uniform-noise",
+      "src-white-noise",
     ];
     const ids = new Set(svgIconIds());
     const glyphs = new Set<string>();

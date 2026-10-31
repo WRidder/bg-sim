@@ -33,6 +33,7 @@ Errors and warnings also mark the canvas.
 | W204 | a declaration is not used |
 | W205 | a Generic port could not be given a domain |
 | W206 | the event limit was reached |
+| W216 | two random sources share a `seed`, so they draw the same sequence |
 | W203, W207–W215 | export warnings |
 
 The message of each item explains the specific problem; this table is only a guide to the number ranges.

@@ -483,6 +483,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Hydraulic volume with fluid compressibility; the pressure integrates the net flow with the bulk modulus.",
         icon = "hyd-volume",
     ),
+    "stdlib:sources/BandLimitedWhiteNoise" => (
+        description = "Band-limited white noise (Simulink style): seeded normal samples held for sample_time, scaled by sqrt(noise_power/sample_time) so the PSD is noise_power; bit for bit repeatable, also in exported code.",
+        icon = "src-white-noise",
+    ),
     "stdlib:sources/Chirp" => (
         description = "Frequency sweep (chirp) from f_start to f_end over duration, linear or logarithmic (log sweep); frequencies in Hz, with amplitude, offset and start phase.",
         icon = "src-chirp",
@@ -518,6 +522,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Seeded normal noise on a fixed sample clock (counter-based SplitMix64 + AS 241); the same seed repeats the run bit for bit, in simulation and in exported code.",
         icon = "src-noise",
     ),
+    "stdlib:sources/PRBS" => (
+        description = "Pseudo-random binary sequence (random binary signal) for system identification: offset +- amplitude, a seeded coin every bit_ticks ticks; bit for bit repeatable, also in exported code.",
+        icon = "src-prbs",
+    ),
     "stdlib:sources/Pulse" => (
         description = "Pulse / square wave (PWM) with amplitude, period, duty, t_start and offset; for edges on the output grid use Trapezoid.",
         icon = "src-pulse",
@@ -525,6 +533,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:sources/Ramp" => (
         description = "Ramp signal source; starts at t_start with slope and initial value, and saturates after duration.",
         icon = "src-ramp",
+    ),
+    "stdlib:sources/RandomWalk" => (
+        description = "Seeded Gaussian random walk (Brownian motion, drift): each tick adds step_std times a normal sample; bit for bit repeatable, also in exported code.",
+        icon = "src-random-walk",
     ),
     "stdlib:sources/RepeatingTable" => (
         description = "Periodic time table (repeating sequence): N values sample_time apart, repeated every N*sample_time, with hold or linear interpolation.",
@@ -560,6 +572,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:sources/Triangle" => (
         description = "Triangle wave: rises from offset to offset + amplitude over half a period and falls back; exact kink events.",
         icon = "src-triangle",
+    ),
+    "stdlib:sources/UniformNoise" => (
+        description = "Seeded uniform noise (random) between y_min and y_max on a fixed sample clock; bit for bit repeatable, also in exported code.",
+        icon = "src-uniform-noise",
     ),
     "stdlib:translation/Damper" => (
         description = "Linear viscous damper between two translation ports.",

@@ -6,7 +6,11 @@
 # within the frozen-mode error of one step per edge.
 #
 # Each source is also compared against the Julia simulation of the same model at the
-# common grid times (the right limit at an edge, as the recorder keeps it).
+# common grid times (the right limit at an edge, as the recorder keeps it). The random
+# sources (UniformNoise, BandLimitedWhiteNoise, PRBS, RandomWalk) are bit-identical: C,
+# simulation and the specification of noise_uniform/noise_normal. The FMU sources build with
+# -std=c99 -Wall -Wextra -Werror and do not allocate after instantiate. W216 (random
+# sources sharing a seed) is tested at the end.
 if !isdefined(@__MODULE__, :BondGraphGolden)
     include(joinpath(@__DIR__, "golden", "bondgraph", "golden_helpers.jl"))
 end
@@ -144,6 +148,28 @@ function _exs_cases()
     return cases
 end
 
+# The random sources: block, parameters, the held variable, and that variable after tick n of
+# the source's clock straight from the specification (spec "Seeded noise and delay").
+function _exs_walk(seed, step, n)
+    w = 0.0
+    for i in 0:n - 1
+        w = w + step * BGSim.bg_noise_normal(seed, i)
+    end
+    return w
+end
+const _EXS_RANDOM = [
+    ("UniformNoise", Dict("y_min" => "-2.0", "y_max" => "3.0", "seed" => "11"), "u",
+        n -> n == 0 ? 0.5 : BGSim.bg_noise_uniform(11, n - 1)),
+    ("BandLimitedWhiteNoise", Dict("noise_power" => "0.02", "seed" => "12"), "z",
+        n -> n == 0 ? 0.0 : BGSim.bg_noise_normal(12, n - 1)),
+    ("PRBS", Dict("amplitude" => "1.5", "offset" => "0.5", "bit_ticks" => "3", "seed" => "13"),
+        "s", n -> n == 0 ? 0.0 : (BGSim.bg_noise_uniform(13, div(n - 1, 3)) < 0.5 ? -1.0 : 1.0)),
+    ("RandomWalk", Dict("step_std" => "0.1", "initial" => "1.0", "seed" => "14"), "w",
+        n -> _exs_walk(14, 0.1, n)),
+]
+# The clock of each random source (the blocks' default sample_time).
+const _EXS_RANDOM_TS = [1e-3, 1e-3, 1e-2, 1e-3]
+
 @testset "signal sources in the C export" begin
     cases = _exs_cases()
     nodes, conns = Any[], Any[]
@@ -153,6 +179,15 @@ end
         push!(nodes, bg_node("i$i", "I$i", bg_ref("stdlib:continuous/Integrator")))
         push!(conns, bg_conn("c$i", "signal", "s$i", "y", "i$i", "u"))
     end
+    for (i, (block, params, _, _)) in enumerate(_EXS_RANDOM)
+        push!(nodes, bg_node("r$i", "R$i", bg_ref("stdlib:sources/" * block);
+            params = Dict{String,Any}(params)))
+        push!(nodes, bg_node("ri$i", "RI$i", bg_ref("stdlib:continuous/Integrator")))
+        push!(conns, bg_conn("rc$i", "signal", "r$i", "y", "ri$i", "u"))
+    end
+    # One ExportOutput, so the FMU wrapper has an output for the allocation harness.
+    push!(nodes, bg_node("y1", "Y1", bg_ref("stdlib:converters/ExportOutput")))
+    push!(conns, bg_conn("cy", "signal", "r1", "y", "y1", "u"))
     doc = bg_model("SourcesExport", nodes, conns; t_end = 1.0, points = 101)
     flat = Compile.flatten(IR.parse_model(doc))
     @test isempty([d for d in flat.diagnostics if d.severity == "error"])
@@ -194,5 +229,66 @@ end
                 @test maximum(abs.(rows[1:10:end, ix] .- area)) < tol
             end
         end
+        # The random sources: the held sample and the output are bit-identical between C,
+        # the simulation and the specification at every step of C and every grid time of
+        # the simulation; the integrals agree to rounding.
+        for (i, (block, params, var, spec)) in enumerate(_EXS_RANDOM)
+            @testset "$block (bit for bit)" begin
+                iv = 1 + length(xn) + findfirst(==("R$i/$var"), yn)
+                iy = 1 + length(xn) + findfirst(==("R$i/y"), yn)
+                ix = 1 + findfirst(n -> startswith(n, "RI$i/"), xn)
+                ticks(tk) = div(round(Int, tk * 1e9), round(Int, _EXS_RANDOM_TS[i] * 1e9))
+                @test all(rows[k, iv] == spec(ticks(t[k])) for k in 1:n + 1)
+                @test all(rows[k, iv] == bg_value(columns, "R$i/$var", t[k]) for k in 1:10:n + 1)
+                @test all(rows[k, iy] == bg_value(columns, "R$i/y", t[k]) for k in 1:10:n + 1)
+                @test maximum(abs(rows[k, ix] - bg_value(columns, "RI$i/y", t[k]))
+                              for k in 1:10:n + 1) < 1e-12
+            end
+        end
+        # A second run of the C model (bg_reset, as fmi2Reset) repeats the first bit for bit.
+        rows2, _, _ = _exs_run_c(cc, dir, r.report, n)
+        @test rows2 == rows
+
+        @testset "builds with -Werror and does not allocate after instantiate" begin
+            src = joinpath(dir, "sources")
+            files = [joinpath(src, f) for f in ("model.c", "bg_solver.c", "bg_intrinsics.c",
+                "bg_mech.c", "fmi2_cs.c") if isfile(joinpath(src, f))]
+            for f in files
+                @test success(`$cc -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-parameter -I $src -c $f -o $(joinpath(dir, "x.o"))`)
+            end
+            harness = joinpath(_EXS.RUNTIME_DIR, "alloc_check.c")
+            exe = joinpath(dir, Sys.iswindows() ? "check.exe" : "check")
+            @test success(`$cc -std=c11 -O2 -I $src $harness $files -o $exe -lm`)
+            out = read(`$exe 1 1000`, String)
+            @test occursin("after instantiate 0", out)
+        end
     end
+end
+
+@testset "W216: random sources that share a seed" begin
+    function seeds_model(seeds)
+        blocks = ["Noise", "UniformNoise", "BandLimitedWhiteNoise", "PRBS", "RandomWalk"]
+        nodes = Any[bg_node("n$i", "R$i", bg_ref("stdlib:sources/" * blocks[i]);
+            params = Dict{String,Any}("seed" => string(seeds[i]))) for i in eachindex(seeds)]
+        return Compile.flatten(IR.parse_model(bg_model("Seeds", nodes, Any[])))
+    end
+    w216(flat) = [d for d in flat.diagnostics if d.code == "W216"]
+    @test isempty(w216(seeds_model([1, 2, 3, 4, 5])))
+    ds = w216(seeds_model([7, 2, 7, 4, 7]))
+    @test length(ds) == 1
+    d = only(ds)
+    @test d.severity == "warning"
+    @test d.path == "R1"
+    @test occursin("`R1`, `R3`, `R5` share seed 7", d.message)
+    @test [r.path for r in d.related] == ["R3", "R5"]
+    @test occursin("its own `seed`", d.hint)
+    # Two groups give two warnings.
+    ds = w216(seeds_model([2, 1, 1, 2, 3]))
+    @test length(ds) == 2
+    @test count(d -> occursin("`R2`, `R3` share seed 1,", d.message), ds) == 1
+    @test count(d -> occursin("`R1`, `R4` share seed 2,", d.message), ds) == 1
+    # Deterministic sources have no seed and never count.
+    @test isempty(w216(Compile.flatten(IR.parse_model(bg_model("NoSeeds",
+        Any[bg_node("a", "A", bg_ref("stdlib:sources/Sine")),
+            bg_node("b", "B", bg_ref("stdlib:sources/Sawtooth"))], Any[])))))
 end

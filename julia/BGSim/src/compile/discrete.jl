@@ -1522,5 +1522,53 @@ function _register_block_info!(parts::Vector{Any}, b::Builder)
     return nothing
 end
 
+# ---------------------------------------------------------------------------------------
+# W216: random sources that share a seed (spec "Seeded noise and delay", "Seeding")
+# ---------------------------------------------------------------------------------------
+
+const _NOISE_CALL = r"\bnoise_(uniform|normal)\s*\("
+
+"""    check_shared_seeds!(b) -> Nothing
+
+W216 for every seed value that two or more random-source instances share. A random source
+is an instance whose block draws with `noise_uniform`/`noise_normal` and has an integer
+`seed` parameter (Noise, UniformNoise, BandLimitedWhiteNoise, PRBS, RandomWalk, or any block
+written the same way). The stream is a function of the seed alone, so two such instances
+with one seed draw the same sequence (the same samples, or for different sample times
+correlated ones). The warning names the first instance and lists the others as related."""
+function check_shared_seeds!(b::Builder)
+    by_seed = Dict{Int,Vector{BlockState}}()
+    for st in b.states
+        occursin(_NOISE_CALL, st.block.source) || continue
+        ids = get(st.ids, :seed, nothing)
+        (ids === nothing || length(ids) != 1) && continue
+        k = get(b.param_index, ids[1], nothing)
+        k === nothing && continue
+        value = b.params[k].value
+        value isa Real && isfinite(value) && value == round(value) || continue
+        push!(get!(by_seed, Int(value), BlockState[]), st)
+    end
+    for seed in sort(collect(keys(by_seed)))
+        group = by_seed[seed]
+        length(group) < 2 && continue
+        sort!(group; by = st -> st.path)
+        first_st = group[1]
+        names = join(["`" * st.path * "`" for st in group], ", ")
+        push!(
+            b.diagnostics,
+            diag(
+                "W216",
+                "random sources $names share seed $seed, so they draw the same sequence";
+                hint = "give each random source its own `seed`",
+                path = first_st.path,
+                block = first_st.ref,
+                node = first_st.node,
+                related = [Related(st.path, "also uses seed $seed") for st in group[2:end]],
+            ),
+        )
+    end
+    return nothing
+end
+
 export DiscretePartition, DiscreteAssign, DiscreteIf, collect_discrete!, step_expression,
     discrete_signal_namedtuple, HookSite, DebugEmit, BlockLineItem, BlockInfo, block_info

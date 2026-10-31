@@ -123,6 +123,31 @@ const GLYPHS: Record<string, Glyph> = {
       <path d="M2 12h20" opacity="0.35" />
     </>
   ),
+  "src-uniform-noise": () => (
+    <>
+      <path d="M2 6h20M2 18h20" opacity="0.35" />
+      <path d="M2 9h2v6h2v-8h2v10h2v-4h2v3h2V7h2v8h2v-6h2v8h2V9" />
+    </>
+  ),
+  "src-white-noise": () => (
+    <>
+      <path d="M2 12h1.5V8h1.5v7h1.5V6h1.5v9h1.5v-5h1.5v8h1.5V7h1.5v6h1.5V9h1.5v5h1.5V8h1.5v4H22" />
+      <path d="M2 21h20" opacity="0.35" />
+    </>
+  ),
+  "src-prbs": () => (
+    <>
+      <path d="M2 17h3V7h2v10h5V7h6v10h2V7h2" />
+      <path d="M2 12h20" opacity="0.35" />
+      <circle cx="19" cy="20" r="0.6" />
+    </>
+  ),
+  "src-random-walk": () => (
+    <>
+      <path d="M2 14l1.5-1 1.5 2 1.5-3 1.5 1 1.5-4 1.5 2 1.5-1 1.5 3 1.5-5 1.5 1 1.5-2 1.5 3 1.5-4" />
+      <path d="M2 21h20" opacity="0.35" />
+    </>
+  ),
   "src-time": () => (
     <>
       <circle cx="12" cy="12" r="8.5" />

@@ -303,13 +303,17 @@ const JEX9_REFS = ["stdlib:continuous/TransportDelay", "stdlib:discrete/IntegerD
 
 # The common signal sources added on top of the M2 rows (Modelica.Blocks.Sources set).
 const SIGNAL_SOURCE_REFS = [
+    "stdlib:sources/BandLimitedWhiteNoise",
     "stdlib:sources/ExpSine",
     "stdlib:sources/Exponentials",
     "stdlib:sources/MultiSine",
+    "stdlib:sources/PRBS",
+    "stdlib:sources/RandomWalk",
     "stdlib:sources/RepeatingTable",
     "stdlib:sources/Sawtooth",
     "stdlib:sources/Trapezoid",
     "stdlib:sources/Triangle",
+    "stdlib:sources/UniformNoise",
 ]
 
 const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS))
@@ -577,6 +581,17 @@ const INTERFACE_FIELDS = [
         @test params("Exponentials") == ["amplitude", "rise_time", "tau_rise", "tau_fall",
             "offset", "t_start"]
         @test params("RepeatingTable") == ["t_start", "sample_time", "values", "method"]
+        # The random sources: an explicit integer seed and a structural sample_time clock.
+        @test params("UniformNoise") == ["y_min", "y_max", "seed"]
+        @test params("BandLimitedWhiteNoise") == ["noise_power", "seed"]
+        @test params("PRBS") == ["amplitude", "offset", "bit_ticks", "seed"]
+        @test params("RandomWalk") == ["step_std", "initial", "seed"]
+        for name in ("Noise", "UniformNoise", "BandLimitedWhiteNoise", "PRBS", "RandomWalk")
+            b = blocks["stdlib:sources/" * name]
+            seed = only(p for p in b.interface.parameters if p.name == "seed")
+            @test seed.type == "Int"
+            @test [(c.name, c.structural) for c in b.interface.constants] == [("sample_time", true)]
+        end
 
         trapezoid = blocks["stdlib:sources/Trapezoid"]
         @test trapezoid.interface.parameters[6].type == "Int"
