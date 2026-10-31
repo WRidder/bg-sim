@@ -523,13 +523,43 @@ from J alone) for every Jacobian in `Js` with the static pivots and report the s
 pivot ratio |u_kk| / (largest entry of its row of W), the growth (largest entry of the
 factors over the largest entry of W) and the relative residual of a solve against a pivoted
 dense solve. `ok` is false when a factorization failed or the residual is above 1e-8."""
-function static_lu_check(lu::StaticLU, Js, hg::Float64; mass::AbstractVector = ones(lu.n))
+static_lu_check(lu::StaticLU, Js, hg::Float64; mass::AbstractVector = ones(lu.n)) =
+    _lu_check(lu, (Matrix{Float64}(LinearAlgebra.Diagonal(Float64.(mass))) .- hg .* J
+                   for J in Js if all(isfinite, J)))
+
+"""    projection_matrix(J, mass) -> Matrix{Float64}
+
+The matrix of `bg_project`'s Newton step on 0 = g(x_d, z) with the differential states held:
+a row with mass is the identity row, an algebraic row is its row of J. Solving it with the
+right-hand side -g on the algebraic rows (0 elsewhere) gives Δx_d = 0 and ∂g/∂z Δz = -g. Its
+pattern is inside W's, so the static LU's tables factor it; elimination with the identity
+rows changes nothing, so the static pivots are those of ∂g/∂z in the matched order."""
+function projection_matrix(J::AbstractMatrix, mass::AbstractVector)
+    n = size(J, 1)
+    A = zeros(n, n)
+    for i in 1:n
+        if iszero(mass[i])
+            A[i, :] .= view(J, i, :)
+        else
+            A[i, i] = 1.0
+        end
+    end
+    return A
+end
+
+"""    projection_check(lu, Js, mass) -> NamedTuple
+
+`static_lu_check`'s test for the projection matrix (`projection_matrix`) at every Jacobian
+in `Js`: when it passes, `bg_project` factors ∂g/∂z on the static tables instead of a dense
+Gaussian elimination of the algebraic block."""
+projection_check(lu::StaticLU, Js, mass::AbstractVector) =
+    _lu_check(lu, (projection_matrix(J, mass) for J in Js if all(isfinite, J)))
+
+function _lu_check(lu::StaticLU, Ws)
     n = lu.n
     min_ratio, growth, residual, points = Inf, 0.0, 0.0, 0
     ok = true
-    for J in Js
-        all(isfinite, J) || continue
-        W = Matrix{Float64}(LinearAlgebra.Diagonal(Float64.(mass))) .- hg .* J
+    for W in Ws
         a = lu_values(lu, W)
         rowmax = zeros(n)
         for r in 1:n, p in lu.rowptr[r]:lu.rowptr[r + 1] - 1
@@ -560,6 +590,26 @@ end
 # ---------------------------------------------------------------------------------------
 # C emission
 
+# bg_project's Newton matrix on the static tables (`projection_matrix`), factored in m->lu:
+# bg_project runs between steps, and every step forms and factors W again.
+const _ALG_FACTOR_C = """
+
+    /* The Newton matrix of bg_project (BG_SPARSE_PROJECT): identity rows for the states with
+       mass, the rows of J for the algebraic equations, factored on the same static tables
+       (in m->lu, which the next step overwrites). Elimination with the identity rows changes
+       nothing, so the pivots are those of dg/dz in the matched order. */
+    int bg_alg_factor(bg_model *m) {
+        double *a = m->lu;
+        for (int k = 0; k < BG_NX; ++k) {
+            const int alg = bg_mass[bg_lu_rperm[k]] == 0.0;
+            for (int p = bg_lu_rowptr[k]; p < bg_lu_rowptr[k + 1]; ++p) a[p] = alg ? m->jac[p] : 0.0;
+        }
+        for (int i = 0; i < BG_NX; ++i)
+            if (bg_mass[i] != 0.0) a[bg_lu_mpos[i]] = 1.0;
+        return bg_lu_factor(m);
+    }
+    """
+
 _cints(v) = isempty(v) ? "0" : join(string.(v), ", ")
 
 function _ctable(io, name, size_expr, vals)
@@ -578,8 +628,11 @@ The static index tables and the sparse side of the linear-algebra seam:
 `bg_jacobian` fills at the positions of the value array, see `jacobian_targets`) and the
 mass diagonal `bg_mass` (at `lu_mass_positions`), and factors it in place in `m->lu`;
 `bg_w_solve(m, b)` solves in place: pivot row k takes the right-hand side of equation
-`bg_lu_rperm[k]` and gives the unknown `bg_lu_perm[k]`."""
-function emit_sparse_lu(io, lu::StaticLU; mass::AbstractVector = ones(lu.n))
+`bg_lu_rperm[k]` and gives the unknown `bg_lu_perm[k]`. With `project`, also
+`bg_alg_factor(m)`, the sparse matrix of `bg_project`'s Newton step (`projection_matrix`)
+on the same tables."""
+function emit_sparse_lu(io, lu::StaticLU; mass::AbstractVector = ones(lu.n),
+    project::Bool = false)
     nperm = lu_rows_permuted(lu)
     println(io, "/* Static sparse LU of W = M - hg J (D-EX13): pivot order $(join(lu.perm .- 1, " ")) (states), minimum degree. */")
     nperm > 0 && println(io, "/* Row matching: $nperm algebraic rows take their pivot off their own diagonal; pivot k is equation bg_lu_rperm[k], unknown bg_lu_perm[k]. */")
@@ -600,11 +653,9 @@ function emit_sparse_lu(io, lu::StaticLU; mass::AbstractVector = ones(lu.n))
        runs over the static tables, so the cost is fixed. */
     #define BG_LU_TINY $(repr(LU_TINY))
 
-    int bg_w_factor(bg_model *m, double hg) {
+    static int bg_lu_factor(bg_model *m) {
         double *a = m->lu;
         int u = 0;
-        for (int p = 0; p < BG_LU_NNZ; ++p) a[p] = -hg * m->jac[p];
-        for (int i = 0; i < BG_NX; ++i) a[bg_lu_mpos[i]] += bg_mass[i];
         for (int i = 0; i < BG_NX; ++i) {
             double s = 0.0;
             for (int p = bg_lu_rowptr[i]; p < bg_lu_rowptr[i + 1]; ++p) {
@@ -625,6 +676,13 @@ function emit_sparse_lu(io, lu::StaticLU; mass::AbstractVector = ones(lu.n))
         return 0;
     }
 
+    int bg_w_factor(bg_model *m, double hg) {
+        double *a = m->lu;
+        for (int p = 0; p < BG_LU_NNZ; ++p) a[p] = -hg * m->jac[p];
+        for (int i = 0; i < BG_NX; ++i) a[bg_lu_mpos[i]] += bg_mass[i];
+        return bg_lu_factor(m);
+    }
+    $(project ? _ALG_FACTOR_C : "")
     void bg_w_solve(bg_model *m, double *b) {
         const double *a = m->lu;
         double *y = m->lu_y;
@@ -834,6 +892,12 @@ function _plan_linear_algebra(jplan, settings, nx, hg, mass, Js, diags)
     end
     lu = solver === :sparse ? slu : nothing
     targets = jacobian_targets(S, lu)
+    # bg_project's Newton step (a DAE re-solves its algebraic unknowns after a tick or an
+    # event) on the same static tables, when its pivots pass the check too; otherwise a dense
+    # Gaussian elimination of the algebraic block, as with the dense LU.
+    nalg = count(iszero, mass)
+    pcheck = lu !== nothing && nalg > 0 ? projection_check(lu, Js, mass) : nothing
+    project = pcheck !== nothing && pcheck.ok
     report = Dict{String,Any}(
         "jacobian" => String(jplan.kind), "linearSolver" => String(solver),
         "nnzJ" => count(S), "colours" => ncol,
@@ -853,8 +917,15 @@ function _plan_linear_algebra(jplan, settings, nx, hg, mass, Js, diags)
         "pivotCheck" => Dict("ok" => check.ok, "points" => check.points,
             "minPivotRatio" => check.min_pivot_ratio, "growth" => check.growth,
             "residual" => check.residual),
+        # The re-solve of the algebraic unknowns (bg_project): `sparse` on the static tables,
+        # else the dense elimination of the BG_NALG x BG_NALG block (nothing: no DAE).
+        "projection" => nalg == 0 ? nothing : Dict("sparse" => project,
+            "denseFlops" => _dense_lu_flops(nalg),
+            "pivotCheck" => pcheck === nothing ? nothing : Dict("ok" => pcheck.ok,
+                "points" => pcheck.points, "minPivotRatio" => pcheck.min_pivot_ratio,
+                "growth" => pcheck.growth, "residual" => pcheck.residual)),
     )
     merge!(report, jplan.stats)
     return (pattern = S, jacobian = jplan.kind, colour = colour, targets = targets, lu = lu,
-        report = report)
+        project = project, report = report)
 end

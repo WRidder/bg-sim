@@ -130,6 +130,7 @@ end
         @test la["linearSolver"] == "sparse" && la["pivotCheck"]["ok"]
         @test !any(d -> d.code == "W211", r.diagnostics)
         @test la["luFlops"] < la["denseLuFlops"] / 4
+        @test la["projection"]["sparse"]       # dg/dz factors on the same tables too
         cc = Sys.which("gcc")
         if cc === nothing
             @info "rigid export: no gcc on PATH, the C run is skipped"

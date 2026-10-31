@@ -727,13 +727,19 @@ end
             @test maximum(abs.(x .- xr) ./ abs.(xr)) < 1e-6
         end
 
-        @testset "FIX-M2-3's sampled DAE plant in C" begin
+        # The dense LU re-solves b by a dense elimination of dg/db; the sparse LU on its
+        # static tables (BG_SPARSE_PROJECT, bg_alg_factor).
+        @testset "FIX-M2-3's sampled DAE plant in C ($solver)" for solver in (:auto, :sparse)
             dir = mktempdir()
             r = _EX.export_model(_ex_flat(_ex_dae_sampled_model()), dir;
-                settings = _EX.ExportSettings(t_end = 2.0, expose_all = true))
+                settings = _EX.ExportSettings(t_end = 2.0, expose_all = true, linear_solver = solver))
             @test r.ok && _EX.is_rosenbrock(Symbol(r.report["method"]))
             @test r.report["algebraic"] == 1 && r.report["partitions"] == 1
+            @test r.report["linearAlgebra"]["linearSolver"] == (solver === :sparse ? "sparse" : "dense")
+            @test r.report["linearAlgebra"]["projection"]["sparse"] == (solver === :sparse)
             src = joinpath(dir, "sources")
+            @test occursin("#define BG_SPARSE_PROJECT", read(joinpath(src, "model.h"), String)) ==
+                  (solver === :sparse)
             write(joinpath(dir, "driver.c"), _EX_DRIVER)
             exe = joinpath(dir, Sys.iswindows() ? "driver.exe" : "driver")
             @test success(`$cc -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-parameter -I $src $(joinpath(dir, "driver.c")) $(joinpath(src, "model.c")) $(joinpath(src, "bg_solver.c")) -o $exe -lm`)

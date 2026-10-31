@@ -269,6 +269,8 @@ end
             @test rep["matching"]["used"] && rep["matching"]["tried"] && rep["matching"]["weighted"]
             @test rep["matching"]["rowsPermuted"] == m.permuted && !rep["matching"]["structuralDiagonal"]
             @test rep["luFlops"] == _SP.lu_flops(la.lu) && rep["nnzLU"] == _SP.lu_nnz(la.lu)
+            # bg_project's Newton matrix factors on the same tables
+            @test la.project && rep["projection"]["sparse"] && rep["projection"]["pivotCheck"]["ok"]
             v = zeros(_SP.lu_nnz(la.lu))
             for j in 1:n, i in 1:n
                 S[i, j] && (v[la.targets[i, j] + 1] = -hg * J[i, j])
@@ -389,8 +391,10 @@ end
                     void bg_jacobian(const bg_model *m, double t, const double *x, double *J);
                     int bg_w_factor(bg_model *m, double hg);
                     void bg_w_solve(bg_model *m, double *b);
+                    int bg_alg_factor(bg_model *m);
                     """)
                 end
+                dae = !all(isone, mass)
                 open(joinpath(dir, "check.c"), "w") do io
                     println(io, "#include <math.h>\n#include <stdio.h>\n#include \"model.h\"")
                     entries = [(T[i, j], J[i, j]) for j in 1:n for i in 1:n if S[i, j]]
@@ -400,7 +404,9 @@ end
                         println(io, "    J[$p] = $(repr(v));")
                     end
                     println(io, "}")
-                    _SP.emit_sparse_lu(io, lu; mass)
+                    _SP.emit_sparse_lu(io, lu; mass, project = dae)
+                    # a DAE also solves bg_project's Newton matrix on the same tables:
+                    # identity rows with right-hand side 0, the algebraic rows of J
                     println(io, """
                     int main(void) {
                         static bg_model m;
@@ -410,13 +416,30 @@ end
                         if (bg_w_factor(&m, $(repr(hg))) != 0) { printf("pivot\\n"); return 1; }
                         bg_w_solve(&m, b);
                         for (int i = 0; i < BG_NX; ++i) printf("%.17g\\n", b[i]);
+                    $(dae ? """
+                        for (int i = 0; i < BG_NX; ++i) b[i] = bg_mass[i] != 0.0 ? 0.0 : 1.0 + i;
+                        if (bg_alg_factor(&m) != 0) { printf("pivot\\n"); return 1; }
+                        bg_w_solve(&m, b);
+                        for (int i = 0; i < BG_NX; ++i) printf("%.17g\\n", b[i]);
+                    """ : "")
                         return 0;
                     }""")
                 end
                 exe = joinpath(dir, Sys.iswindows() ? "check.exe" : "check")
                 @test success(`$cc -std=c99 -O2 -Wall -Wextra -Werror -I $dir $(joinpath(dir, "check.c")) -o $exe -lm`)
                 x = parse.(Float64, split(strip(read(`$exe`, String))))
-                @test isapprox(x, W \ collect(1.0:n); rtol = all(isone, mass) ? 1e-11 : 1e-9)
+                @test length(x) == (dae ? 2n : n)
+                @test isapprox(x[1:n], W \ collect(1.0:n); rtol = dae ? 1e-9 : 1e-11)
+                if dae
+                    r = [mass[i] != 0 ? 0.0 : 1.0 + (i - 1) for i in 1:n]
+                    A = _SP.projection_matrix(J, mass)
+                    @test _SP.projection_check(lu, [J], mass).ok
+                    xp = x[n + 1:end]
+                    @test isapprox(xp, A \ r; rtol = 1e-9)
+                    @test all(xp[i] == 0.0 for i in 1:n if mass[i] != 0)     # Δx_d = 0
+                    alg = findall(iszero, mass)
+                    @test isapprox(xp[alg], J[alg, alg] \ r[alg]; rtol = 1e-9)
+                end
             end
         end
 
