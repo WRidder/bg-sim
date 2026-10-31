@@ -81,6 +81,15 @@
       "drivetrain-position-open-loop"
     ]
   },
+  "gripper": {
+    "title": "Gripper",
+    "description": "Grip-force sizing of an electric parallel gripper in a fast pick-and-place move.",
+    "hasScene": true,
+    "models": [
+      "ball-gripper",
+      "block-gripper"
+    ]
+  },
   "hydraulic-circuit": {
     "title": "Hydraulic circuit",
     "description": "A motor-driven pump with relief valve, check valve, hose and accumulator; a 4/3 proportional valve extends and retracts a loaded cylinder.",

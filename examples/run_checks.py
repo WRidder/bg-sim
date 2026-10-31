@@ -238,7 +238,10 @@ composition and the angles), so it is exact to round-off::
 
 A model entry may also carry ``"model"`` (the file to run when the key is only a
 label) and ``"settings"`` (deep-merged into the model document before the run).
-The pendulum uses that to read its 10 s energy window from the same 4 s model::
+An entry may also carry ``"overrides"``, an object ``{"<instance path>/<param>": value}`` sent as the
+run's ``parameterOverrides`` (the dashboard mechanism: the model document is unchanged and a
+parameter override does not recompile), so one model runs several scenarios. The pendulum uses
+``settings`` to read its 10 s energy window from the same 4 s model::
 
     {"models": {"pendulum-10s": {"model": "pendulum",
       "settings": {"t_end": 10.0, "output": {"points": 10001}},
@@ -500,6 +503,7 @@ def _run_model(
     model: str,
     settings: Any = None,
     run_timeout: float = RUN_TIMEOUT,
+    overrides: Any = None,
 ) -> Run:
     """Open the model, run it and read its columns once it is done."""
     model_document = _get_json(client, f"/api/projects/{project}/models/{model}")
@@ -507,7 +511,12 @@ def _run_model(
         if not isinstance(settings, dict):
             raise ValueError("'settings' must be an object")
         _merge_settings(model_document.setdefault("settings", {}), settings)
-    response = client.post(f"/api/projects/{project}/runs", json={"model": model_document})
+    body: dict[str, Any] = {"model": model_document}
+    if overrides is not None:
+        if not isinstance(overrides, dict):
+            raise ValueError("'overrides' must be an object of parameter -> value")
+        body["parameterOverrides"] = [{"target": k, "value": v} for k, v in overrides.items()]
+    response = client.post(f"/api/projects/{project}/runs", json=body)
     if response.status_code != 201:
         raise RuntimeError(
             f"POST /api/projects/{project}/runs -> {response.status_code}: "
@@ -2317,12 +2326,14 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
             source = model
             settings: Any = None
             run_timeout = RUN_TIMEOUT
+            overrides: Any = None
             if isinstance(entry, dict):
                 source = str(entry.get("model") or model)
                 settings = entry.get("settings")
                 run_timeout = float(entry.get("run_timeout", RUN_TIMEOUT))
+                overrides = entry.get("overrides")
             try:
-                run = _run_model(client, project, project_dir, source, settings, run_timeout)
+                run = _run_model(client, project, project_dir, source, settings, run_timeout, overrides)
             except (RuntimeError, httpx.HTTPError, KeyError, ValueError) as exc:
                 report.check(False, f"{project}/{model} run", str(exc))
                 continue
