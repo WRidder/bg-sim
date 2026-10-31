@@ -206,10 +206,10 @@ describe("fixture coverage", () => {
 
   it("diagnostics.sample.json has one instance of every code", () => {
     // Includes the multibond codes: E007 frame mismatch, E108 invalid inertia
-    // parameters, E109 singular assembled mass.
+    // parameters, E109 singular assembled mass; E113 global parameter cycle.
     const codes = [
       "E000", "E001", "E002", "E003", "E004", "E005", "E006", "E007",
-      "E101", "E102", "E103", "E104", "E105", "E106", "E108", "E109",
+      "E101", "E102", "E103", "E104", "E105", "E106", "E108", "E109", "E113",
       "E900", "E901",
       "W201", "W202", "W203", "W204", "W205", "W206",
       "E301", "E302", "E303", "E304", "E305", "E306",
@@ -223,7 +223,10 @@ describe("fixture coverage", () => {
     expect(sample.map((item) => item.code).sort()).toEqual([...codes].sort());
     for (const item of sample) {
       expect(item.message, `${item.code} has no message`).toBeTruthy();
-      expect(item.path, `${item.code} has no path`).not.toBeNull();
+      // A global-parameter diagnostic is model-wide (path null, `scope: "global:<name>"`).
+      if (item.code !== "E113") {
+        expect(item.path, `${item.code} has no path`).not.toBeNull();
+      }
     }
   });
 

@@ -26,7 +26,9 @@ import { useCatalogStore } from "../library/catalogStore";
 import { useRunStore } from "../plot/runStore";
 import { nodeNameIssue, useDocumentStore } from "../state/documentStore";
 import { nodeRef } from "../state/modelFactory";
+import { equationFieldProps, useGlobalEvaluation } from "../globals/equationField";
 import { copyBlockToProjectLibrary } from "./copyToLibrary";
+import { stripEquationPrefix } from "./expression";
 import { CsvSourceSection } from "./CsvSourceSection";
 import { isCsvSourceRef } from "./csvSource";
 import { NodeImageSection } from "./NodeImageSection";
@@ -86,6 +88,7 @@ function ParameterField({
 }) {
   // M4 debug: at a pause the field edits the paused run, not the model (plan 7.9)
   const live = useLiveMode();
+  const globals = useGlobalEvaluation();
   if (live !== null) {
     return <LiveParameterField node={node} decl={decl} path={path} live={live} />;
   }
@@ -144,15 +147,19 @@ function ParameterField({
     );
   }
 
+  // Global parameters: Σ marker, evaluated value, name completion (spec "Global parameters").
+  const equation = equationFieldProps(value, decl.unit, globals, `inspector-param-${decl.name}`);
   return (
     <TextField
       id={`inspector-param-${decl.name}`}
       testId={`inspector-param-${decl.name}`}
       label={decl.name}
       value={value}
-      issue={(text) => parameterIssue(text, decl)}
+      issue={(text) => parameterIssue(text, decl, globals)}
       onCommit={(text) => {
-        const result = useDocumentStore.getState().setNodeParam(node.id, decl.name, text);
+        const result = useDocumentStore
+          .getState()
+          .setNodeParam(node.id, decl.name, stripEquationPrefix(text));
         return messageOf(result, "The value was refused.");
       }}
       onReset={onReset}
@@ -160,12 +167,22 @@ function ParameterField({
       unit={decl.unit}
       description={decl.description}
       meta={meta}
-      badges={badges}
+      badges={
+        <>
+          {equation.sigma}
+          {badges}
+        </>
+      }
+      completions={equation.completions}
+      describeCompletion={equation.describeCompletion}
+      readout={equation.readout}
+      inputTitle={equation.inputTitle}
     />
   );
 }
 
 function ConstantField({ node, decl }: { node: ModelNode; decl: ConstantDecl }) {
+  const globals = useGlobalEvaluation();
   const stored = node.constants?.[decl.name];
   const value = stored ?? decl.default;
   const overridden = stored !== undefined;
@@ -221,6 +238,9 @@ function ConstantField({ node, decl }: { node: ModelNode; decl: ConstantDecl }) 
     );
   }
 
+  const equation = Array.isArray(decl.default)
+    ? null
+    : equationFieldProps(textValue(value), null, globals, testId);
   return (
     <TextField
       id={testId}
@@ -228,8 +248,12 @@ function ConstantField({ node, decl }: { node: ModelNode; decl: ConstantDecl }) 
       label={decl.name}
       value={textValue(value)}
       issue={(text) =>
-        Array.isArray(decl.default) ? arrayConstantIssue(text) : constantIssue(text, decl)
+        Array.isArray(decl.default) ? arrayConstantIssue(text) : constantIssue(text, decl, globals)
       }
+      completions={equation?.completions}
+      describeCompletion={equation?.describeCompletion}
+      readout={equation?.readout}
+      inputTitle={equation?.inputTitle}
       onCommit={(text) => {
         const parsed = parseConstantInput(text, decl);
         if (!parsed.ok) {
@@ -244,12 +268,18 @@ function ConstantField({ node, decl }: { node: ModelNode; decl: ConstantDecl }) 
       resetLabel={resetLabel}
       description={null}
       meta={meta}
-      badges={badges}
+      badges={
+        <>
+          {equation?.sigma}
+          {badges}
+        </>
+      }
     />
   );
 }
 
 function StartField({ node, variable }: { node: ModelNode; variable: VariableDecl }) {
+  const globals = useGlobalEvaluation();
   const stored = node.starts?.[variable.name];
   const onReset =
     stored !== undefined
@@ -270,18 +300,21 @@ function StartField({ node, variable }: { node: ModelNode; variable: VariableDec
       <ExplainButton signalId={signalId} testId={`inspector-explain-${variable.name}`} />
     </>
   );
+  const testId = `inspector-start-${variable.name}`;
+  const equation = equationFieldProps(stored ?? "", variable.unit, globals, testId);
   return (
     <TextField
-      id={`inspector-start-${variable.name}`}
-      testId={`inspector-start-${variable.name}`}
+      id={testId}
+      testId={testId}
       label={variable.name}
       value={stored ?? ""}
       placeholder={variable.start}
-      issue={startIssue}
+      issue={(text) => startIssue(text, globals)}
       onCommit={(text) => {
+        const expression = stripEquationPrefix(text);
         const result = useDocumentStore
           .getState()
-          .setNodeStart(node.id, variable.name, text.trim().length === 0 ? null : text);
+          .setNodeStart(node.id, variable.name, expression.length === 0 ? null : expression);
         return messageOf(result, "The value was refused.");
       }}
       onReset={onReset}
@@ -290,8 +323,15 @@ function StartField({ node, variable }: { node: ModelNode; variable: VariableDec
       description={null}
       meta={meta}
       badges={
-        variable.state !== null ? <span className="inspector-tag">{variable.state}</span> : null
+        <>
+          {equation.sigma}
+          {variable.state !== null ? <span className="inspector-tag">{variable.state}</span> : null}
+        </>
       }
+      completions={equation.completions}
+      describeCompletion={equation.describeCompletion}
+      readout={equation.readout}
+      inputTitle={equation.inputTitle}
     />
   );
 }

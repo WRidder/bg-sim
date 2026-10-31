@@ -10,6 +10,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { useExpressionCompletion } from "./expressionCompletion";
+
 export interface TextFieldProps {
   id: string;
   /** The input's test id; the wrapper appends `-field`, the error `-error`. */
@@ -30,6 +32,14 @@ export interface TextFieldProps {
   inputMode?: "text" | "numeric" | "decimal";
   /** Render the value as an expression (mono, no spellcheck); always true here. */
   ariaLabel?: string;
+  /** Names offered while typing an identifier (the global parameters). */
+  completions?: readonly string[];
+  /** A short hint next to each offered name (its value). */
+  describeCompletion?: (name: string) => string | null;
+  /** Shown after the input in the row, e.g. the evaluated value "= 8 N/m". */
+  readout?: ReactNode;
+  /** Tooltip of the input, e.g. the equation that drives it. */
+  inputTitle?: string;
 }
 
 export function TextField({
@@ -48,11 +58,23 @@ export function TextField({
   placeholder,
   inputMode = "text",
   ariaLabel,
+  completions,
+  describeCompletion,
+  readout,
+  inputTitle,
 }: TextFieldProps) {
   const [draft, setDraft] = useState(value);
   const [error, setError] = useState<string | null>(null);
   const lastValue = useRef(value);
   const skipBlur = useRef(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const completion = useExpressionCompletion({
+    id,
+    names: completions,
+    inputRef,
+    setText: (text) => update(text),
+    describe: describeCompletion,
+  });
   const errorId = `${id}-error`;
   const descriptionId = `${id}-description`;
 
@@ -112,6 +134,7 @@ export function TextField({
       </div>
       <div className="inspector-field__row">
         <input
+          ref={inputRef}
           id={id}
           className="inspector-input"
           data-testid={testId}
@@ -119,13 +142,19 @@ export function TextField({
           inputMode={inputMode}
           value={draft}
           placeholder={placeholder}
+          title={inputTitle}
           aria-label={ariaLabel}
           aria-invalid={error !== null}
           aria-describedby={describedBy}
           autoComplete="off"
           spellCheck={false}
-          onChange={(event) => update(event.target.value)}
+          {...(completions !== undefined ? completion.inputProps : {})}
+          onChange={(event) => {
+            update(event.target.value);
+            completion.refresh(event.target.value, event.target.selectionStart);
+          }}
           onBlur={() => {
+            completion.close();
             if (skipBlur.current) {
               skipBlur.current = false;
               return;
@@ -133,6 +162,9 @@ export function TextField({
             commit();
           }}
           onKeyDown={(event) => {
+            if (completion.onKeyDown(event)) {
+              return;
+            }
             if (event.key === "Enter") {
               event.preventDefault();
               if (commit()) {
@@ -148,6 +180,8 @@ export function TextField({
             }
           }}
         />
+        {readout}
+        {completion.list}
         {onReset !== undefined ? (
           <button
             type="button"

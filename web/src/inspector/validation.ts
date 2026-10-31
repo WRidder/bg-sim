@@ -10,7 +10,8 @@
 
 import type { ConstantDecl, ParameterDecl } from "../contracts/catalog";
 import type { ModelConstantValue } from "../contracts/model";
-import { evaluateLiteral, parseExpression } from "./expression";
+import { evaluateField, type GlobalEvaluation } from "../globals/globals";
+import { evaluateLiteral, parseExpression, stripEquationPrefix } from "./expression";
 
 export function textValue(value: ModelConstantValue): string {
   if (Array.isArray(value)) {
@@ -39,9 +40,38 @@ function rangeIssue(value: number, decl: ParameterDecl): string | null {
   return null;
 }
 
-/** The first problem with a parameter expression, or null when it looks valid. */
-export function parameterIssue(value: string, decl: ParameterDecl): string | null {
-  const text = value.trim();
+/**
+ * The numeric value of an expression with the global parameters in scope, or
+ * an issue when it names something that is not a global (the compiler's E003)
+ * or uses a broken global. Without `globals` only literals evaluate and a name
+ * is left to the worker (the pre-globals behaviour).
+ */
+function expressionNumber(
+  ast: Parameters<typeof evaluateLiteral>[0],
+  text: string,
+  globals: GlobalEvaluation | undefined,
+): { value: number | null; issue: string | null } {
+  if (globals === undefined) {
+    return { value: evaluateLiteral(ast), issue: null };
+  }
+  const result = evaluateField(text, globals);
+  if (result.error !== null) {
+    return { value: null, issue: result.error };
+  }
+  return { value: typeof result.value === "number" ? result.value : null, issue: null };
+}
+
+/**
+ * The first problem with a parameter expression, or null when it looks valid.
+ * With `globals`, an expression over global parameters is evaluated and its
+ * value is checked against min/max like a literal.
+ */
+export function parameterIssue(
+  value: string,
+  decl: ParameterDecl,
+  globals?: GlobalEvaluation,
+): string | null {
+  const text = stripEquationPrefix(value);
   if (text.length === 0) {
     return "Enter a value.";
   }
@@ -52,7 +82,10 @@ export function parameterIssue(value: string, decl: ParameterDecl): string | nul
   if (!parsed.ok) {
     return parsed.message;
   }
-  const number = evaluateLiteral(parsed.ast);
+  const { value: number, issue } = expressionNumber(parsed.ast, text, globals);
+  if (issue !== null) {
+    return issue;
+  }
   if (number === null) {
     // A named expression: names and units are checked by the worker.
     return null;
@@ -73,13 +106,16 @@ export function parameterIssue(value: string, decl: ParameterDecl): string | nul
 }
 
 /** Start-value overrides may be left empty, which removes the override. */
-export function startIssue(value: string): string | null {
-  const text = value.trim();
+export function startIssue(value: string, globals?: GlobalEvaluation): string | null {
+  const text = stripEquationPrefix(value);
   if (text.length === 0) {
     return null;
   }
   const parsed = parseExpression(text);
-  return parsed.ok ? null : parsed.message;
+  if (!parsed.ok) {
+    return parsed.message;
+  }
+  return expressionNumber(parsed.ast, text, globals).issue;
 }
 
 /** A constant's default rendered into its input. */
@@ -88,8 +124,12 @@ export function constantDefaultText(decl: ConstantDecl): string {
 }
 
 /** The first problem with a constant input, or null. Empty means "use default". */
-export function constantIssue(value: string, decl: ConstantDecl): string | null {
-  const text = value.trim();
+export function constantIssue(
+  value: string,
+  decl: ConstantDecl,
+  globals?: GlobalEvaluation,
+): string | null {
+  const text = stripEquationPrefix(value);
   if (text.length === 0) {
     return null;
   }
@@ -103,7 +143,10 @@ export function constantIssue(value: string, decl: ConstantDecl): string | null 
   if (!parsed.ok) {
     return parsed.message;
   }
-  const number = evaluateLiteral(parsed.ast);
+  const { value: number, issue } = expressionNumber(parsed.ast, text, globals);
+  if (issue !== null) {
+    return issue;
+  }
   if (number === null) {
     // A named constant expression; the worker resolves it.
     return null;
@@ -147,7 +190,7 @@ export function parseConstantInput(
   text: string,
   decl: ConstantDecl,
 ): { ok: true; value: ModelConstantValue | null } | { ok: false; message: string } {
-  const trimmed = text.trim();
+  const trimmed = stripEquationPrefix(text);
   if (trimmed.length === 0) {
     return { ok: true, value: null };
   }

@@ -437,7 +437,8 @@ def test_diagnostics_sample_covers_every_code() -> None:
     assert len(codes) == len(set(codes)), "no code appears twice"
     for item in sample:
         assert item["message"], f"{item['code']}: needs a message"
-        assert item["path"], f"{item['code']}: needs a path"
+        # A global-parameter diagnostic is model-wide (path null, scope "global:<name>").
+        assert item["path"] or item["code"] == "E113", f"{item['code']}: needs a path"
         assert item["severity"] == ("error" if item["code"].startswith("E") else "warning")
 
 

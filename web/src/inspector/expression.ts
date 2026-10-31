@@ -393,3 +393,296 @@ export function literalValue(source: string): number | null {
   const parsed = parseExpression(source);
   return parsed.ok ? evaluateLiteral(parsed.ast) : null;
 }
+
+// ---------------------------------------------------------------------------
+// Global parameters (spec "Global parameters"): evaluation with named values,
+// the names an expression reads, and whole-identifier renaming.
+// ---------------------------------------------------------------------------
+
+export type ExpressionValue = number | boolean;
+
+export type EvaluationResult =
+  | { ok: true; value: ExpressionValue }
+  | { ok: false; message: string; name?: string };
+
+class EvaluationError extends Error {
+  constructor(
+    message: string,
+    readonly name_: string | undefined = undefined,
+  ) {
+    super(message);
+  }
+}
+
+function num(value: ExpressionValue, what: string): number {
+  if (typeof value !== "number") {
+    throw new EvaluationError(`${what} needs a number, not a Bool.`);
+  }
+  return value;
+}
+
+/**
+ * The pure functions of the constant folder (Julia `_fold_call`), so the
+ * browser computes exactly what the compiler will. Anything else (`ddt`,
+ * `previous`, vectors) is not a constant.
+ */
+const PURE_FUNCTIONS: Record<string, (args: number[]) => number> = {
+  abs: ([a = Number.NaN]) => Math.abs(a),
+  sign: ([a = Number.NaN]) => Math.sign(a),
+  min: (args) => Math.min(...args),
+  max: (args) => Math.max(...args),
+  clamp: ([x = Number.NaN, lo = Number.NaN, hi = Number.NaN]) => Math.min(Math.max(x, lo), hi),
+  floor: ([a = Number.NaN]) => Math.floor(a),
+  ceil: ([a = Number.NaN]) => Math.ceil(a),
+  // Julia rounds half to even.
+  round: ([a = Number.NaN]) => {
+    const r = Math.round(a);
+    return Math.abs(a % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r;
+  },
+  sqrt: ([a = Number.NaN]) => {
+    if (a < 0) {
+      throw new EvaluationError(`sqrt of a negative number (${a}).`);
+    }
+    return Math.sqrt(a);
+  },
+  exp: ([a = Number.NaN]) => Math.exp(a),
+  log: ([a = Number.NaN]) => {
+    if (a < 0) {
+      throw new EvaluationError(`log of a negative number (${a}).`);
+    }
+    return Math.log(a);
+  },
+  log10: ([a = Number.NaN]) => {
+    if (a < 0) {
+      throw new EvaluationError(`log10 of a negative number (${a}).`);
+    }
+    return Math.log10(a);
+  },
+  sin: ([a = Number.NaN]) => Math.sin(a),
+  cos: ([a = Number.NaN]) => Math.cos(a),
+  tan: ([a = Number.NaN]) => Math.tan(a),
+  asin: ([a = Number.NaN]) => Math.asin(a),
+  acos: ([a = Number.NaN]) => Math.acos(a),
+  atan: (args) => (args.length === 2 ? Math.atan2(args[0] ?? 0, args[1] ?? 0) : Math.atan(args[0] ?? 0)),
+  sinh: ([a = Number.NaN]) => Math.sinh(a),
+  cosh: ([a = Number.NaN]) => Math.cosh(a),
+  tanh: ([a = Number.NaN]) => Math.tanh(a),
+  mod: ([a = Number.NaN, b = Number.NaN]) => {
+    if (b === 0) {
+      throw new EvaluationError("Division by zero in mod.");
+    }
+    return a - b * Math.floor(a / b);
+  },
+  rem: ([a = Number.NaN, b = Number.NaN]) => {
+    if (b === 0) {
+      throw new EvaluationError("Division by zero in rem.");
+    }
+    return a % b;
+  },
+  hypot: ([a = Number.NaN, b = Number.NaN]) => Math.hypot(a, b),
+};
+
+function evaluateNode(node: ExpressionNode, env: ReadonlyMap<string, number>): ExpressionValue {
+  switch (node.kind) {
+    case "number":
+      return node.value;
+    case "identifier": {
+      const value = env.get(node.name);
+      if (value !== undefined) {
+        return value;
+      }
+      if (node.name === "true" || node.name === "false") {
+        return node.name === "true";
+      }
+      if (node.name === "pi") {
+        return Math.PI;
+      }
+      throw new EvaluationError(`"${node.name}" is not a global parameter.`, node.name);
+    }
+    case "call": {
+      if (node.name === "ifelse") {
+        if (node.args.length !== 3) {
+          throw new EvaluationError("ifelse takes three arguments.");
+        }
+        const [cond, a, b] = node.args as [ExpressionNode, ExpressionNode, ExpressionNode];
+        const c = evaluateNode(cond, env);
+        if (typeof c !== "boolean") {
+          throw new EvaluationError("The ifelse condition must be a comparison.");
+        }
+        return evaluateNode(c ? a : b, env);
+      }
+      const fn = PURE_FUNCTIONS[node.name];
+      if (fn === undefined) {
+        throw new EvaluationError(`${node.name} is not a pure built-in function.`);
+      }
+      return fn(node.args.map((arg) => num(evaluateNode(arg, env), node.name)));
+    }
+    case "unary": {
+      const value = evaluateNode(node.operand, env);
+      if (node.operator === "!") {
+        if (typeof value !== "boolean") {
+          throw new EvaluationError("! needs a Bool.");
+        }
+        return !value;
+      }
+      const n = num(value, node.operator);
+      return node.operator === "-" ? -n : n;
+    }
+    case "binary": {
+      const left = evaluateNode(node.left, env);
+      const right = evaluateNode(node.right, env);
+      if (node.operator === "&&" || node.operator === "||") {
+        if (typeof left !== "boolean" || typeof right !== "boolean") {
+          throw new EvaluationError(`${node.operator} needs two Bools.`);
+        }
+        return node.operator === "&&" ? left && right : left || right;
+      }
+      if (node.operator === "==") {
+        return left === right;
+      }
+      if (node.operator === "!=") {
+        return left !== right;
+      }
+      const a = num(left, node.operator);
+      const b = num(right, node.operator);
+      switch (node.operator) {
+        case "+":
+          return a + b;
+        case "-":
+          return a - b;
+        case "*":
+          return a * b;
+        case "/":
+          if (b === 0) {
+            throw new EvaluationError("Division by zero.");
+          }
+          return a / b;
+        case "^":
+          return a ** b;
+        case "<":
+          return a < b;
+        case ">":
+          return a > b;
+        case "<=":
+          return a <= b;
+        case ">=":
+          return a >= b;
+      }
+    }
+  }
+  throw new EvaluationError("Not a constant expression.");
+}
+
+/**
+ * Evaluate an expression whose names are global parameters (`env`). This is
+ * the browser's mirror of the compiler's constant folder; the worker stays
+ * authoritative.
+ */
+export function evaluateExpression(
+  node: ExpressionNode,
+  env: ReadonlyMap<string, number>,
+): EvaluationResult {
+  try {
+    return { ok: true, value: evaluateNode(node, env) };
+  } catch (error) {
+    if (error instanceof EvaluationError) {
+      return error.name_ === undefined
+        ? { ok: false, message: error.message }
+        : { ok: false, message: error.message, name: error.name_ };
+    }
+    throw error;
+  }
+}
+
+/** Every name an expression reads (not the called function names), first use first. */
+export function expressionNames(node: ExpressionNode, out: string[] = []): string[] {
+  switch (node.kind) {
+    case "identifier":
+      if (!out.includes(node.name)) {
+        out.push(node.name);
+      }
+      break;
+    case "call":
+      node.args.forEach((arg) => expressionNames(arg, out));
+      break;
+    case "unary":
+      expressionNames(node.operand, out);
+      break;
+    case "binary":
+      expressionNames(node.left, out);
+      expressionNames(node.right, out);
+      break;
+    default:
+      break;
+  }
+  return out;
+}
+
+export interface IdentifierSpan {
+  name: string;
+  start: number;
+  end: number;
+  /** The identifier is called (`sqrt(`), so it names a function, not a value. */
+  call: boolean;
+}
+
+/**
+ * The plain identifiers of an expression string with their positions, scanned
+ * with the tokenizer's own number and identifier rules: the `e` of `1e-3` is
+ * part of a number, and a dotted name (`a.b`) is one token that is never
+ * split. Text the tokenizer would reject is skipped, so renaming works on
+ * every stored value.
+ */
+export function identifierSpans(source: string): IdentifierSpan[] {
+  const spans: IdentifierSpan[] = [];
+  let index = 0;
+  while (index < source.length) {
+    const rest = source.slice(index);
+    const numberMatch = NUMBER.exec(rest);
+    if (numberMatch !== null && /[0-9.]/.test(rest[0] ?? "")) {
+      index += numberMatch[0].length;
+      // A number glued to letters (`2x`) is not an identifier start either.
+      const glued = /^[A-Za-z0-9_]*/.exec(source.slice(index));
+      index += glued?.[0].length ?? 0;
+      continue;
+    }
+    const identifierMatch = IDENTIFIER.exec(rest);
+    if (identifierMatch !== null) {
+      const text = identifierMatch[0];
+      if (!text.includes(".")) {
+        const after = source.slice(index + text.length).trimStart();
+        spans.push({ name: text, start: index, end: index + text.length, call: after.startsWith("(") });
+      }
+      index += text.length;
+      continue;
+    }
+    index += 1;
+  }
+  return spans;
+}
+
+/** `source` with every whole-identifier use of `from` replaced by `to`. */
+export function renameIdentifier(source: string, from: string, to: string): string {
+  const spans = identifierSpans(source).filter((span) => span.name === from && !span.call);
+  let out = source;
+  for (const span of spans.reverse()) {
+    out = out.slice(0, span.start) + to + out.slice(span.end);
+  }
+  return out;
+}
+
+/**
+ * A plain value, not an equation: a number with an optional sign, or a Bool.
+ * Anything else (a name, arithmetic, a function) is "driven" and gets the Σ
+ * marker of the inspector, as in SolidWorks.
+ */
+export function isPlainLiteral(source: string): boolean {
+  return /^\s*[+-]?\s*(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\s*$/.test(source) ||
+    /^\s*(?:true|false)\s*$/.test(source);
+}
+
+/** The SolidWorks-style equation prefix: a leading `=` is accepted and dropped. */
+export function stripEquationPrefix(source: string): string {
+  const trimmed = source.trim();
+  return trimmed.startsWith("=") && !trimmed.startsWith("==") ? trimmed.slice(1).trim() : trimmed;
+}
