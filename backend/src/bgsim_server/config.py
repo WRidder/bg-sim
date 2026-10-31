@@ -24,7 +24,7 @@ from pathlib import Path
 # The build stamp of plan section 1.3; it doubles as the backend version in /api/health.
 BACKEND_VERSION = "0.1.0"
 
-DEFAULT_HOST = "127.0.0.1"
+DEFAULT_HOST = "0.0.0.0"
 DEFAULT_HTTP_PORT = 8765
 DEFAULT_PROJECTS_ROOT = "~/bgsim-projects"
 

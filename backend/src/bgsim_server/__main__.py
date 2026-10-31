@@ -1,4 +1,4 @@
-"""``uv run bgsim``: serve the API on 127.0.0.1:8765 and supervise the worker."""
+"""``uv run bgsim``: serve the API on 0.0.0.0:8765 and supervise the worker."""
 
 from __future__ import annotations
 

@@ -31,7 +31,7 @@ def test_from_env_reads_the_documented_variables(tmp_path: Path) -> None:
         "BGSIM_REPO": str(REPO),
     }
     settings = Settings.from_env(env)
-    assert settings.host == "127.0.0.1"
+    assert settings.host == "0.0.0.0"
     assert settings.port == 9000
     assert settings.projects_root == tmp_path / "projects"
     assert settings.julia == "C:/julia/bin/julia.exe"
@@ -43,7 +43,7 @@ def test_from_env_reads_the_documented_variables(tmp_path: Path) -> None:
 
 def test_from_env_defaults() -> None:
     settings = Settings.from_env({})
-    assert settings.host == "127.0.0.1"
+    assert settings.host == "0.0.0.0"
     assert settings.port == 8765
     assert settings.projects_root == Path.home() / "bgsim-projects"
     assert settings.fake_worker is False
