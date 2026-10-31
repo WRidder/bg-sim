@@ -1289,6 +1289,15 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Mode-switched spatial pivot between ground and one body (free, corner, edge about the local z axis, face): the relative pose is integrated as in Free3D and the held directions are pulled back to an anchor by a mask-multiplied stiff spring-damper, re-anchored at each switch.",
         icon = "ct-switched-pivot-3d",
     ),
+    # Vacuum gripping (examples/suction-gripper): a bellows suction cup and its generator.
+    "stdlib:contact/SuctionCup" => (
+        description = "Bellows suction cup between a gripper (spatial port a) and a part (b), with its vacuum chamber on a Hydraulic port: axial, lateral and tilt bellows compliance, a seal that pushes freely but pulls only up to A_eff times the vacuum, lip slip at mu times the lip force, a lip lift that opens a leak (pull-off, peeling), Darcy leakage through a porous part and a seal-lost latch.",
+        icon = "ct-suction-cup",
+    ),
+    "stdlib:contact/VacuumGenerator" => (
+        description = "Vacuum generator (ejector or pump) on a Hydraulic port by its suction capacity curve: free-air flow Q_max at zero vacuum falling to zero at dp_max (linear for an ejector, exponent n for a pump), with an on/release input that vents or blows off.",
+        icon = "ct-vacuum-generator",
+    ),
 )
 
 """

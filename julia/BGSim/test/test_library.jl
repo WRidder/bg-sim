@@ -283,6 +283,8 @@ const M3_CONTACT_REFS = [
     "stdlib:contact/ImpactInertia3D",
     "stdlib:contact/RollingDisk",
     "stdlib:contact/SwitchedPivot3D",
+    "stdlib:contact/SuctionCup",
+    "stdlib:contact/VacuumGenerator",
 ]
 
 # The M3 drives of J-MB11 (plan 6, row J-MB11): composites in the new `drives` group.
