@@ -442,11 +442,11 @@ end
             d.message), check_block(mixed))
     end
 
-    @testset "the catalog reports the seven domains and the new optional fields" begin
+    @testset "the catalog reports the eight domains and the new optional fields" begin
         cat = BGSim.Library.catalog()
         @test [d.name for d in cat.domains] ==
-              ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
-        @test [d.size for d in cat.domains] == [1, 1, 1, 1, 1, 3, 6]
+              ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial", "Thermal"]
+        @test [d.size for d in cat.domains] == [1, 1, 1, 1, 1, 3, 6, 1]
         @test cat.domains[6].components ==
               (effort = ["N*m", "N", "N"], flow = ["rad/s", "m/s", "m/s"])
         @test cat.domains[7].components ==
