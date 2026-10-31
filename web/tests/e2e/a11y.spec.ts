@@ -151,6 +151,23 @@ for (const theme of ["light", "dark"] as const) {
     await expect(page.getByTestId("scene-view")).toHaveAttribute("data-state", "loaded", { timeout: 30_000 });
     await expect(page.getByTestId("playback-bar")).toBeVisible({ timeout: 30_000 });
     await expectClean(page, "3D view");
+    // The toolbar icons sit in the middle of their square buttons.
+    const offsets = await page.locator(".viewer__button--icon").evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const outer = button.getBoundingClientRect();
+        const icon = button.querySelector("svg")?.getBoundingClientRect();
+        return icon === undefined
+          ? Number.NaN
+          : Math.max(
+              Math.abs(outer.left + outer.width / 2 - (icon.left + icon.width / 2)),
+              Math.abs(outer.top + outer.height / 2 - (icon.top + icon.height / 2)),
+            );
+      }),
+    );
+    expect(offsets.length).toBeGreaterThan(3);
+    for (const offset of offsets) {
+      expect(offset).toBeLessThanOrEqual(1);
+    }
     await page.getByTestId("bindings-toggle").click();
     await expect(page.getByTestId("bindings-editor")).toBeVisible();
     await expectClean(page, "3D view with the bindings editor");

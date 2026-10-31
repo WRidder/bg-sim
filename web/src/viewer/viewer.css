@@ -30,7 +30,9 @@
   gap: 2px;
 }
 
-.viewer__button--icon {
+/* Doubled class: `.viewer__button` comes later in this file and would otherwise put its
+   horizontal padding back, pushing the 18 px icon off centre in the square button. */
+.viewer__button.viewer__button--icon {
   display: inline-grid;
   place-items: center;
   width: var(--control-height);
