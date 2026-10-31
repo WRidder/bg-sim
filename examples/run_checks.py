@@ -1912,12 +1912,16 @@ def _read_sdf(path: Path) -> dict[str, Any]:
     model = models[0]
     links: dict[str, Any] = {}
     visuals: dict[str, str] = {}
+    geometry: dict[str, str] = {}
     for link in model.findall("link"):
         name = link.get("name", "")
         pose = link.find("pose")
         links[name] = {"pose": _sdf_pose_matrix(pose.text if pose is not None else None)}
         for visual in link.findall("visual"):
             visuals[visual.get("name", "")] = name
+            shape = visual.find("geometry")
+            kinds = [child.tag for child in shape] if shape is not None else []
+            geometry[visual.get("name", "")] = kinds[0] if kinds else ""
     joints: dict[str, Any] = {}
     for joint in model.findall("joint"):
         pose = joint.find("pose")
@@ -1935,7 +1939,7 @@ def _read_sdf(path: Path) -> dict[str, Any]:
             "relative_to": pose.get("relative_to") if pose is not None else None,
         }
     frames = {frame.get("name", "") for frame in model.findall("frame")}
-    return {"links": links, "joints": joints, "visuals": visuals, "frames": frames}
+    return {"links": links, "joints": joints, "visuals": visuals, "geometry": geometry, "frames": frames}
 
 
 def _sdf_link_worlds(sdf: dict[str, Any], q: dict[str, float]) -> dict[str, np.ndarray]:
@@ -1984,8 +1988,10 @@ def _scene_bindings_check(
     or frame for ``pose``, visual for ``scale.*``/``color``, visual or link for ``visible``),
     every signal id must be in the run's signal list, the unit must fit the property (an
     angle for a revolute joint, a length for a prismatic one, dimensionless then metres for
-    the seven pose signals) and a pose needs exactly seven signals. This is E301 to E304 of
-    the viewer (plan 7.6), checked without a browser.
+    the seven pose signals) and a pose needs exactly seven signals. A ``deformation`` binding
+    needs a box or cylinder visual (a cylinder along its own z), one to three modal coordinates
+    (lengths for bending, angles for torsion) and at most one binding per family and visual.
+    This is E301 to E304 of the viewer (plan 7.6), checked without a browser.
 
     ``fk`` entries check the sign convention of the joint axes against a model signal::
 
@@ -2016,6 +2022,7 @@ def _scene_bindings_check(
     errors: list[str] = []
     counts = {"position": 0, "pose": 0, "visual": 0}
     joint_signals: dict[str, tuple[str, float, float]] = {}
+    deformation_families: set[tuple[str, Any]] = set()
     for binding in bindings:
         target = str(binding.get("target", ""))
         prop = binding.get("property")
@@ -2055,6 +2062,26 @@ def _scene_bindings_check(
                         errors.append(
                             f"{where}: unit {units[signal]!r} of {signal} does not fit pose component {index}"
                         )
+        elif prop == "deformation":
+            counts["visual"] += 1
+            geometry = sdf["geometry"].get(name) if kind == "visual" else None
+            family = binding.get("family")
+            if kind != "visual" or name not in sdf["visuals"]:
+                errors.append(f"{where}: no visual named {name!r}")
+            elif geometry not in ("box", "cylinder"):
+                errors.append(f"{where}: a {geometry} is not a beam; bind a box or cylinder")
+            elif geometry == "cylinder" and str((binding.get("beam") or {}).get("axis", "")) not in ("+z", "-z"):
+                errors.append(f"{where}: a cylinder's beam axis is its local z (+z or -z)")
+            if not isinstance(binding.get("signal"), list) or not 1 <= len(signals) <= 3:
+                errors.append(f"{where}: needs 1 to 3 modal coordinates, got {len(signals)}")
+            key = (target, family)
+            if key in deformation_families:
+                errors.append(f"{where}: a second {family} binding of {target}")
+            deformation_families.add(key)
+            allowed = _ANGLE_UNITS if family == "torsion" else _LENGTH_UNITS
+            for signal in signals:
+                if signal in units and units[signal] not in allowed:
+                    errors.append(f"{where}: unit {units[signal]!r} of {signal} does not fit a {family} modal coordinate")
         else:
             counts["visual"] += 1
             known = (kind == "visual" and name in sdf["visuals"]) or (

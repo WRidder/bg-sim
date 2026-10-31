@@ -1,0 +1,52 @@
+{
+  "$comment": "Deformation bindings of a flexible beam (assumed modes): the link pose carries the rigid reference frame, three bindings of one box visual add y and z bending (clamped-free, 3 and 2 modes) and torsion (1 mode); the y bending also colours the box by its bending strain. The modal coordinates are the recorded columns eta_y[i], eta_z[i], eta_t[i] of a FlexibleBeam3D block. The rod is a cylinder (axis z) with free-free bending recorded in mm.",
+  "bindings": [
+    {
+      "target": "link:beam",
+      "property": "pose",
+      "signal": [
+        "Plant/Beam/pose[1]",
+        "Plant/Beam/pose[2]",
+        "Plant/Beam/pose[3]",
+        "Plant/Beam/pose[4]",
+        "Plant/Beam/pose[5]",
+        "Plant/Beam/pose[6]",
+        "Plant/Beam/pose[7]"
+      ]
+    },
+    {
+      "target": "visual:beam_box",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": { "axis": "+x", "y": "+y", "length": 1.0 },
+      "signal": ["Plant/Beam/eta_y[1]", "Plant/Beam/eta_y[2]", "Plant/Beam/eta_y[3]"],
+      "strain": { "colormap": "heat", "range": [0, 0.001] }
+    },
+    {
+      "target": "visual:beam_box",
+      "property": "deformation",
+      "family": "bending-z",
+      "basis": "clamped-free",
+      "beam": { "axis": "+x", "y": "+y", "length": 1.0 },
+      "signal": ["Plant/Beam/eta_z[1]", "Plant/Beam/eta_z[2]"]
+    },
+    {
+      "target": "visual:beam_box",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "clamped-free",
+      "beam": { "axis": "+x", "y": "+y", "length": 1.0 },
+      "signal": ["Plant/Beam/eta_t[1]"]
+    },
+    {
+      "target": "visual:rod",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "free-free",
+      "beam": { "axis": "+z" },
+      "signal": ["Plant/Rod/eta_y[1]"],
+      "gain": 0.001
+    }
+  ]
+}

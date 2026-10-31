@@ -22,11 +22,18 @@ export * as runManifest from "./run-manifest";
 export * as streamHandshake from "./stream-handshake";
 export * as workerRpc from "./worker-rpc";
 
+export type { BeamMapping } from "./bindings";
 export type { Binding } from "./bindings";
 export type { BindingSignal } from "./bindings";
 export type { Bindings } from "./bindings";
+export type { Colormap } from "./bindings";
+export type { DeformationBasis } from "./bindings";
+export type { DeformationBinding } from "./bindings";
+export type { DeformationFamily } from "./bindings";
 export type { JointPositionBinding } from "./bindings";
 export type { PoseBinding } from "./bindings";
+export type { ShapeAxis } from "./bindings";
+export type { StrainColor } from "./bindings";
 export type { VisibleBinding } from "./bindings";
 export type { VisualColorBinding } from "./bindings";
 export type { VisualScaleBinding } from "./bindings";

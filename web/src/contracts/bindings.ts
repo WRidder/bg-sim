@@ -4,10 +4,17 @@
 /**
  * One binding: a scene target, a property, the signal(s) that drive it, and optional gain and offset.
  */
-export type Binding = JointPositionBinding | PoseBinding | VisualScaleBinding | VisualColorBinding | VisibleBinding;
+export type Binding =
+  JointPositionBinding | PoseBinding | VisualScaleBinding | VisualColorBinding | VisibleBinding | DeformationBinding;
 export type BindingSignal = string;
 export type ScaleProperty = "scale.x" | "scale.y" | "scale.z";
 export type Colormap = "heat" | "viridis" | "coolwarm";
+export type DeformationFamily = "bending-y" | "bending-z" | "torsion";
+/**
+ * Boundary conditions of the mode shapes. clamped-free: end A clamped to the beam frame, end B free (cantilever). free-free: both ends free (the rigid motion is the beam frame pose).
+ */
+export type DeformationBasis = "clamped-free" | "free-free";
+export type ShapeAxis = "+x" | "-x" | "+y" | "-y" | "+z" | "-z";
 
 /**
  * Viewer bindings (spec: "Visualization and bindings"). Bindings are stored with the model and reference scene names and signal ids only, never solver internals.
@@ -66,4 +73,50 @@ export interface VisibleBinding {
   gain?: number;
   offset?: number;
   $comment?: string;
+}
+/**
+ * Elastic deformation of a beam-shaped visual (a box or a cylinder) by modal coordinates (assumed modes, Euler-Bernoulli). The beam frame has its origin at end A (s = 0) and its x axis along the beam to end B (s = L). "bending-y" deflects along the beam y axis (sections rotate about z by the slope), "bending-z" along the beam z axis (sections rotate about y), "torsion" rotates the sections about x. Deflection w(s) = sum_n phi_n(s) * eta_n (eta in m), twist theta(s) = sum_n psi_n(s) * eta_n (eta in rad), with the mode shapes of `basis` normalised to (1/L) * integral_0^L phi_n^2 ds = 1. Deformation bindings of one visual (at most one per family) compose and must give the same `beam`. The rigid motion of the beam frame is the pose binding of the link the visual belongs to.
+ */
+export interface DeformationBinding {
+  target: string;
+  property: "deformation";
+  family: DeformationFamily;
+  basis: DeformationBasis;
+  beam: BeamMapping;
+  /**
+   * The modal coordinates eta_1..eta_n of the family, one signal per mode in mode order (1 to 3 modes). Bending coordinates are in m, torsion coordinates in rad. A FlexibleBeam block records them as <Block>/eta_y[i], <Block>/eta_z[i] and <Block>/eta_t[i].
+   *
+   * @minItems 1
+   * @maxItems 3
+   */
+  signal: [BindingSignal] | [BindingSignal, BindingSignal] | [BindingSignal, BindingSignal, BindingSignal];
+  /**
+   * Multiplies every modal coordinate (default 1), e.g. 0.001 for coordinates in mm. The viewer's exaggeration factor is a display setting and is not stored in the binding.
+   */
+  gain?: number;
+  strain?: StrainColor;
+  $comment?: string;
+}
+/**
+ * Where the beam frame sits in the visual. `axis` is the visual-local direction from end A to end B; end A is the face of the shape on the other side (boxes and cylinders are centred on their origin, so end A is at -extent/2 along `axis`). `y` is the visual-local direction of the beam y axis, perpendicular to `axis` (default: +y, or +z when `axis` is along y); the beam z axis is axis x y. A cylinder's own axis is its local z, so a cylinder takes `axis` +z or -z.
+ */
+export interface BeamMapping {
+  axis: ShapeAxis;
+  y?: ShapeAxis;
+  /**
+   * Beam length L in m: the mode shapes run over s = 0..L from end A. Default: the extent of the shape along `axis`. Parts of the shape beyond L move rigidly with the section at L.
+   */
+  length?: number;
+  $comment?: string;
+}
+/**
+ * Colours the visual by the bending strain magnitude along the beam, c * |w''(s)|, with c the distance of the outer fibre from the neutral axis (half the box size across the beam, or the cylinder radius), over the bending families of the visual. Uses the true deformation, never the exaggerated one. `range` is in strain (dimensionless, e.g. [0, 0.001]).
+ */
+export interface StrainColor {
+  colormap: Colormap;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  range: [number, number];
 }

@@ -110,6 +110,53 @@ def test_each_mistake_fails(runner, tmp_path, binding, fragment):
     assert fragment in results[0][2]
 
 
+def _deform(**over):
+    return {
+        "target": "visual:bar_box",
+        "property": "deformation",
+        "family": "bending-y",
+        "basis": "clamped-free",
+        "beam": {"axis": "+x"},
+        "signal": ["x"],
+        **over,
+    }
+
+
+def test_deformation_bindings_pass(runner, tmp_path):
+    bindings = [_deform(), _deform(family="torsion", signal=["q", "s"])]
+    results = _check(runner, _run(tmp_path, bindings))
+    assert [r[0] for r in results] == [True], results
+    assert "2 binding(s) (0 joint position, 0 pose, 2 visual)" in results[0][2]
+
+
+@pytest.mark.parametrize(
+    ("bindings", "fragment"),
+    [
+        ([_deform(target="visual:nope")], "no visual named 'nope'"),
+        ([_deform(signal=["x", "x", "x", "x"])], "needs 1 to 3 modal coordinates"),
+        ([_deform(signal="x")], "needs 1 to 3 modal coordinates"),
+        ([_deform(signal=["q"], family="bending-z")], "does not fit a bending-z modal coordinate"),
+        ([_deform(signal=["x"], family="torsion")], "does not fit a torsion modal coordinate"),
+        ([_deform(), _deform(signal=["s"])], "a second bending-y binding"),
+    ],
+)
+def test_each_deformation_mistake_fails(runner, tmp_path, bindings, fragment):
+    results = _check(runner, _run(tmp_path, bindings))
+    assert results[0][0] is False
+    assert fragment in results[0][2]
+
+
+def test_deformation_needs_a_beam_shape(runner, tmp_path):
+    run = _run(tmp_path, [_deform()])
+    (tmp_path / "scenes" / "a.sdf").write_text(
+        SDF.replace("<box><size>1 1 1</size></box></geometry></visual></link>\n  <link name=\"slider\">", "<sphere><radius>1</radius></sphere></geometry></visual></link>\n  <link name=\"slider\">"),
+        encoding="utf-8",
+    )
+    results = _check(runner, run)
+    assert results[0][0] is False
+    assert "a sphere is not a beam" in results[0][2]
+
+
 def test_model_without_scene_fails(runner, tmp_path):
     run = _run(tmp_path, GOOD)
     run.model_document["scene"] = None

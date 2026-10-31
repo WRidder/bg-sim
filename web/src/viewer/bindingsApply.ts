@@ -2,11 +2,15 @@
  * Applying bindings (spec "Viewer loop"): at one playback time, interpolate the bound signals
  * (lerp; shortest-path slerp for the pose quaternion), apply `gain` and `offset`, and set the
  * property through the built scene. Only `gain` and `offset` exist; any other math belongs in the model.
+ * A `deformation` binding hands its modal coordinates (times `gain`) to the scene, which evaluates the
+ * mode shapes per vertex (`beamModes.ts`); all families of one visual go in one call.
  */
 
-import type { Binding } from "../contracts/model";
+import type { Binding, DeformationBinding } from "../contracts/model";
+import type { BeamConfig } from "../scene/build";
+import type { ModalSet } from "./beamModes";
 import { colormapColor } from "./bindingsColormaps";
-import { signalsOf } from "./bindingsValidate";
+import { signalCount, signalsOf } from "./bindingsValidate";
 import { normalizeQuat, type SignalBuffer } from "./timeline";
 
 /** The setters of `BuiltScene` the applier uses. */
@@ -16,10 +20,31 @@ export interface ApplyTarget {
   setVisualScale(ref: string, sx: number, sy: number, sz: number): boolean;
   setVisualColor(ref: string, r: number, g: number, b: number): boolean;
   setVisible(ref: string, visible: boolean): boolean;
+  /** The visuals deformation bindings drive (beam meshes); called whenever the bindings or the scene change. */
+  configureBeams?(configs: ReadonlyMap<string, BeamConfig>): void;
+  /** Modal coordinates of a configured beam visual, all its families at once (gain applied). */
+  setDeformation?(ref: string, sets: readonly ModalSet[]): boolean;
   /** Back to the rest pose. */
   reset(): void;
 }
 
+/**
+ * Per visual target of deformation bindings: the beam mapping (of its first deformation binding),
+ * stripes when torsion is bound, and the strain colouring (of the first binding that asks for it).
+ */
+export function beamConfigs(bindings: readonly Binding[]): Map<string, BeamConfig> {
+  const out = new Map<string, BeamConfig>();
+  for (const b of bindings) {
+    if (b.property !== "deformation") continue;
+    const before = out.get(b.target);
+    out.set(b.target, {
+      beam: before?.beam ?? b.beam,
+      stripes: (before?.stripes ?? false) || b.family === "torsion",
+      strain: before?.strain ?? (b.family !== "torsion" ? (b.strain ?? null) : null),
+    });
+  }
+  return out;
+}
 /** The distinct signal ids of the bindings, in first-use order: the ids to request from the stream. */
 export function boundSignalIds(bindings: readonly Binding[]): string[] {
   const seen = new Set<string>();
@@ -48,6 +73,8 @@ export class BindingApplier {
   private readonly compiled: Compiled[] = [];
   /** Per scale target: the scale the bound axes write into (unbound axes stay 1). */
   private readonly scales = new Map<string, [number, number, number]>();
+  /** Per deformation target: the modal sets of its bindings, applied together after the loop. */
+  private readonly deformations = new Map<string, ModalSet[]>();
   /** Last value each position binding set, by target, for tests and the playback bar's readout. */
   readonly applied = new Map<string, number>();
 
@@ -59,8 +86,8 @@ export class BindingApplier {
     for (const binding of bindings) {
       const names = signalsOf(binding);
       const cols = names.map((n) => ids.indexOf(n));
-      const want = binding.property === "pose" ? 7 : 1;
-      if (names.length !== want || cols.some((c) => c < 0)) continue;
+      const [min, max] = signalCount(binding.property);
+      if (names.length < min || names.length > max || cols.some((c) => c < 0)) continue;
       this.compiled.push({ binding, cols });
     }
   }
@@ -73,6 +100,7 @@ export class BindingApplier {
   apply(buffer: SignalBuffer, t: number): number {
     let n = 0;
     this.scales.clear();
+    this.deformations.clear();
     for (const { binding, cols } of this.compiled) {
       const first = cols[0];
       if (first === undefined) continue;
@@ -125,9 +153,30 @@ export class BindingApplier {
           n++;
           break;
         }
+        case "deformation": {
+          const set = modalSet(binding, cols.map((c) => buffer.valueAt(c, t)));
+          if (set === null) break;
+          const sets = this.deformations.get(binding.target) ?? [];
+          sets.push(set);
+          this.deformations.set(binding.target, sets);
+          this.applied.set(`${binding.target}#${binding.family}`, set.eta[0] ?? 0);
+          n++;
+          break;
+        }
       }
     }
     for (const [target, s] of this.scales) this.scene.setVisualScale(target, s[0], s[1], s[2]);
+    for (const [target, sets] of this.deformations) this.scene.setDeformation?.(target, sets);
     return n;
   }
+}
+
+/** The modal coordinates of a deformation binding from its sampled signals (gain applied), or null when a sample is missing. */
+function modalSet(binding: DeformationBinding, values: readonly (number | null)[]): ModalSet | null {
+  const eta: number[] = [];
+  for (const v of values) {
+    if (v === null) return null;
+    eta.push(v * (binding.gain ?? 1));
+  }
+  return { family: binding.family, basis: binding.basis, eta };
 }

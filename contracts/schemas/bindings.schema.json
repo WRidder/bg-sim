@@ -22,7 +22,8 @@
         { "$ref": "#/$defs/poseBinding" },
         { "$ref": "#/$defs/visualScaleBinding" },
         { "$ref": "#/$defs/visualColorBinding" },
-        { "$ref": "#/$defs/visibleBinding" }
+        { "$ref": "#/$defs/visibleBinding" },
+        { "$ref": "#/$defs/deformationBinding" }
       ]
     },
     "jointPositionBinding": {
@@ -92,7 +93,7 @@
         },
         "property": { "const": "color" },
         "signal": { "$ref": "#/$defs/signalRef" },
-        "colormap": { "title": "Colormap", "enum": ["heat", "viridis", "coolwarm"] },
+        "colormap": { "$ref": "#/$defs/colormap" },
         "range": {
           "type": "array",
           "minItems": 2,
@@ -121,6 +122,86 @@
         "$comment": { "type": "string" }
       },
       "additionalProperties": false
+    },
+    "deformationBinding": {
+      "title": "DeformationBinding",
+      "description": "Elastic deformation of a beam-shaped visual (a box or a cylinder) by modal coordinates (assumed modes, Euler-Bernoulli). The beam frame has its origin at end A (s = 0) and its x axis along the beam to end B (s = L). \"bending-y\" deflects along the beam y axis (sections rotate about z by the slope), \"bending-z\" along the beam z axis (sections rotate about y), \"torsion\" rotates the sections about x. Deflection w(s) = sum_n phi_n(s) * eta_n (eta in m), twist theta(s) = sum_n psi_n(s) * eta_n (eta in rad), with the mode shapes of `basis` normalised to (1/L) * integral_0^L phi_n^2 ds = 1. Deformation bindings of one visual (at most one per family) compose and must give the same `beam`. The rigid motion of the beam frame is the pose binding of the link the visual belongs to.",
+      "type": "object",
+      "required": ["target", "property", "family", "basis", "beam", "signal"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "pattern": "^visual:[A-Za-z0-9_.-]+$"
+        },
+        "property": { "const": "deformation" },
+        "family": { "$ref": "#/$defs/deformationFamily" },
+        "basis": { "$ref": "#/$defs/deformationBasis" },
+        "beam": { "$ref": "#/$defs/beamMapping" },
+        "signal": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/signalRef" },
+          "description": "The modal coordinates eta_1..eta_n of the family, one signal per mode in mode order (1 to 3 modes). Bending coordinates are in m, torsion coordinates in rad. A FlexibleBeam block records them as <Block>/eta_y[i], <Block>/eta_z[i] and <Block>/eta_t[i]."
+        },
+        "gain": {
+          "type": "number",
+          "description": "Multiplies every modal coordinate (default 1), e.g. 0.001 for coordinates in mm. The viewer's exaggeration factor is a display setting and is not stored in the binding."
+        },
+        "strain": { "$ref": "#/$defs/strainColor" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "deformationFamily": {
+      "title": "DeformationFamily",
+      "enum": ["bending-y", "bending-z", "torsion"]
+    },
+    "deformationBasis": {
+      "title": "DeformationBasis",
+      "description": "Boundary conditions of the mode shapes. clamped-free: end A clamped to the beam frame, end B free (cantilever). free-free: both ends free (the rigid motion is the beam frame pose).",
+      "enum": ["clamped-free", "free-free"]
+    },
+    "beamMapping": {
+      "title": "BeamMapping",
+      "description": "Where the beam frame sits in the visual. `axis` is the visual-local direction from end A to end B; end A is the face of the shape on the other side (boxes and cylinders are centred on their origin, so end A is at -extent/2 along `axis`). `y` is the visual-local direction of the beam y axis, perpendicular to `axis` (default: +y, or +z when `axis` is along y); the beam z axis is axis x y. A cylinder's own axis is its local z, so a cylinder takes `axis` +z or -z.",
+      "type": "object",
+      "required": ["axis"],
+      "properties": {
+        "axis": { "$ref": "#/$defs/shapeAxis" },
+        "y": { "$ref": "#/$defs/shapeAxis" },
+        "length": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Beam length L in m: the mode shapes run over s = 0..L from end A. Default: the extent of the shape along `axis`. Parts of the shape beyond L move rigidly with the section at L."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "shapeAxis": {
+      "title": "ShapeAxis",
+      "enum": ["+x", "-x", "+y", "-y", "+z", "-z"]
+    },
+    "strainColor": {
+      "title": "StrainColor",
+      "description": "Colours the visual by the bending strain magnitude along the beam, c * |w''(s)|, with c the distance of the outer fibre from the neutral axis (half the box size across the beam, or the cylinder radius), over the bending families of the visual. Uses the true deformation, never the exaggerated one. `range` is in strain (dimensionless, e.g. [0, 0.001]).",
+      "type": "object",
+      "required": ["colormap", "range"],
+      "properties": {
+        "colormap": { "$ref": "#/$defs/colormap" },
+        "range": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "number" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "colormap": {
+      "title": "Colormap",
+      "enum": ["heat", "viridis", "coolwarm"]
     },
     "signalRef": {
       "title": "BindingSignal",

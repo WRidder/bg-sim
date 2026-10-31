@@ -38,6 +38,8 @@ export interface SceneViewProps {
   extras?: ReactNode;
   /** Appended to the viewer toolbar (Detach / Dock, W5.5). */
   toolbarEnd?: ReactNode;
+  /** Top-left corner of the view, while a scene is loaded (the deformation exaggeration). */
+  badge?: ReactNode;
 }
 
 const NO_REFS: readonly string[] = [];
@@ -51,7 +53,7 @@ function describe(error: unknown): string {
  * camera, lists the scene as a tree beside the view and publishes the scene's E305/E306
  * diagnostics to the Diagnostics panel. `data-state` is `none`, `loading`, `loaded` or `error`.
  */
-export function SceneView({ active, createEngine, onBuilt, highlight = null, onKeyDown, extras, toolbarEnd }: SceneViewProps) {
+export function SceneView({ active, createEngine, onBuilt, highlight = null, onKeyDown, extras, toolbarEnd, badge }: SceneViewProps) {
   const project = useDocumentStore((state) => state.project);
   const sceneFile = useDocumentStore((state) => state.doc?.scene?.file ?? null);
   const [viewer, setViewer] = useState<ViewerScene | null>(null);
@@ -139,7 +141,7 @@ export function SceneView({ active, createEngine, onBuilt, highlight = null, onK
       {status === "loaded" && current !== null ? <SceneTree tree={current.tree} selected={selected} onSelect={setSelected} /> : null}
       <div className="scene-view__stage" ref={stageRef} tabIndex={0} role="group" aria-label="3D view" onKeyDown={onKeyDown} data-testid="scene-stage">
         <div className="scene-view__viewer">
-          <Viewer active={active} createEngine={createEngine} onReady={setViewer} onSelect={setSelected} selection={selection} overlay={overlay} toolbarEnd={toolbarEnd} fullscreenRef={stageRef} />
+          <Viewer active={active} createEngine={createEngine} onReady={setViewer} onSelect={setSelected} selection={selection} overlay={overlay} toolbarEnd={toolbarEnd} badge={status === "loaded" ? badge : null} fullscreenRef={stageRef} />
         </div>
         {extras}
       </div>

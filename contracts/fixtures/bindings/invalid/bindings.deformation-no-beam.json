@@ -1,0 +1,13 @@
+{
+  "$comment": "Invalid: a deformation binding needs the beam mapping (at least its axis), and it has no offset.",
+  "bindings": [
+    {
+      "target": "visual:beam_box",
+      "property": "deformation",
+      "family": "bending-z",
+      "basis": "clamped-free",
+      "signal": ["Plant/Beam/eta_z[1]"],
+      "offset": 0.0
+    }
+  ]
+}

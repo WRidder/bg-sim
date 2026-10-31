@@ -1,0 +1,13 @@
+{
+  "$comment": "Invalid: a deformation binding takes 1 to 3 modal coordinates; this one lists four.",
+  "bindings": [
+    {
+      "target": "visual:beam_box",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": { "axis": "+x" },
+      "signal": ["Plant/Beam/eta_y[1]", "Plant/Beam/eta_y[2]", "Plant/Beam/eta_y[3]", "Plant/Beam/eta_y[4]"]
+    }
+  ]
+}
