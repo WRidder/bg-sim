@@ -788,7 +788,7 @@ const INTERFACE_FIELDS = [
         params(ref) = [p.name for p in blocks["stdlib:" * ref].interface.parameters]
         consts(ref) = [(c.name, c.default) for c in blocks["stdlib:" * ref].interface.constants]
         @test params("continuous/TransferFunction") == ["num", "den"]
-        @test consts("continuous/TransferFunction") == [("n", 2)]
+        @test consts("continuous/TransferFunction") == [("n", 2), ("m", 2)]
         @test params("continuous/ZeroPole") == ["gain", "zero_re", "zero_im", "pole_re", "pole_im"]
         @test consts("continuous/ZeroPole") == [("n", 2), ("m", 1)]
         for f in ("LowPassButterworth", "LowPassBessel")
@@ -907,11 +907,13 @@ const INTERFACE_FIELDS = [
 
         # The state-space block: N is structural, the matrices are Vec/Mat. A parameter decl
         # carries its type and default text (the array size lives in the `Vec`/`Mat` type and
-        # in the source), while a variable decl also carries the resolved `size` array.
+        # in the source), while a variable decl also carries the resolved `size` array. The
+        # feedthrough D is a structural constant: D = 0 folds away (no algebraic loop).
         ss = blocks["stdlib:continuous/StateSpace"]
         @test [(c.name, c.type, c.default) for c in ss.interface.constants] ==
-              [("N", "Int", 2)]
-        @test [p.name for p in ss.interface.parameters] == ["A", "B", "C", "D"]
+              [("N", "Int", 2), ("D", "Real", 0.0)]
+        @test [c.structural for c in ss.interface.constants] == [true, true]
+        @test [p.name for p in ss.interface.parameters] == ["A", "B", "C"]
         @test all(p -> p.type == "Real", ss.interface.parameters)
         @test ss.interface.parameters[1].default == "[0.0 1.0; -1.0 -2.0]"
         @test ss.interface.parameters[2].default == "[0.0, 1.0]"

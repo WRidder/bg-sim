@@ -373,6 +373,7 @@ function _bind_constants!(
     node::IR.ModelNode,
 )
     consts = constant_env(st.pb)
+    overridden = Set{Symbol}()
     # F5.1 insertion point: a CSV source's file settings become its `N` and `table` constants.
     for (key, value) in _csv_node_constants(b, st, node)
         name = Symbol(key)
@@ -397,9 +398,35 @@ function _bind_constants!(
         folded = _constant_value(b, st, d, resolved, value)
         folded === nothing && continue
         consts[name] = folded
+        push!(overridden, name)
     end
+    # A constant whose default uses another constant (`m::Int = n`) follows that constant's
+    # instance value: re-fold the defaults that were not overridden, in dependency order.
+    isempty(overridden) || _refold_dependent_defaults!(consts, st, overridden)
     st.consts = consts
     return nothing
+end
+
+function _refold_dependent_defaults!(consts::AbstractDict, st::BlockState, overridden::Set{Symbol})
+    pending = [d for d in BGSim.declarations(st.pb, :constants)
+               if !(BGSim.decl_name(d) in overridden) && d.default !== nothing]
+    env = Dict{Symbol,Any}(name => consts[name] for name in overridden if haskey(consts, name))
+    for _ in 1:(length(pending) + 1)
+        isempty(pending) && break
+        rest = eltype(pending)[]
+        for d in pending
+            ok, v = BGSim.try_eval_const(d.default, env)
+            if ok
+                env[BGSim.decl_name(d)] = v
+                consts[BGSim.decl_name(d)] = v
+            else
+                push!(rest, d)
+            end
+        end
+        length(rest) == length(pending) && break
+        pending = rest
+    end
+    return consts
 end
 
 block_name_safe(st::BlockState) = String(st.block.name)
@@ -804,6 +831,22 @@ function _bind_parameters!(b::Builder, st::BlockState, node::IR.ModelNode)
                 ),
             )
         end
+    end
+    # A parameter value for a name that is a constant of the block would otherwise be
+    # dropped without a word (for example a model saved before StateSpace's `D` became a
+    # structural constant). Say where the value belongs instead.
+    for d in BGSim.declarations(st.pb, :constants)
+        name = String(BGSim.decl_name(d))
+        haskey(node.params, name) || continue
+        _report!(
+            b,
+            st;
+            code = "E003",
+            message = "`$name` of `$(st.path)` is a constant, not a parameter, so its parameter value `$(node.params[name])` is not used",
+            hint = "set `$name` under the block's constants (the inspector's Constants section)",
+            scope = "@constants",
+            range = BGSim.decl_range(d),
+        )
     end
     return nothing
 end

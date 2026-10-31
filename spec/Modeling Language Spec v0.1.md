@@ -311,12 +311,12 @@ The file has a header row (`name` or `name [unit]` per column) and numeric rows;
 | Product / divide | `u[]`, `y` | operations | v0.1 |
 | Integrator | `u`, `y`, optional `reset` | initial value, `lower`, `upper` limits | v0.1 |
 | Filtered derivative | `u`, `y` | time constant | v0.1 |
-| Transfer function | `u`, `y` | `num`, `den` (`Vec{n + 1}`, descending powers of s, proper); order `n` (constant); controllable canonical form | v0.1 |
+| Transfer function | `u`, `y` | `num` (`Vec{m + 1}`), `den` (`Vec{n + 1}`), descending powers of s; order `n` and numerator degree `m` ≤ `n` (constants, `m = n` by default); controllable canonical form; `m < n` has no direct feedthrough | v0.1 |
 | Zero-pole | `u`, `y` | `gain`, `zero_re`, `zero_im`, `pole_re`, `pole_im`; `n` poles, `m` zeros (constants), conjugate pairs from an odd index | v0.1 |
 | Butterworth / Bessel low-pass | `u`, `y` | `k`, `wc` (rad/s, -3 dB); order `n` 1..8 (constant); cascaded second-order sections | v0.1 |
 | Notch / band-pass | `u`, `y` | `k`, `w0` (rad/s), `bandwidth` (rad/s); notch `depth` | v0.1 |
 | Luenberger observer | `u`, `y`, `x_hat`, `y_hat` | `A`, `B`, `C`, `D`, observer gain `L`; `N` (constant) | v0.1 |
-| State space | `u`, `y` | `A`, `B`, `C`, `D`, initial state | v0.1 |
+| State space | `u`, `y` | `A`, `B`, `C`, initial state; `N` and the feedthrough `D` (constants, `D = 0` by default: no direct feedthrough) | v0.1 |
 | First order / second order | `u`, `y` | `k`, `tau` / `k`, `w0`, `zeta` | v0.1 |
 | Lead-lag | `u`, `y` | zero, pole, gain | v0.1 |
 | PID | `u` (error), `y`, optional `track` | `Kp`, `Ti`, `Td`, `N`, limits, anti-windup | v0.1 |
@@ -698,6 +698,7 @@ Validation runs in two passes: per block right after parsing (fast, runs as the 
 | `W216` | Model | Random sources share a seed, so they draw the same sequence | `Noise1`, `Prbs1` share seed 1; give each its own `seed` |
 | `W217` | Run | A `StopSimulation` block ended the run | the run was stopped by `Stop1` at t = 1.25 s |
 | `E902` | Run | An `Assertion` block failed: its input fell below `threshold` | assertion `PressureOk` failed at t = 0.8 s |
+| `E903` | Run | An algebraic loop cannot be solved because the compiler solves it through a parameter coefficient that is zero (or not finite) in this run. Parameters stay symbolic, so the compiler assumes they are nonzero; a structural feedthrough (a constant) removes the path | the algebraic loop through `K`, `P` cannot be solved: the compiler solves it for `K/y` by dividing by `P/D`, which is 0 in this run |
 
 Every diagnostic carries the block path (for example `Plant/Motor1`), scope, line and column in the user's source, the code, the message, and a fix hint where one exists. The editor highlights the element on the canvas and the line in the code view.
 
