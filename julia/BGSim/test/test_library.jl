@@ -300,7 +300,19 @@ const F5_CSV_REFS = [
 
 # J-EX9: the delay blocks on the discrete `delay` intrinsic.
 const JEX9_REFS = ["stdlib:continuous/TransportDelay", "stdlib:discrete/IntegerDelay"]
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS))
+
+# The common signal sources added on top of the M2 rows (Modelica.Blocks.Sources set).
+const SIGNAL_SOURCE_REFS = [
+    "stdlib:sources/ExpSine",
+    "stdlib:sources/Exponentials",
+    "stdlib:sources/MultiSine",
+    "stdlib:sources/RepeatingTable",
+    "stdlib:sources/Sawtooth",
+    "stdlib:sources/Trapezoid",
+    "stdlib:sources/Triangle",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -472,14 +484,15 @@ const INTERFACE_FIELDS = [
 
         ramp = blocks["stdlib:sources/Ramp"]
         @test [p.name for p in ramp.interface.parameters] ==
-              ["t_start", "slope", "initial"]
-        @test [p.unit for p in ramp.interface.parameters] == ["s", "1/s", nothing]
+              ["t_start", "slope", "initial", "duration"]
+        @test [p.unit for p in ramp.interface.parameters] == ["s", "1/s", nothing, "s"]
+        @test ramp.interface.parameters[4].default == "1.0e12"
         @test isempty(ramp.interface.constants)
         @test isempty(ramp.interface.inputs)
 
         pulse = blocks["stdlib:sources/Pulse"]
         @test [p.name for p in pulse.interface.parameters] ==
-              ["amplitude", "period", "duty", "t_start"]
+              ["amplitude", "period", "duty", "t_start", "offset"]
         @test pulse.interface.parameters[2].unit == "s"
         @test pulse.interface.parameters[3].min == 0
         @test pulse.interface.parameters[3].max == 1
@@ -487,8 +500,10 @@ const INTERFACE_FIELDS = [
 
         chirp = blocks["stdlib:sources/Chirp"]
         @test [p.name for p in chirp.interface.parameters] ==
-              ["f_start", "f_end", "duration"]
-        @test [p.unit for p in chirp.interface.parameters] == ["Hz", "Hz", "s"]
+              ["f_start", "f_end", "duration", "amplitude", "offset", "start_phase", "method"]
+        @test [p.unit for p in chirp.interface.parameters] ==
+              ["Hz", "Hz", "s", nothing, nothing, "rad", nothing]
+        @test chirp.interface.parameters[7].options == ["linear", "log"]
 
         time = blocks["stdlib:sources/Time"]
         @test time.interface.outputs[1].unit == "s"
@@ -535,6 +550,48 @@ const INTERFACE_FIELDS = [
         @test [p.name for p in recorder.interface.parameters] == ["decimation"]
         @test recorder.interface.parameters[1].type == "Int"
         @test recorder.interface.parameters[1].min == 1
+    end
+
+    @testset "the common signal sources" begin
+        # Sawtooth, Triangle, Trapezoid, MultiSine, ExpSine, Exponentials, RepeatingTable:
+        # one real output `y`, no inputs or ports, and the parameter lists the editor shows.
+        # The golden tests (test/golden/sources) check the waveforms.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        for ref in SIGNAL_SOURCE_REFS
+            b = blocks[ref]
+            @test isempty(b.diagnostics)
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test isempty(b.interface.ports)
+            @test isempty(b.interface.inputs)
+            @test [(o.name, o.type, o.size) for o in b.interface.outputs] ==
+                  [("y", "Real", Int[])]
+        end
+        params(name) = [p.name for p in blocks["stdlib:sources/" * name].interface.parameters]
+        @test params("Sawtooth") == ["amplitude", "period", "offset", "t_start"]
+        @test params("Triangle") == ["amplitude", "period", "offset", "t_start"]
+        @test params("Trapezoid") == ["amplitude", "rising", "width", "falling", "period",
+            "n_periods", "offset", "t_start"]
+        @test params("MultiSine") == ["amplitudes", "frequencies", "phases", "offset", "t_start"]
+        @test params("ExpSine") == ["amplitude", "frequency", "phase", "damping", "offset", "t_start"]
+        @test params("Exponentials") == ["amplitude", "rise_time", "tau_rise", "tau_fall",
+            "offset", "t_start"]
+        @test params("RepeatingTable") == ["t_start", "sample_time", "values", "method"]
+
+        trapezoid = blocks["stdlib:sources/Trapezoid"]
+        @test trapezoid.interface.parameters[6].type == "Int"
+        @test trapezoid.interface.parameters[6].default == "-1"
+        @test all(trapezoid.interface.parameters[i].min == 0 for i in 2:4)
+        @test trapezoid.interface.parameters[5].min == 1.0e-12
+        # Angular frequencies in rad/s, as in Sine (Chirp alone uses Hz).
+        @test blocks["stdlib:sources/ExpSine"].interface.parameters[2].unit == "rad/s"
+        @test blocks["stdlib:sources/MultiSine"].interface.parameters[2].unit == "rad/s"
+        @test blocks["stdlib:sources/Sine"].interface.parameters[2].unit == "rad/s"
+        @test [(c.name, c.default) for c in blocks["stdlib:sources/MultiSine"].interface.constants] ==
+              [("N", 3)]
+        table = blocks["stdlib:sources/RepeatingTable"]
+        @test [(c.name, c.default) for c in table.interface.constants] == [("N", 8)]
+        @test table.interface.parameters[4].options == ["hold", "linear"]
     end
 
     @testset "the M2 continuous rows (J2.7c)" begin

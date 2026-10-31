@@ -484,7 +484,7 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "hyd-volume",
     ),
     "stdlib:sources/Chirp" => (
-        description = "Linear frequency sweep from f_start to f_end over duration; frequency in Hz.",
+        description = "Frequency sweep (chirp) from f_start to f_end over duration, linear or logarithmic (log sweep); frequencies in Hz, with amplitude, offset and start phase.",
         icon = "src-chirp",
     ),
     "stdlib:sources/Constant" => (
@@ -502,17 +502,37 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Columns of a project CSV file sampled at every tick of sample_period and held in between (a discrete partition).",
         icon = "src-csv-sampled",
     ),
+    "stdlib:sources/ExpSine" => (
+        description = "Damped sine (exponentially decaying oscillation) from t_start; frequency in rad/s, damping in 1/s.",
+        icon = "src-exp-sine",
+    ),
+    "stdlib:sources/Exponentials" => (
+        description = "First-order exponential rise for rise_time, then exponential fall (Modelica Exponentials); also a first-order step response.",
+        icon = "src-exponentials",
+    ),
+    "stdlib:sources/MultiSine" => (
+        description = "Sum of N sines (multisine) with per-component amplitude, frequency (rad/s) and phase, plus offset.",
+        icon = "src-multi-sine",
+    ),
     "stdlib:sources/Noise" => (
         description = "Seeded normal noise on a fixed sample clock (counter-based SplitMix64 + AS 241); the same seed repeats the run bit for bit, in simulation and in exported code.",
         icon = "src-noise",
     ),
     "stdlib:sources/Pulse" => (
-        description = "Pulse / square signal source with amplitude, period, duty and t_start.",
+        description = "Pulse / square wave (PWM) with amplitude, period, duty, t_start and offset; for edges on the output grid use Trapezoid.",
         icon = "src-pulse",
     ),
     "stdlib:sources/Ramp" => (
-        description = "Ramp signal source; starts at t_start with slope and initial value.",
+        description = "Ramp signal source; starts at t_start with slope and initial value, and saturates after duration.",
         icon = "src-ramp",
+    ),
+    "stdlib:sources/RepeatingTable" => (
+        description = "Periodic time table (repeating sequence): N values sample_time apart, repeated every N*sample_time, with hold or linear interpolation.",
+        icon = "src-repeating-table",
+    ),
+    "stdlib:sources/Sawtooth" => (
+        description = "Sawtooth wave: rises from offset to offset + amplitude over each period, then drops back; exact edge events.",
+        icon = "src-sawtooth",
     ),
     "stdlib:sources/Recorder" => (
         description = "Recorder sink; every signal is always recorded, so decimation is ignored (D15).",
@@ -523,15 +543,23 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "src-scope",
     ),
     "stdlib:sources/Sine" => (
-        description = "Sine signal source; frequency in rad/s.", icon = "src-sine",
+        description = "Sine signal source; frequency in rad/s, optional t_start.", icon = "src-sine",
     ),
     "stdlib:sources/Step" => (description = "Step signal source.", icon = "src-step"),
     "stdlib:sources/Time" => (
         description = "Simulation time as an output signal.", icon = "src-time",
     ),
     "stdlib:sources/TimeTable" => (
-        description = "Uniformly sampled time table with hold or linear interpolation (method 0 or 1).",
+        description = "Uniformly sampled time table with hold or linear interpolation (method 0 or 1); a staircase or multi-step signal is a hold table.",
         icon = "src-time-table",
+    ),
+    "stdlib:sources/Trapezoid" => (
+        description = "Trapezoid wave (Modelica Trapezoid): rising, width, falling within each period, n_periods repetitions; a pulse with exact edges when rising = falling = 0.",
+        icon = "src-trapezoid",
+    ),
+    "stdlib:sources/Triangle" => (
+        description = "Triangle wave: rises from offset to offset + amplitude over half a period and falls back; exact kink events.",
+        icon = "src-triangle",
     ),
     "stdlib:translation/Damper" => (
         description = "Linear viscous damper between two translation ports.",
