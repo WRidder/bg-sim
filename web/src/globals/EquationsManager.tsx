@@ -1,7 +1,6 @@
 /**
  * The Equations manager (SolidWorks "Equations, Global Variables, and
- * Dimensions"), shown in the inspector when nothing is selected and, wider,
- * in a dialog:
+ * Dimensions"), on the Parameters tab next to Code and Docs:
  *
  * * Global variables: name | expression | value | unit | comment, with add,
  *   delete (refused while used), rename (rewrites every reference, one undo
@@ -13,10 +12,10 @@
  * Every edit is a document-store command, so undo/redo and autosave apply.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { Model, ModelGlobalParameter } from "../contracts/model";
-import { useDialogFocus } from "../app/useDialogFocus";
+import { requestCenterTab } from "../app/dockBus";
 import { useDocumentStore } from "../state/documentStore";
 import { CellInput } from "./CellInput";
 import { useGlobalEvaluation } from "./equationField";
@@ -33,7 +32,7 @@ import {
 import "./globals.css";
 
 export type ManagerView = "globals" | "equations" | "order";
-type Variant = "panel" | "dialog";
+type Variant = "panel" | "tab";
 
 function message(result: { ok: boolean; error?: string }): string | null {
   return result.ok ? null : (result.error ?? "The change was refused.");
@@ -127,8 +126,8 @@ function GlobalsTable({
   const globals = globalsOf(doc);
   const [open, setOpen] = useState<string | null>(null);
   const [rowError, setRowError] = useState<{ name: string; text: string } | null>(null);
-  const prefix = variant === "dialog" ? "dialog-global" : "global";
-  const wide = variant === "dialog";
+  const prefix = "global";
+  const wide = variant === "tab";
   const names = [...evaluation.byName.keys()];
   const describe = (name: string): string | null => {
     const status = evaluation.byName.get(name);
@@ -399,16 +398,14 @@ function GlobalRow({
 function EquationsTable({
   doc,
   evaluation,
-  variant,
   onNavigate,
 }: {
   doc: Model;
   evaluation: GlobalEvaluation;
-  variant: Variant;
   onNavigate: () => void;
 }) {
   const fields = useMemo(() => drivenFields(doc), [doc]);
-  const prefix = variant === "dialog" ? "dialog-equation" : "equation";
+  const prefix = "equation";
   const names = [...evaluation.byName.keys()];
   const store = useDocumentStore.getState;
   if (fields.length === 0) {
@@ -528,7 +525,7 @@ export function EquationsManager({
     { key: "equations", label: `Equations (${driven})` },
     { key: "order", label: "Order" },
   ];
-  const idPrefix = variant === "dialog" ? "dialog-equations" : "equations";
+  const idPrefix = "equations";
   return (
     <div className={`equations-manager equations-manager--${variant}`} data-testid={`${idPrefix}-manager`}>
       <div className="equations-tabs" role="tablist" aria-label="Equations manager views">
@@ -552,7 +549,7 @@ export function EquationsManager({
         {view === "globals" ? (
           <GlobalsTable doc={doc} evaluation={evaluation} variant={variant} onNavigate={onNavigate} />
         ) : view === "equations" ? (
-          <EquationsTable doc={doc} evaluation={evaluation} variant={variant} onNavigate={onNavigate} />
+          <EquationsTable doc={doc} evaluation={evaluation} onNavigate={onNavigate} />
         ) : (
           <OrderList doc={doc} evaluation={evaluation} />
         )}
@@ -561,42 +558,38 @@ export function EquationsManager({
   );
 }
 
-/** The wide Equations manager in a modal dialog (unit and comment columns). */
-export function EquationsDialog({ onClose }: { onClose: () => void }) {
-  const dialog = useRef<HTMLDivElement>(null);
-  useDialogFocus(true, dialog, onClose);
+/**
+ * The Parameters tab (centre, next to Code and Docs): the full-width Equations
+ * manager with unit and comment columns. A click-through selects the block and
+ * shows it on the Diagram tab.
+ */
+export function ParametersTab() {
+  const name = useDocumentStore((state) => state.doc?.name ?? state.modelName ?? null);
+  if (name === null) {
+    return null;
+  }
   return (
-    <div className="dialog-backdrop" data-testid="equations-dialog-backdrop">
-      <div
-        className="equations-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="equations-dialog-title"
-        data-testid="equations-dialog"
-        ref={dialog}
-        tabIndex={-1}
-      >
-        <header className="equations-dialog__header">
-          <h2 id="equations-dialog-title" className="equations-dialog__title">
-            Equations manager
-          </h2>
-          <button type="button" className="button" data-testid="equations-dialog-close" onClick={onClose}>
-            Close
-          </button>
-        </header>
-        <EquationsManager variant="dialog" onNavigate={onClose} />
-      </div>
+    <div className="parameters-tab" data-testid="parameters-tab">
+      <header className="parameters-tab__header">
+        <h2 className="parameters-tab__title">Global parameters &amp; equations</h2>
+        <p className="parameters-tab__hint">
+          Block parameters and start values can use these names (e.g. <code>4*m</code>). They are
+          evaluated once, before the model is compiled; simulation and export see plain numbers.
+        </p>
+      </header>
+      <EquationsManager variant="tab" onNavigate={() => requestCenterTab("diagram")} />
     </div>
   );
 }
 
 /**
- * The inspector when nothing is selected: the model itself, with its global
- * parameters and equations (the SolidWorks "Equations" home).
+ * The inspector when nothing is selected: the model, a summary of its global
+ * parameters and the way to the Parameters tab.
  */
 export function ModelInspector() {
   const name = useDocumentStore((state) => state.doc?.name ?? state.modelName ?? "Model");
-  const [dialog, setDialog] = useState(false);
+  const count = useDocumentStore((state) => (state.doc === null ? 0 : globalsOf(state.doc).length));
+  const driven = useDocumentStore((state) => (state.doc === null ? 0 : drivenFields(state.doc).length));
   return (
     <div className="inspector-body" data-testid="inspector-model">
       <header className="inspector-header inspector-header--summary">
@@ -604,26 +597,29 @@ export function ModelInspector() {
           <p className="inspector-header__kicker">Model</p>
           <h3 className="inspector-header__title">{name}</h3>
           <p className="inspector-header__description">
-            Nothing is selected. Global parameters live here; select a block to edit it.
+            Nothing is selected. Select a block on the diagram to edit its name, parameters, ports and
+            start values here.
           </p>
         </div>
       </header>
       <section className="inspector-section" aria-labelledby="inspector-globals-title">
         <h4 className="inspector-section__title" id="inspector-globals-title">
-          Global parameters &amp; equations
-          <button
-            type="button"
-            className="equations-open"
-            data-testid="equations-open-dialog"
-            title="Open the wide Equations manager (unit and comment columns)"
-            onClick={() => setDialog(true)}
-          >
-            Open manager…
-          </button>
+          Global parameters
         </h4>
-        <EquationsManager variant="panel" />
+        <p className="inspector-none" data-testid="inspector-globals-summary">
+          {count === 0
+            ? "No global parameters yet."
+            : `${count} global ${count === 1 ? "parameter" : "parameters"}, ${driven} driven ${driven === 1 ? "value" : "values"}.`}
+        </p>
+        <button
+          type="button"
+          className="button"
+          data-testid="equations-open-tab"
+          onClick={() => requestCenterTab("parameters")}
+        >
+          Open the Parameters tab
+        </button>
       </section>
-      {dialog ? <EquationsDialog onClose={() => setDialog(false)} /> : null}
     </div>
   );
 }

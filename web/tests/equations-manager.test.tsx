@@ -1,5 +1,6 @@
 /**
- * The Equations manager (inspector, nothing selected) and the Σ decoration of
+ * The Equations manager (the Parameters tab; the inspector summarises it when
+ * nothing is selected) and the Σ decoration of
  * driven inspector fields: add/rename/edit globals in the table, live values
  * and cycle errors, "used by" click-through, the Equations view, name
  * completion in a block parameter and the evaluated readout.
@@ -12,6 +13,8 @@ import catalogJson from "../../contracts/fixtures/catalog/valid/catalog.min.json
 import type { Catalog, CatalogBlock } from "../src/contracts/catalog";
 import type { ModelNode } from "../src/contracts/model";
 import { resetDiagnosticsStore } from "../src/diagnostics/store";
+import { SHOW_CENTER_TAB_EVENT } from "../src/app/dockBus";
+import { ParametersTab } from "../src/globals/EquationsManager";
 import { Inspector } from "../src/inspector/Inspector";
 import { resetCatalogStore, useCatalogStore } from "../src/library/catalogStore";
 import { resetRunStore } from "../src/plot/runStore";
@@ -58,8 +61,13 @@ beforeEach(() => {
 });
 
 describe("the Equations manager", () => {
-  it("is the inspector when nothing is selected and edits globals with live values", () => {
-    render(<Inspector />);
+  it("edits globals with live values on the Parameters tab; the inspector shows the model", () => {
+    render(
+      <>
+        <Inspector />
+        <ParametersTab />
+      </>,
+    );
     expect(screen.getByTestId("inspector-model").textContent).toContain("Springy");
     expect(screen.getByTestId("globals-empty")).toBeTruthy();
 
@@ -93,7 +101,12 @@ describe("the Equations manager", () => {
     useDocumentStore.getState().addGlobalParameter({ name: "m", value: "2" });
     useDocumentStore.getState().addGlobalParameter({ name: "k", value: "4*m", unit: "N/m" });
     useDocumentStore.getState().addGlobalParameter({ name: "mu", value: "0.5" });
-    render(<Inspector />);
+    render(
+      <>
+        <Inspector />
+        <ParametersTab />
+      </>,
+    );
     act(() => useDocumentStore.getState().setSelection(["n1"], []));
 
     // Completion: typing "m" offers `mu` with its value; Tab takes it.
@@ -154,7 +167,12 @@ describe("the Equations manager", () => {
     useDocumentStore
       .getState()
       .setFieldExpression({ diagramPath: [], nodeId: "n1", kind: "param", key: "k" }, "500*m");
-    render(<Inspector />);
+    render(
+      <>
+        <Inspector />
+        <ParametersTab />
+      </>,
+    );
     fireEvent.click(screen.getByTestId("equations-tab-equations"));
     expect(screen.getByTestId("equation-value-Spring1.k").textContent).toBe("1000");
     type("equation-expr-Spring1.k", "250*m");
@@ -169,16 +187,30 @@ describe("the Equations manager", () => {
     expect(useDocumentStore.getState().selection.nodes).toEqual(["n1"]);
   });
 
-  it("opens the wide manager with unit and comment columns", () => {
+  it("the Parameters tab has unit and comment columns; the inspector summarises and links to it", () => {
     useDocumentStore.getState().addGlobalParameter({ name: "m", value: "2" });
-    render(<Inspector />);
-    fireEvent.click(screen.getByTestId("equations-open-dialog"));
-    const dialog = screen.getByTestId("equations-dialog");
-    expect(within(dialog).getByText("Unit")).toBeTruthy();
-    type("dialog-global-unit-m", "kg");
-    type("dialog-global-comment-m", "Base mass");
+    render(
+      <>
+        <Inspector />
+        <ParametersTab />
+      </>,
+    );
+    const tab = screen.getByTestId("parameters-tab");
+    expect(within(tab).getByText("Unit")).toBeTruthy();
+    type("global-unit-m", "kg");
+    type("global-comment-m", "Base mass");
     expect(globals()[0]).toEqual({ name: "m", value: "2", unit: "kg", description: "Base mass" });
-    fireEvent.click(screen.getByTestId("equations-dialog-close"));
-    expect(screen.queryByTestId("equations-dialog")).toBeNull();
+
+    expect(screen.getByTestId("inspector-globals-summary").textContent).toBe(
+      "1 global parameter, 0 driven values.",
+    );
+    const requested: unknown[] = [];
+    const listener = (event: Event): void => {
+      requested.push((event as CustomEvent<unknown>).detail);
+    };
+    window.addEventListener(SHOW_CENTER_TAB_EVENT, listener);
+    fireEvent.click(screen.getByTestId("equations-open-tab"));
+    window.removeEventListener(SHOW_CENTER_TAB_EVENT, listener);
+    expect(requested).toEqual(["parameters"]);
   });
 });

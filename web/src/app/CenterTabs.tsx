@@ -12,7 +12,12 @@ const CodeTab = lazy(() => import("../code/CodeTab").then((m) => ({ default: m.C
 // The Docs tab (Markdown, KaTeX, CodeMirror) loads when it is first opened (code splitting, W5.6).
 const DocsTab = lazy(() => import("../docs/DocsTab").then((m) => ({ default: m.DocsTab })));
 
-export type CenterTabId = "diagram" | "code" | "docs";
+// The Parameters tab: global parameters and the equations that use them (the Equations manager).
+const ParametersTab = lazy(() =>
+  import("../globals/EquationsManager").then((m) => ({ default: m.ParametersTab })),
+);
+
+export type CenterTabId = "diagram" | "code" | "docs" | "parameters";
 
 function centerTabs(pausedPath: string | null): readonly TabDefinition<CenterTabId>[] {
   return [
@@ -20,6 +25,7 @@ function centerTabs(pausedPath: string | null): readonly TabDefinition<CenterTab
     // W4.1: a statement pause shows its instance path in the tab title.
     { id: "code", label: pausedPath === null ? "Code" : `Code · paused in ${pausedPath}` },
     { id: "docs", label: "Docs" },
+    { id: "parameters", label: "Parameters" },
   ];
 }
 
@@ -80,6 +86,10 @@ export function CenterTabs({ active, onSelect }: CenterTabsProps) {
         ) : active === "code" ? (
           <Suspense fallback={<EmptyState title="Loading the code editor" hint="One moment." />}>
             <CodeTab />
+          </Suspense>
+        ) : active === "parameters" ? (
+          <Suspense fallback={<EmptyState title="Loading the parameters" hint="One moment." />}>
+            <ParametersTab />
           </Suspense>
         ) : (
           <Suspense fallback={<EmptyState title="Loading the docs" hint="One moment." />}>

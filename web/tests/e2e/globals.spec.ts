@@ -59,6 +59,12 @@ async function openModel(page: Page, theme: "dark" | "light" = "dark"): Promise<
   await expect(page.getByTestId("inspector-model")).toBeVisible();
 }
 
+async function showTab(page: Page, name: "Diagram" | "Parameters"): Promise<void> {
+  const tab = page.getByRole("tab", { name, exact: true });
+  await tab.click();
+  await expect(tab).toHaveAttribute("aria-selected", "true");
+}
+
 async function commit(page: Page, testId: string, text: string): Promise<void> {
   const field = page.getByTestId(testId);
   await field.fill(text);
@@ -69,11 +75,21 @@ async function readDocument(page: Page): Promise<{
   parameters?: { name: string; value: string }[];
   diagram: { nodes: { name: string; params?: Record<string, string> }[] };
 }> {
+  // The document mirror lives on the Diagram tab: read it there, then come back.
+  const onParameters =
+    (await page.getByRole("tab", { name: "Parameters", exact: true }).getAttribute("aria-selected")) === "true";
+  if (onParameters) {
+    await showTab(page, "Diagram");
+  }
   const text = await page.getByTestId("document-json").textContent();
+  if (onParameters) {
+    await showTab(page, "Parameters");
+  }
   return JSON.parse(text ?? "null");
 }
 
 async function addGlobal(page: Page, name: string, value: string): Promise<void> {
+  await showTab(page, "Parameters");
   await page.getByTestId("global-add").click();
   const fresh = page.getByTestId(/^global-name-p\d+$/).last();
   await expect(fresh).toBeFocused();
@@ -83,18 +99,22 @@ async function addGlobal(page: Page, name: string, value: string): Promise<void>
 }
 
 async function selectR1(page: Page): Promise<void> {
+  await showTab(page, "Diagram");
   await page.locator('[data-testid="diagram-node"][data-node-name="R1"]').click();
   await expect(page.getByTestId("inspector-node")).toBeVisible();
 }
 
 async function deselect(page: Page): Promise<void> {
+  await showTab(page, "Diagram");
   await page.getByTestId("canvas-surface").click({ position: { x: 30, y: 30 } });
   await expect(page.getByTestId("inspector-model")).toBeVisible();
+  await showTab(page, "Parameters");
 }
 
 test("globals drive a block parameter, rename through, report cycles and run", async ({ page }) => {
   if (real) test.setTimeout(2_400_000);
   await openModel(page);
+  await showTab(page, "Parameters");
   await expect(page.getByTestId("globals-empty")).toBeVisible();
 
   await addGlobal(page, "m", "2");
@@ -135,13 +155,13 @@ test("globals drive a block parameter, rename through, report cycles and run", a
   await expect(page.getByTestId("global-error-m")).toHaveText("Cycle: m → stiffness → m.");
   await expect(page.getByTestId("global-error-stiffness")).toContainText("Cycle");
   if (shots.length > 0) {
-    await page.getByTestId("inspector-panel").screenshot({ path: path.join(shots, "globals-cycle-dark.png") });
+    await page.getByTestId("parameters-tab").screenshot({ path: path.join(shots, "globals-cycle-dark.png") });
   }
   await commit(page, "global-value-m", "2");
   await expect(page.getByTestId("global-error-m")).toHaveCount(0);
   await expect(page.getByTestId("global-result-stiffness")).toHaveText("8");
   if (shots.length > 0) {
-    await page.getByTestId("inspector-panel").screenshot({ path: path.join(shots, "globals-manager-dark.png") });
+    await page.getByTestId("parameters-tab").screenshot({ path: path.join(shots, "globals-manager-dark.png") });
   }
 
   // Click-through from "used by" selects R1.
@@ -158,13 +178,13 @@ test("globals drive a block parameter, rename through, report cycles and run", a
 });
 
 for (const theme of ["light", "dark"] as const) {
-  test(`the Equations manager and its dialog are axe-clean (${theme})`, async ({ page }) => {
+  test(`the Parameters tab is axe-clean (${theme})`, async ({ page }) => {
     await openModel(page, theme);
     await addGlobal(page, "m", "2");
     await addGlobal(page, "k", "4*m");
     await page.getByTestId("global-uses-k").click();
     const check = async (): Promise<void> => {
-      const result = await new AxeBuilder({ page }).include('[data-testid="inspector-panel"]').analyze();
+      const result = await new AxeBuilder({ page }).include('[data-testid="parameters-tab"]').analyze();
       const serious = result.violations.filter(
         (violation) => violation.impact === "serious" || violation.impact === "critical",
       );
@@ -172,20 +192,12 @@ for (const theme of ["light", "dark"] as const) {
     };
     await check();
     if (shots.length > 0) {
-      await page.getByTestId("inspector-panel").screenshot({ path: path.join(shots, `globals-manager-${theme}.png`) });
+      await page.getByTestId("parameters-tab").screenshot({ path: path.join(shots, `globals-manager-${theme}.png`) });
     }
-    await page.getByTestId("equations-open-dialog").click();
-    await expect(page.getByTestId("equations-dialog")).toBeVisible();
-    await commit(page, "dialog-global-unit-m", "kg");
-    await commit(page, "dialog-global-comment-m", "Base mass");
-    const dialogResult = await new AxeBuilder({ page }).include('[data-testid="equations-dialog"]').analyze();
-    expect(
-      dialogResult.violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical").map((violation) => violation.id),
-    ).toEqual([]);
-    if (shots.length > 0) {
-      await page.getByTestId("equations-dialog").screenshot({ path: path.join(shots, `globals-dialog-${theme}.png`) });
-    }
-    await page.getByTestId("equations-dialog-close").click();
+    // The tab has the unit and comment columns.
+    await commit(page, "global-unit-m", "kg");
+    await commit(page, "global-comment-m", "Base mass");
+    await check();
 
     await selectR1(page);
     await commit(page, "inspector-param-R", "= 1.25*k");
