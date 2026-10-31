@@ -1,0 +1,17 @@
+{
+  "$comment": "expected E301: the linear basis is the twist of a lumped torsion spring; it takes family torsion only.",
+  "bindings": [
+    {
+      "target": "visual:shaft_rod",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "linear",
+      "beam": {
+        "axis": "+z"
+      },
+      "signal": [
+        "Shaft/w"
+      ]
+    }
+  ]
+}

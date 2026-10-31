@@ -16,19 +16,31 @@
  *
  * Torsion: clamped-free psi = sqrt 2 sin((2n-1) pi s / 2L), free-free psi = sqrt 2 cos(n pi s / L).
  *
+ * The `linear` basis is not a mode set: it is the twist of a lumped (massless) torsion spring, psi = s / L
+ * with one coordinate, the twist of end B relative to end A (not normalised: psi(L) = 1). Torsion only;
+ * a bending family or a second coordinate on it draws nothing (the validator reports it).
+ *
  * cosh x - sigma sinh x cancels badly for large x (sigma -> 1). It is evaluated as
  * ((1 - sigma) e^x + (1 + sigma) e^-x) / 2 with (1 - sigma) e^lambda from a closed form free of the
  * cancellation, so the hyperbolic part stays accurate to the last digits (and in float32 too).
  */
 
 export type DeformationFamily = "bending-y" | "bending-z" | "torsion";
-export type DeformationBasis = "clamped-free" | "free-free";
+/** The modal bases (mode shapes of a beam). */
+export type ModalBasis = "clamped-free" | "free-free";
+/** Every basis of a deformation binding: the modal bases and the lumped twist `linear` (torsion, one coordinate). */
+export type DeformationBasis = ModalBasis | "linear";
 
 /** Modes per family a binding may give. */
 export const MAX_MODES = 3;
 
+/** Coordinates a binding of `basis` may give: three modes, or the one twist of the `linear` basis. */
+export function maxModes(basis: DeformationBasis): number {
+  return basis === "linear" ? 1 : MAX_MODES;
+}
+
 /** Roots lambda_n of the frequency equations (cos l cosh l = -1, resp. +1). */
-export const LAMBDA: Readonly<Record<DeformationBasis, readonly number[]>> = {
+export const LAMBDA: Readonly<Record<ModalBasis, readonly number[]>> = {
   "clamped-free": [1.87510407, 4.69409113, 7.85475744],
   "free-free": [4.73004074, 7.85320462, 10.99560784],
 };
@@ -42,7 +54,7 @@ interface BendingConstants {
   readonly trigSign: 1 | -1;
 }
 
-function bendingConstants(basis: DeformationBasis, lambda: number): BendingConstants {
+function bendingConstants(basis: ModalBasis, lambda: number): BendingConstants {
   const em = Math.exp(-lambda);
   const c = Math.cos(lambda);
   const s = Math.sin(lambda);
@@ -58,17 +70,17 @@ function bendingConstants(basis: DeformationBasis, lambda: number): BendingConst
   return { lambda, sigma, aScaled, trigSign: -1 };
 }
 
-const BENDING: Readonly<Record<DeformationBasis, readonly BendingConstants[]>> = {
+const BENDING: Readonly<Record<ModalBasis, readonly BendingConstants[]>> = {
   "clamped-free": LAMBDA["clamped-free"].map((l) => bendingConstants("clamped-free", l)),
   "free-free": LAMBDA["free-free"].map((l) => bendingConstants("free-free", l)),
 };
 
 /** sigma_n of a bending mode (1-based n). */
-export function bendingSigma(basis: DeformationBasis, n: number): number {
+export function bendingSigma(basis: ModalBasis, n: number): number {
   return modeConstants(basis, n).sigma;
 }
 
-function modeConstants(basis: DeformationBasis, n: number): BendingConstants {
+function modeConstants(basis: ModalBasis, n: number): BendingConstants {
   const k = BENDING[basis][n - 1];
   if (k === undefined) throw new RangeError(`mode ${String(n)} of ${basis}: only modes 1 to ${String(MAX_MODES)} exist`);
   return k;
@@ -81,7 +93,7 @@ function modeConstants(basis: DeformationBasis, n: number): BendingConstants {
 export type ShapeValues = readonly [f: number, df: number, d2f: number];
 
 /** Bending mode n (1-based) of `basis` at xi = s / L. */
-export function bendingShape(basis: DeformationBasis, n: number, xi: number): ShapeValues {
+export function bendingShape(basis: ModalBasis, n: number, xi: number): ShapeValues {
   const { lambda, sigma, aScaled, trigSign } = modeConstants(basis, n);
   const x = lambda * xi;
   const ae = aScaled * Math.exp(x - lambda); // (1 - sigma) e^x
@@ -97,8 +109,12 @@ export function bendingShape(basis: DeformationBasis, n: number, xi: number): Sh
   return [h0 + t0, lambda * (h1 + t1), lambda * lambda * (h0 + t2)];
 }
 
-/** Torsion mode n (1-based) of `basis` at xi = s / L. */
+/** Torsion mode n (1-based) of `basis` at xi = s / L (`linear`: the lumped twist s / L, n = 1 only). */
 export function torsionShape(basis: DeformationBasis, n: number, xi: number): ShapeValues {
+  if (basis === "linear") {
+    if (n !== 1) throw new RangeError(`the linear basis has one coordinate, not ${String(n)}`);
+    return [xi, 1, 0];
+  }
   if (n < 1 || n > MAX_MODES) throw new RangeError(`mode ${String(n)} of ${basis}: only modes 1 to ${String(MAX_MODES)} exist`);
   const k = basis === "clamped-free" ? ((2 * n - 1) * Math.PI) / 2 : n * Math.PI;
   const r = Math.SQRT2;
@@ -112,6 +128,7 @@ export function torsionShape(basis: DeformationBasis, n: number, xi: number): Sh
 
 /** Mode n of a family at xi = s / L. */
 export function modeShape(family: DeformationFamily, basis: DeformationBasis, n: number, xi: number): ShapeValues {
+  if (basis === "linear") return family === "torsion" && n === 1 ? torsionShape(basis, n, xi) : [0, 0, 0];
   return family === "torsion" ? torsionShape(basis, n, xi) : bendingShape(basis, n, xi);
 }
 

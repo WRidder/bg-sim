@@ -11,12 +11,13 @@
  *    with no concrete domain (`flow*s`; W205 treats the island as dimensionless). An unknown unit is not
  *    evidence of a mismatch: it is unchecked for every target (angle, length, quaternion) and raises no E303.
  *    A physical unit that does not fit (`N`, `1` on a length, `m` on an angle) still raises E303.
- *  - E304 wrong signal count (pose needs exactly 7, deformation 1 to 3 modal coordinates, every other
- *    property 1).
+ *  - E304 wrong signal count (pose needs exactly 7, deformation 1 to 3 modal coordinates, or exactly 1 with
+ *    the `linear` basis, every other property 1).
  *
  * Deformation bindings (elastic beams) also raise E301 when the visual is no beam (a sphere or mesh, a
  * cylinder bent across its own axis, a beam y along the beam axis), when a visual has two bindings of one
- * family, or when two bindings of one visual give different beam mappings. Bending coordinates are lengths
+ * family, when two bindings of one visual give different beam mappings, or when the `linear` basis (the
+ * twist of a lumped torsion spring) is given to a bending family. Bending coordinates are lengths
  * (m), torsion coordinates angles (rad) for E303.
  *
  * Diagnostics have the shape of plan 3.4; `path` is the binding target.
@@ -26,7 +27,7 @@ import type { BeamMapping, Binding, DeformationBinding } from "../contracts/mode
 import type { Diagnostic } from "../contracts/diagnostic";
 import { beamFrame } from "../scene/beamMesh";
 import type { SdfGeometry } from "../scene/sdf";
-import { MAX_MODES } from "./beamModes";
+import { maxModes } from "./beamModes";
 
 /** What validation needs from the built scene. */
 export interface SceneLookup {
@@ -123,9 +124,9 @@ export function signalsOf(binding: Binding): string[] {
   return typeof s === "string" && s !== "" ? [s] : [];
 }
 
-/** How many signals a property takes: [min, max]. */
-export function signalCount(property: string): readonly [number, number] {
-  return property === "pose" ? [7, 7] : property === "deformation" ? [1, MAX_MODES] : [1, 1];
+/** How many signals a property takes: [min, max] (a deformation: by its basis, `linear` takes one). */
+export function signalCount(property: string, basis?: string): readonly [number, number] {
+  return property === "pose" ? [7, 7] : property === "deformation" ? [1, maxModes(basis === "linear" ? "linear" : "clamped-free")] : [1, 1];
 }
 
 /** The kind prefixes a property can target. */
@@ -153,6 +154,9 @@ function sameMapping(a: BeamMapping, b: BeamMapping): boolean {
 /** E301 problems of a deformation binding against its shape and the deformation bindings before it. */
 function deformationProblems(binding: DeformationBinding, scene: SceneLookup, earlier: readonly Binding[]): Diagnostic[] {
   const out: Diagnostic[] = [];
+  if (binding.basis === "linear" && binding.family !== "torsion") {
+    out.push(diag("E301", binding, `the linear basis is the twist of a torsion spring and cannot drive ${binding.family}`, "use the family torsion with the linear basis, or a modal basis (clamped-free, free-free) for bending"));
+  }
   const geometry = scene.visualGeometry?.(binding.target);
   if (geometry !== undefined && geometry !== null) {
     const frame = beamFrame(geometry, binding.beam);
@@ -219,7 +223,7 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
   }
 
   const isList = property === "pose" || property === "deformation";
-  const [min, max] = signalCount(property);
+  const [min, max] = signalCount(property, binding.property === "deformation" ? binding.basis : undefined);
   const countOk = names.length >= min && names.length <= max && Array.isArray(binding.signal) === isList;
   if (!countOk) {
     const want = min === max ? String(min) : `${String(min)} to ${String(max)}`;
@@ -231,7 +235,9 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
         property === "pose"
           ? "list exactly 7 signals: q_w, q_x, q_y, q_z, x, y, z"
           : property === "deformation"
-            ? "list the modal coordinates of the family, one signal per mode (1 to 3 modes)"
+            ? binding.property === "deformation" && binding.basis === "linear"
+              ? "the linear basis takes one signal: the twist of end B relative to end A"
+              : "list the modal coordinates of the family, one signal per mode (1 to 3 modes)"
             : "bind exactly one signal",
       ),
     );

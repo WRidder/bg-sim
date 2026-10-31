@@ -26,9 +26,9 @@ function createEngine(): NullEngine {
   return e;
 }
 
-function openModel(bindings: Binding[]): void {
+function openModel(bindings: Binding[], exaggeration?: 1 | 10 | 100 | 1000): void {
   const doc = createEmptyModel("Beam");
-  doc.scene = { file: "scenes/beam.sdf" };
+  doc.scene = exaggeration === undefined ? { file: "scenes/beam.sdf" } : { file: "scenes/beam.sdf", exaggeration };
   doc.bindings = bindings;
   useDocumentStore.getState().openDocument("p", "Beam", doc);
 }
@@ -100,6 +100,29 @@ describe("the deformation exaggeration in the 3D View", () => {
     expect([...colours].some((c) => Math.abs(c - STRIPE_SHADE) < 1e-6)).toBe(true);
   });
 
+  it("opens with the model's scene.exaggeration; a stored choice wins, and choosing the default again clears it", async () => {
+    const spy = vi.spyOn(BuiltScene.prototype, "setExaggeration");
+    openModel([TORSION], 10);
+    const view = await mount();
+    const badge = screen.getByTestId("deformation-badge");
+    expect(badge.dataset["factor"]).toBe("10");
+    expect(badge.dataset["exaggerated"]).toBe("true");
+    expect(spy).toHaveBeenLastCalledWith(10);
+    // nothing stored yet: the model's default is in charge
+    expect(localStorage.getItem("bgsim.viewer.exaggeration.p/Beam")).toBeNull();
+    // true scale is a choice of its own now, so it is stored
+    select("deformation-exaggeration", "1");
+    expect(screen.getByTestId("deformation-badge").dataset["factor"]).toBe("1");
+    expect(readExaggeration("p/Beam", undefined, 10)).toBe(1);
+    view.unmount();
+    useExaggerationStore.setState({ byModel: {} });
+    await mount();
+    expect(screen.getByTestId("deformation-badge").dataset["factor"]).toBe("1");
+    // back to the model's default: the entry goes, the model keeps the say
+    select("deformation-exaggeration", "10");
+    expect(localStorage.getItem("bgsim.viewer.exaggeration.p/Beam")).toBeNull();
+  });
+
   it("has no badge without deformation bindings", async () => {
     openModel([]);
     await mount();
@@ -129,6 +152,33 @@ describe("deformation bindings in the binding table", () => {
     expect(bindings()).toEqual([
       { target: "visual:rod", property: "deformation", family: "torsion", basis: "free-free", beam: { axis: "+z" }, signal: ["B/eta_t[1]", "B/eta_t[2]"] },
     ]);
+  });
+
+  it("offers the linear basis for torsion only, with one twist signal", async () => {
+    openModel([{ ...TORSION, signal: ["B/eta_t[1]", "B/eta_t[2]"] }]);
+    await mount();
+    fireEvent.click(screen.getByTestId("bindings-toggle"));
+    const options = (id: string): string[] => [...(screen.getByTestId(id) as HTMLSelectElement).options].map((o) => o.value);
+    expect(options("binding-basis-0")).toEqual(["clamped-free", "free-free", "linear"]);
+    // linear keeps the first signal only and allows no second
+    select("binding-basis-0", "linear");
+    expect(bindings()[0]).toMatchObject({ basis: "linear", signal: ["B/eta_t[1]"] });
+    expect((screen.getByTestId("binding-signal-0-add-mode") as HTMLButtonElement).disabled).toBe(true);
+    // a bending family falls back to a modal basis
+    select("binding-family-0", "bending-y");
+    expect(bindings()[0]).toMatchObject({ family: "bending-y", basis: "clamped-free" });
+    expect(options("binding-basis-0")).toEqual(["clamped-free", "free-free"]);
+
+    // the add form: torsion + linear on the cylinder
+    select("add-property", "deformation");
+    select("add-target", "visual:rod");
+    expect(options("add-basis")).toEqual(["clamped-free", "free-free"]);
+    select("add-family", "torsion");
+    select("add-basis", "linear");
+    expect((screen.getByTestId("add-signal-add-mode") as HTMLButtonElement).disabled).toBe(true);
+    select("add-signal-0", "B/eta_t[1]");
+    fireEvent.click(screen.getByTestId("add-binding"));
+    expect(bindings()[1]).toEqual({ target: "visual:rod", property: "deformation", family: "torsion", basis: "linear", beam: { axis: "+z" }, signal: ["B/eta_t[1]"] });
   });
 
   it("edits family, mapping, modes and strain of a row, and shows its problems", { timeout: 20_000 }, async () => {

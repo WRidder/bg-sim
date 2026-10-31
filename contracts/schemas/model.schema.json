@@ -669,6 +669,11 @@
           "type": "string",
           "description": "Scene file relative to the project directory, e.g. scenes/drivetrain.sdf."
         },
+        "exaggeration": {
+          "title": "SceneExaggeration",
+          "enum": [1, 10, 100, 1000],
+          "description": "The initial deformation exaggeration of the 3D view for this model (a display factor on every beam deformation), used when this browser has no stored choice for the model. A choice the viewer stores still wins. Absent: 1 (true scale)."
+        },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false
