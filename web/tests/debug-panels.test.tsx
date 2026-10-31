@@ -654,6 +654,16 @@ describe("the signal browser menu", () => {
     fireEvent.contextMenu(row, { clientX: 40, clientY: 50 });
   }
 
+  it("plots the signal in the target panel, like the + button", () => {
+    renderBrowser();
+    menuFor("Synthetic/sine");
+    const plot = screen.getByTestId("signal-menu-plot");
+    expect(plot.textContent).toMatch(/^Plot in /);
+    fireEvent.click(plot);
+    expect(JSON.stringify(useRunStore.getState().panels)).toContain("Synthetic/sine");
+    expect(screen.queryByTestId("signal-menu")).toBeNull();
+  });
+
   it("opens Break when... with the signal preselected", () => {
     renderBrowser();
     menuFor("Synthetic/sine");

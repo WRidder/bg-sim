@@ -8,19 +8,22 @@
  * usual Ctrl+Z / Ctrl+Y and autosave apply.
  */
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 
 import type { ConstantDecl, ParameterDecl, VariableDecl } from "../contracts/catalog";
 import type { Diagnostic } from "../contracts/diagnostic";
 import type { ModelConnection, ModelNode } from "../contracts/model";
 import { BlockHelpButton } from "../app/BlockHelp";
+import { requestPlotsTab } from "../app/dockBus";
 import { ExplainButton } from "../debug/explain/ExplainButton";
+import { SignalContextMenu } from "../debug/panels/SignalMenu";
 import { domainLetter } from "../editor/connectionRules";
 import { domainColor } from "../editor/geometry";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
 import { interfaceForNode, type PortSpec } from "../editor/nodeInterface";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { useCatalogStore } from "../library/catalogStore";
+import { useRunStore } from "../plot/runStore";
 import { nodeNameIssue, useDocumentStore } from "../state/documentStore";
 import { nodeRef } from "../state/modelFactory";
 import { copyBlockToProjectLibrary } from "./copyToLibrary";
@@ -300,8 +303,14 @@ interface SignalLine {
   title: string;
 }
 
-function signalLines(node: ModelNode, port: PortSpec, index: CatalogIndex): SignalLine[] {
-  const prefix = `${node.name}/${port.name}`;
+function signalLines(
+  node: ModelNode,
+  port: PortSpec,
+  index: CatalogIndex,
+  path: readonly string[] = [],
+): SignalLine[] {
+  // Qualified by the subsystem path, as the run records them.
+  const prefix = [...path, node.name, port.name].join("/");
   const suffix = signalSuffix(port.size);
   if (port.kind !== "power") {
     return [
@@ -379,7 +388,16 @@ function PortRow({
   index: CatalogIndex;
   path?: readonly string[];
 }) {
-  const lines = signalLines(node, port, index);
+  const lines = signalLines(node, port, index, path);
+  const runSignals = useRunStore((state) => state.manifest?.signals ?? null);
+  // Right-click on the port (all its signals) or on one signal line: Plot, Break when…, Explain.
+  const [menu, setMenu] = useState<{ x: number; y: number; ids: string[] } | null>(null);
+  const openMenu = (event: MouseEvent, ids: string[]): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setMenu({ x: event.clientX, y: event.clientY, ids });
+  };
+  const recorded = runSignals === null ? null : new Set(runSignals.map((signal) => signal.id));
   const components = portComponentUnits(port, index);
   const declared =
     port.frame === null || port.frame === undefined ? "" : port.frame.trim();
@@ -391,6 +409,7 @@ function PortRow({
       data-domain={port.domain}
       data-multibond={components !== null ? components.effort.length : undefined}
       role="group"
+      onContextMenu={(event) => openMenu(event, lines.map((line) => line.id))}
       aria-label={
         components === null
           ? `${port.name} port, ${port.domain}`
@@ -458,12 +477,41 @@ function PortRow({
       ) : null}
       <ul className="inspector-signals">
         {lines.map((line) => (
-          <li key={line.key} title={line.title} data-testid={`inspector-signal-${line.id}`}>
+          <li
+            key={line.key}
+            title={line.title}
+            data-testid={`inspector-signal-${line.id}`}
+            onContextMenu={(event) => openMenu(event, [line.id])}
+          >
             <code>{line.id}</code>
             {line.unit !== null ? <span className="inspector-signals__unit">{line.unit}</span> : null}
           </li>
         ))}
       </ul>
+      {menu !== null ? (
+        <SignalContextMenu
+          x={menu.x}
+          y={menu.y}
+          signalId={menu.ids[0] ?? ""}
+          candidates={menu.ids}
+          plotItems={menu.ids.map((id) => ({
+            signalId: id,
+            label: `Plot ${id.slice(id.lastIndexOf("/") + 1)}`,
+            title: `Plot ${id} from the current run`,
+            disabledReason:
+              recorded === null
+                ? "Run the model first; its recorded signals are plotted"
+                : recorded.has(id)
+                  ? null
+                  : `This run did not record ${id}`,
+            run: () => {
+              useRunStore.getState().addSignal(id);
+              requestPlotsTab();
+            },
+          }))}
+          onClose={() => setMenu(null)}
+        />
+      ) : null}
     </div>
   );
 }

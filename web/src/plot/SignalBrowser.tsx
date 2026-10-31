@@ -77,7 +77,7 @@ export function SignalBrowser() {
   const [query, setQuery] = useState("");
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [targetPanelId, setTargetPanelId] = useState(activePanelId);
-  // The context menu of one signal: "Break when..." and "Explain signal" (M4 debug, plan 7.9).
+  // The context menu of one signal: "Plot in …" (the + button), "Break when..." and "Explain signal".
   const [menu, setMenu] = useState<{ x: number; y: number; signalId: string } | null>(null);
 
   const allSignals = manifest?.signals ?? [];
@@ -317,6 +317,14 @@ export function SignalBrowser() {
           x={menu.x}
           y={menu.y}
           signalId={menu.signalId}
+          plotItems={[
+            {
+              signalId: menu.signalId,
+              label: `Plot in ${targetName}`,
+              title: `Add ${menu.signalId} to ${targetName}`,
+              run: () => addSignal(menu.signalId, targetId),
+            },
+          ]}
           onClose={() => setMenu(null)}
         />
       ) : null}

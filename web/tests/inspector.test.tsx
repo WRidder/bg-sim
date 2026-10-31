@@ -14,6 +14,8 @@ import type { Diagnostic } from "../src/contracts/diagnostic";
 import type { Model, ModelNode } from "../src/contracts/model";
 import { resetDiagnosticsStore, useDiagnosticsStore } from "../src/diagnostics/store";
 import { Inspector } from "../src/inspector/Inspector";
+import { resetRunStore, useRunStore } from "../src/plot/runStore";
+import type { RunManifest } from "../src/contracts/run-manifest";
 import { resetCatalogStore, useCatalogStore } from "../src/library/catalogStore";
 import {
   resetDocumentStore,
@@ -59,6 +61,7 @@ beforeEach(() => {
   resetDocumentStore();
   resetCatalogStore();
   resetDiagnosticsStore();
+  resetRunStore();
   useCatalogStore.getState().setCatalog(catalog);
 });
 
@@ -473,5 +476,52 @@ describe("inspector fields", () => {
   it("keeps the documented empty state before a model is open", () => {
     render(<Inspector />);
     expect(screen.getByText("Nothing selected")).toBeTruthy();
+  });
+});
+
+describe("the signal menu on inspector ports", () => {
+  function setRun(ids: readonly string[]): void {
+    useRunStore.setState({
+      runId: "run-test",
+      status: "done",
+      manifest: {
+        id: "run-test",
+        status: "done",
+        signals: ids.map((id) => ({ id, unit: null, kind: "port", path: "Motor1", type: "Real" })),
+        time: { n: 0, t0: 0, t1: 0 },
+        settings: {},
+      } as unknown as RunManifest,
+    });
+  }
+
+  it("right-click on a port offers Plot for each of its signals, then Break when and Explain", () => {
+    open([node("DCMotor", "n1", "Motor1")]);
+    useDocumentStore.getState().setSelection(["n1"], []);
+    render(<Inspector />);
+    fireEvent.contextMenu(screen.getByTestId("inspector-port-shaft"), { clientX: 10, clientY: 10 });
+    const menu = screen.getByRole("menu", { name: "Actions for Motor1/shaft.e" });
+    const plots = [...menu.querySelectorAll('[data-testid="signal-menu-plot"]')];
+    expect(plots.map((item) => item.textContent)).toEqual([
+      "Plot shaft.e",
+      "Plot shaft.f",
+      "Plot shaft.P",
+    ]);
+    // Without a run there is nothing to plot yet.
+    expect(plots.every((item) => (item as HTMLButtonElement).disabled)).toBe(true);
+    expect(screen.getByTestId("break-when")).toBeTruthy();
+    expect(screen.getByTestId("explain-signal")).toBeTruthy();
+  });
+
+  it("right-click on one signal line plots just that signal from the current run", () => {
+    setRun(["Motor1/shaft.f"]);
+    open([node("DCMotor", "n1", "Motor1")]);
+    useDocumentStore.getState().setSelection(["n1"], []);
+    render(<Inspector />);
+    fireEvent.contextMenu(screen.getByTestId("inspector-signal-Motor1/shaft.f"));
+    const plots = screen.getAllByTestId("signal-menu-plot");
+    expect(plots).toHaveLength(1);
+    fireEvent.click(plots[0]!);
+    expect(JSON.stringify(useRunStore.getState().panels)).toContain("Motor1/shaft.f");
+    expect(screen.queryByTestId("signal-menu")).toBeNull();
   });
 });

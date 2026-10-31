@@ -1,7 +1,8 @@
 /**
- * A small context menu for one signal (plan 7.9): "Break when..." and "Explain
- * signal". The signal browser opens it on right-click (or the context-menu key);
- * the canvas menus embed the same two items through `SignalMenuItems`.
+ * A small context menu for one signal (plan 7.9): "Plot", "Break when..." and
+ * "Explain signal". The signal browser and the inspector's port rows open it on
+ * right-click (or the context-menu key); the canvas menus embed the two debug
+ * items through `SignalMenuItems`.
  */
 
 import { useEffect, useRef } from "react";
@@ -55,15 +56,36 @@ export function SignalMenuItems({ signalId, candidates, onDone, disabledReason =
   );
 }
 
+/** A "Plot …" item at the top of the menu. */
+export interface SignalPlotItem {
+  signalId: string;
+  label: string;
+  title: string;
+  /** Why it is disabled (a tooltip), or null when it works. */
+  disabledReason?: string | null;
+  run: () => void;
+}
+
 export interface SignalContextMenuProps {
   x: number;
   y: number;
   signalId: string;
+  /** The signals "Break when..." offers (default: just `signalId`). */
+  candidates?: readonly string[];
+  /** Plot items listed first, like the + button of the signal browser. */
+  plotItems?: readonly SignalPlotItem[];
   onClose: () => void;
 }
 
 /** A fixed-position menu at the pointer; Escape and a click elsewhere close it. */
-export function SignalContextMenu({ x, y, signalId, onClose }: SignalContextMenuProps) {
+export function SignalContextMenu({
+  x,
+  y,
+  signalId,
+  candidates,
+  plotItems = [],
+  onClose,
+}: SignalContextMenuProps) {
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,7 +121,24 @@ export function SignalContextMenu({ x, y, signalId, onClose }: SignalContextMenu
         }
       }}
     >
-      <SignalMenuItems signalId={signalId} onDone={onClose} />
+      {plotItems.map((item) => (
+        <button
+          type="button"
+          role="menuitem"
+          key={item.signalId}
+          data-testid="signal-menu-plot"
+          data-signal-id={item.signalId}
+          disabled={(item.disabledReason ?? null) !== null}
+          title={item.disabledReason ?? item.title}
+          onClick={() => {
+            item.run();
+            onClose();
+          }}
+        >
+          {item.label}
+        </button>
+      ))}
+      <SignalMenuItems signalId={signalId} candidates={candidates} onDone={onClose} />
     </div>
   );
 }
