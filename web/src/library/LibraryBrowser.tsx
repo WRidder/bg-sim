@@ -12,6 +12,10 @@
  * the grid view (LibraryViewToggle.tsx) shows tiles of three per row with only
  * the icon and the name, the description in the tooltip, and opens the block
  * help on click. Both views keep the same entry testids, refs and drag payload.
+ *
+ * The last category, Shapes (src/library/libraryShapes.ts), lists the canvas background shapes.
+ * They are not catalog blocks: a shape drags with its own MIME type, and a click (or Enter) on one
+ * adds it in the middle of the visible canvas (src/editor/shapeRequests.ts) in both views.
  */
 
 import { useId, useMemo, useState, type DragEvent, type ReactNode } from "react";
@@ -20,13 +24,21 @@ import type { CatalogBlock, DomainName } from "../contracts/catalog";
 import type { JunctionType } from "../contracts/model";
 import { retrySession } from "../state/session";
 import { useCatalogStore } from "./catalogStore";
-import { blockSummary, JUNCTION_GROUP, libraryCategories, searchGroups } from "./catalogIndex";
-import { payloadForBlock, writeDragPayload } from "./dnd";
+import {
+  blockSummary,
+  JUNCTION_GROUP,
+  libraryCategories,
+  searchGroups,
+  SHAPES_GROUP,
+} from "./catalogIndex";
+import { payloadForBlock, payloadForShape, writeDragPayload } from "./dnd";
+import { searchShapes, SHAPE_DESCRIPTION, type ShapeEntry } from "./libraryShapes";
+import { requestShapeAtCentre } from "../editor/shapeRequests";
 import { PortGlyph, type PortGlyphProps } from "./PortGlyph";
 import { BlockHelpButton } from "../app/BlockHelp";
 import { useHelpStore } from "../app/helpStore";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
-import { ChevronIcon } from "./icons";
+import { ChevronIcon, ShapeGlyph } from "./icons";
 import { useLibraryPrefs } from "./libraryPrefs";
 import "./library.css";
 
@@ -183,6 +195,11 @@ export function LibraryBrowser() {
       );
   }, [index, query, hidden]);
 
+  const shapes = useMemo<ShapeEntry[]>(
+    () => (hidden.has(SHAPES_GROUP) ? [] : searchShapes(query)),
+    [query, hidden],
+  );
+
   const blockEntries: { group: string; entries: BlockEntry[] }[] = useMemo(
     () =>
       groups
@@ -226,19 +243,32 @@ export function LibraryBrowser() {
     }
   };
 
-  const onDragStart = (event: DragEvent<HTMLLIElement>, entry: BlockEntry | JunctionEntry) => {
+  const onDragStart = (
+    event: DragEvent<HTMLLIElement>,
+    entry: BlockEntry | JunctionEntry | ShapeEntry,
+  ) => {
     if ("block" in entry) {
       writeDragPayload(event.dataTransfer, payloadForBlock(entry.block));
+    } else if ("kind" in entry) {
+      writeDragPayload(event.dataTransfer, payloadForShape(entry.kind));
     } else {
       writeDragPayload(event.dataTransfer, { kind: "junction", junction: entry.junction });
     }
   };
 
   // A grid tile: the icon and the name only. A click (or Enter/Space) opens the block help, the
-  // grid's stand-in for the details the list expands in place.
+  // grid's stand-in for the details the list expands in place; a shape tile adds the shape.
   const renderTile = (
-    entry: BlockEntry | JunctionEntry,
-    tile: { testId: string; ref: string; icon?: string; title: string; glyph: ReactNode },
+    entry: BlockEntry | JunctionEntry | ShapeEntry,
+    tile: {
+      testId: string;
+      ref?: string;
+      shape?: string;
+      icon?: string;
+      title: string;
+      glyph: ReactNode;
+      onActivate?: () => void;
+    },
   ): ReactNode => (
     <li
       key={entry.key}
@@ -246,6 +276,7 @@ export function LibraryBrowser() {
       draggable
       data-testid={tile.testId}
       data-ref={tile.ref}
+      data-shape={tile.shape}
       data-icon={tile.icon}
       onDragStart={(event) => onDragStart(event, entry)}
       title={tile.title}
@@ -253,8 +284,8 @@ export function LibraryBrowser() {
       <button
         type="button"
         className="library-item__tile"
-        aria-haspopup="dialog"
-        onClick={() => openHelp(tile.ref)}
+        aria-haspopup={tile.onActivate === undefined ? "dialog" : undefined}
+        onClick={tile.onActivate ?? (() => openHelp(tile.ref ?? ""))}
       >
         <span className="library-item__icon library-item__icon--tile" aria-hidden="true">
           {tile.glyph}
@@ -285,7 +316,9 @@ export function LibraryBrowser() {
   }
 
   const visibleCount =
-    blockEntries.reduce((count, group) => count + group.entries.length, 0) + junctions.length;
+    blockEntries.reduce((count, group) => count + group.entries.length, 0) +
+    junctions.length +
+    shapes.length;
   const allHidden =
     libraryCategories(index).every((name) => hidden.has(name)) &&
     hidden.size > 0;
@@ -460,6 +493,52 @@ export function LibraryBrowser() {
                       <p className="library-item__ref">{entry.key}</p>
                     </div>
                   ) : null}
+                </li>
+              );
+            })}
+          </LibraryGroupSection>
+        ) : null}
+
+        {shapes.length > 0 ? (
+          <LibraryGroupSection
+            name={SHAPES_GROUP}
+            count={shapes.length}
+            open={isGroupOpen(SHAPES_GROUP)}
+            onToggle={() => toggleGroup(SHAPES_GROUP)}
+            grid={grid}
+          >
+            {shapes.map((entry) => {
+              const testId = `library-item-shape-${entry.kind}`;
+              const title = `${entry.name} — ${SHAPE_DESCRIPTION}. Drag it onto the canvas, or click to add it in the middle.`;
+              const add = (): void => requestShapeAtCentre(entry.kind);
+              if (grid) {
+                return renderTile(entry, {
+                  testId,
+                  shape: entry.kind,
+                  title,
+                  glyph: <ShapeGlyph kind={entry.kind} size={40} />,
+                  onActivate: add,
+                });
+              }
+              return (
+                <li
+                  key={entry.key}
+                  className="library-item"
+                  draggable
+                  data-testid={testId}
+                  data-shape={entry.kind}
+                  onDragStart={(event) => onDragStart(event, entry)}
+                  title={title}
+                >
+                  <button type="button" className="library-item__main" onClick={add}>
+                    <span className="library-item__icon" aria-hidden="true">
+                      <ShapeGlyph kind={entry.kind} size={30} />
+                    </span>
+                    <span className="library-item__text">
+                      <span className="library-item__name">{entry.name}</span>
+                      <span className="library-item__summary">{SHAPE_DESCRIPTION}</span>
+                    </span>
+                  </button>
                 </li>
               );
             })}

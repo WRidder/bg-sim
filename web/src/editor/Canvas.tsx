@@ -125,7 +125,9 @@ import {
 import { addNoteAt, NoteMenuItems, PaneMenuItems } from "./NoteMenu";
 import { isNoteId } from "./notes";
 import { AddShapeMenuItems, addShapeAt, ShapeMenuItems } from "./ShapeMenu";
-import { isShapeId, requestShapeLabelFocus, shapeIdOf } from "./shapes";
+import { isShapeId, requestShapeLabelFocus, SHAPE_DEFAULT_SIZE, shapeIdOf } from "./shapes";
+import { registerShapeAdder } from "./shapeRequests";
+import { dropLibraryPayload } from "./libraryDrop";
 import "./editor.css";
 
 // The probe plot pulls in uPlot; it loads when a diagram has a probe (code splitting, W5.4).
@@ -1347,25 +1349,42 @@ function CanvasInner() {
       if (payload === null || index === null) {
         return;
       }
-      const position = screenToFlowPosition({ x: event.clientX, y: event.clientY });
-      const placement = snap
-        ? {
-            x: Math.round(position.x / GRID_SIZE) * GRID_SIZE,
-            y: Math.round(position.y / GRID_SIZE) * GRID_SIZE,
-          }
-        : position;
-      const store = useDocumentStore.getState();
-      if (payload.kind === "junction") {
-        store.addJunction(payload.junction, placement);
-        return;
-      }
-      const block = index.blocksByRef.get(payload.ref);
-      if (block !== undefined) {
-        store.addBlock(block, placement);
-      }
+      // A block, a junction, or a background shape from the library's Shapes category (its
+      // own MIME type, so it never becomes a block).
+      dropLibraryPayload(
+        payload,
+        screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+        snap,
+        index,
+      );
     },
     [index, screenToFlowPosition, snap],
   );
+
+  // A click or Enter on a shape of the library adds it in the middle of the visible canvas
+  // (src/editor/shapeRequests.ts). Registered a frame after mount, so a request that selected
+  // the Diagram tab sees the restored viewport.
+  useEffect(() => {
+    let unregister = (): void => undefined;
+    const frame = requestAnimationFrame(() => {
+      unregister = registerShapeAdder((kind) => {
+        const bounds = canvasRef.current?.getBoundingClientRect();
+        if (bounds === undefined) {
+          return;
+        }
+        const centre = viewportApi.current.screenToFlowPosition(
+          { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 },
+          { snapToGrid: false },
+        );
+        const size = SHAPE_DEFAULT_SIZE[kind];
+        addShapeAt(kind, { x: centre.x - size.w / 2, y: centre.y - size.h / 2 }, snapRef.current);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      unregister();
+    };
+  }, []);
 
   const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();

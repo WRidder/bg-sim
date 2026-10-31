@@ -50,6 +50,7 @@ The canvas toolbar has **Show legend** (domain colours and port glyphs, bottom l
 Background shapes group and annotate parts of a diagram. They are drawn behind blocks.
 
 - **Add:** right-click the empty canvas and choose **Add rectangle**, **Add rounded rectangle**, **Add ellipse**, **Add line** or **Add arrow**.
+- **From the library:** open the **Shapes** category at the bottom of the library. Drag a shape onto the canvas to place it at the drop point, or click it (or press `Enter`) to add it in the middle of the canvas. The new shape is selected, and one **Undo** removes it.
 - **Style:** select a shape to set fill, line width, line style, opacity and a label in the inspector.
 - **Label position:** under the label, pick one of nine places on the 3×3 grid: a corner, the middle of an edge, or the centre. Lines and arrows always centre their label.
 - **Order:** right-click a shape for **Bring to front**, **Bring forward**, **Send backward** and **Send to back**.

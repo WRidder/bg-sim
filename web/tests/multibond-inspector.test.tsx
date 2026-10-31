@@ -419,8 +419,8 @@ describe("the robotics library categories", () => {
     expect(within(planarGroup).getByTestId("library-item-RigidBody2D")).toBeTruthy();
     expect(within(spatialGroup).getByTestId("library-item-ISpatial")).toBeTruthy();
 
-    // No block is dropped or duplicated by the split.
-    expect(screen.getAllByTestId(/^library-item-/)).toHaveLength(catalog.blocks.length + 2);
+    // No block is dropped or duplicated by the split (the shapes are not blocks).
+    expect(screen.getAllByTestId(/^library-item-(?!shape-)/)).toHaveLength(catalog.blocks.length + 2);
   });
 
   it("draws 2-stroke, 3-stroke and 1-stroke port glyphs with accessible labels", () => {

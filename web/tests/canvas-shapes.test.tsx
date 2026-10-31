@@ -2,8 +2,17 @@
  * Background shapes (diagram.shapes): the pure helpers (ids, z order, line
  * geometry, styles), the document-store operations (add, style, label, frame,
  * reorder, lock, duplicate, move, delete, copy/paste, undo, nested diagrams),
- * the canvas nodes they become and the shape menu.
+ * the canvas nodes they become and the shape menu; a shape dropped from the
+ * library, or added from it in the middle of the canvas.
  */
+
+import { dropLibraryPayload } from "../src/editor/libraryDrop";
+import {
+  registerShapeAdder,
+  requestShapeAtCentre,
+  resetShapeRequests,
+} from "../src/editor/shapeRequests";
+import { SHOW_CENTER_TAB_EVENT } from "../src/app/dockBus";
 
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -382,5 +391,76 @@ describe("shape menu", () => {
     fireEvent.click(screen.getByTestId("shape-duplicate"));
     expect(order()).toHaveLength(6);
     expect(shapes()[5]?.locked).toBeUndefined();
+  });
+});
+
+describe("shapes from the library", () => {
+  beforeEach(() => resetShapeRequests());
+
+  function nodeCount(): number {
+    const state = store();
+    return state.doc === null ? 0 : (activeDiagram(state.doc, state.activePath)?.nodes.length ?? 0);
+  }
+
+  it("drops a shape at the drop point, snapped, selected, in one undo step and never as a block", () => {
+    expect(dropLibraryPayload({ kind: "shape", shape: "rectangle" }, { x: 113, y: 207 }, true, index)).toBe(
+      "shape:s1",
+    );
+    expect(shapes()).toEqual([{ id: "s1", kind: "rectangle", x: 120, y: 200, w: 200, h: 120 }]);
+    expect(store().selection.nodes).toEqual(["shape:s1"]);
+    expect(nodeCount()).toBe(0);
+    store().undo();
+    expect(shapes()).toEqual([]);
+
+    // Without snapping the corner sits exactly at the (rounded) drop point; a line starts there.
+    dropLibraryPayload({ kind: "shape", shape: "arrow" }, { x: 113, y: 207 }, false, index);
+    expect(shapes()).toEqual([{ id: "s1", kind: "arrow", x: 113, y: 207, w: 200, h: 0 }]);
+  });
+
+  it("still drops blocks and junctions on the grid", () => {
+    const se = catalog.blocks.find((block) => block.name === "Se");
+    expect(se).toBeDefined();
+    const id = dropLibraryPayload({ kind: "block", ref: se?.ref ?? "" }, { x: 113, y: 207 }, true, index);
+    expect(id).not.toBeNull();
+    dropLibraryPayload({ kind: "junction", junction: "0" }, { x: 300, y: 300 }, true, index);
+    expect(nodeCount()).toBe(2);
+    expect(shapes()).toEqual([]);
+    expect(dropLibraryPayload({ kind: "block", ref: "stdlib:nope" }, { x: 0, y: 0 }, true, index)).toBeNull();
+  });
+
+  it("adds a shape through the mounted canvas, or selects the Diagram tab and waits for it", () => {
+    const adder = vi.fn();
+    const unregister = registerShapeAdder(adder);
+    requestShapeAtCentre("ellipse");
+    expect(adder).toHaveBeenCalledWith("ellipse");
+    unregister();
+
+    const tabs: string[] = [];
+    const onTab = (event: Event): void => {
+      tabs.push((event as CustomEvent<string>).detail);
+    };
+    window.addEventListener(SHOW_CENTER_TAB_EVENT, onTab);
+    requestShapeAtCentre("line");
+    window.removeEventListener(SHOW_CENTER_TAB_EVENT, onTab);
+    expect(tabs).toEqual(["diagram"]);
+    const later = vi.fn();
+    registerShapeAdder(later);
+    expect(later).toHaveBeenCalledWith("line");
+    expect(adder).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores the request when no model is open", () => {
+    resetDocumentStore();
+    const tabs: string[] = [];
+    const onTab = (event: Event): void => {
+      tabs.push((event as CustomEvent<string>).detail);
+    };
+    window.addEventListener(SHOW_CENTER_TAB_EVENT, onTab);
+    requestShapeAtCentre("rectangle");
+    window.removeEventListener(SHOW_CENTER_TAB_EVENT, onTab);
+    expect(tabs).toEqual([]);
+    const adder = vi.fn();
+    registerShapeAdder(adder);
+    expect(adder).not.toHaveBeenCalled();
   });
 });

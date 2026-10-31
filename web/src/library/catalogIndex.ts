@@ -24,6 +24,8 @@ export interface CatalogIndex {
 }
 
 export const JUNCTION_GROUP = "Junctions";
+/** The library category of the canvas background shapes (src/library/libraryShapes.ts). */
+export const SHAPES_GROUP = "Shapes";
 
 /**
  * The two robotics categories of W-MB3. They are derived from the live catalog:
@@ -103,7 +105,10 @@ export function searchBlocks(blocks: readonly CatalogBlock[], query: string): Ca
   return blocks.filter((block) => haystack(block).includes(needle));
 }
 
-/** The category names the library can list, in display order (the junctions last). */
+/**
+ * The category names the library can list, in display order: the catalog groups, the junctions,
+ * and last the background shapes (src/library/libraryShapes.ts), which are not catalog blocks.
+ */
 export function libraryCategories(index: CatalogIndex): string[] {
   const names = index.groups
     .filter((group) => group.name !== JUNCTION_GROUP && group.blocks.length > 0)
@@ -111,6 +116,7 @@ export function libraryCategories(index: CatalogIndex): string[] {
   if (index.junctions.length > 0) {
     names.push(JUNCTION_GROUP);
   }
+  names.push(SHAPES_GROUP);
   return names;
 }
 
