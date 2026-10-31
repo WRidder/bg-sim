@@ -65,10 +65,58 @@
       "type": "number",
       "description": "Branch runs only: the time at which this run diverges from its parent."
     },
+    "parameterOverrides": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/parameterOverride" },
+      "description": "The parameter overrides the run was started with (run.start parameterOverrides, e.g. from dashboard input cards)."
+    },
+    "parameterSchedule": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/parameterStep" },
+      "description": "The timed parameter changes the run applied (run.start parameterSchedule, e.g. from a dashboard schedule table)."
+    },
     "$comment": { "type": "string" }
   },
   "additionalProperties": false,
   "$defs": {
+    "parameterOverride": {
+      "title": "ParameterOverride",
+      "description": "A value that replaces a parameter for the whole run, applied before the model is flattened (so start values and parameter defaults derived from it follow). The model document itself is not changed.",
+      "type": "object",
+      "required": ["target", "value"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "minLength": 1,
+          "description": "For kind block (the default): <instance path>/<param>, e.g. Rig/Motor1/R."
+        },
+        "kind": {
+          "title": "ParameterTargetKind",
+          "enum": ["block"],
+          "description": "What target names; absent means block. Reserved for a later model-level kind (a global parameter by name)."
+        },
+        "value": { "oneOf": [{ "type": "number" }, { "type": "boolean" }] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "parameterStep": {
+      "title": "ParameterStep",
+      "description": "A timed parameter change: from t on the block parameter target has value (piecewise constant). A step at or before t_start acts as a start override.",
+      "type": "object",
+      "required": ["t", "target", "value"],
+      "properties": {
+        "t": { "type": "number" },
+        "target": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*$",
+          "description": "<instance path>/<param>."
+        },
+        "value": { "type": "number" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "stats": {
       "title": "RunStats",
       "type": "object",

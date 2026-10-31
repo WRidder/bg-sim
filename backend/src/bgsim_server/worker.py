@@ -474,6 +474,11 @@ class FakeWorker:
                 "diagnostics": [],
                 "layout": "columnar-f64-v1",
             }
+            # DASHBOARD_PLAN.md: the fake accepts the dashboard inputs and records them like
+            # the worker does (it does not apply them to the synthetic data).
+            for key in ("parameterOverrides", "parameterSchedule"):
+                if params.get(key):
+                    manifest[key] = params[key]
             temp = run_dir / "manifest.json.tmp"
             temp.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
             os.replace(temp, run_dir / "manifest.json")

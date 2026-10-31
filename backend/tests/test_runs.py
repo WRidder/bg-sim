@@ -214,6 +214,72 @@ def test_start_run_returns_the_id_and_a_valid_manifest(fake_settings, schema_val
         assert on_disk == done, "the GET reflects exactly the worker's manifest"
 
 
+def test_run_inputs_reach_the_worker_and_the_manifest(fake_settings, schema_validate) -> None:
+    """DASHBOARD_PLAN.md: parameterOverrides / parameterSchedule go to run.start unchanged
+    (``$comment`` stripped) and are recorded in the live and the final manifest."""
+    _make_project(fake_settings)
+    app = create_app(fake_settings)
+    overrides = [
+        {"target": "Motor1/R", "value": 2.5},
+        {"target": "Motor1/J", "kind": "block", "value": 0.02, "$comment": "knob"},
+    ]
+    schedule = [{"t": 0.5, "target": "Motor1/R", "value": 3.0}]
+    with TestClient(app) as client:
+        _wait_ready(client)
+        sent: list[dict[str, Any]] = []
+        supervisor = app.state.worker
+        original = supervisor.call
+
+        async def spy(method: str, params: dict[str, Any], *args: Any, **kwargs: Any) -> Any:
+            if method == "run.start":
+                sent.append(params)
+            return await original(method, params, *args, **kwargs)
+
+        supervisor.call = spy
+        response = client.post(
+            "/api/projects/demo/runs",
+            json={"model": _model(), "parameterOverrides": overrides, "parameterSchedule": schedule},
+        )
+        assert response.status_code == 201, response.text
+        run_id = response.json()["runId"]
+        expected_overrides = [
+            {"target": "Motor1/R", "value": 2.5},
+            {"target": "Motor1/J", "kind": "block", "value": 0.02},
+        ]
+        assert sent[0]["parameterOverrides"] == expected_overrides
+        assert sent[0]["parameterSchedule"] == schedule
+        live = client.get(f"/api/runs/{run_id}").json()
+        assert live["parameterOverrides"] == expected_overrides
+        done = _wait_status(client, run_id)
+        schema_validate("run-manifest", done)
+        assert done["parameterOverrides"] == expected_overrides
+        assert done["parameterSchedule"] == schedule
+
+
+def test_a_bad_parameter_step_is_refused(fake_settings) -> None:
+    _make_project(fake_settings)
+    with TestClient(create_app(fake_settings)) as client:
+        _wait_ready(client)
+        response = client.post(
+            "/api/projects/demo/runs",
+            json={"model": _model(), "parameterSchedule": [{"t": 1.0, "value": 2.0}]},
+        )
+        assert response.status_code == 422
+
+
+def test_a_model_with_a_dashboard_runs(fake_settings) -> None:
+    _make_project(fake_settings)
+    model = json.loads(
+        (REPO / "contracts" / "fixtures" / "model" / "valid" / "model.dashboard.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    with TestClient(create_app(fake_settings)) as client:
+        _wait_ready(client)
+        run_id = _start(client, model=model)
+        assert _wait_status(client, run_id)["status"] == "done"
+
+
 def test_a_run_on_disk_is_found_by_a_fresh_app(fake_settings) -> None:
     project = _make_project(fake_settings)
     with TestClient(create_app(fake_settings)) as client:

@@ -19,6 +19,10 @@ export type SourceKind = "stdlib" | "project" | "inline";
 export type Breakpoint = LineBreakpoint | WatchBreakpoint | TimeBreakpoint | EventBreakpoint | ExceptionBreakpoint;
 export type EditKind = "parameter" | "state";
 export type PauseReason = "entry" | "breakpoint" | "step" | "pause" | "event" | "exception" | "time";
+/**
+ * What target names; absent means block. Reserved for a later model-level kind (a global parameter by name).
+ */
+export type ParameterTargetKind = "block";
 
 /**
  * Run manifest (plan 3.5), stored as <project>/runs/<run-id>/manifest.json next to columns.f64 and stream.f64.
@@ -59,6 +63,14 @@ export interface RunManifest {
    * Branch runs only: the time at which this run diverges from its parent.
    */
   branchAt?: number;
+  /**
+   * The parameter overrides the run was started with (run.start parameterOverrides, e.g. from dashboard input cards).
+   */
+  parameterOverrides?: ParameterOverride[];
+  /**
+   * The timed parameter changes the run applied (run.start parameterSchedule, e.g. from a dashboard schedule table).
+   */
+  parameterSchedule?: ParameterStep[];
   $comment?: string;
 }
 export interface ModelSettings {
@@ -282,5 +294,29 @@ export interface Edit {
 export interface PauseRecord {
   t: number;
   reason: PauseReason;
+  $comment?: string;
+}
+/**
+ * A value that replaces a parameter for the whole run, applied before the model is flattened (so start values and parameter defaults derived from it follow). The model document itself is not changed.
+ */
+export interface ParameterOverride {
+  /**
+   * For kind block (the default): <instance path>/<param>, e.g. Rig/Motor1/R.
+   */
+  target: string;
+  kind?: ParameterTargetKind;
+  value: number | boolean;
+  $comment?: string;
+}
+/**
+ * A timed parameter change: from t on the block parameter target has value (piecewise constant). A step at or before t_start acts as a start override.
+ */
+export interface ParameterStep {
+  t: number;
+  /**
+   * <instance path>/<param>.
+   */
+  target: string;
+  value: number;
   $comment?: string;
 }

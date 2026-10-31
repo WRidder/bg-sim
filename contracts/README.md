@@ -48,3 +48,12 @@ an optional `color` (`yellow`, `blue`, `green`, `pink`, `grey`; absent means yel
 never writes `yellow`). They are editor state like positions: the Julia parser drops them, so
 compile, simulation, the compile key and the C/FMU export do not change
 (`model.sticky-notes.json` flattens exactly like `model.subsystem-port-ui.json`).
+
+Dashboard (DASHBOARD_PLAN.md): the model's optional top-level `dashboard` (`cards` in grid order;
+display cards bind `signals`, input cards bind one block `parameter` with an override `value`,
+a schedule card holds a `schedule` table of `parameters` x `rows`) is editor state; the compiler
+and the export ignore it. What a run uses travels separately: `run.start` takes optional
+`parameterOverrides` (`{target, kind?, value}`, applied before flattening) and
+`parameterSchedule` (`{t, target, value}`, applied at `t` during the run), both defined in
+`run-manifest.schema.json` and recorded in the manifest. `kind` is absent or `block` today (the
+target is `<instance path>/<param>`); it is the hook for a later model-level target kind.

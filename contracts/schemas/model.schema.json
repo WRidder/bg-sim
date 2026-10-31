@@ -30,6 +30,7 @@
       "items": { "$ref": "#/$defs/globalParameter" },
       "description": "Global (model-level) parameters, SolidWorks 'global variables' style: named constant expressions over literals, other globals and the whitelisted pure functions, statically evaluated at compile time and visible in every node's params, starts and constants at every diagram level. Names are unique (checked by the compiler, E003)."
     },
+    "dashboard": { "$ref": "#/$defs/dashboard" },
     "$comment": { "type": "string" }
   },
   "additionalProperties": false,
@@ -646,6 +647,160 @@
         },
         "unit": { "type": ["string", "null"] },
         "description": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dashboard": {
+      "title": "ModelDashboard",
+      "description": "The Dashboard tab (plan DASHBOARD_PLAN.md): an ordered grid of cards. Display cards show recorded run signals; input cards and schedule tables give parameter overrides that the editor sends with the next run (run.start parameterOverrides / parameterSchedule). The compiler and the export ignore it.",
+      "type": "object",
+      "required": ["cards"],
+      "properties": {
+        "cards": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/dashboardCard" },
+          "description": "The cards in grid order."
+        },
+        "autoRerun": {
+          "type": "boolean",
+          "description": "Start a new run shortly after an input card or schedule change settles."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dashboardCard": {
+      "title": "ModelDashboardCard",
+      "type": "object",
+      "required": ["id", "kind", "size"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+$" },
+        "kind": {
+          "title": "DashboardCardKind",
+          "enum": [
+            "plot",
+            "value",
+            "gauge",
+            "bar",
+            "indicator",
+            "text",
+            "number",
+            "slider",
+            "knob",
+            "toggle",
+            "select",
+            "schedule"
+          ]
+        },
+        "size": {
+          "title": "DashboardCardSize",
+          "enum": ["1x1", "2x1", "1x2", "2x2", "4x2"],
+          "description": "Columns x rows of the grid."
+        },
+        "title": { "type": "string" },
+        "signals": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Display cards: the bound signal ids (a plot may have several, the other display cards use the first)."
+        },
+        "parameter": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*$",
+          "description": "Input cards: the bound block parameter, <instance path>/<param>."
+        },
+        "value": {
+          "oneOf": [{ "type": "number" }, { "type": "boolean" }],
+          "description": "Input cards: the override value for the next run; absent means the model's own value is used."
+        },
+        "options": { "$ref": "#/$defs/dashboardCardOptions" },
+        "schedule": { "$ref": "#/$defs/dashboardSchedule" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dashboardCardOptions": {
+      "title": "ModelDashboardCardOptions",
+      "description": "Per-card display and input settings; every field is optional.",
+      "type": "object",
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number", "exclusiveMinimum": 0 },
+        "decimals": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "unit": {
+          "type": "string",
+          "description": "Unit label shown on the card instead of the signal's or parameter's unit; an empty string hides it."
+        },
+        "zones": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/dashboardZone" }
+        },
+        "threshold": {
+          "type": "number",
+          "description": "Indicator: the value at which the light switches."
+        },
+        "onWhen": {
+          "title": "DashboardIndicatorMode",
+          "enum": ["above", "below"],
+          "description": "Indicator: on when the value is above (default) or below the threshold."
+        },
+        "orientation": {
+          "title": "DashboardBarOrientation",
+          "enum": ["vertical", "horizontal"]
+        },
+        "sparkline": { "type": "boolean", "description": "Value card: draw the recent history under the number." },
+        "text": { "type": "string", "description": "Text card: the text, plain or Markdown." },
+        "markdown": { "type": "boolean" },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dashboardZone": {
+      "title": "ModelDashboardZone",
+      "type": "object",
+      "required": ["from", "to", "tone"],
+      "properties": {
+        "from": { "type": "number" },
+        "to": { "type": "number" },
+        "tone": { "title": "DashboardZoneTone", "enum": ["good", "warn", "bad", "info"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dashboardSchedule": {
+      "title": "ModelDashboardSchedule",
+      "description": "Schedule table: from each row's t on, the listed parameters take the row's values (piecewise constant). Before the first row the model's values apply.",
+      "type": "object",
+      "required": ["parameters", "rows"],
+      "properties": {
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "description": "The parameter columns, <instance path>/<param>."
+        },
+        "rows": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/dashboardScheduleRow" }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dashboardScheduleRow": {
+      "title": "ModelDashboardScheduleRow",
+      "type": "object",
+      "required": ["t", "values"],
+      "properties": {
+        "t": { "type": "number", "description": "Seconds." },
+        "values": {
+          "type": "array",
+          "items": { "type": ["number", "null"] },
+          "description": "One value per parameter column; null is a cell not filled in yet (the editor refuses to run with one)."
+        },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false

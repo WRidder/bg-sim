@@ -73,7 +73,7 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, ValidationError
 from starlette.routing import WebSocketRoute
 
 from .config import Settings
-from .contracts import DebugStartOptions, Model, RunManifest
+from .contracts import DebugStartOptions, Model, ParameterOverride, ParameterStep, RunManifest
 from .decimate import DEFAULT_POINTS, decimate, open_columns, open_stream
 from .proxy import BlockCheckBody, WorkerRpcFailure
 from .proxy import check_block as proxy_check_block
@@ -109,12 +109,17 @@ class RunCreateBody(BaseModel):
     """``POST /api/projects/{p}/runs`` body: the model document to simulate.
 
     ``debug`` (plan 3.8) makes it a debug run: its breakpoints and ``pauseOnEntry``.
+    ``parameterOverrides`` / ``parameterSchedule`` (DASHBOARD_PLAN.md) are passed to the
+    worker's ``run.start`` unchanged and recorded in the manifest; the backend does not need
+    to know they come from a dashboard.
     """
 
     model_config = ConfigDict(extra="forbid")
 
     model: Model
     debug: DebugStartOptions | None = None
+    parameterOverrides: list[ParameterOverride] | None = None
+    parameterSchedule: list[ParameterStep] | None = None
 
 
 # --------------------------------------------------------------------------- helpers
@@ -224,10 +229,12 @@ def _skeleton(
     run_id: str,
     settings: Settings,
     debug: dict[str, Any] | None = None,
+    inputs: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The manifest of a run that has not published one yet (plan 3.5).
 
-    A debug run (``debug`` = its start options) records its breakpoints (plan 3.8).
+    A debug run (``debug`` = its start options) records its breakpoints (plan 3.8);
+    ``inputs`` holds the run's ``parameterOverrides`` / ``parameterSchedule``, if any.
     """
     model_settings = model["settings"]
     signals = [dict(signal) for signal in _SYNTHETIC_SIGNALS] if settings.fake_worker else []
@@ -251,7 +258,25 @@ def _skeleton(
             "edits": [],
             "pauses": [],
         }
+    if inputs:
+        skeleton.update(inputs)
     return skeleton
+
+
+def run_inputs(body: RunCreateBody) -> dict[str, Any]:
+    """The ``run.start`` parameter overrides and schedule of a run request (JSON, no comments)."""
+    inputs: dict[str, Any] = {}
+    if body.parameterOverrides:
+        inputs["parameterOverrides"] = [
+            _strip_comments(entry.model_dump(by_alias=True, mode="json", exclude_none=True))
+            for entry in body.parameterOverrides
+        ]
+    if body.parameterSchedule:
+        inputs["parameterSchedule"] = [
+            _strip_comments(entry.model_dump(by_alias=True, mode="json", exclude_none=True))
+            for entry in body.parameterSchedule
+        ]
+    return inputs
 
 
 def _prune_runs(
@@ -839,11 +864,13 @@ async def start_run(project: str, body: RunCreateBody, request: Request) -> dict
     }
     if debug is not None:
         params["debug"] = debug
+    inputs = run_inputs(body)
+    params.update(inputs)
     await begin_run(
         request,
         project_dir,
         run_dir,
-        _skeleton(model, run_id, settings, debug),
+        _skeleton(model, run_id, settings, debug, inputs),
         "run.start",
         params,
     )
