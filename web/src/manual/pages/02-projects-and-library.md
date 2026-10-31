@@ -22,8 +22,9 @@ The **Library** panel at the top left lists every block you can use.
 - **Search** (`/` focuses it) matches names, ports, groups and descriptions.
 - **List view** shows names with a summary; click a row for its parameters and ports. **Grid view** shows icons; click a tile for the block help.
 - Blocks are grouped in **categories**, collapsed by default: Bond graph, Sources and sinks, Continuous, Discrete and logic, Electrical, Translation, Rotation, Hydraulic, Converters and sensors, Drives, Planar and Spatial mechanics, Contact, 2D and 3D multibond, Junctions, and **Project** for blocks in the project's own library.
+- The last category, **Shapes**, holds the background shapes: rectangle, rounded rectangle, ellipse, line and arrow. They are drawing only and ignored by simulation (see [Building models](page:building-models)). Search for "shape" or a shape name to find them.
 - The **cog** (Library settings) switches between list and grid, shows or hides categories, and has **Show all**, **Expand all** and **Collapse all**.
-- **Drag** a block onto the canvas to add it.
+- **Drag** a block onto the canvas to add it. A dragged shape lands with its top-left corner (a line: its start) at the drop point. A click on a shape (or `Enter`) adds it in the middle of the canvas.
 - The help button of a block (or `F1` on a selected block) explains its ports and parameters.
 
 ### Your own blocks

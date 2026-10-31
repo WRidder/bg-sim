@@ -4,6 +4,8 @@
  * button carries the accessible name.
  */
 
+import type { ShapeKind } from "../contracts/model";
+
 export interface LibraryIconProps {
   /** Rendered width and height in px (default 16). */
   size?: number;
@@ -85,6 +87,43 @@ export function GridViewIcon({ size = 16, className }: LibraryIconProps) {
         fill="currentColor"
         d="M1.5 1.5h3.5v3.5h-3.5Z M6.25 1.5h3.5v3.5h-3.5Z M11 1.5h3.5v3.5h-3.5Z M1.5 6.25h3.5v3.5h-3.5Z M6.25 6.25h3.5v3.5h-3.5Z M11 6.25h3.5v3.5h-3.5Z M1.5 11h3.5v3.5h-3.5Z M6.25 11h3.5v3.5h-3.5Z M11 11h3.5v3.5h-3.5Z"
       />
+    </svg>
+  );
+}
+
+/**
+ * A background shape of the library's Shapes category, drawn in `currentColor` on a 40x40 grid:
+ * the outline of a rectangle, rounded rectangle or ellipse, a diagonal line, or an arrow.
+ */
+export function ShapeGlyph({ kind, size = 16, className }: LibraryIconProps & { kind: ShapeKind }) {
+  const stroke = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2.5,
+    strokeLinecap: "round",
+  } as const;
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 40 40"
+      aria-hidden="true"
+      focusable="false"
+      data-shape-glyph={kind}
+    >
+      {kind === "rectangle" ? <rect x="5" y="10" width="30" height="20" {...stroke} /> : null}
+      {kind === "roundedRectangle" ? (
+        <rect x="5" y="10" width="30" height="20" rx="6" {...stroke} />
+      ) : null}
+      {kind === "ellipse" ? <ellipse cx="20" cy="20" rx="15" ry="10" {...stroke} /> : null}
+      {kind === "line" ? <line x1="7" y1="31" x2="33" y2="9" {...stroke} /> : null}
+      {kind === "arrow" ? (
+        <>
+          <line x1="7" y1="31" x2="28" y2="13.2" {...stroke} />
+          <path d="M34 8 L22.4 11.2 L28.2 18.1 Z" fill="currentColor" />
+        </>
+      ) : null}
     </svg>
   );
 }

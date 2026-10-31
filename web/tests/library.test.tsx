@@ -3,7 +3,7 @@
  */
 
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import catalogJson from "../../contracts/fixtures/catalog/valid/catalog.min.json";
 import type { Catalog } from "../src/contracts/catalog";
@@ -23,9 +23,14 @@ import {
   BLOCK_DRAG_MIME,
   parseDragPayload,
   payloadForBlock,
+  payloadForShape,
   readDragPayload,
+  SHAPE_DRAG_MIME,
   writeDragPayload,
 } from "../src/library/dnd";
+import { registerShapeAdder, resetShapeRequests } from "../src/editor/shapeRequests";
+import { resetDocumentStore, useDocumentStore } from "../src/state/documentStore";
+import { createEmptyModel } from "../src/state/modelFactory";
 
 const catalog = catalogJson as unknown as Catalog;
 
@@ -67,14 +72,15 @@ describe("library browser", () => {
       "library-group-Rotation",
       "library-group-Converters and sensors",
       "library-group-Junctions",
+      "library-group-Shapes",
     ]);
   });
 
-  it("lists all 36 catalog blocks and both junctions once every category is open", () => {
+  it("lists all 36 catalog blocks, both junctions and the five shapes once every category is open", () => {
     render(<LibraryBrowser />);
     expandLibraryGroups();
-    expect(screen.getAllByTestId(/^library-item-/)).toHaveLength(38);
-    expect(screen.getByTestId("library-count").textContent).toBe("38");
+    expect(screen.getAllByTestId(/^library-item-/)).toHaveLength(43);
+    expect(screen.getByTestId("library-count").textContent).toBe("43");
     expect(screen.getByTestId("library-item-DCMotor")).toBeTruthy();
     expect(screen.getByTestId("library-item-junction-0")).toBeTruthy();
     expect(screen.getByTestId("library-item-junction-1")).toBeTruthy();
@@ -140,15 +146,16 @@ describe("library categories", () => {
   it("starts with every category collapsed, showing its name and block count", () => {
     render(<LibraryBrowser />);
     const toggles = screen.getAllByTestId(/^library-group-toggle-/);
-    expect(toggles).toHaveLength(8);
+    expect(toggles).toHaveLength(9);
     for (const toggle of toggles) {
       expect(toggle.getAttribute("aria-expanded")).toBe("false");
     }
     expect(screen.queryAllByTestId(/^library-item-/)).toHaveLength(0);
     expect(toggleOf("Bond graph").textContent).toMatch(/Bond graph\s*\d+/);
     expect(within(toggleOf("Junctions")).getByText("2")).toBeTruthy();
-    // The total still counts every block, collapsed or not.
-    expect(screen.getByTestId("library-count").textContent).toBe("38");
+    expect(within(toggleOf("Shapes")).getByText("5")).toBeTruthy();
+    // The total still counts every entry, collapsed or not.
+    expect(screen.getByTestId("library-count").textContent).toBe("43");
   });
 
   it("expands and collapses one category from its header", () => {
@@ -234,7 +241,8 @@ describe("library quick settings", () => {
     const dialog = openSettings();
     expect(cog.getAttribute("aria-expanded")).toBe("true");
     const boxes = within(dialog).getAllByRole("checkbox");
-    expect(boxes).toHaveLength(8);
+    expect(boxes).toHaveLength(9);
+    expect(within(dialog).getByLabelText("Shapes")).toBeTruthy();
     expect(boxes.every((box) => (box as HTMLInputElement).checked)).toBe(true);
     // Focus moves into the popover (the checked view radio), and Escape returns it to the cog.
     expect(document.activeElement).toBe(within(dialog).getByRole("radio", { name: "List" }));
@@ -269,7 +277,7 @@ describe("library quick settings", () => {
       "Converters and sensors",
       "Junctions",
     ]);
-    expect(screen.getByTestId("library-count").textContent).toBe(String(38 - 2 - converterCount));
+    expect(screen.getByTestId("library-count").textContent).toBe(String(43 - 2 - converterCount));
 
     fireEvent.change(screen.getByTestId("library-search"), { target: { value: "motor" } });
     expect(screen.queryByTestId("library-item-DCMotor")).toBeNull();
@@ -302,7 +310,7 @@ describe("library quick settings", () => {
     fireEvent.click(within(dialog).getByLabelText("Electrical"));
     fireEvent.click(within(dialog).getByRole("button", { name: "Expand all" }));
     const toggles = screen.getAllByTestId(/^library-group-toggle-/);
-    expect(toggles).toHaveLength(7);
+    expect(toggles).toHaveLength(8);
     expect(toggles.every((toggle) => toggle.getAttribute("aria-expanded") === "true")).toBe(true);
     expect(screen.getAllByTestId(/^library-item-/).length).toBeGreaterThan(20);
     expect(JSON.parse(window.localStorage.getItem(EXPANDED_KEY) ?? "[]")).not.toContain("Electrical");
@@ -380,7 +388,7 @@ describe("library list and grid views", () => {
     renderPanel();
     fireEvent.click(viewButton("Grid view"));
     expandLibraryGroups();
-    expect(screen.getAllByTestId(/^library-item-/)).toHaveLength(38);
+    expect(screen.getAllByTestId(/^library-item-/)).toHaveLength(43);
     for (const list of document.querySelectorAll(".library-group__list")) {
       expect(list.classList.contains("library-group__list--grid")).toBe(true);
     }
@@ -448,7 +456,162 @@ describe("library list and grid views", () => {
   });
 });
 
+describe("library shapes", () => {
+  function renderPanel() {
+    return render(
+      <>
+        <LibraryViewToggle />
+        <LibrarySettings />
+        <LibraryBrowser />
+      </>,
+    );
+  }
+
+  function itemIds(): string[] {
+    return screen
+      .queryAllByTestId(/^library-item-/)
+      .map((item) => item.getAttribute("data-testid") ?? "");
+  }
+
+  const ALL_SHAPES = [
+    "library-item-shape-rectangle",
+    "library-item-shape-roundedRectangle",
+    "library-item-shape-ellipse",
+    "library-item-shape-line",
+    "library-item-shape-arrow",
+  ];
+
+  beforeEach(() => {
+    resetHelpStore();
+    resetShapeRequests();
+  });
+
+  it("lists the five shapes last, collapsed by default, with a glyph, the label and a description", () => {
+    renderPanel();
+    const toggles = screen.getAllByTestId(/^library-group-toggle-/);
+    expect(toggles.at(-1)?.getAttribute("data-testid")).toBe("library-group-toggle-Shapes");
+    expect(toggles.at(-1)?.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(screen.getByTestId("library-group-toggle-Shapes"));
+    expect(JSON.parse(window.localStorage.getItem(EXPANDED_KEY) ?? "[]")).toEqual(["Shapes"]);
+    expect(itemIds()).toEqual(ALL_SHAPES);
+
+    const rect = screen.getByTestId("library-item-shape-rectangle");
+    expect(rect.getAttribute("draggable")).toBe("true");
+    expect(rect.getAttribute("data-shape")).toBe("rectangle");
+    expect(rect.getAttribute("data-ref")).toBeNull();
+    expect(rect.querySelector("svg[data-shape-glyph='rectangle']")).toBeTruthy();
+    expect(rect.querySelector(".library-item__name")?.textContent).toBe("Rectangle");
+    expect(rect.querySelector(".library-item__summary")?.textContent).toBe(
+      "Background drawing, ignored by simulation",
+    );
+    expect(screen.getByTestId("library-item-shape-roundedRectangle").textContent).toContain(
+      "Rounded rectangle",
+    );
+    // The shapes are a library category only: the catalog index (block help, completion, the
+    // model tree, the canvas) has no Shapes group and no shape blocks.
+    const index = useCatalogStore.getState().index;
+    expect(index?.groups.map((group) => group.name)).not.toContain("Shapes");
+    expect(index?.blocksByName.has("Rectangle")).toBe(false);
+  });
+
+  it("shows icon and label only in the grid", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "Grid view" }));
+    fireEvent.click(screen.getByTestId("library-group-toggle-Shapes"));
+    const arrow = screen.getByTestId("library-item-shape-arrow");
+    expect(arrow.classList).toContain("library-item--tile");
+    const button = within(arrow).getByRole("button");
+    expect([...button.children].map((child) => child.className)).toEqual([
+      "library-item__icon library-item__icon--tile",
+      "library-item__label",
+    ]);
+    expect(button.getAttribute("aria-haspopup")).toBeNull();
+    expect(arrow.querySelector(".library-item__label")?.textContent).toBe("Arrow");
+    expect(arrow.getAttribute("title")).toMatch(/^Arrow — Background drawing/);
+  });
+
+  it("matches a search on shape and on the kind names", () => {
+    renderPanel();
+    const search = screen.getByTestId("library-search");
+    fireEvent.change(search, { target: { value: "shape" } });
+    expect(itemIds()).toEqual(ALL_SHAPES);
+    expect(screen.getAllByTestId(/^library-group-toggle-/)).toHaveLength(1);
+    fireEvent.change(search, { target: { value: "rect" } });
+    expect(itemIds()).toEqual([
+      "library-item-shape-rectangle",
+      "library-item-shape-roundedRectangle",
+    ]);
+    fireEvent.change(search, { target: { value: "Ellipse" } });
+    expect(itemIds()).toEqual(["library-item-shape-ellipse"]);
+    fireEvent.change(search, { target: { value: "motor" } });
+    expect(screen.queryByTestId("library-group-Shapes")).toBeNull();
+  });
+
+  it("hides and shows the category from the quick settings, and expands and collapses it with all", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "Library settings" }));
+    const dialog = screen.getByRole("dialog", { name: "Library settings" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Expand all" }));
+    expect(screen.getByTestId("library-group-toggle-Shapes").getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByTestId("library-item-shape-line")).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Collapse all" }));
+    expect(screen.queryByTestId("library-item-shape-line")).toBeNull();
+
+    fireEvent.click(within(dialog).getByLabelText("Shapes"));
+    expect(screen.queryByTestId("library-group-Shapes")).toBeNull();
+    expect(JSON.parse(window.localStorage.getItem(HIDDEN_KEY) ?? "[]")).toEqual(["Shapes"]);
+    expect(screen.getByTestId("library-count").textContent).toBe("38");
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "shape" } });
+    expect(screen.queryAllByTestId(/^library-item-shape-/)).toHaveLength(0);
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "" } });
+    fireEvent.click(within(dialog).getByLabelText("Shapes"));
+    expect(screen.getByTestId("library-group-Shapes")).toBeTruthy();
+  });
+
+  it("drags a shape with its own MIME type in both views", () => {
+    renderPanel();
+    fireEvent.click(screen.getByTestId("library-group-toggle-Shapes"));
+    for (const view of ["List view", "Grid view"] as const) {
+      fireEvent.click(screen.getByRole("button", { name: view }));
+      const { transfer, data } = fakeDataTransfer();
+      fireEvent.dragStart(screen.getByTestId("library-item-shape-ellipse"), { dataTransfer: transfer });
+      expect(data.has(BLOCK_DRAG_MIME)).toBe(false);
+      expect(parseDragPayload(data.get(SHAPE_DRAG_MIME))).toEqual({ kind: "shape", shape: "ellipse" });
+      expect(readDragPayload(transfer)).toEqual({ kind: "shape", shape: "ellipse" });
+      expect(transfer.effectAllowed).toBe("copy");
+    }
+  });
+
+  it("adds the shape in the middle of the canvas on a click or Enter, in both views", () => {
+    useDocumentStore.getState().openDocument("demo", "Shapes", createEmptyModel("Shapes"));
+    const adder = vi.fn();
+    registerShapeAdder(adder);
+    renderPanel();
+    fireEvent.click(screen.getByTestId("library-group-toggle-Shapes"));
+    fireEvent.click(within(screen.getByTestId("library-item-shape-line")).getByRole("button"));
+    expect(adder).toHaveBeenLastCalledWith("line");
+    fireEvent.click(screen.getByRole("button", { name: "Grid view" }));
+    fireEvent.click(within(screen.getByTestId("library-item-shape-rectangle")).getByRole("button"));
+    expect(adder).toHaveBeenLastCalledWith("rectangle");
+    expect(useHelpStore.getState().blockRef).toBeNull();
+    resetDocumentStore();
+  });
+});
+
 describe("drag payload", () => {
+  it("round-trips a shape through its own MIME type and never reads it as a block", () => {
+    const { transfer, data } = fakeDataTransfer();
+    writeDragPayload(transfer, payloadForShape("roundedRectangle"));
+    expect(data.has(BLOCK_DRAG_MIME)).toBe(false);
+    expect(data.get("text/plain")).toBe("shape:roundedRectangle");
+    expect(readDragPayload(transfer)).toEqual({ kind: "shape", shape: "roundedRectangle" });
+    expect(parseDragPayload('{"kind":"shape","shape":"star"}')).toBeNull();
+    // A text-only drag of the fallback is not mistaken for a catalog ref.
+    const plain = fakeDataTransfer();
+    plain.transfer.setData("text/plain", "shape:rectangle");
+    expect(readDragPayload(plain.transfer)).toBeNull();
+  });
+
   it("round-trips a block ref through the typed MIME type", () => {
     const se = catalog.blocks.find((block) => block.name === "Se");
     if (se === undefined) {
