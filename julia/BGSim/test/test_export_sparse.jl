@@ -185,6 +185,15 @@ end
         @test !chk.ok
         chk = _SP.static_lu_check(lu2, [[-1.0 0.5; 0.5 -1.0]], 1e-3)
         @test chk.ok && chk.min_pivot_ratio > 0.99 && chk.residual < 1e-14
+        @test chk.backward_error < 1e-15
+        # a small pivot passes the 1e-12 ratio test, but the growth (1e11) makes the solve
+        # unstable: the backward error rejects it (W = [1e-11 1; 1 1], algebraic rows)
+        chk = _SP.static_lu_check(lu2, [-[1e-11 1.0; 1.0 1.0]], 1.0; mass = [0.0, 0.0])
+        @test chk.min_pivot_ratio > 1e-12 && chk.growth > 1e10
+        @test !chk.ok && chk.backward_error > _SP.LU_BACKWARD_ERROR
+        # a badly row-scaled W (an algebraic row scaled by hγ = 1e-9) is no reason to fail
+        chk = _SP.static_lu_check(lu2, [[-1.0 0.5; 2.0 -3.0]], 1e-9; mass = [1.0, 0.0])
+        @test chk.ok && chk.backward_error < 1e-15
     end
 
     @testset "row matching: a structural pivot on every row" begin

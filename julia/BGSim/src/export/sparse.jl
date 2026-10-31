@@ -516,13 +516,28 @@ function lu_solve!(b::AbstractVector{Float64}, a::Vector{Float64}, lu::StaticLU,
     return b
 end
 
+"""The largest componentwise backward error (Oettli-Prager) of a static-LU solve that the
+pivot check accepts: the solve must be exact for a W perturbed by at most this fraction of
+each entry (and of b)."""
+const LU_BACKWARD_ERROR = 1.0e-10
+
 """    static_lu_check(lu, Js, hg; mass = ones(n)) -> NamedTuple
 
 Factor `W = M - hg·J` (`M = diag(mass)`; an algebraic row has mass 0, so its pivot comes
 from J alone) for every Jacobian in `Js` with the static pivots and report the smallest
 pivot ratio |u_kk| / (largest entry of its row of W), the growth (largest entry of the
-factors over the largest entry of W) and the relative residual of a solve against a pivoted
-dense solve. `ok` is false when a factorization failed or the residual is above 1e-8."""
+factors over the largest entry of W), the componentwise backward error of a solve
+(`backward_error`) and its relative difference to a pivoted dense solve (`residual`, for
+information). `ok` is false when a factorization failed or the backward error is above
+`LU_BACKWARD_ERROR`.
+
+The backward error, not the difference to the dense solve, decides: it is invariant to the
+row scaling, and a DAE's W is badly row-scaled (differential rows O(1), algebraic rows
+O(hγ|J|)). Partial pivoting then picks its pivots from the differential rows, and the
+dense solve is the less accurate of the two: on the rigid-joint RRR arm (cond(W) 1e10, 3e3
+after row scaling) the static LU's backward error is 2e-16 at every point and LAPACK's up
+to 6e-8, so their difference reached 6e-9, close to the old 1e-8 limit, through no fault
+of the static LU."""
 static_lu_check(lu::StaticLU, Js, hg::Float64; mass::AbstractVector = ones(lu.n)) =
     _lu_check(lu, (Matrix{Float64}(LinearAlgebra.Diagonal(Float64.(mass))) .- hg .* J
                    for J in Js if all(isfinite, J)))
@@ -557,7 +572,7 @@ projection_check(lu::StaticLU, Js, mass::AbstractVector) =
 
 function _lu_check(lu::StaticLU, Ws)
     n = lu.n
-    min_ratio, growth, residual, points = Inf, 0.0, 0.0, 0
+    min_ratio, growth, residual, berr, points = Inf, 0.0, 0.0, 0.0, 0
     ok = true
     for W in Ws
         a = lu_values(lu, W)
@@ -579,12 +594,17 @@ function _lu_check(lu::StaticLU, Ws)
         growth = max(growth, maximum(abs, a) / max(wmax, floatmin()))
         b = [1.0 + (k - 1) / max(n - 1, 1) for k in 1:n]    # 1 .. 2 (n = 1 included)
         x = lu_solve!(copy(b), a, lu, inv)
+        all(isfinite, x) || (ok = false; berr = Inf; continue)
+        # Oettli-Prager: x solves (W + ΔW) x = b + Δb exactly with |ΔW| <= ω|W|, |Δb| <= ω|b|
+        r = abs.(b .- W * x)
+        s = abs.(W) * abs.(x) .+ abs.(b)
+        berr = max(berr, maximum(i -> r[i] == 0 ? 0.0 : r[i] / s[i], 1:n; init = 0.0))
         xd = W \ b
         residual = max(residual, maximum(abs, x .- xd) / max(maximum(abs, xd), floatmin()))
     end
-    residual > 1e-8 && (ok = false)
+    berr > LU_BACKWARD_ERROR && (ok = false)
     return (ok = ok, points = points, min_pivot_ratio = isfinite(min_ratio) ? min_ratio : 1.0,
-        growth = growth, residual = residual)
+        growth = growth, residual = residual, backward_error = berr)
 end
 
 # ---------------------------------------------------------------------------------------
@@ -883,7 +903,7 @@ function _plan_linear_algebra(jplan, settings, nx, hg, mass, Js, diags)
             match.permuted > 0 ? "with a row matching" :
             "without a row matching (the row matching was tried and did not help)"
         push!(diags, diag("W211",
-            "the static sparse LU (no pivoting) failed its check at the scanned points $matched: smallest pivot ratio $(round(check.min_pivot_ratio; sigdigits = 3)), residual $(round(check.residual; sigdigits = 3))" *
+            "the static sparse LU (no pivoting) failed its check at the scanned points $matched: smallest pivot ratio $(round(check.min_pivot_ratio; sigdigits = 3)), backward error $(round(check.backward_error; sigdigits = 3))" *
             (forced ? "; it is kept because the sparse solver was forced" :
                 ", so the dense LU with partial pivoting is used");
             hint = forced ? "use linear_solver = auto or dense, or a smaller dt" :
@@ -916,14 +936,15 @@ function _plan_linear_algebra(jplan, settings, nx, hg, mass, Js, diags)
             "structuralDiagonal" => full_diag),
         "pivotCheck" => Dict("ok" => check.ok, "points" => check.points,
             "minPivotRatio" => check.min_pivot_ratio, "growth" => check.growth,
-            "residual" => check.residual),
+            "residual" => check.residual, "backwardError" => check.backward_error),
         # The re-solve of the algebraic unknowns (bg_project): `sparse` on the static tables,
         # else the dense elimination of the BG_NALG x BG_NALG block (nothing: no DAE).
         "projection" => nalg == 0 ? nothing : Dict("sparse" => project,
             "denseFlops" => _dense_lu_flops(nalg),
             "pivotCheck" => pcheck === nothing ? nothing : Dict("ok" => pcheck.ok,
                 "points" => pcheck.points, "minPivotRatio" => pcheck.min_pivot_ratio,
-                "growth" => pcheck.growth, "residual" => pcheck.residual)),
+                "growth" => pcheck.growth, "residual" => pcheck.residual,
+                "backwardError" => pcheck.backward_error)),
     )
     merge!(report, jplan.stats)
     return (pattern = S, jacobian = jplan.kind, colour = colour, targets = targets, lu = lu,
