@@ -280,6 +280,18 @@
     "connection": null
   },
   {
+    "code": "E113",
+    "severity": "error",
+    "message": "global parameters form a cycle: a -> b -> a",
+    "hint": "a global parameter may only use globals that do not depend on it",
+    "path": null,
+    "block": null,
+    "scope": "global:a",
+    "source": null,
+    "node": null,
+    "connection": null
+  },
+  {
     "code": "E301",
     "severity": "error",
     "message": "binding target `joint:shoulder` does not exist in the scene",

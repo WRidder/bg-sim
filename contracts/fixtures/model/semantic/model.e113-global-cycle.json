@@ -1,0 +1,32 @@
+{
+  "$comment": "expected E113: the global parameters `a = b + 1` and `b = 2*a` form a cycle a -> b -> a; the Constant that uses `a` also gets E113 on its instance.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "SemanticE113GlobalCycle",
+  "parameters": [
+    { "name": "a", "value": "b + 1" },
+    { "name": "b", "value": "2*a" }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "C1",
+        "block": { "ref": "stdlib:sources/Constant" },
+        "position": { "x": 100, "y": 100 },
+        "params": { "value": "a" }
+      }
+    ],
+    "connections": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 10 },
+    "event_limit": 10000
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$comment": "invalid: the global parameter name `2k` is not an identifier (parameters[0].name pattern).",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "GlobalBadName",
+  "parameters": [{ "name": "2k", "value": "1.0" }],
+  "diagram": { "nodes": [], "connections": [] },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 10 },
+    "event_limit": 10000
+  }
+}

@@ -25,6 +25,11 @@
         "$ref": "https://bgsim.local/schemas/bindings.schema.json#/$defs/binding"
       }
     },
+    "parameters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/globalParameter" },
+      "description": "Global (model-level) parameters, SolidWorks 'global variables' style: named constant expressions over literals, other globals and the whitelisted pure functions, statically evaluated at compile time and visible in every node's params, starts and constants at every diagram level. Names are unique (checked by the compiler, E003)."
+    },
     "$comment": { "type": "string" }
   },
   "additionalProperties": false,
@@ -618,6 +623,26 @@
       "maxItems": 6,
       "items": { "type": "string", "minLength": 1 },
       "description": "Six unit strings, one per component (Spatial)."
+    },
+    "globalParameter": {
+      "title": "ModelGlobalParameter",
+      "description": "One global parameter. `value` is a constant expression string (`2.5`, `4*m`, `sqrt(k/m)`); `unit` and `description` document it and are not checked against the value.",
+      "type": "object",
+      "required": ["name", "value"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": { "type": ["string", "null"] },
+        "description": { "type": ["string", "null"] },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
     }
   }
 }

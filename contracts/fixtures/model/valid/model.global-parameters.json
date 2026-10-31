@@ -1,0 +1,73 @@
+{
+  "$comment": "Global parameters (SolidWorks 'global variables' style): `rate = 4*m` folds to 8 and `x0 = sqrt(m) + 0.5` to 1.914..., the Constant inside the subsystem uses `rate`, the Integrator's start uses `x0`, so Int1/y = x0 + rate*t.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "GlobalParameters",
+  "parameters": [
+    { "name": "m", "value": "2", "unit": "kg", "description": "Base mass" },
+    { "name": "rate", "value": "4*m", "unit": "1/s", "description": "Driven by m" },
+    { "name": "x0", "value": "sqrt(m) + 0.5", "unit": null, "description": null }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Source",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "y",
+                "kind": "signal",
+                "direction": "output",
+                "type": "Real",
+                "size": [],
+                "unit": null,
+                "node": "s1",
+                "port": "y"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "s1",
+                  "name": "Rate",
+                  "block": { "ref": "stdlib:sources/Constant" },
+                  "position": { "x": 100, "y": 100 },
+                  "params": { "value": "rate" }
+                }
+              ],
+              "connections": []
+            }
+          }
+        },
+        "position": { "x": 40, "y": 120 }
+      },
+      {
+        "id": "n2",
+        "name": "Int1",
+        "block": { "ref": "stdlib:continuous/Integrator" },
+        "position": { "x": 240, "y": 120 },
+        "starts": { "x": "x0" }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "signal",
+        "from": { "node": "n1", "port": "y" },
+        "to": { "node": "n2", "port": "u" }
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": { "mode": "points", "points": 11 },
+    "event_limit": 10000
+  }
+}

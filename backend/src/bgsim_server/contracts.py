@@ -992,6 +992,17 @@ class UnitArray6(RootModel[list[UnitArray6Item]]):
     )
 
 
+class ModelGlobalParameter(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
+    value: constr(min_length=1)
+    unit: str | None = None
+    description: str | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class Project(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2617,6 +2628,10 @@ class Model(BaseModel):
     plots: list[ModelPlot] | None = None
     scene: ModelScene | None = None
     bindings: list[Binding] | None = None
+    parameters: list[ModelGlobalParameter] | None = Field(
+        None,
+        description="Global (model-level) parameters, SolidWorks 'global variables' style: named constant expressions over literals, other globals and the whitelisted pure functions, statically evaluated at compile time and visible in every node's params, starts and constants at every diagram level. Names are unique (checked by the compiler, E003).",
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 

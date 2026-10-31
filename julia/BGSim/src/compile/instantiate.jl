@@ -122,6 +122,7 @@ mutable struct Builder
     nodes_total::Int
     conns_total::Int
     power_signals::Dict{String,Flat.DerivedSignal}
+    globals::GlobalEnv
 end
 
 function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
@@ -151,6 +152,7 @@ function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
         0,
         0,
         Dict{String,Flat.DerivedSignal}(),
+        GlobalEnv(),
     )
 end
 
@@ -846,6 +848,11 @@ name check all see exactly what a block default sees. A parse error becomes E001
 plan 5.2.4 code for a bad model-level expression), an undeclared name stays E003, and a
 type/shape mismatch stays E004; all of them point at the *instance* (node + path) and name
 the parameter/start in the message, because the model JSON has no source range.
+
+Global parameters (`globals.jl`) are the only names in scope: the globals the text mentions
+are declared as `@constants` of the wrapper with their folded value, so the checker accepts
+them and the folder substitutes the number. A mention of a global that failed to evaluate is
+E113 on the instance.
 """
 function _parse_value(
     b::Builder,
@@ -856,9 +863,23 @@ function _parse_value(
     what::AbstractString,
     scope,
 )
+    mentioned = global_names_in(text)
+    broken = [n for n in mentioned if n in b.globals.failed]
+    if !isempty(broken)
+        _report!(
+            b,
+            st;
+            code = "E113",
+            message = "invalid $what of `$(st.path)`: global parameter `$(first(broken))` cannot be evaluated",
+            scope = scope,
+            hint = "fix the global parameter `$(first(broken))` first",
+        )
+        return nothing
+    end
+    used = [n for n in mentioned if haskey(b.globals.values, n)]
     tname = BGSim.type_name(t)
-    src = "@block __ModelValue begin\n    @parameters __value::" * tname * " = " *
-          String(text) * "\nend\n"
+    src = "@block __ModelValue begin\n" * _global_decl_lines(used, b.globals.values) *
+          "    @parameters __value::" * tname * " = " * String(text) * "\nend\n"
     pb = try
         BGSim.parse_block(src; filename = "__model_value", ref = "inline:__model_value")
     catch err
@@ -896,17 +917,27 @@ function _parse_value(
         d.severity == "error" || continue
         failed = true
         code = d.code == "E000" ? "E001" : d.code
+        undeclared = code == "E003" && occursin("is used but not declared", d.message)
         _report!(
             b,
             st;
             code = code,
             message = "invalid $what of `$(st.path)`: " * d.message,
-            hint = d.hint,
+            hint = undeclared ?
+                   "a model-level value may use literals and the model's global parameters; declare it as a global parameter or fix the spelling" :
+                   d.hint,
             scope = scope,
         )
     end
     failed && return nothing
-    ok, folded = try_eval_const(ds[1].default, st.consts)
+    env = isempty(used) ? st.consts :
+          merge(st.consts, Dict{Symbol,Any}(n => b.globals.values[n] for n in used))
+    ok, folded = try
+        try_eval_const(ds[1].default, env)
+    catch err
+        # A domain error of a pure function (`sqrt(-1)`) is a user error, not a crash.
+        (false, sprint(showerror, err))
+    end
     if !ok
         message = String(folded)
         code = occursin("is not a constant", message) ? "E003" : "E001"
@@ -3122,6 +3153,10 @@ end
 # ---------------------------------------------------------------------------------------
 
 function instantiate!(b::Builder)
+    # Global parameters are folded first: every instance expression below may use them.
+    env, diags = evaluate_globals(b.md)
+    b.globals = env
+    append!(b.diagnostics, diags)
     _instantiate_diagram!(b, b.md.diagram, "")
     return b
 end

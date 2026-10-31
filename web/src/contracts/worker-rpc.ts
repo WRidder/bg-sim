@@ -255,6 +255,10 @@ export interface Model {
   plots?: ModelPlot[];
   scene?: ModelScene;
   bindings?: Binding[];
+  /**
+   * Global (model-level) parameters, SolidWorks 'global variables' style: named constant expressions over literals, other globals and the whitelisted pure functions, statically evaluated at compile time and visible in every node's params, starts and constants at every diagram level. Names are unique (checked by the compiler, E003).
+   */
+  parameters?: ModelGlobalParameter[];
   $comment?: string;
 }
 /**
@@ -516,6 +520,16 @@ export interface VisibleBinding {
   signal: BindingSignal;
   gain?: number;
   offset?: number;
+  $comment?: string;
+}
+/**
+ * One global parameter. `value` is a constant expression string (`2.5`, `4*m`, `sqrt(k/m)`); `unit` and `description` document it and are not checked against the value.
+ */
+export interface ModelGlobalParameter {
+  name: string;
+  value: string;
+  unit?: string | null;
+  description?: string | null;
   $comment?: string;
 }
 export interface RunStartRequest {

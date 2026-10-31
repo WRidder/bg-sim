@@ -99,6 +99,7 @@ export type { ModelConnection } from "./model";
 export type { ModelConstantValue } from "./model";
 export type { ModelDiagram } from "./model";
 export type { ModelEndpoint } from "./model";
+export type { ModelGlobalParameter } from "./model";
 export type { ModelNode } from "./model";
 export type { ModelNodeImage } from "./model";
 export type { ModelNodeUi } from "./model";
