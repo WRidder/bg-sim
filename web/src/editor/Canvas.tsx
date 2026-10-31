@@ -14,6 +14,8 @@
  *   (Shift: larger steps); the wheel zooms;
  * * Del, R, F, Ctrl+C/V, Ctrl+Z/Y;
  * * right-click an edge -> reverse a bond; right-click a node -> transform.
+ * * right-click empty canvas -> "Add note"; N adds a sticky note at the
+ *   pointer (`diagram.annotations`, nodes `note:<id>`, see notes.ts).
  */
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -116,6 +118,8 @@ import {
   selectedTerminalPorts,
   usePortDeleteStore,
 } from "./PortDeleteConfirm";
+import { addNoteAt, NoteMenuItems, PaneMenuItems } from "./NoteMenu";
+import { isNoteId } from "./notes";
 import "./editor.css";
 
 // The probe plot pulls in uPlot; it loads when a diagram has a probe (code splitting, W5.4).
@@ -184,7 +188,8 @@ interface SuggestionState {
 interface MenuState {
   x: number;
   y: number;
-  kind: "node" | "edge";
+  /** "pane" is the empty canvas ("Add note"); its id is empty. */
+  kind: "node" | "edge" | "pane";
   id: string;
   /** The click in flow coordinates, used to place a new routing vertex. */
   flow?: { x: number; y: number };
@@ -392,8 +397,12 @@ function CanvasInner() {
   const flowStore = useStoreApi();
   const { fitView, screenToFlowPosition, getViewport, setViewport } = useReactFlow();
   // The shortcut handler is registered once; it reads the viewport API here.
-  const viewportApi = useRef({ getViewport, setViewport });
-  viewportApi.current = { getViewport, setViewport };
+  const viewportApi = useRef({ getViewport, setViewport, screenToFlowPosition });
+  viewportApi.current = { getViewport, setViewport, screenToFlowPosition };
+  // The last pointer position over the canvas (client px): N adds a note there.
+  const lastPointer = useRef<{ x: number; y: number } | null>(null);
+  const snapRef = useRef(snap);
+  snapRef.current = snap;
 
   // Commands mutate the active diagram; rendering reads the same document
   // view, so entering a subsystem shows its nested diagram.
@@ -1027,6 +1036,23 @@ function CanvasInner() {
         store.flipSelection();
         return;
       }
+      if (!mod && !event.altKey && key === "n") {
+        // A sticky note at the pointer, or in the middle of the canvas.
+        const bounds = canvasRef.current?.getBoundingClientRect();
+        if (bounds === undefined || store.doc === null) {
+          return;
+        }
+        event.preventDefault();
+        const pointer = lastPointer.current ?? {
+          x: bounds.left + bounds.width / 2,
+          y: bounds.top + bounds.height / 2,
+        };
+        addNoteAt(
+          viewportApi.current.screenToFlowPosition(pointer, { snapToGrid: false }),
+          snapRef.current,
+        );
+        return;
+      }
       const pan = ARROW_PAN[event.key];
       if (pan !== undefined && !mod && !event.altKey) {
         // Arrows pan the canvas (Shift: a larger step). Only when focus is on
@@ -1476,6 +1502,10 @@ function CanvasInner() {
    * double-click on an inline node opens its source in the Code tab.
    */
   const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    // A sticky note opens its own text editor (NoteNode).
+    if (isNoteId(node.id)) {
+      return;
+    }
     // A terminal leaves the subsystem and shows its outside connection.
     const terminal = terminalPortName(node.id);
     if (terminal !== null) {
@@ -1944,6 +1974,12 @@ function CanvasInner() {
         ref={canvasRef}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onPointerMove={(event) => {
+          lastPointer.current = { x: event.clientX, y: event.clientY };
+        }}
+        onPointerLeave={() => {
+          lastPointer.current = null;
+        }}
         onPointerDownCapture={() => {
           pointerGesture.current = true;
           // The same listener twice is one listener; `once` removes it.
@@ -2046,7 +2082,17 @@ function CanvasInner() {
               }}
               onPaneContextMenu={(event) => {
                 event.preventDefault();
-                setMenu(null);
+                setSuggestions(null);
+                setMenu({
+                  x: event.clientX,
+                  y: event.clientY,
+                  kind: "pane",
+                  id: "",
+                  flow: screenToFlowPosition(
+                    { x: event.clientX, y: event.clientY },
+                    { snapToGrid: false },
+                  ),
+                });
               }}
               proOptions={{ hideAttribution: true }}
             >
@@ -2248,6 +2294,24 @@ function CanvasInner() {
               </button>
             </>
           ) : null}
+          {menu.kind === "pane" ? (
+            <PaneMenuItems
+              onAddNote={() =>
+                runMenuAction(() => {
+                  if (menu.flow !== undefined) {
+                    addNoteAt(menu.flow, snap);
+                  }
+                })
+              }
+            />
+          ) : null}
+          {menu.kind === "node" && isNoteId(menu.id) ? (
+            <NoteMenuItems
+              flowId={menu.id}
+              onDone={() => setMenu(null)}
+              onDelete={() => runMenuAction(requestDelete)}
+            />
+          ) : null}
           {menu.kind === "node" && terminalPortName(menu.id) !== null ? (
             <TerminalMenuItems
               portName={terminalPortName(menu.id) ?? ""}
@@ -2261,7 +2325,7 @@ function CanvasInner() {
               onDelete={() => runMenuAction(requestDelete)}
             />
           ) : null}
-          {menu.kind === "node" && terminalPortName(menu.id) === null ? (
+          {menu.kind === "node" && terminalPortName(menu.id) === null && !isNoteId(menu.id) ? (
             <>
               {menuExpose !== null ? (
                 <button

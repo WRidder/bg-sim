@@ -439,6 +439,7 @@
     },
     "annotation": {
       "title": "ModelAnnotation",
+      "description": "A sticky note on one diagram level: Markdown text in a coloured card behind the blocks. Editor-only; compile, simulation and export ignore it.",
       "type": "object",
       "required": ["id", "kind", "text", "x", "y", "w", "h"],
       "properties": {
@@ -447,11 +448,16 @@
           "pattern": "^[A-Za-z0-9_.-]+$"
         },
         "kind": { "title": "AnnotationKind", "enum": ["text"] },
-        "text": { "type": "string" },
+        "text": { "type": "string", "description": "Markdown (no images, no tables; headings render as bold text)." },
         "x": { "type": "number" },
         "y": { "type": "number" },
         "w": { "type": "number" },
         "h": { "type": "number" },
+        "color": {
+          "title": "AnnotationColor",
+          "description": "The card colour; absent means yellow. The editor themes each colour for dark and light mode.",
+          "enum": ["yellow", "blue", "green", "pink", "grey"]
+        },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false

@@ -1,0 +1,357 @@
+{
+  "$comment": "Sticky notes (diagram.annotations): two notes on the root diagram, one without a colour (yellow) and a blue one, and a green note inside the Plant subsystem. Notes are editor state; flattening, simulation and export ignore them, so this flattens exactly like model.subsystem-port-ui.json.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "StickyNotes",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Step1",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.0",
+          "initial": "0.0",
+          "final": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "plant",
+        "name": "Plant",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "u",
+                "kind": "signal",
+                "direction": "input",
+                "type": "Real",
+                "size": [],
+                "unit": null,
+                "node": "p1",
+                "port": "u",
+                "ui": {
+                  "position": {
+                    "x": -140,
+                    "y": 60
+                  }
+                }
+              },
+              {
+                "name": "vc",
+                "kind": "power",
+                "domain": "Electrical",
+                "size": [
+                  1
+                ],
+                "node": "p3",
+                "port": "p"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "p1",
+                  "name": "V1",
+                  "block": {
+                    "ref": "stdlib:electrical/VoltageSource"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "p2",
+                  "name": "R1",
+                  "block": {
+                    "ref": "stdlib:electrical/Resistor"
+                  },
+                  "position": {
+                    "x": 280,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "p3",
+                  "name": "C1",
+                  "block": {
+                    "ref": "stdlib:electrical/Capacitor"
+                  },
+                  "position": {
+                    "x": 520,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "p4",
+                  "name": "Ground1",
+                  "block": {
+                    "ref": "stdlib:electrical/Ground"
+                  },
+                  "position": {
+                    "x": 280,
+                    "y": 240
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "pc1",
+                  "kind": "wire",
+                  "from": {
+                    "node": "p1",
+                    "port": "p"
+                  },
+                  "to": {
+                    "node": "p2",
+                    "port": "p"
+                  },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "pc2",
+                  "kind": "wire",
+                  "from": {
+                    "node": "p2",
+                    "port": "n"
+                  },
+                  "to": {
+                    "node": "p3",
+                    "port": "p"
+                  },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "pc3",
+                  "kind": "wire",
+                  "from": {
+                    "node": "p3",
+                    "port": "n"
+                  },
+                  "to": {
+                    "node": "p4",
+                    "port": "p"
+                  },
+                  "route": [],
+                  "label": null
+                },
+                {
+                  "id": "pc4",
+                  "kind": "wire",
+                  "from": {
+                    "node": "p1",
+                    "port": "n"
+                  },
+                  "to": {
+                    "node": "p4",
+                    "port": "p"
+                  },
+                  "route": [],
+                  "label": null
+                }
+              ],
+              "subsystemPorts": [],
+              "annotations": [
+                {
+                  "id": "note1",
+                  "kind": "text",
+                  "text": "Inner note: the capacitor voltage is exposed as *vc*.",
+                  "x": 0,
+                  "y": -100,
+                  "w": 180,
+                  "h": 80,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 300,
+          "y": 100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n3",
+        "name": "R2",
+        "block": {
+          "ref": "stdlib:electrical/Resistor"
+        },
+        "position": {
+          "x": 600,
+          "y": 100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n4",
+        "name": "Ground2",
+        "block": {
+          "ref": "stdlib:electrical/Ground"
+        },
+        "position": {
+          "x": 600,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "signal",
+        "from": {
+          "node": "n1",
+          "port": "y"
+        },
+        "to": {
+          "node": "plant",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "wire",
+        "from": {
+          "node": "plant",
+          "port": "vc"
+        },
+        "to": {
+          "node": "n3",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "wire",
+        "from": {
+          "node": "n3",
+          "port": "n"
+        },
+        "to": {
+          "node": "n4",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "note1",
+        "kind": "text",
+        "text": "**Step input**\n\n- 1 V at t = 0\n- see [the overview](page:overview)",
+        "x": 20,
+        "y": -120,
+        "w": 220,
+        "h": 120
+      },
+      {
+        "id": "note2",
+        "kind": "text",
+        "text": "# Plant\nA series RLC inside a subsystem.",
+        "x": 300,
+        "y": -120,
+        "w": 200,
+        "h": 100,
+        "color": "blue"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0,
+    "t_end": 0.01,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 200
+    },
+    "event_limit": 10000
+  }
+}

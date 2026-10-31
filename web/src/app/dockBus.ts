@@ -24,3 +24,12 @@ export function requestDockTab(tab: string): void {
     window.dispatchEvent(new CustomEvent<string>(SHOW_DOCK_TAB_EVENT, { detail: tab }));
   }
 }
+
+export const SHOW_CENTER_TAB_EVENT = "bgsim:show-center-tab";
+
+/** Ask the app shell to select a centre tab (`diagram`, `code` or `docs`; safe outside a browser). */
+export function requestCenterTab(tab: "diagram" | "code" | "docs"): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent<string>(SHOW_CENTER_TAB_EVENT, { detail: tab }));
+  }
+}

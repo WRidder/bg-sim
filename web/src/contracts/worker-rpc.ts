@@ -118,6 +118,10 @@ export type ModelNodeImageFit = "contain" | "stretch";
  */
 export type ConnectionKind = "bond" | "wire" | "signal";
 export type AnnotationKind = "text";
+/**
+ * The card colour; absent means yellow. The editor themes each colour for dark and light mode.
+ */
+export type AnnotationColor = "yellow" | "blue" | "green" | "pink" | "grey";
 export type ProbeKind = "block" | "window";
 /**
  * The recording grid: a fixed number of points over [t_start, t_end], or a fixed interval.
@@ -399,14 +403,21 @@ export interface ModelEndpoint {
   port?: string;
   $comment?: string;
 }
+/**
+ * A sticky note on one diagram level: Markdown text in a coloured card behind the blocks. Editor-only; compile, simulation and export ignore it.
+ */
 export interface ModelAnnotation {
   id: string;
   kind: AnnotationKind;
+  /**
+   * Markdown (no images, no tables; headings render as bold text).
+   */
   text: string;
   x: number;
   y: number;
   w: number;
   h: number;
+  color?: AnnotationColor;
   $comment?: string;
 }
 export interface ModelProbe {

@@ -19,6 +19,8 @@ import { useCatalogStore } from "../library/catalogStore";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { useDocumentStore } from "../state/documentStore";
 import { ProbeInspector } from "../probe/ProbeInspector";
+import { selectedNoteIds } from "../editor/notes";
+import { NoteInspector } from "./NoteInspector";
 import { ConnectionInspector } from "./ConnectionInspector";
 import { NodeInspector } from "./NodeInspector";
 import { PortInspector } from "./PortInspector";
@@ -163,6 +165,14 @@ export function Inspector({ diagnostics }: InspectorProps) {
       : undefined;
   if (selectedProbe !== undefined) {
     return <ProbeInspector model={active} probe={selectedProbe} />;
+  }
+  // Only sticky notes selected: their colour and text.
+  const noteIds = selectedNoteIds(selection.nodes);
+  if (noteIds.length > 0 && noteIds.length === selection.nodes.length && selection.connections.length === 0) {
+    const notes = (diagram.annotations ?? []).filter((note) => noteIds.includes(note.id));
+    if (notes.length > 0) {
+      return <NoteInspector notes={notes} />;
+    }
   }
   // Inside a subsystem: one selected port terminal shows the exposed port.
   const terminal =

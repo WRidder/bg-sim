@@ -343,6 +343,27 @@ end
         @test isfile(joinpath(dir, "export.json"))
     end
 
+    @testset "sticky notes (diagram.annotations) change nothing in the export" begin
+        plain_doc = _ex_lag_model()
+        noted_doc = _ex_lag_model()
+        noted_doc["diagram"]["annotations"] = Any[
+            Dict{String,Any}("id" => "note1", "kind" => "text", "text" => "**Lag** under test",
+                "x" => 0.0, "y" => -100.0, "w" => 200.0, "h" => 100.0),
+            Dict{String,Any}("id" => "note2", "kind" => "text", "text" => "- one\n- two",
+                "x" => 240.0, "y" => -100.0, "w" => 160.0, "h" => 80.0, "color" => "pink"),
+        ]
+        plain_dir, noted_dir = mktempdir(), mktempdir()
+        settings = _EX.ExportSettings(t_end = 0.1)
+        rp = _EX.export_model(_ex_flat(plain_doc), plain_dir; settings)
+        rn = _EX.export_model(_ex_flat(noted_doc), noted_dir; settings)
+        @test rp.ok && rn.ok
+        @test _ex_codes(rp) == _ex_codes(rn)
+        @test [i["name"] for i in rn.report["inputs"]] == [i["name"] for i in rp.report["inputs"]]
+        @test [o["name"] for o in rn.report["outputs"]] == [o["name"] for o in rp.report["outputs"]]
+        @test read(joinpath(noted_dir, "sources", "model.c"), String) ==
+              read(joinpath(plain_dir, "sources", "model.c"), String)
+    end
+
     @testset "expose_all adds read-only locals, not interface" begin
         r = _EX.export_model(_ex_flat(_ex_lag_model()), mktempdir();
             settings = _EX.ExportSettings(t_end = 0.1, expose_all = true))

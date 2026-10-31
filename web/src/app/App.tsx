@@ -6,7 +6,7 @@ import { useTheme } from "../theme/useTheme";
 import { BlockHelp } from "./BlockHelp";
 import { BottomDock, type DiagnosticCounts, type DockTabId } from "./BottomDock";
 import { CenterTabs, type CenterTabId } from "./CenterTabs";
-import { SHOW_PLOTS_EVENT } from "./dockBus";
+import { SHOW_CENTER_TAB_EVENT, SHOW_PLOTS_EVENT } from "./dockBus";
 import { InspectorPanel } from "./InspectorPanel";
 import { LeftPanel } from "./LeftPanel";
 import { hasProjectRoute } from "./route";
@@ -58,6 +58,18 @@ export function App() {
     const showPlots = (): void => setDockTab("plots");
     window.addEventListener(SHOW_PLOTS_EVENT, showPlots);
     return () => window.removeEventListener(SHOW_PLOTS_EVENT, showPlots);
+  }, []);
+
+  // A sticky note's page: link asks for the Docs tab.
+  useEffect(() => {
+    const showCenter = (event: Event): void => {
+      const tab = (event as CustomEvent<unknown>).detail;
+      if (tab === "diagram" || tab === "code" || tab === "docs") {
+        setCenterTab(tab);
+      }
+    };
+    window.addEventListener(SHOW_CENTER_TAB_EVENT, showCenter);
+    return () => window.removeEventListener(SHOW_CENTER_TAB_EVENT, showCenter);
   }, []);
 
   return (

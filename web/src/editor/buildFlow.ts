@@ -55,6 +55,8 @@ import type { EditorEdge, EditorEdgeData } from "./edges/EditorEdges";
 import { BondEdge, SignalEdge, WireEdge } from "./edges/EditorEdges";
 import { BoundaryEdge, type BoundaryEdgeType } from "./edges/BoundaryEdge";
 import { ProbeNode, type ProbeNodeData } from "../probe/ProbeNode";
+import { NoteNode, type NoteNodeData } from "./nodes/NoteNode";
+import { NOTE_Z_INDEX, noteColor, noteFlowId } from "./notes";
 import {
   contentBox,
   ghostId,
@@ -72,7 +74,8 @@ export type DiagramNode =
   | Node<JunctionNodeData, "junction">
   | Node<ProbeNodeData, "probe">
   | Node<TerminalNodeData, "terminal">
-  | Node<GhostNodeData, "terminalGhost">;
+  | Node<GhostNodeData, "terminalGhost">
+  | Node<NoteNodeData, "note">;
 
 export const NODE_TYPES = {
   block: BlockNode,
@@ -81,6 +84,7 @@ export const NODE_TYPES = {
   probe: ProbeNode,
   terminal: PortTerminalNode,
   terminalGhost: PortGhostNode,
+  note: NoteNode,
 };
 export const EDGE_TYPES = {
   bond: BondEdge,
@@ -399,6 +403,12 @@ export function buildDiagram(
     };
   });
 
+  // Sticky notes go first and sit behind everything (NOTE_Z_INDEX).
+  const notes = noteNodes(doc);
+  if (notes.length > 0) {
+    nodes.unshift(...notes);
+  }
+
   if (boundary === null) {
     return { nodes, edges, analysis };
   }
@@ -412,6 +422,24 @@ export function buildDiagram(
 }
 
 const NO_EXPOSED: Record<string, string> = {};
+
+/** The diagram's sticky notes (`diagram.annotations`) as canvas nodes `note:<id>`. */
+export function noteNodes(doc: Model): DiagramNode[] {
+  const annotations = doc.diagram.annotations ?? [];
+  return annotations.map((note) => ({
+    id: noteFlowId(note.id),
+    type: "note" as const,
+    position: { x: note.x, y: note.y },
+    width: note.w,
+    height: note.h,
+    zIndex: NOTE_Z_INDEX,
+    data: { noteId: note.id, text: note.text, color: noteColor(note) },
+    selected: false,
+    connectable: false,
+    deletable: false,
+    ariaLabel: "Note",
+  }));
+}
 
 /**
  * The outer radius of the ring around an exposed port glyph

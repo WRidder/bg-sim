@@ -344,6 +344,30 @@ def test_subsystem_port_ui_round_trips_through_the_generated_model() -> None:
     assert "ui" not in ports[1]
 
 
+def test_sticky_notes_round_trip_through_the_generated_model() -> None:
+    """diagram.annotations (root and nested) survive pydantic; a note without color gains none."""
+    document = _read(FIXTURE_DIR / "model" / "valid" / "model.sticky-notes.json")
+    model = _generated_models()["model"].model_validate(document)
+    dumped = model.model_dump(mode="json", by_alias=True, exclude_unset=True)
+    assert dumped["diagram"]["annotations"] == document["diagram"]["annotations"]
+    assert "color" not in dumped["diagram"]["annotations"][0]
+    inner = dumped["diagram"]["nodes"][1]["block"]["subsystem"]["diagram"]["annotations"]
+    assert inner == document["diagram"]["nodes"][1]["block"]["subsystem"]["diagram"]["annotations"]
+    colours = SCHEMAS_DOCS["model"]["$defs"]["annotation"]["properties"]["color"]["enum"]
+    assert colours == ["yellow", "blue", "green", "pink", "grey"]
+
+
+def test_sticky_note_colour_is_an_enum_in_both_lanes() -> None:
+    """A note colour outside the enum is rejected by the schema and by pydantic."""
+    from pydantic import ValidationError
+
+    document = _read(FIXTURE_DIR / "model" / "invalid" / "model.bad-note-color.json")
+    errors = list(VALIDATORS["model"].iter_errors(document))
+    assert [list(error.path)[-1] for error in errors] == ["color"]
+    with pytest.raises(ValidationError):
+        _generated_models()["model"].model_validate(document)
+
+
 def test_subsystem_port_ui_requires_a_position() -> None:
     """ui is optional on a port, but a ui without position is rejected by both lanes."""
     from pydantic import ValidationError

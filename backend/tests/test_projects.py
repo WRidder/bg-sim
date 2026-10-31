@@ -337,6 +337,27 @@ def test_model_with_subsystem_port_ui_round_trips_and_rejects_a_bad_one(
     assert client.get("/api/projects/demo/models/ports").json() == document
 
 
+def test_model_with_sticky_notes_round_trips_and_rejects_a_bad_colour(
+    client: TestClient, store: ProjectStore
+) -> None:
+    """Sticky notes (diagram.annotations, root and nested, with and without color) are stored as sent."""
+    assert _create(client).status_code == 201
+    document = _load(FIXTURES / "model" / "valid" / "model.sticky-notes.json")
+    response = client.put("/api/projects/demo/models/notes", json=document)
+    assert response.status_code == 200, response.text
+    fetched = client.get("/api/projects/demo/models/notes").json()
+    assert fetched == document
+    notes = fetched["diagram"]["annotations"]
+    assert [note.get("color") for note in notes] == [None, "blue"]
+    inner = fetched["diagram"]["nodes"][1]["block"]["subsystem"]["diagram"]["annotations"]
+    assert inner[0]["color"] == "green"
+
+    notes[0]["color"] = "orange"
+    rejected = client.put("/api/projects/demo/models/notes", json=fetched)
+    assert rejected.status_code == 422, rejected.text
+    assert client.get("/api/projects/demo/models/notes").json() == document
+
+
 @pytest.mark.parametrize(
     "image",
     [
