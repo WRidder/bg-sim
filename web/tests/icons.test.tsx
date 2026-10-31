@@ -233,6 +233,24 @@ describe("block icons", () => {
     expect(glyphs.size).toBe(controlIcons.length);
   });
 
+  it("draws four distinct flexible-beam glyphs", () => {
+    // The assumed-modes beams of stdlib/planar and stdlib/spatial (src/library/catalog.jl).
+    const beamIcons = [
+      "pl-flexible-beam-2d",
+      "pl-modal-beam-2d",
+      "sp-flexible-beam-3d",
+      "sp-modal-beam-3d",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of beamIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(beamIcons.length);
+  });
+
   it("falls back to a placeholder for an unknown icon id", () => {
     expect(hasIcon("no-such-icon")).toBe(false);
     const html = renderToStaticMarkup(<BlockIcon icon="no-such-icon" name="Mystery" />);

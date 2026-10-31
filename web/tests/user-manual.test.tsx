@@ -39,6 +39,7 @@ const EXPECTED_PAGES = [
   "control-blocks",
   "motion-and-drives",
   "mechanical-electrical",
+  "flexible-bodies",
   "hydraulics",
   "thermal-domain",
   "background-tasks",

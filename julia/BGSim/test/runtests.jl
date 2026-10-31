@@ -278,6 +278,11 @@ include("test_switched_joint.jl")
 
 # Work packages J-MB11/J-MB12: electric and current-controlled drives and their golden tests.
 include("test_drives.jl")
+
+# Flexible bodies: the mode shapes shared with the 3D viewer and the assumed-modes beams
+# (FlexibleBeam2D/3D: energy, Southwell, statics, the two-disk torsion shaft).
+include("test_flex_modes.jl")
+include("test_flex_beam.jl")
 include("test_loader.jl")
 include("test_csv.jl")
 
@@ -363,3 +368,5 @@ include("test_export_hydraulic.jl")
 # The signal and control blocks (filters, routing, observers, StopSimulation, Assertion, ...)
 # in the C export, and the run monitors in bg_step and fmi2DoStep.
 include("test_export_signal_blocks.jl")
+# The flexible beams (FlexibleBeam3D, FlexibleBeam2D) in the C export.
+include("test_export_flex.jl")

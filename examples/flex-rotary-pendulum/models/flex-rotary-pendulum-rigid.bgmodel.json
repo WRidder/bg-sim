@@ -1,0 +1,883 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "flex-rotary-pendulum-rigid",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "World",
+        "block": {
+          "ref": "stdlib:multibond/GroundSpatial"
+        },
+        "position": {
+          "x": 40,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n2",
+        "name": "Motor",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 220,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "10000000.0",
+          "kr": "100000.0",
+          "bt": "103.92304845413264",
+          "br": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n3",
+        "name": "ArmLink",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 400,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.1",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n4",
+        "name": "Arm",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 580,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.10800000000000001",
+          "J": "[4.5e-06, 0.00036090000000000015, 0.0003636000000000001]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n5",
+        "name": "PivotMount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 760,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "-0.7071067811865476",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "-0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n6",
+        "name": "Pivot",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 940,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "10000000.0",
+          "kr": "100000.0",
+          "bt": "51.48513184858702",
+          "br": "1.0",
+          "q0": "1.5707963267948966"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n9",
+        "name": "Ground",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 40,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Kick",
+        "block": {
+          "ref": "stdlib:rotation/TorqueSource"
+        },
+        "position": {
+          "x": 220,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "T": "0.4"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Pulse",
+        "block": {
+          "ref": "stdlib:sources/Pulse"
+        },
+        "position": {
+          "x": 220,
+          "y": 20
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "amplitude": "1.0",
+          "period": "1000.0",
+          "duty": "5e-05",
+          "t_start": "3.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "PivotFree",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 940,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "Origin",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 220,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "PMotor",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 400,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "ArmCoM",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 400,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.1",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "PArm",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 580,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "PivotFrame",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 760,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "0.7071067811865476",
+          "qz": "0.0",
+          "x": "0.2",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "PPivotFrame",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 760,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "PRod",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 940,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n7",
+        "name": "RodLink",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1120,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.25",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n8",
+        "name": "Rod",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1300,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.026507188014663882",
+          "J": "[8.283496254582464e-08, 0.0005522745011201038, 0.0005522745011201038]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n27",
+        "name": "RodCoM",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1120,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.25",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n28",
+        "name": "PRodCoM",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1120,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": {
+          "node": "n1",
+          "port": "p"
+        },
+        "to": {
+          "node": "n2",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": {
+          "node": "n2",
+          "port": "child"
+        },
+        "to": {
+          "node": "n3",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "bond",
+        "from": {
+          "node": "n3",
+          "port": "b"
+        },
+        "to": {
+          "node": "n4",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "bond",
+        "from": {
+          "node": "n4",
+          "port": "p"
+        },
+        "to": {
+          "node": "n5",
+          "port": "b"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c5",
+        "kind": "bond",
+        "from": {
+          "node": "n5",
+          "port": "a"
+        },
+        "to": {
+          "node": "n6",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c8",
+        "kind": "wire",
+        "from": {
+          "node": "n9",
+          "port": "a"
+        },
+        "to": {
+          "node": "n10",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c9",
+        "kind": "wire",
+        "from": {
+          "node": "n10",
+          "port": "b"
+        },
+        "to": {
+          "node": "n2",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c10",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n10",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c11",
+        "kind": "bond",
+        "from": {
+          "node": "n12",
+          "port": "p"
+        },
+        "to": {
+          "node": "n6",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c20",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "g"
+        },
+        "to": {
+          "node": "n21",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c21",
+        "kind": "signal",
+        "from": {
+          "node": "n2",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n21",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c22",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "g"
+        },
+        "to": {
+          "node": "n23",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c23",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "g"
+        },
+        "to": {
+          "node": "n23",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c24",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "g"
+        },
+        "to": {
+          "node": "n4",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c25",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "g"
+        },
+        "to": {
+          "node": "n25",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c26",
+        "kind": "signal",
+        "from": {
+          "node": "n24",
+          "port": "g"
+        },
+        "to": {
+          "node": "n25",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c27",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "g"
+        },
+        "to": {
+          "node": "n26",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c28",
+        "kind": "signal",
+        "from": {
+          "node": "n6",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n26",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c6",
+        "kind": "bond",
+        "from": {
+          "node": "n6",
+          "port": "child"
+        },
+        "to": {
+          "node": "n7",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c7",
+        "kind": "bond",
+        "from": {
+          "node": "n7",
+          "port": "b"
+        },
+        "to": {
+          "node": "n8",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c29",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "g"
+        },
+        "to": {
+          "node": "n28",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c30",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "g"
+        },
+        "to": {
+          "node": "n28",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c31",
+        "kind": "signal",
+        "from": {
+          "node": "n28",
+          "port": "g"
+        },
+        "to": {
+          "node": "n8",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 6.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-08,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 6001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Pendulum angle and arm angle (rad)",
+      "signals": [
+        "Pivot/qout",
+        "Motor/qout"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/flex-rotary-pendulum.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:arm",
+      "property": "pose",
+      "signal": [
+        "PArm/g[1]",
+        "PArm/g[2]",
+        "PArm/g[3]",
+        "PArm/g[4]",
+        "PArm/g[5]",
+        "PArm/g[6]",
+        "PArm/g[7]"
+      ]
+    },
+    {
+      "target": "link:rod",
+      "property": "pose",
+      "signal": [
+        "PRod/g[1]",
+        "PRod/g[2]",
+        "PRod/g[3]",
+        "PRod/g[4]",
+        "PRod/g[5]",
+        "PRod/g[6]",
+        "PRod/g[7]"
+      ]
+    }
+  ]
+}

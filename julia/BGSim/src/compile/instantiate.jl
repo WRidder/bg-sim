@@ -2295,24 +2295,28 @@ function _bind_observations!(b::Builder, node::IR.ModelNode, path::String,
         if target_field === nothing
             d = get(st.decls, var_name, nothing)
             ids = get(st.ids, var_name, String[])
-            if d === nothing || BGSim.decl_scope(d) != :variables || isempty(ids)
+            # A variable or an output of the component; a vector records every element as
+            # `name[i]` (the flexible beams expose `eta_y`, `pose`, ... this way).
+            if d === nothing || !(BGSim.decl_scope(d) in (:variables, :outputs)) || isempty(ids)
                 _report_component!(
                     b, node, tpath, st.ref;
                     code = "E102",
                     message = "`$(st.path)` has no variable `$var_name` to observe",
-                    hint = "observe a `@variables` quantity, or a port field `instance.port.e`",
+                    hint = "observe a `@variables` or `@outputs` quantity, or a port field `instance.port.e`",
                 )
                 continue
             end
-            id = _join(path, String(name))
-            v = var_by_id(b, ids[1])
-            _add_observed!(
-                b, node, path, block, Flat.DerivedSignal(
-                    id, :observed, v === nothing ? nothing : v.unit, path,
-                    BGSim.type_element(BGSim.decl_type(d)),
-                    BGSim.Name(Symbol(ids[1]), BGSim.SourceRange("", 0, 0, 0, 0)),
-                ),
-            )
+            for (k, vid) in enumerate(ids)
+                id = _join(path, length(ids) == 1 ? String(name) : "$(name)[$k]")
+                v = var_by_id(b, vid)
+                _add_observed!(
+                    b, node, path, block, Flat.DerivedSignal(
+                        id, :observed, v === nothing ? nothing : v.unit, path,
+                        BGSim.type_element(BGSim.decl_type(d)),
+                        BGSim.Name(Symbol(vid), BGSim.SourceRange("", 0, 0, 0, 0)),
+                    ),
+                )
+            end
         else
             port = get(st.ports, port_name, nothing)
             if port === nothing
@@ -2505,7 +2509,25 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
         component = only(matches)
         named[name] = component
         params = Dict{String,String}()
+        constants = Dict{String,Any}()
         for (key, expr) in BGSim.component_kwargs(comp)
+            if _declared_constant(component, key)
+                # `key = expr` naming a `@constants` entry of the component: folded with the
+                # composite's bound constants and passed on as the component's structural
+                # constant (a mode count, an option index), exactly like a node's `constants`.
+                ok, value = try_eval_const(expr, consts)
+                if !ok
+                    _report_component!(
+                        b, node, _join(path, name), component.ref;
+                        code = "E003",
+                        message = "constant `$key` of component `$name` is not a constant expression: $(value)",
+                        hint = "a component constant is folded from literals and the composite's `@constants`",
+                    )
+                    continue
+                end
+                constants[String(key)] = _repr_value(value)
+                continue
+            end
             _declared_parameter(component, key) || _report_component!(
                 b, node, _join(path, name), component.ref;
                 code = "E003",
@@ -2545,7 +2567,7 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
                 nothing,
                 IR.SubsystemPort[],
                 params,
-                Dict{String,Any}(),
+                constants,
                 get(starts_by_component, String(name), Dict{String,String}()),
                 nothing,
             ),
@@ -2751,6 +2773,13 @@ end
 function _conn_port(ref, junctions::Set{Symbol})
     BGSim.portref_port(ref) in junctions || return BGSim.portref_port(ref)
     return BGSim.portref_instance(ref) === nothing ? nothing : BGSim.portref_port(ref)
+end
+
+"""Whether a resolved block declares `name` in `@constants`."""
+function _declared_constant(block::IR.BlockDef, name::Symbol)
+    return any(
+        d -> BGSim.decl_name(d) == name, BGSim.declarations(block.ast, :constants)
+    )
 end
 
 """Whether a resolved block declares `name` in `@parameters`."""

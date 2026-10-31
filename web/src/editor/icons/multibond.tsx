@@ -95,6 +95,35 @@ function body(dim: 2 | 3): ReactNode {
   );
 }
 
+/**
+ * A flexible beam: a wall hatch at end A, the bent centre line (first bending
+ * mode) and its dashed undeformed axis; the spatial variant adds a twist arrow
+ * at end B. `core` marks the atomic modal core with a small eta.
+ */
+function flexBeam(dim: 2 | 3, core: boolean): ReactNode {
+  return (
+    <>
+      <path d="M3 5v14M3 7l-1.5 1.5M3 10.5l-1.5 1.5M3 14l-1.5 1.5M3 17.5l-1.5 1.5" />
+      <path d="M3 12C9 12 14.5 11.2 21 7" strokeWidth={2.4} />
+      <path d="M3 12H21" strokeDasharray="1.6 1.8" opacity="0.6" />
+      {dim === 3 ? <path d="M18.4 3.6a3.2 1.6 0 1 0 4.6 3.2M23 6.8l.2-2M23 6.8l-1.9-.4" /> : null}
+      {core ? (
+        <text
+          x="14"
+          y="21.5"
+          textAnchor="middle"
+          fontSize="8"
+          fontFamily="var(--font-ui)"
+          fill="currentColor"
+          stroke="none"
+        >
+          η
+        </text>
+      ) : null}
+    </>
+  );
+}
+
 function revolute(dim: 2 | 3): ReactNode {
   return (
     <>
@@ -126,6 +155,10 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
   // ---------------------------------------------------------------- bodies
   "pl-rigid-body-2d": () => body(2),
   "sp-rigid-body-3d": () => body(3),
+  "pl-flexible-beam-2d": () => flexBeam(2, false),
+  "pl-modal-beam-2d": () => flexBeam(2, true),
+  "sp-flexible-beam-3d": () => flexBeam(3, false),
+  "sp-modal-beam-3d": () => flexBeam(3, true),
   "ct-impact-body-3d": () => (
     <>
       <path d="M5 13h9v8H5zM5 13l3-3h9v8l-3 3M14 13l3-3" />
