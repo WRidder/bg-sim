@@ -1015,4 +1015,50 @@ end
                                        1, 1, 1, 1, 1, 1, 1, 1]
         @test values["I1/y"][end] ≈ 0.015 atol = 1.0e-9
     end
+
+    @testset "a held output takes a start value: the value before the first tick" begin
+        # Every clock first executes at t = Ts (the tick at t_start is the initial state, plan
+        # 5.9), so a held output shows its start until then. The start of an ADC's or a ZOH's
+        # output is an instance value like a variable's; an output that the equations compute
+        # (Noise y = mean + std*z) has none: E003 says so.
+        doc = _disc_model(
+            "HeldStarts",
+            [
+                _disc_node("n1", "C1", _disc_ref("stdlib:sources/Constant");
+                    params = Dict{String,Any}("value" => "1.0")),
+                _disc_node("n2", "A1", _disc_ref("stdlib:motion/ADC");
+                    params = Dict{String,Any}("bits" => "4", "u_min" => "0.0", "u_max" => "1.5"),
+                    constants = Dict{String,Any}("sample_period" => 0.1),
+                    starts = Dict{String,Any}("y" => "0.25", "code" => "3.0")),
+                _disc_node("n3", "Z1", _disc_ref("stdlib:discrete/ZOH");
+                    constants = Dict{String,Any}("sample_period" => 0.1),
+                    starts = Dict{String,Any}("y" => "-2.0")),
+            ],
+            [_disc_conn("c1", "n1", "y", "n2", "u"), _disc_conn("c2", "n1", "y", "n3", "u")];
+            t_end = 0.3, points = 7,
+        )
+        flat, result, dir = _disc_run(doc)
+        @test isempty(_disc_errors(flat))
+        @test result.status == "done"
+        time, values = _disc_columns(dir)
+        # Before the first tick (t < 0.1) the starts; from t = 0.1 the samples.
+        @test _disc_at(time, values, "A1/y", 0.05) == 0.25
+        @test _disc_at(time, values, "A1/code", 0.05) == 3.0
+        @test _disc_at(time, values, "Z1/y", 0.0) == -2.0
+        @test _disc_at(time, values, "Z1/y", 0.05) == -2.0
+        @test _disc_at(time, values, "Z1/y", 0.1) == 1.0
+        @test _disc_at(time, values, "A1/code", 0.1) == 10.0      # round(1.0/0.1)
+        @test _disc_at(time, values, "A1/y", 0.1) ≈ 1.0
+
+        noise = _disc_model(
+            "NoiseStart",
+            [_disc_node("n1", "N1", _disc_ref("stdlib:sources/Noise");
+                starts = Dict{String,Any}("y" => "0.5"))],
+            Any[],
+        )
+        fm = _disc_flat(noise)
+        e003 = [d for d in fm.diagnostics if d.code == "E003"]
+        @test length(e003) == 1
+        @test occursin("computed by the block's equations", only(e003).message)
+    end
 end

@@ -19,8 +19,13 @@ import type {
   ModelNode,
 } from "../contracts/model";
 import type { ParameterOverride, ParameterStep } from "../contracts/run-manifest";
-import { evaluateGlobals, globalsOf } from "../globals/globals";
-import { evaluateLiteral, parseExpression } from "../inspector/expression";
+import { evaluateGlobals, globalsOf, type GlobalEvaluation } from "../globals/globals";
+import {
+  evaluateExpression,
+  evaluateLiteral,
+  expressionNames,
+  parseExpression,
+} from "../inspector/expression";
 import type { CatalogIndex } from "../library/catalogIndex";
 
 // ------------------------------------------------------------------ card kinds
@@ -145,8 +150,13 @@ export interface ParameterInfo {
   decl: ParameterDecl;
   /** The node's own expression, or the declared default. */
   modelText: string;
-  /** The model value as a number (Bool as 0/1), or null when it is not a literal. */
+  /**
+   * The model value as a number (Bool as 0/1): the literal, or the expression evaluated with
+   * the global parameters in scope (`h_step`, `2*m`); null when it cannot be evaluated.
+   */
   modelValue: number | null;
+  /** The global parameters the model expression reads (empty for a literal). */
+  drivenBy: string[];
 }
 
 function literalValue(text: string, type: ParameterDecl["type"]): number | null {
@@ -188,8 +198,41 @@ function nodeDecls(node: ModelNode, index: CatalogIndex | null): ParameterDecl[]
   }));
 }
 
-function infoFor(path: string, node: ModelNode, decl: ParameterDecl): ParameterInfo {
+/**
+ * The value of a block parameter's expression with the globals in scope, and the globals it
+ * reads. A literal needs no globals; an expression such as `h_step` is what the compiler folds
+ * from the global table, so the card shows that value instead of nothing.
+ */
+function expressionValue(
+  text: string,
+  type: ParameterDecl["type"],
+  evaluation: GlobalEvaluation | null,
+): { value: number | null; drivenBy: string[] } {
+  const literal = literalValue(text, type);
+  if (literal !== null || evaluation === null) {
+    return { value: literal, drivenBy: [] };
+  }
+  const parsed = parseExpression(text.trim());
+  if (!parsed.ok) {
+    return { value: null, drivenBy: [] };
+  }
+  const drivenBy = expressionNames(parsed.ast).filter((name) => evaluation.byName.has(name));
+  const result = evaluateExpression(parsed.ast, evaluation.values);
+  if (!result.ok) {
+    return { value: null, drivenBy };
+  }
+  const value = typeof result.value === "boolean" ? (result.value ? 1 : 0) : result.value;
+  return { value: Number.isFinite(value) ? value : null, drivenBy };
+}
+
+function infoFor(
+  path: string,
+  node: ModelNode,
+  decl: ParameterDecl,
+  evaluation: GlobalEvaluation | null,
+): ParameterInfo {
   const modelText = node.params?.[decl.name] ?? decl.default;
+  const { value, drivenBy } = expressionValue(modelText, decl.type, evaluation);
   return {
     target: `${path}/${decl.name}`,
     kind: "block",
@@ -197,8 +240,15 @@ function infoFor(path: string, node: ModelNode, decl: ParameterDecl): ParameterI
     node,
     decl,
     modelText,
-    modelValue: literalValue(modelText, decl.type),
+    modelValue: value,
+    drivenBy,
   };
+}
+
+/** The folded global table of a model, or null when it has no globals. */
+function globalEvaluation(doc: Model): GlobalEvaluation | null {
+  const globals = globalsOf(doc);
+  return globals.length === 0 ? null : evaluateGlobals(globals);
 }
 
 function walk(
@@ -240,15 +290,17 @@ function globalInfos(doc: Model): ParameterInfo[] {
     },
     modelText: entry.value,
     modelValue: evaluation.byName.get(entry.name)?.value ?? null,
+    drivenBy: [...(evaluation.byName.get(entry.name)?.deps ?? [])],
   }));
 }
 
 /** Every scalar block parameter of the model in diagram order, then the global parameters. */
 export function listParameters(doc: Model, index: CatalogIndex | null): ParameterInfo[] {
   const out: ParameterInfo[] = [];
+  const evaluation = globalEvaluation(doc);
   walk(doc.diagram, "", (path, node) => {
     for (const decl of nodeDecls(node, index)) {
-      out.push(infoFor(path, node, decl));
+      out.push(infoFor(path, node, decl, evaluation));
     }
   });
   out.push(...globalInfos(doc));
@@ -291,7 +343,7 @@ export function findParameter(
     return null;
   }
   const decl = nodeDecls(node, index).find((entry) => entry.name === name);
-  return decl === undefined ? null : infoFor(parts.join("/"), node, decl);
+  return decl === undefined ? null : infoFor(parts.join("/"), node, decl, globalEvaluation(doc));
 }
 
 /** Which input kinds suit a parameter declaration. */

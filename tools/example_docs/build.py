@@ -24,7 +24,7 @@ library files, the scene and the figure spec, so a rebuild without changes is qu
 
 Figure specs::
 
-    {"kind": "plot", "model": "<model file>", "settings": {..}?, "xlim": [a, b]?, "xlabel": "t [s]",
+    {"kind": "plot", "model": "<model file>", "settings": {..}?, "overrides": {"<path>/<param>": v}?, "xlim": [a, b]?, "xlabel": "t [s]",
      "rows": [{"ylabel": "..", "ylim": [a, b]?, "x": "<signal>"?, "xlabel": ".."?,
                "series": [{"signal": "..", "label": "..", "scale": 1.0?, "style": "-"?}],
                "hlines": [{"y": 1.0, "label": ".."}]?, "vlines": [{"x": 1.0, "label": ".."}]?}],
@@ -141,14 +141,16 @@ class Backend:
             self.projects[example] = (name, Path(rc._get_json(self.client, f"/api/projects/{name}")["path"]))
         return self.projects[example]
 
-    def run(self, example: str, model: str, settings: Any) -> rc.Run:
+    def run(self, example: str, model: str, settings: Any, overrides: Any = None) -> rc.Run:
         name, directory = self.project(example)
         assert self.client is not None
-        return rc._run_model(self.client, name, directory, model, settings, 1800.0)
+        return rc._run_model(self.client, name, directory, model, settings, 1800.0, overrides)
 
 
-def cached_run(backend: Backend, example: str, model: str, settings: Any) -> tuple[np.ndarray, dict[str, np.ndarray]]:
-    key = sha(example_fingerprint(example), model, json.dumps(settings, sort_keys=True))[:24]
+def cached_run(backend: Backend, example: str, model: str, settings: Any,
+               overrides: Any = None) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    key = sha(example_fingerprint(example), model, json.dumps(settings, sort_keys=True),
+              *([json.dumps(overrides, sort_keys=True)] if overrides else []))[:24]
     path = CACHE / "runs" / f"{example}-{model}-{key}.npz"
     if path.is_file():
         data = np.load(path, allow_pickle=False)
@@ -156,7 +158,7 @@ def cached_run(backend: Backend, example: str, model: str, settings: Any) -> tup
         return data["time"], {signal: data[f"s{index}"] for index, signal in enumerate(ids)}
     print(f"  running {example}/{model} ...", flush=True)
     started = time.perf_counter()
-    run = backend.run(example, model, settings)
+    run = backend.run(example, model, settings, overrides)
     print(f"  {example}/{model}: {run.time.size} points, {len(run.signals)} signals in {time.perf_counter() - started:.0f} s", flush=True)
     path.parent.mkdir(parents=True, exist_ok=True)
     ids = list(run.signals)
@@ -345,7 +347,8 @@ def build_model(
         spec = figures[name]
         kind = spec["kind"]
         if kind == "plot":
-            time_column, signals = cached_run(backend, example, spec["model"], spec.get("settings"))
+            time_column, signals = cached_run(backend, example, spec["model"], spec.get("settings"),
+                                              spec.get("overrides"))
             with tempfile.TemporaryDirectory() as directory:
                 out = Path(directory) / "figure.png"
                 plot_png(spec, time_column, signals, out)

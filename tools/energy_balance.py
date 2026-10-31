@@ -108,7 +108,7 @@ for _name in (
 ).split():
     _EXACT[_name] = "source"
 for _name in (
-    "SpringDamper HardStop ContactPoint ContactSurface ImpactBody3D ImpactInertia3D "
+    "SpringDamper HardStop ContactPoint ContactSurface MovingPlaneContact ImpactBody3D ImpactInertia3D "
     "SwitchedPivot3D"
 ).split():
     _EXACT[_name] = "mixed"

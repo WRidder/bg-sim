@@ -22,6 +22,20 @@ Notes:
 - **Worm gear.** `eta` is the efficiency while the worm drives the wheel, `eta_back` while the wheel drives the worm. With `eta_back ≤ 0` the gear is **self-locking**: a load on the wheel cannot turn the worm (it creeps at most at the smoothing speed `w_eps`).
 - **Belt drive.** The belt stretch `x` is the state; in steady state the belt speeds match, `r_a·w_a = r_b·w_b`. The belt does not slip and does not go slack.
 
+## Contact
+
+The **Contact** category holds compliant contacts for 3D rigid bodies: a Hunt-Crossley normal force (`k·x·sqrt(x/xref)·(1 + c·xdot)`, it never pulls) and regularised Coulomb friction. Mount a contact on a body through a `FixedTransform3DNeutral` (contact on side `a`, body on side `b`).
+
+| Block | Ports | What it does | Key parameters |
+| --- | --- | --- | --- |
+| `ContactPoint` | `p` (spatial), inputs `g`, `o`, `fr` (from a `ContactSurface`) | a point of a body against a fixed plane | `k`, `xref`, `c`, `mu`, `vs` |
+| `MovingPlaneContact` | `p` (spatial), `j` (translation), inputs `g`, `pc`, `vc`, `xs` | a sphere of a body against a finite rectangular face that moves: a carrier translates it (`pc`, `vc`) and the port `j` slides it along an axis, for a gripper jaw pad or a pusher | `r`, face `ox..oz`, normal `nx..nz`, tangent `tx..tz`, slide axis `ax..az`, half-widths `w1`, `w2`, `we`, `k`, `xref`, `c`, `mu`, `vs` |
+
+Notes:
+
+- **Moving face.** The face origin is `pc + o + a·xs`: connect the jaw position (for example a `PositionSensor` on the jaw) to `xs`. The face pushes back on the jaw with `j.e = F·a`, and `Pc` is the power the carrier puts in. Outside the half-widths the normal force fades out over `we`, so a part can slide off the face and fall.
+- **Holding.** Below the friction limit a held part creeps at `s = vs·atanh(F_t/(mu·f_n))`; the output `util = F_t/(mu·f_n)` is the share of the friction limit in use (1 = slipping). `examples/gripper` sizes a parallel gripper with it.
+
 ## Electrical
 
 | Block | Ports | What it does | Key parameters |
@@ -60,3 +74,16 @@ The gap `h` and the coil current `i` are the states: set their start values (the
 How it works: the block stores magnetic energy `W = ½·L(h)·i²` with `L(h) = L_inf + 2·alpha/(h + h0)`, and both port laws come from that one energy. The coil sees `v = d(L(h)·i)/dt`, including the voltage induced while the armature moves; the gap gets the attraction `F = alpha·i²/(h + h0)²` (`b.e = F`, `a.e = −F`). So the power into the block is exactly the change of its stored energy: it neither creates nor loses energy (put the coil resistance in a separate resistor or bond graph `R`). The variables `W`, `F`, `L`, `lambda` (flux linkage), `P_el` and `P_mech` (power into the coil and into the gap) can be plotted.
 
 Use it in a circuit and a translation diagram, or in a bond graph: bond the coil to an electrical 1-junction and the armature to the mass's 1-junction. The **maglev** example shows it levitating a steel ball with a cascade controller.
+
+## Wheels and flywheels (3D)
+
+Two blocks of the 3D mechanics categories model a wheel that rolls on the ground and a fast flywheel. The **gyrover** example uses both.
+
+| Block | Category | Ports | What it does | Key parameters |
+| --- | --- | --- | --- | --- |
+| `RollingDisk` | Contact | `p` (spatial), inputs `g`, `o`, `fr` | rolling contact of a wheel on a `ContactSurface` plane: the contact point is the lowest rim point at every instant | `radius`, `crown`, `k`, `xref`, `c`, `mu`, `vs`, `bsp` |
+| `Rotor3D` | Spatial mechanics | `p` (spatial), `drive` (rotation) | a rotor spinning about the z axis of the body that carries it | `Ja` |
+
+- **Mounting.** Bond the wheel body's port `p` straight to the block's `p`, with the body frame at the wheel centre and the axle along body z. Feed `RollingDisk` the body pose (`g`) and the plane (`o`, `fr` from a `ContactSurface`). Put the rotor's mass and transverse inertia into the carrier body; only the axial inertia `Ja` belongs to `Rotor3D`.
+- **Rolling.** The normal force is the smooth Hertz/Hunt-Crossley law of `ContactPoint`. Friction is isotropic regularised Coulomb friction on the slip of the rim point: a wheel rolling under a side force `F` creeps at about `vs F / (mu f_n)`. The block outputs `f_n`, `s_lon`/`s_lat` (slip), `f_lon`/`f_lat`, the contact point, `camber`, the spring energy `Ec` and the dissipated power `Pd`.
+- **Rotor.** Only the axial momentum `h` is a state, so a flywheel at 15 000 rpm costs no more than one at rest. The motor between carrier and rotor bonds to `drive`, and its reaction acts on the carrier. `w_rel`, `w_abs`, `H` and `Ek` are outputs.

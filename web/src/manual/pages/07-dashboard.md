@@ -25,6 +25,7 @@ Value, Gauge and Bar cards can have colour zones. An Indicator turns on above (o
 An input card binds one block parameter and **overrides it for the next run**. The model itself does not change.
 
 - The card footer shows the model value; **Use model value** removes the override.
+- A block parameter whose value is an expression of [global parameters](page:parameters) (`final = h_step`) starts at the value the globals give it, and the footer says which globals drive it. The card overrides that one block parameter only. When the value is just a global's name, **Bind to global** moves the card to the global itself, so it changes every parameter that uses that global.
 - The inspector marks an overridden parameter with a `dashboard:` tag.
 - The toolbar summarises what the next run uses, for example "Next run: 1 parameter override".
 - If an input has a problem, the next run is refused until you fix it.

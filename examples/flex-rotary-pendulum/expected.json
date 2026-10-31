@@ -1,0 +1,62 @@
+{
+  "project": "flex-rotary-pendulum",
+  "description": "Furuta pendulum with a flexible rod (FlexibleBeam3D, 2 + 2 bending modes): power continuity of the whole graph, a visible bending, and the swing against the rigid-rod model.",
+  "models": {
+    "flex-rotary-pendulum": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rod/eta_y[1]",
+          "from_t": 0.0,
+          "to_t": 6.0,
+          "value": 0.001,
+          "rtol": 0.9,
+          "note": "a bending of the order of a millimetre (modal coordinate)"
+        }
+      ]
+    },
+    "flex-rotary-pendulum-rigid": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        }
+      ]
+    }
+  },
+  "compare": [
+    {
+      "a": "flex-rotary-pendulum",
+      "b": "flex-rotary-pendulum-rigid",
+      "signal_a": "Pivot/qout",
+      "signal_b": "Pivot/qout",
+      "from_t": 0.0,
+      "to_t": 1.5,
+      "max_abs": 0.05,
+      "note": "the flexible rod swings like the rigid one (same mass and inertia) over the first swings"
+    }
+  ]
+}

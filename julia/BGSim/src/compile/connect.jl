@@ -748,6 +748,11 @@ function check_unconnected!(b::Builder, plan::ConnPlan)
             sp = get(b.boundary_ports, (path, name), nothing)
             sp === nothing && continue
             sp.kind == :signal && sp.direction == :output && continue
+            # A power face that *is* an internal junction (the body port of a RigidBody or a
+            # FlexibleBeam end) may stay open: the junction's own equation over its internal
+            # bonds sets the outside wrench to zero, i.e. nothing is attached there (a free
+            # end). Its internal bonds keep the junction from being empty.
+            sp.kind == :power && ep.kind == :junction && continue
             key = _portkey(ep)
             any(r -> _external_face_use(r, key, path), b.raw) && continue
             what = sp.kind == :power ? "power port" : "input"

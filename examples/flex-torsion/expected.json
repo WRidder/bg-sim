@@ -1,0 +1,53 @@
+{
+  "project": "flex-torsion",
+  "description": "Two disks on a torsion shaft (FlexibleBeam3D, 3 torsion modes): the first torsional frequency against the Ritz eigenvalue of the model's basis (the simulation reproduces it), the exact transcendental root and the massless-shaft limit (3.5 % truncation error of 3 clamped-free modes for heavy end disks).",
+  "models": {
+    "flex-torsion": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Shaft/twist",
+          "from_t": 0.3,
+          "to_t": 5.0,
+          "min_hz": 1.0,
+          "max_hz": 20.0,
+          "value": 4.242295188401541,
+          "rtol": 0.005,
+          "note": "Ritz eigenvalue of rigid rotation + 3 clamped-free torsion modes with the disk inertias at the ends: 26.65513 rad/s"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Shaft/twist",
+          "from_t": 0.3,
+          "to_t": 5.0,
+          "min_hz": 1.0,
+          "max_hz": 20.0,
+          "value": 4.0978382281737105,
+          "rtol": 0.04,
+          "note": "exact root of 2 mu z cos z + (1 - mu^2 z^2) sin z = 0 (mu = 29404.3): 25.74748 rad/s; massless shaft sqrt(2 k / J) = 25.74755 rad/s; the assumed-modes truncation error with 3 modes is 3.53 %"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Shaft/twist",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 0.27,
+          "rtol": 0.05,
+          "note": "a visibly large twist (about 15 degrees)"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "flex-torsion",
+  "models": [
+    "flex-torsion"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

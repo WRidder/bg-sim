@@ -57,5 +57,6 @@ The FMU runs with a fixed step and allocates no memory after instantiation, so s
 - `CsvSource` cannot be exported (E110). Replace it with an `ExportInput`.
 - Delays (`TransportDelay`, `IntegerDelay`) and `Noise` are supported. A `Noise` block gives the same sequence in the FMU as in BG-Sim for the same seed.
 - Debug hooks and watches are not exported.
+- Flexible beams (`FlexibleBeam2D`, `FlexibleBeam3D`) export, but their modes are fast. RK4 is stable only for `dt · ω_max < 2.8`, where `ω_max` is the highest modal frequency in rad/s; a free beam vibrates up to twice its clamped-free `f_*` outputs (torsion). To follow the simulation closely, keep `dt · ω_max` near 0.1, use fewer modes (often `nt = 0`), or choose Rodas4P. See [Flexible bodies](page:flexible-bodies).
 
 If the model cannot be exported, the dialog lists the reasons as diagnostics with their codes.

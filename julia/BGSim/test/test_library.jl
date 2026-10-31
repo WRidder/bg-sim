@@ -270,6 +270,7 @@ const M3_SPATIAL_REFS = [
     "stdlib:spatial/Revolute3DRigid",
     "stdlib:spatial/Revolute3DLimit",
     "stdlib:spatial/RigidBody3D",
+    "stdlib:spatial/Rotor3D",
     "stdlib:spatial/Spherical3D",
     "stdlib:spatial/Universal3D",
 ]
@@ -280,7 +281,11 @@ const M3_CONTACT_REFS = [
     "stdlib:contact/ContactSurface",
     "stdlib:contact/ImpactBody3D",
     "stdlib:contact/ImpactInertia3D",
+    "stdlib:contact/MovingPlaneContact",
+    "stdlib:contact/RollingDisk",
     "stdlib:contact/SwitchedPivot3D",
+    "stdlib:contact/SuctionCup",
+    "stdlib:contact/VacuumGenerator",
 ]
 
 # The M3 drives of J-MB11 (plan 6, row J-MB11): composites in the new `drives` group.
@@ -421,7 +426,16 @@ const EM_FIELD_REFS = [
     "stdlib:converters/Electromagnet",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS, EM_FIELD_REFS))
+# Flexible bodies: the assumed-modes beams (planar and spatial composites and their atomic
+# modal cores; mode shapes in `src/mech/modes.jl`).
+const FLEX_REFS = [
+    "stdlib:planar/FlexibleBeam2D",
+    "stdlib:planar/ModalBeam2D",
+    "stdlib:spatial/FlexibleBeam3D",
+    "stdlib:spatial/ModalBeam3D",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS, EM_FIELD_REFS, FLEX_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -788,7 +802,7 @@ const INTERFACE_FIELDS = [
         params(ref) = [p.name for p in blocks["stdlib:" * ref].interface.parameters]
         consts(ref) = [(c.name, c.default) for c in blocks["stdlib:" * ref].interface.constants]
         @test params("continuous/TransferFunction") == ["num", "den"]
-        @test consts("continuous/TransferFunction") == [("n", 2)]
+        @test consts("continuous/TransferFunction") == [("n", 2), ("m", 2)]
         @test params("continuous/ZeroPole") == ["gain", "zero_re", "zero_im", "pole_re", "pole_im"]
         @test consts("continuous/ZeroPole") == [("n", 2), ("m", 1)]
         for f in ("LowPassButterworth", "LowPassBessel")
@@ -907,11 +921,13 @@ const INTERFACE_FIELDS = [
 
         # The state-space block: N is structural, the matrices are Vec/Mat. A parameter decl
         # carries its type and default text (the array size lives in the `Vec`/`Mat` type and
-        # in the source), while a variable decl also carries the resolved `size` array.
+        # in the source), while a variable decl also carries the resolved `size` array. The
+        # feedthrough D is a structural constant: D = 0 folds away (no algebraic loop).
         ss = blocks["stdlib:continuous/StateSpace"]
         @test [(c.name, c.type, c.default) for c in ss.interface.constants] ==
-              [("N", "Int", 2)]
-        @test [p.name for p in ss.interface.parameters] == ["A", "B", "C", "D"]
+              [("N", "Int", 2), ("D", "Real", 0.0)]
+        @test [c.structural for c in ss.interface.constants] == [true, true]
+        @test [p.name for p in ss.interface.parameters] == ["A", "B", "C"]
         @test all(p -> p.type == "Real", ss.interface.parameters)
         @test ss.interface.parameters[1].default == "[0.0 1.0; -1.0 -2.0]"
         @test ss.interface.parameters[2].default == "[0.0, 1.0]"
@@ -1888,6 +1904,19 @@ const INTERFACE_FIELDS = [
               [("y", "effort*flow")]
         @test isempty(pws.interface.parameters)
         @test occursin("y ~ a.e * a.f", pws.source)
+        # Transparent: the flow that enters at a leaves at b (port flows count inward).
+        @test occursin("a.f + b.f ~ 0.0", pws.source)
+
+        # An output that a `@discrete` body holds carries its start (the value before the
+        # first tick, which a node may override); a computed output does not.
+        let all_blocks = Dict(b.ref => b for b in load_stdlib())
+            starts_of(ref) = [(o.name, get(o, :start, nothing))
+                              for o in all_blocks[ref].interface.outputs]
+            @test starts_of("stdlib:motion/ADC") == [("y", "0.0"), ("code", "0.0")]
+            @test starts_of("stdlib:discrete/ZOH") == [("y", "0.0")]
+            @test starts_of("stdlib:sources/Noise") == [("y", nothing)]
+            @test starts_of("stdlib:continuous/Gain") == [("y", nothing)]
+        end
 
         # Export markers: an input is a constant source in simulation, an output holds its
         # input, and a parameter publishes a tunable value. The spec's name/type/unit are
@@ -2163,7 +2192,12 @@ const INTERFACE_FIELDS = [
             end
             for (field, defname) in INTERFACE_FIELDS
                 for entry in _field(block, field)
-                    _check_object_keys(entry, defs[defname])
+                    # `start` is only on an output a `@discrete`/`@events` body holds.
+                    _check_object_keys(entry, defs[defname];
+                        optional = defname == "ioDecl" ? ["start"] : String[])
+                    if defname == "ioDecl" && field == "inputs"
+                        @test !haskey(_plain(entry), "start")
+                    end
                 end
             end
         end

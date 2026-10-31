@@ -9,6 +9,11 @@ export const repoRoot = path.resolve(here, "../..");
 export const framesDir = path.join(repoRoot, "media/video/frames");
 const require = createRequire(path.join(repoRoot, "web/package.json"));
 export const { chromium } = require("@playwright/test");
+
+// Headless Chromium falls back to SwiftShader (WebGL on the CPU): the 3D view then renders a few frames
+// per second and recordings stutter. ANGLE on D3D11 uses the real GPU, also headless.
+export const GPU_ARGS = ["--use-angle=d3d11", "--ignore-gpu-blocklist", "--enable-gpu"];
+export const launchBrowser = (opts = {}) => chromium.launch({ ...opts, args: [...GPU_ARGS, ...(opts.args ?? [])] });
 export const BASE = process.env.BGSIM_VIDEO_URL ?? "http://127.0.0.1:8810";
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export const gallery = JSON.parse(readFileSync(path.join(repoRoot, "web/src/examples/gallery.json"), "utf8"));

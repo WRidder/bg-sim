@@ -599,7 +599,10 @@ function _check_observations!(ck::Checker)
         end
         if observation_field(o) === nothing
             d = get(ck.decls, name, nothing)
-            if d !== nothing
+            # An observed signal may share its name with an `@outputs` face: the face is
+            # wiring, not a variable, so the observable is how that output gets recorded at
+            # the composite's path (`Beam/pose[1]` of a FlexibleBeam3D).
+            if d !== nothing && d.scope != :outputs
                 _report!(
                     ck,
                     "E003",
@@ -2309,14 +2312,20 @@ function block_interface(pb::ParsedBlock)
         ) for d in get(pb.declaration_map, :parameters, Decl[])
     ]
 
-    io_entries(scope) = [
-        (
+    # An output that a `@discrete`/`@events` body holds also carries its start: the value it
+    # holds before the first tick, which a node's `starts` may override (catalog `ioDecl`).
+    held = _discrete_assigned_names(pb)
+    io_entry(d, scope) = begin
+        base = (
             name = String(d.name),
             type = _type_string(d.type),
             size = _size_of(d.type, consts),
             unit = get(d.attrs, :unit, nothing),
-        ) for d in get(pb.declaration_map, scope, Decl[])
-    ]
+        )
+        scope === :outputs && d.name in held ?
+            merge(base, (start = something(d.default_text, ""),)) : base
+    end
+    io_entries(scope) = [io_entry(d, scope) for d in get(pb.declaration_map, scope, Decl[])]
 
     port_entries = [
         (

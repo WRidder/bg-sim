@@ -48,8 +48,8 @@ manifest order. The manifest is the source of the signal order and of
 A model entry may also be a bare list of checks. ``compare`` may be a list of
 such objects. ``rtol`` is relative to the expected value; ``abs`` is an extra
 absolute tolerance. ``compare`` evaluates both signals on the union of the two
-runs' time grids over ``[from_t, t1]``, so a different sample grid cannot hide
-a peak. ``max_abs`` takes the largest absolute value over ``[from_t, to_t]``
+runs' time grids over ``[from_t, t1]`` (``t1`` is the optional ``to_t``, default
+the end of the shorter run), so a different sample grid cannot hide a peak. ``max_abs`` takes the largest absolute value over ``[from_t, to_t]``
 (default the whole run); ``ratio`` evaluates ``signal / signal_b`` at ``t``
 (default the final time), which checks a gear ratio or two speeds agreeing.
 
@@ -238,7 +238,7 @@ composition and the angles), so it is exact to round-off::
 
 A model entry may also carry ``"model"`` (the file to run when the key is only a
 label) and ``"settings"`` (deep-merged into the model document before the run).
-The pendulum uses that to read its 10 s energy window from the same 4 s model::
+The pendulum uses ``settings`` to read its 10 s energy window from the same 4 s model::
 
     {"models": {"pendulum-10s": {"model": "pendulum",
       "settings": {"t_end": 10.0, "output": {"points": 10001}},
@@ -253,6 +253,9 @@ its bond-graph model once more with an ideal sensor (no noise, a 52-bit ADC)::
       "overrides": [{"target": "IR/Noise/std", "value": 0.0},
                     {"target": "IR/ADC/bits", "value": 52}],
       "checks": [...]}}}
+
+The short form ``{"<instance path>/<param>": value}`` (an object) means the same; the
+gripper runs one model as several scenarios with it (a parameter override does not recompile).
 """
 
 from __future__ import annotations
@@ -520,8 +523,11 @@ def _run_model(
         _merge_settings(model_document.setdefault("settings", {}), settings)
     body: dict[str, Any] = {"model": model_document}
     if overrides is not None:
+        # A list of {"target", "value"} overrides, or the short form {"<path>/<param>": value}.
+        if isinstance(overrides, dict):
+            overrides = [{"target": k, "value": v} for k, v in overrides.items()]
         if not isinstance(overrides, list):
-            raise ValueError("'overrides' must be a list of parameter overrides")
+            raise ValueError("'overrides' must be a list of parameter overrides or an object of parameter -> value")
         body["parameterOverrides"] = overrides
     response = client.post(f"/api/projects/{project}/runs", json=body)
     if response.status_code != 201:
@@ -1867,6 +1873,8 @@ def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Ru
         from_t = float(spec.get("from_t", max(run_a.time[0], run_b.time[0])))
         lower = max(from_t, float(run_a.time[0]), float(run_b.time[0]))
         upper = min(float(run_a.time[-1]), float(run_b.time[-1]))
+        if "to_t" in spec:
+            upper = min(upper, float(spec["to_t"]))
         if not upper > lower:
             report.check(False, label, f"the runs do not overlap after t={from_t:g}")
             continue
@@ -1878,7 +1886,7 @@ def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Ru
         values_b = np.interp(grid, run_b.time, run_b.signals[signal_b])
         difference = float(np.max(np.abs(values_a - values_b)))
         detail = (
-            f"from t={lower:g} max|delta| {difference:.3g} "
+            f"over [{lower:g}, {upper:g}] max|delta| {difference:.3g} "
             f"(limit {limit:g} over {grid.size} points)"
         )
         report.check(difference <= limit, label, detail)

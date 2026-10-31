@@ -10,7 +10,7 @@
 
 import { useState, type MouseEvent } from "react";
 
-import type { ConstantDecl, ParameterDecl, VariableDecl } from "../contracts/catalog";
+import type { ConstantDecl, IoDecl, ParameterDecl, VariableDecl } from "../contracts/catalog";
 import type { Diagnostic } from "../contracts/diagnostic";
 import type { ModelConnection, ModelNode } from "../contracts/model";
 import { BlockHelpButton } from "../app/BlockHelp";
@@ -286,6 +286,25 @@ function ConstantField({ node, decl }: { node: ModelNode; decl: ConstantDecl }) 
       }
     />
   );
+}
+
+/**
+ * What takes a start value: the block's variables, then the outputs a `@discrete` body holds
+ * (the catalog gives those a `start`: the value held before the first tick, an ADC's or a
+ * ZOH's output).
+ */
+function startDecls(block: { variables: VariableDecl[]; outputs: IoDecl[] }): VariableDecl[] {
+  const held = block.outputs
+    .filter((output) => typeof output.start === "string")
+    .map((output) => ({
+      name: output.name,
+      type: output.type,
+      size: output.size,
+      unit: output.unit,
+      start: output.start === undefined || output.start === "" ? "0" : output.start,
+      state: null,
+    }));
+  return [...block.variables, ...held];
 }
 
 function StartField({ node, variable }: { node: ModelNode; variable: VariableDecl }) {
@@ -797,13 +816,13 @@ export function NodeInspector({
           <section className="inspector-section" aria-labelledby="inspector-starts-title">
             <h4 className="inspector-section__title" id="inspector-starts-title">
               Start values
-              <span className="inspector-section__count">{block.variables.length}</span>
+              <span className="inspector-section__count">{startDecls(block).length}</span>
             </h4>
-            {block.variables.length === 0 ? (
+            {startDecls(block).length === 0 ? (
               <p className="inspector-none">This block has no state variables.</p>
             ) : (
               <>
-                {block.variables.map((variable) => (
+                {startDecls(block).map((variable) => (
                   <StartField key={variable.name} node={node} variable={variable} />
                 ))}
                 <p className="inspector-note">

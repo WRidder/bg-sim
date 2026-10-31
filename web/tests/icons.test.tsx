@@ -115,6 +115,25 @@ describe("block icons", () => {
     }
   });
 
+  it("draws an explicit, distinct glyph for every contact block", () => {
+    // The icon ids of stdlib/contact (src/library/catalog.jl); no two share a drawing.
+    const contactIcons = [
+      "ct-contact-point",
+      "ct-contact-surface",
+      "ct-impact-body-3d",
+      "ct-impact-inertia-3d",
+      "ct-moving-plane-contact",
+      "ct-switched-pivot-3d",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of contactIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      glyphs.add(renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />).replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(contactIcons.length);
+  });
+
   it("draws an explicit glyph for every common mechanical and electrical component", () => {
     // The icon ids of the rotation and electrical components on top of the M1/M2 rows
     // (src/library/catalog.jl); each has its own drawing.
@@ -231,6 +250,37 @@ describe("block icons", () => {
       glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
     }
     expect(glyphs.size).toBe(controlIcons.length);
+  });
+
+  it("draws four distinct flexible-beam glyphs", () => {
+    // The assumed-modes beams of stdlib/planar and stdlib/spatial (src/library/catalog.jl).
+    const beamIcons = [
+      "pl-flexible-beam-2d",
+      "pl-modal-beam-2d",
+      "sp-flexible-beam-3d",
+      "sp-modal-beam-3d",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of beamIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(beamIcons.length);
+  });
+
+  it("draws distinct glyphs for the vacuum gripping blocks", () => {
+    // stdlib/contact SuctionCup and VacuumGenerator (src/library/catalog.jl).
+    const vacuumIcons = ["ct-suction-cup", "ct-vacuum-generator", "hyd-pressure-source", "hyd-orifice"];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of vacuumIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(vacuumIcons.length);
   });
 
   it("falls back to a placeholder for an unknown icon id", () => {

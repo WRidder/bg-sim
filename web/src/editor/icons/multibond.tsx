@@ -95,6 +95,35 @@ function body(dim: 2 | 3): ReactNode {
   );
 }
 
+/**
+ * A flexible beam: a wall hatch at end A, the bent centre line (first bending
+ * mode) and its dashed undeformed axis; the spatial variant adds a twist arrow
+ * at end B. `core` marks the atomic modal core with a small eta.
+ */
+function flexBeam(dim: 2 | 3, core: boolean): ReactNode {
+  return (
+    <>
+      <path d="M3 5v14M3 7l-1.5 1.5M3 10.5l-1.5 1.5M3 14l-1.5 1.5M3 17.5l-1.5 1.5" />
+      <path d="M3 12C9 12 14.5 11.2 21 7" strokeWidth={2.4} />
+      <path d="M3 12H21" strokeDasharray="1.6 1.8" opacity="0.6" />
+      {dim === 3 ? <path d="M18.4 3.6a3.2 1.6 0 1 0 4.6 3.2M23 6.8l.2-2M23 6.8l-1.9-.4" /> : null}
+      {core ? (
+        <text
+          x="14"
+          y="21.5"
+          textAnchor="middle"
+          fontSize="8"
+          fontFamily="var(--font-ui)"
+          fill="currentColor"
+          stroke="none"
+        >
+          η
+        </text>
+      ) : null}
+    </>
+  );
+}
+
 function revolute(dim: 2 | 3): ReactNode {
   return (
     <>
@@ -126,6 +155,10 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
   // ---------------------------------------------------------------- bodies
   "pl-rigid-body-2d": () => body(2),
   "sp-rigid-body-3d": () => body(3),
+  "pl-flexible-beam-2d": () => flexBeam(2, false),
+  "pl-modal-beam-2d": () => flexBeam(2, true),
+  "sp-flexible-beam-3d": () => flexBeam(3, false),
+  "sp-modal-beam-3d": () => flexBeam(3, true),
   "ct-impact-body-3d": () => (
     <>
       <path d="M5 13h9v8H5zM5 13l3-3h9v8l-3 3M14 13l3-3" />
@@ -176,6 +209,14 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
       <path d="M12 2v20M2 12h20" />
       <path d="M12 6.5l5.5 5.5-5.5 5.5L6.5 12z" />
       <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+    </>
+  ),
+  "sp-rotor-3d": () => (
+    <>
+      <rect x="2.5" y="17" width="19" height="4.5" rx="1" />
+      <ellipse cx="12" cy="9" rx="8.5" ry="3.2" />
+      <path d="M12 9V17M12 1.5V5.8" />
+      <path d="M16.5 2.8a5 1.6 0 0 1 2 1.6M18.5 4.4l.4-1.8M18.5 4.4l-1.8-.3" />
     </>
   ),
   "sp-spherical-3d": () => (
@@ -279,6 +320,24 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
       <path d="M2 13h20" />
       <path d="M4 13l-2 3.5M8 13l-2 3.5M12 13l-2 3.5M16 13l-2 3.5M20 13l-2 3.5M24 13l-2 3.5" />
       <path d="M12 13V3M9.8 5.3L12 2.8l2.2 2.5" />
+    </>
+  ),
+  "ct-moving-plane-contact": () => (
+    <>
+      <circle cx="7.5" cy="10.5" r="5" />
+      <path d="M12.5 3v15" />
+      <path d="M12.5 5l3-2.5M12.5 9l3-2.5M12.5 13l3-2.5M12.5 17l3-2.5" />
+      <path d="M17.5 10.5h5M20.3 8.3l2.2 2.2-2.2 2.2" />
+      <path d="M5 21.5h9M7.2 19.3L5 21.5l2.2 2.2M11.8 19.3l2.2 2.2-2.2 2.2" />
+    </>
+  ),
+  "ct-rolling-disk": () => (
+    <>
+      <path d="M2 21h20" />
+      <circle cx="11" cy="11.5" r="8" />
+      <path d="M11 11.5L16.7 5.8M11 11.5v8" opacity="0.55" />
+      <circle cx="11" cy="11.5" r="1.3" fill="currentColor" stroke="none" />
+      <path d="M17 17.5l4-3.5M21 14v3" />
     </>
   ),
   "ct-switched-pivot-3d": () => (
