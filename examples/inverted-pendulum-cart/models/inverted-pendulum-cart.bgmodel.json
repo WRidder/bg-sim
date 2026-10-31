@@ -286,6 +286,54 @@
         "constants": {},
         "starts": {},
         "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "x1",
+        "name": "x_ref",
+        "block": { "ref": "stdlib:converters/ExportInputPass" },
+        "position": { "x": 870, "y": -150 },
+        "rotation": 0,
+        "flipX": false,
+        "params": { "value": "0.0" },
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "x2",
+        "name": "theta",
+        "block": { "ref": "stdlib:converters/ExportOutput" },
+        "position": { "x": 1010, "y": -150 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "x3",
+        "name": "x",
+        "block": { "ref": "stdlib:converters/ExportOutput" },
+        "position": { "x": 1010, "y": -90 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
+      },
+      {
+        "id": "x4",
+        "name": "force",
+        "block": { "ref": "stdlib:converters/ExportOutput" },
+        "position": { "x": 1010, "y": 30 },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": { "showLabel": true, "color": null }
       }
     ],
     "connections": [
@@ -445,9 +493,17 @@
         "id": "s07",
         "kind": "signal",
         "from": { "node": "n21", "port": "y" },
-        "to": { "node": "n22", "port": "x_ref" },
+        "to": { "node": "x1", "port": "u" },
         "route": [],
         "label": "0.2 m step at 1.5 s"
+      },
+      {
+        "id": "s07x",
+        "kind": "signal",
+        "from": { "node": "x1", "port": "y" },
+        "to": { "node": "n22", "port": "x_ref" },
+        "route": [],
+        "label": "cart position setpoint (export input)"
       },
       {
         "id": "s08",
@@ -512,6 +568,30 @@
         "to": { "node": "n13", "port": "u" },
         "route": [],
         "label": null
+      },
+      {
+        "id": "x_s1",
+        "kind": "signal",
+        "from": { "node": "n19", "port": "y" },
+        "to": { "node": "x2", "port": "u" },
+        "route": [],
+        "label": "pendulum angle (export output)"
+      },
+      {
+        "id": "x_s2",
+        "kind": "signal",
+        "from": { "node": "n20", "port": "y" },
+        "to": { "node": "x3", "port": "u" },
+        "route": [],
+        "label": "cart position (export output)"
+      },
+      {
+        "id": "x_s3",
+        "kind": "signal",
+        "from": { "node": "n22", "port": "u" },
+        "to": { "node": "x4", "port": "u" },
+        "route": [],
+        "label": "cart force (export output)"
       }
     ],
     "subsystemPorts": [],

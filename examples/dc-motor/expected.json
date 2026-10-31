@@ -108,7 +108,20 @@
           "codes": ["E901", "E101", "E102", "E103", "E106", "W206"],
           "note": "no solver failure, no connection/causality error and no event-limit stop"
         }
-      ]
+      ],
+      "export": {
+        "status": "compared",
+        "max_rel_error": 1e-3,
+        "inputs": {
+          "speed_ref": {"min": -100.0, "max": 200.0}
+        },
+        "interface": {
+          "inputs": ["speed_ref"],
+          "outputs": ["current", "speed"],
+          "parameters": ["PID1/Kp", "PID1/Ti", "PID1/Td", "PID1/lower", "PID1/upper"]
+        },
+        "note": "X-EX1 (examples/export_checks.py): the FMU is driven through `speed_ref` by the gate's input trajectory (steps, a ramp, a chirp and a PRBS within the range) and compared with the reference driven by the same zero-order-hold samples"
+      }
     }
   },
   "compare": {

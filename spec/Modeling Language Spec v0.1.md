@@ -485,10 +485,11 @@ Converters are the only components with ports in two domains, which is what lets
 | Power sensor | any power domain `a`, `b`; output `y` | none | v0.1 |
 | Temperature / heat flow sensor | Thermal; output `y` | none | v0.2 |
 | Export input | output `y` | name, type, unit | v0.1 |
+| Export input, pass-through | input `u`, output `y` | name, start value | v0.1 |
 | Export output | input `u` | name, type, unit | v0.1 |
 | Export parameter | none | name, links to a tunable parameter | v0.1 |
 
-Export inputs and outputs define the interface of the generated step function, the FMU and the ctrlX Data Layer nodes, so their names are what the controller, SIL harness and 3D bindings refer to.
+Export inputs and outputs define the interface of the generated step function, the FMU and the ctrlX Data Layer nodes, so their names are what the controller, SIL harness and 3D bindings refer to. In simulation an export input is a constant source; the pass-through form passes its wired input through (`y = u`), so a model keeps its own stimulus, and the export cuts that wire so the host supplies the signal. A simulation can also drive an export input from a sampled trajectory, held constant between samples as an FMU host does.
 
 ## Global parameters
 

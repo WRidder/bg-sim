@@ -343,6 +343,36 @@ end
         @test isfile(joinpath(dir, "export.json"))
     end
 
+    @testset "a pass-through input (ExportInputPass) exports as an ExportInput (X-EX1)" begin
+        # In simulation the wired Constant (3.0) reaches the plant; in the export the host
+        # does, starting at the marker's value (2.0), exactly as with an ExportInput.
+        doc = _ex_lag_model()
+        for n in doc["diagram"]["nodes"]
+            n["name"] == "U" && (n["block"] = bg_ref("stdlib:converters/ExportInputPass"))
+        end
+        push!(doc["diagram"]["nodes"], bg_node("n4", "C", bg_ref("stdlib:sources/Constant");
+            params = Dict{String,Any}("value" => "3.0")))
+        push!(doc["diagram"]["connections"], bg_conn("c3", "signal", "n4", "y", "n1", "u"))
+        flat = _ex_flat(doc)
+        @test isempty([d for d in flat.diagnostics if d.severity == "error"])
+        pass_dir, plain_dir = mktempdir(), mktempdir()
+        settings = _EX.ExportSettings(t_end = 0.1)
+        rp = _EX.export_model(flat, pass_dir; settings)
+        rq = _EX.export_model(_ex_flat(_ex_lag_model()), plain_dir; settings)
+        @test rp.ok && rq.ok
+        @test rp.report["inputs"] == [Dict("name" => "U", "id" => "U/value", "start" => 2.0)]
+        @test [o["name"] for o in rp.report["outputs"]] == ["Y"]
+        @test [p["name"] for p in rp.report["parameters"]] == ["Plant/tau"]
+        @test rp.report["dt"] == rq.report["dt"] && rp.report["method"] == rq.report["method"]
+        model_c = read(joinpath(pass_dir, "sources", "model.c"), String)
+        @test occursin("m->u[0]", model_c)
+        xml = read(joinpath(pass_dir, "modelDescription.xml"), String)
+        @test occursin("name=\"U\" valueReference=\"2\" causality=\"input\"", xml)
+        # The job's reference sees the same: the transformed flat, not the Constant.
+        @test _EX.host_inputs(flat) !== flat
+        @test _EX.input_markers(flat) == ["U"]
+    end
+
     @testset "sticky notes (diagram.annotations) change nothing in the export" begin
         plain_doc = _ex_lag_model()
         noted_doc = _ex_lag_model()

@@ -93,6 +93,9 @@ function export_job(request::AbstractDict, job_dir::AbstractString; progress = _
     timings["flattenS"] = time() - t0
     errors = filter(d -> d.severity == "error", flat.diagnostics)
     isempty(errors) || return refused(flat.diagnostics)
+    # The FMU reads a pass-through input (ExportInputPass) from the host, at its start value
+    # unless set; the reference run must see the same, not the wired stimulus.
+    flat = host_inputs(flat)
     # A CSV source is refused by the export up front (E110); no reference run is needed.
     if any(i -> i.ref in CSV_SOURCES, flat.instances)
         return refused(export_model(flat, out["exportDir"]; settings = es, name = name).diagnostics)

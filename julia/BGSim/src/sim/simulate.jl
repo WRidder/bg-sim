@@ -438,6 +438,11 @@ loop and the plan sections it implements.
 `:right`, both at the same `t`). The default is `nothing`, which writes both rows through the
 recorder directly. A discrete tick that changes a held output uses the same seam, so a step
 in a held value renders as a vertical edge too.
+
+`inputs` (X-EX1) drives parameters from sampled trajectories, `Dict(id => (t, u))`: the
+parameter holds `u[k]` on `[t[k], t[k+1])` (zero-order hold), changed after a discrete tick
+at the same instant, as an FMU host sets its inputs between `doStep`s. An export marker's
+input is the parameter `<marker>/value`. See `src/sim/inputs.jl`.
 """
 function simulate(flat::Flat.FlatModel; debug = nothing, kwargs...)
     # M4 debug: a debug run (`debug = ctx::DebugCtx`, src/sim/debug.jl) is bracketed so its
@@ -457,7 +462,10 @@ function _simulate_flat(flat::Flat.FlatModel;
     phase = nothing,
     record_event = nothing,
     debug = nothing,
+    inputs = nothing,
 )
+    # X-EX1: parameters driven by a sampled trajectory (zero-order hold, src/sim/inputs.jl).
+    driven = driven_inputs(flat, inputs)
     cancel = _dbg_cancel(debug, cancel)  # M4 debug:
     start_ns = time_ns()
     run_settings = settings isa RunSettings ? settings : RunSettings(settings)
@@ -734,6 +742,15 @@ function _simulate_flat(flat::Flat.FlatModel;
         end
     end
     targets = discrete_targets(grid, run)
+    drive = nothing
+    if !isempty(driven)
+        drive = InputDrive(driven, lowered.model, integ)
+        targets = merge_input_targets(
+            targets, input_times(drive, run_settings.t_start, run_settings.t_end)
+        )
+        # Samples at or before t_start hold from the first row on.
+        apply_inputs!(drive, integ, run_settings.t_start)
+    end
     # M4 debug: the session holds the live run objects for the debug checkpoints and commands.
     session = _dbg_begin!(
         debug; run_id = id, settings = run_settings, flat = flat, lowered = lowered.model,
@@ -775,6 +792,15 @@ function _simulate_flat(flat::Flat.FlatModel;
                 tk0 = time_ns()
                 changed = run_tick!(run, integ, tt, target.tick_index)
                 prof_tick_ns[] += time_ns() - tk0
+            end
+            # X-EX1: a driven input changes after the tick at the same instant, so the tick
+            # sampled the value held before it (an FMU host sets inputs after its doStep).
+            if drive !== nothing && inputs_due(drive, tt)
+                before_inputs = before === nothing ? values() : nothing
+                if apply_inputs!(drive, integ, tt)
+                    before === nothing && (before = before_inputs)
+                    changed = true
+                end
             end
             if changed
                 _record_event!(record_event, rec, tt, :left, before)

@@ -166,7 +166,20 @@
           "codes": ["E901", "E106", "W202", "W206"],
           "note": "no solver failure, no causal conflict, no algebraic loop and no event-limit stop. W201 (IM, IMv in derivative causality) and W205 (Generic bond island) are expected: the point mass is over-parameterised by two translational stores plus the rigid kinematic constraint, so one store is algebraic."
         }
-      ]
+      ],
+      "export": {
+        "status": "compared",
+        "max_rel_error": 1e-3,
+        "inputs": {
+          "x_ref": {"min": -0.3, "max": 0.3}
+        },
+        "interface": {
+          "inputs": ["x_ref"],
+          "outputs": ["force", "theta", "x"],
+          "parameters": []
+        },
+        "note": "X-EX1 (examples/export_checks.py): the closed loop (plant and LQR) driven through the cart position setpoint `x_ref` by the gate's input trajectory, compared with the reference driven by the same zero-order-hold samples"
+      }
     }
   }
 }

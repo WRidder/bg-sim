@@ -57,6 +57,28 @@ Measured: the voltage clamps at 24.000 V for the first sample of the step, the s
 100.000 rad/s (no overshoot) and a 2.0 mA steady current. The current peaks at 11.03 A
 (24 V / 2 Ω before the back-EMF builds).
 
+### Export interface (X-EX1)
+
+`speed-control` carries export markers, so its FMU is the closed loop with a speed setpoint in
+and the measurements out:
+
+| marker | block | in simulation | in the FMU |
+| --- | --- | --- | --- |
+| `speed_ref` (input, rad/s) | `ExportInputPass` between `Step1` and `Err.u1` | passes the 100 rad/s step through | the host sets the setpoint (start 0) |
+| `speed` (output, rad/s) | `ExportOutput` on `WmSens/y` | records the measured speed | the rotor speed |
+| `current` (output, A) | `ExportOutput` on the series `CurrentSensor` `ISens` (between `V1.p` and `Motor1.p`) | records the winding current | the winding current |
+
+The pass-through input keeps the simulation exactly as before (`ExportInputPass` is
+`y = u`, and the series sensor has no voltage drop); the export cuts its wire
+(`BGSim.Export.host_inputs`), so the host's value replaces the step. The PI is discrete: its
+tick at the end of a `doStep` samples the setpoint the host set before that step, so a new
+setpoint reaches the controller at the next 1 ms tick. The X-EX0 gate
+(`examples/export_checks.py`) drives `speed_ref` with its deterministic trajectory (steps, a
+ramp, a chirp, a PRBS in [-100, 200] rad/s) and compares the FMU with the reference driven by
+the same zero-order-hold samples (`simulate(...; inputs)`); `expected.json` (`export`) holds
+the range, the expected interface and the error threshold. The PI's tunable gains and limits
+are FMU parameters.
+
 ## Checks
 
 `expected.json` holds the acceptance values, and `uv run examples/run_checks.py` runs them
