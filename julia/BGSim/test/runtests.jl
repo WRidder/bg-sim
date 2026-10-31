@@ -316,6 +316,9 @@ include("test_explain.jl")
 # Work package J4.4: parameter and state edits, replay and branch.
 include("test_edits.jl")
 
+# Dashboard inputs (plan/DASHBOARD_PLAN.md): parameter overrides and the parameter schedule.
+include("test_overrides.jl")
+
 # Work package J4.5: the worker debug methods.
 include("test_worker_debug.jl")
 

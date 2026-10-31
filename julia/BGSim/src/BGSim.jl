@@ -63,6 +63,8 @@ include("sim/hooks.jl")
 include("sim/watch.jl")
 include("compile/explain.jl")
 include("sim/edits.jl")
+# Dashboard inputs (plan/DASHBOARD_PLAN.md): parameter overrides and the parameter schedule.
+include("sim/overrides.jl")
 # C/FMU export (plan/EXPORT_PLAN.md): `BGSim.Export.export_model`.
 include("export/export.jl")
 
