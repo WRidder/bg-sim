@@ -30,7 +30,7 @@ Figure specs::
                "hlines": [{"y": 1.0, "label": ".."}]?, "vlines": [{"x": 1.0, "label": ".."}]?}],
      "row_height": 2.3?, "width": 1000?}
     {"kind": "diagram", "model": "<model file>"}
-    {"kind": "scene", "model": "<model file>", "t": 1.6}
+    {"kind": "scene", "model": "<model file>", "t": 1.6, "zoom": 40?}   (zoom: wheel steps in after the fit)
     {"kind": "svg", "svg": "<name of an '@@ svg' section>"}
 """
 
