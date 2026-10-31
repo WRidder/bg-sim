@@ -163,6 +163,82 @@ def interface(model: dict[str, Any], scope: str | None, power_inputs: dict[str, 
     return {"inputs": inputs, "outputs": outputs, "parameters": parameters}, []
 
 
+#: Fake operation counts of the tunables report: each kept value costs this many operations.
+FAKE_RHS_OPS = 120
+FAKE_OPS_PER_TUNABLE = 7
+
+
+def tunables(model: dict[str, Any], scope: str | None, settings: dict[str, Any]
+             ) -> tuple[list[dict[str, Any]], dict[str, Any] | None, list[dict[str, Any]]]:
+    """``(parameters, report section, diagnostics)`` of the request's tunables (J-EX8).
+
+    The real rules in brief: a picked block parameter (``Inst/param``) or global
+    (``global:<name>``) becomes a fixed parameter with its range; an unknown id or a driven
+    global is W215 (folded); a range that does not contain the value is E110. The value of a
+    block parameter is its literal on the node (0 when it is an expression or a default)."""
+    picks = list(settings.get("tunables") or [])
+    if settings.get("exposeGlobals"):
+        have = {p["id"] for p in picks}
+        picks += [{"id": f"global:{g['name']}"} for g in model.get("parameters") or []
+                  if f"global:{g['name']}" not in have]
+    if not picks:
+        return [], None, []
+    globals_ = {g["name"]: g for g in model.get("parameters") or []}
+    nodes: dict[str, dict[str, Any]] = {}
+    diagram = model.get("diagram") or {}
+    prefix = ""
+    if scope:
+        node = next((n for p, n in _walk(diagram) if p == scope), None)
+        if node is not None and "subsystem" in (node.get("block") or {}):
+            diagram, prefix = node["block"]["subsystem"]["diagram"], f"{node['name']}/"
+    for path, node in _walk(diagram, prefix):
+        nodes[path] = node
+    params: list[dict[str, Any]] = []
+    diags: list[dict[str, Any]] = []
+    requested: list[str] = []
+    exposed: list[str] = []
+    for pick in picks:
+        pid = str(pick["id"])
+        entry: dict[str, Any]
+        if pid.startswith("global:"):
+            g = globals_.get(pid[len("global:"):])
+            if g is None or not re.fullmatch(r"\s*[-+0-9.eE]+\s*", str(g.get("value", ""))):
+                diags.append(_diag("W215", f"`{pid}` is not an independent global parameter "
+                                           "of the model, so it is not exposed"))
+                continue
+            entry = {"name": g["name"], "id": pid, "start": _number(g["value"])}
+            if g.get("unit"):
+                entry["unit"] = g["unit"]
+            exposed.append(g["name"])
+        else:
+            path, _, name = pid.rpartition("/")
+            node = nodes.get(path)
+            if node is None or not name:
+                diags.append(_diag("W215", f"`{pid}` is not a parameter of the exported model, "
+                                           "so it cannot be tunable"))
+                continue
+            entry = {"name": pid, "id": pid,
+                     "start": _number((node.get("params") or {}).get(name), 0.0)}
+            requested.append(pid)
+        entry.update(variability="fixed", causality="parameter")
+        for end in ("min", "max"):
+            if pick.get(end) is not None:
+                entry[end] = float(pick[end])
+        lo, hi = entry.get("min", float("-inf")), entry.get("max", float("inf"))
+        if not lo <= entry["start"] <= hi:
+            diags.append(_diag("E110", f"the value {entry['start']} of `{pid}` is outside its "
+                                       f"range [{lo}, {hi}]",
+                               hint="widen the range so it contains the value the model has"))
+        params.append(entry)
+    section = {
+        "requested": requested, "globals": exposed, "calculated": 0, "starts": 0,
+        "heldValues": 0, "newton": False,
+        "rhsOps": FAKE_RHS_OPS + FAKE_OPS_PER_TUNABLE * len(params),
+        "rhsOpsFolded": FAKE_RHS_OPS if params else None, "initializationChecks": [],
+    }
+    return params, section, diags
+
+
 def _model_description(ident: str, guid: str, vars_: dict[str, list]) -> str:
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -183,7 +259,7 @@ def _model_description(ident: str, guid: str, vars_: dict[str, list]) -> str:
     for v in vars_["parameters"]:
         vr += 1
         lines.append(f'    <ScalarVariable name={quoteattr(v["name"])} valueReference="{vr}" '
-                     'causality="parameter" variability="tunable">'
+                     f'causality="parameter" variability="{v.get("variability", "tunable")}">'
                      f'<Real start="{v["start"]!r}"/></ScalarVariable>')
     for v in vars_["inputs"]:
         vr += 1
@@ -230,6 +306,11 @@ class FakeExportRunner:
                                  request.get("inputValues") or {})
         if diags:
             return {"status": "refused", "diagnostics": diags, "timings": timings, "notes": []}
+        settings = request.get("settings") or {}
+        tunable_params, tunable_section, tunable_diags = tunables(model, scope, settings)
+        if any(d["severity"] == "error" for d in tunable_diags):
+            return {"status": "refused", "diagnostics": tunable_diags, "timings": timings,
+                    "notes": []}
         for phase in ("flatten", "reference", "export"):
             on_phase(phase)
             await asyncio.sleep(delay)
@@ -242,8 +323,10 @@ class FakeExportRunner:
         if scope:
             name = f"{name}_{scope.replace('/', '_')}"
         ident = _c_identifier(name)
+        vars_["parameters"] = vars_["parameters"] + tunable_params
         report.update(name=name, identifier=ident, **vars_)
-        settings = request.get("settings") or {}
+        if tunable_section is not None:
+            report["tunables"] = tunable_section
         if settings.get("method") not in (None, "auto"):
             report["method"] = settings["method"]
         if settings.get("dt") is not None:
@@ -257,6 +340,7 @@ class FakeExportRunner:
                 "no inputs or outputs",
                 hint="place ExportInput blocks where the controller supplies a signal and "
                      "ExportOutput blocks on the signals to publish"))
+        diagnostics += tunable_diags
         report["diagnostics"] = diagnostics
         (export_dir / "sources").mkdir(parents=True, exist_ok=True)
         (export_dir / "sources" / "model.c").write_text(

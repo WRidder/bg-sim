@@ -1,4 +1,4 @@
-/* bg-sim FMI 2.0 Co-Simulation wrapper (hand-written, model independent; runtime 0.1.0).
+/* bg-sim FMI 2.0 Co-Simulation wrapper (hand-written, model independent; runtime 0.4.0).
  *
  * Memory: fmi2Instantiate allocates the one instance struct through the environment's
  * allocateMemory callback; nothing else is ever allocated. fmi2DoStep, fmi2GetReal and
@@ -7,6 +7,12 @@
  * Parameters and inputs are refused outside their declared [min, max] (bg_p_min/bg_u_min
  * and friends): the export proved the step stable on that range and nowhere else. Inputs are
  * held constant over a doStep (zero-order hold).
+ *
+ * Parameters (bg_p_tunable): tunable ones can be set at any time, fixed ones (picked
+ * tunables, exposed global parameters) only before fmi2ExitInitializationMode, calculated
+ * ones never. fmi2ExitInitializationMode runs bg_init once (J-EX8): the calculated
+ * parameters, starts and held values from the fixed ones, then, for a DAE, Newton on the
+ * algebraic unknowns. Nothing of it runs in fmi2DoStep.
  */
 #include <math.h>
 #include <string.h>
@@ -29,6 +35,27 @@ static fmi2Status bg_fail(bg_instance *in, fmi2Status status, const char *msg) {
         in->cb.logger(in->cb.componentEnvironment, in->name, status, "error", "%s", msg);
     if (in != NULL && status >= fmi2Error) in->state = ST_ERROR;
     return status;
+}
+
+/* A refusal that names the variable (the host's logger formats it; nothing is formatted
+   here, so no stdio is linked). */
+static fmi2Status bg_name_fail(bg_instance *in, const char *fmt, const char *name) {
+    if (in->cb.logger != NULL)
+        in->cb.logger(in->cb.componentEnvironment, in->name, fmi2Error, "error", fmt, name);
+    in->state = ST_ERROR;
+    return fmi2Error;
+}
+
+/* D-EX16: a value outside the declared range is refused, never clamped: the export proved
+   the step stable on that range only, and a silently changed value would hide the mistake. */
+static fmi2Status bg_range_fail(bg_instance *in, const char *what, const char *name, double v,
+                                double lo, double hi) {
+    if (in->cb.logger != NULL)
+        in->cb.logger(in->cb.componentEnvironment, in->name, fmi2Error, "error",
+                      "fmi2SetReal: %s %s = %g is outside its declared range [%g, %g]",
+                      what, name, v, lo, hi);
+    in->state = ST_ERROR;
+    return fmi2Error;
 }
 
 const char *fmi2GetTypesPlatform(void) { return fmi2TypesPlatform; }
@@ -88,7 +115,10 @@ fmi2Status fmi2EnterInitializationMode(fmi2Component c) {
 
 fmi2Status fmi2ExitInitializationMode(fmi2Component c) {
     if (INST->state != ST_INIT) return bg_fail(INST, fmi2Error, "fmi2ExitInitializationMode: wrong state");
-    INST->m.y_valid = 0;
+    /* J-EX8: the calculated parameters and starts from the parameters set before
+       initialization, and a consistent start of the algebraic unknowns (bg_init). */
+    if (bg_init(&INST->m) != 0)
+        return bg_fail(INST, fmi2Error, "fmi2ExitInitializationMode: no consistent start for the parameters set (the algebraic equations did not converge, or a start value is not finite)");
     INST->state = ST_STEP;
     return fmi2OK;
 }
@@ -121,17 +151,19 @@ fmi2Status fmi2SetReal(fmi2Component c, const fmi2ValueReference vr[], size_t n,
         if (r >= BG_VR_U0 && r < BG_VR_U0 + BG_NU) {
             unsigned k = r - BG_VR_U0;
             if (!(value[i] >= bg_u_min[k] && value[i] <= bg_u_max[k]))
-                return bg_fail(INST, fmi2Error, "fmi2SetReal: input outside its declared range");
+                return bg_range_fail(INST, "input", bg_u_name[k], value[i], bg_u_min[k], bg_u_max[k]);
             m->u[k] = value[i];
             continue;
         }
         if (r < BG_VR_P0 || r >= BG_VR_P0 + BG_NP)
             return bg_fail(INST, fmi2Error, "fmi2SetReal: not a parameter or an input");
         unsigned k = r - BG_VR_P0;
-        if (INST->state == ST_STEP && !bg_p_tunable[k])
-            return bg_fail(INST, fmi2Error, "fmi2SetReal: parameter is not tunable");
+        if (bg_p_tunable[k] == 2)
+            return bg_name_fail(INST, "fmi2SetReal: %s is a calculated parameter; it is computed at initialization and cannot be set", bg_p_name[k]);
+        if (bg_p_tunable[k] != 1 && INST->state != ST_INSTANTIATED && INST->state != ST_INIT)
+            return bg_name_fail(INST, "fmi2SetReal: %s is a fixed parameter; set it before fmi2ExitInitializationMode", bg_p_name[k]);
         if (!(value[i] >= bg_p_min[k] && value[i] <= bg_p_max[k]))
-            return bg_fail(INST, fmi2Error, "fmi2SetReal: parameter outside its declared range");
+            return bg_range_fail(INST, "parameter", bg_p_name[k], value[i], bg_p_min[k], bg_p_max[k]);
         m->p[k] = value[i];
     }
     m->y_valid = 0;

@@ -223,7 +223,37 @@ struct FlatModel
     signals::Vector{NamedTuple}
     diagnostics::Vector{Diagnostic}
     stats::NamedTuple
+    globals::Any                # a GlobalInfo, or nothing (a model without global parameters)
 end
+
+"""    GlobalInfo(names, order, values, exprs, units, descriptions, param_exprs, start_exprs,
+               fixed)
+
+What the flattener knows about the model's global parameters, for the C/FMU export that can
+expose them as FMU parameters (plan/GLOBAL_PARAMETERS.md, J-EX8). The flat model itself still
+holds numbers only (G7): `values` are the folded globals, and `exprs` the front-end AST of each
+global's value over other global names (`order` is the evaluation order). `param_exprs` and
+`start_exprs` map a flat parameter id and a flat variable id to the AST of the instance value
+that used a global, so a value can be recomputed from changed globals. `fixed` lists, per
+global, the uses that cannot be recomputed (a structural `@constants` value, a non-scalar
+value): such a global is not exposed (W215)."""
+struct GlobalInfo
+    names::Vector{Symbol}
+    order::Vector{Symbol}
+    values::Dict{Symbol,Any}
+    exprs::Dict{Symbol,Any}
+    units::Dict{Symbol,String}
+    descriptions::Dict{Symbol,String}
+    param_exprs::Dict{String,Any}
+    start_exprs::Dict{String,Any}
+    fixed::Dict{Symbol,Vector{String}}
+end
+
+FlatModel(name, variables, parameters, equations, initial, events, discrete, junctions,
+    connections, instances, domains, unit_factors, derived, signals, diagnostics, stats) =
+    FlatModel(name, variables, parameters, equations, initial, events, discrete, junctions,
+        connections, instances, domains, unit_factors, derived, signals, diagnostics, stats,
+        nothing)
 
 """    empty_model(name; diagnostics = Diagnostic[]) -> FlatModel
 

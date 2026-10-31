@@ -25,15 +25,20 @@
 
 The result of [`evaluate_globals`](@ref): `values` maps every global that folded to its number
 (`Int` or `Float64`), `failed` holds the declared globals that could not be evaluated, `order`
-is the evaluation (topological) order and `deps` the globals each global's expression uses."""
+is the evaluation (topological) order, `deps` the globals each global's expression uses and
+`exprs` the parsed expression (front-end AST over global names) of every global that folded,
+which the C/FMU export needs to recompute a global exposed as an FMU parameter
+(plan/GLOBAL_PARAMETERS.md)."""
 struct GlobalEnv
     values::Dict{Symbol,Any}
     failed::Set{Symbol}
     order::Vector{Symbol}
     deps::Dict{Symbol,Vector{Symbol}}
+    exprs::Dict{Symbol,Any}
 end
 
-GlobalEnv() = GlobalEnv(Dict{Symbol,Any}(), Set{Symbol}(), Symbol[], Dict{Symbol,Vector{Symbol}}())
+GlobalEnv() = GlobalEnv(Dict{Symbol,Any}(), Set{Symbol}(), Symbol[], Dict{Symbol,Vector{Symbol}}(),
+    Dict{Symbol,Any}())
 
 """Names a global parameter may not take: the predefined `t`/`Ts`, `ifelse`, the literals,
 `pi` (the editor gives it a fixed meaning), and the Julia keywords the front end would parse
@@ -297,8 +302,9 @@ function evaluate_globals(md::IR.ModelDoc)
         local_env = Dict{Symbol,Any}(d => env.values[d] for d in deps)
         value = nothing
         message = nothing
+        ast = declarations(pb, :parameters)[end].default
         try
-            value = eval_const(declarations(pb, :parameters)[end].default, local_env)
+            value = eval_const(ast, local_env)
         catch err
             message = err isa ConstFoldError ? err.message : sprint(showerror, err)
         end
@@ -318,6 +324,7 @@ function evaluate_globals(md::IR.ModelDoc)
                 hint = "check for a division by zero or an overflow"))
         else
             env.values[name] = value isa Integer ? Int(value) : Float64(value)
+            env.exprs[name] = ast
         end
     end
     return env, diags

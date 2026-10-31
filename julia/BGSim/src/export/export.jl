@@ -52,7 +52,7 @@ const MTK = ModelingToolkit
 
 """The hand-written C runtime copied into every export; bump `RUNTIME_VERSION` on any change."""
 const RUNTIME_DIR = normpath(joinpath(@__DIR__, "..", "..", "export", "runtime"))
-const RUNTIME_VERSION = "0.4.0"   # 0.4.0: J-EX9 noise draws and the delay ring
+const RUNTIME_VERSION = "0.5.0"   # 0.4.0: J-EX9 noise draws and the delay ring; 0.5.0: J-EX8 bg_init Newton
 
 """The most `delay` ring slots an exported model may hold (J-EX9): 2^20 doubles, 8 MiB of
 the instance struct. A single ring is capped at `Compile.DELAY_MAX_TICKS` already."""
@@ -74,6 +74,7 @@ include("emit_discrete.jl")
 include("emit_events.jl")
 include("analysis.jl")
 include("sparse.jl")
+include("tunables.jl")
 include("fmi2.jl")
 include("scope.jl")
 include("job.jl")
@@ -99,6 +100,9 @@ include("job.jl")
 | `symbolic_jacobian_limit` | `2e5` | the guard of `:auto`: the largest number of derivative terms the symbolic Jacobian may build (counted while it is built, W212 above it); a 120 s time limit applies as well |
 | `linear_solver` | `:auto` | Rosenbrock only: `:dense` (LU with partial pivoting), `:sparse` (static sparse LU), `:auto` (sparse above `sparse_threshold` states) |
 | `sparse_threshold` | `40` | `:auto` uses the sparse LU when the model has more states than this |
+| `tunables` | `[]` | parameters kept settable before initialization instead of folded (J-EX8, `tunables.jl`): flat parameter ids (`Motor/R`) and globals (`global:m`) |
+| `expose_globals` | `false` | expose every independent global parameter as an FMU parameter (plan/GLOBAL_PARAMETERS.md); the values computed from them are recomputed at initialization |
+| `ranges` | `{}` | id => `(min, max)` of a tunable (D-EX16; `NaN` for an open end): a parameter falls back to its catalog `min`/`max` |
 """
 Base.@kwdef struct ExportSettings
     step::Float64 = 1.0e-3
@@ -117,6 +121,9 @@ Base.@kwdef struct ExportSettings
     symbolic_jacobian_limit::Float64 = 2.0e5
     linear_solver::Symbol = :auto
     sparse_threshold::Int = 40
+    tunables::Vector{String} = String[]
+    expose_globals::Bool = false
+    ranges::Dict{String,Tuple{Float64,Float64}} = Dict{String,Tuple{Float64,Float64}}()
 end
 
 """The time guard of the symbolic Jacobian (`jacobian = :auto`); the size guard is
@@ -148,7 +155,24 @@ function ExportSettings(d::AbstractDict)
         symbolic_jacobian_limit = Float64(get_("symbolic_jacobian_limit", 2.0e5)),
         linear_solver = Symbol(lowercase(String(get_("linear_solver", "auto")))),
         sparse_threshold = Int(get_("sparse_threshold", 40)),
+        tunables = String[String(x) for x in something(get_("tunables", nothing), String[])],
+        expose_globals = Bool(something(get_("expose_globals", false), false)),
+        ranges = _settings_ranges(something(get_("ranges", nothing), Dict{String,Any}())),
     )
+end
+
+_range_end(v) = v === nothing ? NaN : Float64(v)
+
+"""The `ranges` setting from JSON: id => `[min, max]` or `{"min": .., "max": ..}`, `null` for an
+open end."""
+function _settings_ranges(d)
+    out = Dict{String,Tuple{Float64,Float64}}()
+    for (k, v) in pairs(d)
+        out[String(k)] = v isa AbstractDict ?
+            (_range_end(get(v, "min", get(v, :min, nothing))), _range_end(get(v, "max", get(v, :max, nothing)))) :
+            (_range_end(v[1]), _range_end(v[2]))
+    end
+    return out
 end
 
 """    ExportResult(ok, diagnostics, dir, report)
@@ -166,16 +190,30 @@ end
 struct ExportVar
     name::String          # the FMI name
     id::String            # the bg-sim signal or parameter id
-    kind::Symbol          # :output, :local, :parameter, :input
+    kind::Symbol          # :output, :local, :parameter, :calculated, :input
     variability::String   # FMI variability
     start::Float64        # parameters and inputs
     expr::Any             # outputs and locals: the symbolic value
     lo::Float64           # parameters and inputs: the declared range (D-EX16)
     hi::Float64
+    unit::Union{Nothing,String}         # parameters: FMI unit (documentation)
+    description::Union{Nothing,String}
 end
 
 ExportVar(name, id, kind, variability, start, expr) =
     ExportVar(name, id, kind, variability, start, expr, -Inf, Inf)
+ExportVar(name, id, kind, variability, start, expr, lo, hi) =
+    ExportVar(name, id, kind, variability, start, expr, lo, hi, nothing, nothing)
+
+"""The FMI unit of a flat parameter: its unit string, none for a dimensionless one."""
+function _param_unit(fp)
+    fp === nothing && return nothing
+    u = get(fp.attrs, :unit, nothing)
+    u isa AbstractString && !isempty(u) && u != "1" && return String(u)
+    fp.unit === nothing && return nothing
+    s = BGSim.Units.unit_string(fp.unit)
+    return isempty(s) || s == "1" ? nothing : s
+end
 
 function _range(fp)
     fp === nothing && return (-Inf, Inf)
@@ -318,6 +356,10 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     names_p = String[String(getname(p)) for p in ps]
     p0 = Float64[Float64(getp(integ, p)(integ)) for p in ps]
 
+    # J-EX8: the parameters and globals kept settable before initialization (tunables.jl).
+    tp = plan_tunables(flat, settings, lowered, diags)
+    requested = Set(tp.requested)
+
     env = Dict{Any,String}(iv => "t")
     for (i, x) in enumerate(xs)
         env[x] = "x[$(i - 1)]"
@@ -326,6 +368,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     params = ExportVar[]
     inputs = ExportVar[]
     dvals = zeros(length(held_ids))
+    held_calc = Tuple{Int,Any}[]   # held values whose initial value is calculated (J-EX8)
     folded = 0
     fold_subs = Dict{Any,Any}()    # folded parameter => value, substituted when `simplify`
     for (i, p) in enumerate(ps)
@@ -334,6 +377,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         if k !== nothing
             env[p] = "m->d[$(k - 1)]"
             dvals[k] = p0[i]
+            haskey(tp.calc, id) && push!(held_calc, (k, tp.calc[id]))
             continue
         end
         fp = get(flat_params, id, nothing)
@@ -344,8 +388,20 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
                 _range(fp)...))
             env[p] = "m->u[$(length(inputs) - 1)]"
         elseif haskey(export_param, id) || (fp !== nothing && get(fp.attrs, :tunable, false) === true)
+            haskey(tp.calc, id) && push!(diags, _w215(
+                "`$id` is tunable at runtime, so it keeps its own value instead of being computed from the exposed global parameters";
+                path = fp === nothing ? nothing : fp.origin.path))
             push!(params, ExportVar(get(export_param, id, id), id, :parameter, "tunable", p0[i],
-                nothing, _range(fp)...))
+                nothing, _range(fp)..., _param_unit(fp), nothing))
+            env[p] = "m->p[$(length(params) - 1)]"
+        elseif haskey(tp.calc, id)
+            # Computed from the exposed globals once, in fmi2ExitInitializationMode.
+            push!(params, ExportVar(id, id, :calculated, "fixed", p0[i], tp.calc[id], -Inf, Inf,
+                _param_unit(fp), nothing))
+            env[p] = "m->p[$(length(params) - 1)]"
+        elseif id in requested
+            push!(params, ExportVar(id, id, :parameter, "fixed", p0[i], nothing,
+                tp.ranges[id]..., _param_unit(fp), nothing))
             env[p] = "m->p[$(length(params) - 1)]"
         elseif settings.fold_parameters
             # The literal stays the fallback for every place the substitution does not reach
@@ -354,10 +410,32 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             fold_subs[p] = p0[i]
             folded += 1
         else
-            push!(params, ExportVar(id, id, :parameter, "fixed", p0[i], nothing, _range(fp)...))
+            push!(params, ExportVar(id, id, :parameter, "fixed", p0[i], nothing, _range(fp)...,
+                _param_unit(fp), nothing))
             env[p] = "m->p[$(length(params) - 1)]"
         end
     end
+    # The exposed globals: parameter slots no equation reads; the calculated values above are
+    # expressions over them. The FMI name is the global's own name unless that is taken.
+    let taken = Set{String}(v.name for v in vcat(params, inputs)), gi = flat.globals
+        for g in tp.globals
+            gname = String(g.name)
+            fmi_name = gname in taken || gname in markers_out ? GLOBAL_PREFIX * gname : gname
+            push!(params, ExportVar(fmi_name, GLOBAL_PREFIX * gname, :parameter, "fixed",
+                g.value, nothing, g.lo, g.hi, get(gi.units, g.name, nothing),
+                get(gi.descriptions, g.name, nothing)))
+            env[g.sym] = "m->p[$(length(params) - 1)]"
+        end
+    end
+    # A requested value must lie in its own range (the FMU would refuse its own start).
+    for v in params
+        (v.kind === :parameter && v.variability == "fixed" && haskey(tp.ranges, v.id)) || continue
+        v.lo <= v.hi && v.lo <= v.start <= v.hi && continue
+        push!(diags, diag("E110",
+            "the value $(v.start) of `$(v.id)` is outside its range [$(v.lo), $(v.hi)]";
+            scope = "export", hint = "widen the range so it contains the value the model has"))
+    end
+    any(d -> d.severity == "error", diags) && return _fail(diags, out_dir)
 
     obs_eqs = MTK.observed(sys)
     obs = (
@@ -464,6 +542,18 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     rhs_need = needed_observed(rhs, obs)
     has_t = any(iv_used, rhs) || any(k -> rhs_need[k] && iv_used(obs.rhs[k]), eachindex(obs.rhs))
     f_ops = op_count(rhs, obs)
+    # J-EX8: what keeping the tunables costs: the right-hand side with them folded as well.
+    f_ops_folded = nothing
+    if settings.simplify
+        tsubs = Dict{Any,Any}(p => p0[i] for (i, p) in enumerate(ps)
+                              if names_p[i] in requested || haskey(tp.calc, names_p[i]))
+        if !isempty(tsubs)
+            rhs2 = copy(rhs)
+            obs2 = (lhs = obs.lhs, rhs = copy(obs.rhs), names = obs.names, index = obs.index)
+            simplify_system!(tsubs, rhs2, obs2)
+            f_ops_folded = op_count(rhs2, obs2)
+        end
+    end
 
     # ---- the step
     # The analysis uses a numeric Jacobian of the compiled right-hand side, which is cheap at
@@ -498,30 +588,56 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         pattern .|= miss
         pattern_stats["patternAddedFromNumeric"] = count(miss)
     end
+    # The scan runs over q = [p; exposed globals] (J-EX8): a global moves the spectrum through
+    # the parameters calculated from it (`expand`).
+    np_ = length(p0)
+    calc_index = Dict{String,Int}(names_p[i] => i for i in eachindex(names_p)
+                                  if haskey(tp.calc, names_p[i]))
+    req_index = Dict{String,Int}(names_p[i] => i for i in eachindex(names_p)
+                                 if names_p[i] in requested)
+    q0 = vcat(p0, Float64[g.value for g in tp.globals])
+    names_q = vcat(names_p, String[GLOBAL_PREFIX * String(g.name) for g in tp.globals])
+    function expand(q)
+        p = q[1:np_]
+        isempty(tp.globals) && return p
+        sub = Dict{Any,Any}(g.sym => q[np_ + j] for (j, g) in enumerate(tp.globals))
+        for (id, i) in calc_index
+            p[i] = substitute_number(tp.calc[id], sub)
+        end
+        return p
+    end
+    jac_q = isempty(tp.globals) ? jac_fn : (x, q, t) -> jac_fn(x, expand(q), t)
     # A value the right-hand side reads only linearly (an input added to a derivative) does
     # not move the Jacobian: perturb it and look.
     function moves_jacobian(k)
         nx == 0 && return false
-        p = copy(p0)
-        p[k] = p0[k] == 0 ? 1.0 : 1.5 * p0[k]
-        J = jac_fn(x0, p, 0.0)
+        q = copy(q0)
+        q[k] = q0[k] == 0 ? 1.0 : 1.5 * q0[k]
+        J = jac_q(x0, q, 0.0)
         scale = max(1.0, maximum(abs, J0))
         return maximum(abs, J .- J0) > 1e-6 * scale
     end
     ranged = Tuple{Int,Float64,Float64}[]
     for v in vcat(params, inputs)
-        v.variability == "fixed" && continue
-        v.id in in_rhs || continue
-        k = findfirst(==(v.id), names_p)
+        v.kind === :calculated && continue
+        # A fixed parameter is scanned when the user picked it (J-EX8); the blanket
+        # `fold_parameters = false` keeps the scan at the start values.
+        v.variability == "fixed" && !(v.id in requested || startswith(v.id, GLOBAL_PREFIX)) &&
+            continue
+        startswith(v.id, GLOBAL_PREFIX) || v.id in in_rhs || continue
+        k = findfirst(==(v.id), names_q)
         moves_jacobian(k) || continue
         if isfinite(v.lo) && isfinite(v.hi)
             push!(ranged, (k, v.lo, v.hi))
         else
             isfinite(v.lo) && push!(ranged, (k, v.lo, v.lo))
             isfinite(v.hi) && push!(ranged, (k, v.hi, v.hi))
+            before_init = v.kind === :parameter && v.variability == "fixed"
             push!(diags, diag("W210",
-                "`$(v.name)` can change at runtime but has no complete range, so the step is only proven stable for the values scanned";
-                hint = "declare min and max on `$(v.id)`; the FMU then refuses values outside them"))
+                "`$(v.name)` can change $(before_init ? "before initialization" : "at runtime") but has no complete range, so the step is only proven stable for the values scanned";
+                hint = before_init ?
+                    "give `$(v.id)` a min and max in the export's tunables; the FMU then refuses values outside them" :
+                    "declare min and max on `$(v.id)`; the FMU then refuses values outside them"))
         end
     end
     # A DAE's spectrum is that of the pencil (J, M) in the compiled problem's row order; an
@@ -538,8 +654,30 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         end
     end
     scanned_jacobians = Matrix{Float64}[]
-    points = spectrum_scan(jac_fn, x0, p0, names_x, names_p, 0.0; reference_dir = reference_dir,
+    points = spectrum_scan(jac_q, x0, q0, names_x, names_q, 0.0; reference_dir = reference_dir,
         ranges = ranged, mass = mass_an, jacobians = scanned_jacobians)
+
+    # ---- J-EX8: the values recomputed once at initialization (bg_init_values), and the check
+    # that the C initialization reproduces MTK's for a changed tunable (tunables.jl)
+    psym = Dict{String,Any}(id => ps[k] for (id, k) in req_index)
+    for id in keys(calc_index)
+        psym[id] = tp.calc[id]
+    end
+    start_exprs = start_targets(flat, lowered, tp, xs, names_x, psym)
+    init_probes = check_initialization(flat, lowered, settings, tp, xs, x0, names_x, ps, names_p,
+        p0, mass_an, start_exprs, calc_index, req_index, _param_objects(integ, sys, ps, p0), diags)
+    any(d -> d.severity == "error", diags) && return _fail(diags, out_dir)
+    init_targets = Tuple{String,Any,Any}[]
+    for (k, v) in enumerate(params)
+        v.kind === :calculated && push!(init_targets, ("m->p[$(k - 1)]", v.expr, v.id))
+    end
+    for (i, e) in start_exprs
+        push!(init_targets, ("x[$(i - 1)]", e, "start of " * names_x[i]))
+    end
+    for (k, e) in held_calc
+        push!(init_targets, ("m->d[$(k - 1)]", e, held_ids[k]))
+        push!(init_targets, ("m->dprev[$(k - 1)]", e, held_ids[k]))
+    end
 
     # ---- the method and the step (D-EX7): the cheapest candidate that meets the step rule
     modes = Any[]
@@ -675,7 +813,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     # already registered its tables there.
     intrinsics = _intrinsic_context()
     _emit_model_c(cbuf, name, xs, x0, names_x, rhs, mass, jac, la, env, obs, modes, vars,
-        params, inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
+        params, inputs, held_ids, dvals, sched, ps, names_p, flat_params, events, init_targets)
     block_of = Dict(i.path => i.ref for i in flat.instances)
     for cond in modes
         path = _condition_path(cond)
@@ -748,8 +886,17 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         "heldValues" => length(held_ids), "partitions" => has_disc ? length(sched.partitions) : 0,
         "inputs" => [Dict("name" => v.name, "id" => v.id, "start" => v.start) for v in inputs],
         "outputs" => [Dict("name" => v.name, "id" => v.id) for v in vars if v.kind === :output],
-        "parameters" => [Dict("name" => v.name, "id" => v.id, "start" => v.start,
-            "variability" => v.variability) for v in params],
+        "parameters" => [_param_report(v) for v in params],
+        # J-EX8: the values settable before initialization, what is recomputed from them in
+        # fmi2ExitInitializationMode, and what keeping them costs.
+        "tunables" => Dict{String,Any}(
+            "requested" => tp.requested,
+            "globals" => [String(g.name) for g in tp.globals],
+            "calculated" => count(v -> v.kind === :calculated, params),
+            "starts" => length(start_exprs), "heldValues" => length(held_calc),
+            "newton" => nalg > 0,
+            "rhsOps" => f_ops, "rhsOpsFolded" => f_ops_folded,
+            "initializationChecks" => init_probes),
         "locals" => [v.name for v in vars if v.kind === :local],
         "spectrum" => Dict(
             "maxAbsLambda" => choice.max_abs_lambda, "atT" => choice.at_t,
@@ -771,6 +918,24 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
         JSON3.pretty(io, JSON3.write(report))
     end
     return ExportResult(true, sort_diagnostics(diags), out_dir, report)
+end
+
+"""One `parameters` entry of the report: FMI causality, the range (D-EX16), unit and, for a
+calculated parameter, the globals it is computed from."""
+function _param_report(v::ExportVar)
+    d = Dict{String,Any}("name" => v.name, "id" => v.id, "start" => v.start,
+        "variability" => v.variability,
+        "causality" => v.kind === :calculated ? "calculatedParameter" : "parameter")
+    isfinite(v.lo) && (d["min"] = v.lo)
+    isfinite(v.hi) && (d["max"] = v.hi)
+    v.unit === nothing || (d["unit"] = v.unit)
+    v.description === nothing || (d["description"] = v.description)
+    if v.kind === :calculated
+        d["dependsOn"] = sort!(unique([String(getname(s))[length(GLOBAL_PREFIX) + 1:end]
+            for s in Symbolics.get_variables(v.expr)
+            if startswith(String(getname(s)), GLOBAL_PREFIX)]))
+    end
+    return d
 end
 
 # A condition's location for W203: the instance path of its first variable.
@@ -816,6 +981,24 @@ function _dt_clock_errors(dt_setting, dt_ns, step_ns, sched, base_ns)
     return out
 end
 
+"""    _param_objects(integ, sys, ps, p0) -> p -> parameter object
+
+A copy of the integrator's parameter object with the values `p` (in the order of `ps`); only
+the entries that differ from `p0` are written."""
+function _param_objects(integ, sys, ps, p0)
+    base = deepcopy(integ.p)
+    setters = Dict{Int,Any}()
+    return function (p)
+        pobj = deepcopy(base)
+        for k in eachindex(p)
+            p[k] == p0[k] && continue
+            setter = get!(() -> SymbolicIndexingInterface.setp(sys, ps[k]), setters, k)
+            setter(pobj, p[k])
+        end
+        return pobj
+    end
+end
+
 """    _numeric_jacobian(prob, integ, sys, ps, p0) -> (x, p, t) -> Matrix
 
 A central-difference Jacobian of the compiled right-hand side `prob.f`, for the step analysis.
@@ -823,17 +1006,11 @@ A central-difference Jacobian of the compiled right-hand side `prob.f`, for the 
 written into a copy of the integrator's parameter object."""
 function _numeric_jacobian(prob, integ, sys, ps, p0)
     f = prob.f
-    base = deepcopy(integ.p)
-    setters = Dict{Int,Any}()
+    pobj_of = _param_objects(integ, sys, ps, p0)
     return function (x, p, t)
         n = length(x)
         n == 0 && return zeros(0, 0)
-        pobj = deepcopy(base)
-        for k in eachindex(p)
-            p[k] == p0[k] && continue
-            setter = get!(() -> SymbolicIndexingInterface.setp(sys, ps[k]), setters, k)
-            setter(pobj, p[k])
-        end
+        pobj = pobj_of(p)
         J = zeros(n, n)
         fp = zeros(n)
         fm = zeros(n)
@@ -912,7 +1089,7 @@ function _guid(key, settings, dt_ns, method, vars, params, inputs)
 end
 
 function _emit_model_c(io, name, xs, x0, names_x, rhs, mass, jac, la, env, obs, modes, vars,
-    params, inputs, held_ids, dvals, sched, ps, names_p, flat_params, events)
+    params, inputs, held_ids, dvals, sched, ps, names_p, flat_params, events, init_targets)
     nx = length(xs)
     println(io, "/* Generated by bg-sim (C/FMU export, runtime $(RUNTIME_VERSION)) from model `$(ccomment(name))`. Do not edit. */")
     println(io, "#include <math.h>\n#include \"model.h\"\n#include \"bg_runtime.h\"\n")
@@ -934,12 +1111,17 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, mass, jac, la, env, obs, 
     arr("bg_u_min", Float64[v.lo for v in inputs])
     arr("bg_u_max", Float64[v.hi for v in inputs])
     println(io, "const unsigned char bg_p_tunable[BG_SZ($(length(params)))] = {",
-        isempty(params) ? "0" : join([v.variability == "tunable" ? 1 : 0 for v in params], ", "), "};\n")
+        isempty(params) ? "0" : join([v.kind === :calculated ? 2 : v.variability == "tunable" ? 1 : 0
+                                      for v in params], ", "), "};")
+    # The FMI names, for the log message of a refused fmi2SetReal.
+    cstrings(vs) = isempty(vs) ? "\"\"" : join([c_string(v.name) for v in vs], ", ")
+    println(io, "const char *const bg_p_name[BG_SZ($(length(params)))] = {", cstrings(params), "};")
+    println(io, "const char *const bg_u_name[BG_SZ($(length(inputs)))] = {", cstrings(inputs), "};\n")
     for (i, n) in enumerate(names_x)
         println(io, "/* x[$(i - 1)] = $(ccomment(n)) */")
     end
     for (i, v) in enumerate(params)
-        println(io, "/* p[$(i - 1)] = $(ccomment(v.id)) ($(v.variability)) */")
+        println(io, "/* p[$(i - 1)] = $(ccomment(v.id)) ($(v.kind === :calculated ? "calculated" : v.variability)) */")
     end
     for (i, v) in enumerate(inputs)
         println(io, "/* u[$(i - 1)] = $(ccomment(v.name)) */")
@@ -961,6 +1143,13 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, mass, jac, la, env, obs, 
     emit_function(io, "void bg_outputs(const bg_model *m, double t, const double *x, double *y)",
         [("y[$(k - 1)]", v.expr, v.name) for (k, v) in enumerate(vars)], env, obs)
     emit_events(io, events, env, obs, names_x)
+
+    # J-EX8: the calculated parameters, the recomputed starts and held values, once, in
+    # fmi2ExitInitializationMode (bg_init). Every expression reads only values set before
+    # initialization (exposed globals, picked parameters), never a target of this function.
+    println(io, "/* Values computed from the parameters set before initialization (bg_init). */")
+    emit_function(io, "void bg_init_values(bg_model *m, double t, double *x)", init_targets,
+        env, (lhs = Any[], rhs = Any[], names = String[], index = Dict{Any,Int}()))
 
     sample = Tuple{String,Any,Any}[]
     if sched !== nothing
@@ -1032,7 +1221,7 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         #define BG_MODEL_IDENTIFIER "$(ident)"
         #define BG_GUID "$(guid)"
         #define BG_NX $(nx)        /* continuous states */
-        #define BG_NP $(np)        /* runtime parameters (tunable, or all unfolded ones) */
+        #define BG_NP $(np)        /* parameters: tunable, fixed (set before initialization), calculated, exposed globals */
         #define BG_NU $(nu)        /* inputs (ExportInput) */
         #define BG_ND $(nd)        /* held discrete values */
         #define BG_NI $(ni)        /* continuous values sampled by discrete code */
@@ -1110,7 +1299,11 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         extern const double bg_p0[BG_SZ(BG_NP)];
         extern const double bg_u0[BG_SZ(BG_NU)];
         extern const double bg_d0[BG_SZ(BG_ND)];
+        /* 1: tunable (settable at any time), 0: fixed (settable before initialization only),
+           2: calculated (bg_init_values computes it; never set) */
         extern const unsigned char bg_p_tunable[BG_SZ(BG_NP)];
+        extern const char *const bg_p_name[BG_SZ(BG_NP)];   /* FMI names, for log messages */
+        extern const char *const bg_u_name[BG_SZ(BG_NU)];
         /* Declared ranges; the FMI wrapper refuses values outside them, which keeps the step
            inside the range the export proved stable (D-EX16). */
         extern const double bg_p_min[BG_SZ(BG_NP)], bg_p_max[BG_SZ(BG_NP)];
@@ -1125,6 +1318,9 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         void bg_sample(const bg_model *m, double t, const double *x, double *din);
         void bg_event_conditions(const bg_model *m, double t, const double *x, double *z);
         int bg_events(bg_model *m, double t);  /* after a step: apply the events that fired */
+        /* Once, in fmi2ExitInitializationMode: the calculated parameters, starts and held values
+           from the values set before initialization (J-EX8). */
+        void bg_init_values(bg_model *m, double t, double *x);
 
         /* The linear algebra of the Rosenbrock methods: W = M - hg J with M = diag(bg_mass) and
            J from m->jac (filled by bg_jacobian), factored in place (non-zero on a bad pivot),
@@ -1141,6 +1337,10 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         void bg_reset(bg_model *m, double t_start);
         int bg_step(bg_model *m);           /* advance one BG_DT; 0 ok, nonzero error */
         void bg_update_outputs(bg_model *m);
+        /* fmi2ExitInitializationMode: bg_init_values, then (a DAE) Newton on the algebraic
+           unknowns at most BG_NEWTON_INIT times; 0 ok, nonzero when the start is not consistent
+           or not finite. Outside the hot path. */
+        int bg_init(bg_model *m);
 
         #endif
         """)

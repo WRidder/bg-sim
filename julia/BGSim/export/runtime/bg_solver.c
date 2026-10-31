@@ -1,4 +1,4 @@
-/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.3.0).
+/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.4.0).
  *
  * One call of bg_step advances exactly BG_DT:
  *   1. integrate the continuous states over [t, t + BG_DT] with the held discrete values
@@ -290,9 +290,11 @@ static int bg_alg_dense(bg_model *m) {
     return 0;
 }
 
-static void bg_project(bg_model *m, double t) {
+/* Newton on the algebraic block, at most maxit iterations: 0 once converged, -1 on a singular
+   block (z is left as it is), 1 when maxit iterations did not converge. */
+static int bg_newton(bg_model *m, double t, int maxit) {
     double *g = m->ga;
-    for (int it = 0; it < BG_NEWTON; ++it) {
+    for (int it = 0; it < maxit; ++it) {
         memset(m->jac, 0, sizeof m->jac);
         bg_jacobian(m, t, m->x, m->jac);
         bg_derivatives(m, t, m->x, m->fx);
@@ -305,19 +307,40 @@ static void bg_project(bg_model *m, double t) {
             for (int i = 0; i < BG_NALG; ++i) g[i] = r[bg_alg[i]];
         } else
 #endif
-        if (bg_alg_dense(m) != 0) return;
+        if (bg_alg_dense(m) != 0) return -1;
         int done = 1;
         for (int i = 0; i < BG_NALG; ++i) {
             double *z = &m->x[bg_alg[i]];
             *z += g[i];
             if (fabs(g[i]) > 1e-13 * (1.0 + fabs(*z))) done = 0;
         }
-        if (done) return;
+        if (done) return 0;
     }
+    return 1;
 }
-#endif
 
+static void bg_project(bg_model *m, double t) { (void)bg_newton(m, t, BG_NEWTON); }
+
+/* The consistent start (J-EX8, D-EX11 phase 2): the start values come from the export (or
+   bg_init_values), the algebraic unknowns are solved for the parameters set before
+   initialization. More iterations than after a tick: a changed parameter can move z far
+   from the exported start. Runs once, outside the hot path. */
+#define BG_NEWTON_INIT 50
+#endif /* BG_NALG > 0 */
+
+#endif /* BG_METHOD */
+
+/* Once, in fmi2ExitInitializationMode: the values computed from the parameters set before
+   initialization (generated), then, for a DAE, the algebraic unknowns by Newton. Nonzero when
+   the algebraic block is singular or does not converge, or the start is not finite. */
+int bg_init(bg_model *m) {
+    bg_init_values(m, m->t, m->x);
+#if BG_NSTAGE > 0 && BG_NALG > 0
+    if (bg_newton(m, m->t, BG_NEWTON_INIT) != 0) return -1;
 #endif
+    m->y_valid = 0;
+    return bg_finite(m->x, BG_NX) && bg_finite(m->p, BG_NP) ? 0 : -2;
+}
 
 void bg_reset(bg_model *m, double t_start) {
     memset(m, 0, sizeof *m);

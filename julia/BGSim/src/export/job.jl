@@ -50,6 +50,13 @@ function job_settings(s::AbstractDict, t_end::Real)
         d[to] = v
     end
     haskey(d, "step") || (d["step"] = default_step(t_end))
+    # J-EX8 / W-EX1: the tunables editor's picks, each with an optional range, and the
+    # "expose all globals" switch.
+    tunables = something(get(s, "tunables", nothing), Any[])
+    d["tunables"] = String[String(t["id"]) for t in tunables]
+    d["ranges"] = Dict{String,Any}(String(t["id"]) => (get(t, "min", nothing), get(t, "max", nothing))
+                                   for t in tunables)
+    d["expose_globals"] = Bool(something(get(s, "exposeGlobals", nothing), false))
     return ExportSettings(d)
 end
 

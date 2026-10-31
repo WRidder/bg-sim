@@ -566,5 +566,28 @@ export interface ExportSettings {
    * Debug option: publish every recorded signal as a read-only local variable. It does not change the interface.
    */
   exposeAll?: boolean;
+  /**
+   * The tunables editor (W-EX1, J-EX8): block parameters (flat id `Inst/param`) and global parameters (`global:<name>`) that stay FMU parameters settable before initialization (causality parameter, variability fixed) instead of being folded. Each may carry a range (D-EX16): the step is proven stable over it and the FMU refuses values outside it. Absent or empty folds every parameter (the default).
+   */
+  tunables?: ExportTunable[];
+  /**
+   * Expose every independent global parameter as an FMU parameter settable before initialization; the block parameters and starts computed from them become calculated values, recomputed in fmi2ExitInitializationMode (plan/GLOBAL_PARAMETERS.md). A range for a global comes from its entry in tunables.
+   */
+  exposeGlobals?: boolean;
+  $comment?: string;
+}
+export interface ExportTunable {
+  /**
+   * A flat parameter id (`Motor/R`, `Arm/r[2]`) or a global parameter (`global:m`).
+   */
+  id: string;
+  /**
+   * Smallest value the FMU accepts; null or absent falls back to the parameter's catalog min (none for a global).
+   */
+  min?: number | null;
+  /**
+   * Largest value the FMU accepts; null or absent falls back to the parameter's catalog max.
+   */
+  max?: number | null;
   $comment?: string;
 }

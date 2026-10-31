@@ -194,6 +194,58 @@ describe("ExportDialog", () => {
     });
   });
 
+  it("keeps picked parameters and globals tunable, with ranges, and reports their cost", async () => {
+    const withGlobals = structuredClone(model);
+    withGlobals.parameters = [
+      { name: "m", value: "2", unit: "kg", description: "carriage mass" },
+      { name: "k", value: "3*m", unit: null, description: null },
+    ];
+    act(() => useDocumentStore.getState().openDocument("demo", "plant", withGlobals));
+    const tunedJob = structuredClone(doneJob);
+    const tunedReport = fixture<NonNullable<ExportJob["report"]>>(
+      "export-report", "valid", "export-report.tunables.json",
+    );
+    tunedJob.report = { ...tunedJob.report!, parameters: tunedReport.parameters, tunables: tunedReport.tunables };
+    const calls = stubBackend([tunedJob]);
+    render(<ExportDialog />);
+    act(() => useExportDialogStore.getState().openExport(null));
+
+    // Nothing is tunable by default; one click exposes every independent global.
+    expect(screen.queryByTestId("export-tunable-table")).toBeNull();
+    expect(screen.getByTestId("export-expose-globals").textContent).toBe("Expose all globals (1)");
+    fireEvent.click(screen.getByTestId("export-expose-globals"));
+    expect(screen.getByTestId("export-tunable-row-global:m")).toBeTruthy();
+    expect((screen.getByTestId("export-expose-globals") as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId("export-tunable-open").textContent).toContain("1 tunable has an open range");
+
+    // A driven global cannot be picked; a typo is named.
+    fireEvent.change(screen.getByTestId("export-tunable-pick"), { target: { value: "global:k" } });
+    expect(screen.getByTestId("export-tunable-pick-problem").textContent).toMatch(/equation over m/);
+    expect((screen.getByTestId("export-tunable-add") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByTestId("export-tunable-pick"), { target: { value: "Nope/x" } });
+    expect(screen.getByTestId("export-tunable-pick-problem").textContent).toContain("not a parameter of this export");
+
+    // A range that leaves out the value blocks the export.
+    fireEvent.change(screen.getByTestId("export-tunable-pick"), { target: { value: "" } });
+    fireEvent.change(screen.getByTestId("export-tunable-min-global:m"), { target: { value: "3" } });
+    expect((screen.getByTestId("export-start") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(screen.getByTestId("export-tunable-min-global:m"), { target: { value: "1" } });
+    fireEvent.change(screen.getByTestId("export-tunable-max-global:m"), { target: { value: "4" } });
+    expect(screen.queryByTestId("export-tunable-open")).toBeNull();
+    fireEvent.click(screen.getByTestId("export-start"));
+    await screen.findByTestId("export-report");
+    const body = calls.find((c) => c.method === "POST")?.body as ExportRequest;
+    expect(body.settings?.tunables).toEqual([{ id: "global:m", min: 1, max: 4 }]);
+
+    const tunables = screen.getByTestId("export-report-tunables");
+    expect(within(tunables).getByTestId("export-report-parameter-m").textContent).toContain("global");
+    expect(within(tunables).getByTestId("export-report-parameter-Mass/m").textContent).toContain("calculated from m");
+    expect(screen.getByTestId("export-report-recomputed").textContent).toContain(
+      "1 calculated parameter, 1 start value",
+    );
+    expect(screen.getByTestId("export-report-tunable-cost").textContent).toContain("64 operations");
+  });
+
   it("folds a long run of one diagnostic code", async () => {
     const many = structuredClone(doneJob);
     const w203 = Array.from({ length: 14 }, (_, k) => ({

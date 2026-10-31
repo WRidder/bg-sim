@@ -123,6 +123,13 @@ mutable struct Builder
     conns_total::Int
     power_signals::Dict{String,Flat.DerivedSignal}
     globals::GlobalEnv
+    # The instance values that use a global (plan/GLOBAL_PARAMETERS.md, J-EX8): `_parse_value`
+    # leaves the expression it folded in `global_last`, and the binders file it as the
+    # expression of a parameter or a start, or as a use the C/FMU export cannot recompute.
+    global_last::Any
+    global_param_exprs::Dict{String,Any}
+    global_start_exprs::Dict{String,Any}
+    global_fixed::Dict{Symbol,Vector{String}}
 end
 
 function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
@@ -153,6 +160,10 @@ function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
         0,
         Dict{String,Flat.DerivedSignal}(),
         GlobalEnv(),
+        nothing,
+        Dict{String,Any}(),
+        Dict{String,Any}(),
+        Dict{Symbol,Vector{String}}(),
     )
 end
 
@@ -448,6 +459,8 @@ function _constant_value(
             what = "constant `$name`",
             scope = "@constants",
         )
+        _file_global_value!(b, _take_global_value!(b), :constant,
+            "constant `$name` of `$(st.path)`", String[])
         parsed === nothing && return nothing
     end
     ok, message = _check_value(parsed, t, _shape_of(t, st.consts))
@@ -716,8 +729,9 @@ function _bind_parameters!(b::Builder, st::BlockState, node::IR.ModelNode)
             st.units[name] = b.params[b.param_index[first(ids)]].unit
             continue
         end
+        gvalue = nothing
         value = if text !== nothing
-            _parse_value(
+            v = _parse_value(
                 b,
                 st,
                 text,
@@ -726,6 +740,8 @@ function _bind_parameters!(b::Builder, st::BlockState, node::IR.ModelNode)
                 what = "parameter `$name`",
                 scope = "@parameters",
             )
+            gvalue = _take_global_value!(b)
+            v
         elseif BGSim.decl_default(d) !== nothing
             ok, folded = try_eval_const(BGSim.decl_default(d), st.consts)
             if ok
@@ -769,6 +785,7 @@ function _bind_parameters!(b::Builder, st::BlockState, node::IR.ModelNode)
         end
         ids = _element_ids(_qname(st, name), shape)
         st.ids[name] = ids
+        _file_global_value!(b, gvalue, :parameter, "parameter `$name` of `$(st.path)`", ids)
         st.shapes[name] = shape
         st.units[name] = get(BGSim.Units.unit_env(st.pb).names, name, nothing)
         values = _scalar_values(value, shape)
@@ -817,6 +834,7 @@ function _bind_starts!(b::Builder, st::BlockState, node::IR.ModelNode)
             what = "start value of `$key`",
             scope = "@variables",
         )
+        gvalue = _take_global_value!(b)
         value === nothing && continue
         ok, message = _check_value(value, t, shape)
         if !ok
@@ -832,6 +850,7 @@ function _bind_starts!(b::Builder, st::BlockState, node::IR.ModelNode)
         end
         values = _scalar_values(value, shape)
         values === nothing && continue
+        _file_global_value!(b, gvalue, :start, "start of `$key` of `$(st.path)`", st.ids[name])
         for (k, id) in enumerate(st.ids[name])
             v = var_by_id(b, id)
             v === nothing || (v.start = values[k])
@@ -863,6 +882,7 @@ function _parse_value(
     what::AbstractString,
     scope,
 )
+    b.global_last = nothing
     mentioned = global_names_in(text)
     broken = [n for n in mentioned if n in b.globals.failed]
     if !isempty(broken)
@@ -951,7 +971,48 @@ function _parse_value(
         )
         return nothing
     end
+    isempty(used) || (b.global_last = (ast = ds[1].default, used = used))
     return folded
+end
+
+"""    _take_global_value!(b) -> NamedTuple or nothing
+
+The global expression the last `_parse_value` folded (`(ast, used)`), taken so that a later
+value that did not come from `_parse_value` cannot pick it up."""
+_take_global_value!(b::Builder) = (g = b.global_last; b.global_last = nothing; g)
+
+"""    _file_global_value!(b, g, what, label, ids)
+
+File the expression over globals of one instance value (plan/GLOBAL_PARAMETERS.md, J-EX8).
+A scalar parameter or start (or each element of a vector literal) keeps its expression, keyed
+by the flat id, so the C/FMU export can recompute it from globals exposed as FMU parameters.
+Anything else (a `@constants` value, which is structural and folded into the equations, or a
+non-scalar expression) is a use the export cannot recompute: the globals it mentions stay
+folded there (W215)."""
+function _file_global_value!(b::Builder, g, what::Symbol, label::AbstractString, ids)
+    g === nothing && return nothing
+    target = what === :parameter ? b.global_param_exprs :
+             what === :start ? b.global_start_exprs : nothing
+    exprs = if target === nothing
+        nothing
+    elseif length(ids) == 1 && !(g.ast isa BGSim.VectorLit || g.ast isa BGSim.MatrixLit)
+        Any[g.ast]
+    elseif g.ast isa BGSim.VectorLit && length(g.ast.elements) == length(ids)
+        Any[e for e in g.ast.elements]
+    else
+        nothing
+    end
+    if exprs === nothing
+        why = target === nothing ? "a structural constant" : "a non-scalar value"
+        for n in g.used
+            push!(get!(b.global_fixed, n, String[]), "$label ($why)")
+        end
+        return nothing
+    end
+    for (k, id) in enumerate(ids)
+        target[id] = exprs[k]
+    end
+    return nothing
 end
 
 function _check_value(value, t::BGSim.TypeSpec, shape::Union{Tuple{Vararg{Int}},Nothing})
@@ -2106,8 +2167,9 @@ function _bind_composite_parameters!(b::Builder, node::IR.ModelNode, path::Strin
             continue
         end
         text = get(node.params, String(name), nothing)
+        gvalue = nothing
         value = if text !== nothing
-            _parse_value(
+            v = _parse_value(
                 b,
                 st,
                 text,
@@ -2116,6 +2178,8 @@ function _bind_composite_parameters!(b::Builder, node::IR.ModelNode, path::Strin
                 what = "parameter `$name`",
                 scope = "@parameters",
             )
+            gvalue = _take_global_value!(b)
+            v
         elseif BGSim.decl_default(d) !== nothing
             ok, folded = try_eval_const(BGSim.decl_default(d), consts)
             if ok
@@ -2159,6 +2223,7 @@ function _bind_composite_parameters!(b::Builder, node::IR.ModelNode, path::Strin
         end
         ids = _element_ids(_qname(st, name), shape)
         unit = get(BGSim.Units.unit_env(pb).names, name, nothing)
+        _file_global_value!(b, gvalue, :parameter, "parameter `$name` of `$(path)`", ids)
         values = _scalar_values(value, shape)
         for (k, id) in enumerate(ids)
             _add_param!(

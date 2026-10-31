@@ -13,6 +13,10 @@ export type SourceKind = "stdlib" | "project" | "inline";
  */
 export type ExportReportMethod = "euler" | "rk4" | "ros2" | "ros34pw2" | "rodas4p";
 export type ExportReportMethod1 = "euler" | "rk4" | "ros2" | "ros34pw2" | "rodas4p";
+/**
+ * calculatedParameter: computed from the exposed globals in fmi2ExitInitializationMode (J-EX8); it cannot be set.
+ */
+export type ExportParameterCausality = "parameter" | "calculatedParameter";
 
 /**
  * An export job (plan/EXPORT_PLAN.md P-EX1): GET /api/exports/{id}, stored as <project>/exports/<id>/job.json. Statuses: queued (waiting for the one export slot), running, done (report and FMU), refused (the model or the scope cannot be exported: diagnostics say why), failed (an internal error), cancelled.
@@ -177,6 +181,8 @@ export interface ExportReport {
   inputs: ExportInterfaceInput[];
   outputs: ExportInterfaceOutput[];
   parameters: ExportInterfaceParameter[];
+  tunables?: ExportTunables;
+  simplify?: ExportSimplify;
   /**
    * Read-only variables of the expose-all debug option.
    */
@@ -221,10 +227,96 @@ export interface ExportInterfaceOutput {
   $comment?: string;
 }
 export interface ExportInterfaceParameter {
+  /**
+   * The FMI variable name.
+   */
   name: string;
+  /**
+   * The flat parameter id (`Motor/R`), or `global:<name>` for an exposed global parameter.
+   */
   id: string;
   start?: number;
+  /**
+   * tunable (settable at any time), fixed (settable before initialization only; a calculated parameter is fixed as well).
+   */
   variability?: string;
+  causality?: ExportParameterCausality;
+  /**
+   * The declared range (D-EX16); the FMU refuses values outside it.
+   */
+  min?: number;
+  max?: number;
+  unit?: string;
+  description?: string;
+  /**
+   * A calculated parameter: the exposed global parameters it is computed from.
+   */
+  dependsOn?: string[];
+  $comment?: string;
+}
+/**
+ * J-EX8: the values settable before initialization and what fmi2ExitInitializationMode recomputes from them, with what keeping them costs (rhsOps against rhsOpsFolded).
+ */
+export interface ExportTunables {
+  /**
+   * The block parameters kept as fixed FMU parameters.
+   */
+  requested?: string[];
+  /**
+   * The exposed global parameters.
+   */
+  globals?: string[];
+  /**
+   * Calculated parameters.
+   */
+  calculated?: number;
+  /**
+   * Start values recomputed at initialization.
+   */
+  starts?: number;
+  /**
+   * Held discrete values recomputed at initialization.
+   */
+  heldValues?: number;
+  /**
+   * A DAE: the algebraic unknowns are solved by Newton at initialization.
+   */
+  newton?: boolean;
+  /**
+   * Operations of one right-hand-side evaluation, as exported.
+   */
+  rhsOps?: number;
+  /**
+   * The same with the tunables folded as well (null: nothing to compare).
+   */
+  rhsOpsFolded?: number | null;
+  /**
+   * The probes of the initialization check: the C initialization against MTK's for changed values (E110 when they differ).
+   */
+  initializationChecks?: ExportInitializationCheck[];
+  $comment?: string;
+}
+export interface ExportInitializationCheck {
+  ids?: string[];
+  values?: number[];
+  maxStartDeviation?: number;
+  $comment?: string;
+}
+/**
+ * D-EX10: what substituting the folded values and simplifying saved (operations, Jacobian and LU non-zeros, LU flops, before and after).
+ */
+export interface ExportSimplify {
+  enabled?: boolean;
+  rhsOpsBefore?: number;
+  rhsOps?: number;
+  seconds?: number;
+  constantObserved?: number;
+  jacobianNnzBefore?: number;
+  jacobianNnz?: number;
+  luNnzBefore?: number;
+  luNnz?: number;
+  luFlopsBefore?: number;
+  luFlops?: number;
   $comment?: string;
 }
 /**

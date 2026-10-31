@@ -342,3 +342,6 @@ include("test_export_noise_delay.jl")
 
 # D-EX10: folded parameters substituted and simplified before the Jacobian and the C code.
 include("test_export_simplify.jl")
+
+# J-EX8: parameters and global parameters set before initialization (bg_init in C).
+include("test_export_tunables.jl")

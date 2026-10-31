@@ -163,6 +163,46 @@ def test_refusals_are_diagnostics_not_failures(client, schema_validate) -> None:
     assert [(d["code"], d["path"]) for d in doc["diagnostics"]] == [("E110", "Plant/Table")]
 
 
+def test_tunables_and_exposed_globals(client, fake_settings, schema_validate) -> None:
+    """J-EX8 / W-EX1: picked parameters and globals become fixed FMU parameters with a range."""
+    body = _request()
+    body["model"]["parameters"] = [
+        {"name": "m", "value": "2.0", "unit": "kg", "description": "mass"},
+        {"name": "k", "value": "4*m"},
+    ]
+    body["settings"] = {"method": "rk4", "dt": 0.0001,
+                        "tunables": [{"id": "Plant/Load/r", "min": 1.0, "max": 4.0},
+                                     {"id": "Plant/Nope/r"}],
+                        "exposeGlobals": True}
+    doc = _wait(client, _start(client, body))
+    schema_validate("export-job", doc)
+    assert doc["status"] == "done", doc
+    report = doc["report"]
+    params = {p["id"]: p for p in report["parameters"]}
+    assert params["Plant/Load/r"] == {"name": "Plant/Load/r", "id": "Plant/Load/r", "start": 2.0,
+                                      "variability": "fixed", "causality": "parameter",
+                                      "min": 1.0, "max": 4.0}
+    assert params["global:m"]["name"] == "m" and params["global:m"]["unit"] == "kg"
+    assert "global:k" not in params  # a driven global is recomputed, never set
+    tunables = report["tunables"]
+    assert tunables["requested"] == ["Plant/Load/r"] and tunables["globals"] == ["m"]
+    assert tunables["rhsOps"] > tunables["rhsOpsFolded"]
+    w215 = [d["message"] for d in doc["diagnostics"] if d["code"] == "W215"]
+    assert any("Plant/Nope/r" in m for m in w215) and any("global:k" in m for m in w215)
+    job_dir = fake_settings.projects_root / "demo" / "exports" / doc["id"]
+    stored = json.loads((job_dir / "request.json").read_text(encoding="utf-8"))
+    assert stored["settings"]["tunables"][0] == {"id": "Plant/Load/r", "min": 1.0, "max": 4.0}
+
+    # A range that leaves out the model's value is refused (E110), like the real exporter.
+    body["settings"]["tunables"] = [{"id": "Plant/Load/r", "min": 3.0, "max": 4.0}]
+    doc = _wait(client, _start(client, body))
+    assert doc["status"] == "refused"
+    assert [d["code"] for d in doc["diagnostics"] if d["severity"] == "error"] == ["E110"]
+    # A malformed id never reaches the runner.
+    body["settings"]["tunables"] = [{"id": "R"}]
+    assert client.post("/api/projects/demo/models/plant/export", json=body).status_code == 422
+
+
 def test_cancel_a_running_export(client, monkeypatch) -> None:
     monkeypatch.setenv("BGSIM_FAKE_EXPORT_S", "1.0")
     store = exports._store_for(client.app)
