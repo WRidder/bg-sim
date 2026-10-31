@@ -353,7 +353,7 @@ All ports are `Electrical`: voltage \[V\] and current \[A\].
 | Ideal switch | `p`, `n`, input `ctrl` (Bool) | `R_on`, `G_off` | v0.1 |
 | Ideal transformer | `p1`, `n1`, `p2`, `n2` | turns ratio | v0.1 |
 | Ideal op-amp | `in_p`, `in_n`, `out` | none | v0.2 |
-| Averaged H-bridge | `dc_p`, `dc_n`, `out_p`, `out_n`, input `duty` | none | v0.2 |
+| Averaged H-bridge | `dc_p`, `dc_n`, `out_p`, `out_n`, input `duty` | `R_on`, current limit; see "Motion profiles and drive electronics" | v0.1 |
 | Battery (equivalent circuit) | `p`, `n` | capacity, `R_internal`, OCV table | v0.2 |
 
 ### Mechanical translation and rotation
@@ -513,6 +513,33 @@ Converters are the only components with ports in two domains, which is what lets
 | Export parameter | none | name, links to a tunable parameter | v0.1 |
 
 Export inputs and outputs define the interface of the generated step function, the FMU and the ctrlX Data Layer nodes, so their names are what the controller, SIL harness and 3D bindings refer to. In simulation an export input is a constant source; the pass-through form passes its wired input through (`y = u`), so a model keeps its own stimulus, and the export cuts that wire so the host supplies the signal. A simulation can also drive an export input from a sampled trajectory, held constant between samples as an FMU host does.
+
+### Motion profiles and drive electronics
+
+Setpoint generators for point-to-point moves (as in 20-sim's motion profile library and Simulink's trajectory blocks) and the electronics between a controller and a motor. They are the `motion` group of the library.
+
+| Block | Ports | Key parameters | Release |
+| --- | --- | --- | --- |
+| Trapezoidal profile | outputs `q`, `v`, `a` | `q_start`, `q_end`, `t_start`, `v_max`, `a_max`; triangular when `v_max` is not reached | v0.1 |
+| S-curve profile (jerk-limited, 7 segments) | outputs `q`, `v`, `a`, `jerk` | as trapezoidal, plus `j_max` | v0.1 |
+| Cycloidal profile | outputs `q`, `v`, `a`, `jerk` | `q_start`, `q_end`, `t_start`, `duration` | v0.1 |
+| Polynomial profile (3-4-5 quintic) | outputs `q`, `v`, `a`, `jerk` | `q_start`, `q_end`, `t_start`, `duration` | v0.1 |
+| Harmonic profile | outputs `q`, `v`, `a` | `q_start`, `q_end`, `t_start`, `duration` | v0.1 |
+| PWM | input `u` (duty 0..1), output `y` | `frequency` \[Hz\], `high`, `low`, `t_start` | v0.1 |
+| PWM average | input `u`, output `y` | `high`, `low` | v0.1 |
+| Encoder | input `u` \[rad\]; outputs `counts` (whole number), `y` \[rad\], `index` (Bool) | `cpr`; clock `sample_period` | v0.1 |
+| ADC | input `u`; outputs `y`, `code` (whole number) | `bits`, `u_min`, `u_max`; clock `sample_period` | v0.1 |
+| DAC | input `u` (value or code), output `y` | `bits`, `y_min`, `y_max`, `input`; clock `sample_period` | v0.1 |
+| Power amplifier | Electrical `p`, `n`; input `u`; outputs `i`, `v` | `gain`, `V_max`, `R_out`, `I_max`, `R_limit` | v0.1 |
+| Averaged H-bridge | Electrical `dc_p`, `dc_n`, `out_p`, `out_n`; input `duty` (-1..1); outputs `i`, `i_dc` | `R_on`, `I_max`, `R_limit` | v0.1 |
+
+**Profiles.** Every profile moves from `q_start` (its output before `t_start`) to `q_end`, at rest at both ends, and outputs `q_end` exactly once the move has ended; a move with `q_end < q_start` runs backwards. Position and velocity are always continuous; the acceleration is continuous for the S-curve, cycloidal and polynomial profiles and jumps for the trapezoidal and harmonic ones. The S-curve reaches `a_max` and `v_max` when the distance allows it; a shorter move drops the cruise segment, then the constant-acceleration segments, and lowers the peaks so the distance is covered exactly. Positions carry no unit: the profiles drive a translation in m or a rotation in rad alike, with velocities in position units per second. Every segment switch is an exact event: the switch time is written as one product (`2*(0.5*t_start + 0.5*T)`), so the event condition `t - b` is exactly zero at the switch, even on an output-grid time.
+
+**PWM.** The carrier is a sawtooth at `frequency`; each period starts `high` and switches `low` once the carrier phase reaches the duty `clamp(u, 0, 1)` (natural sampling: a varying duty moves the falling edge). Both edge families are exact events, built as in `Trapezoid`; every edge counts towards the run's `event_limit`. `PWMAverage` is the mean over a period, `low + (high - low)·clamp(u, 0, 1)`, without switching events. A bipolar switched H-bridge is a `PWM` with `low = -1`, `high = 1` driving the bridge's `duty`.
+
+**Converters.** `Encoder`, `ADC` and `DAC` run on their own clock and hold their outputs between ticks. The encoder outputs `floor(u·cpr/2π)` counts and the angle `counts·2π/cpr` they stand for; `index` is true during the first count of every revolution. The ADC and the DAC use the `2^bits` levels from the lower to the upper end of their range (`lsb = range/(2^bits − 1)`), round half away from zero and clip at the range; the DAC takes a value (`input = 0`) or a code (`input = 1`).
+
+**Power stages.** The power amplifier is a signal-controlled voltage source, `v = clamp(gain·u, −V_max, V_max) − R_out·i − R_limit·deadzone(i, I_max)`, with `i` the current it drives out of `p`. The current limit is a fold-back slope, so the amplifier stays a voltage source (effort out) for an inductive load; the default `I_max = 1e12` A is no limit. The averaged H-bridge is a power-conserving modulated transformer from the DC bus to the load with the conduction resistance `R_on` and the same optional limit: `v_out = d·v_dc − R_on·i − …`, `i_dc = d·i`, `d = clamp(duty, −1, 1)`. Its output can never exceed the bus voltage.
 
 ## Global parameters
 

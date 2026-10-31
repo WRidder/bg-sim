@@ -38,6 +38,7 @@ const GROUPS = (
     (dir = "multibond", name = "Multibond", icon_prefix = "mb"),
     (dir = "planar", name = "Planar mechanics", icon_prefix = "pl"),
     (dir = "drives", name = "Drives", icon_prefix = "drv"),
+    (dir = "motion", name = "Motion and drive electronics", icon_prefix = "mot"),
     (dir = "spatial", name = "Spatial mechanics", icon_prefix = "sp"),
     (dir = "contact", name = "Contact", icon_prefix = "ct"),
 )
@@ -861,6 +862,55 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:drives/ReactionWheel" => (
         description = "Voltage-driven reaction wheel: a DC motor between a free housing port and an absolute wheel inertia, with the reaction -tau on the housing and the back-EMF on the rate relative to the housing; taps for current, wheel rate and momentum, torque and power.",
         icon = "drv-reaction-wheel",
+    ),
+    # Motion profiles (setpoint generators) and drive electronics.
+    "stdlib:motion/ADC" => (
+        description = "Analog-to-digital converter: samples the input, clips it to u_min..u_max and rounds it to one of 2^bits levels; outputs the held level and the integer code.",
+        icon = "mot-adc",
+    ),
+    "stdlib:motion/CycloidalProfile" => (
+        description = "Cycloidal point-to-point move from q_start to q_end in duration seconds; position, velocity, acceleration (continuous) and jerk outputs.",
+        icon = "mot-cycloidal-profile",
+    ),
+    "stdlib:motion/DAC" => (
+        description = "Digital-to-analog converter with zero-order hold: quantizes a value (or takes a code) to one of 2^bits levels between y_min and y_max and holds it.",
+        icon = "mot-dac",
+    ),
+    "stdlib:motion/Encoder" => (
+        description = "Incremental rotary encoder: the shaft angle sampled as whole counts (counts per revolution), the quantized angle and the once-per-revolution index pulse.",
+        icon = "mot-encoder",
+    ),
+    "stdlib:motion/HarmonicProfile" => (
+        description = "Harmonic (cosine) point-to-point move from q_start to q_end in duration seconds; position, velocity and acceleration outputs.",
+        icon = "mot-harmonic-profile",
+    ),
+    "stdlib:motion/HBridge" => (
+        description = "Averaged H-bridge between a DC bus and a load: the duty (-1..1) scales the bus voltage onto the output and the current back onto the bus; conduction resistance and an optional current limit.",
+        icon = "mot-h-bridge",
+    ),
+    "stdlib:motion/PolynomialProfile" => (
+        description = "Quintic (3-4-5 polynomial) point-to-point move from q_start to q_end in duration seconds, at rest at both ends; position, velocity, acceleration and jerk outputs.",
+        icon = "mot-polynomial-profile",
+    ),
+    "stdlib:motion/PowerAmplifier" => (
+        description = "Signal-controlled voltage source for a motor winding: gain*u clamped to the supply limit V_max, an output resistance and an optional fold-back current limit.",
+        icon = "mot-power-amplifier",
+    ),
+    "stdlib:motion/PWM" => (
+        description = "Pulse-width modulator: a sawtooth carrier at frequency compared with the duty input (0..1) gives a switched high/low output with exact edge events.",
+        icon = "mot-pwm",
+    ),
+    "stdlib:motion/PWMAverage" => (
+        description = "Averaged PWM: the mean of the switched output over a carrier period, low + (high - low)*duty, without the switching events.",
+        icon = "mot-pwm-average",
+    ),
+    "stdlib:motion/SCurveProfile" => (
+        description = "Jerk-limited (seven-segment S-curve) point-to-point move within v_max, a_max and j_max; position, velocity, acceleration and jerk outputs, exact segment switches.",
+        icon = "mot-s-curve-profile",
+    ),
+    "stdlib:motion/TrapezoidalProfile" => (
+        description = "Trapezoidal-velocity point-to-point move within v_max and a_max (triangular when v_max is not reached); position, velocity and acceleration outputs, exact segment switches.",
+        icon = "mot-trapezoidal-profile",
     ),
     # J-MB9: the spatial composites (one port per body, one scalar port per joint axis, the
     # domain from the screw, and the compliant-pivot formulation as the default; D-MB4,

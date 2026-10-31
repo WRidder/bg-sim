@@ -82,6 +82,37 @@ describe("block icons", () => {
     expect(glyphs.size).toBe(sourceIcons.length);
   });
 
+  it("draws an explicit, distinct glyph for every motion and drive-electronics block", () => {
+    // The icon ids of stdlib/motion (src/library/catalog.jl); none shares a drawing with
+    // another motion block or with a signal source.
+    const motionIcons = [
+      "mot-adc",
+      "mot-cycloidal-profile",
+      "mot-dac",
+      "mot-encoder",
+      "mot-h-bridge",
+      "mot-harmonic-profile",
+      "mot-polynomial-profile",
+      "mot-power-amplifier",
+      "mot-pwm",
+      "mot-pwm-average",
+      "mot-s-curve-profile",
+      "mot-trapezoidal-profile",
+    ];
+    const ids = new Set(svgIconIds());
+    const strip = (icon: string) =>
+      renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />).replace(/(aria-label|data-icon)="[^"]*"/g, "");
+    const glyphs = new Set<string>();
+    for (const icon of motionIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      glyphs.add(strip(icon));
+    }
+    expect(glyphs.size).toBe(motionIcons.length);
+    for (const icon of ["src-trapezoid", "src-pulse", "cont-gain", "conv-angle-sensor"]) {
+      expect(glyphs.has(strip(icon)), icon).toBe(false);
+    }
+  });
+
   it("falls back to a placeholder for an unknown icon id", () => {
     expect(hasIcon("no-such-icon")).toBe(false);
     const html = renderToStaticMarkup(<BlockIcon icon="no-such-icon" name="Mystery" />);

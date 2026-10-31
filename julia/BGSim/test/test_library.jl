@@ -316,7 +316,23 @@ const SIGNAL_SOURCE_REFS = [
     "stdlib:sources/UniformNoise",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS))
+# Motion profiles (setpoint generators) and drive electronics: the `motion` group.
+const MOTION_REFS = [
+    "stdlib:motion/ADC",
+    "stdlib:motion/CycloidalProfile",
+    "stdlib:motion/DAC",
+    "stdlib:motion/Encoder",
+    "stdlib:motion/HarmonicProfile",
+    "stdlib:motion/HBridge",
+    "stdlib:motion/PolynomialProfile",
+    "stdlib:motion/PowerAmplifier",
+    "stdlib:motion/PWM",
+    "stdlib:motion/PWMAverage",
+    "stdlib:motion/SCurveProfile",
+    "stdlib:motion/TrapezoidalProfile",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -554,6 +570,63 @@ const INTERFACE_FIELDS = [
         @test [p.name for p in recorder.interface.parameters] == ["decimation"]
         @test recorder.interface.parameters[1].type == "Int"
         @test recorder.interface.parameters[1].min == 1
+    end
+
+    @testset "motion profiles and drive electronics" begin
+        # The interfaces the editor, the spec table and the manual show; the golden tests
+        # (test/golden/motion) check the behaviour.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        b(name) = blocks["stdlib:motion/" * name]
+        params(name) = [p.name for p in b(name).interface.parameters]
+        outs(name) = [(o.name, o.type) for o in b(name).interface.outputs]
+        ins(name) = [i.name for i in b(name).interface.inputs]
+        for ref in MOTION_REFS
+            @test isempty(blocks[ref].diagnostics)
+            @test group_info("motion").name == blocks[ref].group
+        end
+        @test group_info("motion").name == "Motion and drive electronics"
+        for name in ("TrapezoidalProfile", "SCurveProfile", "CycloidalProfile",
+                     "PolynomialProfile", "HarmonicProfile")
+            @test isempty(ins(name))
+            @test isempty(b(name).interface.ports)
+            @test params(name)[1:3] == ["q_start", "q_end", "t_start"]
+            @test only(p for p in b(name).interface.parameters if p.name == "t_start").unit == "s"
+        end
+        @test params("TrapezoidalProfile") == ["q_start", "q_end", "t_start", "v_max", "a_max"]
+        @test params("SCurveProfile") == ["q_start", "q_end", "t_start", "v_max", "a_max", "j_max"]
+        for name in ("CycloidalProfile", "PolynomialProfile", "HarmonicProfile")
+            @test params(name) == ["q_start", "q_end", "t_start", "duration"]
+        end
+        @test outs("TrapezoidalProfile") == [("q", "Real"), ("v", "Real"), ("a", "Real")]
+        @test outs("HarmonicProfile") == [("q", "Real"), ("v", "Real"), ("a", "Real")]
+        for name in ("SCurveProfile", "CycloidalProfile", "PolynomialProfile")
+            @test outs(name) == [("q", "Real"), ("v", "Real"), ("a", "Real"), ("jerk", "Real")]
+        end
+        @test params("PWM") == ["frequency", "high", "low", "t_start"]
+        @test b("PWM").interface.parameters[1].unit == "Hz"
+        @test params("PWMAverage") == ["high", "low"]
+        @test ins("PWM") == ins("PWMAverage") == ["u"]
+        # The sampled converters: a structural clock, integer resolution parameters.
+        for name in ("Encoder", "ADC", "DAC")
+            @test [(c.name, c.structural) for c in b(name).interface.constants] ==
+                  [("sample_period", true)]
+        end
+        @test params("Encoder") == ["cpr"]
+        @test b("Encoder").interface.parameters[1].type == "Int"
+        @test outs("Encoder") == [("counts", "Real"), ("y", "Real"), ("index", "Bool")]
+        @test params("ADC") == ["bits", "u_min", "u_max"]
+        @test outs("ADC") == [("y", "Real"), ("code", "Real")]
+        @test params("DAC") == ["bits", "y_min", "y_max", "input"]
+        @test b("DAC").interface.parameters[4].options == ["value", "code"]
+        # The power electronics: electrical ports, a command input, current taps.
+        @test [(p.name, p.domain) for p in b("PowerAmplifier").interface.ports] ==
+              [("p", "Electrical"), ("n", "Electrical")]
+        @test params("PowerAmplifier") == ["gain", "V_max", "R_out", "I_max", "R_limit"]
+        @test [(p.name, p.domain) for p in b("HBridge").interface.ports] ==
+              [("dc_p", "Electrical"), ("dc_n", "Electrical"), ("out_p", "Electrical"),
+               ("out_n", "Electrical")]
+        @test ins("HBridge") == ["duty"]
+        @test params("HBridge") == ["R_on", "I_max", "R_limit"]
     end
 
     @testset "the common signal sources" begin

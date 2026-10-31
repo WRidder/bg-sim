@@ -348,3 +348,6 @@ include("test_export_tunables.jl")
 
 # The signal sources (Sawtooth, Triangle, Trapezoid, RepeatingTable, ...) in the C export.
 include("test_export_sources.jl")
+
+# The motion profiles and drive electronics (stdlib/motion) in the C export.
+include("test_export_motion.jl")

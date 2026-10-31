@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "motion-servo",
+  "models": [
+    "position-loop"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

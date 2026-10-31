@@ -1,0 +1,80 @@
+{
+  "project": "motion-servo",
+  "description": "Motion profiles and drive electronics example. A DC motor follows a jerk-limited S-curve of one revolution (0 -> 2 pi rad from 0.1 s, v_max 20 rad/s, a_max 200 rad/s^2, j_max 4000 rad/s^3, end at 0.564 s) under a 1 ms discrete PD on a 4096-count encoder, commanding the duty of an averaged H-bridge on a 24 V bus.",
+  "models": {
+    "position-loop": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "Ref/q",
+          "t": 1.0,
+          "value": 6.283185307179586,
+          "rtol": 1e-12,
+          "note": "the S-curve ends exactly at q_end = 2 pi"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ref/v",
+          "t": 0.3,
+          "value": 20.0,
+          "rtol": 1e-12,
+          "note": "the cruise at v_max from 0.25 s to 0.414 s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ref/a",
+          "from_t": 0.0,
+          "to_t": 1.0,
+          "value": 200.0,
+          "rtol": 1e-9,
+          "note": "the move is long enough to reach a_max"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/y",
+          "from_t": 0.0,
+          "to_t": 1.0,
+          "value": 0.03,
+          "note": "tracking error during the move (measured 0.0176 rad at 0.448 s, no velocity feedforward)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/y",
+          "from_t": 0.6,
+          "to_t": 1.0,
+          "value": 0.005,
+          "note": "after the move the loop holds the target within a few encoder counts (1 count = 1.53 mrad; measured 1.53 mrad)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Angle/y",
+          "t": 1.0,
+          "value": 6.283185307179586,
+          "abs": 0.005,
+          "note": "the true shaft angle at the end (measured 6.28367 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Bridge/i",
+          "from_t": 0.0,
+          "to_t": 1.0,
+          "value": 3.0,
+          "note": "winding current (measured peak 1.41 A); the duty stays far inside -1..1"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "PD/y",
+          "from_t": 0.0,
+          "to_t": 1.0,
+          "value": 0.5,
+          "note": "the duty command (measured peak 0.155)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E101", "E102", "E103", "E106", "W206"],
+          "note": "no solver failure, no connection or causality error and no event-limit stop"
+        }
+      ]
+    }
+  }
+}
