@@ -1,0 +1,376 @@
+{
+  "project": "suction-gripper",
+  "description": "A six-cup bellows vacuum gripper (stdlib SuctionCup, VacuumGenerator) moves a 10 kg carton 1 m: pick, lift, transfer, lower, place. Every model is the same plant with other global parameters (separate-generators adds a generator per cup). design/design.py derives the operating vacuum, the holding limits, the pick-up and the shortest safe move per profile, yaw, tilt and porosity; the checks pin the claims of each scenario against those numbers.",
+  "models": {
+    "transfer": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup1/dp",
+          "t": 0.05,
+          "value": 18063.5,
+          "rtol": 0.001,
+          "note": "pick-up: the vacuum build-up 50 ms after the valve opens matches the lumped manifold + six-cup ODE of design/sizing.py (18.06 kPa)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup1/dp",
+          "t": 0.9,
+          "value": 48329.9,
+          "rtol": 0.001,
+          "note": "operating vacuum: the 60 l/min ejector curve meets the leak demand (lip roughness + Darcy flow through cardboard, 6 cups) at 48.33 kPa per cup (sizing.operating_vacuum)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gen/Q",
+          "t": 0.9,
+          "value": 0.00019304,
+          "rtol": 0.005,
+          "note": "the generator delivers the total leak flow of the six cups, 11.6 l/min of free air, at the operating point"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup1/U",
+          "from_t": 0.9564,
+          "to_t": 3.0064,
+          "value": 0.5,
+          "note": "the 1.75 s S-curve transfer keeps every cup's utilisation U at or below 1/S = 0.5 (safety factor 2): the shortest such S-curve move found by design.py is 1.69 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup2/U",
+          "from_t": 0.9564,
+          "to_t": 3.0064,
+          "value": 0.5,
+          "note": "cup 2: the same bound"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup3/U",
+          "from_t": 0.9564,
+          "to_t": 3.0064,
+          "value": 0.5,
+          "note": "cup 3: the same bound"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup4/U",
+          "from_t": 0.9564,
+          "to_t": 3.0064,
+          "value": 0.5,
+          "note": "cup 4: the same bound"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup5/U",
+          "from_t": 0.9564,
+          "to_t": 3.0064,
+          "value": 0.5,
+          "note": "cup 5: the same bound"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup6/U",
+          "from_t": 0.9564,
+          "to_t": 3.0064,
+          "value": 0.5,
+          "note": "cup 6: the same bound"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held",
+          "from_t": 0.0,
+          "to_t": 3.366,
+          "value": 0.5,
+          "note": "the parcel stays on the gripper until the release"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/n_lost",
+          "from_t": 0.0,
+          "to_t": 3.366,
+          "value": 0.5,
+          "note": "no cup loses its seal before the release"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Pose/px",
+          "t": 4.15,
+          "value": 1.0,
+          "abs": 0.005,
+          "note": "the parcel is placed on the place mark, 1 m from the pick position"
+        }
+      ]
+    },
+    "aggressive-trapezoid": {
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/n_lost",
+          "from_t": 0.0,
+          "to_t": 1.423,
+          "value": 0.5,
+          "note": "the parcel survives the acceleration and the cruise of the 0.7 s trapezoid (9.2 m/s^2) ..."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/n_lost",
+          "t": 2.3,
+          "value": 6.0,
+          "abs": 1e-06,
+          "note": "... but the acceleration step at the deceleration rings the bellows: the cups peel one after the other and all six lose their seal"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/held",
+          "t": 2.3,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "the parcel is dropped before the place position"
+        }
+      ]
+    },
+    "aggressive-scurve": {
+      "checks": [
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held",
+          "from_t": 0.0,
+          "to_t": 2.316,
+          "value": 0.5,
+          "note": "the same 0.7 s transfer as an S-curve (13.1 m/s^2 peak, 43 % more than the trapezoid, but finite jerk) keeps the parcel"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/n_lost",
+          "from_t": 0.0,
+          "to_t": 2.316,
+          "value": 0.5,
+          "note": "no cup loses its seal before the release"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Pose/px",
+          "t": 3.1,
+          "value": 0.989,
+          "abs": 0.01,
+          "note": "the parcel arrives (it slides about 1 cm on the lips during the hard deceleration)"
+        }
+      ]
+    },
+    "tilt-tray": {
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup1/U",
+          "from_t": 0.9564,
+          "to_t": 2.5064,
+          "value": 0.5,
+          "note": "the 1.25 s cycloidal move (4.0 m/s^2) with the gripper tilted along the specific force keeps U <= 0.5; held level the same move reaches U = 0.62 (design.py)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup2/U",
+          "from_t": 0.9564,
+          "to_t": 2.5064,
+          "value": 0.5,
+          "note": "cup 2: the same bound"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup3/U",
+          "from_t": 0.9564,
+          "to_t": 2.5064,
+          "value": 0.5,
+          "note": "cup 3: the same bound"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup4/U",
+          "from_t": 0.9564,
+          "to_t": 2.5064,
+          "value": 0.5,
+          "note": "cup 4: the same bound"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup5/U",
+          "from_t": 0.9564,
+          "to_t": 2.5064,
+          "value": 0.5,
+          "note": "cup 5: the same bound"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup6/U",
+          "from_t": 0.9564,
+          "to_t": 2.5064,
+          "value": 0.5,
+          "note": "cup 6: the same bound"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Path/theta",
+          "value": 0.2645,
+          "rtol": 0.01,
+          "note": "the tilt servo turns the gripper up to 15.2 deg (atan(4.0/9.81) = 22 deg commanded, saturated by th_max = 20 deg through tanh)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held",
+          "from_t": 0.0,
+          "to_t": 2.866,
+          "value": 0.5,
+          "note": "the parcel stays on the gripper"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/n_lost",
+          "from_t": 0.0,
+          "to_t": 2.866,
+          "value": 0.5,
+          "note": "no cup loses its seal before the release"
+        }
+      ]
+    },
+    "porous-undersized": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Cup1/dp",
+          "t": 0.9,
+          "value": 21550.9,
+          "rtol": 0.002,
+          "note": "porous parcel on a 36 l/min generator: the Darcy flow through the material (2e-6 m/(s*Pa)) pulls the operating vacuum down to 21.6 kPa, where the generator curve meets the leak demand (sizing.operating_vacuum)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Gen/Q",
+          "t": 0.9,
+          "value": 0.00038252,
+          "rtol": 0.005,
+          "note": "the generator runs at 64 % of its free flow just to feed the leaks"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/n_lost",
+          "from_t": 0.0,
+          "to_t": 1.7564,
+          "value": 0.5,
+          "note": "it survives the lift and the acceleration of the 1.2 s move ..."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/held",
+          "t": 2.8,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "... and is lost in the deceleration (4.5 m/s^2); with the 60 l/min generator (29 kPa) the same move holds (design.py)"
+        }
+      ]
+    },
+    "edge-leak": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Cup1/dp",
+          "t": 0.34,
+          "value": 1868.2,
+          "rtol": 0.01,
+          "note": "cup 1 over the parcel edge (20 mm^2 extra leak) cannot build vacuum (analytic 1.87 kPa) ..."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup3/dp",
+          "t": 0.34,
+          "value": 16660.2,
+          "rtol": 0.01,
+          "note": "... and through the common manifold its leak flow pulls every other cup down to 16.7 kPa (analytic operating point)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/n_lost",
+          "t": 1.0,
+          "value": 6.0,
+          "abs": 1e-06,
+          "note": "16.7 kPa cannot lift 10 kg with five cups: all cups are lost at the lift"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/held",
+          "t": 1.0,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "the parcel stays on the conveyor"
+        }
+      ]
+    },
+    "edge-leak-valves": {
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "Cup1/dp",
+          "from_t": 0.6,
+          "to_t": 0.9,
+          "value": 100.0,
+          "note": "the per-cup flow valve of cup 1 closes (bleed 2 %): cup 1 stays at atmosphere ..."
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup3/dp",
+          "t": 0.9,
+          "value": 48740.0,
+          "rtol": 0.01,
+          "note": "... and the five good cups keep 48.7 kPa (slightly more than with six sealed cups: one cup less leaks into the manifold)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held",
+          "from_t": 0.0,
+          "to_t": 3.366,
+          "value": 0.5,
+          "note": "five cups carry the parcel to the place position"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/n_lost",
+          "from_t": 0.0,
+          "to_t": 3.366,
+          "value": 1.5,
+          "note": "only cup 1 is lost"
+        }
+      ]
+    },
+    "separate-generators": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Cup3/dp",
+          "t": 0.9,
+          "value": 48329.9,
+          "rtol": 0.002,
+          "note": "one 10 l/min generator per cup: a good cup reaches the same 48.33 kPa as with the shared 60 l/min generator, independent of the leaking cup 1"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held",
+          "from_t": 0.0,
+          "to_t": 3.366,
+          "value": 0.5,
+          "note": "five cups carry the parcel"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/n_lost",
+          "from_t": 0.0,
+          "to_t": 3.366,
+          "value": 1.5,
+          "note": "only cup 1 is lost"
+        }
+      ]
+    }
+  }
+}

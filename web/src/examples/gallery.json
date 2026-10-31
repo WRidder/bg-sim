@@ -289,6 +289,21 @@
       "rrr-multibond-stiff"
     ]
   },
+  "suction-gripper": {
+    "title": "Suction gripper",
+    "description": "A six-cup vacuum gripper moves a carton: profiles, yaw, tilt, porosity and supply layouts decide when cups peel off.",
+    "hasScene": true,
+    "models": [
+      "transfer",
+      "aggressive-trapezoid",
+      "aggressive-scurve",
+      "tilt-tray",
+      "porous-undersized",
+      "edge-leak",
+      "edge-leak-valves",
+      "separate-generators"
+    ]
+  },
   "tetra-3d": {
     "title": "Tetra 3d",
     "description": "A tetrahedron with a reaction wheel on every face tips from a face to an edge to a vertex.",

@@ -1,0 +1,17 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "suction-gripper",
+  "models": [
+    "transfer",
+    "aggressive-trapezoid",
+    "aggressive-scurve",
+    "tilt-tray",
+    "porous-undersized",
+    "edge-leak",
+    "edge-leak-valves",
+    "separate-generators"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
