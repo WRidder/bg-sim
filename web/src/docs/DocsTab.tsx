@@ -13,6 +13,7 @@ import { useDialogFocus } from "../app/useDialogFocus";
 import { usePersistedPanelSizes } from "../state/layout";
 import { useRunStore } from "../plot/runStore";
 import { useDocumentStore } from "../state/documentStore";
+import { requestCenterNode } from "../editor/canvasFocus";
 import { DocsTree } from "./DocsTree";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { MarkdownView, type LinkActions } from "./MarkdownView";
@@ -172,6 +173,7 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
           .saveAll()
           .then(() => {
             if (useDocumentStore.getState().selectNodeAt(target.path, target.nodeId)) {
+              requestCenterNode(target.nodeId);
               onShowDiagram();
             } else {
               setNotice(`The block "${target.name}" is no longer in the model.`);

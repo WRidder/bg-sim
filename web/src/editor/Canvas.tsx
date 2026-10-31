@@ -67,6 +67,7 @@ import {
   NODE_TYPES,
   type SelectionOrigins,
 } from "./buildFlow";
+import { CENTER_NODE_EVENT, clearCenterNode, pendingCenterNode } from "./canvasFocus";
 import { imageFromDataTransfer } from "./nodeImage";
 import { applyNodeImage } from "./nodeImageApply";
 import { activeDiagram } from "./subsystemPath";
@@ -400,7 +401,8 @@ function CanvasInner() {
   const repairFrame = useRef(0);
   const selectionOrigins = useRef<SelectionOrigins>(new WeakMap());
   const flowStore = useStoreApi();
-  const { fitView, screenToFlowPosition, getViewport, setViewport } = useReactFlow();
+  const { fitView, screenToFlowPosition, getViewport, setViewport, setCenter, getInternalNode } =
+    useReactFlow();
   // The shortcut handler is registered once; it reads the viewport API here.
   const viewportApi = useRef({ getViewport, setViewport, screenToFlowPosition });
   viewportApi.current = { getViewport, setViewport, screenToFlowPosition };
@@ -595,6 +597,43 @@ function CanvasInner() {
     pendingFocus.current = null;
     void fitView({ nodes: ids.map((id) => ({ id })), padding: 0.35, maxZoom: 1.1, duration: 250 });
   }, [flow, fitView]);
+  // A docs `block:` link centres its node (at the current zoom) once the node is measured;
+  // the request may predate this canvas, which mounts when the Diagram tab opens.
+  const [centerRequests, setCenterRequests] = useState(0);
+  useEffect(() => {
+    const onRequest = (): void => setCenterRequests((count) => count + 1);
+    window.addEventListener(CENTER_NODE_EVENT, onRequest);
+    return () => window.removeEventListener(CENTER_NODE_EVENT, onRequest);
+  }, []);
+  useEffect(() => {
+    const id = pendingCenterNode();
+    if (id === null || !flow.nodes.some((node) => node.id === id)) {
+      return;
+    }
+    // Wait (a frame at a time, at most about a second) until the node has been measured.
+    let frame = 0;
+    let tries = 0;
+    const attempt = (): void => {
+      const node = getInternalNode(id);
+      const width = node?.measured.width;
+      const height = node?.measured.height;
+      if (node === undefined || width === undefined || height === undefined) {
+        tries += 1;
+        if (tries < 60) {
+          frame = requestAnimationFrame(attempt);
+        }
+        return;
+      }
+      clearCenterNode(id);
+      const origin = node.internals.positionAbsolute;
+      void setCenter(origin.x + width / 2, origin.y + height / 2, {
+        zoom: getViewport().zoom,
+        duration: 250,
+      });
+    };
+    attempt();
+    return () => cancelAnimationFrame(frame);
+  }, [flow, centerRequests, getInternalNode, setCenter, getViewport]);
 
   // Delete with selected terminals: a port connected outside asks first.
   const requestDelete = useCallback(() => {

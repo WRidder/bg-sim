@@ -223,6 +223,19 @@ test("pages, math, images, modes, reload, a second model, axe and block links", 
   await page.getByRole("link", { name: "Se1" }).click();
   await expect(page.getByRole("tab", { name: "Diagram" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByTestId("tree-node-Se1")).toHaveAttribute("aria-current", "true");
+  // ... and the canvas centres it, so it is easy to find (the centre is the xyflow node box's,
+  // a few pixels off the inner card's).
+  await expect
+    .poll(async () => {
+      const canvas = await page.getByTestId("canvas-surface").boundingBox();
+      const node = await page.locator('[data-testid="diagram-node"][data-node-name="Se1"]').boundingBox();
+      if (canvas === null || node === null) return Number.POSITIVE_INFINITY;
+      return Math.max(
+        Math.abs(canvas.x + canvas.width / 2 - (node.x + node.width / 2)),
+        Math.abs(canvas.y + canvas.height / 2 - (node.y + node.height / 2)),
+      );
+    })
+    .toBeLessThanOrEqual(16);
 });
 
 test("copying Markdown with images between models brings the images along", async ({ page, context }) => {

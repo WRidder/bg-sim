@@ -12,6 +12,7 @@ import { memo, useEffect, useMemo } from "react";
 import { requestCenterTab, requestPlotsTab } from "../app/dockBus";
 import { useRunStore } from "../plot/runStore";
 import { useDocumentStore } from "../state/documentStore";
+import { requestCenterNode } from "../editor/canvasFocus";
 import type { LinkContext } from "./docsLinks";
 import { useDocsStore } from "./docsStore";
 import { MarkdownView, type LinkActions } from "./MarkdownView";
@@ -23,7 +24,9 @@ const NOTE_ACTIONS: LinkActions = {
     requestCenterTab("docs");
   },
   showBlock: (target) => {
-    useDocumentStore.getState().selectNodeAt(target.path, target.nodeId);
+    if (useDocumentStore.getState().selectNodeAt(target.path, target.nodeId)) {
+      requestCenterNode(target.nodeId);
+    }
   },
   plotSignal: (id) => {
     useRunStore.getState().addSignal(id);

@@ -51,7 +51,7 @@ Links can point into the model:
 | Link | Does |
 | --- | --- |
 | `[text](page:<id>)` | opens another docs page |
-| `[text](block:Motor)` | selects the block on the canvas (`block:Sub/Motor` inside a subsystem) |
+| `[text](block:Motor)` | opens the Diagram, selects the block and centres it (`block:Sub/Motor` inside a subsystem) |
 | `[text](signal:Motor/w)` | plots the signal |
 | `[text](https://…)` | opens a website in a new tab |
 
