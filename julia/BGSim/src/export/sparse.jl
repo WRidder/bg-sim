@@ -658,7 +658,11 @@ function emit_sparse_lu(io, lu::StaticLU; mass::AbstractVector = ones(lu.n),
     nperm > 0 && println(io, "/* Row matching: $nperm algebraic rows take their pivot off their own diagonal; pivot k is equation bg_lu_rperm[k], unknown bg_lu_perm[k]. */")
     println(io, "/* $(lu.nnz_w) non-zeros in W, $(lu_fill(lu)) fill-in, $(lu_nnz(lu)) in the factors; $(lu_flops(lu)) flops per factorization, $(lu_solve_flops(lu)) per solve. */")
     _ctable(io, "bg_lu_perm", "BG_NX", lu.perm .- 1)
-    _ctable(io, "bg_lu_rperm", "BG_NX", lu.rperm .- 1)
+    if nperm > 0
+        _ctable(io, "bg_lu_rperm", "BG_NX", lu.rperm .- 1)
+    else
+        println(io, "#define bg_lu_rperm bg_lu_perm    /* no row matching: equation k is unknown k */")
+    end
     _ctable(io, "bg_lu_rowptr", "BG_NX + 1", lu.rowptr .- 1)
     _ctable(io, "bg_lu_col", "BG_LU_NNZ", lu.col .- 1)
     _ctable(io, "bg_lu_diag", "BG_NX", lu.diag .- 1)
