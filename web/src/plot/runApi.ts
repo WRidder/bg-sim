@@ -14,7 +14,7 @@
 import { API_BASE } from "../api/client";
 import type { DebugStartOptions } from "../contracts/debug";
 import type { Model } from "../contracts/model";
-import type { RunManifest } from "../contracts/run-manifest";
+import type { ParameterOverride, ParameterStep, RunManifest } from "../contracts/run-manifest";
 import type { SeriesWindow } from "./runCache";
 import { parseRunData, RunDataError, type RunDataFrame } from "./runData";
 
@@ -117,12 +117,38 @@ function projectRunsPath(project: string): string {
   return `/api/projects/${encodeURIComponent(project)}/runs`;
 }
 
+/** Parameter values a run uses instead of the model's (the dashboard's input cards and schedule). */
+export interface RunParameterInputs {
+  parameterOverrides?: ParameterOverride[];
+  parameterSchedule?: ParameterStep[];
+}
+
+/** The POST body of a run: the model, plus the debug options and parameter inputs when set. */
+export function runRequestBody(
+  model: Model,
+  debug?: DebugStartOptions,
+  inputs?: RunParameterInputs,
+): Record<string, unknown> {
+  const body: Record<string, unknown> = { model };
+  if (debug !== undefined) {
+    body.debug = debug;
+  }
+  if (inputs?.parameterOverrides !== undefined && inputs.parameterOverrides.length > 0) {
+    body.parameterOverrides = inputs.parameterOverrides;
+  }
+  if (inputs?.parameterSchedule !== undefined && inputs.parameterSchedule.length > 0) {
+    body.parameterSchedule = inputs.parameterSchedule;
+  }
+  return body;
+}
+
 /** Start a run with the model **document** (the backend compiles it). */
 export async function createRun(
   project: string,
   model: Model,
   signal?: AbortSignal,
   debug?: DebugStartOptions,
+  inputs?: RunParameterInputs,
 ): Promise<string> {
   const url = `${API_BASE}${projectRunsPath(project)}`;
   let response: Response;
@@ -133,7 +159,7 @@ export async function createRun(
         accept: "application/json",
         "content-type": "application/json",
       },
-      body: JSON.stringify(debug === undefined ? { model } : { model, debug }),
+      body: JSON.stringify(runRequestBody(model, debug, inputs)),
       signal,
     });
   } catch (cause) {

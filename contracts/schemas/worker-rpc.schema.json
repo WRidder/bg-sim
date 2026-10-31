@@ -194,6 +194,16 @@
           ],
           "description": "Debug run options (plan 3.8), or null/absent for a normal run."
         },
+        "parameterOverrides": {
+          "type": "array",
+          "items": { "$ref": "https://bgsim.local/schemas/run-manifest.schema.json#/$defs/parameterOverride" },
+          "description": "Parameter values for the whole run (dashboard input cards); the model document is not changed. Recorded in the manifest."
+        },
+        "parameterSchedule": {
+          "type": "array",
+          "items": { "$ref": "https://bgsim.local/schemas/run-manifest.schema.json#/$defs/parameterStep" },
+          "description": "Timed parameter changes (a dashboard schedule table). Recorded in the manifest."
+        },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false

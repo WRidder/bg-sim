@@ -143,6 +143,7 @@ bg-sim/
   spec/                         # the language spec (input, read-only)
   plan/IMPLEMENTATION_PLAN.md   # this file
   plan/MULTIBOND_PLAN.md        # M3 detail: multibond mechanics
+  plan/DASHBOARD_PLAN.md        # Dashboard tab: display/input cards, run parameter overrides and schedules
   plan/STATUS.md                # orchestrator-maintained progress log
   contracts/
     schemas/*.schema.json       # single source of truth for data shapes
@@ -1678,6 +1679,12 @@ Design choices that keep these open:
 
 These are explicitly **not** part of M0–M5; they are recorded so the architecture keeps the
 door open.
+
+- **Dashboard tab (step 1 done).** A centre tab with display cards (plot, value, gauge, bar,
+  indicator, text) synced with playback, and input cards (number, slider, knob, toggle, select,
+  schedule table) that set block parameters for the next run. The run request and the manifest
+  carry `parameterOverrides` and a timed `parameterSchedule`. Design, contracts and the open
+  points are in `plan/DASHBOARD_PLAN.md`.
 
 - **Transfer function between two points.** Select two signals in the same physical domain
   (for example `Motor1/shaft.f` → `Wheel2/a.f`, both rotational speed; or `V1/p.e` →

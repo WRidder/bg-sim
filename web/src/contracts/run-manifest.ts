@@ -20,6 +20,10 @@ export type Breakpoint = LineBreakpoint | WatchBreakpoint | TimeBreakpoint | Eve
 export type EditKind = "parameter" | "state";
 export type EditCheckpoint = "entry" | "step" | "target" | "statement";
 export type PauseReason = "entry" | "breakpoint" | "step" | "pause" | "event" | "exception" | "time";
+/**
+ * What target names; absent means block, or global when target starts with global:. A global override is applied before static evaluation of the globals (dependents re-fold, it may recompile) and must be a number.
+ */
+export type ParameterTargetKind = "block" | "global";
 
 /**
  * Run manifest (plan 3.5), stored as <project>/runs/<run-id>/manifest.json next to columns.f64 and stream.f64.
@@ -60,6 +64,14 @@ export interface RunManifest {
    * Branch runs only: the time at which this run diverges from its parent.
    */
   branchAt?: number;
+  /**
+   * The parameter overrides the run was started with (run.start parameterOverrides, e.g. from dashboard input cards).
+   */
+  parameterOverrides?: ParameterOverride[];
+  /**
+   * The timed parameter changes the run applied (run.start parameterSchedule, e.g. from a dashboard schedule table).
+   */
+  parameterSchedule?: ParameterStep[];
   $comment?: string;
 }
 export interface ModelSettings {
@@ -299,5 +311,29 @@ export interface EditPosition {
 export interface PauseRecord {
   t: number;
   reason: PauseReason;
+  $comment?: string;
+}
+/**
+ * A value that replaces a parameter for the whole run, applied before the model is flattened (so start values and parameter defaults derived from it follow). The model document itself is not changed.
+ */
+export interface ParameterOverride {
+  /**
+   * Kind block: <instance path>/<param>, e.g. Rig/Motor1/R. Kind global: global:<name>, a model-level global parameter (the key of BGSim.IR.override_globals).
+   */
+  target: string;
+  kind?: ParameterTargetKind;
+  value: number | boolean;
+  $comment?: string;
+}
+/**
+ * A timed parameter change: from t on the block parameter target has value (piecewise constant). A step at or before t_start acts as a start override.
+ */
+export interface ParameterStep {
+  t: number;
+  /**
+   * <instance path>/<param>.
+   */
+  target: string;
+  value: number;
   $comment?: string;
 }

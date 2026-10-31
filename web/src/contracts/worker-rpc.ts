@@ -141,10 +141,37 @@ export type Binding = JointPositionBinding | PoseBinding | VisualScaleBinding | 
 export type BindingSignal = string;
 export type ScaleProperty = "scale.x" | "scale.y" | "scale.z";
 export type Colormap = "heat" | "viridis" | "coolwarm";
+export type DashboardCardKind =
+  | "plot"
+  | "value"
+  | "gauge"
+  | "bar"
+  | "indicator"
+  | "text"
+  | "number"
+  | "slider"
+  | "knob"
+  | "toggle"
+  | "select"
+  | "schedule";
+/**
+ * Columns x rows of the grid.
+ */
+export type DashboardCardSize = "1x1" | "2x1" | "1x2" | "2x2" | "4x2";
+export type DashboardZoneTone = "good" | "warn" | "bad" | "info";
+/**
+ * Indicator: on when the value is above (default) or below the threshold.
+ */
+export type DashboardIndicatorMode = "above" | "below";
+export type DashboardBarOrientation = "vertical" | "horizontal";
 /**
  * A breakpoint (plan 3.8). Exactly the object that belongs to its kind is present: line, watch, time, event or exception.
  */
 export type Breakpoint = LineBreakpoint | WatchBreakpoint | TimeBreakpoint | EventBreakpoint | ExceptionBreakpoint;
+/**
+ * What target names; absent means block, or global when target starts with global:. A global override is applied before static evaluation of the globals (dependents re-fold, it may recompile) and must be a number.
+ */
+export type ParameterTargetKind = "block" | "global";
 export type ValueType1 = "Real" | "Int" | "Bool";
 export type ValueType2 = "Real" | "Int" | "Bool";
 export type ValueType3 = "Real" | "Int" | "Bool";
@@ -264,6 +291,7 @@ export interface Model {
    * Global (model-level) parameters, SolidWorks 'global variables' style: named constant expressions over literals, other globals and the whitelisted pure functions, statically evaluated at compile time and visible in every node's params, starts and constants at every diagram level. Names are unique (checked by the compiler, E003).
    */
   parameters?: ModelGlobalParameter[];
+  dashboard?: ModelDashboard;
   $comment?: string;
 }
 /**
@@ -544,6 +572,99 @@ export interface ModelGlobalParameter {
   description?: string | null;
   $comment?: string;
 }
+/**
+ * The Dashboard tab (plan DASHBOARD_PLAN.md): an ordered grid of cards. Display cards show recorded run signals; input cards and schedule tables give parameter overrides that the editor sends with the next run (run.start parameterOverrides / parameterSchedule). The compiler and the export ignore it.
+ */
+export interface ModelDashboard {
+  /**
+   * The cards in grid order.
+   */
+  cards: ModelDashboardCard[];
+  /**
+   * Start a new run shortly after an input card or schedule change settles.
+   */
+  autoRerun?: boolean;
+  $comment?: string;
+}
+export interface ModelDashboardCard {
+  id: string;
+  kind: DashboardCardKind;
+  size: DashboardCardSize;
+  title?: string;
+  /**
+   * Display cards: the bound signal ids (a plot may have several, the other display cards use the first).
+   */
+  signals?: string[];
+  /**
+   * Input cards: the bound parameter, a block parameter <instance path>/<param> or a global parameter global:<name> (number, slider and knob cards).
+   */
+  parameter?: string;
+  /**
+   * Input cards: the override value for the next run; absent means the model's own value is used.
+   */
+  value?: number | boolean;
+  options?: ModelDashboardCardOptions;
+  schedule?: ModelDashboardSchedule;
+  $comment?: string;
+}
+/**
+ * Per-card display and input settings; every field is optional.
+ */
+export interface ModelDashboardCardOptions {
+  min?: number;
+  max?: number;
+  step?: number;
+  decimals?: number;
+  /**
+   * Unit label shown on the card instead of the signal's or parameter's unit; an empty string hides it.
+   */
+  unit?: string;
+  zones?: ModelDashboardZone[];
+  /**
+   * Indicator: the value at which the light switches.
+   */
+  threshold?: number;
+  onWhen?: DashboardIndicatorMode;
+  orientation?: DashboardBarOrientation;
+  /**
+   * Value card: draw the recent history under the number.
+   */
+  sparkline?: boolean;
+  /**
+   * Text card: the text, plain or Markdown.
+   */
+  text?: string;
+  markdown?: boolean;
+  $comment?: string;
+}
+export interface ModelDashboardZone {
+  from: number;
+  to: number;
+  tone: DashboardZoneTone;
+  $comment?: string;
+}
+/**
+ * Schedule table: from each row's t on, the listed parameters take the row's values (piecewise constant). Before the first row the model's values apply.
+ */
+export interface ModelDashboardSchedule {
+  /**
+   * The parameter columns, <instance path>/<param>.
+   */
+  parameters: string[];
+  rows: ModelDashboardScheduleRow[];
+  $comment?: string;
+}
+export interface ModelDashboardScheduleRow {
+  /**
+   * Seconds.
+   */
+  t: number;
+  /**
+   * One value per parameter column; null is a cell not filled in yet (the editor refuses to run with one).
+   */
+  values: (number | null)[];
+  $comment?: string;
+}
 export interface RunStartRequest {
   id: number;
   method: "run.start";
@@ -559,6 +680,14 @@ export interface RunStartParams {
    * Debug run options (plan 3.8), or null/absent for a normal run.
    */
   debug?: DebugStartOptions | null;
+  /**
+   * Parameter values for the whole run (dashboard input cards); the model document is not changed. Recorded in the manifest.
+   */
+  parameterOverrides?: ParameterOverride[];
+  /**
+   * Timed parameter changes (a dashboard schedule table). Recorded in the manifest.
+   */
+  parameterSchedule?: ParameterStep[];
   $comment?: string;
 }
 /**
@@ -655,6 +784,30 @@ export interface ExceptionBreakpointTarget {
    * Diagnostic codes to pause on, before the run ends.
    */
   on: string[];
+  $comment?: string;
+}
+/**
+ * A value that replaces a parameter for the whole run, applied before the model is flattened (so start values and parameter defaults derived from it follow). The model document itself is not changed.
+ */
+export interface ParameterOverride {
+  /**
+   * Kind block: <instance path>/<param>, e.g. Rig/Motor1/R. Kind global: global:<name>, a model-level global parameter (the key of BGSim.IR.override_globals).
+   */
+  target: string;
+  kind?: ParameterTargetKind;
+  value: number | boolean;
+  $comment?: string;
+}
+/**
+ * A timed parameter change: from t on the block parameter target has value (piecewise constant). A step at or before t_start acts as a start override.
+ */
+export interface ParameterStep {
+  t: number;
+  /**
+   * <instance path>/<param>.
+   */
+  target: string;
+  value: number;
   $comment?: string;
 }
 export interface RunCancelRequest {

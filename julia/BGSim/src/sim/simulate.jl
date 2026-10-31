@@ -457,6 +457,8 @@ function _simulate_flat(flat::Flat.FlatModel;
     phase = nothing,
     record_event = nothing,
     debug = nothing,
+    parameter_schedule = nothing,
+    manifest_extra = nothing,
 )
     cancel = _dbg_cancel(debug, cancel)  # M4 debug:
     start_ns = time_ns()
@@ -494,6 +496,8 @@ function _simulate_flat(flat::Flat.FlatModel;
         time = (n = 0, t0 = run_settings.t_start, t1 = run_settings.t_end),
         diagnostics = _diag_entries(flat_diagnostics),
     )
+    # DASHBOARD_PLAN.md: the parameter overrides and schedule the run uses (src/sim/overrides.jl).
+    manifest_extra === nothing || (running_manifest = merge(running_manifest, manifest_extra))
     write_manifest_atomic(joinpath(dir, "manifest.json"), running_manifest)
     _phase(phase, "mtkcompile", 0.0)
 
@@ -616,6 +620,7 @@ function _simulate_flat(flat::Flat.FlatModel;
         capacity = length(grid), states = states, equations = equations,
         created = running_manifest.created,
     )
+    manifest_extra === nothing || (rec.manifest = merge(rec.manifest, manifest_extra))
 
     solver_kwargs = (; abstol = run_settings.abstol, reltol = run_settings.reltol)
     if run_settings.max_step !== nothing
@@ -734,6 +739,29 @@ function _simulate_flat(flat::Flat.FlatModel;
         end
     end
     targets = discrete_targets(grid, run)
+    # DASHBOARD_PLAN.md: the timed parameter changes are loop targets of their own.
+    live_steps = _LiveStep[]
+    if parameter_schedule !== nothing && !isempty(parameter_schedule)
+        live_steps = try
+            _resolve_steps(parameter_schedule, lowered.model, integ)
+        catch err
+            err isa ArgumentError || rethrow()
+            diagnostic = diag("E003", err.msg; hint = "a schedule can only set a block parameter")
+            diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+            stats = (
+                compile_s = compile_s, sim_s = 0.0, steps = 0, events = 0,
+                states = states, equations = equations,
+            )
+            manifest = finish_recorder!(rec, "failed", stats, diagnostics)
+            elapsed = (time_ns() - start_ns) / 1.0e9
+            return SimResult(
+                "failed", diagnostics, stats, flat.signals, manifest.time, manifest, dir,
+                elapsed, lowered.cache_hit,
+            )
+        end
+        targets = schedule_targets(targets, live_steps)
+    end
+    next_step = 1
     # M4 debug: the session holds the live run objects for the debug checkpoints and commands.
     session = _dbg_begin!(
         debug; run_id = id, settings = run_settings, flat = flat, lowered = lowered.model,
@@ -770,10 +798,19 @@ function _simulate_flat(flat::Flat.FlatModel;
             # carries the state the continuous solver has at `tt` plus the new held outputs.
             changed = false
             before = nothing
-            if target.tick && run !== nothing
+            if _steps_due(live_steps, next_step, tt)
+                # A parameter step: the left limit is the state before it, the right limit
+                # the state after it (and after a tick at the same instant).
                 before = values()
+                next_step = _apply_due_steps!(
+                    live_steps, next_step, tt, integ, lowered.model.algebraic
+                )
+                changed = true
+            end
+            if target.tick && run !== nothing
+                before === nothing && (before = values())
                 tk0 = time_ns()
-                changed = run_tick!(run, integ, tt, target.tick_index)
+                changed = run_tick!(run, integ, tt, target.tick_index) || changed
                 prof_tick_ns[] += time_ns() - tk0
             end
             if changed

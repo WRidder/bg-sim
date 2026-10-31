@@ -477,8 +477,10 @@ end
 
 Persist the model document a run was started from as `<run_dir>/model.json`
 (`{ "projectDir": ..., "model": ... }`), so `run.replay` and `run.branch` can rebuild the
-parent after the worker forgot it. `model` is a `Dict`, a JSON3 object, JSON text or a path."""
-function write_run_model(run_dir::AbstractString, model, project_dir)
+parent after the worker forgot it. `model` is a `Dict`, a JSON3 object, JSON text or a path.
+`inputs` (a [`ParameterInputs`](@ref), DASHBOARD_PLAN.md) adds the run's
+`parameterOverrides` / `parameterSchedule`, which a replay applies again."""
+function write_run_model(run_dir::AbstractString, model, project_dir; inputs = nothing)
     doc = if model isa AbstractString
         text = isfile(model) ? read(model, String) : String(model)
         JSON3.read(text)
@@ -487,8 +489,10 @@ function write_run_model(run_dir::AbstractString, model, project_dir)
     end
     mkpath(run_dir)
     open(joinpath(run_dir, "model.json"), "w") do io
-        JSON3.write(io, (projectDir = project_dir === nothing ? nothing : String(project_dir),
-            model = doc))
+        stored = (projectDir = project_dir === nothing ? nothing : String(project_dir),
+            model = doc)
+        inputs === nothing || (stored = merge(stored, parameter_inputs_manifest(inputs)))
+        JSON3.write(io, stored)
         write(io, '\n')
     end
     return nothing
@@ -504,10 +508,26 @@ function load_run_flat(run_dir::AbstractString)
     ))
     stored = JSON3.read(read(file, String), Dict{String,Any})
     project_dir = get(stored, "projectDir", nothing)
-    return Compile.flatten(
-        IR.parse_model(stored["model"]);
-        project_dir = project_dir === nothing ? nothing : String(project_dir),
+    md = IR.parse_model(stored["model"])
+    inputs = _stored_inputs(stored)
+    settings = RunSettings(md.settings)
+    overrides, _ = start_inputs(inputs, settings.t_start, settings.t_end)
+    return flatten_with_overrides(
+        md, overrides; project_dir = project_dir === nothing ? nothing : String(project_dir),
     )
+end
+
+_stored_inputs(stored) = parse_parameter_inputs(
+    get(stored, "parameterOverrides", nothing), get(stored, "parameterSchedule", nothing)
+)
+
+"""    load_run_inputs(run_dir) -> ParameterInputs
+
+The parameter overrides and schedule `write_run_model` stored with a run (empty when none)."""
+function load_run_inputs(run_dir::AbstractString)
+    file = joinpath(run_dir, "model.json")
+    isfile(file) || return ParameterInputs()
+    return _stored_inputs(JSON3.read(read(file, String), Dict{String,Any}))
 end
 
 # ---------------------------------------------------------------------------------------
@@ -679,11 +699,16 @@ end
 function _run_replay(parent::ParentRun, ctx::DebugCtx, flat; run_dir, run_id, settings,
     model_hash, kwargs...)
     flat === nothing && (flat = load_run_flat(parent.dir))
+    run_settings = settings === nothing ? parent.settings : settings
+    inputs = load_run_inputs(parent.dir)
+    _, steps = start_inputs(inputs, run_settings.t_start, run_settings.t_end)
     result = simulate(
         flat; run_dir = run_dir, run_id = run_id,
         model_hash = model_hash === nothing ? parent.model_hash : model_hash,
-        settings = settings === nothing ? parent.settings : settings,
-        debug = ctx, kwargs...,
+        settings = run_settings,
+        debug = ctx, parameter_schedule = steps,
+        manifest_extra = isempty(inputs) ? nothing : parameter_inputs_manifest(inputs),
+        kwargs...,
     )
     return _check_replayed(ctx, result)
 end

@@ -17,7 +17,12 @@ const ParametersTab = lazy(() =>
   import("../globals/EquationsManager").then((m) => ({ default: m.ParametersTab })),
 );
 
-export type CenterTabId = "diagram" | "code" | "docs" | "parameters";
+// The Dashboard (cards bound to run signals and parameter overrides) loads when first opened.
+const DashboardTab = lazy(() =>
+  import("../dashboard/DashboardTab").then((m) => ({ default: m.DashboardTab })),
+);
+
+export type CenterTabId = "diagram" | "code" | "docs" | "parameters" | "dashboard";
 
 function centerTabs(pausedPath: string | null): readonly TabDefinition<CenterTabId>[] {
   return [
@@ -26,6 +31,7 @@ function centerTabs(pausedPath: string | null): readonly TabDefinition<CenterTab
     { id: "code", label: pausedPath === null ? "Code" : `Code · paused in ${pausedPath}` },
     { id: "docs", label: "Docs" },
     { id: "parameters", label: "Parameters" },
+    { id: "dashboard", label: "Dashboard" },
   ];
 }
 
@@ -90,6 +96,10 @@ export function CenterTabs({ active, onSelect }: CenterTabsProps) {
         ) : active === "parameters" ? (
           <Suspense fallback={<EmptyState title="Loading the parameters" hint="One moment." />}>
             <ParametersTab />
+          </Suspense>
+        ) : active === "dashboard" ? (
+          <Suspense fallback={<EmptyState title="Loading the dashboard" hint="One moment." />}>
+            <DashboardTab />
           </Suspense>
         ) : (
           <Suspense fallback={<EmptyState title="Loading the docs" hint="One moment." />}>

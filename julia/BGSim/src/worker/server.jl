@@ -207,7 +207,7 @@ recorder's `open_recorder`; `simulate` rewrites it (still `running`) a moment la
 with the final status.
 """
 function _write_running_manifest(flat, settings::RunSettings, run_id::AbstractString,
-    run_dir::AbstractString, model_hash::AbstractString)
+    run_dir::AbstractString, model_hash::AbstractString; extra = nothing)
     mkpath(run_dir)
     manifest = BGSim._manifest(
         id = run_id,
@@ -220,6 +220,7 @@ function _write_running_manifest(flat, settings::RunSettings, run_id::AbstractSt
         time = (n = 0, t0 = settings.t_start, t1 = settings.t_end),
         diagnostics = BGSim._diag_entries(flat.diagnostics),
     )
+    extra === nothing || (manifest = merge(manifest, extra))
     BGSim.write_manifest_atomic(joinpath(String(run_dir), "manifest.json"), manifest)
     return manifest
 end
@@ -397,16 +398,30 @@ function _run_start(conn::Connection, params)
     ctx = debug === nothing ? nothing :
           _make_debug_ctx(conn, debug[1], debug[2], "run.start")
 
+    inputs = _parse_parameter_inputs(params)
+
     log_line(conn.log, "run ", run_id, " preparing `", md.name, "`")
-    flat = Compile.flatten(md; project_dir = project_dir)
+    # DASHBOARD_PLAN.md: the overrides (and the schedule steps at t_start) go into the document
+    # before flattening; the later steps are checked here, so a bad target fails the request.
+    overrides, steps = BGSim.start_inputs(inputs, settings.t_start, settings.t_end)
+    flat = try
+        flat = BGSim.flatten_with_overrides(md, overrides; project_dir = project_dir)
+        BGSim.check_schedule_targets(flat, steps)
+        flat
+    catch err
+        err isa ArgumentError || rethrow()
+        throw(RpcError(err.msg, Any[to_namedtuple(diag("E003", err.msg))]))
+    end
     model_hash = BGSim.compile_key(flat)
+    extra = isempty(inputs) ? nothing : BGSim.parameter_inputs_manifest(inputs)
 
     # REQ-1: the live tail needs the signal list before the first data row. Flattening gives
     # it, so the worker can write the running manifest and only then accept the run.
     try
-        _write_running_manifest(flat, settings, run_id, run_dir, model_hash)
+        _write_running_manifest(flat, settings, run_id, run_dir, model_hash; extra = extra)
         # The model the run used, so `run.replay` / `run.branch` work after this worker is gone.
-        BGSim.write_run_model(run_dir, model_value, project_dir)
+        BGSim.write_run_model(run_dir, model_value, project_dir;
+            inputs = isempty(inputs) ? nothing : inputs)
     catch err
         throw(RpcError(
             "could not prepare the run folder `$run_dir`: " * sprint(showerror, err)
@@ -418,8 +433,21 @@ function _run_start(conn::Connection, params)
 
     return Deferred(
         (; accepted = true),
-        () -> _spawn_run(conn, handle, flat, settings, run_dir, model_hash),
+        () -> _spawn_run(conn, handle, flat, settings, run_dir, model_hash;
+            steps = steps, extra = extra),
     )
+end
+
+function _parse_parameter_inputs(params)
+    try
+        return BGSim.parse_parameter_inputs(
+            _jsonfield(params, :parameterOverrides, nothing),
+            _jsonfield(params, :parameterSchedule, nothing),
+        )
+    catch err
+        err isa ArgumentError || rethrow()
+        throw(RpcError("`run.start`: " * err.msg))
+    end
 end
 
 function _register_run!(handle::RunHandle, run_dir::AbstractString)
@@ -518,7 +546,7 @@ function _spawn_task(conn::Connection, handle::RunHandle, name::AbstractString, 
 end
 
 function _spawn_run(conn::Connection, handle::RunHandle, flat, settings::RunSettings,
-    run_dir::AbstractString, model_hash::AbstractString)
+    run_dir::AbstractString, model_hash::AbstractString; steps = nothing, extra = nothing)
     run_id = handle.id
     log_event(conn, "info", "run $run_id started for `$(flat.name)`")
     # These stages already ran inside `run.start` (they give REQ-1 the signal list); report
@@ -537,6 +565,8 @@ function _spawn_run(conn::Connection, handle::RunHandle, flat, settings::RunSett
             progress = progress,
             phase = phase,
             debug = handle.ctx,
+            parameter_schedule = steps,
+            manifest_extra = extra,
         )
     end
     on_crash = diagnostic -> _write_failed_manifest(

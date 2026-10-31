@@ -1,0 +1,66 @@
+{
+  "$comment": "A run.start with dashboard parameter overrides and a parameter schedule (DASHBOARD_PLAN.md).",
+  "id": 143,
+  "method": "run.start",
+  "params": {
+    "runId": "run-20261021-093050",
+    "model": {
+      "format": "bgsim.model",
+      "language": "0.1.0",
+      "name": "SyntheticSignals",
+      "diagram": {
+        "nodes": [
+          {
+            "id": "n1",
+            "name": "Synthetic",
+            "block": {
+              "ref": "stdlib:sources/Sine"
+            },
+            "position": {
+              "x": 80,
+              "y": 80
+            },
+            "params": {
+              "amplitude": "1.0",
+              "frequency": "6.283185307179586"
+            }
+          }
+        ],
+        "connections": []
+      },
+      "settings": {
+        "t_start": 0,
+        "t_end": 1,
+        "solver": "auto",
+        "reltol": 0.000001,
+        "abstol": 1e-8,
+        "max_step": null,
+        "output": {
+          "mode": "points",
+          "points": 1001
+        },
+        "event_limit": 10000
+      }
+    },
+    "projectDir": "C:/Users/WVDR/bgsim-projects/synthetic",
+    "runDir": "C:/Users/WVDR/bgsim-projects/synthetic/runs/run-20261021-093050",
+    "parameterOverrides": [
+      {
+        "target": "Synthetic/amplitude",
+        "value": 2
+      },
+      {
+        "target": "Synthetic/frequency",
+        "kind": "block",
+        "value": 3.14
+      }
+    ],
+    "parameterSchedule": [
+      {
+        "t": 0.5,
+        "target": "Synthetic/amplitude",
+        "value": 0.5
+      }
+    ]
+  }
+}

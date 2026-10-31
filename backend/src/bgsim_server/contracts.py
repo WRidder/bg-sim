@@ -1031,6 +1031,68 @@ class ModelGlobalParameter(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class DashboardCardKind(Enum):
+    plot = 'plot'
+    value = 'value'
+    gauge = 'gauge'
+    bar = 'bar'
+    indicator = 'indicator'
+    text = 'text'
+    number = 'number'
+    slider = 'slider'
+    knob = 'knob'
+    toggle = 'toggle'
+    select = 'select'
+    schedule = 'schedule'
+
+
+class DashboardCardSize(Enum):
+    field_1x1 = '1x1'
+    field_2x1 = '2x1'
+    field_1x2 = '1x2'
+    field_2x2 = '2x2'
+    field_4x2 = '4x2'
+
+
+class DashboardIndicatorMode(Enum):
+    above = 'above'
+    below = 'below'
+
+
+class DashboardBarOrientation(Enum):
+    vertical = 'vertical'
+    horizontal = 'horizontal'
+
+
+class DashboardZoneTone(Enum):
+    good = 'good'
+    warn = 'warn'
+    bad = 'bad'
+    info = 'info'
+
+
+class ModelDashboardZone(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    from_: float = Field(..., alias='from')
+    to: float
+    tone: DashboardZoneTone = Field(..., title='DashboardZoneTone')
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelDashboardScheduleRow(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    t: float = Field(..., description='Seconds.')
+    values: list[float | None] = Field(
+        ...,
+        description='One value per parameter column; null is a cell not filled in yet (the editor refuses to run with one).',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class Project(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -1055,6 +1117,42 @@ class RunStatus(Enum):
     done = 'done'
     failed = 'failed'
     cancelled = 'cancelled'
+
+
+class ParameterTargetKind(Enum):
+    block = 'block'
+    global_ = 'global'
+
+
+class ParameterOverride(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    target: constr(
+        pattern=r'^(?:global:[A-Za-z_][A-Za-z0-9_]*|(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*)$'
+    ) = Field(
+        ...,
+        description='Kind block: <instance path>/<param>, e.g. Rig/Motor1/R. Kind global: global:<name>, a model-level global parameter (the key of BGSim.IR.override_globals).',
+    )
+    kind: ParameterTargetKind | None = Field(
+        None,
+        description='What target names; absent means block, or global when target starts with global:. A global override is applied before static evaluation of the globals (dependents re-fold, it may recompile) and must be a number.',
+        title='ParameterTargetKind',
+    )
+    value: float | bool
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ParameterStep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    t: float
+    target: constr(pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*$') = (
+        Field(..., description='<instance path>/<param>.')
+    )
+    value: float
+    field_comment: str | None = Field(None, alias='$comment')
 
 
 class RunStats(BaseModel):
@@ -1808,6 +1906,51 @@ class ModelSettings(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ModelDashboardCardOptions(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    min: float | None = None
+    max: float | None = None
+    step: PositiveFloat | None = None
+    decimals: conint(ge=0, le=12) | None = None
+    unit: str | None = Field(
+        None,
+        description="Unit label shown on the card instead of the signal's or parameter's unit; an empty string hides it.",
+    )
+    zones: list[ModelDashboardZone] | None = None
+    threshold: float | None = Field(
+        None, description='Indicator: the value at which the light switches.'
+    )
+    onWhen: DashboardIndicatorMode | None = Field(
+        None,
+        description='Indicator: on when the value is above (default) or below the threshold.',
+        title='DashboardIndicatorMode',
+    )
+    orientation: DashboardBarOrientation | None = Field(
+        None, title='DashboardBarOrientation'
+    )
+    sparkline: bool | None = Field(
+        None, description='Value card: draw the recent history under the number.'
+    )
+    text: str | None = Field(
+        None, description='Text card: the text, plain or Markdown.'
+    )
+    markdown: bool | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelDashboardSchedule(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    parameters: list[
+        constr(pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*$')
+    ] = Field(..., description='The parameter columns, <instance path>/<param>.')
+    rows: list[ModelDashboardScheduleRow]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class StreamHandshake(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2231,6 +2374,38 @@ class ModelSubsystemPowerPort(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ModelDashboardCard(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9_.-]+$')
+    kind: DashboardCardKind = Field(..., title='DashboardCardKind')
+    size: DashboardCardSize = Field(
+        ..., description='Columns x rows of the grid.', title='DashboardCardSize'
+    )
+    title: str | None = None
+    signals: list[constr(min_length=1)] | None = Field(
+        None,
+        description='Display cards: the bound signal ids (a plot may have several, the other display cards use the first).',
+    )
+    parameter: (
+        constr(
+            pattern=r'^(?:global:[A-Za-z_][A-Za-z0-9_]*|(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*)$'
+        )
+        | None
+    ) = Field(
+        None,
+        description='Input cards: the bound parameter, a block parameter <instance path>/<param> or a global parameter global:<name> (number, slider and knob cards).',
+    )
+    value: float | bool | None = Field(
+        None,
+        description="Input cards: the override value for the next run; absent means the model's own value is used.",
+    )
+    options: ModelDashboardCardOptions | None = None
+    schedule: ModelDashboardSchedule | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class RunManifest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2260,6 +2435,14 @@ class RunManifest(BaseModel):
     branchAt: float | None = Field(
         None,
         description='Branch runs only: the time at which this run diverges from its parent.',
+    )
+    parameterOverrides: list[ParameterOverride] | None = Field(
+        None,
+        description='The parameter overrides the run was started with (run.start parameterOverrides, e.g. from dashboard input cards).',
+    )
+    parameterSchedule: list[ParameterStep] | None = Field(
+        None,
+        description='The timed parameter changes the run applied (run.start parameterSchedule, e.g. from a dashboard schedule table).',
     )
     field_comment: str | None = Field(None, alias='$comment')
 
@@ -2480,6 +2663,18 @@ class ModelSubsystemPort(RootModel[ModelSubsystemSignalPort | ModelSubsystemPowe
     )
 
 
+class ModelDashboard(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    cards: list[ModelDashboardCard] = Field(..., description='The cards in grid order.')
+    autoRerun: bool | None = Field(
+        None,
+        description='Start a new run shortly after an input card or schedule change settles.',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class CatalogGetResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2672,6 +2867,7 @@ class Model(BaseModel):
         None,
         description="Global (model-level) parameters, SolidWorks 'global variables' style: named constant expressions over literals, other globals and the whitelisted pure functions, statically evaluated at compile time and visible in every node's params, starts and constants at every diagram level. Names are unique (checked by the compiler, E003).",
     )
+    dashboard: ModelDashboard | None = None
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -2781,6 +2977,14 @@ class RunStartParams(BaseModel):
     debug: DebugStartOptions | None = Field(
         None,
         description='Debug run options (plan 3.8), or null/absent for a normal run.',
+    )
+    parameterOverrides: list[ParameterOverride] | None = Field(
+        None,
+        description='Parameter values for the whole run (dashboard input cards); the model document is not changed. Recorded in the manifest.',
+    )
+    parameterSchedule: list[ParameterStep] | None = Field(
+        None,
+        description='Timed parameter changes (a dashboard schedule table). Recorded in the manifest.',
     )
     field_comment: str | None = Field(None, alias='$comment')
 

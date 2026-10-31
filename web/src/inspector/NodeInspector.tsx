@@ -15,6 +15,7 @@ import type { Diagnostic } from "../contracts/diagnostic";
 import type { ModelConnection, ModelNode } from "../contracts/model";
 import { BlockHelpButton } from "../app/BlockHelp";
 import { requestPlotsTab } from "../app/dockBus";
+import { DashboardOverrideBadge } from "../dashboard/OverrideBadge";
 import { ExplainButton } from "../debug/explain/ExplainButton";
 import { SignalContextMenu } from "../debug/panels/SignalMenu";
 import { domainLetter } from "../editor/connectionRules";
@@ -33,6 +34,7 @@ import { CsvSourceSection } from "./CsvSourceSection";
 import { isCsvSourceRef } from "./csvSource";
 import { NodeImageSection } from "./NodeImageSection";
 import { SelectField, TextField, type SelectOption } from "./fields";
+import { liveParameterName } from "./liveEdit";
 import { LiveBanner, LiveParameterField, useLiveMode } from "./liveInspector";
 import { qualifiedFrame } from "./frames";
 import { portComponentUnits, unitArrayText } from "./units";
@@ -116,8 +118,13 @@ function ParameterField({
       </span>
     </>
   );
-  const badges =
-    decl.type === "Real" ? null : <span className="inspector-tag">{decl.type}</span>;
+  // DASHBOARD_PLAN.md: a dashboard input card or schedule column overrides it for the next run.
+  const badges = (
+    <>
+      {decl.type === "Real" ? null : <span className="inspector-tag">{decl.type}</span>}
+      <DashboardOverrideBadge target={liveParameterName(path, node.name, decl.name)} />
+    </>
+  );
   const resetLabel = `Reset ${decl.name} to its default (${decl.default})`;
 
   if (decl.options !== null) {
