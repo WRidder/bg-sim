@@ -178,6 +178,14 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
       <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
     </>
   ),
+  "sp-rotor-3d": () => (
+    <>
+      <rect x="2.5" y="17" width="19" height="4.5" rx="1" />
+      <ellipse cx="12" cy="9" rx="8.5" ry="3.2" />
+      <path d="M12 9V17M12 1.5V5.8" />
+      <path d="M16.5 2.8a5 1.6 0 0 1 2 1.6M18.5 4.4l.4-1.8M18.5 4.4l-1.8-.3" />
+    </>
+  ),
   "sp-spherical-3d": () => (
     <>
       <path d="M5 11v1.5a7 7 0 0 0 14 0V11" />
@@ -279,6 +287,15 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
       <path d="M2 13h20" />
       <path d="M4 13l-2 3.5M8 13l-2 3.5M12 13l-2 3.5M16 13l-2 3.5M20 13l-2 3.5M24 13l-2 3.5" />
       <path d="M12 13V3M9.8 5.3L12 2.8l2.2 2.5" />
+    </>
+  ),
+  "ct-rolling-disk": () => (
+    <>
+      <path d="M2 21h20" />
+      <circle cx="11" cy="11.5" r="8" />
+      <path d="M11 11.5L16.7 5.8M11 11.5v8" opacity="0.55" />
+      <circle cx="11" cy="11.5" r="1.3" fill="currentColor" stroke="none" />
+      <path d="M17 17.5l4-3.5M21 14v3" />
     </>
   ),
   "ct-switched-pivot-3d": () => (

@@ -1,0 +1,1869 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "gyrover",
+  "$comment": "The Gyrover drives a rounded square: it speeds up to 1.5 m/s and turns four times by 90 degrees. The paper's balance loops (K1 on the drive, K2 through the tilt servo) with our speed and heading loops.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Wheel",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 600,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "2.0",
+          "J": "[0.0146, 0.0146, 0.0249]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Pose",
+        "block": {
+          "ref": "stdlib:multibond/PoseIntegrator3D"
+        },
+        "position": {
+          "x": 600,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "qw": "0.7071067811865476",
+          "qx": "-0.7071067811865475",
+          "qy": "0.0",
+          "qz": "0.0",
+          "px": "-3.55",
+          "py": "-4.42",
+          "pz": "0.19683203698726165"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Ground",
+        "block": {
+          "ref": "stdlib:contact/ContactSurface"
+        },
+        "position": {
+          "x": 380,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Tyre",
+        "block": {
+          "ref": "stdlib:contact/RollingDisk"
+        },
+        "position": {
+          "x": 420,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "radius": "0.197",
+          "k": "1000000.0",
+          "xref": "0.001",
+          "c": "2.0",
+          "mu": "0.9",
+          "vs": "0.001",
+          "bsp": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Axle",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 820,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q0": "0.0",
+          "br": "20.0",
+          "bt": "500.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "LinkP",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1000,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.9238795325112867",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.38268343236508984",
+          "x": "0.0",
+          "y": "0.0939",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Pendulum",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1180,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "3.417",
+          "J": "[0.0371, 0.0091, 0.0353]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "MountA",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 820,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "PoseA",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 820,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "LocalP",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1000,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.9238795325112867",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.38268343236508984",
+          "x": "0.0",
+          "y": "0.0939",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "PoseP",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1180,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "MountT",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1180,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.27059805007309856",
+          "qx": "-0.27059805007309856",
+          "qy": "0.6532814824381884",
+          "qz": "0.6532814824381883",
+          "x": "-0.0939",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Tilt",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1380,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q0": "-0.0",
+          "br": "20.0",
+          "bt": "500.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "LinkG",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1560,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "-0.7071067811865475",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "Gimbal",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1740,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "1.6",
+          "J": "[0.00236, 0.00253, 0.0006]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "Flywheel",
+        "block": {
+          "ref": "stdlib:spatial/Rotor3D"
+        },
+        "position": {
+          "x": 1920,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Ja": "0.00301"
+        },
+        "constants": {},
+        "starts": {
+          "h": "4.7280969436526386"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "LocalT",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1380,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.27059805007309856",
+          "qx": "0.27059805007309856",
+          "qy": "-0.6532814824381884",
+          "qz": "-0.6532814824381883",
+          "x": "-0.06639732675341682",
+          "y": "-0.06639732675341682",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "PoseT",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1380,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "PoseTc",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1560,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "LocalG",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1560,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "-0.7071067811865475",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "PoseG",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1740,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "Drive",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 820,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "TiltMotor",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 1380,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "SpinMotor",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 1920,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "Sense",
+        "block": {
+          "ref": "project:GyroSense"
+        },
+        "position": {
+          "x": 820,
+          "y": 800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R": "0.197"
+        },
+        "constants": {},
+        "starts": {
+          "psi": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "Plan",
+        "block": {
+          "ref": "project:GyroPlan"
+        },
+        "position": {
+          "x": 380,
+          "y": 960
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "v_cruise": "1.2",
+          "dpsi": "1.5707963267948966",
+          "t_go": "1.0",
+          "tau_v": "0.8",
+          "t_turn": "5.5",
+          "t_leg": "6.0",
+          "tau_psi": "0.6"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n27",
+        "name": "Ctrl",
+        "block": {
+          "ref": "project:GyroCtrl"
+        },
+        "position": {
+          "x": 600,
+          "y": 960
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R": "0.197",
+          "mgh": "10.413243387000001",
+          "Ls": "4.7280969436526386",
+          "mh": "1.1878886390862944",
+          "w3_ref": "1570.7963267948965",
+          "kp_t": "40000.0",
+          "kd_t": "20.0",
+          "bal": "1.0",
+          "servo": "1.0",
+          "spin": "1.0",
+          "head": "1.0",
+          "lat": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "r": "-0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n28",
+        "name": "Energy",
+        "block": {
+          "ref": "project:GyroEnergy"
+        },
+        "position": {
+          "x": 1180,
+          "y": 800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m_w": "2.0",
+          "m_p": "3.417",
+          "m_g": "1.6",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c001",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "V"
+        },
+        "to": {
+          "node": "n02",
+          "port": "tw"
+        },
+        "label": null
+      },
+      {
+        "id": "c002",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "g"
+        },
+        "to": {
+          "node": "n01",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c003",
+        "kind": "bond",
+        "from": {
+          "node": "n01",
+          "port": "p"
+        },
+        "to": {
+          "node": "n04",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c004",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "g"
+        },
+        "to": {
+          "node": "n04",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c005",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "o"
+        },
+        "to": {
+          "node": "n04",
+          "port": "o"
+        },
+        "label": null
+      },
+      {
+        "id": "c006",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "fr"
+        },
+        "to": {
+          "node": "n04",
+          "port": "fr"
+        },
+        "label": null
+      },
+      {
+        "id": "c007",
+        "kind": "bond",
+        "from": {
+          "node": "n08",
+          "port": "b"
+        },
+        "to": {
+          "node": "n01",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c008",
+        "kind": "bond",
+        "from": {
+          "node": "n08",
+          "port": "a"
+        },
+        "to": {
+          "node": "n05",
+          "port": "parent"
+        },
+        "label": null
+      },
+      {
+        "id": "c009",
+        "kind": "bond",
+        "from": {
+          "node": "n05",
+          "port": "child"
+        },
+        "to": {
+          "node": "n06",
+          "port": "a"
+        },
+        "label": null
+      },
+      {
+        "id": "c010",
+        "kind": "bond",
+        "from": {
+          "node": "n06",
+          "port": "b"
+        },
+        "to": {
+          "node": "n07",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c011",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "g"
+        },
+        "to": {
+          "node": "n09",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c012",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n09",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "c013",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "g"
+        },
+        "to": {
+          "node": "n11",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c014",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "g"
+        },
+        "to": {
+          "node": "n11",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "c015",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "g"
+        },
+        "to": {
+          "node": "n07",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c016",
+        "kind": "bond",
+        "from": {
+          "node": "n12",
+          "port": "b"
+        },
+        "to": {
+          "node": "n07",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c017",
+        "kind": "bond",
+        "from": {
+          "node": "n12",
+          "port": "a"
+        },
+        "to": {
+          "node": "n13",
+          "port": "parent"
+        },
+        "label": null
+      },
+      {
+        "id": "c018",
+        "kind": "bond",
+        "from": {
+          "node": "n13",
+          "port": "child"
+        },
+        "to": {
+          "node": "n14",
+          "port": "a"
+        },
+        "label": null
+      },
+      {
+        "id": "c019",
+        "kind": "bond",
+        "from": {
+          "node": "n14",
+          "port": "b"
+        },
+        "to": {
+          "node": "n15",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c020",
+        "kind": "bond",
+        "from": {
+          "node": "n15",
+          "port": "p"
+        },
+        "to": {
+          "node": "n16",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c021",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "g"
+        },
+        "to": {
+          "node": "n18",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c022",
+        "kind": "signal",
+        "from": {
+          "node": "n17",
+          "port": "g"
+        },
+        "to": {
+          "node": "n18",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "c023",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "g"
+        },
+        "to": {
+          "node": "n19",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c024",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n19",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "c025",
+        "kind": "signal",
+        "from": {
+          "node": "n19",
+          "port": "g"
+        },
+        "to": {
+          "node": "n21",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c026",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "g"
+        },
+        "to": {
+          "node": "n21",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "c027",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "g"
+        },
+        "to": {
+          "node": "n15",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c028",
+        "kind": "bond",
+        "from": {
+          "node": "n22",
+          "port": "p"
+        },
+        "to": {
+          "node": "n05",
+          "port": "drive"
+        },
+        "label": null
+      },
+      {
+        "id": "c029",
+        "kind": "bond",
+        "from": {
+          "node": "n23",
+          "port": "p"
+        },
+        "to": {
+          "node": "n13",
+          "port": "drive"
+        },
+        "label": null
+      },
+      {
+        "id": "c030",
+        "kind": "bond",
+        "from": {
+          "node": "n24",
+          "port": "p"
+        },
+        "to": {
+          "node": "n16",
+          "port": "drive"
+        },
+        "label": null
+      },
+      {
+        "id": "c031",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "g"
+        },
+        "to": {
+          "node": "n25",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "c032",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "V"
+        },
+        "to": {
+          "node": "n25",
+          "port": "V"
+        },
+        "label": null
+      },
+      {
+        "id": "c033",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n25",
+          "port": "qa"
+        },
+        "label": null
+      },
+      {
+        "id": "c034",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n25",
+          "port": "qda"
+        },
+        "label": null
+      },
+      {
+        "id": "c035",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n25",
+          "port": "qt"
+        },
+        "label": null
+      },
+      {
+        "id": "c036",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n25",
+          "port": "qdt"
+        },
+        "label": null
+      },
+      {
+        "id": "c037",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "w_rel"
+        },
+        "to": {
+          "node": "n25",
+          "port": "w3"
+        },
+        "label": null
+      },
+      {
+        "id": "c038",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "lean"
+        },
+        "to": {
+          "node": "n27",
+          "port": "lean"
+        },
+        "label": null
+      },
+      {
+        "id": "c039",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "heading"
+        },
+        "to": {
+          "node": "n27",
+          "port": "heading"
+        },
+        "label": null
+      },
+      {
+        "id": "c040",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "th1"
+        },
+        "to": {
+          "node": "n27",
+          "port": "th1"
+        },
+        "label": null
+      },
+      {
+        "id": "c041",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "w1"
+        },
+        "to": {
+          "node": "n27",
+          "port": "w1"
+        },
+        "label": null
+      },
+      {
+        "id": "c042",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "wz"
+        },
+        "to": {
+          "node": "n27",
+          "port": "wz"
+        },
+        "label": null
+      },
+      {
+        "id": "c043",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "th2"
+        },
+        "to": {
+          "node": "n27",
+          "port": "th2"
+        },
+        "label": null
+      },
+      {
+        "id": "c044",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "w2"
+        },
+        "to": {
+          "node": "n27",
+          "port": "w2"
+        },
+        "label": null
+      },
+      {
+        "id": "c045",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "wx"
+        },
+        "to": {
+          "node": "n27",
+          "port": "wx"
+        },
+        "label": null
+      },
+      {
+        "id": "c046",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "wy"
+        },
+        "to": {
+          "node": "n27",
+          "port": "wy"
+        },
+        "label": null
+      },
+      {
+        "id": "c047",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "w_rel"
+        },
+        "to": {
+          "node": "n27",
+          "port": "w3"
+        },
+        "label": null
+      },
+      {
+        "id": "c048",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "v_ref"
+        },
+        "to": {
+          "node": "n27",
+          "port": "v_ref"
+        },
+        "label": null
+      },
+      {
+        "id": "c049",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "psi_ref"
+        },
+        "to": {
+          "node": "n27",
+          "port": "psi_ref"
+        },
+        "label": null
+      },
+      {
+        "id": "c050",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "tau1"
+        },
+        "to": {
+          "node": "n22",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c051",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "tau2"
+        },
+        "to": {
+          "node": "n23",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c052",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "tau3"
+        },
+        "to": {
+          "node": "n24",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c053",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "V"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Vw"
+        },
+        "label": null
+      },
+      {
+        "id": "c054",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "P"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Pw"
+        },
+        "label": null
+      },
+      {
+        "id": "c055",
+        "kind": "signal",
+        "from": {
+          "node": "n07",
+          "port": "V"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Vp"
+        },
+        "label": null
+      },
+      {
+        "id": "c056",
+        "kind": "signal",
+        "from": {
+          "node": "n07",
+          "port": "P"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Pp"
+        },
+        "label": null
+      },
+      {
+        "id": "c057",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "V"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Vg"
+        },
+        "label": null
+      },
+      {
+        "id": "c058",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "P"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Pg"
+        },
+        "label": null
+      },
+      {
+        "id": "c059",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "g"
+        },
+        "to": {
+          "node": "n28",
+          "port": "gw"
+        },
+        "label": null
+      },
+      {
+        "id": "c060",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "g"
+        },
+        "to": {
+          "node": "n28",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "c061",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "g"
+        },
+        "to": {
+          "node": "n28",
+          "port": "gg"
+        },
+        "label": null
+      },
+      {
+        "id": "c062",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "Ek"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Er"
+        },
+        "label": null
+      },
+      {
+        "id": "c063",
+        "kind": "signal",
+        "from": {
+          "node": "n04",
+          "port": "Ec"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Ec"
+        },
+        "label": null
+      },
+      {
+        "id": "c064",
+        "kind": "signal",
+        "from": {
+          "node": "n04",
+          "port": "Pd"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Pd"
+        },
+        "label": null
+      },
+      {
+        "id": "c065",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "tau1"
+        },
+        "to": {
+          "node": "n28",
+          "port": "tau1"
+        },
+        "label": null
+      },
+      {
+        "id": "c066",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n28",
+          "port": "qda"
+        },
+        "label": null
+      },
+      {
+        "id": "c067",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "tau2"
+        },
+        "to": {
+          "node": "n28",
+          "port": "tau2"
+        },
+        "label": null
+      },
+      {
+        "id": "c068",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n28",
+          "port": "qdt"
+        },
+        "label": null
+      },
+      {
+        "id": "c069",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "tau3"
+        },
+        "to": {
+          "node": "n28",
+          "port": "tau3"
+        },
+        "label": null
+      },
+      {
+        "id": "c070",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "w_rel"
+        },
+        "to": {
+          "node": "n28",
+          "port": "w3"
+        },
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 30.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-07,
+    "abstol": 1e-09,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1501
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "lean",
+      "title": "Lean and tilt (paper theta0 - pi/2, theta2)",
+      "signals": [
+        "Sense/lean",
+        "Sense/th2",
+        "Ctrl/lean_ref"
+      ]
+    },
+    {
+      "id": "heading",
+      "title": "Heading",
+      "signals": [
+        "Sense/heading"
+      ]
+    },
+    {
+      "id": "speeds",
+      "title": "Wheel rate and forward speed",
+      "signals": [
+        "Sense/wz",
+        "Sense/v"
+      ]
+    },
+    {
+      "id": "flywheel",
+      "title": "Flywheel speed relative to the gimbal",
+      "signals": [
+        "Flywheel/w_rel"
+      ]
+    },
+    {
+      "id": "path",
+      "title": "Path of the wheel centre (y against x)",
+      "signals": [
+        "Sense/yc",
+        "Sense/xc"
+      ]
+    },
+    {
+      "id": "torques",
+      "title": "Actuator torques",
+      "signals": [
+        "Ctrl/tau1",
+        "Ctrl/tau2",
+        "Ctrl/tau3"
+      ]
+    },
+    {
+      "id": "energy",
+      "title": "Energy",
+      "signals": [
+        "Energy/E",
+        "Energy/loss",
+        "Energy/Ebal"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/gyrover.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:wheel",
+      "property": "pose",
+      "signal": [
+        "Pose/qw",
+        "Pose/qx",
+        "Pose/qy",
+        "Pose/qz",
+        "Pose/px",
+        "Pose/py",
+        "Pose/pz"
+      ]
+    },
+    {
+      "target": "link:pendulum",
+      "property": "pose",
+      "signal": [
+        "PoseP/g[1]",
+        "PoseP/g[2]",
+        "PoseP/g[3]",
+        "PoseP/g[4]",
+        "PoseP/g[5]",
+        "PoseP/g[6]",
+        "PoseP/g[7]"
+      ]
+    },
+    {
+      "target": "link:gimbal",
+      "property": "pose",
+      "signal": [
+        "PoseG/g[1]",
+        "PoseG/g[2]",
+        "PoseG/g[3]",
+        "PoseG/g[4]",
+        "PoseG/g[5]",
+        "PoseG/g[6]",
+        "PoseG/g[7]"
+      ]
+    },
+    {
+      "target": "joint:flywheel_spin",
+      "property": "position",
+      "signal": "Sense/spin_vis"
+    }
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "speed",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Cruise speed",
+        "parameter": "Plan/v_cruise",
+        "options": {
+          "min": 0.5,
+          "max": 2.5,
+          "step": 0.1,
+          "decimals": 1,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "turn",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Heading change per turn",
+        "parameter": "Plan/dpsi",
+        "options": {
+          "min": -3.0,
+          "max": 3.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "rad"
+        }
+      },
+      {
+        "id": "lean",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Lean",
+        "signals": [
+          "Sense/lean"
+        ],
+        "options": {
+          "min": -0.4,
+          "max": 0.4,
+          "decimals": 3,
+          "unit": "rad",
+          "zones": [
+            {
+              "from": -0.4,
+              "to": -0.3,
+              "tone": "bad"
+            },
+            {
+              "from": -0.3,
+              "to": -0.2,
+              "tone": "warn"
+            },
+            {
+              "from": -0.2,
+              "to": 0.2,
+              "tone": "good"
+            },
+            {
+              "from": 0.2,
+              "to": 0.3,
+              "tone": "warn"
+            },
+            {
+              "from": 0.3,
+              "to": 0.4,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "v",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Speed",
+        "signals": [
+          "Sense/v"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "m/s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "flywheel",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Flywheel",
+        "signals": [
+          "Flywheel/w_rel"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "rad/s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "tilt",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Tilt",
+        "signals": [
+          "Sense/th2"
+        ],
+        "options": {
+          "min": -0.8,
+          "max": 0.8,
+          "decimals": 3,
+          "unit": "rad"
+        }
+      },
+      {
+        "id": "heading",
+        "kind": "plot",
+        "size": "2x1",
+        "title": "Heading and set-point",
+        "signals": [
+          "Sense/heading",
+          "Plan/psi_ref"
+        ]
+      },
+      {
+        "id": "torques",
+        "kind": "plot",
+        "size": "2x1",
+        "title": "Drive and tilt torque",
+        "signals": [
+          "Ctrl/tau1",
+          "Ctrl/tau2"
+        ]
+      }
+    ]
+  }
+}

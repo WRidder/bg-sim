@@ -353,6 +353,8 @@ include("test_export_sources.jl")
 include("test_export_motion.jl")
 # The Thermal domain (heated resistor, convection, radiation) in the C export.
 include("test_export_thermal.jl")
+# The rolling wheel contact and the flywheel rotor (RollingDisk, Rotor3D) in the C export.
+include("test_export_rolling.jl")
 # The common rotation and electrical components (clutch, gears, op-amp, switches, ...) in the
 # C export.
 include("test_export_components.jl")

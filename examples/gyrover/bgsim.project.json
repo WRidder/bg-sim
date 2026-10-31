@@ -1,0 +1,20 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "gyrover",
+  "models": [
+    "gyrover",
+    "gyrover-ref",
+    "free",
+    "reference",
+    "steady-turn",
+    "steady-turn-ref",
+    "spin",
+    "no-spin",
+    "fig3",
+    "fig3-ref",
+    "fig3-drill"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

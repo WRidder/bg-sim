@@ -270,6 +270,7 @@ const M3_SPATIAL_REFS = [
     "stdlib:spatial/Revolute3DRigid",
     "stdlib:spatial/Revolute3DLimit",
     "stdlib:spatial/RigidBody3D",
+    "stdlib:spatial/Rotor3D",
     "stdlib:spatial/Spherical3D",
     "stdlib:spatial/Universal3D",
 ]
@@ -280,6 +281,7 @@ const M3_CONTACT_REFS = [
     "stdlib:contact/ContactSurface",
     "stdlib:contact/ImpactBody3D",
     "stdlib:contact/ImpactInertia3D",
+    "stdlib:contact/RollingDisk",
     "stdlib:contact/SwitchedPivot3D",
 ]
 

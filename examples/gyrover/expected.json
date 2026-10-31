@@ -1,0 +1,527 @@
+{
+  "project": "gyrover",
+  "description": "Acceptance of the Gyrover example (single-wheel gyroscopically stabilised robot after Tsai, Ferreira and Paredis, IROS 1999). The bond graphs (RigidBody3D wheel on a RollingDisk contact, pendulum and gimbal on Revolute3D joints, Rotor3D flywheel) are compared with the equation-based reference model GyroverRef (exact rolling, Kane's equations); the steady turn is checked against the exact steady-turn solution of design/design.py, the energy book against the contact dissipation, and the controller runs against the paper's figure 3 where it can be reproduced.",
+  "models": {
+    "gyrover": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "the wheel, pendulum and gimbal links follow their composed poses and the flywheel joint the displayed spin angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/v",
+          "t": 5.0,
+          "value": 1.2,
+          "abs": 0.005,
+          "note": "the speed loop (paper K1 shifted to the set-point) reaches the 1.2 m/s cruise speed (measured 1.1997)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/heading",
+          "t": 30.0,
+          "value": 6.2832,
+          "abs": 0.04,
+          "note": "four 90-degree turns: the heading ends 0.025 rad short of 2 pi (measured 6.2581; the heading loop is still closing the last step)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/yc",
+          "t": 30.0,
+          "value": -4.42,
+          "abs": 0.06,
+          "note": "the rounded square closes: the robot is back on its start line y = -4.42 m (measured -4.4585 m after a 33 m loop)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Sense/lean",
+          "value": 0.18629,
+          "rtol": 0.01,
+          "note": "largest lean in the turns (measured 0.1863 rad); the lean set-point saturates at 0.35 rad and the K2 loop realises about half of it"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sense/yaw_rate",
+          "t": 13.5,
+          "value": 0.3126,
+          "abs": 0.0005,
+          "note": "turning rate in the middle of the second turn; the small-angle steady-turn formula of the docs at the measured lean -0.18471, speed 1.19183 m/s and tilt -0.18759 gives 0.31251 rad/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tyre/s_lat",
+          "value": 0.0001,
+          "note": "lateral creep of the tyre stays below 0.1 mm/s (measured 4.3e-5 m/s in the turns: the friction cone is used to 3.8 %)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tyre/s_lon",
+          "value": 0.0002,
+          "note": "longitudinal creep below 0.2 mm/s (measured 7.6e-5 m/s while speeding up)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Tyre/f_n",
+          "value": 50.0,
+          "note": "the wheel never lifts off (measured 62.0 to 79.1 N against a weight of 68.8 N)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tyre/delta",
+          "value": 0.00025,
+          "note": "contact penetration stays below 0.25 mm (measured 0.185 mm)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/tau1",
+          "value": 2.0,
+          "note": "drive torque (measured peak 1.90 N m at the start)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/tau2",
+          "value": 1.6,
+          "note": "tilt torque (measured peak 1.50 N m: it carries the gyroscopic torque in the turns)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Flywheel/w_rel",
+          "value": 1570.0,
+          "note": "the flywheel speed loop holds 15 000 rpm (measured 1570.72 to 1571.13 rad/s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Flywheel/w_rel",
+          "value": 1572.0,
+          "note": "upper bound of the flywheel speed"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/Ebal",
+              "coeff": 1.0
+            }
+          ],
+          "scale": 1.0,
+          "tol": 0.01,
+          "note": "energy book: stored energy + contact loss - motor work is constant to 2.8 mJ (the joint dampers of the stiff held directions dissipate the rest) while the motors do 5.5 J of work"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E007",
+            "W206"
+          ],
+          "note": "compliant joints and an explicit contact: no derivative causality, connected and frame-consistent"
+        }
+      ]
+    },
+    "gyrover-ref": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "Gyrover/heading",
+          "t": 30.0,
+          "value": 6.2832,
+          "abs": 0.04,
+          "note": "the reference model drives the same loop"
+        }
+      ]
+    },
+    "free": {
+      "checks": [
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/Ebal",
+              "coeff": 1.0
+            }
+          ],
+          "scale": 1.0,
+          "tol": 0.006,
+          "note": "no damping, no drive (the tilt is held by a spring): stored energy + contact loss is constant to 3.4 mJ over 6 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Energy/loss",
+          "t": 2.0,
+          "value": 0.0026,
+          "abs": 0.002,
+          "note": "contact losses while the wheel rolls cleanly: 2.6 mJ in 2 s (vertical damping and creep)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Energy/loss",
+          "from_t": 5.9,
+          "to_t": 6.0,
+          "value": 0.5,
+          "note": "after the nutation has grown (about 3 s) the tyre side-slips and the contact dissipates 1.18 J by 6 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Energy/loss",
+          "value": 2.0,
+          "note": "upper bound of the contact loss"
+        }
+      ]
+    },
+    "free-2s": {
+      "model": "free",
+      "settings": {
+        "t_end": 2.0,
+        "output": {
+          "points": 401
+        }
+      },
+      "checks": []
+    },
+    "reference": {
+      "checks": [
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Gyrover/E",
+              "coeff": 1.0
+            }
+          ],
+          "scale": 1.0,
+          "tol": 0.001,
+          "from_t": 0.0,
+          "to_t": 2.0,
+          "note": "the exact-rolling reference is conservative (to 0.3 mJ up to 2 s; the tilt spring energy is not in its book)"
+        }
+      ]
+    },
+    "reference-2s": {
+      "model": "reference",
+      "settings": {
+        "t_end": 2.0,
+        "output": {
+          "points": 401
+        }
+      },
+      "checks": []
+    },
+    "steady-turn": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "Sense/lean",
+          "t": 10.0,
+          "value": 0.208791,
+          "abs": 0.0002,
+          "note": "settled lean of the steady turn"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/v",
+          "t": 10.0,
+          "value": 1.490233,
+          "abs": 0.0005,
+          "note": "settled speed"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/th2",
+          "t": 10.0,
+          "value": 0.111353,
+          "abs": 0.0002,
+          "note": "settled tilt"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/yaw_rate",
+          "t": 10.0,
+          "value": -0.335157,
+          "abs": 5e-05,
+          "note": "turning rate against the EXACT steady turn of design.steady_turn at the settled lean, speed and tilt (-0.335157 rad/s; measured -0.335169; the small-angle formula gives -0.335292)"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Sense/v",
+          "signal_b": "Sense/yaw_rate",
+          "t": 10.0,
+          "value": -4.4464,
+          "rtol": 0.0005,
+          "note": "turn radius v / psi' of the wheel centre: exact 4.4464 m (measured 4.4462 m; a circle fitted to the path gives 4.4452 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Tyre/s_lat",
+          "from_t": 3.0,
+          "to_t": 10.0,
+          "value": 0.0001,
+          "note": "the tyre holds the turn with sub-millimetre-per-second creep"
+        }
+      ]
+    },
+    "steady-turn-ref": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "Gyrover/yaw_rate",
+          "t": 10.0,
+          "value": -0.335157,
+          "abs": 5e-05,
+          "note": "the reference model settles on the same steady turn"
+        }
+      ]
+    },
+    "spin": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "the close-up scene binds like the showcase scene"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Sense/lean",
+          "value": 0.0521,
+          "note": "with the flywheel at 15 000 rpm the robot standing still on its rim keeps its 0.05 rad lean (measured max 0.0519 rad over 5 s: a 1.9 mrad nutation)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Sense/lean",
+          "value": 0.0499,
+          "note": "lower bound: the lean neither falls nor rights itself"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/yaw_rate",
+          "t": 5.0,
+          "value": -0.0536,
+          "abs": 0.002,
+          "note": "instead it precesses slowly about the vertical (gravity moment = H x precession rate)"
+        }
+      ]
+    },
+    "no-spin": {
+      "checks": [
+        {
+          "kind": "min_ge",
+          "signal": "Sense/lean",
+          "from_t": 0.5,
+          "to_t": 0.6,
+          "value": 0.8,
+          "note": "with the flywheel stopped the same start falls over: 0.82 rad after 0.5 s (exponential growth 6.2 1/s)"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Sense/lean",
+          "level": 0.5,
+          "direction": "up",
+          "n": 1,
+          "value": 0.4273,
+          "abs": 0.01,
+          "note": "lean passes 0.5 rad at 0.427 s"
+        }
+      ]
+    },
+    "fig3": {
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "note": "the close-up scene: wheel, pendulum and gimbal follow their poses, the flywheel its displayed spin angle"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Sense/th1",
+          "n": 1,
+          "direction": "down",
+          "value": 0.31,
+          "abs": 0.01,
+          "note": "paper fig. 3: the pendulum angle theta1 returns from 0.075 rad through 0 (here at 0.31 s; the paper's crosses near 0.25 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Sense/th1",
+          "from_t": 1.3,
+          "to_t": 8.0,
+          "value": 0.002,
+          "note": "theta1 settled within about 1.3 s, as in the paper (where it settles within about 1 s)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Sense/wz",
+          "from_t": 0.0,
+          "to_t": 0.5,
+          "value": 0.0851,
+          "rtol": 0.02,
+          "note": "pitch rate dip -0.085 rad/s at 0.17 s; the paper's figure shows about -0.08 rad/s at about 0.2 s"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/th2",
+          "t": 8.0,
+          "value": -0.08924,
+          "abs": 0.001,
+          "note": "NOT as in the paper: the tilt does not return to 0 but settles at -0.089 rad with a 0.112 rad lean and a steady precession; the vertical angular momentum about the contact is conserved and the paper's printed K2 leaves that mode at a zero pole"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Sense/yaw_rate",
+          "t": 8.0,
+          "value": -0.2518,
+          "abs": 0.001,
+          "note": "the steady precession that carries the conserved vertical angular momentum"
+        }
+      ]
+    },
+    "fig3-ref": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "Gyrover/th2",
+          "t": 8.0,
+          "value": -0.08924,
+          "abs": 0.001,
+          "note": "the reference model ends in the same precession"
+        }
+      ]
+    },
+    "fig3-drill": {
+      "checks": [
+        {
+          "kind": "min_ge",
+          "signal": "Gyrover/lean",
+          "from_t": 7.9,
+          "to_t": 8.0,
+          "value": 0.5,
+          "note": "with tyre drilling damping (0.3 N m s/rad) the slow precession becomes unstable under the paper's K2: the lean grows to 0.53 rad by 8 s (dissipation destabilising a gyroscopically stabilised mode)"
+        }
+      ]
+    }
+  },
+  "compare": [
+    {
+      "a": "gyrover",
+      "b": "gyrover-ref",
+      "signal_a": "Sense/heading",
+      "signal_b": "Gyrover/heading",
+      "max_abs": 0.0001,
+      "note": "bond graph vs exact-rolling reference over the 30 s mission: heading within 2.1e-5 rad"
+    },
+    {
+      "a": "gyrover",
+      "b": "gyrover-ref",
+      "signal_a": "Sense/lean",
+      "signal_b": "Gyrover/lean",
+      "max_abs": 0.0001,
+      "note": "lean within 2.0e-5 rad"
+    },
+    {
+      "a": "gyrover",
+      "b": "gyrover-ref",
+      "signal_a": "Sense/th2",
+      "signal_b": "Gyrover/th2",
+      "max_abs": 0.0001,
+      "note": "tilt within 2.8e-5 rad"
+    },
+    {
+      "a": "gyrover",
+      "b": "gyrover-ref",
+      "signal_a": "Sense/xc",
+      "signal_b": "Gyrover/xc",
+      "max_abs": 0.002,
+      "note": "path x within 0.27 mm over 33 m (the compliant contact rolls on a 0.19 mm smaller radius)"
+    },
+    {
+      "a": "gyrover",
+      "b": "gyrover-ref",
+      "signal_a": "Sense/yc",
+      "signal_b": "Gyrover/yc",
+      "max_abs": 0.002,
+      "note": "path y within 0.17 mm"
+    },
+    {
+      "a": "gyrover",
+      "b": "gyrover-ref",
+      "signal_a": "Sense/v",
+      "signal_b": "Gyrover/v",
+      "max_abs": 0.0005,
+      "note": "speed within 0.15 mm/s"
+    },
+    {
+      "a": "free-2s",
+      "b": "reference-2s",
+      "signal_a": "Sense/heading",
+      "signal_b": "Gyrover/heading",
+      "max_abs": 0.01,
+      "note": "uncontrolled rolling: heading within 7.3e-3 rad over 2 s (the free motion is sensitive; the contact compliance and the joint springs separate the runs later)"
+    },
+    {
+      "a": "free-2s",
+      "b": "reference-2s",
+      "signal_a": "Sense/lean",
+      "signal_b": "Gyrover/lean",
+      "max_abs": 0.005,
+      "note": "lean within 3.5e-3 rad over 2 s"
+    },
+    {
+      "a": "free-2s",
+      "b": "reference-2s",
+      "signal_a": "Sense/xc",
+      "signal_b": "Gyrover/xc",
+      "max_abs": 0.001,
+      "note": "path within 0.53 mm over 3 m"
+    },
+    {
+      "a": "free-2s",
+      "b": "reference-2s",
+      "signal_a": "Sense/yc",
+      "signal_b": "Gyrover/yc",
+      "max_abs": 0.001,
+      "note": "path y"
+    },
+    {
+      "a": "steady-turn",
+      "b": "steady-turn-ref",
+      "signal_a": "Sense/yaw_rate",
+      "signal_b": "Gyrover/yaw_rate",
+      "from_t": 3.0,
+      "max_abs": 2e-05,
+      "note": "steady turn: bond graph and reference within 5.1e-6 rad/s"
+    },
+    {
+      "a": "steady-turn",
+      "b": "steady-turn-ref",
+      "signal_a": "Sense/lean",
+      "signal_b": "Gyrover/lean",
+      "from_t": 3.0,
+      "max_abs": 2e-05,
+      "note": "lean within 3.9e-6 rad"
+    },
+    {
+      "a": "fig3",
+      "b": "fig3-ref",
+      "signal_a": "Sense/th1",
+      "signal_b": "Gyrover/th1",
+      "max_abs": 0.0001,
+      "note": "figure 3 scenario: pendulum angle within 3.6e-5 rad"
+    },
+    {
+      "a": "fig3",
+      "b": "fig3-ref",
+      "signal_a": "Sense/th2",
+      "signal_b": "Gyrover/th2",
+      "max_abs": 0.0001,
+      "note": "tilt within 3.8e-5 rad"
+    },
+    {
+      "a": "fig3",
+      "b": "fig3-ref",
+      "signal_a": "Sense/lean",
+      "signal_b": "Gyrover/lean",
+      "max_abs": 0.0001,
+      "note": "lean within 4.1e-5 rad"
+    }
+  ]
+}

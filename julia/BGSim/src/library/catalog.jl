@@ -1234,6 +1234,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Spatial rigid body (diagonal J, m) with one spatial port: the flat graph is the 1-junction with ISpatial, CoriolisSpatial fed by ISpatial/Pm and GravitySpatial fed by the world pose (plan 5.2).",
         icon = "sp-rigid-body-3d",
     ),
+    "stdlib:spatial/Rotor3D" => (
+        description = "Axisymmetric rotor (flywheel, gyro or reaction-wheel rotor) about the z axis of its carrier body: only the axial momentum is a state (no spin-angle frame to resolve), the gyroscopic torque and the motor reaction act on the carrier port, the motor drives the Rotation port.",
+        icon = "sp-rotor-3d",
+    ),
     "stdlib:spatial/Spherical3D" => (
         description = "Spatial spherical (ball) joint (n = 3): three Rotation ports carrying the relative body-frame angular velocity, the relative orientation stored as an integrated unit quaternion (no gimbal lock), and a compliant pivot translation.",
         icon = "sp-spherical-3d",
@@ -1251,6 +1255,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:contact/ContactSurface" => (
         description = "Rigid contact plane (world point and normal, tangent heading) as a signal source for any number of ContactPoint elements.",
         icon = "ct-contact-surface",
+    ),
+    "stdlib:contact/RollingDisk" => (
+        description = "Compliant rolling contact of a wheel (disc, optional toroidal crown) on a ContactSurface plane: the contact point is recomputed as the lowest rim point, smooth Hunt-Crossley normal force, isotropic regularised Coulomb friction on the slip of the rim material point, optional drilling damping; slip, forces, contact point and dissipated power as outputs.",
+        icon = "ct-rolling-disk",
     ),
     # J-MB14: mode-switched pivot and the impact map.
     "stdlib:contact/ImpactBody3D" => (

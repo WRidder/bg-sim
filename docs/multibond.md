@@ -156,6 +156,22 @@ Hertz exponent is fixed at 3/2. Mount the contact on the `a` side of the transfo
 flow is then minus the point twist. Contact is a compliant penalty model: it stores and
 dissipates behind one port, so the energy ledger (section 9) classifies it as `mixed`.
 
+`RollingDisk` is the rolling counterpart of `ContactPoint` for a wheel (disc of radius `radius`,
+optional toroidal `crown`): the contact point is not fixed in the body but recomputed as the
+lowest rim point towards the plane, `u = -(n - (n.a)a)/|.|`, `r = radius u - crown n`. The
+penetration rate is `-n . v_p` of the rim material point (envelope theorem), so the spring is
+power consistent. Friction is isotropic regularised Coulomb on the in-plane slip of the
+material point, `F_t = -mu f_n s / sqrt(|s|^2 + vs^2)` (a wheel rolling under a force `F` creeps
+at about `vs F/(mu f_n)`), plus optional drilling damping `bsp`. Bond the wheel body's port
+straight to it (no mount transform), with the axle along body z; the port power is
+`dEc/dt + Pd`. `Rotor3D` (`stdlib/spatial/`) is the axisymmetric rotor about the carrier's z
+axis with the axial momentum `h` as its only state (no spin-angle frame for the solver to
+resolve), the gyroscopic torque `-w x (h e_z)` and the motor reaction on the carrier port and the
+motor on a `Rotation` port; it is lossless. Both are validated in the `gyrover` example against
+an equation-based (Kane) model of the robot with exact rolling, and by golden tests
+(`test/golden/contact/test_RollingDisk.jl`, `test/golden/spatial/test_Rotor3D.jl`) and the C
+export (`test/test_export_rolling.jl`).
+
 ## 7. Switched pivot and impact map (v1 limits)
 
 `SwitchedPivot3D`, `ImpactInertia3D` and `ImpactBody3D` (`src/mech/impulse.jl`) model a body
