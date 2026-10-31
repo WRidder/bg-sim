@@ -89,7 +89,8 @@ export type ModelSubsystemPowerPort = {
   ui?: ModelSubsystemPortUi;
   $comment?: string;
 };
-export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
+export type DomainName =
+  "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Thermal" | "Generic" | "Planar" | "Spatial";
 /**
  * Three unit strings, one per component (Planar).
  *
@@ -189,7 +190,8 @@ export type ParameterTargetKind = "block" | "global";
 export type ValueType1 = "Real" | "Int" | "Bool";
 export type ValueType2 = "Real" | "Int" | "Bool";
 export type ValueType3 = "Real" | "Int" | "Bool";
-export type DomainName1 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
+export type DomainName1 =
+  "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Thermal" | "Generic" | "Planar" | "Spatial";
 export type ValueType4 = "Real" | "Int" | "Bool";
 /**
  * State-selection hint (spec: state = :prefer / :avoid), or null.
@@ -211,9 +213,9 @@ export type ModelDimension = 2 | 3;
  * One power domain. The name partitions the shape: Planar and Spatial carry authoritative per-component unit arrays and size 3/6; the scalar domains carry size 1 and must not have a components array. For a multibond domain the scalar effort/flow descriptors are only the angular/first-component label kept for existing consumers.
  */
 export type CatalogDomain = PlanarDomain | SpatialDomain | ScalarDomain;
-export type DomainName2 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic";
+export type DomainName2 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Thermal" | "Generic";
 /**
- * Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted.
+ * Which port field is the across variable (D8): e for Electrical, Hydraulic and Thermal, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted.
  */
 export type AcrossField = "e" | "f" | null;
 export type DiagnosticSeverity = "error" | "warning" | "info";
@@ -225,7 +227,8 @@ export type ModelDimension1 = 2 | 3;
 /**
  * Adopted domain per connection id.
  */
-export type DomainName3 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
+export type DomainName3 =
+  "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Thermal" | "Generic" | "Planar" | "Spatial";
 /**
  * The end of the connection where effort is the input (plan 5.7).
  */

@@ -40,7 +40,8 @@ export type ModelSubsystemPowerPort = {
   ui?: ModelSubsystemPortUi;
   $comment?: string;
 };
-export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
+export type DomainName =
+  "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Thermal" | "Generic" | "Planar" | "Spatial";
 /**
  * Three unit strings, one per component (Planar).
  *

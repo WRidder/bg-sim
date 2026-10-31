@@ -1,0 +1,8 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "motor-thermal",
+  "models": ["motor-thermal"],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

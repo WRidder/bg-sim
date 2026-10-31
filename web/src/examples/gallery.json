@@ -109,6 +109,14 @@
       "inverted-pendulum-cart"
     ]
   },
+  "motor-thermal": {
+    "title": "Motor thermal",
+    "description": "A DC motor's copper loss heats its winding, which conducts to the housing and cools by convection; the hot winding resistance slows the fan.",
+    "hasScene": false,
+    "models": [
+      "motor-thermal"
+    ]
+  },
   "multibond-pendulum-2d": {
     "title": "Multibond pendulum 2d",
     "description": "The Gate A planar multibond pendulum.",

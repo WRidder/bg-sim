@@ -116,6 +116,7 @@ class DomainName(Enum):
     Translation = 'Translation'
     Rotation = 'Rotation'
     Hydraulic = 'Hydraulic'
+    Thermal = 'Thermal'
     Generic = 'Generic'
     Planar = 'Planar'
     Spatial = 'Spatial'
@@ -197,6 +198,7 @@ class DomainName1(Enum):
     Translation = 'Translation'
     Rotation = 'Rotation'
     Hydraulic = 'Hydraulic'
+    Thermal = 'Thermal'
     Generic = 'Generic'
 
 
@@ -902,6 +904,7 @@ class DomainName2(Enum):
     Translation = 'Translation'
     Rotation = 'Rotation'
     Hydraulic = 'Hydraulic'
+    Thermal = 'Thermal'
     Generic = 'Generic'
     Planar = 'Planar'
     Spatial = 'Spatial'
@@ -1804,7 +1807,7 @@ class ScalarDomain(BaseModel):
     flow: DomainVariable
     across: AcrossField | None = Field(
         ...,
-        description='Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted.',
+        description='Which port field is the across variable (D8): e for Electrical, Hydraulic and Thermal, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted.',
         title='AcrossField',
     )
     size: Literal[1]

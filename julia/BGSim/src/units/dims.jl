@@ -379,6 +379,7 @@ island adopted them — the full per-component arrays live in
 | Translation | N | m/s |
 | Rotation | N·m | rad/s |
 | Hydraulic | Pa | m³/s |
+| Thermal | K | W (heat flow; a pseudo bond: e·f is not a power) |
 | Planar, Spatial | N·m (component 1) | rad/s (component 1) |
 | Generic | effort | flow |
 """
@@ -388,6 +389,7 @@ const DOMAIN_EFFORT = Dict{Symbol,Dims}(
     :Translation => UNIT_N,
     :Rotation => UNIT_N * UNIT_M,
     :Hydraulic => UNIT_PA,
+    :Thermal => UNIT_K,
     :Planar => UNIT_J,
     :Spatial => UNIT_J,
 )
@@ -398,6 +400,7 @@ const DOMAIN_FLOW = Dict{Symbol,Dims}(
     :Translation => UNIT_M / UNIT_S,
     :Rotation => UNIT_HZ,
     :Hydraulic => UNIT_M^3 / UNIT_S,
+    :Thermal => UNIT_W,
     :Planar => UNIT_HZ,
     :Spatial => UNIT_HZ,
 )
@@ -411,6 +414,7 @@ const DOMAIN_UNIT_LABELS = Dict{Symbol,NTuple{2,String}}(
     :Translation => ("N", "m/s"),
     :Rotation => ("N*m", "rad/s"),
     :Hydraulic => ("Pa", "m^3/s"),
+    :Thermal => ("K", "W"),
     :Planar => ("N*m", "rad/s"),
     :Spatial => ("N*m", "rad/s"),
 )
@@ -534,7 +538,9 @@ end
 
 The dimension of the scalar port power `P = Σ_k e[k]*f[k]` in `domain`: `W` for every
 concrete domain (a torque times an angular rate and a force times a linear rate are both
-watts), and `effort*flow` for `Generic` (nothing has been adopted yet). The function checks
+watts), and `effort*flow` for `Generic` (nothing has been adopted yet). `Thermal` is the one
+exception: it is a pseudo bond domain (temperature times heat flow), so its product is
+`K*W`, not a power. The function checks
 that every component product really is the same dimension, so a wrong component table is a
 programming error, not a silently mislabelled signal."""
 function power_dims(domain::Symbol)::Dims
@@ -563,7 +569,7 @@ to the SI part and their scales multiply the result; the pseudo slots are then z
 function substitute_domain(d::Dims, domain::Symbol)::Dims
     domain === :Generic && return d
     if !haskey(DOMAIN_EFFORT, domain) || !haskey(DOMAIN_FLOW, domain)
-        throw(ArgumentError("unknown domain `$domain`; expected :Electrical, :Translation, :Rotation, :Hydraulic, :Planar, :Spatial or :Generic"))
+        throw(ArgumentError("unknown domain `$domain`; expected :Electrical, :Translation, :Rotation, :Hydraulic, :Thermal, :Planar, :Spatial or :Generic"))
     end
     ee = d.exps[8]
     fe = d.exps[9]

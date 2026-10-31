@@ -1,0 +1,24 @@
+{
+  "$comment": "expected E102: a wire joins the Thermal port of a FixedTemperature (n1.a) to the Electrical port of a Ground (n2.p). Thermal is a pseudo bond domain (temperature and heat flow) and never connects to another concrete domain, so the editor refuses the drop and the compiler reports E102 on node n2 / connection c1.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "NegThermalElectrical",
+  "diagram": {
+    "nodes": [
+      { "id": "n1", "name": "Ambient", "block": { "ref": "stdlib:thermal/FixedTemperature" },
+        "position": { "x": 80, "y": 100 }, "params": {}, "constants": {}, "starts": {} },
+      { "id": "n2", "name": "Gnd", "block": { "ref": "stdlib:electrical/Ground" },
+        "position": { "x": 300, "y": 100 }, "params": {}, "constants": {}, "starts": {} }
+    ],
+    "connections": [
+      { "id": "c1", "kind": "wire", "from": { "node": "n1", "port": "a" }, "to": { "node": "n2", "port": "p" } }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": { "t_start": 0.0, "t_end": 1.0, "solver": "auto", "reltol": 1e-6, "abstol": 1e-8,
+                "max_step": null, "output": { "mode": "points", "points": 1000 }, "event_limit": 10000 },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

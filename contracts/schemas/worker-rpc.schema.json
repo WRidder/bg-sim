@@ -426,7 +426,7 @@
           "type": "object",
           "additionalProperties": {
             "title": "DomainName",
-            "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"],
+            "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Thermal", "Generic", "Planar", "Spatial"],
             "description": "Adopted domain per connection id."
           },
           "description": "Connection id -> adopted domain, for colouring the bonds."

@@ -1,0 +1,107 @@
+{
+  "$comment": "Thermal domain (pseudo bond graph: temperature [K], heat flow [W]). A 12 V source drives a heated resistor (R0 = 6 Ohm, alpha = 0.004 1/K) to ground; its heat port warms a body (C = 200 J/K) that loses heat by convection (h = 10 W/(m^2*K), A = 0.05 m^2) to a 293.15 K ambient and is read by a temperature sensor. Steady state: 0.5*dT*(1 + 0.004*dT) = 24 W, so dT = 41.2 K.",
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "ThermalHeater",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "One",
+        "block": { "ref": "stdlib:sources/Constant" },
+        "position": { "x": 40, "y": 120 },
+        "params": { "value": "1.0" },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n2",
+        "name": "Supply",
+        "block": { "ref": "stdlib:electrical/VoltageSource" },
+        "position": { "x": 200, "y": 120 },
+        "params": { "V": "12.0" },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n3",
+        "name": "Heater",
+        "block": { "ref": "stdlib:thermal/ResistorHeated" },
+        "position": { "x": 380, "y": 60 },
+        "params": { "R0": "6.0", "alpha": "0.004", "T0": "293.15" },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n4",
+        "name": "Gnd",
+        "block": { "ref": "stdlib:electrical/Ground" },
+        "position": { "x": 300, "y": 260 },
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n5",
+        "name": "Body",
+        "block": { "ref": "stdlib:thermal/HeatCapacitor" },
+        "position": { "x": 560, "y": 60 },
+        "params": { "C": "200.0" },
+        "constants": {},
+        "starts": { "T": "293.15" }
+      },
+      {
+        "id": "n6",
+        "name": "Film",
+        "block": { "ref": "stdlib:thermal/Convection" },
+        "position": { "x": 720, "y": 60 },
+        "params": { "h": "10.0", "A": "0.05" },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n7",
+        "name": "Ambient",
+        "block": { "ref": "stdlib:thermal/FixedTemperature" },
+        "position": { "x": 880, "y": 60 },
+        "params": { "T": "293.15" },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "n8",
+        "name": "Probe",
+        "block": { "ref": "stdlib:thermal/TemperatureSensor" },
+        "position": { "x": 560, "y": 200 },
+        "params": {},
+        "constants": {},
+        "starts": {}
+      }
+    ],
+    "connections": [
+      { "id": "c1", "kind": "signal", "from": { "node": "n1", "port": "y" }, "to": { "node": "n2", "port": "u" } },
+      { "id": "c2", "kind": "wire", "from": { "node": "n2", "port": "p" }, "to": { "node": "n3", "port": "p" } },
+      { "id": "c3", "kind": "wire", "from": { "node": "n3", "port": "n" }, "to": { "node": "n4", "port": "p" } },
+      { "id": "c4", "kind": "wire", "from": { "node": "n2", "port": "n" }, "to": { "node": "n4", "port": "p" } },
+      { "id": "c5", "kind": "wire", "from": { "node": "n3", "port": "heat" }, "to": { "node": "n5", "port": "a" } },
+      { "id": "c6", "kind": "wire", "from": { "node": "n5", "port": "a" }, "to": { "node": "n6", "port": "solid" } },
+      { "id": "c7", "kind": "wire", "from": { "node": "n6", "port": "fluid" }, "to": { "node": "n7", "port": "a" } },
+      { "id": "c8", "kind": "wire", "from": { "node": "n8", "port": "a" }, "to": { "node": "n5", "port": "a" } }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 2000.0,
+    "solver": "auto",
+    "reltol": 1e-6,
+    "abstol": 1e-8,
+    "max_step": null,
+    "output": { "mode": "points", "points": 401 },
+    "event_limit": 10000
+  },
+  "plots": [],
+  "scene": null,
+  "bindings": []
+}

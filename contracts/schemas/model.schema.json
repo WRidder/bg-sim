@@ -309,7 +309,7 @@
         "kind": { "const": "power" },
         "domain": {
           "title": "DomainName",
-          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
+          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Thermal", "Generic", "Planar", "Spatial"]
         },
         "size": {
           "type": "array",
@@ -370,7 +370,7 @@
             "type": "object",
             "properties": {
               "domain": {
-                "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+                "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Thermal", "Generic"]
               }
             },
             "required": ["domain"]

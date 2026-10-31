@@ -20,7 +20,14 @@ export const MARKER_OUTPUT = "stdlib:converters/ExportOutput";
 export const MARKER_PARAMETER = "stdlib:converters/ExportParameter";
 
 /** The power-port domains a scope can take (scalar ports only). */
-const SCOPE_DOMAINS = new Set(["Generic", "Electrical", "Translation", "Rotation", "Hydraulic"]);
+const SCOPE_DOMAINS = new Set([
+  "Generic",
+  "Electrical",
+  "Translation",
+  "Rotation",
+  "Hydraulic",
+  "Thermal",
+]);
 
 export type PowerChoice = "effort" | "flow";
 

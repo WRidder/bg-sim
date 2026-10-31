@@ -316,6 +316,55 @@ describe("refusals with the exact tooltip text (plan 7.3)", () => {
     });
   });
 
+  it("links two Thermal ports as a wire (a common temperature node)", () => {
+    const result = checkConnection(
+      modelWith([]),
+      power("Thermal", { node: "body", name: "a" }),
+      power("Thermal", { node: "wall", name: "b" }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.kind).toBe("wire");
+      expect(result.domain).toBe("Thermal");
+    }
+  });
+
+  it("lets a Generic bond graph port adopt Thermal through a bond", () => {
+    const result = checkConnection(
+      modelWith([]),
+      power("Generic", { node: "c", name: "p" }),
+      power("Thermal", { node: "ambient", name: "a" }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.kind).toBe("bond");
+      expect(result.domain).toBe("Thermal");
+    }
+  });
+
+  it("refuses Thermal against every other concrete domain with the heat-flow hint", () => {
+    for (const other of ["Electrical", "Translation", "Rotation", "Hydraulic"] as const) {
+      const forward = checkConnection(
+        modelWith([]),
+        power("Thermal", { node: "heat", name: "a" }),
+        power(other, { node: "other", name: "p" }),
+      );
+      expect(forward).toEqual({
+        ok: false,
+        reason: `Thermal port cannot connect to ${other}; thermal ports carry heat flow, so couple them through RS or a heated component (ResistorHeated)`,
+      });
+      const backward = checkConnection(
+        modelWith([]),
+        power(other, { node: "other", name: "p" }),
+        power("Thermal", { node: "heat", name: "a" }),
+      );
+      expect(backward.ok).toBe(false);
+      if (!backward.ok) {
+        expect(backward.reason).toBe(CONNECTION_MESSAGES.thermal(other, "Thermal"));
+      }
+    }
+  });
+
   it("refuses to mix the Planar and Spatial multibond domains (E102)", () => {
     // Regression guard: checkConnection already refused any two differing
     // concrete domains before W-MB2. This pins the E102 tooltip for the pair
@@ -386,6 +435,7 @@ describe("refusals with the exact tooltip text (plan 7.3)", () => {
     expect(domainLetter("Translation")).toBe("T");
     expect(domainLetter("Rotation")).toBe("R");
     expect(domainLetter("Hydraulic")).toBe("H");
+    expect(domainLetter("Thermal")).toBe("Th");
     expect(domainLetter("Generic")).toBe("G");
     expect(domainLetter("Planar")).toBe("P");
     expect(domainLetter("Spatial")).toBe("S");

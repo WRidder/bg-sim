@@ -41,7 +41,7 @@ MARKER_INPUT_PASS = "stdlib:converters/ExportInputPass"
 MARKER_OUTPUT = "stdlib:converters/ExportOutput"
 MARKER_PARAMETER = "stdlib:converters/ExportParameter"
 CSV_SOURCES = ("stdlib:sources/CsvSource", "stdlib:sources/CsvSourceSampled")
-SCOPE_DOMAINS = ("Generic", "Electrical", "Translation", "Rotation", "Hydraulic")
+SCOPE_DOMAINS = ("Generic", "Electrical", "Translation", "Rotation", "Hydraulic", "Thermal")
 REPORT_FIXTURE = Path("contracts/fixtures/export-report/valid/export-report.rk4.json")
 FAKE_NOTE = ("fake export runner (BGSIM_FAKE_WORKER): nothing was compiled; "
              "the FMU holds the sources only")
@@ -124,7 +124,7 @@ def interface(model: dict[str, Any], scope: str | None, power_inputs: dict[str, 
             if domain not in SCOPE_DOMAINS or size != 1:
                 diags.append(_diag(
                     "E112", f"the power port `{name}` ({domain}) cannot be an export interface yet",
-                    hint="only scalar Electrical, Translation, Rotation, Hydraulic or generic bond ports",
+                    hint="only scalar Electrical, Translation, Rotation, Hydraulic, Thermal or generic bond ports",
                     path=here))
                 continue
             choice = power_inputs.get(name)

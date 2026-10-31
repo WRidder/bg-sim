@@ -296,6 +296,103 @@ const GLYPHS: Record<string, Glyph> = {
     </>
   ),
 
+  // ------------------------------------------------------------------- thermal
+  "th-heat-capacitor": () => (
+    <>
+      <rect x="4.5" y="6.5" width="15" height="11" rx="1.5" />
+      {label("C", 8)}
+      <path d="M8 20.5c1-1 2-1 3 0s2 1 3 0 2-1 3 0" opacity="0.5" />
+    </>
+  ),
+  "th-conductor": () => (
+    <>
+      <path d="M2 12h4M18 12h4" />
+      <rect x="6" y="8" width="12" height="8" />
+      <path d="M8 8l4 8M12 8l4 8" opacity="0.5" />
+    </>
+  ),
+  "th-resistor": () => (
+    <>
+      <path d="M2 12h4M18 12h4" />
+      <rect x="6" y="8" width="12" height="8" />
+      {label("R", 6.5)}
+    </>
+  ),
+  "th-convection": () => (
+    <>
+      <path d="M4 4v16" />
+      <path d="M8 18c2-2 0-4 2-6s0-4 2-6M13 18c2-2 0-4 2-6s0-4 2-6M18 18c2-2 0-4 2-6s0-4 2-6" />
+    </>
+  ),
+  "th-variable-convection": () => (
+    <>
+      <path d="M4 4v16" />
+      <path d="M8 18c2-2 0-4 2-6s0-4 2-6M13 18c2-2 0-4 2-6s0-4 2-6" />
+      <path d="M15 20l6-16M19 6l2-2 .5 3" />
+    </>
+  ),
+  "th-radiation": () => (
+    <>
+      <path d="M4 4v16M20 4v16" />
+      <path d="M7 8l4 0M9 6l2 2-2 2M13 16h4M15 14l2 2-2 2" />
+      <path d="M7 12c1-1.5 2-1.5 3 0s2 1.5 3 0 2-1.5 3 0" opacity="0.6" />
+    </>
+  ),
+  "th-fixed-temperature": () => (
+    <>
+      <path d="M10 4a2 2 0 0 1 4 0v10a4 4 0 1 1-4 0z" />
+      <circle cx="12" cy="17" r="1.8" fill="currentColor" stroke="none" />
+      <path d="M12 9v6" />
+    </>
+  ),
+  "th-prescribed-temperature": () => (
+    <>
+      <path d="M10 4a2 2 0 0 1 4 0v10a4 4 0 1 1-4 0z" />
+      <circle cx="12" cy="17" r="1.8" fill="currentColor" stroke="none" />
+      <path d="M17 6l4 0M17 10h4" opacity="0.6" />
+    </>
+  ),
+  "th-heat-flow-source": () => (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M7 12h9M13 9l3 3-3 3" />
+    </>
+  ),
+  "th-prescribed-heat-flow": () => (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M7 12h9M13 9l3 3-3 3" />
+      <path d="M12 2v2" opacity="0.6" />
+    </>
+  ),
+  "th-temperature-sensor": () => (
+    <>
+      <path d="M10 4a2 2 0 0 1 4 0v10a4 4 0 1 1-4 0z" />
+      <circle cx="12" cy="17" r="1.8" fill="currentColor" stroke="none" />
+      <path d="M16 12h5M19 10l2 2-2 2" opacity="0.8" />
+    </>
+  ),
+  "th-heat-flow-sensor": () => (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      {label("Q", 8)}
+      <path d="M2 12h1.5M20.5 12H22" />
+    </>
+  ),
+  "th-resistor-heated": () => (
+    <>
+      <path d="M2 10h4l2-4 3 8 3-8 3 8 2-4h3" />
+      <path d="M8 20c1-1 2-1 3 0s2 1 3 0 2-1 3 0" opacity="0.6" />
+    </>
+  ),
+  "th-dc-motor": () => (
+    <>
+      <circle cx="12" cy="11" r="7.5" />
+      {label("M", 8)}
+      <path d="M8 21.5c1-1 2-1 3 0s2 1 3 0 2-1 3 0" opacity="0.6" />
+    </>
+  ),
+
   // ------------------------------------------------------- converters & sensors
   "conv-dc-motor": () => (
     <>

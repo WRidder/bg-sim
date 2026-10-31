@@ -25,6 +25,12 @@ and groups the elements:
 ``conversion``   power-conserving transforms, gyrators and junction-like blocks
                  (``W`` is zero up to the integrator), and ``measure`` taps.
 
+Thermal ports are left out: the Thermal domain is a pseudo bond graph (temperature times
+heat flow, unit ``K*W``), so their ``.P`` is not a power.  The elements that couple into it
+(``RS``, ``ResistorHeated``, the heated motor) are dissipation here: their energetic ports
+carry the loss, and the heat they deliver is accounted in the thermal network, with heat
+flow sensors and integrators (see ``examples/motor-thermal``).
+
 Because every bond connects two ports with opposite power, ``sum_all W`` is zero
 (Tellegen's theorem): the **residual** measures the integrator order and any
 recorder inconsistency.  When the caller names stored-energy signals (``stored``)
@@ -91,7 +97,7 @@ for _name in (
     _EXACT[_name] = "storage"
 for _name in (
     "R RPlanar RSpatial MR Resistor RotationalDamper Damper TranslationalDamper "
-    "Orifice VariableOrifice LaminarResistance"
+    "Orifice VariableOrifice LaminarResistance RS ResistorHeated"
 ).split():
     _EXACT[_name] = "dissipation"
 for _name in (
@@ -128,6 +134,16 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
 )
 
 TYPE_CLASS = _EXACT
+
+
+_UNIT_NAME = re.compile(r"[A-Za-z]+")
+
+
+def is_thermal_pseudo_power(entry: dict[str, Any]) -> bool:
+    """True for the ``.P`` of a Thermal port: its unit carries kelvin (``K*W``), because a
+    thermal bond is temperature times heat flow, a pseudo-power, not a power."""
+    unit = entry.get("unit")
+    return isinstance(unit, str) and "K" in _UNIT_NAME.findall(unit)
 
 
 def classify_type(type_name: str) -> str | None:
@@ -465,8 +481,15 @@ def ledger(
 
     ports: dict[str, list[str]] = {}
     for signal_id, entry in run.meta.items():
+        if is_thermal_pseudo_power(entry):
+            continue
         if entry.get("kind") == "power" or signal_id.endswith(".P"):
             ports.setdefault(str(entry.get("path", signal_id.rsplit("/", 1)[0])), []).append(signal_id)
+    # A composite block records observed copies of its boundary ports (`Motor/p.P` mirrors
+    # `Motor/resistor/p.P`); its elements already carry that power, so counting the composite
+    # too would break Tellegen. Drop every path that has elements below it.
+    for path in [p for p in ports if any(q.startswith(p + "/") for q in ports)]:
+        del ports[path]
     if not ports:
         raise ValueError("the run records no power (.P) signals")
 

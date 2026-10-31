@@ -70,6 +70,9 @@
   --domain-translation: #5fc08a; /* plan: #2E9E5B */
   --domain-rotation: #a08cf8; /* plan: #7A5AF8 */
   --domain-hydraulic: #45c4de; /* plan: #0EA5C6 */
+  /* Thermal is a pseudo bond domain (temperature, heat flow): a rose that
+     stays clear of the reserved error red and warning amber. */
+  --domain-thermal: #f2709f; /* light: #C2185B */
   /* Planar and Spatial are one physical domain, mechanics; 2D vs 3D is shown
      by the stroke count and the letter's superscript, not by colour. */
   --domain-mechanics: #b5988d; /* plan: #8D6E63 */
@@ -179,6 +182,7 @@
   --domain-translation: #2e9e5b;
   --domain-rotation: #7a5af8;
   --domain-hydraulic: #0ea5c6;
+  --domain-thermal: #c2185b;
   --domain-mechanics: #8d6e63;
   --domain-planar: var(--domain-mechanics);
   --domain-spatial: var(--domain-mechanics);

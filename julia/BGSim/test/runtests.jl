@@ -351,3 +351,5 @@ include("test_export_sources.jl")
 
 # The motion profiles and drive electronics (stdlib/motion) in the C export.
 include("test_export_motion.jl")
+# The Thermal domain (heated resistor, convection, radiation) in the C export.
+include("test_export_thermal.jl")

@@ -57,6 +57,7 @@ const DOMAIN_LETTER: Record<DomainName, string> = {
   Translation: "T",
   Rotation: "R",
   Hydraulic: "H",
+  Thermal: "Th",
   Generic: "G",
   Planar: "P",
   Spatial: "S",
@@ -89,6 +90,8 @@ export const CONNECTION_MESSAGES = {
     `${from} port cannot connect to ${to}; use a converter (DC motor, EM converter)`,
   converterOther: (from: DomainName, to: DomainName): string =>
     `${from} port cannot connect to ${to}; use a converter block`,
+  thermal: (from: DomainName, to: DomainName): string =>
+    `${from} port cannot connect to ${to}; thermal ports carry heat flow, so couple them through RS or a heated component (ResistorHeated)`,
 } as const;
 
 /** `Scalar`, `Vec{3}` or `Mat{2x3}` for a declaration's size. */
@@ -243,7 +246,9 @@ export function checkConnection(doc: Model, a: PortDescriptor, b: PortDescriptor
       ok: false,
       reason: isConverterPair(a.domain, b.domain)
         ? CONNECTION_MESSAGES.converter(a.domain, b.domain)
-        : CONNECTION_MESSAGES.converterOther(a.domain, b.domain),
+        : a.domain === "Thermal" || b.domain === "Thermal"
+          ? CONNECTION_MESSAGES.thermal(a.domain, b.domain)
+          : CONNECTION_MESSAGES.converterOther(a.domain, b.domain),
     };
   }
 

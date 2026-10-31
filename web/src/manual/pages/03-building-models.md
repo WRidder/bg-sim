@@ -23,7 +23,7 @@ Models are drawn on the canvas of the **Diagram** tab.
 - **Release on empty canvas** to get a filterable list of compatible blocks; the one you pick is added and connected.
 - **Bond direction:** the half arrow on a bond shows the positive power direction. Right-click a bond and choose **Reverse bond direction** to flip it.
 - **Routing:** right-click a connection for **Add routing vertex** and **Clear routing vertices**.
-- **Crossing kinds:** a signal cannot drive a power port directly. Use a modulated source (`MSe`, `MSf`) or a sensor. Different physical domains connect through a converter (`TF`, `GY`, a DC motor, …).
+- **Crossing kinds:** a signal cannot drive a power port directly. Use a modulated source (`MSe`, `MSf`) or a sensor. Different physical domains connect through a converter (`TF`, `GY`, a DC motor, …). **Thermal** ports carry temperature and heat flow, not power, so they never connect to another domain; losses reach them through `RS` or a heated component (see [Thermal domain](page:thermal-domain)).
 - **Junctions:** the **Junctions** category has the 0-junction (equal efforts, flows sum to zero) and the 1-junction (equal flows, efforts sum to zero).
 
 Units are checked: ports with the same dimension but a different unit connect with a conversion factor shown on the wire; different dimensions are refused.
@@ -31,6 +31,18 @@ Units are checked: ports with the same dimension but a different unit connect wi
 ## Legend and grid
 
 The canvas toolbar has **Show legend** (domain colours and port glyphs, bottom left), **Show grid** and **Snap to grid**. Causal strokes on bonds appear after the model has been checked.
+
+| Domain | Colour | Port letter | Effort | Flow |
+| --- | --- | --- | --- | --- |
+| Electrical | blue | E | voltage [V] | current [A] |
+| Translation | green | T | force [N] | velocity [m/s] |
+| Rotation | violet | R | torque [N·m] | angular velocity [rad/s] |
+| Hydraulic | cyan | H | pressure [Pa] | volume flow [m³/s] |
+| Thermal | rose | Th | temperature [K] | heat flow [W] |
+| Generic | grey | G | adopted from the bond | adopted from the bond |
+| Mechanics (2D and 3D multibond) | brown | P, S | wrench | twist |
+
+Colour is never the only cue: hover a port to see its domain letter.
 
 ## Subsystems
 

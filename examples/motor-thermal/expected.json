@@ -1,0 +1,90 @@
+{
+  "project": "motor-thermal",
+  "description": "Thermal domain example: a DC motor whose copper loss heats its winding, which conducts to the housing, which cools by convection. The steady state is the fixed point of the electro-thermal loop (speed, current and loss depend on R(T_winding)); the first-law checks hold at every sample.",
+  "models": {
+    "motor-thermal": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "TWinding/y",
+          "t": 2400.0,
+          "value": 322.94695313697827,
+          "rtol": 1e-6,
+          "note": "fixed point: R = R0*(1 + alpha*(Tw - T_ref)), w = k*V/(k^2 + R*d), i = d*w/k, P = R*i^2, Th = Ta + P/(h*A), Tw = Th + P/G_ins; 2400 s is about 13 slow time constants"
+        },
+        {
+          "kind": "final_value",
+          "signal": "THousing/y",
+          "t": 2400.0,
+          "value": 311.02817188218694,
+          "rtol": 1e-6,
+          "note": "Ta + P/(h*A) with h*A = 1 W/K"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Motor/R_hot",
+          "t": 2400.0,
+          "value": 2.2342040516566497,
+          "rtol": 1e-6,
+          "note": "the copper winding is 11.7 % above its 293.15 K resistance"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Loss/y",
+          "t": 2400.0,
+          "value": 17.87817188218699,
+          "rtol": 1e-5,
+          "note": "copper loss i^2*R(T) at the fixed point (17.9 W)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Speed/y",
+          "t": 2400.0,
+          "value": 353.5982847341126,
+          "rtol": 1e-6,
+          "note": "the hot winding slows the fan: 353.6 rad/s instead of 368.0 rad/s cold"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Loss/y",
+          "signal_b": "Motor/P_loss",
+          "from_t": 0.0,
+          "max_abs": 1e-9,
+          "note": "the heat flow leaving the winding port is exactly the dissipated electrical power v*i of the heated resistor"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {"signal": "ELoss/y", "coeff": 1.0},
+            {"signal": "EIns/y", "coeff": -1.0},
+            {"signal": "Winding/T", "coeff": -30.0}
+          ],
+          "scale": 40000.0,
+          "tol": 1e-6,
+          "note": "first law of the winding: integral of the copper loss = C_w*(T_w - T_w0) + integral of the insulation heat flow (about 4e4 J pass through)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {"signal": "EIns/y", "coeff": 1.0},
+            {"signal": "EConv/y", "coeff": -1.0},
+            {"signal": "Housing/T", "coeff": -150.0}
+          ],
+          "scale": 40000.0,
+          "tol": 1e-6,
+          "note": "first law of the housing: insulation heat in = C_h*(T_h - T_h0) + convected heat out"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-9,
+          "note": "Tellegen on the energetic ports (electrical and rotational); the thermal ports are pseudo-power (K*W) and are left out, the heated resistor inside Motor counts as dissipation"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E101", "E102", "E103", "E006", "W201", "W206"],
+          "note": "no solver failure, no connection, unit or causality error"
+        }
+      ]
+    }
+  }
+}

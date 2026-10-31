@@ -46,7 +46,7 @@ const ALL_SCOPE_NAMES =
     "@discrete @events @causality @components @connections @observables"
 
 const POWER_DOMAINS = Set{Symbol}(
-    [:Electrical, :Translation, :Rotation, :Hydraulic, :Generic, :Planar, :Spatial]
+    [:Electrical, :Translation, :Rotation, :Hydraulic, :Thermal, :Generic, :Planar, :Spatial]
 )
 
 # Which declaration attributes each scope accepts (plan 4.3 and the spec's attribute table).
@@ -723,7 +723,7 @@ function _parse_type!(b::BlockBuilder, node)
                     b,
                     "E001",
                     "`$dom` is not a power domain";
-                    hint = "use Electrical, Translation, Rotation, Hydraulic, Generic, Planar or Spatial",
+                    hint = "use Electrical, Translation, Rotation, Hydraulic, Thermal, Generic, Planar or Spatial",
                 )
                 return nothing
             end

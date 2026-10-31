@@ -98,13 +98,14 @@ def write_run(
     extra: dict[str, np.ndarray] | None = None,
     model: dict | None = MODEL,
     run_name: str = "run-1",
+    units: dict[str, str] | None = None,
 ) -> Path:
     """``<root>/models/rlc.bgmodel.json`` + ``<root>/runs/<run>/{manifest,columns.f64}``."""
     signals: list[tuple[str, str, str, np.ndarray]] = []
     for sid, values in powers.items():
-        signals.append((sid, "power", sid.split("/")[0], values))
+        signals.append((sid, "power", sid.rsplit("/", 1)[0], values))
     for sid, values in (extra or {}).items():
-        signals.append((sid, "state", sid.split("/")[0], values))
+        signals.append((sid, "state", sid.rsplit("/", 1)[0], values))
     run_dir = root / "runs" / run_name
     run_dir.mkdir(parents=True)
     if model is not None:
@@ -116,7 +117,8 @@ def write_run(
         "status": "done",
         "time": {"n": int(t.size), "t0": float(t[0]), "t1": float(t[-1])},
         "signals": [
-            {"id": sid, "kind": kind, "path": path, "type": "Real", "unit": "W"}
+            {"id": sid, "kind": kind, "path": path, "type": "Real",
+             "unit": (units or {}).get(sid, "W")}
             for sid, kind, path, _ in signals
         ],
         "diagnostics": [],
@@ -171,6 +173,51 @@ def test_exact_ledger_on_an_rlc_signal_set(tool, tmp_path):
     assert result["stored"]["storage_balance_rel"] < 1e-5
     assert result["stored"]["supply_balance_rel"] < 1e-5
     assert result["stored"]["delta_E"] == pytest.approx(energy[-1] - energy[0], rel=1e-9)
+
+
+def test_thermal_pseudo_power_is_left_out(tool, tmp_path):
+    # A Thermal port's `.P` is temperature times heat flow (K*W), not a power: a heated
+    # element's heat port and a heat capacity must not enter the ledger, and RS /
+    # ResistorHeated count as dissipation through their energetic ports.
+    t = np.arange(0.0, 6.0 + 5e-4, 1e-3)
+    x = rlc(t)
+    powers = rlc_powers(t)
+    heat = R * x["i"] ** 2
+    powers["R1/heat.P"] = -300.0 * heat            # T*Q at the heat port, in K*W
+    powers["Cth/a.P"] = 300.0 * heat
+    model = json.loads(json.dumps(MODEL))
+    model["diagram"]["nodes"][1]["block"] = {"ref": "stdlib:thermal/ResistorHeated"}
+    model["diagram"]["nodes"].append(
+        {"id": "n7", "name": "Cth", "block": {"ref": "stdlib:thermal/HeatCapacitor"}})
+    run = write_run(tmp_path, t, powers, {"L1/i": x["i"], "C1/q": x["q"]}, model=model,
+                    units={"R1/heat.P": "K*W", "Cth/a.P": "m^2*kg*K/s^3"})
+    assert tool.is_thermal_pseudo_power({"unit": "K*W"})
+    assert not tool.is_thermal_pseudo_power({"unit": "kg*m^2/s^3"})
+    result = tool.energy_balance(run, tol=1e-5, stored=STORED)
+    assert result["ok"], tool.format_table(result)
+    by_path = {e["path"]: e["class"] for e in result["elements"]}
+    assert "Cth" not in by_path
+    assert by_path["R1"] == "dissipation"
+    r1 = next(e for e in result["elements"] if e["path"] == "R1")
+    assert r1["ports"] == ["R1/p.P"]
+    assert tool.classify_type("RS") == "dissipation"
+
+
+def test_composite_port_copies_are_not_counted_twice(tool, tmp_path):
+    # A composite's observed boundary powers (`M/p.P`) mirror its elements' ports
+    # (`M/R1/p.P`): only the elements enter the ledger, so Tellegen still closes.
+    t = np.arange(0.0, 6.0 + 5e-4, 1e-3)
+    x = rlc(t)
+    powers = {f"M/{k}": v for k, v in rlc_powers(t).items()}
+    powers["M/p.P"] = powers["M/V1/p.P"].copy()
+    model = {"format": "bgsim.model", "name": "rlc", "diagram": {"nodes": [
+        {"id": "n1", "name": "M", "block": {"ref": "project:library/Unknown"}}]}}
+    run = write_run(tmp_path, t, powers, {"M/L1/i": x["i"], "M/C1/q": x["q"]}, model=model)
+    result = tool.energy_balance(run, tol=1e-5)
+    paths = {e["path"] for e in result["elements"]}
+    assert "M" not in paths
+    assert {"M/R1", "M/L1", "M/C1", "M/V1", "M/T1"} <= paths
+    assert result["residual_rel"] < 1e-13
 
 
 def test_broken_ledger_is_caught(tool, tmp_path):

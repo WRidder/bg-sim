@@ -2389,9 +2389,13 @@ function _add_observed_power!(b::Builder, node::IR.ModelNode, path::String,
     id = _join(path, portname * ".P")
     e = BGSim.Field(BGSim.Name(Symbol(port.qname), port.range), :e, port.range)
     f = BGSim.Field(BGSim.Name(Symbol(port.qname), port.range), :f, port.range)
+    # W for every energetic port; a Thermal port's e*f is temperature times heat flow (K*W),
+    # a pseudo-power, and keeps that unit so the ledger can tell it apart.
+    unit = port.domain === :Thermal ? BGSim.Units.power_dims(:Thermal) :
+           BGSim.Units.parse_unit("W")
     _add_observed!(
         b, node, path, block, Flat.DerivedSignal(
-            id, :power, BGSim.Units.parse_unit("W"), path, :Real,
+            id, :power, unit, path, :Real,
             BGSim.BinOp(:*, e, f, port.range),
         ),
     )

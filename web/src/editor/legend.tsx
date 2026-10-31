@@ -38,7 +38,9 @@ export const LEGEND_DOMAINS: readonly LegendDomain[] = [
             ? "var(--domain-rotation)"
             : entry.domain === "Hydraulic"
               ? "var(--domain-hydraulic)"
-              : "var(--domain-generic)",
+              : entry.domain === "Thermal"
+                ? "var(--domain-thermal)"
+                : "var(--domain-generic)",
   })),
   // Planar and Spatial share one colour: the domain is mechanics, and 2D vs
   // 3D shows as the stroke count (the multibond keys below).

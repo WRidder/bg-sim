@@ -184,7 +184,17 @@ Power ports carry a domain tag so connections are checked and units come for fre
 | `Translation` | force \[N\] | velocity \[m/s\] |
 | `Rotation` | torque \[N\*m\] | angular velocity \[rad/s\] |
 | `Hydraulic` | pressure \[Pa\] | volume flow \[m^3/s\] |
+| `Thermal` | temperature \[K\] | heat flow \[W\] (pseudo bond: the product is not a power) |
 | `Generic` | e | f |
+
+**Thermal convention (pseudo bond graph).** A `Thermal` port carries the absolute temperature `e = T` \[K\] and the heat flow `f = Q` \[W\] into the element, the convention of Modelica's `HeatPort`, Simscape and 20-sim's iconic thermal library. The product `T·Q` is not a power, so a thermal bond is a *pseudo-power* bond. The exact alternative, a true bond graph with the entropy flow `Ṡ` \[W/K\] as flow (`T·Ṡ` is a power), was rejected: every thermal datasheet, correlation and sensor speaks in watts and kelvins, a heat capacity is a plain `C` in J/K instead of the nonlinear `C` of an entropy store, and the energy bookkeeping engineers want (heat stored plus heat lost equals electrical loss) is a sum of heat flows. The consequences are explicit:
+
+- The across variable is `e` (decision D8), so a wire node is a common temperature with heat flows summing to zero, the thermal 0-junction.
+- A thermal port never connects to another concrete domain (`E102`; the editor refuses the drop). Power enters the thermal domain only through elements that convert dissipated power into heat flow exactly: the bond graph `RS` element and the heated components (`ResistorHeated`, `DCMotorThermal`). Each one sets its heat port flow to minus the dissipated power `e·f` of its energetic port, so energy is conserved to round-off.
+- Generic bond graph elements adopt `Thermal` like any domain: a `C` on a thermal island takes J/K (a heat capacity), an `R` takes K/W (a thermal resistance). A `PowerSensor` or a port's derived `P` signal on a thermal bond is `K*W`, not a power.
+- Temperatures are absolute (K). Write 20 °C as `293.15`.
+
+A block may mix `Generic` ports with concrete ones (the `RS` element: a Generic resistive port and a `Thermal` heat port). Such a block is Generic for adoption: the `effort`/`flow` pseudo-units of its declarations follow the island of its Generic ports, and its concrete ports keep their own domain.
 
 A capacitor-type element, as it would appear in the standard library:
 
@@ -226,7 +236,7 @@ The standard library ships eight groups of components, each written in the langu
 
 ### Bond graph elements
 
-All bond graph elements use `Generic` power ports and take their domain from the bonds they connect to.
+All bond graph elements use `Generic` power ports and take their domain from the bonds they connect to; `RS` adds a `Thermal` heat port.
 
 | Element | Ports | Key parameters | Release |
 | --- | --- | --- | --- |
@@ -247,7 +257,7 @@ All bond graph elements use `Generic` power ports and take their domain from the
 | `De` effort detector | `p`, output `y` | none | v0.1 |
 | `Df` flow detector | `p`, output `y` | none | v0.1 |
 | `CC`, `II` multiport storage | n power ports | matrix | v0.2 |
-| `RS` resistive source (thermal coupling) | `p`, thermal port | `r` | v0.2 |
+| `RS` resistive source (thermal coupling) | `p`, Thermal `heat` | `r`; the dissipated `e·f` leaves `heat` as heat flow | v0.1 |
 
 Nonlinear variants (for example a C with a user-defined constitutive law) are made by copying the element and editing its equations.
 
@@ -469,7 +479,7 @@ Notes:
 
 ### Hydraulic and thermal
 
-Hydraulic ports carry pressure \[Pa\] and volume flow \[m^3/s\]. Thermal is a v0.2 domain that uses the pseudo bond graph convention: temperature \[K\] and heat flow \[W\], whose product is not a power, so it never connects to the other domains except through `RS`-type couplings.
+Hydraulic ports carry pressure \[Pa\] and volume flow \[m^3/s\]. Thermal ports use the pseudo bond graph convention (see "Ports, connections and bond graph elements"): absolute temperature \[K\] and heat flow \[W\] into the element, whose product is not a power, so they never connect to the other domains except through `RS` and the heated components.
 
 | Component | Domain | Ports | Key parameters | Release |
 | --- | --- | --- | --- | --- |
@@ -481,11 +491,14 @@ Hydraulic ports carry pressure \[Pa\] and volume flow \[m^3/s\]. Thermal is a v0
 | Pipe (lumped) | Hydraulic | `a`, `b` | length, diameter, friction model | v0.2 |
 | Check valve | Hydraulic | `a`, `b` | cracking pressure, area | v0.2 |
 | Proportional valve (4/3) | Hydraulic | `P`, `T`, `A`, `B`, input `spool` | flow gain, leakage | v0.2 |
-| Heat capacity | Thermal | `a` | `C` \[J/K\], initial temperature | v0.2 |
-| Thermal conductor | Thermal | `a`, `b` | `G` \[W/K\] | v0.2 |
-| Convection | Thermal | `a`, `b` | `h`, area | v0.2 |
-| Fixed temperature | Thermal | `a` | `T` | v0.2 |
-| Heat flow source | Thermal | `a`, optional input `u` | `Q` | v0.2 |
+| Heat capacitor (`HeatCapacitor`) | Thermal | `a` | `C` \[J/K\] (= m·c_p), initial temperature `T` | v0.1 |
+| Thermal conductor (`ThermalConductor`) | Thermal | `a`, `b` | `G` \[W/K\] | v0.1 |
+| Thermal resistor (`ThermalResistor`) | Thermal | `a`, `b` | `R` \[K/W\] | v0.1 |
+| Convection (`Convection`, `VariableConvection`) | Thermal | `solid`, `fluid`; `VariableConvection` input `h` | `h` \[W/(m^2·K)\], area `A` | v0.1 |
+| Body radiation (`BodyRadiation`) | Thermal | `a`, `b` | emissivity `epsilon`, area `A`; `Q = epsilon·σ·A·(Ta^4 − Tb^4)` | v0.1 |
+| Fixed / prescribed temperature | Thermal | `a`; `PrescribedTemperature` input `T` \[K\] | `T` | v0.1 |
+| Fixed / prescribed heat flow | Thermal | `a`; `PrescribedHeatFlow` input `Q` \[W\] | `Q`, injected into the network | v0.1 |
+| Heated resistor (`ResistorHeated`) | Electrical `p`, `n`; Thermal `heat` | `R0`, `T0`, `alpha`; `R = R0·(1 + alpha·(T − T0))`, all `v·i` leaves `heat` | v0.1 |
 
 ### Domain converters, sensors and export interfaces
 
@@ -494,6 +507,7 @@ Converters are the only components with ports in two domains, which is what lets
 | Component | Ports | Key parameters | Release |
 | --- | --- | --- | --- |
 | DC motor | Electrical `p`, `n`; Rotation `shaft`, `housing` | `R`, `L`, `k_t`, `J`, `d` | v0.1 |
+| DC motor with winding heat port (`DCMotorThermal`) | Electrical `p`, `n`; Rotation `shaft`, `housing`; Thermal `winding` | `R`, `alpha`, `T_ref`, `L`, `k_t`, `J`, `d` | v0.1 |
 | Ideal EM converter (gyrator) | Electrical `p`, `n`; Rotation `shaft` | `k` \[N\*m/A\] | v0.1 |
 | Rack and pinion | Rotation `a`; Translation `b` | pinion radius | v0.1 |
 | Ball screw | Rotation `a`; Translation `b` | lead \[m/rev\], efficiency | v0.1 |
@@ -506,7 +520,7 @@ Converters are the only components with ports in two domains, which is what lets
 | Voltage / current sensor | Electrical; output `y` | none | v0.1 |
 | Pressure / flow sensor | Hydraulic; output `y` | none | v0.1 |
 | Power sensor | any power domain `a`, `b`; output `y` | none | v0.1 |
-| Temperature / heat flow sensor | Thermal; output `y` | none | v0.2 |
+| Temperature / heat flow sensor | Thermal; output `y` \[K\] / \[W\] | none | v0.1 |
 | Export input | output `y` | name, type, unit | v0.1 |
 | Export input, pass-through | input `u`, output `y` | name, start value | v0.1 |
 | Export output | input `u` | name, type, unit | v0.1 |

@@ -179,7 +179,7 @@ describe("fixture coverage", () => {
     "stdlib:converters/AngleSensor",
   ];
 
-  it("catalog.min.json has every M1 block, both junctions and seven domains", () => {
+  it("catalog.min.json has every M1 block, both junctions and eight domains", () => {
     const catalog = readJson(path.join(fixtureDir, "catalog", "valid", "catalog.min.json")) as {
       blocks: { ref: string; source: string }[];
       junctions: { ref: string }[];
@@ -201,6 +201,7 @@ describe("fixture coverage", () => {
       "Generic",
       "Planar",
       "Spatial",
+      "Thermal",
     ]);
   });
 

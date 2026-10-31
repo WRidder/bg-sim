@@ -332,7 +332,26 @@ const MOTION_REFS = [
     "stdlib:motion/TrapezoidalProfile",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS))
+# The Thermal domain (pseudo bond graph: temperature and heat flow) and its couplings.
+const THERMAL_REFS = [
+    "stdlib:bondgraph/RS",
+    "stdlib:thermal/BodyRadiation",
+    "stdlib:thermal/Convection",
+    "stdlib:thermal/DCMotorThermal",
+    "stdlib:thermal/FixedHeatFlow",
+    "stdlib:thermal/FixedTemperature",
+    "stdlib:thermal/HeatCapacitor",
+    "stdlib:thermal/HeatFlowSensor",
+    "stdlib:thermal/PrescribedHeatFlow",
+    "stdlib:thermal/PrescribedTemperature",
+    "stdlib:thermal/ResistorHeated",
+    "stdlib:thermal/TemperatureSensor",
+    "stdlib:thermal/ThermalConductor",
+    "stdlib:thermal/ThermalResistor",
+    "stdlib:thermal/VariableConvection",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -1264,6 +1283,78 @@ const INTERFACE_FIELDS = [
         @test occursin("connect(gear.b, play.a)", gwb.source)
     end
 
+    @testset "the Thermal domain blocks" begin
+        # Pseudo bond graph (spec, "Thermal convention"): e = temperature [K] is the across
+        # variable, f = heat flow [W] into the element. Only RS and the heated components
+        # touch another domain, and each sends its whole dissipated power to the heat port.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        for ref in THERMAL_REFS
+            b = blocks[ref]
+            @test !has_errors(b)
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test any(p -> p.domain == "Thermal", b.interface.ports)
+            startswith(ref, "stdlib:thermal/") && @test b.group == "Thermal"
+        end
+        pure = ["BodyRadiation", "Convection", "FixedHeatFlow", "FixedTemperature",
+            "HeatCapacitor", "HeatFlowSensor", "PrescribedHeatFlow", "PrescribedTemperature",
+            "TemperatureSensor", "ThermalConductor", "ThermalResistor", "VariableConvection"]
+        for name in pure
+            @test all(p -> p.domain == "Thermal", blocks["stdlib:thermal/" * name].interface.ports)
+        end
+
+        hc = blocks["stdlib:thermal/HeatCapacitor"]
+        @test [p.name for p in hc.interface.parameters] == ["C"]
+        @test hc.interface.parameters[1].unit == "J/K"
+        @test [(v.name, v.unit, v.state) for v in hc.interface.variables] ==
+              [("T", "K", "prefer")]
+        @test occursin("ddt(T) ~ a.f / C", hc.source)
+
+        # Sources fix their variable (D6): temperature is effort, heat flow is flow.
+        for name in ("FixedTemperature", "PrescribedTemperature")
+            @test blocks["stdlib:thermal/" * name].interface.causality ==
+                  [(ports = ["a"], kind = "fixed", value = "effort_out")]
+        end
+        for name in ("FixedHeatFlow", "PrescribedHeatFlow", "TemperatureSensor")
+            @test blocks["stdlib:thermal/" * name].interface.causality ==
+                  [(ports = ["a"], kind = "fixed", value = "flow_out")]
+        end
+        @test [(i.name, i.unit) for i in blocks["stdlib:thermal/PrescribedTemperature"].interface.inputs] ==
+              [("T", "K")]
+        @test [(i.name, i.unit) for i in blocks["stdlib:thermal/PrescribedHeatFlow"].interface.inputs] ==
+              [("Q", "W")]
+        @test [(o.name, o.unit) for o in blocks["stdlib:thermal/TemperatureSensor"].interface.outputs] ==
+              [("y", "K")]
+        @test [(o.name, o.unit) for o in blocks["stdlib:thermal/HeatFlowSensor"].interface.outputs] ==
+              [("y", "W")]
+
+        rad = blocks["stdlib:thermal/BodyRadiation"]
+        @test [c.name for c in rad.interface.constants] == ["sigma"]
+        @test occursin("(a.e^4 - b.e^4)", rad.source)
+
+        # RS: a Generic resistive port plus a Thermal heat port; the block is Generic for
+        # adoption (r in effort/flow) and sends p.e*p.f to the heat port.
+        rs = blocks["stdlib:bondgraph/RS"]
+        @test [(p.name, p.domain) for p in rs.interface.ports] ==
+              [("p", "Generic"), ("heat", "Thermal")]
+        @test rs.interface.parameters[1].unit == "effort/flow"
+        @test BGSim.Units.block_domain(rs.ast) === :Generic
+        @test occursin("heat.f ~ -P", rs.source)
+
+        rh = blocks["stdlib:thermal/ResistorHeated"]
+        @test [(p.name, p.domain) for p in rh.interface.ports] ==
+              [("p", "Electrical"), ("n", "Electrical"), ("heat", "Thermal")]
+        @test [p.name for p in rh.interface.parameters] == ["R0", "T0", "alpha"]
+        @test occursin("R ~ R0 * (1.0 + alpha * (heat.e - T0))", rh.source)
+
+        motor = blocks["stdlib:thermal/DCMotorThermal"]
+        @test [(p.name, p.domain) for p in motor.interface.ports] ==
+              [("p", "Electrical"), ("n", "Electrical"), ("shaft", "Rotation"),
+                  ("housing", "Rotation"), ("winding", "Thermal")]
+        @test component_block.(components(motor.ast)) ==
+              [:ResistorHeated, :Inductor, :EMConverter, :Inertia, :RotationalDamper]
+    end
+
     @testset "the M2 hydraulic rows (J2.7g)" begin
         # Plan section 8, M2 row "Hydraulic": Pressure source, Flow source, Tank, Volume,
         # Orifice and VariableOrifice. D8 makes the Hydraulic across variable `e` (pressure)
@@ -1885,10 +1976,11 @@ const INTERFACE_FIELDS = [
         @test _plain(cat.junctions) == _plain(fixture.junctions)
         @test _plain(cat.domains) == _plain(fixture.domains)
 
-        # The two junctions and the seven domains, explicitly (plan 3.2, D8 and D-MB1).
+        # The two junctions and the eight domains, explicitly (plan 3.2, D8 and D-MB1).
         @test [j.ref for j in cat.junctions] == ["junction:0", "junction:1"]
         @test [d.name for d in cat.domains] ==
-              ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
+              ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial",
+                  "Thermal"]
         domains = Dict(d.name => d for d in cat.domains)
         @test domains["Electrical"].effort == (name = "voltage", unit = "V")
         @test domains["Electrical"].flow == (name = "current", unit = "A")
@@ -1906,6 +1998,11 @@ const INTERFACE_FIELDS = [
         @test domains["Generic"].flow == (name = "flow", unit = nothing)
         @test domains["Generic"].across === nothing
         @test all(d -> d.size == 1, cat.domains[1:5])
+        # Thermal: a pseudo bond domain, temperature across (D8) and heat flow through.
+        @test domains["Thermal"].effort == (name = "temperature", unit = "K")
+        @test domains["Thermal"].flow == (name = "heat_flow", unit = "W")
+        @test domains["Thermal"].across == "e"
+        @test domains["Thermal"].size == 1
         # D-MB1/D-MB2: multibond sizes and the authoritative, angular-first components.
         @test domains["Planar"].size == 3
         @test domains["Planar"].across == "f"
