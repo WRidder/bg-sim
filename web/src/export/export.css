@@ -308,3 +308,33 @@
   font-size: var(--font-size-xs);
   white-space: pre-wrap;
 }
+
+/* The tunables editor (W-EX1, J-EX8). */
+.export-dialog__pick {
+  flex: 1 1 260px;
+  min-width: 200px;
+}
+
+.export-dialog__range {
+  width: 90px;
+  padding: 2px var(--space-1);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.export-dialog__range[aria-invalid="true"],
+.export-dialog__pick[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.export-dialog__row-problem {
+  display: block;
+  color: var(--color-error-text);
+  font-size: var(--font-size-xs);
+}
+
+.export-dialog__tunables-report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}

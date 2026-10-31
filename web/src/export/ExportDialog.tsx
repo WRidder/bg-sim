@@ -26,6 +26,7 @@ import type {
   ExportRequest,
   ExportSettings,
 } from "../contracts/export-request";
+import { useCatalogStore } from "../library/catalogStore";
 import { useDocumentStore } from "../state/documentStore";
 import { exportTaskId, trackExportJob } from "../tasks/exportTasks";
 import { cancelTask, useTaskStore } from "../tasks/taskStore";
@@ -51,6 +52,17 @@ import {
   type PowerChoice,
 } from "./exportInterface";
 import { useExportDialogStore } from "./exportStore";
+import {
+  exposeAllGlobals,
+  listTunableCandidates,
+  newTunableRow,
+  rowOpen,
+  rowProblem,
+  tunableCostText,
+  tunablesRequest,
+  type TunableCandidate,
+  type TunableRow,
+} from "./exportTunables";
 import "./export.css";
 
 /** The elapsed seconds of a running job tick this often. */
@@ -197,6 +209,8 @@ function ReportView({ job, report }: { job: ExportJob; report: ExportReport }) {
         </table>
       ) : null}
 
+      <TunablesReport report={report} />
+
       <ul className="export-dialog__lines" data-testid="export-build">
         {buildLines(report.build).map((line) => (
           <li key={line}>{line}</li>
@@ -221,6 +235,255 @@ function ReportView({ job, report }: { job: ExportJob; report: ExportReport }) {
         </a>
       ) : null}
     </section>
+  );
+}
+
+function formatValue(value: number | null): string {
+  return value === null ? "—" : String(Number(value.toPrecision(6)));
+}
+
+/**
+ * The tunables editor (W-EX1, J-EX8): nothing by default (every parameter folded), a picker
+ * over the scope's block parameters and global parameters, "Expose all globals", and a range
+ * per pick (D-EX16).
+ */
+function TunablesSection({
+  candidates,
+  candidateById,
+  rows,
+  problems,
+  pick,
+  onPick,
+  onRows,
+}: {
+  candidates: readonly TunableCandidate[];
+  candidateById: ReadonlyMap<string, TunableCandidate>;
+  rows: readonly TunableRow[];
+  problems: readonly (string | null)[];
+  pick: string;
+  onPick: (next: string) => void;
+  onRows: (next: TunableRow[]) => void;
+}) {
+  const picked = new Set(rows.map((row) => row.id));
+  const pickable = candidates.filter((c) => c.blocked === null && !picked.has(c.id));
+  const chosen = candidateById.get(pick.trim());
+  const pickProblem = pick.trim() === ""
+    ? null
+    : chosen === undefined
+      ? "not a parameter of this export"
+      : chosen.blocked ?? (picked.has(chosen.id) ? "already picked" : null);
+  const exposable = candidates.filter((c) => c.kind === "global" && c.blocked === null);
+  const add = () => {
+    if (chosen !== undefined && pickProblem === null) {
+      onRows([...rows, newTunableRow(chosen)]);
+      onPick("");
+    }
+  };
+  const update = (index: number, patch: Partial<TunableRow>) =>
+    onRows(rows.map((row, k) => (k === index ? { ...row, ...patch } : row)));
+  const open = rows.filter(rowOpen).length;
+  return (
+    <section className="export-dialog__section" aria-label="Tunable parameters" data-testid="export-tunables">
+      <h3 className="export-dialog__heading">Tunable parameters</h3>
+      <p className="export-dialog__note">
+        {rows.length === 0
+          ? "None: every parameter is folded into the generated code, which gives the fastest step. "
+          : ""}
+        A tunable stays an FMU parameter that the host sets before initialization. The values
+        computed from it (and, for a DAE, the algebraic start) are recomputed once at
+        initialization, never per step. Keeping a value open can cost operations per step; the
+        report compares.
+      </p>
+      <div className="export-dialog__row">
+        <input
+          className="open-dialog__input export-dialog__pick"
+          list="export-tunable-candidates"
+          data-testid="export-tunable-pick"
+          aria-label="Parameter or global to keep tunable"
+          aria-invalid={pickProblem !== null}
+          placeholder={pickable[0] ? `e.g. ${pickable[0].id}` : "no parameter to pick"}
+          value={pick}
+          onChange={(event) => onPick(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              add();
+            }
+          }}
+        />
+        <datalist id="export-tunable-candidates">
+          {pickable.map((c) => (
+            <option key={c.id} value={c.id}>
+              {`${formatValue(c.value)}${c.unit ? ` ${c.unit}` : ""}${c.description ? ` · ${c.description}` : ""}`}
+            </option>
+          ))}
+        </datalist>
+        <button
+          type="button"
+          className="button"
+          data-testid="export-tunable-add"
+          disabled={chosen === undefined || pickProblem !== null}
+          onClick={add}
+        >
+          Add
+        </button>
+        {exposable.length > 0 ? (
+          <button
+            type="button"
+            className="button"
+            data-testid="export-expose-globals"
+            disabled={exposable.every((c) => picked.has(c.id))}
+            title="Make every global parameter that is not an equation an FMU parameter"
+            onClick={() => onRows(exposeAllGlobals(rows, candidates))}
+          >
+            Expose all globals ({exposable.length})
+          </button>
+        ) : null}
+      </div>
+      {pickProblem !== null ? (
+        <p className="export-dialog__warning" data-testid="export-tunable-pick-problem">
+          {pick.trim()}: {pickProblem}.
+        </p>
+      ) : null}
+      {rows.length > 0 ? (
+        <table className="export-dialog__table" data-testid="export-tunable-table">
+          <thead>
+            <tr>
+              <th scope="col">Tunable</th>
+              <th scope="col">Value</th>
+              <th scope="col">Unit</th>
+              <th scope="col">Min</th>
+              <th scope="col">Max</th>
+              <th scope="col">
+                <span className="visually-hidden">Remove</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, index) => {
+              const candidate = candidateById.get(row.id);
+              const problem = problems[index];
+              return (
+                <tr key={row.id} data-testid={`export-tunable-row-${row.id}`}>
+                  <td>
+                    <code>{row.id}</code>
+                    {problem ? (
+                      <span className="export-dialog__row-problem" role="alert"> {problem}</span>
+                    ) : null}
+                  </td>
+                  <td>{formatValue(candidate?.value ?? null)}</td>
+                  <td>{candidate?.unit ?? ""}</td>
+                  <td>
+                    <input
+                      className="open-dialog__input export-dialog__range"
+                      data-testid={`export-tunable-min-${row.id}`}
+                      aria-label={`Minimum of ${row.id}`}
+                      aria-invalid={problem !== null}
+                      placeholder="open"
+                      value={row.minText}
+                      onChange={(event) => update(index, { minText: event.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      className="open-dialog__input export-dialog__range"
+                      data-testid={`export-tunable-max-${row.id}`}
+                      aria-label={`Maximum of ${row.id}`}
+                      aria-invalid={problem !== null}
+                      placeholder="open"
+                      value={row.maxText}
+                      onChange={(event) => update(index, { maxText: event.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="icon-button"
+                      data-testid={`export-tunable-remove-${row.id}`}
+                      aria-label={`Remove ${row.id}`}
+                      title="Fold it again"
+                      onClick={() => onRows(rows.filter((_, k) => k !== index))}
+                    >
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      ) : null}
+      {open > 0 ? (
+        <p className="export-dialog__faint" data-testid="export-tunable-open">
+          {open} tunable{open === 1 ? " has" : "s have"} an open range: the step is proven stable
+          only at the model's value there (W210). With a min and a max the export scans the
+          range, and the FMU refuses values outside it.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+/** The report's tunables: what the FMU lets the host set, what it recomputes, the cost. */
+function TunablesReport({ report }: { report: ExportReport }) {
+  const tunables = report.tunables;
+  const fixed = report.parameters.filter((p) => p.variability === "fixed" || p.causality === "calculatedParameter");
+  if (tunables === undefined || fixed.length === 0) {
+    return null;
+  }
+  const cost = tunableCostText(tunables.rhsOps, tunables.rhsOpsFolded);
+  const recomputed = [
+    tunables.calculated ? `${tunables.calculated} calculated parameter${tunables.calculated === 1 ? "" : "s"}` : null,
+    tunables.starts ? `${tunables.starts} start value${tunables.starts === 1 ? "" : "s"}` : null,
+    tunables.heldValues ? `${tunables.heldValues} held value${tunables.heldValues === 1 ? "" : "s"}` : null,
+    tunables.newton ? "the algebraic unknowns (Newton)" : null,
+  ].filter((part) => part !== null);
+  return (
+    <div className="export-dialog__tunables-report" data-testid="export-report-tunables">
+      <table className="export-dialog__table">
+        <caption>Parameters set before initialization</caption>
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Kind</th>
+            <th scope="col">Start</th>
+            <th scope="col">Range</th>
+            <th scope="col">Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fixed.map((p) => (
+            <tr key={p.name} data-testid={`export-report-parameter-${p.name}`}>
+              <td>
+                <code>{p.name}</code>
+              </td>
+              <td>
+                {p.causality === "calculatedParameter"
+                  ? `calculated from ${(p.dependsOn ?? []).join(", ")}`
+                  : p.id.startsWith("global:")
+                    ? "global"
+                    : "fixed"}
+              </td>
+              <td>{p.start === undefined ? "—" : formatValue(p.start)}</td>
+              <td>
+                {p.causality === "calculatedParameter"
+                  ? ""
+                  : `${p.min === undefined ? "open" : formatValue(p.min)} … ${p.max === undefined ? "open" : formatValue(p.max)}`}
+              </td>
+              <td>{p.unit ?? ""}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <ul className="export-dialog__lines">
+        {recomputed.length > 0 ? (
+          <li data-testid="export-report-recomputed">
+            Recomputed once in fmi2ExitInitializationMode: {recomputed.join(", ")}.
+          </li>
+        ) : null}
+        {cost !== null ? <li data-testid="export-report-tunable-cost">{cost}.</li> : null}
+      </ul>
+    </div>
   );
 }
 
@@ -251,6 +514,9 @@ export function ExportDialog() {
   const [jacobian, setJacobian] = useState<ExportJacobian>("auto");
   const [linearSolver, setLinearSolver] = useState<ExportLinearSolver>("auto");
   const [exposeAll, setExposeAll] = useState(false);
+  const [tunableRows, setTunableRows] = useState<TunableRow[]>([]);
+  const [tunablePick, setTunablePick] = useState("");
+  const catalogIndex = useCatalogStore((state) => state.index);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -318,16 +584,30 @@ export function ExportDialog() {
     [doc, scope, powerInputs],
   );
 
+  // The tunables editor (W-EX1, J-EX8): candidates of the scope, the picked rows.
+  const candidates = useMemo(
+    () => (doc === null ? [] : listTunableCandidates(doc, scope, catalogIndex)),
+    [doc, scope, catalogIndex],
+  );
+  const candidateById = useMemo(
+    () => new Map<string, TunableCandidate>(candidates.map((c) => [c.id, c])),
+    [candidates],
+  );
+  const tunableProblems = tunableRows.map((row) => rowProblem(row, candidateById.get(row.id)));
+
   const dt = parseOptionalPositive(dtText);
   const step = parseOptionalPositive(stepText);
   const damping = parseOptionalPositive(dampingText);
   const dampingInvalid = damping !== null && (Number.isNaN(damping) || damping >= 1);
-  const invalid = Number.isNaN(dt) || Number.isNaN(step) || dampingInvalid;
+  const invalid = Number.isNaN(dt) || Number.isNaN(step) || dampingInvalid ||
+    tunableProblems.some((problem) => problem !== null);
 
   const onScopeChange = useCallback(
     (next: string | null) => {
       setScope(next);
       setPowerInputs(doc === null ? {} : defaultPowerInputs(doc, next));
+      // Instance paths change with the scope; a pick of the old scope means nothing there.
+      setTunableRows([]);
     },
     [doc],
   );
@@ -340,6 +620,9 @@ export function ExportDialog() {
     const settings: ExportSettings = { method, dt, step, damping, jacobian, linearSolver };
     if (exposeAll) {
       settings.exposeAll = true;
+    }
+    if (tunableRows.length > 0) {
+      settings.tunables = tunablesRequest(tunableRows);
     }
     const request: ExportRequest = { model: current, settings };
     if (scope !== null) {
@@ -361,7 +644,7 @@ export function ExportDialog() {
     } finally {
       setStarting(false);
     }
-  }, [damping, dt, exposeAll, jacobian, linearSolver, method, modelName, powerInputs, project, scope, setJobId, step]);
+  }, [damping, dt, exposeAll, jacobian, linearSolver, method, modelName, powerInputs, project, scope, setJobId, step, tunableRows]);
 
   const onCancel = useCallback(async () => {
     if (jobId === null) {
@@ -601,6 +884,16 @@ export function ExportDialog() {
                 ))}
               </section>
 
+              <TunablesSection
+                candidates={candidates}
+                candidateById={candidateById}
+                rows={tunableRows}
+                problems={tunableProblems}
+                pick={tunablePick}
+                onPick={setTunablePick}
+                onRows={setTunableRows}
+              />
+
               <section className="export-dialog__section" aria-label="Settings">
                 <h3 className="export-dialog__heading">Settings</h3>
                 <div className="export-dialog__row">
@@ -695,8 +988,9 @@ export function ExportDialog() {
                 </details>
                 {invalid ? (
                   <p className="export-dialog__warning" role="alert">
-                    Steps must be positive numbers in seconds, and the damping between 0 and 1.
-                    Leave a field empty for Auto.
+                    Steps must be positive numbers in seconds, the damping between 0 and 1, and
+                    each tunable range must contain the model's value. Leave a field empty for
+                    Auto.
                   </p>
                 ) : null}
               </section>
