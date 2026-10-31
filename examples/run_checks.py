@@ -243,6 +243,16 @@ The pendulum uses that to read its 10 s energy window from the same 4 s model::
     {"models": {"pendulum-10s": {"model": "pendulum",
       "settings": {"t_end": 10.0, "output": {"points": 10001}},
       "checks": [...]}}}
+
+It may also carry ``"overrides"``, a list of run parameter overrides sent with the run
+(``parameterOverrides`` of ``POST /runs``, the dashboard's mechanism: ``{"target":
+"<instance path>/<param>" | "global:<name>", "value": ...}``). The maglev uses it to run
+its bond-graph model once more with an ideal sensor (no noise, a 52-bit ADC)::
+
+    {"models": {"maglev-bondgraph-ideal-sensor": {"model": "maglev-bondgraph",
+      "overrides": [{"target": "IR/Noise/std", "value": 0.0},
+                    {"target": "IR/ADC/bits", "value": 52}],
+      "checks": [...]}}}
 """
 
 from __future__ import annotations
@@ -500,6 +510,7 @@ def _run_model(
     model: str,
     settings: Any = None,
     run_timeout: float = RUN_TIMEOUT,
+    overrides: Any = None,
 ) -> Run:
     """Open the model, run it and read its columns once it is done."""
     model_document = _get_json(client, f"/api/projects/{project}/models/{model}")
@@ -507,7 +518,12 @@ def _run_model(
         if not isinstance(settings, dict):
             raise ValueError("'settings' must be an object")
         _merge_settings(model_document.setdefault("settings", {}), settings)
-    response = client.post(f"/api/projects/{project}/runs", json={"model": model_document})
+    body: dict[str, Any] = {"model": model_document}
+    if overrides is not None:
+        if not isinstance(overrides, list):
+            raise ValueError("'overrides' must be a list of parameter overrides")
+        body["parameterOverrides"] = overrides
+    response = client.post(f"/api/projects/{project}/runs", json=body)
     if response.status_code != 201:
         raise RuntimeError(
             f"POST /api/projects/{project}/runs -> {response.status_code}: "
@@ -2316,13 +2332,15 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
             checks = entry.get("checks", []) if isinstance(entry, dict) else entry
             source = model
             settings: Any = None
+            overrides: Any = None
             run_timeout = RUN_TIMEOUT
             if isinstance(entry, dict):
                 source = str(entry.get("model") or model)
                 settings = entry.get("settings")
+                overrides = entry.get("overrides")
                 run_timeout = float(entry.get("run_timeout", RUN_TIMEOUT))
             try:
-                run = _run_model(client, project, project_dir, source, settings, run_timeout)
+                run = _run_model(client, project, project_dir, source, settings, run_timeout, overrides)
             except (RuntimeError, httpx.HTTPError, KeyError, ValueError) as exc:
                 report.check(False, f"{project}/{model} run", str(exc))
                 continue

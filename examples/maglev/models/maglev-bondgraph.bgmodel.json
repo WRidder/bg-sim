@@ -1,0 +1,1735 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "maglev-bondgraph",
+  "$comment": "The maglev as an energy-consistent bond graph: amplifier MSe (+-60 V), coil R and the stdlib Electromagnet (two-port IC-field, L(h) = L_inf + 2 alpha/h, F = alpha i^2/h^2), ball I with gravity Se. Cascade: gain-scheduled position PID with trim feedforward -> current setpoint, PI current loop -> voltage. IR sensor with seeded noise and a 16-bit ADC.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Ipi",
+        "block": {
+          "ref": "project:CurrentPI"
+        },
+        "position": {
+          "x": 860,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Kp": "Kp_i",
+          "Ti": "Ti_i",
+          "v_max": "V_max"
+        },
+        "constants": {},
+        "starts": {
+          "x": "R_coil*i_start/Kp_i"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Sat",
+        "block": {
+          "ref": "stdlib:continuous/Saturation"
+        },
+        "position": {
+          "x": 1060,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "lower": "-V_max",
+          "upper": "V_max"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Amp",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 1240,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Jc",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1240,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Rc",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 1080,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "R_coil"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "Imeas",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 1440,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Jv",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 1240,
+          "y": 330
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "Vcoil",
+        "block": {
+          "ref": "stdlib:bondgraph/De"
+        },
+        "position": {
+          "x": 1440,
+          "y": 330
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Pel",
+        "block": {
+          "ref": "stdlib:continuous/Product"
+        },
+        "position": {
+          "x": 1600,
+          "y": 250
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "EM",
+        "block": {
+          "ref": "stdlib:converters/Electromagnet"
+        },
+        "position": {
+          "x": 1240,
+          "y": 470
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "alpha": "alpha",
+          "L_inf": "L_inf",
+          "h0": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "i": "i_start",
+          "h": "h_start"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Gnd",
+        "block": {
+          "ref": "stdlib:electrical/Ground"
+        },
+        "position": {
+          "x": 1440,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Frame",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 1440,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Jf",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 1240,
+          "y": 620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "Fmag",
+        "block": {
+          "ref": "stdlib:bondgraph/De"
+        },
+        "position": {
+          "x": 1440,
+          "y": 620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "Vball",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 1440,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "Pmech",
+        "block": {
+          "ref": "stdlib:continuous/Product"
+        },
+        "position": {
+          "x": 1600,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "Jb",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1240,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "Grav",
+        "block": {
+          "ref": "stdlib:bondgraph/Se"
+        },
+        "position": {
+          "x": 1440,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "e": "m_b*g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "Ball",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 1080,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "m_b"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "BallPos",
+        "block": {
+          "ref": "stdlib:converters/PositionSensor"
+        },
+        "position": {
+          "x": 1240,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "h_start"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "IR",
+        "block": {
+          "subsystem": {
+            "ports": [
+              {
+                "name": "x",
+                "kind": "signal",
+                "direction": "input",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": null,
+                "node": "n01",
+                "port": "u"
+              },
+              {
+                "name": "y",
+                "kind": "signal",
+                "direction": "output",
+                "type": "Real",
+                "size": [
+                  1
+                ],
+                "unit": null,
+                "node": "n07",
+                "port": "y"
+              }
+            ],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "n01",
+                  "name": "Zero",
+                  "block": {
+                    "ref": "project:Bias"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "b": "-h_start"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n02",
+                  "name": "Gain",
+                  "block": {
+                    "ref": "stdlib:continuous/Gain"
+                  },
+                  "position": {
+                    "x": 200,
+                    "y": 40
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k": "k_s"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n03",
+                  "name": "Noise",
+                  "block": {
+                    "ref": "stdlib:sources/Noise"
+                  },
+                  "position": {
+                    "x": 200,
+                    "y": 160
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "mean": "0.0",
+                    "std": "0.0003",
+                    "seed": "7"
+                  },
+                  "constants": {
+                    "sample_time": "0.001"
+                  },
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n04",
+                  "name": "Add",
+                  "block": {
+                    "ref": "project:Add2"
+                  },
+                  "position": {
+                    "x": 380,
+                    "y": 80
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n05",
+                  "name": "ADC",
+                  "block": {
+                    "ref": "stdlib:motion/ADC"
+                  },
+                  "position": {
+                    "x": 540,
+                    "y": 80
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "bits": "16",
+                    "u_min": "-5.0",
+                    "u_max": "5.0"
+                  },
+                  "constants": {
+                    "sample_period": "0.001"
+                  },
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n06",
+                  "name": "Scale",
+                  "block": {
+                    "ref": "stdlib:continuous/Gain"
+                  },
+                  "position": {
+                    "x": 700,
+                    "y": 80
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k": "1.0/k_s"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "n07",
+                  "name": "Back",
+                  "block": {
+                    "ref": "project:Bias"
+                  },
+                  "position": {
+                    "x": 860,
+                    "y": 80
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "b": "h_start"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "c01",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n01",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n02",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "c02",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n02",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n04",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "c03",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n03",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n04",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "c04",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n04",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n05",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "c05",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n06",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "c06",
+                  "kind": "signal",
+                  "from": {
+                    "node": "n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "n07",
+                    "port": "u"
+                  }
+                }
+              ],
+              "annotations": [
+                {
+                  "id": "a1",
+                  "kind": "text",
+                  "text": "**IR sensor.** Zero at h_start, 30 V/m, white noise 0.3 mV rms (10 um) drawn every 1 ms from seed 7, 16-bit ADC over -5..5 V (lsb 5.1 um of gap), scaled back to metres.",
+                  "x": 40,
+                  "y": 260,
+                  "w": 900,
+                  "h": 60,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 820,
+          "y": 960
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "Ref",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_step",
+          "initial": "h_start",
+          "final": "h_step"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "Pre",
+        "block": {
+          "ref": "stdlib:continuous/FirstOrder"
+        },
+        "position": {
+          "x": 220,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0",
+          "tau": "tau_pre"
+        },
+        "constants": {},
+        "starts": {
+          "x": "h_start"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "Trim",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 420,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "c_trim"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "KpTab",
+        "block": {
+          "ref": "stdlib:continuous/Lookup1D"
+        },
+        "position": {
+          "x": 420,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "[0.05, 0.15, 0.25]",
+          "table": "[135.0204737434484, 368.4260776423702, 601.8316815412921]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "KiTab",
+        "block": {
+          "ref": "stdlib:continuous/Lookup1D"
+        },
+        "position": {
+          "x": 420,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "[0.05, 0.15, 0.25]",
+          "table": "[349.38706135359547, 953.3613756835556, 1557.335690013516]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n27",
+        "name": "KdTab",
+        "block": {
+          "ref": "stdlib:continuous/Lookup1D"
+        },
+        "position": {
+          "x": 420,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "[0.05, 0.15, 0.25]",
+          "table": "[12.709282921511472, 34.67941658475215, 56.649550247992835]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n28",
+        "name": "PID",
+        "block": {
+          "ref": "project:ScheduledPID"
+        },
+        "position": {
+          "x": 640,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Tf": "Tf"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n29",
+        "name": "Eel",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 1780,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n30",
+        "name": "Emech",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 1780,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c01",
+        "kind": "bond",
+        "from": {
+          "node": "n03",
+          "port": "p"
+        },
+        "to": {
+          "node": "n04"
+        }
+      },
+      {
+        "id": "c02",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n05",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c03",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n06",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c04",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n07"
+        }
+      },
+      {
+        "id": "c05",
+        "kind": "bond",
+        "from": {
+          "node": "n07"
+        },
+        "to": {
+          "node": "n08",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c06",
+        "kind": "bond",
+        "from": {
+          "node": "n07"
+        },
+        "to": {
+          "node": "n10",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c07",
+        "kind": "wire",
+        "from": {
+          "node": "n10",
+          "port": "n"
+        },
+        "to": {
+          "node": "n11",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c08",
+        "kind": "wire",
+        "from": {
+          "node": "n10",
+          "port": "a"
+        },
+        "to": {
+          "node": "n12",
+          "port": "a"
+        }
+      },
+      {
+        "id": "c09",
+        "kind": "bond",
+        "from": {
+          "node": "n18",
+          "port": "p"
+        },
+        "to": {
+          "node": "n17"
+        }
+      },
+      {
+        "id": "c10",
+        "kind": "bond",
+        "from": {
+          "node": "n17"
+        },
+        "to": {
+          "node": "n19",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c11",
+        "kind": "bond",
+        "from": {
+          "node": "n17"
+        },
+        "to": {
+          "node": "n13"
+        }
+      },
+      {
+        "id": "c12",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n14",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c13",
+        "kind": "bond",
+        "from": {
+          "node": "n13"
+        },
+        "to": {
+          "node": "n10",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c14",
+        "kind": "bond",
+        "from": {
+          "node": "n17"
+        },
+        "to": {
+          "node": "n15",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c15",
+        "kind": "bond",
+        "from": {
+          "node": "n17"
+        },
+        "to": {
+          "node": "n20",
+          "port": "a"
+        }
+      },
+      {
+        "id": "c16",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "v"
+        },
+        "to": {
+          "node": "n02",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c17",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "y"
+        },
+        "to": {
+          "node": "n03",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c18",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "y"
+        },
+        "to": {
+          "node": "n01",
+          "port": "i"
+        }
+      },
+      {
+        "id": "c19",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "y"
+        },
+        "to": {
+          "node": "n21",
+          "port": "x"
+        }
+      },
+      {
+        "id": "c20",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "n25",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c21",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "n26",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c22",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "n27",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c23",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "y"
+        },
+        "to": {
+          "node": "n23",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c24",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "r"
+        }
+      },
+      {
+        "id": "c25",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "y"
+        }
+      },
+      {
+        "id": "c26",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "n24",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c27",
+        "kind": "signal",
+        "from": {
+          "node": "n24",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "ff"
+        }
+      },
+      {
+        "id": "c28",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Kp"
+        }
+      },
+      {
+        "id": "c29",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Ki"
+        }
+      },
+      {
+        "id": "c30",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Kd"
+        }
+      },
+      {
+        "id": "c31",
+        "kind": "signal",
+        "from": {
+          "node": "n28",
+          "port": "u"
+        },
+        "to": {
+          "node": "n01",
+          "port": "i_ref"
+        }
+      },
+      {
+        "id": "c32",
+        "kind": "signal",
+        "from": {
+          "node": "n08",
+          "port": "y"
+        },
+        "to": {
+          "node": "n09",
+          "port": "u1"
+        }
+      },
+      {
+        "id": "c33",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "y"
+        },
+        "to": {
+          "node": "n09",
+          "port": "u2"
+        }
+      },
+      {
+        "id": "c34",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n29",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c35",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "y"
+        },
+        "to": {
+          "node": "n16",
+          "port": "u1"
+        }
+      },
+      {
+        "id": "c36",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "y"
+        },
+        "to": {
+          "node": "n16",
+          "port": "u2"
+        }
+      },
+      {
+        "id": "c37",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "y"
+        },
+        "to": {
+          "node": "n30",
+          "port": "u"
+        }
+      }
+    ],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "**Maglev as a bond graph.** Electrical 1-junction Jc (coil current): amplifier MSe Amp (+-60 V rail in Sat), coil resistance Rc, current detector Imeas and the coil port of EM. EM is the two-port IC-field electromagnet: co-energy W' = L(h)*i^2/2 with L(h) = L_inf + 2*alpha/h, so its gap port carries F = alpha*i^2/h^2. Mechanical 1-junction Jb (ball velocity, down positive): gravity Se Grav, ball mass I Ball, the armature port of EM and the position sensor. The detectors give the field's port powers: coil voltage Vcoil (De on the 0-junction Jv) times Imeas, attraction Fmag (De on Jf) times ball velocity Vball; EM/W - Eel/y - Emech/y stays at W(0).",
+        "x": 40,
+        "y": 1100,
+        "w": 1100,
+        "h": 110
+      },
+      {
+        "id": "a2",
+        "kind": "text",
+        "text": "**Cascade.** Outer: gain-scheduled PID on the IR measurement plus trim feedforward c_trim*h -> current setpoint; its gains are designed with the 1 kHz sample-and-hold, the inner loop and a 5 ms derivative filter in the phase budget. Inner: PI (Kp = L*1000 rad/s, Ti = L/R) -> voltage command.",
+        "x": 40,
+        "y": 560,
+        "w": 640,
+        "h": 80,
+        "color": "blue"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.4,
+    "solver": "auto",
+    "reltol": 1e-09,
+    "abstol": 1e-12,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 2801
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Gap h, measurement and setpoint",
+      "signals": [
+        "BallPos/y",
+        "IR/Back/y",
+        "Pre/y",
+        "Ref/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Coil current and its setpoint",
+      "signals": [
+        "EM/i",
+        "PID/u",
+        "Trim/y"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Amplifier voltage (rail +-60 V)",
+      "signals": [
+        "Sat/y",
+        "Ipi/v"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Field energy terms [J]",
+      "signals": [
+        "EM/W",
+        "Eel/y",
+        "Emech/y"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Field port powers [W]",
+      "signals": [
+        "Pel/y",
+        "Pmech/y"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Magnetic force and weight",
+      "signals": [
+        "EM/F",
+        "Grav/p.e"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/maglev.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:gap",
+      "property": "position",
+      "signal": "BallPos/y"
+    },
+    {
+      "target": "joint:setpoint",
+      "property": "position",
+      "signal": "Ref/y"
+    },
+    {
+      "target": "visual:coil_winding",
+      "property": "color",
+      "signal": "EM/i",
+      "colormap": "heat",
+      "range": [
+        0.0,
+        30.0
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "name": "m_b",
+      "value": "0.02",
+      "unit": "kg",
+      "description": "Ball mass (MathWorks maglev)"
+    },
+    {
+      "name": "g0",
+      "value": "9.81",
+      "unit": "m/s^2",
+      "description": "Gravitational acceleration"
+    },
+    {
+      "name": "alpha",
+      "value": "2.4832e-5",
+      "unit": "H*m",
+      "description": "Force constant: F = alpha*i^2/h^2 (N*m^2/A^2)"
+    },
+    {
+      "name": "c_trim",
+      "value": "sqrt(m_b*g0/alpha)",
+      "unit": "A/m",
+      "description": "Trim law i_bar = c_trim*h_bar: alpha*i_bar^2/h_bar^2 = m_b*g0"
+    },
+    {
+      "name": "h_start",
+      "value": "0.15",
+      "unit": "m",
+      "description": "Gap at the start (levitating at rest)"
+    },
+    {
+      "name": "h_step",
+      "value": "0.1875",
+      "unit": "m",
+      "description": "Setpoint after the step (+25 %)"
+    },
+    {
+      "name": "t_step",
+      "value": "0.2",
+      "unit": "s",
+      "description": "Time of the setpoint step"
+    },
+    {
+      "name": "tau_pre",
+      "value": "0.1",
+      "unit": "s",
+      "description": "Reference prefilter 1/(tau_pre*s + 1), the reference's 10/(s + 10)"
+    },
+    {
+      "name": "Tf",
+      "value": "0.005",
+      "unit": "s",
+      "description": "Derivative filter of the PID: 5 ms for the sampled, noisy IR signal"
+    },
+    {
+      "name": "L_inf",
+      "value": "0.03",
+      "unit": "H",
+      "description": "Coil inductance at an infinite gap (assumed)"
+    },
+    {
+      "name": "R_coil",
+      "value": "2.0",
+      "unit": "Ohm",
+      "description": "Coil resistance (assumed)"
+    },
+    {
+      "name": "V_max",
+      "value": "60.0",
+      "unit": "V",
+      "description": "Amplifier rail"
+    },
+    {
+      "name": "w_i",
+      "value": "1000.0",
+      "unit": "rad/s",
+      "description": "Current-loop bandwidth"
+    },
+    {
+      "name": "L0",
+      "value": "L_inf + 2*alpha/h_start",
+      "unit": "H",
+      "description": "Coil inductance at the start gap"
+    },
+    {
+      "name": "Kp_i",
+      "value": "L0*w_i",
+      "unit": "V/A",
+      "description": "Current PI gain: the loop crosses over at w_i"
+    },
+    {
+      "name": "Ti_i",
+      "value": "L0/R_coil",
+      "unit": "s",
+      "description": "Current PI integral time: the PI zero cancels the coil pole"
+    },
+    {
+      "name": "i_start",
+      "value": "c_trim*h_start",
+      "unit": "A",
+      "description": "Trim current at the start gap"
+    },
+    {
+      "name": "k_s",
+      "value": "30.0",
+      "unit": "V/m",
+      "description": "IR sensor gain"
+    }
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Maglev",
+        "options": {
+          "markdown": true,
+          "text": "Move the **setpoint** and the model runs again: the ball steps from 0.15 m to the new gap at 0.2 s. Keep it between 0.08 and 0.22 m; outside the LPV design range the gains are clamped at the end points."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Setpoint after the step",
+        "parameter": "global:h_step",
+        "options": {
+          "min": 0.08,
+          "max": 0.22,
+          "step": 0.0025,
+          "decimals": 4,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Gap h",
+        "signals": [
+          "BallPos/y"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 0.3,
+          "decimals": 4,
+          "unit": "m",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.05,
+              "tone": "bad"
+            },
+            {
+              "from": 0.05,
+              "to": 0.25,
+              "tone": "good"
+            },
+            {
+              "from": 0.25,
+              "to": 0.3,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Coil current",
+        "signals": [
+          "EM/i"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 30.0,
+          "decimals": 2,
+          "unit": "A",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 25.0,
+              "tone": "good"
+            },
+            {
+              "from": 25.0,
+              "to": 30.0,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "bar",
+        "size": "1x1",
+        "title": "Amplifier voltage",
+        "signals": [
+          "Sat/y"
+        ],
+        "options": {
+          "min": -60.0,
+          "max": 60.0,
+          "decimals": 1,
+          "unit": "V",
+          "orientation": "horizontal",
+          "zones": [
+            {
+              "from": -60.0,
+              "to": -55.0,
+              "tone": "warn"
+            },
+            {
+              "from": -55.0,
+              "to": 55.0,
+              "tone": "good"
+            },
+            {
+              "from": 55.0,
+              "to": 60.0,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Magnetic energy",
+        "signals": [
+          "EM/W"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "J",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d7",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Gap and setpoint",
+        "signals": [
+          "BallPos/y",
+          "Pre/y",
+          "Ref/y"
+        ]
+      }
+    ]
+  }
+}

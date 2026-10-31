@@ -1,0 +1,246 @@
+<?xml version="1.0"?>
+<!--
+  maglev: a tabletop magnetic levitation rig (Z-up, metres).
+  The magnet face is at z = 0.4000; the gap h runs from the face down to the top of the
+  ball (radius 0.0125 m), so the prismatic joint "gap" (axis -Z) carries h directly, and
+  the ball lands on the pedestal at h = 0.3 m. "setpoint" moves the green marker to the
+  reference gap; the copper body "coil_winding" is coloured by the coil current. The IR light
+  curtain (emitter, receiver, faint beam) covers gaps from 0.03 to 0.27 m.
+  Written by examples/maglev/design/build_model.py.
+-->
+<sdf version="1.9">
+  <model name="maglev">
+    <link name="base">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="base_plate">
+        <pose>-0.06 0 0.0100 0 0 0</pose>
+        <geometry><box><size>0.3600 0.2200 0.0200</size></box></geometry>
+        <material><diffuse>0.20 0.22 0.27 1</diffuse></material>
+      </visual>
+      <visual name="base_label">
+        <pose>0.06 0.085 0.0205 0 0 0</pose>
+        <geometry><box><size>0.0800 0.0200 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="foot1">
+        <pose>-0.2200 -0.0900 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.0120</radius><length>0.0080</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+      <visual name="foot2">
+        <pose>-0.2200 0.0900 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.0120</radius><length>0.0080</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+      <visual name="foot3">
+        <pose>0.1000 -0.0900 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.0120</radius><length>0.0080</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+      <visual name="foot4">
+        <pose>0.1000 0.0900 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.0120</radius><length>0.0080</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="rig">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="column">
+        <pose>-0.1700 0 0.2950 0 0 0</pose>
+        <geometry><box><size>0.0400 0.0400 0.5500</size></box></geometry>
+        <material><diffuse>0.72 0.74 0.78 1</diffuse></material>
+      </visual>
+      <visual name="column_foot">
+        <pose>-0.1700 0 0.0300 0 0 0</pose>
+        <geometry><box><size>0.0900 0.0900 0.0200</size></box></geometry>
+        <material><diffuse>0.30 0.32 0.36 1</diffuse></material>
+      </visual>
+      <visual name="arm">
+        <pose>-0.0950 0 0.5500 0 0 0</pose>
+        <geometry><box><size>0.2300 0.0400 0.0300</size></box></geometry>
+        <material><diffuse>0.72 0.74 0.78 1</diffuse></material>
+      </visual>
+      <visual name="pedestal">
+        <pose>0.0000 0 0.0475 0 0 0</pose>
+        <geometry><cylinder><radius>0.0120</radius><length>0.0550</length></cylinder></geometry>
+        <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
+      </visual>
+      <visual name="pedestal_pad">
+        <pose>0.0000 0 0.0720 0 0 0</pose>
+        <geometry><cylinder><radius>0.0200</radius><length>0.0060</length></cylinder></geometry>
+        <material><diffuse>0.12 0.12 0.13 1</diffuse></material>
+      </visual>
+      <visual name="core">
+        <pose>0.0000 0 0.4650 0 0 0</pose>
+        <geometry><cylinder><radius>0.0220</radius><length>0.1300</length></cylinder></geometry>
+        <material><diffuse>0.38 0.39 0.42 1</diffuse></material>
+      </visual>
+      <visual name="pole_face">
+        <pose>0.0000 0 0.4020 0 0 0</pose>
+        <geometry><cylinder><radius>0.0240</radius><length>0.0040</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.68 1</diffuse></material>
+      </visual>
+      <visual name="flange_low">
+        <pose>0.0000 0 0.4110 0 0 0</pose>
+        <geometry><cylinder><radius>0.0560</radius><length>0.0060</length></cylinder></geometry>
+        <material><diffuse>0.22 0.23 0.26 1</diffuse></material>
+      </visual>
+      <visual name="flange_high">
+        <pose>0.0000 0 0.5190 0 0 0</pose>
+        <geometry><cylinder><radius>0.0560</radius><length>0.0060</length></cylinder></geometry>
+        <material><diffuse>0.22 0.23 0.26 1</diffuse></material>
+      </visual>
+      <visual name="coil_winding">
+        <pose>0.0000 0 0.4650 0 0 0</pose>
+        <geometry><cylinder><radius>0.0470</radius><length>0.1020</length></cylinder></geometry>
+        <material><diffuse>0.78 0.45 0.2 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib01">
+        <pose>0.0000 0 0.4180 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib02">
+        <pose>0.0000 0 0.4265 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib03">
+        <pose>0.0000 0 0.4351 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib04">
+        <pose>0.0000 0 0.4436 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib05">
+        <pose>0.0000 0 0.4522 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib06">
+        <pose>0.0000 0 0.4607 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib07">
+        <pose>0.0000 0 0.4693 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib08">
+        <pose>0.0000 0 0.4778 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib09">
+        <pose>0.0000 0 0.4864 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib10">
+        <pose>0.0000 0 0.4949 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib11">
+        <pose>0.0000 0 0.5035 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="winding_rib12">
+        <pose>0.0000 0 0.5120 0 0 0</pose>
+        <geometry><cylinder><radius>0.0485</radius><length>0.0025</length></cylinder></geometry>
+        <material><diffuse>0.55 0.3 0.12 1</diffuse></material>
+      </visual>
+      <visual name="terminal_a">
+        <pose>0.0300 0.045 0.5280 0 0 0</pose>
+        <geometry><cylinder><radius>0.0040</radius><length>0.0160</length></cylinder></geometry>
+        <material><diffuse>0.85 0.2 0.15 1</diffuse></material>
+      </visual>
+      <visual name="terminal_b">
+        <pose>-0.0300 0.045 0.5280 0 0 0</pose>
+        <geometry><cylinder><radius>0.0040</radius><length>0.0160</length></cylinder></geometry>
+        <material><diffuse>0.15 0.15 0.18 1</diffuse></material>
+      </visual>
+      <visual name="ir_receiver">
+        <pose>0.0700 0 0.2375 0 0 0</pose>
+        <geometry><box><size>0.0180 0.0300 0.2600</size></box></geometry>
+        <material><diffuse>0.10 0.11 0.14 1</diffuse></material>
+      </visual>
+      <visual name="ir_receiver_window">
+        <pose>0.0605 0 0.2375 0 0 0</pose>
+        <geometry><box><size>0.0020 0.0160 0.2400</size></box></geometry>
+        <material><diffuse>0.55 0.08 0.1 1</diffuse></material>
+      </visual>
+      <visual name="ir_emitter">
+        <pose>-0.0700 0 0.2375 0 0 0</pose>
+        <geometry><box><size>0.0180 0.0300 0.2600</size></box></geometry>
+        <material><diffuse>0.10 0.11 0.14 1</diffuse></material>
+      </visual>
+      <visual name="ir_emitter_window">
+        <pose>-0.0605 0 0.2375 0 0 0</pose>
+        <geometry><box><size>0.0020 0.0160 0.2400</size></box></geometry>
+        <material><diffuse>0.95 0.25 0.2 1</diffuse></material>
+      </visual>
+      <visual name="ir_beam">
+        <pose>0.0000 0 0.2375 0 0 0</pose>
+        <geometry><box><size>0.1190 0.0030 0.2400</size></box></geometry>
+        <material><diffuse>1.0 0.2 0.15 0.12</diffuse></material>
+      </visual>
+      <visual name="ir_bracket">
+        <pose>0.0000 -0.03 0.3735 0 0 0</pose>
+        <geometry><box><size>0.1600 0.0120 0.0120</size></box></geometry>
+        <material><diffuse>0.30 0.32 0.36 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="ball">
+      <pose>0.0000 0 0.3875 0 0 0</pose>
+      <visual name="ball_sphere">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.0125</radius></sphere></geometry>
+        <material><diffuse>0.80 0.83 0.88 1</diffuse></material>
+      </visual>
+      <visual name="ball_glint">
+        <pose>-0.0040 -0.0040 0.0050 0 0 0</pose>
+        <geometry><sphere><radius>0.0035</radius></sphere></geometry>
+        <material><diffuse>1 1 1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="setpoint_marker">
+      <pose>0.0000 0 0.3875 0 0 0</pose>
+      <visual name="setpoint_disc">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.0340</radius><length>0.0015</length></cylinder></geometry>
+        <material><diffuse>0.15 0.85 0.45 0.28</diffuse></material>
+      </visual>
+      <visual name="setpoint_line">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><box><size>0.1500 0.0025 0.0025</size></box></geometry>
+        <material><diffuse>0.1 0.9 0.45 1</diffuse></material>
+      </visual>
+      <visual name="setpoint_tick_l">
+        <pose>-0.078 0 0 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0060 0.0120</size></box></geometry>
+        <material><diffuse>0.1 0.9 0.45 1</diffuse></material>
+      </visual>
+      <visual name="setpoint_tick_r">
+        <pose>0.078 0 0 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0060 0.0120</size></box></geometry>
+        <material><diffuse>0.1 0.9 0.45 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="gap" type="prismatic">
+      <parent>rig</parent>
+      <child>ball</child>
+      <axis><xyz>0 0 -1</xyz></axis>
+    </joint>
+    <joint name="setpoint" type="prismatic">
+      <parent>rig</parent>
+      <child>setpoint_marker</child>
+      <axis><xyz>0 0 -1</xyz></axis>
+    </joint>
+  </model>
+</sdf>

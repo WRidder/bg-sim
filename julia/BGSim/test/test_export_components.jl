@@ -325,3 +325,35 @@ end
         "IGC/v" => 5e-3, "IGC" => 0.15, "IG" => 5e-2,
     ])
 end
+
+# The Electromagnet (stdlib:converters/Electromagnet, the maglev's IC-field): a DC source
+# through a resistor drives the coil while a velocity source moves the armature, so the
+# current carries both the RL transient and the motional term 2*alpha*i*dh/dt/h^2.
+function _exc_electromagnet_model()
+    nodes = Any[
+        bg_node("gnd", "G0", bg_ref("stdlib:electrical/Ground")),
+        _const("one", "One", 1.0),
+        bg_node("vs", "VS", bg_ref("stdlib:electrical/VoltageSource"); params = _p("V" => 10.0)),
+        bg_node("r", "EMR", bg_ref("stdlib:electrical/Resistor"); params = _p("R" => 2.0)),
+        bg_node("em", "EM", bg_ref("stdlib:converters/Electromagnet");
+            params = _p("alpha" => 2.4832e-5, "L_inf" => 0.03, "h0" => 0.002),
+            starts = _p("i" => 0.0, "h" => 0.1)),
+        bg_node("st", "Stator", bg_ref("stdlib:translation/Fixed")),
+        bg_node("sv", "SV", bg_ref("stdlib:sources/Sine"); params = _p("amplitude" => 0.3, "frequency" => 12.0)),
+        bg_node("arm", "Arm", bg_ref("stdlib:translation/VelocitySource"); params = _p("v" => 1.0)),
+    ]
+    c = 0
+    conns = Any[]
+    wire(a, pa, b, pb) = push!(conns, bg_conn("w$(c += 1)", "wire", a, pa, b, pb))
+    sig(a, pa, b, pb) = push!(conns, bg_conn("s$(c += 1)", "signal", a, pa, b, pb))
+    sig("one", "y", "vs", "u"); wire("vs", "n", "gnd", "p")
+    wire("vs", "p", "r", "p"); wire("r", "n", "em", "p"); wire("em", "n", "gnd", "p")
+    wire("em", "a", "st", "a"); sig("sv", "y", "arm", "u"); wire("em", "b", "arm", "a")
+    return bg_model("ElectromagnetExport", nodes, conns; t_end = 1.0, points = 101)
+end
+
+@testset "electromagnet in the C export" begin
+    errs = _exc_check(_exc_electromagnet_model(), ["EM" => 1e-6])
+    # The armature really moved (the motional term is exercised): h swings by 2*0.3/12 m.
+    errs === nothing || @test haskey(errs, "EM/h")
+end

@@ -5,5 +5,5 @@
         p.f ~ 0.0
         y ~ p.e
     end
-    @causality p => (:effort_out, :fixed)
+    @causality p => (:flow_out, :fixed)
 end

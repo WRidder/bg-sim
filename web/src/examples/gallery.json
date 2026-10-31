@@ -117,6 +117,16 @@
       "inverted-pendulum-cart"
     ]
   },
+  "maglev": {
+    "title": "Maglev",
+    "description": "A steel ball levitated below an electromagnet: a gain-scheduled PID on the LPV model, and a bond graph with an energy-conserving coil field.",
+    "hasScene": true,
+    "models": [
+      "maglev-current-driven",
+      "maglev-open-loop-and-linear",
+      "maglev-bondgraph"
+    ]
+  },
   "motor-thermal": {
     "title": "Motor thermal",
     "description": "A DC motor's copper loss heats its winding, which conducts to the housing and cools by convection; the hot winding resistance slows the fan.",

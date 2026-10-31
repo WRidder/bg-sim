@@ -555,6 +555,7 @@ Converters are the only components with ports in two domains, which is what lets
 | DC motor | Electrical `p`, `n`; Rotation `shaft`, `housing` | `R`, `L`, `k_t`, `J`, `d` | v0.1 |
 | DC motor with winding heat port (`DCMotorThermal`) | Electrical `p`, `n`; Rotation `shaft`, `housing`; Thermal `winding` | `R`, `alpha`, `T_ref`, `L`, `k_t`, `J`, `d` | v0.1 |
 | Ideal EM converter (gyrator) | Electrical `p`, `n`; Rotation `shaft` | `k` \[N\*m/A\] | v0.1 |
+| Electromagnet, variable reluctance (`Electromagnet`): a two-port IC-field, `L(h) = L_inf + 2*alpha/(h + h0)`, attraction `alpha*i^2/(h + h0)^2` | Electrical `p`, `n`; Translation `a` (stator), `b` (armature) | `alpha` \[H\*m\], `L_inf` \[H\], `h0` \[m\] | v0.1 |
 | Rack and pinion | Rotation `a`; Translation `b` | pinion radius | v0.1 |
 | Ball screw | Rotation `a`; Translation `b` | lead \[m/rev\], efficiency | v0.1 |
 | Wheel | Rotation `a`; Translation `b` | radius | v0.1 |

@@ -1,0 +1,1556 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "maglev-open-loop-and-linear",
+  "$comment": "Why the maglev needs control and what its LPV model means: three nonlinear balls released 10 nm below their trim gaps 0.05/0.15/0.25 m (growth rate -> sqrt(2g/p)), and the nonlinear plant next to its frozen linear model at 0.15 m under the same closed loop, for a small (+5 mm) and a large (+60 mm) step.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "I05",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 40,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "c_trim"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "P05",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 30,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.05"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Ball05",
+        "block": {
+          "ref": "project:MaglevBall"
+        },
+        "position": {
+          "x": 190,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_b",
+          "g": "g0",
+          "alpha": "alpha"
+        },
+        "constants": {},
+        "starts": {
+          "x": "0.05 + dh0",
+          "w": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Grow05",
+        "block": {
+          "ref": "project:GrowthRate"
+        },
+        "position": {
+          "x": 190,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p": "0.05"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "I15",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 340,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "c_trim"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "P15",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 330,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.15"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Ball15",
+        "block": {
+          "ref": "project:MaglevBall"
+        },
+        "position": {
+          "x": 490,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_b",
+          "g": "g0",
+          "alpha": "alpha"
+        },
+        "constants": {},
+        "starts": {
+          "x": "0.15 + dh0",
+          "w": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "Grow15",
+        "block": {
+          "ref": "project:GrowthRate"
+        },
+        "position": {
+          "x": 490,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p": "0.15"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "I25",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 640,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "c_trim"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "P25",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 630,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.25"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Ball25",
+        "block": {
+          "ref": "project:MaglevBall"
+        },
+        "position": {
+          "x": 790,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_b",
+          "g": "g0",
+          "alpha": "alpha"
+        },
+        "constants": {},
+        "starts": {
+          "x": "0.25 + dh0",
+          "w": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Grow25",
+        "block": {
+          "ref": "project:GrowthRate"
+        },
+        "position": {
+          "x": 790,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p": "0.25"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Kp",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 40,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "811.5685203706755"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "Ki",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 40,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "4926.507993580662"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "Kd",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 40,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "33.01889172714258"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "RefS",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_step",
+          "initial": "h_start",
+          "final": "0.155"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "PreS",
+        "block": {
+          "ref": "stdlib:continuous/FirstOrder"
+        },
+        "position": {
+          "x": 220,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0",
+          "tau": "tau_pre"
+        },
+        "constants": {},
+        "starts": {
+          "x": "h_start"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "TrimS",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 400,
+          "y": 520
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "c_trim"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "PIDS",
+        "block": {
+          "ref": "project:ScheduledPID"
+        },
+        "position": {
+          "x": 600,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Tf": "Tf"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "BallS",
+        "block": {
+          "ref": "project:MaglevBall"
+        },
+        "position": {
+          "x": 820,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_b",
+          "g": "g0",
+          "alpha": "alpha"
+        },
+        "constants": {},
+        "starts": {
+          "x": "h_start",
+          "w": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "TrimLinS",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 400,
+          "y": 780
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "c_trim"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "PIDLinS",
+        "block": {
+          "ref": "project:ScheduledPID"
+        },
+        "position": {
+          "x": 600,
+          "y": 820
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Tf": "Tf"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "LinS",
+        "block": {
+          "ref": "project:LinearBall"
+        },
+        "position": {
+          "x": 820,
+          "y": 820
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p": "h_start",
+          "m": "m_b",
+          "g": "g0",
+          "alpha": "alpha"
+        },
+        "constants": {},
+        "starts": {
+          "dh": "0.0",
+          "dv": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "DiffS",
+        "block": {
+          "ref": "project:Diff2"
+        },
+        "position": {
+          "x": 1180,
+          "y": 660
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "RefL",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 40,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_step",
+          "initial": "h_start",
+          "final": "0.21"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n26",
+        "name": "PreL",
+        "block": {
+          "ref": "stdlib:continuous/FirstOrder"
+        },
+        "position": {
+          "x": 220,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0",
+          "tau": "tau_pre"
+        },
+        "constants": {},
+        "starts": {
+          "x": "h_start"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n27",
+        "name": "TrimL",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 400,
+          "y": 940
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "c_trim"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n28",
+        "name": "PIDL",
+        "block": {
+          "ref": "project:ScheduledPID"
+        },
+        "position": {
+          "x": 600,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Tf": "Tf"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n29",
+        "name": "BallL",
+        "block": {
+          "ref": "project:MaglevBall"
+        },
+        "position": {
+          "x": 820,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_b",
+          "g": "g0",
+          "alpha": "alpha"
+        },
+        "constants": {},
+        "starts": {
+          "x": "h_start",
+          "w": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n30",
+        "name": "TrimLinL",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 400,
+          "y": 1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "c_trim"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n31",
+        "name": "PIDLinL",
+        "block": {
+          "ref": "project:ScheduledPID"
+        },
+        "position": {
+          "x": 600,
+          "y": 1240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Tf": "Tf"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n32",
+        "name": "LinL",
+        "block": {
+          "ref": "project:LinearBall"
+        },
+        "position": {
+          "x": 820,
+          "y": 1240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p": "h_start",
+          "m": "m_b",
+          "g": "g0",
+          "alpha": "alpha"
+        },
+        "constants": {},
+        "starts": {
+          "dh": "0.0",
+          "dv": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n33",
+        "name": "DiffL",
+        "block": {
+          "ref": "project:Diff2"
+        },
+        "position": {
+          "x": 1180,
+          "y": 1080
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c01",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "y"
+        },
+        "to": {
+          "node": "n01",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c02",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n03",
+          "port": "i"
+        }
+      },
+      {
+        "id": "c03",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "h"
+        },
+        "to": {
+          "node": "n04",
+          "port": "h"
+        }
+      },
+      {
+        "id": "c04",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "v"
+        },
+        "to": {
+          "node": "n04",
+          "port": "v"
+        }
+      },
+      {
+        "id": "c05",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "y"
+        },
+        "to": {
+          "node": "n05",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c06",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "y"
+        },
+        "to": {
+          "node": "n07",
+          "port": "i"
+        }
+      },
+      {
+        "id": "c07",
+        "kind": "signal",
+        "from": {
+          "node": "n07",
+          "port": "h"
+        },
+        "to": {
+          "node": "n08",
+          "port": "h"
+        }
+      },
+      {
+        "id": "c08",
+        "kind": "signal",
+        "from": {
+          "node": "n07",
+          "port": "v"
+        },
+        "to": {
+          "node": "n08",
+          "port": "v"
+        }
+      },
+      {
+        "id": "c09",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "y"
+        },
+        "to": {
+          "node": "n09",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c10",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n11",
+          "port": "i"
+        }
+      },
+      {
+        "id": "c11",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "h"
+        },
+        "to": {
+          "node": "n12",
+          "port": "h"
+        }
+      },
+      {
+        "id": "c12",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "v"
+        },
+        "to": {
+          "node": "n12",
+          "port": "v"
+        }
+      },
+      {
+        "id": "c13",
+        "kind": "signal",
+        "from": {
+          "node": "n17",
+          "port": "y"
+        },
+        "to": {
+          "node": "n19",
+          "port": "r"
+        }
+      },
+      {
+        "id": "c14",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "h"
+        },
+        "to": {
+          "node": "n19",
+          "port": "y"
+        }
+      },
+      {
+        "id": "c15",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "h"
+        },
+        "to": {
+          "node": "n18",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c16",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "y"
+        },
+        "to": {
+          "node": "n19",
+          "port": "ff"
+        }
+      },
+      {
+        "id": "c17",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n19",
+          "port": "Kp"
+        }
+      },
+      {
+        "id": "c18",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "y"
+        },
+        "to": {
+          "node": "n19",
+          "port": "Ki"
+        }
+      },
+      {
+        "id": "c19",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "y"
+        },
+        "to": {
+          "node": "n19",
+          "port": "Kd"
+        }
+      },
+      {
+        "id": "c20",
+        "kind": "signal",
+        "from": {
+          "node": "n17",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "r"
+        }
+      },
+      {
+        "id": "c21",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "h"
+        },
+        "to": {
+          "node": "n22",
+          "port": "y"
+        }
+      },
+      {
+        "id": "c22",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "h"
+        },
+        "to": {
+          "node": "n21",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c23",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "ff"
+        }
+      },
+      {
+        "id": "c24",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "Kp"
+        }
+      },
+      {
+        "id": "c25",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "Ki"
+        }
+      },
+      {
+        "id": "c26",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "y"
+        },
+        "to": {
+          "node": "n22",
+          "port": "Kd"
+        }
+      },
+      {
+        "id": "c27",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "y"
+        },
+        "to": {
+          "node": "n17",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c28",
+        "kind": "signal",
+        "from": {
+          "node": "n19",
+          "port": "u"
+        },
+        "to": {
+          "node": "n20",
+          "port": "i"
+        }
+      },
+      {
+        "id": "c29",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "u"
+        },
+        "to": {
+          "node": "n23",
+          "port": "i"
+        }
+      },
+      {
+        "id": "c30",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "h"
+        },
+        "to": {
+          "node": "n24",
+          "port": "u1"
+        }
+      },
+      {
+        "id": "c31",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "h"
+        },
+        "to": {
+          "node": "n24",
+          "port": "u2"
+        }
+      },
+      {
+        "id": "c32",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "r"
+        }
+      },
+      {
+        "id": "c33",
+        "kind": "signal",
+        "from": {
+          "node": "n29",
+          "port": "h"
+        },
+        "to": {
+          "node": "n28",
+          "port": "y"
+        }
+      },
+      {
+        "id": "c34",
+        "kind": "signal",
+        "from": {
+          "node": "n29",
+          "port": "h"
+        },
+        "to": {
+          "node": "n27",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c35",
+        "kind": "signal",
+        "from": {
+          "node": "n27",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "ff"
+        }
+      },
+      {
+        "id": "c36",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Kp"
+        }
+      },
+      {
+        "id": "c37",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Ki"
+        }
+      },
+      {
+        "id": "c38",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "Kd"
+        }
+      },
+      {
+        "id": "c39",
+        "kind": "signal",
+        "from": {
+          "node": "n26",
+          "port": "y"
+        },
+        "to": {
+          "node": "n31",
+          "port": "r"
+        }
+      },
+      {
+        "id": "c40",
+        "kind": "signal",
+        "from": {
+          "node": "n32",
+          "port": "h"
+        },
+        "to": {
+          "node": "n31",
+          "port": "y"
+        }
+      },
+      {
+        "id": "c41",
+        "kind": "signal",
+        "from": {
+          "node": "n32",
+          "port": "h"
+        },
+        "to": {
+          "node": "n30",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c42",
+        "kind": "signal",
+        "from": {
+          "node": "n30",
+          "port": "y"
+        },
+        "to": {
+          "node": "n31",
+          "port": "ff"
+        }
+      },
+      {
+        "id": "c43",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n31",
+          "port": "Kp"
+        }
+      },
+      {
+        "id": "c44",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "y"
+        },
+        "to": {
+          "node": "n31",
+          "port": "Ki"
+        }
+      },
+      {
+        "id": "c45",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "y"
+        },
+        "to": {
+          "node": "n31",
+          "port": "Kd"
+        }
+      },
+      {
+        "id": "c46",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "y"
+        },
+        "to": {
+          "node": "n26",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c47",
+        "kind": "signal",
+        "from": {
+          "node": "n28",
+          "port": "u"
+        },
+        "to": {
+          "node": "n29",
+          "port": "i"
+        }
+      },
+      {
+        "id": "c48",
+        "kind": "signal",
+        "from": {
+          "node": "n31",
+          "port": "u"
+        },
+        "to": {
+          "node": "n32",
+          "port": "i"
+        }
+      },
+      {
+        "id": "c49",
+        "kind": "signal",
+        "from": {
+          "node": "n29",
+          "port": "h"
+        },
+        "to": {
+          "node": "n33",
+          "port": "u1"
+        }
+      },
+      {
+        "id": "c50",
+        "kind": "signal",
+        "from": {
+          "node": "n32",
+          "port": "h"
+        },
+        "to": {
+          "node": "n33",
+          "port": "u2"
+        }
+      }
+    ],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "**Open loop.** Each ball gets the trim current of its gap and starts dh0 = 10 nm below it, at rest. The deviation grows as dh0*cosh(s*t); Grow*/lambda = v/(h - p) tends to the unstable pole s = sqrt(2*g/p): 19.81, 11.44 and 8.86 1/s.",
+        "x": 960,
+        "y": -40,
+        "w": 420,
+        "h": 120,
+        "color": "green"
+      },
+      {
+        "id": "a2",
+        "kind": "text",
+        "text": "**Small step (0.15 -> 0.155 m).** The same frozen PID (0.15 m gains) and trim feedforward around the nonlinear ball (BallS) and around its linearisation at 0.15 m (LinS: A = [0 1; 2g/p 0], B = [0; -2 sqrt(g alpha/m)/p], C = [1 0] at p = 0.15 m, taking the absolute current and returning the absolute gap). DiffS = BallS/h - LinS/h stays below 0.5 % of the step.",
+        "x": 1380,
+        "y": 600,
+        "w": 420,
+        "h": 150,
+        "color": "blue"
+      },
+      {
+        "id": "a3",
+        "kind": "text",
+        "text": "**Large step (0.15 -> 0.21 m).** The controller now asks for a negative current; the real force alpha*i^2/h^2 still pulls (it does not care about the sign), the linear model pushes. The real ball can at best fall freely, so it lags the linear one: DiffL reaches 18 % of the step.",
+        "x": 1380,
+        "y": 1020,
+        "w": 420,
+        "h": 130,
+        "color": "pink"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.5,
+    "solver": "auto",
+    "reltol": 1e-10,
+    "abstol": 1e-14,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 3001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Open loop: gaps of the released balls",
+      "signals": [
+        "Ball05/h",
+        "Ball15/h",
+        "Ball25/h"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Open loop: growth rate v/(h - p) [1/s]",
+      "signals": [
+        "Grow05/lambda",
+        "Grow15/lambda",
+        "Grow25/lambda"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Small step: nonlinear vs frozen linear",
+      "signals": [
+        "BallS/h",
+        "LinS/h",
+        "PreS/y"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Large step: nonlinear vs frozen linear",
+      "signals": [
+        "BallL/h",
+        "LinL/h",
+        "PreL/y"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Gap difference nonlinear - linear",
+      "signals": [
+        "DiffS/y",
+        "DiffL/y"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Coil currents, large step",
+      "signals": [
+        "PIDL/u",
+        "PIDLinL/u"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/maglev-open-loop.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:gap05",
+      "property": "position",
+      "signal": "Ball05/h"
+    },
+    {
+      "target": "joint:gap15",
+      "property": "position",
+      "signal": "Ball15/h"
+    },
+    {
+      "target": "joint:gap25",
+      "property": "position",
+      "signal": "Ball25/h"
+    }
+  ],
+  "parameters": [
+    {
+      "name": "m_b",
+      "value": "0.02",
+      "unit": "kg",
+      "description": "Ball mass (MathWorks maglev)"
+    },
+    {
+      "name": "g0",
+      "value": "9.81",
+      "unit": "m/s^2",
+      "description": "Gravitational acceleration"
+    },
+    {
+      "name": "alpha",
+      "value": "2.4832e-5",
+      "unit": "H*m",
+      "description": "Force constant: F = alpha*i^2/h^2 (N*m^2/A^2)"
+    },
+    {
+      "name": "c_trim",
+      "value": "sqrt(m_b*g0/alpha)",
+      "unit": "A/m",
+      "description": "Trim law i_bar = c_trim*h_bar: alpha*i_bar^2/h_bar^2 = m_b*g0"
+    },
+    {
+      "name": "h_start",
+      "value": "0.15",
+      "unit": "m",
+      "description": "Gap of the closed loops at the start"
+    },
+    {
+      "name": "t_step",
+      "value": "0.2",
+      "unit": "s",
+      "description": "Time of the setpoint steps"
+    },
+    {
+      "name": "tau_pre",
+      "value": "0.1",
+      "unit": "s",
+      "description": "Reference prefilter time constant"
+    },
+    {
+      "name": "Tf",
+      "value": "0.001",
+      "unit": "s",
+      "description": "Derivative filter time constant"
+    },
+    {
+      "name": "dh0",
+      "value": "1e-08",
+      "unit": "m",
+      "description": "Release offset of the open-loop balls below their trim gap"
+    }
+  ]
+}

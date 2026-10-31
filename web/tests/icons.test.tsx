@@ -179,6 +179,20 @@ describe("block icons", () => {
     expect(glyphs.size).toBe(hydraulicIcons.length);
   });
 
+  it("draws an explicit glyph for the electromagnet", () => {
+    // stdlib:converters/Electromagnet (src/library/catalog.jl): a cored coil above its armature,
+    // not the generic converter glyph and not the EM converter's.
+    const ids = new Set(svgIconIds());
+    expect(ids.has("conv-electromagnet")).toBe(true);
+    const strip = (icon: string) =>
+      renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />).replace(/(aria-label|data-icon)="[^"]*"/g, "");
+    const html = strip("conv-electromagnet");
+    expect(html).toContain("<svg");
+    for (const other of ["conv-em-converter", "conv-dc-motor", "conv-position-sensor", "elec-mutual-inductance"]) {
+      expect(html, other).not.toBe(strip(other));
+    }
+  });
+
   it("draws a distinct glyph for every signal and control block", () => {
     // The icon ids of the signal and control blocks (src/library/catalog.jl): linear
     // systems, filters, routing, nonlinearities, simulation control and observers.

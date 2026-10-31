@@ -809,6 +809,14 @@ const GLYPHS: Record<string, Glyph> = {
       <path d="M3.5 7h-2M3.5 17h-2" opacity="0.35" />
     </>
   ),
+  "conv-electromagnet": () => (
+    <>
+      <path d="M9.5 2v11h5V2" />
+      <path d="M7 4.5l10 1.6M7 7.5l10 1.6M7 10.5l10 1.6" />
+      <circle cx="12" cy="19" r="3" fill="currentColor" stroke="none" />
+      <path d="M12 13.6v1.8" strokeDasharray="1 1" opacity="0.6" />
+    </>
+  ),
   "conv-speed-sensor": () => (
     <>
       <circle cx="12" cy="12" r="8.5" />
