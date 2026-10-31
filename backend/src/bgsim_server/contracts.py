@@ -900,6 +900,30 @@ class ModelAnnotation(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ShapeKind(Enum):
+    rectangle = 'rectangle'
+    roundedRectangle = 'roundedRectangle'
+    ellipse = 'ellipse'
+    line = 'line'
+    arrow = 'arrow'
+
+
+class ShapeStrokeStyle(Enum):
+    solid = 'solid'
+    dashed = 'dashed'
+    dotted = 'dotted'
+
+
+class ShapeColor(Enum):
+    none = 'none'
+    ink = 'ink'
+    yellow = 'yellow'
+    blue = 'blue'
+    green = 'green'
+    pink = 'pink'
+    grey = 'grey'
+
+
 class ModelNodeImageMime(Enum):
     image_png = 'image/png'
     image_svg_xml = 'image/svg+xml'
@@ -1878,6 +1902,41 @@ class ModelConnection(BaseModel):
     to: ModelEndpoint
     route: list[ModelPoint] | None = Field(None, description='Optional waypoints.')
     label: str | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ModelShape(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: constr(pattern=r'^[A-Za-z0-9_.-]+$')
+    kind: ShapeKind = Field(..., title='ShapeKind')
+    x: float
+    y: float
+    w: float = Field(
+        ...,
+        description='Rectangle, rounded rectangle and ellipse: the frame width (positive). Line and arrow: the end point is (x + w, y + h), so w and h may be negative.',
+    )
+    h: float
+    fill: ShapeColor | None = None
+    stroke: ShapeColor | None = None
+    strokeWidth: confloat(ge=0.5, le=24.0) | None = Field(
+        None, description='Outline width in diagram units; absent means 2.'
+    )
+    strokeStyle: ShapeStrokeStyle | None = Field(
+        None, description='Absent means solid.', title='ShapeStrokeStyle'
+    )
+    opacity: confloat(ge=0.0, le=1.0) | None = Field(
+        None,
+        description='The opacity of the whole shape, label included; absent means 1.',
+    )
+    text: str | None = Field(
+        None, description='An optional plain-text label, centred on the shape.'
+    )
+    locked: bool | None = Field(
+        None,
+        description='A locked shape cannot be moved, resized or deleted on the canvas, and a selection rectangle skips it; absent means false.',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -2881,6 +2940,10 @@ class ModelDiagram(BaseModel):
         None, description='Exposed ports; only used inside a subsystem.'
     )
     annotations: list[ModelAnnotation] | None = None
+    shapes: list[ModelShape] | None = Field(
+        None,
+        description='Background shapes, drawn behind the notes, wires and blocks. The array order is the z order: the first entry is the back-most.',
+    )
     probes: list[ModelProbe] | None = Field(
         None,
         description='Oscilloscope probes. Side-channel observers; the compiler ignores them.',

@@ -49,6 +49,15 @@ never writes `yellow`). They are editor state like positions: the Julia parser d
 compile, simulation, the compile key and the C/FMU export do not change
 (`model.sticky-notes.json` flattens exactly like `model.subsystem-port-ui.json`).
 
+Canvas shapes: `diagram.shapes` (every diagram level) are background drawings behind notes,
+wires and blocks, in z order (the first entry is the back-most). `kind` is `rectangle`,
+`roundedRectangle`, `ellipse`, `line` or `arrow`; a line runs from (`x`, `y`) to
+(`x + w`, `y + h`). Optional `fill`/`stroke` (`shapeColor`: the note palette plus `ink` and
+`none`; absent fill is none, absent stroke is ink), `strokeWidth`, `strokeStyle`, `opacity`,
+`text` and `locked`; the editor never writes a default. Editor state like notes: the Julia parser
+drops them (`model.canvas-shapes.json` flattens like `model.subsystem-port-ui.json`, and the
+export test checks an identical `model.c`).
+
 Dashboard (DASHBOARD_PLAN.md): the model's optional top-level `dashboard` (`cards` in grid order;
 display cards bind `signals`, input cards bind one `parameter` with an override `value`, a
 schedule card holds a `schedule` table of block `parameters` x `rows`) is editor state; the

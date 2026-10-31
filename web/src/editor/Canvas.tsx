@@ -16,6 +16,9 @@
  * * right-click an edge -> reverse a bond; right-click a node -> transform.
  * * right-click empty canvas -> "Add note"; N adds a sticky note at the
  *   pointer (`diagram.annotations`, nodes `note:<id>`, see notes.ts).
+ * * right-click empty canvas -> "Add rectangle" and the other background
+ *   shapes (`diagram.shapes`, nodes `shape:<id>` behind everything, see
+ *   shapes.ts); right-click a shape -> arrange, lock, duplicate, delete.
  */
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -120,6 +123,8 @@ import {
 } from "./PortDeleteConfirm";
 import { addNoteAt, NoteMenuItems, PaneMenuItems } from "./NoteMenu";
 import { isNoteId } from "./notes";
+import { AddShapeMenuItems, addShapeAt, ShapeMenuItems } from "./ShapeMenu";
+import { isShapeId, requestShapeLabelFocus, shapeIdOf } from "./shapes";
 import "./editor.css";
 
 // The probe plot pulls in uPlot; it loads when a diagram has a probe (code splitting, W5.4).
@@ -1506,6 +1511,13 @@ function CanvasInner() {
     if (isNoteId(node.id)) {
       return;
     }
+    // A shape's label is edited in the inspector.
+    const shapeId = shapeIdOf(node.id);
+    if (shapeId !== null) {
+      useDocumentStore.getState().setSelection([node.id], []);
+      requestShapeLabelFocus(shapeId);
+      return;
+    }
     // A terminal leaves the subsystem and shows its outside connection.
     const terminal = terminalPortName(node.id);
     if (terminal !== null) {
@@ -2295,18 +2307,36 @@ function CanvasInner() {
             </>
           ) : null}
           {menu.kind === "pane" ? (
-            <PaneMenuItems
-              onAddNote={() =>
-                runMenuAction(() => {
-                  if (menu.flow !== undefined) {
-                    addNoteAt(menu.flow, snap);
-                  }
-                })
-              }
-            />
+            <>
+              <PaneMenuItems
+                onAddNote={() =>
+                  runMenuAction(() => {
+                    if (menu.flow !== undefined) {
+                      addNoteAt(menu.flow, snap);
+                    }
+                  })
+                }
+              />
+              <AddShapeMenuItems
+                onAdd={(kind) =>
+                  runMenuAction(() => {
+                    if (menu.flow !== undefined) {
+                      addShapeAt(kind, menu.flow, snap);
+                    }
+                  })
+                }
+              />
+            </>
           ) : null}
           {menu.kind === "node" && isNoteId(menu.id) ? (
             <NoteMenuItems
+              flowId={menu.id}
+              onDone={() => setMenu(null)}
+              onDelete={() => runMenuAction(requestDelete)}
+            />
+          ) : null}
+          {menu.kind === "node" && isShapeId(menu.id) ? (
+            <ShapeMenuItems
               flowId={menu.id}
               onDone={() => setMenu(null)}
               onDelete={() => runMenuAction(requestDelete)}
@@ -2325,7 +2355,10 @@ function CanvasInner() {
               onDelete={() => runMenuAction(requestDelete)}
             />
           ) : null}
-          {menu.kind === "node" && terminalPortName(menu.id) === null && !isNoteId(menu.id) ? (
+          {menu.kind === "node" &&
+          terminalPortName(menu.id) === null &&
+          !isNoteId(menu.id) &&
+          !isShapeId(menu.id) ? (
             <>
               {menuExpose !== null ? (
                 <button

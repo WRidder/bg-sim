@@ -46,6 +46,15 @@ export type AnnotationKind = "text";
  * The card colour; absent means yellow. The editor themes each colour for dark and light mode.
  */
 export type AnnotationColor = "yellow" | "blue" | "green" | "pink" | "grey";
+export type ShapeKind = "rectangle" | "roundedRectangle" | "ellipse" | "line" | "arrow";
+/**
+ * A shape colour: the sticky-note palette plus `ink` (the theme's text colour) and `none`. The editor themes each colour for dark and light mode.
+ */
+export type ShapeColor = "none" | "ink" | "yellow" | "blue" | "green" | "pink" | "grey";
+/**
+ * Absent means solid.
+ */
+export type ShapeStrokeStyle = "solid" | "dashed" | "dotted";
 export type ProbeKind = "block" | "window";
 /**
  * The recording grid: a fixed number of points over [t_start, t_end], or a fixed interval.
@@ -119,6 +128,10 @@ export interface ModelDiagram {
    */
   subsystemPorts?: ModelSubsystemPort[];
   annotations?: ModelAnnotation[];
+  /**
+   * Background shapes, drawn behind the notes, wires and blocks. The array order is the z order: the first entry is the back-most.
+   */
+  shapes?: ModelShape[];
   /**
    * Oscilloscope probes. Side-channel observers; the compiler ignores them.
    */
@@ -293,6 +306,40 @@ export interface ModelAnnotation {
   w: number;
   h: number;
   color?: AnnotationColor;
+  $comment?: string;
+}
+/**
+ * A background shape on one diagram level (rectangle, rounded rectangle, ellipse, line or arrow), drawn behind notes, wires and blocks. `fill` absent means none (lines and arrows ignore it); `stroke` absent means ink. Editor-only; compile, simulation and export ignore it.
+ */
+export interface ModelShape {
+  id: string;
+  kind: ShapeKind;
+  x: number;
+  y: number;
+  /**
+   * Rectangle, rounded rectangle and ellipse: the frame width (positive). Line and arrow: the end point is (x + w, y + h), so w and h may be negative.
+   */
+  w: number;
+  h: number;
+  fill?: ShapeColor;
+  stroke?: ShapeColor;
+  /**
+   * Outline width in diagram units; absent means 2.
+   */
+  strokeWidth?: number;
+  strokeStyle?: ShapeStrokeStyle;
+  /**
+   * The opacity of the whole shape, label included; absent means 1.
+   */
+  opacity?: number;
+  /**
+   * An optional plain-text label, centred on the shape.
+   */
+  text?: string;
+  /**
+   * A locked shape cannot be moved, resized or deleted on the canvas, and a selection rectangle skips it; absent means false.
+   */
+  locked?: boolean;
   $comment?: string;
 }
 export interface ModelProbe {

@@ -364,6 +364,28 @@ end
               read(joinpath(plain_dir, "sources", "model.c"), String)
     end
 
+    @testset "canvas shapes (diagram.shapes) change nothing in the export" begin
+        plain_doc = _ex_lag_model()
+        shaped_doc = _ex_lag_model()
+        shaped_doc["diagram"]["shapes"] = Any[
+            Dict{String,Any}("id" => "s1", "kind" => "roundedRectangle", "x" => -40.0,
+                "y" => -40.0, "w" => 400.0, "h" => 240.0, "fill" => "blue", "opacity" => 0.5,
+                "text" => "Lag", "locked" => true),
+            Dict{String,Any}("id" => "s2", "kind" => "arrow", "x" => 0.0, "y" => 260.0,
+                "w" => 200.0, "h" => -60.0, "stroke" => "pink", "strokeStyle" => "dashed"),
+        ]
+        plain_dir, shaped_dir = mktempdir(), mktempdir()
+        settings = _EX.ExportSettings(t_end = 0.1)
+        rp = _EX.export_model(_ex_flat(plain_doc), plain_dir; settings)
+        rs = _EX.export_model(_ex_flat(shaped_doc), shaped_dir; settings)
+        @test rp.ok && rs.ok
+        @test _ex_codes(rp) == _ex_codes(rs)
+        @test [i["name"] for i in rs.report["inputs"]] == [i["name"] for i in rp.report["inputs"]]
+        @test [o["name"] for o in rs.report["outputs"]] == [o["name"] for o in rp.report["outputs"]]
+        @test read(joinpath(shaped_dir, "sources", "model.c"), String) ==
+              read(joinpath(plain_dir, "sources", "model.c"), String)
+    end
+
     @testset "expose_all adds read-only locals, not interface" begin
         r = _EX.export_model(_ex_flat(_ex_lag_model()), mktempdir();
             settings = _EX.ExportSettings(t_end = 0.1, expose_all = true))

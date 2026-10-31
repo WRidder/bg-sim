@@ -358,6 +358,29 @@ def test_model_with_sticky_notes_round_trips_and_rejects_a_bad_colour(
     assert client.get("/api/projects/demo/models/notes").json() == document
 
 
+def test_model_with_canvas_shapes_round_trips_in_order_and_rejects_a_bad_kind(
+    client: TestClient, store: ProjectStore
+) -> None:
+    """Canvas shapes (diagram.shapes, root and nested) are stored as sent, z order included."""
+    assert _create(client).status_code == 201
+    document = _load(FIXTURES / "model" / "valid" / "model.canvas-shapes.json")
+    response = client.put("/api/projects/demo/models/shapes", json=document)
+    assert response.status_code == 200, response.text
+    fetched = client.get("/api/projects/demo/models/shapes").json()
+    assert fetched == document
+    assert [shape["id"] for shape in fetched["diagram"]["shapes"]] == ["s1", "s2", "s3", "s4", "s5"]
+
+    fetched["diagram"]["shapes"].reverse()
+    reordered = client.put("/api/projects/demo/models/shapes", json=fetched)
+    assert reordered.status_code == 200, reordered.text
+    stored = client.get("/api/projects/demo/models/shapes").json()["diagram"]["shapes"]
+    assert [shape["id"] for shape in stored] == ["s5", "s4", "s3", "s2", "s1"]
+
+    fetched["diagram"]["shapes"][0]["kind"] = "star"
+    rejected = client.put("/api/projects/demo/models/shapes", json=fetched)
+    assert rejected.status_code == 422, rejected.text
+
+
 @pytest.mark.parametrize(
     "image",
     [

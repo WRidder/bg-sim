@@ -48,7 +48,13 @@ export function ShortcutsOverlay() {
             <span aria-hidden="true">✕</span>
           </button>
         </header>
-        <div className="help-dialog__body help-dialog__body--columns">
+        {/* Focusable, so the list scrolls from the keyboard when it overflows. */}
+        <div
+          className="help-dialog__body help-dialog__body--columns"
+          tabIndex={0}
+          role="region"
+          aria-labelledby="shortcuts-title"
+        >
           {SHORTCUT_GROUPS.map((group) => (
             <section key={group.title} aria-labelledby={`shortcut-group-${group.title}`}>
               <h3 className="open-dialog__heading" id={`shortcut-group-${group.title}`}>

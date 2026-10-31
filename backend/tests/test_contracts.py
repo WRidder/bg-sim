@@ -368,6 +368,45 @@ def test_sticky_note_colour_is_an_enum_in_both_lanes() -> None:
         _generated_models()["model"].model_validate(document)
 
 
+def test_canvas_shapes_round_trip_through_the_generated_model() -> None:
+    """diagram.shapes (root and nested, every kind, z order kept) survive pydantic unchanged."""
+    document = _read(FIXTURE_DIR / "model" / "valid" / "model.canvas-shapes.json")
+    model = _generated_models()["model"].model_validate(document)
+    dumped = model.model_dump(mode="json", by_alias=True, exclude_unset=True)
+    assert dumped["diagram"]["shapes"] == document["diagram"]["shapes"]
+    assert [shape["id"] for shape in dumped["diagram"]["shapes"]] == ["s1", "s2", "s3", "s4", "s5"]
+    assert dumped["diagram"]["shapes"][0]["locked"] is True
+    assert "fill" not in dumped["diagram"]["shapes"][1]
+    inner = dumped["diagram"]["nodes"][1]["block"]["subsystem"]["diagram"]["shapes"]
+    assert inner == document["diagram"]["nodes"][1]["block"]["subsystem"]["diagram"]["shapes"]
+    defs = SCHEMAS_DOCS["model"]["$defs"]
+    assert defs["shape"]["properties"]["kind"]["enum"] == [
+        "rectangle",
+        "roundedRectangle",
+        "ellipse",
+        "line",
+        "arrow",
+    ]
+    # The shape palette is the sticky-note palette plus none and ink.
+    notes = defs["annotation"]["properties"]["color"]["enum"]
+    assert defs["shapeColor"]["enum"] == ["none", "ink", *notes]
+
+
+@pytest.mark.parametrize(
+    ("fixture", "field"),
+    [("model.bad-shape-kind.json", "kind"), ("model.bad-shape-opacity.json", "opacity")],
+)
+def test_canvas_shape_fields_are_checked_in_both_lanes(fixture: str, field: str) -> None:
+    """A shape kind outside the enum or an opacity above 1 is rejected by the schema and pydantic."""
+    from pydantic import ValidationError
+
+    document = _read(FIXTURE_DIR / "model" / "invalid" / fixture)
+    errors = list(VALIDATORS["model"].iter_errors(document))
+    assert [list(error.path)[-1] for error in errors] == [field]
+    with pytest.raises(ValidationError):
+        _generated_models()["model"].model_validate(document)
+
+
 def test_subsystem_port_ui_requires_a_position() -> None:
     """ui is optional on a port, but a ui without position is rejected by both lanes."""
     from pydantic import ValidationError

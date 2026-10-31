@@ -57,6 +57,15 @@ import { BoundaryEdge, type BoundaryEdgeType } from "./edges/BoundaryEdge";
 import { ProbeNode, type ProbeNodeData } from "../probe/ProbeNode";
 import { NoteNode, type NoteNodeData } from "./nodes/NoteNode";
 import { NOTE_Z_INDEX, noteColor, noteFlowId } from "./notes";
+import { ShapeNode, type ShapeNodeData } from "./nodes/ShapeNode";
+import {
+  isLocked,
+  SHAPE_KIND_LABELS,
+  shapeFlowId,
+  shapeNodeFrame,
+  shapeStyle,
+  shapeZIndex,
+} from "./shapes";
 import {
   contentBox,
   ghostId,
@@ -75,7 +84,8 @@ export type DiagramNode =
   | Node<ProbeNodeData, "probe">
   | Node<TerminalNodeData, "terminal">
   | Node<GhostNodeData, "terminalGhost">
-  | Node<NoteNodeData, "note">;
+  | Node<NoteNodeData, "note">
+  | Node<ShapeNodeData, "shape">;
 
 export const NODE_TYPES = {
   block: BlockNode,
@@ -85,6 +95,7 @@ export const NODE_TYPES = {
   terminal: PortTerminalNode,
   terminalGhost: PortGhostNode,
   note: NoteNode,
+  shape: ShapeNode,
 };
 export const EDGE_TYPES = {
   bond: BondEdge,
@@ -403,10 +414,15 @@ export function buildDiagram(
     };
   });
 
-  // Sticky notes go first and sit behind everything (NOTE_Z_INDEX).
+  // Sticky notes go first and sit behind blocks and wires (NOTE_Z_INDEX);
+  // background shapes go before them and sit behind the notes (shapeZIndex).
   const notes = noteNodes(doc);
   if (notes.length > 0) {
     nodes.unshift(...notes);
+  }
+  const shapes = shapeNodes(doc);
+  if (shapes.length > 0) {
+    nodes.unshift(...shapes);
   }
 
   if (boundary === null) {
@@ -439,6 +455,46 @@ export function noteNodes(doc: Model): DiagramNode[] {
     deletable: false,
     ariaLabel: "Note",
   }));
+}
+
+/**
+ * The diagram's background shapes (`diagram.shapes`) as canvas nodes
+ * `shape:<id>`, back to front. A locked shape is neither draggable nor
+ * selectable by xyflow (the selection rectangle skips it); the canvas still
+ * selects it on a click (`onNodeClick`). The node box itself takes no pointer
+ * events, only the painted shape does (ShapeNode), so a press on the empty
+ * inside of an unfilled shape reaches the canvas.
+ */
+export function shapeNodes(doc: Model): DiagramNode[] {
+  const shapes = doc.diagram.shapes ?? [];
+  return shapes.map((shape, index) => {
+    const frame = shapeNodeFrame(shape);
+    const locked = isLocked(shape);
+    return {
+      id: shapeFlowId(shape.id),
+      type: "shape" as const,
+      position: { x: frame.x, y: frame.y },
+      width: frame.width,
+      height: frame.height,
+      zIndex: shapeZIndex(index, shapes.length),
+      data: {
+        shapeId: shape.id,
+        kind: shape.kind,
+        w: shape.w,
+        h: shape.h,
+        text: shape.text ?? "",
+        locked,
+        ...shapeStyle(shape),
+      },
+      selected: false,
+      draggable: !locked,
+      selectable: !locked,
+      connectable: false,
+      deletable: false,
+      style: { pointerEvents: "none" },
+      ariaLabel: `${SHAPE_KIND_LABELS[shape.kind]} shape${locked ? " (locked)" : ""}`,
+    };
+  });
 }
 
 /**
