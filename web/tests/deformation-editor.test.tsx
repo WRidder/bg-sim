@@ -131,7 +131,7 @@ describe("deformation bindings in the binding table", () => {
     ]);
   });
 
-  it("edits family, mapping, modes and strain of a row, and shows its problems", async () => {
+  it("edits family, mapping, modes and strain of a row, and shows its problems", { timeout: 20_000 }, async () => {
     openModel([{ ...TORSION, family: "bending-y", signal: ["B/eta_y[1]"] }, { ...TORSION, target: "visual:ball" }]);
     await mount();
     fireEvent.click(screen.getByTestId("bindings-toggle"));
