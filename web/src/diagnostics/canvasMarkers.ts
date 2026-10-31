@@ -425,7 +425,8 @@ function mouse(
       view: window,
       clientX: x,
       clientY: y,
-      button: 0,
+      // The middle button: the canvas pans on middle and right drags (a left drag box-selects).
+      button: 1,
       buttons,
     }),
   );
@@ -711,8 +712,8 @@ export class CanvasDiagnosticsController {
     const rect = canvas.getBoundingClientRect();
     const startX = rect.left + rect.width / 2;
     const startY = rect.top + rect.height / 2;
-    mouse(renderer, "mousedown", startX, startY, 1);
-    mouse(window, "mousemove", startX + dx, startY + dy, 1);
+    mouse(renderer, "mousedown", startX, startY, 4);
+    mouse(window, "mousemove", startX + dx, startY + dy, 4);
     mouse(window, "mouseup", startX + dx, startY + dy, 0);
     return true;
   }
