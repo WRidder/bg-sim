@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 
 import type { Model, ModelGlobalParameter } from "../contracts/model";
 import { requestCenterTab } from "../app/dockBus";
+import { DashboardOverrideBadge } from "../dashboard/OverrideBadge";
 import { useDocumentStore } from "../state/documentStore";
 import { CellInput } from "./CellInput";
 import { useGlobalEvaluation } from "./equationField";
@@ -287,6 +288,8 @@ function GlobalRow({
           ) : (
             valueText(value, wide ? null : entry.unit)
           )}
+          {/* DASHBOARD_PLAN.md: a dashboard input card overrides this global for the next run. */}
+          <DashboardOverrideBadge target={`global:${name}`} />
         </td>
         {wide ? (
           <td>

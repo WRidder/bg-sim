@@ -169,9 +169,9 @@ export type DashboardBarOrientation = "vertical" | "horizontal";
  */
 export type Breakpoint = LineBreakpoint | WatchBreakpoint | TimeBreakpoint | EventBreakpoint | ExceptionBreakpoint;
 /**
- * What target names; absent means block. Reserved for a later model-level kind (a global parameter by name).
+ * What target names; absent means block, or global when target starts with global:. A global override is applied before static evaluation of the globals (dependents re-fold, it may recompile) and must be a number.
  */
-export type ParameterTargetKind = "block";
+export type ParameterTargetKind = "block" | "global";
 export type ValueType1 = "Real" | "Int" | "Bool";
 export type ValueType2 = "Real" | "Int" | "Bool";
 export type ValueType3 = "Real" | "Int" | "Bool";
@@ -595,7 +595,7 @@ export interface ModelDashboardCard {
    */
   signals?: string[];
   /**
-   * Input cards: the bound block parameter, <instance path>/<param>.
+   * Input cards: the bound parameter, a block parameter <instance path>/<param> or a global parameter global:<name> (number, slider and knob cards).
    */
   parameter?: string;
   /**
@@ -790,7 +790,7 @@ export interface ExceptionBreakpointTarget {
  */
 export interface ParameterOverride {
   /**
-   * For kind block (the default): <instance path>/<param>, e.g. Rig/Motor1/R.
+   * Kind block: <instance path>/<param>, e.g. Rig/Motor1/R. Kind global: global:<name>, a model-level global parameter (the key of BGSim.IR.override_globals).
    */
   target: string;
   kind?: ParameterTargetKind;

@@ -87,13 +87,13 @@
       "properties": {
         "target": {
           "type": "string",
-          "minLength": 1,
-          "description": "For kind block (the default): <instance path>/<param>, e.g. Rig/Motor1/R."
+          "pattern": "^(?:global:[A-Za-z_][A-Za-z0-9_]*|(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*)$",
+          "description": "Kind block: <instance path>/<param>, e.g. Rig/Motor1/R. Kind global: global:<name>, a model-level global parameter (the key of BGSim.IR.override_globals)."
         },
         "kind": {
           "title": "ParameterTargetKind",
-          "enum": ["block"],
-          "description": "What target names; absent means block. Reserved for a later model-level kind (a global parameter by name)."
+          "enum": ["block", "global"],
+          "description": "What target names; absent means block, or global when target starts with global:. A global override is applied before static evaluation of the globals (dependents re-fold, it may recompile) and must be a number."
         },
         "value": { "oneOf": [{ "type": "number" }, { "type": "boolean" }] },
         "$comment": { "type": "string" }

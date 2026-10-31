@@ -17,7 +17,11 @@
 #     output or a debug edit: the algebraic unknowns of a DAE are re-solved at the current
 #     differential state) and records the right limit. Steps after `t_end` never apply.
 #
-# `kind` is `block` (or absent) today; it is the hook for a later model-level target kind.
+# `kind` is `block` (the default: `target` is `<instance path>/<param>`) or `global` (`target`
+# is `global:<name>`, a model-level global parameter). A global is folded to a number at
+# compile time, so its override goes through `IR.override_globals` *before* static evaluation
+# and flattening (every dependent global and instance expression is re-folded); it may change
+# the structure and so the compile key. Globals cannot be scheduled.
 
 """    ParameterStepSpec(t, target, value)
 
@@ -42,6 +46,15 @@ ParameterInputs() = ParameterInputs(Pair{String,Any}[], ParameterStepSpec[])
 Base.isempty(p::ParameterInputs) = isempty(p.overrides) && isempty(p.schedule)
 
 const _TARGET_PATTERN = r"^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*$"
+const _GLOBAL_TARGET_PATTERN = r"^global:[A-Za-z_][A-Za-z0-9_]*$"
+
+_is_global_target(target::AbstractString) = startswith(target, IR.GLOBAL_OVERRIDE_PREFIX)
+
+function _check_global_target(target, what::AbstractString)
+    (target isa AbstractString && occursin(_GLOBAL_TARGET_PATTERN, target)) ||
+        throw(ArgumentError("$what: a global target is written `global:<name>`, not `$target`"))
+    return String(target)
+end
 
 _pfield(obj, key::String) = obj isa AbstractDict ?
     (haskey(obj, key) ? obj[key] : get(obj, Symbol(key), nothing)) : nothing
@@ -76,11 +89,21 @@ function parse_parameter_inputs(overrides, schedule)
             what = "parameterOverrides[$i]"
             o isa AbstractDict || throw(ArgumentError("$what must be an object"))
             kind = _pfield(o, "kind")
-            (kind === nothing || kind == "block") || throw(ArgumentError(
-                "$what: target kind `$kind` is not supported (only `block`)"
-            ))
-            target = _check_target(_pfield(o, "target"), what)
-            push!(out, target => _check_number(_pfield(o, "value"), what; bool_ok = true))
+            raw = _pfield(o, "target")
+            if kind === nothing
+                kind = raw isa AbstractString && _is_global_target(raw) ? "global" : "block"
+            end
+            if kind == "global"
+                target = _check_global_target(raw, what)
+                push!(out, target => _check_number(_pfield(o, "value"), what))
+            elseif kind == "block"
+                target = _check_target(raw, what)
+                push!(out, target => _check_number(_pfield(o, "value"), what; bool_ok = true))
+            else
+                throw(ArgumentError(
+                    "$what: target kind `$kind` is not supported (`block` or `global`)"
+                ))
+            end
         end
     end
     steps = ParameterStepSpec[]
@@ -91,7 +114,12 @@ function parse_parameter_inputs(overrides, schedule)
             what = "parameterSchedule[$i]"
             s isa AbstractDict || throw(ArgumentError("$what must be an object"))
             t = _check_number(_pfield(s, "t"), what * " t")
-            target = _check_target(_pfield(s, "target"), what)
+            raw = _pfield(s, "target")
+            raw isa AbstractString && _is_global_target(raw) && throw(ArgumentError(
+                "$what: `$raw` is a global parameter; globals are folded at compile time " *
+                "and cannot change during a run (use a parameter override instead)"
+            ))
+            target = _check_target(raw, what)
             push!(steps, ParameterStepSpec(t, target, _check_number(_pfield(s, "value"), what)))
         end
         sort!(steps; by = s -> s.t, alg = Base.Sort.DEFAULT_STABLE)
@@ -168,11 +196,15 @@ end
 Flatten `md` with `overrides` applied (see the file header). Throws `ArgumentError` for a
 target that is not a parameter of the flattened model."""
 function flatten_with_overrides(md::IR.ModelDoc, overrides; project_dir = nothing)
-    rest = apply_parameter_overrides!(md, overrides)
+    globals = Dict{String,Any}(t => v for (t, v) in overrides if _is_global_target(t))
+    blocks = Pair{String,Any}[t => v for (t, v) in overrides if !_is_global_target(t)]
+    # Globals first, before static evaluation (an unknown global throws ArgumentError).
+    md = IR.override_globals(md, globals)
+    rest = apply_parameter_overrides!(md, blocks)
     flat = Compile.flatten(md; project_dir = project_dir)
     any(d -> d.severity == "error", flat.diagnostics) && return flat
     known = Dict(p.id => p for p in flat.parameters)
-    for (target, _) in overrides
+    for (target, _) in blocks
         p = get(known, target, nothing)
         p === nothing && throw(ArgumentError(_unknown_parameter_message(flat, target)))
     end
@@ -215,7 +247,9 @@ function parameter_inputs_manifest(inputs::ParameterInputs)
     fields = Pair{Symbol,Any}[]
     if !isempty(inputs.overrides)
         push!(fields, :parameterOverrides => [
-            (target = t, value = v) for (t, v) in inputs.overrides
+            _is_global_target(t) ? (target = t, kind = "global", value = v) :
+                (target = t, value = v)
+            for (t, v) in inputs.overrides
         ])
     end
     if !isempty(inputs.schedule)

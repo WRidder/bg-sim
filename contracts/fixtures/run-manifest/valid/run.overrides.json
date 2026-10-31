@@ -45,6 +45,11 @@
     {
       "target": "Motor1/R",
       "value": 2.5
+    },
+    {
+      "target": "global:J_load",
+      "kind": "global",
+      "value": 0.02
     }
   ],
   "parameterSchedule": [

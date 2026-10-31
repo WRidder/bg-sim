@@ -92,6 +92,8 @@ export function ScheduleCard({ card, titleId, parameters, taken }: ScheduleCardP
   const byTarget = useMemo(() => new Map(parameters.map((p) => [p.target, p])), [parameters]);
   const choices = parameters.filter(
     (p) =>
+      // Globals are folded at compile time: an input card can override one, a schedule cannot.
+      p.kind === "block" &&
       !schedule.parameters.includes(p.target) &&
       !taken.has(p.target) &&
       p.decl.type !== "Bool",

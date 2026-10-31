@@ -222,6 +222,7 @@ def test_run_inputs_reach_the_worker_and_the_manifest(fake_settings, schema_vali
     overrides = [
         {"target": "Motor1/R", "value": 2.5},
         {"target": "Motor1/J", "kind": "block", "value": 0.02, "$comment": "knob"},
+        {"target": "global:m", "kind": "global", "value": 3},
     ]
     schedule = [{"t": 0.5, "target": "Motor1/R", "value": 3.0}]
     with TestClient(app) as client:
@@ -245,6 +246,7 @@ def test_run_inputs_reach_the_worker_and_the_manifest(fake_settings, schema_vali
         expected_overrides = [
             {"target": "Motor1/R", "value": 2.5},
             {"target": "Motor1/J", "kind": "block", "value": 0.02},
+            {"target": "global:m", "kind": "global", "value": 3},
         ]
         assert sent[0]["parameterOverrides"] == expected_overrides
         assert sent[0]["parameterSchedule"] == schedule

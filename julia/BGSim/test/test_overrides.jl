@@ -214,4 +214,51 @@ _ov_at(cols, id, t) = cols[id][last(_ov_rows(cols, t))]
             nothing, [Dict("t" => 1.0, "target" => "k", "value" => 1.0)],
         )
     end
+
+    # model.global-parameters.json: m = 2, rate = 4*m, x0 = sqrt(m) + 0.5; the integrator
+    # starts at x0 and integrates Source/Rate = rate, so y(t) = x0 + rate t on [0, 1].
+    @testset "a global override is applied before static evaluation (kind global)" begin
+        fixture = joinpath(@__DIR__, "..", "..", "..", "contracts", "fixtures", "model",
+            "valid", "model.global-parameters.json")
+        doc = JSON3.read(read(fixture, String), Dict{String,Any})
+        y(m, rate, t) = sqrt(m) + 0.5 + rate * t
+
+        dir = _ov_run(doc; overrides = [Dict("target" => "global:m", "kind" => "global",
+            "value" => 3)])
+        manifest, cols = _ov_columns(dir)
+        @test cols["Int1/y"][1] ≈ y(3, 12, 0.0) atol = 1e-9
+        @test cols["Int1/y"][end] ≈ y(3, 12, 1.0) atol = 1e-6
+        @test manifest.parameterOverrides[1].kind == "global"
+        @test manifest.parameterOverrides[1].target == "global:m"
+
+        # The kind may be left out (the prefix says it); a block override on top wins over
+        # the global-derived expression of that block.
+        dir2 = _ov_run(doc; overrides = [
+            Dict("target" => "global:m", "value" => 3),
+            Dict("target" => "Source/Rate/value", "value" => 1),
+        ])
+        _, cols2 = _ov_columns(dir2)
+        @test cols2["Int1/y"][1] ≈ y(3, 0, 0.0) atol = 1e-9
+        @test cols2["Int1/y"][end] ≈ y(3, 1, 1.0) atol = 1e-6
+
+        # A replay reapplies the stored global override.
+        replay = BGSim.load_run_flat(dir)
+        @test any(p -> p.id == "Source/Rate/value" && p.value == 12, replay.parameters)
+
+        md = IR.parse_model(doc)
+        @test_throws ArgumentError flatten_with_overrides(md, ["global:nope" => 1.0])
+        @test_throws ArgumentError parse_parameter_inputs(
+            [Dict("target" => "global:m", "kind" => "block", "value" => 1)], nothing,
+        )
+        @test_throws ArgumentError parse_parameter_inputs(
+            [Dict("target" => "m", "kind" => "global", "value" => 1)], nothing,
+        )
+        @test_throws ArgumentError parse_parameter_inputs(
+            [Dict("target" => "global:m", "value" => true)], nothing,
+        )
+        # Globals are folded at compile time: they cannot be scheduled.
+        @test_throws ArgumentError parse_parameter_inputs(
+            nothing, [Dict("t" => 0.5, "target" => "global:m", "value" => 1)],
+        )
+    end
 end

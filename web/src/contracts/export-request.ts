@@ -474,7 +474,7 @@ export interface ModelDashboardCard {
    */
   signals?: string[];
   /**
-   * Input cards: the bound block parameter, <instance path>/<param>.
+   * Input cards: the bound parameter, a block parameter <instance path>/<param> or a global parameter global:<name> (number, slider and knob cards).
    */
   parameter?: string;
   /**

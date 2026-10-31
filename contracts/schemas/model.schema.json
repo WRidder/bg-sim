@@ -706,8 +706,8 @@
         },
         "parameter": {
           "type": "string",
-          "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*$",
-          "description": "Input cards: the bound block parameter, <instance path>/<param>."
+          "pattern": "^(?:global:[A-Za-z_][A-Za-z0-9_]*|(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*)$",
+          "description": "Input cards: the bound parameter, a block parameter <instance path>/<param> or a global parameter global:<name> (number, slider and knob cards)."
         },
         "value": {
           "oneOf": [{ "type": "number" }, { "type": "boolean" }],

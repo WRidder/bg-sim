@@ -28,9 +28,9 @@ end.
 | `bar` | display | 1 signal | vertical or horizontal scale, zones, `role="meter"` |
 | `indicator` | display | 1 signal | on/off light at a threshold (`above`/`below`), `role="status"` with a text label |
 | `text` | display | none | plain text or Markdown (react-markdown + GFM, sanitised) |
-| `number` | input | `<instance path>/<param>` | typed value (same parser as the inspector's live edit) |
-| `slider` | input | parameter | native range: min/max/step from the card, else from the catalog |
-| `knob` | input | parameter | SVG `role="slider"`: vertical drag, wheel, arrow keys, Page Up/Down, Home/End |
+| `number` | input | `<instance path>/<param>` or `global:<name>` | typed value (same parser as the inspector's live edit) |
+| `slider` | input | parameter or global | native range: min/max/step from the card, else from the catalog |
+| `knob` | input | parameter or global | SVG `role="slider"`: vertical drag, wheel, arrow keys, Page Up/Down, Home/End |
 | `toggle` | input | `Bool` parameter | `role="switch"` |
 | `select` | input | enumeration (`Int` with options) | 1-based options from the catalog |
 | `schedule` | input | parameter columns | table: t (s) plus one column per parameter |
@@ -99,20 +99,25 @@ summary ("Next run: 2 parameter overrides, 3 scheduled changes", or the problem 
 - `worker-rpc.schema.json`: `run.start` params take the same two optional arrays. The backend's
   `POST /api/projects/{p}/runs` body takes them too and passes them on unchanged (the fake worker
   copies them into its manifest).
-- **Global parameters hook.** `parameterOverride.kind` is an optional enum, today only
-  `"block"` (the default: `target` is `<instance path>/<param>`). A model-level global parameter
-  can later be overridden by adding `"global"` to the enum, with `target` as the global's name.
-  The Julia side rejects any other kind today (`parse_parameter_inputs`). Schedules stay
-  block-only.
+- **Global parameters.** `parameterOverride.kind` is `"block"` (the default: `target` is
+  `<instance path>/<param>`) or `"global"` (`target` is `global:<name>`, the key of
+  `BGSim.IR.override_globals`; when `kind` is absent the prefix decides). A number, slider or
+  knob card can bind a global (`parameter: "global:m"`, fixture `model.dashboard-global.json`);
+  the Parameters tab shows the same `dashboard: <value>` badge on the global's row. Globals are
+  folded to numbers at compile time, so a global override is applied before static evaluation
+  (dependents re-fold, the structure and the compile key may change) and **globals cannot be
+  scheduled** (the schema's step pattern, the web schedule column picker and the Julia parser
+  all refuse them).
 
 ## 3. Julia
 
 `src/sim/overrides.jl`:
 
-- overrides are applied to the IR `ModelDoc` (node and subsystem parameters) **before**
-  flattening, so derived initial values and parameter expressions see them. Every parameter is a
-  runtime MTK parameter (D4) and `compile_key` excludes parameter values, so an override never
-  recompiles. A target that is not in the document falls back to `set_parameter_values`.
+- global overrides go through `IR.override_globals` first; block overrides are then applied to
+  the IR `ModelDoc` (node and subsystem parameters) **before** flattening, so derived initial
+  values and parameter expressions see them. Every block parameter is a runtime MTK parameter
+  (D4) and `compile_key` excludes parameter values, so a block override never recompiles. A
+  target that is not in the document falls back to `set_parameter_values`.
 - `check_schedule_targets` refuses unknown or discrete targets with an E003 diagnostic
   (`run.start` answers with an RPC error before the run starts).
 - `_simulate_flat(...; parameter_schedule, manifest_extra)` merges the steps into the run-loop
@@ -128,9 +133,10 @@ summary ("Next run: 2 parameter overrides, 3 scheduled changes", or the problem 
 - Backend pass-through, fake worker, tests (`test_runs.py`).
 - Julia overrides and schedule, replay/branch, worker RPC, tests (`test_overrides.jl`: an override
   changes the result, a subsystem override, a schedule step at t = 1 against the analytic
-  solution with left and right rows, an off-grid step, replay bit-identical, bad inputs;
+  solution with left and right rows, an off-grid step, replay bit-identical, a global override
+  (re-folded dependents, mixed with a block override, replay), bad inputs;
   `test_worker.jl`: `run.start` with a dashboard, overrides and a schedule on the real worker,
-  and a bad target).
+  a global override, and bad targets).
 - Web: the tab, all twelve card kinds, edit mode, settings dialog, signal drag and drop, run
   inputs, auto re-run, the inspector badge. Unit tests (`tests/dashboard.test.tsx`) and an e2e
   spec (`tests/e2e/dashboard.spec.ts`: add Value + Slider + Schedule, the POST body and manifest
@@ -144,7 +150,6 @@ summary ("Next run: 2 parameter overrides, 3 scheduled changes", or the problem 
 - The **unit** option is a display label, not a unit conversion.
 - Display values come from the decimated series the plots use; a value between two kept samples
   is held from the previous one.
-- Global-parameter overrides (`kind: "global"`), see section 2.
 - Schedule columns for Bool and enumeration parameters; ramps instead of steps.
 - Input cards that change a parameter **during** a paused or live run (today the inputs apply at
   the next run; live edits stay in the inspector).

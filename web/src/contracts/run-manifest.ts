@@ -20,9 +20,9 @@ export type Breakpoint = LineBreakpoint | WatchBreakpoint | TimeBreakpoint | Eve
 export type EditKind = "parameter" | "state";
 export type PauseReason = "entry" | "breakpoint" | "step" | "pause" | "event" | "exception" | "time";
 /**
- * What target names; absent means block. Reserved for a later model-level kind (a global parameter by name).
+ * What target names; absent means block, or global when target starts with global:. A global override is applied before static evaluation of the globals (dependents re-fold, it may recompile) and must be a number.
  */
-export type ParameterTargetKind = "block";
+export type ParameterTargetKind = "block" | "global";
 
 /**
  * Run manifest (plan 3.5), stored as <project>/runs/<run-id>/manifest.json next to columns.f64 and stream.f64.
@@ -301,7 +301,7 @@ export interface PauseRecord {
  */
 export interface ParameterOverride {
   /**
-   * For kind block (the default): <instance path>/<param>, e.g. Rig/Motor1/R.
+   * Kind block: <instance path>/<param>, e.g. Rig/Motor1/R. Kind global: global:<name>, a model-level global parameter (the key of BGSim.IR.override_globals).
    */
   target: string;
   kind?: ParameterTargetKind;

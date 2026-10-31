@@ -19,6 +19,7 @@ import type {
   ModelNode,
 } from "../contracts/model";
 import type { ParameterOverride, ParameterStep } from "../contracts/run-manifest";
+import { evaluateGlobals, globalsOf } from "../globals/globals";
 import { evaluateLiteral, parseExpression } from "../inspector/expression";
 import type { CatalogIndex } from "../library/catalogIndex";
 
@@ -121,13 +122,26 @@ export function moveCard(
 
 // ------------------------------------------------------------- parameters
 
-/** A block parameter of the model, found by instance path. */
+/** The target prefix of a model-level global parameter (`global:m`, the Julia override key). */
+export const GLOBAL_TARGET_PREFIX = "global:";
+
+export function isGlobalTarget(target: string): boolean {
+  return target.startsWith(GLOBAL_TARGET_PREFIX);
+}
+
+/**
+ * A parameter an input card can bind: a block parameter found by instance path, or a global
+ * parameter (`global:<name>`, kind "global": folded at compile time, so it can be overridden
+ * for a run but not scheduled).
+ */
 export interface ParameterInfo {
-  /** `<instance path>/<param>`. */
+  /** `<instance path>/<param>`, or `global:<name>`. */
   target: string;
-  /** Instance path of the node (`Sub/Motor1`). */
+  kind: "block" | "global";
+  /** Instance path of the node (`Sub/Motor1`); empty for a global. */
   path: string;
-  node: ModelNode;
+  /** The node; null for a global. */
+  node: ModelNode | null;
   decl: ParameterDecl;
   /** The node's own expression, or the declared default. */
   modelText: string;
@@ -178,6 +192,7 @@ function infoFor(path: string, node: ModelNode, decl: ParameterDecl): ParameterI
   const modelText = node.params?.[decl.name] ?? decl.default;
   return {
     target: `${path}/${decl.name}`,
+    kind: "block",
     path,
     node,
     decl,
@@ -200,7 +215,35 @@ function walk(
   }
 }
 
-/** Every scalar block parameter of the model, in diagram order. */
+/** The model's global parameters as Real parameters, valued by the compiler's folding rules. */
+function globalInfos(doc: Model): ParameterInfo[] {
+  const globals = globalsOf(doc);
+  if (globals.length === 0) {
+    return [];
+  }
+  const evaluation = evaluateGlobals(globals);
+  return globals.map((entry) => ({
+    target: `${GLOBAL_TARGET_PREFIX}${entry.name}`,
+    kind: "global",
+    path: "",
+    node: null,
+    decl: {
+      name: entry.name,
+      type: "Real",
+      default: entry.value,
+      unit: entry.unit ?? null,
+      min: null,
+      max: null,
+      tunable: false,
+      description: entry.description ?? "Global parameter",
+      options: null,
+    },
+    modelText: entry.value,
+    modelValue: evaluation.byName.get(entry.name)?.value ?? null,
+  }));
+}
+
+/** Every scalar block parameter of the model in diagram order, then the global parameters. */
 export function listParameters(doc: Model, index: CatalogIndex | null): ParameterInfo[] {
   const out: ParameterInfo[] = [];
   walk(doc.diagram, "", (path, node) => {
@@ -208,15 +251,22 @@ export function listParameters(doc: Model, index: CatalogIndex | null): Paramete
       out.push(infoFor(path, node, decl));
     }
   });
+  out.push(...globalInfos(doc));
   return out;
 }
 
-/** The parameter `target` (`<instance path>/<param>`), or null when the model has none. */
+/**
+ * The parameter `target` (`<instance path>/<param>` or `global:<name>`), or null when the
+ * model has none.
+ */
 export function findParameter(
   doc: Model,
   index: CatalogIndex | null,
   target: string,
 ): ParameterInfo | null {
+  if (isGlobalTarget(target)) {
+    return globalInfos(doc).find((info) => info.target === target) ?? null;
+  }
   const parts = target.split("/");
   const name = parts.pop();
   if (name === undefined || parts.length === 0) {
@@ -389,6 +439,13 @@ export function scheduleIssues(
     if (columns.has(target)) {
       issues.push({ row: -1, column, message: `${target} is already a column.` });
     }
+    if (isGlobalTarget(target)) {
+      issues.push({
+        row: -1,
+        column,
+        message: `${target} is a global parameter: globals are fixed for a run and cannot be scheduled.`,
+      });
+    }
     columns.add(target);
   });
   schedule.rows.forEach((row, index) => {
@@ -447,25 +504,40 @@ export function dashboardRunInputs(
   const parameterOverrides: ParameterOverride[] = [];
   const parameterSchedule: ParameterStep[] = [];
   const issues: DashboardIssue[] = [...bindingConflicts(dashboard)];
+  // Globals need no catalog; block parameters are checked once the catalog is loaded.
   const known = (target: string): boolean =>
-    index === null || findParameter(doc, index, target) !== null;
+    isGlobalTarget(target)
+      ? findParameter(doc, index, target) !== null
+      : index === null || findParameter(doc, index, target) !== null;
   for (const card of dashboard?.cards ?? []) {
     const title = cardTitle(card);
     if (isInputKind(card.kind)) {
       if (card.parameter === undefined || card.value === undefined) {
         continue;
       }
+      const global = isGlobalTarget(card.parameter);
       if (!known(card.parameter)) {
+        const what = global
+          ? `global parameter ${card.parameter.slice(GLOBAL_TARGET_PREFIX.length)}`
+          : `block parameter ${card.parameter}`;
         issues.push({
           cardId: card.id,
-          message: `"${title}": the model has no block parameter ${card.parameter}. Rebind or remove the card.`,
+          message: `"${title}": the model has no ${what}. Rebind or remove the card.`,
         });
         continue;
       }
-      parameterOverrides.push({
-        target: card.parameter,
-        value: typedValue(card.value, index === null ? null : findParameter(doc, index, card.parameter)),
-      });
+      const info = global || index !== null ? findParameter(doc, index, card.parameter) : null;
+      const value = typedValue(card.value, info);
+      if (global) {
+        // A global is a Real folded at compile time: a number, applied before static evaluation.
+        parameterOverrides.push({
+          target: card.parameter,
+          kind: "global",
+          value: typeof value === "boolean" ? (value ? 1 : 0) : value,
+        });
+      } else {
+        parameterOverrides.push({ target: card.parameter, value });
+      }
     } else if (card.kind === "schedule" && card.schedule !== undefined) {
       const schedule = card.schedule;
       if (schedule.parameters.length === 0 || schedule.rows.length === 0) {

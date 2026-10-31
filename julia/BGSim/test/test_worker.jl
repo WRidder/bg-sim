@@ -521,6 +521,29 @@ end
             ))
             @test occursin("V1/nope", String(failed.message))
             @test failed.diagnostics[1].code == "E003"
+
+            # A global override (kind global): applied before the globals are evaluated.
+            gmodel = mutable_model("model", "valid", "model.dashboard-global.json")
+            gdir = joinpath(mktempdir(), "run-dash-global")
+            @test result_of(client, 67, "run.start", (;
+                runId = "run-dash-global", model = gmodel, projectDir = WORKER_ROOT,
+                runDir = gdir,
+                parameterOverrides = [(; target = "global:m", kind = "global", value = 3)],
+            )).accepted == true
+            gdone = wait_notification(client, "run.done"; timeout = 300.0)
+            @test gdone.params.status == "done"
+            gfinal = JSON3.read(read(joinpath(gdir, "manifest.json"), String))
+            @test gfinal.parameterOverrides[1].kind == "global"
+            replayed = BGSim.load_run_flat(gdir)   # rate = 4*m folds to 12 with m = 3
+            @test any(p -> p.id == "Source/Rate/value" && p.value == 12, replayed.parameters)
+
+            gfailed = error_of(client, 68, "run.start", (;
+                runId = "run-dash-global-bad", model = gmodel, projectDir = WORKER_ROOT,
+                runDir = joinpath(mktempdir(), "run-dash-global-bad"),
+                parameterOverrides = [(; target = "global:nope", value = 1)],
+            ))
+            @test occursin("nope", String(gfailed.message))
+            @test gfailed.diagnostics[1].code == "E003"
         end
     end
 

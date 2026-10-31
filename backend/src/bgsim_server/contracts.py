@@ -1109,19 +1109,22 @@ class RunStatus(Enum):
 
 class ParameterTargetKind(Enum):
     block = 'block'
+    global_ = 'global'
 
 
 class ParameterOverride(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    target: constr(min_length=1) = Field(
+    target: constr(
+        pattern=r'^(?:global:[A-Za-z_][A-Za-z0-9_]*|(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*)$'
+    ) = Field(
         ...,
-        description='For kind block (the default): <instance path>/<param>, e.g. Rig/Motor1/R.',
+        description='Kind block: <instance path>/<param>, e.g. Rig/Motor1/R. Kind global: global:<name>, a model-level global parameter (the key of BGSim.IR.override_globals).',
     )
     kind: ParameterTargetKind | None = Field(
         None,
-        description='What target names; absent means block. Reserved for a later model-level kind (a global parameter by name).',
+        description='What target names; absent means block, or global when target starts with global:. A global override is applied before static evaluation of the globals (dependents re-fold, it may recompile) and must be a number.',
         title='ParameterTargetKind',
     )
     value: float | bool
@@ -2362,10 +2365,13 @@ class ModelDashboardCard(BaseModel):
         description='Display cards: the bound signal ids (a plot may have several, the other display cards use the first).',
     )
     parameter: (
-        constr(pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*$') | None
+        constr(
+            pattern=r'^(?:global:[A-Za-z_][A-Za-z0-9_]*|(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*)$'
+        )
+        | None
     ) = Field(
         None,
-        description='Input cards: the bound block parameter, <instance path>/<param>.',
+        description='Input cards: the bound parameter, a block parameter <instance path>/<param> or a global parameter global:<name> (number, slider and knob cards).',
     )
     value: float | bool | None = Field(
         None,

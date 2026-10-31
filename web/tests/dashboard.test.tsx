@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import catalogJson from "../../contracts/fixtures/catalog/valid/catalog.min.json";
 import dashboardModel from "../../contracts/fixtures/model/valid/model.dashboard.json";
+import globalModel from "../../contracts/fixtures/model/valid/model.dashboard-global.json";
 import type { Catalog } from "../src/contracts/catalog";
 import type { Model, ModelDashboardCard } from "../src/contracts/model";
 import { DashboardTab } from "../src/dashboard/DashboardTab";
@@ -208,6 +209,35 @@ describe("run inputs", () => {
     expect(overrideBadgeText(doc, "R1/R")).toBe("dashboard: 12.5");
     expect(overrideBadgeText(doc, "Step1/final")).toBe("dashboard: schedule");
     expect(overrideBadgeText(doc, "L1/L")).toBeNull();
+  });
+
+  it("overrides a global parameter (kind global) but never schedules one", () => {
+    const doc = structuredClone(globalModel) as unknown as Model;
+    const globals = listParameters(doc, index).filter((p) => p.kind === "global");
+    expect(globals.map((p) => [p.target, p.modelValue])).toEqual([
+      ["global:m", 2],
+      ["global:rate", 8],
+      ["global:x0", Math.sqrt(2) + 0.5],
+    ]);
+    expect(findParameter(doc, null, "global:m")?.decl.unit).toBe("kg");
+    expect(findParameter(doc, null, "global:nope")).toBeNull();
+
+    // Globals need no catalog: the knob's value is a global override even before it loads.
+    for (const catalogIndex of [index, null]) {
+      const inputs = dashboardRunInputs(doc, catalogIndex);
+      expect(inputs.issues).toEqual([]);
+      expect(inputs.parameterOverrides).toEqual([{ target: "global:m", kind: "global", value: 3 }]);
+    }
+    expect(overrideBadgeText(doc, "global:m")).toBe("dashboard: 3");
+
+    doc.dashboard!.cards[0]!.parameter = "global:gone";
+    expect(dashboardRunInputs(doc, index).issues[0]?.message).toMatch(/no global parameter gone/);
+
+    const issues = scheduleIssues(
+      { parameters: ["global:m"], rows: [{ t: 0, values: [1] }] },
+      { t_start: 0, t_end: 1 },
+    );
+    expect(issues[0]?.message).toMatch(/cannot be scheduled/);
   });
 });
 

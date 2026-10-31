@@ -199,7 +199,7 @@ function ParameterPicker({
   const matches = suitable.filter((p) => q.length === 0 || p.target.toLowerCase().includes(q)).slice(0, 60);
   return (
     <fieldset className="dash-settings__group">
-      <legend>Block parameter</legend>
+      <legend>Parameter</legend>
       {card.parameter !== undefined ? (
         <p className="dash-settings__current">
           Bound to <code>{card.parameter}</code>
