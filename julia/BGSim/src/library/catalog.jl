@@ -333,6 +333,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Series hydraulic flow sensor: zero pressure drop, output y in m^3/s.",
         icon = "conv-flow-sensor",
     ),
+    "stdlib:converters/FixedDisplacementPump" => (
+        description = "Fixed-displacement pump from the rotation shaft to suction a and delivery b: Q = D*w minus leakage, torque D*dp plus friction, set by the volumetric and hydromechanical efficiencies.",
+        icon = "conv-fixed-pump",
+    ),
     "stdlib:converters/ForceSensor" => (
         description = "Series translational force sensor: passes the velocity through and reads the force.",
         icon = "conv-force-sensor",
@@ -340,6 +344,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:converters/HydraulicCylinder" => (
         description = "Double-acting hydraulic cylinder with chamber compressibility: dead volumes plus the swept volumes, drive from A and B to the translation rod.",
         icon = "conv-hydraulic-cylinder",
+    ),
+    "stdlib:converters/HydraulicMotor" => (
+        description = "Fixed-displacement hydraulic motor from inlet a and outlet b to the rotation shaft: w = Q/D and T = D*dp, less leakage and friction set by the efficiencies.",
+        icon = "conv-hydraulic-motor",
     ),
     "stdlib:converters/PositionSensor" => (
         description = "Translational position sensor; integrates the velocity of its port without drawing force.",
@@ -364,6 +372,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:converters/TorqueSensor" => (
         description = "Series rotational torque sensor: passes the angular velocity through and reads the torque.",
         icon = "conv-torque-sensor",
+    ),
+    "stdlib:converters/VariableDisplacementPump" => (
+        description = "Variable-displacement pump: the fixed-displacement pump with the displacement D*u from a signal input (-1 to 1, over-centre).",
+        icon = "conv-variable-pump",
     ),
     "stdlib:converters/VelocitySensor" => (
         description = "Translational velocity sensor; reads the velocity of its port without drawing force.",
@@ -459,6 +471,18 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Linear torsional spring between two rotation ports.",
         icon = "rot-torsion-spring",
     ),
+    "stdlib:hydraulic/Accumulator" => (
+        description = "Gas-charged accumulator (nonlinear C element): precharge p0 in the gas volume V0, compressed polytropically (p*V^n constant); below p0 it is empty and only the dead volume's fluid compressibility remains.",
+        icon = "hyd-accumulator",
+    ),
+    "stdlib:hydraulic/CheckValve" => (
+        description = "Check valve: opens smoothly from the cracking pressure to full area, leakage area when closed; blocks reverse flow.",
+        icon = "hyd-check-valve",
+    ),
+    "stdlib:hydraulic/DirectionalValve43" => (
+        description = "4/3 proportional (servo) valve with ports P, T, A, B and the spool position u (-1 to 1): four metering edges with lap (overlap or underlap) and leakage.",
+        icon = "hyd-directional-valve",
+    ),
     "stdlib:hydraulic/FlowSource" => (
         description = "Signal-controlled volume-flow source; Q*u enters a and returns through b.",
         icon = "hyd-flow-source",
@@ -466,6 +490,18 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:hydraulic/Orifice" => (
         description = "Regularized orifice: Q = Cd*A*sqrt(2/rho)*dp/(dp^2 + p_tr^2)^(1/4), smooth through dp = 0.",
         icon = "hyd-orifice",
+    ),
+    "stdlib:hydraulic/Pipe" => (
+        description = "Lumped hydraulic line in N segments: laminar (optionally turbulent) friction, fluid inertance and compliance; both ends are flow (inertial) ends.",
+        icon = "hyd-pipe",
+    ),
+    "stdlib:hydraulic/PressureCompensatedFlowControl" => (
+        description = "Pressure-compensated flow control valve: the flow Q_nom*u is held once the pressure drop exceeds the compensator setting dp_c.",
+        icon = "hyd-flow-control",
+    ),
+    "stdlib:hydraulic/PressureReliefValve" => (
+        description = "Pressure relief valve: opens at the set pressure and is fully open after the regulation range, so it caps the line pressure; leakage area when closed.",
+        icon = "hyd-relief-valve",
     ),
     "stdlib:hydraulic/PressureSource" => (
         description = "Signal-controlled pressure source; a.e = p*u with fixed effort causality (D6).",

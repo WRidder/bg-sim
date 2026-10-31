@@ -296,6 +296,96 @@ const GLYPHS: Record<string, Glyph> = {
     </>
   ),
 
+  // ----------------------------------------------- hydraulic (ISO 1219-like)
+  "hyd-pressure-source": () => (
+    <>
+      <circle cx="12" cy="13" r="7" />
+      {label("p", 8)}
+      <path d="M12 6V2" />
+    </>
+  ),
+  "hyd-flow-source": () => (
+    <>
+      <circle cx="12" cy="12" r="7" />
+      {label("Q", 7.5)}
+      <path d="M2 12h3M19 12h3" />
+    </>
+  ),
+  "hyd-tank": () => (
+    <>
+      <path d="M4.5 9v10.5h15V9" />
+      <path d="M12 2.5V16" />
+    </>
+  ),
+  "hyd-volume": () => (
+    <>
+      <rect x="5" y="8" width="14" height="11" rx="1.5" />
+      <path d="M12 2.5V8" />
+      <path d="M7.5 15.5h9" opacity="0.4" />
+    </>
+  ),
+  "hyd-orifice": () => (
+    <>
+      <path d="M2 12h20" />
+      <path d="M9.5 6.5c2 3.5 2 7.5 0 11M14.5 6.5c-2 3.5-2 7.5 0 11" />
+    </>
+  ),
+  "hyd-variable-orifice": () => (
+    <>
+      <path d="M2 12h20" />
+      <path d="M9.5 6.5c2 3.5 2 7.5 0 11M14.5 6.5c-2 3.5-2 7.5 0 11" />
+      <path d="M5.5 19.5L18.5 4.5M18.5 4.5l-3.6.9M18.5 4.5l-.7 3.6" />
+    </>
+  ),
+  "hyd-check-valve": () => (
+    <>
+      <path d="M2 12h6M16.7 12H22" />
+      <path d="M12 6.8L8 12l4 5.2" />
+      <circle cx="13.4" cy="12" r="3.2" />
+    </>
+  ),
+  "hyd-relief-valve": () => (
+    <>
+      <rect x="5" y="5" width="11" height="14" />
+      <path d="M9 22v-5M9 7V2" />
+      <path d="M12 16.5V7.5M12 7.5l-1.5 2.5M12 7.5l1.5 2.5" />
+      <path d="M16 12h1l1-2 1.5 4 1.5-4 1 2" />
+      <path d="M9 20H3v-8h2" strokeDasharray="1.6 1.4" opacity="0.7" />
+    </>
+  ),
+  "hyd-directional-valve": () => (
+    <>
+      <path d="M1.5 8h21v8h-21zM8.5 8v8M15.5 8v8" />
+      <path d="M3.5 15v-5.5M3.5 9.5l-1 1.6M3.5 9.5l1 1.6M6.5 9.5V15M6.5 15l-1-1.6M6.5 15l1-1.6" />
+      <path d="M10.5 8v3M9.3 11h2.4M13.5 16v-3M12.3 13h2.4" />
+      <path d="M17.5 9.5l3 5.5M20.5 9.5l-3 5.5" />
+      <path d="M10.5 16v4M13.5 16v4M10.5 8V4M13.5 8V4" opacity="0.45" />
+    </>
+  ),
+  "hyd-accumulator": () => (
+    <>
+      <rect x="7" y="3" width="10" height="16" rx="5" />
+      <path d="M7 11h10" />
+      <path d="M12 5.5l-2.2 3.3h4.4z" fill="currentColor" stroke="none" />
+      <path d="M12 19v3.5" />
+    </>
+  ),
+  "hyd-pipe": () => (
+    <>
+      <path d="M3.5 9h17M3.5 15h17M3.5 6.5v11M20.5 6.5v11" />
+      <path d="M8 12h8M16 12l-2.4-1.6M16 12l-2.4 1.6" opacity="0.6" />
+    </>
+  ),
+  "hyd-flow-control": () => (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="1" />
+      <path d="M12 4v16" opacity="0.35" />
+      <path d="M9.5 7.5c1.6 3 1.6 6 0 9M14.5 7.5c-1.6 3-1.6 6 0 9" />
+      <path d="M7 17.5L17 6.5M17 6.5l-3 .7M17 6.5l-.6 3" />
+      <path d="M5.5 16.5v-6M5.5 10.5l-1 1.6M5.5 10.5l1 1.6" />
+    </>
+  ),
+
   // ------------------------------------------------------- converters & sensors
   "conv-dc-motor": () => (
     <>
@@ -316,6 +406,49 @@ const GLYPHS: Record<string, Glyph> = {
       <circle cx="12" cy="12" r="8.5" />
       {label("\u03c6", 8)}
       <path d="M12 12V6.5" />
+    </>
+  ),
+  "conv-fixed-pump": () => (
+    <>
+      <circle cx="12" cy="13" r="7" />
+      <path d="M12 6.2l-2.8 4.3h5.6z" fill="currentColor" stroke="none" />
+      <path d="M12 6V2M2 13h3M2 11.2h3" />
+    </>
+  ),
+  "conv-variable-pump": () => (
+    <>
+      <circle cx="12" cy="13" r="7" />
+      <path d="M12 6.2l-2.8 4.3h5.6z" fill="currentColor" stroke="none" />
+      <path d="M12 6V2M2 13h3M2 11.2h3" />
+      <path d="M6 21L18.5 6.5M18.5 6.5l-3.5 1M18.5 6.5l-.9 3.5" />
+    </>
+  ),
+  "conv-hydraulic-motor": () => (
+    <>
+      <circle cx="12" cy="13" r="7" />
+      <path d="M12 10.6L9.2 6.4h5.6z" fill="currentColor" stroke="none" />
+      <path d="M12 6V2M19 13h3M19 11.2h3" />
+    </>
+  ),
+  "conv-hydraulic-cylinder": () => (
+    <>
+      <path d="M2.5 7h13v10h-13z" />
+      <path d="M9.5 7v10M9.5 12H22" />
+      <path d="M5 17v4M13 17v4" opacity="0.6" />
+    </>
+  ),
+  "conv-pressure-sensor": () => (
+    <>
+      <circle cx="12" cy="10" r="7" />
+      <path d="M12 10l4-3.5" />
+      <circle cx="12" cy="10" r="1.2" fill="currentColor" stroke="none" />
+      <path d="M12 17v5" />
+    </>
+  ),
+  "conv-flow-sensor": () => (
+    <>
+      <circle cx="12" cy="12" r="6.5" />
+      <path d="M2 12h20M15 12l-2.6-1.8M15 12l-2.6 1.8" />
     </>
   ),
 

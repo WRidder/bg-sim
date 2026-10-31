@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "hydraulic-circuit",
+  "models": [
+    "hydraulic-circuit"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

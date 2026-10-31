@@ -316,7 +316,21 @@ const SIGNAL_SOURCE_REFS = [
     "stdlib:sources/UniformNoise",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS))
+# The common hydraulic components (20-sim / Simscape level): valves, accumulator, pipe in
+# the hydraulic group, pumps and motor with the converters.
+const HYDRAULIC_REFS = [
+    "stdlib:converters/FixedDisplacementPump",
+    "stdlib:converters/HydraulicMotor",
+    "stdlib:converters/VariableDisplacementPump",
+    "stdlib:hydraulic/Accumulator",
+    "stdlib:hydraulic/CheckValve",
+    "stdlib:hydraulic/DirectionalValve43",
+    "stdlib:hydraulic/Pipe",
+    "stdlib:hydraulic/PressureCompensatedFlowControl",
+    "stdlib:hydraulic/PressureReliefValve",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, HYDRAULIC_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -1279,6 +1293,61 @@ const INTERFACE_FIELDS = [
                 @test isempty(b.interface.inputs)
                 @test occursin("A * A", b.source)
             end
+        end
+    end
+
+    @testset "the hydraulic components (valves, accumulator, pipe, pumps, motor)" begin
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        ports(b) = [(p.name, p.domain, p.size) for p in b.interface.ports]
+        params(b) = [(p.name, p.unit) for p in b.interface.parameters]
+        for ref in HYDRAULIC_REFS
+            b = blocks[ref]
+            @test !isempty(b.description)
+            @test startswith(b.icon, startswith(ref, "stdlib:hydraulic/") ? "hyd-" : "conv-")
+            # No switching event anywhere: the laws are smooth (no ifelse, abs or sign),
+            # so the blocks also run in fixed-step export without W203.
+            @test !occursin("ifelse", b.source)
+            @test !occursin("abs(", b.source)
+            @test !occursin("sign(", b.source)
+            # Isothermal, R/C/I elements without a declared causality.
+            @test isempty(b.interface.causality)
+        end
+        two = [("a", "Hydraulic", Int[]), ("b", "Hydraulic", Int[])]
+        for name in ("CheckValve", "PressureReliefValve", "Pipe",
+            "PressureCompensatedFlowControl")
+            @test ports(blocks["stdlib:hydraulic/" * name]) == two
+        end
+        @test params(blocks["stdlib:hydraulic/CheckValve"]) ==
+              [("p_crack", "Pa"), ("dp_open", "Pa"), ("A_max", "m^2"), ("A_leak", "m^2"),
+                  ("Cd", "1"), ("rho", "kg/m^3"), ("p_tr", "Pa")]
+        @test params(blocks["stdlib:hydraulic/PressureReliefValve"]) ==
+              [("p_set", "Pa"), ("dp_reg", "Pa"), ("A_max", "m^2"), ("A_leak", "m^2"),
+                  ("Cd", "1"), ("rho", "kg/m^3"), ("p_tr", "Pa")]
+        dv = blocks["stdlib:hydraulic/DirectionalValve43"]
+        @test ports(dv) == [(n, "Hydraulic", Int[]) for n in ("P", "T", "A", "B")]
+        @test [(i.name, i.type) for i in dv.interface.inputs] == [("u", "Real")]
+        @test [p.name for p in dv.interface.parameters] ==
+              ["A_max", "A_leak", "lap", "Cd", "rho", "p_tr"]
+        lap = dv.interface.parameters[3]
+        @test (lap.min, lap.max) == (-0.9, 0.9)
+        acc = blocks["stdlib:hydraulic/Accumulator"]
+        @test ports(acc) == [("a", "Hydraulic", Int[])]
+        @test params(acc) == [("p0", "Pa"), ("V0", "m^3"), ("n", "1"), ("V_dead", "m^3"),
+            ("beta", "Pa"), ("p_tr", "Pa")]
+        @test [(v.name, v.state) for v in acc.interface.variables if v.state !== nothing] ==
+              [("V_f", "prefer")]
+        pipe = blocks["stdlib:hydraulic/Pipe"]
+        @test [(c.name, c.default) for c in pipe.interface.constants] == [("N", 1)]
+        @test params(pipe) == [("L", "m"), ("d", "m"), ("rho", "kg/m^3"), ("nu", "m^2/s"),
+            ("beta", "Pa"), ("f_t", "1")]
+        for name in ("FixedDisplacementPump", "VariableDisplacementPump", "HydraulicMotor")
+            b = blocks["stdlib:converters/" * name]
+            @test ports(b) == [("a", "Hydraulic", Int[]), ("b", "Hydraulic", Int[]),
+                ("shaft", "Rotation", Int[])]
+            @test params(b) == [("D", "m^3/rad"), ("eta_v", "1"), ("eta_m", "1"),
+                ("p_nom", "Pa"), ("w_nom", "rad/s"), ("p_tr", "Pa"), ("w_tr", "rad/s")]
+            @test [v.name for v in b.interface.variables] == ["w", "dp", "Q", "T", "P_loss"]
+            @test isempty(b.interface.inputs) == (name != "VariableDisplacementPump")
         end
     end
 

@@ -1,0 +1,104 @@
+{
+  "project": "hydraulic-circuit",
+  "description": "Hydraulic component library showcase. A SpeedSource (150 rad/s) drives a 10 cm^3/rev FixedDisplacementPump (eta_v 0.95, eta_m 0.9) from a 1 bar Tank into a 20 cm^3 pump line protected by a PressureReliefValve (100 bar, 5 bar regulation range); a CheckValve (1 bar cracking) feeds a 50 cm^3 rail, a 2 m, 10 mm hose (Pipe, N = 2, f_t = 0.03) connects the rail to a 0.2 l Accumulator (50 bar precharge, n = 1.4), and a DirectionalValve43 (A_max 1e-5 m^2, 2% overlap) driven by 0.4*sin(pi*(t - 0.5)) from 0.5 s extends the HydraulicCylinder (stroke 0.5 m) with a 100 kg load and a 2000 N*s/m damper until 1.5 s, retracts it until 2.5 s and extends again. Every hydraulic law is smooth, so the only event is the spool sine's start.",
+  "models": {
+    "hydraulic-circuit": {
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "PumpLine/p",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 1.06e7,
+          "note": "the relief valve caps the pump line at p_set + dp_reg above the 1 bar tank (measured max 101.24 bar)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/p",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 1.06e7,
+          "note": "the rail behind the check valve stays below the relief limit as well (measured max 101.40 bar, a hose pressure wave on charging)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PumpLine/p",
+          "t": 0.5,
+          "value": 1.0123881e7,
+          "abs": 2.0e4,
+          "note": "charged and at rest: the relief valve regulates the pump line where it passes the whole pump flow, 1.24 bar into its 5 bar regulation range"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Relief/Q",
+          "signal_b": "Pump/Q",
+          "t": 0.5,
+          "value": 1.0,
+          "rtol": 1.0e-3,
+          "note": "at rest all of the pump flow (2.274e-4 m^3/s, eta_v at 100 bar) goes over the relief valve"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Check/Q",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": -1.0e-9,
+          "note": "the check valve blocks the reverse flow from the rail and the accumulator: only its leakage (measured min -2e-11 m^3/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cyl/x",
+          "t": 1.5,
+          "value": 0.09769,
+          "abs": 0.002,
+          "note": "end of the first extension (measured 0.09769 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cyl/x",
+          "t": 2.5,
+          "value": 0.02383,
+          "abs": 0.002,
+          "note": "end of the retraction (measured 0.02383 m)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Cyl/x",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": -1.0e-6,
+          "note": "the rod stays inside the stroke"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Cyl/x",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 0.5,
+          "note": "the rod stays inside the 0.5 m stroke (measured max 0.0977 m)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Pump/P_loss",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 0.0,
+          "note": "the pump only dissipates (leakage plus friction; 393.5 W at 100 bar)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Acc/p",
+          "from_t": 0.5,
+          "to_t": 3.0,
+          "value": 7.0e6,
+          "note": "the accumulator supplies the stroke flow above the pump flow and keeps the rail above 70 bar (measured min 74.05 bar at 1.21 s)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E901", "E101", "E102", "E103", "E106", "W202", "W206"],
+          "note": "no solver failure, no connection or causality error, no algebraic loop (every valve sits between compliances) and no event-limit stop"
+        }
+      ]
+    }
+  }
+}

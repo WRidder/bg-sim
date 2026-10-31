@@ -1,0 +1,727 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "hydraulic-circuit",
+  "$comment": "A small open-loop hydraulic circuit from the hydraulic component library: an electric motor (SpeedSource, 150 rad/s) drives a 10 cm^3/rev FixedDisplacementPump from the tank; a PressureReliefValve (100 bar) protects the pump line, a CheckValve feeds the rail, and a 2 m hose (Pipe, 2 segments) connects the rail to a 0.2 l Accumulator (50 bar precharge). A 4/3 DirectionalValve43 (2% overlap) driven by a sine spool command extends a HydraulicCylinder with a 100 kg load and a 2000 N*s/m damper from 0.5 s to 1.5 s and retracts it from 1.5 s to 2.5 s.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "MotorCmd",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 40,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "EMotor",
+        "block": {
+          "ref": "stdlib:rotation/SpeedSource"
+        },
+        "position": {
+          "x": 200,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "w": "150.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Pump",
+        "block": {
+          "ref": "stdlib:converters/FixedDisplacementPump"
+        },
+        "position": {
+          "x": 380,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "D": "1.6e-6"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Tank",
+        "block": {
+          "ref": "stdlib:hydraulic/Tank"
+        },
+        "position": {
+          "x": 380,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p": "1.0e5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "PumpLine",
+        "block": {
+          "ref": "stdlib:hydraulic/Volume"
+        },
+        "position": {
+          "x": 560,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "V": "2.0e-5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "Relief",
+        "block": {
+          "ref": "stdlib:hydraulic/PressureReliefValve"
+        },
+        "position": {
+          "x": 560,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p_set": "1.0e7",
+          "dp_reg": "5.0e5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Check",
+        "block": {
+          "ref": "stdlib:hydraulic/CheckValve"
+        },
+        "position": {
+          "x": 740,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p_crack": "1.0e5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "Rail",
+        "block": {
+          "ref": "stdlib:hydraulic/Volume"
+        },
+        "position": {
+          "x": 920,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "V": "5.0e-5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Hose",
+        "block": {
+          "ref": "stdlib:hydraulic/Pipe"
+        },
+        "position": {
+          "x": 920,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L": "2.0",
+          "d": "0.01",
+          "f_t": "0.03"
+        },
+        "constants": {
+          "N": 2
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Acc",
+        "block": {
+          "ref": "stdlib:hydraulic/Accumulator"
+        },
+        "position": {
+          "x": 920,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "p0": "5.0e6",
+          "V0": "2.0e-4"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Spool",
+        "block": {
+          "ref": "stdlib:sources/Sine"
+        },
+        "position": {
+          "x": 1100,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "amplitude": "0.4",
+          "frequency": "3.141592653589793",
+          "t_start": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Valve",
+        "block": {
+          "ref": "stdlib:hydraulic/DirectionalValve43"
+        },
+        "position": {
+          "x": 1100,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "lap": "0.02"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Cyl",
+        "block": {
+          "ref": "stdlib:converters/HydraulicCylinder"
+        },
+        "position": {
+          "x": 1300,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "stroke": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "Load",
+        "block": {
+          "ref": "stdlib:translation/Mass"
+        },
+        "position": {
+          "x": 1500,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "100.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "Damp",
+        "block": {
+          "ref": "stdlib:translation/Damper"
+        },
+        "position": {
+          "x": 1500,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "2000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "Ground1",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 1680,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "Ground2",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 1680,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "PRail",
+        "block": {
+          "ref": "stdlib:converters/PressureSensor"
+        },
+        "position": {
+          "x": 1100,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n02",
+          "port": "u"
+        },
+        "route": [],
+        "label": "motor speed command"
+      },
+      {
+        "id": "w02",
+        "kind": "wire",
+        "from": {
+          "node": "n02",
+          "port": "a"
+        },
+        "to": {
+          "node": "n03",
+          "port": "shaft"
+        },
+        "route": []
+      },
+      {
+        "id": "w03",
+        "kind": "wire",
+        "from": {
+          "node": "n04",
+          "port": "a"
+        },
+        "to": {
+          "node": "n03",
+          "port": "a"
+        },
+        "route": [],
+        "label": "suction"
+      },
+      {
+        "id": "w04",
+        "kind": "wire",
+        "from": {
+          "node": "n03",
+          "port": "b"
+        },
+        "to": {
+          "node": "n05",
+          "port": "a"
+        },
+        "route": [],
+        "label": "delivery"
+      },
+      {
+        "id": "w05",
+        "kind": "wire",
+        "from": {
+          "node": "n05",
+          "port": "a"
+        },
+        "to": {
+          "node": "n06",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w06",
+        "kind": "wire",
+        "from": {
+          "node": "n06",
+          "port": "b"
+        },
+        "to": {
+          "node": "n04",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w07",
+        "kind": "wire",
+        "from": {
+          "node": "n05",
+          "port": "a"
+        },
+        "to": {
+          "node": "n07",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w08",
+        "kind": "wire",
+        "from": {
+          "node": "n07",
+          "port": "b"
+        },
+        "to": {
+          "node": "n08",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w09",
+        "kind": "wire",
+        "from": {
+          "node": "n08",
+          "port": "a"
+        },
+        "to": {
+          "node": "n09",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w10",
+        "kind": "wire",
+        "from": {
+          "node": "n09",
+          "port": "b"
+        },
+        "to": {
+          "node": "n10",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w11",
+        "kind": "wire",
+        "from": {
+          "node": "n08",
+          "port": "a"
+        },
+        "to": {
+          "node": "n12",
+          "port": "P"
+        },
+        "route": []
+      },
+      {
+        "id": "w12",
+        "kind": "wire",
+        "from": {
+          "node": "n12",
+          "port": "T"
+        },
+        "to": {
+          "node": "n04",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w13",
+        "kind": "wire",
+        "from": {
+          "node": "n12",
+          "port": "A"
+        },
+        "to": {
+          "node": "n13",
+          "port": "A"
+        },
+        "route": []
+      },
+      {
+        "id": "w14",
+        "kind": "wire",
+        "from": {
+          "node": "n12",
+          "port": "B"
+        },
+        "to": {
+          "node": "n13",
+          "port": "B"
+        },
+        "route": []
+      },
+      {
+        "id": "s15",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n12",
+          "port": "u"
+        },
+        "route": [],
+        "label": "spool position"
+      },
+      {
+        "id": "w16",
+        "kind": "wire",
+        "from": {
+          "node": "n13",
+          "port": "rod"
+        },
+        "to": {
+          "node": "n14",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w17",
+        "kind": "wire",
+        "from": {
+          "node": "n14",
+          "port": "b"
+        },
+        "to": {
+          "node": "n16",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w18",
+        "kind": "wire",
+        "from": {
+          "node": "n14",
+          "port": "a"
+        },
+        "to": {
+          "node": "n15",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w19",
+        "kind": "wire",
+        "from": {
+          "node": "n15",
+          "port": "b"
+        },
+        "to": {
+          "node": "n17",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w20",
+        "kind": "wire",
+        "from": {
+          "node": "n08",
+          "port": "a"
+        },
+        "to": {
+          "node": "n18",
+          "port": "a"
+        },
+        "route": []
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0,
+    "t_end": 3,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 3001
+    },
+    "event_limit": 100000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Pump line, rail and accumulator pressure",
+      "signals": [
+        "PumpLine/p",
+        "Rail/p",
+        "Acc/p"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Spool position and rod extension",
+      "signals": [
+        "Spool/y",
+        "Cyl/x"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Pump, relief and check valve flow",
+      "signals": [
+        "Pump/Q",
+        "Relief/Q",
+        "Check/Q"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Chamber pressures",
+      "signals": [
+        "Cyl/pA",
+        "Cyl/pB"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}

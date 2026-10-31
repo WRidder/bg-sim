@@ -1,0 +1,62 @@
+# Hydraulics
+
+Hydraulic blocks are in the **Hydraulic** category of the library; pumps, motors, the cylinder and the pressure and flow sensors are in **Converters and sensors**. A hydraulic port carries the **pressure** in Pa (its effort) and the **volume flow** in m³/s (its flow), positive into the block. Wires join hydraulic ports into nodes with one pressure, whose flows add up to zero.
+
+The library is isothermal: one fluid with a constant density `rho`, viscosity `nu` and bulk modulus `beta`. Select a block and press `F1` for its full parameter list.
+
+## Blocks
+
+| Block | Ports | What it does | Key parameters |
+| --- | --- | --- | --- |
+| `PressureSource` | `a`, input `u` | holds the pressure `p·u` | `p` |
+| `FlowSource` | `a`, `b`, input `u` | takes `Q·u` in at `a` and pushes it out of `b` | `Q` |
+| `Tank` | `a` | constant pressure (the reservoir) | `p` |
+| `Volume` | `a` | fluid compressibility, `p' = beta·Q/V` | `V`, `beta` |
+| `Accumulator` | `a` | gas-charged accumulator: `p·V_gas^n` constant; empty below the precharge | `p0`, `V0`, `n`, `V_dead` |
+| `Orifice`, `VariableOrifice` | `a`, `b` (input `u`) | turbulent orifice, smooth through zero | `Cd`, `A`, `rho`, `p_tr` |
+| `CheckValve` | `a` → `b` | opens above the cracking pressure, blocks reverse flow | `p_crack`, `dp_open`, `A_max`, `A_leak` |
+| `PressureReliefValve` | `a` → `b` | opens at the set pressure and caps the pressure in `a` | `p_set`, `dp_reg`, `A_max` |
+| `DirectionalValve43` | `P`, `T`, `A`, `B`, input `u` | 4/3 proportional valve; `u` is the spool position from −1 to 1 | `A_max`, `lap`, `A_leak` |
+| `PressureCompensatedFlowControl` | `a`, `b`, input `u` | holds the flow `Q_nom·u` once the pressure drop exceeds `dp_c` | `Q_nom`, `dp_c` |
+| `Pipe` | `a`, `b` | lumped line: friction, fluid inertia and compressibility in `N` segments | `L`, `d`, `nu`, `beta`, `f_t`, constant `N` |
+| `FixedDisplacementPump` | `a` (suction), `b` (delivery), `shaft` | `Q = D·w` less leakage, torque `D·Δp` plus friction | `D`, `eta_v`, `eta_m` |
+| `VariableDisplacementPump` | as above, input `u` | displacement `D·u` (−1 to 1) | `D`, `eta_v`, `eta_m` |
+| `HydraulicMotor` | `a` (inlet), `b` (outlet), `shaft` | `w = Q/D`, torque `D·Δp`, less losses | `D`, `eta_v`, `eta_m` |
+| `HydraulicCylinder` | `A`, `B`, `rod` | double-acting cylinder with chamber compressibility | `Ap`, `Ar`, `stroke` |
+| `PressureSensor`, `FlowSensor` | output `y` | read a pressure (no flow) or a flow (no pressure drop) | none |
+
+## Units and typical values
+
+- Pressures are in **Pa**: 1 bar = 1e5 Pa, so 100 bar is `1e7`. Flows are in **m³/s**: 1 L/min ≈ 1.667e-5 m³/s.
+- Pump and motor displacements are per **radian**: `D` in m³/rad = cm³/rev × 1e-6 / (2π). A 10 cm³/rev pump has `D = 1.59e-6`.
+- Mineral oil: `rho = 850` kg/m³, `nu = 3.2e-5` m²/s (32 cSt), `beta = 1.4e9` Pa; with air and hoses the effective `beta` is often lower.
+
+## Valves and orifices
+
+Every orifice, valve edge and the flow control valve use the same regularized orifice law,
+
+`Q = Cd·A·√(2/ρ)·Δp / (Δp² + p_tr²)^(1/4)`,
+
+which is the square-root law above the transition pressure `p_tr` (default 1 bar) and linear below it, so the flow passes smoothly through zero.
+
+- The valve openings are smooth: a check valve opens between `p_crack` and `p_crack + dp_open`, a relief valve between `p_set` and `p_set + dp_reg`, and a spool edge between the lap and full stroke. There are no switching events, so the models also run in a fixed-step [export](page:export).
+- `A_leak` is the area of a closed valve. Keep it small but not zero: it keeps a closed valve and the pressure behind it well defined.
+- `DirectionalValve43`: `u > 0` connects P→A and B→T, `u < 0` connects P→B and A→T. `lap > 0` is an overlap (a dead band, closed centre), `lap < 0` an underlap (an open centre), `lap = 0` a critical centre. Beyond `|u| = 1` the edges stay fully open.
+
+## Pumps and motors
+
+The efficiencies apply at a nominal point (`p_nom`, `w_nom`): the leakage grows linearly with the pressure, and the friction torque is proportional to the pressure and always opposes the rotation. With `eta_v = eta_m = 1` a pump or motor is ideal: the mechanical power `T·w` equals the hydraulic power `Δp·Q`. The `P_loss` signal is the power lost to leakage and friction; it is never negative.
+
+## Pipes and accumulators
+
+- `Pipe` splits a line into `N` segments (a constant on the block, default 1). Each segment has its share of the friction, the fluid inertia `rho·L/A` and the fluid compressibility. Friction is laminar (Hagen-Poiseuille); a turbulent friction factor `f_t > 0` adds a Darcy-Weisbach loss. More segments resolve pressure waves better but add two states each.
+- `Accumulator` stores fluid against a gas precharge `p0` in the volume `V0`. Below `p0` it is empty and only the small dead volume `V_dead` remains. Its state is the fluid volume `V_f`; set its start value to start with a charged accumulator, `V_f = V0·(1 − (p0/p)^(1/n))` for a start pressure `p`.
+
+## Building a circuit
+
+- Put a `Volume` (or another compliance) at the node after a pump. A pump wired straight into a valve makes the node pressure an algebraic loop, and a pump wired straight into a `Pipe` cannot be solved.
+- Protect every pump with a `PressureReliefValve` to the tank, as in a real circuit.
+- The ends of a `Pipe` take a pressure: connect them to volumes, accumulators, cylinder chambers, valves or sources.
+- Start chambers and volumes at a sensible pressure. A closed-centre valve holding a load needs its equilibrium pressures as start values.
+
+The example **hydraulic-circuit** (in the Example gallery) is a complete circuit: an electric motor speed drives a fixed-displacement pump with a relief valve and an accumulator, and a 4/3 valve extends and retracts a loaded cylinder.

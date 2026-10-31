@@ -1152,6 +1152,35 @@ end
         d = lang_expect(bad, "E005", 7, 13; contains = "loop index")
         @test d !== nothing && occursin("1:5", d.message)
 
+        # An index expression of loop variables is static after unrolling (a neighbour in a
+        # chain, `x[i + 1]`), and every unrolled value is range-checked.
+        ok = parse_block("""
+        @block ShiftOk begin
+            @constants N::Int = 4
+            @variables v::Vec{N} = [0.0, 0.0, 0.0, 0.0]
+            @equations begin
+                for i in 1:N-1
+                    v[i] ~ v[i + 1] + 1.0
+                end
+                v[N] ~ 0.0
+            end
+        end
+        """)
+        @test isempty([d for d in check_block(ok) if d.code == "E005"])
+        bad = parse_block("""
+        @block ShiftBad begin
+            @constants N::Int = 4
+            @variables v::Vec{N} = [0.0, 0.0, 0.0, 0.0]
+            @equations begin
+                for i in 1:N
+                    v[i] ~ v[i + 1] + 1.0
+                end
+            end
+        end
+        """)
+        @test any(d -> d.code == "E005" && occursin("is 5 at i = 4", d.message),
+            check_block(bad))
+
         # A constant index is checked as well.
         bad = parse_block("""
         @block BadConstant begin

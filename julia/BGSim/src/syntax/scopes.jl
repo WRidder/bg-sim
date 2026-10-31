@@ -2022,6 +2022,44 @@ function _check_one_index!(ck::Checker, e::Index, node, n::Int, k::Int, base::Ty
         end
         return nothing
     end
+    # An index expression of loop variables (`p[i + 1]`, `q[N - i]`) is static after
+    # unrolling: fold it for every value of the loop variables it reads and range-check
+    # each result (the instantiation folds the same expression per iteration).
+    vars = [v for v in keys(ck.loopvars) if _mentions_name(node, v)]
+    if !isempty(vars)
+        ranges = [get(ck.loop_ranges, v, nothing) for v in vars]
+        any(r -> r === nothing, ranges) && return nothing
+        prod(length(r[1]:r[2]) for r in ranges) > 100_000 && return nothing
+        for combo in Iterators.product((r[1]:r[2] for r in ranges)...)
+            env = Dict{Symbol,Any}(ck.consts)
+            for (v, x) in zip(vars, combo)
+                env[v] = x
+            end
+            ok, value = try_eval_const(node, env)
+            if !(ok && value isa Integer)
+                _report!(
+                    ck,
+                    "E005",
+                    "the index of `$(_show(e))` is not static",
+                    node;
+                    hint = "use an integer expression of literals, `@constants` values and `for` loop variables",
+                )
+                return nothing
+            end
+            if !(1 <= Int(value) <= n)
+                at = join(("$v = $x" for (v, x) in zip(vars, combo)), ", ")
+                _report!(
+                    ck,
+                    "E005",
+                    "index out of range: `$(_show(e))` is $(Int(value)) at $at but `$(_show(e.base))` is `$(type_name(base))`$where",
+                    e;
+                    hint = "make the loop range fit the array: the index must stay within 1:$(n)",
+                )
+                return nothing
+            end
+        end
+        return nothing
+    end
     ok, value = try_eval_const(node, ck.consts)
     if !ok
         # Equations need static indices (spec table: "Yes, static indices"); discrete code
@@ -2052,6 +2090,14 @@ function _check_one_index!(ck::Checker, e::Index, node, n::Int, k::Int, base::Ty
 end
 
 _show(e::Expr) = sprint(show, e)
+
+"""Whether the expression `x` reads the name `s` anywhere (a walk over the AST fields)."""
+function _mentions_name(x, s::Symbol)
+    x isa Name && return x.name === s
+    x isa AbstractVector && return any(y -> _mentions_name(y, s), x)
+    x isa Expr || return false
+    return any(f -> _mentions_name(getfield(x, f), s), fieldnames(typeof(x)))
+end
 
 function _check_vector!(ck::Checker, e::VectorLit)::Union{TypeSpec,Nothing}
     for el in e.elements
