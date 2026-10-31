@@ -115,6 +115,25 @@ describe("block icons", () => {
     }
   });
 
+  it("draws an explicit, distinct glyph for every contact block", () => {
+    // The icon ids of stdlib/contact (src/library/catalog.jl); no two share a drawing.
+    const contactIcons = [
+      "ct-contact-point",
+      "ct-contact-surface",
+      "ct-impact-body-3d",
+      "ct-impact-inertia-3d",
+      "ct-moving-plane-contact",
+      "ct-switched-pivot-3d",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of contactIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      glyphs.add(renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />).replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(contactIcons.length);
+  });
+
   it("draws an explicit glyph for every common mechanical and electrical component", () => {
     // The icon ids of the rotation and electrical components on top of the M1/M2 rows
     // (src/library/catalog.jl); each has its own drawing.

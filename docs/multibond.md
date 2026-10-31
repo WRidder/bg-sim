@@ -156,6 +156,16 @@ Hertz exponent is fixed at 3/2. Mount the contact on the `a` side of the transfo
 flow is then minus the point twist. Contact is a compliant penalty model: it stores and
 dissipates behind one port, so the energy ledger (section 9) classifies it as `mixed`.
 
+`MovingPlaneContact` is the same Hunt-Crossley law for a sphere (radius `r`, 0 for a point)
+against a finite rectangular face that moves: the face is carried by a translating carrier
+(inputs `pc`, `vc`, for example a gantry) and slides along an axis through a Translation port
+`j` (a gripper jaw, a pusher). The face half-widths `w1`, `w2` gate the normal force with a
+smooth edge (width `we`), so a part can leave the face. Friction is isotropic regularised
+Coulomb on the slip at the contact point, `mu f_n tanh(|s|/vs) s/|s|`, so a held part creeps at
+`s = vs atanh(F_t / (mu f_n))` below the slip limit (the regularisation error). The reaction
+goes to the jaw as `j.e = F . a` and to the carrier as the power output `Pc = F . vc`, which
+closes the power balance `p.P + j.P + Pc = d(Ec)/dt + Pd`. Example: `examples/gripper`.
+
 ## 7. Switched pivot and impact map (v1 limits)
 
 `SwitchedPivot3D`, `ImpactInertia3D` and `ImpactBody3D` (`src/mech/impulse.jl`) model a body

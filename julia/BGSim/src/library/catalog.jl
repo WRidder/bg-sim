@@ -1248,6 +1248,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Rigid contact plane (world point and normal, tangent heading) as a signal source for any number of ContactPoint elements.",
         icon = "ct-contact-surface",
     ),
+    "stdlib:contact/MovingPlaneContact" => (
+        description = "Compliant contact of a sphere (or point) on a spatial body against a finite face that moves: carried in translation by a prescribed carrier and slid along an axis by a Translation port (a gripper jaw, a pusher). ContactPoint's Hunt-Crossley normal law with an edge gate, isotropic regularised Coulomb friction, the wrench on the body and the slide force on the port.",
+        icon = "ct-moving-plane-contact",
+    ),
     # J-MB14: mode-switched pivot and the impact map.
     "stdlib:contact/ImpactBody3D" => (
         description = "Spatial rigid body whose port is the pivot frame of a SwitchedPivot3D (CoM offset r mounted inside): ImpactInertia3D, CoriolisSpatial and GravitySpatial on the CoM 1-junction, with the impact map applied to the body momentum at a mode switch.",

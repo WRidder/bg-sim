@@ -280,6 +280,7 @@ const M3_CONTACT_REFS = [
     "stdlib:contact/ContactSurface",
     "stdlib:contact/ImpactBody3D",
     "stdlib:contact/ImpactInertia3D",
+    "stdlib:contact/MovingPlaneContact",
     "stdlib:contact/SwitchedPivot3D",
 ]
 

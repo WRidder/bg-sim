@@ -63,6 +63,7 @@ const COMPOSITE_IDS = [
   "ct-contact-surface",
   "ct-impact-body-3d",
   "ct-impact-inertia-3d",
+  "ct-moving-plane-contact",
   "ct-switched-pivot-3d",
 ];
 
