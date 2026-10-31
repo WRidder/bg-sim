@@ -8,6 +8,6 @@ import { createDetachStore } from "../plot/detachStore";
 
 export const useViewerDetachStore = createDetachStore({
   windowName: "bgsim-3d-view",
-  title: "bg-sim 3D view",
+  title: "BG-Sim 3D view",
   label: "3D view",
 });

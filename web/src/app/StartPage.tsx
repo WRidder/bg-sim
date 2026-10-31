@@ -130,7 +130,7 @@ export function StartPage() {
     <main className="start-page" id="main" data-testid="start-page" data-state={status}>
       <div className="start-page__inner">
         <header className="start-page__hero">
-          <h1 className="visually-hidden">bg-sim</h1>
+          <h1 className="visually-hidden">BG-Sim</h1>
           <form
             className="start-page__new"
             onSubmit={(event) => {

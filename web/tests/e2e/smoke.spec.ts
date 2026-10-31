@@ -12,7 +12,7 @@ import { expect, test } from "@playwright/test";
 test("the app loads and the worker becomes ready", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page).toHaveTitle("bg-sim");
+  await expect(page).toHaveTitle("BG-Sim");
   await expect(page.getByTestId("top-bar")).toBeVisible();
 
   const workerStatus = page.getByTestId("worker-status");

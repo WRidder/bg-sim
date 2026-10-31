@@ -130,13 +130,13 @@ export function createDetachStore(options: DetachOptions) {
 /** The manual Plots tab. */
 export const useDetachStore = createDetachStore({
   windowName: "bgsim-plots",
-  title: "bg-sim plots",
+  title: "BG-Sim plots",
   label: "plot",
 });
 
 /** The automatic selection plot tab. */
 export const useAutoDetachStore = createDetachStore({
   windowName: "bgsim-auto-plot",
-  title: "bg-sim auto plot",
+  title: "BG-Sim auto plot",
   label: "automatic plot",
 });

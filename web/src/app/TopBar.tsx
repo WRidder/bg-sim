@@ -42,7 +42,7 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
   return (
     <header className="top-bar" data-testid="top-bar">
       {project === null ? (
-        <div className="top-bar__brand">bg-sim</div>
+        <div className="top-bar__brand">BG-Sim</div>
       ) : (
         <button
           type="button"
@@ -51,7 +51,7 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
           title="Back to the library (examples and projects)"
           onClick={requestLeaveProject}
         >
-          bg-sim
+          BG-Sim
         </button>
       )}
       <LeaveProjectDialog />
