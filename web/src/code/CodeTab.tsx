@@ -4,7 +4,9 @@
  * A CodeMirror 6 editor with the Julia legacy mode, `block.check` squiggles,
  * block autocomplete, the read-only stdlib banner with "Copy to project
  * library", and the inline Equation/Discrete-code nodes whose ports follow
- * their source. It listens for the `bgsim:open-source` event from the
+ * their source. An inline node can be saved to the project library (it then
+ * becomes an instance of the reusable block), and "+ Library block" starts a
+ * new project library block from a template (code/inlineToLibrary.ts). It listens for the `bgsim:open-source` event from the
  * inspector and the diagnostics panel, and double-clicking an inline node on
  * the canvas arrives through the same request store.
  */
@@ -18,7 +20,9 @@ import type { BlockCheckResult } from "../contracts/worker-rpc";
 import { copyBlockToProjectLibrary } from "../inspector/copyToLibrary";
 import { useCatalogStore } from "../library/catalogStore";
 import { fetchCatalog } from "../library/catalogClient";
-import { useDocumentStore } from "../state/documentStore";
+import { activeDiagram } from "../editor/subsystemPath";
+import { writeProjectLibrary } from "../library/projectBlocks";
+import { inlineNodePosition, useDocumentStore } from "../state/documentStore";
 import { BreakpointPopover } from "./breakpointsPopover";
 import { CodeEditor } from "./CodeEditor";
 import {
@@ -29,10 +33,15 @@ import {
 } from "./codeSession";
 import { interfaceFromBlockCheck } from "../editor/nodeInterface";
 import { publishInlineInterface } from "./inlineInterfaces";
+import { projectTarget, saveInlineMessage } from "./inlineToLibrary";
+import {
+  ProjectBlockDialog,
+  type ProjectBlockRequest,
+  type ProjectBlockResult,
+} from "./ProjectBlockDialog";
 import { blockNameOf, DISCRETE_TEMPLATE, EQUATION_TEMPLATE } from "./templates";
 import { SourceBanner, type CopyState } from "./SourceBanner";
 import type { CodeTarget } from "./sources";
-import { writeProjectLibrary } from "./projectLibrary";
 import type { MappedDiagnostic } from "./lintMapping";
 import "./code.css";
 
@@ -108,6 +117,9 @@ export function CodeTab() {
   const [copyState, setCopyState] = useState<CopyState>("idle");
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** A new library block the notice offers to place on the diagram. */
+  const [placeRef, setPlaceRef] = useState<string | null>(null);
+  const [blockDialog, setBlockDialog] = useState<ProjectBlockRequest | null>(null);
   const [diagnostics, setDiagnostics] = useState<MappedDiagnostic[]>([]);
   const [checkError, setCheckError] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
@@ -218,10 +230,64 @@ export function CodeTab() {
       .getState()
       .addInlineBlock(kind, kind === "equation" ? EQUATION_TEMPLATE : DISCRETE_TEMPLATE);
     if (id === null) {
-      setNotice("Open a model before adding a code block.");
+      showNotice("Open a model before adding a code block.");
       return;
     }
     openTarget({ kind: "inline", nodeId: id, ref: `inline:${id}`, line: 1, col: 1 });
+  }
+
+  function showNotice(text: string | null, place: string | null = null): void {
+    setNotice(text);
+    setPlaceRef(place);
+  }
+
+  function handleBlockDone(result: ProjectBlockResult): void {
+    setBlockDialog(null);
+    if (result.mode === "save-inline") {
+      // A re-pointed node already switched this tab to the library block
+      // (saveInlineToProjectLibrary); otherwise the inline node stays open.
+      showNotice(saveInlineMessage(result.outcome, result.nodeName));
+      return;
+    }
+    const { outcome } = result;
+    openTarget(projectTarget(outcome));
+    if (outcome.ref !== null) {
+      showNotice(
+        `Created ${outcome.file}. ${outcome.name} is in the library's Project category: drag it onto the diagram.`,
+        useDocumentStore.getState().doc === null ? null : outcome.ref,
+      );
+    } else if (outcome.catalogError !== null) {
+      showNotice(
+        `Created ${outcome.file}, but the catalog could not be refreshed (${outcome.catalogError}). Reopen the project to see ${outcome.name} in the library.`,
+      );
+    } else {
+      showNotice(
+        `Created ${outcome.file}. The catalog does not list project:${outcome.name} yet; the file is editable here and appears in the library's Project category once the worker publishes it.`,
+      );
+    }
+  }
+
+  /** "Place on diagram": add the new library block in the next free slot of the open diagram. */
+  function placeOnDiagram(ref: string): void {
+    const block = index?.blocksByRef.get(ref);
+    const store = useDocumentStore.getState();
+    const diagram = store.doc === null ? null : activeDiagram(store.doc, store.activePath);
+    if (block === undefined || diagram === null) {
+      showNotice("Open a model to place the block.");
+      return;
+    }
+    const id = store.addBlock(block, inlineNodePosition(diagram.nodes));
+    if (id === null) {
+      showNotice("The block could not be placed on the diagram.");
+      return;
+    }
+    const placed = useDocumentStore.getState().doc;
+    const name =
+      placed === null
+        ? block.name
+        : (activeDiagram(placed, store.activePath)?.nodes.find((node) => node.id === id)?.name ??
+          block.name);
+    showNotice(`Placed ${name} (${ref}) on the diagram.`);
   }
 
   function handleChange(next: string): void {
@@ -284,7 +350,7 @@ export function CodeTab() {
           ? `Copied to ${outcome.file}; the worker has not published it yet.`
           : `Copied to ${outcome.file}.`,
       );
-      setNotice(
+      showNotice(
         outcome.ref === null
           ? `Copied to ${outcome.file}. The worker has not published project:${outcome.name} yet; the file is editable here.`
           : `Copied to ${outcome.file} and re-pointed.`,
@@ -376,12 +442,45 @@ export function CodeTab() {
         >
           + Discrete
         </button>
+        <button
+          type="button"
+          className="button code-toolbar__button"
+          data-testid="code-new-library-block"
+          onClick={() => setBlockDialog({ mode: "new" })}
+          disabled={project === null}
+          title={
+            project === null
+              ? "Open a project first"
+              : "Create a reusable equation or discrete block in the project library (library/<Name>.jl)"
+          }
+        >
+          + Library block
+        </button>
       </div>
 
       {notice !== null ? (
         <p className="code-notice" role="status" data-testid="code-notice">
           {notice}
+          {placeRef !== null ? (
+            <button
+              type="button"
+              className="button code-notice__action"
+              data-testid="code-place-on-diagram"
+              onClick={() => placeOnDiagram(placeRef)}
+            >
+              Place on diagram
+            </button>
+          ) : null}
         </p>
+      ) : null}
+
+      {blockDialog !== null && project !== null ? (
+        <ProjectBlockDialog
+          project={project}
+          request={blockDialog}
+          onClose={() => setBlockDialog(null)}
+          onDone={handleBlockDone}
+        />
       ) : null}
 
       {sessionError !== null ? (
@@ -401,7 +500,7 @@ export function CodeTab() {
         <div className="code-empty" data-testid="code-empty">
           <EmptyState
             title="No source open"
-            hint="Select a block and choose “Open source” to read and edit its code here, or create an inline Equation or Discrete code node below."
+            hint="Select a block and choose “Open source” to read and edit its code here, create an inline Equation or Discrete code node, or start a reusable block in the project library."
           />
           <div className="code-empty__actions">
             <button
@@ -421,6 +520,15 @@ export function CodeTab() {
               disabled={doc === null}
             >
               New discrete code block
+            </button>
+            <button
+              type="button"
+              className="button"
+              data-testid="code-empty-new-library-block"
+              onClick={() => setBlockDialog({ mode: "new" })}
+              disabled={project === null}
+            >
+              New library block
             </button>
           </div>
         </div>
@@ -456,6 +564,22 @@ export function CodeTab() {
               </span>
             )}
             <span className="code-toolbar__spacer" />
+            {target.kind === "inline" ? (
+              <button
+                type="button"
+                className="button code-toolbar__button"
+                data-testid="code-save-to-library"
+                disabled={project === null || inlineNode === null}
+                onClick={() => setBlockDialog({ mode: "save-inline", nodeId: target.nodeId })}
+                title={
+                  project === null
+                    ? "Open a project first"
+                    : "Make this code a reusable block in library/<Name>.jl; this node then uses it"
+                }
+              >
+                Save to project library
+              </button>
+            ) : null}
             {target.kind === "library" && target.sourceKind === "project" ? (
               <span
                 className="code-save"

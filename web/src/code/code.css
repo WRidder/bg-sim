@@ -307,3 +307,10 @@
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
 }
+
+.code-notice__action {
+  margin-left: var(--space-2);
+  height: 22px;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-xs);
+}
