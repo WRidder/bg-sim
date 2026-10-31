@@ -507,7 +507,7 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "src-csv-sampled",
     ),
     "stdlib:sources/ExpSine" => (
-        description = "Damped sine (exponentially decaying oscillation) from t_start; frequency in rad/s, damping in 1/s; damping = 0 gives a sine that starts at t_start.",
+        description = "Damped sine (exponentially decaying oscillation) from t_start; frequency in rad/s, damping in 1/s.",
         icon = "src-exp-sine",
     ),
     "stdlib:sources/Exponentials" => (
@@ -555,7 +555,8 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "src-scope",
     ),
     "stdlib:sources/Sine" => (
-        description = "Sine signal source; frequency in rad/s.", icon = "src-sine",
+        description = "Sine signal source from t_start (offset before it); frequency in rad/s.",
+        icon = "src-sine",
     ),
     "stdlib:sources/Step" => (description = "Step signal source.", icon = "src-step"),
     "stdlib:sources/Time" => (

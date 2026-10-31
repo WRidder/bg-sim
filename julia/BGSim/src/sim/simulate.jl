@@ -558,7 +558,9 @@ function _simulate_flat(flat::Flat.FlatModel;
     # changes a value and must not be dropped. MTK's compiled scalar condition reads `tmp[1]`
     # of the (empty) state cache, so letting the run start would surface a `BoundsError` as a
     # confusing E901("no states were available") at t = 1e-6. Name the requirement instead.
-    if states == 0 && !isempty(flat.events)
+    # The compiled system counts too: index reduction can remove every flat state.
+    stateless = states == 0 || isempty(ModelingToolkit.unknowns(lowered.model.system))
+    if stateless && !isempty(flat.events)
         first_event = flat.events[1]
         diagnostic = diag(
             "E901",

@@ -578,6 +578,9 @@ const INTERFACE_FIELDS = [
             "n_periods", "offset", "t_start"]
         @test params("MultiSine") == ["amplitudes", "frequencies", "phases", "offset", "t_start"]
         @test params("ExpSine") == ["amplitude", "frequency", "phase", "damping", "offset", "t_start"]
+        @test params("Sine") == ["amplitude", "frequency", "phase", "offset", "t_start"]
+        @test only(p for p in blocks["stdlib:sources/Sine"].interface.parameters
+                   if p.name == "t_start").unit == "s"
         @test params("Exponentials") == ["amplitude", "rise_time", "tau_rise", "tau_fall",
             "offset", "t_start"]
         @test params("RepeatingTable") == ["t_start", "sample_time", "values", "method"]

@@ -1,7 +1,8 @@
 # Golden tests for the smooth signal sources `stdlib:sources/ExpSine`, `Exponentials` and
 # `MultiSine`, and for the options added to `Ramp` (duration), `Pulse` (offset)
 # and `Chirp` (amplitude, offset, start_phase, logarithmic sweep), through the real
-# pipeline. Each source drives an Integrator.
+# pipeline. Each source drives an Integrator. `Sine` (t_start) has its own golden,
+# test_Sine.jl.
 #
 # Reference: the analytic waveform; the integrals are the exact areas (Gauss-Legendre on
 # pieces between the breakpoints). Tolerance: 1e-9 on the outputs, 1e-8 on the integrals.
@@ -55,14 +56,6 @@ end
         _sg_check("MultiSine", [Dict("amplitudes" => vec(amps), "frequencies" => vec(ws),
                 "phases" => vec(phs), "offset" => string(off), "t_start" => string(t0))],
             [ref], [[t0]])
-    end
-
-    @testset "ExpSine with zero damping is a delayed sine" begin
-        A, w, ph, off, t0 = 2.0, 5.0, 0.4, 0.5, 0.3
-        ref(t) = t < t0 ? off : off + A * sin(w * (t - t0) + ph)
-        _sg_check("ExpSine", [Dict("amplitude" => string(A), "frequency" => string(w),
-                "phase" => string(ph), "damping" => "0.0", "offset" => string(off),
-                "t_start" => string(t0))], [ref], [[t0]])
     end
 
     @testset "Ramp duration" begin
