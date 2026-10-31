@@ -1,0 +1,10 @@
+{
+  "$comment": "Invalid: dependencies is required (empty lists when nothing is used).",
+  "format": "bgsim-clipboard",
+  "version": 1,
+  "source": { "project": "demo", "model": "servo", "path": [] },
+  "nodes": [],
+  "connections": [],
+  "annotations": [],
+  "shapes": []
+}

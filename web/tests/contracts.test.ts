@@ -39,6 +39,7 @@ const schemaNames = [
   "export-request",
   "export-report",
   "export-job",
+  "clipboard",
 ] as const;
 type SchemaName = (typeof schemaNames)[number];
 
@@ -85,8 +86,8 @@ const invalidFixtures = fixtureFiles("invalid");
 const semanticFixtures = fixtureFiles("semantic");
 
 describe("schemas", () => {
-  it("registers all thirteen schemas", () => {
-    expect(schemaNames).toHaveLength(13);
+  it("registers all fourteen schemas", () => {
+    expect(schemaNames).toHaveLength(14);
     for (const name of schemaNames) {
       expect(validator(name)).toBeTypeOf("function");
     }

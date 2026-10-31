@@ -80,6 +80,10 @@ import {
   type TerminalKind,
 } from "../editor/subsystemPorts";
 import type { CatalogIndex } from "../library/catalogIndex";
+import type { ClipboardEnvelope } from "../contracts/clipboard";
+import type { LibraryLookup } from "../clipboard/dependencies";
+import { buildEnvelope, emptyEnvelope, isEmptyEnvelope } from "../clipboard/envelope";
+import { preparePaste, type ClipContent, type PasteRewrites } from "../clipboard/pastePlan";
 import { probeSignalOptions } from "../probe/probeSignals";
 import {
   createConnection,
@@ -131,13 +135,32 @@ export interface HistoryEntry {
   inversePatches: Patch[];
 }
 
-export interface Clipboard {
-  nodes: ModelNode[];
-  connections: ModelConnection[];
-  /** Sticky notes (diagram.annotations) of the copied selection. */
-  annotations: ModelAnnotation[];
-  /** Background shapes (diagram.shapes) of the copied selection, back to front. */
-  shapes: ModelShape[];
+/**
+ * The in-window copy: the same envelope the system clipboard gets (contract
+ * `clipboard.schema.json`), kept as the fallback when a browser gives the page no
+ * clipboard data. It survives switching models, like the system clipboard.
+ */
+export type Clipboard = ClipboardEnvelope;
+
+export interface PasteClipOptions {
+  /** Where the centre of the pasted group goes; null or absent keeps the copied positions plus `offset`. */
+  at?: ModelPoint | null;
+  /** Extra shift in flow units (default: PASTE_OFFSET when `at` is null, else 0). */
+  offset?: number;
+  /** Library, global and data-file rewrites decided by the dependency resolution. */
+  rewrites?: PasteRewrites;
+  /** Global parameters to append to the model in the same undo step. */
+  addGlobals?: readonly ModelGlobalParameter[];
+}
+
+export interface PasteClipResult {
+  nodes: number;
+  connections: number;
+  annotations: number;
+  shapes: number;
+  /** Connections of the clip that were dropped because an end was not copied. */
+  droppedConnections: number;
+  globals: string[];
 }
 
 export interface ConnectResult {
@@ -220,8 +243,18 @@ export interface DocumentActions {
   deleteSelection: () => void;
   rotateSelection: () => void;
   flipSelection: () => void;
-  copySelection: () => void;
+  /**
+   * Copy the selection into the in-window clipboard and return its envelope (null
+   * when nothing copyable is selected). `library` supplies project block sources.
+   */
+  copySelection: (library?: LibraryLookup) => ClipboardEnvelope | null;
+  /** Paste the in-window clipboard with the paste offset (no dependency handling). */
   paste: () => void;
+  /**
+   * Paste a clip into the active diagram as one undo step: fresh ids, unique names,
+   * placement, rewrites and added globals. Null when nothing was pasted.
+   */
+  pasteClip: (clip: ClipContent, options?: PasteClipOptions) => PasteClipResult | null;
   reverseConnection: (id: string) => void;
   /** Replace a connection's ordered waypoints (one undo entry). */
   setConnectionRoute: (id: string, route: readonly ModelPoint[]) => void;
@@ -446,7 +479,7 @@ export interface DocumentState {
 export type DocumentStore = DocumentState & DocumentActions;
 
 const EMPTY_SELECTION: Selection = { nodes: [], connections: [] };
-const EMPTY_CLIPBOARD: Clipboard = { nodes: [], connections: [], annotations: [], shapes: [] };
+const EMPTY_CLIPBOARD: Clipboard = emptyEnvelope();
 
 const INITIAL_STATE: DocumentState = {
   project: null,
@@ -702,7 +735,7 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         future: [],
         selection: EMPTY_SELECTION,
         activePath: [],
-        clipboard: EMPTY_CLIPBOARD,
+        // The clipboard is kept: copy in one model, paste in another.
         gestureKey: null,
         lastHistKey: null,
       }),
@@ -1049,125 +1082,93 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       });
     },
 
-    copySelection: () => {
-      const diagram = currentDiagram();
-      const { selection } = get();
-      if (diagram === null || selection.nodes.length === 0) {
-        return;
+    copySelection: (library) => {
+      const { doc, selection, activePath, project, modelName } = get();
+      if (doc === null || selection.nodes.length === 0) {
+        return null;
       }
-      const selected = new Set(selection.nodes);
-      const nodes = diagram.nodes
-        .filter((node) => selected.has(node.id))
-        .map((node) => clone(node));
-      const nodeIds = new Set(nodes.map((node) => node.id));
-      const connections = diagram.connections
-        .filter(
-          (connection) =>
-            nodeIds.has(connection.from.node) && nodeIds.has(connection.to.node),
-        )
-        .map((connection) => clone(connection));
-      const noteIds = new Set(selectedNoteIds(selection.nodes));
-      const annotations = (diagram.annotations ?? [])
-        .filter((note) => noteIds.has(note.id))
-        .map((note) => clone(note));
-      // Shapes keep their z order (the document order) in the clipboard.
-      const shapeIds = new Set(selectedShapeIds(selection.nodes));
-      const shapes = (diagram.shapes ?? [])
-        .filter((shape) => shapeIds.has(shape.id))
-        .map((shape) => clone(shape));
-      if (nodes.length === 0 && annotations.length === 0 && shapes.length === 0) {
-        return;
+      const envelope = buildEnvelope({
+        doc,
+        path: activePath,
+        selection: selection.nodes,
+        project,
+        model: modelName,
+        library,
+      });
+      if (envelope === null) {
+        return null;
       }
-      set({ clipboard: { nodes, connections, annotations, shapes } });
+      set({ clipboard: envelope });
+      return envelope;
     },
 
     paste: () => {
+      get().pasteClip(get().clipboard);
+    },
+
+    pasteClip: (clip, options = {}) => {
       const doc = get().doc;
       const diagram = currentDiagram();
-      const { clipboard } = get();
-      if (doc === null || diagram === null) {
-        return;
+      if (doc === null || diagram === null || isEmptyEnvelope(clip)) {
+        return null;
       }
-      const clipNotes = clipboard.annotations ?? [];
-      const clipShapes = clipboard.shapes ?? [];
-      if (clipboard.nodes.length === 0 && clipNotes.length === 0 && clipShapes.length === 0) {
-        return;
-      }
-      // Pasted shapes land in front of the other shapes, unlocked.
-      const pastedShapes = copiedShapes(clipShapes, diagram.shapes ?? []);
-      const existingNoteIds = new Set((diagram.annotations ?? []).map((note) => note.id));
-      const pastedNotes: ModelAnnotation[] = clipNotes.map((note) => {
-        const id = nextId("a", existingNoteIds);
-        existingNoteIds.add(id);
-        return {
-          ...clone(note),
-          id,
-          x: Math.round((note.x + PASTE_OFFSET) * 10) / 10,
-          y: Math.round((note.y + PASTE_OFFSET) * 10) / 10,
-        };
+      const at = options.at ?? null;
+      const prepared = preparePaste({
+        clip,
+        diagram,
+        nodeIds: allNodeIds(doc),
+        connectionIds: allConnectionIds(doc),
+        at,
+        offset: options.offset ?? (at === null ? PASTE_OFFSET : 0),
+        rewrites: options.rewrites,
       });
-      const existingNodeIds = new Set(allNodeIds(doc));
-      const existingConnectionIds = new Set(allConnectionIds(doc));
-      const existingNames = new Set(diagram.nodes.map((node) => node.name));
-      const idMap = new Map<string, string>();
-      const pastedNodes: ModelNode[] = [];
-
-      for (const node of clipboard.nodes) {
-        const id = nextId("n", existingNodeIds);
-        existingNodeIds.add(id);
-        idMap.set(node.id, id);
-        const name = uniqueName(node.name, existingNames);
-        existingNames.add(name);
-        pastedNodes.push({
-          ...clone(node),
-          id,
-          name,
-          position: {
-            x: Math.round((node.position.x + PASTE_OFFSET) * 10) / 10,
-            y: Math.round((node.position.y + PASTE_OFFSET) * 10) / 10,
-          },
-        });
-      }
-
-      const pastedConnections: ModelConnection[] = [];
-      for (const connection of clipboard.connections) {
-        const from = idMap.get(connection.from.node);
-        const to = idMap.get(connection.to.node);
-        if (from === undefined || to === undefined) {
-          continue;
+      const addGlobals = (options.addGlobals ?? []).map((entry) => clone(entry));
+      const path = [...get().activePath];
+      // One recipe, so the elements and the added globals are one undo step.
+      commit((draft) => {
+        const target = activeDiagram(draft, path);
+        if (target === null) {
+          return;
         }
-        const id = nextId("c", existingConnectionIds);
-        existingConnectionIds.add(id);
-        pastedConnections.push({
-          ...clone(connection),
-          id,
-          from: { ...clone(connection.from), node: from },
-          to: { ...clone(connection.to), node: to },
-        });
-      }
-
-      commitActive((draft) => {
-        draft.nodes.push(...pastedNodes);
-        draft.connections.push(...pastedConnections);
-        if (pastedNotes.length > 0) {
-          draft.annotations ??= [];
-          draft.annotations.push(...pastedNotes);
+        target.nodes.push(...prepared.nodes);
+        target.connections.push(...prepared.connections);
+        if (prepared.annotations.length > 0) {
+          target.annotations ??= [];
+          target.annotations.push(...prepared.annotations);
         }
-        if (pastedShapes.length > 0) {
-          draft.shapes ??= [];
-          draft.shapes.push(...pastedShapes);
+        if (prepared.shapes.length > 0) {
+          target.shapes ??= [];
+          target.shapes.push(...prepared.shapes);
+        }
+        if (addGlobals.length > 0) {
+          draft.parameters ??= [];
+          const taken = new Set(draft.parameters.map((entry) => entry.name));
+          for (const entry of addGlobals) {
+            if (!taken.has(entry.name)) {
+              draft.parameters.push(entry);
+              taken.add(entry.name);
+            }
+          }
         }
       });
       set({
         selection: {
           nodes: [
-            ...pastedNodes.map((node) => node.id),
-            ...pastedNotes.map((note) => noteFlowId(note.id)),
-            ...pastedShapes.map((shape) => shapeFlowId(shape.id)),
+            ...prepared.nodes.map((node) => node.id),
+            ...prepared.annotations.map((note) => noteFlowId(note.id)),
+            ...prepared.shapes.map((shape) => shapeFlowId(shape.id)),
           ],
           connections: [],
         },
       });
+      return {
+        nodes: prepared.nodes.length,
+        connections: prepared.connections.length,
+        annotations: prepared.annotations.length,
+        shapes: prepared.shapes.length,
+        droppedConnections: clip.connections.length - prepared.connections.length,
+        globals: addGlobals.map((entry) => entry.name),
+      };
     },
 
     reverseConnection: (id) => {

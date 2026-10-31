@@ -44,7 +44,8 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     entries: [
       { keys: [["Ctrl", "Z"]], description: "Undo" },
       { keys: [["Ctrl", "Y"], ["Ctrl", "Shift", "Z"]], description: "Redo" },
-      { keys: [["Ctrl", "C"], ["Ctrl", "V"]], description: "Copy and paste the selection" },
+      { keys: [["Ctrl", "C"], ["Ctrl", "V"]], description: "Copy and paste the selection (also into another model, window or project)" },
+      { keys: [["Ctrl", "X"]], description: "Cut the selection" },
       { keys: [["Del"]], description: "Delete the selection" },
       { keys: [["R"]], description: "Rotate the selection" },
       { keys: [["F"]], description: "Flip the selection" },

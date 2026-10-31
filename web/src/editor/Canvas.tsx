@@ -128,6 +128,10 @@ import { AddShapeMenuItems, addShapeAt, ShapeMenuItems } from "./ShapeMenu";
 import { isShapeId, requestShapeLabelFocus, SHAPE_DEFAULT_SIZE, shapeIdOf } from "./shapes";
 import { registerShapeAdder } from "./shapeRequests";
 import { dropLibraryPayload } from "./libraryDrop";
+import { createCanvasClipboard, editableTarget, imagePasteTarget } from "../clipboard/canvasClipboard";
+import { sameSource } from "../clipboard/envelope";
+import { usePasteUiStore } from "../clipboard/pasteUi";
+import { PasteConflictDialog, PasteNoticePanel } from "../clipboard/PasteDialog";
 import "./editor.css";
 
 // The probe plot pulls in uPlot; it loads when a diagram has a probe (code splitting, W5.4).
@@ -236,30 +240,6 @@ const ARROW_PAN: Record<string, [number, number]> = {
 };
 const PAN_STEP = 40;
 const PAN_STEP_LARGE = 200;
-
-function editableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-  const tag = target.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    target.isContentEditable
-  );
-}
-
-/** Inside the inspector's image paste area, which handles Ctrl+V itself. */
-function imagePasteTarget(target: EventTarget | null): boolean {
-  return target instanceof Element && target.closest("[data-node-image-paste]") !== null;
-}
-
-/**
- * How long Ctrl+V on a selected subsystem waits for the browser's `paste` event before it
- * falls back to the node paste (a browser that fires no paste event outside text fields).
- */
-const PASTE_EVENT_WAIT_MS = 300;
 
 /** The id of the only selected element when it is a subsystem node, else null. */
 function soleSelectedSubsystem(): string | null {
@@ -652,6 +632,44 @@ function CanvasInner() {
   const requestDeleteRef = useRef(requestDelete);
   requestDeleteRef.current = requestDelete;
 
+  // Copy, cut and paste through the system clipboard; one instance per canvas.
+  const [canvasClipboard] = useState(() =>
+    createCanvasClipboard({
+      canvas: () => canvasRef.current,
+      anchor: (source) => {
+        const { screenToFlowPosition: toFlow } = viewportApi.current;
+        // At the pointer when it is over the canvas.
+        if (lastPointer.current !== null) {
+          return toFlow(lastPointer.current, { snapToGrid: false });
+        }
+        // Back into the diagram it came from: the copied layout plus the paste offset.
+        const state = useDocumentStore.getState();
+        if (
+          source !== null &&
+          sameSource(source, { project: state.project, model: state.modelName, path: state.activePath })
+        ) {
+          return null;
+        }
+        // Anywhere else: the middle of the visible canvas.
+        const bounds = canvasRef.current?.getBoundingClientRect();
+        return bounds === undefined
+          ? null
+          : toFlow({ x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 }, { snapToGrid: false });
+      },
+      deleteSelection: () => requestDeleteRef.current(),
+      soleSubsystem: soleSelectedSubsystem,
+      pasteImage: (nodeId, data) => {
+        const load = imageFromDataTransfer(data);
+        if (load === null) {
+          return false;
+        }
+        void applyNodeImage(nodeId, load);
+        return true;
+      },
+    }),
+  );
+  const clipboardRef = useRef(canvasClipboard);
+
   /**
    * Offer the compatible elements at an empty release point. The list is
    * already ranked by `suggestTargets`; picking one adds it and connects the
@@ -985,30 +1003,17 @@ function CanvasInner() {
 
   // --------------------------------------------------------------- shortcuts
   useEffect(() => {
-    // Ctrl+V on a selected subsystem: the browser's paste event decides. An image on the
-    // clipboard becomes the subsystem's image (ui.image); anything else is the node paste.
-    let pendingImagePaste: { nodeId: string; timer: number } | null = null;
-    const onPaste = (event: ClipboardEvent): void => {
-      const pending = pendingImagePaste;
-      if (pending === null) {
-        return;
-      }
-      pendingImagePaste = null;
-      window.clearTimeout(pending.timer);
-      const load = imageFromDataTransfer(event.clipboardData);
-      if (load === null) {
-        useDocumentStore.getState().paste();
-        return;
-      }
-      event.preventDefault();
-      void applyNodeImage(pending.nodeId, load);
-    };
+    // Copy, cut and paste use the browser's clipboard events (src/clipboard/canvasClipboard.ts):
+    // the elements reach the system clipboard, so they paste into other models, windows and
+    // projects. Ctrl+V on a selected subsystem with an image on the clipboard sets its image.
+    const clip = clipboardRef.current;
+    const uninstall = clip.install();
     const onKeyDown = (event: KeyboardEvent): void => {
       if (editableTarget(event.target) || imagePasteTarget(event.target)) {
         return;
       }
-      // The port-delete confirmation is modal.
-      if (usePortDeleteStore.getState().request !== null) {
+      // The port-delete confirmation and the paste conflict dialog are modal.
+      if (usePortDeleteStore.getState().request !== null || usePasteUiStore.getState().dialog !== null) {
         return;
       }
       const store = useDocumentStore.getState();
@@ -1038,31 +1043,8 @@ function CanvasInner() {
         store.redo();
         return;
       }
-      if (mod && key === "c") {
-        if (store.selection.nodes.length > 0) {
-          event.preventDefault();
-          store.copySelection();
-        }
-        return;
-      }
-      if (mod && key === "v") {
-        const subsystem = soleSelectedSubsystem();
-        if (subsystem !== null) {
-          // No preventDefault: that would cancel the paste event and its clipboard data.
-          if (pendingImagePaste !== null) {
-            window.clearTimeout(pendingImagePaste.timer);
-          }
-          pendingImagePaste = {
-            nodeId: subsystem,
-            timer: window.setTimeout(() => {
-              pendingImagePaste = null;
-              useDocumentStore.getState().paste();
-            }, PASTE_EVENT_WAIT_MS),
-          };
-          return;
-        }
-        event.preventDefault();
-        store.paste();
+      // No preventDefault for Ctrl+C/X/V: that would cancel the clipboard events.
+      if (mod && !event.altKey && !event.shiftKey && clip.keydown(key)) {
         return;
       }
       if (key === "delete" || key === "backspace") {
@@ -1121,13 +1103,9 @@ function CanvasInner() {
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    window.addEventListener("paste", onPaste);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      window.removeEventListener("paste", onPaste);
-      if (pendingImagePaste !== null) {
-        window.clearTimeout(pendingImagePaste.timer);
-      }
+      uninstall();
     };
   }, []);
 
@@ -2228,6 +2206,7 @@ function CanvasInner() {
             </p>
           </div>
         ) : null}
+        <PasteNoticePanel />
       </div>
 
       <HoverReadout canvasRef={canvasRef} model={view} pathPrefix={pathPrefix} />
@@ -2246,6 +2225,7 @@ function CanvasInner() {
       <PortDeleteConfirm
         onRefused={(message) => showTooltip({ x: window.innerWidth / 2, y: 120 }, message)}
       />
+      <PasteConflictDialog />
 
       {menu !== null ? (
         <div
@@ -2366,6 +2346,21 @@ function CanvasInner() {
           ) : null}
           {menu.kind === "pane" ? (
             <>
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="canvas-paste"
+                title="Paste copied blocks, notes and shapes here (from this or another model, window or project)"
+                onClick={() =>
+                  runMenuAction(() => {
+                    if (menu.flow !== undefined) {
+                      void canvasClipboard.pasteFromMenu(menu.flow);
+                    }
+                  })
+                }
+              >
+                Paste (Ctrl+V)
+              </button>
               <PaneMenuItems
                 onAddNote={() =>
                   runMenuAction(() => {
@@ -2431,6 +2426,15 @@ function CanvasInner() {
                   Expose as subsystem port
                 </button>
               ) : null}
+              <button
+                type="button"
+                role="menuitem"
+                data-testid="copy-selection"
+                title="Copy the selection; paste it here, in another model, window or project"
+                onClick={() => runMenuAction(() => void canvasClipboard.copyFromMenu())}
+              >
+                Copy (Ctrl+C)
+              </button>
               <button
                 type="button"
                 role="menuitem"

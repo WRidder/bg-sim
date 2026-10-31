@@ -267,3 +267,25 @@ export async function publishProjectBlock(
     catalogError,
   };
 }
+
+/**
+ * The source of `library/<name>.jl` of `project`, or null when the project has no
+ * such block (404); throws with a user-facing message on any other failure.
+ */
+export async function readProjectLibrarySource(project: string, name: string): Promise<string | null> {
+  const url = `${API_BASE}/api/projects/${encodeURIComponent(project)}/library/${encodeURIComponent(name)}`;
+  let response: Response;
+  try {
+    response = await fetch(url, { headers: { accept: "text/plain" } });
+  } catch (cause) {
+    throw new Error(`Cannot reach the bg-sim backend at ${url}. Is it running?`, { cause });
+  }
+  const text = await response.text();
+  if (response.status === 404) {
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`The library block ${name} could not be read: ${detailFrom(text, response.status)}`);
+  }
+  return text;
+}

@@ -260,6 +260,42 @@ class DomainVariable(BaseModel):
     unit: str | None
 
 
+class ClipboardSource(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    project: str | None
+    model: str | None
+    path: list[str] = Field(
+        ...,
+        description="Subsystem node ids from the root to the copied diagram level (the editor's activePath).",
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ClipboardLibraryBlock(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: constr(pattern=r'^[A-Za-z_][A-Za-z0-9_]*$')
+    source: str | None = Field(
+        None,
+        description='The block source; absent when the copying editor did not have it (the paste then reads it from the source project).',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ClipboardOmitted(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    bindings: conint(ge=0) | None = None
+    probes: conint(ge=0) | None = None
+    dashboardCards: conint(ge=0) | None = None
+    plots: conint(ge=0) | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class BreakpointResolved(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -1813,6 +1849,29 @@ class ScalarDomain(BaseModel):
     size: Literal[1]
 
 
+class ClipboardDependencies(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    libraryBlocks: list[ClipboardLibraryBlock] = Field(
+        ...,
+        description='Project library blocks (project:<Name>) used by the copied nodes, and the project blocks their sources instantiate.',
+    )
+    globals: list[ModelGlobalParameter] = Field(
+        ...,
+        description='Global parameters read by the copied params, starts and constants, with every global they depend on.',
+    )
+    assets: list[constr(pattern=r'^[0-9a-f]{12}\.(?:png|jpg|gif|webp|svg)$')] = Field(
+        ...,
+        description='Docs images (assets/<hash>.<ext> of the source model) that copied sticky notes show.',
+    )
+    dataFiles: list[constr(pattern=r'^[A-Za-z0-9_.-]+\.[Cc][Ss][Vv]$')] = Field(
+        ...,
+        description="CSV files of the source project's data/ folder that copied CsvSource nodes read.",
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class Breakpoint(
     RootModel[
         LineBreakpoint
@@ -3024,6 +3083,33 @@ class DebugSetBreakpointsResponse(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ClipboardEnvelope(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    format: Literal['bgsim-clipboard']
+    version: Literal[1] = Field(
+        ..., description='Envelope version. A reader refuses versions it does not know.'
+    )
+    id: constr(min_length=1, max_length=64) | None = Field(
+        None,
+        description='Random id of one copy; repeated pastes of the same copy cascade.',
+    )
+    source: ClipboardSource
+    nodes: list[ModelNode]
+    connections: list[ModelConnection] = Field(
+        ...,
+        description='Only connections whose two ends are copied nodes; a reader drops any other.',
+    )
+    annotations: list[ModelAnnotation]
+    shapes: list[ModelShape] = Field(
+        ..., description='Back to front, like diagram.shapes.'
+    )
+    dependencies: ClipboardDependencies
+    omitted: ClipboardOmitted | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class ExportRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3333,6 +3419,7 @@ class Contracts(
     RootModel[
         Bindings
         | Catalog
+        | ClipboardEnvelope
         | Debug
         | Diagnostics
         | Docs
@@ -3349,6 +3436,7 @@ class Contracts(
     root: (
         Bindings
         | Catalog
+        | ClipboardEnvelope
         | Debug
         | Diagnostics
         | Docs
@@ -3368,6 +3456,7 @@ class Contracts(
 
 
 DocsPage.model_rebuild()
+ClipboardEnvelope.model_rebuild()
 ExportRequest.model_rebuild()
 Model.model_rebuild()
 ModelDiagram.model_rebuild()

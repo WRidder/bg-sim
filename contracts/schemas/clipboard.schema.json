@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/clipboard.schema.json",
+  "title": "ClipboardEnvelope",
+  "description": "What the diagram editor puts on the system clipboard (text/plain JSON) when elements are copied: the copied nodes, the connections between them, sticky notes and shapes of one diagram level, plus what a paste into another model or project needs (library block sources, global parameters, docs images, CSV data files). A paste refuses an unknown format or version.",
+  "type": "object",
+  "required": [
+    "format",
+    "version",
+    "source",
+    "nodes",
+    "connections",
+    "annotations",
+    "shapes",
+    "dependencies"
+  ],
+  "properties": {
+    "format": { "const": "bgsim-clipboard" },
+    "version": {
+      "const": 1,
+      "description": "Envelope version. A reader refuses versions it does not know."
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Random id of one copy; repeated pastes of the same copy cascade."
+    },
+    "source": { "$ref": "#/$defs/source" },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "https://bgsim.local/schemas/model.schema.json#/$defs/node" }
+    },
+    "connections": {
+      "type": "array",
+      "items": { "$ref": "https://bgsim.local/schemas/model.schema.json#/$defs/connection" },
+      "description": "Only connections whose two ends are copied nodes; a reader drops any other."
+    },
+    "annotations": {
+      "type": "array",
+      "items": { "$ref": "https://bgsim.local/schemas/model.schema.json#/$defs/annotation" }
+    },
+    "shapes": {
+      "type": "array",
+      "items": { "$ref": "https://bgsim.local/schemas/model.schema.json#/$defs/shape" },
+      "description": "Back to front, like diagram.shapes."
+    },
+    "dependencies": { "$ref": "#/$defs/dependencies" },
+    "omitted": { "$ref": "#/$defs/omitted" },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "source": {
+      "title": "ClipboardSource",
+      "description": "Where the copy was made. project and model are null when no saved model was open.",
+      "type": "object",
+      "required": ["project", "model", "path"],
+      "properties": {
+        "project": { "type": ["string", "null"] },
+        "model": { "type": ["string", "null"] },
+        "path": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Subsystem node ids from the root to the copied diagram level (the editor's activePath)."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "title": "ClipboardDependencies",
+      "description": "What the copied elements use from their model and project, collected recursively through subsystems.",
+      "type": "object",
+      "required": ["libraryBlocks", "globals", "assets", "dataFiles"],
+      "properties": {
+        "libraryBlocks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/libraryBlock" },
+          "description": "Project library blocks (project:<Name>) used by the copied nodes, and the project blocks their sources instantiate."
+        },
+        "globals": {
+          "type": "array",
+          "items": { "$ref": "https://bgsim.local/schemas/model.schema.json#/$defs/globalParameter" },
+          "description": "Global parameters read by the copied params, starts and constants, with every global they depend on."
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{12}\\.(?:png|jpg|gif|webp|svg)$"
+          },
+          "description": "Docs images (assets/<hash>.<ext> of the source model) that copied sticky notes show."
+        },
+        "dataFiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]+\\.[Cc][Ss][Vv]$"
+          },
+          "description": "CSV files of the source project's data/ folder that copied CsvSource nodes read."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "libraryBlock": {
+      "title": "ClipboardLibraryBlock",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "source": {
+          "type": "string",
+          "description": "The block source; absent when the copying editor did not have it (the paste then reads it from the source project)."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "omitted": {
+      "title": "ClipboardOmitted",
+      "description": "How many model-level items refer to the copied elements and are not carried along.",
+      "type": "object",
+      "properties": {
+        "bindings": { "type": "integer", "minimum": 0 },
+        "probes": { "type": "integer", "minimum": 0 },
+        "dashboardCards": { "type": "integer", "minimum": 0 },
+        "plots": { "type": "integer", "minimum": 0 },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "$comment": "A subsystem with a project block, a CsvSource, a note and a shape, copied from inside a subsystem; the dependencies carry the library source (one without it), the global closure, a docs image and a CSV file.",
+  "format": "bgsim-clipboard",
+  "version": 1,
+  "source": { "project": "lab", "model": "rig", "path": ["n2"] },
+  "nodes": [
+    {
+      "id": "n7",
+      "name": "Drive",
+      "block": {
+        "subsystem": {
+          "ports": [
+            {
+              "name": "shaft",
+              "kind": "power",
+              "domain": "Rotation",
+              "size": [1],
+              "node": "n8",
+              "port": "a"
+            }
+          ],
+          "diagram": {
+            "nodes": [
+              {
+                "id": "n8",
+                "name": "Motor",
+                "block": { "ref": "project:MyMotor" },
+                "position": { "x": 0, "y": 0 },
+                "params": { "k": "k_motor" }
+              },
+              {
+                "id": "n9",
+                "name": "Profile",
+                "block": { "ref": "stdlib:sources/CsvSource" },
+                "position": { "x": -160, "y": 0 },
+                "constants": { "file": "data/profile.csv" }
+              }
+            ],
+            "connections": [],
+            "annotations": [
+              {
+                "id": "a1",
+                "kind": "text",
+                "text": "See ![wiring](assets/0123456789ab.png)",
+                "x": 0,
+                "y": 120,
+                "w": 200,
+                "h": 80
+              }
+            ]
+          }
+        }
+      },
+      "position": { "x": 240, "y": 160 },
+      "ui": { "showLabel": true, "color": null }
+    },
+    {
+      "id": "n10",
+      "name": "Load",
+      "block": { "ref": "stdlib:rotation/Inertia" },
+      "position": { "x": 420, "y": 160 },
+      "params": { "J": "2*J0" }
+    }
+  ],
+  "connections": [
+    {
+      "id": "c3",
+      "kind": "bond",
+      "from": { "node": "n7", "port": "shaft" },
+      "to": { "node": "n10", "port": "a" },
+      "route": [{ "x": 330, "y": 160 }]
+    }
+  ],
+  "annotations": [
+    { "id": "a2", "kind": "text", "text": "Drive train", "x": 200, "y": 40, "w": 160, "h": 60, "color": "blue" }
+  ],
+  "shapes": [
+    { "id": "s1", "kind": "rectangle", "x": 180, "y": 100, "w": 320, "h": 160, "stroke": "grey" }
+  ],
+  "dependencies": {
+    "libraryBlocks": [
+      {
+        "name": "MyMotor",
+        "source": "@block MyMotor begin\n    @ports a::Power{Rotation}\n    @components begin\n        g = MyGear(n = 3)\n    end\nend\n"
+      },
+      { "name": "MyGear" }
+    ],
+    "globals": [
+      { "name": "k_motor", "value": "0.1*J0", "unit": "N*m/A" },
+      { "name": "J0", "value": "0.002", "unit": "kg*m^2", "description": "Rotor inertia" }
+    ],
+    "assets": ["0123456789ab.png"],
+    "dataFiles": ["profile.csv"]
+  },
+  "omitted": { "bindings": 1, "probes": 0, "dashboardCards": 2, "plots": 0 }
+}
