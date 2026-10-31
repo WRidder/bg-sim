@@ -1131,6 +1131,8 @@ export function domainColor(domain: DomainName): string {
       return "var(--domain-rotation)";
     case "Hydraulic":
       return "var(--domain-hydraulic)";
+    case "Thermal":
+      return "var(--domain-thermal)";
     case "Planar":
       return "var(--domain-planar)";
     case "Spatial":
@@ -1166,5 +1168,6 @@ export const DOMAIN_LEGEND: readonly { domain: DomainName; label: string }[] = [
   { domain: "Translation", label: "Translation" },
   { domain: "Rotation", label: "Rotation" },
   { domain: "Hydraulic", label: "Hydraulic" },
+  { domain: "Thermal", label: "Thermal" },
   { domain: "Generic", label: "Generic" },
 ];

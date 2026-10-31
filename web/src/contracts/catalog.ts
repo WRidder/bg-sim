@@ -4,7 +4,8 @@
 export type ValueType = "Real" | "Int" | "Bool";
 export type ValueType1 = "Real" | "Int" | "Bool";
 export type ValueType2 = "Real" | "Int" | "Bool";
-export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
+export type DomainName =
+  "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Thermal" | "Generic" | "Planar" | "Spatial";
 export type ValueType3 = "Real" | "Int" | "Bool";
 /**
  * State-selection hint (spec: state = :prefer / :avoid), or null.
@@ -27,9 +28,9 @@ export type ModelDimension = 2 | 3;
  */
 export type CatalogDomain = Domain;
 export type Domain = PlanarDomain | SpatialDomain | ScalarDomain;
-export type DomainName1 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic";
+export type DomainName1 = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Thermal" | "Generic";
 /**
- * Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted.
+ * Which port field is the across variable (D8): e for Electrical, Hydraulic and Thermal, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted.
  */
 export type AcrossField = "e" | "f" | null;
 

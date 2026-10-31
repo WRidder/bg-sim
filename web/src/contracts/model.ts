@@ -13,7 +13,8 @@ export type ModelSubsystemPort = ModelSubsystemSignalPort | ModelSubsystemPowerP
 export type SignalDirection = "input" | "output";
 export type ValueType = "Real" | "Int" | "Bool";
 export type ModelSubsystemPowerPort = SubsystemPowerPort;
-export type DomainName = "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Generic" | "Planar" | "Spatial";
+export type DomainName =
+  "Electrical" | "Translation" | "Rotation" | "Hydraulic" | "Thermal" | "Generic" | "Planar" | "Spatial";
 /**
  * Three unit strings, one per component (Planar).
  *

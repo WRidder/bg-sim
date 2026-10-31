@@ -13,6 +13,7 @@ const DOMAIN_LETTER: Record<DomainName, string> = {
   Translation: "T",
   Rotation: "R",
   Hydraulic: "H",
+  Thermal: "Th",
   Generic: "G",
   Planar: "P",
   Spatial: "S",

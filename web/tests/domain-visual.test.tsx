@@ -256,9 +256,13 @@ describe("canvas legend", () => {
       "Translation",
       "Rotation",
       "Hydraulic",
+      "Thermal",
       "Generic",
       "Mechanics",
     ]);
+    expect(LEGEND_DOMAINS.find((entry) => entry.id === "Thermal")?.token).toBe(
+      "var(--domain-thermal)",
+    );
     expect(LEGEND_DOMAINS.find((entry) => entry.id === "Mechanics")?.token).toBe(
       "var(--domain-mechanics)",
     );
@@ -316,6 +320,9 @@ describe("canvas legend", () => {
     );
     expect(within(legend).getByTestId("legend-domain-Mechanics").textContent).toContain(
       "Mechanics",
+    );
+    expect(within(legend).getByTestId("legend-domain-Thermal").textContent).toContain(
+      "Thermal",
     );
     // Every key is keyboard reachable (plan 7.4 accessibility).
     for (const item of legend.querySelectorAll(".editor-legend__item")) {

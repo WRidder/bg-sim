@@ -348,3 +348,6 @@ include("test_export_tunables.jl")
 
 # The signal sources (Sawtooth, Triangle, Trapezoid, RepeatingTable, ...) in the C export.
 include("test_export_sources.jl")
+
+# The Thermal domain (heated resistor, convection, radiation) in the C export.
+include("test_export_thermal.jl")

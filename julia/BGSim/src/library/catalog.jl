@@ -34,6 +34,7 @@ const GROUPS = (
     (dir = "translation", name = "Translation", icon_prefix = "mech"),
     (dir = "rotation", name = "Rotation", icon_prefix = "rot"),
     (dir = "hydraulic", name = "Hydraulic", icon_prefix = "hyd"),
+    (dir = "thermal", name = "Thermal", icon_prefix = "th"),
     (dir = "converters", name = "Converters and sensors", icon_prefix = "conv"),
     (dir = "multibond", name = "Multibond", icon_prefix = "mb"),
     (dir = "planar", name = "Planar mechanics", icon_prefix = "pl"),
@@ -98,6 +99,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     ),
     "stdlib:bondgraph/R" => (
         description = "Resistive element; free causality.", icon = "bg-r",
+    ),
+    "stdlib:bondgraph/RS" => (
+        description = "Resistive source: a resistor whose dissipated power leaves as heat flow on a Thermal port.",
+        icon = "bg-rs",
     ),
     "stdlib:bondgraph/Se" => (
         description = "Effort source; imposes the effort on its bond.", icon = "bg-se",
@@ -578,6 +583,62 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Seeded uniform noise (random) between y_min and y_max on a fixed sample clock; bit for bit repeatable, also in exported code.",
         icon = "src-uniform-noise",
     ),
+    "stdlib:thermal/BodyRadiation" => (
+        description = "Grey-body radiation between two surfaces: Q = epsilon*sigma*A*(Ta^4 - Tb^4).",
+        icon = "th-radiation",
+    ),
+    "stdlib:thermal/Convection" => (
+        description = "Convective heat transfer from a solid to a fluid: Q = h*A*(T_solid - T_fluid).",
+        icon = "th-convection",
+    ),
+    "stdlib:thermal/DCMotorThermal" => (
+        description = "DC motor whose copper loss heats a Thermal winding port; R follows the winding temperature.",
+        icon = "th-dc-motor",
+    ),
+    "stdlib:thermal/FixedHeatFlow" => (
+        description = "Constant heat flow Q injected into the network at a.",
+        icon = "th-heat-flow-source",
+    ),
+    "stdlib:thermal/FixedTemperature" => (
+        description = "Holds its port at a fixed absolute temperature T (an ambient or a coolant).",
+        icon = "th-fixed-temperature",
+    ),
+    "stdlib:thermal/HeatCapacitor" => (
+        description = "Heat capacity C = m*c_p; its temperature integrates the net heat flow.",
+        icon = "th-heat-capacitor",
+    ),
+    "stdlib:thermal/HeatFlowSensor" => (
+        description = "Series heat flow sensor; outputs the heat flow from a to b with no temperature drop.",
+        icon = "th-heat-flow-sensor",
+    ),
+    "stdlib:thermal/PrescribedHeatFlow" => (
+        description = "Heat flow source driven by the signal Q [W], injected into the network at a.",
+        icon = "th-prescribed-heat-flow",
+    ),
+    "stdlib:thermal/PrescribedTemperature" => (
+        description = "Temperature source driven by the signal T [K].",
+        icon = "th-prescribed-temperature",
+    ),
+    "stdlib:thermal/ResistorHeated" => (
+        description = "Electrical resistor with a heat port: R = R0*(1 + alpha*(T - T0)), all of v*i leaves as heat.",
+        icon = "th-resistor-heated",
+    ),
+    "stdlib:thermal/TemperatureSensor" => (
+        description = "Temperature sensor; reads the port temperature in K and draws no heat flow.",
+        icon = "th-temperature-sensor",
+    ),
+    "stdlib:thermal/ThermalConductor" => (
+        description = "Thermal conductance G: Q = G*(Ta - Tb).",
+        icon = "th-conductor",
+    ),
+    "stdlib:thermal/ThermalResistor" => (
+        description = "Thermal resistance R: Ta - Tb = R*Q.",
+        icon = "th-resistor",
+    ),
+    "stdlib:thermal/VariableConvection" => (
+        description = "Convection whose heat transfer coefficient h comes from a signal input.",
+        icon = "th-variable-convection",
+    ),
     "stdlib:translation/Damper" => (
         description = "Linear viscous damper between two translation ports.",
         icon = "mech-damper",
@@ -1016,11 +1077,12 @@ end
 """
     DOMAINS
 
-The seven power domains of plan 3.2 and decisions D8/D-MB1: effort and flow names and units,
-which port field is the across variable (`e` for Electrical and Hydraulic, `f` for
+The eight power domains of plan 3.2 and decisions D8/D-MB1: effort and flow names and units,
+which port field is the across variable (`e` for Electrical, Hydraulic and Thermal, `f` for
 Translation, Rotation, Planar and Spatial, `nothing` for Generic until a domain is adopted),
 the port size, and for the multibond domains the authoritative `components` arrays. The order
-is the contract fixture's order.
+is the contract fixture's order; `Thermal` (a pseudo bond domain: temperature and heat flow,
+whose product is not a power) comes last because it was added after the multibond domains.
 """
 const DOMAINS = Any[
     (
@@ -1073,6 +1135,13 @@ const DOMAINS = Any[
         across = "f",
         size = 6,
         components = DOMAIN_COMPONENTS[:Spatial],
+    ),
+    (
+        name = "Thermal",
+        effort = (name = "temperature", unit = "K"),
+        flow = (name = "heat_flow", unit = "W"),
+        across = "e",
+        size = 1,
     ),
 ]
 

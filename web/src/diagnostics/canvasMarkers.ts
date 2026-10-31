@@ -36,6 +36,7 @@ const DOMAIN_TOKENS: Record<DomainName, string> = {
   Translation: "var(--domain-translation)",
   Rotation: "var(--domain-rotation)",
   Hydraulic: "var(--domain-hydraulic)",
+  Thermal: "var(--domain-thermal)",
   Generic: "var(--domain-generic)",
   Planar: "var(--domain-planar)",
   Spatial: "var(--domain-spatial)",

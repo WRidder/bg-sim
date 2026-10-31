@@ -92,7 +92,9 @@ M1_BLOCKS: dict[str, str] = {
     "stdlib:converters/AngleSensor": "AngleSensor",
 }
 
-DOMAIN_NAMES = ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
+DOMAIN_NAMES = [
+    "Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial", "Thermal",
+]
 
 # One instance of every code in the spec's table plus D14's additions, the
 # multibond codes (E007 frame mismatch, E108 invalid inertia parameters,

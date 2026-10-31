@@ -272,7 +272,7 @@
         },
         "domain": {
           "title": "DomainName",
-          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic", "Planar", "Spatial"]
+          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Thermal", "Generic", "Planar", "Spatial"]
         },
         "size": {
           "type": "array",
@@ -396,7 +396,7 @@
             "type": "object",
             "properties": {
               "name": {
-                "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+                "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Thermal", "Generic"]
               }
             },
             "required": ["name"]
@@ -447,7 +447,7 @@
       "properties": {
         "name": {
           "title": "DomainName",
-          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Generic"]
+          "enum": ["Electrical", "Translation", "Rotation", "Hydraulic", "Thermal", "Generic"]
         },
         "effort": { "$ref": "#/$defs/domainVariable" },
         "flow": { "$ref": "#/$defs/domainVariable" },
@@ -455,7 +455,7 @@
           "title": "AcrossField",
           "type": ["string", "null"],
           "enum": ["e", "f", null],
-          "description": "Which port field is the across variable (D8): e for Electrical and Hydraulic, f for Translation and Rotation; null for Generic until a domain is adopted."
+          "description": "Which port field is the across variable (D8): e for Electrical, Hydraulic and Thermal, f for Translation, Rotation, Planar and Spatial; null for Generic until a domain is adopted."
         },
         "size": { "const": 1 }
       },

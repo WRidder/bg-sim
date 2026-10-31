@@ -3,7 +3,7 @@
 # The union-find runs over bond islands: every bond joins its two endpoints, and every
 # junction is the shared endpoint of all its bonds, so the whole connected bond graph falls
 # out as one component. Each component collects the *concrete* domains its ports declare
-# (`Electrical`, `Translation`, `Rotation`, `Hydraulic`):
+# (`Electrical`, `Translation`, `Rotation`, `Hydraulic`, `Thermal`):
 #
 # | concrete domains in the island | result |
 # | --- | --- |
@@ -208,7 +208,7 @@ function _report_w205!(b::Builder, plan::ConnPlan, island::_Island)
             diag(
                 "W205",
                 "bond island has no concrete domain; it is treated as dimensionless";
-                hint = "connect the island to an Electrical, Translation, Rotation or Hydraulic port",
+                hint = "connect the island to an Electrical, Translation, Rotation, Hydraulic or Thermal port",
                 path = path,
                 block = _port_ref(b, island.ports[1]),
                 node = _port_node(b, island.ports[1]),
@@ -222,7 +222,7 @@ function _report_w205!(b::Builder, plan::ConnPlan, island::_Island)
             diag(
                 "W205",
                 "bond island has no concrete domain; it is treated as dimensionless";
-                hint = "connect the island to an Electrical, Translation, Rotation or Hydraulic port",
+                hint = "connect the island to an Electrical, Translation, Rotation, Hydraulic or Thermal port",
                 path = path,
                 node = _junction_node(b, island.junctions[1]),
                 connection = first_bond,
@@ -633,7 +633,10 @@ end
 function _apply_instance_domains!(b::Builder, plan::ConnPlan)
     for st in b.states
         doms = Symbol[]
-        for (name, _) in st.ports
+        for (name, port) in st.ports
+            # Only the Generic ports adopt: a concrete port of a mixed block (the `RS` heat
+            # port) keeps its own domain and does not take part in the adoption.
+            port.domain == :Generic || continue
             adopted = get(plan.port_domains, _portkey(st.path, name), nothing)
             adopted === nothing && continue
             adopted in doms || push!(doms, adopted)

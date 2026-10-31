@@ -14,7 +14,7 @@
 # so unsupported elements can stay in the model as long as they sit outside the scope.
 # Export markers inside the subsystem stay valid; their names gain the subsystem's prefix.
 
-const _SCOPE_DOMAINS = ("Generic", "Electrical", "Translation", "Rotation", "Hydraulic")
+const _SCOPE_DOMAINS = ("Generic", "Electrical", "Translation", "Rotation", "Hydraulic", "Thermal")
 
 _scope_err(message; hint = nothing, path = nothing) =
     diag("E112", message; hint = hint, path = path, scope = "export")
@@ -118,7 +118,7 @@ function scope_document(doc::AbstractDict, path::AbstractString;
             size = get(p, "size", Any[1])
             if !(domain in _SCOPE_DOMAINS) || prod(Int.(size); init = 1) != 1
                 push!(diags, _scope_err("the power port `$pname` ($domain) cannot be an export interface yet";
-                    hint = "only scalar Electrical, Translation, Rotation, Hydraulic or generic bond ports", path = here))
+                    hint = "only scalar Electrical, Translation, Rotation, Hydraulic, Thermal or generic bond ports", path = here))
                 continue
             end
             choice = get(power_inputs, pname, nothing)

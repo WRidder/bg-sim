@@ -130,17 +130,22 @@ end
 
 """    block_domain(pb) -> Symbol
 
-The concrete power domain of a block: the first non-`Generic` `@ports` domain, else
-`:Generic`. The connection pass (J2.5) owns the case of a block that mixes concrete
-domains (E102); the unit checker only needs one domain to adopt the `effort`/`flow`
-pseudo-dimensions (decision D9)."""
+The domain the `effort`/`flow` pseudo-dimensions of a block refer to (decision D9): `:Generic`
+when the block has at least one `Generic` port, else the first concrete `@ports` domain
+(`:Generic` for a block without ports). A block that mixes `Generic` ports with concrete ones
+(the `RS` element: a Generic resistive port plus a `Thermal` heat port) is therefore Generic:
+its pseudo-dimensions follow the island its Generic ports adopt, and its concrete ports keep
+their own units. The connection pass (J2.5) owns the case of a block that mixes concrete
+domains (E102); the unit checker only needs one domain to adopt the pseudo-dimensions."""
 function block_domain(pb::ParsedBlock)::Symbol
+    first_concrete = :Generic
     for p in ports(pb)
         domain = type_domain(decl_type(p))
-        (domain === nothing || domain === :Generic) && continue
-        return domain
+        domain === nothing && continue
+        domain === :Generic && return :Generic
+        first_concrete === :Generic && (first_concrete = domain)
     end
-    return :Generic
+    return first_concrete
 end
 
 """    unit_env(pb::ParsedBlock[, domain::Symbol]) -> UnitEnv

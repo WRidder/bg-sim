@@ -519,8 +519,9 @@ end
 
 """    across_field(domain) / through_field(domain) -> Symbol
 
-Decision D8: Electrical and Hydraulic have `e` as the across variable and `f` as the
-through variable; Translation, Rotation and Planar have `f` across and `e` through."""
+Decision D8: Electrical, Hydraulic and Thermal have `e` as the across variable and `f` as
+the through variable; Translation, Rotation and Planar have `f` across and `e` through.
+Thermal is a pseudo bond domain: `e` is the temperature, `f` the heat flow."""
 function across_field(domain::Symbol)
     return domain in (:Translation, :Rotation, :Planar, :Spatial) ? :f : :e
 end

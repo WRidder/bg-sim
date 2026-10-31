@@ -961,6 +961,78 @@ end
         @test occursin("Rotation", _diag(fm, "E102"; node = "n2").message)
     end
 
+    @testset "Thermal domain: connection rules, adoption and mixed-domain blocks" begin
+        parse_unit = BGSim.Units.parse_unit
+        # A Thermal port never joins another concrete domain, by wire (fixture) or bond.
+        fm = flat_file(joinpath(_REPO, "contracts", "fixtures", "model", "semantic",
+            "model.e102-thermal-electrical.json"))
+        @test _has_code(fm, "E102"; node = "n2", connection = "c1")
+        @test length(_errors(fm)) == 1
+        @test occursin("Thermal", _diag(fm, "E102"; node = "n2").message)
+        @test occursin("Electrical", _diag(fm, "E102"; node = "n2").message)
+        bond = flat(_model("ThermalBond", Any[
+            _node("n1", "Ambient", _ref("stdlib:thermal/FixedTemperature")),
+            _node("n2", "Frame", _ref("stdlib:rotation/FixedShaft")),
+        ], Any[
+            _conn("c1", "bond", "n1", "a", "n2", "a"),
+        ]))
+        @test _has_code(bond, "E102"; connection = "c1")
+
+        # The valid contract fixture: heated resistor, capacity, convection, sensor.
+        ok = flat_file(_fixture("model.thermal.json"))
+        @test isempty(_errors(ok))
+        @test ok.stats.states == 1
+        @test only(v for v in ok.variables if v.id == "Body/a.e").unit == parse_unit("K")
+        @test only(v for v in ok.variables if v.id == "Body/a.f").unit == parse_unit("W")
+        @test only(v for v in ok.variables if v.id == "Heater/heat.f").unit == parse_unit("W")
+        @test only(v for v in ok.variables if v.id == "Heater/p.e").unit == parse_unit("V")
+
+        # A Generic bond graph C on a thermal island adopts Thermal: c in J/K, q in J.
+        cap = flat(_model("ThermalC", Any[
+            _node("n1", "Heat", _ref("stdlib:thermal/FixedHeatFlow")),
+            _node("n2", "C1", _ref("stdlib:bondgraph/C"); params = Dict("c" => "100.0")),
+            _node("n3", "J0", _junction(0)),
+            _node("n4", "Leak", _ref("stdlib:thermal/ThermalConductor")),
+            _node("n5", "Ambient", _ref("stdlib:thermal/FixedTemperature")),
+        ], Any[
+            _conn("c1", "bond", "n3", nothing, "n2", "p"),
+            _conn("c2", "bond", "n1", "a", "n3", nothing),
+            _conn("c3", "bond", "n3", nothing, "n4", "a"),
+            _conn("c4", "wire", "n4", "b", "n5", "a"),
+        ]))
+        @test isempty(_errors(cap))
+        @test !_has_code(cap, "W205")
+        @test only(p for p in cap.parameters if p.id == "C1/c").unit == parse_unit("J/K")
+        @test only(v for v in cap.variables if v.id == "C1/q").unit == parse_unit("J")
+
+        # RS mixes a Generic port with a Thermal one: the Generic port adopts its island's
+        # domain (r in Ohm) while the heat port stays Thermal; no "two domains" E102.
+        rs = flat(_model("RSAdoption", Any[
+            _node("n1", "One", _ref("stdlib:sources/Constant")),
+            _node("n2", "Supply", _ref("stdlib:electrical/VoltageSource")),
+            _node("n3", "Gnd", _ref("stdlib:electrical/Ground")),
+            _node("n4", "Load", _ref("stdlib:bondgraph/RS")),
+            _node("n5", "Mass", _ref("stdlib:thermal/HeatCapacitor")),
+        ], Any[
+            _conn("c1", "signal", "n1", "y", "n2", "u"),
+            _conn("c2", "wire", "n2", "n", "n3", "p"),
+            _conn("c3", "bond", "n2", "p", "n4", "p"),
+            _conn("c4", "wire", "n4", "heat", "n5", "a"),
+        ]))
+        @test isempty(_errors(rs))
+        @test only(p for p in rs.parameters if p.id == "Load/r").unit == parse_unit("Ohm")
+        @test only(v for v in rs.variables if v.id == "Load/p.e").unit == parse_unit("V")
+        @test only(v for v in rs.variables if v.id == "Load/heat.e").unit == parse_unit("K")
+        @test only(v for v in rs.variables if v.id == "Load/P").unit == parse_unit("W")
+        # Standalone (no adoption yet) the RS still checks: the `watt` constant carries
+        # effort*flow to W.
+        rs_block = BGSim.Library.load_block(
+            read(joinpath(BGSim.Library.stdlib_dir(), "bondgraph", "RS.jl"), String);
+            ref = "stdlib:bondgraph/RS")
+        @test isempty(rs_block.diagnostics)
+        @test BGSim.Units.block_domain(rs_block.ast) === :Generic
+    end
+
     @testset "empty model and internal error containment" begin
         empty = flat(_model("Empty", Any[], Any[]))
         @test _counts(empty) == (0, 0)

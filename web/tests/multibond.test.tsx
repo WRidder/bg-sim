@@ -76,6 +76,7 @@ describe("multibond stroke count", () => {
       "Translation",
       "Rotation",
       "Hydraulic",
+      "Thermal",
       "Generic",
     ] as const) {
       expect(multibondStrokes(domain), domain).toBe(1);
