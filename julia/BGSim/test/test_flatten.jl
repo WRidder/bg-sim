@@ -1033,6 +1033,45 @@ end
         @test BGSim.Units.block_domain(rs_block.ast) === :Generic
     end
 
+    @testset "a Generic two-port links a Generic island to a concrete one" begin
+        parse_unit = BGSim.Units.parse_unit
+        # Se -> 1-junction -> PowerSensor -> Resistor (Electrical, wired to ground). The
+        # sensor's port `a` sits on an island of Generic ports only, port `b` on an
+        # Electrical one. The sensor adopts one domain for both ports, so the Generic island
+        # can only be Electrical: it adopts it (no E102, no W205).
+        linked = flat(_model("LinkedIslands", Any[
+            _node("n1", "Supply", _ref("stdlib:bondgraph/Se"); params = Dict("e" => "6.0")),
+            _node("n2", "J1", _junction(1)),
+            _node("n3", "P1", _ref("stdlib:converters/PowerSensor")),
+            _node("n4", "Load", _ref("stdlib:electrical/Resistor")),
+            _node("n5", "Gnd", _ref("stdlib:electrical/Ground")),
+        ], Any[
+            _conn("c1", "bond", "n1", "p", "n2"),
+            _conn("c2", "bond", "n2", nothing, "n3", "a"),
+            _conn("c3", "bond", "n3", "b", "n4", "p"),
+            _conn("c4", "wire", "n4", "n", "n5", "p"),
+        ]))
+        @test isempty(_errors(linked))
+        @test !_has_code(linked, "W205")
+        @test linked.domains == Dict("c1" => "Electrical", "c2" => "Electrical",
+            "c3" => "Electrical", "c4" => "Electrical")
+        @test only(p for p in linked.parameters if p.id == "Supply/e").unit == parse_unit("V")
+        @test only(v for v in linked.variables if v.id == "P1/a.f").unit == parse_unit("A")
+        @test only(v for v in linked.variables if v.id == "P1/y").unit == parse_unit("W")
+
+        # Two different concrete domains on the two sides stay an error of the linking block.
+        crossed = flat(_model("CrossedIslands", Any[
+            _node("n1", "Gnd", _ref("stdlib:electrical/Ground")),
+            _node("n2", "P1", _ref("stdlib:converters/PowerSensor")),
+            _node("n3", "Shaft", _ref("stdlib:rotation/FixedShaft")),
+        ], Any[
+            _conn("c1", "bond", "n1", "p", "n2", "a"),
+            _conn("c2", "bond", "n2", "b", "n3", "a"),
+        ]))
+        @test _has_code(crossed, "E102")
+        @test occursin("different domains", _diag(crossed, "E102").message)
+    end
+
     @testset "empty model and internal error containment" begin
         empty = flat(_model("Empty", Any[], Any[]))
         @test _counts(empty) == (0, 0)

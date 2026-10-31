@@ -2312,14 +2312,20 @@ function block_interface(pb::ParsedBlock)
         ) for d in get(pb.declaration_map, :parameters, Decl[])
     ]
 
-    io_entries(scope) = [
-        (
+    # An output that a `@discrete`/`@events` body holds also carries its start: the value it
+    # holds before the first tick, which a node's `starts` may override (catalog `ioDecl`).
+    held = _discrete_assigned_names(pb)
+    io_entry(d, scope) = begin
+        base = (
             name = String(d.name),
             type = _type_string(d.type),
             size = _size_of(d.type, consts),
             unit = get(d.attrs, :unit, nothing),
-        ) for d in get(pb.declaration_map, scope, Decl[])
-    ]
+        )
+        scope === :outputs && d.name in held ?
+            merge(base, (start = something(d.default_text, ""),)) : base
+    end
+    io_entries(scope) = [io_entry(d, scope) for d in get(pb.declaration_map, scope, Decl[])]
 
     port_entries = [
         (

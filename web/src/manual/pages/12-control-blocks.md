@@ -6,13 +6,14 @@ The signal and control blocks are in the **Continuous**, **Discrete and logic** 
 
 | Block | What it does | Key parameters |
 | --- | --- | --- |
-| `TransferFunction` | `num(s)/den(s)`, coefficients in descending powers of s | `num`, `den` (n + 1 values each); constant `n`, the order |
+| `TransferFunction` | `num(s)/den(s)`, coefficients in descending powers of s | `num` (m + 1 values), `den` (n + 1 values); constants `n` (the order) and `m` (the numerator degree, `n` by default) |
 | `ZeroPole` | `gain·(s − z1)…(s − zm) / ((s − p1)…(s − pn))` | `gain`, `zero_re`, `zero_im`, `pole_re`, `pole_im`; constants `n` (poles), `m` (zeros) |
-| `StateSpace` | `x' = A·x + B·u`, `y = C·x + D·u` | `A`, `B`, `C`, `D` |
+| `StateSpace` | `x' = A·x + B·u`, `y = C·x + D·u` | `A`, `B`, `C`; constants `N` (states) and `D` (the feedthrough, 0 by default) |
 
 Notes:
 
-- The transfer function must be proper: `den[1]` is not zero, and `num` has as many values as `den` (pad it with leading zeros). `2/(s² + 3s + 2)` is `num = [0, 0, 2]`, `den = [1, 3, 2]`.
+- The transfer function must be proper: `den[1]` is not zero and the numerator degree `m` is at most `n`. `2/(s² + 3s + 2)` is `num = [2]` with `m = 0` and `den = [1, 3, 2]`; `num = [0, 0, 2]` with the default `m = n` gives the same response.
+- **Linear blocks in a feedback loop.** A block whose output depends directly on its input (a direct feedthrough) closes an algebraic loop when it sits in a feedback loop. For the linear blocks the constants decide it, not the parameter values: `StateSpace` with `D = 0` (the default), `TransferFunction` with `m < n` and `ZeroPole` with `m < n` have no feedthrough and work in any loop. A `TransferFunction` whose numerator is padded with leading zeros to `n + 1` values (`m = n`) keeps the feedthrough path, even though its coefficient is 0: give it its `m + 1` values instead. When a loop cannot be solved because a coefficient is zero in the run, the run stops with E903, which names the blocks of the loop and the coefficient.
 - In `ZeroPole`, the zeros and poles are given as real and imaginary parts. A complex pair starts at an odd position: position 1 and 2 hold `(re, im)` and `(re, −im)`, so set `pole_re = [-1, -1]`, `pole_im = [2, -2]` for `s = −1 ± 2j`. Only the first `m` zeros are used.
 
 ## Filters

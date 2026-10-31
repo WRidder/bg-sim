@@ -239,6 +239,29 @@ describe("run inputs", () => {
     );
     expect(issues[0]?.message).toMatch(/cannot be scheduled/);
   });
+
+  it("evaluates a block parameter driven by a global and names the global", () => {
+    const doc = structuredClone(globalModel) as unknown as Model;
+    // Source/Rate/value = "rate", and rate = 4*m = 8.
+    const rate = findParameter(doc, index, "Source/Rate/value");
+    expect(rate?.modelText).toBe("rate");
+    expect(rate?.modelValue).toBe(8);
+    expect(rate?.drivenBy).toEqual(["rate"]);
+    const listed = listParameters(doc, index).find((p) => p.target === "Source/Rate/value");
+    expect(listed?.modelValue).toBe(8);
+    // Globals list the globals they read; the slider range centres on the evaluated value.
+    expect(findParameter(doc, index, "global:rate")?.drivenBy).toEqual(["m"]);
+    expect(findParameter(doc, index, "global:m")?.drivenBy).toEqual([]);
+    const range = inputRange({ id: "c", kind: "slider", size: "2x1" }, rate);
+    expect(range.max).toBeGreaterThan(8);
+    // An expression that cannot be evaluated has no value but still names its globals.
+    doc.diagram.nodes[0]!.block = structuredClone(doc.diagram.nodes[0]!.block);
+    const inner = (doc.diagram.nodes[0]!.block as { subsystem: { diagram: Model["diagram"] } }).subsystem.diagram;
+    inner.nodes[0]!.params = { value: "rate / 0 + nope" };
+    const broken = findParameter(doc, index, "Source/Rate/value");
+    expect(broken?.modelValue).toBeNull();
+    expect(broken?.drivenBy).toEqual(["rate"]);
+  });
 });
 
 // --------------------------------------------------------- run store wiring
@@ -377,6 +400,23 @@ describe("DashboardTab", () => {
     fireEvent.change(number, { target: { value: "3.5" } });
     fireEvent.keyDown(number, { key: "Enter" });
     expect(useDocumentStore.getState().doc?.dashboard?.cards.find((c) => c.id === "c9")?.value).toBe(3.5);
+  });
+
+  it("shows the global that drives a block parameter and binds the card to it", () => {
+    const doc = structuredClone(globalModel) as unknown as Model;
+    doc.dashboard = {
+      cards: [{ id: "s", kind: "slider", size: "2x1", parameter: "Source/Rate/value", options: { min: 0, max: 20, step: 1 } }],
+    };
+    openModel(doc);
+    render(<DashboardTab />);
+    // The slider shows the value the global gives (8), not the slider minimum.
+    expect((screen.getByTestId("dash-slider-s") as HTMLInputElement).value).toBe("8");
+    expect(screen.getByTestId("dash-driven-s").textContent).toMatch(/driven by global rate = 8/);
+    fireEvent.click(screen.getByTestId("dash-bind-global-s"));
+    const card = useDocumentStore.getState().doc?.dashboard?.cards[0];
+    expect(card?.parameter).toBe("global:rate");
+    expect(card?.value).toBeUndefined();
+    expect(screen.queryByTestId("dash-driven-s")).toBeNull();
   });
 
   it("adds, edits and removes cards in edit mode; a schedule row is added sorted", () => {

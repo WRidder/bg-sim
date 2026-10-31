@@ -200,6 +200,8 @@ Power ports carry a domain tag so connections are checked and units come for fre
 
 A block may mix `Generic` ports with concrete ones (the `RS` element: a Generic resistive port and a `Thermal` heat port). Such a block is Generic for adoption: the `effort`/`flow` pseudo-units of its declarations follow the island of its Generic ports, and its concrete ports keep their own domain.
 
+A Generic block adopts one domain for all its Generic ports, so it also passes a domain between the islands it joins. An island that has only Generic ports (a 1-junction between an `Se` and a `PowerSensor`) takes the concrete domain of the islands linked to it through Generic blocks, when they have exactly one. When the linked islands have two different concrete domains, the block that joins them is `E102`.
+
 A capacitor-type element, as it would appear in the standard library:
 
 ```julia
@@ -309,12 +311,12 @@ The file has a header row (`name` or `name [unit]` per column) and numeric rows;
 | Product / divide | `u[]`, `y` | operations | v0.1 |
 | Integrator | `u`, `y`, optional `reset` | initial value, `lower`, `upper` limits | v0.1 |
 | Filtered derivative | `u`, `y` | time constant | v0.1 |
-| Transfer function | `u`, `y` | `num`, `den` (`Vec{n + 1}`, descending powers of s, proper); order `n` (constant); controllable canonical form | v0.1 |
+| Transfer function | `u`, `y` | `num` (`Vec{m + 1}`), `den` (`Vec{n + 1}`), descending powers of s; order `n` and numerator degree `m` ≤ `n` (constants, `m = n` by default); controllable canonical form; `m < n` has no direct feedthrough | v0.1 |
 | Zero-pole | `u`, `y` | `gain`, `zero_re`, `zero_im`, `pole_re`, `pole_im`; `n` poles, `m` zeros (constants), conjugate pairs from an odd index | v0.1 |
 | Butterworth / Bessel low-pass | `u`, `y` | `k`, `wc` (rad/s, -3 dB); order `n` 1..8 (constant); cascaded second-order sections | v0.1 |
 | Notch / band-pass | `u`, `y` | `k`, `w0` (rad/s), `bandwidth` (rad/s); notch `depth` | v0.1 |
 | Luenberger observer | `u`, `y`, `x_hat`, `y_hat` | `A`, `B`, `C`, `D`, observer gain `L`; `N` (constant) | v0.1 |
-| State space | `u`, `y` | `A`, `B`, `C`, `D`, initial state | v0.1 |
+| State space | `u`, `y` | `A`, `B`, `C`, initial state; `N` and the feedthrough `D` (constants, `D = 0` by default: no direct feedthrough) | v0.1 |
 | First order / second order | `u`, `y` | `k`, `tau` / `k`, `w0`, `zeta` | v0.1 |
 | Lead-lag | `u`, `y` | zero, pole, gain | v0.1 |
 | PID | `u` (error), `y`, optional `track` | `Kp`, `Ti`, `Td`, `N`, limits, anti-windup | v0.1 |
@@ -649,6 +651,7 @@ A model is a hybrid system: one continuous DAE, plus clocked discrete partitions
 - Each `@discrete` scope runs on a periodic clock with period `Ts` and optional `offset`.
 - All periods in one model must be integer multiples of a base tick (their greatest common divisor). This makes the schedule fixed and repeatable.
 - Reading a continuous variable in discrete code samples it at the tick. Discrete outputs are held constant between ticks (zero-order hold).
+- A clock ticks at the instants `t = offset + k·Ts` strictly after the start of the run; a tick at the start time is the initial state, not an execution. Without an offset the first tick is therefore one period after the start, never at `t = 0`. Before it, a held output (an output that a `@discrete` or `@events` body assigns) has its start value, the declaration default unless the instance sets one in `starts`. An output that the equations compute takes no start value (`E003`). The exported code holds the same start values until its first tick.
 
 **Order at a tick.** When several discrete blocks fire at the same tick:
 
@@ -697,6 +700,7 @@ Validation runs in two passes: per block right after parsing (fast, runs as the 
 | `W216` | Model | Random sources share a seed, so they draw the same sequence | `Noise1`, `Prbs1` share seed 1; give each its own `seed` |
 | `W217` | Run | A `StopSimulation` block ended the run | the run was stopped by `Stop1` at t = 1.25 s |
 | `E902` | Run | An `Assertion` block failed: its input fell below `threshold` | assertion `PressureOk` failed at t = 0.8 s |
+| `E903` | Run | An algebraic loop cannot be solved because the compiler solves it through a parameter coefficient that is zero (or not finite) in this run. Parameters stay symbolic, so the compiler assumes they are nonzero; a structural feedthrough (a constant) removes the path | the algebraic loop through `K`, `P` cannot be solved: the compiler solves it for `K/y` by dividing by `P/D`, which is 0 in this run |
 
 Every diagnostic carries the block path (for example `Plant/Motor1`), scope, line and column in the user's source, the code, the message, and a fix hint where one exists. The editor highlights the element on the canvas and the line in the code view.
 

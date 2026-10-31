@@ -5,8 +5,8 @@
     #   B(p) = [0; -2*sqrt(g*alpha/m)/p],          h = p + dh,
     # with di = i - i_trim(p) and i_trim(p) = sqrt(m*g/alpha)*p. It takes and returns absolute
     # values (current in, gap out), so it drops into the same loop as MaglevBall.
-    # (stdlib StateSpace with D = 0 is the textbook form, but its D*u term closes an
-    # algebraic loop through the PID and the trim feedforward; this block has no feedthrough.)
+    # (stdlib StateSpace, whose feedthrough D is a constant 0 by default, gives the same
+    # deviation dynamics; this block also adds the trim current and the operating gap.)
     @inputs i::Real, [unit = "A", description = "Coil current"]
     @outputs h::Real, [unit = "m", description = "Gap p + dh"]
     @parameters begin

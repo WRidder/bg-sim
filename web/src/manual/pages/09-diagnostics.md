@@ -29,6 +29,7 @@ Errors and warnings also mark the canvas.
 | E401, W401 | a breakpoint could not be verified |
 | E901 | the solver failed during the run |
 | E902 | an [Assertion](page:control-blocks) block failed; the message names the block and the time |
+| E903 | an algebraic loop cannot be solved: the compiler solves it through a coefficient that is zero in this run (for example a feedthrough `D` of 0 given as a parameter); the message names the blocks of the loop and the coefficient |
 | W201 | a storage element is in derivative causality |
 | W202 | an algebraic loop is solved iteratively |
 | W204 | a declaration is not used |

@@ -474,6 +474,171 @@ function _solver_diagnostic(integ, model::CompiledModel, flat::Flat.FlatModel)
     )
 end
 
+# ---------------------------------------------------------------------------------------
+# A loop torn through a coefficient that is zero in this run (E903)
+# ---------------------------------------------------------------------------------------
+#
+# Tearing solves an equation for one of its unknowns and divides by that unknown's
+# coefficient. When the coefficient is a parameter expression (the `D` of `y ~ C*x + D*u`,
+# the `k` of a Gain), MTK assumes it is not zero: parameter values are runtime values (D4),
+# not structure. If the value *is* zero in this run, the torn system computes Inf/NaN and the
+# run fails at t = 0 with an initialization error or E901. After such a failure this analysis
+# looks for the division by a zero parameter coefficient and names it, and the algebraic loop
+# it sits in, instead of the generic message. It only runs after a failure, so a run that
+# works never pays for it and a guarded division (inside `ifelse`) is never blamed.
+
+# Every denominator of `ex` outside `ifelse` branches: `a / b` gives `b`, `b^-k` gives `b`.
+function _denominators!(out::Vector{Any}, ex)
+    Symbolics.iscall(ex) || return out
+    op = Symbolics.operation(ex)
+    args = Symbolics.arguments(ex)
+    if op === ifelse
+        _denominators!(out, args[1])
+        return out
+    elseif op === (/)
+        push!(out, args[2])
+    elseif op === (^) && length(args) == 2
+        k = Symbolics.value(args[2])
+        k isa Real && k < 0 && push!(out, args[1])
+    end
+    for a in args
+        _denominators!(out, a)
+    end
+    return out
+end
+
+# The value of a denominator that depends on run-constant parameters only, or `nothing`.
+function _parameter_value(den, values::Dict{String,Float64})
+    vars = Symbolics.get_variables(den)
+    isempty(vars) && return nothing
+    subs = Dict{Any,Any}()
+    for v in vars
+        ModelingToolkit.isparameter(v) || return nothing
+        name = try
+            _var_name(v)
+        catch
+            return nothing
+        end
+        value = get(values, name, nothing)
+        value === nothing && return nothing
+        subs[v] = value
+    end
+    x = Symbolics.value(Symbolics.substitute(den, subs))
+    return x isa Real ? Float64(x) : nothing
+end
+
+function _zero_coefficient_diagnostic(model::CompiledModel, flat::Flat.FlatModel)
+    try
+        return _find_zero_coefficient(model, flat)
+    catch
+        # The analysis only refines a failure message; it must never replace it with a crash.
+        return nothing
+    end
+end
+
+function _find_zero_coefficient(model::CompiledModel, flat::Flat.FlatModel)
+    values = Dict{String,Float64}()
+    discrete = Set{String}()
+    for p in flat.parameters
+        get(p.attrs, :kind, nothing) === :discrete && (push!(discrete, p.id); continue)
+        p.value isa Real && (values[p.id] = Float64(p.value))
+    end
+    sys = model.system
+    observed = ModelingToolkit.observed(sys)
+    eqs = ModelingToolkit.equations(sys)
+    # The unknowns a time instant does not know: observed and algebraic, never a state.
+    states = Set{String}()
+    for e in eqs
+        lhs = Symbolics.unwrap(e.lhs)
+        if Symbolics.iscall(lhs) && Symbolics.operation(lhs) isa Symbolics.Differential
+            push!(states, _var_name(Symbolics.arguments(lhs)[1]))
+        end
+    end
+    names_of(ex) = String[_var_name(v) for v in Symbolics.get_variables(ex)
+                          if !ModelingToolkit.isparameter(v)]
+    graph = Dict{String,Set{String}}()
+    found = nothing
+    for e in observed
+        lhs = _var_name(Symbolics.unwrap(e.lhs))
+        graph[lhs] = Set(n for n in names_of(e.rhs) if !(n in states))
+        if found === nothing
+            for den in _denominators!(Any[], Symbolics.unwrap(e.rhs))
+                value = _parameter_value(den, values)
+                if value !== nothing && (value == 0.0 || !isfinite(value))
+                    found = (lhs, den, value)
+                    break
+                end
+            end
+        end
+    end
+    found === nothing && return nothing
+    for e in eqs
+        lhs = Symbolics.unwrap(e.lhs)
+        Symbolics.iscall(lhs) && Symbolics.operation(lhs) isa Symbolics.Differential && continue
+        members = Set(n for n in vcat(names_of(e.lhs), names_of(e.rhs)) if !(n in states))
+        for n in members
+            union!(get!(graph, n, Set{String}()), members)
+        end
+    end
+    lhs, den, value = found
+    reach(from) = begin
+        seen = Set{String}()
+        stack = collect(get(graph, from, Set{String}()))
+        while !isempty(stack)
+            n = pop!(stack)
+            n in seen && continue
+            push!(seen, n)
+            append!(stack, collect(get(graph, n, Set{String}())))
+        end
+        seen
+    end
+    loop = String[n for n in reach(lhs) if lhs in reach(n)]
+    origin_path(name) = begin
+        o = _state_origin(flat, name)
+        o === nothing ? nothing : o.path
+    end
+    blocks = String[p for p in (origin_path(n) for n in loop) if p !== nothing && !isempty(p)]
+    den_vars = [v for v in Symbolics.get_variables(den) if ModelingToolkit.isparameter(v)]
+    # One parameter (`-P/D` is the coefficient -D): name the parameter, not the expression.
+    single = length(den_vars) == 1 ? _var_name(only(den_vars)) : nothing
+    den_text = single !== nothing && get(values, single, NaN) == value ? single : string(den)
+    owner = nothing
+    for p in flat.parameters
+        if !isempty(den_vars) && p.id == _var_name(first(den_vars))
+            owner = p.origin
+            break
+        end
+    end
+    # The equation torn through the coefficient belongs to the coefficient's block, so that
+    # block is in the loop even when tearing folded its own variables away (`P/y` substituted
+    # into `K/y ~ (… P/y …) / P/D` leaves only `K` and `E` in the variable graph).
+    if !isempty(loop) && owner !== nothing && !isempty(owner.path)
+        push!(blocks, owner.path)
+    end
+    sort!(unique!(blocks))
+    what = value == 0.0 ? "which is 0 in this run" : "which is $(value) in this run"
+    message = if isempty(loop)
+        "`$(lhs)` is computed by dividing by `$(den_text)`, $(what)"
+    else
+        through = isempty(blocks) ? "" : " through " * join(("`$b`" for b in blocks), ", ")
+        "the algebraic loop$(through) cannot be solved: the compiler solves it for `$(lhs)` " *
+        "by dividing by `$(den_text)`, $(what)"
+    end
+    hint = isempty(loop) ?
+        "give the coefficient a value other than zero" :
+        "at this value the block with that coefficient has no direct feedthrough, but its " *
+        "equations still say it may have one. Make that structural (StateSpace: leave the " *
+        "constant D at 0; TransferFunction: a numerator degree m below the order n), or break " *
+        "the loop with a block that has no direct feedthrough (an integrator, a filter, a UnitDelay)"
+    return diag(
+        "E903", message;
+        hint = hint,
+        path = owner === nothing ? _last_path(flat) : owner.path,
+        block = owner === nothing ? nothing : owner.block,
+        source = owner === nothing ? nothing : _origin_source(owner),
+    )
+end
+
 function _compile_diagnostic(err, flat::Flat.FlatModel)
     if err isa ModelingToolkit.ExtraEquationsSystemException ||
        err isa ModelingToolkit.ExtraVariablesSystemException
@@ -781,7 +946,8 @@ function _simulate_flat(flat::Flat.FlatModel;
     integ = try
         init(solver_problem, alg; init_kwargs...)
     catch err
-        diagnostic = _initialization_diagnostic(err, flat)
+        diagnostic = something(_zero_coefficient_diagnostic(lowered.model, flat),
+            _initialization_diagnostic(err, flat))
         diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
         stats = (
             compile_s = compile_s, sim_s = 0.0, steps = 0, events = 0,
@@ -798,10 +964,10 @@ function _simulate_flat(flat::Flat.FlatModel;
     prof_init_s = (time_ns() - init_ns) / 1.0e9
     retcode = integ.sol.retcode
     if retcode == ReturnCode.InitialFailure
-        diagnostic = diag(
+        diagnostic = something(_zero_coefficient_diagnostic(lowered.model, flat), diag(
             "E103", "initial conditions are inconsistent";
             hint = "the initialization returned $(retcode)", path = _last_path(flat),
-        )
+        ))
         diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
         stats = (
             compile_s = compile_s, sim_s = 0.0, steps = 0, events = 0,
@@ -1035,7 +1201,11 @@ function _simulate_flat(flat::Flat.FlatModel;
             break
         end
         if !step_ok || !_ok_retcode(integ.sol.retcode)
-            diagnostic = _solver_diagnostic(integ, lowered.model, flat)
+            # A zero coefficient breaks the torn system from the first evaluation on, so it
+            # only explains a failure at the start of the run.
+            zero_coeff = integ.t <= run_settings.t_start ?
+                         _zero_coefficient_diagnostic(lowered.model, flat) : nothing
+            diagnostic = something(zero_coeff, _solver_diagnostic(integ, lowered.model, flat))
             status = "failed"
             if _dbg_failure!(debug, session, diagnostic)  # M4 debug: pause before the end
                 status = "cancelled"

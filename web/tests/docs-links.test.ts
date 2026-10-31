@@ -19,6 +19,16 @@ describe("resolveLink", () => {
     const broken = resolveLink("page:ghost", context);
     expect(broken.kind).toBe("broken");
     expect(describeLink(broken)).toContain('no page "ghost"');
+    expect(describeLink(broken)).toContain("this model's docs only");
+  });
+
+  it("says that a page link cannot reach another model's docs", () => {
+    for (const href of ["page:maglev-bondgraph/overview", "page:other.docs/plant"]) {
+      const broken = resolveLink(href, context);
+      expect(broken.kind).toBe("broken");
+      expect(describeLink(broken)).toContain("not a page id");
+      expect(describeLink(broken)).toContain("this model's docs only");
+    }
   });
 
   it("resolves block links by node name, with the id for selection", () => {
