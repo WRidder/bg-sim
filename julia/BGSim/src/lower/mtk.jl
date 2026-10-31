@@ -710,7 +710,7 @@ function set_parameter_values(flat::Flat.FlatModel, updates)
     return Flat.FlatModel(
         flat.name, flat.variables, params, flat.equations, flat.initial, flat.events,
         flat.discrete, flat.junctions, flat.connections, flat.instances, flat.domains,
-        flat.unit_factors, flat.derived, flat.signals, flat.diagnostics, flat.stats,
+        flat.unit_factors, flat.derived, flat.signals, flat.diagnostics, flat.stats, flat.globals,
     )
 end
 
@@ -740,7 +740,7 @@ function set_start_values(flat::Flat.FlatModel, updates)
     return Flat.FlatModel(
         flat.name, variables, flat.parameters, flat.equations, flat.initial, flat.events,
         flat.discrete, flat.junctions, flat.connections, flat.instances, flat.domains,
-        flat.unit_factors, flat.derived, flat.signals, flat.diagnostics, flat.stats,
+        flat.unit_factors, flat.derived, flat.signals, flat.diagnostics, flat.stats, flat.globals,
     )
 end
 

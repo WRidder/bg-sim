@@ -140,6 +140,23 @@ function flatten(md::IR.ModelDoc; project_dir = nothing)
     return first(_flatten(md; project_dir = project_dir))
 end
 
+"""The model's global parameters as the C/FMU export needs them (`Flat.GlobalInfo`), or
+`nothing` for a model without globals."""
+function _global_info(b)
+    isempty(b.md.globals) && return nothing
+    g = b.globals
+    units = Dict{Symbol,String}()
+    descriptions = Dict{Symbol,String}()
+    for p in b.md.globals
+        p.unit === nothing || isempty(p.unit) || (units[Symbol(p.name)] = p.unit)
+        p.description === nothing || isempty(p.description) ||
+            (descriptions[Symbol(p.name)] = p.description)
+    end
+    return Flat.GlobalInfo(Symbol[Symbol(p.name) for p in b.md.globals], copy(g.order),
+        copy(g.values), copy(g.exprs), units, descriptions, b.global_param_exprs,
+        b.global_start_exprs, b.global_fixed)
+end
+
 """    _flatten(md; project_dir) -> (FlatModel, CausalityMap, frames, multibond)
 
 The one flattening run. It returns the flat model, the causal strokes, and the two editor
@@ -191,6 +208,7 @@ function _flatten(md::IR.ModelDoc; project_dir = nothing)
         signals,
         diagnostics,
         stats,
+        _global_info(b),
     )
     return model, causality, frames, multibond
 end
