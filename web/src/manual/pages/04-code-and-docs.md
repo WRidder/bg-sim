@@ -49,6 +49,8 @@ The main sections of a block:
 | `@discrete Ts = …` | code that runs every `Ts` seconds, with `=` assignments |
 | `@events` | `condition => begin … end`, with `reinit` |
 
+An event changes only the states its `reinit` lines name; all other states keep their values. A state that only events change is written `ddt(x) ~ 0.0`: it holds its start value until an event sets it.
+
 Units are written as attributes, for example `R::Real = 1.0, [unit = "Ohm"]`, and are checked for consistency. The full language is described in the modeling language spec in the repository (`spec/`).
 
 ## Docs tab

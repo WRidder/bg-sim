@@ -8,10 +8,6 @@
     # In the exported C code the condition is checked after every internal step: bg_step
     # returns BG_STEP_STOP, and fmi2DoStep returns fmi2Discard with fmi2Terminated set in
     # fmi2GetBooleanStatus, so a co-simulation master ends the run (up to one dt late).
-    #
-    # Note: the latch is a state that only its event changes. A state whose derivative is
-    # identically zero is removed by the symbolic reduction, so it carries a decay of 1e-300
-    # per second, which leaves 1.0 unchanged in double precision.
     @inputs u::Real
     @parameters threshold::Real = 0.5, [description = "The run stops when u rises above this value"]
     @variables begin
@@ -19,7 +15,7 @@
         z::Real, [description = "u - threshold: the run stops when it is positive"]
     end
     @equations begin
-        ddt(stopped) ~ -1.0e-300 * stopped   # held (see the note above)
+        ddt(stopped) ~ 0.0   # held: only the event changes it
         z ~ u - threshold
     end
     @events begin

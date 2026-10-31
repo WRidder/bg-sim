@@ -11,7 +11,7 @@
         V_pos::Real = 15.0, [unit = "V", description = "Positive supply rail: the highest output voltage (finite-gain mode)"]
         V_neg::Real = -15.0, [unit = "V", description = "Negative supply rail: the lowest output voltage (finite-gain mode)"]
     end
-    @variables v_o::Real = 0.0, [unit = "V", state = :prefer, description = "Output voltage of the finite-gain mode (decays to zero and is unused in the ideal mode)"]
+    @variables v_o::Real = 0.0, [unit = "V", state = :prefer, description = "Output voltage of the finite-gain mode (held at its start and unused in the ideal mode)"]
     @equations begin
         # Infinite input impedance: no current into either input.
         in_p.f ~ 0.0
@@ -24,7 +24,7 @@
         0.0 ~ ifelse(ideal == 1, in_p.e - in_n.e, out.e - v_o)
         ddt(v_o) ~ ifelse(
             ideal == 1,
-            -v_o / T_o,
+            0.0,
             (clamp(A * (in_p.e - in_n.e), V_neg, V_pos) - v_o) / T_o,
         )
     end

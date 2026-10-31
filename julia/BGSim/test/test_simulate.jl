@@ -595,6 +595,92 @@ _sim_ramp_model() = _sim_model(
         @test all(isapprox.(data["TF1/p1.f"], 1 / 12; atol = 1.0e-12))
     end
 
+    @testset "a state with ddt(x) ~ 0 is held at its start and set by its events" begin
+        # mtkcompile integrates a zero derivative analytically (x ~ x#0, a new parameter),
+        # which used to fail initialization with E900, and with an event's reinit(x, ...)
+        # failed inside mtkcompile itself. Such states now stay ordinary states, also when
+        # the derivative only folds to zero once a constant applies (`frozen`).
+        held(events) = """
+            @block Held begin
+                @constants frozen::Int = 1
+                @variables begin
+                    x::Real = 2.5
+                    y::Real = -1.0
+                    n::Real = 0.0
+                    r::Real = 0.0
+                    z::Real
+                end
+                @equations begin
+                    ddt(x) ~ 0.0
+                    ddt(y) ~ ifelse(frozen == 1, 0.0, -y)
+                    ddt(n) ~ 0.0
+                    ddt(r) ~ 1.0
+                    z ~ x + y + n
+                end
+                $(events ? "@events begin\n r > 0.5 => begin\n reinit(n, n + 1.0)\n end\n end" : "")
+            end
+            """
+        for events in (false, true)
+            node = _sim_node("n1", "H", _sim_inline(held(events));
+                starts = Dict{String,Any}("x" => "4.0"))
+            flat = _sim_flat(_sim_model("Held", [node], []; t_end = 1.0, points = 11))
+            @test isempty(_sim_errors(flat))
+            dir = mktempdir()
+            result = simulate(flat; run_dir = dir, settings = BGSim.RunSettings(
+                t_start = 0.0, t_end = 1.0,
+                output = Dict{String,Any}("mode" => "points", "points" => 11)))
+            @test result.status == "done"
+            @test !any(d -> d.code in ("E900", "E901"), result.diagnostics)
+            data = _sim_columns(dir)
+            @test all(==(4.0), data["H/x"])
+            @test all(==(-1.0), data["H/y"])
+            n_end = events ? 1.0 : 0.0
+            # The event rows at t = 0.5 hold the left and the right limit.
+            for (tk, n) in zip(data["time"], data["H/n"])
+                abs(tk - 0.5) < 1.0e-6 && continue
+                @test n == (tk < 0.5 ? 0.0 : n_end)
+            end
+            @test data["H/z"][end] == 3.0 + n_end
+        end
+    end
+
+    @testset "reinit sets only the states it names" begin
+        # MTK solves an affect for every unknown it does not hold, so reinit(n, ...) used to
+        # move x as well, to keep z ~ x + n unchanged. The other states keep their values.
+        source = """
+            @block Shared begin
+                @variables begin
+                    x::Real = 4.0
+                    n::Real = 0.0
+                    r::Real = 0.0
+                    z::Real
+                end
+                @equations begin
+                    ddt(x) ~ -0.1 * x
+                    ddt(n) ~ 0.0
+                    ddt(r) ~ 1.0
+                    z ~ x + n
+                end
+                @events begin
+                    r > 0.5 => begin
+                        reinit(n, n + 1.0)
+                    end
+                end
+            end
+            """
+        flat = _sim_flat(_sim_model("Shared", [_sim_node("n1", "H", _sim_inline(source))], [];
+            t_end = 1.0, points = 11))
+        dir = mktempdir()
+        result = simulate(flat; run_dir = dir, settings = BGSim.RunSettings(
+            t_start = 0.0, t_end = 1.0, reltol = 1.0e-10, abstol = 1.0e-12,
+            output = Dict{String,Any}("mode" => "points", "points" => 11)))
+        @test result.status == "done"
+        data = _sim_columns(dir)
+        @test all(isapprox.(data["H/x"], 4.0 .* exp.(-0.1 .* data["time"]); rtol = 1.0e-7))
+        @test data["H/n"][end] == 1.0
+        @test isapprox(data["H/z"][end], 4.0 * exp(-0.1) + 1.0; rtol = 1.0e-7)
+    end
+
     @testset "RLC: analytic overshoot and iconic vs bond graph" begin
         iconic = Compile.flatten(IR.parse_model(_sim_fixture("model.rlc.iconic.json")))
         bond = Compile.flatten(

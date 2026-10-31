@@ -11,10 +11,6 @@
     # chatter.) `side` starts at its start value, 0 (below) by default, as the held state of
     # Relay: set the start of `side` to 1 for an input that starts above the level, or the
     # first falling crossing is not seen.
-    #
-    # Note: the counters are states that only the event changes. A state whose derivative is
-    # identically zero is removed by the symbolic reduction, so each carries a decay of
-    # 1e-300 per second, which leaves any count unchanged in double precision.
     @inputs u::Real
     @outputs begin
         y::Real, [description = "0 before the first crossing in the selected direction, 1 from it on"]
@@ -30,9 +26,9 @@
         n_down::Real = 0.0, [description = "Number of falling crossings"]
     end
     @equations begin
-        ddt(side) ~ -1.0e-300 * side   # held (see the note above)
-        ddt(n_up) ~ -1.0e-300 * n_up
-        ddt(n_down) ~ -1.0e-300 * n_down
+        ddt(side) ~ 0.0   # held: only the event changes these three
+        ddt(n_up) ~ 0.0
+        ddt(n_down) ~ 0.0
         n ~ ifelse(direction == 1, n_up, ifelse(direction == 2, n_down, n_up + n_down))
         y ~ min(n, 1.0)
     end

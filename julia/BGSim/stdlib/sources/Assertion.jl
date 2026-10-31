@@ -9,10 +9,6 @@
     #
     # In the exported C code the condition is checked after every internal step: bg_step
     # returns BG_STEP_ASSERT, and fmi2DoStep logs the block path and returns fmi2Error.
-    #
-    # Note: the latch is a state that only its event changes. A state whose derivative is
-    # identically zero is removed by the symbolic reduction, so it carries a decay of 1e-300
-    # per second, which leaves 1.0 unchanged in double precision.
     @inputs u::Real
     @parameters threshold::Real = 0.5, [description = "The condition holds while u is at least this value"]
     @variables begin
@@ -20,7 +16,7 @@
         z::Real, [description = "threshold - u: the assertion fails when it is positive"]
     end
     @equations begin
-        ddt(failed) ~ -1.0e-300 * failed   # held (see the note above)
+        ddt(failed) ~ 0.0   # held: only the event changes it
         z ~ threshold - u
     end
     @events begin

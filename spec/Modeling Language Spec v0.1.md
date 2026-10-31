@@ -657,7 +657,7 @@ A model is a hybrid system: one continuous DAE, plus clocked discrete partitions
 
 **Events.**
 
-- `@events` declares `condition => begin … end` pairs. A condition crossing zero from negative to positive fires the body once; `reinit(x, v)` resets a state.
+- `@events` declares `condition => begin … end` pairs. A condition crossing zero from negative to positive fires the body once; `reinit(x, v)` resets a state. Only the states named by `reinit` change; every other state keeps its value, and algebraic variables are recomputed. A state whose derivative is zero (`ddt(x) ~ 0`, also once constants apply) is held at its start value and changed only by its events.
 - Nonsmooth functions in equations (`abs`, `sign`, `min`, `max`, `ifelse`, `floor`) create zero-crossing events in Julia variable-step simulation, so switching instants are located accurately.
 - Exported fixed-step code does not locate events: it evaluates conditions once per step. The compiler reports every such site, so differences between simulation and target are visible, not silent.
 

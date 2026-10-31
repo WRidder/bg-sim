@@ -584,6 +584,11 @@ function _state_priorities!(vars::Vector{Num}, flat::Flat.FlatModel)
     return vars
 end
 
+# The names of the variables that `mtkcompile` integrated analytically in `csys` (their
+# derivative was identically zero).
+_held_states(csys) =
+    Set{String}(_var_name(x) for x in keys(ModelingToolkit.analytically_integrated(csys)))
+
 # The `ODEProblem` of a compiled system with the starts, parameters and guesses of `flat`. A
 # conservative (index-reduced) model builds its initialization system with the same tearing
 # rule as the system itself. MTK's `remake` with symbolic maps rebuilds the initialization
@@ -602,6 +607,34 @@ function _new_problem(flat::Flat.FlatModel, csys, int_states, params, tspan)
 end
 
 function _build_compiled(flat::Flat.FlatModel, key::String, tspan::Tuple{Float64,Float64})
+    # A state whose derivative is identically zero (`ddt(x) ~ 0`, also once constants fold)
+    # is integrated analytically by `mtkcompile`: `x` becomes `x ~ x#0` with a new `t = 0`
+    # parameter. The start of `x` then reaches no operating-point entry, so initialization
+    # fails (E900), and an event's `reinit(x, ...)` makes `mtkcompile` itself throw (the
+    # affect sets `x#0`, which is not a callback parameter). Such a model is compiled again
+    # with those variables irreducible, which keeps each as an ordinary state with
+    # `D(x) ~ 0`: held at its start value and changed only by its events. The retry lowers
+    # the model afresh, because a failed `mtkcompile` writes `x#0` into the callbacks.
+    held = Set{String}()
+    compiled = try
+        _compile_lowered(flat, key, held)
+    catch
+        held = _held_states(_compile_lowered(flat, key, held; events = false).csys)
+        isempty(held) && rethrow()
+        nothing
+    end
+    if compiled === nothing || !isempty(union!(held, _held_states(compiled.csys)))
+        compiled = _compile_lowered(flat, key, held)
+    end
+    (; lowered, csys) = compiled
+    prob = _new_problem(flat, csys, lowered.int_states, lowered.params, tspan)
+    return CompiledModel(key, csys, prob, lowered.vars, lowered.params,
+        lowered.int_states, _has_algebraic(prob))
+end
+
+# Lower `flat` and `mtkcompile` it, with the variables named in `held` irreducible (see
+# `_build_compiled`). `events = false` compiles without any callback.
+function _compile_lowered(flat::Flat.FlatModel, key::String, held::Set{String}; events::Bool = true)
     lowered = lower_flat(flat)
     vars = Num[lowered.vars[v.id] for v in flat.variables]
     for d in flat.derived
@@ -611,6 +644,9 @@ function _build_compiled(flat::Flat.FlatModel, key::String, tspan::Tuple{Float64
         push!(vars, p.first)
     end
     pars = Num[lowered.params[p.id] for p in flat.parameters]
+    for (i, v) in enumerate(vars)
+        _var_name(v) in held && (vars[i] = ModelingToolkit.setirreducible(v, true))
+    end
 
     sysname = Symbol("bg_" * first(key, 12))
     kwargs = (; name = sysname)
@@ -625,18 +661,54 @@ function _build_compiled(flat::Flat.FlatModel, key::String, tspan::Tuple{Float64
         sys = System(lowered.eqs, t, vars, pars; kw...)
         conservative ? mtkcompile(sys; allow_parameter = false) : mtkcompile(sys)
     end
-    csys = compiled_with(lowered.events)
+    csys = compiled_with(events ? lowered.events : Any[])
     # The condition-only kink callbacks need a state (see `lower_flat`). Index reduction can
     # remove every state of a model that has some before it: an AccelerationSensor's `v` on a
     # prescribed velocity becomes the derivative of the source, an exact function of `t`.
     # Its kink callbacks would throw a BoundsError in the first `step!` (E901 at t = 1e-6),
     # so such a model is compiled again without them; its values are exact without events.
-    if isempty(ModelingToolkit.unknowns(csys)) && !isempty(lowered.kinks)
-        csys = compiled_with(lowered.affects)
+    used = events ? lowered.events : Any[]
+    if events && isempty(ModelingToolkit.unknowns(csys)) && !isempty(lowered.kinks)
+        used = lowered.affects
+        csys = compiled_with(used)
     end
-    prob = _new_problem(flat, csys, lowered.int_states, lowered.params, tspan)
-    return CompiledModel(key, csys, prob, lowered.vars, lowered.params,
-        lowered.int_states, _has_algebraic(prob))
+    isempty(lowered.affects) || (csys = _pin_event_states(csys, used))
+    return (; lowered, csys)
+end
+
+# An `@events` action sets only the states it names (`reinit`, plan D19); every other state
+# keeps its value across the event. MTK solves an affect for every unknown it does not hold
+# fixed, so without this a `reinit(n, ...)` also moved a state `x` that shares an algebraic
+# equation with `n` (`z ~ x + n` kept `z` and shifted `x`). Which variables stay
+# differential states is only known after `mtkcompile`, so each affect is rebuilt here with
+# `s ~ Pre(s)` for every compiled state it does not assign, and completed against `csys`
+# the way `mtkcompile` completes the callbacks it is given.
+function _pin_event_states(csys, used::Vector{Any})
+    states = ModelingToolkit.collect_differential_variables(csys)
+    iv = ModelingToolkit.get_iv(csys)
+    pinned = map(used) do cb
+        affect = cb.affect
+        affect isa ModelingToolkit.SymbolicAffect || return ModelingToolkit.complete(cb;
+            iv = iv, parent_sys = csys)
+        eqs = copy(affect.affect)
+        assigned = Set(Symbolics.unwrap(eq.lhs) for eq in eqs)
+        # A target that `mtkcompile` did not keep as a state (an impact sets the momentum
+        # `P` of a body whose state is its twist, `P = M V`) can only change through the
+        # states it is computed from, so such an affect keeps MTK's consistent solve.
+        all(x -> x in states || ModelingToolkit.isparameter(x), assigned) ||
+            return ModelingToolkit.complete(cb; iv = iv, parent_sys = csys)
+        for s in states
+            s in assigned || push!(eqs, s ~ ModelingToolkit.Pre(s))
+        end
+        rebuilt = ModelingToolkit.SymbolicContinuousCallback(
+            cb.conditions,
+            ModelingToolkit.SymbolicAffect(eqs; discrete_parameters = affect.discrete_parameters),
+            cb.affect_neg, cb.initialize, cb.finalize, cb.rootfind, cb.reinitializealg,
+            cb.zero_crossing_id, cb.initialize_save_discretes,
+        )
+        return ModelingToolkit.complete(rebuilt; iv = iv, parent_sys = csys)
+    end
+    return ModelingToolkit.Setfield.@set csys.continuous_events = pinned
 end
 
 """
