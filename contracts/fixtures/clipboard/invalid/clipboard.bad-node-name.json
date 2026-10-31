@@ -1,0 +1,18 @@
+{
+  "$comment": "Invalid: node names are identifiers (model.schema node); '2 Gain' is not.",
+  "format": "bgsim-clipboard",
+  "version": 1,
+  "source": { "project": "demo", "model": "servo", "path": [] },
+  "nodes": [
+    {
+      "id": "n1",
+      "name": "2 Gain",
+      "block": { "ref": "stdlib:continuous/Gain" },
+      "position": { "x": 0, "y": 0 }
+    }
+  ],
+  "connections": [],
+  "annotations": [],
+  "shapes": [],
+  "dependencies": { "libraryBlocks": [], "globals": [], "assets": [], "dataFiles": [] }
+}

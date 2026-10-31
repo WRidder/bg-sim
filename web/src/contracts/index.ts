@@ -9,6 +9,7 @@
 
 export * as bindings from "./bindings";
 export * as catalog from "./catalog";
+export * as clipboard from "./clipboard";
 export * as debug from "./debug";
 export * as diagnostic from "./diagnostic";
 export * as docs from "./docs";
@@ -45,6 +46,11 @@ export type { ScalarDomain } from "./catalog";
 export type { SpatialComponents } from "./catalog";
 export type { SpatialDomain } from "./catalog";
 export type { VariableDecl } from "./catalog";
+export type { ClipboardDependencies } from "./clipboard";
+export type { ClipboardEnvelope } from "./clipboard";
+export type { ClipboardLibraryBlock } from "./clipboard";
+export type { ClipboardOmitted } from "./clipboard";
+export type { ClipboardSource } from "./clipboard";
 export type { Breakpoint } from "./debug";
 export type { BreakpointStatus } from "./debug";
 export type { Debug } from "./debug";

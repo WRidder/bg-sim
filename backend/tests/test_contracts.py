@@ -50,6 +50,7 @@ SCHEMAS: dict[str, str] = {
     "export-request": "ExportRequest",
     "export-report": "ExportReport",
     "export-job": "ExportJob",
+    "clipboard": "ClipboardEnvelope",
 }
 
 # The M1 blocks of plan section 8, as ref -> name.

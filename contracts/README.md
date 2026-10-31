@@ -3,7 +3,7 @@
 `schemas/*.schema.json` (JSON Schema 2020-12) is the single source of truth for the shapes the
 Julia worker, the Python backend and the TypeScript web app exchange. Every schema carries
 `"$id": "https://bgsim.local/schemas/<name>.schema.json"`, cross-schema references use that
-absolute id, and both test suites register all thirteen schemas by `$id` before validating.
+absolute id, and both test suites register all fourteen schemas by `$id` before validating.
 
 `fixtures/<name>/valid/**/*.json` must validate (the walkers use a recursive glob, so
 `run.synthetic/` counts); `fixtures/<name>/invalid/*.json` must fail for the reason written in
@@ -68,3 +68,15 @@ compiler and the export ignore it. What a run uses travels separately: `run.star
 `<instance path>/<param>`; `kind` `global` targets a global parameter as `global:<name>` (the key
 of `BGSim.IR.override_globals`, applied before the globals are evaluated, so dependents re-fold).
 Globals cannot be scheduled.
+
+Clipboard: `clipboard.schema.json` is what the diagram editor writes to the system clipboard
+(`text/plain` JSON, also `application/x-bgsim-clipboard+json`) on copy, and validates on paste
+(`web/src/clipboard/validate.ts`, Ajv on demand). `format` is `bgsim-clipboard` and `version` is
+`1`; a reader refuses anything else. `nodes`, `connections`, `annotations` and `shapes` reuse the
+model schema's `$defs` (one diagram level; nested subsystems travel inside their node, without
+probes). `dependencies` carries what a paste into another model or project needs: project library
+blocks (`source` may be absent, the paste then reads `library/<name>.jl` of `source.project`), the
+global parameters the copied values read with their dependency closure, docs image names of the
+source model (copied with `POST .../docs/<model>/assets/copy`) and CSV names of the source project's
+`data/` folder. `omitted` counts the bindings, probes, dashboard cards and plots that stay behind.
+The backend never sees an envelope; the Python model exists for parity and the fixture tests.

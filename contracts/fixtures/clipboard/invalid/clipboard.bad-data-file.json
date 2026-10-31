@@ -1,0 +1,11 @@
+{
+  "$comment": "Invalid: a data file is one plain .csv name of the project's data folder; a path is refused.",
+  "format": "bgsim-clipboard",
+  "version": 1,
+  "source": { "project": "demo", "model": "servo", "path": [] },
+  "nodes": [],
+  "connections": [],
+  "annotations": [],
+  "shapes": [],
+  "dependencies": { "libraryBlocks": [], "globals": [], "assets": [], "dataFiles": ["../models/rig.csv"] }
+}

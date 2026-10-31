@@ -1,0 +1,11 @@
+{
+  "$comment": "Invalid: version 2 is not known to this schema; a reader refuses it.",
+  "format": "bgsim-clipboard",
+  "version": 2,
+  "source": { "project": "demo", "model": "servo", "path": [] },
+  "nodes": [],
+  "connections": [],
+  "annotations": [],
+  "shapes": [],
+  "dependencies": { "libraryBlocks": [], "globals": [], "assets": [], "dataFiles": [] }
+}

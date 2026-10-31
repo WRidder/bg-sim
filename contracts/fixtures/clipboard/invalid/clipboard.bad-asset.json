@@ -1,0 +1,11 @@
+{
+  "$comment": "Invalid: an asset is a content-hash name <12 hex>.<ext> without a folder; a path is refused.",
+  "format": "bgsim-clipboard",
+  "version": 1,
+  "source": { "project": "demo", "model": "servo", "path": [] },
+  "nodes": [],
+  "connections": [],
+  "annotations": [],
+  "shapes": [],
+  "dependencies": { "libraryBlocks": [], "globals": [], "assets": ["../secret.png"], "dataFiles": [] }
+}
