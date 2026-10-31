@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
@@ -29,6 +29,9 @@ export interface ViewerProps {
   readonly overlay?: ReactNode;
   /** Appended to the toolbar (the 3D View's Detach / Dock button). */
   readonly toolbarEnd?: ReactNode;
+  /** The element the full-screen button enlarges (default: the view itself), e.g. the stage
+   *  that also holds the playback bar. */
+  readonly fullscreenRef?: RefObject<HTMLElement | null> | undefined;
 }
 
 const DEFAULT_DPR_CAP = 1.5;
@@ -80,7 +83,7 @@ interface Shown {
  */
 export function Viewer(props: ViewerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
-  const { canFullscreen, fullscreen, toggle: toggleFullscreen } = useFullscreen(hostRef);
+  const { canFullscreen, fullscreen, toggle: toggleFullscreen } = useFullscreen(props.fullscreenRef ?? hostRef);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<ViewerScene | null>(null);
   const propsRef = useRef(props);

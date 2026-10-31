@@ -14,6 +14,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
  */
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+const shots = process.env.BGSIM_SCREENSHOT_DIR ?? "";
 const repoRoot = path.resolve(here, "../../..");
 
 let project = "";
@@ -168,6 +169,18 @@ for (const theme of ["light", "dark"] as const) {
     for (const offset of offsets) {
       expect(offset).toBeLessThanOrEqual(1);
     }
+    // Full screen takes the stage, so the playback bar comes along.
+    await page.getByTestId("viewer-fullscreen").click();
+    await expect(page.getByTestId("viewer-fullscreen")).toHaveAttribute("aria-pressed", "true");
+    expect(
+      await page.evaluate(() => document.fullscreenElement?.querySelector('[data-testid="playback-bar"]') !== null),
+    ).toBe(true);
+    await expect(page.getByTestId("playback-bar")).toBeVisible();
+    if (shots.length > 0) {
+      await page.screenshot({ path: path.join(shots, `viewer-fullscreen-${theme}.png`) });
+    }
+    await page.getByTestId("viewer-fullscreen").click();
+    await expect(page.getByTestId("viewer-fullscreen")).toHaveAttribute("aria-pressed", "false");
     await page.getByTestId("bindings-toggle").click();
     await expect(page.getByTestId("bindings-editor")).toBeVisible();
     await expectClean(page, "3D view with the bindings editor");

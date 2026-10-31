@@ -14,6 +14,11 @@
   height: 100%;
 }
 
+/* Full screen (the view's button): the stage with the view and its playback bar. */
+.scene-view__stage:fullscreen {
+  background: var(--color-bg);
+}
+
 .scene-view__stage:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: -2px;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type KeyboardEventHandler, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEventHandler, type ReactNode } from "react";
 
 import { EmptyState } from "../app/EmptyState";
 import type { Diagnostic } from "../contracts/diagnostic";
@@ -117,6 +117,8 @@ export function SceneView({ active, createEngine, onBuilt, highlight = null, onK
     if (highlight !== null) for (const r of built.visualsOf(highlight)) refs.add(r);
     return refs.size === 0 ? NO_REFS : [...refs];
   }, [built, selected, highlight]);
+  // Full screen takes the whole stage, so the playback bar stays under the view.
+  const stageRef = useRef<HTMLDivElement>(null);
 
   let overlay;
   if (status === "none") {
@@ -135,9 +137,9 @@ export function SceneView({ active, createEngine, onBuilt, highlight = null, onK
   return (
     <div className="scene-view" data-testid="scene-view" data-state={status} data-scene={sceneFile ?? ""}>
       {status === "loaded" && current !== null ? <SceneTree tree={current.tree} selected={selected} onSelect={setSelected} /> : null}
-      <div className="scene-view__stage" tabIndex={0} role="group" aria-label="3D view" onKeyDown={onKeyDown} data-testid="scene-stage">
+      <div className="scene-view__stage" ref={stageRef} tabIndex={0} role="group" aria-label="3D view" onKeyDown={onKeyDown} data-testid="scene-stage">
         <div className="scene-view__viewer">
-          <Viewer active={active} createEngine={createEngine} onReady={setViewer} onSelect={setSelected} selection={selection} overlay={overlay} toolbarEnd={toolbarEnd} />
+          <Viewer active={active} createEngine={createEngine} onReady={setViewer} onSelect={setSelected} selection={selection} overlay={overlay} toolbarEnd={toolbarEnd} fullscreenRef={stageRef} />
         </div>
         {extras}
       </div>

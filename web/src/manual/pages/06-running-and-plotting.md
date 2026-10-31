@@ -47,6 +47,6 @@ While the **Auto Plot** tab is open, it plots every recorded signal of the selec
 Models with a 3D scene show it in the **3D View** tab. The scene follows the run through bindings between scene objects and signals.
 
 - Drag to orbit, right-drag to pan, scroll to zoom.
-- The toolbar has **Isometric**, **Top**, **Front** and **Side** views, an **Orthographic projection** toggle, **Fit the scene in the view**, **Full screen** (`Esc` exits) and **Detach** (a separate window).
+- The toolbar has **Isometric**, **Top**, **Front** and **Side** views, an **Orthographic projection** toggle, **Fit the scene in the view**, **Full screen** (with the playback bar; `Esc` exits) and **Detach** (a separate window).
 - The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** and a time slider.
 - **Bindings** opens the bindings table. Each row binds a scene object's property (position, pose, scale, colour or visibility) to a signal, with a gain and an offset. **Add binding** adds a row.
