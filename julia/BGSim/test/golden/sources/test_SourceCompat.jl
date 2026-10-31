@@ -1,5 +1,8 @@
-# Backward compatibility of the signal sources that gained parameters: `Sine` (t_start),
-# `Ramp` (duration), `Pulse` (offset) and `Chirp` (amplitude, offset, start_phase, method).
+# Backward compatibility of the signal sources that gained parameters: `Ramp` (duration),
+# `Pulse` (offset) and `Chirp` (amplitude, offset, start_phase, method). `Sine` is kept as a
+# guard: a start time there would put an `ifelse` into every Sine, which breaks models that
+# differentiate the source (the AccelerationSensor golden), so Sine has none; ExpSine with
+# damping = 0 is the delayed sine.
 #
 # Each case runs the same model twice, once with the stdlib block at the defaults of its
 # new parameters and once with the block's previous source inline (verbatim, renamed), and
