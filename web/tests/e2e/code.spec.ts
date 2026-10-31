@@ -1,5 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
+import { waitForLibrary } from "./library";
+
 import type { Model, ModelNode } from "../../src/contracts/model";
 
 /**
@@ -151,7 +153,7 @@ test("E001 squiggle with its hint, then the canvas node gains the new port", asy
   const document = emptyModel("CodeEntry");
   project = await createProject(page.request, document);
   await page.goto(`/?project=${encodeURIComponent(project)}&model=${encodeURIComponent(document.name)}`);
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({ timeout: 30_000 });
+  await waitForLibrary(page);
 
   // Open the Code tab and create an inline Equation node.
   await page.getByRole("tab", { name: "Code" }).click();
@@ -214,7 +216,7 @@ test("a stdlib source is read-only and copies into an editable project block", a
   const document = emptyModel("CopyEntry");
   project = await createProject(page.request, document);
   await page.goto(`/?project=${encodeURIComponent(project)}&model=${encodeURIComponent(document.name)}`);
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({ timeout: 30_000 });
+  await waitForLibrary(page);
 
   await page.getByRole("tab", { name: "Code" }).click();
   await page.getByTestId("code-source-select").selectOption("stdlib:bondgraph/C");

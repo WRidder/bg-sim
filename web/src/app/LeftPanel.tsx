@@ -1,6 +1,7 @@
 import { Group, Panel, Separator } from "react-resizable-panels";
 
 import { LibraryBrowser } from "../library/LibraryBrowser";
+import { LibrarySettings } from "../library/LibrarySettings";
 import { ModelTree } from "../editor/ModelTree";
 import { usePersistedPanelSizes } from "../state/layout";
 
@@ -22,9 +23,12 @@ export function LeftPanel() {
       >
         <Panel id="library-section" minSize="20" style={{ overflow: "hidden" }}>
           <section className="panel-section" aria-labelledby="library-heading">
-            <h2 className="panel-section__title" id="library-heading">
-              Library
-            </h2>
+            <div className="panel-section__title panel-section__title--actions">
+              <h2 className="panel-section__heading" id="library-heading">
+                Library
+              </h2>
+              <LibrarySettings />
+            </div>
             <div className="panel-section__body">
               <LibraryBrowser />
             </div>

@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { waitForLibrary } from "./library";
+
 /**
  * W4.2 acceptance (plan 7.9) against the fake worker's debug runs
  * (`backend/src/bgsim_server/fake_debug.py`):
@@ -28,7 +30,7 @@ test.afterEach(async ({ request }) => {
 
 async function openModel(page: Page): Promise<void> {
   await page.goto(`/?project=${encodeURIComponent(project)}&model=DebugPanels`);
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({ timeout: 30_000 });
+  await waitForLibrary(page);
   await expect(page.getByTestId("run-button")).toBeEnabled();
 }
 

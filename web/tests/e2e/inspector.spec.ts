@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { expandLibrary } from "./library";
+
 /**
  * W1.2 acceptance (plan 7.2, 7.4 and the work package):
  *
@@ -27,7 +29,8 @@ test.afterEach(async ({ request }) => {
 
 async function openModel(page: Page): Promise<void> {
   await page.goto(`/?project=${encodeURIComponent(project)}&model=Inspector`);
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({ timeout: 30_000 });
+  await expandLibrary(page);
+  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible();
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 }
 

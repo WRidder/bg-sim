@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { expandLibrary } from "./library";
+
 /**
  * The diagram visual language follow-up:
  *
@@ -27,7 +29,8 @@ test.afterEach(async ({ request }) => {
 
 async function openModel(page: Page): Promise<void> {
   await page.goto(`/?project=${encodeURIComponent(project)}&model=CanvasStyle`);
-  await expect(page.getByTestId("library-item-Se")).toBeVisible({ timeout: 30_000 });
+  await expandLibrary(page);
+  await expect(page.getByTestId("library-item-Se")).toBeVisible();
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 }
 
@@ -745,6 +748,7 @@ test("probe blocks and plot windows tap a connection without entering the circui
   await page.getByTestId("save-now").click();
   await expect(page.getByTestId("save-status")).toHaveAttribute("data-state", "saved");
   await page.reload();
+  // The expanded library categories persist across the reload.
   await expect(page.getByTestId("library-item-Se")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("probe-node")).toHaveCount(1);
   await expect(page.locator('[data-testid^="probe-window-"]')).toHaveCount(2);

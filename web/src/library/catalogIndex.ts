@@ -103,6 +103,17 @@ export function searchBlocks(blocks: readonly CatalogBlock[], query: string): Ca
   return blocks.filter((block) => haystack(block).includes(needle));
 }
 
+/** The category names the library can list, in display order (the junctions last). */
+export function libraryCategories(index: CatalogIndex): string[] {
+  const names = index.groups
+    .filter((group) => group.name !== JUNCTION_GROUP && group.blocks.length > 0)
+    .map((group) => group.name);
+  if (index.junctions.length > 0) {
+    names.push(JUNCTION_GROUP);
+  }
+  return names;
+}
+
 /** The visible groups after a search; groups with no match are dropped. */
 export function searchGroups(groups: readonly LibraryGroup[], query: string): LibraryGroup[] {
   const needle = query.trim().toLowerCase();

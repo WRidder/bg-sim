@@ -1,5 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
+import { waitForLibrary } from "./library";
+
 import type { Model, ModelConnection, ModelNode } from "../../src/contracts/model";
 
 /**
@@ -144,7 +146,7 @@ async function createProject(request: APIRequestContext, document: Model): Promi
 async function openModel(page: Page, document: Model): Promise<void> {
   project = await createProject(page.request, document);
   await page.goto(`/?project=${encodeURIComponent(project)}&model=${encodeURIComponent(document.name)}`);
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({ timeout: 30_000 });
+  await waitForLibrary(page);
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
   await page.getByRole("tab", { name: /^Diagnostics/ }).click();
   await expect(page.getByTestId("diagnostic-item-0")).toBeVisible({ timeout: 30_000 });
