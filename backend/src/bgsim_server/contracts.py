@@ -25,6 +25,26 @@ class ScaleProperty(Enum):
     scale_z = 'scale.z'
 
 
+class DeformationFamily(Enum):
+    bending_y = 'bending-y'
+    bending_z = 'bending-z'
+    torsion = 'torsion'
+
+
+class DeformationBasis(Enum):
+    clamped_free = 'clamped-free'
+    free_free = 'free-free'
+
+
+class ShapeAxis(Enum):
+    field_x = '+x'
+    field_x_1 = '-x'
+    field_y = '+y'
+    field_y_1 = '-y'
+    field_z = '+z'
+    field_z_1 = '-z'
+
+
 class Colormap(Enum):
     heat = 'heat'
     viridis = 'viridis'
@@ -1736,7 +1756,7 @@ class VisualColorBinding(BaseModel):
     target: constr(pattern=r'^visual:[A-Za-z0-9_.-]+$')
     property: Literal['color']
     signal: BindingSignal
-    colormap: Colormap = Field(..., title='Colormap')
+    colormap: Colormap
     range: list[float] = Field(..., max_length=2, min_length=2)
     gain: float | None = None
     offset: float | None = None
@@ -1753,6 +1773,27 @@ class VisibleBinding(BaseModel):
     gain: float | None = None
     offset: float | None = None
     field_comment: str | None = Field(None, alias='$comment')
+
+
+class BeamMapping(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    axis: ShapeAxis
+    y: ShapeAxis | None = None
+    length: PositiveFloat | None = Field(
+        None,
+        description='Beam length L in m: the mode shapes run over s = 0..L from end A. Default: the extent of the shape along `axis`. Parts of the shape beyond L move rigidly with the section at L.',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class StrainColor(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    colormap: Colormap
+    range: list[float] = Field(..., max_length=2, min_length=2)
 
 
 class CatalogBlock(BaseModel):
@@ -2448,26 +2489,27 @@ class RunBranchRequest(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
-class Binding(
-    RootModel[
-        JointPositionBinding
-        | PoseBinding
-        | VisualScaleBinding
-        | VisualColorBinding
-        | VisibleBinding
-    ]
-):
-    root: (
-        JointPositionBinding
-        | PoseBinding
-        | VisualScaleBinding
-        | VisualColorBinding
-        | VisibleBinding
-    ) = Field(
-        ...,
-        description='One binding: a scene target, a property, the signal(s) that drive it, and optional gain and offset.',
-        title='Binding',
+class DeformationBinding(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
     )
+    target: constr(pattern=r'^visual:[A-Za-z0-9_.-]+$')
+    property: Literal['deformation']
+    family: DeformationFamily
+    basis: DeformationBasis
+    beam: BeamMapping
+    signal: list[BindingSignal] = Field(
+        ...,
+        description='The modal coordinates eta_1..eta_n of the family, one signal per mode in mode order (1 to 3 modes). Bending coordinates are in m, torsion coordinates in rad. A FlexibleBeam block records them as <Block>/eta_y[i], <Block>/eta_z[i] and <Block>/eta_t[i].',
+        max_length=3,
+        min_length=1,
+    )
+    gain: float | None = Field(
+        None,
+        description="Multiplies every modal coordinate (default 1), e.g. 0.001 for coordinates in mm. The viewer's exaggeration factor is a display setting and is not stored in the binding.",
+    )
+    strain: StrainColor | None = None
+    field_comment: str | None = Field(None, alias='$comment')
 
 
 class CatalogDomain(RootModel[PlanarDomain | SpatialDomain | ScalarDomain]):
@@ -2787,12 +2829,28 @@ class DebugEditResult(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
-class Bindings(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
+class Binding(
+    RootModel[
+        JointPositionBinding
+        | PoseBinding
+        | VisualScaleBinding
+        | VisualColorBinding
+        | VisibleBinding
+        | DeformationBinding
+    ]
+):
+    root: (
+        JointPositionBinding
+        | PoseBinding
+        | VisualScaleBinding
+        | VisualColorBinding
+        | VisibleBinding
+        | DeformationBinding
+    ) = Field(
+        ...,
+        description='One binding: a scene target, a property, the signal(s) that drive it, and optional gain and offset.',
+        title='Binding',
     )
-    bindings: list[Binding]
-    field_comment: str | None = Field(None, alias='$comment')
 
 
 class Catalog(BaseModel):
@@ -3029,6 +3087,14 @@ class DebugPausedNotification(BaseModel):
     )
     method: Literal['debug.paused']
     params: PausedInfo
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class Bindings(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    bindings: list[Binding]
     field_comment: str | None = Field(None, alias='$comment')
 
 

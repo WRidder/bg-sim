@@ -1,5 +1,5 @@
 {
-  "$comment": "Invalid: property \"rotation\" is not one of position, pose, scale.x|y|z, color or visible (spec: \"Binding schema\").",
+  "$comment": "Invalid: property \"rotation\" is not one of position, pose, scale.x|y|z, color, visible or deformation (spec: \"Binding schema\").",
   "bindings": [
     {
       "target": "joint:shoulder",

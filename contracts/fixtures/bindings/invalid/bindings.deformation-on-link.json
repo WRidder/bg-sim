@@ -1,0 +1,13 @@
+{
+  "$comment": "Invalid: a deformation binding targets a visual (the beam shape), not a link.",
+  "bindings": [
+    {
+      "target": "link:beam",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "free-free",
+      "beam": { "axis": "+z", "y": "+x" },
+      "signal": ["Plant/Beam/eta_y[1]"]
+    }
+  ]
+}
