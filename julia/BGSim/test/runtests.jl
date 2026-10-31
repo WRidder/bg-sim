@@ -356,3 +356,5 @@ include("test_export_thermal.jl")
 # The common rotation and electrical components (clutch, gears, op-amp, switches, ...) in the
 # C export.
 include("test_export_components.jl")
+# The hydraulic components (valves, accumulator, pipe, pumps, motor) in the C export.
+include("test_export_hydraulic.jl")

@@ -107,7 +107,7 @@ Equations are declarative and order-free; discrete code is imperative and bounde
 | `if / elseif / else` | Only around whole equations, with equal equation counts per branch | Yes | No |
 | `for i in 1:N` | Yes, N static; unrolled | Yes, N static | No |
 | `while`, `break`, `continue` | No | No | No |
-| Array literals and indexing `v[i]` | Yes, static indices | Yes, index checked against size | Yes |
+| Array literals and indexing `v[i]` | Yes, static indices: literals, constants, loop variables and integer expressions of them (`v[i + 1]`), each unrolled value range-checked | Yes, index checked against size | Yes |
 | `ddt(x)`, `int(x)` | Yes | No | No |
 | `previous(x)`, `hold(x)` | No | Yes | No |
 | `reinit(x, value)` | No | `@events` only | No |
@@ -501,9 +501,13 @@ Hydraulic ports carry pressure \[Pa\] and volume flow \[m^3/s\]. Thermal ports u
 | Tank (constant pressure) | Hydraulic | `a` | pressure | v0.1 |
 | Volume (fluid compressibility) | Hydraulic | `a` | volume, bulk modulus | v0.1 |
 | Orifice | Hydraulic | `a`, `b` | discharge coefficient, area, density | v0.1 |
-| Pipe (lumped) | Hydraulic | `a`, `b` | length, diameter, friction model | v0.2 |
-| Check valve | Hydraulic | `a`, `b` | cracking pressure, area | v0.2 |
-| Proportional valve (4/3) | Hydraulic | `P`, `T`, `A`, `B`, input `spool` | flow gain, leakage | v0.2 |
+| Variable orifice | Hydraulic | `a`, `b`, input `u` | area gain, discharge coefficient, density | v0.1 |
+| Pipe (lumped, `Pipe`) | Hydraulic | `a`, `b` | length, diameter, viscosity, bulk modulus, turbulent friction factor, segments `N` (constant) | v0.1 |
+| Check valve | Hydraulic | `a`, `b` | cracking pressure, opening range, area, leakage area | v0.1 |
+| Pressure relief valve | Hydraulic | `a`, `b` | set pressure, regulation range, area, leakage area | v0.1 |
+| Proportional valve (4/3, `DirectionalValve43`) | Hydraulic | `P`, `T`, `A`, `B`, input `u` (spool, −1 to 1) | edge area, lap, leakage area | v0.1 |
+| Pressure-compensated flow control valve | Hydraulic | `a`, `b`, input `u` | regulated flow, compensator pressure | v0.1 |
+| Gas-charged accumulator | Hydraulic | `a` | precharge pressure, gas volume, polytropic index, dead volume | v0.1 |
 | Heat capacitor (`HeatCapacitor`) | Thermal | `a` | `C` \[J/K\] (= m·c_p), initial temperature `T` | v0.1 |
 | Thermal conductor (`ThermalConductor`) | Thermal | `a`, `b` | `G` \[W/K\] | v0.1 |
 | Thermal resistor (`ThermalResistor`) | Thermal | `a`, `b` | `R` \[K/W\] | v0.1 |
@@ -512,6 +516,13 @@ Hydraulic ports carry pressure \[Pa\] and volume flow \[m^3/s\]. Thermal ports u
 | Fixed / prescribed temperature | Thermal | `a`; `PrescribedTemperature` input `T` \[K\] | `T` | v0.1 |
 | Fixed / prescribed heat flow | Thermal | `a`; `PrescribedHeatFlow` input `Q` \[W\] | `Q`, injected into the network | v0.1 |
 | Heated resistor (`ResistorHeated`) | Electrical `p`, `n`; Thermal `heat` | `R0`, `T0`, `alpha`; `R = R0·(1 + alpha·(T − T0))`, all `v·i` leaves `heat` | v0.1 |
+
+Hydraulic notes:
+
+- **Isothermal, compressible through the bulk modulus.** Fluid compliance lives in `Volume`, the cylinder chambers, `Pipe` and `Accumulator`; the valves and orifices have no volume of their own.
+- **Orifice law.** Every orifice, valve edge and the flow control valve use one regularized law, `Q = Cd·A·√(2/ρ)·Δp/(Δp² + p_tr²)^(1/4)`: square-root for `|Δp| ≫ p_tr`, linear below. The valves write it without a branch, `Cd·A·Δp·√(2/(ρ·√(Δp² + p_tr²)))`, so no switching event is generated.
+- **Valve openings** (check, relief, 4/3 spool) are smooth clamps of a normalized opening to [0, 1], with a leakage area that keeps a closed valve well-posed; there are no `ifelse` switches, so the same model runs in fixed-step export.
+- **Causality.** Valves and orifices take pressures and return flows; `Pipe` ends are inertial (flow) ends; pumps deliver a flow. Put a `Volume` (or another compliance) at a node between a pump and a valve or pipe, or the node pressure becomes an algebraic loop (pump straight into a valve) or a derivative causality (pump straight into a pipe).
 
 ### Domain converters, sensors and export interfaces
 
@@ -526,7 +537,8 @@ Converters are the only components with ports in two domains, which is what lets
 | Ball screw | Rotation `a`; Translation `b` | lead \[m/rev\], efficiency | v0.1 |
 | Wheel | Rotation `a`; Translation `b` | radius | v0.1 |
 | Hydraulic cylinder | Hydraulic `A`, `B`; Translation `rod` | piston and rod areas, stroke, leakage | v0.1 |
-| Hydraulic pump / motor | Hydraulic `a`, `b`; Rotation `shaft` | displacement, efficiency | v0.2 |
+| Hydraulic pump, fixed or variable displacement | Hydraulic `a` (suction), `b` (delivery); Rotation `shaft`; variable: input `u` (displacement fraction) | displacement, volumetric and hydromechanical efficiency at a nominal point | v0.1 |
+| Hydraulic motor (fixed displacement) | Hydraulic `a` (inlet), `b` (outlet); Rotation `shaft` | displacement, volumetric and hydromechanical efficiency at a nominal point | v0.1 |
 | Position, velocity, acceleration sensor | Translation `a`; output `y` | none | v0.1 |
 | Angle, speed sensor | Rotation `a`; output `y` | none | v0.1 |
 | Force / torque sensor | power `a`, `b`; output `y` | none | v0.1 |

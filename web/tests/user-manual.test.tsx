@@ -41,6 +41,7 @@ const EXPECTED_PAGES = [
   "motion-and-drives",
   "thermal-domain",
   "mechanical-electrical",
+  "hydraulics",
 ];
 
 const LINKS: LinkContext = { pageIds: MANUAL_PAGE_IDS, model: null, signalIds: null };

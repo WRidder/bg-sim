@@ -144,6 +144,39 @@ describe("block icons", () => {
     expect(glyphs.size).toBe(componentIcons.length);
   });
 
+  it("draws an explicit, distinct glyph for every hydraulic block", () => {
+    // The icon ids of stdlib/hydraulic and of the hydraulic converters and sensors
+    // (src/library/catalog.jl): ISO 1219-like symbols, no two alike.
+    const hydraulicIcons = [
+      "hyd-accumulator",
+      "hyd-check-valve",
+      "hyd-directional-valve",
+      "hyd-flow-control",
+      "hyd-flow-source",
+      "hyd-orifice",
+      "hyd-pipe",
+      "hyd-pressure-source",
+      "hyd-relief-valve",
+      "hyd-tank",
+      "hyd-variable-orifice",
+      "hyd-volume",
+      "conv-fixed-pump",
+      "conv-variable-pump",
+      "conv-hydraulic-motor",
+      "conv-hydraulic-cylinder",
+      "conv-pressure-sensor",
+      "conv-flow-sensor",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of hydraulicIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(hydraulicIcons.length);
+  });
+
   it("falls back to a placeholder for an unknown icon id", () => {
     expect(hasIcon("no-such-icon")).toBe(false);
     const html = renderToStaticMarkup(<BlockIcon icon="no-such-icon" name="Mystery" />);

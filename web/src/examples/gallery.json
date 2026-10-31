@@ -81,6 +81,14 @@
       "drivetrain-position-open-loop"
     ]
   },
+  "hydraulic-circuit": {
+    "title": "Hydraulic circuit",
+    "description": "A motor-driven pump with relief valve, check valve, hose and accumulator; a 4/3 proportional valve extends and retracts a loaded cylinder.",
+    "hasScene": false,
+    "models": [
+      "hydraulic-circuit"
+    ]
+  },
   "hydraulic-servo": {
     "title": "Hydraulic servo",
     "description": "A valve-controlled hydraulic position servo: a 100 bar supply and a 1 bar tank feed a 4/3 spool valve built from four variable orifices, which drive a single-rod…",
