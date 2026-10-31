@@ -8,7 +8,7 @@
  * changes underneath it (an undo, a reset, or a command from another panel).
  */
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { useExpressionCompletion } from "./expressionCompletion";
 
@@ -345,29 +345,51 @@ export function SelectField({
   );
 }
 
-/** Longer values than this collapse to one line in a field's meta line. */
-const META_VALUE_LIMIT = 32;
-
 /**
  * A value in a field's meta line (a default, say). A long one, like a table
- * constant's matrix, shows as one line ending in an ellipsis; a click shows
- * it whole and a second click folds it again.
+ * constant's matrix, shows at most three lines ending in an ellipsis; then a
+ * click (or Enter) shows it whole and a second one folds it again. A value
+ * that fits is plain text.
  */
 export function MetaValue({ text, testId }: { text: string; testId?: string }) {
+  const ref = useRef<HTMLElement>(null);
   const [open, setOpen] = useState(false);
-  if (text.length <= META_VALUE_LIMIT) {
-    return <code>{text}</code>;
-  }
+  const [clamped, setClamped] = useState(false);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (element === null || open) {
+      return;
+    }
+    const check = (): void => setClamped(element.scrollHeight > element.clientHeight + 1);
+    check();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(check);
+    observer?.observe(element);
+    return () => observer?.disconnect();
+  }, [text, open]);
+  const toggle = clamped || open;
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setOpen((value) => !value);
+    }
+  };
   return (
-    <button
-      type="button"
-      className={`inspector-meta-value${open ? " is-open" : ""}`}
-      aria-expanded={open}
-      title={open ? "Fold the value to one line" : "Show the whole value"}
+    <code
+      ref={ref}
+      className={`inspector-meta-value${open ? " is-open" : ""}${toggle ? " is-toggle" : ""}`}
       data-testid={testId}
-      onClick={() => setOpen((value) => !value)}
+      {...(toggle
+        ? {
+            role: "button",
+            tabIndex: 0,
+            "aria-expanded": open,
+            title: open ? "Fold the value to three lines" : "Show the whole value",
+            onClick: () => setOpen((value) => !value),
+            onKeyDown,
+          }
+        : {})}
     >
-      <code>{text}</code>
-    </button>
+      {text}
+    </code>
   );
 }

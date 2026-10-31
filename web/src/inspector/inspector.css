@@ -215,37 +215,40 @@
   color: var(--color-text-muted);
 }
 
-/* "default <value>": a long value is one line with an ellipsis until clicked. */
+/* "default <value>": a long value is at most three lines with an ellipsis until clicked. */
 .inspector-meta-default {
   display: inline-flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: 4px;
   min-width: 0;
   max-width: 100%;
 }
 
 .inspector-meta-value {
+  display: -webkit-box;
   min-width: 0;
-  padding: 0;
   overflow: hidden;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  cursor: pointer;
-  background: none;
-  border: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
   border-radius: var(--radius-sm);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
 
-.inspector-meta-value:hover code {
+.inspector-meta-value.is-toggle {
+  cursor: pointer;
+}
+
+.inspector-meta-value.is-toggle:hover {
   color: var(--color-text);
 }
 
 .inspector-meta-value.is-open {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: none;
+  line-clamp: none;
 }
 
 .inspector-meta-value:focus-visible {

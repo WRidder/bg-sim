@@ -1,26 +1,39 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MetaValue } from "../src/inspector/fields";
 
+/** jsdom has no layout: pretend the text needs `scroll` px in a `client` px box. */
+function layout(scroll: number, client: number): void {
+  vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(scroll);
+  vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(client);
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("MetaValue", () => {
-  it("shows a short value as plain code", () => {
+  it("shows a value that fits in three lines as plain text", () => {
+    layout(14, 14);
     render(<MetaValue text="0.5" testId="value" />);
-    expect(screen.queryByRole("button")).toBeNull();
-    expect(screen.getByText("0.5").tagName).toBe("CODE");
+    const value = screen.getByTestId("value");
+    expect(value.getAttribute("role")).toBeNull();
+    expect(value.className).not.toContain("is-toggle");
   });
 
-  it("folds a long value to one line and expands it on click", () => {
+  it("clamps a longer value to three lines and expands it on click or Enter", () => {
+    layout(560, 42);
     const table = `[${Array.from({ length: 40 }, (_, k) => `${k} ${k * 0.25} ${k * 0.5}`).join("; ")}]`;
     render(<MetaValue text={table} testId="value" />);
-    const button = screen.getByTestId("value");
-    expect(button.getAttribute("aria-expanded")).toBe("false");
-    expect(button.className).not.toContain("is-open");
-    expect(button.textContent).toBe(table);
-    fireEvent.click(button);
-    expect(button.getAttribute("aria-expanded")).toBe("true");
-    expect(button.className).toContain("is-open");
-    fireEvent.click(button);
-    expect(button.getAttribute("aria-expanded")).toBe("false");
+    const value = screen.getByRole("button");
+    expect(value.textContent).toBe(table);
+    expect(value.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(value);
+    expect(value.getAttribute("aria-expanded")).toBe("true");
+    expect(value.className).toContain("is-open");
+    fireEvent.keyDown(value, { key: "Enter" });
+    expect(value.getAttribute("aria-expanded")).toBe("false");
+    expect(value.className).not.toContain("is-open");
   });
 });
