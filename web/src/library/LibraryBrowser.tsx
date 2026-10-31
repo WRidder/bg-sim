@@ -13,12 +13,16 @@
  * the icon and the name, the description in the tooltip, and opens the block
  * help on click. Both views keep the same entry testids, refs and drag payload.
  *
+ * A block just added to the project library (src/library/libraryReveal.ts) is shown: its
+ * category expands (and un-hides), a search that hides it clears, and the entry scrolls into
+ * view with a short highlight.
+ *
  * The last category, Shapes (src/library/libraryShapes.ts), lists the canvas background shapes.
  * They are not catalog blocks: a shape drags with its own MIME type, and a click (or Enter) on one
  * adds it in the middle of the visible canvas (src/editor/shapeRequests.ts) in both views.
  */
 
-import { useId, useMemo, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type DragEvent, type ReactNode } from "react";
 
 import type { CatalogBlock, DomainName } from "../contracts/catalog";
 import type { JunctionType } from "../contracts/model";
@@ -28,6 +32,7 @@ import {
   blockSummary,
   JUNCTION_GROUP,
   libraryCategories,
+  libraryGroupFor,
   searchGroups,
   SHAPES_GROUP,
 } from "./catalogIndex";
@@ -40,6 +45,7 @@ import { useHelpStore } from "../app/helpStore";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
 import { ChevronIcon, ShapeGlyph } from "./icons";
 import { useLibraryPrefs } from "./libraryPrefs";
+import { REVEAL_HIGHLIGHT_MS, useLibraryReveal } from "./libraryReveal";
 import "./library.css";
 
 interface BlockEntry {
@@ -161,6 +167,44 @@ export function LibraryBrowser() {
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const searching = query.trim().length > 0;
+  const pendingReveal = useLibraryReveal((state) => state.pending);
+  const [highlight, setHighlight] = useState<string | null>(null);
+
+  // Show a block that was just added to the project library, once the
+  // refreshed catalog lists it.
+  useEffect(() => {
+    if (pendingReveal === null || index === null) {
+      return;
+    }
+    const block = index.blocksByRef.get(pendingReveal);
+    if (block === undefined) {
+      return;
+    }
+    useLibraryReveal.getState().consume();
+    const group = libraryGroupFor(block);
+    const prefs = useLibraryPrefs.getState();
+    if (prefs.hidden.has(group)) {
+      prefs.setHidden(group, false);
+    }
+    if (!prefs.expanded.has(group)) {
+      prefs.expandAll([group]);
+    }
+    prefs.clearSearchOverrides();
+    setQuery("");
+    setHighlight(block.ref);
+  }, [pendingReveal, index]);
+
+  useEffect(() => {
+    if (highlight === null) {
+      return;
+    }
+    const entry = document.querySelector<HTMLElement>(
+      `[data-testid="library-browser"] [data-ref="${highlight.replace(/["\\]/g, "\\$&")}"]`,
+    );
+    entry?.scrollIntoView?.({ block: "nearest" });
+    const timer = setTimeout(() => setHighlight(null), REVEAL_HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [highlight]);
 
   const groups = useMemo(
     () =>
@@ -272,9 +316,10 @@ export function LibraryBrowser() {
   ): ReactNode => (
     <li
       key={entry.key}
-      className="library-item library-item--tile"
+      className={`library-item library-item--tile${tile.ref !== undefined && tile.ref === highlight ? " is-new" : ""}`}
       draggable
       data-testid={tile.testId}
+      data-new={tile.ref !== undefined && tile.ref === highlight ? "true" : undefined}
       data-ref={tile.ref}
       data-shape={tile.shape}
       data-icon={tile.icon}
@@ -367,9 +412,10 @@ export function LibraryBrowser() {
               return (
                 <li
                   key={entry.key}
-                  className={`library-item${isOpen ? " is-open" : ""}`}
+                  className={`library-item${isOpen ? " is-open" : ""}${entry.block.ref === highlight ? " is-new" : ""}`}
                   draggable
                   data-testid={`library-item-${entry.name}`}
+                  data-new={entry.block.ref === highlight ? "true" : undefined}
                   data-ref={entry.block.ref}
                   data-icon={entry.icon}
                   onDragStart={(event) => onDragStart(event, entry)}

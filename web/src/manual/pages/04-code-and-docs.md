@@ -6,10 +6,25 @@ Every block is defined in the BG-Sim modeling language, a small subset of Julia 
 
 - **Choose a source…** opens a block: an inline block of this model, a block of the project library, or a standard library block (read-only).
 - **+ Equation** and **+ Discrete** add a new inline code block to the diagram. Double-click an inline code block on the canvas to open its source.
+- **+ Library block** creates a reusable block in the project library (see below).
 - Inline blocks are saved with the model. Project library blocks save automatically a moment after you stop typing.
 - To change a standard block, use **Copy to project library**; the copy is editable and the instance points to it.
 - Autocomplete suggests allowed functions, declared names, port fields (`p.e`, `p.f`) and units. The source is checked while you type; problems are underlined.
 - Click the gutter (or press `F9`) to set a [breakpoint](page:debugging).
+
+### From code to a reusable block
+
+An inline code block belongs to one model. To use the same code as a block you can drag from the library, put it in the [project library](page:projects-and-library):
+
+1. Open the inline block in the Code tab (or select it on the diagram) and click **Save to project library**.
+2. Enter a block name, for example `FirstOrderLag`. The proposed name comes from the `@block` line. It must be a Julia identifier that no project block uses yet. The `@block` line is renamed to match, because a library block is named like its file.
+3. If other inline blocks have exactly the same code, tick **Also use it for …** to switch them over too.
+4. Click **Save to library**. The code goes to `library/FirstOrderLag.jl` and the block on the diagram becomes an instance of `project:FirstOrderLag`. Its name, position and values are kept, and one **Undo** reverts it. The Code tab shows the library block, and the library's **Project** category opens with the new block highlighted.
+5. Drag **FirstOrderLag** from the **Project** category to add more instances, in this model or any other model of the project. Editing its code changes every instance.
+
+To start a library block from scratch, click **+ Library block**. Choose *Equation block* (continuous, `@equations`) or *Discrete block* (sampled, `@discrete`) and a name. The new block opens in the Code tab and appears in the **Project** category. Drag it onto the diagram, or click **Place on diagram** in the message above the editor.
+
+If the library does not list the new block (for example while the simulation worker restarts), the file is still saved and the inline block stays as it was. Reopen the project to use the library block.
 
 A minimal equation block:
 

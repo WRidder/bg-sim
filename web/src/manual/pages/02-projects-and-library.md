@@ -29,4 +29,10 @@ The **Library** panel at the top left lists every block you can use.
 
 ### Your own blocks
 
-To change a standard block, select it and click **Copy to project library** in the inspector (or in the read-only Code tab). The copy goes to `library/<Name>.jl` in the project, appears in the **Project** category and can be edited in the [Code tab](page:code-and-docs).
+Blocks in the project library live in `library/<Name>.jl` in the project. They appear in the **Project** category, can be dragged onto any model of the project like a standard block, and are edited in the [Code tab](page:code-and-docs). There are three ways to make one:
+
+- **Change a standard block:** select it and click **Copy to project library** in the inspector (or in the read-only Code tab). The instance then uses the copy.
+- **Keep an inline code block:** select an inline Equation or Discrete code block and click **Save to project library** in the inspector (or in the Code tab). Choose a name. The block on the diagram then uses the library block and keeps its name, position and values. Inline blocks with exactly the same code can be switched over in the same step, and one **Undo** turns them all back into inline blocks.
+- **Start a new one:** click **+ Library block** in the Code tab and pick *Equation block* or *Discrete block* and a name.
+
+A block name is a Julia identifier (letters, digits and `_`, not starting with a digit) that no other project block uses. Case does not count, because the name is also the file name. The `@block <Name>` line of the code is set to the chosen name. After saving, the **Project** category opens and the new block is highlighted for a moment.

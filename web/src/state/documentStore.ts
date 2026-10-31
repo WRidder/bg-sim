@@ -295,6 +295,14 @@ export interface DocumentActions {
   /** Re-point a library instance, used by "Copy to project library" (plan 7.4). */
   setNodeBlockRef: (nodeId: string, ref: string) => EditResult;
   /**
+   * Turn inline code nodes, anywhere in the model, into instances of the
+   * library block `ref` ("Save to project library", plan 7.7) in ONE undo
+   * step. Name, position, params, constants, starts and look are kept; only
+   * `block` changes. Ids that are not inline nodes are ignored; it fails when
+   * none is.
+   */
+  replaceInlineWithRef: (nodeIds: readonly string[], ref: string) => EditResult & { replaced?: string[] };
+  /**
    * Replace the embedded source of an inline code node (plan 7.7). Pass
    * `coalesce` while the editor has a typing gesture open so one editing
    * session is one undo step.
@@ -551,8 +559,8 @@ function removeSubsystemPorts(root: Model, path: readonly string[], names: reado
   }
 }
 
-/** A free grid slot for a new code node when the caller does not give one. */
-function inlineNodePosition(nodes: readonly ModelNode[]): ModelPoint {
+/** The next grid slot of a new code node: three columns after the existing nodes. */
+export function inlineNodePosition(nodes: readonly ModelNode[]): ModelPoint {
   const columns = 3;
   const index = nodes.length;
   return {
@@ -1619,6 +1627,48 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         }
       });
       return { ok: true };
+    },
+
+    replaceInlineWithRef: (nodeIds, ref) => {
+      const doc = get().doc;
+      if (doc === null) {
+        return { ok: false, error: "No model is open." };
+      }
+      const next = ref.trim();
+      if (next.length === 0) {
+        return { ok: false, error: "Enter a block reference." };
+      }
+      const wanted = new Set(nodeIds);
+      const replaced: string[] = [];
+      const visit = (diagram: ModelDiagram): void => {
+        for (const node of diagram.nodes) {
+          if (wanted.has(node.id) && "inline" in node.block) {
+            replaced.push(node.id);
+          }
+          if ("subsystem" in node.block) {
+            visit(node.block.subsystem.diagram);
+          }
+        }
+      };
+      visit(doc.diagram);
+      if (replaced.length === 0) {
+        return { ok: false, error: "Only inline code nodes can be saved to the library." };
+      }
+      const targets = new Set(replaced);
+      commit((draft) => {
+        const rewrite = (diagram: ModelDiagram): void => {
+          for (const node of diagram.nodes) {
+            if (targets.has(node.id) && "inline" in node.block) {
+              node.block = { ref: next };
+            }
+            if ("subsystem" in node.block) {
+              rewrite(node.block.subsystem.diagram);
+            }
+          }
+        };
+        rewrite(draft.diagram);
+      });
+      return { ok: true, replaced };
     },
 
     setInlineSource: (nodeId, source, options = {}) => {

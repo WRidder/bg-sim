@@ -1,0 +1,96 @@
+/*
+ * The name dialog of "Save to project library" and "+ Library block" (ProjectBlockDialog.tsx).
+ * Its own stylesheet: the inspector opens it before the Code tab has ever been shown.
+ */
+
+.project-block-dialog {
+  width: min(480px, 94vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  outline: none;
+}
+
+.project-block-dialog__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.project-block-dialog__text {
+  margin: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.project-block-dialog__kinds {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.project-block-dialog__kinds legend {
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.project-block-dialog__kinds label,
+.project-block-dialog__check {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.project-block-dialog__muted {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.project-block-dialog__field {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.project-block-dialog__input {
+  height: 28px;
+  padding: 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.project-block-dialog__input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.project-block-dialog__hint,
+.project-block-dialog__note {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.project-block-dialog__hint--error,
+.project-block-dialog__error {
+  margin: 0;
+  color: var(--color-error-text);
+}
+
+.project-block-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}

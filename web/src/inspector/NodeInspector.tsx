@@ -29,6 +29,8 @@ import { nodeNameIssue, useDocumentStore } from "../state/documentStore";
 import { nodeRef } from "../state/modelFactory";
 import { equationFieldProps, useGlobalEvaluation } from "../globals/equationField";
 import { copyBlockToProjectLibrary } from "./copyToLibrary";
+import { saveInlineMessage } from "../code/inlineToLibrary";
+import { ProjectBlockDialog, type ProjectBlockResult } from "../code/ProjectBlockDialog";
 import { stripEquationPrefix } from "./expression";
 import { CsvSourceSection } from "./CsvSourceSection";
 import { isCsvSourceRef } from "./csvSource";
@@ -581,6 +583,8 @@ export function NodeInspector({
   const sourcePath = block?.path ?? (inlineSource !== null ? "inline source" : null);
   const [sourceOpen, setSourceOpen] = useState(false);
   const [copy, setCopy] = useState<CopyState>({ status: "idle", message: null });
+  const [saveDialog, setSaveDialog] = useState(false);
+  const isInline = "inline" in node.block;
 
   const displayRef =
     ref ??
@@ -665,6 +669,20 @@ export function NodeInspector({
         message: error instanceof Error ? error.message : String(error),
       });
     }
+  };
+
+  const saveDisabled = project === null || copy.status === "working";
+  const saveHint =
+    project === null
+      ? "Open a project before saving a block to its library."
+      : "Make this code a reusable block in library/<Name>.jl; this node then uses it.";
+
+  const onSaveDone = (result: ProjectBlockResult): void => {
+    setSaveDialog(false);
+    if (result.mode !== "save-inline") {
+      return;
+    }
+    setCopy({ status: "done", message: saveInlineMessage(result.outcome, result.nodeName) });
   };
 
   const helpRef = iface.isJunction ? `junction:${iface.junction ?? "0"}` : ref;
@@ -878,17 +896,38 @@ export function NodeInspector({
           >
             {sourceOpen ? "Hide source" : "Open source"}
           </button>
-          <button
-            type="button"
-            className="button inspector-button"
-            data-testid="inspector-copy-library"
-            disabled={copyDisabled}
-            title={copyHint}
-            onClick={() => void onCopy()}
-          >
-            {copy.status === "working" ? "Copying…" : "Copy to project library"}
-          </button>
+          {isInline ? (
+            <button
+              type="button"
+              className="button inspector-button"
+              data-testid="inspector-save-library"
+              disabled={saveDisabled}
+              title={saveHint}
+              onClick={() => setSaveDialog(true)}
+            >
+              Save to project library
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="button inspector-button"
+              data-testid="inspector-copy-library"
+              disabled={copyDisabled}
+              title={copyHint}
+              onClick={() => void onCopy()}
+            >
+              {copy.status === "working" ? "Copying…" : "Copy to project library"}
+            </button>
+          )}
         </div>
+        {saveDialog && project !== null ? (
+          <ProjectBlockDialog
+            project={project}
+            request={{ mode: "save-inline", nodeId: node.id }}
+            onClose={() => setSaveDialog(false)}
+            onDone={onSaveDone}
+          />
+        ) : null}
         {copy.status !== "idle" && copy.message !== null ? (
           <p
             className={`inspector-copy inspector-copy--${copy.status}`}
