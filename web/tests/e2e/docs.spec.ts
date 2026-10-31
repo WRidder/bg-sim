@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { waitForLibrary } from "./library";
+
 /**
  * W5.6 acceptance: the model Docs tab. Create a model's docs, add a page and a child page,
  * write inline and display math, paste an image (synthetic clipboard event), copy it and paste it
@@ -43,7 +45,7 @@ test.afterEach(async ({ request }) => {
 
 async function openDocs(page: Page, model: string): Promise<void> {
   await page.goto(`/?project=${encodeURIComponent(project)}&model=${model}`);
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({ timeout: 30_000 });
+  await waitForLibrary(page);
   await page.getByRole("tab", { name: "Docs" }).click();
   await expect(page.getByTestId("docs-tab")).toHaveAttribute("data-status", "ready");
 }

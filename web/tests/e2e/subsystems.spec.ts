@@ -5,6 +5,8 @@ import {
   type Page,
 } from "@playwright/test";
 
+import { waitForLibrary } from "./library";
+
 /**
  * W2.2 acceptance against the real worker (`BGSIM_E2E_REAL=1`):
  *
@@ -75,9 +77,7 @@ function node(page: Page, name: string) {
 async function openIconic(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto(`/?project=${encodeURIComponent(project)}&model=iconic`);
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({
-    timeout: 30_000,
-  });
+  await waitForLibrary(page);
   await expect(page.getByTestId("run-button")).toBeEnabled();
 }
 

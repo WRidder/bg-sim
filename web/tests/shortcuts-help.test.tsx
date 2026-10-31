@@ -170,7 +170,8 @@ describe("block help", () => {
   it("opens from the library item and from F1 for the selected block, and F1 without one shows shortcuts", () => {
     render(<Shell />);
 
-    // The help button of an expanded library item.
+    // The help button of an expanded library item (its category opened first).
+    fireEvent.click(screen.getByTestId("library-group-toggle-Converters and sensors"));
     fireEvent.click(within(screen.getByTestId("library-item-DCMotor")).getByRole("button", { name: /DCMotor/ }));
     fireEvent.click(screen.getByRole("button", { name: "Help for DCMotor" }));
     expect(screen.getByTestId("block-help").getAttribute("data-ref")).toBe("stdlib:converters/DCMotor");

@@ -19,6 +19,8 @@
 
 import { expect, test, type Page } from "@playwright/test";
 
+import { waitForLibrary } from "../e2e/library";
+
 test.describe.configure({ timeout: 180_000 });
 
 const POINTS = 1_000_000;
@@ -168,9 +170,7 @@ async function installRawFrame(page: Page, signals: number): Promise<void> {
 
 async function openModel(page: Page, model: string): Promise<void> {
   await page.goto(`/?project=${encodeURIComponent(project)}&model=${model}`);
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({
-    timeout: 30_000,
-  });
+  await waitForLibrary(page);
   await expect(page.getByTestId("run-button")).toBeEnabled();
 }
 

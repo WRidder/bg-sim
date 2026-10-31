@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { waitForLibrary } from "./library";
+
 /**
  * W1.4 acceptance against the fake worker:
  *
@@ -32,9 +34,7 @@ async function openModel(page: Page): Promise<void> {
   await page.goto(
     `/?project=${encodeURIComponent(project)}&model=PlotRun`,
   );
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({
-    timeout: 30_000,
-  });
+  await waitForLibrary(page);
   await expect(page.getByTestId("run-button")).toBeEnabled();
 }
 

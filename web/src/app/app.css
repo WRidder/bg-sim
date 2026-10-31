@@ -327,6 +327,19 @@ body {
   border-bottom: var(--border-width) solid var(--color-border);
 }
 
+/* A title row with actions (the library cog): the heading keeps the title look. */
+.panel-section__title--actions {
+  padding-right: var(--space-1);
+}
+
+.panel-section__heading {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+}
+
 .panel-section__body {
   flex: 1 1 auto;
   min-height: 0;

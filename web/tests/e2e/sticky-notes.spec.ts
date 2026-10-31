@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { expandLibrary } from "./library";
+
 /**
  * Sticky notes on the diagram canvas (`diagram.annotations`):
  *
@@ -29,7 +31,8 @@ test.afterEach(async ({ request }) => {
 
 async function openModel(page: Page): Promise<void> {
   await page.goto(`/?project=${encodeURIComponent(project)}&model=Notes`);
-  await expect(page.getByTestId("library-item-Se")).toBeVisible({ timeout: 30_000 });
+  await expandLibrary(page);
+  await expect(page.getByTestId("library-item-Se")).toBeVisible();
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 }
 
@@ -142,6 +145,7 @@ test("add, edit, recolour, move, delete, undo and reload a note", async ({ page 
   // Persisted: the reload shows the same note.
   await waitSaved(page);
   await page.reload();
+  // The expanded library categories persist across the reload.
   await expect(page.getByTestId("library-item-Se")).toBeVisible({ timeout: 30_000 });
   await expect(notes(page)).toHaveCount(1);
   await expect(notes(page).first()).toHaveAttribute("data-color", "blue");

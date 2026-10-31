@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { expandLibrary } from "./library";
+
 /**
  * W2.4 acceptance (plan 7.5): multiple panels share one cursor as the global
  * inspect time, a pinned run overlays as dashed same-colour lines, the canvas
@@ -26,9 +28,8 @@ test.afterEach(async ({ request }) => {
 
 async function openModel(page: Page, model = "PlotV2"): Promise<void> {
   await page.goto(`/?project=${encodeURIComponent(project)}&model=${model}`);
-  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible({
-    timeout: 30_000,
-  });
+  await expandLibrary(page);
+  await expect(page.getByTestId("library-item-DCMotor")).toBeVisible();
   await expect(page.getByTestId("run-button")).toBeEnabled();
 }
 

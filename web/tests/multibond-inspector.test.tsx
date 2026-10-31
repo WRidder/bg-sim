@@ -21,6 +21,7 @@ import {
 import { Inspector } from "../src/inspector/Inspector";
 import { resetCatalogStore, useCatalogStore } from "../src/library/catalogStore";
 import { LibraryBrowser } from "../src/library/LibraryBrowser";
+import { expandLibraryGroups } from "./libraryHelpers";
 import {
   resetDocumentStore,
   useDocumentStore,
@@ -404,6 +405,7 @@ describe("the robotics library categories", () => {
 
     useCatalogStore.getState().setCatalog(catalog);
     const { container } = render(<LibraryBrowser />);
+    expandLibraryGroups();
 
     const groupIds = [...container.querySelectorAll(".library-group")].map((group) =>
       group.getAttribute("data-testid"),
@@ -425,6 +427,7 @@ describe("the robotics library categories", () => {
     const catalog = spatialCatalog();
     useCatalogStore.getState().setCatalog(catalog);
     const { container } = render(<LibraryBrowser />);
+    expandLibraryGroups();
 
     const planarRow = screen.getByTestId("library-item-RigidBody2D");
     fireEvent.click(within(planarRow).getByRole("button"));
@@ -473,6 +476,7 @@ describe("the robotics library categories", () => {
     catalog.blocks.push(drive);
     useCatalogStore.getState().setCatalog(catalog);
     render(<LibraryBrowser />);
+    expandLibraryGroups();
     expect(within(screen.getByTestId("library-group-Drives")).getByTestId("library-item-DriveX")).toBeTruthy();
     expect(screen.getByTestId("library-group-2D multibond")).toBeTruthy();
   });
@@ -481,6 +485,7 @@ describe("the robotics library categories", () => {
     const catalog = planarCatalog();
     useCatalogStore.getState().setCatalog(catalog);
     render(<LibraryBrowser />);
+    expandLibraryGroups();
     expect(screen.getByTestId("library-group-2D multibond")).toBeTruthy();
   });
 });
