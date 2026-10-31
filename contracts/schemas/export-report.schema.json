@@ -72,6 +72,8 @@
       "type": "array",
       "items": { "$ref": "#/$defs/parameter" }
     },
+    "tunables": { "$ref": "#/$defs/tunables" },
+    "simplify": { "$ref": "#/$defs/simplify" },
     "locals": {
       "type": "array",
       "items": { "type": "string" },
@@ -149,10 +151,93 @@
       "type": "object",
       "required": ["name", "id"],
       "properties": {
-        "name": { "type": "string" },
-        "id": { "type": "string" },
+        "name": { "type": "string", "description": "The FMI variable name." },
+        "id": {
+          "type": "string",
+          "description": "The flat parameter id (`Motor/R`), or `global:<name>` for an exposed global parameter."
+        },
         "start": { "type": "number" },
-        "variability": { "type": "string" },
+        "variability": {
+          "type": "string",
+          "description": "tunable (settable at any time), fixed (settable before initialization only; a calculated parameter is fixed as well)."
+        },
+        "causality": {
+          "title": "ExportParameterCausality",
+          "enum": ["parameter", "calculatedParameter"],
+          "description": "calculatedParameter: computed from the exposed globals in fmi2ExitInitializationMode (J-EX8); it cannot be set."
+        },
+        "min": { "type": "number", "description": "The declared range (D-EX16); the FMU refuses values outside it." },
+        "max": { "type": "number" },
+        "unit": { "type": "string" },
+        "description": { "type": "string" },
+        "dependsOn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "A calculated parameter: the exposed global parameters it is computed from."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "tunables": {
+      "title": "ExportTunables",
+      "type": "object",
+      "description": "J-EX8: the values settable before initialization and what fmi2ExitInitializationMode recomputes from them, with what keeping them costs (rhsOps against rhsOpsFolded).",
+      "properties": {
+        "requested": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The block parameters kept as fixed FMU parameters."
+        },
+        "globals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The exposed global parameters."
+        },
+        "calculated": { "type": "integer", "minimum": 0, "description": "Calculated parameters." },
+        "starts": { "type": "integer", "minimum": 0, "description": "Start values recomputed at initialization." },
+        "heldValues": { "type": "integer", "minimum": 0, "description": "Held discrete values recomputed at initialization." },
+        "newton": { "type": "boolean", "description": "A DAE: the algebraic unknowns are solved by Newton at initialization." },
+        "rhsOps": { "type": "integer", "minimum": 0, "description": "Operations of one right-hand-side evaluation, as exported." },
+        "rhsOpsFolded": {
+          "type": ["integer", "null"],
+          "description": "The same with the tunables folded as well (null: nothing to compare)."
+        },
+        "initializationChecks": {
+          "type": "array",
+          "description": "The probes of the initialization check: the C initialization against MTK's for changed values (E110 when they differ).",
+          "items": {
+            "title": "ExportInitializationCheck",
+            "type": "object",
+            "properties": {
+              "ids": { "type": "array", "items": { "type": "string" } },
+              "values": { "type": "array", "items": { "type": "number" } },
+              "maxStartDeviation": { "type": "number" },
+              "$comment": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "simplify": {
+      "title": "ExportSimplify",
+      "type": "object",
+      "description": "D-EX10: what substituting the folded values and simplifying saved (operations, Jacobian and LU non-zeros, LU flops, before and after).",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "rhsOpsBefore": { "type": "integer" },
+        "rhsOps": { "type": "integer" },
+        "seconds": { "type": "number" },
+        "constantObserved": { "type": "integer" },
+        "jacobianNnzBefore": { "type": "integer" },
+        "jacobianNnz": { "type": "integer" },
+        "luNnzBefore": { "type": "integer" },
+        "luNnz": { "type": "integer" },
+        "luFlopsBefore": { "type": "number" },
+        "luFlops": { "type": "number" },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false

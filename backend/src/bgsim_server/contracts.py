@@ -608,14 +608,104 @@ class ExportInterfaceOutput(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ExportParameterCausality(Enum):
+    parameter = 'parameter'
+    calculatedParameter = 'calculatedParameter'
+
+
 class ExportInterfaceParameter(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: str
-    id: str
+    name: str = Field(..., description='The FMI variable name.')
+    id: str = Field(
+        ...,
+        description='The flat parameter id (`Motor/R`), or `global:<name>` for an exposed global parameter.',
+    )
     start: float | None = None
-    variability: str | None = None
+    variability: str | None = Field(
+        None,
+        description='tunable (settable at any time), fixed (settable before initialization only; a calculated parameter is fixed as well).',
+    )
+    causality: ExportParameterCausality | None = Field(
+        None,
+        description='calculatedParameter: computed from the exposed globals in fmi2ExitInitializationMode (J-EX8); it cannot be set.',
+        title='ExportParameterCausality',
+    )
+    min: float | None = Field(
+        None,
+        description='The declared range (D-EX16); the FMU refuses values outside it.',
+    )
+    max: float | None = None
+    unit: str | None = None
+    description: str | None = None
+    dependsOn: list[str] | None = Field(
+        None,
+        description='A calculated parameter: the exposed global parameters it is computed from.',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportInitializationCheck(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    ids: list[str] | None = None
+    values: list[float] | None = None
+    maxStartDeviation: float | None = None
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportTunables(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    requested: list[str] | None = Field(
+        None, description='The block parameters kept as fixed FMU parameters.'
+    )
+    globals: list[str] | None = Field(
+        None, description='The exposed global parameters.'
+    )
+    calculated: conint(ge=0) | None = Field(None, description='Calculated parameters.')
+    starts: conint(ge=0) | None = Field(
+        None, description='Start values recomputed at initialization.'
+    )
+    heldValues: conint(ge=0) | None = Field(
+        None, description='Held discrete values recomputed at initialization.'
+    )
+    newton: bool | None = Field(
+        None,
+        description='A DAE: the algebraic unknowns are solved by Newton at initialization.',
+    )
+    rhsOps: conint(ge=0) | None = Field(
+        None, description='Operations of one right-hand-side evaluation, as exported.'
+    )
+    rhsOpsFolded: int | None = Field(
+        None,
+        description='The same with the tunables folded as well (null: nothing to compare).',
+    )
+    initializationChecks: list[ExportInitializationCheck] | None = Field(
+        None,
+        description="The probes of the initialization check: the C initialization against MTK's for changed values (E110 when they differ).",
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class ExportSimplify(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    enabled: bool | None = None
+    rhsOpsBefore: int | None = None
+    rhsOps: int | None = None
+    seconds: float | None = None
+    constantObserved: int | None = None
+    jacobianNnzBefore: int | None = None
+    jacobianNnz: int | None = None
+    luNnzBefore: int | None = None
+    luNnz: int | None = None
+    luFlopsBefore: float | None = None
+    luFlops: float | None = None
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -708,40 +798,23 @@ class ExportLinearSolver(Enum):
     sparse = 'sparse'
 
 
-class ExportSettings(BaseModel):
+class ExportTunable(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    method: ExportMethod | None = Field(
-        None,
-        description='The integrator; auto picks the cheapest method that meets the step rule (a Rosenbrock method for a DAE).',
-        title='ExportMethod',
+    id: constr(
+        pattern=r'^(global:[A-Za-z_][A-Za-z0-9_]*|([A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(\[[0-9]+(,[0-9]+)?\])?)$'
+    ) = Field(
+        ...,
+        description='A flat parameter id (`Motor/R`, `Arm/r[2]`) or a global parameter (`global:m`).',
     )
-    dt: PositiveFloat | None = Field(
+    min: float | None = Field(
         None,
-        description='Internal step in seconds (whole nanoseconds, dividing the communication step); null chooses it from the spectrum.',
+        description="Smallest value the FMU accepts; null or absent falls back to the parameter's catalog min (none for a global).",
     )
-    step: PositiveFloat | None = Field(
+    max: float | None = Field(
         None,
-        description='Communication step in seconds (FMI DefaultExperiment stepSize); null is 1 ms, or finer for horizons below 0.5 s.',
-    )
-    damping: confloat(lt=1.0, gt=0.0) | None = Field(
-        None,
-        description="The Rosenbrock step rule's damping; null is the default 0.05 with the over-budget fallback to 0.5 (W214). A set value turns the fallback off.",
-    )
-    jacobian: ExportJacobian | None = Field(
-        None,
-        description='Rosenbrock only: the Jacobian in C (symbolic, coloured finite differences, or auto).',
-        title='ExportJacobian',
-    )
-    linearSolver: ExportLinearSolver | None = Field(
-        None,
-        description='Rosenbrock only: dense LU, static sparse LU, or auto (sparse above 40 states).',
-        title='ExportLinearSolver',
-    )
-    exposeAll: bool | None = Field(
-        None,
-        description='Debug option: publish every recorded signal as a read-only local variable. It does not change the interface.',
+        description="Largest value the FMU accepts; null or absent falls back to the parameter's catalog max.",
     )
     field_comment: str | None = Field(None, alias='$comment')
 
@@ -1742,6 +1815,52 @@ class Docs(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class ExportSettings(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    method: ExportMethod | None = Field(
+        None,
+        description='The integrator; auto picks the cheapest method that meets the step rule (a Rosenbrock method for a DAE).',
+        title='ExportMethod',
+    )
+    dt: PositiveFloat | None = Field(
+        None,
+        description='Internal step in seconds (whole nanoseconds, dividing the communication step); null chooses it from the spectrum.',
+    )
+    step: PositiveFloat | None = Field(
+        None,
+        description='Communication step in seconds (FMI DefaultExperiment stepSize); null is 1 ms, or finer for horizons below 0.5 s.',
+    )
+    damping: confloat(lt=1.0, gt=0.0) | None = Field(
+        None,
+        description="The Rosenbrock step rule's damping; null is the default 0.05 with the over-budget fallback to 0.5 (W214). A set value turns the fallback off.",
+    )
+    jacobian: ExportJacobian | None = Field(
+        None,
+        description='Rosenbrock only: the Jacobian in C (symbolic, coloured finite differences, or auto).',
+        title='ExportJacobian',
+    )
+    linearSolver: ExportLinearSolver | None = Field(
+        None,
+        description='Rosenbrock only: dense LU, static sparse LU, or auto (sparse above 40 states).',
+        title='ExportLinearSolver',
+    )
+    exposeAll: bool | None = Field(
+        None,
+        description='Debug option: publish every recorded signal as a read-only local variable. It does not change the interface.',
+    )
+    tunables: list[ExportTunable] | None = Field(
+        None,
+        description='The tunables editor (W-EX1, J-EX8): block parameters (flat id `Inst/param`) and global parameters (`global:<name>`) that stay FMU parameters settable before initialization (causality parameter, variability fixed) instead of being folded. Each may carry a range (D-EX16): the step is proven stable over it and the FMU refuses values outside it. Absent or empty folds every parameter (the default).',
+    )
+    exposeGlobals: bool | None = Field(
+        None,
+        description='Expose every independent global parameter as an FMU parameter settable before initialization; the block parameters and starts computed from them become calculated values, recomputed in fmi2ExitInitializationMode (plan/GLOBAL_PARAMETERS.md). A range for a global comes from its entry in tunables.',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class ModelProbe(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2167,6 +2286,8 @@ class ExportReport(BaseModel):
     inputs: list[ExportInterfaceInput]
     outputs: list[ExportInterfaceOutput]
     parameters: list[ExportInterfaceParameter]
+    tunables: ExportTunables | None = None
+    simplify: ExportSimplify | None = None
     locals: list[str] | None = Field(
         None, description='Read-only variables of the expose-all debug option.'
     )

@@ -69,6 +69,37 @@
           "type": "boolean",
           "description": "Debug option: publish every recorded signal as a read-only local variable. It does not change the interface."
         },
+        "tunables": {
+          "type": "array",
+          "description": "The tunables editor (W-EX1, J-EX8): block parameters (flat id `Inst/param`) and global parameters (`global:<name>`) that stay FMU parameters settable before initialization (causality parameter, variability fixed) instead of being folded. Each may carry a range (D-EX16): the step is proven stable over it and the FMU refuses values outside it. Absent or empty folds every parameter (the default).",
+          "items": { "$ref": "#/$defs/tunable" }
+        },
+        "exposeGlobals": {
+          "type": "boolean",
+          "description": "Expose every independent global parameter as an FMU parameter settable before initialization; the block parameters and starts computed from them become calculated values, recomputed in fmi2ExitInitializationMode (plan/GLOBAL_PARAMETERS.md). A range for a global comes from its entry in tunables."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "tunable": {
+      "title": "ExportTunable",
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(global:[A-Za-z_][A-Za-z0-9_]*|([A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(\\[[0-9]+(,[0-9]+)?\\])?)$",
+          "description": "A flat parameter id (`Motor/R`, `Arm/r[2]`) or a global parameter (`global:m`)."
+        },
+        "min": {
+          "type": ["number", "null"],
+          "description": "Smallest value the FMU accepts; null or absent falls back to the parameter's catalog min (none for a global)."
+        },
+        "max": {
+          "type": ["number", "null"],
+          "description": "Largest value the FMU accepts; null or absent falls back to the parameter's catalog max."
+        },
         "$comment": { "type": "string" }
       },
       "additionalProperties": false
