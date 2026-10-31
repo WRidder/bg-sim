@@ -40,4 +40,9 @@ double bg_noise_normal(double seed, double k);
    and advances the position. */
 double bg_delay_ring(double *ring, int *pos, int k, double x);
 
+/* One call of the variable-read `delay(x, Tmax, tau)`: the ring as above, read d = tau / Ts
+   calls back (clamped to [0, k]; 0 is x itself), linearly interpolated between the two
+   stored values around it; then x is stored and the position advanced. */
+double bg_delay_ring_at(double *ring, int *pos, int k, double x, double d);
+
 #endif

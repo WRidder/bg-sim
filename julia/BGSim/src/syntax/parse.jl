@@ -746,6 +746,14 @@ function _parse_type!(b::BlockBuilder, node)
     return nothing
 end
 
+# An infix `+`, `-` or `*` (a size such as `n + 1` or `2 * n`); the operands are folded with
+# the constants later, so anything that is not an integer constant is still E005.
+function _size_arith(node)
+    ch = _children(node)
+    length(ch) >= 3 && _is_operator_node(ch[2]) || return false
+    return _operator_symbol(ch[2]) in (:+, :-, :*)
+end
+
 function _size_arg!(b::BlockBuilder, node)
     k = kind(node)
     if k == K"Integer"
@@ -758,9 +766,11 @@ function _size_arg!(b::BlockBuilder, node)
     elseif k == K"Identifier"
         push!(b.size_refs, node.val)
         return node.val
-    elseif k == K"call" && !isempty(_children(node)) && _leaf_symbol(_children(node)[1]) === :ifelse
-        # The spec allows `ifelse` in sizes; fold it once the constants are known
-        # (`resolve_type` does that with `try_eval_const`).
+    elseif k == K"call" && !isempty(_children(node)) &&
+           (_leaf_symbol(_children(node)[1]) === :ifelse || _size_arith(node))
+        # The spec allows `ifelse` and integer `+ - *` of constants in sizes (`Vec{n + 1}`);
+        # fold them once the constants are known (`resolve_type` does that with
+        # `try_eval_const`; a result that is not a positive integer is E005 in the checker).
         e = _to_expr!(b, node, :default)
         e === nothing && return nothing
         _collect_expr_refs!(b.size_refs, e)
@@ -769,7 +779,7 @@ function _size_arg!(b::BlockBuilder, node)
     _error!(
         b,
         "E005",
-        "array size must be an integer literal, a `@constants` value or an `ifelse` of them, found $(_label(node))";
+        "array size must be an integer literal, a `@constants` value, an integer `+ - *` or an `ifelse` of them, found $(_label(node))";
         hint = "declare the size in `@constants`, e.g. `@constants N::Int = 3`",
     )
     return nothing

@@ -50,7 +50,7 @@ one `FunctionRule` built from each of them, so `function_rule` sees exactly one 
 | `noise_normal(seed, k)` | discrete | no |
 | `noise_uniform(seed, k)` | discrete | no |
 | `csv_value(table, k, t)` | all | no (F5.1, `CsvSource` only) |
-| `delay(x, T)` | discrete | no |
+| `delay(x, T)`, `delay(x, Tmax, tau)` | discrete | no |
 """
 struct IntrinsicRule
     name::Symbol
@@ -67,7 +67,7 @@ const INTRINSIC_RULES = IntrinsicRule[
     IntrinsicRule(:noise_normal, [:discrete], 2, 2, true, :intrinsic),
     IntrinsicRule(:noise_uniform, [:discrete], 2, 2, true, :intrinsic),
     IntrinsicRule(:csv_value, ALL_CONTEXTS, 3, 3, true, :intrinsic),
-    IntrinsicRule(:delay, [:discrete], 2, 2, true, :delay),
+    IntrinsicRule(:delay, [:discrete], 2, 3, true, :delay),
 ]
 
 """    intrinsic_rule(name::Symbol) -> Union{IntrinsicRule,Nothing}

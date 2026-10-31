@@ -225,3 +225,30 @@ function bg_delay_ring!(ring::Vector{Float64}, pos::Vector{Int}, id::Int, off::I
     pos[id] = p == k ? 0 : p
     return out
 end
+
+"""
+    bg_delay_ring_at!(ring, pos, id, off, k, x, d) -> Float64
+
+One call of the variable-read `delay(x, Tmax, tau)` (spec "Seeded noise and delay"): the ring
+holds the last `k = Tmax / Ts` values of `x` (0.0 before they have arrived) and `d = tau / Ts`
+says how many calls back to read. `d` is clamped to `[0, k]` (NaN reads 0 back); with
+`n = floor(d)` and `f = d - n` the result is `h(n) + f * (h(n + 1) - h(n))`, where `h(0)` is
+`x` itself and `h(j)` the value written `j` calls ago. Then `x` is written as in
+[`bg_delay_ring!`](@ref). The C twin is `bg_delay_ring_at` in `bg_intrinsics.c`, operation for
+operation, so the export is bit-exact.
+"""
+function bg_delay_ring_at!(ring::Vector{Float64}, pos::Vector{Int}, id::Int, off::Int,
+    k::Int, x::Real, d::Real)
+    xf = Float64(x)
+    dd = Float64(d)
+    dd = dd > 0.0 ? (dd < Float64(k) ? dd : Float64(k)) : 0.0
+    n = unsafe_trunc(Int, dd)
+    f = dd - Float64(n)
+    p = pos[id]
+    # The value written j calls ago (1 <= j <= k) is at slot p - j, modulo k.
+    a = n == 0 ? xf : ring[off + mod(p - n, k) + 1]
+    out = n < k ? a + f * (ring[off + mod(p - n - 1, k) + 1] - a) : a
+    ring[off + p + 1] = xf
+    pos[id] = p + 1 == k ? 0 : p + 1
+    return out
+end

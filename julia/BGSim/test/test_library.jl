@@ -385,7 +385,37 @@ const HYDRAULIC_REFS = [
     "stdlib:hydraulic/PressureReliefValve",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS))
+# The signal and control blocks (Simulink / 20-sim set): linear systems, filters, routing,
+# nonlinearities, simulation control and observers.
+const SIGNAL_CONTROL_REFS = [
+    "stdlib:continuous/Backlash",
+    "stdlib:continuous/BandPass",
+    "stdlib:continuous/Demux2",
+    "stdlib:continuous/Demux3",
+    "stdlib:continuous/Demux4",
+    "stdlib:continuous/HitCrossing",
+    "stdlib:continuous/LowPassBessel",
+    "stdlib:continuous/LowPassButterworth",
+    "stdlib:continuous/Luenberger",
+    "stdlib:continuous/MultiportSwitch",
+    "stdlib:continuous/Mux2",
+    "stdlib:continuous/Mux3",
+    "stdlib:continuous/Mux4",
+    "stdlib:continuous/Notch",
+    "stdlib:continuous/Polynomial",
+    "stdlib:continuous/Rounding",
+    "stdlib:continuous/TransferFunction",
+    "stdlib:continuous/VariableTransportDelay",
+    "stdlib:continuous/WrapToPi",
+    "stdlib:continuous/ZeroPole",
+    "stdlib:discrete/DiscreteDerivative",
+    "stdlib:discrete/KalmanFilter",
+    "stdlib:discrete/Memory",
+    "stdlib:sources/Assertion",
+    "stdlib:sources/StopSimulation",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -736,6 +766,49 @@ const INTERFACE_FIELDS = [
         table = blocks["stdlib:sources/RepeatingTable"]
         @test [(c.name, c.default) for c in table.interface.constants] == [("N", 8)]
         @test table.interface.parameters[4].options == ["hold", "linear"]
+    end
+
+    @testset "the signal and control blocks" begin
+        # Clean blocks with a description, an icon and a described parameter each; the
+        # golden tests (test/golden/{continuous,discrete,sources}) check the responses.
+        blocks = Dict(b.ref => b for b in load_stdlib())
+        for ref in SIGNAL_CONTROL_REFS
+            b = blocks[ref]
+            @test isempty(b.diagnostics)
+            @test !isempty(b.description)
+            @test !isempty(b.icon)
+            @test all(p -> !isempty(something(p.description, "")), b.interface.parameters)
+        end
+        params(ref) = [p.name for p in blocks["stdlib:" * ref].interface.parameters]
+        consts(ref) = [(c.name, c.default) for c in blocks["stdlib:" * ref].interface.constants]
+        @test params("continuous/TransferFunction") == ["num", "den"]
+        @test consts("continuous/TransferFunction") == [("n", 2)]
+        @test params("continuous/ZeroPole") == ["gain", "zero_re", "zero_im", "pole_re", "pole_im"]
+        @test consts("continuous/ZeroPole") == [("n", 2), ("m", 1)]
+        for f in ("LowPassButterworth", "LowPassBessel")
+            b = blocks["stdlib:continuous/" * f]
+            @test params("continuous/" * f) == ["k", "wc"]
+            @test b.interface.parameters[2].unit == "rad/s"
+            @test consts("continuous/" * f) == [("n", 2)]
+        end
+        @test params("continuous/Notch") == ["k", "w0", "bandwidth", "depth"]
+        @test params("continuous/BandPass") == ["k", "w0", "bandwidth"]
+        @test blocks["stdlib:continuous/Rounding"].interface.parameters[1].options ==
+              ["floor", "ceil", "round", "fix"]
+        @test blocks["stdlib:continuous/HitCrossing"].interface.parameters[2].options ==
+              ["either", "rising", "falling"]
+        for n in 2:4
+            mux = blocks["stdlib:continuous/Mux$n"]
+            @test [i.name for i in mux.interface.inputs] == ["u$i" for i in 1:n]
+            @test only(mux.interface.outputs).size == [n]
+            demux = blocks["stdlib:continuous/Demux$n"]
+            @test only(demux.interface.inputs).size == [n]
+            @test [o.name for o in demux.interface.outputs] == ["y$i" for i in 1:n]
+        end
+        @test [i.name for i in blocks["stdlib:continuous/VariableTransportDelay"].interface.inputs] == ["u", "d"]
+        @test params("sources/StopSimulation") == ["threshold"]
+        @test params("sources/Assertion") == ["threshold"]
+        @test params("discrete/KalmanFilter") == ["A", "B", "C", "D", "Q", "R"]
     end
 
     @testset "the M2 continuous rows (J2.7c)" begin
@@ -2386,7 +2459,10 @@ const INTERFACE_FIELDS = [
             rule = BGSim.function_rule(Symbol(row.name))
             @test rule !== nothing
             @test rule.stdlib_only == row.stdlib_only
-            @test rule.min_args == row.arity == rule.max_args
+            # `arity` is the smallest form; only `delay` has a longer one, the variable read
+            # `delay(x, Tmax, tau)`.
+            @test rule.min_args == row.arity
+            @test rule.max_args == (row.name == "delay" ? 3 : row.arity)
         end
     end
 

@@ -36,12 +36,13 @@ const EXPECTED_PAGES = [
   "diagnostics",
   "export",
   "signal-sources",
-  "background-tasks",
-  "keyboard-shortcuts",
+  "control-blocks",
   "motion-and-drives",
-  "thermal-domain",
   "mechanical-electrical",
   "hydraulics",
+  "thermal-domain",
+  "background-tasks",
+  "keyboard-shortcuts",
 ];
 
 const LINKS: LinkContext = { pageIds: MANUAL_PAGE_IDS, model: null, signalIds: null };

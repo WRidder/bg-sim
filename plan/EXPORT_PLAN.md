@@ -586,6 +586,12 @@ declared range [1, 4]`; a range that leaves out the model's value is E110 at exp
   (requested, globals, counts of what is recomputed, `newton`, `rhsOps` against
   `rhsOpsFolded`, the initialization probes). `RUNTIME_VERSION` 0.4.0 (`bg_init`,
   `bg_p_name`/`bg_u_name`, `bg_p_tunable` 2 for a calculated parameter).
+- Signal and control blocks (branch `blocks-signal`): `RUNTIME_VERSION` 0.6.0. The
+  variable-read ring `bg_delay_ring_at` (the intrinsic `delay(x, Tmax, tau)`, used by
+  VariableTransportDelay), and the run monitors: `bg_step` returns `BG_STEP_STOP` (1) or
+  `BG_STEP_ASSERT` (2) when a StopSimulation or Assertion block has triggered (`m->monitor`,
+  `bg_monitor_name`), and `fmi2DoStep` maps them to `fmi2Discard` with `fmi2Terminated` and
+  to a logged `fmi2Error`. Test: `test/test_export_signal_blocks.jl`.
 - Spec: the target-platform paragraph (generated C, FMU, C API; ctrlX runs it without Julia),
   the "Future option: C++ export" paragraph (superseded), the pipeline figure (C/FMU output),
   and the open question on bit-exactness (answered by D-EX14).

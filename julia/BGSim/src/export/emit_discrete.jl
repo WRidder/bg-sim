@@ -52,6 +52,11 @@ function dval(ex, param::Dict{Int,String})
             _, _, id, off, k, x = ex.args[2:end]
             return "bg_delay_ring(m->ring + $(off), &m->ring_pos[$(id - 1)], $(k), $(dval(x, param)))"
         end
+        if f isa GlobalRef && f.name === :bg_delay_ring_at!
+            # `delay(x, Tmax, tau)`: (ring, ring_pos, id, off, k, x, tau / Ts).
+            _, _, id, off, k, x, d = ex.args[2:end]
+            return "bg_delay_ring_at(m->ring + $(off), &m->ring_pos[$(id - 1)], $(k), $(dval(x, param)), $(dval(d, param)))"
+        end
         a = String[dval(y, param) for y in ex.args[2:end]]
         if f isa GlobalRef
             n = f.name

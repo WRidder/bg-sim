@@ -28,12 +28,14 @@ Errors and warnings also mark the canvas.
 | E301–E306 | 3D scene and binding problems |
 | E401, W401 | a breakpoint could not be verified |
 | E901 | the solver failed during the run |
+| E902 | an [Assertion](page:control-blocks) block failed; the message names the block and the time |
 | W201 | a storage element is in derivative causality |
 | W202 | an algebraic loop is solved iteratively |
 | W204 | a declaration is not used |
 | W205 | a Generic port could not be given a domain |
 | W206 | the event limit was reached |
 | W216 | two random sources share a `seed`, so they draw the same sequence |
+| W217 | a [StopSimulation](page:control-blocks) block ended the run; the message names the block and the time |
 | W203, W207–W215 | export warnings |
 
 The message of each item explains the specific problem; this table is only a guide to the number ranges.
