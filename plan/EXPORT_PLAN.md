@@ -91,7 +91,7 @@ Four findings shape this plan:
 | D-EX10 | Parameters | Non-tunable parameters are **folded** into constants by default. `tunable = true` parameters (and `ExportParameter`), inputs and held discrete values stay fields, settable at any time. An option (`fold_parameters = false`) keeps all parameters as fields (settable before initialization); nothing is substituted then. **Folding simplifies** (`simplify = true`, `src/export/simplify.jl`): the folded values are substituted into the right-hand side, the observed equations (in order, so an observed value that becomes a constant is substituted further), the outputs and the event conditions and values, *before* the Jacobian pattern, the symbolic Jacobian and the C code. The rules are cheap and predictable, applied bottom-up once per distinct subexpression: a call on constants is evaluated (arithmetic, comparisons, logic, the elementary functions; never `round`, an intrinsic or a domain error), SymbolicUtils' own rebuild of `+`/`*`/`/`/`^` removes `0*x`, `1*x`, `x+0`, `x^1`, `x/1` and merges coefficients, a constant `ifelse` condition selects its branch (so the frozen mode disappears too), `&`/`|` with a constant reduce. No full `simplify` (unpredictable in time and form). Tables keep their literals through `env`. The emitter adds a peephole for leftovers (`_c_product`, `_c_sum`): literal operands fold, `0.0 * x` → `0.0`, `1.0 * x` → `x`, `(-1.0) * x` → `-x`, `a + (-1.0) * b` → `a - b`. The discrete partitions (bit-exact against the Julia scheduler, section 8) get only the exact part: `1.0` factors dropped, `(-1.0)` as a negation, all-literal products folded left to right. **Accepted semantic difference:** `0*x → 0` drops the NaN of an infinite or NaN `x` and the sign of a zero product (`0.0 * -3.0` is `-0.0`), and `x + 0 → x` keeps the sign of a negative zero (`-0.0 + 0.0` is `+0.0`); every other rule is exact in IEEE arithmetic (a negation, or a swap of two addends), except that literal operands of one sum or product are combined first (a rounding-level reordering). `simplify = false` keeps the expressions as compiled (for comparisons); `export.json` reports `simplify` (RHS operations, structural Jacobian non-zeros, LU non-zeros and flops, before and after). | D4 left folding to export; folding shrinks code. gcc -O2 without `-ffast-math` may not remove `0.0 * x` or `x + 0.0`, and the structural pattern counted such terms as non-zeros, which enlarged the static sparse LU. |
 | D-EX11 | Initialization | Phase 1: start values computed in Julia at export with the current parameters, and baked in. Phase 2: MTK's initialization system is generated as C and solved with a bounded Newton iteration in `ExitInitializationMode`, which is outside the hot path. | Phase 1 suffices for fixed parameters; phase 2 is needed when initialization depends on parameters that are set before init. |
 | D-EX12 | Jacobian | Symbolic by the chain rule through the observed equations (each partial of each observed local once, so common subexpressions by construction; `calculate_jacobian` substitutes everything and blows up), written on the sparse pattern. Fallback for expressions that blow up: finite differences with column colouring (fixed cost of `ncolours` derivative calls). The pattern and the partials are taken **after** the folded values are substituted and simplified (D-EX10), so a dependency through a zero folded value (an axis component, an offset, a zero gain) is not a structural non-zero, and neither the LU nor the colouring pays for it. A tunable parameter or an input is never substituted, so its entries stay structural for every value it may take. | Rosenbrock needs J every step. |
-| D-EX13 | Linear algebra | Dense in-place LU with partial pivoting for small systems; generated static sparse LU (symbolic factorization at export, fixed fill-in) above a size threshold (start at nx > 40). | Fixed cost, no allocation; the 72-state arm makes this real. |
+| D-EX13 | Linear algebra | Dense in-place LU with partial pivoting for small systems; generated static sparse LU (symbolic factorization at export, fixed fill-in) above a size threshold (start at nx > 40). **Row matching for DAEs:** when W = M − hγJ has a structural zero on its diagonal (an algebraic unknown its own row does not read; the compiled system pairs the k-th algebraic equation with the k-th algebraic unknown) or the identity fails the pivot check, a static row permutation is computed at export: rows with mass keep their diagonal, the algebraic rows are assigned to the algebraic unknowns on the pattern of ∂g/∂z by a maximum-product assignment over the scanned Jacobians (MC64's objective, row-scaled, worst case over the points; a structural maximum matching without Jacobians). Minimum degree then orders the row-matched pattern. The runtime cost stays fixed (one more static index table); a matched LU that still fails the check falls back to dense with W211, which says whether the matching was tried. The check runs at every scanned point with the method's γ and h and the mass matrix, and decides on the componentwise backward error. No equilibration: the target models pass without it. With the sparse LU, `bg_project` (the re-solve of the algebraic unknowns after a tick or event) factors ∂g/∂z on the same tables when that passes the same check (`BG_SPARSE_PROJECT`), else it eliminates densely. | Fixed cost, no allocation; the 72-state arm makes this real. The rigid-joint Panda (154 and 168 states, 140 algebraic) paid 2.4 to 3.1 Mflop for the dense LU; matched, the sparse LU takes 32 to 38 kflop, and both Pandas run in real time at 1 ms (section 5.4). |
 | D-EX14 | Numerics | `-std=c99 -O2 -fno-math-errno`, no `-ffast-math`. Non-finite state → error status, never silently continued. Subnormal flush is a documented target setting. Results match simulation **within tolerance**, not bit-exact (answers the spec's open question: repeatability per target, not across targets). | libm differs from Julia in the last bit; bit-exact output would forbid every libm. |
 | D-EX16 | Values that move the spectrum | Every runtime-settable value the Jacobian depends on (tunable parameters, inputs) needs a declared range (`min`/`max`). The step is chosen over that range (each end, and every corner of the box for up to 6 values), not only at the start values. The FMU refuses `SetReal` outside the range, so the stability proof holds for every accepted value; the range is also published as FMI `min`/`max`. A settable value without a complete range gets W210 (stable only for the scanned values). Gains that only discrete code reads are not scanned: they change the closed loop, which simulation shows as well. When ranges are wide or unknown, an L-stable Rosenbrock export is the robust choice (stable for any value on linear(ised) dynamics). Later: an eigenvalue bound recomputed when a value changes, outside the hot path. | A step proven stable at the start values says nothing about a raised stiffness or gain at runtime. |
 | D-EX17 | Quaternion norm | Exported code does **not** renormalize quaternion states (decided in J-EX5, section 5.4). | The spec asks for one choice in simulation and the target build, and simulation does not project. The pose blocks are norm-invariant (`R(q)` is the quadratic form over `|q|²`), so a drifting norm does not change the motion. The solver cannot tell quaternion states from others, and a projection would make the FMU differ from simulation. |
@@ -160,17 +160,53 @@ The dense versions are in `bg_solver.c`. With `#define BG_SPARSE_LU` in `model.h
   after the folded values are substituted and simplified (D-EX10). It is
   structural, not the numeric zeros of one point. The export adds any numeric non-zero of the
   Jacobian at the start point and reports the count (`patternAddedFromNumeric`, expected 0).
-- **Ordering and factors.** Exact minimum degree on the symmetric pattern of W, then a
-  symbolic LU of P·W·Pᵀ with a fixed fill-in. C runs the factorization from static index
-  tables: row-compressed factors, one destination per multiply-add. Every loop runs over
-  these tables, so the cost is fixed.
-- **Static pivoting.** The pivots are the diagonal of P·W·Pᵀ in a fixed order. This is safe
-  when W is diagonally dominant (small hγ, W → I) or when its symmetric part is positive
-  definite (J dissipative); every pivot is then at least 1. Neither holds in general. So
-  `bg_w_factor` returns an error when a pivot is below 1e-12 of the largest entry of its row,
-  and the export factors W at the start point and at reference rows. A failed check (small
-  pivot ratio, or a residual above 1e-8 against a pivoted dense solve) gives W211 and falls
-  back to the dense LU, unless the sparse LU was forced.
+- **Row matching (DAEs).** The compiled system puts the k-th algebraic equation in the row
+  of the k-th algebraic unknown, an arbitrary pairing, so W can have a structural zero on an
+  algebraic diagonal (the index-reduced rigid-joint chains: every one of them). When the
+  diagonal of W is not structurally full, or the identity fails the pivot check,
+  `row_matching` computes a static row permutation: rows with mass keep their diagonal, and
+  the algebraic rows are assigned to the algebraic unknowns on the pattern of ∂g/∂z (an
+  index-1 DAE has it structurally non-singular). The assignment maximises the product over
+  the pivots of `min over the scanned points |J_ij| / max_k |J_ik|` (MC64's objective with
+  the row scaling; hγ cancels in an algebraic row), by a Hungarian algorithm on the
+  algebraic block (O(n³), milliseconds for 140 unknowns); a structural zero that is
+  numerically zero at a point costs more than any non-zero entry, ties keep a row on its
+  diagonal, and the result is deterministic. Without Jacobians (the cost model) it is a
+  structural maximum matching (diagonal first, then augmenting paths). The matching is kept
+  when it passes the check (or beats the identity's pivot ratio). `export.json` reports
+  `linearAlgebra.matching`: `tried`, `used`, `rowsPermuted`, `weighted`,
+  `structuralDiagonal`; W211 says whether it was tried. No equilibration: every target
+  model passes without it.
+- **Ordering and factors.** Exact minimum degree on the symmetric pattern of the
+  row-matched W, then a symbolic LU of Pr·W·Pcᵀ with a fixed fill-in (Pr = Pc without a
+  matching). C runs the factorization from static index tables: row-compressed factors, one
+  destination per multiply-add, `bg_lu_rperm` (the equation of pivot k) and `bg_lu_perm`
+  (its unknown). Every loop runs over these tables, so the cost is fixed. `bg_jacobian`
+  writes J[i][j] (row i of the C code) at its position in the factored layout, and the mass
+  goes to the position of (i, i), so nothing outside `sparse.jl` sees the permutation.
+- **Static pivoting.** The pivots are the diagonal of Pr·W·Pcᵀ in a fixed order. This is
+  safe when W is diagonally dominant (small hγ, W → I) or when its symmetric part is
+  positive definite (J dissipative); every pivot is then at least 1. Neither holds in
+  general, and an algebraic row has no mass to help. So `bg_w_factor` returns an error when
+  a pivot is below 1e-12 of the largest entry of its row, and the export factors W at every
+  scanned point of the spectrum scan (the start, the D-EX16 range corners and 25 reference
+  rows) with the chosen method's γ and h and the mass matrix. A failed check (a pivot below
+  1e-12 of its row, or a componentwise backward error of a solve above 1e-10, Oettli-Prager)
+  gives W211 and falls back to the dense LU, unless the sparse LU was forced. The backward
+  error replaced the earlier test, the relative difference to a pivoted dense solve below
+  1e-8 (still reported as `residual`). That test is not invariant to row scaling, and a DAE's
+  W is badly row-scaled: differential rows O(1), algebraic rows O(hγ|J|). On the rigid RRR
+  arm (cond(W) 1e10, 3e3 after row scaling), the static LU's backward error is 2e-16 at
+  every point. LAPACK's partial pivoting reaches 6e-8, because it pivots on the differential
+  rows. The difference of the two solves reached 6e-9 for that reason, close to the old limit.
+- **Re-solve of the algebraic unknowns (`bg_project`).** After a tick or an event a DAE
+  re-solves z by Newton on 0 = g(x_d, z). With the sparse LU, its Newton matrix (identity
+  rows for the states with mass, the rows of J for the algebraic equations) is factored on
+  the same static tables (`bg_alg_factor`, `BG_SPARSE_PROJECT`) when its pivots pass the same
+  check at the scanned points (`linearAlgebra.projection`); elimination with the identity
+  rows changes nothing, so the pivots are those of ∂g/∂z in the matched order. A bad pivot
+  at run time falls back to the dense elimination of the BG_NALG × BG_NALG block (the only
+  path with the dense LU), which cost the rigid Panda about 2 Mflop per Newton iteration.
 - **Jacobian.** Symbolic by the chain rule through `observed` (`jacobian_c`, J-EX3), while it
   needs at most `symbolic_jacobian_limit` terms (2e5) and 120 s. Above that, or when a partial
   has no C form (an intrinsic has no symbolic derivative), forward differences in C with a
@@ -181,10 +217,67 @@ The dense versions are in `bg_solver.c`. With `#define BG_SPARSE_LU` in `model.h
   `dense`, `sparse`) and `jacobian` (`auto`, `symbolic`, `fd`). `export.json` reports
   `linearAlgebra`: non-zeros of J and of the factors, fill-in, colours, flops of the sparse and
   dense LU, and the pivot check. The gate takes `--settings JSON` and prints a step-time table.
-- **Mass matrix (J-EX3).** The forming step adds `bg_mass[i]` on the diagonal positions
-  `bg_lu_mpos`. A zero mass entry (algebraic row) leaves −hγ·J_ii as the pivot; the pivot
-  check, which forms W with M and the chosen method's γ, then decides whether the static
-  order holds.
+- **Mass matrix (J-EX3).** The forming step adds `bg_mass[i]` at the positions
+  `bg_lu_mpos` of the entries (i, i) of W. A zero mass entry (algebraic row) leaves its
+  pivot to J alone: −hγ·J_ii without a matching, −hγ·∂g_i/∂z_j of its matched unknown with
+  one; the pivot check, which forms W with M and the chosen method's γ, then decides whether
+  the static order holds.
+- **Row matching and the sparse projection, measured (D-EX13).** These are gate runs
+  (`export_checks.py --budget 900`, gcc 14 -O2, this machine; other agents loaded the CPU)
+  on master and on this branch. The first doStep column is master. The second has the
+  matching only. The third adds the sparse projection, and is the final branch.
+
+  The double pendulum is the non-planar rigid double 3D pendulum of `test_rigid_spatial.jl`
+  (1.5 s). `rrr-multibond-rigid` is `rrr-multibond` with every `Revolute3D` swapped for
+  `Revolute3DRigid` (5 s, a 1 ms controller). Neither is an example model; both were built
+  in a scratch project.
+
+  | model | method, dt | states (alg) | LU flops: master (dense) → branch (sparse), nnz LU | rows matched | doStep mean / max µs: master → matching → + sparse projection | worst error vs reference |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | `panda-3d/panda-free-rigid` | ros34pw2, 1 ms | 154 (140) | 2,423,113 → 32,005, 2948 | 84 | 581 / 1805 → 27.6 / 381 → 27.5 / 258 | 1.21e-2 (same) |
+  | `panda-3d/panda-rigid` | rodas4p, 0.25 ms × 4 | 168 (140) | 3,147,116 → 38,304, 3203 | 84 | 3604 / 8872 → 668 / 3890 → 184 / 759 | 3.16e-5 (same) |
+  | double pendulum (rigid) | ros2, 1 ms | 44 (40) | 55,858 → 633, 296 | 22 | 18.4 / 92 → 2.09 / 42 → 2.21 / 176 | 6.54e-4 (same) |
+  | `rrr-multibond-rigid` | ros2, 1 ms | 66 (60) | 189,541 → 1,432, 518 | 36 | 99.2 / 1160 → 48.6 / 518 → 6.64 / 95 | 9.02e-4 (same) |
+
+  The other columns:
+
+  * **Pivot check.** The smallest pivot ratio is 1.6e-4, 5.9e-7, 2.4e-3 and 1.2e-2. The
+    backward error is at most 1.5e-15 at the 26 points. The projection check passes for
+    all four.
+  * **Error column.** The worst error is relative to the signal's peak. For
+    `panda-free-rigid` it is on a body effort `B1/inertia/p.e[4]`; the joint angles are
+    better.
+  * **Dense against sparse.** The dense and sparse FMUs of the two Pandas agree signal by
+    signal (2375 and 2661 signals) to 1.9e-12 and 3.4e-11 of each signal's peak.
+  * **Effect of the matching alone.** With the matching only, the rigid Pandas dropped
+    20× and 5×.
+  * **Where the remaining time went.** Profiling `panda-rigid` showed it in `bg_project`.
+    The 1 ms controller tick re-solved the 140 algebraic unknowns with a dense elimination,
+    1.8 Newton iterations per tick at about 2 Mflop each. That was 730 of the 900 µs of a
+    doStep; with the projection disabled a doStep took 155 µs.
+  * **Real time at 1 ms.** A QPC histogram of 5150 `panda-rigid` doSteps through the C API
+    (three runs) gives:
+    * median 178 µs, p99 430 µs, p99.9 520 to 570 µs;
+    * 0 to 4 steps over 1 ms, each an isolated OS preemption on this desktop.
+
+    `panda-free-rigid` gives median 23 to 41 µs and max 120 to 320 µs. **Both rigid Pandas
+    run in real time at a 1 ms communication step with margin.** The deterministic worst
+    case of `panda-rigid`'s tick is 8 Newton iterations, each one Jacobian, one derivative
+    call and one sparse LU of 38 kflop.
+
+  The control models generate the same `model.c` except the version line, and the same
+  method, `dt`, LU and worst error. In the measured run, the sparse ones also had a
+  `bg_lu_rperm` table equal to `bg_lu_perm`; it is now a `#define`. Their timings move only
+  within the run-to-run noise:
+
+  * `robot-arm-3d/arm` 246 → 248 µs;
+  * `panda-3d/panda` 1581 → 1631 µs;
+  * `cube-3d` 85.0 → 85.3 µs;
+  * `drivetrain` 1.3 → 1.8 µs;
+  * `inverted-pendulum-cart` 0.54 → 0.83 µs.
+
+  `inverted-pendulum-cart` is a DAE with 3 algebraic unknowns, a structural diagonal and a
+  dense LU below the threshold, so it never tries the matching.
 - **Folding and simplification, measured (D-EX10).** The gate with `simplify` false and
   true on the same branch (gcc 14 -O2, this machine; doStep is the mean of three
   alternating harness runs, ±5 % between runs). RHS ops is `op_count` of `bg_derivatives`;

@@ -292,9 +292,12 @@ exactly `2n` differential states (`q`, `qdot` per joint) and matches the indepen
 references to 1e-9..1e-12 rad, where the compliant joints (`k = 1e7`) are off by 1e-5 (and
 4e-3 rad after 0.5 s of the chaotic Panda fall). Simulation is not faster than the compliant
 version: the index-reduced DAE keeps every body twist, momentum and reaction as an algebraic
-unknown (about 20 per body). **For export it is not real time on the Panda yet:** the
-algebraic block forces the dense LU (the static sparse LU has zero pivots on the algebraic
-rows, W211), 647 µs mean / 2.3 ms max per 1 ms step for `panda-free`.
+unknown (about 20 per body). **For export it is now real time on the Panda.** The
+experiment found the algebraic block forcing the dense LU, because the static sparse LU had
+zero pivots on the algebraic rows (W211): 647 µs mean / 2.3 ms max per 1 ms step for
+`panda-free`. D-EX13's row matching and sparse projection (EXPORT_PLAN 5.4) fixed that.
+`panda-free-rigid` now takes 27.5 µs mean and `panda-rigid` 184 µs mean, p99.9 about
+550 µs, per 1 ms step.
 
 **The element.** `stdlib:spatial/Revolute3DRigid`: the `kr, kt -> Inf` limit of `Revolute3D`.
 The five off-axis relative twist components are velocity-level constraints whose Lagrange
@@ -341,8 +344,8 @@ warm runs; "alg" counts the algebraic unknowns):
 | `panda` (elastic gear drives), 5.15 s | 28 / 139 (98 / 0) | 4.6 s | 27.6 s, 26660 steps (22.0 s, 23328 steps) | 2.7e-6 rad from compliant; settled flange 5.5e-6 m (5.5e-5 m) |
 
 C/FMU export with the default `method = :auto` (`expose_all`, compared with the simulation by
-`export_checks.py`). Every model exports, builds and passes. All of them use the dense LU
-(W211):
+`export_checks.py`). Every model exports, builds and passes. On the experiment branch, all
+of them used the dense LU (W211):
 
 | model | method, dt | states (alg) | nnz J | LU flops dense (sparse) | doStep mean / max | joint angles vs reference |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -350,6 +353,29 @@ C/FMU export with the default `method = :auto` (`expose_all`, compared with the 
 | `rrr-multibond` | ros2, 1 ms | 66 (60) | 815 | 190k (9.2k) | 102 / 831 µs | 1.6e-5 rad |
 | `panda-free` | ros34pw2, 1 ms | 154 (140) | 2165 | 2.42M (65k) | 647 / 2347 µs | 3.0e-4 rad, flange 2.2e-5 m |
 | `panda` | rodas4p, 0.25 ms x 4 | 168 (140) | 2317 | 3.15M (75k) | 3912 / 14795 µs | 2.3e-11 rad |
+
+**Export with D-EX13 (row matching and sparse projection).** Gate runs on master and on the
+branch; the full table is in EXPORT_PLAN 5.4. The fixes:
+
+* A static row matching (a maximum-product assignment on ∂g/∂z) gives every algebraic row a
+  structural pivot, so the static sparse LU passes its check: no W211.
+* `bg_project` factors ∂g/∂z on the same tables after every controller tick.
+
+The method, `dt` and the worst error against the reference are unchanged. The dense and
+sparse FMUs agree to 3e-11 of each signal's peak. nnz J is lower than above because
+export-simplify (D-EX10) has been merged since.
+
+| model | method, dt | states (alg) | nnz J | LU flops dense → sparse | rows matched | doStep mean / max, master → branch |
+| --- | --- | --- | --- | --- | --- | --- |
+| double pendulum | ros2, 1 ms | 44 (40) | 234 | 55.9k → 633 | 22 | 18.4 / 92 → 2.2 / 176 µs |
+| `rrr-multibond` (rigid) | ros2, 1 ms | 66 (60) | 366 | 190k → 1.4k | 36 | 99 / 1160 → 6.6 / 95 µs |
+| `panda-free-rigid` | ros34pw2, 1 ms | 154 (140) | 1724 | 2.42M → 32.0k | 84 | 581 / 1805 → 27.5 / 258 µs |
+| `panda-rigid` | rodas4p, 0.25 ms x 4 | 168 (140) | 1876 | 3.15M → 38.3k | 84 | 3604 / 8872 → 184 / 759 µs |
+
+For `panda-rigid` the matching alone gave 668 µs. The rest was the dense re-solve of the 140
+algebraic unknowns after each 1 ms tick: 1.8 Newton iterations of about 2 Mflop each. A QPC
+histogram of its doSteps gives median 178 µs, p99 430 µs and p99.9 about 550 µs. Only
+isolated OS preemptions on this desktop pass 1 ms.
 
 Forcing `method = ros2` makes it worse. The step rule then resolves the lightly damped gear and
 link modes with the second-order method:
@@ -382,15 +408,17 @@ accurate. The remaining cost is linear algebra.
 `O(20 n)` unknowns, because every body twist, momentum and reaction stays algebraic. Its
 Jacobian has zero diagonal entries on the algebraic rows, so:
 
-* the static, unpivoted sparse LU of the export fails and the dense LU is `O(n^3)` in 140
-  unknowns;
+* the static, unpivoted sparse LU of the export failed and the dense LU is `O(n^3)` in 140
+  unknowns. This is fixed for export by D-EX13's row matching: a static row permutation
+  that gives every algebraic row a structural pivot in ∂g/∂z;
 * the simulation pays the same price in `Rodas5P`.
 
-There are two ways forward:
+There were two ways forward:
 
-* **Export side.** A pivoting sparse LU, or a static row permutation from a maximum
-  transversal so that the diagonal is non-zero, would bring the Panda LU from 2.4 Mflop to
-  about 65 kflop. That is in the export area, which this experiment did not touch.
+* **Export side (done, D-EX13).** A static row matching (a maximum-product assignment on
+  ∂g/∂z), then minimum degree and the static LU, and a sparse `bg_project`. It brought the
+  Panda LU from 2.4 to 3.1 Mflop down to 32 to 38 kflop, and both rigid Pandas run in real
+  time at 1 ms (above).
 * **Option 2: a joint-coordinate chain element.** One block per serial chain, with states
   `q, qdot` (2n), an internal recursive Newton-Euler for the bias and CRBA for `M(q)`, and
   `qdd = M \ (tau - c)` as an `n x n` solve. Its interface would be per-joint drive ports, the
