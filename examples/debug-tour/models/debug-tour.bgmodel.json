@@ -454,7 +454,18 @@
       }
     ],
     "subsystemPorts": [],
-    "annotations": [],
+    "annotations": [
+      {
+        "id": "tour",
+        "kind": "text",
+        "text": "**Debug tour**: why does the cart trip the limit switch at 1.2 m?\n\n1. **Run** (Ctrl+Enter) and plot [Pos/y](signal:Pos/y).\n2. **Debug** tab: tick *Break on: Events*, press **Debug** (F5). The run pauses at the trip.\n3. **Code** tab, `CartPID`: click the gutter of line 30, right-click the marker, condition `abs(u) > umax`. **Debug** again.\n4. **Step statement** (F10), **Step tick** (F11): watch `z` grow while the drive is saturated.\n5. **Plots**: right-click before 0.5 s, **Rewind to here**.\n6. Select [Ctrl](block:Ctrl), set `aw` = 1 (live), **Continue**.\n\nThe full walkthrough is in the [Docs](page:walkthrough) tab.",
+        "x": -360,
+        "y": 20,
+        "w": 380,
+        "h": 300,
+        "color": "blue"
+      }
+    ],
     "probes": [
       {
         "id": "scope",

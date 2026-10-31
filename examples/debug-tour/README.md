@@ -40,7 +40,7 @@ An oscilloscope probe, `Scope`, is part of the model: its window on the canvas p
 the cart position against the reference and the force command `Ctrl/F` against the
 force that reaches the drive `Limit/F`, and it follows every pause. The 3D view shows
 the cart on a rail with a green post at the 1 m target and a red one at the 1.2 m
-switch.
+switch. A blue sticky note on the canvas lists the tour steps in short.
 
 ## The tour in short
 

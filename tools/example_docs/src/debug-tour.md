@@ -20,7 +20,7 @@ A small model with a **planted bug**, made to show off the debugger. A 1 kg cart
 
 ![The model canvas|900](@fig:diagram)
 
-The [walkthrough](page:walkthrough) finds the cause with the debugger and fixes it while the run is paused. On the way it uses:
+The [walkthrough](page:walkthrough) finds the cause with the debugger and fixes it while the run is paused. A blue sticky note on the canvas repeats the steps in short. On the way it uses:
 
 - **Break on events**: pause at the instant an `@events` condition fires (the switch);
 - **watch expressions** that are re-evaluated at every pause;
