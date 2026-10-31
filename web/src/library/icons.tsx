@@ -50,3 +50,41 @@ export function ChevronIcon({ size = 16, className }: LibraryIconProps) {
     </svg>
   );
 }
+
+/** List view: three rows, each a small square and a line. */
+export function ListViewIcon({ size = 16, className }: LibraryIconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        d="M1.5 2.5h2.5v2.5h-2.5Z M1.5 6.75h2.5v2.5h-2.5Z M1.5 11h2.5v2.5h-2.5Z M5.75 3h8.75v1.5h-8.75Z M5.75 7.25h8.75v1.5h-8.75Z M5.75 11.5h8.75v1.5h-8.75Z"
+      />
+    </svg>
+  );
+}
+
+/** Grid view: a 3x3 grid of squares, like the three-column tiles. */
+export function GridViewIcon({ size = 16, className }: LibraryIconProps) {
+  return (
+    <svg
+      className={className}
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        d="M1.5 1.5h3.5v3.5h-3.5Z M6.25 1.5h3.5v3.5h-3.5Z M11 1.5h3.5v3.5h-3.5Z M1.5 6.25h3.5v3.5h-3.5Z M6.25 6.25h3.5v3.5h-3.5Z M11 6.25h3.5v3.5h-3.5Z M1.5 11h3.5v3.5h-3.5Z M6.25 11h3.5v3.5h-3.5Z M11 11h3.5v3.5h-3.5Z"
+      />
+    </svg>
+  );
+}

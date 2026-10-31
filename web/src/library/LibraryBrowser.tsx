@@ -7,6 +7,11 @@
  * and hidden categories persist (src/library/libraryPrefs.ts, edited from the
  * quick settings of LibrarySettings.tsx). While a search is active the
  * categories with a match show expanded, and hidden categories are not searched.
+ *
+ * The list view shows each block with a summary line and expandable details;
+ * the grid view (LibraryViewToggle.tsx) shows tiles of three per row with only
+ * the icon and the name, the description in the tooltip, and opens the block
+ * help on click. Both views keep the same entry testids, refs and drag payload.
  */
 
 import { useId, useMemo, useState, type DragEvent, type ReactNode } from "react";
@@ -19,6 +24,7 @@ import { blockSummary, JUNCTION_GROUP, libraryCategories, searchGroups } from ".
 import { payloadForBlock, writeDragPayload } from "./dnd";
 import { PortGlyph, type PortGlyphProps } from "./PortGlyph";
 import { BlockHelpButton } from "../app/BlockHelp";
+import { useHelpStore } from "../app/helpStore";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
 import { ChevronIcon } from "./icons";
 import { useLibraryPrefs } from "./libraryPrefs";
@@ -80,17 +86,25 @@ function portLines(
   return lines;
 }
 
+function junctionDescription(junction: JunctionType): string {
+  return junction === "0"
+    ? "0 junction: equal efforts, flows sum to zero."
+    : "1 junction: equal flows, efforts sum to zero.";
+}
+
 function LibraryGroupSection({
   name,
   count,
   open,
   onToggle,
+  grid,
   children,
 }: {
   name: string;
   count: number;
   open: boolean;
   onToggle: () => void;
+  grid: boolean;
   children: ReactNode;
 }) {
   const listId = `${useId()}-list`;
@@ -115,7 +129,7 @@ function LibraryGroupSection({
         </button>
       </h3>
       {open ? (
-        <ul className="library-group__list" id={listId}>
+        <ul className={`library-group__list${grid ? " library-group__list--grid" : ""}`} id={listId}>
           {children}
         </ul>
       ) : null}
@@ -130,6 +144,8 @@ export function LibraryBrowser() {
   const savedExpanded = useLibraryPrefs((state) => state.expanded);
   const hidden = useLibraryPrefs((state) => state.hidden);
   const searchCollapsed = useLibraryPrefs((state) => state.searchCollapsed);
+  const grid = useLibraryPrefs((state) => state.view) === "grid";
+  const openHelp = useHelpStore((state) => state.openBlockHelp);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const searching = query.trim().length > 0;
@@ -218,6 +234,36 @@ export function LibraryBrowser() {
     }
   };
 
+  // A grid tile: the icon and the name only. A click (or Enter/Space) opens the block help, the
+  // grid's stand-in for the details the list expands in place.
+  const renderTile = (
+    entry: BlockEntry | JunctionEntry,
+    tile: { testId: string; ref: string; icon?: string; title: string; glyph: ReactNode },
+  ): ReactNode => (
+    <li
+      key={entry.key}
+      className="library-item library-item--tile"
+      draggable
+      data-testid={tile.testId}
+      data-ref={tile.ref}
+      data-icon={tile.icon}
+      onDragStart={(event) => onDragStart(event, entry)}
+      title={tile.title}
+    >
+      <button
+        type="button"
+        className="library-item__tile"
+        aria-haspopup="dialog"
+        onClick={() => openHelp(tile.ref)}
+      >
+        <span className="library-item__icon library-item__icon--tile" aria-hidden="true">
+          {tile.glyph}
+        </span>
+        <span className="library-item__label">{entry.name}</span>
+      </button>
+    </li>
+  );
+
   if (index === null) {
     return (
       <div className="library library--status" data-testid="library-browser">
@@ -245,7 +291,7 @@ export function LibraryBrowser() {
     hidden.size > 0;
 
   return (
-    <div className="library" data-testid="library-browser">
+    <div className="library" data-testid="library-browser" data-view={grid ? "grid" : "list"}>
       <div className="library__search">
         <input
           type="search"
@@ -272,8 +318,18 @@ export function LibraryBrowser() {
             count={group.entries.length}
             open={isGroupOpen(group.group)}
             onToggle={() => toggleGroup(group.group)}
+            grid={grid}
           >
             {group.entries.map((entry) => {
+              if (grid) {
+                return renderTile(entry, {
+                  testId: `library-item-${entry.name}`,
+                  ref: entry.block.ref,
+                  icon: entry.icon,
+                  title: `${entry.name} — ${entry.description}`,
+                  glyph: <BlockIcon icon={entry.icon} name={entry.name} size={40} />,
+                });
+              }
               const isOpen = expanded.has(entry.key);
               return (
                 <li
@@ -357,8 +413,17 @@ export function LibraryBrowser() {
             count={junctions.length}
             open={isGroupOpen(JUNCTION_GROUP)}
             onToggle={() => toggleGroup(JUNCTION_GROUP)}
+            grid={grid}
           >
             {junctions.map((entry) => {
+              if (grid) {
+                return renderTile(entry, {
+                  testId: `library-item-junction-${entry.junction}`,
+                  ref: entry.key,
+                  title: `${entry.name} — ${junctionDescription(entry.junction)}`,
+                  glyph: <JunctionGlyph kind={entry.junction} size={40} />,
+                });
+              }
               const isOpen = expanded.has(entry.key);
               return (
                 <li
@@ -390,9 +455,7 @@ export function LibraryBrowser() {
                   {isOpen ? (
                     <div className="library-item__details">
                       <p className="library-item__description">
-                        {entry.junction === "0"
-                          ? "0 junction: equal efforts, flows sum to zero."
-                          : "1 junction: equal flows, efforts sum to zero."}
+                        {junctionDescription(entry.junction)}
                       </p>
                       <p className="library-item__ref">{entry.key}</p>
                     </div>

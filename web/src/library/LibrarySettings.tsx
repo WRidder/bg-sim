@@ -1,17 +1,30 @@
 /**
  * The quick settings of the library panel: a small cog at the top right of the panel title opens
- * a popover with a show/hide checkbox per category, "Show all", and "Expand all" / "Collapse
- * all". The choices persist through src/library/libraryPrefs.ts. The popover is non-modal: it
+ * a popover with the list/grid view choice (also in the title, LibraryViewToggle.tsx), a
+ * show/hide checkbox per category, "Show all", and "Expand all" / "Collapse all". The choices persist through src/library/libraryPrefs.ts. The popover is non-modal: it
  * closes on Escape (focus returns to the cog), on a press outside it, and when focus leaves it.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FocusEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type FocusEvent,
+} from "react";
 import { createPortal } from "react-dom";
 
 import { useCatalogStore } from "./catalogStore";
 import { libraryCategories } from "./catalogIndex";
 import { CogIcon } from "./icons";
-import { useLibraryPrefs } from "./libraryPrefs";
+import { useLibraryPrefs, type LibraryView } from "./libraryPrefs";
+
+const VIEWS: { view: LibraryView; label: string }[] = [
+  { view: "list", label: "List" },
+  { view: "grid", label: "Grid" },
+];
 
 const POPOVER_WIDTH = 256;
 const MARGIN = 8;
@@ -36,6 +49,8 @@ function placeBelow(button: HTMLElement): Placement {
 export function LibrarySettings() {
   const index = useCatalogStore((state) => state.index);
   const hidden = useLibraryPrefs((state) => state.hidden);
+  const view = useLibraryPrefs((state) => state.view);
+  const viewName = `${useId()}-view`;
   const [open, setOpen] = useState(false);
   const [placement, setPlacement] = useState<Placement | null>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -69,7 +84,11 @@ export function LibrarySettings() {
     if (!open) {
       return;
     }
-    popover.current?.querySelector<HTMLElement>("input, button")?.focus();
+    // The first control is the view choice: focus its checked radio, as a radio group would.
+    (
+      popover.current?.querySelector<HTMLElement>("input[type='radio']:checked") ??
+      popover.current?.querySelector<HTMLElement>("input, button")
+    )?.focus();
     const onPointerDown = (event: PointerEvent): void => {
       const target = event.target as Node;
       if (popover.current?.contains(target) || button.current?.contains(target)) {
@@ -112,7 +131,7 @@ export function LibrarySettings() {
         type="button"
         className={`icon-button library-settings__button${open ? " is-active" : ""}`}
         aria-label="Library settings"
-        title="Library settings: show or hide categories, expand or collapse all"
+        title="Library settings: list or grid, show or hide categories, expand or collapse all"
         aria-haspopup="dialog"
         aria-expanded={open}
         data-testid="library-settings"
@@ -136,6 +155,22 @@ export function LibrarySettings() {
               }
               onBlur={onBlur}
             >
+              <fieldset className="library-settings__view">
+                <legend className="library-settings__legend">View</legend>
+                {VIEWS.map((option) => (
+                  <label className="library-settings__option" key={option.view}>
+                    <input
+                      type="radio"
+                      name={viewName}
+                      value={option.view}
+                      checked={view === option.view}
+                      data-testid={`library-settings-view-${option.view}`}
+                      onChange={() => prefs().setView(option.view)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                ))}
+              </fieldset>
               <fieldset className="library-settings__categories">
                 <legend className="library-settings__legend">Show categories</legend>
                 {categories.map((name) => (

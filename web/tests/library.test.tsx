@@ -10,7 +10,14 @@ import type { Catalog } from "../src/contracts/catalog";
 import { resetCatalogStore, useCatalogStore } from "../src/library/catalogStore";
 import { LibraryBrowser } from "../src/library/LibraryBrowser";
 import { LibrarySettings } from "../src/library/LibrarySettings";
-import { EXPANDED_KEY, HIDDEN_KEY, resetLibraryPrefs } from "../src/library/libraryPrefs";
+import { LibraryViewToggle } from "../src/library/LibraryViewToggle";
+import { resetHelpStore, useHelpStore } from "../src/app/helpStore";
+import {
+  EXPANDED_KEY,
+  HIDDEN_KEY,
+  VIEW_KEY,
+  resetLibraryPrefs,
+} from "../src/library/libraryPrefs";
 import { expandLibraryGroups } from "./libraryHelpers";
 import {
   BLOCK_DRAG_MIME,
@@ -229,8 +236,8 @@ describe("library quick settings", () => {
     const boxes = within(dialog).getAllByRole("checkbox");
     expect(boxes).toHaveLength(8);
     expect(boxes.every((box) => (box as HTMLInputElement).checked)).toBe(true);
-    // Focus moves into the popover, and Escape returns it to the cog.
-    expect(document.activeElement).toBe(boxes[0]);
+    // Focus moves into the popover (the checked view radio), and Escape returns it to the cog.
+    expect(document.activeElement).toBe(within(dialog).getByRole("radio", { name: "List" }));
 
     fireEvent.keyDown(document.activeElement ?? window, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "Library settings" })).toBeNull();
@@ -303,6 +310,141 @@ describe("library quick settings", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Collapse all" }));
     expect(screen.queryAllByTestId(/^library-item-/)).toHaveLength(0);
     expect(JSON.parse(window.localStorage.getItem(EXPANDED_KEY) ?? "[]")).toEqual([]);
+  });
+});
+
+describe("library list and grid views", () => {
+  function renderPanel() {
+    return render(
+      <>
+        <LibraryViewToggle />
+        <LibrarySettings />
+        <LibraryBrowser />
+      </>,
+    );
+  }
+
+  function viewButton(name: "List view" | "Grid view"): HTMLElement {
+    return screen.getByRole("button", { name });
+  }
+
+  beforeEach(() => resetHelpStore());
+
+  it("defaults to the list view with the list button pressed", () => {
+    renderPanel();
+    expect(viewButton("List view").getAttribute("aria-pressed")).toBe("true");
+    expect(viewButton("Grid view").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("library-browser").getAttribute("data-view")).toBe("list");
+  });
+
+  it("switches to the grid, persists the choice, and reads it back", () => {
+    const first = renderPanel();
+    fireEvent.click(viewButton("Grid view"));
+    expect(viewButton("Grid view").getAttribute("aria-pressed")).toBe("true");
+    expect(viewButton("List view").getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByTestId("library-browser").getAttribute("data-view")).toBe("grid");
+    expect(window.localStorage.getItem(VIEW_KEY)).toBe("grid");
+    first.unmount();
+
+    resetLibraryPrefs();
+    renderPanel();
+    expect(screen.getByTestId("library-browser").getAttribute("data-view")).toBe("grid");
+    fireEvent.click(viewButton("List view"));
+    expect(window.localStorage.getItem(VIEW_KEY)).toBe("list");
+    expect(screen.getByTestId("library-browser").getAttribute("data-view")).toBe("list");
+  });
+
+  it("ignores an unknown stored view", () => {
+    window.localStorage.setItem(VIEW_KEY, "mosaic");
+    resetLibraryPrefs();
+    renderPanel();
+    expect(viewButton("List view").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("offers the same choice in the quick settings", () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole("button", { name: "Library settings" }));
+    const dialog = screen.getByRole("dialog", { name: "Library settings" });
+    const grid = within(dialog).getByRole("radio", { name: "Grid" });
+    fireEvent.click(grid);
+    expect((grid as HTMLInputElement).checked).toBe(true);
+    expect(viewButton("Grid view").getAttribute("aria-pressed")).toBe("true");
+    expect(window.localStorage.getItem(VIEW_KEY)).toBe("grid");
+    fireEvent.click(viewButton("List view"));
+    expect((within(dialog).getByRole("radio", { name: "List" }) as HTMLInputElement).checked).toBe(
+      true,
+    );
+  });
+
+  it("renders tiles with only the icon and the name, keeping the entry testids", () => {
+    renderPanel();
+    fireEvent.click(viewButton("Grid view"));
+    expandLibraryGroups();
+    expect(screen.getAllByTestId(/^library-item-/)).toHaveLength(38);
+    for (const list of document.querySelectorAll(".library-group__list")) {
+      expect(list.classList.contains("library-group__list--grid")).toBe(true);
+    }
+
+    const motor = screen.getByTestId("library-item-DCMotor");
+    expect(motor.getAttribute("draggable")).toBe("true");
+    expect(motor.getAttribute("data-ref")).toMatch(/dcmotor/i);
+    expect(motor.querySelector("svg[data-icon='conv-dc-motor']")).toBeTruthy();
+    expect(motor.querySelector(".library-item__label")?.textContent).toBe("DCMotor");
+    // The full name and description sit in the tooltip.
+    expect(motor.getAttribute("title")).toMatch(/^DCMotor — Permanent-magnet DC motor/);
+    // No summary, chevron, parameters or ports: besides the icon, the tile holds the name alone.
+    const button = within(motor).getByRole("button");
+    expect([...button.children].map((child) => child.className)).toEqual([
+      "library-item__icon library-item__icon--tile",
+      "library-item__label",
+    ]);
+    expect(button.getAttribute("aria-expanded")).toBeNull();
+    expect(motor.querySelector(".library-item__summary, .library-item__details")).toBeNull();
+
+    fireEvent.click(button);
+    expect(motor.querySelector(".library-item__details")).toBeNull();
+    expect(useHelpStore.getState().blockRef).toBe(motor.getAttribute("data-ref"));
+
+    const junction = screen.getByTestId("library-item-junction-0");
+    expect(junction.querySelector(".library-item__label")?.textContent).toBe("Junction 0");
+    expect(junction.querySelector(".library-item__summary")).toBeNull();
+    expect(junction.getAttribute("title")).toMatch(/equal efforts/);
+  });
+
+  it("drags a tile with the same payload as the list entry", () => {
+    renderPanel();
+    fireEvent.click(viewButton("Grid view"));
+    expandLibraryGroups();
+    const { transfer, data } = fakeDataTransfer();
+    fireEvent.dragStart(screen.getByTestId("library-item-DCMotor"), { dataTransfer: transfer });
+    expect(parseDragPayload(data.get(BLOCK_DRAG_MIME))).toEqual({
+      kind: "block",
+      ref: screen.getByTestId("library-item-DCMotor").getAttribute("data-ref"),
+    });
+    const junction = fakeDataTransfer();
+    fireEvent.dragStart(screen.getByTestId("library-item-junction-1"), {
+      dataTransfer: junction.transfer,
+    });
+    expect(readDragPayload(junction.transfer)).toEqual({ kind: "junction", junction: "1" });
+  });
+
+  it("keeps search, collapse and hidden categories working in the grid", () => {
+    renderPanel();
+    fireEvent.click(viewButton("Grid view"));
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "motor" } });
+    expect(screen.getAllByTestId(/^library-item-/)).toHaveLength(1);
+    expect(screen.getByTestId("library-item-DCMotor").classList).toContain("library-item--tile");
+
+    fireEvent.click(screen.getByTestId("library-group-toggle-Converters and sensors"));
+    expect(screen.queryByTestId("library-item-DCMotor")).toBeNull();
+    fireEvent.change(screen.getByTestId("library-search"), { target: { value: "" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Library settings" }));
+    const dialog = screen.getByRole("dialog", { name: "Library settings" });
+    fireEvent.click(within(dialog).getByLabelText("Junctions"));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Expand all" }));
+    expect(screen.queryByTestId("library-item-junction-0")).toBeNull();
+    expect(screen.getByTestId("library-item-DCMotor")).toBeTruthy();
   });
 });
 

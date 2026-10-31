@@ -1,6 +1,6 @@
 /**
- * Per-browser view preferences of the library panel: which categories are expanded and which
- * are hidden. Both persist in localStorage (a private-mode browser without storage keeps them
+ * Per-browser view preferences of the library panel: which categories are expanded, which are
+ * hidden, and whether the blocks show as a list or a grid of tiles. All three persist in localStorage (a private-mode browser without storage keeps them
  * for the session only). The search-time overrides are transient: while a query is active the
  * matching categories show expanded, and a category the user collapses during that search is
  * remembered here until the query changes.
@@ -10,6 +10,26 @@ import { create } from "zustand";
 
 export const EXPANDED_KEY = "bgsim.library.expanded";
 export const HIDDEN_KEY = "bgsim.library.hidden";
+export const VIEW_KEY = "bgsim.library.view";
+
+/** The list shows a summary line and expandable details; the grid shows an icon and a label only. */
+export type LibraryView = "list" | "grid";
+
+function readView(): LibraryView {
+  try {
+    return window.localStorage.getItem(VIEW_KEY) === "grid" ? "grid" : "list";
+  } catch {
+    return "list";
+  }
+}
+
+function writeView(view: LibraryView): void {
+  try {
+    window.localStorage.setItem(VIEW_KEY, view);
+  } catch {
+    // A private-mode browser has no storage; the preference still holds for this session.
+  }
+}
 
 function readNames(key: string): ReadonlySet<string> {
   try {
@@ -41,6 +61,9 @@ interface LibraryPrefsState {
   hidden: ReadonlySet<string>;
   /** Categories collapsed by hand during the current search (transient). */
   searchCollapsed: ReadonlySet<string>;
+  /** List or grid of tiles (persisted). */
+  view: LibraryView;
+  setView: (view: LibraryView) => void;
   toggleExpanded: (name: string) => void;
   toggleSearchCollapsed: (name: string) => void;
   clearSearchOverrides: () => void;
@@ -64,6 +87,11 @@ export const useLibraryPrefs = create<LibraryPrefsState>((set, get) => ({
   expanded: readNames(EXPANDED_KEY),
   hidden: readNames(HIDDEN_KEY),
   searchCollapsed: new Set(),
+  view: readView(),
+  setView: (view) => {
+    writeView(view);
+    set({ view });
+  },
   toggleExpanded: (name) => {
     const expanded = toggled(get().expanded, name);
     writeNames(EXPANDED_KEY, expanded);
@@ -110,5 +138,6 @@ export function resetLibraryPrefs(): void {
     expanded: readNames(EXPANDED_KEY),
     hidden: readNames(HIDDEN_KEY),
     searchCollapsed: new Set(),
+    view: readView(),
   });
 }
