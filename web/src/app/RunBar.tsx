@@ -15,6 +15,7 @@ import { useBreakpointStore } from "../debug/breakpointStore";
 import { DebugControls } from "../debug/DebugControls";
 import { isDebugging, useDebugStore } from "../debug/debugStore";
 import { pausedStatusText } from "../debug/format";
+import { RunIcon, StopIcon } from "../debug/icons";
 import { useDocumentStore } from "../state/documentStore";
 import { formatDuration, formatProgress } from "../plot/format";
 import { useRunStore } from "../plot/runStore";
@@ -206,7 +207,7 @@ export function RunBar() {
           }
         >
           <span className="button__glyph" aria-hidden="true">
-            ▶
+            <RunIcon size={14} />
           </span>
           Run
         </button>
@@ -227,7 +228,7 @@ export function RunBar() {
           }
         >
           <span className="button__glyph" aria-hidden="true">
-            ■
+            <StopIcon size={14} />
           </span>
           {stopping ? "Stopping…" : "Stop"}
         </button>
