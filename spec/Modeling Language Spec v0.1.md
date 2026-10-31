@@ -490,6 +490,40 @@ Converters are the only components with ports in two domains, which is what lets
 
 Export inputs and outputs define the interface of the generated step function, the FMU and the ctrlX Data Layer nodes, so their names are what the controller, SIL harness and 3D bindings refer to.
 
+## Global parameters
+
+A model can declare **global parameters** (SolidWorks' "global variables"): named values that every block instance in the model can refer to. They are stored in the model document as a top-level `parameters` array (contract `model.schema.json`, `ModelGlobalParameter`):
+
+```json
+"parameters": [
+  { "name": "m",    "value": "2",            "unit": "kg",  "description": "Carriage mass" },
+  { "name": "k",    "value": "4*m",          "unit": "N/m" },
+  { "name": "w0",   "value": "sqrt(k/m)",    "unit": "rad/s" }
+]
+```
+
+**Values are equations or plain values.** Every instance value in the model document (a parameter in `params`, a start value in `starts`, a string constant in `constants`) is a constant expression string. A plain number is a plain value; anything else (a global's name, arithmetic, a pure function) is an *equation*, and the editor marks the field with Σ, shows the evaluated value with the unit, and lists it in the Equations manager. A leading `=` typed in the editor (`= 4*m`) is accepted as the SolidWorks equation prefix and dropped; the stored value is always the bare expression.
+
+**Expression language.** A global's `value` and every instance value use the same constant-expression language: number literals, `+ - * / ^`, comparisons, `&&`/`||`/`!`, `ifelse(c, a, b)`, and the pure whitelisted functions (`sqrt`, `exp`, `log`, `log10`, the trigonometric and hyperbolic functions, `abs`, `sign`, `min`, `max`, `clamp`, `floor`, `ceil`, `round`, `mod`, `rem`, `hypot`). Nothing else is a constant: `t`, variables, ports and stateful functions (`ddt`, `previous`, ...) are refused.
+
+**Scope.** The names in scope of an instance value are exactly the global parameters, at every diagram level, including the inside of subsystems. A block's own parameters and constants are *not* in scope of an instance value (they never were: a model-level value is literal-only apart from the globals), so no block name can shadow a global and the meaning of a name never depends on the block it is typed into. Global parameters are not visible inside block source (`@block` text, library or inline): blocks stay self-contained; a value reaches a block only through its parameters.
+
+**Names.** A global's name is an identifier (`^[A-Za-z_][A-Za-z0-9_]*$`), unique in the model, and not a reserved word: `t`, `Ts`, `ifelse`, `true`, `false`, `pi`, the Julia keywords, or a built-in function name. Violations are `E003`.
+
+**Static evaluation.** Globals are folded to numbers once per compile, before any instance is created:
+
+1. Every value is parsed with the block front end (syntax errors are `E001`, a function off the whitelist `E002`).
+2. A name that is not a global is `E003`.
+3. The globals are sorted topologically on the names their values use; the table order does not matter. A cycle (`a = b + 1`, `b = 2*a`, or `x = x + 1`) is **`E113`** on its first member with the cycle path (`a -> b -> a`).
+4. The values are folded in that order by the constant folder (never `eval`). The result must be a finite number: a Bool is `E004`; `Inf`/`NaN`, a division by zero or a domain error (`sqrt(-1)`) is `E113`. An `Int` result stays an `Int`, so a global can size a structural constant.
+5. A global that uses a failed global fails as well (`E113`, "uses `x`, which cannot be evaluated"), and an instance value that uses a failed global is `E113` on that instance.
+
+Global diagnostics are model-wide: `path` is null and `scope` is `global:<name>`.
+
+**Static, not tunable.** The flat model, the simulation and the C/FMU export see only the folded numbers; a global is not a runtime parameter. A block parameter set to an expression of globals is still the block's own parameter (tunable if the block declares it tunable). A start-time change of a global (a dashboard input, a parameter sweep) is applied to the document *before* static evaluation (`BGSim.IR.override_globals(md, Dict("global:m" => 3))`, keys prefixed `global:`), so every dependent global and instance value is re-folded.
+
+**Rename and delete.** Renaming a global in the editor rewrites every whole-identifier reference (other globals and every instance value at every level) as one undo step; `k2` and the `e` of `1e-3` are different tokens. Deleting a global that is still used is refused and the message lists its users.
+
 ## Continuous, discrete and event semantics
 
 A model is a hybrid system: one continuous DAE, plus clocked discrete partitions, plus events. The same semantics hold in Julia simulation and in exported code, except where noted.
@@ -541,6 +575,7 @@ Validation runs in two passes: per block right after parsing (fast, runs as the 
 | `E104` | Model | Discrete clock not a multiple of base tick or `dt` | `Ts = 0.0015` with `dt = 0.001` |
 | `E105` | Model | Cycle between discrete blocks | Add `previous()` on one link |
 | `E108` | Model | CSV data file or its settings unusable | `data/a.csv`, data row 12, column `q1` (line 14): `abc` is not a finite number |
+| `E113` | Model | Global parameter cannot be evaluated: a cycle, a non-finite result, or a use of a failed global | global parameters form a cycle: `a -> b -> a` |
 | `W201` | Model | Derivative causality | `I2` is in derivative causality; DAE index raised |
 | `W202` | Model | Algebraic loop torn | Loop through `R1`, `R3` solved iteratively |
 | `W203` | Model | Event not located in fixed-step export | `abs` in `Friction1` switches between steps |

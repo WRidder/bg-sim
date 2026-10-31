@@ -21,6 +21,8 @@ import { expect, test, type Page } from "@playwright/test";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../..");
 const shots = process.env.BGSIM_SCREENSHOT_DIR ?? "";
+// BGSIM_E2E_REAL=1 runs against the Julia worker, which warms up and compiles first.
+const real = process.env.BGSIM_E2E_REAL === "1";
 
 let project = "";
 
@@ -44,7 +46,7 @@ test.afterEach(async ({ request }) => {
 async function openModel(page: Page, theme: "dark" | "light" = "dark"): Promise<void> {
   await page.addInitScript((value) => localStorage.setItem("bgsim.theme", value), theme);
   await page.goto(`/?project=${encodeURIComponent(project)}&model=Globals`);
-  await expect(page.getByTestId("canvas-surface")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByTestId("canvas-surface")).toBeVisible({ timeout: real ? 600_000 : 30_000 });
   await expect(page.getByTestId("inspector-model")).toBeVisible();
 }
 
@@ -82,6 +84,7 @@ async function deselect(page: Page): Promise<void> {
 }
 
 test("globals drive a block parameter, rename through, report cycles and run", async ({ page }) => {
+  if (real) test.setTimeout(1_200_000);
   await openModel(page);
   await expect(page.getByTestId("globals-empty")).toBeVisible();
 
@@ -137,10 +140,12 @@ test("globals drive a block parameter, rename through, report cycles and run", a
   await page.getByTestId("global-user-stiffness-R1.R").click();
   await expect(page.getByTestId("inspector-param-R")).toHaveValue("stiffness");
 
-  // Run against the fake worker.
-  await expect(page.getByTestId("run-button")).toBeEnabled();
+  // Run (fake worker by default; BGSIM_E2E_REAL=1 runs the Julia worker, which folds the globals).
+  await expect(page.getByTestId("run-button")).toBeEnabled({ timeout: real ? 600_000 : 5_000 });
   await page.keyboard.press("Control+Enter");
-  await expect(page.getByTestId("run-status")).toHaveAttribute("data-status", "done", { timeout: 30_000 });
+  await expect(page.getByTestId("run-status")).toHaveAttribute("data-status", "done", {
+    timeout: real ? 600_000 : 30_000,
+  });
 });
 
 for (const theme of ["light", "dark"] as const) {
