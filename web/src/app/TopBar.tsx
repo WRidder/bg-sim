@@ -4,6 +4,8 @@ import { ExportDialog } from "../export/ExportDialog";
 import { useExportDialogStore } from "../export/exportStore";
 import { useDocumentStore } from "../state/documentStore";
 import type { Theme } from "../theme/theme";
+import { LeaveProjectDialog } from "./LeaveProjectDialog";
+import { requestLeaveProject } from "./leaveProject";
 import { OpenDialog } from "./OpenDialog";
 import { RunBar } from "./RunBar";
 import { WorkerStatus } from "./WorkerStatus";
@@ -39,7 +41,20 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
 
   return (
     <header className="top-bar" data-testid="top-bar">
-      <div className="top-bar__brand">bg-sim</div>
+      {project === null ? (
+        <div className="top-bar__brand">bg-sim</div>
+      ) : (
+        <button
+          type="button"
+          className="top-bar__brand top-bar__brand--link"
+          data-testid="brand-home"
+          title="Back to the library (examples and projects)"
+          onClick={requestLeaveProject}
+        >
+          bg-sim
+        </button>
+      )}
+      <LeaveProjectDialog />
 
       <button
         type="button"

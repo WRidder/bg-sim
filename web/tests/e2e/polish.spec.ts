@@ -56,7 +56,7 @@ test("the start page lists a card per example, imports a sample and lists the pr
   await page.goto("/");
   const start = page.getByTestId("start-page");
   await expect(start).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeAttached();
   // The editor is not mounted behind the start page.
   await expect(page.getByTestId("left-panel")).toHaveCount(0);
 

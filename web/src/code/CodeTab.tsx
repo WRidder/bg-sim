@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "../app/EmptyState";
+import { registerUnsavedWork } from "../app/leaveProject";
 import type { CatalogBlock } from "../contracts/catalog";
 import type { BlockCheckResult } from "../contracts/worker-rpc";
 import { copyBlockToProjectLibrary } from "../inspector/copyToLibrary";
@@ -174,6 +175,31 @@ export function CodeTab() {
     }, LIBRARY_SAVE_DELAY_MS);
     return () => clearTimeout(timer);
   }, [draft, project, target, targetKey]);
+
+  // An edited library block that is not on disk yet asks before leaving the project.
+  useEffect(() => {
+    if (
+      target === null ||
+      target.kind !== "library" ||
+      target.sourceKind !== "project" ||
+      project === null ||
+      draft === null ||
+      draft.key !== targetKey ||
+      saveState === "saved"
+    ) {
+      return;
+    }
+    const name = target.name;
+    const text = draft.source;
+    return registerUnsavedWork("code-tab", () => ({
+      label: `the library block “${name}”`,
+      save: () =>
+        writeProjectLibrary(project, name, text).then(
+          () => true,
+          () => false,
+        ),
+    }));
+  }, [draft, project, saveState, target, targetKey]);
 
   function chooseSource(value: string): void {
     if (value.startsWith("inline:")) {

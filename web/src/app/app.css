@@ -84,6 +84,26 @@ body {
   background: var(--color-accent);
 }
 
+.top-bar__brand--link {
+  padding: var(--space-1) var(--space-2);
+  margin: calc(-1 * var(--space-1)) calc(-1 * var(--space-2));
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.top-bar__brand--link:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.top-bar__brand--link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
 .top-bar__project {
   flex: 1 1 auto;
   display: flex;
@@ -691,19 +711,6 @@ body {
   padding: var(--space-8) var(--space-6) var(--space-12);
 }
 
-.start-page__title {
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-tight);
-}
-
-.start-page__lead {
-  max-width: 68ch;
-  margin: 0 0 var(--space-4);
-  color: var(--color-text-muted);
-}
-
 .start-page__new {
   display: flex;
   flex-wrap: wrap;
@@ -961,4 +968,43 @@ kbd {
 
 .open-dialog__row.is-selected .open-dialog__meta {
   color: var(--color-text-muted);
+}
+
+/* Back to the library with unsaved work (LeaveProjectDialog). */
+.leave-dialog {
+  width: min(460px, 94vw);
+  padding: var(--space-4);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  outline: none;
+}
+
+.leave-dialog__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-lg);
+}
+
+.leave-dialog__text {
+  margin: 0 0 var(--space-1);
+}
+
+.leave-dialog__list {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+  color: var(--color-text-muted);
+}
+
+.leave-dialog__error {
+  margin: 0 0 var(--space-3);
+  color: var(--color-error-text);
+}
+
+.leave-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
 }

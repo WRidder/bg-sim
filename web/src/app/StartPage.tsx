@@ -130,11 +130,7 @@ export function StartPage() {
     <main className="start-page" id="main" data-testid="start-page" data-state={status}>
       <div className="start-page__inner">
         <header className="start-page__hero">
-          <h1 className="start-page__title">Model, simulate and see it move</h1>
-          <p className="start-page__lead">
-            Draw bond graphs, block diagrams and equations on one canvas, run them on the Julia
-            worker and play the result in 3D. Start from a sample or create an empty project.
-          </p>
+          <h1 className="visually-hidden">bg-sim</h1>
           <form
             className="start-page__new"
             onSubmit={(event) => {

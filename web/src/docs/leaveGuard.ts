@@ -22,3 +22,14 @@ export function hasUnsavedDocs(): boolean {
 export function saveUnsavedDocs(): Promise<boolean> {
   return guard?.saveAll() ?? Promise.resolve(true);
 }
+
+let leaveConfirmed = false;
+
+/** The user already chose to leave without saving (in-app prompt): skip the browser's own. */
+export function confirmLeave(): void {
+  leaveConfirmed = true;
+}
+
+export function isLeaveConfirmed(): boolean {
+  return leaveConfirmed;
+}

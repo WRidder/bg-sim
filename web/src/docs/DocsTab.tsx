@@ -17,6 +17,7 @@ import { DocsTree } from "./DocsTree";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { MarkdownView, type LinkActions } from "./MarkdownView";
 import { dirtyPageIds, useDocsStore, type DocsMode } from "./docsStore";
+import { isLeaveConfirmed } from "./leaveGuard";
 import { allIds, findPage, pathTo } from "./pageTree";
 import type { LinkContext } from "./docsLinks";
 import { useSyncedScroll } from "./useSyncedScroll";
@@ -120,6 +121,9 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
       return;
     }
     const warn = (event: BeforeUnloadEvent): void => {
+      if (isLeaveConfirmed()) {
+        return;
+      }
       event.preventDefault();
     };
     window.addEventListener("beforeunload", warn);
