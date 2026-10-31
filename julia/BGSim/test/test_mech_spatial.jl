@@ -750,7 +750,9 @@ end
         # The generic 6x6-basis joint and its pose helper are dropped (J-MB9 correction).
         @test !haskey(blocks, "stdlib:spatial/JointBasis")
         @test !haskey(blocks, "stdlib:spatial/JointPose3D")
-        @test sort([r for r in keys(blocks) if startswith(r, "stdlib:spatial/")]) == sort(_MSP_REFS)
+        # the flexible beam and its modal core are checked in test_flex_modes.jl / test_flex_beam.jl
+        flex = ["stdlib:spatial/FlexibleBeam3D", "stdlib:spatial/ModalBeam3D"]
+        @test sort([r for r in keys(blocks) if startswith(r, "stdlib:spatial/")]) == sort(vcat(_MSP_REFS, flex))
         for ref in _MSP_REFS
             b = blocks[ref]
             @test b.group == "Spatial mechanics"
