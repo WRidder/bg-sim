@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { BuiltScene } from "../scene/build";
 import { SceneView } from "../scene/SceneView";
 import { BindingsEditor } from "./BindingsEditor";
+import { useExaggeration } from "./exaggeration";
+import { ExaggerationControl } from "./ExaggerationControl";
 import { DetachIcon, DockIcon } from "./icons";
 import { PlaybackBar, playbackKeyHandler } from "./PlaybackBar";
 import { useBindableSignals, useModelBindings, useViewerPlayback } from "./playbackHook";
@@ -34,6 +36,11 @@ export default function DockViewer({ active, createEngine, hostWindow }: DockVie
   const signals = useBindableSignals();
   const { playback, snapshot, streamError, streamNote } = useViewerPlayback(built, active, hostWindow ?? null);
   const onKeyDown = useMemo(() => playbackKeyHandler(playback), [playback]);
+  const [exaggeration, setExaggeration] = useExaggeration();
+  const deforms = bindings.some((b) => b.property === "deformation");
+  useEffect(() => {
+    built?.setExaggeration(exaggeration);
+  }, [built, exaggeration]);
 
   const extras =
     built === null ? null : (
@@ -55,6 +62,7 @@ export default function DockViewer({ active, createEngine, hostWindow }: DockVie
     );
   return (
     <SceneView active={active} createEngine={createEngine} onBuilt={setBuilt} highlight={hover} onKeyDown={onKeyDown} extras={extras}
+      badge={deforms ? <ExaggerationControl factor={exaggeration} onChange={setExaggeration} /> : null}
       toolbarEnd={
         <>
           <button

@@ -869,7 +869,7 @@ Don't copy anything PP-02-specific: the sidecar contract, ACS transmissions, clo
 - Unsupported elements produce viewer diagnostics (`E3xx`, below) and are skipped.
 
 **Bindings** (exactly the spec's schema):
-- Properties: `position` on joints, `pose` (7 signals) on links and frames, `scale.x|y|z` on visuals, `color` with `colormap` (`heat`, `viridis`, `coolwarm`) and `range` on visuals, and `visible`.
+- Properties: `position` on joints, `pose` (7 signals) on links and frames, `scale.x|y|z` on visuals, `color` with `colormap` (`heat`, `viridis`, `coolwarm`) and `range` on visuals, `visible`, and `deformation` (1 to 3 modal coordinates of a `bending-y`, `bending-z` or `torsion` family) on box and cylinder visuals. Deformation is drawn on the CPU per ring of a segmented beam mesh (`src/viewer/beamModes.ts`, `src/scene/beamMesh.ts`), with stripes while torsion is bound, an optional strain colormap, and a per-model exaggeration factor (×1 to ×1000) shown in the view.
 - Validation runs in the browser against the scene and the `signals` list from `model.check`. It reports:
   - `E301` unknown target;
   - `E302` unknown signal;

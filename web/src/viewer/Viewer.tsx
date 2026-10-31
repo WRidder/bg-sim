@@ -29,6 +29,8 @@ export interface ViewerProps {
   readonly overlay?: ReactNode;
   /** Appended to the toolbar (the 3D View's Detach / Dock button). */
   readonly toolbarEnd?: ReactNode;
+  /** Shown in the top-left corner of the view (the deformation exaggeration). */
+  readonly badge?: ReactNode;
   /** The element the full-screen button enlarges (default: the view itself), e.g. the stage
    *  that also holds the playback bar. */
   readonly fullscreenRef?: RefObject<HTMLElement | null> | undefined;
@@ -326,6 +328,7 @@ export function Viewer(props: ViewerProps) {
               {props.toolbarEnd}
             </div>
           </div>
+          {props.badge ?? null}
           {props.overlay ? <div className="viewer__overlay">{props.overlay}</div> : null}
         </>
       ) : (
