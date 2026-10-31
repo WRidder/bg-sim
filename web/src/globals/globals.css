@@ -1,0 +1,389 @@
+/*
+ * The Equations manager and the Σ decoration of driven inspector fields.
+ * Every colour, space and radius is a theme token (src/theme/tokens.css).
+ */
+
+.equations-manager {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.equations-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.equations-tab {
+  flex: 1 1 auto;
+  height: 22px;
+  padding: 0 var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.equations-tab:hover {
+  color: var(--color-text);
+}
+
+.equations-tab--active {
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-panel);
+}
+
+.equations-tab:focus-visible,
+.equations-link:focus-visible,
+.equations-icon-button:focus-visible,
+.equations-open:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.equations-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.equations-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: var(--font-size-sm);
+}
+
+.equations-table th {
+  padding: 0 var(--space-1) 2px;
+  font-size: 9px;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--color-text-faint);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.equations-table td {
+  padding: 2px var(--space-1);
+  vertical-align: top;
+  border-bottom: var(--border-width) solid color-mix(in srgb, var(--color-border) 55%, transparent);
+}
+
+.equations-table tr.equations-detail td {
+  border-bottom-color: var(--color-border);
+  padding-top: 0;
+}
+
+.equations-table--wide td:nth-child(1) {
+  width: 16%;
+}
+
+.equations-table--wide td:nth-child(2) {
+  width: 30%;
+}
+
+.equations-cell {
+  position: relative;
+  min-width: 0;
+}
+
+.equations-input {
+  width: 100%;
+  min-width: 3.5em;
+  height: var(--control-height);
+  padding: 0 5px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.equations-input--mono {
+  font-family: var(--font-mono);
+}
+
+.equations-input:hover {
+  border-color: var(--color-border-strong);
+}
+
+.equations-input:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -1px;
+  border-color: var(--color-focus);
+}
+
+.equations-input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.equations-cell__error,
+.equations-error {
+  margin: 2px 0 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-error-text);
+  overflow-wrap: anywhere;
+}
+
+.equations-value {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--control-height);
+  color: var(--color-text);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.equations-value__error {
+  color: var(--color-error-text);
+  cursor: help;
+}
+
+.equations-row-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.equations-icon-button {
+  min-width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  padding: 0 3px;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  background: transparent;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.equations-icon-button:hover:not(:disabled) {
+  color: var(--color-text);
+  border-color: var(--color-border);
+  background: var(--color-surface-raised);
+}
+
+.equations-icon-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.equations-icon-button--danger:hover:not(:disabled) {
+  color: var(--color-error-text);
+}
+
+.equations-uses {
+  font-variant-numeric: tabular-nums;
+  border-color: var(--color-border);
+}
+
+.equations-uses[aria-expanded="true"] {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.equations-users ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.equations-link {
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.equations-link:hover {
+  text-decoration: underline;
+}
+
+.equations-kind {
+  margin-left: var(--space-1);
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.equations-select-all {
+  margin-bottom: var(--space-1);
+}
+
+.equations-doc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+}
+
+.equations-note {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.equations-note code,
+.equations-order code {
+  font-family: var(--font-mono);
+}
+
+.equations-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.equations-order {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: var(--font-size-sm);
+}
+
+.equations-order__value {
+  margin-left: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+.equations-order__item--error .equations-order__value {
+  color: var(--color-error-text);
+}
+
+.equations-open {
+  margin-left: auto;
+  padding: 0;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-accent);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.equations-open:hover {
+  text-decoration: underline;
+}
+
+.equations-dialog {
+  width: min(980px, 94vw);
+  max-height: min(720px, 88vh);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  outline: none;
+}
+
+.equations-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.equations-dialog__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+/* Inspector decoration of a driven value (SolidWorks' Σ). */
+
+.inspector-tag--equation {
+  color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  font-size: 10px;
+  text-transform: none;
+}
+
+.equation-readout {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.inspector-field__row {
+  position: relative;
+}
+
+.expression-completions {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 20;
+  min-width: 160px;
+  max-width: 100%;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-panel);
+}
+
+.expression-completions__item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 2px 6px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.expression-completions__item code {
+  font-family: var(--font-mono);
+}
+
+.expression-completions__item--active {
+  color: var(--color-on-accent);
+  background: var(--color-accent-fill);
+}
+
+.expression-completions__hint {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  opacity: 0.75;
+}

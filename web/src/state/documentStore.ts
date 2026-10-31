@@ -31,6 +31,7 @@ import type {
   ModelConnection,
   ModelConstantValue,
   ModelDiagram,
+  ModelGlobalParameter,
   ModelNode,
   ModelNodeImage,
   ModelPoint,
@@ -54,6 +55,17 @@ import {
   type ParameterChange,
 } from "../debug/panels/editsModel";
 import { nodeImageIssue } from "../editor/nodeImage";
+import {
+  type EditPlan,
+  type FieldRef,
+  type GlobalPatch,
+  planAddGlobal,
+  planDeleteGlobal,
+  planMoveGlobal,
+  planRenameGlobal,
+  planSetField,
+  planUpdateGlobal,
+} from "../globals/globalEdits";
 import { groupSelectionIntoSubsystem } from "../editor/subsystemGroup";
 import { terminalId, terminalPortName } from "../editor/subsystemBoundary";
 import {
@@ -235,6 +247,17 @@ export interface DocumentActions {
   ) => EditResult;
   /** Set one start-value override, or remove it with null (plan 3.3 `starts`). */
   setNodeStart: (nodeId: string, name: string, value: string | null) => EditResult;
+
+  /** Global parameters (the Equations manager); each edit is one undo step. */
+  addGlobalParameter: (init?: Partial<ModelGlobalParameter>) => EditResult & { name?: string };
+  updateGlobalParameter: (name: string, patch: GlobalPatch) => EditResult;
+  /** Rename a global and rewrite every whole-identifier reference in the model. */
+  renameGlobalParameter: (name: string, next: string) => EditResult;
+  /** Refused while any block field or other global still uses it. */
+  deleteGlobalParameter: (name: string) => EditResult;
+  moveGlobalParameter: (name: string, toIndex: number) => EditResult;
+  /** Set a params/starts/constants expression of any node in the model (the Equations view). */
+  setFieldExpression: (field: FieldRef, text: string) => EditResult;
   /**
    * Set the image drawn in a subsystem card (plan 3.3 `ui.image`), or remove it with null.
    * The caller has already fitted the image into the 512 KiB limit (editor/nodeImage.ts).
@@ -541,6 +564,20 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         recipe(diagram);
       }
     }, options);
+  };
+
+  /** Validate an edit against the open document, then commit its recipe as one step. */
+  const runPlan = (plan: (doc: Model) => EditPlan): EditResult & { name?: string } => {
+    const doc = get().doc;
+    if (doc === null) {
+      return { ok: false, error: "No model is open." };
+    }
+    const result = plan(doc);
+    if (!result.ok) {
+      return { ok: false, error: result.error };
+    }
+    commit(result.recipe);
+    return result.name === undefined ? { ok: true } : { ok: true, name: result.name };
   };
 
   const addNode = (node: ModelNode): string | null => {
@@ -1357,6 +1394,13 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       });
       return { ok: true };
     },
+
+    addGlobalParameter: (init) => runPlan((doc) => planAddGlobal(doc, init)),
+    updateGlobalParameter: (name, patch) => runPlan((doc) => planUpdateGlobal(doc, name, patch)),
+    renameGlobalParameter: (name, next) => runPlan((doc) => planRenameGlobal(doc, name, next)),
+    deleteGlobalParameter: (name) => runPlan((doc) => planDeleteGlobal(doc, name)),
+    moveGlobalParameter: (name, toIndex) => runPlan((doc) => planMoveGlobal(doc, name, toIndex)),
+    setFieldExpression: (field, text) => runPlan((doc) => planSetField(doc, field, text)),
 
     setNodeImage: (nodeId, image) => {
       const diagram = currentDiagram();

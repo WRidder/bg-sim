@@ -55,6 +55,7 @@ import ..BGSim.Library
 import ..BGSim.IR
 import ..BGSim.Flat
 
+include("globals.jl")
 include("instantiate.jl")
 include("connect.jl")
 include("domains.jl")
@@ -259,6 +260,6 @@ function check_block_source(text::AbstractString; ref::AbstractString = "inline:
     return (diagnostics = block.diagnostics, interface = bad ? nothing : block.interface)
 end
 
-export flatten, model_check, check_block_source
+export flatten, model_check, check_block_source, evaluate_globals, evaluate_globals_values, GlobalEnv
 
 end # module Compile

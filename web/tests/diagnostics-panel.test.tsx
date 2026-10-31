@@ -74,11 +74,11 @@ describe("the diagnostics panel", () => {
     apply(fixture);
     render(<DiagnosticsPanel />);
 
-    expect(screen.getByTestId("diagnostics-count-error").textContent).toContain("26");
+    expect(screen.getByTestId("diagnostics-count-error").textContent).toContain("27");
     expect(screen.getByTestId("diagnostics-count-warning").textContent).toContain("7");
     expect(screen.getByTestId("diagnostics-count-info").textContent).toContain("0");
-    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(33);
-    expect(screen.getAllByTestId("diagnostics-group")).toHaveLength(24);
+    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(34);
+    expect(screen.getAllByTestId("diagnostics-group")).toHaveLength(25);
     expect(screen.getByTestId("diagnostics-status").textContent).toContain("Revision 1 checked");
   });
 
@@ -101,7 +101,8 @@ describe("the diagnostics panel", () => {
     const groups = [...container.querySelectorAll('[data-testid="diagnostics-group"]')].map(
       (group) => group.getAttribute("data-path"),
     );
-    expect(groups.slice(0, 2)).toEqual(["Ctrl", "Ctrl/Compare1"]);
+    // The model-wide group (the E113 global-parameter cycle, path null) comes first.
+    expect(groups.slice(0, 3)).toEqual(["", "Ctrl", "Ctrl/Compare1"]);
   });
 
   it("puts model-wide diagnostics in a Model group first", () => {
@@ -115,7 +116,7 @@ describe("the diagnostics panel", () => {
     const groups = [...container.querySelectorAll('[data-testid="diagnostics-group"]')];
     expect(groups[0]?.getAttribute("data-path")).toBe("");
     expect(within(groups[0] as HTMLElement).getByText("Model")).toBeTruthy();
-    expect(within(groups[0] as HTMLElement).getByTestId(/^diagnostic-item-/)).toBeTruthy();
+    expect(within(groups[0] as HTMLElement).getAllByTestId(/^diagnostic-item-/)).toHaveLength(2);
   });
 
   it("filters by severity, shows the empty-filter state and restores all", () => {
@@ -136,7 +137,7 @@ describe("the diagnostics panel", () => {
     );
 
     fireEvent.click(screen.getByTestId("diagnostics-show-all"));
-    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(33);
+    expect(screen.getAllByTestId(/^diagnostic-item-\d+$/)).toHaveLength(34);
     expect(screen.getByTestId("diagnostics-filter-error").getAttribute("aria-pressed")).toBe(
       "true",
     );
@@ -215,7 +216,7 @@ describe("the diagnostics panel", () => {
     });
 
     const tab = screen.getByRole("tab", { name: /^Diagnostics/ });
-    expect(within(tab).getByLabelText("26 errors")).toBeTruthy();
+    expect(within(tab).getByLabelText("27 errors")).toBeTruthy();
     expect(within(tab).getByLabelText("7 warnings")).toBeTruthy();
   });
 });

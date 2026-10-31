@@ -337,7 +337,7 @@ describe("inspector fields", () => {
     open([motor, capacitor], [connection]);
     render(<Inspector />);
 
-    expect(screen.getByText("Nothing selected")).toBeTruthy();
+    expect(screen.getByTestId("inspector-model")).toBeTruthy();
 
     act(() => useDocumentStore.getState().setSelection(["n1", "n2"], []));
     const summary = screen.getByTestId("inspector-multi");
@@ -351,7 +351,7 @@ describe("inspector fields", () => {
     );
 
     act(() => useDocumentStore.getState().setSelection([], []));
-    expect(screen.getByText("Nothing selected")).toBeTruthy();
+    expect(screen.getByTestId("inspector-model")).toBeTruthy();
   });
 
   it("shows the node's diagnostics when the check panel passes them in", () => {
@@ -447,7 +447,7 @@ describe("inspector fields", () => {
     const subsystemId = useDocumentStore.getState().selection.nodes[0] ?? "";
     expect(useDocumentStore.getState().enterSubsystem(subsystemId)).toBe(true);
     render(<Inspector />);
-    expect(screen.getByText("Nothing selected")).toBeTruthy();
+    expect(screen.getByTestId("inspector-model")).toBeTruthy();
 
     // The nested Motor1 is not in the root diagram; the inspector still finds it.
     expect(docNode("n1")).toBeUndefined();
@@ -470,7 +470,7 @@ describe("inspector fields", () => {
 
     // Leaving the subsystem prunes the nested selection.
     act(() => useDocumentStore.getState().leaveSubsystem());
-    expect(screen.getByText("Nothing selected")).toBeTruthy();
+    expect(screen.getByTestId("inspector-model")).toBeTruthy();
   });
 
   it("keeps the documented empty state before a model is open", () => {

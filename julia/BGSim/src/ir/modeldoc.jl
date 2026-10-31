@@ -109,11 +109,26 @@ struct ModelDiagram
     connections::Vector{ModelConnection}
 end
 
-"""    ModelDoc(name, language, diagram, settings, plots, scene, bindings, format)
+"""    GlobalParam(name, value, unit, description)
+
+One model-level ("global") parameter (contract `model.parameters[]`, spec "Global
+parameters"). `value` is a constant expression string over literals, other globals and the
+whitelisted pure functions; it is folded once per compile by `BGSim.Compile.evaluate_globals`
+and every instance-level expression (params, starts, string constants, at every diagram
+level) sees the folded number. `unit` and `description` are documentation only."""
+struct GlobalParam
+    name::String
+    value::String
+    unit::Union{String,Nothing}
+    description::Union{String,Nothing}
+end
+
+"""    ModelDoc(name, language, diagram, settings, plots, scene, bindings, format, globals)
 
 The parsed model document. `settings` is the raw JSON object (a `Dict{String,Any}`) because
 the simulation stage reads `t_start`, `t_end`, `solver`, the tolerances, the output grid and
-`event_limit` from it and this stage has no reason to interpret them."""
+`event_limit` from it and this stage has no reason to interpret them. `globals` keeps the
+document's global parameters in document order (`GlobalParam[]` when there are none)."""
 struct ModelDoc
     format::String
     language::String
@@ -123,7 +138,11 @@ struct ModelDoc
     plots::Vector{Any}
     scene::Any
     bindings::Vector{Any}
+    globals::Vector{GlobalParam}
 end
+
+ModelDoc(format, language, name, diagram, settings, plots, scene, bindings) =
+    ModelDoc(format, language, name, diagram, settings, plots, scene, bindings, GlobalParam[])
 
 # ---------------------------------------------------------------------------------------
 # JSON helpers (JSON3.Object and plain Dict both work)
@@ -371,6 +390,7 @@ function parse_model(obj::AbstractDict)
     scene = _plain(_get(obj, "scene", nothing))
     bindings_value = _get(obj, "bindings", nothing)
     bindings = bindings_value === nothing ? Any[] : _plain(bindings_value)
+    globals = _parse_globals(_get(obj, "parameters", nothing))
     return ModelDoc(
         format,
         language,
@@ -380,5 +400,70 @@ function parse_model(obj::AbstractDict)
         Any[plots...],
         scene,
         Any[bindings...],
+        globals,
     )
+end
+
+# The top-level `parameters` array. Structure only: a missing name or a non-string value is
+# a programming error (the schema forbids it); a bad identifier, a duplicate or a bad
+# expression is a user error that `Compile.evaluate_globals` reports as a diagnostic.
+function _parse_globals(value)
+    value === nothing && return GlobalParam[]
+    value isa AbstractVector || throw(ArgumentError("the model `parameters` must be an array"))
+    out = GlobalParam[]
+    for (k, g) in enumerate(value)
+        name = _str(_get(g, "name", nothing), "global parameter $k name")
+        text = _str(_get(g, "value", nothing), "global parameter `$name` value")
+        unit_value = _get(g, "unit", nothing)
+        unit = unit_value === nothing ? nothing :
+               _str(unit_value, "global parameter `$name` unit")
+        desc_value = _get(g, "description", nothing)
+        desc = desc_value === nothing ? nothing :
+               _str(desc_value, "global parameter `$name` description")
+        push!(out, GlobalParam(name, text, unit, desc))
+    end
+    return out
+end
+
+"""    GLOBAL_OVERRIDE_PREFIX
+
+The key prefix that addresses a global parameter in a run-start override map
+(`parameterOverrides["global:m"] = "3.5"`). A colon never occurs in an instance path, so the
+key cannot collide with a block parameter id such as `Mass1/m`."""
+const GLOBAL_OVERRIDE_PREFIX = "global:"
+
+"""    override_globals(md, overrides) -> ModelDoc
+
+The start-time hook for global parameters (dashboard inputs, scripted sweeps): return a copy
+of `md` whose global parameters named in `overrides` take the given value *before* static
+evaluation, so every dependent global and every instance expression that uses them sees the
+new number. Keys carry the [`GLOBAL_OVERRIDE_PREFIX`](@ref) (`"global:m"`); every other key
+(a block parameter id such as `Mass1/m`) is ignored, so a mixed `parameterOverrides` map can be
+passed as is. A value is an expression string or a number. Naming a global that does not
+exist throws an `ArgumentError`, which the caller turns into its own refusal."""
+function override_globals(md::ModelDoc, overrides::AbstractDict)
+    wanted = Dict{String,String}()
+    for (k, v) in pairs(overrides)
+        key = String(k)
+        startswith(key, GLOBAL_OVERRIDE_PREFIX) || continue
+        name = key[(length(GLOBAL_OVERRIDE_PREFIX) + 1):end]
+        wanted[name] = if v isa AbstractString
+            String(v)
+        elseif v isa Real && !(v isa Bool)
+            repr(v)
+        else
+            throw(ArgumentError("the override of global `$name` must be a number or an expression string"))
+        end
+    end
+    isempty(wanted) && return md
+    known = Set(g.name for g in md.globals)
+    for name in keys(wanted)
+        name in known || throw(ArgumentError("the model has no global parameter `$name`"))
+    end
+    globals = GlobalParam[
+        haskey(wanted, g.name) ? GlobalParam(g.name, wanted[g.name], g.unit, g.description) : g
+        for g in md.globals
+    ]
+    return ModelDoc(md.format, md.language, md.name, md.diagram, md.settings, md.plots,
+        md.scene, md.bindings, globals)
 end

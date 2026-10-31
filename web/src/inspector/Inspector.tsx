@@ -18,6 +18,7 @@ import { subsystemAtPath } from "../editor/subsystemPorts";
 import { useCatalogStore } from "../library/catalogStore";
 import type { CatalogIndex } from "../library/catalogIndex";
 import { useDocumentStore } from "../state/documentStore";
+import { ModelInspector } from "../globals/EquationsManager";
 import { ProbeInspector } from "../probe/ProbeInspector";
 import { selectedNoteIds } from "../editor/notes";
 import { NoteInspector } from "./NoteInspector";
@@ -232,12 +233,8 @@ export function Inspector({ diagnostics }: InspectorProps) {
       }
       return <ConnectionSelection connections={selectedConnections} nodes={diagram.nodes} />;
     }
-    return (
-      <EmptyState
-        title="Nothing selected"
-        hint="Select a block on the diagram to edit its name, parameters, ports and start values here."
-      />
-    );
+    // Nothing selected: the model itself, with its global parameters and equations.
+    return <ModelInspector />;
   }
 
   const node = selectedNodes[0];
