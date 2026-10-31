@@ -120,10 +120,13 @@
 
 .plot-toolbar__target select {
   max-width: 16ch;
-  padding: 1px 3px;
+  /* The height and look of the toolbar buttons beside it. */
+  height: var(--control-height);
+  padding: 0 var(--space-1);
   font: inherit;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm);
 }

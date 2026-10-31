@@ -126,7 +126,7 @@ describe("DetachedViewerWindow", () => {
     const canvas = popupDocument.querySelector("canvas");
     expect(canvas).not.toBeNull();
     expect(canvas?.ownerDocument).toBe(popupDocument);
-    expect(popup.document.querySelector('[data-testid="dock-viewer-button"]')?.textContent).toBe("Dock");
+    expect(popup.document.querySelector('[data-testid="dock-viewer-button"]')?.getAttribute("aria-label")).toBe("Dock");
     expect(engines).toHaveLength(1);
     expect(engines[0]?.scenes).toHaveLength(1);
     await waitFor(() => expect(Number((popup.document.querySelector('[data-testid="viewer"]') as HTMLElement).dataset["frames"])).toBeGreaterThanOrEqual(1));

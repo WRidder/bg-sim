@@ -21,7 +21,34 @@
   top: var(--space-2);
   right: var(--space-2);
   display: flex;
-  gap: var(--space-1);
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.viewer__group {
+  display: flex;
+  gap: 2px;
+}
+
+.viewer__button--icon {
+  display: inline-grid;
+  place-items: center;
+  width: var(--control-height);
+  padding: 0;
+  color: var(--color-text-muted);
+}
+
+.viewer__button--icon:hover {
+  color: var(--color-text);
+}
+
+.viewer__icon {
+  display: block;
+}
+
+/* Full screen: the view fills the screen on the app background. */
+.viewer:fullscreen {
+  background: var(--color-bg);
 }
 
 .viewer__button {

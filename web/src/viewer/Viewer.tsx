@@ -2,8 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
+import { ExitFullscreenIcon, FitIcon, FullscreenIcon, OrthographicIcon, ViewIcons } from "./icons";
 import { hardwareScaling, RenderScheduler, windowClock } from "./renderScheduler";
 import { TAP_SLOP_PX } from "./picking";
+import { useFullscreen } from "./useFullscreen";
 import { ViewerScene, type CameraPreset, type ViewerColours } from "./viewerScene";
 import "./viewer.css";
 
@@ -31,10 +33,10 @@ export interface ViewerProps {
 
 const DEFAULT_DPR_CAP = 1.5;
 const PRESETS: readonly { readonly id: CameraPreset; readonly label: string }[] = [
-  { id: "iso", label: "Iso" },
-  { id: "top", label: "Top" },
-  { id: "front", label: "Front" },
-  { id: "side", label: "Side" },
+  { id: "iso", label: "Isometric view" },
+  { id: "top", label: "Top view" },
+  { id: "front", label: "Front view" },
+  { id: "side", label: "Side view" },
 ];
 const NO_SELECTION: readonly string[] = [];
 
@@ -78,6 +80,7 @@ interface Shown {
  */
 export function Viewer(props: ViewerProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const { canFullscreen, fullscreen, toggle: toggleFullscreen } = useFullscreen(hostRef);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<ViewerScene | null>(null);
   const propsRef = useRef(props);
@@ -267,24 +270,58 @@ export function Viewer(props: ViewerProps) {
       {failure === null ? (
         <>
           <div className="viewer__toolbar" role="toolbar" aria-label="3D view">
-            {PRESETS.map((p) => (
+            <div className="viewer__group" role="group" aria-label="View direction">
+              {PRESETS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="viewer__button viewer__button--icon"
+                  data-testid={`viewer-preset-${p.id}`}
+                  aria-label={p.label}
+                  title={p.label}
+                  onClick={() => sceneRef.current?.fit(p.id)}
+                >
+                  {ViewIcons[p.id]()}
+                </button>
+              ))}
               <button
-                key={p.id}
                 type="button"
-                className="viewer__button"
-                data-testid={`viewer-preset-${p.id}`}
-                onClick={() => sceneRef.current?.fit(p.id)}
+                className="viewer__button viewer__button--icon"
+                data-testid="viewer-ortho"
+                aria-pressed={ortho}
+                aria-label="Orthographic projection"
+                title={ortho ? "Orthographic projection (click for perspective)" : "Orthographic projection"}
+                onClick={toggleOrtho}
               >
-                {p.label}
+                <OrthographicIcon />
               </button>
-            ))}
-            <button type="button" className="viewer__button" data-testid="viewer-fit" onClick={() => sceneRef.current?.fit()}>
-              Fit
-            </button>
-            <button type="button" className="viewer__button" data-testid="viewer-ortho" aria-pressed={ortho} onClick={toggleOrtho}>
-              Ortho
-            </button>
-            {props.toolbarEnd}
+            </div>
+            <div className="viewer__group">
+              <button
+                type="button"
+                className="viewer__button viewer__button--icon"
+                data-testid="viewer-fit"
+                aria-label="Fit the scene in the view"
+                title="Fit the scene in the view"
+                onClick={() => sceneRef.current?.fit()}
+              >
+                <FitIcon />
+              </button>
+              {canFullscreen ? (
+                <button
+                  type="button"
+                  className="viewer__button viewer__button--icon"
+                  data-testid="viewer-fullscreen"
+                  aria-pressed={fullscreen}
+                  aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+                  title={fullscreen ? "Exit full screen (Esc)" : "Full screen"}
+                  onClick={toggleFullscreen}
+                >
+                  {fullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
+                </button>
+              ) : null}
+              {props.toolbarEnd}
+            </div>
           </div>
           {props.overlay ? <div className="viewer__overlay">{props.overlay}</div> : null}
         </>

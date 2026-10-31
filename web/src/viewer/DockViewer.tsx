@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import type { BuiltScene } from "../scene/build";
 import { SceneView } from "../scene/SceneView";
 import { BindingsEditor } from "./BindingsEditor";
+import { DetachIcon, DockIcon } from "./icons";
 import { PlaybackBar, playbackKeyHandler } from "./PlaybackBar";
 import { useBindableSignals, useModelBindings, useViewerPlayback } from "./playbackHook";
 import { useViewerDetachStore } from "./detachStore";
@@ -58,15 +59,16 @@ export default function DockViewer({ active, createEngine, hostWindow }: DockVie
         <>
           <button
             type="button"
-            className="viewer__button"
+            className="viewer__button viewer__button--icon"
             data-testid={detached ? "dock-viewer-button" : "detach-viewer"}
+            aria-label={detached ? "Dock" : "Detach"}
             title={detached ? "Move the 3D view back into the bottom dock" : "Open the 3D view in a separate browser window"}
             onClick={() => {
               if (detached) attach();
               else detach();
             }}
           >
-            {detached ? "Dock" : "Detach"}
+            {detached ? <DockIcon /> : <DetachIcon />}
           </button>
           {detachError !== null && !detached ? (
             <span className="viewer__note" role="alert" data-testid="viewer-detach-error">
