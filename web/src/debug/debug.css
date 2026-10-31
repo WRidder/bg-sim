@@ -17,9 +17,54 @@
   border-left: var(--border-width) solid var(--color-border-strong);
 }
 
-.debug-controls__button {
-  padding: 0 var(--space-2);
-  font-size: var(--font-size-xs);
+/* The icon buttons of the debug toolbar (icons.tsx draws them in currentColor). */
+.debug-controls__icon {
+  flex: none;
+  padding: 0;
+  color: var(--color-accent);
+}
+
+.debug-controls__icon > svg {
+  display: block;
+}
+
+/* app.css turns a hovered .icon-button to the text colour; the debug icons keep theirs. */
+.debug-controls__icon:hover:not(:disabled) {
+  color: var(--color-accent);
+  background: var(--color-surface-raised);
+  border-color: var(--color-border);
+}
+
+.debug-controls__icon--pause,
+.debug-controls__icon--pause:hover:not(:disabled) {
+  color: var(--debug-pause-arrow);
+}
+
+.debug-controls__icon:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.debug-controls__icon:disabled {
+  color: var(--color-text-muted);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* app.css colours a hovered .icon-button as text; a disabled one keeps its dimmed look. */
+.debug-controls__icon:disabled:hover {
+  background: transparent;
+  border-color: transparent;
+}
+
+.debug-controls__icon[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: var(--color-accent);
+}
+
+/* The SVG glyphs of Run, Debug and Stop sit on the text's centre line. */
+.top-bar__run .button__glyph {
+  display: inline-flex;
 }
 
 .debug-controls__menu {

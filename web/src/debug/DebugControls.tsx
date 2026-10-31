@@ -9,11 +9,27 @@
  * Shift+F5 stops. F9 toggles a breakpoint in the Code tab.
  */
 
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 
 import type { StepGranularity } from "../contracts/debug";
 import { bindBreakpointsToDocument } from "./breakpointStore";
 import { isDebugging, subscribePaused, useDebugStore } from "./debugStore";
+import {
+  ContinueIcon,
+  DebugIcon,
+  MoreIcon,
+  PauseIcon,
+  RunToIcon,
+  StepIntoIcon,
+  StepOverIcon,
+  type DebugIconProps,
+} from "./icons";
 import { openPauseLocation } from "./pauseNavigation";
 import "./debug.css";
 
@@ -25,21 +41,29 @@ export interface DebugControlsProps {
 interface StepButton {
   granularity: StepGranularity;
   label: string;
-  short: string;
   keys: string | null;
 }
 
-const STEP_STATEMENT: StepButton = {
+interface ToolbarStep extends StepButton {
+  icon: ComponentType<DebugIconProps>;
+}
+
+/** One statement: the finest step, so the "step into" icon. */
+const STEP_STATEMENT: ToolbarStep = {
   granularity: "statement",
   label: "Step statement",
-  short: "Stmt",
   keys: "F10",
+  icon: StepIntoIcon,
 };
-const STEP_TICK: StepButton = { granularity: "tick", label: "Step tick", short: "Tick", keys: "F11" };
+/** The rest of the tick: the "step over" icon. */
+const STEP_TICK: ToolbarStep = { granularity: "tick", label: "Step tick", keys: "F11", icon: StepOverIcon };
 const MENU_STEPS: readonly StepButton[] = [
-  { granularity: "event", label: "Step event", short: "Event", keys: null },
-  { granularity: "solverStep", label: "Step solver step", short: "Solver step", keys: null },
+  { granularity: "event", label: "Step event", keys: null },
+  { granularity: "solverStep", label: "Step solver step", keys: null },
 ];
+
+/** The icon buttons of the debug toolbar. */
+const ICON_BUTTON = "icon-button debug-controls__icon";
 
 function withKeys(label: string, keys: string | null, enabled: boolean, reason: string): string {
   if (!enabled) {
@@ -163,21 +187,18 @@ export function DebugControls({ canStart }: DebugControlsProps) {
     }
   };
 
-  const stepButton = (step: StepButton) => (
+  const stepButton = (step: ToolbarStep) => (
     <button
       key={step.granularity}
       type="button"
-      className="button debug-controls__button"
+      className={ICON_BUTTON}
       disabled={!paused}
       aria-label={step.label}
       data-testid={`debug-step-${step.granularity}`}
       title={withKeys(step.label, step.keys, paused, notPaused)}
       onClick={() => void store().step(step.granularity)}
     >
-      <span className="button__glyph" aria-hidden="true">
-        ⤓
-      </span>
-      {step.short}
+      <step.icon />
     </button>
   );
 
@@ -199,7 +220,7 @@ export function DebugControls({ canStart }: DebugControlsProps) {
         }
       >
         <span className="button__glyph" aria-hidden="true">
-          ⏵
+          <DebugIcon size={14} />
         </span>
         Debug
       </button>
@@ -214,47 +235,41 @@ export function DebugControls({ canStart }: DebugControlsProps) {
         >
           <button
             type="button"
-            className="button debug-controls__button"
+            className={`${ICON_BUTTON} debug-controls__icon--continue`}
             disabled={!paused}
             aria-label="Continue"
             data-testid="debug-continue"
             title={withKeys("Continue", "F5", paused, notPaused)}
             onClick={() => void store().continueRun()}
           >
-            <span className="button__glyph" aria-hidden="true">
-              ⏵⏵
-            </span>
-            Continue
+            <ContinueIcon />
           </button>
           <button
             type="button"
-            className="button debug-controls__button"
+            className={`${ICON_BUTTON} debug-controls__icon--pause`}
             disabled={!running}
             aria-label="Pause"
             data-testid="debug-pause"
             title={withKeys("Pause", "F6", running, "Available while the run is going")}
             onClick={() => void store().pause()}
           >
-            <span className="button__glyph" aria-hidden="true">
-              ⏸
-            </span>
-            Pause
+            <PauseIcon />
           </button>
           {stepButton(STEP_STATEMENT)}
           {stepButton(STEP_TICK)}
           <div className="debug-controls__menu" ref={menu}>
             <button
               type="button"
-              className="button debug-controls__button"
+              className={ICON_BUTTON}
               disabled={!paused}
               aria-label="More step commands"
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               data-testid="debug-step-menu"
-              title={paused ? "Step event, step solver step" : notPaused}
+              title={paused ? "More step commands: step event, step solver step" : notPaused}
               onClick={() => setMenuOpen((open) => !open)}
             >
-              More ▾
+              <MoreIcon />
             </button>
             {menuOpen && paused ? (
               <div className="debug-controls__popup" role="menu" aria-label="More step commands">
@@ -296,14 +311,14 @@ export function DebugControls({ canStart }: DebugControlsProps) {
           </label>
           <button
             type="button"
-            className="button debug-controls__button"
+            className={ICON_BUTTON}
             disabled={!paused}
             aria-label="Run to time"
             data-testid="debug-runto"
-            title={paused ? "Run to the time and pause" : notPaused}
+            title={paused ? "Run to the time and pause (Enter)" : notPaused}
             onClick={submitRunTo}
           >
-            Go
+            <RunToIcon />
           </button>
         </div>
       ) : null}
