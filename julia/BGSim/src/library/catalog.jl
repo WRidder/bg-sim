@@ -1101,6 +1101,14 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Planar rigid body (m, J) with one planar port: the flat graph is the 1-junction with IPlanar, CoriolisPlanar fed by IPlanar/Pm and GravityPlanar fed by the world pose (plan 5.2).",
         icon = "pl-rigid-body-2d",
     ),
+    "stdlib:planar/FlexibleBeam2D" => (
+        description = "Flexible planar beam (rod, tube or rectangle; E, rho, L) by the assumed-modes method: a floating reference frame plus up to three in-plane bending modes (clamped-free or free-free basis) with modal damping, own mass and inertia included; end ports A and B are 1-junctions like a body port; outputs the reference pose, the modal coordinates eta_y and the eigenfrequencies f_y.",
+        icon = "pl-flexible-beam-2d",
+    ),
+    "stdlib:planar/ModalBeam2D" => (
+        description = "Atomic core of FlexibleBeam2D: the modal bond graph of a planar beam (frame inertia, modal I and C, R by zeta, the slope and foreshortening transformers at the ends) as explicit energy-consistent equations.",
+        icon = "pl-modal-beam-2d",
+    ),
     # J-MB11: the drives (composites of the electrical/rotation primitives).
     "stdlib:drives/CurrentControlledDrive" => (
         description = "Current/torque-controlled drive: a signal current reference gives the motor torque k_t*i_ref through an ideal current source and a gyrator, with rotor inertia and viscous loss; taps for current, speed, torque and power.",
@@ -1229,6 +1237,14 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:spatial/RigidBody3D" => (
         description = "Spatial rigid body (diagonal J, m) with one spatial port: the flat graph is the 1-junction with ISpatial, CoriolisSpatial fed by ISpatial/Pm and GravitySpatial fed by the world pose (plan 5.2).",
         icon = "sp-rigid-body-3d",
+    ),
+    "stdlib:spatial/FlexibleBeam3D" => (
+        description = "Flexible spatial beam (rod, tube or rectangle; E, rho, nu, L) by the assumed-modes method: a floating reference frame plus up to three bending modes about y and z and three torsion modes (axial rigid), clamped-free or free-free basis, modal damping, centrifugal (geometric) stiffening, own mass and inertia; it replaces a RigidBody3D. Outputs the reference pose, eta_y, eta_z, eta_t and the eigenfrequencies.",
+        icon = "sp-flexible-beam-3d",
+    ),
+    "stdlib:spatial/ModalBeam3D" => (
+        description = "Atomic core of FlexibleBeam3D: the floating-frame modal bond graph (frame momentum with Euler-Poincare gyroscopics, modal I/C/R, the end-port slope transformers and the foreshortening terms that give geometric stiffening) as explicit energy-consistent equations.",
+        icon = "sp-modal-beam-3d",
     ),
     "stdlib:spatial/Spherical3D" => (
         description = "Spatial spherical (ball) joint (n = 3): three Rotation ports carrying the relative body-frame angular velocity, the relative orientation stored as an integrated unit quaternion (no gimbal lock), and a compliant pivot translation.",

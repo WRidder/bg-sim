@@ -599,7 +599,10 @@ function _check_observations!(ck::Checker)
         end
         if observation_field(o) === nothing
             d = get(ck.decls, name, nothing)
-            if d !== nothing
+            # An observed signal may share its name with an `@outputs` face: the face is
+            # wiring, not a variable, so the observable is how that output gets recorded at
+            # the composite's path (`Beam/pose[1]` of a FlexibleBeam3D).
+            if d !== nothing && d.scope != :outputs
                 _report!(
                     ck,
                     "E003",

@@ -1,0 +1,64 @@
+{
+  "project": "cantilever-modes",
+  "description": "Assumed-modes cantilever (2 bending modes) as a scalar bond graph: the ring-down frequencies are the analytic Euler-Bernoulli eigenfrequencies, the settled tip deflection is the 2-mode modal sum F (4/k1 + 4/k2) = 0.9954 F L^3 / (3 E I).",
+  "models": {
+    "cantilever-modes": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "C1/q",
+          "from_t": 0.05,
+          "to_t": 3.0,
+          "min_hz": 2.0,
+          "max_hz": 20.0,
+          "value": 7.235785970661091,
+          "rtol": 0.01,
+          "note": "f1 = lambda1^2/(2 pi) sqrt(E I/(rho A L^4)), damped by zeta = 0.05 (sqrt(1 - zeta^2) = 0.9987)"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "C2/q",
+          "from_t": 0.05,
+          "to_t": 0.6,
+          "min_hz": 20.0,
+          "max_hz": 100.0,
+          "value": 45.345896515745295,
+          "rtol": 0.01,
+          "note": "f2 = lambda2^2/(2 pi) sqrt(E I/(rho A L^4))"
+        },
+        {
+          "kind": "final_value",
+          "signal": "C1/q",
+          "t": 6.0,
+          "value": 0.0015694204103386484,
+          "rtol": 0.0001,
+          "note": "static modal coordinate eta1 = phi1(L) F / k1"
+        },
+        {
+          "kind": "final_value",
+          "signal": "C2/q",
+          "t": 6.0,
+          "value": 3.996085167648526e-05,
+          "rtol": 0.001,
+          "note": "static modal coordinate eta2 = |phi2(L)| F / k2; the tip deflection 2 (eta1 + eta2) = 3.218763e-03 m is 0.9954 of Euler-Bernoulli F L^3/(3 E I) = 3.233624e-03 m"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Force/p.e",
+          "value": 1.0,
+          "rtol": 1e-09,
+          "note": "the tip force step"
+        }
+      ]
+    }
+  }
+}
