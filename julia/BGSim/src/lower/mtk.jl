@@ -350,8 +350,8 @@ function lower_flat(flat::Flat.FlatModel)
 
     # `@events` (plan D19, section 5.8): rising-edge zero crossings with the final
     # assignment map as the affect; then one condition-only callback per nonsmooth kink.
-    events = Any[]
-    append!(events, Compile.event_callbacks(flat, ctx))
+    affects = Any[]
+    append!(affects, Compile.event_callbacks(flat, ctx))
     # A model with no continuous state has nothing to integrate: every signal is an exact
     # algebraic function of `t` and the parameters, so landing the integrator on a kink of an
     # `ifelse`/`abs`/... cannot improve any value. MTK's compiled scalar condition also
@@ -363,15 +363,21 @@ function lower_flat(flat::Flat.FlatModel)
     # they change values, so `simulate` refuses a stateless model that has one with E901
     # up front (the solver's event root finder needs a state) instead of failing inside
     # `step!` with a confusing BoundsError.
+    # This is the cheap pre-filter on the flat state count. Index reduction can still remove
+    # every state of a model whose flat count is not zero (a sensor that differentiates a
+    # prescribed velocity); `_build_compiled` then drops the `kinks` after `mtkcompile`.
+    kinks = Any[]
     if flat.stats.states > 0 || !isempty(ctx.int_states)
         for c in nonsmooth_conditions(flat)
             ctx.origin = nothing
             ctx.event_values = nothing
-            push!(events, SymbolicContinuousCallback(lower_expression(c, ctx) ~ 0))
+            push!(kinks, SymbolicContinuousCallback(lower_expression(c, ctx) ~ 0))
         end
     end
+    events = vcat(affects, kinks)
 
-    return (; vars, params, eqs, initial, events, int_states = ctx.int_states, ctx)
+    return (; vars, params, eqs, initial, events, affects, kinks,
+        int_states = ctx.int_states, ctx)
 end
 
 # ---------------------------------------------------------------------------------------
@@ -611,14 +617,23 @@ function _build_compiled(flat::Flat.FlatModel, key::String, tspan::Tuple{Float64
     if !isempty(lowered.initial)
         kwargs = merge(kwargs, (; initialization_eqs = lowered.initial))
     end
-    if !isempty(lowered.events)
-        kwargs = merge(kwargs, (; continuous_events = lowered.events))
-    end
 
     conservative = _needs_index_reduction(flat)
     conservative && _state_priorities!(vars, flat)
-    sys = System(lowered.eqs, t, vars, pars; kwargs...)
-    csys = conservative ? mtkcompile(sys; allow_parameter = false) : mtkcompile(sys)
+    compiled_with(events) = begin
+        kw = isempty(events) ? kwargs : merge(kwargs, (; continuous_events = events))
+        sys = System(lowered.eqs, t, vars, pars; kw...)
+        conservative ? mtkcompile(sys; allow_parameter = false) : mtkcompile(sys)
+    end
+    csys = compiled_with(lowered.events)
+    # The condition-only kink callbacks need a state (see `lower_flat`). Index reduction can
+    # remove every state of a model that has some before it: an AccelerationSensor's `v` on a
+    # prescribed velocity becomes the derivative of the source, an exact function of `t`.
+    # Its kink callbacks would throw a BoundsError in the first `step!` (E901 at t = 1e-6),
+    # so such a model is compiled again without them; its values are exact without events.
+    if isempty(ModelingToolkit.unknowns(csys)) && !isempty(lowered.kinks)
+        csys = compiled_with(lowered.affects)
+    end
     prob = _new_problem(flat, csys, lowered.int_states, lowered.params, tspan)
     return CompiledModel(key, csys, prob, lowered.vars, lowered.params,
         lowered.int_states, _has_algebraic(prob))
