@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { expandLibrary } from "./library";
+
 /**
  * Background shapes on the diagram canvas (`diagram.shapes`):
  *
@@ -55,7 +57,7 @@ interface StoredDoc {
 
 async function openModel(page: Page, model: string): Promise<void> {
   await page.goto(`/?project=${encodeURIComponent(project)}&model=${model}`);
-  await expect(page.getByTestId("library-item-Se")).toBeVisible({ timeout: 30_000 });
+  await expandLibrary(page);
   await expect(page.getByTestId("canvas-surface")).toBeVisible();
 }
 
