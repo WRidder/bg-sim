@@ -219,6 +219,19 @@ describe("block icons", () => {
     expect(glyphs.size).toBe(controlIcons.length);
   });
 
+  it("draws distinct glyphs for the vacuum gripping blocks", () => {
+    // stdlib/contact SuctionCup and VacuumGenerator (src/library/catalog.jl).
+    const vacuumIcons = ["ct-suction-cup", "ct-vacuum-generator", "hyd-pressure-source", "hyd-orifice"];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of vacuumIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(vacuumIcons.length);
+  });
+
   it("falls back to a placeholder for an unknown icon id", () => {
     expect(hasIcon("no-such-icon")).toBe(false);
     const html = renderToStaticMarkup(<BlockIcon icon="no-such-icon" name="Mystery" />);

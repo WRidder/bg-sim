@@ -801,6 +801,26 @@ const GLYPHS: Record<string, Glyph> = {
     </>
   ),
 
+  // ------------------------------------------------------- vacuum gripping (contact group)
+  "ct-suction-cup": () => (
+    <>
+      <path d="M8 2.5h8M12 2.5v3" />
+      <path d="M9 5.5h6l-1 2.2 1.6 2.3-1.6 2.3 1.6 2.3" />
+      <path d="M9 5.5l1 2.2-1.6 2.3 1.6 2.3-1.6 2.3" />
+      <path d="M8.4 14.6L4.5 18.5h15l-3.9-3.9" />
+      <path d="M2.5 20.5h19" opacity="0.55" />
+      <path d="M18.5 9.5h3M20 8v3" opacity="0.6" />
+    </>
+  ),
+  "ct-vacuum-generator": () => (
+    <>
+      <circle cx="12" cy="12" r="7.5" />
+      <path d="M12 4.5L8.2 16.5M12 4.5l3.8 12" />
+      <path d="M2 12h2.5M19.5 12H22" />
+      <path d="M9 19.5h6" opacity="0.6" />
+    </>
+  ),
+
   // ------------------------------------------------------- converters & sensors
   "conv-dc-motor": () => (
     <>

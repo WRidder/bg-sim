@@ -530,6 +530,7 @@ Hydraulic ports carry pressure \[Pa\] and volume flow \[m^3/s\]. Thermal ports u
 | Proportional valve (4/3, `DirectionalValve43`) | Hydraulic | `P`, `T`, `A`, `B`, input `u` (spool, −1 to 1) | edge area, lap, leakage area | v0.1 |
 | Pressure-compensated flow control valve | Hydraulic | `a`, `b`, input `u` | regulated flow, compensator pressure | v0.1 |
 | Gas-charged accumulator | Hydraulic | `a` | precharge pressure, gas volume, polytropic index, dead volume | v0.1 |
+| Vacuum generator (`VacuumGenerator`, ejector or pump) | Hydraulic | `a`, input `u` (on / release) | `dp_max`, `Q_max` (free air), curve exponent `n`, release conductance and pressure | v0.1 |
 | Heat capacitor (`HeatCapacitor`) | Thermal | `a` | `C` \[J/K\] (= m·c_p), initial temperature `T` | v0.1 |
 | Thermal conductor (`ThermalConductor`) | Thermal | `a`, `b` | `G` \[W/K\] | v0.1 |
 | Thermal resistor (`ThermalResistor`) | Thermal | `a`, `b` | `R` \[K/W\] | v0.1 |
@@ -855,6 +856,7 @@ Each element is the matrix-valued counterpart of a bond graph element. Planar ve
 | Spherical, universal, planar joints | Multi-DOF `MTF` | `parent`, `child`, drives | axes | v0.3 |
 | Compliant joint | Joint plus stiff spatial spring | `parent`, `child` | stiffness, damping | v0.3 |
 | Point contact (compliant) | Nonlinear `C` and `R` | `a`, `b` | stiffness, damping, friction | Later |
+| Suction cup (`SuctionCup`, bellows and seal) | Nonlinear `C`/`R` two-port plus a vacuum chamber `C` | `a` (gripper), `b` (part), Hydraulic `vac` | `A_eff`, bellows `k_ax`, `k_lat`, `k_tilt`, `mu`, lip `D_lip`, `A_lip0`, part `perm`, chamber `V`; pushes freely, pulls up to `A_eff`·vacuum, lip lift opens a leak, held `lost` latch | v0.1 |
 | Pose, twist, wrench sensors | Detectors | `p`; output `SE3` / `Vec{6}` | frame to report in | v0.2 |
 
 Actuation needs no special component: a DC motor's Rotation port connects to a revolute joint's `drive` port, through a gear if needed.

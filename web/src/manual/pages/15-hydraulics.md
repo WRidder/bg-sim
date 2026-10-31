@@ -59,4 +59,21 @@ The efficiencies apply at a nominal point (`p_nom`, `w_nom`): the leakage grows 
 - The ends of a `Pipe` take a pressure: connect them to volumes, accumulators, cylinder chambers, valves or sources.
 - Start chambers and volumes at a sensible pressure. A closed-centre valve holding a load needs its equilibrium pressures as start values.
 
+## Vacuum gripping (pneumatics)
+
+The **Contact** category has two blocks for suction grippers that use the hydraulic port for air: the pressure is the **gauge** pressure in Pa (negative is vacuum) and the flow is the **free-air** volume flow in m³/s (1 L/min ≈ 1.667e-5 m³/s). A `Volume` with `beta = 101325` (atmospheric pressure) is an isothermal air volume, so a manifold or a hose is a `Volume` too.
+
+| Block | Ports | What it does | Key parameters |
+| --- | --- | --- | --- |
+| `SuctionCup` | spatial `a` (gripper), `b` (part), `vac`; outputs `T`, `F_lat`, `dp`, `U`, `h`, `sealed`, flows | a bellows cup: holding force `A_eff·dp`, bellows stiffness, lip friction `mu·N`, peeling, seal leak and loss | `A_eff`, `D_lip`, `k_ax`, `k_lat`, `k_tilt`, `mu`, `V`, `perm`, `A_lip0` |
+| `VacuumGenerator` | `a`, input `u`; outputs `Q`, `dp` | flow–pressure curve `Q = Q_max·(1 − (dp/dp_max)^n)` (`n = 1` ejector, `n ≈ 3` pump); `u = 0` vents to atmosphere | `dp_max`, `Q_max`, `n`, `G_rel` |
+
+- Mount the cup with two `FixedTransform3DNeutral` blocks: side `a` of each on the cup, side `b` on the gripper body and on the part. The cup axis is the mount frame's −z axis, and the cup's rest length is `L0`. Set the start `rz = -L0` (and the static stretch for a hanging load).
+- `U` is the cup utilisation: axial tension, peeling moment and shear as a fraction of the holding capacity `A_eff·dp`. A cup holds while `U < 1`; with a safety factor `S` keep `U ≤ 1/S`.
+- When the tension or the moment exceeds the vacuum force, the lip lifts (`h > 0`). The lifted lip opens a leak, the chamber loses its vacuum, and above `h_lost` the `sealed` latch drops to 0 for the rest of the run.
+- Air leaks through the part (`perm`, a Darcy permeance: 0 for sealed film, about 4e-7 m/(s·Pa) for cardboard, 2e-6 for porous material) and past the lip (`A_lip0`). The generator must supply this flow: the steady vacuum is where the generator curve meets the leak demand of all cups.
+- Use solver **FBDF** for gripper models: the air chambers are very stiff, and the default automatic choice (Tsit5) takes too many steps.
+
+The example **suction-gripper** is a six-cup gripper that moves a carton: profiles, gripper yaw and tilt, parcel porosity, generator size and manifold layouts.
+
 The example **hydraulic-circuit** (in the Example gallery) is a complete circuit: an electric motor speed drives a fixed-displacement pump with a relief valve and an accumulator, and a 4/3 valve extends and retracts a loaded cylinder.
