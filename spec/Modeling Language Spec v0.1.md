@@ -650,6 +650,7 @@ A model is a hybrid system: one continuous DAE, plus clocked discrete partitions
 - Each `@discrete` scope runs on a periodic clock with period `Ts` and optional `offset`.
 - All periods in one model must be integer multiples of a base tick (their greatest common divisor). This makes the schedule fixed and repeatable.
 - Reading a continuous variable in discrete code samples it at the tick. Discrete outputs are held constant between ticks (zero-order hold).
+- A clock ticks at the instants `t = offset + k·Ts` strictly after the start of the run; a tick at the start time is the initial state, not an execution. Without an offset the first tick is therefore one period after the start, never at `t = 0`. Before it, a held output (an output that a `@discrete` or `@events` body assigns) has its start value, the declaration default unless the instance sets one in `starts`. An output that the equations compute takes no start value (`E003`). The exported code holds the same start values until its first tick.
 
 **Order at a tick.** When several discrete blocks fire at the same tick:
 

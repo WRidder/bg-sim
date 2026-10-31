@@ -852,16 +852,31 @@ function _bind_parameters!(b::Builder, st::BlockState, node::IR.ModelNode)
 end
 
 function _bind_starts!(b::Builder, st::BlockState, node::IR.ModelNode)
+    held = isempty(node.starts) ? Set{Symbol}() : BGSim._discrete_assigned_names(st.pb)
     for (key, text) in node.starts
         name = Symbol(key)
         d = get(st.decls, name, nothing)
-        if d === nothing || BGSim.decl_scope(d) != :variables
+        # A `@variables` entry takes a start value, and so does an output that a `@discrete`
+        # (or `@events`) body holds: its start is the value it holds before the first tick
+        # (an ADC's or a ZOH's output, the state of a flip-flop). An output that the equations
+        # compute has no start of its own.
+        if d !== nothing && BGSim.decl_scope(d) == :outputs && !(name in held)
+            _report!(
+                b,
+                st;
+                code = "E003",
+                message = "output `$key` of `$(st.path)` is computed by the block's equations, so it takes no start value",
+                hint = "a start value keys a `@variables` entry, or an output that a `@discrete` body holds until its first tick",
+            )
+            continue
+        end
+        if d === nothing || !(BGSim.decl_scope(d) == :variables || BGSim.decl_scope(d) == :outputs)
             _report!(
                 b,
                 st;
                 code = "E003",
                 message = "`$(st.path)` has no variable `$key` to give a start value",
-                hint = "the start override keys the `@variables` of the block",
+                hint = "the start override keys the `@variables` of the block, or an output that a `@discrete` body holds",
             )
             continue
         end

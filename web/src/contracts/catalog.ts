@@ -129,6 +129,10 @@ export interface IoDecl {
    * One unit for the whole declaration. For a vector or matrix signal it applies to every element; null means unit-free or mixed (a wrench, twist or pose chart whose elements have different units). The catalog carries no per-element signal units: the per-component units of a multibond quantity live on the power port, in the domain 'components' arrays (D-MB1, C-MB2).
    */
   unit: string | null;
+  /**
+   * Only on an output that a @discrete (or @events) body holds: its declared start value as a constant expression string (empty: zero of its type), the value it holds before the first tick. A node's `starts` may override it like a variable's. Absent on inputs and on outputs the equations compute.
+   */
+  start?: string;
 }
 export interface PortDecl {
   name: string;

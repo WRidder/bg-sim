@@ -1893,6 +1893,17 @@ const INTERFACE_FIELDS = [
         # Transparent: the flow that enters at a leaves at b (port flows count inward).
         @test occursin("a.f + b.f ~ 0.0", pws.source)
 
+        # An output that a `@discrete` body holds carries its start (the value before the
+        # first tick, which a node may override); a computed output does not.
+        let all_blocks = Dict(b.ref => b for b in load_stdlib())
+            starts_of(ref) = [(o.name, get(o, :start, nothing))
+                              for o in all_blocks[ref].interface.outputs]
+            @test starts_of("stdlib:motion/ADC") == [("y", "0.0"), ("code", "0.0")]
+            @test starts_of("stdlib:discrete/ZOH") == [("y", "0.0")]
+            @test starts_of("stdlib:sources/Noise") == [("y", nothing)]
+            @test starts_of("stdlib:continuous/Gain") == [("y", nothing)]
+        end
+
         # Export markers: an input is a constant source in simulation, an output holds its
         # input, and a parameter publishes a tunable value. The spec's name/type/unit are
         # instance metadata, which the language has no parameter type for.
@@ -2167,7 +2178,12 @@ const INTERFACE_FIELDS = [
             end
             for (field, defname) in INTERFACE_FIELDS
                 for entry in _field(block, field)
-                    _check_object_keys(entry, defs[defname])
+                    # `start` is only on an output a `@discrete`/`@events` body holds.
+                    _check_object_keys(entry, defs[defname];
+                        optional = defname == "ioDecl" ? ["start"] : String[])
+                    if defname == "ioDecl" && field == "inputs"
+                        @test !haskey(_plain(entry), "start")
+                    end
                 end
             end
         end
