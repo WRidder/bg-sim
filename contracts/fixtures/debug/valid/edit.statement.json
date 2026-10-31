@@ -1,0 +1,11 @@
+{
+  "t": 0.5,
+  "kind": "parameter",
+  "target": "Ctrl/aw",
+  "value": 1.0,
+  "position": {
+    "at": "statement",
+    "tick": 49,
+    "hook": 5
+  }
+}

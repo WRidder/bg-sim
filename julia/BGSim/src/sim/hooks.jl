@@ -320,6 +320,22 @@ function _capture_frame(h::HookState, s::DebugSession, k::Int, temps)
     return PausedFrame(k, h.emit.sites[k], (locals = locals, held = held, previous = previous), env)
 end
 
+# After a parameter edit at a statement pause: the frame's names for parameters show the new
+# values, so `debug.evaluate` and the frame agree with what the remaining statements read.
+function _refresh_frame_params!(s::DebugSession)
+    frame = paused_frame(s.ctx)
+    frame === nothing && return nothing
+    h = get(s.ctx.ext, :hooks, nothing)
+    h isa HookState || return nothing
+    scope = _site_scope(h, s, frame.hook)
+    for b in scope.reads
+        b.kind === :param || continue
+        any(l -> l.name === b.name, scope.locals) && continue  # a local wins (`_frame_env`)
+        frame.env[b.name] = _binding_value(b, _fetcher(s.run, (), b, false))
+    end
+    return nothing
+end
+
 function _site_location(site::Compile.HookSite)
     r = site.range
     return (
@@ -594,7 +610,9 @@ function _resolve_lines!(ctx::DebugCtx, s::Union{Nothing,DebugSession}, bps::Vec
     end
     # Before the run exists there is no hook table: the breakpoints bind when it starts.
     s === nothing && return NamedTuple[breakpoint_status(bp; verified = false) for bp in bps]
-    return NamedTuple[_resolve_line_bp!(ctx, s, h, bp) for bp in bps]
+    statuses = NamedTuple[_resolve_line_bp!(ctx, s, h, bp) for bp in bps]
+    _arm_replay_hooks!(ctx, h)  # a replay's statement edits (src/sim/edits.jl)
+    return statuses
 end
 
 register_breakpoint_kind!("line", _resolve_lines!; validate = _validate_line)
@@ -636,6 +654,9 @@ function _hook_entry(h::HookState, k::Int, temps)
     ctx.cancel_flag[] && return nothing
     s = ctx.session
     s isa DebugSession || return nothing
+    # A replay applies the edits made at this statement pause of the parent first, so the
+    # statement (and a breakpoint condition here) sees them as the parent's session did.
+    ctx.replay === nothing || _replay_statement!(s, h, k)
     reason = nothing
     bp_id = nothing
     diags = Any[]

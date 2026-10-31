@@ -50,6 +50,7 @@ export type { BreakpointStatus } from "./debug";
 export type { Debug } from "./debug";
 export type { DebugStartOptions } from "./debug";
 export type { Edit } from "./debug";
+export type { EditPosition } from "./debug";
 export type { EvaluateResult } from "./debug";
 export type { EventBreakpoint } from "./debug";
 export type { ExceptionBreakpoint } from "./debug";

@@ -2,11 +2,11 @@
 # package J4.4).
 #
 #   * `debug_set_parameter!` / `debug_set_state!` change the live integrator of a paused debug
-#     run and append an `Edit` `(t, kind, target, value)` to `ctx.edits`, which the manifest
-#     stores in `debug.edits`. A parameter is always editable (D4: every parameter is a runtime
-#     value); a state only when it is a differential state of the compiled system and no
-#     algebraic equation depends on a differential state (otherwise E402, D24). Held discrete
-#     outputs are read-only.
+#     run and append an `Edit` `(t, kind, target, value, position)` to `ctx.edits`, which
+#     the manifest stores in `debug.edits`. A parameter is always editable (D4: every
+#     parameter is a runtime value); a state only when it is a differential state of the
+#     compiled system and no algebraic equation depends on a differential state (otherwise
+#     E402, D24). Held discrete outputs are read-only.
 #   * A *replay* (`replay_run`) re-runs the model from the parent's manifest and applies every
 #     edit at the place of the loop where it was made; a *branch* (`branch_run`) replays the
 #     edits made before `t`, pauses at `t` and records `parentRun` and `branchAt` (D25).
@@ -14,14 +14,24 @@
 #
 # Where an edit sits in the loop. The debug loop has three checkpoints (src/sim/debug.jl):
 # `:entry` (after row zero), `:step` (after every internal integrator step) and `:target`
-# (after a tick/grid target's partitions and row). An edit made at a pause is the same
-# operation on the same state whichever way it is made, so a replay is bit-identical when it
-# applies the edit at the same checkpoint. The checkpoint is stored in the edit's
-# `$comment` (`at=entry|step|target|statement`; the contract keeps `$comment` free for this),
-# because the contract's `Edit` has no field for it. A statement pause is replayed as a `:step`
-# edit at its tick time: the edit then takes effect before the tick instead of in the middle of
-# it, which is the same operation unless a later partition of the same tick reads the edited
-# parameter (NOTES.md, J4.4).
+# (after a tick/grid target's partitions and row), plus the statement hooks inside a tick
+# (src/sim/hooks.jl). An edit made at a pause is the same operation on the same state whichever
+# way it is made, so a replay is bit-identical when it applies the edit at the same place. The
+# place is the edit's `position` (contract `editPosition`): `at` = `entry`, `step`, `target` or
+# `statement`, and for a statement pause also `tick` (the ticks completed before the paused
+# one, `PausedInfo.tick`) and `hook` (the statement hook the run paused at, before its
+# statement ran). A replay arms that hook and applies the edit when the hook is reached in that
+# tick, so the statements before it run with the old value and the rest of the tick with the
+# new one, exactly as in the session.
+#
+# What an edit at a statement pause changes: the integrator's parameter (the continuous part,
+# and every partition that runs later in the tick, since a partition samples its parameters
+# right before it runs) and the paused partition's own sampled copy (`run.params`), so its
+# remaining statements, breakpoint conditions and `debug.evaluate` read the new value. The
+# continuous inputs that partition sampled when it started stay as sampled (a tick samples its
+# inputs once). Manifests written before `position` existed carry the checkpoint in `$comment`
+# (`at=...`); they are still read, and their statement edits replay as `step` edits at the tick
+# time, as they did then.
 #
 # A replay is a debug run (`DebugCtx` with a [`ReplayPlan`](@ref)) that never pauses. A debug
 # run without pauses writes the same bytes as a normal run (J4.1), so the replay is the normal
@@ -142,25 +152,30 @@ end
 # Edit records
 # ---------------------------------------------------------------------------------------
 
-# The Edit of plan 3.8 with the checkpoint in `$comment`.
+# The Edit of plan 3.8 with its `position` in the loop.
 function _edit_record(t::Real, kind::AbstractString, target::AbstractString, value::Real,
-    at::AbstractString)
+    position::NamedTuple)
     return (
         t = Float64(t), kind = String(kind), target = String(target), value = Float64(value),
-        var"$comment" = "at=" * at,
+        position = position,
     )
 end
 
-# The checkpoint of the current pause, as stored in the edit.
+# The contract's `editPosition` of a checkpoint (`tick` and `hook` only for a statement).
+_position(at::Symbol, tick::Int = 0, hook::Int = 0) =
+    at === :statement ? (at = "statement", tick = tick, hook = hook) : (at = String(at),)
+
+# The position of the current pause, as stored in the edit.
 function _pause_position(s::DebugSession)
     ctx = s.ctx
     s.info !== nothing && s.info.reason == "exception" && throw(DebugStateError(
         "the run is paused at a failure and ends here; edits are not allowed"
     ))
-    haskey(ctx.ext, :frame) && return "statement"
-    ctx.at === :entry && return "entry"
-    ctx.at === :target && return "target"
-    return "step"
+    frame = paused_frame(ctx)
+    frame === nothing || return _position(:statement, s.tick, frame.hook)
+    ctx.at === :entry && return _position(:entry)
+    ctx.at === :target && return _position(:target)
+    return _position(:step)
 end
 
 # ---------------------------------------------------------------------------------------
@@ -262,9 +277,14 @@ end
 # made consistent with the new value at the current differential state (Brown full basic
 # init; the problem's own initialization would jump back to the t = 0 operating point), and
 # the derivative data is marked stale.
-function _apply_parameter!(s::DebugSession, sym, value::Float64)
+#
+# The discrete runtime's sampled copy of the parameter (`run.params`) is updated too. Between
+# partitions it is overwritten before it is read again; at a statement pause it is what the
+# paused partition's remaining statements, its breakpoint conditions and `debug.evaluate` read.
+function _apply_parameter!(s::DebugSession, name::AbstractString, sym, value::Float64)
     integ = s.integ
     setp(integ, sym)(integ, value)
+    _update_sampled_parameter!(s, name, value)
     if s.lowered.algebraic
         ModelingToolkit.SciMLBase.initialize_dae!(
             integ, OrdinaryDiffEqNonlinearSolve.BrownFullBasicInit()
@@ -294,6 +314,16 @@ function _apply_state!(s::DebugSession, sym, value::Float64)
     return nothing
 end
 
+function _update_sampled_parameter!(s::DebugSession, name::AbstractString, value::Float64)
+    run = s.run
+    run === nothing && return nothing
+    j = get(run.schedule.param_index, String(name), 0)
+    j == 0 && return nothing
+    run.params[j] = value
+    _refresh_frame_params!(s)
+    return nothing
+end
+
 function _record_edit!(s::DebugSession, edit)
     push!(s.ctx.edits, edit)
     dbg_sync_manifest!(s)
@@ -314,7 +344,7 @@ function debug_set_parameter!(ctx::DebugCtx, name::AbstractString, value)
         position = _pause_position(s)
         sym, diagnostics = _check_parameter(s, name, value)
         sym === nothing && return (ok = false, edit = nothing, diagnostics = diagnostics)
-        _apply_parameter!(s, sym, Float64(value))
+        _apply_parameter!(s, name, sym, Float64(value))
         edit = _record_edit!(
             s, _edit_record(s.integ.t, "parameter", name, value, position)
         )
@@ -349,14 +379,17 @@ end
     ReplayEdit
 
 One edit of a parent run: `t`, `kind` (`"parameter"` or `"state"`), `target`, `value`, `at`
-(the replay checkpoint `:entry`, `:step` or `:target`) and `comment`, the stored `\$comment`."""
+(where the replay applies it: `:entry`, `:step`, `:target` or `:statement`) and, for
+`:statement`, `tick` (the ticks completed before the paused tick) and `hook` (the statement
+hook it was made at); both are 0 otherwise."""
 struct ReplayEdit
     t::Float64
     kind::String
     target::String
     value::Float64
     at::Symbol
-    comment::String
+    tick::Int
+    hook::Int
 end
 
 """
@@ -373,23 +406,43 @@ struct ParentRun
     pauses::Vector{NamedTuple{(:t, :reason),Tuple{Float64,String}}}
 end
 
-const _COMMENT_KEY = Symbol("\$comment")
-
-function _edit_checkpoint(comment)
+# A manifest written before `position` existed keeps the checkpoint in `$comment`. Its
+# statement edits carry no hook, so they replay as `step` edits at the tick time, as then.
+function _legacy_checkpoint(comment)
     comment isa AbstractString || return :step
     occursin("at=entry", comment) && return :entry
     occursin("at=target", comment) && return :target
     return :step     # "at=step" and "at=statement"
 end
 
+const _EDIT_CHECKPOINTS = Dict(
+    "entry" => :entry, "step" => :step, "target" => :target, "statement" => :statement,
+)
+
 function _parse_replay_edit(e)
     raw = _plain(e)
     kind = String(raw["kind"])
     kind in ("parameter", "state") || throw(ArgumentError("unknown edit kind `$kind`"))
-    comment = String(get(raw, "\$comment", "at=step"))
+    position = get(raw, "position", nothing)
+    at, tick, hook = :step, 0, 0
+    if position isa AbstractDict
+        name = String(position["at"])
+        haskey(_EDIT_CHECKPOINTS, name) ||
+            throw(ArgumentError("unknown edit position `$name`"))
+        at = _EDIT_CHECKPOINTS[name]
+        if at === :statement
+            tk = get(position, "tick", nothing)
+            hk = get(position, "hook", nothing)
+            tk isa Integer && tk >= 0 && hk isa Integer && hk >= 1 || throw(ArgumentError(
+                "a statement edit position needs `tick` >= 0 and `hook` >= 1"
+            ))
+            tick, hook = Int(tk), Int(hk)
+        end
+    else
+        at = _legacy_checkpoint(get(raw, "\$comment", nothing))
+    end
     return ReplayEdit(
-        Float64(raw["t"]), kind, String(raw["target"]), Float64(raw["value"]),
-        _edit_checkpoint(comment), comment,
+        Float64(raw["t"]), kind, String(raw["target"]), Float64(raw["value"]), at, tick, hook,
     )
 end
 
@@ -488,10 +541,10 @@ function _replay_apply!(s::DebugSession, e::ReplayEdit)
         d = first(diagnostics)
         error("replay: the edit of `$(e.target)` at t = $(e.t) is refused ($(d.code): $(d.message))")
     end
-    e.kind == "parameter" ? _apply_parameter!(s, sym, e.value) : _apply_state!(s, sym, e.value)
-    push!(s.ctx.edits, (
-        t = e.t, kind = e.kind, target = e.target, value = e.value,
-        var"$comment" = e.comment,
+    e.kind == "parameter" ? _apply_parameter!(s, e.target, sym, e.value) :
+    _apply_state!(s, sym, e.value)
+    push!(s.ctx.edits, _edit_record(
+        e.t, e.kind, e.target, e.value, _position(e.at, e.tick, e.hook)
     ))
     return nothing
 end
@@ -522,6 +575,54 @@ function _replay_checkpoint!(s::DebugSession, pos::Symbol)
         end
         _replay_apply!(s, e)
         plan.next += 1
+    end
+    return nothing
+end
+
+# The replay's statement checkpoint, called by `_hook_entry` (src/sim/hooks.jl) at an armed
+# hook before its statement runs: apply the next edits when they were made at this hook in
+# this tick. The pending event rows are recorded first, as `dbg_pause!` does (inside a tick the
+# loop has recorded them already, so this is a no-op kept for symmetry).
+function _replay_statement!(s::DebugSession, h, k::Int)
+    plan = s.ctx.replay::ReplayPlan
+    applied = false
+    while plan.next <= length(plan.edits)
+        e = plan.edits[plan.next]
+        (e.at === :statement && e.hook == k && e.tick == s.tick) || break
+        if !applied
+            s.event_cursor = _record_new_events!(
+                s.integ, s.rec, s.record_event, s.event_cursor, s.getters
+            )
+            applied = true
+        end
+        _replay_apply!(s, e)
+        plan.next += 1
+    end
+    applied && _arm_replay_hooks!(s.ctx, h)
+    return nothing
+end
+
+# Arm the statement hooks of the replay's pending statement edits, on top of the hooks the line
+# breakpoints armed (`_resolve_lines!` calls this after it re-armed them). A hook armed only for
+# the replay calls `_hook_entry`, which finds no breakpoint and does not pause, so it never
+# changes the results.
+_arm_replay_hooks!(ctx::DebugCtx, h) = _arm_replay_hooks!(ctx.replay, h)
+_arm_replay_hooks!(::Nothing, h) = nothing
+
+function _arm_replay_hooks!(plan::ReplayPlan, h)
+    h === nothing && return nothing
+    n = length(h.armed)
+    for k in 1:n
+        h.armed[k] = !isempty(h.by_hook[k])
+    end
+    for i in plan.next:length(plan.edits)
+        e = plan.edits[i]
+        e.at === :statement || continue
+        1 <= e.hook <= n || error(
+            "replay: the edit of `$(e.target)` at t = $(e.t) was made at statement hook " *
+            "$(e.hook), but this model has $n hooks; the model is not the parent's"
+        )
+        h.armed[e.hook] = true
     end
     return nothing
 end

@@ -200,6 +200,7 @@ export type LogLevel = "debug" | "info" | "warning" | "error";
 export type StepGranularity = "statement" | "tick" | "solverStep" | "event";
 export type FrameValueType = "Real" | "Int" | "Bool";
 export type EditKind = "parameter" | "state";
+export type EditCheckpoint = "entry" | "step" | "target" | "statement";
 export type ExplainKind = "state" | "algebraic" | "observed" | "alias" | "parameter" | "discrete";
 export type PauseReason = "entry" | "breakpoint" | "step" | "pause" | "event" | "exception" | "time";
 
@@ -1377,6 +1378,22 @@ export interface Edit {
   kind: EditKind;
   target: string;
   value: number;
+  position?: EditPosition;
+  $comment?: string;
+}
+/**
+ * Where in the run loop the edit was made (plan 5.13 'Edits, replay and branch'); a replay applies it at the same place, so it reproduces the session bit for bit. 'entry': after row zero; 'step': after an internal integrator step (also solver-step, event, time, watch and pause-request pauses); 'target': after a tick or output-grid instant and its row (tick pauses); 'statement': at a statement pause inside a tick, before the paused statement ran, with 'tick' (the ticks completed before that tick, PausedInfo.tick) and 'hook' (the run's statement hook index). The statements before it ran with the old value; the paused partition's remaining statements, later partitions and the continuous part use the new one. Absent in manifests written before it existed: a replay then reads the checkpoint from $comment ('at=...') and applies a statement edit as a 'step' edit at the tick time.
+ */
+export interface EditPosition {
+  at: EditCheckpoint;
+  /**
+   * Statement edits only: the ticks completed before the paused tick (PausedInfo.tick).
+   */
+  tick?: number;
+  /**
+   * Statement edits only: the index of the statement hook the run paused at.
+   */
+  hook?: number;
   $comment?: string;
 }
 export interface DebugSetStateResponse {

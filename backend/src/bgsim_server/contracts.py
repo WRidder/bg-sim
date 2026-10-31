@@ -280,14 +280,26 @@ class EditKind(Enum):
     state = 'state'
 
 
-class Edit(BaseModel):
+class EditCheckpoint(Enum):
+    entry = 'entry'
+    step = 'step'
+    target = 'target'
+    statement = 'statement'
+
+
+class EditPosition(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    t: float
-    kind: EditKind = Field(..., title='EditKind')
-    target: str
-    value: float
+    at: EditCheckpoint = Field(..., title='EditCheckpoint')
+    tick: conint(ge=0) | None = Field(
+        None,
+        description='Statement edits only: the ticks completed before the paused tick (PausedInfo.tick).',
+    )
+    hook: conint(ge=1) | None = Field(
+        None,
+        description='Statement edits only: the index of the statement hook the run paused at.',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -1657,6 +1669,18 @@ class Frame(BaseModel):
     locals: list[FrameValue]
     held: list[FrameValue]
     previous: list[FrameValue]
+    field_comment: str | None = Field(None, alias='$comment')
+
+
+class Edit(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    t: float
+    kind: EditKind = Field(..., title='EditKind')
+    target: str
+    value: float
+    position: EditPosition | None = None
     field_comment: str | None = Field(None, alias='$comment')
 
 
