@@ -1888,6 +1888,8 @@ const INTERFACE_FIELDS = [
               [("y", "effort*flow")]
         @test isempty(pws.interface.parameters)
         @test occursin("y ~ a.e * a.f", pws.source)
+        # Transparent: the flow that enters at a leaves at b (port flows count inward).
+        @test occursin("a.f + b.f ~ 0.0", pws.source)
 
         # Export markers: an input is a constant source in simulation, an output holds its
         # input, and a parameter publishes a tunable value. The spec's name/type/unit are
