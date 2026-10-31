@@ -51,6 +51,7 @@ Background shapes group and annotate parts of a diagram. They are drawn behind b
 
 - **Add:** right-click the empty canvas and choose **Add rectangle**, **Add rounded rectangle**, **Add ellipse**, **Add line** or **Add arrow**.
 - **Style:** select a shape to set fill, line width, line style, opacity and a label in the inspector.
+- **Label position:** under the label, pick one of nine places on the 3×3 grid: a corner, the middle of an edge, or the centre. Lines and arrows always centre their label.
 - **Order:** right-click a shape for **Bring to front**, **Bring forward**, **Send backward** and **Send to back**.
 - **Lock:** **Lock** in the shape's menu (or **Locked** in the inspector) prevents moving, resizing and deleting it. **Unlock** to change it again.
 - **Duplicate** copies the shape.
