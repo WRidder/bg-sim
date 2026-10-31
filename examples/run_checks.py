@@ -238,7 +238,7 @@ composition and the angles), so it is exact to round-off::
 
 A model entry may also carry ``"model"`` (the file to run when the key is only a
 label) and ``"settings"`` (deep-merged into the model document before the run).
-The pendulum uses that to read its 10 s energy window from the same 4 s model::
+The pendulum uses ``settings`` to read its 10 s energy window from the same 4 s model::
 
     {"models": {"pendulum-10s": {"model": "pendulum",
       "settings": {"t_end": 10.0, "output": {"points": 10001}},
@@ -253,6 +253,9 @@ its bond-graph model once more with an ideal sensor (no noise, a 52-bit ADC)::
       "overrides": [{"target": "IR/Noise/std", "value": 0.0},
                     {"target": "IR/ADC/bits", "value": 52}],
       "checks": [...]}}}
+
+The short form ``{"<instance path>/<param>": value}`` (an object) means the same; the
+gripper runs one model as several scenarios with it (a parameter override does not recompile).
 """
 
 from __future__ import annotations
@@ -520,8 +523,11 @@ def _run_model(
         _merge_settings(model_document.setdefault("settings", {}), settings)
     body: dict[str, Any] = {"model": model_document}
     if overrides is not None:
+        # A list of {"target", "value"} overrides, or the short form {"<path>/<param>": value}.
+        if isinstance(overrides, dict):
+            overrides = [{"target": k, "value": v} for k, v in overrides.items()]
         if not isinstance(overrides, list):
-            raise ValueError("'overrides' must be a list of parameter overrides")
+            raise ValueError("'overrides' must be a list of parameter overrides or an object of parameter -> value")
         body["parameterOverrides"] = overrides
     response = client.post(f"/api/projects/{project}/runs", json=body)
     if response.status_code != 201:

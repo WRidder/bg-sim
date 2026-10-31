@@ -1,0 +1,37 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "mechanism",
+          "title": "Mechanism and bond graph",
+          "file": "pages/mechanism.md",
+          "children": []
+        },
+        {
+          "id": "contact",
+          "title": "Contact model",
+          "file": "pages/contact.md",
+          "children": []
+        },
+        {
+          "id": "sizing",
+          "title": "Derivation and sizing",
+          "file": "pages/sizing.md",
+          "children": []
+        },
+        {
+          "id": "validation",
+          "title": "Validation",
+          "file": "pages/validation.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

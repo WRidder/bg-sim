@@ -365,6 +365,8 @@ include("test_export_rolling.jl")
 include("test_export_components.jl")
 # The hydraulic components (valves, accumulator, pipe, pumps, motor) in the C export.
 include("test_export_hydraulic.jl")
+# The moving-face contact (MovingPlaneContact, a jaw clamp) in the C export.
+include("test_export_contact.jl")
 # The vacuum gripping blocks (SuctionCup, VacuumGenerator) in the C export.
 include("test_export_suction.jl")
 # The signal and control blocks (filters, routing, observers, StopSimulation, Assertion, ...)

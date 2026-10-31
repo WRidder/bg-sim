@@ -89,6 +89,15 @@
       "drivetrain-position-open-loop"
     ]
   },
+  "gripper": {
+    "title": "Gripper",
+    "description": "Grip-force sizing of an electric parallel gripper in a fast pick-and-place move.",
+    "hasScene": true,
+    "models": [
+      "ball-gripper",
+      "block-gripper"
+    ]
+  },
   "gyrover": {
     "title": "Gyrover",
     "description": "A single-wheel robot balanced and steered by a tilting flywheel.",

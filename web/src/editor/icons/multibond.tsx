@@ -322,6 +322,15 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
       <path d="M12 13V3M9.8 5.3L12 2.8l2.2 2.5" />
     </>
   ),
+  "ct-moving-plane-contact": () => (
+    <>
+      <circle cx="7.5" cy="10.5" r="5" />
+      <path d="M12.5 3v15" />
+      <path d="M12.5 5l3-2.5M12.5 9l3-2.5M12.5 13l3-2.5M12.5 17l3-2.5" />
+      <path d="M17.5 10.5h5M20.3 8.3l2.2 2.2-2.2 2.2" />
+      <path d="M5 21.5h9M7.2 19.3L5 21.5l2.2 2.2M11.8 19.3l2.2 2.2-2.2 2.2" />
+    </>
+  ),
   "ct-rolling-disk": () => (
     <>
       <path d="M2 21h20" />

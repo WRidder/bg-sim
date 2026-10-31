@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "gripper",
+  "models": [
+    "ball-gripper",
+    "block-gripper"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
