@@ -33,7 +33,7 @@ import { stripEquationPrefix } from "./expression";
 import { CsvSourceSection } from "./CsvSourceSection";
 import { isCsvSourceRef } from "./csvSource";
 import { NodeImageSection } from "./NodeImageSection";
-import { SelectField, TextField, type SelectOption } from "./fields";
+import { MetaValue, SelectField, TextField, type SelectOption } from "./fields";
 import { liveParameterName } from "./liveEdit";
 import { LiveBanner, LiveParameterField, useLiveMode } from "./liveInspector";
 import { qualifiedFrame } from "./frames";
@@ -113,8 +113,8 @@ function ParameterField({
         max <code>{decl.max ?? "—"}</code>
       </span>
       <span className="inspector-dot">·</span>
-      <span>
-        default <code>{decl.default}</code>
+      <span className="inspector-meta-default">
+        default <MetaValue text={decl.default} testId={`inspector-param-${decl.name}-default`} />
       </span>
     </>
   );
@@ -210,8 +210,9 @@ function ConstantField({ node, decl }: { node: ModelNode; decl: ConstantDecl }) 
     <>
       <span>{decl.type}</span>
       <span className="inspector-dot">·</span>
-      <span>
-        default <code>{constantDefaultText(decl)}</code>
+      <span className="inspector-meta-default">
+        default{" "}
+        <MetaValue text={constantDefaultText(decl)} testId={`inspector-constant-${decl.name}-default`} />
       </span>
     </>
   );

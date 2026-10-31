@@ -2,7 +2,7 @@
 
 ## Block parameters
 
-Select a block to edit its parameters in the inspector. Each field shows its unit, limits and default; the reset button returns it to the default. A field accepts a number or an expression, such as `2*pi*50`.
+Select a block to edit its parameters in the inspector. Each field shows its unit, limits and default; the reset button returns it to the default. A long default, such as a table constant, shows as one line ending in "…"; click it to see it whole. A field accepts a number or an expression, such as `2*pi*50`.
 
 ## Global parameters
 

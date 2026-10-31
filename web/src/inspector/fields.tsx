@@ -344,3 +344,30 @@ export function SelectField({
     </div>
   );
 }
+
+/** Longer values than this collapse to one line in a field's meta line. */
+const META_VALUE_LIMIT = 32;
+
+/**
+ * A value in a field's meta line (a default, say). A long one, like a table
+ * constant's matrix, shows as one line ending in an ellipsis; a click shows
+ * it whole and a second click folds it again.
+ */
+export function MetaValue({ text, testId }: { text: string; testId?: string }) {
+  const [open, setOpen] = useState(false);
+  if (text.length <= META_VALUE_LIMIT) {
+    return <code>{text}</code>;
+  }
+  return (
+    <button
+      type="button"
+      className={`inspector-meta-value${open ? " is-open" : ""}`}
+      aria-expanded={open}
+      title={open ? "Fold the value to one line" : "Show the whole value"}
+      data-testid={testId}
+      onClick={() => setOpen((value) => !value)}
+    >
+      <code>{text}</code>
+    </button>
+  );
+}

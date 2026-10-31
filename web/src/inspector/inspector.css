@@ -215,6 +215,44 @@
   color: var(--color-text-muted);
 }
 
+/* "default <value>": a long value is one line with an ellipsis until clicked. */
+.inspector-meta-default {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.inspector-meta-value {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+}
+
+.inspector-meta-value:hover code {
+  color: var(--color-text);
+}
+
+.inspector-meta-value.is-open {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.inspector-meta-value:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
 .inspector-dot {
   color: var(--color-text-faint);
 }
