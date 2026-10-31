@@ -126,6 +126,7 @@ const ProbeWindow = lazy(() =>
 const ZOOM = 0.85;
 const GRID_KEY = "bgsim.canvas.grid";
 const SNAP_KEY = "bgsim.canvas.snap";
+const LEGEND_KEY = "bgsim.canvas.legend";
 const NO_SELECTION = { nodes: [], connections: [] } as const;
 /**
  * Pointer travel (px) between press and release that still counts as a click
@@ -374,6 +375,7 @@ function CanvasInner() {
   const suppressPaneClickUntil = useRef(0);
   const [showGrid, setShowGrid] = useState(() => readPreference(GRID_KEY, true));
   const [snap, setSnap] = useState(() => readPreference(SNAP_KEY, true));
+  const [showLegend, setShowLegend] = useState(() => readPreference(LEGEND_KEY, true));
   const tooltipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const quickGesture = useRef<QuickGesture | null>(null);
@@ -1857,6 +1859,26 @@ function CanvasInner() {
         </button>
         <button
           type="button"
+          className={`icon-button${showLegend ? " is-active" : ""}`}
+          data-testid="toggle-legend"
+          aria-pressed={showLegend}
+          onClick={() => {
+            const next = !showLegend;
+            setShowLegend(next);
+            writePreference(LEGEND_KEY, next);
+          }}
+          aria-label="Show legend"
+          title="Show or hide the legend (domains and port glyphs)"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+            <rect x="1" y="2" width="3" height="3" rx="0.5" fill="currentColor" />
+            <rect x="1" y="9" width="3" height="3" rx="0.5" fill="currentColor" />
+            <line x1="6" y1="3.5" x2="13" y2="3.5" stroke="currentColor" strokeWidth="1.5" />
+            <line x1="6" y1="10.5" x2="13" y2="10.5" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        </button>
+        <button
+          type="button"
           className="icon-button"
           data-testid="add-probe-block"
           aria-label="Add probe block"
@@ -2037,9 +2059,11 @@ function CanvasInner() {
                   color="var(--color-border)"
                 />
               ) : null}
-              <Panel position="bottom-left">
-                <CanvasLegend />
-              </Panel>
+              {showLegend ? (
+                <Panel position="bottom-left" className="editor-legend-panel">
+                  <CanvasLegend />
+                </Panel>
+              ) : null}
               <ViewportPortal>
                 <Suspense fallback={null}>
                   {view?.diagram.probes?.map((probe) => (

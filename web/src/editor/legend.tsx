@@ -42,7 +42,7 @@ export const LEGEND_DOMAINS: readonly LegendDomain[] = [
   })),
   // Planar and Spatial share one colour: the domain is mechanics, and 2D vs
   // 3D shows as the stroke count (the multibond keys below).
-  { id: "Mechanics", label: "Mechanics (2D/3D)", token: "var(--domain-mechanics)" },
+  { id: "Mechanics", label: "Mechanics", token: "var(--domain-mechanics)" },
 ];
 
 export const LEGEND_KEYS: readonly LegendKey[] = [
@@ -75,13 +75,13 @@ export const LEGEND_KEYS: readonly LegendKey[] = [
   },
   {
     id: "multibond2d",
-    label: "2D multibond (2 strokes)",
+    label: "2D multibond",
     description:
       "Planar power bond: two parallel strokes, one causal bar, three components (torque and two forces).",
   },
   {
     id: "multibond3d",
-    label: "3D multibond (3 strokes)",
+    label: "3D multibond",
     description:
       "Spatial power bond: three parallel strokes, one causal bar, six components (torque and force triads).",
   },
@@ -150,7 +150,6 @@ export function CanvasLegend() {
       role="group"
       aria-label="Canvas legend: domains, port glyphs, causal strokes and unit factors"
     >
-      <span className="editor-legend__title">Domains</span>
       {LEGEND_DOMAINS.map((entry) => (
         <span
           className="editor-legend__item"

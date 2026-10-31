@@ -257,7 +257,7 @@ describe("canvas legend", () => {
       "Rotation",
       "Hydraulic",
       "Generic",
-      "Mechanics (2D/3D)",
+      "Mechanics",
     ]);
     expect(LEGEND_DOMAINS.find((entry) => entry.id === "Mechanics")?.token).toBe(
       "var(--domain-mechanics)",
@@ -289,10 +289,10 @@ describe("canvas legend", () => {
     );
     expect(LEGEND_KEYS.find((entry) => entry.id === "unit")?.description).toContain("0.001");
     expect(LEGEND_KEYS.find((entry) => entry.id === "multibond2d")?.label).toBe(
-      "2D multibond (2 strokes)",
+      "2D multibond",
     );
     expect(LEGEND_KEYS.find((entry) => entry.id === "multibond3d")?.label).toBe(
-      "3D multibond (3 strokes)",
+      "3D multibond",
     );
   });
 
@@ -309,13 +309,13 @@ describe("canvas legend", () => {
     expect(within(legend).getByTestId("legend-out").textContent).toContain("out");
     // The multibond keys name the stroke count in text, not by colour (7.4).
     expect(within(legend).getByTestId("legend-multibond2d").textContent).toContain(
-      "2D multibond (2 strokes)",
+      "2D multibond",
     );
     expect(within(legend).getByTestId("legend-multibond3d").textContent).toContain(
-      "3D multibond (3 strokes)",
+      "3D multibond",
     );
     expect(within(legend).getByTestId("legend-domain-Mechanics").textContent).toContain(
-      "Mechanics (2D/3D)",
+      "Mechanics",
     );
     // Every key is keyboard reachable (plan 7.4 accessibility).
     for (const item of legend.querySelectorAll(".editor-legend__item")) {

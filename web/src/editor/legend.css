@@ -4,10 +4,13 @@
 
 .editor-legend {
   display: flex;
-  flex-wrap: wrap;
+  /* One line; a canvas narrower than the legend clips its end. */
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--space-1) var(--space-2);
-  max-width: min(760px, 92%);
+  gap: 6px;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
   padding: var(--space-1) var(--space-2);
   font-size: 10px;
   color: var(--color-text-muted);
@@ -17,17 +20,10 @@
   pointer-events: none;
 }
 
-.editor-legend__title {
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-label);
-  text-transform: uppercase;
-  color: var(--color-text-faint);
-}
-
 .editor-legend__item {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   white-space: nowrap;
 }
 
@@ -82,4 +78,10 @@
   background: var(--color-surface-raised);
   border: var(--border-width) solid var(--color-border-strong);
   border-radius: 999px;
+}
+
+/* The xyflow panel is absolutely placed in the canvas: cap it there so the one-line legend clips
+   at the canvas edge, not at its own shrink-to-fit width. */
+.editor-legend-panel {
+  max-width: calc(100% - 30px);
 }

@@ -353,7 +353,7 @@ test("a Planar out bond is a two-stroke bundle with one causal bar and a frame p
 
   // The legend key is keyboard reachable and names the stroke count in text.
   const legendKey = page.getByTestId("legend-multibond2d");
-  await expect(legendKey).toContainText("2D multibond (2 strokes)");
+  await expect(legendKey).toContainText("2D multibond");
   await legendKey.focus();
   await expect(legendKey).toBeFocused();
   await page.evaluate(() => {
@@ -435,7 +435,7 @@ test("a Spatial out bond is a three-stroke bundle with one causal bar and three 
 
   // The 3D legend key is keyboard reachable and names the stroke count in text.
   const legendKey = page.getByTestId("legend-multibond3d");
-  await expect(legendKey).toContainText("3D multibond (3 strokes)");
+  await expect(legendKey).toContainText("3D multibond");
   await legendKey.focus();
   await expect(legendKey).toBeFocused();
   await page.evaluate(() => {

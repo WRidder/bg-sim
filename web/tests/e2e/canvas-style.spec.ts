@@ -768,6 +768,18 @@ test("the toolbar toggles the grid and snapping", async ({ page }) => {
   await snap.click();
   await expect(snap).toHaveAttribute("aria-pressed", "true");
 
+  // The legend is shown by default; the toggle hides it and the choice survives a reload.
+  const legend = page.getByTestId("toggle-legend");
+  await expect(legend).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("canvas-legend")).toBeVisible();
+  await legend.click();
+  await expect(page.getByTestId("canvas-legend")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByTestId("toggle-legend")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByTestId("canvas-legend")).toHaveCount(0);
+  await page.getByTestId("toggle-legend").click();
+  await expect(page.getByTestId("canvas-legend")).toBeVisible();
+
   await dropBlock(page, "Se", 137, 213);
   const stored = JSON.parse((await page.getByTestId("document-json").textContent()) ?? "null") as {
     diagram: { nodes: { position: { x: number; y: number } }[] };
