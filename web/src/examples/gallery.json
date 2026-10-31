@@ -45,6 +45,14 @@
       "speed-control"
     ]
   },
+  "debug-tour": {
+    "title": "Debug tour",
+    "description": "A guided tour of the debugger: find and fix an integrator windup.",
+    "hasScene": true,
+    "models": [
+      "debug-tour"
+    ]
+  },
   "drivetrain": {
     "title": "Drivetrain",
     "description": "Motor, gearbox and a flexible rod between two inertias.",

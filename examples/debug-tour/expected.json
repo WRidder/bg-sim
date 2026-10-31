@@ -1,0 +1,59 @@
+{
+  "project": "debug-tour",
+  "description": "The debug tour as shipped, with its planted bug (anti-windup off, Ctrl/aw = 0). The 1 m reference step at 0.5 s saturates the drive at 15 N, the integrator winds up, the cart crosses 1.1 m (the 'Break when' moment of the walkthrough) and then 1.2 m, where the limit switch event latches and cuts the drive. The walkthrough fixes the bug live (aw = 1); those runs are proven by web/tests/e2e/debug-tour.spec.ts, not here.",
+  "models": {
+    "debug-tour": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Pos/y",
+          "n": 1,
+          "direction": "up",
+          "level": 1.1,
+          "value": 1.0233,
+          "abs": 1e-3,
+          "note": "the cart passes 1.1 m: the walkthrough's 'Break when Pos/y > 1.1' pause"
+        },
+        {
+          "kind": "zero_crossing",
+          "signal": "Pos/y",
+          "n": 1,
+          "direction": "up",
+          "level": 1.2,
+          "value": 1.0936541918155125,
+          "abs": 1e-5,
+          "note": "the cart reaches the 1.2 m limit switch: the @events instant where 'Break on Events' pauses"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Limit/tripped",
+          "t": 4.0,
+          "value": 1.0,
+          "abs": 1e-12,
+          "note": "the switch latched and stays latched"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Pos/y",
+          "value": 1.2436,
+          "rtol": 2e-3,
+          "note": "the overshoot peak, 24 % past the 1 m target, after the trip"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/F",
+          "value": 15.0,
+          "note": "the force command never exceeds the drive limit umax"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["W201", "W205", "W206", "E900", "E901"],
+          "note": "the latch stays a differential state, the bond island has the Translation domain, no event-limit warning and no compiler or solver failure"
+        }
+      ]
+    }
+  }
+}

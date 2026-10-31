@@ -20,6 +20,7 @@ interface Case {
 const CASES: Case[] = [
   { example: "bouncing-ball", model: "bouncing-ball", pages: ["overview", "model", "results"] },
   { example: "dc-motor", model: "iconic", pages: ["overview", "physics", "results"] },
+  { example: "debug-tour", model: "debug-tour", pages: ["overview", "walkthrough", "model"] },
 ];
 
 const projects: string[] = [];
