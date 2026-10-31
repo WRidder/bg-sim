@@ -45,8 +45,17 @@ test.afterEach(async ({ request }) => {
 
 async function openModel(page: Page, theme: "dark" | "light" = "dark"): Promise<void> {
   await page.addInitScript((value) => localStorage.setItem("bgsim.theme", value), theme);
+  if (real) {
+    // The catalog answers 503 until the Julia worker has warmed up; the app does not retry by itself.
+    await expect
+      .poll(async () => (await page.request.get(`/api/catalog?project=${encodeURIComponent(project)}`)).status(), {
+        timeout: 900_000,
+        intervals: [5_000],
+      })
+      .toBe(200);
+  }
   await page.goto(`/?project=${encodeURIComponent(project)}&model=Globals`);
-  await expect(page.getByTestId("canvas-surface")).toBeVisible({ timeout: real ? 600_000 : 30_000 });
+  await expect(page.getByTestId("canvas-surface")).toBeVisible({ timeout: real ? 120_000 : 30_000 });
   await expect(page.getByTestId("inspector-model")).toBeVisible();
 }
 
@@ -84,7 +93,7 @@ async function deselect(page: Page): Promise<void> {
 }
 
 test("globals drive a block parameter, rename through, report cycles and run", async ({ page }) => {
-  if (real) test.setTimeout(1_200_000);
+  if (real) test.setTimeout(2_400_000);
   await openModel(page);
   await expect(page.getByTestId("globals-empty")).toBeVisible();
 
