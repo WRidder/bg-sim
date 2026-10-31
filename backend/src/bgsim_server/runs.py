@@ -903,7 +903,11 @@ async def export_csv(
     request: Request,
     ids: str | None = Query(default=None, description="Comma-separated signal ids; default all."),
 ) -> StreamingResponse:
-    """Plan 3.7: CSV export, one column per signal, with ``t`` first."""
+    """Plan 3.7: CSV export, one column per signal, with ``t`` first.
+
+    ``X-BGSim-Rows`` is the number of data rows (the header line not counted): the body is
+    streamed without a length, so the web app's background task counts lines against it.
+    """
     run_dir, state = _locate(request, run_id)
     document, signals = _manifest_and_signals(run_dir, state)
     chosen = _choose_signals(signals, ids)
@@ -923,7 +927,10 @@ async def export_csv(
     return StreamingResponse(
         rows(),
         media_type="text/csv",
-        headers={"Content-Disposition": f'attachment; filename="{run_id}.csv"'},
+        headers={
+            "Content-Disposition": f'attachment; filename="{run_id}.csv"',
+            "X-BGSim-Rows": str(int(time_column.size)),
+        },
     )
 
 

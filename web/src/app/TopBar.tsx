@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ExportDialog } from "../export/ExportDialog";
 import { useExportDialogStore } from "../export/exportStore";
 import { useDocumentStore } from "../state/documentStore";
+import { TaskIndicator } from "../tasks/TaskIndicator";
 import type { Theme } from "../theme/theme";
 import { LeaveProjectDialog } from "./LeaveProjectDialog";
 import { requestLeaveProject } from "./leaveProject";
@@ -89,6 +90,7 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
       </button>
 
       <div className="top-bar__status">
+        <TaskIndicator />
         <WorkerStatus />
         <button
           type="button"

@@ -17,7 +17,8 @@ but it answers like the real pipeline at the contract level, deterministically a
   (a source-only FMU) and says in its note that nothing was compiled.
 
 Each phase takes ``BGSIM_FAKE_EXPORT_S`` seconds (default 0.3), so the dialog's progress is
-visible and a cancel can land in the middle.
+visible and a cancel can land in the middle. A job's ``fakeDelayS`` (set from the POST's
+``X-BGSim-Fake-Export-S`` header, see :mod:`bgsim_server.exports`) overrides it per job.
 """
 
 from __future__ import annotations
@@ -206,26 +207,32 @@ class FakeExportRunner:
         self.settings = settings
         self.delay = float(os.environ.get("BGSIM_FAKE_EXPORT_S", "0.3"))
 
+    def _delay(self, request: dict[str, Any] | None) -> float:
+        """The phase duration: the job's ``fakeDelayS`` (a test header), else the default."""
+        value = (request or {}).get("fakeDelayS")
+        return float(value) if isinstance(value, int | float) else self.delay
+
     async def export(self, job_dir: Path, request: dict[str, Any],
                      on_phase: Callable[[str], None]) -> dict[str, Any]:
         timings: dict[str, float] = {}
         export_dir = job_dir / "export"
         model = request["model"]
         scope = request.get("scope") or None
-        await asyncio.sleep(self.delay)
-        timings["juliaS"] = self.delay
+        delay = self._delay(request)
+        await asyncio.sleep(delay)
+        timings["juliaS"] = delay
         if scope:
             on_phase("scope")
-            await asyncio.sleep(self.delay / 3)
-            timings["scopeS"] = self.delay / 3
+            await asyncio.sleep(delay / 3)
+            timings["scopeS"] = delay / 3
         vars_, diags = interface(model, scope, request.get("powerInputs") or {},
                                  request.get("inputValues") or {})
         if diags:
             return {"status": "refused", "diagnostics": diags, "timings": timings, "notes": []}
         for phase in ("flatten", "reference", "export"):
             on_phase(phase)
-            await asyncio.sleep(self.delay)
-            timings[f"{phase}S"] = self.delay
+            await asyncio.sleep(delay)
+            timings[f"{phase}S"] = delay
 
         repo = self.settings.repo_root
         report = json.loads((repo / REPORT_FIXTURE).read_text(encoding="utf-8"))
@@ -261,7 +268,11 @@ class FakeExportRunner:
 
     async def build(self, export_dir: Path) -> dict[str, Any]:
         """Zip a source-only FMU; returns ``{fmu, error}`` like the real build."""
-        await asyncio.sleep(self.delay)
+        request_path = export_dir.parent / "request.json"
+        request = (json.loads(request_path.read_text(encoding="utf-8"))
+                   if request_path.is_file() else None)
+        delay = self._delay(request)
+        await asyncio.sleep(delay)
         report = json.loads((export_dir / "export.json").read_text(encoding="utf-8"))
         fmu = export_dir / f"{report['identifier']}.fmu"
         with zipfile.ZipFile(fmu, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -273,7 +284,7 @@ class FakeExportRunner:
             "ok": True, "forbiddenSymbols": [], "symbolCheck": None, "cxxOk": None,
             "harnessDoSteps": None, "internalStepsPerDoStep": None,
             "allocationsAfterInstantiate": None, "doStepMeanUs": None, "doStepMaxUs": None,
-            "buildS": self.delay, "error": None, "note": FAKE_NOTE,
+            "buildS": delay, "error": None, "note": FAKE_NOTE,
         }
         (export_dir / "export.json").write_text(json.dumps(report, indent=4), encoding="utf-8")
         return {"fmu": fmu, "error": None}

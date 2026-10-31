@@ -176,6 +176,53 @@ def test_cancel_a_running_export(client, monkeypatch) -> None:
     assert client.delete(f"/api/exports/{export_id}").json() == {"ok": False}
 
 
+def test_list_exports_of_a_project(client, fake_settings, schema_validate) -> None:
+    assert client.get("/api/exports", params={"project": "demo"}).json() == []
+    first = _wait(client, _start(client, {"model": _model()}, model="plant"))
+    second = _wait(client, _start(client, {"model": _model()}, model="other"))
+    store = exports._store_for(client.app)
+    store.runner.delay = 1.0
+    running = _start(client, {"model": _model()}, model="plant")
+    time.sleep(0.1)
+
+    listed = client.get("/api/exports", params={"project": "demo"})
+    assert listed.status_code == 200
+    docs = listed.json()
+    for doc in docs:
+        schema_validate("export-job", doc)
+    # Newest first; the running job is listed live from memory, the others from job.json.
+    assert [doc["id"] for doc in docs] == [running, second["id"], first["id"]]
+    assert docs[0]["status"] == "running"
+    assert {doc["status"] for doc in docs[1:]} == {"done"}
+    assert docs[1]["report"] is not None
+
+    only = client.get("/api/exports", params={"project": "demo", "model": "other"}).json()
+    assert [doc["id"] for doc in only] == [second["id"]]
+    assert client.delete(f"/api/exports/{running}").json() == {"ok": True}
+
+    # A new backend process still lists them, from disk.
+    with TestClient(create_app(fake_settings)) as fresh:
+        statuses = {doc["id"]: doc["status"] for doc in
+                    fresh.get("/api/exports", params={"project": "demo"}).json()}
+        assert statuses == {first["id"]: "done", second["id"]: "done", running: "cancelled"}
+
+    assert client.get("/api/exports", params={"project": "nope"}).status_code == 404
+    assert client.get("/api/exports", params={"project": ".."}).status_code == 404
+    assert client.get("/api/exports").status_code == 422
+
+
+def test_fake_delay_header_holds_a_job_running(client) -> None:
+    response = client.post("/api/projects/demo/models/plant/export", json={"model": _model()},
+                           headers={exports.FAKE_DELAY_HEADER: "0.5"})
+    assert response.status_code == 201
+    export_id = response.json()["exportId"]
+    time.sleep(0.2)
+    assert client.get(f"/api/exports/{export_id}").json()["status"] == "running"
+    doc = _wait(client, export_id)
+    assert doc["status"] == "done"
+    assert doc["timings"]["flattenS"] == 0.5
+
+
 def test_jobs_wait_for_the_one_export_slot(client) -> None:
     store = exports._store_for(client.app)
     store.runner.delay = 0.2
