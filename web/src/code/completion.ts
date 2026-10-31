@@ -76,6 +76,7 @@ export const WHITELIST_FUNCTIONS = [
   "interp1",
   "interp2",
   "noise_normal",
+  "noise_uniform",
   "csv_value",
   "reinit",
   "ifelse",

@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "dead-time-noise",
+  "models": [
+    "dead-time-noise"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

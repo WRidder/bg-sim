@@ -169,6 +169,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Product of two inputs; chain instances for more factors.",
         icon = "cont-product",
     ),
+    "stdlib:continuous/TransportDelay" => (
+        description = "Constant transport delay: the input stored every sample_period, the output linearly interpolated at t - delay_time; initial until the line has filled.",
+        icon = "cont-transport-delay",
+    ),
     "stdlib:continuous/RateLimiter" => (
         description = "Limits the rate of change of the output to the rising and falling rates.",
         icon = "cont-rate-limiter",
@@ -236,6 +240,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:discrete/FIR" => (
         description = "FIR filter: the weighted sum of the last N input samples, with b[1] the newest.",
         icon = "disc-fir",
+    ),
+    "stdlib:discrete/IntegerDelay" => (
+        description = "Delays the input by N samples (z^-N) through a ring buffer; initial until N samples have arrived.",
+        icon = "disc-integer-delay",
     ),
     "stdlib:discrete/IIR" => (
         description = "IIR filter: N feedforward and M feedback coefficients, a[1] is the output gain.",
@@ -491,7 +499,7 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "src-csv-sampled",
     ),
     "stdlib:sources/Noise" => (
-        description = "Seeded normal noise on a fixed sample clock; the same seed repeats the run.",
+        description = "Seeded normal noise on a fixed sample clock (counter-based SplitMix64 + AS 241); the same seed repeats the run bit for bit, in simulation and in exported code.",
         icon = "src-noise",
     ),
     "stdlib:sources/Pulse" => (

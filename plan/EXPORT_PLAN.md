@@ -112,7 +112,7 @@ julia/BGSim/src/export/
 julia/BGSim/export/runtime/      hand-written C, versioned, copied into every FMU
   bg_runtime.h     language semantics (sign, round, clamp, deadzone, mod, ...)
   bg_solver.c      Euler / RK4 / Rosenbrock, LU, modes, tick, events
-  bg_intrinsics.c  interp1/interp2 over constant tables (later: delay ring buffer, noise)
+  bg_intrinsics.c  interp1/interp2 over constant tables, the noise draws and the delay ring (J-EX9)
   bg_mech.c        SE2/SE3 exp/log, quaternion functions, spatial inertia
   fmi2_cs.c, fmi3_cs.c
   bg_model.hpp     optional header-only C++ wrapper on the C API
@@ -381,6 +381,24 @@ order. The emitter maps the calls in `src/export/emit_intrinsics.jl`.
   against Julia's own elementary functions. Matching Julia bit for bit would need its
   `sin`/`cos` in C; a different target libm moves these numbers by about an ulp.
 
+- **Noise and delay (J-EX9).** `noise_normal(seed, k)`/`noise_uniform(seed, k)` and the
+  discrete `delay(x, T)` are discrete code. They reach C through `emit_discrete.jl` as
+  `bg_noise_normal`, `bg_noise_uniform` and `bg_delay_ring` (`bg_intrinsics.c`). The noise
+  is counter-based: SplitMix64 bits of `(seed, k)`, an exact uniform `(2j + 1) 2^-53`, and
+  Wichura's AS 241 with a logarithm of plain IEEE arithmetic (`frexp` and an atanh series)
+  instead of libm's `log`. Every operation is exactly rounded and specified, so the C value
+  is the Julia value bit for bit. Unlike the libm functions above, this is not "within a few
+  ulp" (spec "Seeded noise and delay"). There is no generator state: the sample index is the
+  `Noise` block's held tick counter, which already lives in `m->d`, so `bg_reset`
+  (instantiate, `fmi2SetupExperiment`, `fmi2Reset`) restarts the stream. Each `delay` call
+  site owns a ring of `T/Ts` slots in `m->ring` (laid out by `Compile.discrete_rings`, the
+  same layout as the simulator's `DiscreteState.ring`) and a write position in
+  `m->ring_pos`. Both are fixed-size struct members, zeroed by `bg_reset`'s `memset`. FMU
+  state get/set is not offered (`fmi2GetFMUstate` refuses), so nothing else holds the rings.
+  `bg_intrinsics.c` turns off FMA contraction for clang and MSVC, and the FMU builds in ISO
+  C mode, where GCC does not contract. `TransportDelay` reads its two ring samples as held
+  values and interpolates in the continuous code: `y = initial + ea + (t - tk)/Ts (eb - ea)`.
+
 - **Quaternion norm (D-EX17).** Exported code does not renormalize. Simulation does not
   either: no `ManifoldProjection` is attached, and the pose blocks (`PoseIntegrator3D`,
   `Free3D`, `Spherical3D`, the transforms) divide the rotation's quadratic form by
@@ -408,8 +426,8 @@ order. The emitter maps the calls in `src/export/emit_intrinsics.jl`.
 | `interp1`, `interp2` over constant tables of the model | supported; each table becomes one `static const` array (phase C); W-level size report |
 | `csv_value` (`CsvSource`) | not exported (E110): a CSV source is simulation data (stimulus or comparison). In an export variant an `ExportInput` replaces it, so the host supplies the signal |
 | mechanics functions (`exp`/`log` on SE2/SE3, quaternions, `spatial_inertia`) | supported through `bg_mech.c` (phase C) |
-| `delay` | supported only with a constant delay; a ring buffer of `ceil(T/dt)` slots (phase E; also missing in simulation) |
-| `noise_normal` | phase E, with a specified PRNG shared with simulation |
+| `delay` (discrete, `IntegerDelay`, `TransportDelay`) | supported (J-EX9): a discrete intrinsic with a ring buffer of `T/Ts` slots per call in the instance struct (`m->ring`, zeroed by `bg_reset`), bit-exact; `TransportDelay` interpolates between its samples in the continuous code, so it matches within the continuous tolerance. More than 2^20 slots per model is E110 |
+| `noise_normal`, `noise_uniform` (`Noise`) | supported (J-EX9): counter-based (SplitMix64 + AS 241 with an IEEE-only logarithm), no generator state, bit-identical to simulation |
 | debug hooks, watches | not exported |
 
 Unsupported constructs fail with **E110** naming the block path and source range, as every
@@ -477,7 +495,7 @@ Naming follows the main plan: J (Julia), P (Python backend), W (web), X (example
 | WP | scope | acceptance |
 | --- | --- | --- |
 | J-EX8 | Initialization in C (D-EX11 phase 2): MTK's initialization system, bounded Newton at `ExitInitializationMode` | changing a parameter before init gives the same start as a Julia run with that parameter |
-| J-EX9 | `delay` (constant delay, ring buffer) and `noise_normal` (PRNG specified once, implemented in Julia and C) | bit-identical noise sequence in Julia and C |
+| J-EX9 | `delay` (constant delay, ring buffer) and `noise_normal` (PRNG specified once, implemented in Julia and C) | bit-identical noise sequence in Julia and C. **Done (branch `jex9-delay-noise`):** counter-based noise (SplitMix64 + AS 241 with an IEEE-only log, spec "Seeded noise and delay") in `library/random.jl` and `bg_intrinsics.c`, plus a `noise_uniform` primitive for other random sources; `Noise` draws it per tick; `delay(x, T)` is a discrete intrinsic with a ring buffer per call (`DiscreteState.ring` in simulation, `m->ring` in C, at most 2^20 slots per model, else E110); new blocks `IntegerDelay` (z⁻ᴺ, exact) and `TransportDelay` (sampled ring plus linear interpolation, error ≤ Ts²/8·max\|u''\|). `test_export_noise_delay.jl`: 43402 draws (7 seeds incl. ±2^62-range, 4 counter ranges) equal bitwise between Julia and the C runtime; an exported model gives 1001/1001 noise and delayed samples bit-identical to simulation, also after `bg_reset`, and its DDE state within 6e-14; it builds with `-std=c99 -Wall -Wextra -Werror` and as C++17. New example `dead-time-noise` passes the X-EX0 gate (compared, worst 2.8e-6, zero allocations, symbol check) |
 | J-EX10 | Optional C++ wrapper `bg_model.hpp` on the C API; `BG_STATIC_INSTANCE` MCU build (one static instance, no allocation callback) | the wrapper builds with `-fno-exceptions -fno-rtti`; the static build has no undefined allocation symbol |
 
 ## 8. Validation and gates

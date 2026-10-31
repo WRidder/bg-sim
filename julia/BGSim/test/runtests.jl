@@ -331,5 +331,8 @@ include("test_export_sparse.jl")
 # Work package J-EX5: the C twins of the intrinsics, golden against Julia.
 include("test_export_intrinsics.jl")
 
+# Work package J-EX9: seeded noise and the delay ring, bit-identical in the exported C code.
+include("test_export_noise_delay.jl")
+
 # D-EX10: folded parameters substituted and simplified before the Jacobian and the C code.
 include("test_export_simplify.jl")

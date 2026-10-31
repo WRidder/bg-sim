@@ -1622,7 +1622,8 @@ function _qualify_node(q::QCtx, e::Call)
            fn === :ceil || fn === :round || fn === :hypot || fn === :mod ||
            fn === :rem || fn === :deadzone || fn === :saturate ||
            fn === :previous || fn === :hold || fn === :delay ||
-           fn === :noise_normal || fn === :reinit || fn === :csv_value
+           fn === :noise_normal || fn === :noise_uniform || fn === :reinit ||
+           fn === :csv_value
         # A scalar function: every argument must be scalar. `min`/`max`/`clamp`/`abs` also
         # work on the same-shaped arrays in the language, so lift them element-wise when all
         # arguments have one common array shape.

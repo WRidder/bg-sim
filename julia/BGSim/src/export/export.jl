@@ -50,7 +50,11 @@ const MTK = ModelingToolkit
 
 """The hand-written C runtime copied into every export; bump `RUNTIME_VERSION` on any change."""
 const RUNTIME_DIR = normpath(joinpath(@__DIR__, "..", "..", "export", "runtime"))
-const RUNTIME_VERSION = "0.3.0"
+const RUNTIME_VERSION = "0.4.0"   # 0.4.0: J-EX9 noise draws and the delay ring
+
+"""The most `delay` ring slots an exported model may hold (J-EX9): 2^20 doubles, 8 MiB of
+the instance struct. A single ring is capped at `Compile.DELAY_MAX_TICKS` already."""
+const MAX_RING_SLOTS = 1 << 20
 const RUNTIME_FILES = ["bg_runtime.h", "bg_solver.c", "fmi2_cs.c",
     "fmi2Functions.h", "fmi2FunctionTypes.h", "fmi2TypesPlatform.h",
     "bg_intrinsics.h", "bg_intrinsics.c", "bg_mech.h", "bg_mech.c"]
@@ -683,12 +687,18 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
             scope = "@events",
             hint = "a smaller dt moves the event closer to the simulated instant"))
     end
+    # J-EX9: the `delay` rings live in the instance struct, sized here, zeroed by bg_reset.
+    rings = has_disc ? sched.ring_sizes : Int[]
+    nring = sum(rings; init = 0)
+    nring <= MAX_RING_SLOTS || throw(ExportError(
+        "the `delay` rings need $nring slots ($(8 * nring) bytes), more than the $(MAX_RING_SLOTS) an exported model may hold; use longer sample periods or shorter delays"))
     mkpath(joinpath(out_dir, "sources"))
     _write_model_h(joinpath(out_dir, "sources", "model.h"), name, ident, guid, nx,
         length(params), length(held_ids), has_disc ? length(sched.input_ids) : 0, length(vars),
         length(inputs), has_disc ? length(sched.partitions) : 0, length(modes), dt, dt_ns, method;
         nalg, has_t, la, ne = length(events),
-        ner = maximum((length(ev.targets) for ev in events); init = 0))
+        ner = maximum((length(ev.targets) for ev in events); init = 0),
+        nring, nrings = length(rings))
     write(joinpath(out_dir, "sources", "model.c"), splice_intrinsics(String(take!(cbuf)), intrinsics))
     for f in RUNTIME_FILES
         cp(joinpath(RUNTIME_DIR, f), joinpath(out_dir, "sources", f); force = true)
@@ -983,7 +993,7 @@ function _emit_model_c(io, name, xs, x0, names_x, rhs, mass, jac, la, env, obs, 
 end
 
 function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, nc, dt, dt_ns, method;
-    nalg = 0, has_t = false, la = nothing, ne = 0, ner = 0)
+    nalg = 0, has_t = false, la = nothing, ne = 0, ner = 0, nring = 0, nrings = 0)
     nstage = is_rosenbrock(method) ? method_stages(method) : 0
     sparse = la !== nothing && la.lu !== nothing
     lu_defs = sparse ? """
@@ -1026,6 +1036,8 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         #define BG_NPART $(npart)  /* discrete partitions */
         #define BG_NE $(ne)        /* @events, checked after every step */
         #define BG_NER $(ner)       /* the most states one event writes */
+        #define BG_NRING $(nring)     /* slots of all `delay` rings (J-EX9) */
+        #define BG_NRINGS $(nrings)    /* `delay` rings */
         #define BG_DT $(repr(dt))
         #define BG_DT_NS INT64_C($(dt_ns))
         #define BG_METHOD_EULER 1
@@ -1060,6 +1072,8 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
             double din[BG_SZ(BG_NI)];
             double dinprev[BG_SZ(BG_NI)];
             double dprev_t;
+            double ring[BG_SZ(BG_NRING)];  /* the `delay` rings, back to back; zero after bg_reset */
+            int ring_pos[BG_SZ(BG_NRINGS)]; /* each ring's write position */
             double c[BG_SZ(BG_NC)];
             double ez0[BG_SZ(BG_NE)];      /* event conditions at the start of the step */
             double ez[BG_SZ(BG_NE)];       /* ... and at its end */

@@ -901,6 +901,10 @@ function _dims!(ctx::_Ctx, e::Call)
             )
         end
         return d
+    elseif (name === :noise_normal || name === :noise_uniform) && nargs == 2
+        # J-EX9: a sample of a seeded stream is a pure number.
+        _walk_args!(ctx, e)
+        return DIMENSIONLESS
     elseif name === :reinit && nargs == 2
         d = _dims!(ctx, args[1])
         value = _dims!(ctx, args[2])

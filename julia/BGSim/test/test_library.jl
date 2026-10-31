@@ -297,7 +297,9 @@ const F5_CSV_REFS = [
     "stdlib:sources/CsvSourceSampled",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS))
+# J-EX9: the delay blocks on the discrete `delay` intrinsic.
+const JEX9_REFS = ["stdlib:continuous/TransportDelay", "stdlib:discrete/IntegerDelay"]
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -493,10 +495,13 @@ const INTERFACE_FIELDS = [
         @test isempty(time.interface.constants)
 
         noise = blocks["stdlib:sources/Noise"]
-        @test [p.name for p in noise.interface.parameters] ==
-              ["mean", "std", "seed", "sample_time"]
+        # J-EX9: the sample time is a constant (it fixes the discrete clock, like every
+        # discrete block's sample_period);
+        # the seed stays an Int parameter.
+        @test [p.name for p in noise.interface.parameters] == ["mean", "std", "seed"]
         @test noise.interface.parameters[3].type == "Int"
-        @test noise.interface.parameters[4].unit == "s"
+        @test [(c.name, c.type, c.default) for c in noise.interface.constants] ==
+              [("sample_time", "Real", 1.0e-3)]
         @test noise.interface.parameters[2].min == 0
 
         # The time table: N is a structural constant; the method is D11's Int enumeration
@@ -1938,7 +1943,8 @@ const INTERFACE_FIELDS = [
 
     @testset "intrinsics (D12)" begin
         rows = intrinsics()
-        @test [r.name for r in rows] == ["csv_value", "delay", "interp1", "interp2", "noise_normal"]
+        @test [r.name for r in rows] ==
+              ["csv_value", "delay", "interp1", "interp2", "noise_normal", "noise_uniform"]
         by = Dict(r.name => r for r in rows)
         @test by["csv_value"].arity == 3
         @test by["csv_value"].stdlib_only == true
@@ -1950,11 +1956,13 @@ const INTERFACE_FIELDS = [
         @test by["interp1"].stdlib_only == false
         @test by["interp2"].stdlib_only == false
         @test by["noise_normal"].stdlib_only == true
+        @test by["noise_uniform"].arity == 2
+        @test by["noise_uniform"].stdlib_only == true
         @test by["delay"].stdlib_only == true
         @test by["delay"].lowering == :delay
         @test all(
             r -> r.lowering == :intrinsic,
-            [by["interp1"], by["interp2"], by["noise_normal"], by["csv_value"]],
+            [by["interp1"], by["interp2"], by["noise_normal"], by["noise_uniform"], by["csv_value"]],
         )
         @test all(r -> !isempty(r.description), rows)
 
