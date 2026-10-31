@@ -58,6 +58,11 @@
           "type": "array",
           "items": { "$ref": "#/$defs/annotation" }
         },
+        "shapes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/shape" },
+          "description": "Background shapes, drawn behind the notes, wires and blocks. The array order is the z order: the first entry is the back-most."
+        },
         "probes": {
           "type": "array",
           "items": { "$ref": "#/$defs/probe" },
@@ -467,6 +472,54 @@
         "$comment": { "type": "string" }
       },
       "additionalProperties": false
+    },
+    "shape": {
+      "title": "ModelShape",
+      "description": "A background shape on one diagram level (rectangle, rounded rectangle, ellipse, line or arrow), drawn behind notes, wires and blocks. `fill` absent means none (lines and arrows ignore it); `stroke` absent means ink. Editor-only; compile, simulation and export ignore it.",
+      "type": "object",
+      "required": ["id", "kind", "x", "y", "w", "h"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$"
+        },
+        "kind": { "title": "ShapeKind", "enum": ["rectangle", "roundedRectangle", "ellipse", "line", "arrow"] },
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "w": { "type": "number", "description": "Rectangle, rounded rectangle and ellipse: the frame width (positive). Line and arrow: the end point is (x + w, y + h), so w and h may be negative." },
+        "h": { "type": "number" },
+        "fill": { "$ref": "#/$defs/shapeColor" },
+        "stroke": { "$ref": "#/$defs/shapeColor" },
+        "strokeWidth": {
+          "type": "number",
+          "minimum": 0.5,
+          "maximum": 24,
+          "description": "Outline width in diagram units; absent means 2."
+        },
+        "strokeStyle": {
+          "title": "ShapeStrokeStyle",
+          "enum": ["solid", "dashed", "dotted"],
+          "description": "Absent means solid."
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "The opacity of the whole shape, label included; absent means 1."
+        },
+        "text": { "type": "string", "description": "An optional plain-text label, centred on the shape." },
+        "locked": {
+          "type": "boolean",
+          "description": "A locked shape cannot be moved, resized or deleted on the canvas, and a selection rectangle skips it; absent means false."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "shapeColor": {
+      "title": "ShapeColor",
+      "description": "A shape colour: the sticky-note palette plus `ink` (the theme's text colour) and `none`. The editor themes each colour for dark and light mode.",
+      "enum": ["none", "ink", "yellow", "blue", "green", "pink", "grey"]
     },
     "nodeUi": {
       "title": "ModelNodeUi",

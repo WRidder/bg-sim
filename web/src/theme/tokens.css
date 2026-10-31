@@ -139,6 +139,12 @@
   --note-grey-fold: #4a515d;
   --note-grey-text: #e4e8ee;
   --note-shadow: drop-shadow(0 2px 4px rgb(0 0 0 / 55%));
+  /* Background shapes: the note palette as outline colours, bright on the dark canvas. */
+  --shape-yellow-stroke: #e3c454;
+  --shape-blue-stroke: #6fa6f2;
+  --shape-green-stroke: #5cc283;
+  --shape-pink-stroke: #e57fad;
+  --shape-grey-stroke: #9aa5b4;
 
   /* Shell metrics. */
   --topbar-height: 40px;
@@ -221,6 +227,11 @@
   --note-grey-fold: #c9cfd7;
   --note-grey-text: #262c34;
   --note-shadow: drop-shadow(0 2px 3px rgb(27 33 41 / 22%));
+  --shape-yellow-stroke: #b08800;
+  --shape-blue-stroke: #2f6fc8;
+  --shape-green-stroke: #2a8a4e;
+  --shape-pink-stroke: #c2417c;
+  --shape-grey-stroke: #6b7686;
 
   --status-starting: #8a95a3;
   --status-warming: #f79009;

@@ -645,6 +645,31 @@ end
         @test BGSim.compile_key(with_notes) == BGSim.compile_key(plain)
     end
 
+    @testset "canvas shapes are editor state (diagram.shapes)" begin
+        # `model.canvas-shapes.json` is `model.sticky-notes.json` plus six background
+        # shapes: five on the root diagram (every kind, one locked) and one inside `Plant`.
+        # The parser drops shapes (and notes) at every level, so the model flattens and
+        # compiles exactly like the one without them.
+        path = _fixture("model.canvas-shapes.json")
+        with_shapes = flat_file(path)
+        document = JSON3.read(read(path, String), Dict{String,Any})
+        plant = document["diagram"]["nodes"][2]["block"]["subsystem"]["diagram"]
+        @test [s["kind"] for s in document["diagram"]["shapes"]] ==
+              ["roundedRectangle", "rectangle", "ellipse", "line", "arrow"]
+        @test document["diagram"]["shapes"][1]["locked"] == true
+        @test length(plant["shapes"]) == 1
+        delete!(document["diagram"], "shapes")
+        delete!(plant, "shapes")
+        plain = flat(document)
+        reference = flat_file(_fixture("model.subsystem-port-ui.json"))
+        @test isempty(_errors(with_shapes))
+        @test _counts(with_shapes) == _counts(plain) == _counts(reference)
+        @test sort([v.id for v in with_shapes.variables]) == sort([v.id for v in plain.variables])
+        @test sort([string(e) for e in with_shapes.equations]) ==
+              sort([string(e) for e in plain.equations])
+        @test BGSim.compile_key(with_shapes) == BGSim.compile_key(plain)
+    end
+
     @testset "junctions: 0, 1, junction-to-junction and dangling" begin
         # A 0-junction of two effort sources: equal efforts, flows summing to zero.
         zero_model = _model("ZeroJ", Any[

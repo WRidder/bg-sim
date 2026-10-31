@@ -1,0 +1,477 @@
+/*
+ * Background shapes on the canvas (diagram.shapes). The colours are the
+ * sticky-note palette (src/theme/tokens.css): a fill uses the note card
+ * colour and its label the note text colour (AA on each card), a stroke uses
+ * a stronger `--shape-<colour>-stroke` per theme; `ink` is the theme's text.
+ * Shapes sit behind notes, wires and blocks (shapeZIndex).
+ *
+ * xyflow's node box takes no pointer events (`shapeNodes`); only what is
+ * painted here does, so an unfilled shape lets presses through its inside.
+ */
+
+.react-flow__node-shape {
+  /* The shape draws its own selection; xyflow's focus ring would double it. */
+  outline: none;
+}
+
+.canvas-shape {
+  --shape-fill: none;
+  --shape-stroke: var(--color-text);
+  --shape-label: var(--color-text);
+
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-ui);
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-tight);
+}
+
+.canvas-shape__art {
+  position: absolute;
+  inset: 0;
+}
+
+.canvas-shape__svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.canvas-shape__body {
+  fill: var(--shape-fill);
+  stroke: var(--shape-stroke);
+  /* A filled shape is grabbed anywhere inside, an unfilled one by its outline. */
+  pointer-events: visiblePainted;
+  cursor: move;
+}
+
+.canvas-shape__body--line,
+.canvas-shape.is-dotted .canvas-shape__body {
+  stroke-linecap: round;
+}
+
+.canvas-shape__head {
+  fill: var(--shape-stroke);
+  stroke: none;
+  pointer-events: visiblePainted;
+  cursor: move;
+}
+
+/* A transparent band along the outline: a thin or invisible stroke is still easy to grab. */
+.canvas-shape__hit {
+  fill: none;
+  stroke: transparent;
+  pointer-events: stroke;
+  cursor: move;
+}
+
+.canvas-shape.is-locked .canvas-shape__body,
+.canvas-shape.is-locked .canvas-shape__head,
+.canvas-shape.is-locked .canvas-shape__hit,
+.canvas-shape.is-locked .canvas-shape__label > span {
+  cursor: default;
+}
+
+.canvas-shape__halo {
+  stroke: var(--color-accent);
+  stroke-opacity: 0.35;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.canvas-shape__label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2);
+  overflow: hidden;
+  color: var(--shape-label);
+  text-align: center;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.canvas-shape__label > span {
+  pointer-events: auto;
+  cursor: move;
+}
+
+/* A line's label sits on the line's middle, on a patch of canvas. */
+.canvas-shape__label--line {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  padding: 0;
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+.canvas-shape__label--line > span {
+  padding: 1px var(--space-1);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+/* Selection: an accent outline around the frame (a line shows its halo). */
+.canvas-shape.is-selected:not(.canvas-shape--line, .canvas-shape--arrow) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.canvas-shape.is-selected.is-locked:not(.canvas-shape--line, .canvas-shape--arrow) {
+  outline-style: dashed;
+}
+
+/* The padlock of a locked shape: shown while hovered or selected. */
+.canvas-shape__lock {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+
+.canvas-shape--line .canvas-shape__lock,
+.canvas-shape--arrow .canvas-shape__lock {
+  top: 50%;
+  right: auto;
+  left: 50%;
+  transform: translate(-50%, -150%);
+}
+
+.canvas-shape.is-locked:hover .canvas-shape__lock,
+.canvas-shape.is-locked.is-selected .canvas-shape__lock {
+  display: flex;
+}
+
+/* Resize handles (rectangle kinds) and end-point handles (lines). */
+.canvas-shape .react-flow__resize-control {
+  pointer-events: all;
+}
+
+.canvas-shape .canvas-shape__handle.react-flow__resize-control.handle {
+  width: 9px;
+  height: 9px;
+  background: var(--color-accent);
+  border: 1px solid var(--color-surface);
+  border-radius: 2px;
+}
+
+.canvas-shape .canvas-shape__resize-line.react-flow__resize-control.line {
+  border-color: transparent;
+}
+
+.canvas-shape__end {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin: -6px 0 0 -6px;
+  background: var(--color-accent);
+  border: 1.5px solid var(--color-surface);
+  border-radius: 50%;
+  cursor: crosshair;
+  pointer-events: all;
+  touch-action: none;
+}
+
+/* Colours: a fill (with its label colour) and a stroke per palette entry. */
+.shape-fill--none {
+  --shape-fill: none;
+  --shape-label: var(--color-text);
+}
+
+.shape-fill--ink {
+  --shape-fill: var(--color-text);
+  --shape-label: var(--color-bg);
+}
+
+.shape-fill--yellow {
+  --shape-fill: var(--note-yellow-bg);
+  --shape-label: var(--note-yellow-text);
+}
+
+.shape-fill--blue {
+  --shape-fill: var(--note-blue-bg);
+  --shape-label: var(--note-blue-text);
+}
+
+.shape-fill--green {
+  --shape-fill: var(--note-green-bg);
+  --shape-label: var(--note-green-text);
+}
+
+.shape-fill--pink {
+  --shape-fill: var(--note-pink-bg);
+  --shape-label: var(--note-pink-text);
+}
+
+.shape-fill--grey {
+  --shape-fill: var(--note-grey-bg);
+  --shape-label: var(--note-grey-text);
+}
+
+.shape-stroke--none {
+  --shape-stroke: none;
+}
+
+.shape-stroke--ink {
+  --shape-stroke: var(--color-text);
+}
+
+.shape-stroke--yellow {
+  --shape-stroke: var(--shape-yellow-stroke);
+}
+
+.shape-stroke--blue {
+  --shape-stroke: var(--shape-blue-stroke);
+}
+
+.shape-stroke--green {
+  --shape-stroke: var(--shape-green-stroke);
+}
+
+.shape-stroke--pink {
+  --shape-stroke: var(--shape-pink-stroke);
+}
+
+.shape-stroke--grey {
+  --shape-stroke: var(--shape-grey-stroke);
+}
+
+/* A line's label takes the line colour where it reads on the canvas. */
+.canvas-shape--line .canvas-shape__label,
+.canvas-shape--arrow .canvas-shape__label {
+  color: var(--color-text);
+}
+
+/* The shape inspector and menu swatches: "none" is a crossed-out square. */
+.shape-swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: var(--swatch-bg);
+  border: var(--border-width) solid var(--swatch-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.shape-swatch:hover {
+  box-shadow: 0 0 0 2px var(--color-border-strong);
+}
+
+.shape-swatch.is-current {
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.shape-swatch:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.shape-swatch--fill.shape-swatch--yellow {
+  --swatch-bg: var(--note-yellow-bg);
+  --swatch-border: var(--note-yellow-fold);
+}
+
+.shape-swatch--fill.shape-swatch--blue {
+  --swatch-bg: var(--note-blue-bg);
+  --swatch-border: var(--note-blue-fold);
+}
+
+.shape-swatch--fill.shape-swatch--green {
+  --swatch-bg: var(--note-green-bg);
+  --swatch-border: var(--note-green-fold);
+}
+
+.shape-swatch--fill.shape-swatch--pink {
+  --swatch-bg: var(--note-pink-bg);
+  --swatch-border: var(--note-pink-fold);
+}
+
+.shape-swatch--fill.shape-swatch--grey {
+  --swatch-bg: var(--note-grey-bg);
+  --swatch-border: var(--note-grey-fold);
+}
+
+.shape-swatch--stroke.shape-swatch--yellow {
+  --swatch-bg: var(--shape-yellow-stroke);
+  --swatch-border: var(--shape-yellow-stroke);
+}
+
+.shape-swatch--stroke.shape-swatch--blue {
+  --swatch-bg: var(--shape-blue-stroke);
+  --swatch-border: var(--shape-blue-stroke);
+}
+
+.shape-swatch--stroke.shape-swatch--green {
+  --swatch-bg: var(--shape-green-stroke);
+  --swatch-border: var(--shape-green-stroke);
+}
+
+.shape-swatch--stroke.shape-swatch--pink {
+  --swatch-bg: var(--shape-pink-stroke);
+  --swatch-border: var(--shape-pink-stroke);
+}
+
+.shape-swatch--stroke.shape-swatch--grey {
+  --swatch-bg: var(--shape-grey-stroke);
+  --swatch-border: var(--shape-grey-stroke);
+}
+
+.shape-swatch--ink {
+  --swatch-bg: var(--color-text);
+  --swatch-border: var(--color-text);
+}
+
+.shape-swatch--none {
+  --swatch-border: var(--color-border-strong);
+
+  background:
+    linear-gradient(
+      to top right,
+      transparent calc(50% - 1px),
+      var(--color-error) calc(50% - 1px),
+      var(--color-error) calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ),
+    var(--color-surface);
+}
+
+/* The shape inspector. */
+.shape-inspector__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.shape-inspector__section h4 {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+}
+
+.shape-inspector__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.shape-inspector__row {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.shape-inspector__row select,
+.shape-inspector__row input[type="number"] {
+  min-width: 0;
+  height: var(--control-height);
+  padding: 0 var(--space-1);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.shape-inspector__opacity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.shape-inspector__opacity input {
+  flex: 1;
+  min-width: 0;
+}
+
+.shape-inspector__opacity output {
+  min-width: 3.5em;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  text-align: right;
+}
+
+.shape-inspector__text {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-2);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  background: var(--color-surface-sunken);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  resize: vertical;
+}
+
+.shape-inspector__lock {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.shape-inspector__hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.shape-inspector__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Separators and disabled rows in the canvas menu (shape arrange items). */
+.editor-menu__separator {
+  height: 1px;
+  margin: var(--space-1) 0;
+  background: var(--color-border);
+}
+
+.editor-menu button:disabled {
+  color: var(--color-text-faint);
+  cursor: default;
+}
+
+.editor-menu button:disabled:hover {
+  background: transparent;
+  color: var(--color-text-faint);
+}
+
+.editor-menu__label {
+  padding: var(--space-1) var(--space-2) 0;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-label);
+}

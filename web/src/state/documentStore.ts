@@ -37,7 +37,9 @@ import type {
   ModelNodeImage,
   ModelPoint,
   ModelProbePanel,
+  ModelShape,
   ProbeKind,
+  ShapeKind,
 } from "../contracts/model";
 import {
   checkConnection,
@@ -94,6 +96,20 @@ import {
   noteIdOf,
   selectedNoteIds,
 } from "../editor/notes";
+import {
+  applyShapeStyle,
+  isLineKind,
+  isLocked,
+  reorderShapes as reorderShapeList,
+  SHAPE_DEFAULT_SIZE,
+  SHAPE_MIN_SIZE,
+  shapeFlowId,
+  shapeIdOf,
+  shapeOriginAt,
+  selectedShapeIds,
+  type ShapeOrder,
+  type ShapeStylePatch,
+} from "../editor/shapes";
 
 enablePatches();
 
@@ -120,6 +136,8 @@ export interface Clipboard {
   connections: ModelConnection[];
   /** Sticky notes (diagram.annotations) of the copied selection. */
   annotations: ModelAnnotation[];
+  /** Background shapes (diagram.shapes) of the copied selection, back to front. */
+  shapes: ModelShape[];
 }
 
 export interface ConnectResult {
@@ -334,6 +352,36 @@ export interface DocumentActions {
     coalesce?: boolean,
   ) => void;
 
+  /**
+   * Add a background shape (a `diagram.shapes` entry) in front of the other
+   * shapes of the active diagram, at `position` (its top-left corner, or a
+   * line's start), and select it. Returns its canvas id (`shape:<id>`).
+   */
+  addShape: (
+    kind: ShapeKind,
+    position: ModelPoint,
+    options?: { size?: { w: number; h: number }; style?: ShapeStylePatch; text?: string },
+  ) => string | null;
+  /** Restyle shapes by shape id (a default value removes its field). */
+  setShapeStyle: (ids: readonly string[], patch: ShapeStylePatch, options?: { coalesce?: string }) => void;
+  /** Replace a shape's label; `coalesce` makes one undo step of a typing session. */
+  setShapeText: (id: string, text: string, options?: { coalesce?: boolean }) => void;
+  /**
+   * Move and resize an unlocked shape: a rectangle kind's frame (with a
+   * minimum size), or a line's start and `w`/`h` to its end.
+   */
+  setShapeFrame: (
+    id: string,
+    frame: { x: number; y: number; w: number; h: number },
+    coalesce?: string,
+  ) => void;
+  /** Lock or unlock shapes by shape id (unlocked removes the field). */
+  setShapeLocked: (ids: readonly string[], locked: boolean) => void;
+  /** Change the z order of shapes by shape id (one undo step; a no-op adds none). */
+  reorderShapes: (ids: readonly string[], order: ShapeOrder) => void;
+  /** Copy shapes in front of all shapes, offset and unlocked, and select the copies. */
+  duplicateShapes: (ids: readonly string[]) => string[];
+
   undo: () => void;
   redo: () => void;
 }
@@ -390,7 +438,7 @@ export interface DocumentState {
 export type DocumentStore = DocumentState & DocumentActions;
 
 const EMPTY_SELECTION: Selection = { nodes: [], connections: [] };
-const EMPTY_CLIPBOARD: Clipboard = { nodes: [], connections: [], annotations: [] };
+const EMPTY_CLIPBOARD: Clipboard = { nodes: [], connections: [], annotations: [], shapes: [] };
 
 const INITIAL_STATE: DocumentState = {
   project: null,
@@ -422,6 +470,26 @@ function roundPosition(point: ModelPoint): ModelPoint {
   };
 }
 
+/**
+ * Copies of `shapes` for a paste or a duplicate: fresh ids next to `existing`,
+ * offset by the paste offset and unlocked (a copy is placed by hand).
+ */
+function copiedShapes(shapes: readonly ModelShape[], existing: readonly ModelShape[]): ModelShape[] {
+  const ids = new Set(existing.map((shape) => shape.id));
+  return shapes.map((shape) => {
+    const id = nextId("s", ids);
+    ids.add(id);
+    const copy: ModelShape = {
+      ...clone(shape),
+      id,
+      x: Math.round((shape.x + PASTE_OFFSET) * 10) / 10,
+      y: Math.round((shape.y + PASTE_OFFSET) * 10) / 10,
+    };
+    delete copy.locked;
+    return copy;
+  });
+}
+
 function sameIds(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((id, index) => id === b[index]);
 }
@@ -441,6 +509,8 @@ function pruneSelection(doc: Model, path: readonly string[], selection: Selectio
     ),
     // Sticky notes are canvas nodes `note:<id>`.
     ...(diagram.annotations ?? []).map((note) => noteFlowId(note.id)),
+    // Background shapes are canvas nodes `shape:<id>`.
+    ...(diagram.shapes ?? []).map((shape) => shapeFlowId(shape.id)),
   ]);
   const connectionIds = new Set(diagram.connections.map((connection) => connection.id));
   const nodes = selection.nodes.filter((id) => nodeIds.has(id));
@@ -721,6 +791,18 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
               }
               continue;
             }
+            // A dragged shape (`shape:<id>`; the position is its canvas node's
+            // box, a line's padded bounds) moves its frame; a locked one stays.
+            const shapeId = shapeIdOf(id);
+            if (shapeId !== null) {
+              const shape = (diagram.shapes ?? []).find((entry) => entry.id === shapeId);
+              if (shape !== undefined && !isLocked(shape)) {
+                const rounded = roundPosition(shapeOriginAt(shape, position));
+                shape.x = rounded.x;
+                shape.y = rounded.y;
+              }
+              continue;
+            }
             const node = diagram.nodes.find((entry) => entry.id === id);
             if (node !== undefined) {
               node.position = roundPosition(position);
@@ -874,6 +956,18 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         return;
       }
       const notes = new Set(selectedNoteIds(selection.nodes));
+      // A locked shape survives Del (and stays selected); unlock it to delete it.
+      const lockedShapes = new Set(
+        (diagram.shapes ?? []).filter((shape) => isLocked(shape)).map((shape) => shape.id),
+      );
+      const shapes = new Set(selectedShapeIds(selection.nodes).filter((id) => !lockedShapes.has(id)));
+      const kept = selection.nodes.filter((id) => {
+        const shapeId = shapeIdOf(id);
+        return shapeId !== null && lockedShapes.has(shapeId);
+      });
+      if (kept.length === nodes.size && connections.size === 0) {
+        return;
+      }
       const path = [...get().activePath];
       // Selected terminals delete their exposed ports in the same undo entry,
       // except a port the next level up exposes again (the canvas says why).
@@ -910,8 +1004,11 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         if (notes.size > 0 && draft.annotations !== undefined) {
           draft.annotations = draft.annotations.filter((note) => !notes.has(note.id));
         }
+        if (shapes.size > 0 && draft.shapes !== undefined) {
+          draft.shapes = draft.shapes.filter((shape) => !shapes.has(shape.id));
+        }
       });
-      set({ selection: EMPTY_SELECTION });
+      set({ selection: kept.length === 0 ? EMPTY_SELECTION : { nodes: kept, connections: [] } });
     },
 
     rotateSelection: () => {
@@ -965,10 +1062,15 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
       const annotations = (diagram.annotations ?? [])
         .filter((note) => noteIds.has(note.id))
         .map((note) => clone(note));
-      if (nodes.length === 0 && annotations.length === 0) {
+      // Shapes keep their z order (the document order) in the clipboard.
+      const shapeIds = new Set(selectedShapeIds(selection.nodes));
+      const shapes = (diagram.shapes ?? [])
+        .filter((shape) => shapeIds.has(shape.id))
+        .map((shape) => clone(shape));
+      if (nodes.length === 0 && annotations.length === 0 && shapes.length === 0) {
         return;
       }
-      set({ clipboard: { nodes, connections, annotations } });
+      set({ clipboard: { nodes, connections, annotations, shapes } });
     },
 
     paste: () => {
@@ -979,9 +1081,12 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         return;
       }
       const clipNotes = clipboard.annotations ?? [];
-      if (clipboard.nodes.length === 0 && clipNotes.length === 0) {
+      const clipShapes = clipboard.shapes ?? [];
+      if (clipboard.nodes.length === 0 && clipNotes.length === 0 && clipShapes.length === 0) {
         return;
       }
+      // Pasted shapes land in front of the other shapes, unlocked.
+      const pastedShapes = copiedShapes(clipShapes, diagram.shapes ?? []);
       const existingNoteIds = new Set((diagram.annotations ?? []).map((note) => note.id));
       const pastedNotes: ModelAnnotation[] = clipNotes.map((note) => {
         const id = nextId("a", existingNoteIds);
@@ -1040,12 +1145,17 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
           draft.annotations ??= [];
           draft.annotations.push(...pastedNotes);
         }
+        if (pastedShapes.length > 0) {
+          draft.shapes ??= [];
+          draft.shapes.push(...pastedShapes);
+        }
       });
       set({
         selection: {
           nodes: [
             ...pastedNodes.map((node) => node.id),
             ...pastedNotes.map((note) => noteFlowId(note.id)),
+            ...pastedShapes.map((shape) => shapeFlowId(shape.id)),
           ],
           connections: [],
         },
@@ -1799,6 +1909,168 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
         },
         coalesce ? { coalesce: "note-resize" } : {},
       );
+    },
+
+    addShape: (kind, position, options = {}) => {
+      const diagram = currentDiagram();
+      if (diagram === null || !Number.isFinite(position.x) || !Number.isFinite(position.y)) {
+        return null;
+      }
+      const id = nextId("s", (diagram.shapes ?? []).map((shape) => shape.id));
+      const at = roundPosition(position);
+      const size = options.size ?? SHAPE_DEFAULT_SIZE[kind];
+      const line = isLineKind(kind);
+      const shape: ModelShape = {
+        id,
+        kind,
+        x: at.x,
+        y: at.y,
+        w: line ? Math.round(size.w) : Math.max(SHAPE_MIN_SIZE.w, Math.round(Math.abs(size.w))),
+        h: line ? Math.round(size.h) : Math.max(SHAPE_MIN_SIZE.h, Math.round(Math.abs(size.h))),
+      };
+      if (options.style !== undefined) {
+        applyShapeStyle(shape, options.style);
+      }
+      if (options.text !== undefined && options.text.length > 0) {
+        shape.text = options.text;
+      }
+      const next = commitActive((draft) => {
+        draft.shapes ??= [];
+        draft.shapes.push(shape);
+      });
+      if (next === null) {
+        return null;
+      }
+      const flowId = shapeFlowId(id);
+      set({ selection: { nodes: [flowId], connections: [] } });
+      return flowId;
+    },
+
+    setShapeStyle: (ids, patch, options = {}) => {
+      const wanted = new Set(ids);
+      if (wanted.size === 0 || currentDiagram() === null) {
+        return;
+      }
+      commitActive(
+        (draft) => {
+          for (const shape of draft.shapes ?? []) {
+            if (wanted.has(shape.id)) {
+              applyShapeStyle(shape, patch);
+            }
+          }
+        },
+        options.coalesce === undefined ? {} : { coalesce: options.coalesce },
+      );
+    },
+
+    setShapeText: (id, text, options = {}) => {
+      const shape = (currentDiagram()?.shapes ?? []).find((entry) => entry.id === id);
+      if (shape === undefined || (shape.text ?? "") === text) {
+        return;
+      }
+      commitActive(
+        (draft) => {
+          const target = (draft.shapes ?? []).find((entry) => entry.id === id);
+          if (target === undefined) {
+            return;
+          }
+          // An empty label leaves no field behind.
+          if (text.length === 0) {
+            delete target.text;
+          } else {
+            target.text = text;
+          }
+        },
+        options.coalesce === true ? { coalesce: `shape-text:${id}` } : {},
+      );
+    },
+
+    setShapeFrame: (id, frame, coalesce) => {
+      if (
+        currentDiagram() === null ||
+        ![frame.x, frame.y, frame.w, frame.h].every((value) => Number.isFinite(value))
+      ) {
+        return;
+      }
+      const at = roundPosition({ x: frame.x, y: frame.y });
+      commitActive(
+        (draft) => {
+          const shape = (draft.shapes ?? []).find((entry) => entry.id === id);
+          if (shape === undefined || isLocked(shape)) {
+            return;
+          }
+          const line = isLineKind(shape.kind);
+          // Immer records only real changes, so an unchanged frame adds no history.
+          shape.x = at.x;
+          shape.y = at.y;
+          shape.w = line
+            ? Math.round(frame.w * 10) / 10
+            : Math.max(SHAPE_MIN_SIZE.w, Math.round(frame.w));
+          shape.h = line
+            ? Math.round(frame.h * 10) / 10
+            : Math.max(SHAPE_MIN_SIZE.h, Math.round(frame.h));
+        },
+        coalesce === undefined ? {} : { coalesce },
+      );
+    },
+
+    setShapeLocked: (ids, locked) => {
+      const wanted = new Set(ids);
+      if (wanted.size === 0 || currentDiagram() === null) {
+        return;
+      }
+      commitActive((draft) => {
+        for (const shape of draft.shapes ?? []) {
+          if (!wanted.has(shape.id)) {
+            continue;
+          }
+          if (locked) {
+            if (shape.locked !== true) {
+              shape.locked = true;
+            }
+          } else if ("locked" in shape) {
+            delete shape.locked;
+          }
+        }
+      });
+    },
+
+    reorderShapes: (ids, order) => {
+      const shapes = currentDiagram()?.shapes ?? [];
+      const next = reorderShapeList(shapes, ids, order);
+      if (next === shapes) {
+        return;
+      }
+      const ordered = next.map((shape) => shape.id);
+      commitActive((draft) => {
+        const byId = new Map((draft.shapes ?? []).map((shape) => [shape.id, shape]));
+        draft.shapes = ordered
+          .map((id) => byId.get(id))
+          .filter((shape): shape is ModelShape => shape !== undefined);
+      });
+    },
+
+    duplicateShapes: (ids) => {
+      const diagram = currentDiagram();
+      if (diagram === null) {
+        return [];
+      }
+      const wanted = new Set(ids);
+      const existing = diagram.shapes ?? [];
+      const copies = copiedShapes(
+        existing.filter((shape) => wanted.has(shape.id)),
+        existing,
+      );
+      if (copies.length === 0) {
+        return [];
+      }
+      commitActive((draft) => {
+        draft.shapes ??= [];
+        draft.shapes.push(...copies);
+      });
+      const flowIds = copies.map((shape) => shapeFlowId(shape.id));
+      set({ selection: { nodes: flowIds, connections: [] } });
+      return flowIds;
     },
 
     undo: () => {

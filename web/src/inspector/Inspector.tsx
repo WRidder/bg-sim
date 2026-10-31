@@ -22,6 +22,8 @@ import { ModelInspector } from "../globals/EquationsManager";
 import { ProbeInspector } from "../probe/ProbeInspector";
 import { selectedNoteIds } from "../editor/notes";
 import { NoteInspector } from "./NoteInspector";
+import { selectedShapeIds } from "../editor/shapes";
+import { ShapeInspector } from "./ShapeInspector";
 import { ConnectionInspector } from "./ConnectionInspector";
 import { NodeInspector } from "./NodeInspector";
 import { PortInspector } from "./PortInspector";
@@ -173,6 +175,14 @@ export function Inspector({ diagnostics }: InspectorProps) {
     const notes = (diagram.annotations ?? []).filter((note) => noteIds.includes(note.id));
     if (notes.length > 0) {
       return <NoteInspector notes={notes} />;
+    }
+  }
+  // Only background shapes selected: their style, label, order and lock.
+  const shapeIds = selectedShapeIds(selection.nodes);
+  if (shapeIds.length > 0 && shapeIds.length === selection.nodes.length && selection.connections.length === 0) {
+    const shapes = (diagram.shapes ?? []).filter((shape) => shapeIds.includes(shape.id));
+    if (shapes.length > 0) {
+      return <ShapeInspector shapes={shapes} all={diagram.shapes ?? []} />;
     }
   }
   // Inside a subsystem: one selected port terminal shows the exposed port.

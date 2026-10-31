@@ -607,6 +607,15 @@ Validation runs in two passes: per block right after parsing (fast, runs as the 
 
 Every diagnostic carries the block path (for example `Plant/Motor1`), scope, line and column in the user's source, the code, the message, and a fix hint where one exists. The editor highlights the element on the canvas and the line in the code view.
 
+## Diagram annotations: notes and shapes
+
+Every diagram level (the root and each subsystem's nested diagram) can carry two kinds of pure annotation. Neither is part of the model: the parser drops them, so compile, the compile key, simulation and the C/FMU export are the same with or without them, and no diagnostic refers to them.
+
+- **Sticky notes** (`diagram.annotations`, `kind: "text"`): Markdown text in a coloured card (`yellow`, `blue`, `green`, `pink`, `grey`; absent is yellow), drawn behind blocks and wires.
+- **Shapes** (`diagram.shapes`): background drawings of kind `rectangle`, `roundedRectangle`, `ellipse`, `line` or `arrow`. A frame kind has a frame `x`/`y`/`w`/`h`; a line or arrow runs from (`x`, `y`) to (`x + w`, `y + h`), so its `w` and `h` can be negative. The style fields are `fill` and `stroke` (the note palette plus `ink`, the theme's text colour, and `none`; absent fill is `none`, absent stroke is `ink`; lines ignore the fill), `strokeWidth` (0.5 to 24, absent 2), `strokeStyle` (`solid`, `dashed`, `dotted`; absent solid), `opacity` (0 to 1, absent 1) and an optional plain-text label `text`, centred. A `locked` shape cannot be moved, resized or deleted on the canvas and a selection rectangle skips it; a click still selects it, so its menu or the inspector can unlock it.
+
+Shapes are always drawn behind everything else, notes included. The array order is the z order (the first shape is the back-most); "Bring to front", "Bring forward", "Send backward" and "Send to back" reorder the array. Copies (paste, duplicate) go in front of the other shapes and are unlocked. The editor writes no field that equals its default.
+
 ## Visualization and bindings
 
 The 3D viewer (Babylon.js) shows an SDFormat-style scene, and simulation values reach it only through declarative bindings. The viewer does no physics: any derived quantity it needs is a model output, validated and exported with everything else.
