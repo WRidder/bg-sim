@@ -283,7 +283,8 @@
           "amplitude": "0.04",
           "frequency": "1.5",
           "phase": "0.0",
-          "offset": "0.0"
+          "offset": "0.0",
+          "t_start": "0.0"
         },
         "constants": {},
         "starts": {},
@@ -308,7 +309,8 @@
           "amplitude": "0.03",
           "frequency": "2.1",
           "phase": "0.7",
-          "offset": "0.0"
+          "offset": "0.0",
+          "t_start": "0.0"
         },
         "constants": {},
         "starts": {},
@@ -333,7 +335,8 @@
           "amplitude": "0.05",
           "frequency": "1.1",
           "phase": "1.9",
-          "offset": "0.0"
+          "offset": "0.0",
+          "t_start": "0.0"
         },
         "constants": {},
         "starts": {},

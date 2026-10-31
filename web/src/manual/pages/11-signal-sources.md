@@ -11,9 +11,9 @@ Frequencies are angular (**rad/s**) in `Sine`, `MultiSine` and `ExpSine`, and in
 | `Constant` | a constant value | `value` |
 | `Step` | jumps from `initial` to `final` at `t_step` | `t_step`, `initial`, `final` |
 | `Ramp` | rises with `slope` from `t_start`, for `duration` seconds | `t_start`, `slope`, `initial`, `duration` (default: no end) |
-| `Sine` | `offset + amplitude·sin(frequency·t + phase)` | `frequency` in **rad/s**, `phase` in rad |
+| `Sine` | `offset + amplitude·sin(frequency·τ + phase)` with `τ = t − t_start` | `amplitude`, `frequency` in **rad/s**, `phase` in rad, `offset`, `t_start` |
 | `MultiSine` | a sum of N sines | `amplitudes`, `frequencies` (rad/s), `phases`, `offset`, `t_start` |
-| `ExpSine` | a damped sine, `amplitude·e^(−damping·τ)·sin(frequency·τ + phase)` with `τ = t − t_start` | `damping` in 1/s (0 gives a sine that starts at `t_start`) |
+| `ExpSine` | a damped sine, `amplitude·e^(−damping·τ)·sin(frequency·τ + phase)` with `τ = t − t_start` | `damping` in 1/s, `offset`, `t_start` |
 | `Exponentials` | a first-order rise for `rise_time`, then a first-order fall | `amplitude`, `rise_time`, `tau_rise`, `tau_fall` |
 | `Pulse` | a square wave | `amplitude`, `period`, `duty` (0..1), `t_start`, `offset` |
 | `Trapezoid` | rise, high, fall and low within each period (as in Modelica) | `rising`, `width`, `falling`, `period`, `n_periods` (−1: forever) |
@@ -29,6 +29,7 @@ Frequencies are angular (**rad/s**) in `Sine`, `MultiSine` and `ExpSine`, and in
 Notes:
 
 - A staircase or a multi-step signal is a `TimeTable` with `method` 0 (hold).
+- `Sine` starts at `t_start` with the phase `phase`, as in Modelica. With a non-zero `phase` the output jumps at `t_start`, from `offset` to `offset + amplitude·sin(phase)`; the jump is an exact event. A cosine is `phase = π/2`.
 - `Pulse` locates its edges from a smooth condition. When an edge falls exactly on an output time, the solver can stop with W206 (event limit). `Trapezoid` with `rising = falling = 0` and `width = duty·period` is the same pulse with exact edges. `Sawtooth`, `Triangle`, `Trapezoid` and `RepeatingTable` locate every edge exactly.
 - `CsvSource` reads a CSV file from the project (for example `data/trajectory.csv`) and interpolates with hold, linear or cubic (`method` 0, 1, 2). It cannot be exported to an FMU; use an `ExportInput` there (see [Export](page:export)).
 

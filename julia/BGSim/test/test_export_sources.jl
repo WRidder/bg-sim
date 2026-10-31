@@ -1,5 +1,5 @@
 # The signal sources in the C export (plan/EXPORT_PLAN.md): every new periodic and smooth
-# source, and the options added to Ramp, Pulse and Chirp, exports, compiles with
+# source, and the options added to Sine, Ramp, Pulse and Chirp, exports, compiles with
 # -Werror and runs. In C the `ifelse` conditions are frozen per step for the derivatives
 # (W203) but `bg_outputs` evaluates them at the sample instant, so the published source
 # outputs equal the analytic waveform at every step, and the integrals of the sources stay
@@ -130,8 +130,8 @@ function _exs_cases()
         t -> t < 0.1005 ? 0.2 : 0.2 + sum([1.0, 0.5, 0.25][i] *
             sin([2.0, 7.0, 13.0][i] * (t - 0.1005) + [0.0, 0.5, -1.0][i]) for i in 1:3),
         [0.1005], 3e-3))
-    push!(cases, ("ExpSine", Dict("amplitude" => "2.0", "frequency" => "5.0", "phase" => "0.4",
-            "damping" => "0.0", "offset" => "0.5", "t_start" => "0.3005"),
+    push!(cases, ("Sine", Dict("amplitude" => "2.0", "frequency" => "5.0", "phase" => "0.4",
+            "offset" => "0.5", "t_start" => "0.3005"),
         t -> t < 0.3005 ? 0.5 : 0.5 + 2 * sin(5 * (t - 0.3005) + 0.4), [0.3005], 3e-3))
     push!(cases, ("Ramp", Dict("t_start" => "0.2", "slope" => "3.0", "initial" => "-1.0",
             "duration" => "0.5"), t -> t < 0.2 ? -1.0 : -1.0 + 3 * min(t - 0.2, 0.5),

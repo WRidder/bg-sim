@@ -258,7 +258,7 @@ Nonlinear variants (for example a C with a user-defined constitutive law) are ma
 | Constant | output `y` | `value` | v0.1 |
 | Step | output `y` | `t_step`, `initial`, `final` | v0.1 |
 | Ramp | output `y` | `t_start`, `slope`, `initial` | v0.1 |
-| Sine | output `y` | `amplitude`, `frequency`, `phase`, `offset` | v0.1 |
+| Sine | output `y` | `amplitude`, `frequency` (rad/s), `phase`, `offset`, `t_start` (output `offset` before it; a non-zero `phase` jumps at `t_start`) | v0.1 |
 | Pulse / square | output `y` | `amplitude`, `period`, `duty`, `t_start` | v0.1 |
 | Chirp | output `y` | `f_start`, `f_end`, `duration` | v0.1 |
 | Time | output `y` | none | v0.1 |
