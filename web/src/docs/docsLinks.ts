@@ -87,9 +87,17 @@ export function resolveLink(href: string | undefined, context: LinkContext): Lin
       if (context.pageIds.has(rest)) {
         return { kind: "page", id: rest };
       }
+      // Page ids are lower-case letters, digits and dashes; a slash or a dot reads as an
+      // attempt to reach the docs of another model, which a page link cannot do.
+      if (/[/.]/.test(rest)) {
+        return {
+          kind: "broken",
+          reason: `"${rest}" is not a page id: page links open pages of this model's docs only; name the other model in the text instead.`,
+        };
+      }
       return {
         kind: "broken",
-        reason: `There is no page "${rest}" in these docs; pick an existing page id or create the page.`,
+        reason: `There is no page "${rest}" in these docs; pick an existing page id or create the page. Page links open pages of this model's docs only.`,
       };
     }
     case "block": {

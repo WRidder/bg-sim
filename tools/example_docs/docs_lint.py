@@ -185,7 +185,13 @@ def lint_model_docs(
             scheme, _, rest = target.partition(":")
             if scheme == "page":
                 if rest not in ids:
-                    errors.append(f"{where}:{number}: link page:{rest} names no page; pick one of {sorted(ids)}")
+                    # The app resolves page: links in the docs of the open model only (there is
+                    # no link to another model's docs), so the lint does the same.
+                    errors.append(
+                        f"{where}:{number}: link page:{rest} names no page of this model's docs "
+                        f"(page links cannot reach another model's docs; name that model in the text); "
+                        f"pick one of {sorted(ids)}"
+                    )
             elif scheme == "block":
                 if model_document is None:
                     errors.append(f"{where}:{number}: block:{rest} cannot be checked without the model")
