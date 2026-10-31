@@ -1,0 +1,25 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "walkthrough",
+          "title": "Walkthrough",
+          "file": "pages/walkthrough.md",
+          "children": []
+        },
+        {
+          "id": "model",
+          "title": "Model and checks",
+          "file": "pages/model.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

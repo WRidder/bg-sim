@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<!--
+  debug-tour: a cart on a rail, positioned by the sampled PID controller.
+
+  Z-up, metres. The prismatic joint "slide" (axis +X) carries the cart and is bound to the
+  model's Pos/y, the cart position. Two posts stand beside the rail at the positions that
+  matter in the walkthrough: the green one at the 1 m target, the red one at the 1.2 m
+  limit switch. The posts mark the position of the cart centre, so the cart passes them.
+-->
+<sdf version="1.9">
+  <model name="debug_tour">
+    <link name="rail">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="rail_bar">
+        <pose>0.6 0 -0.015 0 0 0</pose>
+        <geometry><box><size>2.0 0.08 0.03</size></box></geometry>
+        <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
+      </visual>
+      <visual name="anchor_wall">
+        <pose>-0.43 0 0.1 0 0 0</pose>
+        <geometry><box><size>0.04 0.3 0.25</size></box></geometry>
+        <material><diffuse>0.35 0.36 0.4 1</diffuse></material>
+      </visual>
+      <visual name="target_post">
+        <pose>1.0 0.15 0.1 0 0 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.2</length></cylinder></geometry>
+        <material><diffuse>0.2 0.65 0.3 1</diffuse></material>
+      </visual>
+      <visual name="limit_switch">
+        <pose>1.2 0.15 0.1 0 0 0</pose>
+        <geometry><box><size>0.04 0.04 0.2</size></box></geometry>
+        <material><diffuse>0.85 0.2 0.15 1</diffuse></material>
+      </visual>
+    </link>
+
+    <link name="cart">
+      <pose>0 0 0.05 0 0 0</pose>
+      <visual name="cart_body">
+        <geometry><box><size>0.2 0.16 0.1</size></box></geometry>
+        <material><diffuse>0.15 0.45 0.8 1</diffuse></material>
+      </visual>
+    </link>
+
+    <joint name="slide" type="prismatic">
+      <parent>rail</parent>
+      <child>cart</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+      </axis>
+    </joint>
+  </model>
+</sdf>

@@ -1,0 +1,588 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "debug-tour",
+  "$comment": "A guided tour of the debugger. A 1 kg cart on a spring (k = 10 N/m) and a damper (b = 2 N s/m), a bond-graph plant, is positioned by a sampled PID controller (library/CartPID.jl, Ts = 10 ms) whose drive force saturates at +-15 N. The reference steps from 0 to 1 m at t = 0.5 s. The controller has a planted bug: anti-windup is off (aw = 0), so the integrator winds up while the force is saturated, the cart overshoots past 1.2 m and an @events limit switch (library/LimitSwitch.jl) trips and cuts the drive. The docs walk through finding and fixing it with breakpoints, stepping, watches, a live parameter edit, Rewind and Replay.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "XRef",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 80,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "0.5",
+          "initial": "0.0",
+          "final": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Ctrl",
+        "block": {
+          "ref": "project:CartPID"
+        },
+        "position": {
+          "x": 300,
+          "y": 160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "Kp": "40.0",
+          "Ki": "80.0",
+          "Kd": "8.0",
+          "umax": "15.0",
+          "aw": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Drive",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 700,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "CartJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 860,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Mass",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 860,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "Damper",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 740,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "2.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Spring",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 980,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "Speed",
+        "block": {
+          "ref": "project:FlowSensor"
+        },
+        "position": {
+          "x": 1000,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Pos",
+        "block": {
+          "ref": "stdlib:continuous/Integrator"
+        },
+        "position": {
+          "x": 1140,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Limit",
+        "block": {
+          "ref": "project:LimitSwitch"
+        },
+        "position": {
+          "x": 540,
+          "y": 153
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x_limit": "1.2"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s01",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n02",
+          "port": "x_ref"
+        },
+        "route": [],
+        "label": "1 m step at 0.5 s"
+      },
+      {
+        "id": "s02",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n02",
+          "port": "x"
+        },
+        "route": [
+          {
+            "x": 1230,
+            "y": 350
+          },
+          {
+            "x": 1230,
+            "y": 250
+          },
+          {
+            "x": 250,
+            "y": 250
+          },
+          {
+            "x": 250,
+            "y": 180
+          }
+        ],
+        "label": "x (position)"
+      },
+      {
+        "id": "s03",
+        "kind": "signal",
+        "from": {
+          "node": "n08",
+          "port": "y"
+        },
+        "to": {
+          "node": "n02",
+          "port": "v"
+        },
+        "route": [
+          {
+            "x": 1090,
+            "y": 350
+          },
+          {
+            "x": 1090,
+            "y": 270
+          },
+          {
+            "x": 235,
+            "y": 270
+          },
+          {
+            "x": 235,
+            "y": 200
+          }
+        ],
+        "label": "v (speed)"
+      },
+      {
+        "id": "s05",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "F"
+        },
+        "to": {
+          "node": "n10",
+          "port": "F_cmd"
+        },
+        "route": [],
+        "label": "force command (+-15 N)"
+      },
+      {
+        "id": "s06",
+        "kind": "signal",
+        "from": {
+          "node": "n08",
+          "port": "y"
+        },
+        "to": {
+          "node": "n09",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s07",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n10",
+          "port": "x"
+        },
+        "route": [
+          {
+            "x": 1230,
+            "y": 350
+          },
+          {
+            "x": 1230,
+            "y": 250
+          },
+          {
+            "x": 500,
+            "y": 250
+          },
+          {
+            "x": 500,
+            "y": 176
+          }
+        ],
+        "label": null
+      },
+      {
+        "id": "s08",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "F"
+        },
+        "to": {
+          "node": "n03",
+          "port": "u"
+        },
+        "route": [
+          {
+            "x": 650,
+            "y": 183
+          },
+          {
+            "x": 650,
+            "y": 350
+          }
+        ],
+        "label": "drive force (0 after a trip)"
+      },
+      {
+        "id": "b01",
+        "kind": "bond",
+        "from": {
+          "node": "n03",
+          "port": "p"
+        },
+        "to": {
+          "node": "n04"
+        },
+        "route": [],
+        "label": "drive force"
+      },
+      {
+        "id": "b02",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n05",
+          "port": "p"
+        },
+        "route": [],
+        "label": "m = 1 kg"
+      },
+      {
+        "id": "b03",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n06",
+          "port": "p"
+        },
+        "route": [],
+        "label": "b = 2 N s/m"
+      },
+      {
+        "id": "b04",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n07",
+          "port": "p"
+        },
+        "route": [],
+        "label": "k = 10 N/m"
+      },
+      {
+        "id": "b05",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n08",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": [
+      {
+        "id": "tour",
+        "kind": "text",
+        "text": "**Debug tour**: why does the cart trip the limit switch at 1.2 m?\n\n1. **Run** (Ctrl+Enter) and plot [Pos/y](signal:Pos/y).\n2. **Debug** tab: tick *Break on: Events*, press **Debug** (F5). The run pauses at the trip.\n3. **Code** tab, `CartPID`: click the gutter of line 30, right-click the marker, condition `abs(u) > umax`. **Debug** again.\n4. **Step statement** (F10), **Step tick** (F11): watch `z` grow while the drive is saturated.\n5. **Plots**: right-click before 0.5 s, **Rewind to here**.\n6. Select [Ctrl](block:Ctrl), set `aw` = 1 (live), **Continue**.\n\nThe full walkthrough is in the [Docs](page:walkthrough) tab.",
+        "x": -360,
+        "y": 20,
+        "w": 380,
+        "h": 300,
+        "color": "blue"
+      }
+    ],
+    "probes": [
+      {
+        "id": "scope",
+        "name": "Scope",
+        "kind": "block",
+        "position": {
+          "x": 420,
+          "y": 30
+        },
+        "panelPosition": {
+          "x": 60,
+          "y": 320
+        },
+        "size": {
+          "width": 520,
+          "height": 260
+        },
+        "open": true,
+        "links": [
+          {
+            "id": "l1",
+            "connection": "s02",
+            "signals": [
+              "Pos/y"
+            ]
+          },
+          {
+            "id": "l2",
+            "connection": "s01",
+            "signals": [
+              "XRef/y"
+            ]
+          },
+          {
+            "id": "l3",
+            "connection": "s05",
+            "signals": [
+              "Ctrl/F"
+            ]
+          },
+          {
+            "id": "l4",
+            "connection": "s08",
+            "signals": [
+              "Limit/F"
+            ]
+          }
+        ],
+        "panels": [
+          {
+            "id": "pp1",
+            "title": "Cart position and reference (m)",
+            "signals": [
+              "Pos/y",
+              "XRef/y"
+            ]
+          },
+          {
+            "id": "pp2",
+            "title": "Force command and drive force (N)",
+            "signals": [
+              "Ctrl/F",
+              "Limit/F"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0,
+    "t_end": 4,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 4001
+    },
+    "event_limit": 100
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Cart position and reference (limit switch at 1.2 m)",
+      "signals": [
+        "Pos/y",
+        "XRef/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Force: PID u, limited F (+-15 N), at the drive",
+      "signals": [
+        "Ctrl/u",
+        "Ctrl/F",
+        "Limit/F"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Integrator z and limit switch",
+      "signals": [
+        "Ctrl/z",
+        "Limit/tripped"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/debug-tour.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:slide",
+      "property": "position",
+      "signal": "Pos/y"
+    }
+  ]
+}
