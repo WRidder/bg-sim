@@ -319,6 +319,86 @@ const GLYPHS: Record<string, Glyph> = {
     </>
   ),
 
+  // ------------------------------------------- motion profiles & drive electronics
+  // The profiles draw their velocity over one move; the drive electronics their schematic.
+  "mot-trapezoidal-profile": () => (
+    <>
+      <path d="M3 18l5-11h8l5 11" />
+      <path d="M2 18h20" opacity="0.35" />
+    </>
+  ),
+  "mot-s-curve-profile": () => (
+    <>
+      <path d="M3 18c3 0 3-11 7-11h4c4 0 4 11 7 11" />
+      <path d="M2 18h20" opacity="0.35" />
+    </>
+  ),
+  "mot-cycloidal-profile": () => (
+    <>
+      <path d="M2 18c5 0 5-12 10-12s5 12 10 12" />
+      <path d="M2 18h20" opacity="0.35" />
+    </>
+  ),
+  "mot-polynomial-profile": () => (
+    <>
+      <path d="M3 18C11 18 13 6 21 6" />
+      <path d="M2 18h20M21 4v16" opacity="0.35" />
+      <circle cx="3" cy="18" r="1" />
+      <circle cx="21" cy="6" r="1" />
+    </>
+  ),
+  "mot-harmonic-profile": () => (
+    <>
+      <path d="M3 18Q12 -3 21 18" />
+      <path d="M2 18h20" opacity="0.35" />
+    </>
+  ),
+  "mot-pwm": () => (
+    <>
+      <path d="M2 17V7h2v10h3V7h4v10h2V7h6v10h3" />
+      <path d="M2 20h20" opacity="0.35" />
+    </>
+  ),
+  "mot-pwm-average": () => (
+    <>
+      <path d="M2 17V7h2v10h3V7h4v10h2V7h6v10h3" opacity="0.35" />
+      <path d="M2 13l6-1 6-1.5 8-1.5" />
+    </>
+  ),
+  "mot-encoder": () => (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="1.2" />
+      <path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2" />
+    </>
+  ),
+  "mot-adc": () => (
+    <>
+      <path d="M3.5 5.5h13l4 6.5-4 6.5h-13z" />
+      {label("A/D", 6)}
+    </>
+  ),
+  "mot-dac": () => (
+    <>
+      <path d="M20.5 5.5h-13l-4 6.5 4 6.5h13z" />
+      {label("D/A", 6)}
+    </>
+  ),
+  "mot-h-bridge": () => (
+    <>
+      <path d="M3 4h18M3 20h18M7 4v4M7 16v4M17 4v4M17 16v4" />
+      <path d="M7 8l2 3.5M7 16l2-3.5M17 8l2 3.5M17 16l2-3.5" />
+      <path d="M7 12h3M14 12h3" />
+      <rect x="10" y="10.5" width="4" height="3" />
+    </>
+  ),
+  "mot-power-amplifier": () => (
+    <>
+      <path d="M5 5v14l13-7z" />
+      <path d="M2 12h3M18 12h4M10 3v4.5M10 21v-4.5" />
+    </>
+  ),
+
   // ------------------------------------------------------------- placeholders
   junction: () => (
     <>

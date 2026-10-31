@@ -1,6 +1,6 @@
 # Signal sources
 
-Source blocks are in the **Sources and sinks** category of the library. Delay and sampling blocks are in **Continuous** and **Discrete and logic**. Select a block and press `F1`, or click its help button in the library, for the full parameter list.
+Source blocks are in the **Sources and sinks** category of the library. Delay and sampling blocks are in **Continuous** and **Discrete and logic**. Point-to-point motion profiles (trapezoidal, S-curve, cycloidal, polynomial) and PWM are on [Motion profiles and drive electronics](page:motion-and-drives). Select a block and press `F1`, or click its help button in the library, for the full parameter list.
 
 ## Sources
 

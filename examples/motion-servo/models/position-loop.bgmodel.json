@@ -1,0 +1,577 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "position-loop",
+  "$comment": "Motion example: a DC motor (R 2 Ohm, L 0.5 mH, k_t 0.05 N*m/A, rotor plus load 1.1e-4 kg*m^2) follows a jerk-limited S-curve of one revolution (v_max 20 rad/s, a_max 200 rad/s^2, j_max 4000 rad/s^3, from 0.1 s to 0.564 s). A 1 ms discrete PD (Kp 10/rad, Td 6 ms, output -1..1) closes the loop on a 4096-count encoder and commands the duty of an averaged H-bridge on a 24 V bus.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Ref",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "6.283185307179586",
+          "t_start": "0.1",
+          "v_max": "20.0",
+          "a_max": "200.0",
+          "j_max": "4000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n2",
+        "name": "Err",
+        "block": {
+          "inline": {
+            "source": "@block ErrorSum begin\n    @inputs begin\n        u1::Real\n        u2::Real\n    end\n    @outputs y::Real\n    @equations y ~ u1 - u2\nend\n"
+          }
+        },
+        "position": {
+          "x": 260,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n3",
+        "name": "PD",
+        "block": {
+          "ref": "stdlib:discrete/DiscretePID"
+        },
+        "position": {
+          "x": 440,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "method": "1",
+          "Kp": "10.0",
+          "Ti": "1000.0",
+          "Td": "0.006",
+          "lower": "-1.0",
+          "upper": "1.0"
+        },
+        "constants": {
+          "sample_period": 0.001
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n4",
+        "name": "Bridge",
+        "block": {
+          "ref": "stdlib:motion/HBridge"
+        },
+        "position": {
+          "x": 640,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R_on": "0.05",
+          "I_max": "1e12",
+          "R_limit": "100.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n5",
+        "name": "One",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 440,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n6",
+        "name": "Bus",
+        "block": {
+          "ref": "stdlib:electrical/VoltageSource"
+        },
+        "position": {
+          "x": 640,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "V": "24.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n7",
+        "name": "Gnd",
+        "block": {
+          "ref": "stdlib:electrical/Ground"
+        },
+        "position": {
+          "x": 640,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n8",
+        "name": "Motor",
+        "block": {
+          "ref": "stdlib:converters/DCMotor"
+        },
+        "position": {
+          "x": 840,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "R": "2.0",
+          "L": "5e-4",
+          "k_t": "0.05",
+          "J": "1.1e-4",
+          "d": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n9",
+        "name": "Housing",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 840,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Friction",
+        "block": {
+          "ref": "stdlib:rotation/RotationalDamper"
+        },
+        "position": {
+          "x": 1040,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "1e-5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Frame",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 1220,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Angle",
+        "block": {
+          "ref": "stdlib:converters/AngleSensor"
+        },
+        "position": {
+          "x": 1040,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Enc",
+        "block": {
+          "ref": "stdlib:motion/Encoder"
+        },
+        "position": {
+          "x": 840,
+          "y": 520
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "cpr": "4096"
+        },
+        "constants": {
+          "sample_period": 0.001
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s1",
+        "kind": "signal",
+        "from": {
+          "node": "n1",
+          "port": "q"
+        },
+        "to": {
+          "node": "n2",
+          "port": "u1"
+        },
+        "route": [],
+        "label": "position setpoint"
+      },
+      {
+        "id": "s2",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n2",
+          "port": "u2"
+        },
+        "route": [],
+        "label": "encoder angle"
+      },
+      {
+        "id": "s3",
+        "kind": "signal",
+        "from": {
+          "node": "n2",
+          "port": "y"
+        },
+        "to": {
+          "node": "n3",
+          "port": "u"
+        },
+        "route": [],
+        "label": "tracking error"
+      },
+      {
+        "id": "s4",
+        "kind": "signal",
+        "from": {
+          "node": "n3",
+          "port": "y"
+        },
+        "to": {
+          "node": "n4",
+          "port": "duty"
+        },
+        "route": [],
+        "label": "duty -1..1"
+      },
+      {
+        "id": "s5",
+        "kind": "signal",
+        "from": {
+          "node": "n5",
+          "port": "y"
+        },
+        "to": {
+          "node": "n6",
+          "port": "u"
+        },
+        "route": [],
+        "label": ""
+      },
+      {
+        "id": "w6",
+        "kind": "wire",
+        "from": {
+          "node": "n6",
+          "port": "p"
+        },
+        "to": {
+          "node": "n4",
+          "port": "dc_p"
+        },
+        "route": []
+      },
+      {
+        "id": "w7",
+        "kind": "wire",
+        "from": {
+          "node": "n6",
+          "port": "n"
+        },
+        "to": {
+          "node": "n7",
+          "port": "p"
+        },
+        "route": []
+      },
+      {
+        "id": "w8",
+        "kind": "wire",
+        "from": {
+          "node": "n4",
+          "port": "dc_n"
+        },
+        "to": {
+          "node": "n7",
+          "port": "p"
+        },
+        "route": []
+      },
+      {
+        "id": "w9",
+        "kind": "wire",
+        "from": {
+          "node": "n4",
+          "port": "out_p"
+        },
+        "to": {
+          "node": "n8",
+          "port": "p"
+        },
+        "route": []
+      },
+      {
+        "id": "w10",
+        "kind": "wire",
+        "from": {
+          "node": "n4",
+          "port": "out_n"
+        },
+        "to": {
+          "node": "n7",
+          "port": "p"
+        },
+        "route": []
+      },
+      {
+        "id": "w11",
+        "kind": "wire",
+        "from": {
+          "node": "n8",
+          "port": "n"
+        },
+        "to": {
+          "node": "n7",
+          "port": "p"
+        },
+        "route": []
+      },
+      {
+        "id": "w12",
+        "kind": "wire",
+        "from": {
+          "node": "n8",
+          "port": "housing"
+        },
+        "to": {
+          "node": "n9",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w13",
+        "kind": "wire",
+        "from": {
+          "node": "n8",
+          "port": "shaft"
+        },
+        "to": {
+          "node": "n10",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w14",
+        "kind": "wire",
+        "from": {
+          "node": "n10",
+          "port": "b"
+        },
+        "to": {
+          "node": "n11",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "w15",
+        "kind": "wire",
+        "from": {
+          "node": "n12",
+          "port": "a"
+        },
+        "to": {
+          "node": "n10",
+          "port": "a"
+        },
+        "route": []
+      },
+      {
+        "id": "s16",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "y"
+        },
+        "to": {
+          "node": "n13",
+          "port": "u"
+        },
+        "route": [],
+        "label": "shaft angle"
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0,
+    "t_end": 1,
+    "solver": "auto",
+    "reltol": 1e-8,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Setpoint and measured angle",
+      "signals": [
+        "Ref/q",
+        "Angle/y",
+        "Enc/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Tracking error",
+      "signals": [
+        "Err/y"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Duty, winding current and bus current",
+      "signals": [
+        "PD/y",
+        "Bridge/i",
+        "Bridge/i_dc"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Setpoint velocity, acceleration and jerk",
+      "signals": [
+        "Ref/v",
+        "Ref/a",
+        "Ref/jerk"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": []
+}
