@@ -157,6 +157,11 @@ function nodeCard(page: Page, nodeId: string) {
 }
 
 async function expectInsideCanvas(page: Page, nodeId: string): Promise<void> {
+  // The canvas pans with a 250 ms animation: retry until it has settled.
+  await expect(async () => checkInsideCanvas(page, nodeId)).toPass({ timeout: 5_000 });
+}
+
+async function checkInsideCanvas(page: Page, nodeId: string): Promise<void> {
   const canvas = await page.getByTestId("canvas-surface").boundingBox();
   const box = await nodeCard(page, nodeId).boundingBox();
   expect(canvas).not.toBeNull();
@@ -174,13 +179,13 @@ test("navigates every fixture diagnostic to its node and marks the canvas", asyn
   await openModel(page, fixtureModel());
 
   const rows = page.locator('[data-testid^="diagnostic-item-"]');
-  // 33 items: the M2 sample plus the M4 debugger codes E401, E402 and W401 (C4.0).
-  await expect(rows).toHaveCount(33);
-  await expect(page.getByTestId("diagnostics-count-error")).toContainText("26");
+  // 34 items: the M2 sample, the M4 debugger codes E401, E402 and W401 (C4.0) and the globals cycle E113.
+  await expect(rows).toHaveCount(34);
+  await expect(page.getByTestId("diagnostics-count-error")).toContainText("27");
   await expect(page.getByTestId("diagnostics-count-warning")).toContainText("7");
 
-  // Grouping by instance path: 24 groups (E401 adds `Ctrl`), Ctrl/PI1 holds four diagnostics.
-  await expect(page.locator('[data-testid="diagnostics-group"]')).toHaveCount(24);
+  // Grouping by instance path: 25 groups (E401 adds `Ctrl`, E113 the model-level group), Ctrl/PI1 holds four diagnostics.
+  await expect(page.locator('[data-testid="diagnostics-group"]')).toHaveCount(25);
   const controller = page.locator('[data-testid="diagnostics-group"][data-path="Ctrl/PI1"]');
   await expect(controller.locator('[data-testid^="diagnostic-item-"]')).toHaveCount(4);
   await expect(controller).toContainText("E001");
@@ -191,7 +196,7 @@ test("navigates every fixture diagnostic to its node and marks the canvas", asyn
   await page.getByTestId("diagnostics-filter-warning").click();
   await expect(page.getByTestId("diagnostics-filter-empty")).toBeVisible();
   await page.getByTestId("diagnostics-show-all").click();
-  await expect(rows).toHaveCount(33);
+  await expect(rows).toHaveCount(34);
 
   // Canvas markers: Motor1 carries E103 and E900, and c9 carries E102.
   const motor = nodeCard(page, "n3");
