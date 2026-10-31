@@ -58,7 +58,7 @@ Blocks: [Step1](block:Step1) and [V1](block:V1) form the 12 V step source (at 0.
 | `Wheel1.J`, `Wheel2.J` | 1e-3, 2e-3 kg·m² | the two inertias |
 | `Rod.k`, `RodDamper.d` | 5 N·m/rad, 0.02 N·m·s/rad | the flexible rod |
 | `Step1` | 0 to 12 V at 0.01 s | supply |
-| `LoadStep`, `Load.T` | 0 to 1 at 1.0 s, 0.5 N·m | load torque |
+| `LoadStep`, `Load.T` | 0 to 0.5 N·m at 1.0 s, gain 1 | load torque (through the `load_torque` export input) |
 
 The run lasts 2 s with 5000 output points (`solver` auto, `reltol` 1e-6).
 

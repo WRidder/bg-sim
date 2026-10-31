@@ -5,7 +5,8 @@
  * `export_model`); the dialog only previews them, the backend's report is the authority:
  *
  * - the whole model publishes its Export markers under their instance paths
- *   (`ExportInput` → input, `ExportOutput` → output, `ExportParameter` → parameter);
+ *   (`ExportInput` → input, `ExportInputPass` → input (pass-through in simulation),
+ *   `ExportOutput` → output, `ExportParameter` → parameter);
  * - a subsystem scope publishes its ports: a signal port under its name, a scalar power port
  *   as `<port>_e`/`<port>_f` (the host imposes the effort or the flow and reads the
  *   conjugate), plus the markers inside the subsystem (`<subsystem>/<marker>`).
@@ -14,6 +15,7 @@
 import type { Model, ModelDiagram, ModelNode } from "../contracts/model";
 
 export const MARKER_INPUT = "stdlib:converters/ExportInput";
+export const MARKER_INPUT_PASS = "stdlib:converters/ExportInputPass";
 export const MARKER_OUTPUT = "stdlib:converters/ExportOutput";
 export const MARKER_PARAMETER = "stdlib:converters/ExportParameter";
 
@@ -127,6 +129,8 @@ function markers(diagram: ModelDiagram, prefix: string, preview: InterfacePrevie
     const ref = "ref" in node.block ? node.block.ref : null;
     if (ref === MARKER_INPUT) {
       preview.inputs.push({ name: path, detail: "ExportInput" });
+    } else if (ref === MARKER_INPUT_PASS) {
+      preview.inputs.push({ name: path, detail: "ExportInputPass" });
     } else if (ref === MARKER_OUTPUT) {
       preview.outputs.push({ name: path, detail: "ExportOutput" });
     } else if (ref === MARKER_PARAMETER) {

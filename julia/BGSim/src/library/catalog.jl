@@ -309,6 +309,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Export interface input marker; in simulation it supplies the constant parameter value.",
         icon = "conv-export-input",
     ),
+    "stdlib:converters/ExportInputPass" => (
+        description = "Pass-through export input marker; in simulation y = u, in the export the host supplies y (value is its start value).",
+        icon = "conv-export-input",
+    ),
     "stdlib:converters/ExportOutput" => (
         description = "Export interface output marker; in simulation it holds the input value for recording.",
         icon = "conv-export-output",

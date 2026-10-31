@@ -178,6 +178,7 @@ const M2_REFS = [
     "stdlib:converters/FlowSensor",
     "stdlib:converters/PowerSensor",
     "stdlib:converters/ExportInput",
+    "stdlib:converters/ExportInputPass",
     "stdlib:converters/ExportOutput",
     "stdlib:converters/ExportParameter",
 ]
@@ -1223,6 +1224,7 @@ const INTERFACE_FIELDS = [
             "stdlib:converters/FlowSensor",
             "stdlib:converters/PowerSensor",
             "stdlib:converters/ExportInput",
+            "stdlib:converters/ExportInputPass",
             "stdlib:converters/ExportOutput",
             "stdlib:converters/ExportParameter",
         ]
@@ -1389,6 +1391,15 @@ const INTERFACE_FIELDS = [
         @test [(o.name, o.type) for o in ei.interface.outputs] == [("y", "Real")]
         @test [p.name for p in ei.interface.parameters] == ["value"]
         @test occursin("y ~ value", ei.source)
+
+        # The pass-through input passes its wired signal in simulation; the export cuts the
+        # wire and the host supplies `y` (its `value` is the start value).
+        eip = blocks["stdlib:converters/ExportInputPass"]
+        @test isempty(eip.interface.ports)
+        @test [(i.name, i.type) for i in eip.interface.inputs] == [("u", "Real")]
+        @test [(o.name, o.type) for o in eip.interface.outputs] == [("y", "Real")]
+        @test [p.name for p in eip.interface.parameters] == ["value"]
+        @test occursin("y ~ u", eip.source)
 
         eo = blocks["stdlib:converters/ExportOutput"]
         @test isempty(eo.interface.ports)

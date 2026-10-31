@@ -100,6 +100,26 @@ The 0.1 rad tilt is recovered well before the step (`|x| < 2 mm` and `|θ| < 0.3
 t = 1.45 s), the tilt never exceeds the initial 0.1 rad, and after the step the cart settles
 inside 1 cm in well under 2 s while the angle stays below 0.5°.
 
+## Export interface (X-EX1)
+
+The model carries export markers, so its FMU is the balanced closed loop with the cart
+position setpoint in:
+
+| marker | block | in simulation | in the FMU |
+| --- | --- | --- | --- |
+| `x_ref` (input, m) | `ExportInputPass` between `XRef` and `LQR1.x_ref` | passes the 0.2 m step through | the host sets the setpoint (start 0) |
+| `theta` (output, rad) | `ExportOutput` on `ThetaInt/y` | records the angle | the pendulum angle |
+| `x` (output, m) | `ExportOutput` on `XInt/y` | records the position | the cart position |
+| `force` (output, N) | `ExportOutput` on `LQR1/u` | records the force | the saturated LQR force |
+
+The pass-through input keeps the simulation exactly as before; the export cuts its wire
+(`BGSim.Export.host_inputs`). The X-EX0 gate (`examples/export_checks.py`) drives `x_ref`
+with its deterministic trajectory in [-0.3, 0.3] m and compares the FMU with the reference
+driven by the same zero-order-hold samples. A plant-only export (the force as the input, for
+a controller on the target) is a pass-through marker between `LQR1.u` and `MSe1.u`; it is
+not gated, because the open-loop pendulum is unstable and two correct runs part
+exponentially.
+
 ## Checks
 
 `expected.json` is the machine-readable acceptance (17 checks, plan 9.6c):

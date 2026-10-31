@@ -14,6 +14,8 @@
 # The interface is what the user declares (D-EX9), never "the whole model":
 #
 #   ExportInput      its `value` parameter becomes an FMU input (constant source in simulation)
+#   ExportInputPass  the same, but inert in simulation (`y = u`); the export cuts its wire
+#                    (`host_inputs`, interface.jl)
 #   ExportOutput     the signal wired to its input `u` becomes an FMU output
 #   ExportParameter  its `value` becomes a tunable FMU parameter
 #   tunable = true   any parameter declared tunable is a tunable FMU parameter too
@@ -59,6 +61,7 @@ const MARKER_INPUT = "stdlib:converters/ExportInput"
 const MARKER_OUTPUT = "stdlib:converters/ExportOutput"
 const MARKER_PARAMETER = "stdlib:converters/ExportParameter"
 const CSV_SOURCES = ("stdlib:sources/CsvSource", "stdlib:sources/CsvSourceSampled")
+include("interface.jl")
 
 include("emit_c.jl")
 include("emit_intrinsics.jl")
@@ -197,6 +200,8 @@ function export_model(flat::Flat.FlatModel, out_dir::AbstractString;
     if any(d -> d.severity == "error", flat.diagnostics)
         return _fail(collect(Diagnostic, flat.diagnostics), out_dir)
     end
+    # A pass-through input (ExportInputPass) is supplied by the host: cut its wire.
+    flat = host_inputs(flat)
     settings.method in (:auto, EXPORT_METHODS...) ||
         return _fail([diag("E110", "unknown export method `$(settings.method)`";
             hint = "use auto, euler, rk4, ros2, ros34pw2 or rodas4p")], out_dir)
@@ -298,7 +303,7 @@ function _export(flat, lowered, integ, out_dir, settings, reference_dir, name, d
     held_ids = has_disc ? sched.held_ids : String[]
 
     # ---- the interface from the markers
-    markers_in = String[i.path for i in flat.instances if i.ref == MARKER_INPUT]
+    markers_in = input_markers(flat)     # ExportInput and ExportInputPass (interface.jl)
     markers_out = String[i.path for i in flat.instances if i.ref == MARKER_OUTPUT]
     markers_par = String[i.path for i in flat.instances if i.ref == MARKER_PARAMETER]
     input_param = Dict(p * "/value" => p for p in markers_in)

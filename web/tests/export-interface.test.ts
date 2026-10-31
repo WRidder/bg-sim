@@ -93,6 +93,17 @@ describe("previewInterface", () => {
     expect(robot.powerPorts).toEqual([]);
   });
 
+  it("previews the X-EX1 example markers, pass-through inputs included", () => {
+    const speed = readJson<Model>("examples", "dc-motor", "models", "speed-control.bgmodel.json");
+    const p = previewInterface(speed, null, {});
+    expect(p.inputs).toEqual([{ name: "speed_ref", detail: "ExportInputPass" }]);
+    expect(p.outputs.map((e) => e.name)).toEqual(["speed", "current"]);
+    const drive = readJson<Model>("examples", "drivetrain", "models", "drivetrain.bgmodel.json");
+    const d = previewInterface(drive, null, {});
+    expect(d.inputs.map((e) => e.name)).toEqual(["voltage", "load_torque"]);
+    expect(d.outputs.map((e) => e.name)).toEqual(["load_speed"]);
+  });
+
   it("flags a missing scope and ports a scope cannot take", () => {
     expect(previewInterface(scoped, "Nope", {}).missingScope).toBe(true);
     const vector = structuredClone(scoped);

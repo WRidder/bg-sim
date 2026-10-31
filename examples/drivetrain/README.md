@@ -70,9 +70,26 @@ unaffected; the warning is the honest bond-graph causality of a rigid gear.
 | `Wheel1.J`, `Wheel2.J` | 1e-3, 2e-3 kg·m² | the two inertias |
 | `Rod.k`, `RodDamper.d` | 5 N·m/rad, 0.02 N·m·s/rad | the flexible rod |
 | `Step1.final`, `t_step` | 12 V, 0.01 s | the voltage step |
-| `Load.T`, `LoadStep.t_step` | 0.5 N·m, 1.0 s | the load step |
+| `LoadStep.final`, `LoadStep.t_step`, `Load.T` | 0.5 N·m, 1.0 s, 1 | the load step (the step carries the torque, the source's gain is 1) |
 
 Simulation: `t_end = 2 s`, 5000 points, solver `auto`, reltol 1e-6.
+
+## Export interface (X-EX1)
+
+`drivetrain` carries export markers, so its FMU is a plant a controller can drive:
+
+| marker | block | in simulation | in the FMU |
+| --- | --- | --- | --- |
+| `voltage` (input, V) | `ExportInputPass` between `Step1` and `V1.u` | passes the 12 V step through | the host sets the motor voltage (start 0) |
+| `load_torque` (input, N·m) | `ExportInputPass` between `LoadStep` and `Load.u` | passes the 0.5 N·m step through | the host sets the load torque (start 0) |
+| `load_speed` (output, rad/s) | `ExportOutput` on the `LoadSpeed` speed sensor at `Wheel2` | records the load speed | the load wheel's speed |
+
+The pass-through markers keep the simulation exactly as before (`ExportInputPass` is
+`y = u`); the export cuts their wires (`BGSim.Export.host_inputs`), so the host's values
+replace the two steps. The X-EX0 gate (`examples/export_checks.py`) drives both inputs with
+its deterministic trajectory and compares the FMU with the reference driven by the same
+zero-order-hold samples; `expected.json` (`export`) holds the input ranges, the expected
+interface and the error threshold.
 
 ## What to try
 

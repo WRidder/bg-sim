@@ -37,6 +37,7 @@ from xml.sax.saxutils import quoteattr
 from .config import Settings
 
 MARKER_INPUT = "stdlib:converters/ExportInput"
+MARKER_INPUT_PASS = "stdlib:converters/ExportInputPass"
 MARKER_OUTPUT = "stdlib:converters/ExportOutput"
 MARKER_PARAMETER = "stdlib:converters/ExportParameter"
 CSV_SOURCES = ("stdlib:sources/CsvSource", "stdlib:sources/CsvSourceSampled")
@@ -144,7 +145,7 @@ def interface(model: dict[str, Any], scope: str | None, power_inputs: dict[str, 
     csv = []
     for local, node in _walk(subtree):
         ref = (node.get("block") or {}).get("ref")
-        if ref == MARKER_INPUT:
+        if ref in (MARKER_INPUT, MARKER_INPUT_PASS):
             inputs.append({"name": local, "id": f"{local}/value",
                            "start": _number((node.get("params") or {}).get("value"))})
         elif ref == MARKER_OUTPUT:

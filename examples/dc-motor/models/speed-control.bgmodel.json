@@ -229,6 +229,88 @@
           "showLabel": true,
           "color": null
         }
+      },
+      {
+        "id": "x1",
+        "name": "speed_ref",
+        "block": {
+          "ref": "stdlib:converters/ExportInputPass"
+        },
+        "position": {
+          "x": 150,
+          "y": 250
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "x2",
+        "name": "speed",
+        "block": {
+          "ref": "stdlib:converters/ExportOutput"
+        },
+        "position": {
+          "x": 1330,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "ISens",
+        "block": {
+          "ref": "stdlib:converters/CurrentSensor"
+        },
+        "position": {
+          "x": 880,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "x3",
+        "name": "current",
+        "block": {
+          "ref": "stdlib:converters/ExportOutput"
+        },
+        "position": {
+          "x": 1000,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
       }
     ],
     "connections": [
@@ -240,11 +322,25 @@
           "port": "y"
         },
         "to": {
+          "node": "x1",
+          "port": "u"
+        },
+        "route": [],
+        "label": "100 rad/s at 0.01 s"
+      },
+      {
+        "id": "x01",
+        "kind": "signal",
+        "from": {
+          "node": "x1",
+          "port": "y"
+        },
+        "to": {
           "node": "n2",
           "port": "u1"
         },
         "route": [],
-        "label": "100 rad/s at 0.01 s"
+        "label": "speed setpoint (export input)"
       },
       {
         "id": "s02",
@@ -311,6 +407,20 @@
         "from": {
           "node": "n4",
           "port": "p"
+        },
+        "to": {
+          "node": "n12",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "w08",
+        "kind": "wire",
+        "from": {
+          "node": "n12",
+          "port": "n"
         },
         "to": {
           "node": "n5",
@@ -402,6 +512,34 @@
         },
         "route": [],
         "label": "w (zero-effort speed tap)"
+      },
+      {
+        "id": "x02",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "x2",
+          "port": "u"
+        },
+        "route": [],
+        "label": "measured speed (export output)"
+      },
+      {
+        "id": "x03",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "y"
+        },
+        "to": {
+          "node": "x3",
+          "port": "u"
+        },
+        "route": [],
+        "label": "winding current (export output)"
       }
     ],
     "subsystemPorts": [],
