@@ -23,7 +23,7 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
       { keys: [["Ctrl", "Enter"]], description: "Run the model" },
       { keys: [["Ctrl", "O"]], description: "Open a project, model or sample" },
       { keys: [["/"]], description: "Focus the library search" },
-      { keys: [["F1"]], description: "Help for the selected block (this list when none is selected)" },
+      { keys: [["F1"]], description: "Help for the selected block (the user manual when none is selected)" },
       { keys: [["?"]], description: "Show or hide this list" },
       { keys: [["Esc"]], description: "Close a dialog, cancel a connection drag, leave a subsystem" },
     ],
