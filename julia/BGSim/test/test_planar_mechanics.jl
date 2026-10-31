@@ -840,8 +840,13 @@ const _PM_REFS = [
         @test isempty(_pm_errors(result))
         flat = _pm_flat(rigid)
         @test isempty(_pm_errors(flat))          # the W201 is a warning, not an error
-        # SCAP puts the inertia in derivative causality (the joint imposes the body twist).
-        @test count(d -> d.code == "W201", result.diagnostics) == 1
+        # model.check (SCAP) finds a consistent integral causality: in the scalar picture Se and
+        # the rate sensor Df impose effort on the axis 1-junction and the screw passes the
+        # flow, and SCAP cannot see that the 1-DOF screw cannot carry the 3-DOF body twist.
+        # (The model-check W201 counted here before came from Df being declared flow-out;
+        # aac5cfe fixed that: Df sets p.e = 0, so it imposes effort.) The index-3 structure
+        # is reported after compilation, the three W201 below.
+        @test count(d -> d.code == "W201", result.diagnostics) == 0
 
         lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 1.0)
         warnings = Compile.post_compile_warnings(flat, lowered.model.system)
@@ -902,7 +907,9 @@ const _PM_REFS = [
         @test !_pm_has(result, "E007")
         @test isempty(_pm_errors(result))
         @test endswith(result.frames["c5"], "/body")    # Joint2.parent on BodyJ1
-        @test count(d -> d.code == "W201", result.diagnostics) == 2
+        # No model-check W201 (see the rigid variant above); the post-compile W201 below
+        # report both bodies.
+        @test count(d -> d.code == "W201", result.diagnostics) == 0
         flat = _pm_flat(doc)
         @test isempty(_pm_errors(flat))
         lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 0.5)
