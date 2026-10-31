@@ -6773,58 +6773,6 @@
    ]
   },
   {
-   "target": "link:trail_protected_13",
-   "property": "pose",
-   "signal": [
-    "ProtectedTrail/d13[1]",
-    "ProtectedTrail/d13[2]",
-    "ProtectedTrail/d13[3]",
-    "ProtectedTrail/d13[4]",
-    "ProtectedTrail/d13[5]",
-    "ProtectedTrail/d13[6]",
-    "ProtectedTrail/d13[7]"
-   ]
-  },
-  {
-   "target": "link:trail_protected_14",
-   "property": "pose",
-   "signal": [
-    "ProtectedTrail/d14[1]",
-    "ProtectedTrail/d14[2]",
-    "ProtectedTrail/d14[3]",
-    "ProtectedTrail/d14[4]",
-    "ProtectedTrail/d14[5]",
-    "ProtectedTrail/d14[6]",
-    "ProtectedTrail/d14[7]"
-   ]
-  },
-  {
-   "target": "link:trail_protected_15",
-   "property": "pose",
-   "signal": [
-    "ProtectedTrail/d15[1]",
-    "ProtectedTrail/d15[2]",
-    "ProtectedTrail/d15[3]",
-    "ProtectedTrail/d15[4]",
-    "ProtectedTrail/d15[5]",
-    "ProtectedTrail/d15[6]",
-    "ProtectedTrail/d15[7]"
-   ]
-  },
-  {
-   "target": "link:trail_protected_16",
-   "property": "pose",
-   "signal": [
-    "ProtectedTrail/d16[1]",
-    "ProtectedTrail/d16[2]",
-    "ProtectedTrail/d16[3]",
-    "ProtectedTrail/d16[4]",
-    "ProtectedTrail/d16[5]",
-    "ProtectedTrail/d16[6]",
-    "ProtectedTrail/d16[7]"
-   ]
-  },
-  {
    "target": "link:ac_unprotected",
    "property": "pose",
    "signal": [
@@ -6997,58 +6945,6 @@
     "UnprotectedTrail/d12[5]",
     "UnprotectedTrail/d12[6]",
     "UnprotectedTrail/d12[7]"
-   ]
-  },
-  {
-   "target": "link:trail_unprotected_13",
-   "property": "pose",
-   "signal": [
-    "UnprotectedTrail/d13[1]",
-    "UnprotectedTrail/d13[2]",
-    "UnprotectedTrail/d13[3]",
-    "UnprotectedTrail/d13[4]",
-    "UnprotectedTrail/d13[5]",
-    "UnprotectedTrail/d13[6]",
-    "UnprotectedTrail/d13[7]"
-   ]
-  },
-  {
-   "target": "link:trail_unprotected_14",
-   "property": "pose",
-   "signal": [
-    "UnprotectedTrail/d14[1]",
-    "UnprotectedTrail/d14[2]",
-    "UnprotectedTrail/d14[3]",
-    "UnprotectedTrail/d14[4]",
-    "UnprotectedTrail/d14[5]",
-    "UnprotectedTrail/d14[6]",
-    "UnprotectedTrail/d14[7]"
-   ]
-  },
-  {
-   "target": "link:trail_unprotected_15",
-   "property": "pose",
-   "signal": [
-    "UnprotectedTrail/d15[1]",
-    "UnprotectedTrail/d15[2]",
-    "UnprotectedTrail/d15[3]",
-    "UnprotectedTrail/d15[4]",
-    "UnprotectedTrail/d15[5]",
-    "UnprotectedTrail/d15[6]",
-    "UnprotectedTrail/d15[7]"
-   ]
-  },
-  {
-   "target": "link:trail_unprotected_16",
-   "property": "pose",
-   "signal": [
-    "UnprotectedTrail/d16[1]",
-    "UnprotectedTrail/d16[2]",
-    "UnprotectedTrail/d16[3]",
-    "UnprotectedTrail/d16[4]",
-    "UnprotectedTrail/d16[5]",
-    "UnprotectedTrail/d16[6]",
-    "UnprotectedTrail/d16[7]"
    ]
   },
   {

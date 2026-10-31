@@ -8334,58 +8334,6 @@
    ]
   },
   {
-   "target": "link:trail_a30_13",
-   "property": "pose",
-   "signal": [
-    "A30Trail/d13[1]",
-    "A30Trail/d13[2]",
-    "A30Trail/d13[3]",
-    "A30Trail/d13[4]",
-    "A30Trail/d13[5]",
-    "A30Trail/d13[6]",
-    "A30Trail/d13[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a30_14",
-   "property": "pose",
-   "signal": [
-    "A30Trail/d14[1]",
-    "A30Trail/d14[2]",
-    "A30Trail/d14[3]",
-    "A30Trail/d14[4]",
-    "A30Trail/d14[5]",
-    "A30Trail/d14[6]",
-    "A30Trail/d14[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a30_15",
-   "property": "pose",
-   "signal": [
-    "A30Trail/d15[1]",
-    "A30Trail/d15[2]",
-    "A30Trail/d15[3]",
-    "A30Trail/d15[4]",
-    "A30Trail/d15[5]",
-    "A30Trail/d15[6]",
-    "A30Trail/d15[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a30_16",
-   "property": "pose",
-   "signal": [
-    "A30Trail/d16[1]",
-    "A30Trail/d16[2]",
-    "A30Trail/d16[3]",
-    "A30Trail/d16[4]",
-    "A30Trail/d16[5]",
-    "A30Trail/d16[6]",
-    "A30Trail/d16[7]"
-   ]
-  },
-  {
    "target": "link:ac_a35",
    "property": "pose",
    "signal": [
@@ -8561,58 +8509,6 @@
    ]
   },
   {
-   "target": "link:trail_a35_13",
-   "property": "pose",
-   "signal": [
-    "A35Trail/d13[1]",
-    "A35Trail/d13[2]",
-    "A35Trail/d13[3]",
-    "A35Trail/d13[4]",
-    "A35Trail/d13[5]",
-    "A35Trail/d13[6]",
-    "A35Trail/d13[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a35_14",
-   "property": "pose",
-   "signal": [
-    "A35Trail/d14[1]",
-    "A35Trail/d14[2]",
-    "A35Trail/d14[3]",
-    "A35Trail/d14[4]",
-    "A35Trail/d14[5]",
-    "A35Trail/d14[6]",
-    "A35Trail/d14[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a35_15",
-   "property": "pose",
-   "signal": [
-    "A35Trail/d15[1]",
-    "A35Trail/d15[2]",
-    "A35Trail/d15[3]",
-    "A35Trail/d15[4]",
-    "A35Trail/d15[5]",
-    "A35Trail/d15[6]",
-    "A35Trail/d15[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a35_16",
-   "property": "pose",
-   "signal": [
-    "A35Trail/d16[1]",
-    "A35Trail/d16[2]",
-    "A35Trail/d16[3]",
-    "A35Trail/d16[4]",
-    "A35Trail/d16[5]",
-    "A35Trail/d16[6]",
-    "A35Trail/d16[7]"
-   ]
-  },
-  {
    "target": "link:ac_a38",
    "property": "pose",
    "signal": [
@@ -8785,58 +8681,6 @@
     "A38Trail/d12[5]",
     "A38Trail/d12[6]",
     "A38Trail/d12[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a38_13",
-   "property": "pose",
-   "signal": [
-    "A38Trail/d13[1]",
-    "A38Trail/d13[2]",
-    "A38Trail/d13[3]",
-    "A38Trail/d13[4]",
-    "A38Trail/d13[5]",
-    "A38Trail/d13[6]",
-    "A38Trail/d13[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a38_14",
-   "property": "pose",
-   "signal": [
-    "A38Trail/d14[1]",
-    "A38Trail/d14[2]",
-    "A38Trail/d14[3]",
-    "A38Trail/d14[4]",
-    "A38Trail/d14[5]",
-    "A38Trail/d14[6]",
-    "A38Trail/d14[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a38_15",
-   "property": "pose",
-   "signal": [
-    "A38Trail/d15[1]",
-    "A38Trail/d15[2]",
-    "A38Trail/d15[3]",
-    "A38Trail/d15[4]",
-    "A38Trail/d15[5]",
-    "A38Trail/d15[6]",
-    "A38Trail/d15[7]"
-   ]
-  },
-  {
-   "target": "link:trail_a38_16",
-   "property": "pose",
-   "signal": [
-    "A38Trail/d16[1]",
-    "A38Trail/d16[2]",
-    "A38Trail/d16[3]",
-    "A38Trail/d16[4]",
-    "A38Trail/d16[5]",
-    "A38Trail/d16[6]",
-    "A38Trail/d16[7]"
    ]
   },
   {

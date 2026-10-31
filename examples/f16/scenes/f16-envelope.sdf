@@ -278,38 +278,6 @@
         <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
       </visual>
     </link>
-    <link name="trail_protected_13">
-      <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_protected_13">
-        <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.340</radius></sphere></geometry>
-        <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="trail_protected_14">
-      <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_protected_14">
-        <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.320</radius></sphere></geometry>
-        <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="trail_protected_15">
-      <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_protected_15">
-        <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.300</radius></sphere></geometry>
-        <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="trail_protected_16">
-      <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_protected_16">
-        <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.280</radius></sphere></geometry>
-        <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
-      </visual>
-    </link>
     <link name="ac_unprotected">
       <pose>0 0 0 0 0 0</pose>
       <visual name="airframe_unprotected">
@@ -422,38 +390,6 @@
       <visual name="dot_unprotected_12">
         <pose>0 0 0 0 0 0</pose>
         <geometry><sphere><radius>0.360</radius></sphere></geometry>
-        <material><diffuse>1.0 0.85 0.45 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="trail_unprotected_13">
-      <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_unprotected_13">
-        <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.340</radius></sphere></geometry>
-        <material><diffuse>1.0 0.85 0.45 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="trail_unprotected_14">
-      <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_unprotected_14">
-        <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.320</radius></sphere></geometry>
-        <material><diffuse>1.0 0.85 0.45 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="trail_unprotected_15">
-      <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_unprotected_15">
-        <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.300</radius></sphere></geometry>
-        <material><diffuse>1.0 0.85 0.45 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="trail_unprotected_16">
-      <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_unprotected_16">
-        <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.280</radius></sphere></geometry>
         <material><diffuse>1.0 0.85 0.45 1</diffuse></material>
       </visual>
     </link>

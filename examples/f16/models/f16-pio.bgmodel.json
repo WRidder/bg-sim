@@ -7824,58 +7824,6 @@
    ]
   },
   {
-   "target": "link:trail_plain_13",
-   "property": "pose",
-   "signal": [
-    "PlainTrail/d13[1]",
-    "PlainTrail/d13[2]",
-    "PlainTrail/d13[3]",
-    "PlainTrail/d13[4]",
-    "PlainTrail/d13[5]",
-    "PlainTrail/d13[6]",
-    "PlainTrail/d13[7]"
-   ]
-  },
-  {
-   "target": "link:trail_plain_14",
-   "property": "pose",
-   "signal": [
-    "PlainTrail/d14[1]",
-    "PlainTrail/d14[2]",
-    "PlainTrail/d14[3]",
-    "PlainTrail/d14[4]",
-    "PlainTrail/d14[5]",
-    "PlainTrail/d14[6]",
-    "PlainTrail/d14[7]"
-   ]
-  },
-  {
-   "target": "link:trail_plain_15",
-   "property": "pose",
-   "signal": [
-    "PlainTrail/d15[1]",
-    "PlainTrail/d15[2]",
-    "PlainTrail/d15[3]",
-    "PlainTrail/d15[4]",
-    "PlainTrail/d15[5]",
-    "PlainTrail/d15[6]",
-    "PlainTrail/d15[7]"
-   ]
-  },
-  {
-   "target": "link:trail_plain_16",
-   "property": "pose",
-   "signal": [
-    "PlainTrail/d16[1]",
-    "PlainTrail/d16[2]",
-    "PlainTrail/d16[3]",
-    "PlainTrail/d16[4]",
-    "PlainTrail/d16[5]",
-    "PlainTrail/d16[6]",
-    "PlainTrail/d16[7]"
-   ]
-  },
-  {
    "target": "link:ac_comp",
    "property": "pose",
    "signal": [
@@ -8048,58 +7996,6 @@
     "CompTrail/d12[5]",
     "CompTrail/d12[6]",
     "CompTrail/d12[7]"
-   ]
-  },
-  {
-   "target": "link:trail_comp_13",
-   "property": "pose",
-   "signal": [
-    "CompTrail/d13[1]",
-    "CompTrail/d13[2]",
-    "CompTrail/d13[3]",
-    "CompTrail/d13[4]",
-    "CompTrail/d13[5]",
-    "CompTrail/d13[6]",
-    "CompTrail/d13[7]"
-   ]
-  },
-  {
-   "target": "link:trail_comp_14",
-   "property": "pose",
-   "signal": [
-    "CompTrail/d14[1]",
-    "CompTrail/d14[2]",
-    "CompTrail/d14[3]",
-    "CompTrail/d14[4]",
-    "CompTrail/d14[5]",
-    "CompTrail/d14[6]",
-    "CompTrail/d14[7]"
-   ]
-  },
-  {
-   "target": "link:trail_comp_15",
-   "property": "pose",
-   "signal": [
-    "CompTrail/d15[1]",
-    "CompTrail/d15[2]",
-    "CompTrail/d15[3]",
-    "CompTrail/d15[4]",
-    "CompTrail/d15[5]",
-    "CompTrail/d15[6]",
-    "CompTrail/d15[7]"
-   ]
-  },
-  {
-   "target": "link:trail_comp_16",
-   "property": "pose",
-   "signal": [
-    "CompTrail/d16[1]",
-    "CompTrail/d16[2]",
-    "CompTrail/d16[3]",
-    "CompTrail/d16[4]",
-    "CompTrail/d16[5]",
-    "CompTrail/d16[6]",
-    "CompTrail/d16[7]"
    ]
   },
   {

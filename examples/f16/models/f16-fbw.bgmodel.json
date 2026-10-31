@@ -6582,58 +6582,6 @@
    ]
   },
   {
-   "target": "link:trail_sched_13",
-   "property": "pose",
-   "signal": [
-    "SchedTrail/d13[1]",
-    "SchedTrail/d13[2]",
-    "SchedTrail/d13[3]",
-    "SchedTrail/d13[4]",
-    "SchedTrail/d13[5]",
-    "SchedTrail/d13[6]",
-    "SchedTrail/d13[7]"
-   ]
-  },
-  {
-   "target": "link:trail_sched_14",
-   "property": "pose",
-   "signal": [
-    "SchedTrail/d14[1]",
-    "SchedTrail/d14[2]",
-    "SchedTrail/d14[3]",
-    "SchedTrail/d14[4]",
-    "SchedTrail/d14[5]",
-    "SchedTrail/d14[6]",
-    "SchedTrail/d14[7]"
-   ]
-  },
-  {
-   "target": "link:trail_sched_15",
-   "property": "pose",
-   "signal": [
-    "SchedTrail/d15[1]",
-    "SchedTrail/d15[2]",
-    "SchedTrail/d15[3]",
-    "SchedTrail/d15[4]",
-    "SchedTrail/d15[5]",
-    "SchedTrail/d15[6]",
-    "SchedTrail/d15[7]"
-   ]
-  },
-  {
-   "target": "link:trail_sched_16",
-   "property": "pose",
-   "signal": [
-    "SchedTrail/d16[1]",
-    "SchedTrail/d16[2]",
-    "SchedTrail/d16[3]",
-    "SchedTrail/d16[4]",
-    "SchedTrail/d16[5]",
-    "SchedTrail/d16[6]",
-    "SchedTrail/d16[7]"
-   ]
-  },
-  {
    "target": "link:ac_frozen",
    "property": "pose",
    "signal": [
@@ -6806,58 +6754,6 @@
     "FrozenTrail/d12[5]",
     "FrozenTrail/d12[6]",
     "FrozenTrail/d12[7]"
-   ]
-  },
-  {
-   "target": "link:trail_frozen_13",
-   "property": "pose",
-   "signal": [
-    "FrozenTrail/d13[1]",
-    "FrozenTrail/d13[2]",
-    "FrozenTrail/d13[3]",
-    "FrozenTrail/d13[4]",
-    "FrozenTrail/d13[5]",
-    "FrozenTrail/d13[6]",
-    "FrozenTrail/d13[7]"
-   ]
-  },
-  {
-   "target": "link:trail_frozen_14",
-   "property": "pose",
-   "signal": [
-    "FrozenTrail/d14[1]",
-    "FrozenTrail/d14[2]",
-    "FrozenTrail/d14[3]",
-    "FrozenTrail/d14[4]",
-    "FrozenTrail/d14[5]",
-    "FrozenTrail/d14[6]",
-    "FrozenTrail/d14[7]"
-   ]
-  },
-  {
-   "target": "link:trail_frozen_15",
-   "property": "pose",
-   "signal": [
-    "FrozenTrail/d15[1]",
-    "FrozenTrail/d15[2]",
-    "FrozenTrail/d15[3]",
-    "FrozenTrail/d15[4]",
-    "FrozenTrail/d15[5]",
-    "FrozenTrail/d15[6]",
-    "FrozenTrail/d15[7]"
-   ]
-  },
-  {
-   "target": "link:trail_frozen_16",
-   "property": "pose",
-   "signal": [
-    "FrozenTrail/d16[1]",
-    "FrozenTrail/d16[2]",
-    "FrozenTrail/d16[3]",
-    "FrozenTrail/d16[4]",
-    "FrozenTrail/d16[5]",
-    "FrozenTrail/d16[6]",
-    "FrozenTrail/d16[7]"
    ]
   },
   {
