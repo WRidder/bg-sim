@@ -78,6 +78,24 @@ export async function fetchCsvPreview(
   return (await response.json()) as CsvPreview;
 }
 
+/** `GET /api/projects/{p}/data/{file}`: the CSV text, or null when the project has no such file. */
+export async function fetchDataText(project: string, file: string): Promise<string | null> {
+  const response = await fetch(`${base(project)}/${encodeURIComponent(file)}`);
+  if (response.status === 404) return null;
+  if (!response.ok) throw await failure(response, `cannot read ${file}`);
+  return response.text();
+}
+
+/** `PUT /api/projects/{p}/data/{file}`: create or replace a CSV file with `text`. */
+export async function writeDataText(project: string, file: string, text: string): Promise<void> {
+  const response = await fetch(`${base(project)}/${encodeURIComponent(file)}`, {
+    method: "PUT",
+    headers: { "content-type": "text/csv; charset=utf-8" },
+    body: text,
+  });
+  if (!response.ok) throw await failure(response, `cannot write ${file}`);
+}
+
 /** `POST /api/projects/{p}/data` (multipart, field `file`); returns the stored name. */
 export async function uploadDataFile(
   project: string,

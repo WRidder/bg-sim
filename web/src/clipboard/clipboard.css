@@ -1,0 +1,137 @@
+/* Paste: the conflict dialog and the notice (src/clipboard/PasteDialog.tsx). */
+
+.paste-dialog {
+  width: min(560px, 94vw);
+  max-height: min(640px, 88vh);
+  overflow: auto;
+  padding: var(--space-4);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  outline: none;
+}
+
+.paste-dialog__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-lg);
+}
+
+.paste-dialog__text,
+.paste-dialog__note {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-md);
+}
+
+.paste-dialog__note {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.paste-dialog__list {
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.paste-dialog__row {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.paste-dialog__label {
+  font-size: var(--font-size-md);
+}
+
+.paste-dialog__kind {
+  color: var(--color-text-muted);
+}
+
+.paste-dialog__detail {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.paste-dialog__select {
+  justify-self: start;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.paste-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.paste-notice {
+  position: absolute;
+  left: var(--space-3);
+  bottom: var(--space-3);
+  z-index: 20;
+  max-width: min(460px, calc(100% - 2 * var(--space-3)));
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+}
+
+.paste-notice--error {
+  border-left-color: var(--color-error);
+}
+
+.paste-notice--busy {
+  border-left-color: var(--color-border-strong);
+  color: var(--color-text-muted);
+}
+
+.paste-notice__header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.paste-notice__title {
+  flex: 1;
+}
+
+.paste-notice__close {
+  flex: none;
+  padding: 0 var(--space-1);
+  font: inherit;
+  font-size: var(--font-size-md);
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.paste-notice__close:hover {
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.paste-notice__lines {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
+}

@@ -7,7 +7,7 @@ Models are drawn on the canvas of the **Diagram** tab.
 - **Add:** drag a block from the [library](page:projects-and-library) onto the canvas.
 - **Select:** click a block, or drag on empty canvas for a selection box.
 - **Edit:** the inspector on the right shows the selected block: name, parameters (with units, defaults and limits), constants, start values and ports. Press `Enter` to apply a value, `Esc` to undo the typing. Values can be expressions and can use [global parameters](page:parameters).
-- **Arrange:** `R` rotates, `F` flips, `Del` deletes, `Ctrl+C` / `Ctrl+V` copy and paste. Right-click a block for the same actions.
+- **Arrange:** `R` rotates, `F` flips, `Del` deletes, `Ctrl+C` / `Ctrl+X` / `Ctrl+V` copy, cut and paste (see **Copy and paste** below). Right-click a block for the same actions.
 - **Undo:** `Ctrl+Z`, redo `Ctrl+Y`.
 - **Navigate:** the mouse wheel zooms. Pan with the middle mouse button, `Space`+drag or the arrow keys. **Fit view** in the canvas toolbar fits the whole diagram.
 
@@ -56,3 +56,40 @@ Background shapes group and annotate parts of a diagram. They are drawn behind b
 - **Order:** right-click a shape for **Bring to front**, **Bring forward**, **Send backward** and **Send to back**.
 - **Lock:** **Lock** in the shape's menu (or **Locked** in the inspector) prevents moving, resizing and deleting it. **Unlock** to change it again.
 - **Duplicate** copies the shape.
+
+## Copy and paste
+
+Select blocks, sticky notes and shapes, press `Ctrl+C` (or `Ctrl+X` to cut), and press `Ctrl+V` where they should go. Right-click a block for **Copy**, and right-click the empty canvas for **Paste**.
+
+- **What is copied:** the selected blocks with everything inside a subsystem, the connections between selected blocks, and the selected notes and shapes. A connection to a block that is not selected stays behind.
+- **Where it lands:** at the mouse pointer when it is over the canvas, otherwise in the middle of the visible canvas. The pasted elements keep their layout. Pasted back into the diagram they came from with the pointer outside the canvas, they appear slightly offset, and pasting again offsets them further.
+- **Names and undo:** pasted blocks get a free name in the target diagram (`Gain` becomes `Gain2`). The pasted elements are selected, and one **Undo** removes the whole paste, including any global parameters it added.
+- **Inside a subsystem:** the paste goes into the diagram that is open, at any subsystem level.
+
+### Between models, windows and projects
+
+The copy goes to the system clipboard, so you can paste it into another model, another browser window or tab, or another project on the same bg-sim server. Copying text in a field, in the code editor or in the docs works as usual: the canvas only handles `Ctrl+C` and `Ctrl+V` when no text field has the focus.
+
+When the target is another model or project, the paste brings along what the copied elements need:
+
+| Copied elements use | Is brought along as |
+| --- | --- |
+| a project library block (`project:<Name>`), also inside a subsystem or used by another library block | `library/<Name>.jl` in the target project |
+| a global parameter in a value or start value | a global parameter of the target model, with every global it depends on |
+| a CSV file of a CsvSource block | the same file in the target project's `data/` folder |
+| an image in a sticky note's Markdown | the image in the target model's docs |
+
+A subsystem image is part of the block, so it always comes along.
+
+**Conflicts:** if the target already has a library block, global parameter or data file with the same name but different content, one dialog lists them. Choose for each:
+
+- **Use this project's / this model's …** (the default): the paste uses the target's definition and changes nothing in it.
+- **Import as `<Name2>`:** the copy is added under a free name, and the pasted blocks and values are changed to use it.
+- **Convert the pasted blocks to inline** (library blocks only): the pasted blocks carry the block's code themselves.
+
+**Cancel** pastes nothing. Library blocks and data files are written to the project before the elements are pasted. **Undo** removes the pasted elements and globals but not those files.
+
+After the paste, a notice at the bottom of the canvas lists what was added, which of the target's definitions were kept, and what was not carried along:
+
+- 3D bindings, plot probes, dashboard cards and saved plots that refer to the copied blocks,
+- docs pages, and their links to the copied blocks, which stay with the source model.

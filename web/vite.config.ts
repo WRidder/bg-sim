@@ -1,5 +1,5 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, searchForWorkspaceRoot } from "vite";
 
 /**
  * The backend (FastAPI/uvicorn, plan 2.1) listens on 127.0.0.1:8765.
@@ -13,6 +13,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // The clipboard paste validates against ../contracts/schemas (src/clipboard/validate.ts).
+    fs: { allow: [searchForWorkspaceRoot(process.cwd()), "../contracts/schemas"] },
     proxy: {
       "/api": { target: BACKEND_ORIGIN, changeOrigin: false },
       "/ws": { target: BACKEND_ORIGIN, ws: true, changeOrigin: false },
