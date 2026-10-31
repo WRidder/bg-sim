@@ -44,3 +44,19 @@ Notes:
 - **Battery.** `soc` is the state of charge (1 full, 0 empty); its start value is the initial charge. Charging current (into `p`) raises it. The OCV is interpolated linearly in the table and held at the edge values outside it. The constant `N` sets the table length.
 - **MOSFET and IGBT.** The Boolean `gate` comes from a logic block, for example a `Compare` on a PWM carrier. The MOSFET channel conducts both ways while on; the IGBT only from `c` to `e` above `V_ce0`. Both have an antiparallel diode (forward voltage `V_f`, resistance `R_d`). Every switching instant is located exactly in a simulation; an [export](page:export) checks the switching once per step.
 - **Losses.** Clutch, brake, worm gear, battery and the switches lose power as heat. There is no thermal port yet; the heat only shows up as the power balance of the block.
+
+## Electromagnet
+
+`Electromagnet` (in **Converters and sensors**) is a lifting magnet or maglev coil: a variable-reluctance actuator that pulls an iron armature across an air gap. It has a coil (Electrical `p`, `n`) and a gap (Translation `a` for the magnet body, `b` for the armature).
+
+| Parameter | Unit | Meaning |
+| --- | --- | --- |
+| `alpha` | H·m | force constant: attraction `F = alpha·i²/(h + h0)²` |
+| `L_inf` | H | coil inductance with the armature far away |
+| `h0` | m | gap offset; `0` is the pure inverse-square law, a few mm keeps the force finite at contact |
+
+The gap `h` and the coil current `i` are the states: set their start values (the armature position and the initial current). `h` grows when the armature moves away from the magnet, `dh/dt = b.f − a.f`.
+
+How it works: the block stores magnetic energy `W = ½·L(h)·i²` with `L(h) = L_inf + 2·alpha/(h + h0)`, and both port laws come from that one energy. The coil sees `v = d(L(h)·i)/dt`, including the voltage induced while the armature moves; the gap gets the attraction `F = alpha·i²/(h + h0)²` (`b.e = F`, `a.e = −F`). So the power into the block is exactly the change of its stored energy: it neither creates nor loses energy (put the coil resistance in a separate resistor or bond graph `R`). The variables `W`, `F`, `L`, `lambda` (flux linkage), `P_el` and `P_mech` (power into the coil and into the gap) can be plotted.
+
+Use it in a circuit and a translation diagram, or in a bond graph: bond the coil to an electrical 1-junction and the armature to the mass's 1-junction. The **maglev** example shows it levitating a steel ball with a cascade controller.

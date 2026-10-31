@@ -415,6 +415,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Ideal electromagnetic gyrator: back-EMF -k*shaft.f and shaft torque k*p.f, power conserving.",
         icon = "conv-em-converter",
     ),
+    "stdlib:converters/Electromagnet" => (
+        description = "Variable-reluctance actuator (lifting magnet): a power-conserving IC-field from the coil p/n to the gap between stator a and armature b, L(h) = L_inf + 2*alpha/(h + h0), attraction alpha*i^2/(h + h0)^2.",
+        icon = "conv-electromagnet",
+    ),
     "stdlib:converters/ExportInput" => (
         description = "Export interface input marker; in simulation it supplies the constant parameter value.",
         icon = "conv-export-input",
