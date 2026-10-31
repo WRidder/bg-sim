@@ -11,6 +11,9 @@ Intermediate frames go to `media/video/frames/` (git-ignored).
 
 Prerequisites: `web/dist` is built (the backend serves it), `npm install` was run in `web/`, Julia is set up,
 and ffmpeg is on PATH (otherwise `uv run --with imageio-ffmpeg` supplies the binary).
+The scripts launch Chromium through `launchBrowser()` in `lib.mjs`, which passes ANGLE on D3D11 so the headless
+browser renders WebGL on the GPU. Plain `chromium.launch()` falls back to SwiftShader (WebGL on the CPU): the 3D
+view then renders a few frames per second, and recordings of it stutter and flash.
 
 1. Start a private backend (real Julia worker) on port 8810 with a temporary projects root:
 

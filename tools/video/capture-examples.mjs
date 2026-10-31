@@ -4,7 +4,7 @@
 // usage: node capture-examples.mjs [--only a,b] [--skip a,b] [--steps 6]
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { chromium, createProject, newPage, openModel, runAndWait, outDir, gallery, repoRoot, sleep } from "./lib.mjs";
+import { launchBrowser, createProject, newPage, openModel, runAndWait, outDir, gallery, repoRoot, sleep } from "./lib.mjs";
 
 const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
 const only = arg("--only")?.split(",") ?? null;
@@ -127,7 +127,7 @@ async function capture(browser, example) {
   return info;
 }
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 for (const [k, v] of Object.entries(overrides)) if (v.example && !listed.includes(k)) listed.push(k);
 const todo = listed.filter((e) => (!only || only.includes(e)) && !skip.includes(e));
 for (const ex of todo) {

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Robird video, part 2: real-time (CDP screencast, visible cursor) recording of the model: pan/zoom over the diagram,
 // a few blocks in the inspector, the Docs tab. Output: media/video/frames/robird60/ui/ (timeline.json + frames)
-import { chromium, BASE, createProject, openModel, outDir, sleep, framesDir } from "./lib.mjs";
+import { launchBrowser, BASE, createProject, openModel, outDir, sleep, framesDir } from "./lib.mjs";
 import { installCursor, Recorder, glide, click, wheel, drag } from "./rec.mjs";
 import path from "node:path";
 
 const root = outDir("robird60");
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1, colorScheme: "dark" });
 await installCursor(ctx);
 const page = await ctx.newPage();

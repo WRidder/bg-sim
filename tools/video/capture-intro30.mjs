@@ -4,7 +4,7 @@
 // usage: node capture-intro30.mjs [--scene s02,s05,...]
 import { writeFileSync, readFileSync, existsSync } from "node:fs";
 import path from "node:path";
-import { chromium, BASE, createProject, newPage, openModel, outDir, sleep, framesDir } from "./lib.mjs";
+import { launchBrowser, BASE, createProject, newPage, openModel, outDir, sleep, framesDir } from "./lib.mjs";
 import { installCursor, Recorder, glide, hover, click, dblclick, typeInto, drag, key, wheel, slide } from "./rec.mjs";
 
 const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
@@ -549,7 +549,7 @@ const scenes = {
   },
 };
 
-browser = await chromium.launch();
+browser = await launchBrowser();
 for (const s of Object.keys(scenes).filter((x) => !only || only.includes(x))) {
   console.log("scene", s);
   try { await scenes[s](); } catch (e) { console.log("FAIL", s, String(e).split("\n").slice(0, 3).join(" | ")); }
