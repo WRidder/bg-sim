@@ -167,7 +167,7 @@ describe("block help", () => {
     expect(row.textContent).toMatch(/ohm|Ω/i);
   });
 
-  it("opens from the library item and from F1 for the selected block, and F1 without one shows shortcuts", () => {
+  it("opens from the library item and from F1 for the selected block, and F1 without one opens the manual", () => {
     render(<Shell />);
 
     // The help button of an expanded library item (its category opened first).
@@ -178,10 +178,11 @@ describe("block help", () => {
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByTestId("block-help")).toBeNull();
 
-    // F1 with nothing selected explains the shortcuts instead.
+    // F1 with nothing selected opens the user manual instead (tests/user-manual.test.tsx).
     fireEvent.keyDown(document.body, { key: "F1" });
-    expect(screen.getByTestId("shortcuts-overlay")).toBeTruthy();
-    fireEvent.keyDown(window, { key: "Escape" });
+    expect(useHelpStore.getState().manualOpen).toBe(true);
+    expect(screen.queryByTestId("shortcuts-overlay")).toBeNull();
+    act(() => useHelpStore.getState().setManualOpen(false));
 
     // F1 with one selected block opens that block's help.
     const model = createEmptyModel("Model1", catalog.language);

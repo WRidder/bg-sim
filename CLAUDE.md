@@ -27,4 +27,5 @@ A bond-graph / block-diagram / equation modeling and simulation tool:
 
 ## Conventions
 - Contracts live in `contracts/` as JSON Schema plus fixtures. They are the single source of truth for the TypeScript, Python and Julia data shapes. Never change a shape in only one language.
+- User manual: `web/src/manual/pages/*.md` (help icon in the top bar / F1). Every user-visible feature change updates the relevant manual page in the same branch; a new page also goes into the page list of `web/tests/user-manual.test.tsx`.
 - The 3D viewer follows the setup of `D:\CtrlX Agentic Machine Control\framework\hmi\src\viewer` (see the plan, section 7.6).

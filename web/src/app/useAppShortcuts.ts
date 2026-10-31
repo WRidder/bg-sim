@@ -22,7 +22,8 @@ export function selectedBlockRef(): string | null {
 
 /**
  * App-wide single-key shortcuts: `?` toggles the shortcuts overlay, `/` focuses
- * the library search, F1 opens the help of the selected block. Ctrl+O lives in
+ * the library search, F1 opens the help of the selected block (the user manual
+ * when no block is selected). Ctrl+O lives in
  * the TopBar and Ctrl+Enter in the RunBar, next to the controls they drive.
  */
 export function useAppShortcuts(): void {
@@ -34,11 +35,14 @@ export function useAppShortcuts(): void {
       const help = useHelpStore.getState();
       if (event.key === "F1") {
         event.preventDefault();
+        if (help.manualOpen) {
+          return;
+        }
         const ref = selectedBlockRef();
         if (ref !== null) {
           help.openBlockHelp(ref);
         } else {
-          help.setShortcutsOpen(true);
+          help.setManualOpen(true);
         }
         return;
       }

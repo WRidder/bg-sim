@@ -1,15 +1,36 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { ExportDialog } from "../export/ExportDialog";
 import { useExportDialogStore } from "../export/exportStore";
 import { useDocumentStore } from "../state/documentStore";
 import { TaskIndicator } from "../tasks/TaskIndicator";
 import type { Theme } from "../theme/theme";
+import { useHelpStore } from "./helpStore";
 import { LeaveProjectDialog } from "./LeaveProjectDialog";
 import { requestLeaveProject } from "./leaveProject";
 import { OpenDialog } from "./OpenDialog";
 import { RunBar } from "./RunBar";
 import { WorkerStatus } from "./WorkerStatus";
+
+// The manual pulls in the Markdown stack (react-markdown, KaTeX); it loads on first open.
+const UserManualDialog = lazy(() => import("../manual/UserManualDialog"));
+
+/** A question mark in a circle, drawn in the text colour. */
+function HelpIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M6.1 6.3a1.95 1.95 0 1 1 2.7 1.8c-.52.24-.8.62-.8 1.18v.35"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <circle cx="8" cy="11.45" r="0.85" fill="currentColor" />
+    </svg>
+  );
+}
 
 export interface TopBarProps {
   theme: Theme;
@@ -19,7 +40,8 @@ export interface TopBarProps {
 /**
  * The top bar of plan 7.2: project ▸ model tabs, Run/Stop, t_end/solver/tol and
  * the worker status. Run and Stop stay disabled until a model is open (M1
- * wires them); the theme toggle is live.
+ * wires them); the theme toggle is live. The help icon at the far right opens
+ * the user manual (also F1 when no block is selected).
  */
 export function TopBar({ theme, onToggleTheme }: TopBarProps) {
   const nextTheme = theme === "dark" ? "light" : "dark";
@@ -28,6 +50,8 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
   const hasDoc = useDocumentStore((state) => state.doc !== null);
   const openExport = useExportDialogStore((state) => state.openExport);
   const [openDialog, setOpenDialog] = useState(false);
+  const manualOpen = useHelpStore((state) => state.manualOpen);
+  const setManualOpen = useHelpStore((state) => state.setManualOpen);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -102,10 +126,27 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
         >
           <span aria-hidden="true">{theme === "dark" ? "☾" : "☀"}</span>
         </button>
+        <button
+          type="button"
+          className="icon-button"
+          data-testid="open-manual"
+          aria-label="User manual"
+          aria-haspopup="dialog"
+          aria-expanded={manualOpen}
+          title="User manual (F1)"
+          onClick={() => setManualOpen(true)}
+        >
+          <HelpIcon />
+        </button>
       </div>
 
       <OpenDialog open={openDialog} onClose={() => setOpenDialog(false)} />
       <ExportDialog />
+      {manualOpen ? (
+        <Suspense fallback={null}>
+          <UserManualDialog />
+        </Suspense>
+      ) : null}
     </header>
   );
 }

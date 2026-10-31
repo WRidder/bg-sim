@@ -1,0 +1,122 @@
+/* The user manual: a full-screen modal, page list left, rendered page right. */
+
+.manual-backdrop {
+  padding: var(--space-3);
+}
+
+.manual-dialog {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-panel);
+  outline: none;
+  overflow: hidden;
+}
+
+.manual-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+}
+
+.manual-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+  padding: var(--space-3) var(--space-2);
+  overflow: auto;
+  background: var(--color-surface);
+  border-right: var(--border-width) solid var(--color-border);
+}
+
+.manual-nav__search {
+  flex: none;
+}
+
+.manual-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.manual-nav__item {
+  width: 100%;
+  padding: 5px var(--space-2);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  color: var(--color-text);
+  background: transparent;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.manual-nav__item:hover {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border);
+}
+
+.manual-nav__item.is-current {
+  font-weight: var(--font-weight-semibold);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: var(--color-accent);
+}
+
+.manual-nav__empty {
+  margin: 0;
+  padding: 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.manual-page {
+  min-height: 0;
+  padding: var(--space-4) var(--space-8);
+  background: var(--color-surface-raised);
+}
+
+.manual-page > * {
+  max-width: 860px;
+}
+
+.manual-page table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 720px) {
+  .manual-backdrop {
+    padding: 0;
+  }
+
+  .manual-dialog {
+    border-radius: 0;
+  }
+
+  .manual-dialog__body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .manual-nav {
+    max-height: 30vh;
+    border-right: none;
+    border-bottom: var(--border-width) solid var(--color-border);
+  }
+
+  .manual-page {
+    padding: var(--space-3);
+  }
+}
