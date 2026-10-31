@@ -48,8 +48,8 @@ manifest order. The manifest is the source of the signal order and of
 A model entry may also be a bare list of checks. ``compare`` may be a list of
 such objects. ``rtol`` is relative to the expected value; ``abs`` is an extra
 absolute tolerance. ``compare`` evaluates both signals on the union of the two
-runs' time grids over ``[from_t, t1]``, so a different sample grid cannot hide
-a peak. ``max_abs`` takes the largest absolute value over ``[from_t, to_t]``
+runs' time grids over ``[from_t, t1]`` (``t1`` is the optional ``to_t``, default
+the end of the shorter run), so a different sample grid cannot hide a peak. ``max_abs`` takes the largest absolute value over ``[from_t, to_t]``
 (default the whole run); ``ratio`` evaluates ``signal / signal_b`` at ``t``
 (default the final time), which checks a gear ratio or two speeds agreeing.
 
@@ -1851,6 +1851,8 @@ def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Ru
         from_t = float(spec.get("from_t", max(run_a.time[0], run_b.time[0])))
         lower = max(from_t, float(run_a.time[0]), float(run_b.time[0]))
         upper = min(float(run_a.time[-1]), float(run_b.time[-1]))
+        if "to_t" in spec:
+            upper = min(upper, float(spec["to_t"]))
         if not upper > lower:
             report.check(False, label, f"the runs do not overlap after t={from_t:g}")
             continue
@@ -1862,7 +1864,7 @@ def _compare_checks(report: Report, project: str, specs: Any, runs: dict[str, Ru
         values_b = np.interp(grid, run_b.time, run_b.signals[signal_b])
         difference = float(np.max(np.abs(values_a - values_b)))
         detail = (
-            f"from t={lower:g} max|delta| {difference:.3g} "
+            f"over [{lower:g}, {upper:g}] max|delta| {difference:.3g} "
             f"(limit {limit:g} over {grid.size} points)"
         )
         report.check(difference <= limit, label, detail)

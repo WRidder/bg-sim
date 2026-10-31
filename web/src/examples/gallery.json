@@ -15,6 +15,14 @@
       "bouncing-ball"
     ]
   },
+  "cantilever-modes": {
+    "title": "Cantilever modes",
+    "description": "A cantilever in two eigenmodes as a scalar bond graph, with global parameters and a tip force step.",
+    "hasScene": false,
+    "models": [
+      "cantilever-modes"
+    ]
+  },
   "cube-3d": {
     "title": "Cube 3d",
     "description": "A cube balanced on one corner by three reaction wheels.",
@@ -79,6 +87,23 @@
       "drivetrain-position",
       "naive",
       "drivetrain-position-open-loop"
+    ]
+  },
+  "flex-rotary-pendulum": {
+    "title": "Flex rotary pendulum",
+    "description": "A Furuta pendulum whose rod bends (FlexibleBeam3D, 2 + 2 modes), next to its rigid twin.",
+    "hasScene": true,
+    "models": [
+      "flex-rotary-pendulum",
+      "flex-rotary-pendulum-rigid"
+    ]
+  },
+  "flex-torsion": {
+    "title": "Flex torsion",
+    "description": "Two disks on a flexible shaft (FlexibleBeam3D, three torsion modes) against the exact torsion frequency.",
+    "hasScene": true,
+    "models": [
+      "flex-torsion"
     ]
   },
   "hydraulic-circuit": {
