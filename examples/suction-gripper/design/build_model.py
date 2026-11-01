@@ -93,6 +93,13 @@ def globals_table(overrides: dict | None = None) -> list[dict]:
         ("V_cup", num(c["V_cup"]), "m^3", "Cup chamber volume"),
         ("A_lip0", num(c["A_lip0"]), "m^2", "Sealed-lip leak area per cup (surface roughness)"),
         ("A_edge", "0", "m^2", "Extra leak area of cup 1 (a cup over the parcel edge or a damaged lip)"),
+        ("s_bot", num(c["s_bot"]), "m", "Bellows compression stroke before the folds bottom (estimate)"),
+        ("k_bot", num(c["k_bot"]), "N/m", "Bottoming stiffness scale (estimate)"),
+        ("n_bot", num(c["n_bot"]), "1", "Bottoming exponent"),
+        ("x_bot", num(c["x_bot"]), "m", "Reference over-stroke of the bottoming law"),
+        ("A_fold", num(c["A_fold"]), "m^2", "Folded bellows annulus: vacuum lift stroke A_fold*dp/k_ax (estimate)"),
+        ("c_vac", num(c["c_vac"]), "1", "Lateral/tilt stiffness rise with vacuum, 1 + c_vac*dp/p_atm (estimate)"),
+        ("c_ext", num(c["c_ext"]), "1", "Lateral/tilt stiffness fall with extension, exp(-c_ext*ext/L0) (estimate)"),
         # supply
         ("dp_max", num(s["dp_max"]), "Pa", "Generator maximum vacuum"),
         ("Q_max", num(s["Q_max"]), "m^3/s", "Generator maximum suction flow (free air)"),
@@ -223,6 +230,7 @@ def build(variant: str = "manifold") -> dict:
         "L0": "L0", "A_eff": "A_eff", "D_lip": "D_lip", "k_ax": "k_ax", "d_ax": "d_ax",
         "k_lat": "k_lat", "d_lat": "d_lat", "k_tilt": "k_tilt", "mu": "mu", "V": "V_cup",
         "perm": "perm", "A_lip0": "A_lip0",
+        **{k: k for k in P.CUP_NL},
     }
     for i in range(N_CUPS):
         n = i + 1
@@ -374,18 +382,18 @@ def dashboard() -> dict:
 SCENARIOS = {
     "transfer": ("Pick, lift, transfer (1 m in 1.75 s, S-curve) and place a 10 kg cardboard carton with a six-cup bellows "
                  "gripper: the shortest S-curve move in which every cup keeps a holding margin of 2 (U <= 0.5).", {}, "manifold"),
-    "aggressive-trapezoid": ("The transfer in 0.7 s with a trapezoidal profile (9.2 m/s^2, infinite jerk): the step in "
+    "aggressive-trapezoid": ("The transfer in 0.74 s with a trapezoidal profile (8.2 m/s^2, infinite jerk): the step in "
                              "acceleration rings the bellows, the cups peel at the deceleration and the parcel drops.",
-                             {"kind": "1", "T_move": "0.7"}, "manifold"),
-    "aggressive-scurve": ("The same 0.7 s transfer with the S-curve: a higher peak acceleration (13.1 m/s^2) but a finite "
-                          "jerk; no cup loses its seal and the parcel arrives.", {"kind": "2", "T_move": "0.7"}, "manifold"),
+                             {"kind": "1", "T_move": "0.74"}, "manifold"),
+    "aggressive-scurve": ("The same 0.74 s transfer with the S-curve: a higher peak acceleration (11.7 m/s^2) but a finite "
+                          "jerk; no cup loses its seal and the parcel arrives.", {"kind": "2", "T_move": "0.74"}, "manifold"),
     "tilt-tray": ("A cycloidal transfer in 1.25 s (4.0 m/s^2) with the gripper tilted along the specific force (waiter's "
                   "tray, previewed tilt servo): U stays below 0.5, the same move held level reaches 0.62.",
                   {"kind": "4", "T_move": "1.25", "k_tilt_g": "1"}, "manifold"),
     "porous-undersized": ("A porous parcel (permeance 2e-6 m/(s*Pa)) on a 36 l/min generator: the leak through the material "
-                          "holds the vacuum at 21.5 kPa, and a 1.2 s move (4.5 m/s^2) tears the parcel off; the 60 l/min "
+                          "holds the vacuum at 21.6 kPa, and a 1.1 s move (5.3 m/s^2) tears the parcel off; the 60 l/min "
                           "generator (29 kPa) carries it.",
-                          {"perm": "2e-6", "Q_max": "6e-4", "T_move": "1.2"}, "manifold"),
+                          {"perm": "2e-6", "Q_max": "6e-4", "T_move": "1.1"}, "manifold"),
     "edge-leak": ("Cup 1 sits over the parcel edge (20 mm^2 extra leak): through the common manifold the leak pulls every "
                   "cup down to 17 kPa and the parcel is lost at the lift.", {"A_edge": "2e-5"}, "manifold"),
     "edge-leak-valves": ("The same edge leak with per-cup flow valves (closing above 8 kPa line drop): the leaking cup is "

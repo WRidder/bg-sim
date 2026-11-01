@@ -24,11 +24,11 @@ manifold with a generator per cup.
 
 | model | what | outcome |
 | --- | --- | --- |
-| `transfer` | S-curve, 1.75 s, cardboard, 60 l/min | max U 0.474 ≤ 0.5, placed at x = 1.000 m |
-| `aggressive-trapezoid` | trapezoid, 0.7 s (9.2 m/s²) | the bellows ring at the deceleration step, and all six cups peel |
-| `aggressive-scurve` | S-curve, 0.7 s (13.1 m/s²) | max U 1.18, but held |
-| `tilt-tray` | cycloidal, 1.25 s, tilt gain 1 | max U 0.46 (0.62 level) |
-| `porous-undersized` | porous parcel, 36 l/min, S-curve 1.2 s | 21.6 kPa, lost in the deceleration |
+| `transfer` | S-curve, 1.75 s, cardboard, 60 l/min | max U 0.450 ≤ 0.5, placed at x = 1.000 m |
+| `aggressive-trapezoid` | trapezoid, 0.74 s (8.2 m/s²) | the bellows ring at the deceleration step, and all six cups peel |
+| `aggressive-scurve` | S-curve, 0.74 s (11.7 m/s²) | max U 1.53, but held |
+| `tilt-tray` | cycloidal, 1.25 s, tilt gain 1 | max U 0.45 (0.62 level) |
+| `porous-undersized` | porous parcel, 36 l/min, S-curve 1.1 s | 21.6 kPa, lost in the deceleration |
 | `edge-leak` | cup 1 over the edge (20 mm² leak), common manifold | all cups at 16.7 kPa, nothing lifted |
 | `edge-leak-valves` | the same, with per-cup flow valves | cup 1 isolated, the others at 48.7 kPa, held |
 | `separate-generators` | the same, with a 10 l/min generator per cup | good cups at 48.3 kPa, held |
@@ -49,8 +49,10 @@ The 3D scene colours each cup by its utilisation, from blue to red, and turns a 
   - `CupValve` is a line with an optional check valve or flow-closing valve.
   - `GripMonitor` provides the held flag and the lost-cup count.
 - `design/params.py`: all parameters. They become global parameters of the models.
-- `design/sizing.py`: the analytic sizing. It covers quasi-static cup loads (linear bellows statics and the
-  bolt-group formula), the operating vacuum, the generator size, the pick-up ODE and the topology.
+- `design/sizing.py`: the analytic sizing. It covers quasi-static cup loads (bellows statics linearised at
+  the hang point, with the lift stroke, the bottoming and the vacuum- and stroke-dependent side stiffness
+  of the nonlinear `SuctionCup`, and the bolt-group formula), the operating vacuum, the generator size, the
+  pick-up ODE and the topology.
 - `design/build_model.py`: writes `models/*.bgmodel.json` and `scenes/suction-gripper.sdf` (through `scene.py`).
 - `design/design.py`: the analysis.
   - It runs the hand calculation and validates it against simulations.
@@ -85,17 +87,22 @@ Shortest safe transfer time in seconds (U ≤ 0.5, 60 l/min, yaw 0, level / tilt
 
 | parcel | trapezoid | S-curve | polynomial | cycloidal |
 | --- | --- | --- | --- | --- |
-| sealed | 1.50 / 1.50 | 1.54 / 1.32 | 1.29 / 1.05 | 1.29 / 1.08 |
-| cardboard | 1.83 / 1.83 | 1.69 / 1.58 | 1.50 / 1.19 | 1.54 / 1.19 |
-| porous | > 3.9 | 3.30 / 2.95 | 3.03 / 2.73 | 3.10 / 2.44 |
+| sealed | 1.43 / 1.61 | 1.43 / 1.39 | 1.26 / 1.08 | 1.32 / 1.08 |
+| cardboard | 1.74 / 1.91 | 1.61 / 1.46 | 1.50 / 1.16 | 1.54 / 1.19 |
+| porous | > 3.9 / 3.60 | 3.40 / 2.50 | 3.03 / 2.38 | 3.10 / 2.13 |
 
-- **Profile.** At equal time (0.7 s) the trapezoid is the only profile that loses the parcel, although its
-  peak acceleration is the lowest (9.2 against 11.8 to 13.1 m/s²). The dynamic amplification at 4 m/s² is
-  1.90 for the trapezoid and falls from 2.51 to 1.01 for S-curves with λ = 0.1 to 0.5.
-- **Yaw.** A pattern at 45° or 90° to the path is 10 to 25 % slower.
-- **Tilt.** Tilting saves 8 to 21 % with smooth profiles and nothing with the trapezoid.
-- **Generator.** For S = 2 at 2 m/s² the generator needs 5 l/min for sealed parcels, 30 l/min for
-  cardboard and 131 l/min for porous parcels.
+- **Profile.** At equal time (0.74 s) the trapezoid is the only profile that loses the parcel, although its
+  peak acceleration is the lowest (8.2 against 10.5 to 11.7 m/s²). At 0.7 s the S-curve (13.1 m/s²) is
+  lost too, while the polynomial and the cycloid still hold; at 0.8 s all four hold. The dynamic
+  amplification at 4 m/s² is 1.80 for the trapezoid and falls from 1.63 to 0.96 for S-curves with λ = 0.1
+  to 0.5.
+- **Yaw.** A pattern at 45° or 90° to the path is 10 to 31 % slower (cardboard S-curve: 1.61 to 1.96 /
+  2.00 s).
+- **Tilt.** Tilting saves 14 to 31 % with the polynomial and the cycloid, 3 to 26 % with the S-curve. The
+  trapezoid gets 10 to 13 % slower with the tilt for sealed and cardboard parcels: its acceleration
+  jumps, so the smooth tilt servo is wrong right after each step, where the ringing peak decides.
+- **Generator.** For S = 2 at 2 m/s² the generator needs 5 l/min for sealed parcels, 31 l/min for
+  cardboard and 138 l/min for porous parcels.
 - **Supply topology.** One cup off the edge on a common manifold drops every cup. Flow valves (48.7 kPa),
   restrictor nozzles (40.9 kPa) or separate generators (48.3 kPa) keep the other five cups holding.
 

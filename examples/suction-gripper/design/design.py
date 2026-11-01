@@ -344,12 +344,12 @@ def sweep(procs: int, work: Path, t_x0: float, quick: bool) -> dict:
 def equal_time(procs: int, work: Path, t_x0: float) -> dict:
     """All four profiles at the same transfer time; and the porous / edge-leak scenarios."""
     jobs = []
-    for tm in (0.7, 0.8):
+    for tm in (0.7, 0.74, 0.8):
         for kind in (1, 2, 3, 4):
             jobs.append(job(f"eq_{kind}_T{tm:g}", {"kind": kind, "T_move": tm}, t_x0 + tm + 0.5))
     res = run_jobs(jobs, procs, work, "eq")
     rows = []
-    for tm in (0.7, 0.8):
+    for tm in (0.7, 0.74, 0.8):
         for kind in (1, 2, 3, 4):
             m = transfer_metrics(res[f"eq_{kind}_T{tm:g}"], t_x0, tm)
             rows.append({"T_move": tm, "profile": PROFILES[kind], "a_peak": peak_a(kind, tm), **m})
@@ -359,8 +359,8 @@ def equal_time(procs: int, work: Path, t_x0: float) -> dict:
 SCEN = {
     "tilt_level": {"kind": 4, "T_move": 1.25, "k_tilt_g": 0},
     "tilt_tray": {"kind": 4, "T_move": 1.25, "k_tilt_g": 1},
-    "porous_36lpm": {"perm": PORO["porous"], "Q_max": 6e-4, "T_move": 1.2},
-    "porous_60lpm": {"perm": PORO["porous"], "Q_max": 1e-3, "T_move": 1.2},
+    "porous_36lpm": {"perm": PORO["porous"], "Q_max": 6e-4, "T_move": 1.1},
+    "porous_60lpm": {"perm": PORO["porous"], "Q_max": 1e-3, "T_move": 1.1},
     "edge_manifold": {"A_edge": 2e-5},
     "edge_valves": {"A_edge": 2e-5, "dp_close": 8000},
     "edge_nozzles": {"A_edge": 2e-5, "A_line": 1e-6},

@@ -40,48 +40,48 @@
 <line x1="60" y1="30.0" x2="740" y2="30.0" stroke="#e0e0e0"/>
 <text x="54" y="34.0" text-anchor="end" fill="#333">3.5</text>
 <text x="14" y="150.0" transform="rotate(-90 14 150.0)" text-anchor="middle" fill="#333">shortest safe transfer time [s]</text>
-<rect x="77.0" y="167.1" width="25.2" height="102.9" fill="#1f77b4"/>
-<text x="89.6" y="164.1" text-anchor="middle" font-size="10" fill="#333">1.50</text>
-<rect x="104.2" y="144.9" width="25.2" height="125.1" fill="#d95f02"/>
-<text x="116.8" y="141.9" text-anchor="middle" font-size="10" fill="#333">1.82</text>
+<rect x="77.0" y="172.3" width="25.2" height="97.7" fill="#1f77b4"/>
+<text x="89.6" y="169.3" text-anchor="middle" font-size="10" fill="#333">1.43</text>
+<rect x="104.2" y="150.9" width="25.2" height="119.1" fill="#d95f02"/>
+<text x="116.8" y="147.9" text-anchor="middle" font-size="10" fill="#333">1.74</text>
 <text x="145.0" y="266" text-anchor="middle" fill="#888">&gt;</text>
-<rect x="158.6" y="144.9" width="25.2" height="125.1" fill="#1b9e77"/>
-<text x="171.2" y="141.9" text-anchor="middle" font-size="10" fill="#333">1.82</text>
-<rect x="185.8" y="128.6" width="25.2" height="141.4" fill="#a6761d"/>
-<text x="198.4" y="125.6" text-anchor="middle" font-size="10" fill="#333">2.06</text>
+<rect x="158.6" y="138.9" width="25.2" height="131.1" fill="#1b9e77"/>
+<text x="171.2" y="135.9" text-anchor="middle" font-size="10" fill="#333">1.91</text>
+<rect x="185.8" y="135.9" width="25.2" height="134.1" fill="#a6761d"/>
+<text x="198.4" y="132.9" text-anchor="middle" font-size="10" fill="#333">1.96</text>
 <text x="145.0" y="286" text-anchor="middle" fill="#333">trapezoid</text>
-<rect x="247.0" y="164.6" width="25.2" height="105.4" fill="#1f77b4"/>
-<text x="259.6" y="161.6" text-anchor="middle" font-size="10" fill="#333">1.54</text>
-<rect x="274.2" y="153.9" width="25.2" height="116.1" fill="#d95f02"/>
-<text x="286.8" y="150.9" text-anchor="middle" font-size="10" fill="#333">1.69</text>
-<rect x="301.4" y="43.7" width="25.2" height="226.3" fill="#7570b3"/>
-<text x="314.0" y="40.7" text-anchor="middle" font-size="10" fill="#333">3.30</text>
-<rect x="328.6" y="162.0" width="25.2" height="108.0" fill="#1b9e77"/>
-<text x="341.2" y="159.0" text-anchor="middle" font-size="10" fill="#333">1.57</text>
-<rect x="355.8" y="128.6" width="25.2" height="141.4" fill="#a6761d"/>
-<text x="368.4" y="125.6" text-anchor="middle" font-size="10" fill="#333">2.06</text>
+<rect x="247.0" y="172.3" width="25.2" height="97.7" fill="#1f77b4"/>
+<text x="259.6" y="169.3" text-anchor="middle" font-size="10" fill="#333">1.43</text>
+<rect x="274.2" y="159.4" width="25.2" height="110.6" fill="#d95f02"/>
+<text x="286.8" y="156.4" text-anchor="middle" font-size="10" fill="#333">1.61</text>
+<rect x="301.4" y="36.9" width="25.2" height="233.1" fill="#7570b3"/>
+<text x="314.0" y="33.9" text-anchor="middle" font-size="10" fill="#333">3.40</text>
+<rect x="328.6" y="169.7" width="25.2" height="100.3" fill="#1b9e77"/>
+<text x="341.2" y="166.7" text-anchor="middle" font-size="10" fill="#333">1.46</text>
+<rect x="355.8" y="132.9" width="25.2" height="137.1" fill="#a6761d"/>
+<text x="368.4" y="129.9" text-anchor="middle" font-size="10" fill="#333">2.00</text>
 <text x="315.0" y="286" text-anchor="middle" fill="#333">S-curve</text>
-<rect x="417.0" y="181.7" width="25.2" height="88.3" fill="#1f77b4"/>
-<text x="429.6" y="178.7" text-anchor="middle" font-size="10" fill="#333">1.29</text>
+<rect x="417.0" y="183.9" width="25.2" height="86.1" fill="#1f77b4"/>
+<text x="429.6" y="180.9" text-anchor="middle" font-size="10" fill="#333">1.26</text>
 <rect x="444.2" y="167.1" width="25.2" height="102.9" fill="#d95f02"/>
 <text x="456.8" y="164.1" text-anchor="middle" font-size="10" fill="#333">1.50</text>
 <rect x="471.4" y="62.6" width="25.2" height="207.4" fill="#7570b3"/>
 <text x="484.0" y="59.6" text-anchor="middle" font-size="10" fill="#333">3.02</text>
-<rect x="498.6" y="188.1" width="25.2" height="81.9" fill="#1b9e77"/>
-<text x="511.2" y="185.1" text-anchor="middle" font-size="10" fill="#333">1.19</text>
+<rect x="498.6" y="190.3" width="25.2" height="79.7" fill="#1b9e77"/>
+<text x="511.2" y="187.3" text-anchor="middle" font-size="10" fill="#333">1.16</text>
 <rect x="525.8" y="150.9" width="25.2" height="119.1" fill="#a6761d"/>
 <text x="538.4" y="147.9" text-anchor="middle" font-size="10" fill="#333">1.74</text>
 <text x="485.0" y="286" text-anchor="middle" fill="#333">polynomial 3-4-5</text>
-<rect x="587.0" y="181.7" width="25.2" height="88.3" fill="#1f77b4"/>
-<text x="599.6" y="178.7" text-anchor="middle" font-size="10" fill="#333">1.29</text>
+<rect x="587.0" y="179.6" width="25.2" height="90.4" fill="#1f77b4"/>
+<text x="599.6" y="176.6" text-anchor="middle" font-size="10" fill="#333">1.32</text>
 <rect x="614.2" y="164.6" width="25.2" height="105.4" fill="#d95f02"/>
 <text x="626.8" y="161.6" text-anchor="middle" font-size="10" fill="#333">1.54</text>
 <rect x="641.4" y="57.4" width="25.2" height="212.6" fill="#7570b3"/>
 <text x="654.0" y="54.4" text-anchor="middle" font-size="10" fill="#333">3.10</text>
 <rect x="668.6" y="188.1" width="25.2" height="81.9" fill="#1b9e77"/>
 <text x="681.2" y="185.1" text-anchor="middle" font-size="10" fill="#333">1.19</text>
-<rect x="695.8" y="150.9" width="25.2" height="119.1" fill="#a6761d"/>
-<text x="708.4" y="147.9" text-anchor="middle" font-size="10" fill="#333">1.74</text>
+<rect x="695.8" y="144.9" width="25.2" height="125.1" fill="#a6761d"/>
+<text x="708.4" y="141.9" text-anchor="middle" font-size="10" fill="#333">1.82</text>
 <text x="655.0" y="286" text-anchor="middle" fill="#333">cycloidal</text>
 <rect x="60" y="318" width="12" height="12" fill="#1f77b4"/>
 <text x="76" y="328" fill="#333">sealed</text>
@@ -109,14 +109,14 @@ The example answers three questions:
 
 It also covers the air side: the operating vacuum against generator size and porosity, the pick-up time, and one leaking cup on a shared manifold versus flow valves, restrictor nozzles or a generator per cup.
 
-The default run is this model: an S-curve transfer of 1.75 s, the shortest S-curve that keeps every cup at U ≤ 0.5 with cardboard (see [results](page:results)).
+The default run is this model: an S-curve transfer of 1.75 s, which keeps every cup at U ≤ 0.5 with cardboard (the shortest such S-curve is 1.61 s, see [results](page:results)).
 
 ## What to try
 
 1. Press **Run** and open the **Dashboard** tab. The two plots show the cup utilisation and the vacuum. The indicator and the counter show whether the parcel is held and how many cups are lost.
-2. Set **Profile** to 1 (trapezoid) and **Transfer time** to 0.7 s, then run again. At the deceleration step the bellows ring, the cups peel one after the other, and all six lose their seal.
-3. Keep 0.7 s and set the profile to 2 (S-curve). The peak acceleration rises to 13.1 m/s², yet no cup is lost.
-4. Set **Parcel permeance** to 2e-6 (porous) and **Generator flow** to 6e-4 (36 l/min). The vacuum drops to 21.6 kPa and a 1.2 s move tears the parcel off.
+2. Set **Profile** to 1 (trapezoid) and **Transfer time** to 0.74 s, then run again. At the deceleration step the bellows ring, the cups peel one after the other, and all six lose their seal.
+3. Keep 0.74 s and set the profile to 2 (S-curve). The peak acceleration rises to 11.7 m/s², yet no cup is lost.
+4. Set **Parcel permeance** to 2e-6 (porous) and **Generator flow** to 6e-4 (36 l/min). The vacuum drops to 21.6 kPa and a 1.1 s move tears the parcel off.
 5. Set **Tilt gain** to 1, or **Yaw of the cup pattern** to 45°, to see the effect of the tray tilt and of the pattern orientation.
 
 All of these are global parameters. The Parameters tab lists them and the dashboard sliders change them. A change keeps the compiled plant, so a rerun takes about a second.
@@ -150,10 +150,12 @@ Four [ContactPoint](block:Floor1) corners carry the carton on the conveyor and o
 
 | part | law |
 | --- | --- |
-| bellows axial | $F_s = k_{ax}(s - L_0) + d_{ax}\dot s$ (pull > 0) |
+| bellows axial | $F_s = k_{ax}(s - L_0) + d_{ax}\dot s + A_{fold}\,\Delta p - F_{bot}$ (pull > 0) |
+| bottoming | $F_{bot} = k_{bot}\,x_b (x_b/x_{bot})^{n_{bot}-1}$, $x_b$ the compression beyond $s_{bot}$ (smooth) |
+| side stiffness | $k_{lat}$ and $k_{tilt}$ times $k_f = (1 + c_{vac}\Delta p/p_{atm})\,e^{-c_{ext}(s - L_0)/L_0}$ |
 | holding capacity | $F_{cap} = A_{eff}\,\Delta p$ |
 | transmitted pull | $T = \mathrm{smin}(F_s, F_{cap})$, with lip contact $N = F_{cap} - T$ |
-| bending, torsion | $M = 2 q_w (k_{tilt} q_x, k_{tilt} q_y, k_{tor} q_z) + d_{rot}\,\omega$ |
+| bending, torsion | $M = 2 q_w (k_f k_{tilt} q_x, k_f k_{tilt} q_y, k_{tor} q_z) + d_{rot}\,\omega$ |
 | peeling | lip gap $h = \mathrm{pos}((F_s + 4\lvert M_{xy}\rvert/D_{lip} - F_{cap})/k_{ax})$ |
 | shear | bellows deflection $e$ plus a Dahl slip law: elastic below $\mu N$, sliding at it |
 
@@ -168,7 +170,8 @@ The cup parameters are those of a 50 mm two-fold bellows cup:
 - effective area 14 cm², so 58 kPa holds 81 N;
 - axial stiffness 5 kN/m, lateral 2.5 kN/m, tilt 3 N·m/rad;
 - μ = 0.5 on cardboard;
-- chamber volume 20 cm³.
+- chamber volume 20 cm³;
+- nonlinear bellows (estimates): the folds bottom after 10 mm of compression ($k_{bot}$ = 5e4 N/m, cubic), the vacuum pulls the bellows 6 mm short ($A_{fold}$ = 5 cm²), and the side stiffness rises by 59 % under 60 kPa and falls as the cup is pulled long ($c_{vac}$ = 1, $c_{ext}$ = 3). With all of them zero the cup is the linear one.
 
 ## Motion
 
@@ -240,7 +243,7 @@ The table gives the operating vacuum per cup in kPa. A sealed parcel is limited 
 
 ## Cup loads
 
-For a steady acceleration $a$ along the path, the cups must apply the specific force $\mathbf f = \mathbf a - \mathbf g$ to the carton, expressed in the gripper frame (rotated by yaw ψ and tilt θ). The bellows are linear springs. The carton moves rigidly relative to the gripper by a translation $\mathbf u$ and a small rotation $\boldsymbol\varphi$. Cup $i$ at $\mathbf r_i$ from the centre of mass deflects by $\mathbf d_i = \mathbf u + \boldsymbol\varphi\times\mathbf r_i$, so the 6 x 6 statics are
+For a steady acceleration $a$ along the path, the cups must apply the specific force $\mathbf f = \mathbf a - \mathbf g$ to the carton, expressed in the gripper frame (rotated by yaw ψ and tilt θ). The bellows are nonlinear, so `sizing.operating_cup` linearises them about the hanging parcel: it solves the axial law $k_{ax}\,ext + A_{fold}\Delta p - F_{bot}(ext) = m g/6$ for the extension and takes the tangent stiffnesses there, with $k_f$ on the lateral and tilt springs. The carton moves rigidly relative to the gripper by a translation $\mathbf u$ and a small rotation $\boldsymbol\varphi$. Cup $i$ at $\mathbf r_i$ from the centre of mass deflects by $\mathbf d_i = \mathbf u + \boldsymbol\varphi\times\mathbf r_i$, so the 6 x 6 statics are
 
 $$\sum_i K\mathbf d_i = -m\mathbf f,\qquad \sum_i \mathbf r_i\times K\mathbf d_i + K_r\boldsymbol\varphi = 0$$
 
@@ -250,9 +253,9 @@ At rest the U is 0.20 (sealed), 0.24 (cardboard) and 0.40 (porous). Solving max 
 
 | parcel | Δp [kPa] | yaw 0 | yaw 0, tilt | yaw 45° | yaw 45°, tilt | yaw 90° | yaw 90°, tilt |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| sealed | 58.0 | 4.11 | 7.18 | 3.01 | 6.13 | 3.07 | 6.19 |
-| cardboard | 48.3 | 2.96 | 5.97 | 2.17 | 5.17 | 2.21 | 5.21 |
-| porous | 29.0 | 0.67 | 2.97 | 0.49 | 2.67 | 0.50 | 2.68 |
+| sealed | 58.0 | 3.84 | 6.93 | 2.73 | 5.86 | 2.69 | 5.81 |
+| cardboard | 48.3 | 2.82 | 5.83 | 2.02 | 5.00 | 2.00 | 4.98 |
+| porous | 29.0 | 0.66 | 2.95 | 0.48 | 2.64 | 0.48 | 2.65 |
 
 Values are in m/s², at S = 2 and 60 l/min. Tilt means k_tilt = 1, with θ ≤ 20°.
 
@@ -262,9 +265,9 @@ Turned around, a required acceleration needs a vacuum, and that vacuum needs a g
 
 | acceleration | vacuum needed | sealed | cardboard | porous |
 | --- | --- | --- | --- | --- |
-| 1 m/s² | 31.8 kPa | 3.2 l/min | 16.8 l/min | 72 l/min |
-| 2 m/s² | 40.2 kPa | 5.1 l/min | 29.8 l/min | 131 l/min |
-| 3 m/s² | 48.6 kPa | 9.8 l/min | 62 l/min | 287 l/min |
+| 1 m/s² | 32.0 kPa | 3.2 l/min | 17.1 l/min | 73 l/min |
+| 2 m/s² | 40.9 kPa | 5.3 l/min | 31.3 l/min | 138 l/min |
+| 3 m/s² | 50.0 kPa | 11.3 l/min | 73 l/min | 340 l/min |
 
 Porous parcels need a pump-sized generator or a slower move. For a sealed parcel the ejector size hardly matters.
 
@@ -288,15 +291,15 @@ Below 90 l/min a porous parcel never reaches the lift-ready vacuum, because 29.0
 
 | quantity | simulation | analytic |
 | --- | --- | --- |
-| operating vacuum, sealed | 57 970.6 Pa | 57 971.2 Pa |
-| operating vacuum, cardboard | 48 329.8 Pa | 48 329.9 Pa |
+| operating vacuum, sealed | 57 970.5 Pa | 57 971.2 Pa |
+| operating vacuum, cardboard | 48 329.7 Pa | 48 329.9 Pa |
 | operating vacuum, porous | 29 022.4 Pa | 29 022.6 Pa |
 | vacuum 50 ms after the valve opens (sealed / cardboard / porous) | 18 731 / 18 062 / 15 693 Pa | 18 733 / 18 064 / 15 695 Pa |
-| pull of cup 5 / 1 at 1.6 m/s² (sealed, slow S-curve) | 19.46 / 13.46 N | 19.61 / 13.09 N |
-| shear per cup | 2.58 N | 2.68 N |
-| U of cup 5 / 1 | 0.313 / 0.239 | 0.318 / 0.238 |
+| pull of cup 5 / 1 at 1.6 m/s² (sealed, slow S-curve) | 19.47 / 13.36 N | 19.53 / 13.17 N |
+| shear per cup | 2.54 to 2.78 N | 2.68 N |
+| U of cup 5 / 1 | 0.320 / 0.253 | 0.327 / 0.248 |
 
-The slow-move loads agree within 1.9 % for the pull and 3.8 % for the shear. The difference comes from the dynamic loads the hand calculation ignores.
+The slow-move loads agree within 1.0 % for the pull and 5.1 % for the shear. The difference comes from the dynamic loads the hand calculation ignores.
 
 ## Dynamic amplification and jerk
 
@@ -304,26 +307,26 @@ At the same peak acceleration of 4 m/s², the dynamic U divided by the quasi-sta
 
 | profile | jerk [m/s³] | DAF |
 | --- | --- | --- |
-| trapezoid | ∞ | 1.90 |
-| S-curve λ = 0.1 | 107 | 2.51 |
-| S-curve λ = 0.2 | 51 | 2.10 |
-| S-curve λ = 0.3 | 32 | 1.44 |
-| S-curve λ = 0.5 | 16 | 1.01 |
+| trapezoid | ∞ | 1.80 |
+| S-curve λ = 0.1 | 107 | 1.63 |
+| S-curve λ = 0.2 | 51 | 1.37 |
+| S-curve λ = 0.3 | 32 | 1.35 |
+| S-curve λ = 0.5 | 16 | 0.96 |
 
-The bellows and the carton form lightly damped modes: about 6 Hz laterally and 9 Hz axially for six cups on 10 kg. A jerk phase much shorter than their period acts like a step. At this peak, λ = 0.1 is even slightly worse than the trapezoid, because the short acceleration phase lets the excitations of its two ends add up. From λ ≈ 0.3 the amplification falls quickly, and λ = 0.5 is quasi-static.
+The bellows and the carton form lightly damped modes: about 6 Hz laterally and 9 Hz axially for six cups on 10 kg. A jerk phase much shorter than their period acts like a step, so λ = 0.1 is little better than the trapezoid. From λ = 0.2 the amplification drops to about 1.36, and λ = 0.5 is quasi-static. With the linear bellows of the first version λ = 0.1 was even worse than the trapezoid (2.51 against 1.90).
 
 ## Q2: the profile at equal time
 
-All profiles move 1 m in 0.7 s:
+All profiles move 1 m in the same time (max U 2 means lost):
 
-| profile | peak a [m/s²] | max U | cups lost |
+| profile | 0.70 s: peak a / max U | 0.74 s: peak a / max U | 0.80 s: peak a / max U |
 | --- | --- | --- | --- |
-| trapezoid | 9.18 | 2 (lost) | 6 |
-| S-curve | 13.12 | 1.18 | 0 |
-| polynomial 3-4-5 | 11.78 | 1.15 | 0 |
-| cycloidal | 12.82 | 1.14 | 0 |
+| trapezoid | 9.18 / 2 (lost) | 8.22 / 2 (lost) | 7.03 / 1.13 |
+| S-curve | 13.12 / 2 (lost) | 11.74 / 1.53 | 10.04 / 1.39 |
+| polynomial 3-4-5 | 11.78 / 1.33 | 10.54 / 1.15 | 9.02 / 1.08 |
+| cycloidal | 12.82 / 1.30 | 11.47 / 1.14 | 9.82 / 1.06 |
 
-The trapezoid has the lowest peak acceleration yet is the only profile that loses the parcel. Its acceleration steps excite the bellows mode and make the leading cups peel. The others pass the U = 1 mark only briefly and hold through the lip friction margin. None of them is safe with S = 2.
+Peak accelerations are in m/s². At 0.74 s the trapezoid has the lowest peak acceleration yet is the only profile that loses the parcel; at 0.7 s the S-curve, with 43 % more peak, is lost too, and at 0.8 s all four hold. Its acceleration steps excite the bellows mode and make the leading cups peel. The others pass the U = 1 mark only briefly and hold through the lip friction margin. None of them is safe with S = 2.
 
 ## Q1 and Q3: the shortest safe move
 
@@ -333,20 +336,20 @@ The trapezoid has the lowest peak acceleration yet is the only profile that lose
 
 | parcel | trapezoid | S-curve | polynomial | cycloidal |
 | --- | --- | --- | --- | --- |
-| sealed | 1.50 / 1.50 | 1.54 / 1.32 | 1.29 / 1.05 | 1.29 / 1.08 |
-| cardboard | 1.83 / 1.83 | 1.69 / 1.58 | 1.50 / 1.19 | 1.54 / 1.19 |
-| porous | > 3.9 | 3.30 / 2.95 | 3.03 / 2.73 | 3.10 / 2.44 |
+| sealed | 1.43 / 1.61 | 1.43 / 1.39 | 1.26 / 1.08 | 1.32 / 1.08 |
+| cardboard | 1.74 / 1.91 | 1.61 / 1.46 | 1.50 / 1.16 | 1.54 / 1.19 |
+| porous | > 3.9 / 3.60 | 3.40 / 2.50 | 3.03 / 2.38 | 3.10 / 2.13 |
 
-Times are T_min in seconds at yaw 0, level / tilted. The profile matters at equal peak acceleration as well. All profiles share the same quasi-static limit, but the dynamic surcharge differs (see the DAF table). A smooth profile can therefore run closer to the quasi-static limit. It also needs a higher peak for the same move time (4.5 against 5.8 to 6.4 L/T²). For cardboard the safe peak accelerations are 1.35 m/s² (trapezoid), 2.24 (S-curve), 2.57 (polynomial) and 2.66 (cycloidal), against the quasi-static limit of 2.96.
+Times are T_min in seconds at yaw 0, level / tilted. The profile matters at equal peak acceleration as well. All profiles share the same quasi-static limit, but the dynamic surcharge differs (see the DAF table). A smooth profile can therefore run closer to the quasi-static limit. It also needs a higher peak for the same move time (4.5 against 5.8 to 6.4 L/T²). For cardboard the safe peak accelerations are 1.49 m/s² (trapezoid), 2.47 (S-curve), 2.57 (polynomial) and 2.66 (cycloidal), against the quasi-static limit of 2.82.
 
-**Yaw.** At yaw 45° or 90° the short pattern side lies along the path, so the couple that balances the tipping moment has a shorter lever arm. T_min grows by 10 to 25 % (cardboard S-curve: 1.69 to 2.06 s). Keep the long side of the pattern along the path.
+**Yaw.** At yaw 45° or 90° the short pattern side lies along the path, so the couple that balances the tipping moment has a shorter lever arm. T_min grows by 10 to 31 % (cardboard S-curve: 1.61 to 1.96 s at 45° and 2.00 s at 90°). Keep the long side of the pattern along the path.
 
-**Tilt.** Tilting along the specific force turns most of the shear and the tipping moment into pull, which the cups carry better. For the smooth profiles T_min drops by 8 to 21 % (cardboard polynomial: 1.50 to 1.19 s, cycloidal 1.54 to 1.19 s). In `tilt-tray` the max U falls from 0.62 (level) to 0.46 at the same 1.25 s. The trapezoid gains nothing within the sweep resolution. Its acceleration jumps, so a smooth tilt servo arrives either too early (wrong for the phase before) or too late, and the ringing peak at the step decides.
+**Tilt.** Tilting along the specific force turns most of the shear and the tipping moment into pull, which the cups carry better. For the polynomial and the cycloid T_min drops by 14 to 31 % (cardboard polynomial: 1.50 to 1.16 s, cycloidal 1.54 to 1.19 s), for the S-curve by 3 to 26 %. In `tilt-tray` the max U falls from 0.62 (level) to 0.45 at the same 1.25 s. The trapezoid gets 10 to 13 % slower with the tilt (sealed, cardboard). Its acceleration jumps, so a smooth tilt servo arrives either too early (wrong for the phase before) or too late, and the ringing peak at the step decides.
 
 ## Recommendations
 
-- Use a smooth profile (polynomial or cycloidal) with the long side of the cup pattern along the path. Add the tray tilt if the axis is available. For cardboard this is 1.19 s against 1.83 s for a trapezoid.
-- Size the generator for the most porous parcel. Porous parcels need about 2.5 times the move time, or a pump of more than 130 l/min.
+- Use a smooth profile (polynomial or cycloidal) with the long side of the cup pattern along the path. Add the tray tilt if the axis is available. For cardboard this is 1.16 s against 1.74 s for a trapezoid.
+- Size the generator for the most porous parcel. Porous parcels need about twice the move time, or a pump of about 140 l/min.
 - With a common manifold, one cup off the parcel edge drops every cup (see `edge-leak`). Per-cup flow valves or restrictor nozzles keep the other five cups at 48.7 and 40.9 kPa.
 
 ## Checks (`expected.json`)
@@ -371,13 +374,13 @@ The 43 checks of the eight models cover the following (plus one docs check per m
 @@ page aggressive-trapezoid overview - | Aggressive trapezoid
 # Aggressive trapezoid: the parcel is lost
 
-This model is the `transfer` plant with `kind` = 1 (trapezoid) and `T_move` = 0.7 s, which gives a peak acceleration of 9.18 m/s² with infinite jerk.
+This model is the `transfer` plant with `kind` = 1 (trapezoid) and `T_move` = 0.74 s, which gives a peak acceleration of 8.2 m/s² with infinite jerk.
 
 ![Utilisation, lost cups and vacuum|900](@fig:run)
 
-The carton survives the acceleration (U briefly reaches 1.15) and the cruise. The deceleration step at t ≈ 1.42 s sets the bellows ringing, and within 80 ms the U of the trailing cups 1/2 goes past 1: braking reverses the tipping moment, so they now take the extra pull. A lifted lip leaks, the vacuum in that cup drops, and the capacity falls with it. The first cups lose their seal at 1.50 s, the load moves to the others, and [Monitor/n_lost](signal:Monitor/n_lost) reaches 6 at 1.54 s. The carton falls short of the place position.
+The carton survives the acceleration (U briefly goes past 1) and the cruise. The deceleration step at t ≈ 1.45 s sets the bellows ringing, and within 70 ms the U of the trailing cups 1/2 goes past 1: braking reverses the tipping moment, so they now take the extra pull. A lifted lip leaks, the vacuum in that cup drops, and the capacity falls with it. The first cups lose their seal at 1.51 s, the load moves to the others, and [Monitor/n_lost](signal:Monitor/n_lost) reaches 6 at 1.55 s. The carton leaves the gripper still moving forward and is not placed.
 
-Compare with `aggressive-scurve`: the same 0.7 s as an S-curve holds.
+Compare with `aggressive-scurve`: the same 0.74 s as an S-curve holds. (With the linear bellows of the first version the trapezoid was already lost at 0.7 s and the S-curve still held there; the nonlinear bellows shift both limits, so the pair now runs at 0.74 s.)
 @@ figures aggressive-trapezoid
 {
   "run": {
@@ -393,11 +396,11 @@ Compare with `aggressive-scurve`: the same 0.7 s as an S-curve holds.
 @@ page aggressive-scurve overview - | Aggressive S-curve
 # Aggressive S-curve: the same time, held
 
-This model is the `transfer` plant with `kind` = 2 and `T_move` = 0.7 s. The peak acceleration is 13.1 m/s², 43 % more than the trapezoid in `aggressive-trapezoid`, but the jerk is finite (λ = 0.3).
+This model is the `transfer` plant with `kind` = 2 and `T_move` = 0.74 s. The peak acceleration is 11.7 m/s², 43 % more than the trapezoid in `aggressive-trapezoid`, but the jerk is finite (λ = 0.3).
 
 ![Utilisation and position|900](@fig:run)
 
-The maximum U reaches 1.18 for a moment, so the safety factor is gone, but no cup loses its seal. The carton slides about 1 cm on the lips during the hard deceleration and is placed at [Pose/px](signal:Pose/px) ≈ 0.99 m.
+The maximum U reaches 1.53 for a moment, so the safety factor is gone, but no cup loses its seal, and the carton is placed at [Pose/px](signal:Pose/px) = 1.000 m.
 @@ figures aggressive-scurve
 {
   "run": {
@@ -416,7 +419,7 @@ This model runs a cycloidal transfer of 1.25 s (peak 4.0 m/s²) with `k_tilt` = 
 
 ![Tilt, acceleration and utilisation|900](@fig:run)
 
-The maximum U is 0.46, which is safe with S = 2. Held level, the same move reaches U = 0.62 (design.py). The cycloid needs 1.54 s level and 1.19 s tilted for cardboard.
+The maximum U is 0.45, which is safe with S = 2. Held level, the same move reaches U = 0.62 (design.py). The cycloid needs 1.54 s level and 1.19 s tilted for cardboard.
 @@ figures tilt-tray
 {
   "run": {
@@ -435,7 +438,7 @@ The carton material leaks 2e-6 m/(s·Pa) per cup area (`perm`), and the generato
 
 ![Vacuum, flow and lost cups|900](@fig:run)
 
-The carton survives the lift and the acceleration of a 1.2 s S-curve and is lost in the deceleration. With 60 l/min (29.0 kPa) the same move holds with a max U of 1.13. A safe move (U ≤ 0.5) needs 3.3 s as an S-curve, or a much larger generator (see the sizing page of the `transfer` model).
+The carton survives the lift and the acceleration of a 1.1 s S-curve (5.3 m/s²) and is lost in the deceleration: the first cup at 1.80 s, all six at 1.83 s. With 60 l/min (29.0 kPa) the same move holds with a max U of 1.14. A safe move (U ≤ 0.5) needs 3.4 s as an S-curve even at 60 l/min, or a much larger generator (see the sizing page of the `transfer` model).
 @@ figures porous-undersized
 {
   "run": {
