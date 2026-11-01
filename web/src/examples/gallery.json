@@ -91,13 +91,14 @@
   },
   "f16": {
     "title": "F-16",
-    "description": "The nonlinear F-16 of Stevens & Lewis: open-loop modes, a gain-scheduled pitch fly-by-wire, alpha/g envelope protection and a rate-limit PIO.",
+    "description": "The nonlinear F-16 of Stevens & Lewis: open-loop modes, scheduled pitch FBW, envelope protection, a rate-limit PIO and a flyable three-axis FBW for a simulator FMU.",
     "hasScene": true,
     "models": [
       "f16-open-loop",
       "f16-fbw",
       "f16-envelope",
-      "f16-pio"
+      "f16-pio",
+      "f16-sim"
     ]
   },
   "gripper": {

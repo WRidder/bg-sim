@@ -1,5 +1,5 @@
-"""The example runner's ``fft_peak``, ``period``, ``energy``, ``invariant`` and
-``planar_fk`` checks.
+"""The example runner's ``fft_peak``, ``period``, ``energy``, ``invariant``,
+``planar_fk`` and ``damping`` checks.
 
 ``examples/run_checks.py`` is an inline ``uv`` script, not an installed module, so
 the tests load it by path.  The spectral helper is checked against synthetic
@@ -655,3 +655,58 @@ def test_planar_fk_rejects_bad_parameters(runner):
         runner._planar_fk_check(report, "project", "arm", run, broken)
         assert report.checks == 1 and report.failures == 1, broken
 
+
+# --------------------------------------------------------------------- damping
+def _ring_down(time, zeta, wn, offset=0.0, drift=0.0):
+    sigma, wd = zeta * wn, wn * np.sqrt(1.0 - zeta**2)
+    return offset + drift * time + 2.0 * np.exp(-sigma * time) * np.cos(wd * time + 0.4)
+
+
+@pytest.mark.parametrize("zeta, wn", [(0.12, 2.76), (0.52, 1.31), (0.05, 8.0)])
+def test_damping_fit_recovers_a_known_mode(runner, zeta, wn):
+    time = np.arange(0.0, 10.0, 0.01)
+    fit = runner._damping_fit(time, _ring_down(time, zeta, wn, offset=0.3), False)
+    assert fit is not None
+    assert fit[0] == pytest.approx(zeta, abs=1e-4)
+    assert fit[1] == pytest.approx(wn, rel=1e-4)
+
+
+def test_damping_fit_linear_offset_absorbs_a_drift(runner):
+    time = np.arange(0.0, 10.0, 0.01)
+    values = _ring_down(time, 0.2, 2.0, drift=0.15)
+    zeta, wn, _ = runner._damping_fit(time, values, True)
+    assert zeta == pytest.approx(0.2, abs=1e-4) and wn == pytest.approx(2.0, rel=1e-4)
+
+
+def test_damping_check_passes_and_fails(runner):
+    time = np.arange(0.0, 10.0, 0.01)
+    run = _run(time, _ring_down(time, 0.12, 2.76))
+    good = {"kind": "damping", "signal": "sig", "zeta": 0.12, "zeta_abs": 0.01, "wn": 2.76, "wn_rtol": 0.01}
+    report = runner.Report()
+    runner._damping_check(report, "project", "model", run, good)
+    assert report.checks == 1 and report.failures == 0
+    for bad in ({**good, "zeta": 0.3}, {**good, "wn": 3.5}):
+        report = runner.Report()
+        runner._damping_check(report, "project", "model", run, bad)
+        assert report.checks == 1 and report.failures == 1, bad
+
+
+def test_damping_check_rejects_bad_parameters(runner):
+    time = np.arange(0.0, 5.0, 0.01)
+    run = _run(time, _ring_down(time, 0.12, 2.76))
+    good = {"kind": "damping", "signal": "sig", "zeta": 0.12, "zeta_abs": 0.01, "wn": 2.76, "wn_rtol": 0.01}
+    for broken in (
+        {**good, "signal": "missing"},
+        {k: v for k, v in good.items() if k != "zeta"},
+        {k: v for k, v in good.items() if k != "wn_rtol"},
+        {**good, "offset": "cubic"},
+        {**good, "min_wn": 5.0, "max_wn": 1.0},
+        {**good, "from_t": 7.0, "to_t": 8.0},
+    ):
+        report = runner.Report()
+        runner._damping_check(report, "project", "model", run, broken)
+        assert report.checks == 1 and report.failures == 1, broken
+    flat = _run(time, np.ones_like(time))
+    report = runner.Report()
+    runner._damping_check(report, "project", "model", flat, good)
+    assert report.checks == 1 and report.failures == 1

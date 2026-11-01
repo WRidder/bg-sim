@@ -16,9 +16,15 @@
     #                      standard-atmosphere fit (Stevens & Lewis ADC, converted to SI):
     #                      T = 519 R (1 - 0.703e-5 h/ft), 390 R above 35000 ft;
     #                      rho = 2.377e-3 slug/ft^3 (1 - 0.703e-5 h/ft)^4.14
+    #   pa                 static pressure rho R T (Pa), R = 1716.3 ft^2/(s^2 R)
+    #   wn, we, wd         wind (m/s, north-east-down): vt, alpha and beta are relative to the air,
+    #                      the inertial body velocity is ui, vi, wi (FRD); hdot the climb rate
     @inputs begin
         gP::Vec{7}, [description = "Pose of the principal frame (qw, qx, qy, qz, x, y, z)"]
         VP::Vec{6}, [description = "Twist of the principal frame [w; v] (RigidBody3D.V)"]
+        wn::Real, [unit = "m/s", description = "Wind towards north"]
+        we::Real, [unit = "m/s", description = "Wind towards east"]
+        wd::Real, [unit = "m/s", description = "Wind downwards"]
     end
     @outputs begin
         gB::Vec{7}
@@ -31,6 +37,13 @@
         q::Real, [unit = "rad/s"]
         r::Real, [unit = "rad/s"]
         q_deg::Real
+        p_deg::Real
+        r_deg::Real
+        ui::Real, [unit = "m/s"]
+        vi::Real, [unit = "m/s"]
+        wi::Real, [unit = "m/s"]
+        hdot::Real, [unit = "m/s"]
+        pa::Real, [unit = "Pa"]
         phi::Real, [unit = "rad"]
         theta::Real, [unit = "rad"]
         psi::Real, [unit = "rad"]
@@ -57,9 +70,9 @@
         se::Real = 0.0
         ch::Real = 1.0
         sh::Real = 0.0
-        ub::Real = 0.0, [description = "Body velocity x (forward), m/s"]
-        vb::Real = 0.0, [description = "Body velocity y (right), m/s"]
-        wb::Real = 0.0, [description = "Body velocity z (down), m/s"]
+        ub::Real = 0.0, [description = "Air-relative body velocity x (forward), m/s"]
+        vb::Real = 0.0, [description = "Air-relative body velocity y (right), m/s"]
+        wb::Real = 0.0, [description = "Air-relative body velocity z (down), m/s"]
         tfac::Real = 1.0
         Tr::Real = 519.0, [description = "Ambient temperature (Rankine, as in the book)"]
         rho::Real = 1.2250554, [description = "Density (kg/m^3)"]
@@ -95,13 +108,21 @@
         gB[6] ~ gP[6]
         gB[7] ~ gP[7]
         # Twist of B = R_BP twist of P; then FLU -> FRD (y and z change sign).
-        ub ~ ce * VP[4] + se * VP[6]
-        vb ~ -VP[5]
-        wb ~ -(ce * VP[6] - se * VP[4])
+        ui ~ ce * VP[4] + se * VP[6]
+        vi ~ -VP[5]
+        wi ~ -(ce * VP[6] - se * VP[4])
+        # The wind in body axes: R_WB^T (wn, -we, -wd) in FLU (the world is x north, y west, z up),
+        # then FRD.
+        ub ~ ui - (R[1, 1] * wn - R[2, 1] * we - R[3, 1] * wd)
+        vb ~ vi + (R[1, 2] * wn - R[2, 2] * we - R[3, 2] * wd)
+        wb ~ wi + (R[1, 3] * wn - R[2, 3] * we - R[3, 3] * wd)
+        hdot ~ R[3, 1] * ui - R[3, 2] * vi - R[3, 3] * wi
         p ~ ce * VP[1] + se * VP[3]
         q ~ -VP[2]
         r ~ -(ce * VP[3] - se * VP[1])
         q_deg ~ q * 57.29577951308232
+        p_deg ~ p * 57.29577951308232
+        r_deg ~ r * 57.29577951308232
         vt ~ sqrt(ub * ub + vb * vb + wb * wb)
         alpha ~ atan(wb, ub)
         beta ~ asin(vb / vt)
@@ -122,5 +143,6 @@
         a ~ a_gas * sqrt(Tr)
         mach ~ vt / a
         qbar ~ 0.5 * rho * vt * vt
+        pa ~ rho * 159.44948755 * Tr
     end
 end

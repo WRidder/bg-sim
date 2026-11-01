@@ -2,14 +2,8 @@
 // Usage (from web/): node ../tools/example_docs/shots.mjs <jobs.json>
 // jobs.json: {baseUrl, jobs: [{project, model, name, kind: "diagram" | "scene", t?, out}]}
 // Not part of any test suite; build.py starts the backend and passes its URL.
-import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const here = path.dirname(fileURLToPath(import.meta.url));
-const require = createRequire(path.join(here, "../../web/package.json"));
-const { chromium } = require("@playwright/test");
+import { launchBrowser } from "../video/lib.mjs";
 
 const { baseUrl, jobs } = JSON.parse(readFileSync(process.argv[2], "utf8"));
 
@@ -29,7 +23,8 @@ async function open(browser, project, model, viewport) {
   return { context, page };
 }
 
-const browser = await chromium.launch();
+// The GPU (ANGLE on D3D11): the 3D view renders with SwiftShader otherwise (tools/video/lib.mjs).
+const browser = await launchBrowser();
 try {
   for (const group of byModel.values()) {
     const { project, model } = group[0];

@@ -1,6 +1,6 @@
 {
   "project": "f16",
-  "description": "F-16 (Stevens & Lewis, NASA TP-1538 data): open loop, gain-scheduled FBW, envelope protection, PIO. Numbers come from design/design.json (an independent scipy implementation of the book's F16 subroutine and of the same controllers).",
+  "description": "F-16 (Stevens & Lewis, NASA TP-1538 data): open loop, gain-scheduled FBW, envelope protection, PIO and the flyable three-axis f16-sim. Numbers come from design/design.json (an independent scipy implementation of the book's F16 subroutine and of the same controllers).",
   "models": {
     "f16-open-loop": {
       "checks": [
@@ -645,6 +645,571 @@
           "signal": "Comp/Air/theta_deg",
           "t": 4.0,
           "value": 12.470938101375259,
+          "abs": 0.1
+        }
+      ]
+    },
+    "f16-sim": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 4.0,
+          "value": 60.14070505549989,
+          "abs": 0.3,
+          "note": "the nonlinear three-axis scipy reference (design/sim3.py, design/simscen.py): 60 deg bank after a 1 s roll-stick pulse"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 30.0,
+          "value": 58.30385309489827,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Forces/nz",
+          "t": 10.0,
+          "value": 1.9569758792736864,
+          "abs": 0.01,
+          "note": "the turn compensation pulls the 2 g of a level 60 deg turn"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/h",
+          "t": 10.0,
+          "value": 3028.911874638423,
+          "abs": 1.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/h",
+          "t": 30.0,
+          "value": 3002.6178842450267,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/vt",
+          "t": 30.0,
+          "value": 153.0782849759168,
+          "abs": 0.5
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Air/beta_deg",
+          "value": 1.0,
+          "note": "coordinated: |beta| stays below 1 deg (reference 0.57 deg)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "F16/Air/h",
+          "value": 2968.0,
+          "note": "altitude within 80 m in a 30 s 60 deg turn with the stick centred (reference: 45 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Air/h",
+          "value": 3128.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LatLaw/ps",
+          "t": 1.5,
+          "value": 50.46157907090557,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LatLaw/ps",
+          "t": 2.0,
+          "value": 60.99021100161692,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LatLaw/ps",
+          "t": 3.0,
+          "value": -0.7003436326778666,
+          "abs": 0.2
+        }
+      ]
+    },
+    "f16-sim-roll-step": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 5.0,
+        "output": {
+          "points": 501
+        }
+      },
+      "overrides": {
+        "global:roll_amp": 0.25,
+        "global:roll_dur": 2.0,
+        "global:throttle_set": 0.15685387339962167
+      },
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "LatLaw/ps",
+          "from_t": 1.0,
+          "to_t": 2.0,
+          "step_t": 1.0,
+          "value": 52.60233537730567,
+          "initial": 0.0,
+          "max_rise_time": 0.6,
+          "max_overshoot": 0.1,
+          "settle": 0.05,
+          "max_settling_time": 1.0,
+          "note": "roll-rate step: the stability-axis roll rate follows the 52.6 deg/s command of a quarter stick"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LatLaw/ps",
+          "t": 1.2,
+          "value": 15.923476826662947,
+          "abs": 0.2,
+          "note": "the nonlinear three-axis scipy reference (design/sim3.py, design/simscen.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 1.2,
+          "value": 1.1268941762613451,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LatLaw/ps",
+          "t": 1.5,
+          "value": 44.38674364958176,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 1.5,
+          "value": 10.70664424324255,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LatLaw/ps",
+          "t": 2.0,
+          "value": 53.58159212542626,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 2.0,
+          "value": 36.50012015732477,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LatLaw/ps",
+          "t": 3.0,
+          "value": 50.83957811691352,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 3.0,
+          "value": 87.30969753235217,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "LatLaw/ps",
+          "t": 4.0,
+          "value": -2.8763786912779907,
+          "abs": 0.2
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 4.0,
+          "value": 103.93932271089665,
+          "abs": 0.2
+        }
+      ]
+    },
+    "f16-sim-full-roll": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 6.0,
+        "output": {
+          "points": 601
+        }
+      },
+      "overrides": {
+        "global:roll_amp": 1.0,
+        "global:roll_dur": 1.8,
+        "global:throttle_set": 0.15685387339962167
+      },
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "LatLaw/ps",
+          "value": 225.7563353463591,
+          "note": "full stick: the roll rate stays at the limit (219 deg/s from nz and qbar)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "LatLaw/ps",
+          "value": 216.593388841366,
+          "rtol": 0.01
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Air/beta_deg",
+          "value": 2.0,
+          "note": "full-stick roll: |beta| below 2 deg (reference 1.50)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "AilAct/Servo/y",
+          "value": 21.500001
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "RdrAct/Servo/y",
+          "value": 30.000001
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Air/alpha_deg",
+          "value": 25.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 1.5,
+          "value": 31.62632455825127,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 2.0,
+          "value": 125.38326924076557,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 3.0,
+          "value": -25.986649433397815,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 5.0,
+          "value": -4.127933050863021,
+          "abs": 0.5
+        }
+      ]
+    },
+    "f16-sim-dutch-open": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 12.0,
+        "output": {
+          "points": 1201
+        }
+      },
+      "overrides": {
+        "global:roll_amp": 0.0,
+        "global:kick_amp": 5.0,
+        "global:throttle_set": 0.15685387339962167,
+        "global:roll_law": 0.0,
+        "global:yaw_damper": 0.0,
+        "global:beta_hold": 0.0,
+        "global:ari": 0.0
+      },
+      "checks": [
+        {
+          "kind": "damping",
+          "signal": "F16/Air/beta_deg",
+          "from_t": 2.0,
+          "to_t": 12.0,
+          "offset": "linear",
+          "zeta": 0.1236568565688414,
+          "zeta_abs": 0.01,
+          "wn": 2.763478008896611,
+          "wn_rtol": 0.02,
+          "note": "dutch roll of the airframe after a 5 deg rudder kick: the linearised mode zeta 0.124, wn 2.76 rad/s (design/simscen.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/beta_deg",
+          "t": 2.0,
+          "value": 0.9715213722351551,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/beta_deg",
+          "t": 4.0,
+          "value": 0.5715921319806684,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/beta_deg",
+          "t": 8.0,
+          "value": -0.04229143766507047,
+          "abs": 0.02
+        }
+      ]
+    },
+    "f16-sim-dutch-yaw-damper": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 12.0,
+        "output": {
+          "points": 1201
+        }
+      },
+      "overrides": {
+        "global:roll_amp": 0.0,
+        "global:kick_amp": 5.0,
+        "global:throttle_set": 0.15685387339962167,
+        "global:roll_law": 0.0,
+        "global:beta_hold": 0.0,
+        "global:ari": 0.0
+      },
+      "checks": [
+        {
+          "kind": "damping",
+          "signal": "F16/Air/beta_deg",
+          "from_t": 2.0,
+          "to_t": 12.0,
+          "offset": "linear",
+          "zeta": 0.5244176079748257,
+          "zeta_abs": 0.03,
+          "wn": 1.3112603507794303,
+          "wn_rtol": 0.05,
+          "note": "with the yaw damper alone: zeta 0.524, wn 1.31 rad/s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/beta_deg",
+          "t": 2.0,
+          "value": 0.5047925202119146,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/beta_deg",
+          "t": 4.0,
+          "value": -0.13184226299606555,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/beta_deg",
+          "t": 8.0,
+          "value": 0.0006995327913159426,
+          "abs": 0.02
+        }
+      ]
+    },
+    "f16-sim-dutch-full": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 12.0,
+        "output": {
+          "points": 1201
+        }
+      },
+      "overrides": {
+        "global:roll_amp": 0.0,
+        "global:kick_amp": 5.0,
+        "global:throttle_set": 0.15685387339962167
+      },
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Air/beta_deg",
+          "from_t": 4.0,
+          "value": 0.1,
+          "note": "the full law (zeta 0.91): the kick has died out after 3 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/beta_deg",
+          "t": 1.5,
+          "value": 0.5256253126154972,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/beta_deg",
+          "t": 2.0,
+          "value": -0.04829585305708062,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/beta_deg",
+          "t": 3.0,
+          "value": -0.10728676131754285,
+          "abs": 0.02
+        }
+      ]
+    },
+    "f16-sim-hialpha-vv": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 6.0,
+        "output": {
+          "points": 601
+        }
+      },
+      "overrides": {
+        "global:vt0": 79.248,
+        "global:alpha0": 15.73128073144981,
+        "global:el0": 1.020743879787114,
+        "global:thtl0": 0.3047750172919136,
+        "global:roll_amp": 1.0,
+        "global:roll_dur": 1.5,
+        "global:throttle_set": 0.3047750172919136
+      },
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Air/beta_deg",
+          "value": 3.6629338046208626,
+          "note": "260 ft/s, alpha 15.7 deg, full stick: rolling about the velocity vector keeps |beta| at 3.1 deg"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 2.0,
+          "value": 35.701844643571235,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 3.0,
+          "value": 96.89000068412793,
+          "abs": 0.5
+        }
+      ]
+    },
+    "f16-sim-hialpha-body": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 6.0,
+        "output": {
+          "points": 601
+        }
+      },
+      "overrides": {
+        "global:vt0": 79.248,
+        "global:alpha0": 15.73128073144981,
+        "global:el0": 1.020743879787114,
+        "global:thtl0": 0.3047750172919136,
+        "global:roll_amp": 1.0,
+        "global:roll_dur": 1.5,
+        "global:throttle_set": 0.3047750172919136,
+        "global:ari": 0.0,
+        "global:vv_roll": 0.0
+      },
+      "checks": [
+        {
+          "kind": "max_abs",
+          "signal": "F16/Air/beta_deg",
+          "value": 7.101532948674411,
+          "rtol": 0.05,
+          "note": "the same roll about the body axis (no ARI): |beta| 7.1 deg, alpha trades into sideslip"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 2.0,
+          "value": 35.53242594796782,
+          "abs": 0.5
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Status/phi_deg",
+          "t": 3.0,
+          "value": 86.39136876625776,
+          "abs": 0.5
+        }
+      ]
+    },
+    "f16-sim-pull": {
+      "model": "f16-sim",
+      "settings": {
+        "t_end": 6.0,
+        "output": {
+          "points": 601
+        }
+      },
+      "overrides": {
+        "global:pitch_amp": 1.0,
+        "global:pitch_dur": 3.0,
+        "global:roll_amp": 0.0,
+        "global:throttle_set": 0.15685387339962167
+      },
+      "checks": [
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Air/alpha_deg",
+          "value": 27.0,
+          "note": "full aft stick: the limiter holds alpha near 25 deg (reference peak 26.6 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "F16/Forces/nz",
+          "value": 9.0
+        },
+        {
+          "kind": "max_abs",
+          "signal": "PitchCmd/lim_active",
+          "value": 1.0,
+          "rtol": 1e-09,
+          "note": "the HUD's limit flag comes on"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/alpha_deg",
+          "t": 1.5,
+          "value": 10.374183491779384,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/alpha_deg",
+          "t": 2.0,
+          "value": 24.972856585576636,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "F16/Air/alpha_deg",
+          "t": 3.0,
+          "value": 15.950376218834581,
           "abs": 0.1
         }
       ]

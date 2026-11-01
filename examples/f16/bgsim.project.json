@@ -6,7 +6,8 @@
     "f16-open-loop",
     "f16-fbw",
     "f16-envelope",
-    "f16-pio"
+    "f16-pio",
+    "f16-sim"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"

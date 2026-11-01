@@ -374,3 +374,5 @@ include("test_export_suction.jl")
 include("test_export_signal_blocks.jl")
 # The flexible beams (FlexibleBeam3D, FlexibleBeam2D) in the C export.
 include("test_export_flex.jl")
+# The f16-sim FMU of examples/f16 (the flight-simulator host's FMU): interface, method, trim.
+include("test_export_f16.jl")
