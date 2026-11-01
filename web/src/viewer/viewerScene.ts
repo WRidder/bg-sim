@@ -16,6 +16,11 @@ import "@babylonjs/core/Materials/standardMaterial";
 import "@babylonjs/core/Materials/PBR/pbrMaterial";
 import "@babylonjs/core/Culling/ray";
 import "@babylonjs/core/Rendering/outlineRenderer";
+import type { ArcRotateCameraPointersInput } from "@babylonjs/core/Cameras/Inputs/arcRotateCameraPointersInput";
+import { CreateSphere } from "@babylonjs/core/Meshes/Builders/sphereBuilder";
+import type { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { clipPlanes, GROUND_MAX_RADII, MIN_ZOOM_DISTANCE_M, orthoZoomEye, pivotRig, rayPlane, zoomEye, zoomFactor, zoomScale, type Pivoted } from "./orbitPivot";
 import { nearestTarget, PICK_RADIUS_PX, type ScreenTarget } from "./picking";
 import { ToonPlugin } from "./toon";
 
@@ -50,6 +55,10 @@ const FIT_MARGIN = 1.05;
 /** Babylon pans about this many world units per dragged pixel times 1/panningSensibility (measured on 9.28,
  *  independent of zoom and frame rate). `updatePanning` divides it out so the grabbed point follows the cursor. */
 const PAN_WORLD_PER_PX = 5.3;
+/** The orbit radius (distance to the pivot along the view axis) never drops below this, m: below the closest zoom. */
+const MIN_ORBIT_RADIUS_M = 1e-4;
+/** The orbit pivot dot is this many CSS pixels across (its halo 2.4 times that), at any distance. */
+const PIVOT_DOT_PX = 8;
 
 const ENTITY_KEY = "bgsimEntity";
 const HELPER_KEY = "bgsimHelper";
@@ -122,6 +131,11 @@ export class ViewerScene {
   private readonly axes: readonly LinesMesh[];
   private colours: ViewerColours = DEFAULT_COLOURS;
   private selected: ReadonlySet<string> = new Set();
+  /** The orbit pivot dot and its halo, made on first use. */
+  private pivot: { readonly core: Mesh; readonly halo: Mesh } | null = null;
+  /** Half the orthographic view height (m), and the orbit radius it was last matched to. */
+  private orthoHalf = 1;
+  private orthoRadius = 0;
 
   /** `onInvalidate` asks for a redraw (the render scheduler's `invalidate`). */
   constructor(
@@ -133,14 +147,22 @@ export class ViewerScene {
     this.scene.clearColor = new Color4(0, 0, 0, 0);
     this.scene.skipPointerMovePicking = true;
     this.camera = new ArcRotateCamera("camera", Math.PI / 4, Math.PI / 3, 3, Vector3.Zero(), this.scene);
+    // minZ and maxZ follow the view every frame (`updateClipPlanes`)
     this.camera.minZ = 0.01;
-    this.camera.lowerRadiusLimit = 0.05;
-    this.camera.wheelDeltaPercentage = 0.02;
-    this.camera.pinchDeltaPercentage = 0.004;
+    this.camera.lowerRadiusLimit = MIN_ORBIT_RADIUS_M;
+    // The wheel is ours (`zoomAt`: a fraction of the distance per notch, toward the point under the cursor), not
+    // the orbit camera's percentage dolly toward the target, which crawls on large scenes and never reaches what
+    // the cursor is on.
+    this.camera.inputs.removeByType("ArcRotateCameraMouseWheelInput");
+    // A pinch scales the distance to the pivot by the change in finger spread, at any scale.
+    const pointers = this.camera.inputs.attached["pointers"] as ArcRotateCameraPointersInput | undefined;
+    if (pointers) pointers.useNaturalPinchZoom = true;
     this.updatePanning();
     this.scene.onBeforeCameraRenderObservable.add(() => {
       this.updateOrthoBounds();
       this.updatePanning();
+      this.updateClipPlanes();
+      this.sizePivot();
     });
     for (const l of LIGHT_RIG) {
       const light = new DirectionalLight(l.name, new Vector3(0, 0, -1), this.scene);
@@ -170,7 +192,7 @@ export class ViewerScene {
     this.onInvalidate();
   }
 
-  /** Left drag orbits, the right button pans, the wheel zooms. */
+  /** Left drag orbits, the right button (or Ctrl+left) pans; the wheel is the host's (`zoomAt`). */
   attachControl(): void {
     this.camera.attachControl(false, true, 2);
   }
@@ -182,6 +204,7 @@ export class ViewerScene {
   setColours(colours: ViewerColours): void {
     this.colours = colours;
     this.paintHelpers();
+    this.paintPivot();
     this.highlight([...this.selected]);
   }
 
@@ -250,10 +273,13 @@ export class ViewerScene {
     const { centre, radius } = this.contentBounds();
     const dir = preset ? this.toSceneDirection(CAMERA_PRESETS[preset]) : this.camera.position.subtract(this.camera.target).normalize();
     const distance = (radius / Math.sin(this.camera.fov / 2)) * FIT_MARGIN;
+    // the zoom-out limit first: placing the camera clamps the radius to the limit of the previous fit
+    this.camera.upperRadiusLimit = distance * 4;
     this.camera.targetScreenOffset.set(0, 0);
     this.camera.setTarget(centre);
     this.camera.setPosition(centre.add(dir.scale(distance)));
-    this.camera.upperRadiusLimit = distance * 4;
+    this.hidePivot();
+    this.syncOrtho();
     this.updateOrthoBounds();
     this.invalidate();
   }
@@ -261,6 +287,7 @@ export class ViewerScene {
   /** Orthographic (parallel) or perspective projection. The orthographic frustum is the perspective one's cross-section at the target. */
   setOrthographic(on: boolean): void {
     this.camera.mode = on ? Camera.ORTHOGRAPHIC_CAMERA : Camera.PERSPECTIVE_CAMERA;
+    if (on) this.syncOrtho();
     this.updateOrthoBounds();
     this.invalidate();
   }
@@ -269,9 +296,22 @@ export class ViewerScene {
     return this.camera.mode === Camera.ORTHOGRAPHIC_CAMERA;
   }
 
+  /** The orthographic view becomes the perspective cross-section at the target. */
+  private syncOrtho(): void {
+    this.orthoHalf = this.camera.radius * Math.tan(this.camera.fov / 2);
+    this.orthoRadius = this.camera.radius;
+  }
+
+  /**
+   * The orthographic frustum: `orthoHalf`, scaled with any change of the orbit radius the camera's own inputs make
+   * (a pinch). A pivot changes the radius without changing the view, so `applyPivot` resets `orthoRadius`.
+   */
   private updateOrthoBounds(): void {
     if (this.camera.mode !== Camera.ORTHOGRAPHIC_CAMERA) return;
-    const half = this.camera.radius * Math.tan(this.camera.fov / 2);
+    const r = this.camera.radius;
+    if (this.orthoRadius > 0 && r !== this.orthoRadius) this.orthoHalf *= r / this.orthoRadius;
+    this.orthoRadius = r;
+    const half = this.orthoHalf;
     const aspect = this.scene.getEngine().getAspectRatio(this.camera) || 1;
     this.camera.orthoTop = half;
     this.camera.orthoBottom = -half;
@@ -287,8 +327,217 @@ export class ViewerScene {
   private updatePanning(): void {
     const engine = this.scene.getEngine();
     const heightPx = engine.getRenderingCanvas()?.clientHeight || engine.getRenderHeight(true) || 1;
-    const visible = 2 * this.camera.radius * Math.tan(this.camera.fov / 2);
+    const visible = this.orthographic ? 2 * this.orthoHalf : 2 * this.camera.radius * Math.tan(this.camera.fov / 2);
     this.camera.panningSensibility = (PAN_WORLD_PER_PX * heightPx) / Math.max(visible, 1e-6);
+  }
+
+  /** Where the camera really looks from (the orbit position less the screen offset), in scene coordinates. */
+  eye(): Vector3 {
+    return this.camera.getViewMatrix().clone().invert().getTranslation();
+  }
+
+  /** The unit view direction. */
+  private forward(): Vector3 {
+    return this.camera.target.subtract(this.camera.position).normalize();
+  }
+
+  /**
+   * Near and far clip planes from the view: the near plane follows the orbit radius and stays in front of the
+   * nearest object the camera is outside of, the far plane takes in every object (bounding spheres, as of the
+   * last frame). A close-up does not clip and a km-scale scene keeps its depth precision.
+   */
+  private updateClipPlanes(): void {
+    const eye = this.eye();
+    let farthest = 0;
+    let gap: number | null = null;
+    for (const m of this.scene.meshes) {
+      if (!m.isEnabled() || !m.isVisible || m.getTotalVertices() === 0 || m === this.pivot?.core || m === this.pivot?.halo) continue;
+      // this frame's pose (a binding may just have moved it); the render reuses it
+      m.computeWorldMatrix();
+      const s = m.getBoundingInfo().boundingSphere;
+      const d = Vector3.Distance(eye, s.centerWorld);
+      if (!Number.isFinite(d)) continue;
+      farthest = Math.max(farthest, d + s.radiusWorld);
+      if (d > s.radiusWorld) gap = Math.min(gap ?? Infinity, d - s.radiusWorld);
+    }
+    const { near, far } = clipPlanes(this.camera.radius, gap, farthest);
+    this.camera.minZ = near;
+    this.camera.maxZ = far;
+  }
+
+  /** Visible geometry a zoom or orbit can aim at (not the grid, the axes or the pivot dot). */
+  private readonly aimable = (m: AbstractMesh): boolean => m.isPickable && m.isEnabled() && m.isVisible && !isHelper(m);
+
+  /** The scene point of the geometry under the canvas point (CSS px), else null. */
+  surfaceAt(x: number, y: number): Vector3 | null {
+    const ray = this.scene.createPickingRay(x, y, Matrix.Identity(), this.camera);
+    const hit = this.scene.pickWithRay(ray, this.aimable);
+    return hit?.hit && hit.pickedPoint ? hit.pickedPoint.clone() : null;
+  }
+
+  /**
+   * The point a wheel zoom at the canvas point heads for: the geometry under it, else the ground (z = 0 of the
+   * model) when it is not far beyond the pivot (not toward the horizon), else the plane through the orbit target
+   * facing the camera.
+   */
+  zoomPointAt(x: number, y: number): Vector3 | null {
+    const ray = this.scene.createPickingRay(x, y, Matrix.Identity(), this.camera);
+    const hit = this.scene.pickWithRay(ray, this.aimable);
+    if (hit?.hit && hit.pickedPoint) return hit.pickedPoint.clone();
+    const dir = ray.direction.normalize();
+    this.root.computeWorldMatrix(true);
+    const origin = Vector3.TransformCoordinates(Vector3.Zero(), this.root.getWorldMatrix());
+    const ground = rayPlane(ray.origin, dir, origin, this.toSceneDirection([0, 0, 1]));
+    if (ground && Vector3.Distance(this.eye(), ground) <= GROUND_MAX_RADII * this.camera.radius) return ground;
+    return rayPlane(ray.origin, dir, this.camera.target, this.forward());
+  }
+
+  private radiusAllowed(r: number): boolean {
+    const c = this.camera;
+    return Number.isFinite(r) && r >= (c.lowerRadiusLimit ?? 0) && r <= (c.upperRadiusLimit ?? Infinity);
+  }
+
+  /** Puts the orbit target at the pivot, the view unchanged (see `orbitPivot.ts`). */
+  private applyPivot(p: Pivoted): void {
+    const c = this.camera;
+    c.targetScreenOffset.set(p.offset[0], p.offset[1]);
+    c.setTarget(p.target, false, true);
+    c.setPosition(p.position);
+    c.rebuildAnglesAndRadius();
+    this.orthoRadius = c.radius;
+    this.updateOrthoBounds();
+  }
+
+  /**
+   * Wheel zoom at the canvas point (CSS px): `notches` > 0 zooms in. The camera moves along the ray through the
+   * point toward the scene point under it (`zoomPointAt`), a fixed fraction of the distance per notch, and that
+   * point becomes the orbit pivot; the point stays under the cursor. In the orthographic projection the view
+   * shrinks by the same fraction about the point. Returns false when the view did not change (nothing to aim
+   * at, or at the closest or farthest distance).
+   */
+  zoomAt(x: number, y: number, notches: number): boolean {
+    if (notches === 0) return false;
+    const point = this.zoomPointAt(x, y);
+    if (!point) return false;
+    const eye = this.eye();
+    const forward = this.forward();
+    const max = this.camera.upperRadiusLimit ?? Infinity;
+    let next: Vector3 | null;
+    let half: number | null = null;
+    if (this.orthographic) {
+      const tan = Math.tan(this.camera.fov / 2);
+      half = zoomScale(this.orthoHalf, zoomFactor(notches), MIN_ZOOM_DISTANCE_M * tan, max * tan);
+      next = half === null ? null : orthoZoomEye(eye, forward, point, half / this.orthoHalf);
+    } else {
+      next = zoomEye(eye, point, zoomFactor(notches), MIN_ZOOM_DISTANCE_M, max);
+    }
+    if (!next) return false;
+    const p = pivotRig(next, forward, point, this.camera.getViewMatrix());
+    if (!this.radiusAllowed(p.radius)) return false;
+    if (half !== null) this.orthoHalf = half;
+    this.applyPivot(p);
+    if (this.pivot?.core.isEnabled()) this.pivot.core.position.copyFrom(point);
+    this.invalidate();
+    return true;
+  }
+
+  /**
+   * A press to orbit or pan: the geometry point under the canvas point becomes the orbit pivot, and the view
+   * does not move (the camera keeps its place and orientation; the point's offset from the view axis becomes
+   * the camera's screen offset). Returns the pivot, or null when nothing is under the point (the pivot stays).
+   */
+  pivotAt(x: number, y: number): Vector3 | null {
+    const point = this.surfaceAt(x, y);
+    if (!point) return null;
+    const p = pivotRig(this.eye(), this.forward(), point, this.camera.getViewMatrix());
+    if (!this.radiusAllowed(p.radius)) return null;
+    this.applyPivot(p);
+    return point;
+  }
+
+  /** Marks the orbit pivot with a dot in the selection colour, drawn over the scene, a few pixels across at any distance. */
+  showPivot(point: Vector3): void {
+    if (!this.pivot) {
+      const make = (name: string, diameter: number) => {
+        const m = CreateSphere(name, { diameter, segments: 12 }, this.scene);
+        const mat = new StandardMaterial(`${name}:material`, this.scene);
+        mat.disableLighting = true;
+        m.material = mat;
+        m.isPickable = false;
+        m.renderingGroupId = 1;
+        m.metadata = { [HELPER_KEY]: true };
+        return m;
+      };
+      const core = make("orbit-pivot", 1);
+      const halo = make("orbit-pivot-halo", 2.4);
+      halo.parent = core;
+      this.pivot = { core, halo };
+      this.paintPivot();
+    }
+    this.setPivotAlpha(1);
+    this.pivot.core.position.copyFrom(point);
+    this.pivot.core.setEnabled(true);
+    this.sizePivot();
+    this.invalidate();
+  }
+
+  hidePivot(): void {
+    if (!this.pivot?.core.isEnabled()) return;
+    this.pivot.core.setEnabled(false);
+    this.invalidate();
+  }
+
+  /** The pivot dot's strength, 1 = full (the fade-out sets it per frame). */
+  setPivotAlpha(alpha: number): void {
+    const p = this.pivot;
+    if (!p) return;
+    (p.core.material as StandardMaterial).alpha = alpha;
+    (p.halo.material as StandardMaterial).alpha = 0.35 * alpha;
+    this.invalidate();
+  }
+
+  /** The pivot dot's centre, null while hidden. */
+  pivotPoint(): Vector3 | null {
+    return this.pivot?.core.isEnabled() ? this.pivot.core.position.clone() : null;
+  }
+
+  private paintPivot(): void {
+    if (!this.pivot) return;
+    for (const m of [this.pivot.core, this.pivot.halo]) (m.material as StandardMaterial).emissiveColor = this.colours.selection;
+  }
+
+  private sizePivot(): void {
+    const p = this.pivot;
+    if (!p?.core.isEnabled()) return;
+    // the height the view shows at the dot's depth, over the canvas height: metres per pixel there
+    const visible = this.orthographic ? 2 * this.orthoHalf : 2 * Vector3.Distance(this.eye(), p.core.position) * Math.tan(this.camera.fov / 2);
+    const engine = this.scene.getEngine();
+    const heightPx = engine.getRenderingCanvas()?.clientHeight || engine.getRenderHeight(true) || 1;
+    p.core.scaling.setAll(Math.max((visible / heightPx) * PIVOT_DOT_PX, 1e-6));
+  }
+
+  /**
+   * The camera for e2e tests: effective eye and orbit target (scene frame, Y up), orbit radius, whether the pivot
+   * dot shows, the view matrix (Babylon order, row vectors) and the vertical field of view.
+   */
+  cameraState(): {
+    readonly eye: readonly number[];
+    readonly target: readonly number[];
+    readonly radius: number;
+    readonly pivot: boolean;
+    readonly view: readonly number[];
+    readonly fov: number;
+  } {
+    const e = this.eye();
+    const t = this.camera.target;
+    return {
+      eye: [e.x, e.y, e.z],
+      target: [t.x, t.y, t.z],
+      radius: this.camera.radius,
+      pivot: this.pivotPoint() !== null,
+      view: Array.from(this.camera.getViewMatrix().m),
+      fov: this.camera.fov,
+    };
   }
 
   /** The ray pick under the finger (canvas CSS px), else the nearest entity centre within the touch radius. */

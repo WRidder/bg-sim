@@ -3,6 +3,9 @@ import type { AbstractEngine } from "@babylonjs/core/Engines/abstractEngine";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { ExitFullscreenIcon, FitIcon, FullscreenIcon, OrthographicIcon, ViewIcons } from "./icons";
+import type { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { wheelNotches } from "./orbitPivot";
+import { driveFade, PivotFade } from "./pivotFade";
 import { hardwareScaling, RenderScheduler, windowClock } from "./renderScheduler";
 import { TAP_SLOP_PX } from "./picking";
 import { useFullscreen } from "./useFullscreen";
@@ -136,6 +139,7 @@ export function Viewer(props: ViewerProps) {
       const moving = scene.cameraMoving;
       host.dataset["state"] = moving ? "rendering" : "idle";
       host.dataset["frames"] = String(scheduler.frames);
+      host.dataset["camera"] = JSON.stringify(scene.cameraState());
       return moving;
     }, windowClock(win));
     const scene = new ViewerScene(engine, () => {
@@ -199,18 +203,61 @@ export function Viewer(props: ViewerProps) {
     const noMenu = (e: Event) => {
       e.preventDefault();
     };
-    // Non-passive: the wheel zooms the view, it must not scroll the page.
+    // Non-passive: the wheel zooms the view (toward the point under the cursor), it must not scroll the page.
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      scene.zoomAt(e.offsetX, e.offsetY, wheelNotches(e.deltaY, e.deltaMode, e.ctrlKey));
       wake();
     };
-    let down: { id: number; x: number; y: number } | null = null;
+    // The orbit pivot dot shows once a press on the scene turns into a rotate drag, and fades out from the
+    // release (pivotFade.ts); a new drag shows it at full strength at once. The fade runs its own frames.
+    const fade = new PivotFade();
+    let stopFade: (() => void) | null = null;
+    const cancelFade = () => {
+      stopFade?.();
+      stopFade = null;
+      fade.reset();
+    };
+    const fadePivot = () => {
+      if (fade.fading || scene.pivotPoint() === null) return;
+      fade.start(win.performance.now());
+      stopFade = driveFade(fade, {
+        now: () => win.performance.now(),
+        raf: (cb) => win.requestAnimationFrame(cb),
+        cancel: (id) => {
+          win.cancelAnimationFrame(id);
+        },
+        apply: (alpha, done) => {
+          if (done) {
+            scene.hidePivot();
+            stopFade = null;
+            fade.reset();
+          } else scene.setPivotAlpha(alpha);
+        },
+      });
+    };
+    // `orbit`: the pivot a left press found under it, shown as a dot once the press becomes a drag.
+    let down: { id: number; x: number; y: number; orbit: Vector3 | null } | null = null;
     const onDown = (e: PointerEvent) => {
-      down = e.button === 0 ? { id: e.pointerId, x: e.offsetX, y: e.offsetY } : null;
+      cancelFade();
+      scene.hidePivot();
+      // A press to orbit (left button, a touch) or to pan (right button, Ctrl+left) makes the scene point under
+      // it the orbit pivot, without moving the view: the drag orbits around that point, and a pan keeps it under
+      // the cursor. Pressing on empty space keeps the pivot. A second finger (a pinch) does not move it.
+      const pivot = e.isPrimary && (e.button === 0 || e.button === 2) ? scene.pivotAt(e.offsetX, e.offsetY) : null;
+      // a second finger makes the gesture a pinch: no tap, no orbit dot
+      down = e.button === 0 && e.isPrimary !== false ? { id: e.pointerId, x: e.offsetX, y: e.offsetY, orbit: e.ctrlKey ? null : pivot } : null;
+      wake();
+    };
+    const onMove = (e: PointerEvent) => {
+      if (down?.orbit && e.pointerId === down.id && scene.pivotPoint() === null && Math.hypot(e.offsetX - down.x, e.offsetY - down.y) > TAP_SLOP_PX) {
+        scene.showPivot(down.orbit);
+      }
       wake();
     };
     const onUp = (e: PointerEvent) => {
       wake();
+      fadePivot();
       if (!down || e.pointerId !== down.id) return;
       const moved = Math.hypot(e.offsetX - down.x, e.offsetY - down.y);
       down = null;
@@ -219,11 +266,12 @@ export function Viewer(props: ViewerProps) {
     };
     const onCancel = () => {
       down = null;
+      fadePivot();
     };
     canvas.addEventListener("contextmenu", noMenu);
     canvas.addEventListener("wheel", onWheel, { passive: false });
     canvas.addEventListener("pointerdown", onDown);
-    canvas.addEventListener("pointermove", wake, { passive: true });
+    canvas.addEventListener("pointermove", onMove, { passive: true });
     canvas.addEventListener("pointerup", onUp);
     canvas.addEventListener("pointercancel", onCancel);
 
@@ -240,9 +288,10 @@ export function Viewer(props: ViewerProps) {
       canvas.removeEventListener("contextmenu", noMenu);
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("pointerdown", onDown);
-      canvas.removeEventListener("pointermove", wake);
+      canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("pointercancel", onCancel);
+      cancelFade();
       scene.detachControl();
       scheduler.dispose();
       scene.dispose();
