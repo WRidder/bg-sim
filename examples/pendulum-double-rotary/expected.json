@@ -1,6 +1,6 @@
 {
   "project": "pendulum-double-rotary",
-  "description": "X5.13: Quanser-style rotary double inverted pendulum on the spatial multibond stdlib. World -> Mount -> J1 (Revolute3D about world z, the arm) -> arm bar (RigidBody3D) -> J2 (Revolute3D about the arm axis, the lower link) -> J3 (upper link), every body a RigidBody3D with a distributed mass (COM at the bar middle). The arm is driven by an SRV02-like servo: Motor (ElectricDrive, voltage input) -> Shaft (ElasticShaft) -> Gear (IdealGear, 70:1) -> J1.drive. The 1 kHz firmware Ctrl (phases: idle, TVLQR swing-up along the collocation trajectory, latched LQR balance) reads the joint angles and rates. Dist is a force pulse on the tip of the upper link. Joint compliance kt = kr = 1e6 (N/m, N m/rad); every state is integral.",
+  "description": "X5.13: Quanser-style rotary double inverted pendulum on the spatial multibond stdlib. World -> Mount -> J1 (Revolute3D about world z, the arm) -> arm bar (RigidBody3D) -> J2 (Revolute3D about the arm axis, the lower link) -> J3 (upper link), every body a RigidBody3D with a distributed mass (COM at the bar middle). The arm is driven by an SRV02-like servo: Motor (ElectricDrive, voltage input) -> Shaft (ElasticShaft) -> Gear (IdealGear, 70:1) -> J1.drive. The 1 kHz firmware Ctrl (phases: idle, TVLQR swing-up along the collocation trajectory, latched LQR balance) reads the joint angles and rates. Dist is a force pulse on the tip of the upper link. Joint compliance kt = kr = 1e6 (N/m, N m/rad); every state is integral. The actilink-* models are the same rig on a Synapticon ACTILINK-JD10 actuator (dq motor, current and velocity loops, gear backlash and friction, AS5048 encoders, 1 kHz EtherCAT LQR) and its identification experiments; written by design/actilink_finish.py.",
   "models": {
     "pendulum-double-rotary": {
       "run_timeout": 1500.0,
@@ -261,6 +261,601 @@
           "value": 3.838043338674732,
           "abs": 0.004754457950252089,
           "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 0.0024 rad (at least 3 mrad)"
+        }
+      ]
+    },
+    "actilink-free": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 0.5000625,
+          "value": -0.2679589053349483,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 0.5000625,
+          "value": 3.3014405869605077,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 0.5000625,
+          "value": 3.6431488701694885,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 1.0000625,
+          "value": -0.1506510264729841,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 1.0000625,
+          "value": 3.642079581402821,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 1.0000625,
+          "value": 4.115781182223376,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 1.5000625,
+          "value": 0.6776167616555432,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 1.5000625,
+          "value": 2.726289437927404,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 1.5000625,
+          "value": 2.2129599360060417,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 2.0000625,
+          "value": 0.3384716116856461,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 2.0000625,
+          "value": 3.056782189913982,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 2.0000625,
+          "value": 3.001597017304886,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 2.5000625,
+          "value": 0.17920500855070012,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 2.5000625,
+          "value": 3.5278704560582232,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 2.5000625,
+          "value": 3.9491344869161216,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 2.9990625,
+          "value": 0.657016139849794,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi1",
+          "t": 2.9990625,
+          "value": 2.9189187865112203,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Angles/phi2",
+          "t": 2.9990625,
+          "value": 2.730053295855205,
+          "abs": 0.0017,
+          "note": "actilink_design.py twin (9 states: rigid multibody, gear with smooth backlash and hardening, Stribeck friction, rotor, winding, 16 kHz current loop) against the bond graph, open loop with a zero torque target; tolerance 2x the measured max difference 0.00086 rad (at least 1 mrad)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/H",
+              "coeff": 1.0
+            }
+          ],
+          "scale": 0.7532,
+          "tol": 0.00041,
+          "note": "energy balance of the whole rig H = E_mech + E_drive + W_loss - W_in (link, arm, rotor and winding energy, gear spring, every friction and copper loss) is constant up to the energy the joint-compliance regularisation of the three Revolute3D joints absorbs (kr = kt = 1e6 with damping, excited by the drive's torque ripple): measured drift 0.000155 J, joint port work 4.59e-05 J, throughput 0.753 J; bound 2x the drift, at least 1e-4. The energy_ledger check closes the balance exactly, joints included"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "Tellegen: the port powers of every bond sum to zero over the run (joint compliance included)"
+        }
+      ]
+    },
+    "actilink-balance": {
+      "run_timeout": 1500.0,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative-causality warning, no event-loop warning, no solver failure"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurrentLoop/iq",
+          "value": 44.2084,
+          "note": "the q current stays inside the drive's peak current (44.21 A amplitude: the gear's peak torque 68 N m at the output, inside the Circulo's 60 A rms); measured 4.65 A"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "DriveLoop/tau_ref",
+          "value": 12.000000001,
+          "note": "the torque command stays inside the firmware clamp 12 N m (rated 21 N m); measured 6.94 N m"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurrentLoop/uq",
+          "value": 26.327173,
+          "note": "the q voltage stays inside the inverter limit 0.95 V_dc/sqrt(3) = 26.33 V; measured 2.44 V"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "GearSpring/defl",
+          "value": 0.00867,
+          "note": "gear deflection (backlash + torsion) bounded: measured 4.33 mrad, bound 2x"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/mode",
+          "t": 0.01,
+          "value": 2.0,
+          "abs": 1e-09,
+          "note": "balance controller active from the first cycle"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Angles/dev",
+          "from_t": 1.5,
+          "to_t": 5.0,
+          "value": 0.017453292519943295,
+          "note": "balancing with the quantised AS5048A readings: every link within 1.00 deg of upright from 1.5 s (measured 0.33 deg; bound 2x, at least 1 deg)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/H",
+              "coeff": 1.0
+            }
+          ],
+          "scale": 3.525,
+          "tol": 0.092,
+          "note": "energy balance of the whole rig H = E_mech + E_drive + W_loss - W_in (link, arm, rotor and winding energy, gear spring, every friction and copper loss) is constant up to the energy the joint-compliance regularisation of the three Revolute3D joints absorbs (kr = kt = 1e6 with damping, excited by the drive's torque ripple): measured drift 0.161 J, joint port work 0.161 J, throughput 3.53 J; bound 2x the drift, at least 1e-4. The energy_ledger check closes the balance exactly, joints included"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "Tellegen: the port powers of every bond sum to zero over the run (joint compliance included)"
+        }
+      ]
+    },
+    "actilink-push": {
+      "run_timeout": 1500.0,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative-causality warning, no event-loop warning, no solver failure"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurrentLoop/iq",
+          "value": 44.2084,
+          "note": "the q current stays inside the drive's peak current (44.21 A amplitude: the gear's peak torque 68 N m at the output, inside the Circulo's 60 A rms); measured 4.70 A"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "DriveLoop/tau_ref",
+          "value": 12.000000001,
+          "note": "the torque command stays inside the firmware clamp 12 N m (rated 21 N m); measured 6.76 N m"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurrentLoop/uq",
+          "value": 26.327173,
+          "note": "the q voltage stays inside the inverter limit 0.95 V_dc/sqrt(3) = 26.33 V; measured 4.41 V"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "GearSpring/defl",
+          "value": 0.00928,
+          "note": "gear deflection (backlash + torsion) bounded: measured 4.64 mrad, bound 2x"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/mode",
+          "t": 0.01,
+          "value": 2.0,
+          "abs": 1e-09,
+          "note": "balance controller active from the first cycle"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Angles/dev",
+          "from_t": 1.5,
+          "to_t": 1.99,
+          "value": 0.017453292519943295,
+          "note": "balancing with the quantised AS5048A readings: every link within 1.00 deg of upright from 1.5 s (measured 0.26 deg; bound 2x, at least 1 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Angles/phi2",
+          "from_t": 2.0,
+          "to_t": 6.0,
+          "value": 0.0821139411229308,
+          "rtol": 0.3,
+          "note": "the push is real: link 2 deflects 4.70 deg; band +-30 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Angles/dev",
+          "from_t": 4.2525,
+          "to_t": 6.0,
+          "value": 0.017453292519943295,
+          "note": "recovered: back inside 1.00 deg from 4.25 s (measured: inside 1 deg 1.40 s after the push)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/H",
+              "coeff": 1.0
+            }
+          ],
+          "scale": 1.265,
+          "tol": 0.072,
+          "note": "energy balance of the whole rig H = E_mech + E_drive + W_loss - W_in (link, arm, rotor and winding energy, gear spring, every friction and copper loss) is constant up to the energy the joint-compliance regularisation of the three Revolute3D joints absorbs (kr = kt = 1e6 with damping, excited by the drive's torque ripple): measured drift 0.0458 J, joint port work 0.0455 J, throughput 1.26 J; bound 2x the drift, at least 1e-4. The energy_ledger check closes the balance exactly, joints included",
+          "to_t": 1.99
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "Tellegen: the port powers of every bond sum to zero over the run (joint compliance included)"
+        }
+      ]
+    },
+    "actilink-swingup": {
+      "run_timeout": 1500.0,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative-causality warning, no event-loop warning, no solver failure"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurrentLoop/iq",
+          "value": 44.2084,
+          "note": "the q current stays inside the drive's peak current (44.21 A amplitude: the gear's peak torque 68 N m at the output, inside the Circulo's 60 A rms); measured 8.34 A"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "DriveLoop/tau_ref",
+          "value": 12.000000001,
+          "note": "the torque command stays inside the firmware clamp 12 N m (rated 21 N m); measured 12.00 N m"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CurrentLoop/uq",
+          "value": 26.327173,
+          "note": "the q voltage stays inside the inverter limit 0.95 V_dc/sqrt(3) = 26.33 V; measured 7.43 V"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "GearSpring/defl",
+          "value": 0.0126,
+          "note": "gear deflection (backlash + torsion) bounded: measured 6.29 mrad, bound 2x"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/mode",
+          "t": 0.95,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "idle before t_on"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J2/qout",
+          "t": 0.95,
+          "value": 3.141592653589793,
+          "abs": 0.002,
+          "note": "link 1 hangs straight down before t_on"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "J1/qdout",
+          "from_t": 0.05,
+          "to_t": 0.99,
+          "value": 0.002,
+          "note": "at rest before t_on (drive enabled, zero torque); bound 5x the measured residual"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/mode",
+          "t": 4.5,
+          "value": 2.0,
+          "abs": 1e-09,
+          "note": "balance controller latched by t_on + T_s + 0.5 s (measured catch at 4.000 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "J1/qout",
+          "value": 3.5,
+          "note": "the arm stays within +-3.5 rad (the trajectory bound is 3 rad; measured 2.98 rad)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Angles/dev",
+          "from_t": 5.5,
+          "to_t": 8.0,
+          "value": 0.017453292519943295,
+          "note": "balancing with the quantised AS5048A readings: every link within 1.00 deg of upright from 5.5 s (measured 0.41 deg; bound 2x, at least 1 deg)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/H",
+              "coeff": 1.0
+            }
+          ],
+          "scale": 16.35,
+          "tol": 0.024,
+          "note": "energy balance of the whole rig H = E_mech + E_drive + W_loss - W_in (link, arm, rotor and winding energy, gear spring, every friction and copper loss) is constant up to the energy the joint-compliance regularisation of the three Revolute3D joints absorbs (kr = kt = 1e6 with damping, excited by the drive's torque ripple): measured drift 0.197 J, joint port work 0.197 J, throughput 16.4 J; bound 2x the drift, at least 1e-4. The energy_ledger check closes the balance exactly, joints included"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "Tellegen: the port powers of every bond sum to zero over the run (joint compliance included)"
+        }
+      ]
+    },
+    "actilink-sysid-current": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "CurrentLoop/iq",
+          "t": 0.035,
+          "value": 3.25062,
+          "rtol": 0.1,
+          "note": "the current step reaches the commanded i_q = tau/(N kt_q) (5 N m at the output, arm clamped)"
+        }
+      ]
+    },
+    "actilink-sysid-friction": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "J2/qdout",
+          "value": 1.5,
+          "note": "the clamped pendulum stays (nearly) still while the arm turns: 1.08 rad/s for a few ms at the +8 -> -8 rad/s reversal (about 500 rad/s^2 on the arm), 2.3 mrad in the 1e5 Nm/rad clamp, otherwise below 1e-4 rad/s"
+        }
+      ]
+    },
+    "actilink-sysid-gear": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "GearSpring/defl",
+          "value": 0.00385,
+          "rtol": 0.05,
+          "note": "locked-output torque reversal: the gear deflection (backlash + torsion) at the peak torque"
+        }
+      ]
+    },
+    "actilink-sysid-swing1": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "period",
+          "signal": "J2/qout",
+          "level": 3.141592653589793,
+          "direction": "up",
+          "n": 1,
+          "value": 1.7674,
+          "rtol": 0.01,
+          "note": "first period of the free swing (released at 40 deg) against the undamped large-amplitude period 4/w0 K(sin^2(a/2)) with J = 0.24774 kg m^2"
+        }
+      ]
+    },
+    "actilink-sysid-swing2": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "period",
+          "signal": "J3/qout",
+          "level": 0.0,
+          "direction": "up",
+          "n": 1,
+          "value": 1.30901,
+          "rtol": 0.01,
+          "note": "first period of the free swing (released at 40 deg) against the undamped large-amplitude period 4/w0 K(sin^2(a/2)) with J = 0.021969 kg m^2"
+        }
+      ]
+    },
+    "actilink-sysid-encoder": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "J1/qdout",
+          "from_t": 0.6,
+          "to_t": 1.8,
+          "value": 4.0,
+          "rtol": 0.05,
+          "note": "constant speed 4 rad/s (CSV) during the bench turn"
+        }
+      ]
+    },
+    "actilink-sysid-chirp": {
+      "run_timeout": 900.0,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "J1/qout",
+          "value": 3.119,
+          "rtol": 0.1,
+          "note": "arm amplitude of the chirp"
         }
       ]
     }

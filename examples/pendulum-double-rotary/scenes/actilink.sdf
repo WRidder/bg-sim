@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<!--
+  actilink (pendulum-double-rotary): a Synapticon ACTILINK-JD10 actuator (d 106 mm,
+  86 mm long) on a column turns a 0.30 m arm; two 0.60 m links on passive joints
+  with AS5048 encoders. Z-up, metres, drawn at q = 0: the arm along +X, the links upright on
+  its tip, link 2 offset 40 mm outward along the joint axis. Joints: arm (+Z, J1/qout),
+  link1 and link2 (+X, J2/qout, J3/qout; a positive angle tilts the link towards -Y).
+-->
+<sdf version="1.9">
+  <model name="actilink_rotary_double_pendulum">
+    <link name="base">
+      <visual name="floor_plate">
+        <pose>0 0 -1.5400 0 0 0</pose>
+        <geometry><box><size>0.6 0.6 0.02</size></box></geometry>
+        <material><diffuse>0.45 0.47 0.5 1</diffuse></material>
+      </visual>
+      <visual name="column">
+        <pose>0 0 -0.8081 0 0 0</pose>
+        <geometry><box><size>0.08 0.08 1.4437</size></box></geometry>
+        <material><diffuse>0.7 0.72 0.75 1</diffuse></material>
+      </visual>
+      <visual name="actilink_housing">
+        <pose>0 0 -0.0512 0 0 0</pose>
+        <geometry><cylinder><radius>0.0530</radius><length>0.0863</length></cylinder></geometry>
+        <material><diffuse>0.12 0.13 0.15 1</diffuse></material>
+      </visual>
+      <visual name="actilink_ring">
+        <pose>0 0 -0.012 0 0 0</pose>
+        <geometry><cylinder><radius>0.0550</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.85 0.45 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="arm_bar">
+      <visual name="hub">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.04</radius><length>0.016</length></cylinder></geometry>
+        <material><diffuse>0.6 0.62 0.66 1</diffuse></material>
+      </visual>
+      <visual name="arm_tube">
+        <pose>0.125 0 0 0 0 0</pose>
+        <geometry><box><size>0.33 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.25 0.5 0.85 1</diffuse></material>
+      </visual>
+      <visual name="joint1_housing">
+        <pose>0.2700 0 0 0 0 0</pose>
+        <geometry><box><size>0.04 0.045 0.045</size></box></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="as5048_1">
+        <pose>0.2920 0 0 0 0 0</pose>
+        <geometry><box><size>0.003 0.028 0.028</size></box></geometry>
+        <material><diffuse>0.1 0.45 0.2 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="rod1">
+      <pose>0.3000 0 0 0 0 0</pose>
+      <visual name="clamp1">
+        <geometry><box><size>0.02 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.75 0.75 0.78 1</diffuse></material>
+      </visual>
+      <visual name="tube1">
+        <pose>0 0 0.3000 0 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.6000</length></cylinder></geometry>
+        <material><diffuse>0.85 0.35 0.3 1</diffuse></material>
+      </visual>
+      <visual name="joint2_housing">
+        <pose>0.0160 0 0.6000 0 0 0</pose>
+        <geometry><box><size>0.0320 0.04 0.04</size></box></geometry>
+        <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
+      </visual>
+      <visual name="as5048_2">
+        <pose>0.0340 0 0.6000 0 0 0</pose>
+        <geometry><box><size>0.003 0.028 0.028</size></box></geometry>
+        <material><diffuse>0.1 0.45 0.2 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="rod2">
+      <pose>0.3400 0 0.6000 0 0 0</pose>
+      <visual name="clamp2">
+        <geometry><box><size>0.02 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.75 0.75 0.78 1</diffuse></material>
+      </visual>
+      <visual name="tube2">
+        <pose>0 0 0.3000 0 0 0</pose>
+        <geometry><cylinder><radius>0.01</radius><length>0.6000</length></cylinder></geometry>
+        <material><diffuse>0.95 0.75 0.2 1</diffuse></material>
+      </visual>
+      <visual name="tip">
+        <pose>0 0 0.6000 0 0 0</pose>
+        <geometry><sphere><radius>0.014</radius></sphere></geometry>
+        <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="arm" type="revolute">
+      <parent>base</parent>
+      <child>arm_bar</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-100</lower><upper>100</upper></limit></axis>
+    </joint>
+    <joint name="link1" type="revolute">
+      <parent>arm_bar</parent>
+      <child>rod1</child>
+      <axis><xyz>1 0 0</xyz><limit><lower>-100</lower><upper>100</upper></limit></axis>
+    </joint>
+    <joint name="link2" type="revolute">
+      <parent>rod1</parent>
+      <child>rod2</child>
+      <axis><xyz>1 0 0</xyz><limit><lower>-100</lower><upper>100</upper></limit></axis>
+    </joint>
+  </model>
+</sdf>
