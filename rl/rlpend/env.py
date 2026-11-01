@@ -317,6 +317,7 @@ class TrainCfg:
     init_std: float = 1.0
     num_learning_epochs: int = 5
     num_mini_batches: int = 4
+    desired_kl: float = 0.01
 
     def runner_cfg(self) -> dict:
         return {
@@ -327,7 +328,7 @@ class TrainCfg:
             "algorithm": {
                 "class_name": "PPO", "learning_rate": self.learning_rate, "gamma": self.gamma, "lam": self.lam,
                 "entropy_coef": self.entropy_coef, "num_learning_epochs": self.num_learning_epochs,
-                "num_mini_batches": self.num_mini_batches, "schedule": "adaptive", "desired_kl": 0.01,
+                "num_mini_batches": self.num_mini_batches, "schedule": "adaptive", "desired_kl": self.desired_kl,
                 "clip_param": 0.2, "value_loss_coef": 1.0, "max_grad_norm": 1.0,
             },
             "actor": {

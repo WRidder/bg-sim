@@ -47,8 +47,10 @@ HANG_CASES = [
     {"name": "rlcmp-hang-b", "x": -0.1, "th1": -math.pi - 0.15, "th2": -math.pi + 0.05, "t_end": 6.0},
 ]
 TASKS = {   # the comparison cases and the default model's timing (design/rlmodels.py RL_TASKS)
-    "balance": {"cases": UP_CASES, "t_on": 0.0, "t_push": 3.0},
-    "swingup": {"cases": HANG_CASES + UP_CASES[:2], "t_on": 1.0, "t_push": 7.0},
+    "balance": {"cases": UP_CASES, "t_on": 0.0, "t_push": 3.0, "model": "pendulum-double-cart-rl",
+                "block": "DoubleCartPolicy"},
+    "swingup": {"cases": HANG_CASES + UP_CASES[:2], "t_on": 1.0, "t_push": 7.0,
+                "model": "pendulum-double-cart-rl-swingup", "block": "DoubleCartSwingPolicy"},
 }
 
 
@@ -138,7 +140,7 @@ def metrics(run: dict, t_on: float, t_push: float) -> dict:
     }
 
 
-def plot(cases, env, runs, out: Path, default_run=None, t_push: float = 7.0):
+def plot(cases, env, runs, out: Path, default_run=None, t_push: float = 7.0, model: str = "pendulum-double-cart-rl"):
     import matplotlib
 
     matplotlib.use("Agg")
@@ -168,7 +170,7 @@ def plot(cases, env, runs, out: Path, default_run=None, t_push: float = 7.0):
         axes[-1, 1].plot(r["t"], r["Policy/th1"], color="#3b6fb6")
         axes[-1, 1].plot(r["t"], r["Policy/th2"], color="#6a9f58")
         axes[-1, 2].plot(r["t"], r["Policy/u"], color="#3b6fb6")
-        axes[-1, 0].text(0.02, 0.85, "pendulum-double-cart-rl (bgsim)", transform=axes[-1, 0].transAxes, fontsize=8)
+        axes[-1, 0].text(0.02, 0.85, f"{model} (bgsim)", transform=axes[-1, 0].transAxes, fontsize=8)
         for ax in axes[-1]:
             ax.grid(alpha=0.3)
             ax.axvline(t_push, color="0.5", lw=0.8, ls=":")
@@ -190,7 +192,7 @@ def main() -> int:
                     help="which cases, and the timing of the default pendulum-double-cart-rl model")
     args = ap.parse_args()
     task = TASKS[args.task]
-    CASES = task["cases"]
+    CASES = [{**c, "block": task["block"]} for c in task["cases"]]
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     (out / "cases.json").write_text(json.dumps(CASES, indent=2), encoding="utf-8")
@@ -198,7 +200,7 @@ def main() -> int:
     if not args.skip_bgsim:
         subprocess.run(["uv", "run", str(EXAMPLE / "design" / "rlmodels.py"), "--cases", str(out / "cases.json"),
                         str(models)], check=True, cwd=ROOT)
-        paths = [str(EXAMPLE / "models" / "pendulum-double-cart-rl.bgmodel.json")]
+        paths = [str(EXAMPLE / "models" / f"{task['model']}.bgmodel.json")]
         paths += [str(models / f"{c['name']}.bgmodel.json") for c in CASES]
         subprocess.run(["julia", "--project=julia/BGSim", "rl/closed_loop.jl", str(out / "bgsim"), *paths],
                        check=True, cwd=ROOT)
@@ -218,13 +220,13 @@ def main() -> int:
         res["cases"][c["name"]] = {
             k: {f"to{h}s": float(np.max(v[t <= h + 1e-9])) for h in (0.5, 1.0, c["t_end"])} for k, v in dev.items()}
         print(c["name"], {k: f"{float(np.max(v[t <= 1.0])):.1e} (1 s) / {float(np.max(v)):.1e}" for k, v in dev.items()})
-    default = read_run(out / "bgsim" / "pendulum-double-cart-rl")
+    default = read_run(out / "bgsim" / task["model"])
     res["default"] = metrics(default, task["t_on"], task["t_push"])
-    print("pendulum-double-cart-rl:", json.dumps(res["default"], indent=1))
+    print(f"{task['model']}:", json.dumps(res["default"], indent=1))
     timings = json.loads((out / "bgsim" / "timings.json").read_text(encoding="utf-8"))
     res["timings"] = timings
     (out / "compare.json").write_text(json.dumps(res, indent=2), encoding="utf-8")
-    plot(CASES, env, runs, out / "compare.png", default_run=default, t_push=task["t_push"])
+    plot(CASES, env, runs, out / "compare.png", default_run=default, t_push=task["t_push"], model=task["model"])
     print("wrote", out / "compare.json", out / "compare.png")
     return 0
 

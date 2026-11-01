@@ -85,6 +85,59 @@ Triple and quad cart, then rotary double and triple. The rotary quad only if the
 feasible at all. Each task compares the variants of risk 4 (pure RL, imitation warm start, hybrid RL swing-up
 with the LQR balance); if none works, the classical design stays the controller and the result is recorded.
 
+## Step 0 result: go/no-go (R0.6)
+
+**Verdict: go for the workflow, no-go for "pure RL from scratch" as the default recipe.**
+FMU → batched C env → rsl_rl PPO → generated `@discrete` block → bgsim works end to end. It is fast
+enough and agrees with the training env to round-off. On this plant (high-gain balance, saturating
+at 0.1 rad), useful policies need an imitation warm start from the classical design. Details are in the
+table rows R0.1-R0.5.
+
+| question | result |
+| --- | --- |
+| throughput | Plant FMU (Rodas4P, fixed 1 ms): 5-6 µs per doStep (harness), 9-10 µs per step in the shim. Batched C env (200 Hz policy, 5 substeps): 21k env steps/s per core, 166k with 12 OpenMP threads, **285k with 12 processes**. In PPO training 42-48k env steps/s: the torch side (inference + update, CPU) takes 60 % of the wall time, the plant 35 %. fmpy would give 14k/s per core. |
+| training effort | Balance (BC on the LQR, then PPO): **5 min, 13 M steps**; BC alone takes about 1 min. Pure-RL attempts: about 120 M steps in total (6 runs, about 1 h) without a balancing policy. Swing-up variants: see below. |
+| final performance (balance, shipped) | 0.95 of rest starts within ±0.3 rad balanced for 6 s (the LQR: 0.91). In bgsim: 0.8° band, cart 3-5 cm off centre (LQR: 0.01°, 1 mm), push 0.28 N → 18.4° peak (LQR 17.8°), recovered. |
+| swing-up variants (timeboxed) | @@SWINGUP@@ |
+| bgsim vs env | From the same rest poses, over 4 s: x 8e-7 m, th1 3e-6 rad, th2 8e-7 rad, u 2e-3 V (the block computes in float64, the env's actor in float32). |
+| compile time | 4865-weight block (66 KiB): cold flatten 2.1 s, compile 2.0 s, first run 31.8 s (Julia JIT); warm 0.16 s / 1.3 s / 2.7 s for a 6 s run. No compiler change needed. |
+
+What worked:
+- The plain C API plus a 300-line OpenMP shim. It matches fmpy bit for bit and gives 20× fmpy's throughput.
+- Exposed globals with ranges, recomputed in C at init; the reset/parameter-set path is ready for domain
+  randomisation.
+- The generator and the operation-for-operation observation pipeline (differenced encoder rates, previous
+  action) agree between env and bgsim to round-off.
+- An env sanity check against the classical controller (the LQR as the actor). It separated "env bug" from
+  "learning problem" in minutes and should be the first test of every new env.
+- Imitation warm starts: behaviour cloning on the LQR, and on the TVLQR swing-up from the example's own design
+  tables (`rl/classical.py`).
+
+What did not:
+- PPO from scratch on this plant: the needed gains are 10/rad in action units, and the actor stays 6-80× too
+  small.
+- PPO fine-tuning without an anchor destroys a cloned swing-up within 20 iterations, and does the same to the
+  cloned balance once the swing-up is trained.
+- DAgger on the time-indexed TVLQR expert (conflicting labels off the nominal).
+
+What step 1 (domain randomisation) needs:
+1. The shared parameter set `design/realism.json` (C0 of `plan/ROBUST_CLASSICAL_PLAN.md`): the plant FMU's
+   11 globals and ranges plus the non-idealities.
+2. Per-env parameter sampling at reset. `bgenv_reset` already takes parameter indices and values; the env
+   passes none yet. The sampled values go to the critic as privileged observations.
+3. Non-idealities in the wrapper: action delay (a ring buffer of 1-2 ms and more, which needs a finer
+   substep or 1 kHz control), encoder quantisation and noise, filtered rates, actuator ripple, random pushes
+   through `F_push`.
+4. Resets with velocity: the shim sets only pose integrators (rest starts). Starting with rates needs the
+   momenta (mass matrix) or a short pre-roll.
+5. The classical controller as the expert, recomputed per parameter set (the LQR/TVLQR robustness of
+   `ROBUST_CLASSICAL_PLAN.md`) for the imitation warm start. Then PPO with a BC anchor; the anchor weight
+   decays as the randomised performance overtakes the expert.
+6. Throughput: the torch update dominates. Larger minibatches or fewer epochs help; a GPU would help most. The
+   plant side scales with processes (285k steps/s).
+7. The motor current at 1 ms is off by 3e-2 (electrical pole); keep it critic-only, or export at 0.5 ms if
+   current feedback is wanted.
+
 ## Progress tracking
 
 | # | item | status | notes |

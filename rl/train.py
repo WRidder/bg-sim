@@ -81,41 +81,104 @@ def lqr_action(env: DoubleCartEnv, obs) -> np.ndarray:
 
 
 def bc_lqr(runner, env: DoubleCartEnv, steps: int, rollout: int = 64, sigma: float = 0.2,
-           region: float = 0.6) -> dict:
-    """Warm start: fit the actor's mean to the LQR on the states the noisy expert visits from the
-    env's resets: the LQR where both links are within ``region`` rad of upright, 0 V elsewhere (so
-    the swing-up starts from "do nothing", not from the LQR extrapolated to hanging, which drives
-    the cart off the rail). Sets the actor's observation normaliser from the same samples. The
-    critic is left untrained (see ``--critic-warmup``)."""
+           region: float = 0.6, expert: str = "lqr", dagger: int = 0) -> dict:
+    """Warm start: fit the actor's mean to an expert on the states the noisy expert visits.
+
+    ``lqr``: from the env's resets, the LQR where both links are within ``region`` rad of
+    upright, 0 V elsewhere (so the swing-up starts from "do nothing", not from the LQR
+    extrapolated to hanging, which drives the cart off the rail).
+    ``tvlqr``: the example's TVLQR swing-up + LQR balance (rlpend.experts) from hanging starts
+    (the env's hang noise), over 4.4 s per episode (the swing-up takes 2.4 s), plus the LQR on
+    upright starts (samples within ``region``), then ``dagger`` rounds of DAgger (the learner's
+    own rollouts from hanging, relabelled by the expert).
+    Sets the actor's observation normaliser from the same samples and freezes it. The critic is
+    left untrained (see ``--critic-warmup``)."""
+    from rlpend.experts import TvlqrSwingUp
+
     rng = np.random.default_rng(1)
-    obs = env.get_observations()
-    X, Y = [], []
-    with torch.inference_mode():
-        for _ in range(rollout):
-            near = (np.abs(env._state[1]) < region) & (np.abs(env._state[2]) < region)
-            a_star = np.where(near, lqr_action(env, obs), 0.0)
-            X.append(obs["policy"].clone())
-            Y.append(torch.as_tensor(a_star, dtype=torch.float32))
-            a = a_star + sigma * rng.standard_normal(env.num_envs)
-            obs, _, _, _ = env.step(torch.as_tensor(a[:, None], dtype=torch.float32))
-    X, Y = torch.cat(X), torch.cat(Y)[:, None]
     actor = runner.alg.actor
     norm = actor.obs_normalizer
+    keep_p = env.cfg.p_upright_start, env.cfg.p_random_start
+
+    def collect(starts_up: bool, steps_n: int, label, learner=None, every: int = 1):
+        """Roll out (the noisy expert, or the noisy learner for DAgger) from fresh resets and label
+        the visited states with ``label(env, obs)`` -> (action, valid)."""
+        env.cfg.p_upright_start, env.cfg.p_random_start = (1.0 if starts_up else 0.0), 0.0
+        env._reset(np.ones(env.num_envs, bool))
+        env.obs = env._observe()
+        obs = env.obs
+        X, Y = [], []
+        with torch.inference_mode():
+            for k in range(steps_n):
+                a_star, valid = label(env, obs)
+                if k % every == 0 and valid.any():
+                    X.append(obs["policy"][torch.as_tensor(valid)].clone())
+                    Y.append(torch.as_tensor(a_star[valid], dtype=torch.float32))
+                a = a_star if learner is None else learner(obs).numpy().ravel().astype(float)
+                a = a + sigma * rng.standard_normal(env.num_envs)
+                obs, _, _, _ = env.step(torch.as_tensor(a[:, None], dtype=torch.float32))
+        return torch.cat(X), torch.cat(Y)[:, None]
+
+    def lqr_label(env, obs):
+        near = (np.abs(env._state[1]) < region) & (np.abs(env._state[2]) < region)
+        a = lqr_action(env, obs)
+        if expert == "lqr":   # 0 V elsewhere: the swing-up starts from "do nothing"
+            return np.where(near, a, 0.0), np.ones(env.num_envs, bool)
+        return a, near        # with the TVLQR data: balance samples near upright only
+
+    tv = TvlqrSwingUp()
+
+    def tv_label(env, obs):
+        return tv(env), np.ones(env.num_envs, bool)
+
+    def fit(X, Y, n):
+        opt = torch.optim.Adam(actor.mlp.parameters(), lr=1e-3)
+        gen = torch.Generator().manual_seed(0)
+        loss = torch.tensor(0.0)
+        for _ in range(n):
+            idx = torch.randint(0, X.shape[0], (4096,), generator=gen)
+            loss = torch.nn.functional.mse_loss(actor.mlp(norm(X[idx])), Y[idx])
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+        return float(loss)
+
+    t_swing = int(round(4.4 / env.cfg.ts))      # the swing-up takes 2.4 s, then 2 s of balance
+    if expert == "tvlqr":
+        X1, Y1 = collect(False, t_swing, tv_label, every=2)
+        X2, Y2 = collect(True, rollout, lqr_label)
+        X, Y = torch.cat([X1, X2]), torch.cat([Y1, Y2])
+    else:
+        env.cfg.p_upright_start, env.cfg.p_random_start = keep_p
+        X, Y = collect(env.cfg.p_upright_start >= 1.0, rollout, lqr_label)
     norm.train()
     norm.update(X)
     norm.until = int(norm.count)   # frozen from here on: PPO's data must not move the cloned map
-    opt = torch.optim.Adam(actor.mlp.parameters(), lr=1e-3)
-    gen = torch.Generator().manual_seed(0)
+    loss = fit(X, Y, steps)
+    for _ in range(dagger if expert == "tvlqr" else 0):
+        # DAgger: the states the learner visits from hanging, labelled by the (time-indexed) expert
+        policy = runner.get_inference_policy()
+        Xd, Yd = collect(False, t_swing, tv_label, learner=policy, every=2)
+        X, Y = torch.cat([X, Xd]), torch.cat([Y, Yd])
+        loss = fit(X, Y, steps)
+    env.cfg.p_upright_start, env.cfg.p_random_start = keep_p
+    env._reset(np.ones(env.num_envs, bool))
+    env.obs = env._observe()
+    return {"samples": int(X.shape[0]), "loss": loss, "X": X, "Y": Y}
+
+
+def bc_anchor(runner, X, Y, steps: int, opt) -> float:
+    """BC regularisation during PPO (DAPG-style): a few gradient steps of the actor's mean toward
+    the expert's actions on the stored expert data after each PPO iteration."""
+    actor = runner.alg.actor
     loss = torch.tensor(0.0)
     for _ in range(steps):
-        idx = torch.randint(0, X.shape[0], (4096,), generator=gen)
-        loss = torch.nn.functional.mse_loss(actor.mlp(norm(X[idx])), Y[idx])
+        idx = torch.randint(0, X.shape[0], (4096,))
+        loss = torch.nn.functional.mse_loss(actor.mlp(actor.obs_normalizer(X[idx])), Y[idx])
         opt.zero_grad()
         loss.backward()
         opt.step()
-    env._reset(np.ones(env.num_envs, bool))
-    env.obs = env._observe()
-    return {"samples": int(X.shape[0]), "loss": float(loss)}
+    return float(loss)
 
 
 def plot(curve_path: Path, out: Path) -> None:
@@ -171,11 +234,30 @@ def main() -> int:
     ap.add_argument("--drop-penalty", type=float, default=50.0)
     ap.add_argument("--bc-lqr", type=int, default=0,
                     help="warm start: this many behaviour-cloning steps of the actor on the balance LQR")
+    ap.add_argument("--bc-expert", choices=["lqr", "tvlqr"], default="lqr",
+                    help="the expert of --bc-lqr: the balance LQR, or the TVLQR swing-up + LQR from hanging")
+    ap.add_argument("--bc-sigma", type=float, default=0.2, help="action noise of the expert's data rollouts")
+    ap.add_argument("--dagger", type=int, default=0, help="with --bc-expert tvlqr: DAgger rounds")
+    ap.add_argument("--desired-kl", type=float, default=TrainCfg.desired_kl)
+    ap.add_argument("--bc-anchor", type=int, default=0,
+                    help="with --bc-lqr: BC gradient steps on the expert data after every PPO iteration")
+    ap.add_argument("--bc-anchor-lr", type=float, default=3e-4)
     ap.add_argument("--critic-warmup", type=int, default=0,
                     help="iterations at the start with the actor frozen (fits the critic to a warm-started actor)")
     ap.add_argument("--catch-tol", type=float, default=0.0,
                     help="hybrid variant: the balance LQR takes over once z'Pz < this (rl/classical.json); "
                          "training episodes end there as a success")
+    ap.add_argument("--fixed-norm", action="store_true",
+                    help="hand-scaled observations instead of the running normaliser: o / [0.3, 1, 0.3, 1, 0.2, 0.5, "
+                         "3, 3, 1], frozen")
+    ap.add_argument("--w-energy", type=float, help="override the energy-error weight")
+    ap.add_argument("--w-rate", type=float, help="override the action-rate weight")
+    ap.add_argument("--widen", action="store_true",
+                    help="with --upright-only: start at +-0.05 rad, widen by 0.05 (to 0.3) whenever the upright eval "
+                         "reaches 0.8")
+    ap.add_argument("--catch-continue", action="store_true",
+                    help="hybrid: the LQR balances on inside the training episode (dense up/balance reward) "
+                         "instead of ending it at the catch")
     ap.add_argument("--p-up", type=float, help="with --no-curriculum: share of resets near upright")
     ap.add_argument("--p-random", type=float, help="with --no-curriculum: share of resets at random poses")
     ap.add_argument("--entropy", type=float, default=TrainCfg.entropy_coef)
@@ -192,6 +274,7 @@ def main() -> int:
     if args.catch_tol > 0:
         cl = json.loads((Path(__file__).resolve().parent / "classical.json").read_text(encoding="utf-8"))
         ecfg.catch_tol = args.catch_tol
+        ecfg.catch_end = not args.catch_continue
         ecfg.lqr_K = tuple(cl["K"])
         ecfg.lqr_P = tuple(np.ravel(cl["P"]).tolist())
     if args.p_up is not None:
@@ -200,8 +283,15 @@ def main() -> int:
         ecfg.p_random_start = args.p_random
     if args.upright_only:
         ecfg.p_upright_start, ecfg.p_random_start = 1.0, 0.0
+        if args.widen:
+            ecfg.up_noise = (0.05, 0.05, 0.05)
+    if args.w_energy is not None:
+        ecfg.w_energy = args.w_energy
+    if args.w_rate is not None:
+        ecfg.w_rate = args.w_rate
     tcfg = TrainCfg(hidden=[int(h) for h in args.hidden.split(",")], iterations=args.iterations,
-                    init_std=args.init_std, entropy_coef=args.entropy, gamma=args.gamma)
+                    init_std=args.init_std, entropy_coef=args.entropy, gamma=args.gamma,
+                    desired_kl=args.desired_kl)
     (run / "env.json").write_text(json.dumps(ecfg.to_dict(), indent=2), encoding="utf-8")
     cli = {k: (str(v) if isinstance(v, Path) else v) for k, v in vars(args).items()}
     (run / "train.json").write_text(json.dumps({**asdict(tcfg), "runner": tcfg.runner_cfg(), "cli": cli}, indent=2),
@@ -224,11 +314,23 @@ def main() -> int:
     runner = OnPolicyRunner(env, tcfg.runner_cfg(), log_dir=None, device="cpu")
     if args.resume:
         runner.load(str(args.resume))
+    if args.fixed_norm:
+        norm = runner.alg.actor.obs_normalizer
+        scale = torch.tensor([[0.3, 1.0, 0.3, 1.0, 0.2, 0.5, 3.0, 3.0, 1.0]])
+        with torch.no_grad():
+            norm._mean.zero_()
+            norm._std.copy_(scale - norm.eps)
+            norm._var.copy_((scale - norm.eps) ** 2)
+        norm.until = 0   # never updated
     if args.bc_lqr:
-        bc = bc_lqr(runner, env, args.bc_lqr)
+        bc = bc_lqr(runner, env, args.bc_lqr, sigma=args.bc_sigma, expert=args.bc_expert, dagger=args.dagger)
         evb = evaluate(runner.get_inference_policy(), ecfg, upright=True, episodes=64)
-        print(f"BC on the LQR: {bc['samples']} samples, loss {bc['loss']:.2e}, from upright "
-              f"{evb['success']:.2f}", flush=True)
+        evh = evaluate(runner.get_inference_policy(), ecfg)
+        print(f"BC on the {args.bc_expert}: {bc['samples']} samples, loss {bc['loss']:.2e}, from upright "
+              f"{evb['success']:.2f}, from hanging {evh['success']:.2f} (fell {evh['fell']:.2f})", flush=True)
+    anchor = None
+    if args.bc_lqr and args.bc_anchor:
+        anchor = torch.optim.Adam(runner.alg.actor.mlp.parameters(), lr=args.bc_anchor_lr)
     if args.critic_warmup:
         actor_params = list(runner.alg.actor.parameters())
         for p in actor_params:
@@ -260,7 +362,13 @@ def main() -> int:
         chunk = min(args.eval_every, args.iterations - it)
         rewards.clear()
         te, tp, t_chunk = env.t_env, env.t_plant, time.perf_counter()
-        runner.learn(num_learning_iterations=chunk)
+        if anchor is None:
+            runner.learn(num_learning_iterations=chunk)
+        else:
+            for _ in range(chunk):
+                runner.learn(num_learning_iterations=1)
+                anchor_loss = bc_anchor(runner, bc["X"], bc["Y"], args.bc_anchor, anchor)
+            print(f"  BC anchor loss {anchor_loss:.2e}", flush=True)
         it += chunk
         wall = time.perf_counter() - t0
         dt_chunk = time.perf_counter() - t_chunk
@@ -281,6 +389,11 @@ def main() -> int:
               f"from upright {evu['success']:.2f}; resets hanging {p_hang:.2f}", flush=True)
         if curriculum:
             schedule(ev["success"])
+        if args.upright_only and args.widen and evu["success"] >= 0.8 and env.cfg.up_noise[1] < 0.3 - 1e-9:
+            w_ = min(0.3, env.cfg.up_noise[1] + 0.05)
+            env.cfg.up_noise = (0.05, w_, w_)
+            ecfg.up_noise = env.cfg.up_noise      # the upright eval follows the training range
+            print(f"  widen: upright starts now +-{w_:.2f} rad", flush=True)
         runner.save(str(run / f"model_{it}.pt"))
         gate = evu["success"] if args.upright_only else ev["success"]
         if gate >= best:

@@ -145,7 +145,8 @@ def plant_model() -> dict:
 
 
 def rl_model(t_end: float = 12.0, t_on: float = 1.0, push: dict | None = None, th0=None, x0: float = 0.0,
-             title: str = "pendulum-double-cart-rl", points: int | None = None) -> dict:
+             title: str = "pendulum-double-cart-rl", points: int | None = None,
+             block: str = "DoubleCartPolicy") -> dict:
     """The closed loop with the trained policy. Default: hang until 1 s, swing up and balance, the
     README's 40 ms, 0.28 N push at 7 s. ``th0``/``x0`` start the plant at rest in another pose
     (absolute angles from upright), for the comparison with the training env (R0.5)."""
@@ -159,7 +160,7 @@ def rl_model(t_end: float = 12.0, t_on: float = 1.0, push: dict | None = None, t
     M.nodes, M.conns = doc["diagram"]["nodes"], doc["diagram"]["connections"]
     motor = _node(doc, "Motor")
     th_start = list(th0) if th0 is not None else [-3.141592653589793] * 2
-    pol = M.node("Policy", "project:DoubleCartPolicy", 80, 80,
+    pol = M.node("Policy", f"project:{block}", 80, 80,
                  params={"t_on": repr(float(t_on))},
                  starts={"xp": repr(float(x0)), "th1p": repr(th_start[0]), "th2p": repr(th_start[1]),
                          "th1": repr(th_start[0]), "th2": repr(th_start[1])})
@@ -179,7 +180,7 @@ def rl_model(t_end: float = 12.0, t_on: float = 1.0, push: dict | None = None, t
 RL_TASKS = {
     "balance": {"t_end": 6.0, "t_on": 0.0, "th0": [0.1, -0.05], "push": {"amplitude": 0.28, "t_start": 3.0,
                                                                          "duration": 0.04}},
-    "swingup": {},
+    "swingup": {"title": "pendulum-double-cart-rl-swingup", "block": "DoubleCartSwingPolicy"},
 }
 
 
@@ -193,8 +194,9 @@ def main(argv: list[str]) -> None:
         # --rl swingup: hang until 1 s, swing up and balance, push at 7 s (12 s).
         task = argv[argv.index("--rl") + 1] if len(argv) > argv.index("--rl") + 1 else "balance"
         doc = rl_model(**RL_TASKS[task])
-        cm.write(models / "pendulum-double-cart-rl.bgmodel.json", doc)
-        print("wrote", models / "pendulum-double-cart-rl.bgmodel.json", f"({task})")
+        name = RL_TASKS[task].get("title", "pendulum-double-cart-rl")
+        cm.write(models / f"{name}.bgmodel.json", doc)
+        print("wrote", models / f"{name}.bgmodel.json", f"({task})")
     if "--cases" in argv:
         # rl/compare.py: closed-loop variants from given poses at rest, policy from t = 0, no push
         import json
@@ -203,7 +205,8 @@ def main(argv: list[str]) -> None:
         out.mkdir(parents=True, exist_ok=True)
         for c in json.loads(spec.read_text(encoding="utf-8")):
             doc = rl_model(t_end=c["t_end"], t_on=0.0, push={"amplitude": 0.0, "t_start": 1.0e6, "duration": 0.04},
-                           th0=[c["th1"], c["th2"]], x0=c["x"], title=c["name"])
+                           th0=[c["th1"], c["th2"]], x0=c["x"], title=c["name"],
+                           block=c.get("block", "DoubleCartPolicy"))
             cm.write(out / f"{c['name']}.bgmodel.json", doc)
         print("wrote the cases into", out)
 
