@@ -59,6 +59,26 @@ Every expression can use these names: block parameters and start values, global 
 
 The Unicode names are spellings of the ASCII ones. `ħ` and `µ₀` (written with the micro sign) also work. Single letters such as `e`, `g`, `c`, `k`, `σ` or `μ` are not constants. They stay free for your own names, such as a gain `k` or a friction coefficient `μ` in block code.
 
+## Units: degrees, percent and other scaled units
+
+A unit such as `mm`, `deg`, `rpm` or `%` is a scaled SI unit: `deg` is a radian times π/180, `%` is a plain number times 0.01. The unit of a parameter tells what its number means; it never converts the number. A parameter declared in block code as `q_max::Real = 120.0, [unit = "deg"]` holds 120: you enter it in degrees and the inspector shows it in degrees.
+
+There are two ways to give an angle in degrees:
+
+- **Keep the parameter in rad** and type the value as `120*deg` (an equation, marked Σ, with the value in rad next to it). Nothing else changes.
+- **Declare the parameter in deg** (or a readout in deg, or a value in `%`) and convert it where the block code mixes it with radians. The checker refuses `q - q_max` with `q` in rad (E006, "differ only in scale"), and its hint names the conversion. Write the factor out:
+
+| You have | Write | Result |
+| --- | --- | --- |
+| `q_max` in deg, need rad | `q_max*deg` | rad |
+| `q` in rad, need deg (an output in deg) | `q/deg` | deg |
+| `f` in `1`, need % | `100*f` | % |
+| `p` in %, need `1` | `p/100` or `p*0.01` | 1 |
+| `n` in rpm, need rad/s | `n*rpm` | rad/s |
+| `x` in mm, need m | `x/1000` | m |
+
+Only the exact factor between the two units counts as a conversion; any other number (`2*x`) keeps the unit. A wire between two ports of the same dimension converts by itself: an output in deg can feed an input in rad, and the editor shows the factor on the wire.
+
 ## Other ways to change parameters
 
 - **Dashboard inputs** override a parameter for the next run without changing the model (see [Dashboard](page:dashboard)).

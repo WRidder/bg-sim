@@ -1,0 +1,15 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "quad-pendulum",
+  "models": [
+    "quad-pendulum-swingup",
+    "quad-pendulum-balance",
+    "quad-pendulum-free",
+    "quad-rotary-swingup",
+    "quad-rotary-balance",
+    "quad-rotary-free"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

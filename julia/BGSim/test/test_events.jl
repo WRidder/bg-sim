@@ -290,6 +290,8 @@ end
         w206 = only([d for d in result.diagnostics if d.code == "W206"])
         @test w206.severity == "warning"
         @test occursin("event limit", w206.message)
+        # the busiest condition is named (the impact h ~ 0 takes nearly every firing)
+        @test occursin("by the condition", w206.message)
 
         manifest = _ev_manifest(dir)
         mcode = [String(d.code) for d in manifest.diagnostics]
@@ -339,4 +341,48 @@ end
         @test result.status == "done"
         @test any(abs(t - 2.0) <= 1.0e-5 for t in _ev_event_groups(columns["time"]))
     end
+end
+
+# A switching root on an output-grid time or tick, or a few ulps before it (the ramp of the
+# race car in examples/cars ending at 10.0 + 0.05 == 10.05 on the grid), trapped the event
+# handling until W206: the event lands on the float before the root, the rest of the step to
+# the stop is an ulp, and the repeat nudge cannot pass the root. The run loop now lands exactly
+# on its targets, and steps a little past a target that has a root on or just before it.
+@testset "step targets land exactly, and step past a root on the target" begin
+    SB = BGSim.ModelingToolkit.SciMLBase
+    a, b = 10.0, 0.05                       # the root -b - a + t == 0 at t = 10.05
+    for vector in (false, true)
+        cb = vector ?
+             SB.VectorContinuousCallback((out, u, t, i) -> (out[1] = -b - a + t; out[2] = t - 3.0),
+                 (i, k) -> nothing, 2) :
+             SB.ContinuousCallback((u, t, i) -> -b - a + t, i -> nothing)
+        prob = SB.ODEProblem((u, p, t) -> [1.0], [0.0], (0.0, 14.0); callback = cb)
+        integ = SB.init(prob, BGSim.OrdinaryDiffEqTsit5.Tsit5())
+        t0 = nextfloat(10.04, 3)
+        @test BGSim._dbg_step!(nothing, nothing, integ, t0, 0)
+        @test integ.t == t0                 # exactly on the target
+        probe = BGSim.kink_probe(integ)
+        for target in (a + b, nextfloat(a + b, 3))     # the root on / just before the target
+            past = BGSim._snap_target(probe, integ, target)
+            @test target < past <= target + 1.0e-10
+        end
+        @test BGSim._snap_target(probe, integ, prevfloat(a + b, 2)) == prevfloat(a + b, 2)
+        @test BGSim._snap_target(probe, integ, 10.06) == 10.06          # no root nearby
+        past = BGSim._snap_target(probe, integ, a + b)
+        @test BGSim._dbg_step!(nothing, nothing, integ, past, 0)
+        @test integ.t == past
+        @test BGSim._dbg_step!(nothing, nothing, integ, 10.06, 0)
+        @test integ.t == 10.06
+    end
+    @test BGSim._snap_target(nothing, nothing, 1.0) == 1.0
+end
+
+@testset "an early E901 with W201 explains the dependent storage element" begin
+    w201 = BGSim.diag("W201",
+        "`Arm/inertia/P[1]` appears under ddt but was not kept as a differential state; the DAE index is raised")
+    note = BGSim._dependent_store_note([w201], true)
+    @test occursin("`Arm/inertia/P[1]`", note)
+    @test occursin("its own state", note)
+    @test BGSim._dependent_store_note([w201], false) == ""        # a failure later in the run
+    @test BGSim._dependent_store_note(BGSim.Diagnostic[], true) == ""
 end

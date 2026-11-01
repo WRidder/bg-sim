@@ -43,10 +43,23 @@
     # D-MB8: the single drive is a **Rotation** port (N*m, rad/s). `pose` is `H` on the D-MB6
     # chart `(q_w, q_x, q_y, q_z, p)`: the quaternion `Rz(q) (x) (1, g_x, g_y, 0)`, which the
     # consumers normalise, and the origin `R dl`.
+    #
+    # Optional hard stops: below `q_min` and above `q_max` a stiff spring-damper acts on the
+    # joint coordinate, `ts = k_stop (x_hi - x_lo) + d_stop (s_hi + s_lo) qdot`, applied like the
+    # drive (`drive.e = -tau + ts`). `x` is the smooth positive part of the overshoot
+    # `d = q - q_max` (or `q_min - q`): `x = (d + sqrt(d^2 + w_stop^2))/2`, and `s = dx/dd`
+    # rises from 0 to 1 over a few `w_stop`, so the stop needs no `ifelse`, `max` or `abs`:
+    # no switching event and nothing that can trap the root finder when the joint rests on its
+    # stop. The limits are structural constants: the default `-Inf`/`Inf` leaves each stop out
+    # of the equations entirely, so a joint without stops compiles exactly as before.
     @ports begin
         parent::Power{Spatial}
         child::Power{Spatial}
         drive::Power{Rotation}
+    end
+    @constants begin
+        q_min::Real = -Inf, [unit = "rad", description = "Lower hard stop (-Inf: none)"]
+        q_max::Real = Inf, [unit = "rad", description = "Upper hard stop (Inf: none)"]
     end
     @parameters begin
         kr::Real = 1.0e6, [unit = "N*m/rad", min = 0, description = "Stiffness of the two held rotations"]
@@ -54,7 +67,9 @@
         kt::Real = 1.0e6, [unit = "N/m", min = 0, description = "Pivot translational stiffness"]
         bt::Real = 0.0, [unit = "N*s/m", min = 0, description = "Pivot translational damping"]
         q0::Real = 0.0, [unit = "rad", description = "Initial joint angle"]
-
+        k_stop::Real = 1.0e5, [unit = "N*m/rad", min = 0, description = "Hard-stop stiffness beyond q_min/q_max"]
+        d_stop::Real = 100.0, [unit = "N*m*s/rad", min = 0, description = "Hard-stop damping beyond q_min/q_max"]
+        w_stop::Real = 1.0e-5, [unit = "rad", min = 1.0e-12, description = "Smoothing width of the stop onset"]
     end
     @variables begin
         cq::Real = 1.0, [unit = "1", description = "cos(q)"]
@@ -85,6 +100,7 @@
         dang::Vec{2}, [unit = "rad"]
         dlin::Vec{3}, [unit = "m"]
         Vrelout::Vec{6}
+        tau_stop::Real, [unit = "N*m", description = "Hard-stop torque on the joint coordinate (0 without stops)"]
     end
     @equations begin
         cq ~ cos(q)
@@ -152,7 +168,20 @@
         parent.e[4] ~ -(R[1, 1] * Fl[1] + R[1, 2] * Fl[2] + R[1, 3] * Fl[3])
         parent.e[5] ~ -(R[2, 1] * Fl[1] + R[2, 2] * Fl[2] + R[2, 3] * Fl[3])
         parent.e[6] ~ -(R[3, 1] * Fl[1] + R[3, 2] * Fl[2] + R[3, 3] * Fl[3])
-        drive.e ~ -tau
+        if q_min > -Inf || q_max < Inf
+            tau_stop ~ ifelse(q_max < Inf,
+                0.5 * k_stop * ((q - q_max) + sqrt((q - q_max) * (q - q_max) + w_stop * w_stop)) +
+                0.5 * d_stop * (1.0 + (q - q_max) / sqrt((q - q_max) * (q - q_max) + w_stop * w_stop)) * qdot,
+                0.0) +
+                ifelse(q_min > -Inf,
+                -0.5 * k_stop * ((q_min - q) + sqrt((q_min - q) * (q_min - q) + w_stop * w_stop)) +
+                0.5 * d_stop * (1.0 + (q_min - q) / sqrt((q_min - q) * (q_min - q) + w_stop * w_stop)) * qdot,
+                0.0)
+            drive.e ~ -tau + tau_stop
+        else
+            tau_stop ~ 0.0
+            drive.e ~ -tau
+        end
         drive.f ~ qdot
         qout ~ q
         qdout ~ qdot

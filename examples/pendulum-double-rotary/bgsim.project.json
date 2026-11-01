@@ -4,7 +4,18 @@
   "name": "pendulum-double-rotary",
   "models": [
     "pendulum-double-rotary",
-    "pendulum-double-rotary-free"
+    "pendulum-double-rotary-free",
+    "actilink-free",
+    "actilink-balance",
+    "actilink-push",
+    "actilink-swingup",
+    "actilink-sysid-current",
+    "actilink-sysid-friction",
+    "actilink-sysid-gear",
+    "actilink-sysid-swing1",
+    "actilink-sysid-swing2",
+    "actilink-sysid-encoder",
+    "actilink-sysid-chirp"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"

@@ -2,7 +2,7 @@
 
 Full accelerator from rest for 12 s. The rear motor ([MotorR](block:MotorR), [MachineR](block:MachineR)) gives its 300 N m torque limit up to the base speed $P_{max}/T_{max} = 867$ rad/s (8280 rpm, 38 m/s, reached after about 5 s), then its 260 kW power limit. The traction control trims the torque in the first 0.1 s while the slicks take up the load. The battery current rises to 740 A and the state of charge falls by 2 % in 12 s.
 
-![The model canvas|900](assets/6b264e099bff.png)
+![The model canvas|900](assets/ff35e998a4c6.png)
 
 ## What to try
 

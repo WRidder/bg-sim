@@ -90,7 +90,7 @@ end
     @test signal["Motor1/i"].kind == "observed"
     @test signal["Motor1/w_rel"].kind == "observed"
     @test signal["Motor1/i"].unit == "A"
-    @test signal["Motor1/w_rel"].unit == "1/s"
+    @test signal["Motor1/w_rel"].unit == "rad/s"
 
     # Equivalence on every signal the consumers read. The composite's shaft/housing *effort*
     # is the effort at the exposed rotor port, not the flat block's lumped motor equation, so

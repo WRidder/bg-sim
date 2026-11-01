@@ -207,7 +207,9 @@ _sj_P(cols, i) = [cols["Body/inertia/P[$k]"][i] for k in 1:6]
             @test err_forms < 1e-9
             @test ke_p <= ke_m * (1 + 1e-9)
             if mode == 0
-                @test norm(Pp - Pm) < 1e-12
+                # free: the momentum passes the event unchanged, to the rounding of the affect's
+                # projection (the other errors above are ~1.5e-12 relative)
+                @test norm(Pp - Pm) < 1e-11
             else
                 @test ke_p < ke_m              # an impact dissipates
             end

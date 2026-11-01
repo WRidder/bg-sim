@@ -103,10 +103,16 @@ end
 # crossing, because landing on the kink is exactly its purpose.
 _is_empty_affect(a) = a === nothing || a === ModelingToolkit.ModelingToolkitBase.EMPTY_AFFECT
 
-function _counted_affect!(affect, counter::Base.RefValue{Int}, limit::Int, count::Bool)
+# The firings are also tallied per callback slot (the `continuous_events` order of the
+# compiled system, see `_dbg_wrap`), so W206 can name the condition that chatters.
+const EventTally = Dict{Int,Int}
+
+function _counted_affect!(affect, counter::Base.RefValue{Int}, limit::Int, count::Bool,
+    tally::EventTally = EventTally(), slot::Int = 0)
     count || return affect
     return function (integ)
         counter[] += 1
+        tally[slot] = get(tally, slot, 0) + 1
         affect(integ)
         counter[] > limit && ModelingToolkit.SciMLBase.terminate!(integ)
         return nothing
@@ -128,14 +134,18 @@ function _with_event_limit(
     cb::ModelingToolkit.SciMLBase.ContinuousCallback,
     counter::Base.RefValue{Int},
     limit::Int,
+    tally::EventTally = EventTally(),
+    next::Base.RefValue{Int} = Ref(0),
 )
+    next[] += 1
+    slot = next[]
     real = !_is_empty_affect(cb.affect!) || !_is_empty_affect(cb.affect_neg!)
     count_pos = real ? !_is_empty_affect(cb.affect!) : true
     count_neg = real ? !_is_empty_affect(cb.affect_neg!) : true
     return ModelingToolkit.SciMLBase.ContinuousCallback(
         cb.condition,
-        _counted_affect!(cb.affect!, counter, limit, count_pos),
-        _counted_affect!(cb.affect_neg!, counter, limit, count_neg);
+        _counted_affect!(cb.affect!, counter, limit, count_pos, tally, slot),
+        _counted_affect!(cb.affect_neg!, counter, limit, count_neg, tally, slot);
         initialize = cb.initialize,
         finalize = cb.finalize,
         idxs = cb.idxs,
@@ -157,17 +167,21 @@ function _with_event_limit(
     cb::ModelingToolkit.SciMLBase.VectorContinuousCallback,
     counter::Base.RefValue{Int},
     limit::Int,
+    tally::EventTally = EventTally(),
+    next::Base.RefValue{Int} = Ref(0),
 )
     va = cb.affect!
+    base = next[]
+    next[] += cb.len
     real = any(!_is_empty_affect(a) for a in va.affects) ||
            any(!_is_empty_affect(a) for a in va.affect_negs)
     affects = Any[
-        _counted_affect!(a, counter, limit, real ? !_is_empty_affect(a) : true) for
-        a in va.affects
+        _counted_affect!(a, counter, limit, real ? !_is_empty_affect(a) : true, tally, base + i)
+        for (i, a) in enumerate(va.affects)
     ]
     affect_negs = Any[
-        _counted_affect!(a, counter, limit, real ? !_is_empty_affect(a) : true) for
-        a in va.affect_negs
+        _counted_affect!(a, counter, limit, real ? !_is_empty_affect(a) : true, tally, base + i)
+        for (i, a) in enumerate(va.affect_negs)
     ]
     wrapped_affect = ModelingToolkit.ModelingToolkitBase.VectorAffect(
         va.eq2affect, affects, affect_negs
@@ -197,14 +211,16 @@ function _with_event_limit(
     cb::ModelingToolkit.SciMLBase.CallbackSet,
     counter::Base.RefValue{Int},
     limit::Int,
+    tally::EventTally = EventTally(),
+    next::Base.RefValue{Int} = Ref(0),
 )
     continuous = [
-        _with_event_limit(c, counter, limit) for c in cb.continuous_callbacks
+        _with_event_limit(c, counter, limit, tally, next) for c in cb.continuous_callbacks
     ]
     return ModelingToolkit.SciMLBase.CallbackSet(continuous, collect(cb.discrete_callbacks))
 end
 
-_with_event_limit(cb, ::Base.RefValue{Int}, ::Int) = cb
+_with_event_limit(cb, ::Base.RefValue{Int}, ::Int, args...) = cb
 
 # ---------------------------------------------------------------------------------------
 # StopSimulation and Assertion: the run monitors
@@ -331,13 +347,108 @@ _with_monitors(cb, check) = cb
 
 _event_limit_reached(counter::Base.RefValue{Int}, limit::Int) = counter[] > limit
 
-function _event_limit_diagnostic(flat::Flat.FlatModel, t, count::Int, limit::Int)
+function _event_limit_diagnostic(flat::Flat.FlatModel, t, count::Int, limit::Int,
+    tally::EventTally = EventTally(), system = nothing)
     return diag(
         "W206",
-        "the event limit of $limit was reached at t = $t ($count firings)";
+        "the event limit of $limit was reached at t = $t ($count firings)" *
+        _chatter_note(tally, system, count);
         hint = "the model may chatter (a Zeno event); check the event conditions or raise `event_limit`",
         path = _last_path(flat),
     )
+end
+
+# The condition of the busiest callback slot, when it took most of the firings: the slot
+# order is the `continuous_events` order of the compiled system.
+function _chatter_note(tally::EventTally, system, count::Int)
+    (isempty(tally) || system === nothing || count == 0) && return ""
+    slot, n = reduce((a, b) -> a[2] >= b[2] ? a : b, collect(tally))
+    n < count / 2 && return ""
+    text = try
+        cbs = ModelingToolkit.continuous_events(system)
+        slot <= length(cbs) ? join(string.(ModelingToolkit.conditions(cbs[slot])), ", ") : ""
+    catch
+        ""
+    end
+    isempty(text) && return ""
+    return "; $n of them by the condition `$(first(text, 200))`"
+end
+
+# ---------------------------------------------------------------------------------------
+# Kinks on a step target
+# ---------------------------------------------------------------------------------------
+#
+# The run loop stops the integrator exactly on every output-grid time and tick (a tstop). A
+# switching root on such a stop, or a few ulps before it (a ramp ending at 10.0 + 0.05 on the
+# grid time 10.05, a Step on a tick), traps the event handling: the root finder puts the event
+# on the last float before the root, the rest of the step to the stop is an ulp or two, and the
+# callback's repeat nudge (a fraction of that step) cannot get past the root, so the same
+# condition fires again at the same t until W206 (the race car of examples/cars with a 0.05 s
+# pedal ramp: 100 000 firings at t = 10.049999999999999).
+#
+# Before stepping to a target, the conditions are probed at the ends of a small window around
+# it, with the current state (only conditions explicit in `t` change sign over so short a time).
+# When one has its root inside the window at or before the target, the step goes a little past
+# the target instead (1e-12 relative): the root lies inside the step, the event is handled with
+# a normal remaining step, and the row of the target is written at the target time with the
+# values just after it. A root after the target needs nothing: the next step starts before it.
+
+struct KinkProbe
+    callbacks::Vector{Any}
+    lengths::Vector{Int}
+    values::Vector{Float64}
+    window::Float64
+end
+
+function _continuous_callbacks(cb)
+    cb === nothing && return Any[]
+    cb isa ModelingToolkit.SciMLBase.CallbackSet && return collect(Any, cb.continuous_callbacks)
+    cb isa ModelingToolkit.SciMLBase.AbstractContinuousCallback && return Any[cb]
+    return Any[]
+end
+
+function kink_probe(integ)
+    # a model with no state runs on a `NullODEIntegrator`, which has no callbacks
+    hasproperty(integ, :opts) || return nothing
+    cbs = _continuous_callbacks(integ.opts.callback)
+    isempty(cbs) && return nothing
+    lengths = Int[cb isa ModelingToolkit.SciMLBase.VectorContinuousCallback ? cb.len : 1 for cb in cbs]
+    abstol = maximum(Float64(cb.abstol) for cb in cbs)
+    return KinkProbe(cbs, lengths, zeros(sum(lengths)), max(100.0 * abstol, 1.0e-13))
+end
+
+function _probe!(probe::KinkProbe, integ, t)
+    k = 0
+    for (cb, n) in zip(probe.callbacks, probe.lengths)
+        if cb isa ModelingToolkit.SciMLBase.VectorContinuousCallback
+            cb.condition(view(probe.values, (k + 1):(k + n)), integ.u, t, integ)
+        else
+            probe.values[k + 1] = cb.condition(integ.u, t, integ)
+        end
+        k += n
+    end
+    return probe.values
+end
+
+function _snap_target(probe, integ, tt::Float64)
+    probe === nothing && return tt
+    t0 = Float64(integ.t)
+    window = max(64.0 * eps(abs(tt)), probe.window)
+    lo, hi = tt - window, tt + window
+    lo <= t0 && return tt
+    try
+        clo = copy(_probe!(probe, integ, lo))
+        chi = copy(_probe!(probe, integ, tt))
+        for j in eachindex(clo)
+            sa = sign(clo[j])
+            (sa == 0 || sign(chi[j]) == sa) && continue
+            # the root is in (lo, tt]: step past the target
+            return tt + max(2.0 * window, 1.0e-12 * max(1.0, abs(tt)))
+        end
+        return tt
+    catch
+        return tt
+    end
 end
 
 # The event-record seam for J2.2: the scheduler's run loop may pass its own record_event
@@ -458,7 +569,25 @@ function _state_origin(flat::Flat.FlatModel, name::AbstractString)
     return nothing
 end
 
-function _solver_diagnostic(integ, model::CompiledModel, flat::Flat.FlatModel)
+# A failure right at the start of a run with storage elements in derivative causality: the
+# usual cause is a dependent inertia next to a stiff compliance (a hub `Inertia` on the drive
+# of a compliant `Revolute3D` follows the joint's stiff deflection rates), which the default
+# compile cannot start. The remedy is the physical one: give the element its own state.
+function _dependent_store_note(diagnostics, early::Bool)
+    early || return ""
+    w201 = [d for d in diagnostics if d.code == "W201"]
+    isempty(w201) && return ""
+    m = match(r"`([^`]+)`", first(w201).message)
+    first_name = m === nothing ? something(first(w201).path, "?") : m.captures[1]
+    return "; $(length(w201)) storage element(s) are in derivative causality (W201, first " *
+           "`$(first_name)`): their rate is fixed by other states, and next to a stiff " *
+           "compliance the run cannot start. Give the element its own state (a spring for " *
+           "the gear or shaft stiffness between it and what drives it), lump it into the " *
+           "body it moves with, or use a rigid joint (`Revolute3DRigid`, its `Ja` armature)"
+end
+
+function _solver_diagnostic(integ, model::CompiledModel, flat::Flat.FlatModel,
+    diagnostics = Diagnostic[], early::Bool = false)
     retcode = integ.sol.retcode
     t = integ.t
     largest = _largest_states(integ, model)
@@ -467,7 +596,8 @@ function _solver_diagnostic(integ, model::CompiledModel, flat::Flat.FlatModel)
     return diag(
         "E901",
         "the solver failed at t = $(t) (retcode = $(retcode))";
-        hint = isempty(largest) ? "no states were available" : "largest states: " * largest,
+        hint = (isempty(largest) ? "no states were available" : "largest states: " * largest) *
+               _dependent_store_note(diagnostics, early),
         path = origin === nothing ? nothing : origin.path,
         block = origin === nothing ? nothing : origin.block,
         source = origin === nothing ? nothing : _origin_source(origin),
@@ -881,12 +1011,14 @@ function _simulate_flat(flat::Flat.FlatModel;
     # The wrapped callback is installed by remaking the problem, because `init` merges a
     # callback kwarg with the problem's own callbacks instead of replacing them.
     event_counter = Ref(0)
+    event_tally = EventTally()
     solver_problem = lowered.problem
     # StopSimulation / Assertion: an event that triggers one ends the integration there.
     monitors = run_monitors(flat, lowered.model)
     if haskey(lowered.problem.kwargs, :callback)
         limited = _with_event_limit(
-            lowered.problem.kwargs[:callback], event_counter, run_settings.event_limit
+            lowered.problem.kwargs[:callback], event_counter, run_settings.event_limit,
+            event_tally,
         )
         if !isempty(monitors)
             limited = _with_monitors(limited, integ -> monitor_hit(monitors, integ) !== nothing)
@@ -986,9 +1118,9 @@ function _simulate_flat(flat::Flat.FlatModel;
     init_kwargs = (;
         solver_kwargs..., save_everystep = false, save_start = false, save_end = false
     )
-    if schedule !== nothing && !isempty(schedule.tick_times)
-        init_kwargs = merge(init_kwargs, (; tstops = schedule.tick_times))
-    end
+    # The tick times are not given as tstops up front: the run loop stops on every tick itself,
+    # and steps past one that has a switching root on it (`_snap_target`), which a tstop at the
+    # tick would undo.
     # F5.1 insertion point: the breakpoints of every CSV table the model reads are tstops.
     csv_stops = csv_model_tstops(flat, run_settings.t_start, run_settings.t_end)
     if !isempty(csv_stops)
@@ -1016,6 +1148,7 @@ function _simulate_flat(flat::Flat.FlatModel;
     end
 
     prof_init_s = (time_ns() - init_ns) / 1.0e9
+    probe = kink_probe(integ)
     retcode = integ.sol.retcode
     if retcode == ReturnCode.InitialFailure
         diagnostic = diag(
@@ -1151,6 +1284,13 @@ function _simulate_flat(flat::Flat.FlatModel;
     extra_diagnostics = Diagnostic[]   # E903 next to a failure at the start (never instead)
     loop_ns = time_ns()
     last_progress_ns = time_ns()
+    # A changed tick off the output grid records a left and a right row of every signal. A
+    # clock much faster than the grid (a 16 kHz current loop under a 1 ms grid) would write
+    # gigabytes that way, so such rows are kept only a tenth of an output step apart; the
+    # grid rows still carry the held values. A clock no faster than that (a 1 ms controller
+    # under a 10 ms grid) records every change, as before.
+    tick_row_gap = length(grid) > 1 ? 0.1 * minimum(diff(grid)) * (1 - 1.0e-9) : Inf
+    last_tick_rows = -Inf
     last_flush_ns = time_ns()
     next_index = 1
     event_cursor = 0
@@ -1181,6 +1321,7 @@ function _simulate_flat(flat::Flat.FlatModel;
             # A discrete tick runs before the row for this instant is recorded, so the row
             # carries the state the continuous solver has at `tt` plus the new held outputs.
             changed = false
+            tick_only = true    # nothing but a tick changed values at `tt`
             before = nothing
             if _steps_due(live_steps, next_step, tt)
                 # A parameter step: the left limit is the state before it, the right limit
@@ -1190,6 +1331,7 @@ function _simulate_flat(flat::Flat.FlatModel;
                     live_steps, next_step, tt, integ, lowered.model.algebraic
                 )
                 changed = true
+                tick_only = false
             end
             if target.tick && run !== nothing
                 before === nothing && (before = values())
@@ -1204,11 +1346,14 @@ function _simulate_flat(flat::Flat.FlatModel;
                 if apply_inputs!(drive, integ, tt)
                     before === nothing && (before = before_inputs)
                     changed = true
+                    tick_only = false
                 end
             end
-            if changed
+            dense = changed && tick_only && !target.grid && tt - last_tick_rows < tick_row_gap
+            if changed && !dense
                 _record_event!(record_event, rec, tt, :left, before)
                 _record_event!(record_event, rec, tt, :right, values())
+                last_tick_rows = tt
             elseif target.grid
                 record_row!(rec, tt, values())
             end
@@ -1225,7 +1370,9 @@ function _simulate_flat(flat::Flat.FlatModel;
             _dbg_target!(debug, session, target)  # M4 debug: tick checkpoint
             continue
         end
-        dt = tt - integ.t
+        # A switching root on or just before the target: step a little past it.
+        next_t = _snap_target(probe, integ, tt)
+        dt = next_t - integ.t
         if dt <= 0
             if target.grid
                 record_row!(rec, tt, values())
@@ -1235,7 +1382,7 @@ function _simulate_flat(flat::Flat.FlatModel;
         end
         before = integ.t
         sp0 = time_ns()
-        step_ok = _dbg_step!(debug, session, integ, dt, event_cursor)  # M4 debug:
+        step_ok = _dbg_step!(debug, session, integ, next_t, event_cursor)  # M4 debug:
         prof_step_ns[] += time_ns() - sp0
         event_cursor = _dbg_cursor(debug, session, event_cursor)  # M4 debug:
         # Record every event instant that this step crossed, twice (left and right limits)
@@ -1247,7 +1394,8 @@ function _simulate_flat(flat::Flat.FlatModel;
         monitor_end!() && break
         if _event_limit_reached(event_counter, run_settings.event_limit)
             diagnostic = _event_limit_diagnostic(
-                flat, integ.t, event_counter[], run_settings.event_limit
+                flat, integ.t, event_counter[], run_settings.event_limit, event_tally,
+                lowered.model.system,
             )
             status = "done"
             if _dbg_failure!(debug, session, diagnostic)  # M4 debug: pause before the end
@@ -1262,7 +1410,9 @@ function _simulate_flat(flat::Flat.FlatModel;
             # It is added to the solver's own diagnostic, never in place of it.
             integ.t <= run_settings.t_start &&
                 append!(extra_diagnostics, _zero_coefficient_diagnostics(lowered.model, flat))
-            diagnostic = _solver_diagnostic(integ, lowered.model, flat)
+            early = integ.t - run_settings.t_start <=
+                    1.0e-3 * (run_settings.t_end - run_settings.t_start)
+            diagnostic = _solver_diagnostic(integ, lowered.model, flat, flat_diagnostics, early)
             status = "failed"
             if _dbg_failure!(debug, session, diagnostic)  # M4 debug: pause before the end
                 status = "cancelled"

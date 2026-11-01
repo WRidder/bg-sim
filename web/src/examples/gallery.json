@@ -327,11 +327,22 @@
   },
   "pendulum-double-rotary": {
     "title": "Pendulum double rotary",
-    "description": "A Quanser-style rotary double inverted pendulum.",
+    "description": "A Quanser-style rotary double inverted pendulum, plus the rig on a Synapticon ACTILINK-JD10: dq motor, backlash, AS5048 encoders, EtherCAT LQR, system identification.",
     "hasScene": true,
     "models": [
       "pendulum-double-rotary",
-      "pendulum-double-rotary-free"
+      "pendulum-double-rotary-free",
+      "actilink-swingup",
+      "actilink-balance",
+      "actilink-push",
+      "actilink-free",
+      "actilink-sysid-current",
+      "actilink-sysid-friction",
+      "actilink-sysid-gear",
+      "actilink-sysid-swing1",
+      "actilink-sysid-swing2",
+      "actilink-sysid-encoder",
+      "actilink-sysid-chirp"
     ]
   },
   "pendulum-triple-cart": {
@@ -372,6 +383,19 @@
       "planar-links",
       "planar-links-fwd",
       "planar-links-payload"
+    ]
+  },
+  "quad-pendulum": {
+    "title": "Quad pendulum",
+    "description": "Four pendulum links swung up from hanging and balanced upright, on a cart and on a rotary arm.",
+    "hasScene": true,
+    "models": [
+      "quad-pendulum-swingup",
+      "quad-pendulum-balance",
+      "quad-pendulum-free",
+      "quad-rotary-swingup",
+      "quad-rotary-balance",
+      "quad-rotary-free"
     ]
   },
   "quadcopter": {

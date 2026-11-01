@@ -1,0 +1,1158 @@
+{
+  "project": "quad-pendulum",
+  "models": {
+    "quad-pendulum-swingup": {
+      "run_timeout": 1800,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1e-12,
+          "note": "the actuator is off before the swing-up starts"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qdout",
+          "from_t": 0.02,
+          "to_t": 0.99,
+          "value": 0.0001,
+          "note": "hanging at rest before t_on (5x the start-up residual of the pivot compliance, measured 7.2e-17)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 0.95,
+          "value": -180.0,
+          "abs": 0.01,
+          "note": "link 1 hangs straight down before the swing-up"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.95,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "hold phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/swinging",
+          "t": 2.0,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "SWINGING UP (TVLQR)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/balancing",
+          "t": 6.5,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "BALANCING: the catch region was reached (catch at 5.500 s; design closed loop 5.500 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 3.0,
+          "value": -102.1247,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -102.12 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 3.0,
+          "value": -86.4807,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -86.48 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 3.0,
+          "value": -81.0197,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -81.02 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 3.0,
+          "value": -77.4735,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -77.47 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 4.5,
+          "value": 0.2445,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 0.24 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 4.5,
+          "value": 0.1156,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 0.12 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 4.5,
+          "value": -0.0241,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -0.02 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 4.5,
+          "value": -0.1613,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -0.16 deg; 2 deg band)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/dev",
+          "from_t": 7.5,
+          "to_t": 10.0,
+          "value": 0.5,
+          "note": "balance holds: every link within 0.5 deg of upright from 7.5 s (measured max 0.0007 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "value": 40.000000001,
+          "note": "|u| within the actuator limit 40 N (firmware clamp; measured peak 13.61 N, design 13.61)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "value": 13.6068,
+          "rtol": 0.15,
+          "note": "peak actuator effort 13.61 N (design closed loop 13.61 N); +-15 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qout",
+          "value": 1.5,
+          "note": "the cart stays on the +-1.5 m rail (measured max 0.581 m)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "value": 0.581,
+          "abs": 0.05,
+          "note": "peak travel 0.581 m (design closed loop 0.581; collocation bound 1)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/S4",
+          "t": 10.0,
+          "value": 4.3164,
+          "abs": 0.04316400000000001,
+          "note": "upright at rest: the stacked energy equals the UPRIGHT level 4.3164 J (measured 4.3164 J)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/E_up",
+          "t": 10.0,
+          "value": 4.3164,
+          "abs": 1e-09,
+          "note": "UPRIGHT level = sum m_i g 2 h_i of the chain"
+        },
+        {
+          "kind": "invariant",
+          "tol": 0.001,
+          "scale": 4.316400000000001,
+          "terms": [
+            {
+              "signal": "Mon/E_tot",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Mon/W_in",
+              "coeff": -1.0
+            },
+            {
+              "signal": "Mon/W_loss",
+              "coeff": 1.0
+            }
+          ],
+          "note": "energy bookkeeping: E_tot - W_in + W_loss stays constant (work of the actuator minus friction losses equals the change of the mechanical energy); measured drift 3.57e-06 J (the stiff pivots' spring and damper energy), tolerance 3x that, at least 1e-3 of E_up"
+        }
+      ]
+    },
+    "quad-pendulum-balance": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no diagnostics"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/balancing",
+          "t": 0.01,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "balance-only: BALANCING from the start"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/dev",
+          "from_t": 2.5,
+          "to_t": 2.99,
+          "value": 0.5,
+          "note": "the start lean is caught: inside 0.5 deg before the push (measured 0.327 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/dev",
+          "from_t": 3.0,
+          "to_t": 7.0,
+          "value": 9.3644,
+          "rtol": 0.2,
+          "note": "the 0.018 N, 50 ms tip push is real: peak deviation 9.36 deg (design 9.36 deg); +-20 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/dev",
+          "from_t": 5.530900000000001,
+          "to_t": 7.0,
+          "value": 0.5,
+          "note": "recovered: inside 0.5 deg from 5.53 s (measured 1.79 s after the push)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "value": 40.000000001,
+          "note": "|u| within the actuator limit (measured peak 17.64 N)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qout",
+          "value": 1.5,
+          "note": "inside the travel limit (measured 0.189 m)"
+        },
+        {
+          "kind": "invariant",
+          "tol": 0.001,
+          "scale": 4.316400000000001,
+          "terms": [
+            {
+              "signal": "Mon/E_tot",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Mon/W_in",
+              "coeff": -1.0
+            },
+            {
+              "signal": "Mon/W_loss",
+              "coeff": 1.0
+            }
+          ],
+          "note": "energy bookkeeping (measured drift 1.59e-05 J)"
+        }
+      ]
+    },
+    "quad-pendulum-free": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no diagnostics"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 0.25,
+          "value": 0.12913151,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 0.25,
+          "value": -147.393545,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 0.25,
+          "value": -147.3418302,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 0.25,
+          "value": -133.425565,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 0.25,
+          "value": -110.7308995,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 0.5,
+          "value": 0.246636984,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 0.5,
+          "value": -202.9373668,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 0.5,
+          "value": -184.5483452,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 0.5,
+          "value": -186.3344714,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 0.5,
+          "value": -210.2968373,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 0.75,
+          "value": 0.283969984,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 0.75,
+          "value": -202.0961133,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 0.75,
+          "value": -241.6165211,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 0.75,
+          "value": -261.2025661,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 0.75,
+          "value": -243.1111152,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.0,
+          "value": 0.259726479,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 1.0,
+          "value": -217.1303855,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 1.0,
+          "value": -231.7577627,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 1.0,
+          "value": -238.6390549,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 1.0,
+          "value": -288.1218347,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.25,
+          "value": 0.160605844,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 1.25,
+          "value": -189.4315439,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 1.25,
+          "value": -193.874291,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 1.25,
+          "value": -204.3306536,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 1.25,
+          "value": -185.6439733,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.5,
+          "value": 0.038302268,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 1.5,
+          "value": -147.7308075,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 1.5,
+          "value": -153.7910772,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 1.5,
+          "value": -134.230776,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 1.5,
+          "value": -131.9357715,
+          "abs": 0.0021,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1e-07 m, 0.0007 deg)"
+        },
+        {
+          "kind": "invariant",
+          "tol": 0.0001,
+          "scale": 4.316400000000001,
+          "terms": [
+            {
+              "signal": "Mon/E_tot",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Mon/W_in",
+              "coeff": -1.0
+            },
+            {
+              "signal": "Mon/W_loss",
+              "coeff": 1.0
+            }
+          ],
+          "note": "free swing: mechanical energy + friction losses constant (measured drift 9.90e-07 J)"
+        }
+      ]
+    },
+    "quad-rotary-swingup": {
+      "run_timeout": 1800,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1e-12,
+          "note": "the actuator is off before the swing-up starts"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "J1/qdout",
+          "from_t": 0.02,
+          "to_t": 0.99,
+          "value": 0.0001,
+          "note": "hanging at rest before t_on (5x the start-up residual of the pivot compliance, measured 6.9e-16)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 0.95,
+          "value": 180.0,
+          "abs": 0.01,
+          "note": "link 1 hangs straight down before the swing-up"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.95,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "hold phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/swinging",
+          "t": 2.0,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "SWINGING UP (TVLQR)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/balancing",
+          "t": 6.5,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "BALANCING: the catch region was reached (catch at 5.500 s; design closed loop 5.500 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 3.0,
+          "value": 158.6106,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 158.61 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 3.0,
+          "value": 157.9396,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 157.94 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 3.0,
+          "value": 157.7672,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 157.77 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 3.0,
+          "value": 158.0468,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 158.05 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 4.5,
+          "value": 0.6314,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 0.63 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 4.5,
+          "value": 1.1893,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 1.19 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 4.5,
+          "value": 1.7124,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 1.71 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 4.5,
+          "value": 2.1796,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 2.18 deg; 2 deg band)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/dev",
+          "from_t": 7.5,
+          "to_t": 10.0,
+          "value": 0.5,
+          "note": "balance holds: every link within 0.5 deg of upright from 7.5 s (measured max 0.0030 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "value": 3.000000001,
+          "note": "|u| within the actuator limit 3 N m (firmware clamp; measured peak 3.00 N m, design 3.00)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "value": 3.0,
+          "rtol": 0.15,
+          "note": "peak actuator effort 3.00 N m (design closed loop 3.00 N m); +-15 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "J1/qout",
+          "value": 3.0,
+          "note": "the arm stays inside the +-3 rad cable limit (measured max 2.500 rad)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "J1/qout",
+          "value": 2.5,
+          "abs": 0.12500071076252858,
+          "note": "peak travel 2.500 rad (design closed loop 2.500; collocation bound 2.5)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/S4",
+          "t": 10.0,
+          "value": 0.70632,
+          "abs": 0.0070631999999999995,
+          "note": "upright at rest: the stacked energy equals the UPRIGHT level 0.7063 J (measured 0.7063 J)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/E_up",
+          "t": 10.0,
+          "value": 0.70632,
+          "abs": 1e-09,
+          "note": "UPRIGHT level = sum m_i g 2 h_i of the chain"
+        },
+        {
+          "kind": "invariant",
+          "tol": 0.001,
+          "scale": 0.70632,
+          "terms": [
+            {
+              "signal": "Mon/E_tot",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Mon/W_in",
+              "coeff": -1.0
+            },
+            {
+              "signal": "Mon/W_loss",
+              "coeff": 1.0
+            }
+          ],
+          "note": "energy bookkeeping: E_tot - W_in + W_loss stays constant (work of the actuator minus friction losses equals the change of the mechanical energy); measured drift 1.82e-06 J (the stiff pivots' spring and damper energy), tolerance 3x that, at least 1e-3 of E_up"
+        }
+      ]
+    },
+    "quad-rotary-balance": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no diagnostics"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/balancing",
+          "t": 0.01,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "balance-only: BALANCING from the start"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/dev",
+          "from_t": 2.5,
+          "to_t": 2.99,
+          "value": 0.5,
+          "note": "the start lean is caught: inside 0.5 deg before the push (measured 0.206 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/dev",
+          "from_t": 3.0,
+          "to_t": 7.0,
+          "value": 10.0507,
+          "rtol": 0.2,
+          "note": "the 0.0052 N, 50 ms tip push is real: peak deviation 10.05 deg (design 10.05 deg); +-20 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/dev",
+          "from_t": 5.2826,
+          "to_t": 7.0,
+          "value": 0.5,
+          "note": "recovered: inside 0.5 deg from 5.28 s (measured 1.60 s after the push)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "value": 3.000000001,
+          "note": "|u| within the actuator limit (measured peak 0.83 N m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "J1/qout",
+          "value": 3.0,
+          "note": "inside the travel limit (measured 0.496 rad)"
+        },
+        {
+          "kind": "invariant",
+          "tol": 0.001,
+          "scale": 0.70632,
+          "terms": [
+            {
+              "signal": "Mon/E_tot",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Mon/W_in",
+              "coeff": -1.0
+            },
+            {
+              "signal": "Mon/W_loss",
+              "coeff": 1.0
+            }
+          ],
+          "note": "energy bookkeeping (measured drift 1.28e-06 J)"
+        }
+      ]
+    },
+    "quad-rotary-free": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no diagnostics"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 0.25,
+          "value": 0.098075955,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 0.25,
+          "value": 170.1084132,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 0.25,
+          "value": 156.6988507,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 0.25,
+          "value": 171.7418969,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 0.25,
+          "value": 97.8935252,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 0.5,
+          "value": -0.25758048,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 0.5,
+          "value": 186.9678277,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 0.5,
+          "value": 246.5761024,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 0.5,
+          "value": 242.7520892,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 0.5,
+          "value": 267.8921779,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 0.75,
+          "value": -0.23549022,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 0.75,
+          "value": 219.0224263,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 0.75,
+          "value": 205.1582762,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 0.75,
+          "value": 251.8482521,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 0.75,
+          "value": 299.7485749,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 1.0,
+          "value": 0.208075088,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 1.0,
+          "value": 168.9595427,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 1.0,
+          "value": 181.1068957,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 1.0,
+          "value": 133.1604372,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 1.0,
+          "value": 152.8759565,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 1.25,
+          "value": 0.431206778,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 1.25,
+          "value": 120.6960875,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 1.25,
+          "value": 133.5884946,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 1.25,
+          "value": 135.1067646,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 1.25,
+          "value": 89.3784981,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "J1/qout",
+          "t": 1.5,
+          "value": 0.165520367,
+          "abs": 2e-05,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 1.5,
+          "value": 178.0511119,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 1.5,
+          "value": 176.8097892,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 1.5,
+          "value": 153.6848797,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 1.5,
+          "value": 131.9858115,
+          "abs": 0.00771,
+          "note": "Python twin (Lagrangian, scipy DOP853 at rtol 1e-11) vs bond graph, open-loop free swing from rest; tolerance 3x the measured max difference (1.7e-06 rad, 0.0026 deg)"
+        },
+        {
+          "kind": "invariant",
+          "tol": 0.0001,
+          "scale": 0.70632,
+          "terms": [
+            {
+              "signal": "Mon/E_tot",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Mon/W_in",
+              "coeff": -1.0
+            },
+            {
+              "signal": "Mon/W_loss",
+              "coeff": 1.0
+            }
+          ],
+          "note": "free swing: mechanical energy + friction losses constant (measured drift 6.44e-07 J)"
+        }
+      ]
+    }
+  },
+  "description": "A chain of four pendulum links swung up from hanging and balanced upright, on a cart (planar multibond bond graph, ideal force actuator) and on a rotary arm (Furuta, spatial multibond bond graph, ideal torque). 1 kHz firmware: feed-forward + discrete time-varying LQR along an offline direct-collocation trajectory, latched infinite-horizon LQR in the catch region. Monitors: link angles, energy per link from the body twists and poses, the energy ledger. The -free models compare the bond graph with the Python (Lagrangian) twin."
+}

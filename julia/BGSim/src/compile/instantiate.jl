@@ -647,10 +647,10 @@ function _create_declarations!(b::Builder, st::BlockState, node::IR.ModelNode)
                String[qport * ".e[" * string(k) * "]" for k in 1:size]
         fids = size == 1 ? String[qport * ".f"] :
                String[qport * ".f[" * string(k) * "]" for k in 1:size]
-        # A multibond component carries the catalog's own spelling (`N*m`, `rad/s`) as a
-        # signal label, because `unit_string` is dimension-based and would print `J`/`1/s`
-        # (a torque is not an energy). Scalar ports keep the canonical `unit_string`.
-        labelled = BGSim.Units.is_multibond_domain(domain)
+        # A port component carries its domain's own spelling (`N*m`, `rad/s`) as a signal
+        # label, because `unit_string` is dimension-based and would print `J`/`1/s` (a torque
+        # is not an energy). A `Generic` port has no spelling until a connection adopts it.
+        labelled = domain !== :Generic
         elabels = labelled ? BGSim.Units.domain_effort_unit_strings(domain) : String[]
         flabels = labelled ? BGSim.Units.domain_flow_unit_strings(domain) : String[]
         for (k, id) in enumerate(eids)
@@ -1320,15 +1320,26 @@ end
 # Qualification
 # ---------------------------------------------------------------------------------------
 
-"""    QCtx(builder, state, locals)
+"""    QCtx(builder, state, locals[, spill])
 
 The context of one expression: the instance, plus the loop variables bound by a `for`
-unroll (plan 4.3: `for` is unrolled at instantiation)."""
+unroll (plan 4.3: `for` is unrolled at instantiation).
+
+`spill` is how the context stores an intermediate value: `spill(expr, range, events)` returns
+an atomic expression (a `Name`) that holds `expr`. In `@equations` it is a hidden algebraic
+unknown with one explicit equation ([`_equation_spill`](@ref)), in `@discrete` a local slot of
+the step function. The unrolled linear solve `A \\ b` (`linsolve.jl`) needs it to share the
+LU factors instead of copying expression trees. `nothing` (an `@events` body) has no slots.
+`events = false` marks a value whose `ifelse` conditions are pivot choices, which must not
+become switching events: the solution is continuous across a pivot change."""
 struct QCtx
     b::Builder
     st::BlockState
     locals::Dict{Symbol,QValue}
+    spill::Union{Nothing,Function}
 end
+
+QCtx(b::Builder, st::BlockState, locals::Dict{Symbol,QValue}) = QCtx(b, st, locals, nothing)
 
 _qreport!(q::QCtx; kwargs...) = _report!(q.b, q.st; kwargs...)
 
@@ -1750,13 +1761,8 @@ function _qualify_node(q::QCtx, e::BinOp)
         if isempty(lhs.shape) && isempty(rhs.shape)
             return _qscalar(BinOp(op, lhs.elems[1], rhs.elems[1], r))
         end
-        _qreport!(
-            q;
-            code = "E004",
-            message = "the `\\` operator needs scalar operands",
-            range = r,
-        )
-        return nothing
+        # `A \ b` and `A \ B`: the unrolled LU with partial pivoting of `linsolve.jl`.
+        return _qsolve(q, lhs, rhs, r)
     elseif op === :^
         isempty(rhs.shape) || begin
             _qreport!(
@@ -1967,7 +1973,7 @@ function _emit_equation!(
     eq::Equation,
     locals::Dict{Symbol,QValue},
 )
-    q = QCtx(b, st, locals)
+    q = QCtx(b, st, locals, _equation_spill(b, st))
     lhs = _qualify(q, eq.lhs)
     rhs = _qualify(q, eq.rhs)
     (lhs === nothing || rhs === nothing) && return nothing
@@ -2085,7 +2091,7 @@ function _emit_if!(
                 )
                 return nothing
             end
-            q = QCtx(b, st, locals)
+            q = QCtx(b, st, locals, _equation_spill(b, st))
             lhs = _qualify(q, sub.lhs)
             rhs = _qualify(q, sub.rhs)
             (lhs === nothing || rhs === nothing) && return nothing

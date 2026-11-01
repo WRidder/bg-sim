@@ -375,6 +375,28 @@ end
     end
 
     # -----------------------------------------------------------------------------------
+    @testset "a clock much faster than the output grid records thinned tick rows" begin
+        # 1 ms ticks under a 20 ms grid: 20 ticks per output step. Changed ticks off the grid
+        # keep their left/right rows only a tenth of an output step (2 ms) apart; every grid
+        # row still carries the held value, and every tick still ran.
+        doc = _disc_model(
+            "FastUnderCoarseGrid",
+            [_disc_node("n1", "F1", _disc_inline(_DISC_FAST))],
+            Any[];
+            t_end = 0.2, points = 11,
+        )
+        flat, result, dir = _disc_run(doc)
+        @test result.status == "done"
+        time, values = _disc_columns(dir)
+        grid = collect(range(0.0, 0.2; length = 11))
+        @test _disc_sequence(time, values, "F1/n", grid) == Float64.(collect(0:20:200))
+        ticks = filter(t -> !(t in grid), unique(time))
+        @test 80 <= length(ticks) <= 100                  # every second off-grid tick of 190
+        @test all(>=(0.002 * (1 - 1e-6)), diff(sort(ticks)))
+        @test length(time) < 2 * 200                      # not two rows for each of the 200 ticks
+    end
+
+    # -----------------------------------------------------------------------------------
     @testset "offset clock" begin
         doc = _disc_model(
             "OffsetClock",
@@ -1060,5 +1082,42 @@ end
         e003 = [d for d in fm.diagnostics if d.code == "E003"]
         @test length(e003) == 1
         @test occursin("computed by the block's equations", only(e003).message)
+    end
+
+    # -----------------------------------------------------------------------------------
+    @testset "&& and || on a Bool parameter in @discrete" begin
+        # A Bool parameter reaches the step function as 1.0/0.0, which a plain Julia `&&`
+        # refuses ("non-boolean (Float64) used in boolean context") at the first tick.
+        src = """
+        @block BoolGate begin
+            @parameters begin
+                on::Bool = true
+                off::Bool = false
+            end
+            @outputs begin
+                a::Real = 0.0
+                o::Real = 0.0
+                n::Real = 0.0
+            end
+            @discrete Ts = 0.1 begin
+                a = ifelse(on && !off, 1.0, 2.0)
+                o = ifelse(off || on, 3.0, 4.0)
+                if off || (on && off)
+                    n = 5.0
+                else
+                    n = 6.0
+                end
+            end
+        end
+        """
+        doc = _disc_model("BoolGate", [_disc_node("n1", "G1", _disc_inline(src))], Any[];
+            t_end = 0.2, points = 3)
+        flat, result, dir = _disc_run(doc)
+        @test isempty(_disc_errors(flat))
+        @test result.status == "done"
+        time, values = _disc_columns(dir)
+        @test _disc_at(time, values, "G1/a", 0.1) == 1.0
+        @test _disc_at(time, values, "G1/o", 0.1) == 3.0
+        @test _disc_at(time, values, "G1/n", 0.1) == 6.0
     end
 end

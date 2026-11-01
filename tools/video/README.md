@@ -80,6 +80,11 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
   steps, swing, chirp, overload, linear vs nonlinear), each in real time (frame k at t = k/fps). Every run happens off camera.
   The caption bar names the motion and shows the simulation time. Writes `suction-cup.mp4` and stills per model (dashboard
   before the run, camera framing, mid and end of the segment).
+- `capture-quad-pendulum.mjs <out-dir> [--fps 30] [--max-frames n] [--only cart,rotary,push] [--stills] [--compose-only]`: the
+  `quad-pendulum` example in the same layout as `capture-vdp-belt.mjs` (dashboard plus detached 3D viewer, real time): the cart
+  swing-up and balance, the rotary-arm swing-up (`QP_ROTARY_MODEL` picks another rotary model) and the cart balance with 3 ms of
+  actuator delay and a tip push. Writes `quad-pendulum.mp4` and per segment `<id>-camera.png`, `<id>-3d-mid|end.png`,
+  `<id>-dashboard-mid|end.png`.
 - `capture-beams.mjs <out-dir>`: stills of the `cantilever-sections` example: the settled static bend (x10 and true scale), a
   close-up at the wall, the step peak, the dashboard with load "1 · sine" selected and run, and two opposite crests of the
   round bar's resonance.

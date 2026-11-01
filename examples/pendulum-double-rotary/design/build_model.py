@@ -40,13 +40,18 @@ def main() -> None:
     (ROOT / "scenes" / f"{name}.sdf").write_text(rb.scene_sdf(plant, name), encoding="utf-8", newline="\n")
     rb.write_json(ROOT / "models" / f"{name}.bgmodel.json", rb.build_model(plant, dz, name, False))
     rb.write_json(ROOT / "models" / f"{name}-free.bgmodel.json", rb.build_model(plant, dz, f"{name}-free", True))
+    # keep the models other scripts add (the ACTILINK models of actilink_models.py)
+    proj_path = ROOT / "bgsim.project.json"
+    extra = []
+    if proj_path.is_file():
+        extra = [m for m in json.loads(proj_path.read_text(encoding="utf-8"))["models"] if m not in (name, f"{name}-free")]
     rb.write_json(
-        ROOT / "bgsim.project.json",
+        proj_path,
         {
             "format": "bgsim.project",
             "language": "0.1.0",
             "name": name,
-            "models": [name, f"{name}-free"],
+            "models": [name, f"{name}-free", *extra],
             "libraryDir": "library",
             "scenesDir": "scenes",
         },

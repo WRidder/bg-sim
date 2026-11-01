@@ -734,6 +734,32 @@ def test_create_from_example_copies_the_tree_and_renames_the_project(
     assert client.get("/api/projects/my-motor/models/iconic").status_code == 200
 
 
+def test_create_from_example_skips_run_data_and_ignored_files(
+    client: TestClient, store: ProjectStore
+) -> None:
+    source = _make_example(store.examples_root)
+    (source / ".gitignore").write_text(
+        "# run data of design/finish.py\ndesign/_runs/\n*.npz\n", encoding="utf-8"
+    )
+    (source / "design" / "_runs" / "run-1").mkdir(parents=True)
+    (source / "design" / "_runs" / "run-1" / "data.f64").write_bytes(b"x" * 64)
+    (source / "design" / "fit.py").write_text("print(1)\n", encoding="utf-8")
+    (source / "design" / "cache.npz").write_bytes(b"x")
+    (source / "runs").mkdir()
+    (source / "runs" / "old.f64").write_bytes(b"x")
+    (source / "design" / "__pycache__").mkdir()
+    response = client.post("/api/projects", json={"name": "copy", "example": "dc-motor"})
+    assert response.status_code == 201
+    destination = store.projects_root / "copy"
+    assert (destination / "design" / "fit.py").is_file()
+    assert (destination / ".gitignore").is_file()
+    assert not (destination / "design" / "_runs").exists()
+    assert not (destination / "design" / "cache.npz").exists()
+    assert not (destination / "runs").exists()
+    assert not (destination / "design" / "__pycache__").exists()
+    assert (destination / "models" / "iconic.bgmodel.json").is_file()
+
+
 def test_create_from_example_unknown_names_the_available_examples(
     client: TestClient, store: ProjectStore
 ) -> None:

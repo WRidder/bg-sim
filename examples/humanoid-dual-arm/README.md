@@ -103,8 +103,8 @@ bg-sim specifics of the block:
   the page's error (generated scalar code, checked against a central difference to 5·10⁻¹¹). The
   two Jacobians differ slightly, so the solutions differ by up to 0.2° (stacked) and 0.4°
   (ideal) per joint; the errors agree within 10⁻⁴ mm.
-* **Generated Cholesky solves.** The two 6×6 solves are generated Cholesky factorisations. The
-  language spec offers `A \ b`, but the compiler rejects `\` on arrays (see
+* **Generated Cholesky solves.** The two 6×6 solves are generated Cholesky factorisations. They
+  were written when the compiler rejected `\` on arrays; it now accepts `A \ b` (see
   [Limitations](#limitations)).
 * **Rate limit.** One iteration per tick at 1 kHz is the page's 8 iterations per frame, slower.
   The step is **scaled down as a whole** to at most 0.05° per joint and tick (50°/s), where the
@@ -197,17 +197,14 @@ arm is a URDF-style tree of seven revolute joints bound to the joint angles: `LJ
 
 ## Limitations
 
-* **`A \ b` on arrays is rejected.** The language spec (table "Linear algebra": "`\` via fixed-size
-  LU") offers `A \ b` in all scopes. The compiler (`julia/BGSim/src/compile/instantiate.jl`,
-  `the \ operator needs scalar operands`, E004) accepts only scalars. `ArmIK` works around it with
-  generated Cholesky solves. This is not fixed in core: it is a spec/compiler mismatch to settle
-  separately.
-* **Units on angles in degrees.** A parameter declared `unit = "deg"` that meets a `rad` quantity is
-  rejected (E006 "differ only in scale"), and `"%"` is not a valid unit. The degree-valued
-  parameters and readouts of the blocks carry no unit attribute; the descriptions name the unit.
-* **No joint hard stops in the dynamic model.** The IK clamps its solution to the limits, but the
-  `Revolute3D` joints have none. In the 6-DOF hold the grasp pushes the saturated wrist 1.6° past
-  its limit.
+* **Written before three core features.** The example predates them and does not use them yet:
+  * `A \ b` on fixed-size arrays (an LU with partial pivoting, also in `@discrete`). `ArmIK`
+    still uses its generated Cholesky solves.
+  * Degree and percent units. A `deg` parameter now meets a `rad` quantity through an explicit
+    `x*deg` or `q/deg`, and `"%"` is a unit. The degree-valued parameters and readouts of the
+    blocks still carry no unit attribute; the descriptions name the unit.
+  * Joint hard stops (`q_min`/`q_max` on `Revolute3D`). The model leaves them off. In the 6-DOF
+    hold the grasp pushes the saturated wrist 1.6° past its limit.
 * **Illustrative dynamics.** The masses, drives and grasp are assumptions, not a particular robot.
 * **The first firmware tick is at t = Ts.** Until then the IK outputs hold the start posture (node
   starts).

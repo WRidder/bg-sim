@@ -2016,9 +2016,9 @@ const INTERFACE_FIELDS = [
                   ("drive", "Rotation", Int[], nothing)]
         @test [(o.name, o.size) for o in revolute.interface.outputs] ==
               [("qout", Int[]), ("qdout", Int[]), ("pose", [3]), ("dout", [2]),
-                  ("Vrelout", [3])]
+                  ("Vrelout", [3]), ("tau_stop", Int[])]
         @test [p.name for p in revolute.interface.parameters] ==
-              ["rx", "ry", "kt", "bt", "q0"]
+              ["rx", "ry", "kt", "bt", "q0", "k_stop", "d_stop", "w_stop"]
 
         # The J-MB5 full planar set: the one-port C/R sources and the two-port transformers
         # and gyrators. The physics tests live in `test_planar_primitives.jl`; here the
@@ -2143,7 +2143,7 @@ const INTERFACE_FIELDS = [
               [("parent", "Planar", [3]), ("child", "Planar", [3]),
                   ("drive", "Translation", Int[])]
         @test [o.name for o in blocks["stdlib:planar/Prismatic2D"].interface.outputs] ==
-              ["qout", "qdout", "pose", "drout", "dout", "Vrelout"]
+              ["qout", "qdout", "pose", "drout", "dout", "Vrelout", "f_stop"]
         for ref in ("stdlib:planar/Revolute2DCompliant", "stdlib:planar/Revolute2DFriction",
             "stdlib:planar/Revolute2DLimit", "stdlib:planar/Revolute2DRigid")
             drive = only([p for p in blocks[ref].interface.ports if p.name == "drive"])
