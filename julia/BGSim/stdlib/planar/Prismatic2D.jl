@@ -23,10 +23,21 @@
     # i.e. exactly the two spring/damper powers, so with br = bd = 0 the joint is conservative.
     # Both hard directions are compliant, so every state stays integral (no W201); `kr, kd ->
     # Inf` gives the rigid prismatic joint.
+    #
+    # Optional hard stops (as `Revolute3D`): below `q_min` and above `q_max` a stiff
+    # spring-damper acts on the joint displacement, `fs = k_stop (x_hi - x_lo) + d_stop (s_hi +
+    # s_lo) qdot` with the smooth positive part `x = (d + sqrt(d^2 + w_stop^2))/2` of the
+    # overshoot and `s = dx/dd`, applied like the drive (`drive.e = -tau + fs`). No `ifelse`,
+    # so no switching event. The limits are structural constants; the default `-Inf`/`Inf`
+    # leaves each stop out of the equations.
     @ports begin
         parent::Power{Planar}
         child::Power{Planar}
         drive::Power{Translation}
+    end
+    @constants begin
+        q_min::Real = -Inf, [unit = "m", description = "Lower hard stop (-Inf: none)"]
+        q_max::Real = Inf, [unit = "m", description = "Upper hard stop (Inf: none)"]
     end
     @parameters begin
         phi::Real = 0.0, [unit = "rad", description = "Axis direction in the parent frame"]
@@ -35,6 +46,9 @@
         kd::Real = 1.0e6, [unit = "N/m", min = 0, description = "Perpendicular translational stiffness"]
         bd::Real = 0.0, [unit = "N*s/m", min = 0, description = "Perpendicular translational damping"]
         q0::Real = 0.0, [unit = "m", description = "Initial displacement"]
+        k_stop::Real = 1.0e6, [unit = "N/m", min = 0, description = "Hard-stop stiffness beyond q_min/q_max"]
+        d_stop::Real = 1.0e3, [unit = "N*s/m", min = 0, description = "Hard-stop damping beyond q_min/q_max"]
+        w_stop::Real = 1.0e-6, [unit = "m", min = 1.0e-12, description = "Smoothing width of the stop onset"]
     end
     @variables begin
         q::Real = 0.0, [unit = "m", description = "Joint displacement along the axis"]
@@ -53,6 +67,7 @@
         drout::Real, [unit = "rad"]
         dout::Real, [unit = "m"]
         Vrelout::Vec{3}
+        f_stop::Real, [unit = "N", description = "Hard-stop force on the joint displacement (0 without stops)"]
     end
     @equations begin
         Vrel[1] ~ child.f[1] - parent.f[1]
@@ -70,7 +85,20 @@
         parent.e[1] ~ -(child.e[1] - q * sin(phi) * child.e[2] + q * cos(phi) * child.e[3])
         parent.e[2] ~ -child.e[2]
         parent.e[3] ~ -child.e[3]
-        drive.e ~ -tau
+        if q_min > -Inf || q_max < Inf
+            f_stop ~ ifelse(q_max < Inf,
+                0.5 * k_stop * ((q - q_max) + sqrt((q - q_max) * (q - q_max) + w_stop * w_stop)) +
+                0.5 * d_stop * (1.0 + (q - q_max) / sqrt((q - q_max) * (q - q_max) + w_stop * w_stop)) * qdot,
+                0.0) +
+                ifelse(q_min > -Inf,
+                -0.5 * k_stop * ((q_min - q) + sqrt((q_min - q) * (q_min - q) + w_stop * w_stop)) +
+                0.5 * d_stop * (1.0 + (q_min - q) / sqrt((q_min - q) * (q_min - q) + w_stop * w_stop)) * qdot,
+                0.0)
+            drive.e ~ -tau + f_stop
+        else
+            f_stop ~ 0.0
+            drive.e ~ -tau
+        end
         drive.f ~ qdot
         qout ~ q
         qdout ~ qdot

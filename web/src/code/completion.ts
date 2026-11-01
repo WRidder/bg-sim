@@ -134,6 +134,7 @@ export const UNITS = [
   "rad",
   "deg",
   "°",
+  "%",
   "L",
   "effort",
   "flow",

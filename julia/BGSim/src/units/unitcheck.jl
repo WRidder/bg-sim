@@ -13,7 +13,10 @@
 #     difference is E006 too: the language does no runtime conversion, so `1 mm + 1 m` would
 #     silently add 1 to 1. The message names both units and the factor (orchestrator decision
 #     FIX-M1-1: the earlier I101 info code was outside the diagnostic contract, whose `code`
-#     pattern is `^[EW][0-9]{3}$`);
+#     pattern is `^[EW][0-9]{3}$`). A conversion written out is accepted: one side is a
+#     product/quotient with a numeric factor equal to the scale ratio (`q_max*deg` is [rad]
+#     for `q_max` in [deg], `x/deg` is [deg], `100*f` is [%]; `_scale_hint!`), and the
+#     hint of the E006 spells out that factor;
 #   * `* /` add/subtract exponents and multiply/divide scales;
 #   * `^` needs an integer exponent (a literal, or a `@constants` value that folds to one);
 #     a dimensionless base may take any real exponent;
@@ -427,16 +430,23 @@ end
 
 _same_scale(a::Dims, b::Dims) = isapprox(a.scale, b.scale; rtol = 1e-12)
 
-"""    _scale_hint!(ctx, node, d, ref_node, reference) -> nothing
+"""    _scale_hint!(ctx, node, d, ref_node, reference) -> Dims
 
-Report E006 for a scale-only difference and nothing else. Plan 5.3 requires equal dimensions
-(exponents **and** scale) for `+ - ~` and comparisons, and the language does no runtime
-conversion (spec: "no runtime conversion"), so `1 mm + 1 m` would silently add 1 to 1. This is
-therefore an error, not a hint, and it uses the contract's E006 code (the diagnostic schema only
-admits `E`/`W` codes)."""
+Check a scale-only difference between `node` [`d`] and `ref_node` [`reference`] and return the
+unit of the combination. Plan 5.3 requires equal dimensions (exponents **and** scale) for
+`+ - ~` and comparisons, and the language does no runtime conversion (spec: "no runtime
+conversion"), so `1 mm + 1 m` would silently add 1 to 1. A scale-only difference is therefore
+E006 (the diagnostic schema only admits `E`/`W` codes) **unless the conversion is written
+out**: one side is a product or quotient with a numeric factor (a literal, a unit-less
+`@constants` value, or a built-in constant such as `deg` or `rpm`) that is exactly the factor
+between the two scales ([`_converts`](@ref)). `q_max*deg` with `q_max` in [deg] is then [rad],
+`x/deg` with `x` in [rad] is [deg], and `100*f` with `f` in [1] is [%]. The result is the
+unit of the side that was not converted; on E006 the hint names the factor to write."""
 function _scale_hint!(ctx::_Ctx, node, d::Dims, ref_node, reference::Dims)
-    _same_scale(d, reference) && return nothing
+    _same_scale(d, reference) && return reference
     factor = d.scale / reference.scale
+    _converts(ctx, node, factor) && return reference
+    _converts(ctx, ref_node, 1.0 / factor) && return d
     _report!(
         ctx,
         "E006",
@@ -445,9 +455,57 @@ function _scale_hint!(ctx::_Ctx, node, d::Dims, ref_node, reference::Dims)
         _label(ctx, ref_node, reference) * "] is ×" * string(factor) *
         _in_equation(ctx),
         node;
-        hint = "write both operands in the same unit; the language does not convert at run time",
+        hint = "convert explicitly: write `" * _conversion_text(factor, _term_text(ctx, node)) *
+               "` to get [" * _label(ctx, ref_node, reference) * "], or declare both in one " *
+               "unit; the language does not convert at run time",
     )
+    return reference
+end
+
+"""    _converts(ctx, node, factor) -> Bool
+
+True when `node` is a product/quotient chain (`*`, `/`, unary `-`) with one numeric factor
+equal to `factor` (relative 1e-9): a literal or folded constant in the numerator counts as
+itself, one in a denominator as its reciprocal. That factor is an explicit unit conversion
+(`x*deg`, `x/deg`, `100*f`, `x*0.001`), so the scale-only check accepts it."""
+function _converts(ctx::_Ctx, node, factor::Float64)
+    (isfinite(factor) && factor > 0) || return false
+    found = Ref(false)
+    _factor_walk(ctx, node, 1, f -> (isapprox(f, factor; rtol = 1.0e-9) && (found[] = true)))
+    return found[]
+end
+
+function _factor_walk(ctx::_Ctx, node, sign::Int, visit)
+    if node isa BinOp && node.op === Symbol("*")
+        _factor_walk(ctx, node.lhs, sign, visit)
+        _factor_walk(ctx, node.rhs, sign, visit)
+    elseif node isa BinOp && node.op === Symbol("/")
+        _factor_walk(ctx, node.lhs, sign, visit)
+        _factor_walk(ctx, node.rhs, -sign, visit)
+    elseif node isa UnOp && (node.op === Symbol("-") || node.op === Symbol("+"))
+        _factor_walk(ctx, node.operand, sign, visit)
+    else
+        v = _scalar_value(ctx, node)
+        if v !== nothing && isfinite(v) && v != 0
+            visit(sign > 0 ? abs(v) : 1.0 / abs(v))
+        end
+    end
     return nothing
+end
+
+"""The hint's conversion of `term` by a scale factor: the built-in unit constants by name
+(`x*deg`, `x/deg`, `w*rpm`), otherwise the number (`100*f`, `p/100`)."""
+function _conversion_text(factor::Float64, term::AbstractString)
+    t = occursin(r"^[A-Za-z_][A-Za-z0-9_.]*(\[[^\]]*\])?$", term) ? term : "(" * term * ")"
+    for (name, value) in (("deg", π / 180), ("rpm", 2π / 60))
+        isapprox(factor, value; rtol = 1.0e-9) && return t * "*" * name
+        isapprox(factor, 1.0 / value; rtol = 1.0e-9) && return t * "/" * name
+    end
+    num(x) = begin
+        y = round(x; sigdigits = 12)
+        isinteger(y) && abs(y) < 1.0e15 ? string(Int(y)) : string(y)
+    end
+    return factor >= 1 ? num(factor) * "*" * t : t * "/" * num(1.0 / factor)
 end
 
 """    _common!(ctx, items; what) -> Union{Dims,Nothing}
@@ -483,7 +541,9 @@ function _common!(ctx::_Ctx, items::AbstractVector; what::AbstractString)
             )
             return nothing
         end
-        _scale_hint!(ctx, node, dims, ref_node, ref_dims)
+        result = _scale_hint!(ctx, node, dims, ref_node, ref_dims)
+        # the reference was the converted side: the common unit is this item's
+        _same_scale(result, ref_dims) || ((ref_node, ref_dims) = (node, dims))
     end
     return ref_dims
 end
@@ -651,8 +711,7 @@ function _add!(ctx::_Ctx, e::BinOp, op::Symbol)
         return ld === nothing ? rd : ld
     end
     if ld.exps == rd.exps
-        _scale_hint!(ctx, e.rhs, rd, e.lhs, ld)
-        return ld
+        return _scale_hint!(ctx, e.rhs, rd, e.lhs, ld)
     end
     verb = op === Symbol("+") ? "add" : "subtract"
     prep = op === Symbol("+") ? "to" : "from"
@@ -670,16 +729,34 @@ function _add!(ctx::_Ctx, e::BinOp, op::Symbol)
 end
 
 """`*` multiplies the dimensions. A numeric literal or a scalar `@constants` value is a
-multiplicative identity, so `2*x` keeps `x`'s dimension."""
+multiplicative identity, so `2*x` keeps `x`'s dimension, except a factor that is exactly the
+scale of a scaled unit: that converts the term to its SI unit (`_to_si`)."""
 function _mul!(ctx::_Ctx, e::BinOp)
     ld = _dims!(ctx, e.lhs)
     rd = _dims!(ctx, e.rhs)
     if ld === nothing
-        return _scalar_value(ctx, e.lhs) === nothing ? nothing : rd
+        v = _scalar_value(ctx, e.lhs)
+        return v === nothing ? nothing : _to_si(rd, v)
     elseif rd === nothing
-        return _scalar_value(ctx, e.rhs) === nothing ? nothing : ld
+        v = _scalar_value(ctx, e.rhs)
+        return v === nothing ? nothing : _to_si(ld, v)
     end
     return ld * rd
+end
+
+"""    _to_si(d, factor) -> Dims or nothing
+
+`x*factor` for `x` in the scaled unit `d`: when `factor` is exactly `d`'s scale (relative
+1e-9), the product is the SI value, so its unit is `d` with scale 1 (`q*deg` with `q` in
+[deg] is [rad], `p*0.01` with `p` in [%] is [1], `x*0.001` with `x` in [mm] is [m]).
+Otherwise the factor is a plain multiplicative identity and `d` is kept. The other direction
+(`x/deg` to [deg]) is ambiguous on its own and is resolved against the other operand by
+`_scale_hint!`."""
+_to_si(::Nothing, ::Real) = nothing
+function _to_si(d::Dims, factor::Real)
+    d.scale == 1.0 && return d
+    (isfinite(factor) && factor > 0 && isapprox(factor, d.scale; rtol = 1.0e-9)) || return d
+    return Dims(d.exps, 1.0)
 end
 
 """`/` subtracts the dimensions. A numeric literal numerator is the reciprocal
@@ -692,7 +769,8 @@ function _div!(ctx::_Ctx, e::BinOp; solve::Bool = false)
         return rd / ld
     end
     if rd === nothing && _scalar_value(ctx, e.rhs) !== nothing
-        return ld
+        v = _scalar_value(ctx, e.rhs)
+        return v == 0 ? ld : _to_si(ld, 1.0 / v)
     elseif ld === nothing && _scalar_value(ctx, e.lhs) !== nothing
         rd === nothing && return nothing
         return Dims(ntuple(i -> -rd.exps[i], N_DIMENSIONS), 1.0 / rd.scale)

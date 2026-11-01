@@ -136,8 +136,16 @@ function eval_const(e::Expr, env::AbstractDict = Dict{Symbol,Any}())
             b == 0 && throw(ConstFoldError("division by zero"))
             return a / b
         elseif e.op === :\
-            b == 0 && throw(ConstFoldError("division by zero"))
-            return a \ b
+            # `a \ b` is `b / a` for scalars; on arrays it is the LU solve.
+            a isa Number && a == 0 && throw(ConstFoldError("division by zero"))
+            try
+                return a \ b
+            catch err
+                err isa LinearAlgebra.SingularException &&
+                    throw(ConstFoldError("the matrix of `\\` is singular"))
+                err isa DimensionMismatch && throw(ConstFoldError("`\\`: $(err.msg)"))
+                rethrow()
+            end
         elseif e.op === :^
             return a^b
         end

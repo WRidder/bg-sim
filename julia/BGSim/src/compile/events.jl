@@ -688,11 +688,17 @@ end
 
 The switching conditions of every continuous equation (plan 5.8), as real expressions whose
 upward zero crossing is the switch. Duplicates are removed in first-seen order, so the
-compile key and the callback order are deterministic."""
+compile key and the callback order are deterministic.
+
+The equations of an unrolled linear solve (`origin.kind === :solve`, `linsolve.jl`) are
+skipped: their `ifelse` conditions are pivot choices over values that are already spilled to
+their own equations (whose conditions are collected), and the solution is continuous when the
+pivot changes, so a pivot change is no switching event."""
 function nonsmooth_conditions(flat::Flat.FlatModel)
     out = BGSim.Expr[]
     seen = Set{String}()
     for eq in flat.equations
+        eq.origin.kind === :solve && continue
         _walk_nonsmooth!(out, seen, eq.lhs)
         _walk_nonsmooth!(out, seen, eq.rhs)
     end

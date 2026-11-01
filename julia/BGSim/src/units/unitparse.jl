@@ -12,7 +12,7 @@
 # start of the unit or after an explicit operator, never as an implicit factor, so `m2` is
 # an error with the hint "write `m^2`". Whitespace and `·`/`⋅`/`×` are multiplication
 # separators. Names are case-sensitive (`V` is the volt, `v` is an error that suggests
-# `V`); `Ω` aliases `Ohm` and `°` aliases `deg`.
+# `V`); `Ω` aliases `Ohm` and `°` aliases `deg`. `%` is a one-character name (percent).
 #
 # This is the inverse of `unit_string` in the sense that
 # `parse_unit(unit_string(d)) == d` for every `d`.
@@ -109,6 +109,10 @@ function _tokenize(unit::AbstractString)
                 throw(UnitParseError(unit, i, "`$text` is not a number"))
             push!(toks, UnitToken(:number, text, value, i, j - 1))
             i = j
+        elseif c == '%'
+            # percent: one character, a name of its own (`%/s` is percent per second)
+            push!(toks, UnitToken(:name, "%", 0.0, i, i))
+            i += 1
         elseif isletter(c) || c == '_' || c == '°'
             j = i + 1
             while j <= n && (isletter(chars[j]) || isdigit(chars[j]) || chars[j] == '_')
