@@ -1,6 +1,6 @@
 # Results
 
-![Tank voltage, scaled state against the textbook equation, diode power (mu = 1)|900](assets/1be0cf902b60.png)
+![Tank voltage, scaled state against the textbook equation, diode power (mu = 1)|900](assets/e84bad4eb39b.png)
 
 The circuit's scaled voltage and the textbook equation lie on top of each other from the first instant. The oscillation grows from 72.5 mV onto the limit cycle within three periods.
 
@@ -8,13 +8,13 @@ The circuit's scaled voltage and the textbook equation lie on top of each other 
 
 ## Energy per cycle
 
-![Tank energy, energy supplied and dissipated by the diode, and their per-cycle increments|900](assets/22501b6a16c8.png)
+![Tank energy, energy supplied and dissipated by the diode, and their per-cycle increments|900](assets/c57a32f360e8.png)
 
 On the limit cycle the diode supplies 13.418 pJ per cycle on the inner part ($|x| < \sqrt3$) and dissipates the same 13.418 pJ near the voltage peaks. The tank energy returns to the same value every cycle.
 
 ## Relaxation at mu = 5
 
-![Tank voltage and inductor current at mu = 5|900](assets/0b536a070060.png)
+![Tank voltage and inductor current at mu = 5|900](assets/062573a23f17.png)
 
 At $\mu = 5$ ($Z_0$ = 236 Ω) the voltage jumps between the branches and the current ramps slowly: the frequency falls to 5.41 MHz.
 

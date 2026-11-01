@@ -4,7 +4,7 @@ Balthasar van der Pol found his equation in 1920 in a triode oscillator. The sam
 
 This model is that oscillator as a bond graph, with the textbook equation running alongside in the circuit's own seconds.
 
-![The model canvas|900](assets/375fddfe35f8.png)
+![The model canvas|900](assets/dd46724d4b85.png)
 
 | block | role |
 | --- | --- |

@@ -195,6 +195,30 @@ end
         """; filename = "x", ref = "inline:x")
         @test any(d -> d.code == "E003" && occursin("built-in constant", d.message),
             BGSim.check_block(bad))
+
+        # In a model, a block that declares one reports its own E003, and its wires are not an
+        # E102 each (the node has no ports because its block did not load).
+        src = "@block RpmOut begin\n    @inputs w::Real\n    @outputs begin\n        rpm::Real\n" *
+              "        regen::Real\n    end\n    @equations begin\n        rpm ~ w\n        regen ~ 2.0*w\n" *
+              "    end\nend"
+        node = Dict{String,Any}("id" => "n2", "name" => "Motor",
+            "block" => Dict{String,Any}("inline" => Dict{String,Any}("source" => src)),
+            "position" => Dict{String,Any}("x" => 0, "y" => 0), "params" => Dict{String,Any}())
+        wire(id, port) = Dict{String,Any}("id" => id, "kind" => "signal",
+            "from" => Dict{String,Any}("node" => "n2", "port" => port),
+            "to" => Dict{String,Any}("node" => "n3", "port" => "u"))
+        sink(id) = Dict{String,Any}("id" => id, "name" => "Sink$id",
+            "block" => Dict{String,Any}("ref" => "stdlib:continuous/Gain"),
+            "position" => Dict{String,Any}("x" => 0, "y" => 0), "params" => Dict{String,Any}())
+        doc = _gl_model(Pair{String,String}[]; nodes = Any[_gl_const("n1", "W", "1.0"), node, sink("n3")],
+            connections = Any[
+                Dict{String,Any}("id" => "c1", "kind" => "signal",
+                    "from" => Dict{String,Any}("node" => "n1", "port" => "y"),
+                    "to" => Dict{String,Any}("node" => "n2", "port" => "w")),
+                wire("c2", "regen")])
+        errors = _gl_errors(Compile.flatten(IR.parse_model(doc)))
+        @test [d.code for d in errors] == ["E003"]
+        @test occursin("`rpm` is a built-in constant", only(errors).message)
     end
 
     @testset "values: syntax, whitelist, finiteness, numbers" begin

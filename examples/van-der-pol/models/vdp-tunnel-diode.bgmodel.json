@@ -444,6 +444,28 @@
           "showLabel": true,
           "color": null
         }
+      },
+      {
+        "id": "n21",
+        "name": "Z0_ohm",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1400,
+          "y": 840
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "Z0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
       }
     ],
     "connections": [
@@ -935,7 +957,8 @@
         ],
         "options": {
           "decimals": 2,
-          "unit": "MHz"
+          "unit": "MHz",
+          "sparkline": true
         }
       },
       {
@@ -948,8 +971,30 @@
         ],
         "options": {
           "decimals": 1,
-          "unit": "mV"
+          "unit": "mV",
+          "sparkline": true
         }
+      },
+      {
+        "id": "d15",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Phase portrait x' against x (limit cycle)",
+        "signals": [
+          "Yc/y"
+        ],
+        "x": "Xc/y",
+        "equalAspect": true
+      },
+      {
+        "id": "d16",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Diode current (A) against voltage (V)",
+        "signals": [
+          "Diode/i"
+        ],
+        "x": "Vm/y"
       },
       {
         "id": "d6",
@@ -1030,25 +1075,30 @@
         }
       },
       {
-        "id": "d15",
-        "kind": "plot",
-        "size": "2x2",
-        "title": "Phase portrait x' against x",
+        "id": "d17",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Tank impedance sqrt(L/C)",
         "signals": [
-          "Yc/y"
+          "Z0_ohm/y"
         ],
-        "x": "Xc/y",
-        "equalAspect": true
+        "options": {
+          "decimals": 1,
+          "unit": "Ohm"
+        }
       },
       {
-        "id": "d16",
-        "kind": "plot",
-        "size": "2x2",
-        "title": "Diode current (A) against voltage (V)",
+        "id": "d18",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Cycles so far",
         "signals": [
-          "Diode/i"
+          "Meter/n"
         ],
-        "x": "Vm/y"
+        "options": {
+          "decimals": 0,
+          "unit": ""
+        }
       },
       {
         "id": "d12",
