@@ -126,10 +126,75 @@ end
         @test any(d -> d.code == "E003" && occursin("declared twice", d.message), diags)
         _, diags = _gl_eval(["t" => "1"])
         @test any(d -> d.code == "E003" && occursin("reserved", d.message), diags)
+        _, diags = _gl_eval(["pi" => "3"])
+        @test any(d -> d.code == "E003" && occursin("reserved", d.message), diags)
         _, diags = _gl_eval(["sin" => "1"])
         @test any(d -> d.code == "E003" && occursin("built-in", d.message), diags)
         _, diags = _gl_eval(["bad name" => "1"])
         @test any(d -> d.code == "E003" && occursin("not an identifier", d.message), diags)
+    end
+
+    @testset "the built-in constants pi and π" begin
+        env, diags = _gl_eval(["f" => "50", "w" => "2*pi*f", "q" => "π/4"])
+        @test isempty(diags)
+        @test env.values[:w] ≈ 100pi
+        @test env.values[:q] ≈ pi / 4
+        @test env.deps[:w] == [:f]
+        @test isempty(env.deps[:q])
+
+        # the table is the shared contract fixture (the web evaluator checks the same one)
+        table = JSON3.read(read(joinpath(_GL_REPO, "contracts", "fixtures", "constants",
+            "builtin_constants.json"), String))
+        @test Set(Symbol(c.name) for c in table.constants) == Set(keys(BGSim.BUILTIN_CONSTANTS))
+        for c in table.constants
+            want = c.value == "Inf" ? Inf : Float64(c.value)
+            @test BGSim.BUILTIN_CONSTANTS[Symbol(c.name)] == want
+            # none can name a global
+            _, diags = _gl_eval([String(c.name) => "1"])
+            @test any(d -> d.code == "E003", diags)
+        end
+        env, diags = _gl_eval(["a" => "30*deg", "w" => "3000*rpm", "W" => "m*g_n", "m" => "2",
+                               "T" => "T_0C + 20"])
+        @test isempty(diags)
+        @test env.values[:a] ≈ pi / 6
+        @test env.values[:w] ≈ 100pi
+        @test env.values[:W] == 2 * 9.80665
+        @test env.values[:T] ≈ 293.15
+        # a global must be finite; Inf is for limits inside blocks
+        _, diags = _gl_eval(["x" => "Inf"])
+        @test any(d -> d.code == "E113" && occursin("not finite", d.message), diags)
+    end
+
+    @testset "built-in constants in a block: folded, not declarable" begin
+        src = """
+        @block ConstUse begin
+            @parameters begin
+                a::Real = 30*deg
+                hi::Real = Inf
+            end
+            @inputs u::Real
+            @outputs y::Real
+            @equations begin
+                y ~ clamp(sin(a) * u * g_n, -hi, hi)
+            end
+        end
+        """
+        pb = BGSim.parse_block(src; filename = "x", ref = "inline:x")
+        @test isempty([d for d in BGSim.check_block(pb) if d.severity == "error"])
+        ps = Dict(d.name => d for d in BGSim.declarations(pb, :parameters))
+        @test BGSim.eval_const(ps[:a].default) ≈ pi / 6
+        @test BGSim.eval_const(ps[:hi].default) == Inf
+        bad = BGSim.parse_block("""
+        @block ConstDecl begin
+            @parameters g_n::Real = 9.81
+            @outputs y::Real
+            @equations begin
+                y ~ g_n
+            end
+        end
+        """; filename = "x", ref = "inline:x")
+        @test any(d -> d.code == "E003" && occursin("built-in constant", d.message),
+            BGSim.check_block(bad))
     end
 
     @testset "values: syntax, whitelist, finiteness, numbers" begin

@@ -69,7 +69,6 @@ def globals_table(overrides: dict | None = None) -> list[dict]:
     t_low_dur = P.scurve_time(m["H_lift"] + m["d_press"], m["v_lift"], m["a_lift"], m["j_lift"])
     load = P.PARCEL["m_p"] * P.G0 / 4.0
     rows = [
-        ("deg", "0.017453292519943295", "rad", "One degree"),
         # parcel
         ("m_p", num(P.PARCEL["m_p"]), "kg", "Parcel mass"),
         ("L_p", num(P.PARCEL["L_p"]), "m", "Parcel length (along the gripper x)"),

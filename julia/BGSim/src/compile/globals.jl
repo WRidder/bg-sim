@@ -41,10 +41,11 @@ GlobalEnv() = GlobalEnv(Dict{Symbol,Any}(), Set{Symbol}(), Symbol[], Dict{Symbol
     Dict{Symbol,Any}())
 
 """Names a global parameter may not take: the predefined `t`/`Ts`, `ifelse`, the literals,
-`pi` (the editor gives it a fixed meaning), and the Julia keywords the front end would parse
+the built-in constants (`BGSim.BUILTIN_CONSTANTS`: an expression may use them), and the Julia keywords the front end would parse
 as syntax. Whitelisted function names are refused separately (`function_rule`)."""
 const RESERVED_GLOBAL_NAMES = Set{Symbol}([
-    :t, :Ts, :ifelse, Symbol("true"), Symbol("false"), :pi, :begin, :end, :if, :else,
+    keys(BGSim.BUILTIN_CONSTANTS)...,
+    :t, :Ts, :ifelse, Symbol("true"), Symbol("false"), :begin, :end, :if, :else,
     :elseif, :for, :while,
     :function, :return, :let, :local, :global, :const, :struct, :module, :using, :import,
     :do, :try, :catch, :finally, :quote, :macro, :abstract, :primitive, :mutable,

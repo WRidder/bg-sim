@@ -6,6 +6,7 @@
  * * the names declared in the current block (`@block`, `@constants`,
  *   `@parameters`, `@variables`, `@inputs`, `@outputs`, `@ports`);
  * * the field names of each declared power port (`p.e`, `p.f`);
+ * * the built-in constants (`pi`, `deg`, `g_n`, ...);
  * * unit strings inside `unit = "..."` (`UNIT_TABLE` in
  *   `julia/BGSim/src/units/dims.jl`).
  *
@@ -15,6 +16,8 @@
  */
 
 import type { Completion, CompletionContext, CompletionResult } from "@codemirror/autocomplete";
+
+import { BUILTIN_CONSTANTS } from "../inspector/expression";
 
 /** The scope macros of the language (spec section 2). */
 export const SCOPE_MACROS = [
@@ -365,6 +368,9 @@ export function blockCompletionSource(context: CompletionContext): CompletionRes
   }
   for (const name of ["t", "Ts"]) {
     options.push({ label: name, type: "variable", detail: "predefined" });
+  }
+  for (const [name, value] of BUILTIN_CONSTANTS) {
+    options.push({ label: name, type: "constant", detail: `= ${value.toPrecision(6)}` });
   }
   for (const macro of SCOPE_MACROS) {
     options.push({ label: macro, type: "keyword", detail: "scope" });

@@ -7,6 +7,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import catalogJson from "../../contracts/fixtures/catalog/valid/catalog.min.json";
+import constantsJson from "../../contracts/fixtures/constants/builtin_constants.json";
 import fixtureJson from "../../contracts/fixtures/model/valid/model.global-parameters.json";
 import type { Catalog, CatalogBlock } from "../src/contracts/catalog";
 import type { Model, ModelGlobalParameter, ModelNode } from "../src/contracts/model";
@@ -19,6 +20,7 @@ import {
   globalUsages,
 } from "../src/globals/globals";
 import {
+  BUILTIN_CONSTANTS,
   evaluateExpression,
   identifierSpans,
   isPlainLiteral,
@@ -66,6 +68,7 @@ describe("expression helpers", () => {
     expect(run("ifelse(m > 1, 10, 20)")).toEqual({ ok: true, value: 10 });
     expect(run("max(m, 3) ^ 2")).toEqual({ ok: true, value: 9 });
     expect(run("2*pi")).toEqual({ ok: true, value: 2 * Math.PI });
+    expect(run("π/2")).toEqual({ ok: true, value: Math.PI / 2 });
     expect(run("mass + 1")).toMatchObject({ ok: false, name: "mass" });
     expect(run("1/0")).toMatchObject({ ok: false });
     expect(run("sqrt(-1)")).toMatchObject({ ok: false });
@@ -108,6 +111,32 @@ describe("evaluateGlobals", () => {
       w: 2,
       m: 2,
     });
+  });
+
+  it("knows the built-in constants pi and π, which are not globals and cannot be declared", () => {
+    const evaluation = evaluateGlobals([g("f", "50"), g("w", "2*pi*f"), g("q", "π/4")]);
+    expect(evaluation.byName.get("w")).toMatchObject({ value: 100 * Math.PI, error: null, deps: ["f"] });
+    expect(evaluation.byName.get("q")).toMatchObject({ value: Math.PI / 4, error: null, deps: [] });
+    expect(evaluateGlobals([g("pi", "3")]).byName.get("pi")?.error).not.toBeNull();
+  });
+
+  it("has every built-in constant of the shared table, which no global may be named after", () => {
+    const table = constantsJson.constants.map((c) => [c.name, c.value === "Inf" ? Number.POSITIVE_INFINITY : c.value]);
+    expect([...BUILTIN_CONSTANTS]).toEqual(table);
+    for (const [name] of table) {
+      if (/^[A-Za-z_]/.test(String(name))) {
+        expect(globalNameIssue([], String(name))).not.toBeNull();
+      }
+    }
+    expect(values([g("a", "30*deg"), g("w", "3000*rpm"), g("W", "m*g_n"), g("m", "2"), g("T", "T_0C + 20")])).toEqual({
+      a: Math.PI / 6,
+      w: 100 * Math.PI,
+      W: 2 * 9.80665,
+      m: 2,
+      T: 293.15,
+    });
+    // a global must be finite: Inf is for limits in blocks
+    expect(evaluateGlobals([g("x", "Inf")]).byName.get("x")?.error).not.toBeNull();
   });
 
   it("reports a cycle on every member with its path, and dependents of broken globals", () => {
