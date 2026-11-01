@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "van-der-pol",
+  "models": [
+    "vdp-tunnel-diode",
+    "vdp-belt",
+    "vdp-textbook"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

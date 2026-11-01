@@ -51,6 +51,24 @@ The main sections of a block:
 
 An event changes only the states its `reinit` lines name; all other states keep their values. A state that only events change is written `ddt(x) ~ 0.0`: it holds its start value until an event sets it.
 
+### A nonlinear bond-graph element
+
+The standard `R` is linear. A nonlinear resistor is a small library block with one power port. Write its law in the causality it will have on the diagram, and state that causality with `@causality`. For example, a tunnel diode on a capacitor's 0-junction gets the voltage and returns the current:
+
+```julia
+@block TunnelDiode begin
+    @ports p::Power{Generic}
+    @parameters begin
+        a::Real = 0.0212
+        b::Real = 0.336
+    end
+    @equations p.f ~ -a * p.e + b * p.e^3
+    @causality p => :flow_out
+end
+```
+
+`:flow_out` means the element sets the flow (the conductance form, `i = g(v)`). `:effort_out` means it sets the effort (the resistance form, `F = F(w)`, such as a friction contact driven by a slip velocity). The **van-der-pol** example (in the Example gallery) builds Van der Pol oscillators this way. One is a tunnel-diode LC oscillator, the other a block on a spring riding a belt with a falling friction curve.
+
 Units are written as attributes, for example `R::Real = 1.0, [unit = "Ohm"]`, and are checked for consistency. The full language is described in the modeling language spec in the repository (`spec/`).
 
 ## Docs tab
