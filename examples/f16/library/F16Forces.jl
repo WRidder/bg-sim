@@ -20,7 +20,8 @@
     # the aerodynamics: Mach only enters the thrust tables.
     #
     # nz is the load factor at the centre of gravity, -Z_aero/(m g0) (1 g in level flight), as
-    # in the book. P_ext is the power of the aero force, thrust and moments, F.v + M.w.
+    # in the book; ny is the lateral load factor Y_aero/(m g0) (positive to the right). P_ext is
+    # the power of the aero force, thrust and moments, F.v + M.w.
     @inputs begin
         vt::Real, [unit = "m/s"]
         alpha_deg::Real
@@ -60,6 +61,7 @@
         fy::Real, [unit = "N"]
         fz::Real, [unit = "N"]
         nz::Real
+        ny::Real
         CXT::Real
         CYT::Real
         CZT::Real
@@ -105,6 +107,7 @@
         M ~ qbar * S * cbar * CMT
         N ~ qbar * S * b * CNT
         nz ~ -qbar * S * CZT / (m * g0)
+        ny ~ qbar * S * CYT / (m * g0)
         # FRD -> FLU (y and z change sign); gyroscopic torque -w x (he, 0, 0) = (0, -r he, q he) in FRD.
         fx ~ X
         fy ~ -Y

@@ -2,7 +2,7 @@
 
 The nonlinear F-16 of Stevens & Lewis (*Aircraft Control and Simulation*, Section 3.6), on the low-speed wind-tunnel data of NASA TP-1538. Three aircraft are trimmed at the book's point, 502 ft/s (153 m/s) at sea level, with the centre of gravity at 0.30, 0.35 and 0.38 of the mean chord, and each is released on its own mode. The further aft the CG, the less the airframe weathercocks into the wind: at 0.38 it is statically unstable.
 
-![The model canvas|900](assets/8cf2293ec5f8.png)
+![The model canvas|900](assets/e6a7e00fb429.png)
 
 | block | role |
 | --- | --- |
@@ -20,6 +20,6 @@ The nonlinear F-16 of Stevens & Lewis (*Aircraft Control and Simulation*, Sectio
 
 The view keeps A30 (grey) framed and moves the world around it; A35 (sand) and A38 (blue) fly 30 m to the sides. The floor is a reference plane 150 m below the start altitude: it follows climbs and descents of up to 100 m (beyond that it stays in view as an attitude reference) and its stripes scroll with the ground track; the dots behind each aircraft are its path over the last second. Picture at 6 s:
 
-![3D view at t = 6 s|600](assets/fb3ae5c1cd95.png)
+![3D view at t = 6 s|600](assets/d19914192c6d.png)
 
 Continue with [the airframe](page:airframe) and [the results](page:results).

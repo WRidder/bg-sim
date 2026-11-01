@@ -92,3 +92,11 @@ A gain that depends on the operating point is a lookup table whose output feeds 
 - Write the control law so that it takes the gains as inputs and integrates `Ki·e` rather than multiplying `Ki` by the integral of `e`. Then a gain that changes with the flight condition does not make the output jump.
 
 The **f16** example (in the Example gallery) schedules a pitch-rate law over dynamic pressure and Mach with three `Lookup2D` tables. It also shows a rate-limited actuator built from `Saturation`, `Gain` and `Integrator` blocks, a pilot model with a `TransportDelay`, and a phase-compensated rate limiter that removes a pilot-induced oscillation.
+
+Its model **f16-sim** is a full three-axis fly-by-wire on the same airframe. Five more `Lookup2D` tables over dynamic pressure and Mach hold the roll and yaw gains, and a `Lookup1D` over alpha holds the aileron-rudder interconnect:
+
+- Pitch: the stick commands a load factor. A turn compensation holds the altitude in a bank, and the alpha and g limiter stays in the loop.
+- Roll: the stick commands a roll rate about the velocity vector. The rate limit falls with the load factor and at low dynamic pressure.
+- Yaw: a yaw damper on the washed-out yaw rate, and the pedals command a sideslip.
+
+The model's inputs and outputs are export markers, and its trim, CG, mass and law switches are globals. It exports as the FMU of a flight-simulator host (`apps/f16-sim`). The dashboard has sliders for the sticks, the pedals, the throttle and the law switches.

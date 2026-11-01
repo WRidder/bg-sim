@@ -15,6 +15,8 @@ Writes `design/design.json`: every number the models, the checks and the docs us
 3. The tables in the bg-sim layout (square Lookup2D grids, refined without changing the
    bilinear function), the SI constants and the principal axes of the inertia.
 4. The fly-by-wire design (`fbw.py`) and the scenario references (`scenarios.py`).
+5. The f16-sim three-axis law: the lateral gains (`lateral.py`), the nonlinear 3-axis reference
+   (`sim3.py`) and its scenarios and linearised dutch-roll modes (`simscen.py`).
 """
 
 from __future__ import annotations
@@ -130,6 +132,14 @@ def main() -> int:
     import scenarios
     out["fbw"] = fbw.design(out)
     out["scenarios"] = scenarios.run(out)
+
+    import lateral
+    import sim3
+    import simscen
+    out["lat"] = lateral.design(out)
+    out["sim_law"] = {"nz_pull": sim3.NZ_PULL, "nz_push": sim3.NZ_PUSH, "nz_min": sim3.NZ_MIN,
+                      "k_nzc": sim3.K_NZC, "nzc_lim": sim3.NZC_LIM}
+    out["sim"] = simscen.run(out)
 
     (HERE / "design.json").write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {HERE / 'design.json'}")

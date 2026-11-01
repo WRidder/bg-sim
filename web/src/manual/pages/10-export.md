@@ -22,6 +22,12 @@ For a whole-model export, marker blocks define the inputs, outputs and parameter
 
 Use `ExportInputPass` when the model should keep its own test stimulus in BG-Sim but take the input from the host in the FMU. The FMI variable names are the instance paths of the markers.
 
+The **f16-sim** model of the f16 example shows a complete interface:
+
+- the pilot's controls and the wind come in through `ExportInputPass` markers;
+- 36 `ExportOutput` markers carry what a flight-simulator host draws;
+- the trim, the CG, the mass and the control-law switches are globals that are kept tunable.
+
 For a subsystem export, the power ports of the subsystem are part of the interface too. For each one, choose whether the host imposes the **effort** or the **flow**.
 
 If the export has nothing to publish, you get warning W209.
