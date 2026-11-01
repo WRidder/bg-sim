@@ -651,6 +651,121 @@
           "note": "the closed loop with the 4865-weight policy block reports no diagnostics"
         }
       ]
+    },
+    "pendulum-double-cart-rl-swingup": {
+      "run_timeout": 600,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {"link": "link1", "point": [0.125, 0, 0], "signals": ["PoseB1/g[2]", null, "PoseB1/g[3]"], "tol": 1e-06},
+            {"link": "link2", "point": [0.125, 0, 0], "signals": ["PoseB2/g[2]", null, "PoseB2/g[3]"], "tol": 1e-06}
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "the policy is off until t_on = 1 s: 0 V while the links hang"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "the cart rests at the centre until the policy starts"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th1",
+          "from_t": 5.0,
+          "to_t": 6.99,
+          "value": 0.0,
+          "abs": 0.0175,
+          "note": "one learned network (rl/, BC on the TVLQR swing-up + PPO with a BC anchor) swings both links up from hanging and holds link 1 within 1 deg before the push (measured 0.08 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th2",
+          "from_t": 5.0,
+          "to_t": 6.99,
+          "value": 0.0,
+          "abs": 0.0175,
+          "note": "link 2 within 1 deg of upright before the push (measured 0.10 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 5.0,
+          "to_t": 6.99,
+          "value": 0.0052,
+          "abs": 0.02,
+          "note": "the cart balances near the centre (measured 5.2 mm)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th1",
+          "from_t": 7.0,
+          "to_t": 9.0,
+          "value": 0.2999,
+          "abs": 0.03,
+          "note": "the 40 ms, 0.28 N push at 7 s: link 1 deflects by 17.2 deg"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th2",
+          "from_t": 7.0,
+          "to_t": 9.0,
+          "value": 0.1097,
+          "abs": 0.015,
+          "note": "link 2 deflects by 6.3 deg after the push"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th1",
+          "from_t": 11.0,
+          "to_t": 12.0,
+          "value": 0.0,
+          "abs": 0.0175,
+          "note": "recovered: link 1 back within 1 deg over the last second (measured 0.01 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th2",
+          "from_t": 11.0,
+          "to_t": 12.0,
+          "value": 0.0,
+          "abs": 0.0175,
+          "note": "recovered: link 2 back within 1 deg over the last second (measured 0.01 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Policy/u",
+          "from_t": 0.0,
+          "to_t": 12.0,
+          "value": 24.0,
+          "note": "the policy's output stays inside the +-24 V supply (peak 19.6 V)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 12.0,
+          "value": 0.3166,
+          "abs": 0.03,
+          "note": "peak cart travel 0.317 m during the swing-up, inside the +-0.40 m rail"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": ["E101", "E102", "E103", "E106", "E901", "W201", "W202", "W205", "W206"],
+          "note": "the closed loop with the 4865-weight swing-up policy block reports no diagnostics"
+        }
+      ]
     }
   }
 }

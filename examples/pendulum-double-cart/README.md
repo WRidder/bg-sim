@@ -115,10 +115,10 @@ times; `scene_bindings` (the SDF kinematic tree reproduces the composed poses); 
 - Raise `PushPulse/amplitude` above ≈ 0.35 N: the LQR loses the pendulum (design-model limit for a 40 ms pulse).
 - Run `pendulum-double-cart-free` to see the design check (motor shorted, released from a non-trivial pose).
 
-## Learned controller (`pendulum-double-cart-plant`, `pendulum-double-cart-rl`)
+## Learned controllers (`pendulum-double-cart-plant`, `pendulum-double-cart-rl`, `pendulum-double-cart-rl-swingup`)
 
 The RL spike of `plan/RL_PLAN.md` (step 0) trains a neural-network controller on the exported plant FMU and
-brings it back as an ordinary `@discrete` block. Both models are written by `design/rlmodels.py`.
+brings it back as an ordinary `@discrete` block. The models are written by `design/rlmodels.py`.
 
 - **`pendulum-double-cart-plant`**: the same plant without controller, clock and disturbance source, for
   the FMU export. The motor voltage `V` and the push force `F_push` are `ExportInput`s. The encoders `x`, `q1`,
@@ -134,11 +134,20 @@ brings it back as an ordinary `@discrete` block. Both models are written by `des
   The policy was behaviour-cloned on the example's balance LQR and then trained further with PPO (rsl_rl); PPO
   from scratch did not learn the balance (see the plan's R0.3 notes). It holds both links within about 0.8°
   and the cart 3–5 cm off centre (the LQR firmware: 0.01°), and catches the push at 18.4° peak (LQR 17.8°).
+- **`pendulum-double-cart-rl-swingup`**: the same plant with `library/DoubleCartSwingPolicy.jl`, again a single
+  network of the same size. Task: **swing-up and balance**. The links hang at rest until the policy starts at
+  1 s, and the push hits at 7 s (12 s run). The policy was behaviour-cloned on the example's TVLQR swing-up and
+  balance LQR (`rl/classical.py` → `rl/classical.json`, `rl/rlpend/experts.py`), then trained with PPO plus
+  a behaviour-cloning anchor. It is upright inside 2° 2.3 s after it starts, holds 0.1° and 5 mm, catches the
+  push at 17.2° peak, and uses at most 19.6 V and 0.32 m of the ±0.40 m rail. It is not robust: in the
+  training env it succeeds from about two thirds of the noisy hanging starts (the TVLQR: all of them), and
+  from one of the three hanging test poses in `rl/compare.py` it runs off the rail.
 - **Agreement**: from the same rest poses, bgsim (Rodas5P, reltol 1e-8) and the training env (the batched
-  FMU) agree to 3e-6 rad, 8e-7 m and 2e-3 V over 4 s (`rl/compare.py`).
-- **Checks**: `expected.json` → `pendulum-double-cart-rl`. It checks 0 V before the first tick, the upright
-  band before the push, the push deflection, recovery, the cart offset, |V| ≤ 24 V, the scene bindings and
-  no diagnostics.
+  FMU) agree to 3e-6 rad, 8e-7 m and 2e-3 V over 4 s (`rl/compare.py`). Through a swing-up the tumbling
+  links amplify the round-off to about 1e-3 rad, with the same outcome.
+- **Checks**: `expected.json` → `pendulum-double-cart-rl` and `pendulum-double-cart-rl-swingup`. They check
+  0 V before the policy starts, the upright band before the push, the push deflection, recovery, the cart
+  travel, |V| ≤ 24 V, the scene bindings and no diagnostics.
 
 Regenerate (the `rl/` uv project; the training run is in the ignored `runs/`):
 
@@ -147,7 +156,15 @@ uv run --project rl rl/train.py runs/plantA/export runs/balA --upright-only --bc
 uv run --project rl rl/make_policy_block.py runs/balA --checkpoint model_best.pt
 uv run examples/pendulum-double-cart/design/rlmodels.py --rl balance
 uv run --project rl rl/compare.py runs/balA runs/plantA/export runs/cmpA --checkpoint model_best.pt --task balance
+
+uv run --project rl rl/train.py runs/plantA/export runs/imi2 --bc-lqr 10000 --bc-expert tvlqr --bc-sigma 0.1 --bc-anchor 20 --critic-warmup 20 --no-curriculum --p-up 0.2 --p-random 0.1 --init-std 0.05 --entropy 0 --desired-kl 0.005 --gamma 0.998 --drop-penalty 20 --iterations 300 --eval-every 20 --threads 6 --torch-threads 4
+uv run --project rl rl/make_policy_block.py runs/imi2 --checkpoint model_280.pt --name DoubleCartSwingPolicy
+uv run examples/pendulum-double-cart/design/rlmodels.py --rl swingup
+uv run --project rl rl/compare.py runs/imi2 runs/plantA/export runs/cmpS --checkpoint model_280.pt --task swingup
 ```
+
+PPO training is not bit-reproducible across thread counts; the checkpoint numbers refer to the runs that
+produced the committed blocks.
 
 ## 3D view
 

@@ -6,7 +6,8 @@
     "pendulum-double-cart",
     "pendulum-double-cart-free",
     "pendulum-double-cart-plant",
-    "pendulum-double-cart-rl"
+    "pendulum-double-cart-rl",
+    "pendulum-double-cart-rl-swingup"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"

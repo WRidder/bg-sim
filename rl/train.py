@@ -254,7 +254,9 @@ def main() -> int:
     ap.add_argument("--w-rate", type=float, help="override the action-rate weight")
     ap.add_argument("--widen", action="store_true",
                     help="with --upright-only: start at +-0.05 rad, widen by 0.05 (to 0.3) whenever the upright eval "
-                         "reaches 0.8")
+                         "reaches 0.8; the stop and best-checkpoint gates count only the widest range so far")
+    ap.add_argument("--widen-start", type=float, default=0.05,
+                    help="with --widen: the first start range (to continue a widened run with --resume)")
     ap.add_argument("--catch-continue", action="store_true",
                     help="hybrid: the LQR balances on inside the training episode (dense up/balance reward) "
                          "instead of ending it at the catch")
@@ -284,7 +286,7 @@ def main() -> int:
     if args.upright_only:
         ecfg.p_upright_start, ecfg.p_random_start = 1.0, 0.0
         if args.widen:
-            ecfg.up_noise = (0.05, 0.05, 0.05)
+            ecfg.up_noise = (0.05, args.widen_start, args.widen_start)
     if args.w_energy is not None:
         ecfg.w_energy = args.w_energy
     if args.w_rate is not None:
@@ -347,7 +349,7 @@ def main() -> int:
     steps_per_it = args.envs * tcfg.num_steps_per_env
     it = 0
     good = 0
-    best = -1.0
+    best, best_val, best_rng = -1.0, -1.0, 0.0
     # Learn in chunks; the reward is tracked through a wrapper of the env's step.
     rewards: list[float] = []
     orig_step = env.step
@@ -377,6 +379,7 @@ def main() -> int:
         policy = runner.get_inference_policy()
         ev = evaluate(policy, ecfg)
         evu = evaluate(policy, ecfg, upright=True, episodes=64 if args.upright_only else 32)
+        rng = env.cfg.up_noise[1]          # the start range of this eval (before widening)
         p_hang = 1.0 - env.cfg.p_upright_start - env.cfg.p_random_start
         std = float(runner.alg.get_policy().output_std.mean())
         w.writerow([it, it * steps_per_it, f"{wall:.1f}", f"{np.mean(rewards):.4f}", ev["success"], ev["fell"],
@@ -395,18 +398,22 @@ def main() -> int:
             ecfg.up_noise = env.cfg.up_noise      # the upright eval follows the training range
             print(f"  widen: upright starts now +-{w_:.2f} rad", flush=True)
         runner.save(str(run / f"model_{it}.pt"))
-        gate = evu["success"] if args.upright_only else ev["success"]
+        val = evu["success"] if args.upright_only else ev["success"]
+        widening = args.upright_only and args.widen
+        gate = val + 10.0 * rng if widening else val     # a wider start range ranks first
         if gate >= best:
-            best = gate
+            best, best_val, best_rng = gate, val, rng
             runner.save(str(run / "model_best.pt"))
-        good = good + 1 if gate >= args.stop_success else 0
+        full = not widening or rng >= 0.3 - 1e-9          # stop only at the full start range
+        good = good + 1 if full and val >= args.stop_success else 0
         if good >= 2:
             print("stop: success reached twice in a row", flush=True)
             break
     runner.save(str(run / "model.pt"))
     total = time.perf_counter() - t0
     (run / "summary.json").write_text(json.dumps({"iterations": it, "envSteps": it * steps_per_it,
-                                                  "wallS": total, "bestEvalSuccess": best}, indent=2))
+                                                  "wallS": total, "bestEvalSuccess": best_val,
+                                                  "bestStartRange": best_rng}, indent=2))
     curve.close()
     plot(run / "curve.csv", run / "curve.png")
     env.close()
