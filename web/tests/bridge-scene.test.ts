@@ -18,7 +18,16 @@ import { planarPoint, segmentAxis } from "../src/scene/segment";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const example = path.join(repoRoot, "examples", "bridge");
-const design = JSON.parse(readFileSync(path.join(example, "design", "design.json"), "utf8")) as { xy: [number, number][] };
+/** Node coordinates of the Warren truss (`design.json`) and of the two-span bridge on a pier (`design_pier.json`). */
+function designNodes(file: string): [number, number][] {
+  return (JSON.parse(readFileSync(path.join(example, "design", file), "utf8")) as { xy: [number, number][] }).xy;
+}
+const warren = designNodes("design.json");
+const pier = designNodes("design_pier.json");
+/** The design a scene was written from: the `bridge-pier*` scenes come from build_pier.py. */
+function nodesOf(sceneFile: string): [number, number][] {
+  return path.basename(sceneFile).startsWith("bridge-pier") ? pier : warren;
+}
 
 interface ModelFile {
   scene?: { file: string };
@@ -34,10 +43,10 @@ function loadScene(rel: string): ResolvedScene {
 }
 
 /** Rest position of the node a signal such as `Truss/x[12]` reads (1-based, as in the model). */
-function restCoordinate(signal: string): number {
+function restCoordinate(signal: string, nodes: [number, number][]): number {
   const m = /^Truss\/([xy])\[(\d+)\]$/.exec(signal);
   if (m === null) throw new Error(`not a truss node coordinate: ${signal}`);
-  const node = design.xy[Number(m[2]) - 1];
+  const node = nodes[Number(m[2]) - 1];
   if (node === undefined) throw new Error(`no node ${String(m[2])}`);
   return m[1] === "x" ? node[0] : node[1];
 }
@@ -55,7 +64,7 @@ const models = readdirSync(path.join(example, "models"))
 
 describe("bridge example scene", () => {
   it("has bridge models with segment bindings, so the loop below is never vacuous", () => {
-    expect(models.map(([f]) => f)).toEqual(expect.arrayContaining(["bridge-crossing.bgmodel.json", "bridge-failure.bgmodel.json"]));
+    expect(models.map(([f]) => f)).toEqual(expect.arrayContaining(["bridge-crossing.bgmodel.json", "bridge-failure.bgmodel.json", "bridge-pier.bgmodel.json"]));
   });
 
   it.each(models)("%s: every segment-bound bar and deck slab stands at its rest place before a run", (_file, model) => {
@@ -69,7 +78,8 @@ describe("bridge example scene", () => {
       if (typeof axis === "string") throw new Error(`${b.target}: ${axis}`);
       const world = scene.world.get(visual.node);
       if (world === undefined) throw new Error(`no rest pose of ${b.target}`);
-      const [ua, va, ub, vb] = b.signal.map(restCoordinate);
+      const nodes = nodesOf(model.scene?.file ?? "");
+      const [ua, va, ub, vb] = b.signal.map((signal) => restCoordinate(signal, nodes));
       const a = planarPoint(ua ?? NaN, va ?? NaN, b.plane, b.depth ?? 0);
       const bEnd = planarPoint(ub ?? NaN, vb ?? NaN, b.plane, b.depth ?? 0);
       // the ends of the visual's axis at scale 1 land on the two rest nodes

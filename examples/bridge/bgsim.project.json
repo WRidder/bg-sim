@@ -8,7 +8,10 @@
     "bridge-static",
     "bridge-modes",
     "bridge-moving-load",
-    "strut-buckling"
+    "strut-buckling",
+    "bridge-pier",
+    "bridge-pier-static",
+    "bridge-pier-modes"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"

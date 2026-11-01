@@ -1336,5 +1336,39 @@
       "depth": 0.0,
       "axis": "+x"
     }
-  ]
+  ],
+  "dashboard": {
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x2",
+        "title": "About",
+        "options": {
+          "markdown": true,
+          "text": "The truss starts in its first vertical bending mode at **4.3978 Hz** (eigenvalues of the stiffness and lumped mass matrices of `design/design.py`), 5 mm at midspan. No damping, so `Ebal` stays constant."
+        }
+      },
+      {
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Midspan deflection",
+        "signals": [
+          "Truss/y[6]"
+        ],
+        "id": "d2"
+      },
+      {
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Energy",
+        "signals": [
+          "Truss/Ek",
+          "Truss/Ee",
+          "Truss/Ebal"
+        ],
+        "id": "d3"
+      }
+    ]
+  }
 }
