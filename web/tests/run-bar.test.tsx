@@ -11,6 +11,7 @@ import { RunBar } from "../src/app/RunBar";
 import { resetDocumentStore, useDocumentStore } from "../src/state/documentStore";
 import { createEmptyModel } from "../src/state/modelFactory";
 import { resetRunStore } from "../src/plot/runStore";
+import { formatSettingNumber } from "../src/plot/settings";
 
 function openModel(): void {
   useDocumentStore
@@ -58,6 +59,37 @@ describe("RunBar", () => {
     expect(state.doc?.settings.reltol).toBe(1e-9);
     expect(state.revision).toBe(2);
     expect(state.saveState).toBe("dirty");
+  });
+
+  it("shows a microsecond t_end and a tiny tolerance in exponent notation", () => {
+    openModel();
+    render(<RunBar />);
+    const end = screen.getByLabelText("t_end") as HTMLInputElement;
+    fireEvent.change(end, { target: { value: "0.0000032" } });
+    fireEvent.blur(end);
+    expect(useDocumentStore.getState().doc?.settings.t_end).toBe(3.2e-6);
+    expect(end.value).toBe("3.2e-6");
+    const tolerance = screen.getByLabelText("tol") as HTMLInputElement;
+    fireEvent.change(tolerance, { target: { value: "0.000001" } });
+    fireEvent.blur(tolerance);
+    expect(tolerance.value).toBe("1e-6");
+    // ordinary values keep their plain text
+    fireEvent.change(end, { target: { value: "12.5" } });
+    fireEvent.blur(end);
+    expect(end.value).toBe("12.5");
+  });
+
+  it("formats setting numbers losslessly", () => {
+    expect(formatSettingNumber(3.2e-6)).toBe("3.2e-6");
+    expect(formatSettingNumber(1.23456789e-7)).toBe("1.23456789e-7");
+    expect(formatSettingNumber(0.001)).toBe("0.001");
+    expect(formatSettingNumber(2.5)).toBe("2.5");
+    expect(formatSettingNumber(3600)).toBe("3600");
+    expect(formatSettingNumber(2e6)).toBe("2e6");
+    expect(formatSettingNumber(0)).toBe("0");
+    for (const value of [3.2e-6, 1.23456789e-7, 2e6, 0.1]) {
+      expect(Number(formatSettingNumber(value))).toBe(value);
+    }
   });
 
   it("rejects a non-positive t_end and restores it on Escape", () => {

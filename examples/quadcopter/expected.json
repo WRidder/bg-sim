@@ -311,6 +311,99 @@
           ]
         }
       ]
+    },
+    "quadcopter-gust": {
+      "model": "quadcopter",
+      "run_timeout": 900,
+      "overrides": [
+        {
+          "target": "global:gust_speed",
+          "value": 4.0
+        }
+      ],
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "GustPulse/g",
+          "t": 7.0,
+          "value": 4.0,
+          "abs": 1e-12,
+          "note": "the 1-cos gust peaks at its mid-point, t0 + T/2 = 7 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "GustPulse/g",
+          "t": 5.9,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "off before t0"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "GustPulse/g",
+          "t": 8.1,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "and after t0 + T"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Err/track",
+          "from_t": 6.0,
+          "to_t": 9.0,
+          "value": 0.191483825985,
+          "rtol": 0.001,
+          "note": "a 4 m/s gust towards +y while flying the +2 m x leg: 19 cm off the set-point at most (regression value)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Truth/tilt",
+          "from_t": 6.0,
+          "to_t": 9.0,
+          "value": 0.4363,
+          "note": "the tilt stays inside the 25 degree limit (0.254 rad measured)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Truth/z",
+          "t": 18.0,
+          "value": 0.0847,
+          "abs": 0.001,
+          "note": "and it still lands"
+        }
+      ]
+    },
+    "quadcopter-wind-hover": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PitchAvg/y",
+          "t": 9.0,
+          "value": -0.075365723,
+          "rtol": 0.02,
+          "note": "2 s mean pitch in a steady 4 m/s wind (nose into the wind) = the static drag balance of design.wind_tilt, 0.075366 rad (bgsim -0.07430; the remaining 1.3 % is the jitter of the noisy sensors and the integrators)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PitchAvg/y",
+          "t": 12.0,
+          "value": -0.075365723,
+          "rtol": 0.02,
+          "note": "2 s mean pitch in a steady 4 m/s wind (nose into the wind) = the static drag balance of design.wind_tilt, 0.075366 rad (bgsim -0.07448; the remaining 1.3 % is the jitter of the noisy sensors and the integrators)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Err/track",
+          "from_t": 8.0,
+          "to_t": 12.0,
+          "value": 0.03,
+          "note": "holds its place within 3 cm (2.4 cm measured) against the wind"
+        }
+      ]
     }
   },
   "compare": [
@@ -381,7 +474,7 @@
       "signal_a": "Truth/z",
       "signal_b": "Truth/z",
       "from_t": 0.0,
-      "max_abs": 1e-9,
+      "max_abs": 1e-09,
       "note": "and the closed-loop plant trajectory (the continuous part reproduces to the integrator's determinism)"
     }
   ]

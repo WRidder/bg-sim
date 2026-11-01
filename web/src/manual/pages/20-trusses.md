@@ -59,6 +59,8 @@ Both `Bar2D` and `Truss2D` use the same bar. The length comes from the current n
 
 Failure is an event: the solver stops on the exact instant the force crosses the limit. Set `event_limit` in the run settings high enough for a run in which many bars fail.
 
+To scale the strength of every bar with one [global parameter](page:parameters) `strength`, set `fy` to `3.55e8*strength` and `K` to `1/sqrt(strength)`. The tensile strength and every buckling load then scale with `strength`, and the stiffness does not change. To weaken one strut only, write its entry of `I` as an expression, for example `1.5e-5*slender`.
+
 ## Loads on the deck
 
 Put the deck nodes first in `Truss2D`, numbered from left to right: nodes 1 to `nd` form the road surface.
@@ -72,4 +74,11 @@ Draw each bar as a cylinder or box in the scene and bind it with a **segment** b
 
 ## Example
 
-**bridge**: a 30 m Warren truss road bridge with a lorry on compliant tyres. It shows the member forces against the method of joints, the first bending frequency against an eigenvalue analysis, a strut that buckles at the Euler load, and an undersized diagonal that snaps when the lorry crosses too fast or too heavy. Its dashboard has sliders for the lorry's speed and mass.
+**bridge** has two bridges, each with a lorry on compliant tyres.
+
+- A 30 m Warren truss. It shows the member forces against the method of joints, the first bending frequency against an eigenvalue analysis, a strut that buckles at the Euler load, and an undersized diagonal that snaps when the lorry crosses too fast or too heavy (`bridge-failure`). The truss is statically determinate, so one failed bar brings it down.
+- `bridge-pier`: a 2 × 24 m continuous truss on a steel column in the river, with X-braced panels next to the pier. It is statically indeterminate, so its reference numbers come from the stiffness method. A too slender diagonal next to the pier buckles under an overloaded lorry, its X-partner takes over the load, and the bridge stays up. With weaker members the bars next to it fail, the pier column buckles, and the bridge collapses.
+
+In the lorry models the roller bearing sits on a seat of finite length: the project block `RollerSeat` carries the roller node, which is free in the truss (`fix` [0 0]). The seat pushes the node up but never pulls, the node rolls freely along it, and when it has rolled 0.3 m to either edge an event releases it for good: that end of the truss falls. In `bridge-failure` the folding truss pulls the roller off its seat. In the 3D view the seat turns red when the roller has rolled off.
+
+The dashboards of `bridge-crossing`, `bridge-failure` and `bridge-pier` have sliders for the member strength (the global `strength` scales `fy` and, through `K`, every buckling load), the lorry's mass and its speed. `bridge-pier` also has a slider for the slender diagonal. A gauge shows the peak utilisation of the run. Indicators show when a member has failed, when the roller has rolled off its seat and when the bridge has collapsed. Move a slider until a member fails, then move it back to see where the bridge holds again.

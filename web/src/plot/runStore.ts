@@ -22,8 +22,10 @@
 import { create } from "zustand";
 
 import type { DebugStartOptions } from "../contracts/debug";
+import type { ModelPlot } from "../contracts/model";
 import type {
   Diagnostic,
+  ParameterOverride,
   RunManifest,
   RunSignal,
   RunStatus,
@@ -87,10 +89,61 @@ export type SocketState = "off" | "connecting" | "open" | "closed";
 
 export interface PlotPanelState {
   id: string;
-  /** Signal ids, in the order they were added. */
+  /** Signal ids, in the order they were added (the y signals of an XY panel). */
   signals: string[];
   /** User-given name; empty means the positional "Panel N" label. */
   name?: string;
+  /**
+   * XY panel: the signal on the horizontal axis, as `x` of a model plot (contracts
+   * `ModelPlot.x`); every signal is drawn against it. Absent: time. Never also in `signals`.
+   */
+  x?: string;
+  /** XY panel: equal units per pixel on both axes (`ModelPlot.equalAspect`). */
+  equalAspect?: boolean;
+}
+
+/** True when a panel draws its signals against another signal instead of time. */
+export function isXYPanel(panel: Pick<PlotPanelState, "x">): boolean {
+  return panel.x !== undefined;
+}
+
+/**
+ * The panel of a saved model plot (`plots[]`): its signals, title, `x` and `equalAspect`. The x
+ * signal is never drawn against itself, so it is dropped from the y list.
+ */
+export function panelFromModelPlot(plot: ModelPlot, id: string): PlotPanelState {
+  const x = plot.x !== undefined && plot.x.length > 0 ? plot.x : undefined;
+  const signals = [...new Set(plot.signals)].filter((signal) => signal !== x);
+  return {
+    id,
+    signals,
+    ...(plot.title.trim().length > 0 ? { name: plot.title.trim() } : {}),
+    ...(x !== undefined ? { x } : {}),
+    ...(x !== undefined && plot.equalAspect === true ? { equalAspect: true } : {}),
+  };
+}
+
+/**
+ * Switch a panel's x axis to `x` (a signal id) or back to time (null). The new x leaves the y
+ * list, and the previous x (if any) returns to its front, so no signal is lost by switching.
+ */
+export function withPanelX(panel: PlotPanelState, x: string | null): PlotPanelState {
+  const previous = panel.x;
+  if ((x ?? undefined) === previous) {
+    return panel;
+  }
+  let signals = panel.signals.filter((id) => id !== x);
+  if (previous !== undefined && !signals.includes(previous)) {
+    signals = [previous, ...signals];
+  }
+  const next: PlotPanelState = { ...panel, signals };
+  if (x === null) {
+    delete next.x;
+    delete next.equalAspect;
+  } else {
+    next.x = x;
+  }
+  return next;
 }
 
 /** How the automatic selection plot splits its signals across charts. */
@@ -138,6 +191,11 @@ export interface RunStoreState {
   startedAt: number | null;
   /** `Date.now()` when the current phase began. */
   phaseAt: number | null;
+  /**
+   * The dashboard overrides this editor sent with the current run (null: a followed run, or none yet). The
+   * dashboard compares its inputs with these: a real worker publishes them in the manifest only at the end.
+   */
+  sentOverrides: readonly ParameterOverride[] | null;
   progress: RunProgress | null;
   stats: RunStats | null;
   error: string | null;
@@ -155,6 +213,8 @@ export interface RunStoreState {
   scopeSignals: string[];
   /** Signals of the open dashboard's display cards, unioned like the probe signals. */
   dashboardSignals: string[];
+  /** The open dashboard has an XY plot card: request whole rows (see `needsExactRows`). */
+  dashboardExact: boolean;
 
   /** The shared x window; null means "show all" (raw, px=0). */
   view: SeriesWindow | null;
@@ -192,11 +252,18 @@ export interface RunStoreState {
   setActivePanel: (panelId: string) => void;
   /** Rename a panel; whitespace or an empty string restores "Panel N". */
   renamePanel: (panelId: string, name: string) => void;
+  /** XY: draw the panel's signals against `signalId`, or against time again (null). */
+  setPanelX: (panelId: string, signalId: string | null) => void;
+  /** XY: equal units per pixel on both axes. */
+  setPanelEqualAspect: (panelId: string, on: boolean) => void;
+  /** Open a saved model plot (`plots[]`) as a new panel, with its title, x axis and aspect. */
+  openModelPlot: (plot: ModelPlot) => string;
   /** Replace the automatic selection plot's signal set. */
   setAutoSignals: (signalIds: readonly string[]) => void;
   setAutoLayout: (layout: AutoPlotLayout) => void;
   setScopeSignals: (signalIds: readonly string[]) => void;
-  setDashboardSignals: (signalIds: readonly string[]) => void;
+  /** The dashboard's display signals; `exact` while one of its plot cards is XY. */
+  setDashboardSignals: (signalIds: readonly string[], exact?: boolean) => void;
   setView: (view: SeriesWindow | null, px?: number) => void;
   /** Return to the live tail after a zoom (plan 7.5: autoscroll unless zoomed). */
   followLive: () => void;
@@ -228,12 +295,12 @@ function initialPanels(): { panels: PlotPanelState[]; activePanelId: string } {
   return { panels: [panel], activePanelId: panel.id };
 }
 
-/** The unique signal ids of every panel, in first-added order. */
+/** The unique signal ids of every panel (an XY panel's x first), in first-added order. */
 export function plottedSignalIds(panels: readonly PlotPanelState[]): string[] {
   const seen = new Set<string>();
   const ids: string[] = [];
   for (const panel of panels) {
-    for (const id of panel.signals) {
+    for (const id of panel.x === undefined ? panel.signals : [panel.x, ...panel.signals]) {
       if (!seen.has(id)) {
         seen.add(id);
         ids.push(id);
@@ -241,6 +308,19 @@ export function plottedSignalIds(panels: readonly PlotPanelState[]): string[] {
     }
   }
   return ids;
+}
+
+/**
+ * True while an XY plot is open (a dock panel or a dashboard card). An XY plot pairs signals
+ * sample by sample, so the data must be whole recorded rows: `/data` is then requested raw
+ * (`px=0`) even when zoomed, and the live tail is subscribed `exact` (whole rows, not per-signal
+ * min/max envelopes). The time panels draw the same raw rows; uPlot handles them as it does an
+ * unzoomed run.
+ */
+export function needsExactRows(
+  state: Pick<RunStoreState, "panels" | "dashboardExact">,
+): boolean {
+  return state.dashboardExact || state.panels.some((panel) => panel.x !== undefined);
 }
 
 /** Every id the plots need: the manual panels plus the auto selection plot. */
@@ -351,8 +431,8 @@ function placeSignal(
   };
 }
 
-function requestWidth(view: SeriesWindow | null, width: number): number {
-  if (view === null) {
+function requestWidth(view: SeriesWindow | null, width: number, exact = false): number {
+  if (view === null || exact) {
     return 0;
   }
   const pixels =
@@ -476,7 +556,8 @@ function syncSubscription(force: boolean): void {
   const ids = activeSignalIds(state.panels, state.autoSignals, state.scopeSignals, state.dashboardSignals).filter((id) =>
     available.has(id),
   );
-  const key = ids.join(",");
+  const exact = needsExactRows(state);
+  const key = `${ids.join(",")}${exact ? "|exact" : ""}`;
   if (!force && key === subscribedKey) {
     return;
   }
@@ -487,7 +568,8 @@ function syncSubscription(force: boolean): void {
     return;
   }
   try {
-    current.send(JSON.stringify({ subscribe: ids }));
+    // `exact`: whole recorded rows for the XY plots (the backend's row-selecting tail).
+    current.send(JSON.stringify(exact ? { subscribe: ids, exact: true } : { subscribe: ids }));
   } catch {
     /* the close handler will report the socket as closed */
   }
@@ -570,10 +652,18 @@ function ingestManifest(manifest: RunManifest): void {
   let dashboardSignals = state.dashboardSignals;
   if (manifest.signals.length > 0) {
     const available = new Set(manifest.signals.map((signal) => signal.id));
-    panels = panels.map((panel) => ({
-      ...panel,
-      signals: panel.signals.filter((id) => available.has(id)),
-    }));
+    panels = panels.map((panel) => {
+      const next: PlotPanelState = {
+        ...panel,
+        signals: panel.signals.filter((id) => available.has(id)),
+      };
+      if (next.x !== undefined && !available.has(next.x)) {
+        // The x signal is gone (a renamed block): the panel falls back to time.
+        delete next.x;
+        delete next.equalAspect;
+      }
+      return next;
+    });
     autoSignals = autoSignals.filter((id) => available.has(id));
     scopeSignals = scopeSignals.filter((id) => available.has(id));
     dashboardSignals = dashboardSignals.filter((id) => available.has(id));
@@ -862,6 +952,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
   phase: null,
   startedAt: null,
   phaseAt: null,
+  sentOverrides: null,
   progress: null,
   stats: null,
   error: null,
@@ -875,6 +966,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
   autoLayout: "single",
   scopeSignals: [],
   dashboardSignals: [],
+  dashboardExact: false,
 
   view: null,
   pixelWidth: 0,
@@ -930,6 +1022,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       phase: null,
       startedAt: Date.now(),
       phaseAt: Date.now(),
+      sentOverrides: inputs === null ? null : inputs.parameterOverrides,
       progress: null,
       stats: null,
       error: null,
@@ -1029,6 +1122,11 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     if (target !== undefined && target.signals.includes(signalId)) {
       set({ activePanelId: target.id });
       showNotice(`${signalId} is already in this panel.`);
+      return;
+    }
+    if (target !== undefined && target.x === signalId) {
+      set({ activePanelId: target.id });
+      showNotice(`${signalId} is this panel's x axis.`);
       return;
     }
     set({
@@ -1233,8 +1331,77 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     setExtraSignals("scopeSignals", signalIds);
   },
 
-  setDashboardSignals: (signalIds) => {
+  setDashboardSignals: (signalIds, exact = false) => {
+    if (get().dashboardExact !== exact) {
+      set({ dashboardExact: exact });
+      const updated = get();
+      updated.syncSocketSubscription();
+      void updated.ensureData();
+      void updated.ensureCompareData();
+    }
     setExtraSignals("dashboardSignals", signalIds);
+  },
+
+  setPanelX: (panelId, signalId) => {
+    const state = get();
+    const panel = state.panels.find((entry) => entry.id === panelId);
+    if (panel === undefined || (signalId ?? undefined) === panel.x) {
+      return;
+    }
+    if (
+      signalId !== null &&
+      state.manifest !== null &&
+      !state.manifest.signals.some((signal) => signal.id === signalId)
+    ) {
+      showNotice(`This run has no signal ${signalId}.`);
+      return;
+    }
+    set({
+      panels: state.panels.map((entry) =>
+        entry.id === panelId ? withPanelX(entry, signalId) : entry,
+      ),
+      activePanelId: panelId,
+    });
+    const updated = get();
+    updated.syncSocketSubscription();
+    void updated.ensureData(undefined, true);
+    void updated.ensureCompareData(undefined, true);
+  },
+
+  setPanelEqualAspect: (panelId, on) => {
+    set((state) => ({
+      panels: state.panels.map((panel) => {
+        if (panel.id !== panelId || panel.x === undefined) {
+          return panel;
+        }
+        const next = { ...panel };
+        if (on) next.equalAspect = true;
+        else delete next.equalAspect;
+        return next;
+      }),
+    }));
+  },
+
+  openModelPlot: (plot) => {
+    panelSequence += 1;
+    const panel = panelFromModelPlot(plot, `panel-${panelSequence}`);
+    const state = get();
+    // An untouched first panel (no signals, no name) is replaced instead of left empty.
+    const first = state.panels[0];
+    const blank =
+      state.panels.length === 1 &&
+      first !== undefined &&
+      first.signals.length === 0 &&
+      first.x === undefined &&
+      first.name === undefined;
+    const panels = blank ? [panel] : [...state.panels, panel];
+    set({ panels, activePanelId: panel.id });
+    showNotice(`Opened the saved plot "${plot.title || plot.id}" as Panel ${panels.length}.`);
+    const updated = get();
+    updated.syncSocketSubscription();
+    void updated.ensureData(undefined, true);
+    void updated.ensureCompareData(undefined, true);
+    return panel.id;
   },
 
   removePanel: (panelId) => {
@@ -1299,7 +1466,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       return;
     }
 
-    const width = requestWidth(state.view, px ?? state.pixelWidth);
+    const width = requestWidth(state.view, px ?? state.pixelWidth, needsExactRows(state));
     const key = `${manifest.id}|${ids.join(",")}|${windowKey(state.view)}|${width}`;
     if (!force && key === state.dataKey) {
       return;
@@ -1423,7 +1590,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       return;
     }
 
-    const width = requestWidth(state.view, px ?? state.pixelWidth);
+    const width = requestWidth(state.view, px ?? state.pixelWidth, needsExactRows(state));
     const key = `${pinned.manifest.id}|${ids.join(",")}|${windowKey(state.view)}|${width}`;
     if (!force && key === state.compareKey) {
       return;
@@ -1568,6 +1735,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       phase: null,
       startedAt: null,
       phaseAt: null,
+      sentOverrides: null,
       progress: null,
       stats: null,
       error: null,
@@ -1578,7 +1746,8 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       activePanelId: panels.activePanelId,
       autoSignals: [],
       scopeSignals: [],
-  dashboardSignals: [],
+      dashboardSignals: [],
+      dashboardExact: false,
       autoLayout: "single",
       view: null,
       pixelWidth: 0,

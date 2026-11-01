@@ -9,6 +9,14 @@ navigation filter, and the plant stands on four compliant contact legs. Z is up,
 | --- | --- |
 | `quadcopter` | the 18 s mission, reltol 1e-4, abstol 1e-6, output every 10 ms |
 | `quadcopter-repeat` | the same document stopped at 9 s on the same output grid: the determinism twin |
+| `quadcopter-wind-hover` | climb to 1 m and hover for 12 s in a steady 4 m/s wind without turbulence: the wind reference |
+
+`quadcopter` has a **dashboard**:
+- sliders for the mean wind (x, y), the turbulence and the discrete gust (peak, direction, start, duration);
+- readouts of the wind speed, the distance to the set-point, the tilt, the altitude, a rotor speed and the battery;
+- plots of the wind, the position and the tracking error.
+
+Auto re-run is off, because the 18 s mission takes about a minute: press **Run** after a change.
 
 The model document and the 3D scene are **generated**: `uv run examples/quadcopter/design/build_model.py`
 writes `models/*.bgmodel.json` and `scenes/quadcopter.sdf` from the numbers of
@@ -80,8 +88,14 @@ and the loop margins (below).
 * **Mission.** `Waypoints` (50 Hz): sums of minimum-jerk moves with exact velocity, acceleration and yaw
   rate feed-forward: climb 1 m at 1 s (3 s), +2 m x at 5 s, +2 m y with a +90 degree turn at 8 s,
   back to the origin with a -90 degree turn at 11 s, descend at 14 s; armed 0.5 s to 17.4 s.
-* **Wind.** `Wind` (a new Gaussian gust every 0.5 s, mean (0.4, -0.2) m/s, sigma 0.5 m/s) through a 1 s
-  `Gust` lag into the drag of `RotorWrench`.
+* **Wind.**
+  * `Wind` gives the turbulence: a new Gaussian gust every 0.5 s around the mean wind (globals `wind_x`,
+    `wind_y` = 0.4, -0.2 m/s; `wind_sigma` = 0.5 m/s), smoothed by a 1 s `Gust` lag.
+  * `GustPulse` adds a discrete **1-cos gust**, `g = A/2 (1 - cos(2 pi (t - t0)/T))` for t0 < t < t0 + T,
+    blowing towards a heading (`gust_speed`, `gust_dir`, `gust_t`, `gust_T`). It is off (0 m/s) by default.
+  * The sum drives the drag of `RotorWrench`.
+  * The 3D scene has a wind vane that turns to the wind's heading (`GustPulse/heading`) and is coloured by
+    its speed.
 
 ## Why some things look the way they do
 
@@ -129,6 +143,8 @@ integrator carries the difference.
 | rotors | hover 482 rad/s (4607 rpm), mission range 403 to 558 rad/s (peak 5325 rpm), limit 775 rad/s |
 | electrical | hover 99 W, 7.96 A at 12.4 V; spin-up peak 62 A (pack sags to 11.4 V); 1.35 % of the 3 Ah pack used |
 | navigation filter | attitude error RMS 0.53 deg, peak 1.08 deg; position error peak 2.9 cm; velocity error peak 0.11 m/s |
+| steady wind 4 m/s (`quadcopter-wind-hover`) | 2 s mean pitch -0.0745 rad against the static drag balance 0.07537 rad (`design.wind_tilt`: thrust, anisotropic drag and weight in equilibrium), within 1.3 %; holds its place within 2.4 cm |
+| 4 m/s gust towards +y at 6 s (2 s) | worst distance to the set-point 19.1 cm, peak tilt 0.254 rad (limit 0.436); lands normally |
 | landing | touches down at 17.1 s, rests at z = 0.0847 m with m g on the four legs (13.2435 N) |
 | cost | 18 s: 51 800 solver steps, compile 1 to 3 s, solve 41 to 65 s (loaded machine), 142.6 s for `run_checks.py --only quadcopter` (both models plus the worker start) |
 
@@ -142,9 +158,9 @@ which only exchange `qd`/`F`, `w_sp` and `tau`. A manipulator reaction wrench ca
 
 ## Files
 
-* `models/quadcopter.bgmodel.json`, `models/quadcopter-repeat.bgmodel.json` (generated), `bgsim.project.json`
+* `models/quadcopter.bgmodel.json`, `models/quadcopter-repeat.bgmodel.json`, `models/quadcopter-wind-hover.bgmodel.json` (generated), `bgsim.project.json`
 * `library/` `RotorWrench`, `Propeller`, `Battery`, `Esc`, `QuadMixer`, `RateCtrl`, `AttitudeCtrl`,
-  `PositionCtrl`, `NavFilter`, `ImuSensor`, `GpsSensor`, `Waypoints`, `Wind`, `Gust`, `Truth`, `EstError`,
+  `PositionCtrl`, `NavFilter`, `ImuSensor`, `GpsSensor`, `Waypoints`, `Wind`, `Gust`, `GustPulse`, `Truth`, `EstError`,
   `Pack3`, `Pack4`, `Unpack4`
 * `design/design.py` (gain derivation), `design/build_model.py` (model and scene generator)
 * `scenes/quadcopter.sdf`: link `body` (pose binding `Truth/q[1..4]`, `Truth/x`, `y`, `z`), joints `rotor_1..4`

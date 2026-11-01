@@ -654,7 +654,17 @@
           "items": {
             "type": "string",
             "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?(?:\\.[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?)?$"
-          }
+          },
+          "description": "The plotted signals: against time, or against `x` when it is set."
+        },
+        "x": {
+          "type": "string",
+          "pattern": "^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?(?:\\.[A-Za-z_][A-Za-z0-9_]*(?:\\[\\d+(?:,\\d+)?\\])?)?$",
+          "description": "XY plot: the signal on the horizontal axis; every signal in `signals` is drawn against it, sample by sample (a phase portrait, a Lissajous figure, a force-deflection loop). Absent: time."
+        },
+        "equalAspect": {
+          "type": "boolean",
+          "description": "XY plot: one unit on the x axis is as long as one unit on the y axis (a circle stays round). Absent: false. Ignored without `x`."
         },
         "$comment": { "type": "string" }
       },
@@ -766,6 +776,15 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "description": "Display cards: the bound signal ids (a plot may have several, the other display cards use the first)."
+        },
+        "x": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Plot cards: the signal on the horizontal axis, as `x` of a model plot (an XY plot of every bound signal against it). Absent: time."
+        },
+        "equalAspect": {
+          "type": "boolean",
+          "description": "Plot cards with `x`: equal units per pixel on both axes, as `equalAspect` of a model plot. Absent: false."
         },
         "parameter": {
           "type": "string",

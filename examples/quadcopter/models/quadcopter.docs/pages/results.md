@@ -1,10 +1,10 @@
 # Results and checks
 
-![Mission: position against set-points, attitude, tracking error|900](assets/c806b9d289ef.png)
+![Mission: position against set-points, attitude, tracking error|900](assets/246be9bfcad4.png)
 
-![Rotor speeds, battery and landing-gear forces|900](assets/3d8928147ffb.png)
+![Rotor speeds, battery and landing-gear forces|900](assets/348e0e58159b.png)
 
-![Navigation filter errors against the truth|900](assets/551c63aed80a.png)
+![Navigation filter errors against the truth|900](assets/f966b3cfd89d.png)
 
 ## Measured (README, real worker, `reltol` 1e-4)
 

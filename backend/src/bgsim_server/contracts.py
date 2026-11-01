@@ -1161,7 +1161,23 @@ class ModelPlot(BaseModel):
         constr(
             pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?(?:\.[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?)?$'
         )
-    ]
+    ] = Field(
+        ...,
+        description='The plotted signals: against time, or against `x` when it is set.',
+    )
+    x: (
+        constr(
+            pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?(?:\.[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?)?$'
+        )
+        | None
+    ) = Field(
+        None,
+        description='XY plot: the signal on the horizontal axis; every signal in `signals` is drawn against it, sample by sample (a phase portrait, a Lissajous figure, a force-deflection loop). Absent: time.',
+    )
+    equalAspect: bool | None = Field(
+        None,
+        description='XY plot: one unit on the x axis is as long as one unit on the y axis (a circle stays round). Absent: false. Ignored without `x`.',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -1843,6 +1859,12 @@ class BeamMapping(BaseModel):
     length: PositiveFloat | None = Field(
         None,
         description='Beam length L in m: the mode shapes run over s = 0..L from end A. Default: the extent of the shape along `axis`. Parts of the shape beyond L move rigidly with the section at L.',
+    )
+    neutral: list[float] | None = Field(
+        None,
+        description='Where the neutral axis of the bending lies, as [y, z] in m along the beam y and z axes from the centre line of the shape (default [0, 0]: the shape bends about its own centre line). For a shape that is one part of a built-up section, such as a flange of an I-beam drawn as its own box: the sections of the shape then turn about the neutral axis of the whole section, and the outer fibre of its strain colouring is the point of the shape farthest from that axis (|y| + half the size along beam y, and the same along z).',
+        max_length=2,
+        min_length=2,
     )
     field_comment: str | None = Field(None, alias='$comment')
 
@@ -2770,6 +2792,14 @@ class ModelDashboardCard(BaseModel):
     signals: list[constr(min_length=1)] | None = Field(
         None,
         description='Display cards: the bound signal ids (a plot may have several, the other display cards use the first).',
+    )
+    x: constr(min_length=1) | None = Field(
+        None,
+        description='Plot cards: the signal on the horizontal axis, as `x` of a model plot (an XY plot of every bound signal against it). Absent: time.',
+    )
+    equalAspect: bool | None = Field(
+        None,
+        description='Plot cards with `x`: equal units per pixel on both axes, as `equalAspect` of a model plot. Absent: false.',
     )
     parameter: (
         constr(

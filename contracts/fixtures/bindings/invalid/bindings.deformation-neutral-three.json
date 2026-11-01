@@ -1,0 +1,13 @@
+{
+  "$comment": "Invalid: the neutral axis offset of a beam mapping is [y, z], two numbers, not three.",
+  "bindings": [
+    {
+      "target": "visual:beam_box",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": { "axis": "+x", "neutral": [0.01, 0, 0] },
+      "signal": ["Plant/Beam/eta_y[1]"]
+    }
+  ]
+}

@@ -76,7 +76,41 @@ interface Token {
 }
 
 const NUMBER = /^(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/;
-const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*/;
+// The only non-ASCII names are built-in constants (`π`, `ε₀`, ...), as in the block language.
+const IDENTIFIER = /^(?:π|ℯ|ℏ|ħ|[με]₀|µ₀|[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)/;
+
+/**
+ * The built-in numeric constants (SI; CODATA 2018 for the physical ones): they mean the same in
+ * every expression and cannot be declared. The table is
+ * `contracts/fixtures/constants/builtin_constants.json`; Julia `syntax/whitelist.jl` has the same one.
+ */
+export const BUILTIN_CONSTANTS: ReadonlyMap<string, number> = new Map([
+  ["pi", Math.PI],
+  ["π", Math.PI],
+  ["ℯ", Math.E],
+  ["Inf", Number.POSITIVE_INFINITY],
+  ["deg", Math.PI / 180],
+  ["rpm", (2 * Math.PI) / 60],
+  ["g_n", 9.80665],
+  ["c_0", 299792458.0],
+  ["G_grav", 6.6743e-11],
+  ["h_P", 6.62607015e-34],
+  ["hbar", 6.62607015e-34 / (2 * Math.PI)],
+  ["ℏ", 6.62607015e-34 / (2 * Math.PI)],
+  ["ħ", 6.62607015e-34 / (2 * Math.PI)],
+  ["k_B", 1.380649e-23],
+  ["N_A", 6.02214076e23],
+  ["R_gas", 8.31446261815324],
+  ["q_e", 1.602176634e-19],
+  ["mu_0", 1.25663706212e-6],
+  ["μ₀", 1.25663706212e-6],
+  ["µ₀", 1.25663706212e-6],
+  ["eps_0", 8.8541878128e-12],
+  ["ε₀", 8.8541878128e-12],
+  ["sigma_SB", 5.670374419e-8],
+  ["atm", 101325.0],
+  ["T_0C", 273.15],
+]);
 
 function tokenize(source: string): Token[] {
   const tokens: Token[] = [];
@@ -342,14 +376,14 @@ export function parseExpression(source: string): ParseResult {
 /**
  * The numeric value of a pure-literal expression, or null when the expression
  * names anything (a constant, parameter, `t`, a function) and only the worker
- * can resolve it. `pi` is the one name that has a fixed numeric meaning.
+ * can resolve it. The built-in constants (`pi`, `deg`, `g_n`, ...) have a fixed numeric meaning.
  */
 export function evaluateLiteral(node: ExpressionNode): number | null {
   switch (node.kind) {
     case "number":
       return node.value;
     case "identifier":
-      return node.name === "pi" ? Math.PI : null;
+      return BUILTIN_CONSTANTS.get(node.name) ?? null;
     case "call":
       return null;
     case "unary": {
@@ -494,8 +528,9 @@ function evaluateNode(node: ExpressionNode, env: ReadonlyMap<string, number>): E
       if (node.name === "true" || node.name === "false") {
         return node.name === "true";
       }
-      if (node.name === "pi") {
-        return Math.PI;
+      const constant = BUILTIN_CONSTANTS.get(node.name);
+      if (constant !== undefined) {
+        return constant;
       }
       throw new EvaluationError(`"${node.name}" is not a global parameter.`, node.name);
     }

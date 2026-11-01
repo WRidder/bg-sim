@@ -6,6 +6,7 @@
  *   and playing or scrubbing writes the cursor back, so both views share one head.
  * - **Live** (running): the head follows the newest sample, delayed by 1.5 sample intervals, never
  *   extrapolated; the cursor is not written.
+ * - Loop is on by default. A run started from Play (`playWhenDone`) plays from the start once it is complete.
  * - A frame loop runs only while playing or live. Paused, a frame is applied once per change (seek, cursor,
  *   data, bindings), so the render scheduler stays idle.
  */
@@ -74,6 +75,8 @@ export class ViewerPlayback {
   private active = true;
   /** M4 debug: the pause time of a paused debug run; the head never goes beyond it. */
   private pauseTime: number | null = null;
+  /** Play from the start when the next run's samples are complete (the run was started from Play). */
+  private autoPlay = false;
 
   constructor(
     private readonly cursor: CursorPort,
@@ -81,6 +84,7 @@ export class ViewerPlayback {
   ) {
     this.now = deps.now ?? (() => performance.now());
     this.frames = deps.frames ?? browserClock;
+    this.clock.setLoop(true, this.now());
     this.snapshotValue = this.makeSnapshot();
     this.unsubscribe.push(this.clock.subscribe(() => { this.onClockChange(); }));
     this.unsubscribe.push(this.cursor.subscribe((t) => { this.onCursor(t); }));
@@ -160,12 +164,33 @@ export class ViewerPlayback {
     this.requestFrame();
   }
 
+  /** Play the next run from its start once its samples are complete (see `complete`). */
+  playWhenDone(): void {
+    this.autoPlay = true;
+  }
+
+  /**
+   * The run's samples are all here (a live run ended, or a finished run was loaded): a live run switches to
+   * clock playback, and a run started from Play plays from its start.
+   */
+  complete(): void {
+    this.finishLive();
+    const span = this.buffer?.span ?? null;
+    if (!this.autoPlay || this.mode !== "playback" || span === null) return;
+    this.autoPlay = false;
+    this.pendingCursor = null;
+    this.clock.seek(span.t0, this.now());
+    this.clock.play(this.now());
+  }
+
   play(): void {
+    this.autoPlay = false;
     this.pendingCursor = null;
     if (this.mode === "playback") this.clock.play(this.now());
   }
 
   pause(): void {
+    this.autoPlay = false;
     this.clock.pause(this.now());
   }
 

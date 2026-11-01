@@ -19,12 +19,18 @@ Trim: `i_bar = c h_bar` with `c = sqrt(m g/alpha) = 88.888 A/m`. LPV model at th
 
 | model | what it shows |
 | --- | --- |
-| `maglev-current-driven` | The reference scenario: current input, gain-scheduled PID (Lookup1D tables at 0.05/0.15/0.25 m) with trim feedforward `c h` and the prefilter `10/(s+10)`, step 0.15 -> 0.1875 m at 0.2 s. A `Statics` subsystem finds the trim currents at the three gaps by integral action. |
+| `maglev-current-driven` | The reference scenario: current input, gain-scheduled PID (Lookup1D tables at 0.05/0.15/0.25 m) with trim feedforward `c h` and the prefilter `10/(s+10)`, step 0.15 -> 0.1875 m at 0.2 s. A `Statics` subsystem finds the trim currents at the three gaps by integral action. Dashboard: start gap, first step, a setpoint program, disturbance force and time, prefilter, plant-only ball mass, gauges and plots. |
 | `maglev-open-loop-and-linear` | Three balls released 10 nm off their trim gaps (growth rate -> `sqrt(2g/p)`), and the nonlinear plant next to its LPV model frozen at 0.15 m under the same PID, for a small (+5 mm) and a large (+60 mm) step. |
-| `maglev-bondgraph` | The energy-consistent version: amplifier MSe with a +-60 V rail, coil 1-junction with R and the stdlib `converters/Electromagnet` (a two-port IC-field, `L(h) = L_inf + 2 alpha/h`, `F = alpha i^2/h^2`), ball I with a gravity Se. Cascade: scheduled position PID -> current setpoint, PI current loop -> voltage. IR sensor with seeded noise and a 16-bit ADC at 1 kHz. Dashboard with a setpoint slider and gauges. |
+| `maglev-bondgraph` | The energy-consistent version: amplifier MSe with a +-60 V rail, coil 1-junction with R and the stdlib `converters/Electromagnet` (a two-port IC-field, `L(h) = L_inf + 2 alpha/h`, `F = alpha i^2/h^2`), ball I with a gravity Se. Cascade: scheduled position PID -> current setpoint, PI current loop -> voltage. IR sensor with seeded noise and a 16-bit ADC at 1 kHz. Dashboard: first step, setpoint program, disturbance, prefilter, gauges and plots. |
 
 The docs of each model (overview, plant and LPV derivation, controller design, bond graph and
 co-energy, results) are under `models/<model>.docs/`.
+
+Gravity is in both plants: `m g` in `MaglevBall`, and the effort source `Grav = m_b g0` (0.196 N) on the
+ball's 1-junction of the bond graph. Both models also have a **disturbance force** on the ball, a step
+`F_dist` from `t_dist` (positive downward, like the weight). It is 0 N by default; set it on the
+dashboard. In the current-driven model it enters through `MaglevBallLoad` (the `MaglevBall` with an
+extra force input `F_d`), in the bond graph through its own MSe `Dist` on the ball's 1-junction.
 
 ## Parameters chosen here
 
@@ -61,6 +67,9 @@ phase budget (PM 58.9 / 59.7 / 59.8 deg of the sampled loop).
 | bond graph, noisy sensor | 0.1641 s | 0.12 % | 0.286 s | energy invariant 2.3e-9 of W(0); voltage hits the +60 V rail once |
 | bond graph, ideal sensor | 0.1642 s | 0.13 % | 0.286 s | at 6 s: i/h = 88.8881058457 A/m (c = 88.8881058456) |
 
+Disturbance of 0.05 N (a quarter of the weight) at 0.9 s: the gap opens by 1.7 mm (current-driven) and
+3.4 mm (bond graph, softer gains); integral action brings both back to the setpoint.
+
 Open loop: growth rates 19.8080 / 11.4366 / 8.8588 1/s against the poles 19.8091 / 11.4368 / 8.8589.
 Frozen linear vs nonlinear: 0.49 % of the small step, 17.6 % of the large one (the large step asks for a
 negative current, and the real magnet cannot push).
@@ -69,7 +78,7 @@ negative current, and the real magnet cannot push).
 
 - `design/design.py` writes `design/design.json` (trim, LPV, gains, margins, scipy simulations);
 - `design/build_model.py` writes the three models, the two scenes and `expected.json` from it;
-- `library/`: `MaglevBall` (the reference plant with soft stops), `ScheduledPID`, `CurrentPI` (anti-windup),
+- `library/`: `MaglevBall` (the reference plant with soft stops), `MaglevBallLoad` (the same with a disturbance force input), `ScheduledPID`, `CurrentPI` (anti-windup),
   `LinearBall` (the frozen LPV model), `GrowthRate`, and the small `Bias`, `Add2`, `Diff2` helpers;
 - `scenes/maglev.sdf` (tabletop rig), `scenes/maglev-open-loop.sdf` (three rigs).
 

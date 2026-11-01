@@ -196,7 +196,7 @@
         "id": "n09",
         "name": "Ball",
         "block": {
-          "ref": "project:MaglevBall"
+          "ref": "project:MaglevBallLoad"
         },
         "position": {
           "x": 920,
@@ -205,7 +205,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "m": "m_b",
+          "m": "m_ball",
           "g": "g0",
           "alpha": "alpha"
         },
@@ -949,6 +949,30 @@
           "showLabel": true,
           "color": null
         }
+      },
+      {
+        "id": "n11",
+        "name": "Dist",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 720,
+          "y": 320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_dist",
+          "initial": "0.0",
+          "final": "F_dist"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
       }
     ],
     "connections": [
@@ -1107,13 +1131,25 @@
           "node": "n09",
           "port": "i"
         }
+      },
+      {
+        "id": "c14",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n09",
+          "port": "F_d"
+        }
       }
     ],
     "annotations": [
       {
         "id": "a1",
         "kind": "text",
-        "text": "**Maglev, current-driven (MathWorks reproduction).** m*h'' = m*g - alpha*i^2/h^2 with the current as the input. The PID gains are designed at h = 0.05, 0.15 and 0.25 m (crossover 50 rad/s, phase margin 60 deg, Tf = 1 ms) and interpolated over the measured gap (KpTab, KiTab, KdTab). Trim feedforward c_trim*h, prefilter 10/(s + 10) on the 0.15 -> 0.1875 m step at 0.2 s. Ideal is the reference behaviour 900/(s^2 + 42 s + 900) of the prefiltered setpoint, for comparison only.",
+        "text": "**Maglev, current-driven (MathWorks reproduction).** m*h'' = m*g - alpha*i^2/h^2 with the current as the input. The PID gains are designed at h = 0.05, 0.15 and 0.25 m (crossover 50 rad/s, phase margin 60 deg, Tf = 1 ms) and interpolated over the measured gap (KpTab, KiTab, KdTab). Trim feedforward c_trim*h, prefilter 10/(s + 10) on the 0.15 -> 0.1875 m step at 0.2 s. Ideal is the reference behaviour 900/(s^2 + 42 s + 900) of the prefiltered setpoint, for comparison only. Dist is a force on the ball (F_dist from t_dist, positive downward), off (0 N) by default.",
         "x": 40,
         "y": 580,
         "w": 1100,
@@ -1174,6 +1210,13 @@
         "Statics/PID05/u",
         "Statics/PID15/u",
         "Statics/PID25/u"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Disturbance force on the ball",
+      "signals": [
+        "Dist/y"
       ]
     }
   ],
@@ -1256,6 +1299,276 @@
       "value": "0.001",
       "unit": "s",
       "description": "Derivative filter time constant of the PID"
+    },
+    {
+      "name": "F_dist",
+      "value": "0.0",
+      "unit": "N",
+      "description": "Disturbance force on the ball from t_dist on, positive downward like the weight (0: off; the weight is m_b*g0 = 0.196 N)"
+    },
+    {
+      "name": "t_dist",
+      "value": "0.9",
+      "unit": "s",
+      "description": "Time the disturbance force starts"
+    },
+    {
+      "name": "m_ball",
+      "value": "m_b",
+      "unit": "kg",
+      "description": "Mass of the simulated ball (plant only; the trim and the gains are designed for m_b)"
     }
-  ]
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "intro",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Maglev: gain-scheduled PID",
+        "options": {
+          "markdown": true,
+          "text": "Change an input and the model runs again. Keep the gap within **0.08 to 0.22 m** (the gain schedule's range). Delete the program rows for the single documented step."
+        }
+      },
+      {
+        "id": "h_start",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Start gap",
+        "parameter": "global:h_start",
+        "options": {
+          "min": 0.08,
+          "max": 0.22,
+          "step": 0.0025,
+          "decimals": 4,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "h_step",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Step (0.2 s) to",
+        "parameter": "global:h_step",
+        "options": {
+          "min": 0.08,
+          "max": 0.22,
+          "step": 0.0025,
+          "decimals": 4,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "program",
+        "kind": "schedule",
+        "size": "2x2",
+        "title": "Setpoint program (after the first step)",
+        "schedule": {
+          "parameters": [
+            "Ref/final"
+          ],
+          "rows": [
+            {
+              "t": 0.7,
+              "values": [
+                0.12
+              ]
+            },
+            {
+              "t": 1.05,
+              "values": [
+                0.17
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "dist_F",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Disturbance force (0 = off, + down)",
+        "parameter": "global:F_dist",
+        "options": {
+          "min": -0.1,
+          "max": 0.1,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "dist_t",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Disturbance at",
+        "parameter": "global:t_dist",
+        "options": {
+          "min": 0.25,
+          "max": 1.35,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "err",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Control error",
+        "signals": [
+          "PID/e"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": "m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "tau_pre",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Reference prefilter time constant",
+        "parameter": "global:tau_pre",
+        "options": {
+          "min": 0.02,
+          "max": 0.3,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "mass",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Ball mass (the controller assumes 20 g)",
+        "parameter": "global:m_ball",
+        "options": {
+          "min": 0.01,
+          "max": 0.04,
+          "step": 0.001,
+          "decimals": 3,
+          "unit": "kg"
+        }
+      },
+      {
+        "id": "gap",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Gap h",
+        "signals": [
+          "Ball/h"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 0.3,
+          "decimals": 4,
+          "unit": "m",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.05,
+              "tone": "bad"
+            },
+            {
+              "from": 0.05,
+              "to": 0.08,
+              "tone": "warn"
+            },
+            {
+              "from": 0.08,
+              "to": 0.22,
+              "tone": "good"
+            },
+            {
+              "from": 0.22,
+              "to": 0.3,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "current",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Coil current",
+        "signals": [
+          "PID/u"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 30.0,
+          "decimals": 2,
+          "unit": "A",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 25.0,
+              "tone": "good"
+            },
+            {
+              "from": 25.0,
+              "to": 30.0,
+              "tone": "warn"
+            }
+          ]
+        }
+      },
+      {
+        "id": "speed",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Ball velocity (+ down)",
+        "signals": [
+          "Ball/v"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "m/s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "kp",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Scheduled Kp",
+        "signals": [
+          "KpTab/y"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "A/m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "plot_gap",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Gap, setpoint and prefiltered reference",
+        "signals": [
+          "Ball/h",
+          "Ref/y",
+          "Pre/y"
+        ]
+      },
+      {
+        "id": "plot_current",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Coil current, trim current and disturbance",
+        "signals": [
+          "PID/u",
+          "Trim/y",
+          "Dist/y"
+        ]
+      }
+    ]
+  }
 }

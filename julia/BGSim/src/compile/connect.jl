@@ -16,11 +16,12 @@
 # attached port's `e`/`f`, and the junction's `n` constraints (plan 5.4) are the connection
 # equations. That accounting is what makes the fixture counts balance (see the WP report).
 
-"""    ConnState(conn, from, to, valid, domain, factor)
+"""    ConnState(conn, from, to, valid, domain, factor, diagram)
 
 One connection with its resolved endpoints. `valid` is cleared by any E102 (or by a domain
 conflict found in `domains.jl`); `domain` is the adopted power domain; `factor` is the unit
-conversion inserted by the compiler (1.0 when none)."""
+conversion inserted by the compiler (1.0 when none); `diagram` is the path of the (sub)diagram
+the connection belongs to ("" at the root): connection ids are unique only within one diagram."""
 mutable struct ConnState
     conn::IR.ModelConnection
     from::RawEndpoint
@@ -28,6 +29,7 @@ mutable struct ConnState
     valid::Bool
     domain::Union{Symbol,Nothing}
     factor::Float64
+    diagram::String
 end
 
 """    WireGroup(ports, edges, domain, valid)
@@ -115,7 +117,7 @@ function classify_connections!(b::Builder)
     end
     sources = Dict{Tuple{String,Symbol},Int}()
     for (i, raw) in enumerate(b.raw)
-        state = ConnState(raw.conn, raw.from, raw.to, true, nothing, 1.0)
+        state = ConnState(raw.conn, raw.from, raw.to, true, nothing, 1.0, raw.diagram)
         push!(states, state)
         _classify_one!(b, state, i, attempts, bond_attempts, sources)
     end

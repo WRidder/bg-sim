@@ -1,0 +1,925 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "cantilever-sections",
+  "parameters": [
+    {
+      "name": "E",
+      "value": "210000000000.0",
+      "unit": "Pa",
+      "description": "Young's modulus (steel)"
+    },
+    {
+      "name": "rho",
+      "value": "7850.0",
+      "unit": "kg/m^3",
+      "description": "Density (steel)"
+    },
+    {
+      "name": "fy",
+      "value": "235000000.0",
+      "unit": "Pa",
+      "description": "Yield strength (S235)"
+    },
+    {
+      "name": "L",
+      "value": "2.0",
+      "unit": "m",
+      "description": "Length of every beam, wall to tip"
+    },
+    {
+      "name": "zeta",
+      "value": "0.02",
+      "unit": null,
+      "description": "Modal damping ratio, every mode of every beam"
+    },
+    {
+      "name": "g0",
+      "value": "0.0",
+      "unit": "m/s^2",
+      "description": "Gravity on the beams' own weight (0: tip force only; 9.81 adds the weight)"
+    },
+    {
+      "name": "Pi",
+      "value": "3.141592653589793",
+      "unit": null,
+      "description": "pi (a global expression cannot use the built-in constant)"
+    },
+    {
+      "name": "h",
+      "value": "0.1",
+      "unit": "m",
+      "description": "IPE 100: height"
+    },
+    {
+      "name": "b",
+      "value": "0.055",
+      "unit": "m",
+      "description": "IPE 100: flange width"
+    },
+    {
+      "name": "tw",
+      "value": "0.0041",
+      "unit": "m",
+      "description": "IPE 100: web thickness"
+    },
+    {
+      "name": "tf",
+      "value": "0.0057",
+      "unit": "m",
+      "description": "IPE 100: flange thickness"
+    },
+    {
+      "name": "A_ipe",
+      "value": "2*b*tf + (h - 2*tf)*tw",
+      "unit": "m^2",
+      "description": "I-beam area (no root fillets)"
+    },
+    {
+      "name": "I_ipe",
+      "value": "(b*h^3 - (b - tw)*(h - 2*tf)^3)/12",
+      "unit": "m^4",
+      "description": "I-beam second moment, strong axis"
+    },
+    {
+      "name": "d_rod",
+      "value": "sqrt(4*A_ipe/Pi)",
+      "unit": "m",
+      "description": "Round bar diameter: the I-beam's area"
+    },
+    {
+      "name": "A_rod",
+      "value": "Pi*d_rod^2/4",
+      "unit": "m^2",
+      "description": "Round bar area"
+    },
+    {
+      "name": "I_rod",
+      "value": "Pi*d_rod^4/64",
+      "unit": "m^4",
+      "description": "Round bar second moment"
+    },
+    {
+      "name": "a_sq",
+      "value": "sqrt(A_ipe)",
+      "unit": "m",
+      "description": "Square bar side: the I-beam's area"
+    },
+    {
+      "name": "A_sq",
+      "value": "a_sq^2",
+      "unit": "m^2",
+      "description": "Square bar area"
+    },
+    {
+      "name": "I_sq",
+      "value": "a_sq^4/12",
+      "unit": "m^4",
+      "description": "Square bar second moment"
+    }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Load",
+        "block": {
+          "ref": "project:TipLoad"
+        },
+        "position": {
+          "x": 40,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "FRound",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 300,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "Round",
+        "block": {
+          "ref": "project:ModalCantilever"
+        },
+        "position": {
+          "x": 560,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L": "L",
+          "E": "E",
+          "rho": "rho",
+          "A": "A_rod",
+          "I": "I_rod",
+          "c": "d_rod/2",
+          "fy": "fy",
+          "zeta": "zeta",
+          "g0": "g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "FSquare",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 300,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "Square",
+        "block": {
+          "ref": "project:ModalCantilever"
+        },
+        "position": {
+          "x": 560,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L": "L",
+          "E": "E",
+          "rho": "rho",
+          "A": "A_sq",
+          "I": "I_sq",
+          "c": "a_sq/2",
+          "fy": "fy",
+          "zeta": "zeta",
+          "g0": "g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "FIPE",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 300,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "IPE",
+        "block": {
+          "ref": "project:ModalCantilever"
+        },
+        "position": {
+          "x": 560,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L": "L",
+          "E": "E",
+          "rho": "rho",
+          "A": "A_ipe",
+          "I": "I_ipe",
+          "c": "h/2",
+          "fy": "fy",
+          "zeta": "zeta",
+          "g0": "g0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c10",
+        "kind": "signal",
+        "from": {
+          "node": "n1",
+          "port": "F"
+        },
+        "to": {
+          "node": "n10",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c20",
+        "kind": "bond",
+        "from": {
+          "node": "n10",
+          "port": "p"
+        },
+        "to": {
+          "node": "n20",
+          "port": "tip"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c11",
+        "kind": "signal",
+        "from": {
+          "node": "n1",
+          "port": "F"
+        },
+        "to": {
+          "node": "n11",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c21",
+        "kind": "bond",
+        "from": {
+          "node": "n11",
+          "port": "p"
+        },
+        "to": {
+          "node": "n21",
+          "port": "tip"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c12",
+        "kind": "signal",
+        "from": {
+          "node": "n1",
+          "port": "F"
+        },
+        "to": {
+          "node": "n12",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c22",
+        "kind": "bond",
+        "from": {
+          "node": "n12",
+          "port": "p"
+        },
+        "to": {
+          "node": "n22",
+          "port": "tip"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 10.0,
+    "solver": "auto",
+    "reltol": 1e-08,
+    "abstol": 1e-11,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 10001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Tip deflection (mm, down)",
+      "signals": [
+        "Round/w_mm",
+        "Square/w_mm",
+        "IPE/w_mm"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Bending stress at the wall (MPa)",
+      "signals": [
+        "Round/sigma_MPa",
+        "Square/sigma_MPa",
+        "IPE/sigma_MPa"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Utilisation |sigma| / fy",
+      "signals": [
+        "Round/util",
+        "Square/util",
+        "IPE/util"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Root bending moment (N m) and tip force (N)",
+      "signals": [
+        "Round/M",
+        "Square/M",
+        "IPE/M",
+        "Load/F"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/cantilever-sections.sdf",
+    "exaggeration": 10
+  },
+  "bindings": [
+    {
+      "target": "visual:round_bar",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": {
+        "axis": "+z",
+        "y": "+x"
+      },
+      "signal": [
+        "Round/eta[1]",
+        "Round/eta[2]",
+        "Round/eta[3]"
+      ],
+      "strain": {
+        "colormap": "coolwarm",
+        "range": [
+          -0.0011190476190476191,
+          0.0011190476190476191
+        ]
+      }
+    },
+    {
+      "target": "visual:square_bar",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": {
+        "axis": "+x",
+        "y": "-z"
+      },
+      "signal": [
+        "Square/eta[1]",
+        "Square/eta[2]",
+        "Square/eta[3]"
+      ],
+      "strain": {
+        "colormap": "coolwarm",
+        "range": [
+          -0.0011190476190476191,
+          0.0011190476190476191
+        ]
+      }
+    },
+    {
+      "target": "visual:ipe_top",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": {
+        "axis": "+x",
+        "y": "-z",
+        "neutral": [
+          0.047150000000000004,
+          0
+        ]
+      },
+      "signal": [
+        "IPE/eta[1]",
+        "IPE/eta[2]",
+        "IPE/eta[3]"
+      ],
+      "strain": {
+        "colormap": "coolwarm",
+        "range": [
+          -0.0011190476190476191,
+          0.0011190476190476191
+        ]
+      }
+    },
+    {
+      "target": "visual:ipe_web",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": {
+        "axis": "+x",
+        "y": "-z"
+      },
+      "signal": [
+        "IPE/eta[1]",
+        "IPE/eta[2]",
+        "IPE/eta[3]"
+      ],
+      "strain": {
+        "colormap": "coolwarm",
+        "range": [
+          -0.0011190476190476191,
+          0.0011190476190476191
+        ]
+      }
+    },
+    {
+      "target": "visual:ipe_bottom",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": {
+        "axis": "+x",
+        "y": "-z",
+        "neutral": [
+          -0.047150000000000004,
+          0
+        ]
+      },
+      "signal": [
+        "IPE/eta[1]",
+        "IPE/eta[2]",
+        "IPE/eta[3]"
+      ],
+      "strain": {
+        "colormap": "coolwarm",
+        "range": [
+          -0.0011190476190476191,
+          0.0011190476190476191
+        ]
+      }
+    }
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "intro",
+        "kind": "text",
+        "size": "2x2",
+        "title": "Same mass, three sections",
+        "options": {
+          "markdown": true,
+          "text": "Three **2 m steel cantilevers of the same mass per metre** (7.77 kg/m): a round bar, a square bar and an **IPE 100** on its strong axis. One tip force pushes all three down. Pick the **load**, press **Run**, and open the **3D View**: the beams are coloured by the bending stress of their outer fibre (grey 0, dark red at the yield stress 235 MPa). The 3D deflection is drawn **x10 (exaggerated)** by default; pick x1 in the view for true scale.\n\nFirst eigenfrequencies: round 6.42 Hz, square 6.57 Hz, IPE 29.4 Hz. A sine at the round bar's frequency (the default 6.42 Hz) shows resonance."
+        }
+      },
+      {
+        "id": "mode",
+        "kind": "select",
+        "size": "2x1",
+        "title": "Load",
+        "parameter": "Load/mode"
+      },
+      {
+        "id": "F0",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Constant force F0 (down)",
+        "parameter": "Load/F0",
+        "options": {
+          "min": 0.0,
+          "max": 1000.0,
+          "step": 10.0,
+          "decimals": 0,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "t_ramp",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Ramp time (0: step)",
+        "parameter": "Load/t_ramp",
+        "options": {
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "Fa",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Sine amplitude",
+        "parameter": "Load/Fa",
+        "options": {
+          "min": 0.0,
+          "max": 100.0,
+          "step": 1.0,
+          "decimals": 0,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "f",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Sine frequency",
+        "parameter": "Load/f",
+        "options": {
+          "min": 0.5,
+          "max": 60.0,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": "Hz"
+        }
+      },
+      {
+        "id": "zeta",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Damping ratio",
+        "parameter": "global:zeta",
+        "options": {
+          "min": 0.002,
+          "max": 0.1,
+          "step": 0.002,
+          "decimals": 3,
+          "unit": ""
+        }
+      },
+      {
+        "id": "g0",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Own weight (0 off, 9.81 on)",
+        "parameter": "global:g0",
+        "options": {
+          "min": 0.0,
+          "max": 9.81,
+          "step": 9.81,
+          "decimals": 2,
+          "unit": "m/s²"
+        }
+      },
+      {
+        "id": "w_round",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Tip deflection, round bar",
+        "signals": [
+          "Round/w_mm"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "mm",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "w_square",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Tip deflection, square bar",
+        "signals": [
+          "Square/w_mm"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "mm",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "w_ipe",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Tip deflection, IPE 100",
+        "signals": [
+          "IPE/w_mm"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "mm",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "force",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Tip force (down)",
+        "signals": [
+          "Load/F"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "N",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "s_round",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Root stress, round bar",
+        "signals": [
+          "Round/sigma_MPa"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "MPa",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "s_square",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Root stress, square bar",
+        "signals": [
+          "Square/sigma_MPa"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "MPa",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "s_ipe",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Root stress, IPE 100",
+        "signals": [
+          "IPE/sigma_MPa"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "MPa",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "spacer_m",
+        "kind": "text",
+        "size": "1x1",
+        "title": "Root moment",
+        "options": {
+          "markdown": true,
+          "text": "Root bending moment `M` (N m) and stress `sigma` are from the equilibrium of the whole beam. **Utilisation** is |sigma| / fy: 1 is first yield at the wall."
+        }
+      },
+      {
+        "id": "u_round",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Utilisation, round bar",
+        "signals": [
+          "Round/util"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 1.2,
+          "decimals": 2,
+          "unit": "",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.6,
+              "tone": "good"
+            },
+            {
+              "from": 0.6,
+              "to": 1.0,
+              "tone": "warn"
+            },
+            {
+              "from": 1.0,
+              "to": 1.2,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "u_square",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Utilisation, square bar",
+        "signals": [
+          "Square/util"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 1.2,
+          "decimals": 2,
+          "unit": "",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.6,
+              "tone": "good"
+            },
+            {
+              "from": 0.6,
+              "to": 1.0,
+              "tone": "warn"
+            },
+            {
+              "from": 1.0,
+              "to": 1.2,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "u_ipe",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Utilisation, IPE 100",
+        "signals": [
+          "IPE/util"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 1.2,
+          "decimals": 2,
+          "unit": "",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.6,
+              "tone": "good"
+            },
+            {
+              "from": 0.6,
+              "to": 1.0,
+              "tone": "warn"
+            },
+            {
+              "from": 1.0,
+              "to": 1.2,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "M_ipe",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Root moment, IPE 100",
+        "signals": [
+          "IPE/M"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "N m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "p_w",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Tip deflection (mm, down)",
+        "signals": [
+          "Round/w_mm",
+          "Square/w_mm",
+          "IPE/w_mm"
+        ]
+      },
+      {
+        "id": "p_s",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Bending stress at the wall (MPa)",
+        "signals": [
+          "Round/sigma_MPa",
+          "Square/sigma_MPa",
+          "IPE/sigma_MPa"
+        ]
+      },
+      {
+        "id": "p_u",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Utilisation |sigma| / fy",
+        "signals": [
+          "Round/util",
+          "Square/util",
+          "IPE/util"
+        ]
+      },
+      {
+        "id": "p_f",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Tip force (N, down)",
+        "signals": [
+          "Load/F"
+        ]
+      }
+    ]
+  }
+}

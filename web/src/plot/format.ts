@@ -66,6 +66,11 @@ export function formatCursorTime(value: number | null | undefined): string {
     return "—";
   }
   const magnitude = Math.abs(value);
+  if (magnitude > 0 && magnitude < 0.01) {
+    // Runs of milli-, micro- or nanoseconds: "1.523 µs", not "0 s".
+    const [scale, unit] = magnitude >= 1e-3 ? [1e3, "ms"] : magnitude >= 1e-6 ? [1e6, "µs"] : [1e9, "ns"];
+    return `${trimZeros((value * scale).toPrecision(4))} ${unit}`;
+  }
   const digits = magnitude < 10 ? 3 : magnitude < 100 ? 2 : 1;
   return `${trimZeros(value.toFixed(digits))} s`;
 }
@@ -76,6 +81,10 @@ export function formatAxisTime(value: number): string {
     return "";
   }
   const magnitude = Math.abs(value);
+  if (magnitude > 0 && magnitude < 0.01) {
+    // Runs of microseconds or nanoseconds: 1.6e-6, not 0.
+    return Number(value.toPrecision(3)).toExponential();
+  }
   const digits =
     magnitude < 10 ? 3 : magnitude < 100 ? 2 : magnitude < 1000 ? 1 : 0;
   return trimZeros(value.toFixed(digits));

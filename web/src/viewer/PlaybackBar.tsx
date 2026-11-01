@@ -34,11 +34,12 @@ function canStartRun(): boolean {
 }
 
 /**
- * Play with nothing to play yet starts a run (as Run in the top bar); the view then follows it live.
- * Returns whether a run was started.
+ * Play with nothing to play yet starts a run (as Run in the top bar); the view follows it live and plays it
+ * from the start once it is done. Returns whether a run was started.
  */
-export function startRunFromPlayback(): boolean {
+export function startRunFromPlayback(playback: ViewerPlayback | null = null): boolean {
   if (!canStartRun()) return false;
+  playback?.playWhenDone();
   void useRunStore.getState().startRun();
   return true;
 }
@@ -53,7 +54,7 @@ export function playbackKeyHandler(playback: ViewerPlayback | null): (event: Key
     const el = event.target as HTMLElement;
     if (el.closest("button, input, select, textarea, a, [contenteditable=true]") !== null) return;
     event.preventDefault();
-    if (playback.snapshot().mode === "empty") startRunFromPlayback();
+    if (playback.snapshot().mode === "empty") startRunFromPlayback(playback);
     else playback.toggle();
   };
 }
@@ -82,7 +83,7 @@ export function PlaybackBar({ playback, snapshot, streamError, streamNote = null
   let note: string | null = null;
   if (streamError !== null) note = streamError;
   else if (!hasBindings) note = "No bindings yet. Open Bindings to connect a signal to the scene.";
-  else if (mode === "empty") note = "Press Play (or Run) to run the model and follow it in 3D.";
+  else if (mode === "empty") note = "Press Play to run the model: the view follows the run and plays it back when it is done.";
 
   return (
     <div
@@ -119,7 +120,7 @@ export function PlaybackBar({ playback, snapshot, streamError, streamNote = null
           data-runs={playRuns ? "true" : "false"}
           title={playRuns ? "Run the model and follow it in 3D (Space)" : undefined}
           onClick={() => {
-            if (playRuns) startRunFromPlayback();
+            if (playRuns) startRunFromPlayback(playback);
             else playback?.toggle();
           }}
         >

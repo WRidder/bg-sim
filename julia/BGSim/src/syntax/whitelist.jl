@@ -294,6 +294,42 @@ const COMPARISON_OPS =
 is_comparison_op(op::Symbol) = op in COMPARISON_OPS
 
 """
+The built-in numeric constants (SI; CODATA 2018 for the physical ones): the parser turns these
+names into literals, so they mean the same in every block, instance value and global
+parameter, and they cannot be declared. The table is `contracts/fixtures/constants/
+builtin_constants.json`; the web evaluator has the same one.
+"""
+const BUILTIN_CONSTANTS = Dict{Symbol,Float64}(
+    :pi => Float64(pi),
+    :π => Float64(pi),
+    :ℯ => Float64(ℯ),
+    :Inf => Inf,
+    :deg => Float64(pi) / 180,
+    :rpm => 2 * Float64(pi) / 60,
+    :g_n => 9.80665,
+    :c_0 => 299792458.0,
+    :G_grav => 6.6743e-11,
+    :h_P => 6.62607015e-34,
+    # Julia normalises the identifiers `ℏ` to `ħ` and `µ` (micro sign) to `μ`; both spellings
+    # stay in the table so it matches the web one, which sees what was typed.
+    :hbar => 6.62607015e-34 / (2 * Float64(pi)),
+    Symbol("ℏ") => 6.62607015e-34 / (2 * Float64(pi)),
+    Symbol("ħ") => 6.62607015e-34 / (2 * Float64(pi)),
+    :k_B => 1.380649e-23,
+    :N_A => 6.02214076e23,
+    :R_gas => 8.31446261815324,
+    :q_e => 1.602176634e-19,
+    :mu_0 => 1.25663706212e-6,
+    Symbol("μ₀") => 1.25663706212e-6,
+    Symbol("µ₀") => 1.25663706212e-6,
+    :eps_0 => 8.8541878128e-12,
+    Symbol("ε₀") => 8.8541878128e-12,
+    :sigma_SB => 5.670374419e-8,
+    :atm => 101325.0,
+    :T_0C => 273.15,
+)
+
+"""
 Names that are predefined in every block (spec table: `t` is readable in all scopes, `Ts`
 only in discrete scopes). The checker resolves them before declarations.
 """

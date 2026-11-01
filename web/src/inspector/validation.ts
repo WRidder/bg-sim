@@ -97,8 +97,9 @@ export function parameterIssue(
     return "The value must be a whole number.";
   }
   if (decl.options !== null) {
-    if (!Number.isInteger(number) || number < 1 || number > decl.options.length) {
-      return `Choose a number from 1 to ${decl.options.length}.`;
+    // an enumeration is zero-based, like every library block that declares one (`0 floor, 1 ceil, ...`)
+    if (!Number.isInteger(number) || number < 0 || number > decl.options.length - 1) {
+      return `Choose a number from 0 to ${decl.options.length - 1}.`;
     }
     return null;
   }

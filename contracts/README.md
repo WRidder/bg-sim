@@ -80,3 +80,13 @@ global parameters the copied values read with their dependency closure, docs ima
 source model (copied with `POST .../docs/<model>/assets/copy`) and CSV names of the source project's
 `data/` folder. `omitted` counts the bindings, probes, dashboard cards and plots that stay behind.
 The backend never sees an envelope; the Python model exists for parity and the fixture tests.
+
+XY plots: a model plot (`plots[]`) and a dashboard `plot` card share one shape for the axes. `x`
+names the signal on the horizontal axis; absent, the axis is time. With `x`, every signal in
+`signals` is drawn against it sample by sample (a phase portrait, a force-deflection loop), so `x`
+is not repeated in `signals`. `equalAspect: true` makes one unit as long on both axes; it is ignored
+without `x`, and the editor never writes `false`. The plot dock's panels carry the same `x` and
+`equalAspect` in memory (`PlotPanelState`), so opening a saved plot keeps its axes. Like the rest of
+`plots` and `dashboard` they are editor state: the Julia parser keeps `plots` as plain data and the
+compiler ignores them. `model.xy-plots.json` is the valid fixture; `model.plot-x-not-signal.json`,
+`model.dashboard-plot-bad-aspect.json` and `model.dashboard-plot-empty-x.json` are rejected.

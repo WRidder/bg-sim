@@ -1083,8 +1083,8 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "mean": "[0.4, -0.2, 0.0]",
-          "sigma": "0.5"
+          "mean": "[wind_x, wind_y, 0.0]",
+          "sigma": "wind_sigma"
         },
         "constants": {},
         "starts": {},
@@ -1109,7 +1109,9 @@
           "tau": "1.0"
         },
         "constants": {},
-        "starts": {},
+        "starts": {
+          "x": "[wind_x, wind_y, 0.0]"
+        },
         "ui": {
           "showLabel": true,
           "color": null
@@ -1409,6 +1411,31 @@
         "rotation": 0,
         "flipX": false,
         "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n61",
+        "name": "GustPulse",
+        "block": {
+          "ref": "project:GustPulse"
+        },
+        "position": {
+          "x": 400,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "A": "gust_speed",
+          "dir_deg": "gust_dir",
+          "t0": "gust_t",
+          "T": "gust_T"
+        },
         "constants": {},
         "starts": {},
         "ui": {
@@ -2584,20 +2611,6 @@
         "id": "s84",
         "kind": "signal",
         "from": {
-          "node": "n47",
-          "port": "y"
-        },
-        "to": {
-          "node": "n28",
-          "port": "wind"
-        },
-        "route": [],
-        "label": "wind velocity (world)"
-      },
-      {
-        "id": "s85",
-        "kind": "signal",
-        "from": {
           "node": "n15",
           "port": "f_n"
         },
@@ -2609,7 +2622,7 @@
         "label": null
       },
       {
-        "id": "s86",
+        "id": "s85",
         "kind": "signal",
         "from": {
           "node": "n19",
@@ -2623,7 +2636,7 @@
         "label": null
       },
       {
-        "id": "s87",
+        "id": "s86",
         "kind": "signal",
         "from": {
           "node": "n23",
@@ -2637,7 +2650,7 @@
         "label": null
       },
       {
-        "id": "s88",
+        "id": "s87",
         "kind": "signal",
         "from": {
           "node": "n27",
@@ -2651,7 +2664,7 @@
         "label": null
       },
       {
-        "id": "s89",
+        "id": "s88",
         "kind": "signal",
         "from": {
           "node": "n48",
@@ -2665,7 +2678,7 @@
         "label": "landing-gear normal forces"
       },
       {
-        "id": "s90",
+        "id": "s89",
         "kind": "signal",
         "from": {
           "node": "n02",
@@ -2679,7 +2692,7 @@
         "label": null
       },
       {
-        "id": "s91",
+        "id": "s90",
         "kind": "signal",
         "from": {
           "node": "n03",
@@ -2693,7 +2706,7 @@
         "label": null
       },
       {
-        "id": "s92",
+        "id": "s91",
         "kind": "signal",
         "from": {
           "node": "n49",
@@ -2707,7 +2720,7 @@
         "label": null
       },
       {
-        "id": "s93",
+        "id": "s92",
         "kind": "signal",
         "from": {
           "node": "n28",
@@ -2721,7 +2734,7 @@
         "label": "true specific force"
       },
       {
-        "id": "s94",
+        "id": "s93",
         "kind": "signal",
         "from": {
           "node": "n49",
@@ -2735,7 +2748,7 @@
         "label": null
       },
       {
-        "id": "s95",
+        "id": "s94",
         "kind": "signal",
         "from": {
           "node": "n49",
@@ -2749,7 +2762,7 @@
         "label": null
       },
       {
-        "id": "s96",
+        "id": "s95",
         "kind": "signal",
         "from": {
           "node": "n49",
@@ -2763,7 +2776,7 @@
         "label": null
       },
       {
-        "id": "s97",
+        "id": "s96",
         "kind": "signal",
         "from": {
           "node": "n53",
@@ -2777,7 +2790,7 @@
         "label": null
       },
       {
-        "id": "s98",
+        "id": "s97",
         "kind": "signal",
         "from": {
           "node": "n50",
@@ -2791,7 +2804,7 @@
         "label": null
       },
       {
-        "id": "s99",
+        "id": "s98",
         "kind": "signal",
         "from": {
           "node": "n50",
@@ -2805,7 +2818,7 @@
         "label": null
       },
       {
-        "id": "s100",
+        "id": "s99",
         "kind": "signal",
         "from": {
           "node": "n51",
@@ -2814,6 +2827,20 @@
         "to": {
           "node": "n52",
           "port": "pm"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s100",
+        "kind": "signal",
+        "from": {
+          "node": "n51",
+          "port": "vm"
+        },
+        "to": {
+          "node": "n52",
+          "port": "vm"
         },
         "route": [],
         "label": null
@@ -2823,11 +2850,11 @@
         "kind": "signal",
         "from": {
           "node": "n51",
-          "port": "vm"
+          "port": "psim"
         },
         "to": {
           "node": "n52",
-          "port": "vm"
+          "port": "psim"
         },
         "route": [],
         "label": null
@@ -2837,11 +2864,11 @@
         "kind": "signal",
         "from": {
           "node": "n51",
-          "port": "psim"
+          "port": "n"
         },
         "to": {
           "node": "n52",
-          "port": "psim"
+          "port": "n"
         },
         "route": [],
         "label": null
@@ -2850,12 +2877,12 @@
         "id": "s103",
         "kind": "signal",
         "from": {
-          "node": "n51",
-          "port": "n"
+          "node": "n54",
+          "port": "p_sp"
         },
         "to": {
-          "node": "n52",
-          "port": "n"
+          "node": "n55",
+          "port": "p_sp"
         },
         "route": [],
         "label": null
@@ -2865,11 +2892,11 @@
         "kind": "signal",
         "from": {
           "node": "n54",
-          "port": "p_sp"
+          "port": "v_sp"
         },
         "to": {
           "node": "n55",
-          "port": "p_sp"
+          "port": "v_sp"
         },
         "route": [],
         "label": null
@@ -2879,11 +2906,11 @@
         "kind": "signal",
         "from": {
           "node": "n54",
-          "port": "v_sp"
+          "port": "a_sp"
         },
         "to": {
           "node": "n55",
-          "port": "v_sp"
+          "port": "a_sp"
         },
         "route": [],
         "label": null
@@ -2893,11 +2920,11 @@
         "kind": "signal",
         "from": {
           "node": "n54",
-          "port": "a_sp"
+          "port": "psi_sp"
         },
         "to": {
           "node": "n55",
-          "port": "a_sp"
+          "port": "psi_sp"
         },
         "route": [],
         "label": null
@@ -2907,11 +2934,11 @@
         "kind": "signal",
         "from": {
           "node": "n54",
-          "port": "psi_sp"
+          "port": "armed"
         },
         "to": {
           "node": "n55",
-          "port": "psi_sp"
+          "port": "armed"
         },
         "route": [],
         "label": null
@@ -2924,7 +2951,7 @@
           "port": "armed"
         },
         "to": {
-          "node": "n55",
+          "node": "n57",
           "port": "armed"
         },
         "route": [],
@@ -2938,7 +2965,7 @@
           "port": "armed"
         },
         "to": {
-          "node": "n57",
+          "node": "n58",
           "port": "armed"
         },
         "route": [],
@@ -2948,12 +2975,12 @@
         "id": "s110",
         "kind": "signal",
         "from": {
-          "node": "n54",
-          "port": "armed"
+          "node": "n52",
+          "port": "p"
         },
         "to": {
-          "node": "n58",
-          "port": "armed"
+          "node": "n55",
+          "port": "p"
         },
         "route": [],
         "label": null
@@ -2963,11 +2990,11 @@
         "kind": "signal",
         "from": {
           "node": "n52",
-          "port": "p"
+          "port": "v"
         },
         "to": {
           "node": "n55",
-          "port": "p"
+          "port": "v"
         },
         "route": [],
         "label": null
@@ -2977,11 +3004,11 @@
         "kind": "signal",
         "from": {
           "node": "n52",
-          "port": "v"
+          "port": "q"
         },
         "to": {
           "node": "n55",
-          "port": "v"
+          "port": "q"
         },
         "route": [],
         "label": null
@@ -2994,7 +3021,7 @@
           "port": "q"
         },
         "to": {
-          "node": "n55",
+          "node": "n56",
           "port": "q"
         },
         "route": [],
@@ -3004,20 +3031,6 @@
         "id": "s114",
         "kind": "signal",
         "from": {
-          "node": "n52",
-          "port": "q"
-        },
-        "to": {
-          "node": "n56",
-          "port": "q"
-        },
-        "route": [],
-        "label": null
-      },
-      {
-        "id": "s115",
-        "kind": "signal",
-        "from": {
           "node": "n55",
           "port": "qd"
         },
@@ -3029,7 +3042,7 @@
         "label": null
       },
       {
-        "id": "s116",
+        "id": "s115",
         "kind": "signal",
         "from": {
           "node": "n54",
@@ -3043,7 +3056,7 @@
         "label": null
       },
       {
-        "id": "s117",
+        "id": "s116",
         "kind": "signal",
         "from": {
           "node": "n56",
@@ -3057,7 +3070,7 @@
         "label": null
       },
       {
-        "id": "s118",
+        "id": "s117",
         "kind": "signal",
         "from": {
           "node": "n52",
@@ -3071,7 +3084,7 @@
         "label": null
       },
       {
-        "id": "s119",
+        "id": "s118",
         "kind": "signal",
         "from": {
           "node": "n55",
@@ -3085,7 +3098,7 @@
         "label": null
       },
       {
-        "id": "s120",
+        "id": "s119",
         "kind": "signal",
         "from": {
           "node": "n57",
@@ -3099,7 +3112,7 @@
         "label": null
       },
       {
-        "id": "s121",
+        "id": "s120",
         "kind": "signal",
         "from": {
           "node": "n58",
@@ -3113,7 +3126,7 @@
         "label": null
       },
       {
-        "id": "s122",
+        "id": "s121",
         "kind": "signal",
         "from": {
           "node": "n59",
@@ -3127,7 +3140,7 @@
         "label": null
       },
       {
-        "id": "s123",
+        "id": "s122",
         "kind": "signal",
         "from": {
           "node": "n59",
@@ -3141,7 +3154,7 @@
         "label": null
       },
       {
-        "id": "s124",
+        "id": "s123",
         "kind": "signal",
         "from": {
           "node": "n59",
@@ -3155,7 +3168,7 @@
         "label": null
       },
       {
-        "id": "s125",
+        "id": "s124",
         "kind": "signal",
         "from": {
           "node": "n59",
@@ -3169,7 +3182,7 @@
         "label": null
       },
       {
-        "id": "s126",
+        "id": "s125",
         "kind": "signal",
         "from": {
           "node": "n52",
@@ -3183,7 +3196,7 @@
         "label": null
       },
       {
-        "id": "s127",
+        "id": "s126",
         "kind": "signal",
         "from": {
           "node": "n52",
@@ -3197,7 +3210,7 @@
         "label": null
       },
       {
-        "id": "s128",
+        "id": "s127",
         "kind": "signal",
         "from": {
           "node": "n52",
@@ -3211,7 +3224,7 @@
         "label": null
       },
       {
-        "id": "s129",
+        "id": "s128",
         "kind": "signal",
         "from": {
           "node": "n49",
@@ -3225,7 +3238,7 @@
         "label": null
       },
       {
-        "id": "s130",
+        "id": "s129",
         "kind": "signal",
         "from": {
           "node": "n49",
@@ -3239,7 +3252,7 @@
         "label": null
       },
       {
-        "id": "s131",
+        "id": "s130",
         "kind": "signal",
         "from": {
           "node": "n49",
@@ -3253,7 +3266,7 @@
         "label": null
       },
       {
-        "id": "s132",
+        "id": "s131",
         "kind": "signal",
         "from": {
           "node": "n54",
@@ -3265,6 +3278,34 @@
         },
         "route": [],
         "label": null
+      },
+      {
+        "id": "s132",
+        "kind": "signal",
+        "from": {
+          "node": "n47",
+          "port": "y"
+        },
+        "to": {
+          "node": "n61",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s133",
+        "kind": "signal",
+        "from": {
+          "node": "n61",
+          "port": "y"
+        },
+        "to": {
+          "node": "n28",
+          "port": "wind"
+        },
+        "route": [],
+        "label": "wind velocity (world)"
       }
     ],
     "subsystemPorts": [],
@@ -3367,6 +3408,15 @@
         "Leg3/f_n",
         "Leg4/f_n"
       ]
+    },
+    {
+      "id": "p10",
+      "title": "Wind at the airframe (m/s): x, y and the discrete gust",
+      "signals": [
+        "GustPulse/y[1]",
+        "GustPulse/y[2]",
+        "GustPulse/g"
+      ]
     }
   ],
   "scene": {
@@ -3413,6 +3463,347 @@
       "signal": "Drv4/rotor/phi",
       "gain": -1.0,
       "offset": 0.0
+    },
+    {
+      "target": "joint:wind_vane",
+      "property": "position",
+      "signal": "GustPulse/heading"
+    },
+    {
+      "target": "visual:vane_arrow",
+      "property": "color",
+      "signal": "GustPulse/speed",
+      "colormap": "heat",
+      "range": [
+        0.0,
+        8.0
+      ]
     }
-  ]
+  ],
+  "parameters": [
+    {
+      "name": "wind_x",
+      "value": "0.4",
+      "unit": "m/s",
+      "description": "Mean wind, world x (the wind blows towards +x)"
+    },
+    {
+      "name": "wind_y",
+      "value": "-0.2",
+      "unit": "m/s",
+      "description": "Mean wind, world y"
+    },
+    {
+      "name": "wind_sigma",
+      "value": "0.5",
+      "unit": "m/s",
+      "description": "Turbulence: standard deviation of the Gaussian gusts (a new one every 0.5 s, 1 s lag)"
+    },
+    {
+      "name": "gust_speed",
+      "value": "0.0",
+      "unit": "m/s",
+      "description": "Peak speed of the discrete 1-cos gust (0: off)"
+    },
+    {
+      "name": "gust_dir",
+      "value": "90.0",
+      "unit": "deg",
+      "description": "Direction the gust blows towards (world, from +x; 90 = +y)"
+    },
+    {
+      "name": "gust_t",
+      "value": "6.0",
+      "unit": "s",
+      "description": "Start of the gust"
+    },
+    {
+      "name": "gust_T",
+      "value": "2.0",
+      "unit": "s",
+      "description": "Duration of the gust"
+    }
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "intro",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Quadcopter in the wind",
+        "options": {
+          "markdown": true,
+          "text": "The wind drags on the airframe: a **mean wind**, **turbulence** (Gaussian gusts) and a **discrete gust** (1-cos, off at 0 m/s). Press **Run** after a change: the 18 s mission takes about a minute."
+        }
+      },
+      {
+        "id": "wind_x",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Mean wind x",
+        "parameter": "global:wind_x",
+        "options": {
+          "min": -5.0,
+          "max": 5.0,
+          "step": 0.1,
+          "decimals": 1,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "wind_y",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Mean wind y",
+        "parameter": "global:wind_y",
+        "options": {
+          "min": -5.0,
+          "max": 5.0,
+          "step": 0.1,
+          "decimals": 1,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "sigma",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Turbulence",
+        "parameter": "global:wind_sigma",
+        "options": {
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "gust",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Gust peak",
+        "parameter": "global:gust_speed",
+        "options": {
+          "min": 0.0,
+          "max": 8.0,
+          "step": 0.25,
+          "decimals": 2,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "gust_dir",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Gust towards",
+        "parameter": "global:gust_dir",
+        "options": {
+          "min": -180.0,
+          "max": 180.0,
+          "step": 5.0,
+          "decimals": 0,
+          "unit": "deg"
+        }
+      },
+      {
+        "id": "gust_t",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Gust at",
+        "parameter": "global:gust_t",
+        "options": {
+          "min": 1.0,
+          "max": 16.0,
+          "step": 0.25,
+          "decimals": 2,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "gust_T",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Gust duration",
+        "parameter": "global:gust_T",
+        "options": {
+          "min": 0.25,
+          "max": 5.0,
+          "step": 0.25,
+          "decimals": 2,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "wind_speed",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Wind speed",
+        "signals": [
+          "GustPulse/speed"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "m/s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "track",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Distance to the set-point",
+        "signals": [
+          "Err/track"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "tilt",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Tilt (limit 25 deg)",
+        "signals": [
+          "Truth/tilt"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 0.5,
+          "decimals": 3,
+          "unit": "rad",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.35,
+              "tone": "good"
+            },
+            {
+              "from": 0.35,
+              "to": 0.436,
+              "tone": "warn"
+            },
+            {
+              "from": 0.436,
+              "to": 0.5,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "alt",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Altitude",
+        "signals": [
+          "Truth/z"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "rotor",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Rotor 1 speed",
+        "signals": [
+          "Drv1/rotor/w"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 800.0,
+          "decimals": 0,
+          "unit": "rad/s",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 700.0,
+              "tone": "good"
+            },
+            {
+              "from": 700.0,
+              "to": 775.0,
+              "tone": "warn"
+            },
+            {
+              "from": 775.0,
+              "to": 800.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "current",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Battery current",
+        "signals": [
+          "Bat/I"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "A",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "soc",
+        "kind": "value",
+        "size": "1x1",
+        "title": "State of charge",
+        "signals": [
+          "Bat/soc"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": "",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "plot_wind",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Wind at the airframe (m/s)",
+        "signals": [
+          "GustPulse/y[1]",
+          "GustPulse/y[2]",
+          "GustPulse/g"
+        ]
+      },
+      {
+        "id": "plot_pos",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Position and set-point (m)",
+        "signals": [
+          "Truth/x",
+          "Truth/y",
+          "Truth/z",
+          "Mission/p_sp[1]",
+          "Mission/p_sp[2]",
+          "Mission/p_sp[3]"
+        ]
+      },
+      {
+        "id": "plot_err",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Distance to the set-point (m) and tilt (rad)",
+        "signals": [
+          "Err/track",
+          "Truth/tilt"
+        ]
+      }
+    ]
+  }
 }

@@ -159,7 +159,7 @@ export function useViewerPlayback(
     const end = ({ ok, reason }: StreamEnd) => {
       setStreaming(false);
       if (ok) {
-        if (isLive) playback.finishLive();
+        playback.complete();
       } else {
         setStreamError(reason);
       }
@@ -195,7 +195,7 @@ export function useViewerPlayback(
   }, [playback, streamRun, ids, idsKey, httpRun]);
 
   const idle = useMemo<PlaybackSnapshot>(
-    () => ({ mode: "empty", playing: false, time: null, start: 0, end: 0, speed: 1, loop: false, applied: {}, pauseTime: null }),
+    () => ({ mode: "empty", playing: false, time: null, start: 0, end: 0, speed: 1, loop: true, applied: {}, pauseTime: null }),
     [],
   );
   const snapshot = useSyncExternalStore(

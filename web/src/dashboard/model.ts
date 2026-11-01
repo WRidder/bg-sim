@@ -41,7 +41,7 @@ export interface CardKindInfo {
 }
 
 export const CARD_KINDS: readonly CardKindInfo[] = [
-  { kind: "plot", label: "Plot", role: "display", size: "4x2", description: "Signals over time, with the shared cursor." },
+  { kind: "plot", label: "Plot", role: "display", size: "4x2", description: "Signals over time, or against another signal (XY), with the shared cursor." },
   { kind: "value", label: "Value", role: "display", size: "1x1", description: "A big number with its unit and an optional sparkline." },
   { kind: "gauge", label: "Gauge", role: "display", size: "2x2", description: "A dial between min and max with colour zones." },
   { kind: "bar", label: "Bar", role: "display", size: "1x2", description: "A linear scale, e.g. a tank level." },
@@ -644,15 +644,28 @@ export function dashboardOverrideOf(
   return null;
 }
 
-/** Display signals of every card, for the run store's data subscription. */
+/** Display signals of every card (a plot card's x included), for the run store's data subscription. */
 export function dashboardSignalIds(dashboard: ModelDashboard | undefined): string[] {
   const out: string[] = [];
   for (const card of dashboard?.cards ?? []) {
     if (isDisplayKind(card.kind)) {
+      if (card.kind === "plot" && card.x !== undefined) {
+        out.push(card.x);
+      }
       out.push(...(card.signals ?? []));
     }
   }
   return [...new Set(out)];
+}
+
+/** True when a plot card draws against a signal (`x`, an XY plot) instead of time. */
+export function isXYCard(card: ModelDashboardCard): boolean {
+  return card.kind === "plot" && card.x !== undefined && card.x.length > 0;
+}
+
+/** True when the dashboard has an XY plot card (the run store then requests whole rows). */
+export function dashboardHasXY(dashboard: ModelDashboard | undefined): boolean {
+  return (dashboard?.cards ?? []).some(isXYCard);
 }
 
 // ----------------------------------------------------------- value at a time

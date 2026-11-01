@@ -406,6 +406,109 @@
           "value": 60.0
         }
       ]
+    },
+    "maglev-current-driven-disturbance": {
+      "model": "maglev-current-driven",
+      "overrides": [
+        {
+          "target": "global:F_dist",
+          "value": 0.05
+        }
+      ],
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Dist/y",
+          "t": 1.0,
+          "value": 0.05,
+          "abs": 1e-12,
+          "note": "the dashboard's disturbance: 0.05 N downward (a quarter of the weight) from t_dist = 0.9 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Dist/y",
+          "t": 0.85,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "off before t_dist"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ball/h",
+          "from_t": 0.9,
+          "to_t": 1.4,
+          "value": 0.189206957839,
+          "rtol": 0.0001,
+          "note": "the push opens the gap (positive downward) by 1.7 mm"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "PID/e",
+          "from_t": 0.9,
+          "to_t": 1.4,
+          "value": 0.00172060054553,
+          "rtol": 0.001,
+          "note": "peak control error"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ball/h",
+          "t": 1.4,
+          "value": 0.1875,
+          "abs": 0.0001,
+          "note": "integral action returns the ball to the setpoint (0.05 mm left at 1.4 s)"
+        }
+      ]
+    },
+    "maglev-bondgraph-disturbance": {
+      "model": "maglev-bondgraph",
+      "settings": {
+        "t_end": 3.0,
+        "output": {
+          "points": 6001
+        }
+      },
+      "overrides": [
+        {
+          "target": "global:F_dist",
+          "value": 0.05
+        },
+        {
+          "target": "IR/Noise/std",
+          "value": 0.0
+        },
+        {
+          "target": "IR/ADC/bits",
+          "value": 52
+        }
+      ],
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "DistSig/y",
+          "t": 1.0,
+          "value": 0.05,
+          "abs": 1e-12,
+          "note": "the disturbance enters through its own effort source on the ball's 1-junction"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "BallPos/y",
+          "from_t": 0.9,
+          "to_t": 1.4,
+          "value": 0.19086365699,
+          "rtol": 0.0001,
+          "note": "the push opens the gap by 3.4 mm (softer gains than the current-driven loop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BallPos/y",
+          "t": 3.0,
+          "value": 0.1875,
+          "abs": 0.0001,
+          "note": "integral action has returned the ball to the setpoint"
+        }
+      ]
     }
   },
   "compare": [

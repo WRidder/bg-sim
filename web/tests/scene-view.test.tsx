@@ -103,14 +103,17 @@ describe("SceneView", () => {
     const canvas = screen.getByTestId("viewer-canvas");
     const pointer = (type: string): Event =>
       Object.assign(new Event(type, { bubbles: true, cancelable: true }), { pointerId: 1, button: 0, offsetX: 32, offsetY: 32 });
-    // the fit view looks at the middle of the scene: the nearest entity centre within the touch radius is picked
-    act(() => {
-      canvas.dispatchEvent(pointer("pointerdown"));
-      canvas.dispatchEvent(pointer("pointerup"));
+    // the fit view looks at the middle of the scene: the nearest entity centre within the touch radius is picked.
+    // Under load the view may not be framed yet when "loaded" is set, so the tap is repeated until it picks.
+    await waitFor(() => {
+      act(() => {
+        canvas.dispatchEvent(pointer("pointerdown"));
+        canvas.dispatchEvent(pointer("pointerup"));
+      });
+      const pressed = screen.queryAllByRole("button", { pressed: true }).filter((b) => b.getAttribute("data-testid")?.startsWith("scene-tree-row-visual:"));
+      expect(pressed).toHaveLength(1);
+      expect(pressed[0]?.getAttribute("data-testid")).toMatch(/^scene-tree-row-visual:/);
     });
-    const pressed = screen.queryAllByRole("button", { pressed: true }).filter((b) => b.getAttribute("data-testid")?.startsWith("scene-tree-row-visual:"));
-    expect(pressed).toHaveLength(1);
-    expect(pressed[0]?.getAttribute("data-testid")).toMatch(/^scene-tree-row-visual:/);
   });
 
   it("collapses the tree and its branches", async () => {

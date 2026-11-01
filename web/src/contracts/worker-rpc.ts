@@ -591,7 +591,18 @@ export interface ModelOutputInterval {
 export interface ModelPlot {
   id: string;
   title: string;
+  /**
+   * The plotted signals: against time, or against `x` when it is set.
+   */
   signals: string[];
+  /**
+   * XY plot: the signal on the horizontal axis; every signal in `signals` is drawn against it, sample by sample (a phase portrait, a Lissajous figure, a force-deflection loop). Absent: time.
+   */
+  x?: string;
+  /**
+   * XY plot: one unit on the x axis is as long as one unit on the y axis (a circle stays round). Absent: false. Ignored without `x`.
+   */
+  equalAspect?: boolean;
   $comment?: string;
 }
 export interface JointPositionBinding {
@@ -678,10 +689,17 @@ export interface BeamMapping {
    * Beam length L in m: the mode shapes run over s = 0..L from end A. Default: the extent of the shape along `axis`. Parts of the shape beyond L move rigidly with the section at L.
    */
   length?: number;
+  /**
+   * Where the neutral axis of the bending lies, as [y, z] in m along the beam y and z axes from the centre line of the shape (default [0, 0]: the shape bends about its own centre line). For a shape that is one part of a built-up section, such as a flange of an I-beam drawn as its own box: the sections of the shape then turn about the neutral axis of the whole section, and the outer fibre of its strain colouring is the point of the shape farthest from that axis (|y| + half the size along beam y, and the same along z).
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  neutral?: [number, number];
   $comment?: string;
 }
 /**
- * Colours the visual by the bending strain magnitude along the beam, c * |w''(s)|, with c the distance of the outer fibre from the neutral axis (half the box size across the beam, or the cylinder radius), over the bending families of the visual. Uses the true deformation, never the exaggerated one. `range` is in strain (dimensionless, e.g. [0, 0.001]).
+ * Colours the visual by the bending strain magnitude along the beam, c * |w''(s)|, with c the distance of the outer fibre from the neutral axis (half the box size across the beam, or the cylinder radius, plus the offset of the beam mapping's `neutral` axis), over the bending families of the visual. Uses the true deformation, never the exaggerated one. `range` is in strain (dimensionless, e.g. [0, 0.001]).
  */
 export interface StrainColor {
   colormap: Colormap;
@@ -777,6 +795,14 @@ export interface ModelDashboardCard {
    * Display cards: the bound signal ids (a plot may have several, the other display cards use the first).
    */
   signals?: string[];
+  /**
+   * Plot cards: the signal on the horizontal axis, as `x` of a model plot (an XY plot of every bound signal against it). Absent: time.
+   */
+  x?: string;
+  /**
+   * Plot cards with `x`: equal units per pixel on both axes, as `equalAspect` of a model plot. Absent: false.
+   */
+  equalAspect?: boolean;
   /**
    * Input cards: the bound parameter, a block parameter <instance path>/<param> or a global parameter global:<name> (number, slider and knob cards).
    */

@@ -20,6 +20,7 @@ import { useDocumentStore } from "../state/documentStore";
 import { formatDuration, formatProgress } from "../plot/format";
 import { useRunStore } from "../plot/runStore";
 import {
+  formatSettingNumber,
   isValidEndTime,
   isValidTolerance,
   parseFiniteNumber,
@@ -80,8 +81,8 @@ export function RunBar() {
     if (settings === null) {
       return;
     }
-    setEndDraft(String(settings.t_end));
-    setTolDraft(String(settings.reltol));
+    setEndDraft(formatSettingNumber(settings.t_end));
+    setTolDraft(formatSettingNumber(settings.reltol));
     setEndInvalid(false);
     setTolInvalid(false);
   }, [settings?.t_end, settings?.reltol]);
@@ -124,7 +125,7 @@ export function RunBar() {
       return;
     }
     if (updateModelSettings({ t_end: value })) {
-      setEndDraft(String(value));
+      setEndDraft(formatSettingNumber(value));
       setEndInvalid(false);
     } else {
       setEndInvalid(true);
@@ -138,7 +139,7 @@ export function RunBar() {
       return;
     }
     if (updateModelSettings({ reltol: value })) {
-      setTolDraft(String(value));
+      setTolDraft(formatSettingNumber(value));
       setTolInvalid(false);
     } else {
       setTolInvalid(true);
@@ -149,8 +150,8 @@ export function RunBar() {
     if (settings === null) {
       return;
     }
-    setEndDraft(String(settings.t_end));
-    setTolDraft(String(settings.reltol));
+    setEndDraft(formatSettingNumber(settings.t_end));
+    setTolDraft(formatSettingNumber(settings.reltol));
     setEndInvalid(false);
     setTolInvalid(false);
   };

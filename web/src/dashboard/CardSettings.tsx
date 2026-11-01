@@ -16,11 +16,13 @@ import type {
 import type { RunSignal } from "../contracts/run-manifest";
 import { parseLiveValue } from "../inspector/liveEdit";
 import {
+  setCardEqualAspect,
   setCardOptions,
   setCardParameter,
   setCardSignals,
   setCardSize,
   setCardTitle,
+  setCardX,
 } from "./actions";
 import {
   CARD_SIZES,
@@ -180,6 +182,75 @@ function SignalPicker({
           ))}
         </ul>
       )}
+    </fieldset>
+  );
+}
+
+/** Plot cards: the x axis (time or a signal, an XY plot) and the equal-aspect switch. */
+function PlotAxisSettings({
+  card,
+  signals,
+}: {
+  card: ModelDashboardCard;
+  signals: readonly RunSignal[];
+}) {
+  const bound = card.signals ?? [];
+  const own = card.x === undefined ? bound : [card.x, ...bound.filter((id) => id !== card.x)];
+  const others = signals.filter((signal) => !own.includes(signal.id));
+  const unitOf = (id: string): string => {
+    const unit = signals.find((signal) => signal.id === id)?.unit?.trim() ?? "";
+    return unit.length > 0 ? `${id} [${unit}]` : id;
+  };
+  const selectId = `${card.id}-x-axis`;
+  return (
+    <fieldset className="dash-settings__group">
+      <legend>X axis</legend>
+      <div className="dash-settings__row">
+        <div className="dash-settings__field">
+          <label htmlFor={selectId}>Plot against</label>
+          <select
+            id={selectId}
+            value={card.x ?? ""}
+            data-testid="dash-settings-x"
+            onChange={(event) => setCardX(card.id, event.target.value === "" ? null : event.target.value)}
+          >
+            <option value="">Time (t)</option>
+            {own.length > 0 ? (
+              <optgroup label="Signals of this card">
+                {own.map((id) => (
+                  <option key={id} value={id}>
+                    {unitOf(id)}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
+            {others.length > 0 ? (
+              <optgroup label="Other signals">
+                {others.map((signal) => (
+                  <option key={signal.id} value={signal.id}>
+                    {unitOf(signal.id)}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
+          </select>
+        </div>
+      </div>
+      <label className="dash-settings__check">
+        <input
+          type="checkbox"
+          checked={card.equalAspect === true}
+          disabled={card.x === undefined}
+          data-testid="dash-settings-equal-aspect"
+          onChange={(event) => setCardEqualAspect(card.id, event.target.checked)}
+        />
+        Equal aspect (one unit as long on both axes)
+      </label>
+      <p className="dash-card__hint">
+        {card.x === undefined
+          ? "Pick a signal to draw the card's signals against it (a phase portrait or a force-deflection loop)."
+          : `The card's signals are drawn against ${card.x}, sample by sample.`}
+      </p>
     </fieldset>
   );
 }
@@ -381,6 +452,7 @@ export function CardSettings({ card, signals, parameters, taken, onClose }: Card
           </div>
 
           {isDisplayKind(kind) && kind !== "text" ? <SignalPicker card={card} signals={signals} /> : null}
+          {kind === "plot" ? <PlotAxisSettings card={card} signals={signals} /> : null}
           {isInputKind(kind) ? <ParameterPicker card={card} parameters={parameters} taken={taken} /> : null}
 
           {hasRange || hasDecimals || hasUnit ? (

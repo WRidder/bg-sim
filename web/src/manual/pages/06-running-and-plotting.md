@@ -45,6 +45,22 @@ Signals go to the **Active** panel, which you choose in the plot toolbar.
 - **Pin run** keeps the current run. Start another run to compare: the pinned run shows as dashed lines.
 - **CSV** downloads the plotted signals. The download runs as a [background task](page:background-tasks).
 - **Detach** opens the plots in a separate browser window.
+- **Saved** lists the plots saved with the model. Pick one to open it as a new panel, with its title and its x axis.
+
+### XY plots
+
+A panel can draw its signals against another signal instead of time: a phase portrait (x' against x), a Lissajous figure, a force–deflection loop or a torque–speed curve.
+
+- In the panel header, set **x** from **Time (t)** to a signal. The list shows the panel's own signals first, then every other signal of the run. Picking one of the panel's signals moves it to the x axis, and the others are drawn against it. **Time (t)** puts it back.
+- You can also drag a signal from the **Signals** tab onto the **x** control.
+- **1:1** (equal aspect) makes one unit as long on both axes, so a circle stays round. It suits a phase portrait in scaled units.
+- The axes show the signals and their units.
+- The XY panel draws the same time window as the other panels. Zoom into a time range in a time panel to see that part of the trajectory; **Reset zoom** shows the whole run again.
+- Drag a box in the XY panel to zoom in on both axes, use the mouse wheel to zoom at the pointer, and double-click to fit the data again. This zoom belongs to the panel only.
+- Hover the curve: the nearest sample becomes the inspect time for every panel and the 3D view. A ring marks the point at the inspect time (the newest point when there is none), and the legend shows t, x and each y there.
+- The curve is drawn from every recorded sample, also while a run streams, so it stays sharp at any zoom. A pinned run shows as dashed lines when it records the x signal too.
+
+In the model file, a saved plot is XY when it has `"x": "<signal id>"`; `"equalAspect": true` turns on 1:1. Example **van-der-pol** saves phase portraits, and **quarter-car** the suspension force against its deflection.
 
 ## Auto Plot
 
@@ -57,7 +73,7 @@ Models with a 3D scene show it in the **3D View** tab. The scene follows the run
 - Drag to orbit, right-drag to pan, scroll to zoom. Panning follows the zoom: the point you grab stays under the cursor, so a large or zoomed-out scene pans as fast as a close-up.
 - While a run compiles, initializes or takes its first step, the view shows the stages, the time so far and **Stop**. It clears with the first samples, when the scene starts to move.
 - The toolbar has **Isometric**, **Top**, **Front** and **Side** views, an **Orthographic projection** toggle, **Fit the scene in the view**, **Full screen** (with the playback bar; `Esc` exits) and **Detach** (a separate window).
-- The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** and a time slider. With no run yet, **Play** (or `Space`) runs the model, like **Run**, and the view follows it live.
+- The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** (on by default) and a time slider. With no run yet, **Play** (or `Space`) runs the model, like **Run**: the view follows it live and, when the run is done, plays it back from the start.
 - **Bindings** opens the bindings table. Each row binds a scene object's property (position, pose, scale, colour, visibility, deformation, mode shapes or segment) to a signal, with a gain and an offset. **Add binding** adds a row.
 
 ### Bars between two points (segment bindings)
@@ -81,10 +97,14 @@ A box or cylinder in the scene can bend and twist with the run. A flexible beam 
 1. In **Bindings**, pick the property **deformation** and a box or cylinder as target. Spheres cannot bend; a mesh bends through a **mode-shapes** binding instead (below).
 2. Pick the **family**: `bending-y` (deflection along the beam's y axis), `bending-z` (along its z axis) or `torsion` (twist about the beam axis).
 3. Pick the **basis**, which must match the block: `clamped-free` (a cantilever, fixed at end A) or `free-free` (both ends free). Torsion also offers `linear` (see below).
-4. Set the **beam axis**: the direction in the shape from end A to end B. End A is the face on the other side. A cylinder runs along its own z axis, so it takes `+z` or `-z`. In the table you can also set the beam's **y** axis (default `+y`) and its length **L** (empty means the shape's length).
+4. Set the **beam axis**: the direction in the shape from end A to end B. End A is the face on the other side. A cylinder runs along its own z axis, so it takes `+z` or `-z`. In the table you can also set the beam's **y** axis (default `+y`), its length **L** (empty means the shape's length) and the **neutral axis** offset **NA y**, **NA z** (in m, empty means 0; see below).
 5. Pick one signal per mode, in mode order (up to three: **+ mode**, **− mode**). **Gain** multiplies every coordinate, for example 0.001 for coordinates in mm.
 
-Add one binding per family. A beam can bend in y and z and twist at the same time, and all bindings of one visual must give the same beam axis. While torsion is bound, the beam shows dark longitudinal stripes: a dark band on each side of a box, four lines on a cylinder. They wind around the beam as it twists, so the twist is visible. For a bending binding, **strain** colours the beam by the bending strain of its outer fibres along its length, with a colormap and range (for example 0 to 0.001). The strain colours always come from the true deformation.
+Add one binding per family. A beam can bend in y and z and twist at the same time, and all bindings of one visual must give the same beam axis. While torsion is bound, the beam shows dark longitudinal stripes: a dark band on each side of a box, four lines on a cylinder. They wind around the beam as it twists, so the twist is visible. For a bending binding, **strain** colours the beam by the bending strain of its outer fibres along its length, with a colormap and range (for example 0 to 0.001). The strain colours always come from the true deformation. The strain is a magnitude (never negative); the stress is E times it, so a range of minus to plus the yield strain fy/E on `coolwarm` draws an unstressed beam grey and a beam at first yield dark red.
+
+#### Built-up sections: the neutral axis
+
+A section that is not a plain box or cylinder, such as an I-beam, can be drawn as several boxes (two flanges and a web), each with its own deformation binding on the same modal coordinates. A flange does not bend about its own centre line but about the **neutral axis** of the whole section. Give each flange binding the offset of that axis from the flange's centre line, along the beam y and z axes, as **NA y** and **NA z** (in the model file: `"neutral": [y, z]` in `beam`). For an I-beam of height h and flange thickness tf bent along its beam y axis, the offset is ±(h − tf)/2: positive for the flange on the −y side of the axis. The flange's sections then turn about the neutral axis, so its fibres stretch and shorten with the web's, and its strain colour uses the true outer-fibre distance h/2. The web keeps the default offset 0. Example **cantilever-sections** draws its IPE 100 this way.
 
 #### A lumped torsion spring: the linear basis
 
