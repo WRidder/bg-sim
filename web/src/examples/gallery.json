@@ -155,7 +155,15 @@
       "pick-place-best",
       "offset-com-best",
       "loose-sphere-best",
-      "loose-cylinder-best"
+      "loose-cylinder-best",
+      "pick-place-tilt-best",
+      "pick-place-opt",
+      "offset-com-tilt-best",
+      "offset-com-opt",
+      "loose-sphere-tilt-best",
+      "loose-sphere-opt",
+      "loose-cylinder-tilt-best",
+      "loose-cylinder-opt"
     ]
   },
   "fem-bracket": {
@@ -471,6 +479,20 @@
       "rrr-multibond",
       "rrr-multibond-soft",
       "rrr-multibond-stiff"
+    ]
+  },
+  "suction-cup": {
+    "title": "Suction cup",
+    "description": "One bellows cup holds a box through holds, bounces, steps, swings and a chirp: lift stroke, bottoming, sway and tilt resonances, overload.",
+    "hasScene": true,
+    "models": [
+      "hold-release",
+      "bounce",
+      "steps",
+      "swing",
+      "chirp",
+      "overload",
+      "linear-vs-nonlinear"
     ]
   },
   "suction-gripper": {

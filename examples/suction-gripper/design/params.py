@@ -30,7 +30,20 @@ CUP = dict(
     mu=0.5,           # lip friction on cardboard
     V_cup=2.0e-5,     # m^3    cup chamber
     A_lip0=3.0e-8,    # m^2    sealed-lip roughness leak (about a 0.2 mm hole)
+    # nonlinear bellows (stdlib SuctionCup). ESTIMATES for a 1.5-fold bellows cup with a 50 mm
+    # lip (the class of e.g. Schmalz FSGA 50 / Piab BL50-2): about 10 mm usable compression
+    # before the folds stack, a vacuum lift stroke of about 6 mm at 60 kPa, and a bellows that
+    # is stiffer sideways when evacuated and softer when pulled out.
+    s_bot=0.010,      # m      compression stroke before the folds bottom
+    k_bot=5.0e4,      # N/m    bottoming stiffness scale (slope n_bot k_bot at x_bot over-stroke)
+    n_bot=3.0,        # 1      bottoming exponent
+    x_bot=1.0e-3,     # m      reference over-stroke
+    A_fold=5.0e-4,    # m^2    folded annulus: lift stroke A_fold dp / k_ax = 6 mm at 60 kPa
+    c_vac=1.0,        # 1      lateral/tilt stiffness x (1 + dp/p_atm): +59 % at 60 kPa
+    c_ext=3.0,        # 1      lateral/tilt stiffness x exp(-3 ext/L0)
 )
+#: the nonlinear bellows parameters (passed to every SuctionCup, global parameters of the models)
+CUP_NL = ("s_bot", "k_bot", "n_bot", "x_bot", "A_fold", "c_vac", "c_ext")
 #: cup centres in the gripper frame G (2 x 3, long side along G x); cup 1..6
 PX, PY = 0.18, 0.08
 CUPS = [(-PX, PY), (-PX, -PY), (0.0, PY), (0.0, -PY), (PX, PY), (PX, -PY)]

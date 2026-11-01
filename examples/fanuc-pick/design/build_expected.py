@@ -25,6 +25,7 @@ import build_models as B  # noqa: E402
 NL = "\n"
 DIAG = ["W201", "W205", "W206", "E006", "E007", "E101", "E102", "E103", "E106", "E901"]
 M_ABS = 0.03          # bg-sim against the reduced model: holding margin
+M_ABS_LOOSE = 0.05    # the same with a loose content (its wall impacts are sensitive to the rod compliance)
 M_SLACK = 0.02        # the optimum models: margin at least M_req - M_SLACK in bg-sim
 
 
@@ -34,6 +35,7 @@ def r6(x: float) -> float:
 
 def model_checks(name: str, m: dict, ref: dict, best: bool) -> list[dict]:
     tL, tE, tF = m["tL"], m["tE"], m["tF"]
+    m_abs = M_ABS if m["kind"] == "box" else M_ABS_LOOSE
     checks: list[dict] = [
         {"kind": "scene_bindings",
          "fk": [{"link": "gripper", "point": [0, 0, 0],
@@ -55,8 +57,8 @@ def model_checks(name: str, m: dict, ref: dict, best: bool) -> list[dict]:
         checks += [
             {"kind": "min_ge", "signal": "Monitor/held_ok", "from_t": 0.0, "to_t": r6(tF), "value": 0.5,
              "note": "held from the pick to the place (no drop)"},
-            {"kind": "cursor_value", "signal": "Monitor/M_tot", "t": r6(tF), "value": r6(m["M_tot"]), "abs": M_ABS,
-             "note": f"holding margin of the reduced model (reduced.py), {m['M_tot']:.3f}, within {M_ABS}"},
+            {"kind": "cursor_value", "signal": "Monitor/M_tot", "t": r6(tF), "value": r6(m["M_tot"]), "abs": m_abs,
+             "note": f"holding margin of the reduced model (reduced.py), {m['M_tot']:.3f}, within {m_abs}"},
             {"kind": "min_ge", "signal": "Monitor/sep", "from_t": r6(tL + 0.002), "to_t": r6(tE - 0.002), "value": -1e-9},
             {"kind": "max_abs_le", "signal": "Monitor/sep", "from_t": r6(tL + 0.002), "to_t": r6(tE - 0.002),
              "value": 0.02, "note": "the parcel stays within d_drop of its grip position while carried"},
@@ -68,6 +70,24 @@ def model_checks(name: str, m: dict, ref: dict, best: bool) -> list[dict]:
             {"kind": "max_abs_le", "signal": "Planner/util_max", "from_t": 0.0, "to_t": r6(tF), "value": 100.0,
              "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"},
         ]
+    if "tilt_err_max" in m:
+        w0, w1 = m["tilt_win"]
+        bound = round(1.1 * m["tilt_err_max"] + 0.5, 1)
+        checks += [
+            {"kind": "max_abs_le", "signal": "Planner/tilt_err", "from_t": r6(w0), "to_t": r6(w1), "value": bound,
+             "note": f"waiter tilt (gain {m['tilt_gain']:.2f}): inside the carry the tool axis stays within {bound} deg "
+                     f"of the specific force a - g of the load (planned {m['tilt_err_max']:.1f} deg; a level tool would "
+                     f"be {m['f_ang_max']:.1f} deg off)"},
+            {"kind": "max_abs_le", "signal": "Planner/tilt_pk", "from_t": 0.0, "to_t": r6(tF),
+             "value": r6(m["tilt_pk"] + 0.05), "note": f"peak tool tilt {m['tilt_pk']:.1f} deg"},
+            {"kind": "max_abs_le", "signal": "Planner/tilt", "from_t": r6(tE), "to_t": r6(tF), "value": 0.01,
+             "note": "the tool is level again at the place contact and the depart"},
+        ]
+    if not m["dropped"]:
+        checks.append(
+            {"kind": "cursor_value", "signal": "BoxPose/g[7]", "t": r6(tF), "value": r6(m["z_rest"]), "abs": 0.005,
+             "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), "
+                     "the vacuum has vented before the depart and did not carry it off"})
     if name == "pick-place":
         checks += [
             {"kind": "cursor_value", "signal": "Cup1/dp", "t": r6(tL), "value": r6(m["dp_lift"][0]), "rtol": 2e-3,
@@ -103,7 +123,8 @@ def main() -> int:
     models = {}
     for name in B.all_scenarios():
         m = ref["models"][name]
-        models[name] = {"run_timeout": 1200, "checks": model_checks(name, m, ref, name in best_models)}
+        best = name in best_models or name.endswith(("-tilt-best", "-opt"))
+        models[name] = {"run_timeout": 1200, "checks": model_checks(name, m, ref, best)}
     doc = {
         "project": "fanuc-pick",
         "description": "FANUC LR-10iA/10 (LR Mate 200iD/7L geometry, kinematic: it follows the plan inside the "

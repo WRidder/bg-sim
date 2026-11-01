@@ -65,18 +65,26 @@ The **Contact** category has two blocks for suction grippers that use the hydrau
 
 | Block | Ports | What it does | Key parameters |
 | --- | --- | --- | --- |
-| `SuctionCup` | spatial `a` (gripper), `b` (part), `vac`; outputs `T`, `F_lat`, `dp`, `U`, `h`, `sealed`, flows | a bellows cup: holding force `A_eff·dp`, bellows stiffness, lip friction `mu·N`, peeling, seal leak and loss | `A_eff`, `D_lip`, `k_ax`, `k_lat`, `k_tilt`, `mu`, `V`, `perm`, `A_lip0` |
+| `SuctionCup` | spatial `a` (gripper), `b` (part), `vac`; outputs `T`, `F_lat`, `dp`, `U`, `h`, `sealed`, flows | a bellows cup: holding force `A_eff·dp`, bellows stiffness, lip friction `mu·N`, peeling, seal leak and loss; optional nonlinear bellows (bottoming, vacuum lift stroke, vacuum- and stroke-dependent side stiffness) | `A_eff`, `D_lip`, `k_ax`, `k_lat`, `k_tilt`, `mu`, `V`, `perm`, `A_lip0`; nonlinear: `k_bot`, `s_bot`, `A_fold`, `c_vac`, `c_ext` |
 | `VacuumGenerator` | `a`, input `u`; outputs `Q`, `dp` | flow–pressure curve `Q = Q_max·(1 − (dp/dp_max)^n)` (`n = 1` ejector, `n ≈ 3` pump); `u = 0` vents to atmosphere | `dp_max`, `Q_max`, `n`, `G_rel` |
 
 - Mount the cup with two `FixedTransform3DNeutral` blocks: side `a` of each on the cup, side `b` on the gripper body and on the part. The cup axis is the mount frame's −z axis, and the cup's rest length is `L0`. Set the start `rz = -L0` (and the static stretch for a hanging load).
 - `U` is the cup utilisation: axial tension, peeling moment and shear as a fraction of the holding capacity `A_eff·dp`. A cup holds while `U < 1`; with a safety factor `S` keep `U ≤ 1/S`.
 - When the tension or the moment exceeds the vacuum force, the lip lifts (`h > 0`). The lifted lip opens a leak, the chamber loses its vacuum, and above `h_lost` the `sealed` latch drops to 0 for the rest of the run.
 - Air leaks through the part (`perm`, a Darcy permeance: 0 for sealed film, about 4e-7 m/(s·Pa) for cardboard, 2e-6 for porous material) and past the lip (`A_lip0`). The generator must supply this flow: the steady vacuum is where the generator curve meets the leak demand of all cups.
+- The bellows can be made nonlinear. The extra terms are off by default, so a cup without them behaves exactly as the linear cup:
+  - **Bottoming.** Beyond the compression stroke `s_bot` the folds stack up. The cup stiffens smoothly with the push `F_bot = k_bot·xb·(xb/x_bot)^(n_bot−1)`, where `xb` is the over-stroke. Set `k_bot > 0` to switch this on.
+  - **Vacuum lift stroke.** The vacuum on the folded annulus `A_fold` pulls the bellows shut. An unloaded cup contracts by `A_fold·dp/k_ax` (it lifts the part), and a loaded one follows `T = k_ax·ext + A_fold·dp`. The holding capacity `A_eff·dp` does not change.
+  - **Stiffness factor.** The lateral and tilt stiffness are multiplied by `kf = (1 + c_vac·dp/p_atm)·exp(−c_ext·ext/L0)`: an evacuated or compressed cup is stiffer sideways, and an extended one is softer.
+  - The recorded variables `F_bot`, `xb` and `kf` show these terms.
+  - Damping stays a Kelvin damper per direction (`d_ax`, `d_lat`, `d_rot`).
 - Use solver **FBDF** for gripper models: the air chambers are very stiff, and the default automatic choice (Tsit5) takes too many steps.
 - A cup that starts away from the part (the gripper approaches from above, so the start `rz` is below `-L0`) has its lip gap `h` fall through `h_lost` when the lip lands. FBDF can stop there ("dt was forced below floating point epsilon"); use **Rodas5P** for such models.
 
+The example **suction-cup** shows the dynamics of one nonlinear bellows cup that holds a box: the vacuum build-up and lift stroke, a vertical bounce with bottoming, horizontal acceleration steps, a tool-tilt swing, a lateral chirp with its transmissibility, an overload that loses the box, and the nonlinear cup next to the linear one.
+
 The example **suction-gripper** is a six-cup gripper that moves a carton: profiles, gripper yaw and tilt, parcel porosity, generator size and manifold layouts.
 
-The example **fanuc-pick** is a pick and place of a carton by a FANUC LR-10iA/10 with a five-zone gripper (a pneumatic cylinder per zone extends its bellows cup, one ejector per zone). It compares four trajectory families and finds the shortest cycle time that keeps a holding margin, for a carton with a centred or offset centre of mass and for a carton with a loose ball or bottle inside. The arm is kinematic: it follows the plan exactly, and the plan is checked against the robot's datasheet limits.
+The example **fanuc-pick** is a pick and place of a carton by a FANUC LR-10iA/10 with a five-zone gripper (a pneumatic cylinder per zone extends its bellows cup, one ejector per zone). It compares four trajectory families and finds the shortest cycle time that keeps a holding margin, for a carton with a centred or offset centre of mass and for a carton with a loose ball or bottle inside. A waiter tilt turns the tool towards the specific force of the carton, and a free optimisation (free timing, tilt, yaw window and gripper timing) finds the highest pick rate within the robot limits; the `*-tilt-best` and `*-opt` models show the results. The cups of fanuc-pick and suction-gripper use the nonlinear bellows of `SuctionCup`. The arm is kinematic: it follows the plan exactly, and the plan is checked against the robot's datasheet limits.
 
 The example **hydraulic-circuit** (in the Example gallery) is a complete circuit: an electric motor speed drives a fixed-displacement pump with a relief valve and an accumulator, and a 4/3 valve extends and retracts a loaded cylinder.

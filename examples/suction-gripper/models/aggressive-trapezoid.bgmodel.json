@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "aggressive-trapezoid",
-  "$comment": "The transfer in 0.7 s with a trapezoidal profile (9.2 m/s^2, infinite jerk): the step in acceleration rings the bellows, the cups peel at the deceleration and the parcel drops.",
+  "$comment": "The transfer in 0.74 s with a trapezoidal profile (8.2 m/s^2, infinite jerk): the step in acceleration rings the bellows, the cups peel at the deceleration and the parcel drops.",
   "diagram": {
     "nodes": [
       {
@@ -761,7 +761,14 @@
           "mu": "mu",
           "V": "V_cup",
           "perm": "perm",
-          "A_lip0": "A_lip0 + A_edge"
+          "A_lip0": "A_lip0 + A_edge",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -832,7 +839,14 @@
           "mu": "mu",
           "V": "V_cup",
           "perm": "perm",
-          "A_lip0": "A_lip0"
+          "A_lip0": "A_lip0",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -903,7 +917,14 @@
           "mu": "mu",
           "V": "V_cup",
           "perm": "perm",
-          "A_lip0": "A_lip0"
+          "A_lip0": "A_lip0",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -974,7 +995,14 @@
           "mu": "mu",
           "V": "V_cup",
           "perm": "perm",
-          "A_lip0": "A_lip0"
+          "A_lip0": "A_lip0",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -1045,7 +1073,14 @@
           "mu": "mu",
           "V": "V_cup",
           "perm": "perm",
-          "A_lip0": "A_lip0"
+          "A_lip0": "A_lip0",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -1116,7 +1151,14 @@
           "mu": "mu",
           "V": "V_cup",
           "perm": "perm",
-          "A_lip0": "A_lip0"
+          "A_lip0": "A_lip0",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -2807,14 +2849,14 @@
   },
   "settings": {
     "t_start": 0.0,
-    "t_end": 3.1,
+    "t_end": 3.14,
     "solver": "FBDF",
     "reltol": 1e-06,
     "abstol": 1e-08,
     "max_step": null,
     "output": {
       "mode": "points",
-      "points": 1551
+      "points": 1571
     },
     "event_limit": 20000
   },
@@ -2952,6 +2994,48 @@
       "description": "Extra leak area of cup 1 (a cup over the parcel edge or a damaged lip)"
     },
     {
+      "name": "s_bot",
+      "value": "0.01",
+      "unit": "m",
+      "description": "Bellows compression stroke before the folds bottom (estimate)"
+    },
+    {
+      "name": "k_bot",
+      "value": "50000",
+      "unit": "N/m",
+      "description": "Bottoming stiffness scale (estimate)"
+    },
+    {
+      "name": "n_bot",
+      "value": "3",
+      "unit": "1",
+      "description": "Bottoming exponent"
+    },
+    {
+      "name": "x_bot",
+      "value": "0.001",
+      "unit": "m",
+      "description": "Reference over-stroke of the bottoming law"
+    },
+    {
+      "name": "A_fold",
+      "value": "0.0005",
+      "unit": "m^2",
+      "description": "Folded bellows annulus: vacuum lift stroke A_fold*dp/k_ax (estimate)"
+    },
+    {
+      "name": "c_vac",
+      "value": "1",
+      "unit": "1",
+      "description": "Lateral/tilt stiffness rise with vacuum, 1 + c_vac*dp/p_atm (estimate)"
+    },
+    {
+      "name": "c_ext",
+      "value": "3",
+      "unit": "1",
+      "description": "Lateral/tilt stiffness fall with extension, exp(-c_ext*ext/L0) (estimate)"
+    },
+    {
       "name": "dp_max",
       "value": "60000",
       "unit": "Pa",
@@ -3007,7 +3091,7 @@
     },
     {
       "name": "T_move",
-      "value": "0.7",
+      "value": "0.74",
       "unit": "s",
       "description": "Transfer time"
     },

@@ -18,19 +18,35 @@
     # Q = identity, so the part must start with its point frame aligned with the cup).
     #
     # Bellows and seal (the vacuum force is a holding CAPACITY, not a pressure x area force):
-    #   s = -r_z separation, Fs = k_ax (s - L0) + d_ax s'           bellows tension (pull > 0)
+    #   s = -r_z separation, ext = s - L0                           bellows extension
+    #   Fs = k_ax ext + d_ax s' + A_fold dp - F_bot                 bellows tension (pull > 0)
     #   Fcap = A_eff dp,  dp = pos(-p)                              holding force of the seal
     #   T = smin(Fs, Fcap)                                          transmitted axial force
     #   N = Fcap - T                                                lip contact force (>= 0)
-    #   Mb = 2 qw (k_tilt qx, k_tilt qy, k_tor qz) + d_rot wr       bellows bending/torsion
+    #   Mb = 2 qw (k_tilt kf qx, k_tilt kf qy, k_tor qz) + d_rot wr bellows bending/torsion
     #   h = pos((Fs + 4|Mb_xy|/D_lip - Fcap) / k_ax)                lip lift (gap), m
+    # Nonlinear bellows (all OFF by default: k_bot = A_fold = c_vac = c_ext = 0 give the linear
+    # cup exactly):
+    #   * bottoming: beyond the compression stroke s_bot the folds stack up and the cup stiffens
+    #     progressively, F_bot = k_bot xb (xb / x_bot)^(n_bot - 1), xb = pos(-ext - s_bot) (a
+    #     push; smooth: pos uses h_eps, so the force-stroke curve has no kink, and its slope is
+    #     n_bot k_bot at xb = x_bot);
+    #   * vacuum lift stroke: the vacuum acting on the folded annulus A_fold pulls the bellows
+    #     shut, A_fold dp; an unloaded cup contracts by ext = -A_fold dp / k_ax (until it
+    #     bottoms), a loaded one by T = k_ax ext + A_fold dp. The holding capacity is unchanged;
+    #   * lateral and tilt stiffness: k_lat kf and k_tilt kf with
+    #     kf = (1 + c_vac dp / p_atm) exp(-c_ext ext / L0)
+    #     (a cup under vacuum and compressed stiffens, an extended one softens).
+    # Hysteresis: the Kelvin dampers d_ax, d_lat, d_rot carry the rate-dependent losses of the
+    # rubber; the rate-independent (Dahl-type) loop of a bellows is small next to them at
+    # handling speeds and is not modelled (the lateral Dahl law below is the lip slip).
     # so the cup pushes without limit (lip support), pulls up to the vacuum force, and a lip
     # that lifts (pull-off, or one side under a tilting moment: a ring of diameter D_lip under
     # an axial force F and a moment M lifts when F + 4M/D_lip > Fcap) opens a leak.
     # Lateral: the bellows deflection `e` is the elastic part of the relative lateral motion;
     # the lip slips over the surface with a generalised Dahl law of exponent 5,
-    #   e' = v - |v| rho |rho|^4 / (1 + |rho|^4/100),   rho = k_lat e / (mu N + F_min),
-    # elastic below the friction capacity mu N, sliding at it (F_lat = k_lat e + d_lat e').
+    #   e' = v - |v| rho |rho|^4 / (1 + |rho|^4/100),   rho = k_lat kf e / (mu N + F_min),
+    # elastic below the friction capacity mu N, sliding at it (F_lat = k_lat kf e + d_lat e').
     #
     # Vacuum chamber (free-air volume flows, as generator datasheets give them; isothermal):
     #   p' = p_atm (Q_leak + Q_por + vac.f) / V,      vac.e = p (gauge pressure, < 0 = vacuum)
@@ -74,7 +90,14 @@
         F_eps::Real = 0.1, [unit = "N", min = 1.0e-9, description = "Smoothing force of the capacity limit"]
         v_eps::Real = 1.0e-4, [unit = "m/s", min = 1.0e-12, description = "Smoothing velocity of the slip law"]
         p_eps::Real = 1.0, [unit = "Pa", min = 1.0e-9, description = "Smoothing pressure of the vacuum level"]
-        h_eps::Real = 1.0e-6, [unit = "m", min = 1.0e-12, description = "Smoothing length of the lip gap"]
+        h_eps::Real = 1.0e-6, [unit = "m", min = 1.0e-12, description = "Smoothing length of the lip gap (and of the bottoming stroke)"]
+        k_bot::Real = 0.0, [unit = "N/m", min = 0, description = "Bottoming stiffness scale beyond the compression stroke (0 = no bottoming)"]
+        s_bot::Real = 0.01, [unit = "m", min = 0, description = "Compression stroke of the bellows before it bottoms"]
+        n_bot::Real = 3.0, [unit = "1", min = 1, description = "Bottoming exponent: F_bot = k_bot xb (xb/x_bot)^(n_bot-1)"]
+        x_bot::Real = 1.0e-3, [unit = "m", min = 1.0e-9, description = "Reference over-stroke of the bottoming law"]
+        A_fold::Real = 0.0, [unit = "m^2", min = 0, description = "Folded annulus on which the vacuum contracts the bellows (lift stroke; 0 = none)"]
+        c_vac::Real = 0.0, [unit = "1", min = 0, description = "Rise of the lateral/tilt stiffness with the vacuum: factor 1 + c_vac dp/p_atm"]
+        c_ext::Real = 0.0, [unit = "1", description = "Stroke dependence of the lateral/tilt stiffness: factor exp(-c_ext ext/L0)"]
     end
     @variables begin
         rx::Real = 0.0, [unit = "m", state = :prefer, description = "Part point x in the cup frame"]
@@ -125,6 +148,9 @@
         A_lip::Real = 3.0e-8, [unit = "m^2", description = "Lip leak area"]
         Ur::Real = 0.0, [unit = "1", description = "Unclamped utilisation"]
         Uh::Real = 0.0, [unit = "1", description = "Utilisation clamped from above at 2"]
+        xb::Real = 0.0, [unit = "m", description = "Over-stroke beyond the bottoming stroke, pos(-ext - s_bot)"]
+        F_bot::Real = 0.0, [unit = "N", description = "Bottoming push of the stacked folds"]
+        kf::Real = 1.0, [unit = "1", description = "Lateral/tilt stiffness factor (vacuum and stroke)"]
     end
     @outputs begin
         T::Real, [unit = "N", description = "Axial force transmitted to the part (pull > 0, push < 0)"]
@@ -176,9 +202,12 @@
         dp ~ 0.5 * (-p + sqrt(p * p + p_eps * p_eps))
         Fcap ~ A_eff * dp
         ext ~ -rz - L0
-        Fs ~ k_ax * ext - d_ax * rdz
-        Mbx ~ 2 * qw * k_tilt * qx + d_rot * wrx
-        Mby ~ 2 * qw * k_tilt * qy + d_rot * wry
+        xb ~ 0.5 * ((-ext - s_bot) + sqrt((-ext - s_bot) * (-ext - s_bot) + h_eps * h_eps))
+        F_bot ~ k_bot * xb * (xb / x_bot)^(n_bot - 1)
+        Fs ~ k_ax * ext - d_ax * rdz + A_fold * dp - F_bot
+        kf ~ (1 + c_vac * dp / p_atm) * exp(-c_ext * ext / L0)
+        Mbx ~ 2 * qw * k_tilt * kf * qx + d_rot * wrx
+        Mby ~ 2 * qw * k_tilt * kf * qy + d_rot * wry
         Mbz ~ 2 * qw * k_tor * qz + d_rot * wrz
         Mbt ~ sqrt(Mbx * Mbx + Mby * Mby + 1.0e-12 * k_tilt * k_tilt)
         h ~ 0.5 * ((Fs + 4 * Mbt / D_lip - Fcap) / k_ax +
@@ -190,16 +219,16 @@
         # Lateral: Dahl-type slip of the lip at the friction capacity.
         Fc ~ mu * N_lip + F_min
         vn ~ sqrt(rdx * rdx + rdy * rdy + v_eps * v_eps)
-        rhox ~ k_lat * ex / Fc
-        rhoy ~ k_lat * ey / Fc
+        rhox ~ k_lat * kf * ex / Fc
+        rhoy ~ k_lat * kf * ey / Fc
         rho4 ~ (rhox * rhox + rhoy * rhoy)^2
         gs ~ rho4 / (1 + 0.01 * rho4)
         dex ~ rdx - vn * rhox * gs
         dey ~ rdy - vn * rhoy * gs
         ddt(ex) ~ dex
         ddt(ey) ~ dey
-        Flx ~ k_lat * ex + d_lat * dex
-        Fly ~ k_lat * ey + d_lat * dey
+        Flx ~ k_lat * kf * ex + d_lat * dex
+        Fly ~ k_lat * kf * ey + d_lat * dey
         F_lat ~ sqrt(Flx * Flx + Fly * Fly)
         Ur ~ (T + 4 * M_tilt / D_lip + F_lat / mu) / (Fcap + F_eps)
         Uh ~ 2 - 0.5 * (2 - Ur + sqrt((2 - Ur) * (2 - Ur) + 1.0e-6))

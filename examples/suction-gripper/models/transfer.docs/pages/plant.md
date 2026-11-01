@@ -19,10 +19,12 @@ Four [ContactPoint](block:Floor1) corners carry the carton on the conveyor and o
 
 | part | law |
 | --- | --- |
-| bellows axial | $F_s = k_{ax}(s - L_0) + d_{ax}\dot s$ (pull > 0) |
+| bellows axial | $F_s = k_{ax}(s - L_0) + d_{ax}\dot s + A_{fold}\,\Delta p - F_{bot}$ (pull > 0) |
+| bottoming | $F_{bot} = k_{bot}\,x_b (x_b/x_{bot})^{n_{bot}-1}$, $x_b$ the compression beyond $s_{bot}$ (smooth) |
+| side stiffness | $k_{lat}$ and $k_{tilt}$ times $k_f = (1 + c_{vac}\Delta p/p_{atm})\,e^{-c_{ext}(s - L_0)/L_0}$ |
 | holding capacity | $F_{cap} = A_{eff}\,\Delta p$ |
 | transmitted pull | $T = \mathrm{smin}(F_s, F_{cap})$, with lip contact $N = F_{cap} - T$ |
-| bending, torsion | $M = 2 q_w (k_{tilt} q_x, k_{tilt} q_y, k_{tor} q_z) + d_{rot}\,\omega$ |
+| bending, torsion | $M = 2 q_w (k_f k_{tilt} q_x, k_f k_{tilt} q_y, k_{tor} q_z) + d_{rot}\,\omega$ |
 | peeling | lip gap $h = \mathrm{pos}((F_s + 4\lvert M_{xy}\rvert/D_{lip} - F_{cap})/k_{ax})$ |
 | shear | bellows deflection $e$ plus a Dahl slip law: elastic below $\mu N$, sliding at it |
 
@@ -37,7 +39,8 @@ The cup parameters are those of a 50 mm two-fold bellows cup:
 - effective area 14 cm², so 58 kPa holds 81 N;
 - axial stiffness 5 kN/m, lateral 2.5 kN/m, tilt 3 N·m/rad;
 - μ = 0.5 on cardboard;
-- chamber volume 20 cm³.
+- chamber volume 20 cm³;
+- nonlinear bellows (estimates): the folds bottom after 10 mm of compression ($k_{bot}$ = 5e4 N/m, cubic), the vacuum pulls the bellows 6 mm short ($A_{fold}$ = 5 cm²), and the side stiffness rises by 59 % under 60 kPa and falls as the cup is pulled long ($c_{vac}$ = 1, $c_{ext}$ = 3). With all of them zero the cup is the linear one.
 
 ## Motion
 

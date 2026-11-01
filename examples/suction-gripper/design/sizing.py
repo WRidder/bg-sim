@@ -42,19 +42,51 @@ def specific_force(a_x: float, a_z: float, psi: float, theta: float) -> np.ndarr
     return rg.T @ f_world
 
 
+def bottoming(ext: float, cup: dict = C) -> tuple[float, float]:
+    """Bottoming push F_bot and its slope dF_bot/d(-ext) of the stdlib SuctionCup law."""
+    xo = -ext - cup.get("s_bot", 0.01)
+    root = math.sqrt(xo * xo + 1.0e-12)
+    xb, dxb = 0.5 * (xo + root), 0.5 * (1 + xo / root)
+    kb, nb, xr = cup.get("k_bot", 0.0), cup.get("n_bot", 3.0), cup.get("x_bot", 1.0e-3)
+    return kb * xb * (xb / xr) ** (nb - 1), nb * kb * (xb / xr) ** (nb - 1) * dxb
+
+
+def operating_cup(dp: float, t_ax: float, cup: dict = C) -> dict:
+    """The cup linearised about a static hold at vacuum ``dp`` with axial pull ``t_ax`` (N).
+
+    The stdlib SuctionCup law is k_ax ext + A_fold dp - F_bot(ext) = T (lift stroke, bottoming),
+    and its lateral and tilt stiffness carry kf = (1 + c_vac dp/p_atm) exp(-c_ext ext/L0). Returns
+    the cup with the tangent stiffnesses k_ax, k_lat, k_tilt at that point plus ``ext`` and ``kf``.
+    """
+    def law(e):
+        return cup["k_ax"] * e + cup.get("A_fold", 0.0) * dp - bottoming(e, cup)[0]
+
+    lo, hi = -cup["L0"], cup["L0"]
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        lo, hi = (mid, hi) if law(mid) < t_ax else (lo, mid)
+    ext = 0.5 * (lo + hi)
+    kf = (1 + cup.get("c_vac", 0.0) * dp / P.P_ATM) * math.exp(-cup.get("c_ext", 0.0) * ext / cup["L0"])
+    return {**cup, "k_ax": cup["k_ax"] + bottoming(ext, cup)[1], "k_lat": cup["k_lat"] * kf,
+            "k_tilt": cup["k_tilt"] * kf, "ext": ext, "kf": kf}
+
+
 def quasi_static(a_x: float, a_z: float = 0.0, psi: float = 0.0, theta: float = 0.0,
                  dp: float = S["dp_max"], parcel: dict = P.PARCEL, cup: dict = C, cups=P.CUPS) -> dict:
-    """Per-cup loads from the linear elastic statics of the bellows.
+    """Per-cup loads from the elastic statics of the bellows, linearised about the static hold.
 
     Unknowns: the parcel's translation u and small rotation phi relative to the gripper (G frame).
     Cup i at r_i (from the CoM) deflects d_i = u + phi x r_i and pushes -K d_i (K = diag(k_lat,
     k_lat, k_ax)) plus a moment -diag(k_tilt, k_tilt, k_tor) phi. The sum of the cup forces is
-    m f (f = a - g in G) and their moment about the CoM is zero (no angular acceleration).
+    m f (f = a - g in G) and their moment about the CoM is zero (no angular acceleration). The
+    nonlinear bellows enter through their tangent stiffnesses at the hanging parcel (vacuum dp,
+    T = m g / N per cup; :func:`operating_cup`).
     """
     r = cup_points(parcel, cups)
     m = parcel["m_p"]
+    cup = operating_cup(dp, m * P.G0 / len(cups), cup)
     kd = np.diag([cup["k_lat"], cup["k_lat"], cup["k_ax"]])
-    kr = np.diag([cup["k_tilt"], cup["k_tilt"], cup["k_tor"]])
+    kr = np.diag([cup["k_tilt"], cup["k_tilt"], cup.get("k_tor", 5.0)])
     stiff = np.zeros((6, 6))
     for ri in r:
         h = np.array([[0, -ri[2], ri[1]], [ri[2], 0, -ri[0]], [-ri[1], ri[0], 0]])  # hat(r)

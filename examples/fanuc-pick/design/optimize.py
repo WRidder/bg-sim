@@ -238,7 +238,7 @@ def readme_table(data: dict) -> str:
              "| --- | --- | --- | --- | --- | --- | --- |"]
     for case in data["cases"]:
         d = case["default"]
-        cells = [case["title"], f"{d['T_cyc']:.3f} s, M {d['M_tot']:+.2f}{' (drop)' if d['dropped'] else ''}"]
+        cells = [case["title"], f"{d['T_cyc']:.3f} s, " + ("drop" if d["dropped"] else f"M {d['M_tot']:+.2f}")]
         for fam in (1, 2, 3, 4):
             r = case["families"].get(str(fam))
             cells.append(f"{r['T_cyc']:.3f} s (M {r['M_tot']:.2f}, robot {100 * r['util_max']:.0f} %)"
@@ -306,6 +306,9 @@ def main(argv: list[str]) -> int:
         cases.append(entry)
     data = {"generated_by": "design/optimize.py", "M_req": P.MOTION["M_req"], "clearance": CLEAR,
             "r_clear": R_CLEAR, "cart_ref": CART_REF, "quick": a.quick, "cases": cases}
+    if Path(a.out).exists():   # keep the sections of optimize_free.py
+        old = json.loads(Path(a.out).read_text(encoding="utf-8"))
+        data.update({k: v for k, v in old.items() if k not in data})
     Path(a.out).write_text(json.dumps(data, indent=2) + NL, encoding="utf-8", newline=NL)
     print("wrote", a.out, f"({time.time() - t0:.0f} s)")
     if len(cases) == len(CASES) and not a.quick:

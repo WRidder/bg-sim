@@ -14,7 +14,12 @@
 #   * vacuum build-up: dp(t) = dp_max (1 - exp(-t / tau)), tau = V dp_max / (p_atm Q_max),
 #     and with a porous part the steady vacuum dp_max / (1 + perm A_eff dp_max / Q_max) with
 #     tau' = V / (p_atm (Q_max / dp_max + perm A_eff));
-#   * the pump-like generator curve (n = 3) against an RK4 reference, and the release path.
+#   * the pump-like generator curve (n = 3) against an RK4 reference, and the release path;
+#   * the nonlinear bellows: with the defaults the block equals a frozen copy of the linear
+#     block to round-off (`fixtures/library/SuctionCupLinear.jl`); the force-stroke curve with
+#     bottoming (a part resting on an upward-facing cup) against the analytic law; the vacuum
+#     lift stroke ext = (T - A_fold dp) / k_ax, unloaded and loaded; the tilt stiffness
+#     k_tilt (1 + c_vac dp/p_atm) exp(-c_ext ext/L0).
 if !isdefined(@__MODULE__, :BondGraphGolden)
     include(joinpath(@__DIR__, "..", "bondgraph", "golden_helpers.jl"))
 end
@@ -52,7 +57,7 @@ attach point at `r0` (cup frame, default `(0, 0, -L0)`). `cup`/`gen` are paramet
 """
 function _sc_rig(; m = 4.0, J = 0.01, g0 = _SC_G, qc = (1.0, 0.0, 0.0, 0.0), hcm = 0.0, dx = 0.0,
     r0 = nothing, e0 = (0.0, 0.0), p0 = -_SC_DP, cup = Dict(), gen = Dict(), u = 1.0,
-    t_end = 4.0, points = 401)
+    t_end = 4.0, points = 401, block = "stdlib:contact/SuctionCup", solver = "Rodas5P")
     L0 = 0.04
     r0 = r0 === nothing ? (0.0, 0.0, -L0) : r0
     cupp = merge(Dict("d_ax" => 100.0, "d_lat" => 100.0, "d_rot" => 0.2), cup)
@@ -65,7 +70,7 @@ function _sc_rig(; m = 4.0, J = 0.01, g0 = _SC_G, qc = (1.0, 0.0, 0.0, 0.0), hcm
         bg_node("gr", "Ground", bg_ref("stdlib:multibond/GroundSpatial")),
         bg_node("gm", "GMount", bg_ref("stdlib:multibond/FixedTransform3DNeutral");
             params = _sc_str(Dict("qw" => qci[1], "qx" => qci[2], "qy" => qci[3], "qz" => qci[4]))),
-        bg_node("cu", "Cup", bg_ref("stdlib:contact/SuctionCup"); params = _sc_str(cupp),
+        bg_node("cu", "Cup", bg_ref(block); params = _sc_str(cupp),
             starts = _sc_str(Dict("rx" => r0[1], "ry" => r0[2], "rz" => r0[3], "p" => p0,
                 "ex" => e0[1], "ey" => e0[2]))),
         bg_node("pm", "PMount", bg_ref("stdlib:multibond/FixedTransform3DNeutral");
@@ -90,7 +95,7 @@ function _sc_rig(; m = 4.0, J = 0.01, g0 = _SC_G, qc = (1.0, 0.0, 0.0, 0.0), hcm
         bg_conn("c8", "signal", "on", "y", "ge", "u"),
     ]
     return bg_model("SuctionCupRig", nodes, conns; t_end = t_end, points = points,
-        reltol = 1.0e-9, abstol = 1.0e-11)
+        reltol = 1.0e-9, abstol = 1.0e-11, solver = solver)
 end
 
 _sc_ok(result) = result.status == "done" &&
@@ -186,6 +191,92 @@ _sc_ok(result) = result.status == "done" &&
             @test isapprox(bg_value(cols, "Cup/Q_por", 0.1), G * bg_value(cols, "Cup/dp", 0.1); rtol = 1e-9)
             perm == 0 && @test isapprox(tau, V * _SC_DP / (_SC_PATM * _SC_QMAX); rtol = 1e-12)
         end
+    end
+
+    @testset "nonlinear terms off: the linear block to round-off" begin
+        # A tilted cup (30 deg about x) with an off-centre part, the vacuum building up from
+        # 20 kPa: axial, lateral, tilt, slip and chamber paths all move. With the defaults every
+        # new term is an exact zero (F_bot, A_fold dp) or an exact one (kf), so each equation
+        # evaluates to the linear block's value. The runs are still not bit for bit: once `Fs`
+        # carries extra terms the symbolic simplification reorders the inlined sums, and the
+        # round-off differences (1e-13 relative) go through the adaptive steps. Measured: max
+        # 3e-9 Pa on the chamber pressure (of 6e4), 1e-11 N on the forces, 1e-14 on the pose.
+        fixtures = joinpath(@__DIR__, "fixtures")
+        qc = (cos(pi / 12), sin(pi / 12), 0.0, 0.0)
+        kw = (; m = 3.0, dx = 0.008, hcm = 0.01, qc = qc, p0 = -2.0e4, t_end = 0.5, points = 101)
+        cn, rn, _ = bg_run(_sc_rig(; kw...))
+        co, ro, _ = bg_run(_sc_rig(; kw..., block = "project:SuctionCupLinear"); project_dir = fixtures)
+        @test _sc_ok(rn) && _sc_ok(ro)
+        shared = sort([k for k in keys(co) if k == "time" || startswith(k, "Cup/") || startswith(k, "Pose/")])
+        @test length(shared) > 40
+        @test cn["time"] == co["time"]
+        near(k) = haskey(cn, k) && maximum(abs.(cn[k] .- co[k])) <= 1.0e-10 * max(1.0, maximum(abs, co[k]))
+        @test all(near, shared)
+        @test maximum(abs, bg_all(cn, "Cup/ext")) > 1.0e-3      # the run is not trivial
+        @test maximum(abs, bg_all(cn, "Cup/F_bot")) == 0.0
+        @test all(==(1.0), bg_all(cn, "Cup/kf"))
+    end
+
+    @testset "force-stroke with bottoming (part resting on an upward cup)" begin
+        # The cup axis points up (cup frame turned 180 deg about x); the part's weight
+        # compresses the bellows: k_ax ext - F_bot(ext) = -m g, with
+        # F_bot = k_bot xb (xb/x_bot)^(n_bot-1), xb = pos(-ext - s_bot).
+        kb, sb, nb, xr = 5.0e4, 0.005, 3.0, 0.002
+        Fb(ext) = (x = -ext - sb; xb = 0.5 * (x + sqrt(x^2 + 1e-12)); kb * xb * (xb / xr)^(nb - 1))
+        law(ext) = k_ax * ext - Fb(ext)
+        for m in (1.5, 4.0, 8.0)
+            cols, result, _ = bg_run(_sc_rig(; m = m, qc = (0.0, 1.0, 0.0, 0.0),
+                cup = Dict("k_bot" => kb, "s_bot" => sb, "n_bot" => nb, "x_bot" => xr),
+                t_end = 3.0, points = 31))
+            @test _sc_ok(result)
+            ext = bg_value(cols, "Cup/ext", 3.0)
+            # Solve the analytic law for the stroke (bisection on the monotone curve).
+            lo, hi = -0.04, 0.0
+            for _ in 1:200
+                mid = 0.5 * (lo + hi)
+                law(mid) > -m * _SC_G ? (hi = mid) : (lo = mid)
+            end
+            @test isapprox(ext, 0.5 * (lo + hi); atol = 1e-7)
+            @test isapprox(bg_value(cols, "Cup/F_bot", 3.0), Fb(ext); rtol = 1e-6, atol = 1e-9)
+            @test isapprox(bg_value(cols, "Cup/T", 3.0), -m * _SC_G; rtol = 1e-4)
+            m == 1.5 && @test -ext < sb                      # before the folds bottom
+            m == 8.0 && @test -ext - sb > 0.5 * xr           # well into the bottoming law
+        end
+    end
+
+    @testset "vacuum lift stroke" begin
+        A_fold = 4.0e-4
+        # Unloaded (no gravity): the bellows contracts by A_fold dp / k_ax.
+        cols, result, _ = bg_run(_sc_rig(; g0 = 0.0, cup = Dict("A_fold" => A_fold, "A_lip0" => 0.0),
+            t_end = 3.0, points = 31))
+        @test _sc_ok(result)
+        dp = bg_value(cols, "Cup/dp", 3.0)
+        @test isapprox(dp, _SC_DP; rtol = 1e-4)
+        # (T = smin(Fs, Fcap) = 0 leaves Fs = F_eps^2 / (4 Fcap), 3e-5 N: a 1e-6 relative offset)
+        @test isapprox(bg_value(cols, "Cup/ext", 3.0), -A_fold * dp / k_ax; rtol = 1e-5)
+        @test abs(bg_value(cols, "Cup/T", 3.0)) < 1e-6
+        # Loaded: T = m g = k_ax ext + A_fold dp; the holding capacity is unchanged.
+        m = 4.0
+        cols, result, _ = bg_run(_sc_rig(; m = m, cup = Dict("A_fold" => A_fold), t_end = 3.0, points = 31))
+        @test _sc_ok(result)
+        dp = bg_value(cols, "Cup/dp", 3.0)
+        @test isapprox(bg_value(cols, "Cup/ext", 3.0), (m * _SC_G - A_fold * dp) / k_ax; rtol = 1e-5)
+        @test isapprox(bg_value(cols, "Cup/T", 3.0), m * _SC_G; rtol = 1e-6)
+        @test isapprox(bg_value(cols, "Cup/Fcap", 3.0), _SC_A * dp; rtol = 1e-9)
+    end
+
+    @testset "tilt stiffness rising with vacuum, falling with extension" begin
+        m, dx, c_vac, c_ext = 2.0, 0.01, 1.0, 2.0
+        cols, result, _ = bg_run(_sc_rig(; m = m, dx = dx, cup = Dict("c_vac" => c_vac, "c_ext" => c_ext),
+            t_end = 6.0, points = 61))
+        @test _sc_ok(result)
+        qw, qy = bg_value(cols, "Cup/qw", 6.0), bg_value(cols, "Cup/qy", 6.0)
+        phi = 2 * atan(qy, qw)
+        dp, ext = bg_value(cols, "Cup/dp", 6.0), bg_value(cols, "Cup/ext", 6.0)
+        kf = (1 + c_vac * dp / _SC_PATM) * exp(-c_ext * ext / 0.04)
+        @test isapprox(bg_value(cols, "Cup/kf", 6.0), kf; rtol = 1e-9)
+        @test kf > 1.25                     # the vacuum (+59 %) outweighs the 3.9 mm extension (-18 %)
+        @test isapprox(2 * qw * qy * k_tilt * kf, m * _SC_G * dx * cos(phi); rtol = 1e-4)
     end
 end
 

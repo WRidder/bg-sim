@@ -108,7 +108,22 @@
           "M45_max": "M45_max",
           "M6_max": "M6_max",
           "I45_max": "I45_max",
-          "I6_max": "I6_max"
+          "I6_max": "I6_max",
+          "tilt_gain": "tilt_gain",
+          "tilt_max_deg": "tilt_max_deg",
+          "T_tw": "T_tw",
+          "T_tr": "T_tr",
+          "f5_Ta": "f5_Ta",
+          "f5_Tp": "f5_Tp",
+          "f5_Tl": "f5_Tl",
+          "f5_Tx": "f5_Tx",
+          "f5_ox": "f5_ox",
+          "f5_ax": "f5_ax",
+          "f5_dx": "f5_dx",
+          "f5_ex": "f5_ex",
+          "f5_Td": "f5_Td",
+          "f5_y0": "f5_y0",
+          "f5_y1": "f5_y1"
         },
         "constants": {},
         "starts": {}
@@ -376,7 +391,14 @@
           "perm": "perm",
           "A_lip0": "A_lip0",
           "F_min": "F_min",
-          "p_atm": "101325"
+          "p_atm": "101325",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -675,7 +697,14 @@
           "perm": "perm",
           "A_lip0": "A_lip0",
           "F_min": "F_min",
-          "p_atm": "101325"
+          "p_atm": "101325",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -974,7 +1003,14 @@
           "perm": "perm",
           "A_lip0": "A_lip0",
           "F_min": "F_min",
-          "p_atm": "101325"
+          "p_atm": "101325",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -1273,7 +1309,14 @@
           "perm": "perm",
           "A_lip0": "A_lip0",
           "F_min": "F_min",
-          "p_atm": "101325"
+          "p_atm": "101325",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -1572,7 +1615,14 @@
           "perm": "perm",
           "A_lip0": "A_lip0",
           "F_min": "F_min",
-          "p_atm": "101325"
+          "p_atm": "101325",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
         },
         "constants": {},
         "starts": {
@@ -3895,6 +3945,96 @@
       "description": "Required holding margin 1 - U (0.5 = safety factor 2)"
     },
     {
+      "name": "tilt_gain",
+      "value": "0",
+      "unit": "1",
+      "description": "Waiter motion: share of the tilt that turns the cup axis into the specific force a - g of the load (0 off, 1 full)"
+    },
+    {
+      "name": "tilt_max_deg",
+      "value": "25",
+      "unit": "deg",
+      "description": "Waiter motion: largest tool tilt (smooth saturation)"
+    },
+    {
+      "name": "T_tw",
+      "value": "0.08",
+      "unit": "s",
+      "description": "Waiter motion: the planned load acceleration is averaged over a triangle window of +-T_tw (smooth wrist motion)"
+    },
+    {
+      "name": "T_tr",
+      "value": "0.1",
+      "unit": "s",
+      "description": "Waiter motion: the tilt fades in over T_tr after the lift start and out over T_tr before the place contact"
+    },
+    {
+      "name": "f5_Ta",
+      "value": "0.2",
+      "unit": "s",
+      "description": "Family 5: approach duration"
+    },
+    {
+      "name": "f5_Tp",
+      "value": "0.2",
+      "unit": "s",
+      "description": "Family 5: depart duration"
+    },
+    {
+      "name": "f5_Tl",
+      "value": "0.15",
+      "unit": "s",
+      "description": "Family 5: lift duration (H_lift, from the lift start)"
+    },
+    {
+      "name": "f5_Td",
+      "value": "0.15",
+      "unit": "s",
+      "description": "Family 5: lower duration (H_lift, ending at the place contact)"
+    },
+    {
+      "name": "f5_Tx",
+      "value": "0.8",
+      "unit": "s",
+      "description": "Family 5: transfer duration (straight line, own profile)"
+    },
+    {
+      "name": "f5_ox",
+      "value": "0.05",
+      "unit": "s",
+      "description": "Family 5: transfer start after the lift start"
+    },
+    {
+      "name": "f5_ex",
+      "value": "0.1",
+      "unit": "s",
+      "description": "Family 5: carry time after the transfer end (the lower finishes)"
+    },
+    {
+      "name": "f5_ax",
+      "value": "0.4",
+      "unit": "1",
+      "description": "Family 5: acceleration phase of the transfer, share of its duration"
+    },
+    {
+      "name": "f5_dx",
+      "value": "0.4",
+      "unit": "1",
+      "description": "Family 5: deceleration phase of the transfer, share of its duration"
+    },
+    {
+      "name": "f5_y0",
+      "value": "0",
+      "unit": "1",
+      "description": "Family 5: the yaw turn starts at this share of the carry"
+    },
+    {
+      "name": "f5_y1",
+      "value": "1",
+      "unit": "1",
+      "description": "Family 5: the yaw turn ends at this share of the carry"
+    },
+    {
       "name": "z_s",
       "value": "0",
       "unit": "m",
@@ -4325,6 +4465,48 @@
       "value": "0.1",
       "unit": "N",
       "description": "Residual friction capacity of a free lip"
+    },
+    {
+      "name": "s_bot",
+      "value": "0.006",
+      "unit": "m",
+      "description": "Cup compression stroke before the folds bottom (estimate)"
+    },
+    {
+      "name": "k_bot",
+      "value": "25000",
+      "unit": "N/m",
+      "description": "Cup bottoming stiffness scale (estimate)"
+    },
+    {
+      "name": "n_bot",
+      "value": "3",
+      "unit": "1",
+      "description": "Cup bottoming exponent"
+    },
+    {
+      "name": "x_bot",
+      "value": "0.001",
+      "unit": "m",
+      "description": "Reference over-stroke of the bottoming law"
+    },
+    {
+      "name": "A_fold",
+      "value": "0.00017",
+      "unit": "m^2",
+      "description": "Folded bellows annulus: vacuum lift stroke A_fold*dp/k_ax (estimate)"
+    },
+    {
+      "name": "c_vac",
+      "value": "1",
+      "unit": "1",
+      "description": "Cup lateral/tilt stiffness rise with vacuum, 1 + c_vac*dp/p_atm (estimate)"
+    },
+    {
+      "name": "c_ext",
+      "value": "3",
+      "unit": "1",
+      "description": "Cup lateral/tilt stiffness fall with extension, exp(-c_ext*ext/L0) (estimate)"
     },
     {
       "name": "h_stack",
@@ -4769,6 +4951,26 @@
         "Tool/W[5]",
         "Tool/W[6]"
       ]
+    },
+    {
+      "id": "tilt",
+      "title": "Waiter tilt [deg]: tool tilt, angle of the specific force, tool axis to force",
+      "signals": [
+        "Planner/tilt",
+        "Planner/f_ang",
+        "Planner/tilt_err"
+      ]
+    },
+    {
+      "id": "bellows",
+      "title": "Bellows extension [m] (negative: compressed or lifted by the vacuum)",
+      "signals": [
+        "Cup1/ext",
+        "Cup2/ext",
+        "Cup3/ext",
+        "Cup4/ext",
+        "Cup5/ext"
+      ]
     }
   ],
   "scene": {
@@ -5100,17 +5302,110 @@
         ]
       },
       {
+        "id": "tiltplot",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Waiter tilt [deg]: tool tilt, specific-force angle, tool axis to force",
+        "signals": [
+          "Planner/tilt",
+          "Planner/f_ang",
+          "Planner/tilt_err"
+        ]
+      },
+      {
+        "id": "tiltpk",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Peak tool tilt",
+        "signals": [
+          "Planner/tilt_pk"
+        ],
+        "options": {
+          "min": 0,
+          "max": 40,
+          "decimals": 1,
+          "unit": "deg"
+        }
+      },
+      {
+        "id": "tiltnow",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Tool tilt",
+        "signals": [
+          "Planner/tilt"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "deg"
+        }
+      },
+      {
+        "id": "axial",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Axial cup force T per cup [N] (pull > 0)",
+        "signals": [
+          "Cup1/T",
+          "Cup2/T",
+          "Cup3/T",
+          "Cup4/T",
+          "Cup5/T"
+        ]
+      },
+      {
+        "id": "shear",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Shear (lateral) cup force per cup [N]",
+        "signals": [
+          "Cup1/F_lat",
+          "Cup2/F_lat",
+          "Cup3/F_lat",
+          "Cup4/F_lat",
+          "Cup5/F_lat"
+        ]
+      },
+      {
         "id": "family",
         "kind": "slider",
         "size": "2x1",
-        "title": "Family: 1 joint PTP, 2 Cartesian, 3 Cartesian blended, 4 joint blended",
+        "title": "Family: 1 joint PTP, 2 Cartesian, 3 Cartesian blended, 4 joint blended, 5 free timing",
         "parameter": "global:family",
         "options": {
           "min": 1,
-          "max": 4,
+          "max": 5,
           "step": 1,
           "decimals": 0,
           "unit": ""
+        }
+      },
+      {
+        "id": "tiltgain",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Waiter tilt gain (0 level, 1 tool axis along the specific force)",
+        "parameter": "global:tilt_gain",
+        "options": {
+          "min": 0,
+          "max": 1.5,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "tiltmax",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Largest tilt",
+        "parameter": "global:tilt_max_deg",
+        "options": {
+          "min": 0,
+          "max": 40,
+          "step": 1,
+          "decimals": 0,
+          "unit": "deg"
         }
       },
       {

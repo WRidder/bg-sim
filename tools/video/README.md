@@ -75,6 +75,11 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
   the `vdp-belt` model of `van-der-pol`, the dashboard next to the detached 3D viewer, in real time (frame k at t = k/fps) for
   three runs set on the dashboard sliders: mu = 0.5 growing onto the limit cycle, mu = 1.0, and mu = 0.5 shrinking from x0 = 2.5.
   The caption bar shows the simulation time. `--stills` writes only the framing stills (`camera-fit.png`, `camera.png`, segment ends).
+- `capture-suction-cup.mjs <out-dir> [--fps 30] [--zoom 6] [--zoom-at 0.5,0.55] [--orbit 0,-40] [--only a,b] [--stills] [--compose-only]`:
+  the `suction-cup` example, the dashboard next to the detached 3D viewer, one segment per model (hold and release, bounce,
+  steps, swing, chirp, overload, linear vs nonlinear), each in real time (frame k at t = k/fps). Every run happens off camera.
+  The caption bar names the motion and shows the simulation time. Writes `suction-cup.mp4` and stills per model (dashboard
+  before the run, camera framing, mid and end of the segment).
 - `capture-quad-pendulum.mjs <out-dir> [--set main|travel] [--fps 30] [--max-frames n] [--only cart,rotary,push] [--stills] [--compose-only]`: the
   `quad-pendulum` example in the same layout as `capture-vdp-belt.mjs` (dashboard plus detached 3D viewer, real time): the cart
   swing-up and balance, the rotary-arm swing-up (`QP_ROTARY_MODEL` picks another rotary model) and the cart balance with 3 ms of
@@ -92,3 +97,7 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
 - `capture-flexarm.mjs <out.mp4> [--shots <dir>]`: the triple rotary pendulum on a rigid arm, on the flexible arm with the rigid
   firmware (slow motion of the arm mode), and with the low-pass firmware. The 3D stage runs full screen; the model runs are cut.
   `--shots examples/pendulum-triple-rotary/design/_shots` also writes the paused close-ups that `flex_finish.py --docs` puts in the docs.
+- `capture-fanuc.mjs <out.mp4> [--shots <dir>] [--theme dark|light]`: the `fanuc-pick` example. Every pick plays at 1x and is
+  labelled "1x real time"; slow-motion repeats carry their factor. Side-by-side pairs start together at 1x: the level optimum
+  against the waiter tilt (`pick-place-best` / `pick-place-tilt-best`) and the old optimum against the free optimum
+  (`*-best` / `*-opt`). The runs and model switches are cut. `--shots` writes a 3D-view and a dashboard screenshot per model.

@@ -37,7 +37,7 @@
           "from_t": 0.9564,
           "to_t": 3.0064,
           "value": 0.5,
-          "note": "the 1.75 s S-curve transfer keeps every cup's utilisation U at or below 1/S = 0.5 (safety factor 2): the shortest such S-curve move found by design.py is 1.69 s"
+          "note": "the 1.75 s S-curve transfer keeps every cup's utilisation U at or below 1/S = 0.5 (safety factor 2): the shortest such S-curve move found by design.py is 1.61 s"
         },
         {
           "kind": "max_abs_le",
@@ -111,9 +111,9 @@
           "kind": "max_abs_le",
           "signal": "Monitor/n_lost",
           "from_t": 0.0,
-          "to_t": 1.423,
+          "to_t": 1.449,
           "value": 0.5,
-          "note": "the parcel survives the acceleration and the cruise of the 0.7 s trapezoid (9.2 m/s^2) ..."
+          "note": "the parcel survives the acceleration and the cruise of the 0.74 s trapezoid (8.2 m/s^2) ..."
         },
         {
           "kind": "cursor_value",
@@ -139,15 +139,15 @@
           "kind": "min_ge",
           "signal": "Monitor/held",
           "from_t": 0.0,
-          "to_t": 2.316,
+          "to_t": 2.356,
           "value": 0.5,
-          "note": "the same 0.7 s transfer as an S-curve (13.1 m/s^2 peak, 43 % more than the trapezoid, but finite jerk) keeps the parcel"
+          "note": "the same 0.74 s transfer as an S-curve (11.7 m/s^2 peak, 43 % more than the trapezoid, but finite jerk) keeps the parcel"
         },
         {
           "kind": "max_abs_le",
           "signal": "Monitor/n_lost",
           "from_t": 0.0,
-          "to_t": 2.316,
+          "to_t": 2.356,
           "value": 0.5,
           "note": "no cup loses its seal before the release"
         },
@@ -155,9 +155,9 @@
           "kind": "final_value",
           "signal": "Pose/px",
           "t": 3.1,
-          "value": 0.989,
+          "value": 1.0,
           "abs": 0.01,
-          "note": "the parcel arrives (it slides about 1 cm on the lips during the hard deceleration)"
+          "note": "the parcel arrives at the place (x = 1 m)"
         }
       ]
     },
@@ -258,9 +258,9 @@
           "kind": "max_abs_le",
           "signal": "Monitor/n_lost",
           "from_t": 0.0,
-          "to_t": 1.7564,
+          "to_t": 1.689,
           "value": 0.5,
-          "note": "it survives the lift and the acceleration of the 1.2 s move ..."
+          "note": "it survives the lift and the acceleration of the 1.1 s move ..."
         },
         {
           "kind": "cursor_value",
@@ -268,7 +268,7 @@
           "t": 2.8,
           "value": 0.0,
           "abs": 1e-09,
-          "note": "... and is lost in the deceleration (4.5 m/s^2); with the 60 l/min generator (29 kPa) the same move holds (design.py)"
+          "note": "... and is lost in the deceleration (5.3 m/s^2); with the 60 l/min generator (29 kPa) the same move holds (design.py)"
         }
       ]
     },

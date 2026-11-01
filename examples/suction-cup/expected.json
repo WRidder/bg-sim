@@ -1,0 +1,117 @@
+{
+  "project": "suction-cup",
+  "description": "One stdlib SuctionCup (the 1.5-fold bellows of fanuc-pick, nonlinear bellows on) on a prescribed-motion tool holds a 0.6 kg box: hold and release, a vertical bounce, horizontal acceleration steps, a tool-tilt swing, a lateral chirp, an overload and the nonlinear cup next to the linear one. design/analysis.py derives the operating vacuum, the static hold with the vacuum lift stroke, the axial and lateral/tilt modes and the quasi-static utilisations; the checks pin the simulations to those numbers and pin which runs hold and which lose the box.",
+  "models": {
+    "hold-release": {
+      "checks": [
+        {"kind": "scene_bindings"},
+        {"kind": "no_diagnostics", "codes": ["W201", "W202", "W203", "W204", "W205", "W206", "E006", "E007", "E101", "E102", "E103", "E106", "E901"]},
+        {"kind": "cursor_value", "signal": "Cup/dp", "t": 2.0, "value": 59152.3, "rtol": 0.0001,
+         "note": "operating vacuum: the ejector curve Q_max (1 - dp/dp_max) meets the sealed-lip leak at 59.15 kPa (analysis.operating_vacuum)"},
+        {"kind": "cursor_value", "signal": "Cup/Fcap", "t": 2.0, "value": 29.576, "rtol": 0.001,
+         "note": "holding capacity A_eff dp = 5e-4 m^2 x 59.15 kPa"},
+        {"kind": "cursor_value", "signal": "Cup/ext", "t": 2.0, "value": -0.001668, "rtol": 0.003,
+         "note": "static hold: k_ax ext + A_fold dp = m g gives ext = (5.884 - 10.056 N) / 2500 N/m = -1.668 mm; the vacuum lift stroke (4.022 mm unloaded) is larger than the sag, so the hanging cup is shorter than its rest length"},
+        {"kind": "cursor_value", "signal": "Cup/kf", "t": 2.0, "value": 1.8713, "rtol": 0.002,
+         "note": "side-stiffness factor (1 + c_vac dp/p_atm) exp(-c_ext ext/L0) at the hang"},
+        {"kind": "cursor_value", "signal": "Cup/U", "t": 2.0, "value": 0.199, "rtol": 0.01,
+         "note": "static utilisation m g / (A_eff dp)"},
+        {"kind": "cursor_value", "signal": "Pose/g[7]", "t": 0.4, "value": 0.0216302, "abs": 5e-05,
+         "note": "before the robot moves, the lift stroke lifts the box 1.668 mm off the table (resting centre 19.962 mm + 1.668 mm)"},
+        {"kind": "max_abs_le", "signal": "Cup/U", "from_t": 0.1, "to_t": 2.5, "value": 0.3,
+         "note": "the lift and the lowering stay far from the holding limit (max 0.283)"},
+        {"kind": "final_value", "signal": "Mon/held", "t": 3.49, "value": 1, "abs": 0.01, "note": "the box was held until the release"},
+        {"kind": "final_value", "signal": "Cup/dp", "t": 3.49, "value": 0, "abs": 5, "note": "the release vents the cup"},
+        {"kind": "final_value", "signal": "Cup/sealed", "t": 3.49, "value": 0, "abs": 0.01, "note": "the tool retracts after the release: the lip leaves the box"}
+      ]
+    },
+    "bounce": {
+      "checks": [
+        {"kind": "scene_bindings"},
+        {"kind": "no_diagnostics", "codes": ["W201", "W202", "W203", "W204", "W205", "W206", "E006", "E007", "E101", "E102", "E103", "E106", "E901"]},
+        {"kind": "damping", "signal": "Cup/ext", "from_t": 1.0, "to_t": 1.7, "zeta": 0.1033, "zeta_abs": 0.005,
+         "wn": 64.55, "wn_rtol": 0.01, "min_wn": 20, "max_wn": 200,
+         "note": "the ring-down after the 4 mm step: w_n = sqrt(k_ax/m) = 64.55 rad/s (10.27 Hz), zeta = d_ax / (2 sqrt(k_ax m)) = 0.103 (no bottoming at the hang)"},
+        {"kind": "max_abs_le", "signal": "Cup/F_bot", "from_t": 0.9, "to_t": 3.0, "value": 0.001,
+         "note": "the step ring (ext down to -2.96 mm) stays inside the 6 mm stroke: no bottoming"},
+        {"kind": "max_abs", "signal": "Cup/F_bot", "from_t": 3.0, "to_t": 7.0, "value": 69.15, "abs": 35,
+         "note": "in the vertical chirp the folds bottom (ext to -7.4 mm): the hardening bends the resonance up, so the largest push comes at about 13.9 Hz, above the 10.27 Hz linear mode"},
+        {"kind": "cursor_value", "signal": "Cup/sealed", "t": 7.0, "value": 1, "abs": 0.01, "note": "the seal survives the bottoming (max U 0.87)"},
+        {"kind": "final_value", "signal": "Mon/held", "t": 8.89, "value": 1, "abs": 0.01, "note": "held"}
+      ]
+    },
+    "steps": {
+      "checks": [
+        {"kind": "scene_bindings"},
+        {"kind": "no_diagnostics", "codes": ["W201", "W202", "W203", "W204", "W205", "W206", "E006", "E007", "E101", "E102", "E103", "E106", "E901"]},
+        {"kind": "fft_peak", "signal": "Cup/ex", "from_t": 1.12, "to_t": 1.68, "min_hz": 3, "max_hz": 10, "value": 6.546, "rtol": 0.03,
+         "note": "the coast after the 1.5 m/s^2 pulse rings the sway mode: 6.55 Hz from the linearised two-degree-of-freedom model (lateral bellows deflection and box tilt, side stiffness x kf 1.87)"},
+        {"kind": "fft_peak", "signal": "Cup/ex", "from_t": 1.12, "to_t": 1.68, "min_hz": 10, "max_hz": 20, "value": 13.198, "rtol": 0.03,
+         "note": "and the tilt mode at 13.20 Hz"},
+        {"kind": "fft_peak", "signal": "Cup/ex", "from_t": 4.84, "to_t": 5.55, "min_hz": 3, "max_hz": 10, "value": 6.546, "rtol": 0.03,
+         "note": "the sway mode again after the 4.5 m/s^2 stop"},
+        {"kind": "max_abs_le", "signal": "Cup/U", "from_t": 0.9, "to_t": 6.0, "value": 0.95,
+         "note": "max U 0.90 at the 4.5 m/s^2 pulse: the quasi-static value is 0.61, the sudden pulse overshoots"},
+        {"kind": "max_abs_le", "signal": "Cup/h", "from_t": 0.9, "to_t": 6.0, "value": 1e-09, "note": "the lip never lifts"},
+        {"kind": "final_value", "signal": "Mon/held", "t": 7.29, "value": 1, "abs": 0.01, "note": "held"}
+      ]
+    },
+    "swing": {
+      "checks": [
+        {"kind": "scene_bindings"},
+        {"kind": "no_diagnostics", "codes": ["W201", "W202", "W203", "W204", "W205", "W206", "E006", "E007", "E101", "E102", "E103", "E106", "E901"]},
+        {"kind": "cursor_value", "signal": "Tool/theta", "t": 2.2, "value": 30, "abs": 0.05, "note": "the tool holds 30 degrees"},
+        {"kind": "cursor_value", "signal": "Cup/ex", "t": 2.2, "value": 0.0010159, "rtol": 0.01,
+         "note": "quasi-static tilt: the shear m g sin 30 deg over k_lat kf, with kf at the axial load m g cos 30 deg: 1.016 mm"},
+        {"kind": "cursor_value", "signal": "Cup/U", "t": 2.2, "value": 0.62, "rtol": 0.04,
+         "note": "quasi-static utilisation at 30 degrees: (m g cos + 4 m g sin h / D_lip + m g sin / mu) / Fcap = 0.620"},
+        {"kind": "max_abs_le", "signal": "Cup/U", "from_t": 0.9, "to_t": 6.5, "value": 0.9,
+         "note": "the fast +-10 degree swing at 1.5 Hz peaks at U 0.84"},
+        {"kind": "final_value", "signal": "Mon/held", "t": 7.49, "value": 1, "abs": 0.01, "note": "held"}
+      ]
+    },
+    "chirp": {
+      "checks": [
+        {"kind": "scene_bindings"},
+        {"kind": "no_diagnostics", "codes": ["W201", "W202", "W203", "W204", "W205", "W206", "E006", "E007", "E101", "E102", "E103", "E106", "E901"]},
+        {"kind": "max_abs", "signal": "Trans/TR", "from_t": 3.0, "to_t": 5.0, "value": 2.75, "rtol": 0.05,
+         "note": "transmissibility peak at the sway mode (fl 6.6 Hz); the swept, demodulated peak is lower than the steady-state 4.58 of the linear model because the 1.85 Hz/s sweep crosses the resonance in a few cycles"},
+        {"kind": "max_abs", "signal": "Trans/TR", "from_t": 6.5, "to_t": 9.5, "value": 3.28, "rtol": 0.05,
+         "note": "and at the tilt mode (fl 13.4 Hz)"},
+        {"kind": "max_abs_le", "signal": "Cup/U", "from_t": 0.9, "to_t": 11.5, "value": 0.8, "note": "max U 0.71 at the tilt resonance"},
+        {"kind": "final_value", "signal": "Mon/held", "t": 13.09, "value": 1, "abs": 0.01, "note": "held"}
+      ]
+    },
+    "overload": {
+      "checks": [
+        {"kind": "scene_bindings"},
+        {"kind": "no_diagnostics", "codes": ["W201", "W202", "W203", "W204", "W205", "W206", "E006", "E007", "E101", "E102", "E103", "E106", "E901"]},
+        {"kind": "max_abs_le", "signal": "Cup/U", "from_t": 0.9, "to_t": 2.42, "value": 0.9,
+         "note": "the 0.8 kg box survives the 3 m/s^2 move (max U 0.87)"},
+        {"kind": "cursor_value", "signal": "Cup/sealed", "t": 2.5, "value": 1, "abs": 0.01, "note": "still sealed at the start of the 6 m/s^2 pulse"},
+        {"kind": "cursor_value", "signal": "Tool/ax", "t": 2.5, "value": -6, "abs": 0.01, "note": "in the 6 m/s^2 pulse (quasi-static U 0.996)"},
+        {"kind": "cursor_value", "signal": "Cup/sealed", "t": 2.55, "value": 0, "abs": 0.01, "note": "U reaches 1, the lip peels, the gap passes h_lost: the seal is lost at 2.51 s"},
+        {"kind": "final_value", "signal": "Cup/sealed", "t": 7.29, "value": 0, "abs": 0.01, "note": "lost for good"},
+        {"kind": "final_value", "signal": "Mon/held", "t": 7.29, "value": 0, "abs": 0.01, "note": "the box fell off before the release"}
+      ]
+    },
+    "linear-vs-nonlinear": {
+      "checks": [
+        {"kind": "scene_bindings"},
+        {"kind": "no_diagnostics", "codes": ["W201", "W202", "W203", "W204", "W205", "W206", "E006", "E007", "E101", "E102", "E103", "E106", "E901"]},
+        {"kind": "cursor_value", "signal": "Cup/ext", "t": 1.75, "value": -0.001668, "abs": 4e-05,
+         "note": "nonlinear cup at the hang: (m g - A_fold dp) / k_ax = -1.668 mm"},
+        {"kind": "cursor_value", "signal": "CupL/ext", "t": 1.75, "value": 0.0023544, "abs": 4e-05,
+         "note": "linear cup: m g / k_ax = +2.354 mm; the difference is the lift stroke A_fold dp / k_ax = 4.022 mm, so the nonlinear box hangs 4 mm higher"},
+        {"kind": "damping", "signal": "CupL/ext", "from_t": 1.0, "to_t": 1.7, "zeta": 0.1033, "zeta_abs": 0.005,
+         "wn": 64.55, "wn_rtol": 0.01, "min_wn": 20, "max_wn": 200,
+         "note": "small motions: both cups ring at the same 10.27 Hz axial mode (same k_ax, no bottoming)"},
+        {"kind": "max_abs", "signal": "Cup/F_bot", "from_t": 3.0, "to_t": 7.0, "value": 69.15, "abs": 35,
+         "note": "in the chirp the nonlinear cup bottoms: the lift stroke has used 1.7 mm of the 6 mm compression travel"},
+        {"kind": "max_abs_le", "signal": "CupL/F_bot", "value": 1e-09, "note": "the linear cup has no bottoming"},
+        {"kind": "final_value", "signal": "Mon/held", "t": 8.89, "value": 1, "abs": 0.01, "note": "the nonlinear cup holds (max U 0.87)"},
+        {"kind": "final_value", "signal": "MonL/held", "t": 8.89, "value": 1, "abs": 0.01, "note": "the linear cup holds (max U 0.64)"}
+      ]
+    }
+  }
+}

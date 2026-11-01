@@ -60,9 +60,9 @@
           "kind": "cursor_value",
           "signal": "Monitor/M_tot",
           "t": 1.70903,
-          "value": -0.0731564,
+          "value": -0.0533209,
           "abs": 0.03,
-          "note": "holding margin of the reduced model (reduced.py), -0.073, within 0.03"
+          "note": "holding margin of the reduced model (reduced.py), -0.053, within 0.03"
         },
         {
           "kind": "min_ge",
@@ -78,6 +78,14 @@
           "to_t": 1.36957,
           "value": 0.02,
           "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.70903,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
         },
         {
           "kind": "cursor_value",
@@ -216,9 +224,9 @@
           "kind": "cursor_value",
           "signal": "Monitor/M_tot",
           "t": 1.70903,
-          "value": 0.0916094,
-          "abs": 0.03,
-          "note": "holding margin of the reduced model (reduced.py), 0.092, within 0.03"
+          "value": -0.200378,
+          "abs": 0.05,
+          "note": "holding margin of the reduced model (reduced.py), -0.200, within 0.05"
         },
         {
           "kind": "min_ge",
@@ -234,6 +242,14 @@
           "to_t": 1.36957,
           "value": 0.02,
           "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.70903,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
         }
       ]
     },
@@ -295,9 +311,9 @@
           "kind": "cursor_value",
           "signal": "Monitor/M_tot",
           "t": 1.70903,
-          "value": 0.0488906,
-          "abs": 0.03,
-          "note": "holding margin of the reduced model (reduced.py), 0.049, within 0.03"
+          "value": -0.107515,
+          "abs": 0.05,
+          "note": "holding margin of the reduced model (reduced.py), -0.108, within 0.05"
         },
         {
           "kind": "min_ge",
@@ -313,6 +329,14 @@
           "to_t": 1.36957,
           "value": 0.02,
           "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.70903,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
         }
       ]
     },
@@ -438,9 +462,9 @@
           "kind": "cursor_value",
           "signal": "Monitor/M_tot",
           "t": 12.9745,
-          "value": 0.164894,
+          "value": 0.144513,
           "abs": 0.03,
-          "note": "holding margin of the reduced model (reduced.py), 0.165, within 0.03"
+          "note": "holding margin of the reduced model (reduced.py), 0.145, within 0.03"
         },
         {
           "kind": "min_ge",
@@ -459,6 +483,14 @@
         },
         {
           "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 12.9745,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
+        },
+        {
+          "kind": "cursor_value",
           "signal": "Cup1/T",
           "t": 6.52224,
           "value": 2.943,
@@ -470,7 +502,7 @@
           "kind": "cursor_value",
           "signal": "Cup2/T",
           "t": 6.52224,
-          "value": 9.28055,
+          "value": 7.57063,
           "rtol": 0.02,
           "abs": 0.05,
           "note": "static cup force of zone 2 (hand calculation of reference.py: rigid plate on five bellows, axial and tilt springs, CoM below the lip plane)"
@@ -479,7 +511,7 @@
           "kind": "cursor_value",
           "signal": "Cup3/T",
           "t": 6.52224,
-          "value": 6.11178,
+          "value": 5.25682,
           "rtol": 0.02,
           "abs": 0.05,
           "note": "static cup force of zone 3 (hand calculation of reference.py: rigid plate on five bellows, axial and tilt springs, CoM below the lip plane)"
@@ -488,7 +520,7 @@
           "kind": "cursor_value",
           "signal": "Cup4/T",
           "t": 6.52224,
-          "value": -3.39455,
+          "value": -1.68463,
           "rtol": 0.02,
           "abs": 0.05,
           "note": "static cup force of zone 4 (hand calculation of reference.py: rigid plate on five bellows, axial and tilt springs, CoM below the lip plane)"
@@ -497,7 +529,7 @@
           "kind": "cursor_value",
           "signal": "Cup5/T",
           "t": 6.52224,
-          "value": -0.225775,
+          "value": 0.629185,
           "rtol": 0.02,
           "abs": 0.05,
           "note": "static cup force of zone 5 (hand calculation of reference.py: rigid plate on five bellows, axial and tilt springs, CoM below the lip plane)"
@@ -506,7 +538,7 @@
           "kind": "cursor_value",
           "signal": "Cup2/U",
           "t": 6.52224,
-          "value": 0.649819,
+          "value": 0.658478,
           "rtol": 0.03,
           "note": "utilisation of the most loaded cup at rest: (T + 4 k_t |phi| / D_lip) / (A_eff dp): the centre grip cannot reach the margin of 0.5 with this carton"
         },
@@ -541,7 +573,7 @@
               "tol": 1e-06
             }
           ],
-          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 2e-16 m)"
         },
         {
           "kind": "no_diagnostics",
@@ -561,8 +593,8 @@
         {
           "kind": "cursor_value",
           "signal": "Planner/T_cyc",
-          "t": 1.6278,
-          "value": 1.577795913,
+          "t": 1.66235,
+          "value": 1.612353323,
           "rtol": 1e-06,
           "note": "the cycle time of planner.reference (approach start to depart end)"
         },
@@ -570,38 +602,38 @@
           "kind": "min_ge",
           "signal": "Monitor/held_ok",
           "from_t": 0.0,
-          "to_t": 1.6278,
+          "to_t": 1.66235,
           "value": 0.5,
           "note": "held from the pick to the place (no drop)"
         },
         {
           "kind": "cursor_value",
           "signal": "Monitor/M_tot",
-          "t": 1.6278,
-          "value": 0.501799,
+          "t": 1.66235,
+          "value": 0.502774,
           "abs": 0.03,
-          "note": "holding margin of the reduced model (reduced.py), 0.502, within 0.03"
+          "note": "holding margin of the reduced model (reduced.py), 0.503, within 0.03"
         },
         {
           "kind": "min_ge",
           "signal": "Monitor/sep",
           "from_t": 0.286706,
-          "to_t": 1.31109,
+          "to_t": 1.34565,
           "value": -1e-09
         },
         {
           "kind": "max_abs_le",
           "signal": "Monitor/sep",
           "from_t": 0.286706,
-          "to_t": 1.31109,
+          "to_t": 1.34565,
           "value": 0.02,
           "note": "the parcel stays within d_drop of its grip position while carried"
         },
         {
           "kind": "min_ge",
           "signal": "Monitor/M_tot",
-          "from_t": 1.31309,
-          "to_t": 1.6278,
+          "from_t": 1.34765,
+          "to_t": 1.66235,
           "value": 0.48,
           "note": "the optimum keeps the required margin 0.5 (bg-sim within 0.02 of the reduced model)"
         },
@@ -609,9 +641,17 @@
           "kind": "max_abs_le",
           "signal": "Planner/util_max",
           "from_t": 0.0,
-          "to_t": 1.6278,
+          "to_t": 1.66235,
           "value": 100.0,
           "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.66235,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
         }
       ]
     },
@@ -656,8 +696,8 @@
         {
           "kind": "cursor_value",
           "signal": "Planner/T_cyc",
-          "t": 1.64657,
-          "value": 1.596569771,
+          "t": 1.67629,
+          "value": 1.626290306,
           "rtol": 1e-06,
           "note": "the cycle time of planner.reference (approach start to depart end)"
         },
@@ -665,38 +705,38 @@
           "kind": "min_ge",
           "signal": "Monitor/held_ok",
           "from_t": 0.0,
-          "to_t": 1.64657,
+          "to_t": 1.67629,
           "value": 0.5,
           "note": "held from the pick to the place (no drop)"
         },
         {
           "kind": "cursor_value",
           "signal": "Monitor/M_tot",
-          "t": 1.64657,
-          "value": 0.506218,
+          "t": 1.67629,
+          "value": 0.503133,
           "abs": 0.03,
-          "note": "holding margin of the reduced model (reduced.py), 0.506, within 0.03"
+          "note": "holding margin of the reduced model (reduced.py), 0.503, within 0.03"
         },
         {
           "kind": "min_ge",
           "signal": "Monitor/sep",
-          "from_t": 0.286706,
-          "to_t": 1.32986,
+          "from_t": 0.293392,
+          "to_t": 1.3529,
           "value": -1e-09
         },
         {
           "kind": "max_abs_le",
           "signal": "Monitor/sep",
-          "from_t": 0.286706,
-          "to_t": 1.32986,
+          "from_t": 0.293392,
+          "to_t": 1.3529,
           "value": 0.02,
           "note": "the parcel stays within d_drop of its grip position while carried"
         },
         {
           "kind": "min_ge",
           "signal": "Monitor/M_tot",
-          "from_t": 1.33186,
-          "to_t": 1.64657,
+          "from_t": 1.3549,
+          "to_t": 1.67629,
           "value": 0.48,
           "note": "the optimum keeps the required margin 0.5 (bg-sim within 0.02 of the reduced model)"
         },
@@ -704,9 +744,17 @@
           "kind": "max_abs_le",
           "signal": "Planner/util_max",
           "from_t": 0.0,
-          "to_t": 1.64657,
+          "to_t": 1.67629,
           "value": 100.0,
           "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.67629,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
         }
       ]
     },
@@ -751,8 +799,8 @@
         {
           "kind": "cursor_value",
           "signal": "Planner/T_cyc",
-          "t": 1.44169,
-          "value": 1.391686461,
+          "t": 1.55575,
+          "value": 1.505745757,
           "rtol": 1e-06,
           "note": "the cycle time of planner.reference (approach start to depart end)"
         },
@@ -760,38 +808,38 @@
           "kind": "min_ge",
           "signal": "Monitor/held_ok",
           "from_t": 0.0,
-          "to_t": 1.44169,
+          "to_t": 1.55575,
           "value": 0.5,
           "note": "held from the pick to the place (no drop)"
         },
         {
           "kind": "cursor_value",
           "signal": "Monitor/M_tot",
-          "t": 1.44169,
-          "value": 0.301027,
-          "abs": 0.03,
-          "note": "holding margin of the reduced model (reduced.py), 0.301, within 0.03"
+          "t": 1.55575,
+          "value": 0.300952,
+          "abs": 0.05,
+          "note": "holding margin of the reduced model (reduced.py), 0.301, within 0.05"
         },
         {
           "kind": "min_ge",
           "signal": "Monitor/sep",
-          "from_t": 0.285301,
-          "to_t": 1.12639,
+          "from_t": 0.313168,
+          "to_t": 1.21258,
           "value": -1e-09
         },
         {
           "kind": "max_abs_le",
           "signal": "Monitor/sep",
-          "from_t": 0.285301,
-          "to_t": 1.12639,
+          "from_t": 0.313168,
+          "to_t": 1.21258,
           "value": 0.02,
           "note": "the parcel stays within d_drop of its grip position while carried"
         },
         {
           "kind": "min_ge",
           "signal": "Monitor/M_tot",
-          "from_t": 1.12839,
-          "to_t": 1.44169,
+          "from_t": 1.21458,
+          "to_t": 1.55575,
           "value": 0.28,
           "note": "the optimum keeps the required margin 0.3 (bg-sim within 0.02 of the reduced model)"
         },
@@ -799,13 +847,251 @@
           "kind": "max_abs_le",
           "signal": "Planner/util_max",
           "from_t": 0.0,
-          "to_t": 1.44169,
+          "to_t": 1.55575,
           "value": 100.0,
           "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.55575,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
         }
       ]
     },
     "loose-cylinder-best": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.54237,
+          "value": 1.492372844,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.54237,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.54237,
+          "value": 0.309728,
+          "abs": 0.05,
+          "note": "holding margin of the reduced model (reduced.py), 0.310, within 0.05"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.303042,
+          "to_t": 1.20933,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.303042,
+          "to_t": 1.20933,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.21133,
+          "to_t": 1.54237,
+          "value": 0.28,
+          "note": "the optimum keeps the required margin 0.3 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.54237,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.54237,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
+        }
+      ]
+    },
+    "pick-place-tilt-best": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.58387,
+          "value": 1.533867041,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.58387,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.58387,
+          "value": 0.500184,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.500, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.30473,
+          "to_t": 1.24924,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.30473,
+          "to_t": 1.24924,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.25124,
+          "to_t": 1.58387,
+          "value": 0.48,
+          "note": "the optimum keeps the required margin 0.5 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.58387,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_err",
+          "from_t": 0.60043,
+          "to_t": 0.953537,
+          "value": 27.4,
+          "note": "waiter tilt (gain 0.50): inside the carry the tool axis stays within 27.4 deg of the specific force a - g of the load (planned 24.4 deg; a level tool would be 28.3 deg off)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_pk",
+          "from_t": 0.0,
+          "to_t": 1.58387,
+          "value": 3.97307,
+          "note": "peak tool tilt 3.9 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt",
+          "from_t": 1.25124,
+          "to_t": 1.58387,
+          "value": 0.01,
+          "note": "the tool is level again at the place contact and the depart"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.58387,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
+        }
+      ]
+    },
+    "pick-place-opt": {
       "run_timeout": 1200,
       "checks": [
         {
@@ -846,8 +1132,8 @@
         {
           "kind": "cursor_value",
           "signal": "Planner/T_cyc",
-          "t": 1.40891,
-          "value": 1.35891384,
+          "t": 1.4437,
+          "value": 1.3937,
           "rtol": 1e-06,
           "note": "the cycle time of planner.reference (approach start to depart end)"
         },
@@ -855,38 +1141,419 @@
           "kind": "min_ge",
           "signal": "Monitor/held_ok",
           "from_t": 0.0,
-          "to_t": 1.40891,
+          "to_t": 1.4437,
           "value": 0.5,
           "note": "held from the pick to the place (no drop)"
         },
         {
           "kind": "cursor_value",
           "signal": "Monitor/M_tot",
-          "t": 1.40891,
-          "value": 0.310752,
+          "t": 1.4437,
+          "value": 0.500401,
           "abs": 0.03,
-          "note": "holding margin of the reduced model (reduced.py), 0.311, within 0.03"
+          "note": "holding margin of the reduced model (reduced.py), 0.500, within 0.03"
         },
         {
           "kind": "min_ge",
           "signal": "Monitor/sep",
-          "from_t": 0.279002,
-          "to_t": 1.09991,
+          "from_t": 0.2502,
+          "to_t": 1.253,
           "value": -1e-09
         },
         {
           "kind": "max_abs_le",
           "signal": "Monitor/sep",
-          "from_t": 0.279002,
-          "to_t": 1.09991,
+          "from_t": 0.2502,
+          "to_t": 1.253,
           "value": 0.02,
           "note": "the parcel stays within d_drop of its grip position while carried"
         },
         {
           "kind": "min_ge",
           "signal": "Monitor/M_tot",
-          "from_t": 1.10191,
-          "to_t": 1.40891,
+          "from_t": 1.255,
+          "to_t": 1.4437,
+          "value": 0.48,
+          "note": "the optimum keeps the required margin 0.5 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.4437,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_err",
+          "from_t": 0.5294,
+          "to_t": 0.9738,
+          "value": 32.9,
+          "note": "waiter tilt (gain 0.00): inside the carry the tool axis stays within 32.9 deg of the specific force a - g of the load (planned 29.5 deg; a level tool would be 29.5 deg off)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_pk",
+          "from_t": 0.0,
+          "to_t": 1.4437,
+          "value": 0.0671241,
+          "note": "peak tool tilt 0.0 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt",
+          "from_t": 1.255,
+          "to_t": 1.4437,
+          "value": 0.01,
+          "note": "the tool is level again at the place contact and the depart"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.4437,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
+        }
+      ]
+    },
+    "offset-com-tilt-best": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.60625,
+          "value": 1.556250384,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.60625,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.60625,
+          "value": 0.501399,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.501, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.309242,
+          "to_t": 1.27191,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.309242,
+          "to_t": 1.27191,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.27391,
+          "to_t": 1.60625,
+          "value": 0.48,
+          "note": "the optimum keeps the required margin 0.5 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.60625,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_err",
+          "from_t": 0.600342,
+          "to_t": 0.980808,
+          "value": 28.1,
+          "note": "waiter tilt (gain 0.37): inside the carry the tool axis stays within 28.1 deg of the specific force a - g of the load (planned 25.1 deg; a level tool would be 28.8 deg off)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_pk",
+          "from_t": 0.0,
+          "to_t": 1.60625,
+          "value": 3.76934,
+          "note": "peak tool tilt 3.7 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt",
+          "from_t": 1.27391,
+          "to_t": 1.60625,
+          "value": 0.01,
+          "note": "the tool is level again at the place contact and the depart"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.60625,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
+        }
+      ]
+    },
+    "offset-com-opt": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.4499,
+          "value": 1.3999,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.4499,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.4499,
+          "value": 0.500716,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.501, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.2301,
+          "to_t": 1.2097,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.2301,
+          "to_t": 1.2097,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.2117,
+          "to_t": 1.4499,
+          "value": 0.48,
+          "note": "the optimum keeps the required margin 0.5 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.4499,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_err",
+          "from_t": 0.5193,
+          "to_t": 0.9205,
+          "value": 34.1,
+          "note": "waiter tilt (gain 0.03): inside the carry the tool axis stays within 34.1 deg of the specific force a - g of the load (planned 30.6 deg; a level tool would be 31.5 deg off)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_pk",
+          "from_t": 0.0,
+          "to_t": 1.4499,
+          "value": 1.16992,
+          "note": "peak tool tilt 1.1 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt",
+          "from_t": 1.2117,
+          "to_t": 1.4499,
+          "value": 0.01,
+          "note": "the tool is level again at the place contact and the depart"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.4499,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
+        }
+      ]
+    },
+    "loose-sphere-tilt-best": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 4e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.52105,
+          "value": 1.47104639,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.52105,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.52105,
+          "value": 0.301315,
+          "abs": 0.05,
+          "note": "holding margin of the reduced model (reduced.py), 0.301, within 0.05"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.310485,
+          "to_t": 1.18226,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.310485,
+          "to_t": 1.18226,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.18426,
+          "to_t": 1.52105,
           "value": 0.28,
           "note": "the optimum keeps the required margin 0.3 (bg-sim within 0.02 of the reduced model)"
         },
@@ -894,9 +1561,422 @@
           "kind": "max_abs_le",
           "signal": "Planner/util_max",
           "from_t": 0.0,
-          "to_t": 1.40891,
+          "to_t": 1.52105,
           "value": 100.0,
           "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_err",
+          "from_t": 0.491785,
+          "to_t": 1.00096,
+          "value": 11.9,
+          "note": "waiter tilt (gain 0.05): inside the carry the tool axis stays within 11.9 deg of the specific force a - g of the load (planned 10.3 deg; a level tool would be 10.6 deg off)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_pk",
+          "from_t": 0.0,
+          "to_t": 1.52105,
+          "value": 0.996814,
+          "note": "peak tool tilt 0.9 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt",
+          "from_t": 1.18426,
+          "to_t": 1.52105,
+          "value": 0.01,
+          "note": "the tool is level again at the place contact and the depart"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.52105,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
+        }
+      ]
+    },
+    "loose-sphere-opt": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 2e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.3758,
+          "value": 1.3258,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.3758,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.3758,
+          "value": 0.300682,
+          "abs": 0.05,
+          "note": "holding margin of the reduced model (reduced.py), 0.301, within 0.05"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.2361,
+          "to_t": 1.0943,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.2361,
+          "to_t": 1.0943,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.0963,
+          "to_t": 1.3758,
+          "value": 0.28,
+          "note": "the optimum keeps the required margin 0.3 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.3758,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_err",
+          "from_t": 0.4156,
+          "to_t": 0.9148,
+          "value": 58.6,
+          "note": "waiter tilt (gain 0.17): inside the carry the tool axis stays within 58.6 deg of the specific force a - g of the load (planned 52.8 deg; a level tool would be 59.4 deg off)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_pk",
+          "from_t": 0.0,
+          "to_t": 1.3758,
+          "value": 6.92523,
+          "note": "peak tool tilt 6.9 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt",
+          "from_t": 1.0963,
+          "to_t": 1.3758,
+          "value": 0.01,
+          "note": "the tool is level again at the place contact and the depart"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.3758,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
+        }
+      ]
+    },
+    "loose-cylinder-tilt-best": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.40387,
+          "value": 1.353871216,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.40387,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.40387,
+          "value": 0.30155,
+          "abs": 0.05,
+          "note": "holding margin of the reduced model (reduced.py), 0.302, within 0.05"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.287954,
+          "to_t": 1.08592,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.287954,
+          "to_t": 1.08592,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.08792,
+          "to_t": 1.40387,
+          "value": 0.28,
+          "note": "the optimum keeps the required margin 0.3 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.40387,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_err",
+          "from_t": 0.517654,
+          "to_t": 0.856217,
+          "value": 32.3,
+          "note": "waiter tilt (gain 0.40): inside the carry the tool axis stays within 32.3 deg of the specific force a - g of the load (planned 28.9 deg; a level tool would be 35.4 deg off)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_pk",
+          "from_t": 0.0,
+          "to_t": 1.40387,
+          "value": 6.55293,
+          "note": "peak tool tilt 6.5 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt",
+          "from_t": 1.08792,
+          "to_t": 1.40387,
+          "value": 0.01,
+          "note": "the tool is level again at the place contact and the depart"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.40387,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
+        }
+      ]
+    },
+    "loose-cylinder-opt": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.327,
+          "value": 1.277,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.327,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.327,
+          "value": 0.340374,
+          "abs": 0.05,
+          "note": "holding margin of the reduced model (reduced.py), 0.340, within 0.05"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.2304,
+          "to_t": 1.0894,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.2304,
+          "to_t": 1.0894,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.0914,
+          "to_t": 1.327,
+          "value": 0.28,
+          "note": "the optimum keeps the required margin 0.3 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.327,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_err",
+          "from_t": 0.4479,
+          "to_t": 0.8719,
+          "value": 42.6,
+          "note": "waiter tilt (gain 0.03): inside the carry the tool axis stays within 42.6 deg of the specific force a - g of the load (planned 38.3 deg; a level tool would be 38.8 deg off)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt_pk",
+          "from_t": 0.0,
+          "to_t": 1.327,
+          "value": 0.687951,
+          "note": "peak tool tilt 0.6 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/tilt",
+          "from_t": 1.0914,
+          "to_t": 1.327,
+          "value": 0.01,
+          "note": "the tool is level again at the place contact and the depart"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoxPose/g[7]",
+          "t": 1.327,
+          "value": 0.06,
+          "abs": 0.005,
+          "note": "released: at the depart end the carton rests on the place table (its centre H_p/2 above it), the vacuum has vented before the depart and did not carry it off"
         }
       ]
     }

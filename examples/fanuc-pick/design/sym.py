@@ -142,6 +142,8 @@ class F:
     atan2 = staticmethod(lambda y, x: F._f("atan", math.atan2, np.arctan2, y, x))
     abs = staticmethod(lambda x: F._f("abs", abs, np.abs, x))
     hypot = staticmethod(lambda x, y: F._f("hypot", math.hypot, np.hypot, x, y))
+    tanh = staticmethod(lambda x: F._f("tanh", math.tanh, np.tanh, x))
+    tan = staticmethod(lambda x: F._f("tan", math.tan, np.tan, x))
 
     @staticmethod
     def min(a, b):

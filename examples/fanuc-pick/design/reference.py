@@ -79,22 +79,60 @@ def operating_vacuum(g: dict) -> float:
 def static_hold(g: dict) -> dict:
     """Hand calculation of the cup forces of the hanging carton (see the module docstring)."""
     m, a = g["m_p"], g["r_p"]
-    k_s = 1.0 / (1.0 / g["k_ax"] + 1.0 / g["k_stop"])
-    k_t = 1.0 / (1.0 / g["k_tilt"] + 1.0 / g["kr_rod"])
-    d = g["H_p"] / 2 - g["cz"]
     W = m * P.G0
-    K = 2 * k_s * a * a + 5 * k_t + W * d
+    # the nonlinear bellows linearised at the hold: each cup carries about W/5 at the operating
+    # vacuum, k_ax ext + A_fold dp - F_bot(ext) = W/5 (lift stroke, bottoming), and its tilt
+    # stiffness is k_tilt kf, kf = (1 + c_vac dp/p_atm) exp(-c_ext ext/L0)
+    dp = operating_vacuum(g)
+    ext, k_ax_t, kf = cup_operating_point(g, dp, W / 5)
+    k_s = 1.0 / (1.0 / k_ax_t + 1.0 / g["k_stop"])
+
+    def k_tilt_of(kf_i: float) -> float:
+        return 1.0 / (1.0 / (g["k_tilt"] * kf_i) + 1.0 / g["kr_rod"])
+
+    d = g["H_p"] / 2 - g["cz"]
     # the CoM offset seen from the grip point, gripper frame (psig = 0, lay = 0 in this model)
     cx, cy = g["cx"] - g["gx"], g["cy"] - g["gy"]
-    phx, phy = W * cx / K, W * cy / K
-    T = [W / 5 + k_s * (a * dx * phx + a * dy * phy) for dx, dy in P.ZONE_DIRS]
-    # utilisation at rest: every bellows carries the moment k_t |phi| (its share of the series
+    # the tilt stiffness of each bellows depends on its own extension (exp(-c_ext ext/L0)), so
+    # the loaded side is softer: fixed point over the cup forces (three passes converge)
+    kfs = [kf] * len(P.ZONE_DIRS)
+    for _ in range(4):
+        k_ts = [k_tilt_of(kf_i) for kf_i in kfs]
+        K = 2 * k_s * a * a + sum(k_ts) + W * d
+        phx, phy = W * cx / K, W * cy / K
+        T = [W / 5 + k_s * (a * dx * phx + a * dy * phy) for dx, dy in P.ZONE_DIRS]
+        kfs = [cup_operating_point(g, dp, Ti)[2] for Ti in T]
+    # utilisation at rest: every bellows carries the moment k_t,i |phi| (its share of the series
     # tilt), no shear; the capacity is A_eff at the operating vacuum
-    M = k_t * math.hypot(phx, phy)
+    Ms = [k_t * math.hypot(phx, phy) for k_t in k_ts]
     cap = g["A_eff"] * operating_vacuum(g) + Rd.CUP_DEF["F_eps"]
-    U = [(Ti + 4 * M / g["D_lip"]) / cap for Ti in T]
-    return {"T": T, "U": U, "M_tilt": M, "k_s": k_s, "k_t": k_t, "K": K, "phi": [phx, phy], "d": d, "sum": sum(T),
-            "W": W}
+    U = [(Ti + 4 * Mi / g["D_lip"]) / cap for Ti, Mi in zip(T, Ms)]
+    return {"T": T, "U": U, "M_tilt": Ms, "k_s": k_s, "k_t": k_ts, "K": K, "phi": [phx, phy], "d": d, "sum": sum(T),
+            "W": W, "ext": ext, "kf": kfs, "dp": dp}
+
+
+def cup_operating_point(g: dict, dp: float, t_ax: float) -> tuple[float, float, float]:
+    """Extension, tangent axial stiffness and side-stiffness factor of the stdlib SuctionCup at
+    vacuum ``dp`` and axial pull ``t_ax`` (bisection on the monotone force-stroke law)."""
+    h_eps = Rd.CUP_DEF["h_eps"]
+
+    def bot(e: float) -> tuple[float, float]:
+        xo = -e - g["s_bot"]
+        root = math.sqrt(xo * xo + h_eps * h_eps)
+        xb, dxb = 0.5 * (xo + root), 0.5 * (1 + xo / root)
+        r = (xb / g["x_bot"]) ** (g["n_bot"] - 1)
+        return g["k_bot"] * xb * r, g["n_bot"] * g["k_bot"] * r * dxb
+
+    lo, hi = -g["L0"], g["L0"]
+    for _ in range(200):
+        e = 0.5 * (lo + hi)
+        if g["k_ax"] * e + g["A_fold"] * dp - bot(e)[0] < t_ax:
+            lo = e
+        else:
+            hi = e
+    e = 0.5 * (lo + hi)
+    kf = (1 + g["c_vac"] * dp / P.P_ATM) * math.exp(-g["c_ext"] * e / g["L0"])
+    return e, g["k_ax"] + bot(e)[1], kf
 
 
 def main() -> int:
@@ -116,7 +154,16 @@ def main() -> int:
             "t2s": tl["t2s"], "T2": tl["T2"], "util_max": ref["util_max"], "fk": fk,
             "dp_lift": res["dp_lift"], "M_tot": res["M_tot"], "margins": res["margins"], "dropped": res["dropped"],
             "sep_max": res["sep_max"], "M_req": g["M_req"], "act": pk.act, "a_carry": a_carry,
+            "T_ret": ref["T_ret"], "tilt_gain": g["tilt_gain"], "tD": tl["tD"],
+            "z_rest": float(tl["zB"] - g["h_stack"] - 0.5 * g["H_p"]),
         }
+        # waiter tilt: the tool axis against the specific force of the load, inside the carry
+        # (the fade-in after the lift start and the fade-out before the place excluded)
+        w0, w1 = tl["tL"] + g["T_tr"], tl["tE"] - g["T_tr"]
+        win = (ref["t"] >= w0) & (ref["t"] <= w1)
+        if g["tilt_gain"] > 0 and np.any(win):
+            entry.update(tilt_win=[float(w0), float(w1)], tilt_err_max=float(np.max(ref["tilt_err"][win])),
+                         f_ang_max=float(np.max(ref["f_ang"][win])), tilt_pk=float(np.max(ref["tilt"])))
         out["models"][name] = entry
         print(f"{name:24s} T_cyc {ref['T_cyc']:.4f}  util {100 * ref['util_max']:5.1f} %  fk pos {fk['pos']:.1e} yaw "
               f"{fk['yaw']:.1e} down {fk['down']:.1e}  M_tot {res['M_tot']:+.3f}  dropped {res['dropped']}  "

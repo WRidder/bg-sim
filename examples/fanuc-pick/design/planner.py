@@ -63,6 +63,8 @@ PLANNER_PARAMS = [
     "qmax1", "qmax2", "qmax3", "qmax4", "qmax5", "qmax6",
     "m_g", "zc_g", "Jg45", "Jg6", "m_p", "cx", "cy", "cz", "Jpx", "Jpy", "Jpz",
     "m_max", "M45_max", "M6_max", "I45_max", "I6_max",
+    "tilt_gain", "tilt_max_deg", "T_tw", "T_tr",
+    "f5_Ta", "f5_Tp", "f5_Tl", "f5_Tx", "f5_ox", "f5_ax", "f5_dx", "f5_ex", "f5_Td", "f5_y0", "f5_y1",
 ]
 
 
@@ -118,6 +120,34 @@ def prof_s(c: Code, pre: str, tau, al, lam):
 def seg_s(c: Code, pre: str, tk, ts, T, al, lam):
     tau = c.let(f"{pre}_tau", F.clamp((tk - ts) / T, 0.0, 1.0))
     return prof_s(c, pre, tau, al, lam)
+
+
+def prof_s2(c: Code, pre: str, tau, aa, ad, lam):
+    """Asymmetric normalised profile (family 5): an acceleration phase `aa` and a deceleration
+    phase `ad` of the duration (aa + ad <= 1), each with jerk ramps lam/2 of the phase, the
+    cruise in between at the peak speed vp = 1/(1 - aa/2 - ad/2)."""
+    vp = c.let(f"{pre}_vp", 1.0 / (1.0 - 0.5 * aa - 0.5 * ad))
+
+    def sacc(u, al, nm):
+        tj = c.let(f"{pre}_{nm}tj", F.max(0.5 * lam * al, 1.0e-6 * al))
+        ap = c.let(f"{pre}_{nm}ap", vp / (al - tj))
+        jj = c.let(f"{pre}_{nm}jj", ap / tj)
+        w = c.let(f"{pre}_{nm}w", al - u)
+        r1 = jj * u * u * u / 6.0
+        du = u - tj
+        r2 = ap * tj * tj / 6.0 + 0.5 * ap * tj * du + 0.5 * ap * du * du
+        r3 = 0.5 * vp * al - (vp * w - jj * w * w * w / 6.0)
+        return c.let(f"{pre}_{nm}", F.ifelse(u <= tj, r1, F.ifelse(u <= al - tj, r2, r3)))
+
+    sa = sacc(c.let(f"{pre}_ua", F.min(tau, aa)), aa, "sa")
+    sb = sacc(c.let(f"{pre}_ub", F.min(1.0 - tau, ad)), ad, "sb")
+    mid = 0.5 * vp * aa + vp * (tau - aa)
+    return c.let(f"{pre}_s", F.ifelse(tau <= aa, sa, F.ifelse(tau <= 1.0 - ad, mid, 1.0 - sb)))
+
+
+def smooth7(x):
+    """C3 smooth step on [0, 1] (x already clamped)."""
+    return x * x * x * x * (35.0 - 84.0 * x + 70.0 * x * x - 20.0 * x * x * x)
 
 
 def inv_prof(c: Code, pre: str, f, al, lam, iters: int = 40):
@@ -181,45 +211,53 @@ def fk_down(c: Code, pre: str, q):
     return x, y, z, c.let(f"{pre}_fp", q[0] + q[5])
 
 
-def wrist_load(c: Code, p: NS, acc, psi, psid, psidd, held):
-    """Wrist moment, inertia and payload use (fraction of the LR-10iA/10 ratings).
-
-    Gripper (m_g at zc_g below the flange) and, while held, the parcel (m_p at its centre of mass)
-    as point masses with their own inertias; the moment about the wrist centre (the J5 axis, D6
-    above the flange) is what accelerates them against gravity, M = sum r x m (a - g) +
-    J_axial psi''. Bending |M_xy| is rated by J4/J5, the axial |M_z| by J6. The inertia about J4/J5
-    is bounded by the inertia about a horizontal axis through the wrist centre.
-    """
+def com_lever(c: Code, p: NS):
+    """The parcel centre of mass seen from the flange, gripper frame (z up): (cxg, cyg, zcg)."""
     psg = p.psig_deg * DEG
-    # parcel centre of mass in the gripper frame (z up, origin at the flange)
     cxg = c.let("w_cx", F.cos(psg) * (p.cx - p.gx) + F.sin(psg) * (p.cy - p.gy))
     cyg = c.let("w_cy", -F.sin(psg) * (p.cx - p.gx) + F.cos(psg) * (p.cy - p.gy))
-    zp = c.let("w_zp", -(p.h_stack + 0.5 * p.H_p - p.cz) - fz.D6)
+    zcg = c.let("w_zc", -(p.h_stack + 0.5 * p.H_p - p.cz))
+    return cxg, cyg, zcg
+
+
+def wrist_load(c: Code, p: NS, lev, pf, n, a_f, a_c, com, psidd, held):
+    """Wrist moment, inertia and payload use (fraction of the LR-10iA/10 ratings).
+
+    Gripper (m_g at zc_g below the flange, on the tool axis n) and, while held, the parcel (m_p at
+    its centre of mass `com`) as point masses with their own inertias; the moment about the wrist
+    centre (the J5 axis, D6 above the flange along n) is what accelerates them against gravity,
+    M = sum r x m (a - g) + J_axial psi''. Bending (M across n) is rated by J4/J5, the axial
+    part M.n by J6. `a_f` is the flange acceleration, `a_c` that of the parcel centre of mass. The
+    inertia about J4/J5 is bounded by the inertia about an axis across n through the wrist centre.
+    """
+    cxg, cyg, zcg = lev
+    zp = c.let("w_zp", zcg - fz.D6)
     zg = c.let("w_zg", -p.zc_g - fz.D6)
-    cp = c.let("w_cps", F.cos(psi))
-    sp = c.let("w_sps", F.sin(psi))
-    rx = c.let("w_rx", cp * cxg - sp * cyg)      # parcel lever (world), horizontal part
-    ry = c.let("w_ry", sp * cxg + cp * cyg)
+    wc = [c.let(f"w_wc{i}", pf[i] + fz.D6 * n[i]) for i in range(3)]
+    rp = [c.let(f"w_rp{i}", com[i] - wc[i]) for i in range(3)]
+    rg = [zg * n[i] for i in range(3)]
     mp = c.let("w_mp", held * p.m_p)
-    # accelerations of the two centres of mass plus gravity (world)
-    ax, ay, az = acc
-    gx_ = ax
-    gy_ = ay
-    gz_ = az + fz.G0
-    px_ = c.let("w_pax", ax - psidd * ry - psid * psid * rx)
-    py_ = c.let("w_pay", ay + psidd * rx - psid * psid * ry)
-    pz_ = gz_
-    # M = r_g x m_g (a_g - g) + r_p x m_p (a_p - g), r_g = (0, 0, zg), r_p = (rx, ry, zp)
-    mx = c.let("w_Mx", p.m_g * (-zg * gy_) + mp * (ry * pz_ - zp * py_))
-    my = c.let("w_My", p.m_g * (zg * gx_) + mp * (zp * px_ - rx * pz_))
-    mz = c.let("w_Mz", mp * (rx * py_ - ry * px_) + (p.Jg6 + held * p.Jpz) * psidd)
-    um = c.let("w_uM", F.max(F.sqrt(mx * mx + my * my + 1e-12) / p.M45_max, F.abs(mz) / p.M6_max))
+    fg = [a_f[0], a_f[1], a_f[2] + fz.G0]
+    fp = [c.let(f"w_fp{i}", a_c[i] + (fz.G0 if i == 2 else 0.0)) for i in range(3)]
+
+    def cross(a, b):
+        return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+
+    mg_ = cross(rg, fg)
+    mpp = cross(rp, fp)
+    M = [c.let(f"w_M{i}", p.m_g * mg_[i] + mp * mpp[i]) for i in range(3)]
+    ma = c.let("w_Ma", M[0] * n[0] + M[1] * n[1] + M[2] * n[2])
+    mb = [c.let(f"w_Mb{i}", M[i] - ma * n[i]) for i in range(3)]
+    mz = c.let("w_Mz", ma + (p.Jg6 + held * p.Jpz) * psidd)
+    um = c.let("w_uM", F.max(F.sqrt(mb[0] * mb[0] + mb[1] * mb[1] + mb[2] * mb[2] + 1e-12) / p.M45_max,
+                             F.abs(mz) / p.M6_max))
+    mx, my = M[0], M[1]
     c2 = c.let("w_c2", cxg * cxg + cyg * cyg)
     i45 = c.let("w_I45", p.Jg45 + p.m_g * zg * zg + held * (F.max(p.Jpx, p.Jpy) + p.m_p * (zp * zp + c2)))
     i6 = c.let("w_I6", p.Jg6 + held * (p.Jpz + p.m_p * c2))
     ui = c.let("w_uI", F.max(i45 / p.I45_max, i6 / p.I6_max))
     upl = c.let("w_um", (p.m_g + held * p.m_p) / p.m_max)
-    return um, ui, upl, (mx, my, mz)
+    return um, ui, upl, (mx, my, M[2])
 
 
 # ------------------------------------------------------------------ the plan
@@ -273,9 +311,12 @@ def timeline(c: Code, p: NS):
     T2j, al2j = joint_move("j2", qC, qD)
     T3j, al3j = joint_move("j3", qD, qE)
     fam = p.family
-    joint2 = F.or_(fam < 1.5, fam > 3.5)
-    joint13 = fam > 3.5
-    blend = fam > 2.5
+    # family 5 (free timing): every move has its own duration and start, see the module docstring
+    fam5 = fam > 4.5
+    fam4 = F.and_(fam > 3.5, fam < 4.5)
+    joint2 = F.or_(fam < 1.5, fam4)
+    joint13 = fam4
+    blend = F.and_(fam > 2.5, fam < 4.5)
     T1 = c.let("T1", F.ifelse(joint13, T1j, T1c))
     al1 = c.let("al1", F.ifelse(joint13, al1j, al1c))
     T2 = c.let("T2", F.ifelse(joint2, T2j, T2c))
@@ -288,17 +329,35 @@ def timeline(c: Code, p: NS):
     u3 = inv_prof(c, "b3", fb, al3, p.lam)
     ov1 = c.let("ov1", F.ifelse(blend, F.min(T1 * u1, 0.5 * T2), 0.0))
     ov3 = c.let("ov3", F.ifelse(blend, F.min(T3 * u3, 0.5 * T2), 0.0))
+    # family 5: the carry lasts f5_ox + f5_Tx + f5_ex; the lift and the lower are clipped to it
+    Tc5 = c.let("Tc5", F.max(p.f5_ox, 0.0) + F.max(p.f5_Tx, 1.0e-3) + F.max(p.f5_ex, 0.0))
+    aa5 = c.let("aa5", F.clamp(p.f5_ax, 0.02, 0.98))
+    ad5 = c.let("ad5", F.clamp(p.f5_dx, 0.02, 1.0 - aa5))
+    T_app = c.let("T_app", F.ifelse(fam5, F.max(p.f5_Ta, 1.0e-3), T_app))
+    al_app = c.let("al_app", F.ifelse(fam5, 0.5, al_app))
+    T_dep = c.let("T_dep", F.ifelse(fam5, F.max(p.f5_Tp, 1.0e-3), T_dep))
+    al_dep = c.let("al_dep", F.ifelse(fam5, 0.5, al_dep))
     tA = c.let("tA", p.t0)
     tB = c.let("tB", tA + T_app)
     tL = c.let("tL", tB + p.T_seal)
-    t2s = c.let("t2s", tL + T1 - ov1)
-    t3s = c.let("t3s", t2s + T2 - ov3)
-    tE = c.let("tE", t3s + T3)
+    T1 = c.let("T1f", F.ifelse(fam5, F.clamp(p.f5_Tl, 1.0e-3, Tc5), T1))
+    al1 = c.let("al1f", F.ifelse(fam5, 0.5, al1))
+    T3 = c.let("T3f", F.ifelse(fam5, F.clamp(p.f5_Td, 1.0e-3, Tc5), T3))
+    al3 = c.let("al3f", F.ifelse(fam5, 0.5, al3))
+    T2 = c.let("T2f", F.ifelse(fam5, F.max(p.f5_Tx, 1.0e-3), T2))
+    t2s = c.let("t2s", F.ifelse(fam5, tL + F.max(p.f5_ox, 0.0), tL + T1 - ov1))
+    t3s0 = c.let("t3s0", t2s + T2 - ov3)
+    tE = c.let("tE", F.ifelse(fam5, tL + Tc5, t3s0 + T3))
+    t3s = c.let("t3s", F.ifelse(fam5, tE - T3, t3s0))
+    # yaw (family 5): turned between the fractions f5_y0 and f5_y1 of the carry
+    ty0 = c.let("ty0", tL + F.clamp(p.f5_y0, 0.0, 0.99) * (tE - tL))
+    Ty = c.let("Ty", F.max((F.clamp(p.f5_y1, 0.01, 1.0) - F.clamp(p.f5_y0, 0.0, 0.99)) * (tE - tL), 1.0e-3))
     tD = c.let("tD", tE + p.T_rel)
     tF = c.let("tF", tD + T_dep)
     return dict(lam1=lam1, psB=psB, psE=psE, dpsi=dpsi, xB=xB, yB=yB, xE=xE, yE=yE, zB=zB, zC=zC,
                 T_app=T_app, al_app=al_app, T_dep=T_dep, al_dep=al_dep, T1=T1, al1=al1, T2=T2, al2=al2,
-                T3=T3, al3=al3, qB=qB, qC=qC, qD=qD, qE=qE, fam=fam, joint2=joint2, joint13=joint13,
+                T3=T3, al3=al3, qB=qB, qC=qC, qD=qD, qE=qE, fam=fam, fam4=fam4, fam5=fam5, joint2=joint2,
+                joint13=joint13, aa5=aa5, ad5=ad5, ty0=ty0, Ty=Ty,
                 tA=tA, tB=tB, tL=tL, t2s=t2s, t3s=t3s, tE=tE, tD=tD, tF=tF, ov1=ov1, ov3=ov3)
 
 
@@ -307,13 +366,19 @@ def joint_ref(c: Code, p: NS, tl: dict, pre: str, tk):
     lam = p.lam
     s_app = seg_s(c, f"{pre}a", tk, tl["tA"], tl["T_app"], tl["al_app"], lam)
     s1 = seg_s(c, f"{pre}1", tk, tl["tL"], tl["T1"], tl["al1"], lam)
-    s2 = seg_s(c, f"{pre}2", tk, tl["t2s"], tl["T2"], tl["al2"], lam)
+    s2s = seg_s(c, f"{pre}2", tk, tl["t2s"], tl["T2"], tl["al2"], lam)
+    # family 5: the asymmetric transfer profile and the yaw on its own window
+    tau2 = c.let(f"{pre}5_tau", F.clamp((tk - tl["t2s"]) / tl["T2"], 0.0, 1.0))
+    s25 = prof_s2(c, f"{pre}5", tau2, tl["aa5"], tl["ad5"], lam)
+    s2 = c.let(f"{pre}_s2", F.ifelse(tl["fam5"], s25, s2s))
+    sy5 = seg_s(c, f"{pre}y", tk, tl["ty0"], tl["Ty"], 0.5, lam)
+    sy = c.let(f"{pre}_sy", F.ifelse(tl["fam5"], sy5, s2))
     s3 = seg_s(c, f"{pre}3", tk, tl["t3s"], tl["T3"], tl["al3"], lam)
     s_dep = seg_s(c, f"{pre}d", tk, tl["tD"], tl["T_dep"], tl["al_dep"], lam)
     xc = c.let(f"{pre}_px", tl["xB"] + (tl["xE"] - tl["xB"]) * s2)
     yc = c.let(f"{pre}_py", tl["yB"] + (tl["yE"] - tl["yB"]) * s2)
     zc = c.let(f"{pre}_pz", tl["zB"] + p.h_app * (1.0 - s_app) + p.H_lift * (s1 - s3) + p.h_dep * s_dep)
-    psc = c.let(f"{pre}_pps", tl["psB"] + tl["dpsi"] * s2)
+    psc = c.let(f"{pre}_pps", tl["psB"] + tl["dpsi"] * sy)
     qc = ik_down(c, f"{pre}k", xc, yc, zc, psc)
     fam = tl["fam"]
     out = []
@@ -323,7 +388,7 @@ def joint_ref(c: Code, p: NS, tl: dict, pre: str, tk):
         jbl = qB + (qC - qB) * s1 + (qD - qC) * s2 + (qE - qD) * s3  # family 4
         f1 = F.ifelse(F.and_(tk >= tl["t2s"], tk < tl["t3s"]), jtr, qc[j])
         f4 = F.ifelse(F.and_(tk >= tl["tL"], tk < tl["tE"]), jbl, qc[j])
-        out.append(c.let(f"{pre}q{j + 1}", F.ifelse(fam < 1.5, f1, F.ifelse(fam > 3.5, f4, qc[j]))))
+        out.append(c.let(f"{pre}q{j + 1}", F.ifelse(fam < 1.5, f1, F.ifelse(tl["fam4"], f4, qc[j]))))
     return out, (xc, yc, zc, psc)
 
 
@@ -364,32 +429,185 @@ def sequence(c: Code, p: NS, tl: dict, act, t):
     return ue, uv, held
 
 
+# ------------------------------------------------------------------ waiter motion and the general IK
+def tilt_consts(c: Code, p: NS):
+    """Filter window, tan of the largest tilt and the fade time (parameters only)."""
+    tw = c.let("tw_w", F.max(p.T_tw, 1.0e-3))
+    tm = c.let("tw_tm", F.tan(F.clamp(p.tilt_max_deg, 0.1, 60.0) * DEG))
+    ttr = c.let("tw_tr", F.max(p.T_tr, 1.0e-3))
+    return tw, tm, ttr
+
+
+def nominal(c: Code, p: NS, tl: dict, lev, pre: str, tk):
+    """The tool-down plan at tk: joints, flange pose and the parcel centre of mass (world)."""
+    q, _ = joint_ref(c, p, tl, pre, tk)
+    x, y, z, psi = fk_down(c, pre, q)
+    cxg, cyg, zcg = lev
+    cp = c.let(f"{pre}_ca", F.cos(psi))
+    sp = c.let(f"{pre}_sa", F.sin(psi))
+    rx = c.let(f"{pre}_rx", cp * cxg - sp * cyg)
+    ry = c.let(f"{pre}_ry", sp * cxg + cp * cyg)
+    com = (c.let(f"{pre}_cx", x + rx), c.let(f"{pre}_cy", y + ry), c.let(f"{pre}_cz", z + zcg))
+    return dict(q=q, x=x, y=y, z=z, psi=psi, cps=cp, sps=sp, r=(rx, ry, zcg), com=com)
+
+
+def waiter_pose(c: Code, p: NS, tl: dict, lev, tc, pre: str, tk):
+    """The commanded gripper pose at tk with the waiter tilt.
+
+    The planned acceleration of the parcel centre of mass, averaged over a triangle window of
+    +-T_tw (the second difference of the planned path over T_tw: smooth wrist motion, no lag),
+    gives the tilt u = tilt_gain a_h / (g + a_z) (tan of the angle, saturated smoothly at
+    tilt_max), faded in after the lift start and out before the place contact (T_tr). The gripper
+    z axis is turned onto n = (u, 1)/|(u, 1)| by the shortest rotation R_t, about the parcel
+    centre of mass (the load keeps the planned path): flange = p_nom + (I - R_t) r_c.
+    """
+    tw, tm, ttr = tc
+    n0 = nominal(c, p, tl, lev, f"{pre}_0", tk)
+    nm = nominal(c, p, tl, lev, f"{pre}_m", tk - tw)
+    npp = nominal(c, p, tl, lev, f"{pre}_p", tk + tw)
+    af = [c.let(f"{pre}_af{i}", (npp["com"][i] - 2.0 * n0["com"][i] + nm["com"][i]) / (tw * tw)) for i in range(3)]
+    den = c.let(f"{pre}_den", F.max(fz.G0 + af[2], 0.5 * fz.G0))
+    e1 = c.let(f"{pre}_e1", F.clamp((tk - tl["tL"]) / ttr, 0.0, 1.0))
+    e2 = c.let(f"{pre}_e2", F.clamp((tl["tE"] - tk) / ttr, 0.0, 1.0))
+    env = c.let(f"{pre}_env", smooth7(e1) * smooth7(e2))
+    ux0 = c.let(f"{pre}_ux0", p.tilt_gain * af[0] / den)
+    uy0 = c.let(f"{pre}_uy0", p.tilt_gain * af[1] / den)
+    ur = c.let(f"{pre}_ur", F.sqrt(ux0 * ux0 + uy0 * uy0 + 1.0e-12))
+    sat = c.let(f"{pre}_sat", env * tm * F.tanh(ur / tm) / ur)
+    ux = c.let(f"{pre}_ux", ux0 * sat)
+    uy = c.let(f"{pre}_uy", uy0 * sat)
+    nn = c.let(f"{pre}_nn", F.sqrt(1.0 + ux * ux + uy * uy))
+    nx = c.let(f"{pre}_nx", ux / nn)
+    ny = c.let(f"{pre}_ny", uy / nn)
+    nz = c.let(f"{pre}_nz", 1.0 / nn)
+    k = c.let(f"{pre}_k", 1.0 / (1.0 + nz))
+    R = [[c.let(f"{pre}_R11", 1.0 - nx * nx * k), c.let(f"{pre}_R12", -(nx * ny * k)), nx],
+         [c.let(f"{pre}_R21", -(nx * ny * k)), c.let(f"{pre}_R22", 1.0 - ny * ny * k), ny],
+         [-nx, -ny, nz]]
+    r = n0["r"]
+    base = (n0["x"], n0["y"], n0["z"])
+    pf = [c.let(f"{pre}_f{i}", base[i] + r[i] - (R[i][0] * r[0] + R[i][1] * r[1] + R[i][2] * r[2])) for i in range(3)]
+    return dict(nom=n0, n=(nx, ny, nz), R=R, pf=pf, ux=ux, uy=uy)
+
+
+def ik_full(c: Code, pre: str, w: dict):
+    """Closed-form IK of the tilted gripper pose (fanuc.ik: wrist centre, arm plane, X-Y-X wrist),
+    q6 unwrapped next to its tool-down value psi - q1."""
+    nx, ny, nz = w["n"]
+    R = w["R"]
+    nom = w["nom"]
+    cps, sps, psi = nom["cps"], nom["sps"], nom["psi"]
+    ex = [c.let(f"{pre}_ex{i}", R[i][0] * cps + R[i][1] * sps) for i in range(3)]
+    ey = [c.let(f"{pre}_ey{i}", R[i][1] * cps - R[i][0] * sps) for i in range(3)]
+    pf = w["pf"]
+    wx = c.let(f"{pre}_wx", pf[0] + fz.D6 * nx)
+    wy = c.let(f"{pre}_wy", pf[1] + fz.D6 * ny)
+    wz = c.let(f"{pre}_wz", pf[2] + fz.D6 * nz)
+    hh = c.let(f"{pre}_h", F.hypot(wx, wy))
+    q1 = c.let(f"{pre}_q1", F.atan2(wy / hh, wx / hh))
+    rr = c.let(f"{pre}_rr", hh - fz.A1)
+    zz = c.let(f"{pre}_zz", wz - fz.D1)
+    nn = c.let(f"{pre}_n", F.hypot(rr, zz))
+    sg = c.let(f"{pre}_sg", F.clamp((rr * rr + zz * zz - fz.A2 * fz.A2 - fz.L3 * fz.L3) / (2.0 * fz.A2 * fz.L3), -1.0, 1.0))
+    g = c.let(f"{pre}_g", F.asin(sg))
+    aa = c.let(f"{pre}_aa", fz.A2 + fz.L3 * F.sin(g))
+    bb = c.let(f"{pre}_bb", fz.L3 * F.cos(g))
+    q2 = c.let(f"{pre}_q2", F.atan2((aa * rr - bb * zz) / nn, (bb * rr + aa * zz) / nn))
+    q3 = c.let(f"{pre}_q3", g - fz.PHI3)
+    c1 = c.let(f"{pre}_c1", F.cos(q1))
+    s1 = c.let(f"{pre}_s1", F.sin(q1))
+    cb = c.let(f"{pre}_cb", F.cos(q2 - q3))
+    sb = c.let(f"{pre}_sb", F.sin(q2 - q3))
+
+    def r03t(v, nm):
+        w0 = c.let(f"{pre}_{nm}0", c1 * v[0] + s1 * v[1])
+        w1 = c.let(f"{pre}_{nm}1", c1 * v[1] - s1 * v[0])
+        return [cb * w0 - sb * v[2], w1, sb * w0 + cb * v[2]]
+
+    m0 = r03t([-nx, -ny, -nz], "a")
+    m01 = c.let(f"{pre}_m01", r03t(ey, "b")[0])
+    m02 = c.let(f"{pre}_m02", r03t(ex, "c")[0])
+    m00 = c.let(f"{pre}_m00", m0[0])
+    m10 = c.let(f"{pre}_m10", m0[1])
+    m20 = c.let(f"{pre}_m20", m0[2])
+    b = c.let(f"{pre}_b5", F.acos(F.clamp(m00, -1.0, 1.0)))
+    a = c.let(f"{pre}_a4", F.atan2(m10, -m20))
+    cc = c.let(f"{pre}_c6", F.atan2(m01, m02))
+    ref6 = c.let(f"{pre}_r6", psi - q1)
+    d6 = c.let(f"{pre}_d6", F.atan2(F.sin(-cc - ref6), F.cos(-cc - ref6)))
+    return [q1, q2, q3, -a, -b, c.let(f"{pre}_q6", ref6 + d6)]
+
+
+def command(c: Code, p: NS, tl: dict, lev, tc, pre: str, tk):
+    """The joint command at tk: the tool-down plan, or the IK of the waiter pose when tilting."""
+    w = waiter_pose(c, p, tl, lev, tc, pre, tk)
+    qf = ik_full(c, f"{pre}_i", w)
+    on = p.tilt_gain > 1.0e-9
+    q = [c.let(f"{pre}_q{j + 1}", F.ifelse(on, qf[j], w["nom"]["q"][j])) for j in range(6)]
+    return q, w
+
+
+def _vee_prod(c: Code, pre: str, A, B):
+    """vee(A B^T) (the rotation vector of A B^T for small angles)."""
+    def e(i, j):
+        return A[i][0] * B[j][0] + A[i][1] * B[j][1] + A[i][2] * B[j][2]
+    return [c.let(f"{pre}{k}", 0.5 * v) for k, v in
+            enumerate((e(2, 1) - e(1, 2), e(0, 2) - e(2, 0), e(1, 0) - e(0, 1)))]
+
+
 # ------------------------------------------------------------------ tick outputs (shared)
 def tick(c: Code, p: NS, tl: dict, act, t, ts, prev):
     """Everything the block computes at the tick t (ts = the period). `prev(j)` is the previous
     tick's joint acceleration qddr[j] (the jerk is its backward difference)."""
-    qm, _ = joint_ref(c, p, tl, "m", t - ts)
-    q0, _ = joint_ref(c, p, tl, "c", t)
-    qp, _ = joint_ref(c, p, tl, "p", t + ts)
+    lev = com_lever(c, p)
+    tc = tilt_consts(c, p)
+    qm, wm = command(c, p, tl, lev, tc, "im", t - ts)
+    q0, w0 = command(c, p, tl, lev, tc, "ic", t)
+    qp, wp = command(c, p, tl, lev, tc, "ip", t + ts)
     qd = [c.let(f"qd{j + 1}", (qp[j] - qm[j]) / (2.0 * ts)) for j in range(6)]
     qdd = [c.let(f"qdd{j + 1}", (qp[j] - 2.0 * q0[j] + qm[j]) / (ts * ts)) for j in range(6)]
-    # the gripper: forward kinematics at the three instants, body twist and its rate
-    fm = fk_down(c, "km", qm)
-    f0 = fk_down(c, "kc", q0)
-    fp = fk_down(c, "kp", qp)
-    vel = [c.let(f"gv{k + 1}", (fp[k] - fm[k]) / (2.0 * ts)) for k in range(4)]
-    acc = [c.let(f"ga{k + 1}", (fp[k] - 2.0 * f0[k] + fm[k]) / (ts * ts)) for k in range(4)]
-    psi = f0[3]
-    cps = c.let("cps", F.cos(psi))
-    sps = c.let("sps", F.sin(psi))
-    vbx = c.let("vbx", cps * vel[0] + sps * vel[1])
-    vby = c.let("vby", -sps * vel[0] + cps * vel[1])
-    # d/dt (R^T v) = R^T a - w x (R^T v), w = (0, 0, psi')
-    abx = c.let("abx", cps * acc[0] + sps * acc[1] + vel[3] * vby)
-    aby = c.let("aby", -sps * acc[0] + cps * acc[1] - vel[3] * vbx)
-    V = [0.0, 0.0, vel[3], vbx, vby, vel[2]]
-    Vd = [0.0, 0.0, acc[3], abx, aby, acc[2]]
-    g = [F.cos(0.5 * psi), 0.0, 0.0, F.sin(0.5 * psi), f0[0], f0[1], f0[2]]
+    # the gripper: pose at the three instants, body twist and its rate
+    pm, p0, pp = wm["pf"], w0["pf"], wp["pf"]
+    vel = [c.let(f"gv{k + 1}", (pp[k] - pm[k]) / (2.0 * ts)) for k in range(3)]
+    acc = [c.let(f"ga{k + 1}", (pp[k] - 2.0 * p0[k] + pm[k]) / (ts * ts)) for k in range(3)]
+    psm, ps0, psp = wm["nom"]["psi"], w0["nom"]["psi"], wp["nom"]["psi"]
+    psd = c.let("gv4", (psp - psm) / (2.0 * ts))
+    psdd = c.let("ga4", (psp - 2.0 * ps0 + psm) / (ts * ts))
+    n = w0["n"]
+    R0 = w0["R"]
+    cps, sps = w0["nom"]["cps"], w0["nom"]["sps"]
+    # tilt rate (world) from the three tilt rotations; yaw about the tool axis n
+    wt = [v / (2.0 * ts) for v in _vee_prod(c, "wtv", wp["R"], wm["R"])]
+    va = _vee_prod(c, "wta", wp["R"], R0)
+    vb_ = _vee_prod(c, "wtb", R0, wm["R"])
+    wtd = [(va[k] - vb_[k]) / (ts * ts) for k in range(3)]
+    ww = [c.let(f"ww{k}", wt[k] + psd * n[k]) for k in range(3)]
+    wxn = [wt[1] * n[2] - wt[2] * n[1], wt[2] * n[0] - wt[0] * n[2], wt[0] * n[1] - wt[1] * n[0]]
+    wwd = [c.let(f"wwd{k}", wtd[k] + psdd * n[k] + psd * wxn[k]) for k in range(3)]
+    ex = [c.let(f"gex{i}", R0[i][0] * cps + R0[i][1] * sps) for i in range(3)]
+    ey = [c.let(f"gey{i}", R0[i][1] * cps - R0[i][0] * sps) for i in range(3)]
+
+    def body(v, nm):
+        return [c.let(f"{nm}{k}", a[0] * v[0] + a[1] * v[1] + a[2] * v[2]) for k, a in enumerate((ex, ey, n))]
+
+    wb = body(ww, "wb")
+    wbd = body(wwd, "wbd")
+    vb = body(vel, "vb")
+    ab = body(acc, "ab")
+    # d/dt (R^T v) = R^T a - w_b x (R^T v)
+    vbd = [c.let("vbd0", ab[0] - (wb[1] * vb[2] - wb[2] * vb[1])),
+           c.let("vbd1", ab[1] - (wb[2] * vb[0] - wb[0] * vb[2])),
+           c.let("vbd2", ab[2] - (wb[0] * vb[1] - wb[1] * vb[0]))]
+    V = [wb[0], wb[1], wb[2], vb[0], vb[1], vb[2]]
+    Vd = [wbd[0], wbd[1], wbd[2], vbd[0], vbd[1], vbd[2]]
+    # quaternion of R_t Rz(psi): q_t = (sqrt((1 + nz)/2), -ny/s, nx/s, 0), s = sqrt(2 (1 + nz))
+    qa = c.let("qta", F.sqrt(0.5 * (1.0 + n[2])))
+    sq = c.let("qts", F.sqrt(2.0 * (1.0 + n[2])))
+    qb = c.let("qtb", -n[1] / sq)
+    qc_ = c.let("qtc", n[0] / sq)
+    ch = c.let("qch", F.cos(0.5 * ps0))
+    sh = c.let("qsh", F.sin(0.5 * ps0))
+    g = [qa * ch, qb * ch + qc_ * sh, qc_ * ch - qb * sh, qa * sh, p0[0], p0[1], p0[2]]
     ue, uv, held = sequence(c, p, tl, act, t)
     # utilisation of the limits (fractions)
     vmax = [getattr(p, f"qdmax{j}") for j in range(1, 7)]
@@ -401,7 +619,17 @@ def tick(c: Code, p: NS, tl: dict, act, t, ts, prev):
     uaj = [c.let(f"uaj{j + 1}", F.abs(qdd[j]) / amax[j]) for j in range(6)]
     ujj = [c.let(f"ujj{j + 1}", F.abs(qdd[j] - prev(j)) / ts / jmax[j]) for j in range(6)]
     urj = [c.let(f"urj{j + 1}", F.abs(2.0 * q0[j] - hi[j] - lo[j]) / (hi[j] - lo[j])) for j in range(6)]
-    um, ui, upl, mom = wrist_load(c, p, acc[:3], psi, vel[3], acc[3], held)
+    # the parcel centre of mass follows the planned (tool-down) path: its acceleration
+    cm, c0, cp_ = wm["nom"]["com"], w0["nom"]["com"], wp["nom"]["com"]
+    a_c = [c.let(f"gac{k}", (cp_[k] - 2.0 * c0[k] + cm[k]) / (ts * ts)) for k in range(3)]
+    um, ui, upl, mom = wrist_load(c, p, lev, p0, n, acc, a_c, c0, psdd, held)
+    # tilt angle and its misalignment with the specific force a_c - g of the load (degrees)
+    tilt = c.let("tilt_a", F.atan2(F.sqrt(n[0] * n[0] + n[1] * n[1] + 1.0e-30), n[2]) / DEG)
+    fz_ = c.let("tilt_fz", a_c[2] + fz.G0)
+    cr = [n[1] * fz_ - n[2] * a_c[1], n[2] * a_c[0] - n[0] * fz_, n[0] * a_c[1] - n[1] * a_c[0]]
+    dot = n[0] * a_c[0] + n[1] * a_c[1] + n[2] * fz_
+    terr = c.let("tilt_e", F.atan2(F.sqrt(cr[0] * cr[0] + cr[1] * cr[1] + cr[2] * cr[2] + 1.0e-30), dot) / DEG)
+    fang = c.let("tilt_f", F.atan2(F.sqrt(a_c[0] * a_c[0] + a_c[1] * a_c[1] + 1.0e-30), fz_) / DEG)
 
     def mx(vals):
         out = vals[0]
@@ -411,7 +639,8 @@ def tick(c: Code, p: NS, tl: dict, act, t, ts, prev):
 
     return dict(q=q0, qd=qd, qdd=qdd, V=V, Vd=Vd, g=g, ue=ue, uv=uv, held=held,
                 uvj=uvj, uaj=uaj, ujj=ujj, urj=urj, uv_all=mx(uvj), ua_all=mx(uaj), uj_all=mx(ujj),
-                ur_all=mx(urj), uM=um, uI=ui, um=upl, M=mom)
+                ur_all=mx(urj), uM=um, uI=ui, um=upl, M=mom, n=n, com=c0, tilt=tilt, tilt_err=terr,
+                f_ang=fang, a_c=a_c)
 
 
 # ------------------------------------------------------------------ numeric reference
@@ -421,6 +650,23 @@ def num_params(globals_: dict) -> NS:
 
 def _arr(v, t):
     return np.broadcast_to(np.asarray(v, dtype=float), t.shape).astype(float)
+
+
+def return_time(p: NS, tl: dict) -> float:
+    """The empty return from the depart end F back to the approach start A of the next cycle:
+    one synchronised joint move at 100 % of the datasheet rates and the assumed accelerations
+    and jerks (no load, so no grip limit). Pick rate = 60 / (T_cyc + T_ret) per minute."""
+    c = Code(False)
+    qF = ik_down(c, "rF", tl["xE"], tl["yE"], tl["zB"] + p.h_dep, tl["psE"])
+    qA = ik_down(c, "rA", tl["xB"], tl["yB"], tl["zB"] + p.h_app, tl["psB"])
+    V = A = J = 0.0
+    for j in range(6):
+        d = abs(qA[j] - qF[j])
+        V = max(V, d / getattr(p, f"qdmax{j + 1}"))
+        A = max(A, d / getattr(p, f"qddmax{j + 1}"))
+        J = max(J, d / getattr(p, f"qdddmax{j + 1}"))
+    T, _ = prof_time(c, "ret", V, A, 1.0 - 0.5 * p.lam, J, p.lam)
+    return float(T)
 
 
 def reference(globals_: dict, dt: float = P.TS, t_end: float | None = None) -> dict:
@@ -436,13 +682,18 @@ def reference(globals_: dict, dt: float = P.TS, t_end: float | None = None) -> d
     act = zones(c, p)
     # the block's previous(qddr): qdd one tick earlier (0 before the first tick)
     c0 = Code(False)
-    qa, _ = joint_ref(c0, p, tl, "m", t - 2 * dt)
-    qb, _ = joint_ref(c0, p, tl, "c", t - dt)
-    qc, _ = joint_ref(c0, p, tl, "p", t)
+    lev, tc = com_lever(c0, p), tilt_consts(c0, p)
+    qa, _ = command(c0, p, tl, lev, tc, "m", t - 2 * dt)
+    qb, _ = command(c0, p, tl, lev, tc, "c", t - dt)
+    qc, _ = command(c0, p, tl, lev, tc, "p", t)
     qdd_prev = [np.where(t > 0.5 * dt, (_arr(qc[j], t) - 2 * _arr(qb[j], t) + _arr(qa[j], t)) / dt ** 2, 0.0)
                 for j in range(6)]
     r = tick(c, p, tl, act, t, dt, lambda j: qdd_prev[j])
     out = {
+        "n": np.array([_arr(v, t) for v in r["n"]]), "com": np.array([_arr(v, t) for v in r["com"]]),
+        "a_c": np.array([_arr(v, t) for v in r["a_c"]]),
+        "tilt": _arr(r["tilt"], t), "tilt_err": _arr(r["tilt_err"], t), "f_ang": _arr(r["f_ang"], t),
+        "T_ret": return_time(p, tl),
         "t": t, "q": np.array([_arr(v, t) for v in r["q"]]),
         "qd": np.array([_arr(v, t) for v in r["qd"]]), "qdd": np.array([_arr(v, t) for v in r["qdd"]]),
         "V": np.array([_arr(v, t) for v in r["V"]]), "Vd": np.array([_arr(v, t) for v in r["Vd"]]),
@@ -485,6 +736,10 @@ OUTPUTS = [
     ("util_m", "Real", "1", "Peak payload, % of 10 kg"),
     ("util_max", "Real", "1", "Largest of the utilisations above, %"),
     ("M_w", "Vec{3}", "N*m", "Wrist load moment about the wrist centre (world axes)"),
+    ("tilt", "Real", "1", "Waiter motion: tool tilt from the vertical, degrees"),
+    ("tilt_pk", "Real", "1", "Waiter motion: peak tool tilt so far, degrees"),
+    ("tilt_err", "Real", "1", "Angle between the tool axis and the specific force a - g of the load's centre of mass, degrees"),
+    ("f_ang", "Real", "1", "Angle of the specific force a - g of the load from the vertical, degrees"),
 ] + [(f"ue{k}", "Real", "1", f"Zone {k} cylinder valve (+1 extend, -1 retract)") for k in range(1, 6)] \
   + [(f"uv{k}", "Real", "1", f"Zone {k} vacuum valve (1 on)") for k in range(1, 6)] + [
     ("act", "Vec{5}", "1", "Active zones"),
@@ -503,6 +758,7 @@ def output_defaults(globals_: dict) -> dict:
     d = {
         "qr": ref["q"][:, 0], "qdr": [0.0] * 6, "qddr": [0.0] * 6, "V": [0.0] * 6, "Vd": [0.0] * 6, "tk": 0.0,
         "gref": ref["g"][:, 0], "uv_j": [0.0] * 6, "ua_j": [0.0] * 6, "uj_j": [0.0] * 6, "M_w": [0.0] * 3,
+        "tilt": 0.0, "tilt_pk": 0.0, "tilt_err": 0.0, "f_ang": 0.0,
         "act": ref["act"], "held": 0.0, "T_cyc": tl["tF"] - tl["tA"], "t_lift": tl["tL"], "t_place": tl["tE"],
         "t_end": tl["tF"],
     }
@@ -546,6 +802,10 @@ def emit_block() -> str:
                                F.max(F.max(Sym("util_M", True), Sym("util_I", True)), Sym("util_m", True))))
     for k in range(3):
         c.assign(f"M_w[{k + 1}]", r["M"][k])
+    c.assign("tilt", r["tilt"])
+    c.assign("tilt_pk", F.max(Sym("previous(tilt_pk)", True), r["tilt"]))
+    c.assign("tilt_err", r["tilt_err"])
+    c.assign("f_ang", r["f_ang"])
     for k in range(5):
         c.assign(f"ue{k + 1}", r["ue"][k])
         c.assign(f"uv{k + 1}", r["uv"][k])

@@ -11,6 +11,7 @@ The gripper is estimated from the reference video. Every dimension is a global p
 | end stops | 2e5 N/m with 300 N·s/m cushions | `k_stop`, `b_stop` |
 | rod | 60 g moving mass, 5e4 N/m lateral and 200 N·m/rad bending stiffness in its guide | `m_rod`, `kt_rod`, `kr_rod` |
 | cup | 1.5-fold bellows, lip 32 mm, A_eff 5 cm², L0 30 mm, axial 2500 N/m, lateral 1500 N/m, tilt 1 N·m/rad, µ 0.5 | `D_lip`, `A_eff`, `L0`, `k_ax`, `k_lat`, `k_tilt`, `mu` |
+| bellows (nonlinear, estimates) | folds bottom after 6 mm compression (cubic, 2.5e4 N/m scale); vacuum lift stroke 4.1 mm at 60 kPa; side stiffness × (1 + dp/p_atm) × exp(−3 ext/L0) | `s_bot`, `k_bot`, `n_bot`, `x_bot`, `A_fold`, `c_vac`, `c_ext` |
 | ejector | one per zone, 60 kPa end vacuum, 12 l/min free air | `dp_max`, `Q_max` |
 | carton | permeance 4e-7 m/(s·Pa) (cardboard) | `perm` |
 
