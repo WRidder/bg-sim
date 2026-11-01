@@ -60,3 +60,41 @@ Controller: Q = diag(20, 200, 200, 200, 1, 5, 5, 5), R = 5 V⁻² for both the T
 | run time (real worker) | 37.5 s (free model 82.6 s) | |
 
 Trajectory optimisation 124 s (four warm-started solves), discrete TVLQR 40 s.
+
+## The flexible arm (`-flex`, `-flex-lowpass`, `-flex-free`)
+
+The same rig with a flexible arm: the rigid arm body is replaced by a `stdlib:spatial/FlexibleBeam3D` (assumed modes, clamped at the motor hub, `ny` = 2, `nz` = 2, `nt` = 1). The pendulum chain hangs from the beam's end B.
+
+| model | arm | firmware | result |
+| --- | --- | --- | --- |
+| `pendulum-triple-rotary-flex` | flexible | `RotaryCtrl` (the rigid design, unchanged) | fails: the arm mode goes unstable near the top of the swing-up, the voltage saturates from 2.88 s, the chain is never caught |
+| `pendulum-triple-rotary-flex-lowpass` | flexible | `RotaryCtrlLP` (the same weights, designed with a 12 Hz low-pass in the loop) | caught at 5.0 s, recovers from the push in 2.24 s |
+| `pendulum-triple-rotary-flex-free` | flexible | off | free swing; with overrides also the tap test and the stiff limit |
+
+**Choice of arm.** A 3 × 50 mm AISI 304 strip on edge (E 193 GPa, ν 0.29), 0.2159 m long. The density, 7936 kg/m³, is set so the strip weighs the rigid arm's 0.257 kg, and its rigid inertia about the motor axis matches the rigid arm's to 0.1 %. Flexibility is then the only difference. A flat strip on edge, like the Quanser rotary flexible link, bends easily in the plane of the motor torque (EI 21.7 N·m²) and hardly at all under the pendulum's weight (EI 6031 N·m²). Torsion is included (GJ 32.4 N·m²) but stays tiny, because the pendulum hinge passes no moment about the arm axis. The first horizontal mode was placed a few times above the controller's fastest closed-loop pole (131 1/s, 21 Hz) and the pendulum's fastest unstable pole (3.8 Hz), where a rigid-arm design may or may not cope with it.
+
+**Frequencies** (`flex_design.py`; the exact values solve the Euler-Bernoulli frequency equation of a clamped beam with the pendulum assembly at the tip):
+
+| mode | Hz |
+| --- | --- |
+| bare strip, clamped-free: horizontal / vertical / torsion | 51.27 / 854.5 / 417.7 |
+| hub clamped, chain hanging, horizontal: exact, with the hinged chain as a frequency-dependent tip mass M(ω) (28.1 g at high frequency) | **42.68** |
+| the same: Rayleigh with M(∞) / assumed modes (2) / bond-graph tap test | 43.00 / 42.69 / 42.66 |
+| the same with the whole 0.321 kg chain as a rigid tip mass (wrong: the hinge decouples the chain) | 20.71 |
+| hub clamped, vertical: exact (tip mass 0.321 kg, 0.0526 kg·m² about the tip, gravity) / assumed modes (2) / tap test | 111.4 / 122.3 / 121.9 |
+| running rig (hub on the motor, no control) | 74.7 |
+
+**Controller finding.** The rigid firmware has no roll-off: at the upright its loop gain on the rigid arm is still 0.22 at 76 Hz, and the arm's resonance lifts that to 4.3. The closed loop on the flexible arm has the pole pair +277 ± 412j 1/s (65.5 Hz). A notch (55 to 90 Hz) or a gentler LQR (R up to 5e4) does not stabilise it, and the linear loop needs an arm about 23 times stiffer. In the run, the swing-up rings the arm mode at about 106 Hz. Near the top, where the TVLQR gains grow towards the balance gains, the frozen-time loop goes unstable at 2.88 s and the 15 V limit is reached at the same moment. The swing-up is lost, and the saturated motor ends up driving the arm round (49 rad by 12 s). The fix keeps Q, R and the swing-up nominal, but designs the LQR and the discrete TVLQR for the rigid model followed by a second-order 12 Hz low-pass (ζ 0.707) between the feedback and the motor. The filter state is part of the controller state, so the Riccati design compensates the filter lag. The loop gain then crosses 1 at about 7 Hz and is 0.21 at the arm resonance (gain-stabilised). Validated on the design model (rigid, flexible, E × 0.5 and × 2, perturbed links, friction and k_t) and linearly stable for E × 0.5 to × 100. The price is a slower balance loop: 5.7 deg tip-link deflection after the push (rigid: 3.5 deg), recovery 2.24 s (rigid: 1.35 s).
+
+**Measured** (bond graph, `flex_finish.py`): the flexible design model follows the bond graph to a few µm of modal coordinate until the first saturation. Tap test 42.66 Hz (exact 42.68 Hz, 0.05 %) and 121.9 Hz vertically (two assumed modes 122.3 Hz). Stiff limit (E × 1e4) against the rigid free model: at most 1.6e-5 rad over the first second of the chaotic free swing. Low-pass firmware: caught at 5.00 s, band 0.0014 deg, peak voltage 14.9 V, largest sideways tip deflection 1.62 mm in the swing-up, 0.65 mm after the push, 14 nm while balancing. Run times: 143 s (`-flex-lowpass`), 67 s (`-flex`), 114 s (`-flex-free`).
+
+**3D view.** The arm visual is a 3 × 50 mm box (`visual:arm_strip`) on the link that follows `Arm/pose`, with three deformation bindings (bending-y with `eta_y[1..2]`, bending-z with `eta_z[1..2]`, torsion with `eta_t[1]`; clamped-free basis, beam axis +x, y +y, length 0.2159 m). The pendulum hinge follows `Arm/poseB`, the deformed tip. The dashboards plot the tip deflection `Arm/dB[2..3]`, the modal coordinates and the twist.
+
+| file | content |
+| --- | --- |
+| `design/flex_lib.py` | the beam (sections, modes, frequencies), the flexible design model (Lagrange, the rigid triple plus assumed modes), the frequency equations, the chain's frequency-dependent tip mass |
+| `design/flex_design.py` | frequencies, the rigid firmware on the flexible arm (linear and the whole scenario), the low-pass LQR/TVLQR and its validation; writes `design/flex_design.json` |
+| `design/flex_build.py` | writes the three models, `library/RotaryCtrlLP.jl`, `scenes/pendulum-triple-rotary-flex.sdf` (the rigid models are not touched) |
+| `design/flex_finish.py` | runs the flexible models, the tap test, the stiff limit, E × 100 and the rigid references on the real backend; adds their checks to `expected.json`; `--docs` writes the model docs (`flex_docs.py`) |
+
+Order: `design.py`, `build_model.py`, `finish.py`, then `flex_design.py`, `flex_build.py`, `flex_finish.py`, `tools/video/capture-flexarm.mjs --shots design/_shots` (3D screenshots for the docs), `flex_finish.py --docs`.

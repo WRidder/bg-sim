@@ -148,5 +148,15 @@ def run(example_dir: Path, n_links: int, argv: list[str]) -> None:
         json.dumps({"bond_graph": m, "free_diff": free}, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
     doc = expected(dz, m, free, name)
+    path = example_dir / "expected.json"
+    if path.is_file():
+        # keep the entries other scripts add (the flexible-arm models of flex_finish.py)
+        old = json.loads(path.read_text(encoding="utf-8"))
+        for key, entry in old.get("models", {}).items():
+            doc["models"].setdefault(key, entry)
+        if "compare" in old:
+            doc["compare"] = old["compare"]
+        if str(old.get("description", "")).startswith(doc["description"]):
+            doc["description"] = old["description"]
     (example_dir / "expected.json").write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {example_dir / 'expected.json'}")

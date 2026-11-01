@@ -1,6 +1,6 @@
 {
   "project": "pendulum-triple-rotary",
-  "description": "X5.13: rotary triple inverted pendulum on the spatial multibond stdlib (NOT a Quanser product: the arm, the SRV02 servo and the pendulum links of the Quanser rotary double pendulum, chained short + short + medium). World -> Mount -> J1 (Revolute3D about world z, the arm) -> arm bar (RigidBody3D) -> J2, J3, J4 (Revolute3D about the arm axis, one per link), every body a RigidBody3D with a distributed mass (COM at the bar middle). The arm is driven by an SRV02-like servo with a 15 V amplifier: Motor (ElectricDrive, voltage input) -> Shaft (ElasticShaft) -> Gear (IdealGear, 70:1) -> J1.drive. The 1 kHz firmware Ctrl (phases: idle, discrete TVLQR swing-up along the collocation trajectory, latched discrete LQR balance) reads the joint angles and rates. Dist is a force pulse on the tip of the top link. Joint compliance kt = kr = 1e8 (N/m, N m/rad); every state is integral.",
+  "description": "X5.13: rotary triple inverted pendulum on the spatial multibond stdlib (NOT a Quanser product: the arm, the SRV02 servo and the pendulum links of the Quanser rotary double pendulum, chained short + short + medium). World -> Mount -> J1 (Revolute3D about world z, the arm) -> arm bar (RigidBody3D) -> J2, J3, J4 (Revolute3D about the arm axis, one per link), every body a RigidBody3D with a distributed mass (COM at the bar middle). The arm is driven by an SRV02-like servo with a 15 V amplifier: Motor (ElectricDrive, voltage input) -> Shaft (ElasticShaft) -> Gear (IdealGear, 70:1) -> J1.drive. The 1 kHz firmware Ctrl (phases: idle, discrete TVLQR swing-up along the collocation trajectory, latched discrete LQR balance) reads the joint angles and rates. Dist is a force pulse on the tip of the top link. Joint compliance kt = kr = 1e8 (N/m, N m/rad); every state is integral. Flexible-arm models (flex_design.py, flex_build.py, flex_finish.py): the arm as a FlexibleBeam3D, a 3 x 50 mm stainless strip on edge; -flex runs the rigid firmware (it fails: the arm's first bending mode goes unstable), -flex-lowpass the firmware with a 12 Hz low-pass in the loop (it catches), -flex-free the free swing; flex-tap and flex-free-stiff are parameter-override runs of -flex-free.",
   "models": {
     "pendulum-triple-rotary": {
       "run_timeout": 1500.0,
@@ -247,6 +247,271 @@
           "note": "design.py free swing vs bond graph, open loop from rest with the motor terminals at 0 V; tolerance 2x the measured max difference 1.1e-05 rad (at least 0.2 mrad)"
         }
       ]
+    },
+    "pendulum-triple-rotary-flex-lowpass": {
+      "run_timeout": 1800.0,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ],
+          "note": "no derivative-causality warning, no event-loop warning, no solver failure"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "power continuity of the whole graph, the flexible arm's modal bond graph included (Tellegen residual)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 6.0,
+          "value": 2.0,
+          "abs": 1e-09,
+          "note": "the low-pass firmware catches: the balance controller has taken over one second after t_on + T_s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Angles/dev",
+          "from_t": 6.5,
+          "to_t": 8.49,
+          "value": 0.017453292519943295,
+          "note": "upright on the flexible arm: all links inside 1.0 deg between catch + 1.5 s and the disturbance (measured 0.001 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Angles/phi3",
+          "from_t": 8.5,
+          "to_t": 10.5,
+          "value": 0.09974792435116264,
+          "rtol": 0.3,
+          "note": "the disturbance is real: the tip link deflects by 5.7 deg (rigid arm and firmware: 3.5 deg); band +-30 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Angles/dev",
+          "from_t": 11.5,
+          "to_t": 12.0,
+          "value": 0.017453292519943295,
+          "note": "recovered: inside 1.0 deg from 11.50 s (measured: inside 0.5 deg 2.24 s after the pulse)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "value": 15.000000001,
+          "note": "the voltage stays inside the +-15 V limit (measured peak 14.92 V)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Arm/dB[2]",
+          "from_t": 6.5,
+          "to_t": 8.49,
+          "value": 0.0001,
+          "note": "while balancing, the arm tip deflects by at most 0.0 um sideways (bound 3x, at least 0.1 mm): the arm mode is not excited"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Arm/dB[2]",
+          "from_t": 1.0,
+          "to_t": 5.0,
+          "value": 0.0016236388269657324,
+          "rtol": 0.3,
+          "note": "the swing-up bends the arm: largest sideways tip deflection 1.62 mm (+-30 %)"
+        }
+      ]
+    },
+    "pendulum-triple-rotary-flex": {
+      "run_timeout": 1800.0,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E901"
+          ],
+          "note": "no derivative-causality warning, no solver failure"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "power continuity of the whole graph, the flexible arm's modal bond graph included (Tellegen residual)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/phase",
+          "value": 1.000000001,
+          "note": "the rigid firmware never catches on the flexible arm: the balance phase (2) is never reached"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 1.0,
+          "to_t": 5.0,
+          "value": 15.0,
+          "rtol": 1e-06,
+          "note": "the loop saturates the amplifier during the swing-up (first at 2.88 s): the arm mode grows until the 15 V limit caps it"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Arm/eta_y[1]",
+          "from_t": 1.5,
+          "to_t": 2.86,
+          "min_hz": 40.0,
+          "max_hz": 400.0,
+          "value": 105.69723595280581,
+          "rtol": 0.1,
+          "note": "the arm's first bending mode rings under the swing-up loop at 105.7 Hz before the voltage first saturates (the flexible design model of flex_design.py follows the bond graph to a few um up to there); at the upright the linear analysis puts the closed-loop arm pole at 65.5 Hz, growing at 277 1/s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Arm/dB[2]",
+          "value": 0.007455340612994189,
+          "rtol": 0.3,
+          "note": "the unstable loop shakes the arm: sideways tip deflection up to 7.46 mm (+-30 %; the low-pass firmware: 1.62 mm)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Angles/dev",
+          "from_t": 11.0,
+          "to_t": 12.0,
+          "value": 0.5235987755982988,
+          "note": "the chain is not upright at the end (it falls at 5.00 s)"
+        }
+      ]
+    },
+    "pendulum-triple-rotary-flex-free": {
+      "run_timeout": 1800.0,
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W206",
+            "E901"
+          ]
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "power continuity of the whole graph, the flexible arm's modal bond graph included (Tellegen residual)"
+        }
+      ]
+    },
+    "flex-tap": {
+      "model": "pendulum-triple-rotary-flex-free",
+      "run_timeout": 900.0,
+      "settings": {
+        "t_end": 1.0,
+        "output": {
+          "points": 20001
+        }
+      },
+      "overrides": {
+        "J1/q0": 0.0,
+        "J2/q0": 3.141592653589793,
+        "J3/q0": 0.0,
+        "J4/q0": 0.0,
+        "Motor/J_m": 1000.0,
+        "DistPulse/amplitude": 1.0,
+        "DistPulse/t_start": 0.05,
+        "DistPulse/duty": 2e-06
+      },
+      "checks": [
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "power continuity in the tap test"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Arm/eta_y[1]",
+          "from_t": 0.060000000000000005,
+          "to_t": 1.0,
+          "min_hz": 20.0,
+          "max_hz": 80.0,
+          "value": 42.67783468951087,
+          "rtol": 0.01,
+          "note": "first horizontal arm mode, hub clamped (rotor inertia 1e3 kg m^2 at the motor), chain hanging on its free hinge: the exact Euler-Bernoulli frequency equation with the hinged chain as a frequency-dependent tip mass gives 42.68 Hz (Rayleigh with the chain's high-frequency mass 28.1 g: 43.00 Hz; the whole 0.321 kg as a rigid tip mass would give 20.7 Hz); measured 42.66 Hz"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Arm/eta_z[1]",
+          "from_t": 0.0,
+          "to_t": 1.0,
+          "min_hz": 60.0,
+          "max_hz": 200.0,
+          "value": 122.26186577194322,
+          "rtol": 0.01,
+          "note": "first vertical arm mode (the arm starts without its gravity sag and rings): the pendulum assembly is a rigid tip mass 0.321 kg with 0.0526 kg m^2 about the tip. Two assumed modes give 122.26 Hz; the exact frequency equation 111.39 Hz: the large tip inertia needs more modes (three: 118.4 Hz). Measured 121.89 Hz"
+        }
+      ]
+    },
+    "flex-free-stiff": {
+      "model": "pendulum-triple-rotary-flex-free",
+      "run_timeout": 1800.0,
+      "overrides": {
+        "Arm/E": 1930000000000000.0
+      },
+      "checks": [
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06
+        }
+      ]
     }
-  }
+  },
+  "compare": [
+    {
+      "a": "flex-free-stiff",
+      "b": "pendulum-triple-rotary-free",
+      "signal_a": "J1/qout",
+      "signal_b": "J1/qout",
+      "from_t": 0.0,
+      "to_t": 1.0,
+      "max_abs": 0.0002,
+      "note": "stiff limit: the flexible arm with E x 10000 swings like the rigid arm (same mass and inertia) over the first second of the chaotic free swing (measured 2.1e-06 rad; bound 3x, at least 0.2 mrad)"
+    },
+    {
+      "a": "flex-free-stiff",
+      "b": "pendulum-triple-rotary-free",
+      "signal_a": "Angles/phi1",
+      "signal_b": "Angles/phi1",
+      "from_t": 0.0,
+      "to_t": 1.0,
+      "max_abs": 0.0002,
+      "note": "stiff limit: the flexible arm with E x 10000 swings like the rigid arm (same mass and inertia) over the first second of the chaotic free swing (measured 1.1e-05 rad; bound 3x, at least 0.2 mrad)"
+    },
+    {
+      "a": "flex-free-stiff",
+      "b": "pendulum-triple-rotary-free",
+      "signal_a": "Angles/phi2",
+      "signal_b": "Angles/phi2",
+      "from_t": 0.0,
+      "to_t": 1.0,
+      "max_abs": 0.0002,
+      "note": "stiff limit: the flexible arm with E x 10000 swings like the rigid arm (same mass and inertia) over the first second of the chaotic free swing (measured 1.6e-05 rad; bound 3x, at least 0.2 mrad)"
+    },
+    {
+      "a": "flex-free-stiff",
+      "b": "pendulum-triple-rotary-free",
+      "signal_a": "Angles/phi3",
+      "signal_b": "Angles/phi3",
+      "from_t": 0.0,
+      "to_t": 1.0,
+      "max_abs": 0.0002,
+      "note": "stiff limit: the flexible arm with E x 10000 swings like the rigid arm (same mass and inertia) over the first second of the chaotic free swing (measured 1.2e-05 rad; bound 3x, at least 0.2 mrad)"
+    }
+  ]
 }

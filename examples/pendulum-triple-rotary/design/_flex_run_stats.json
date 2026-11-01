@@ -1,0 +1,22 @@
+{
+  "pendulum-triple-rotary": {
+    "seconds": 119.8883402000065,
+    "points": 22738,
+    "diagnostics": []
+  },
+  "pendulum-triple-rotary-free": {
+    "seconds": 42.12682390000555,
+    "points": 4061,
+    "diagnostics": []
+  },
+  "flex-tap": {
+    "seconds": 71.12549310000031,
+    "points": 21033,
+    "diagnostics": []
+  },
+  "flex-free-stiff": {
+    "seconds": 63.9810262999963,
+    "points": 4061,
+    "diagnostics": []
+  }
+}

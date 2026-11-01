@@ -82,6 +82,7 @@ Bind the block's `pose` to the link that holds the beam's visual. Then add one *
 - **cantilever-modes**: the same method by hand, as a scalar bond graph. Each mode is a 1-junction with I, C and R, coupled to the tip by a TF with modulus |φ_n(L)| = 2. All element values are global parameters.
 - **flex-torsion**: two disks on a 1 m shaft with three torsion modes. The twist is checked against the exact frequency equation and the massless-shaft limit.
 - **flex-rotary-pendulum**: a Furuta pendulum with a bending rod (2 + 2 modes), next to its rigid twin.
+- **pendulum-triple-rotary** (models `-flex`, `-flex-lowpass`, `-flex-free`): the rotary triple inverted pendulum with a flexible arm, a 3 x 50 mm steel strip (2 + 2 bending modes, 1 torsion mode). The rigid arm's controller drives the arm's first bending mode unstable. A controller designed with a 12 Hz low-pass in the loop balances the pendulum. The first mode is checked against the exact frequency equation, with the hinged pendulum chain as the tip load.
 
 ## For library authors
 

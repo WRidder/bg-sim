@@ -4,7 +4,10 @@
   "name": "pendulum-triple-rotary",
   "models": [
     "pendulum-triple-rotary",
-    "pendulum-triple-rotary-free"
+    "pendulum-triple-rotary-free",
+    "pendulum-triple-rotary-flex",
+    "pendulum-triple-rotary-flex-lowpass",
+    "pendulum-triple-rotary-flex-free"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"
