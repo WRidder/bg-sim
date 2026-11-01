@@ -129,10 +129,9 @@ def build() -> dict:
         drv.append(dr), prop.append(pr), esc.append(es)
 
     # ------------------------------------------------------------------ wind (discrete gusts + lag)
-    wind = node("Wind", "project:Wind", 40, 1000, params={"mean": d.WIND_MEAN, "sigma": d.WIND_SIGMA})
-    gust = node("Gust", "project:Gust", 220, 1000, params={"tau": 1.0})
+    wind = node("Wind", "project:Wind", 40, 1000, params={"mean": "[wind_x, wind_y, 0.0]", "sigma": "wind_sigma"})
+    gust = node("Gust", "project:Gust", 220, 1000, params={"tau": 1.0}, starts={"x": "[wind_x, wind_y, 0.0]"})
     sig(wind, "wind", gust, "u")
-    sig(gust, "y", rw, "wind", "wind velocity (world)")
     pk_f = node("PackLeg", "project:Pack4", 900, 1020)
     for k, ct in enumerate(legs, start=1):
         sig(ct, "f_n", pk_f, f"u{k}")
@@ -180,6 +179,12 @@ def build() -> dict:
     sig(nav, "p", err, "phat"), sig(nav, "v", err, "vhat"), sig(nav, "q", err, "qhat")
     sig(truth, "p", err, "p"), sig(truth, "vw", err, "v"), sig(truth, "q", err, "q"), sig(mission, "p_sp", err, "p_sp")
 
+    # the dashboard's discrete gust, on top of the turbulence (off by default)
+    pulse = node("GustPulse", "project:GustPulse", 400, 1000,
+                 params={"A": "gust_speed", "dir_deg": "gust_dir", "t0": "gust_t", "T": "gust_T"})
+    sig(gust, "y", pulse, "u")
+    sig(pulse, "y", rw, "wind", "wind velocity (world)")
+
     plots = [
         {"id": "p1", "title": "Position and set-point (m)",
          "signals": ["Truth/x", "Truth/y", "Truth/z", "Mission/p_sp[1]", "Mission/p_sp[2]", "Mission/p_sp[3]"]},
@@ -194,12 +199,17 @@ def build() -> dict:
         {"id": "p9", "title": "Tracking error: distance to the set-point (m)", "signals": ["Err/track"]},
         {"id": "p7", "title": "Battery voltage (V) and current (A)", "signals": ["Bat/V", "Bat/I"]},
         {"id": "p8", "title": "Landing-gear normal forces (N)", "signals": [f"Leg{k}/f_n" for k in range(1, 5)]},
+        {"id": "p10", "title": "Wind at the airframe (m/s): x, y and the discrete gust",
+         "signals": ["GustPulse/y[1]", "GustPulse/y[2]", "GustPulse/g"]},
     ]
     bindings = [{"target": "link:body", "property": "pose",
                  "signal": ["Truth/q[1]", "Truth/q[2]", "Truth/q[3]", "Truth/q[4]", "Truth/x", "Truth/y", "Truth/z"]}]
     for k in range(1, 5):
         bindings.append({"target": f"joint:rotor_{k}", "property": "position", "signal": f"Drv{k}/rotor/phi",
                          "gain": float(d.SPIN[k - 1]), "offset": 0.0})
+    bindings.append({"target": "joint:wind_vane", "property": "position", "signal": "GustPulse/heading"})
+    bindings.append({"target": "visual:vane_arrow", "property": "color", "signal": "GustPulse/speed",
+                     "colormap": "heat", "range": [0.0, 8.0]})
 
     return {
         "format": "bgsim.model", "language": "0.1.0", "name": "quadcopter",
@@ -210,7 +220,69 @@ def build() -> dict:
         "plots": plots,
         "scene": {"file": "scenes/quadcopter.sdf"},
         "bindings": bindings,
+        "parameters": GLOBALS,
+        "dashboard": dashboard(),
     }
+
+
+def glob(name, value, unit, description):
+    return {"name": name, "value": value, "unit": unit, "description": description}
+
+
+GLOBALS = [
+    glob("wind_x", "0.4", "m/s", "Mean wind, world x (the wind blows towards +x)"),
+    glob("wind_y", "-0.2", "m/s", "Mean wind, world y"),
+    glob("wind_sigma", str(d.WIND_SIGMA), "m/s",
+         "Turbulence: standard deviation of the Gaussian gusts (a new one every 0.5 s, 1 s lag)"),
+    glob("gust_speed", "0.0", "m/s", "Peak speed of the discrete 1-cos gust (0: off)"),
+    glob("gust_dir", "90.0", "deg", "Direction the gust blows towards (world, from +x; 90 = +y)"),
+    glob("gust_t", "6.0", "s", "Start of the gust"),
+    glob("gust_T", "2.0", "s", "Duration of the gust"),
+]
+
+
+def dashboard() -> dict:
+    def slider(cid, title, param, lo, hi, step, decimals, unit):
+        return {"id": cid, "kind": "slider", "size": "1x1", "title": title, "parameter": f"global:{param}",
+                "options": {"min": lo, "max": hi, "step": step, "decimals": decimals, "unit": unit}}
+
+    def value(cid, title, signal, decimals, unit):
+        return {"id": cid, "kind": "value", "size": "1x1", "title": title, "signals": [signal],
+                "options": {"decimals": decimals, "unit": unit, "sparkline": True}}
+
+    # rows of four columns: intro, mean wind | turbulence, gust | duration, readouts | readouts | plots.
+    # No automatic re-run: the 18 s mission takes about a minute.
+    return {"autoRerun": False, "cards": [
+        {"id": "intro", "kind": "text", "size": "2x1", "title": "Quadcopter in the wind", "options": {"markdown": True, "text":
+            "The wind drags on the airframe: a **mean wind**, **turbulence** (Gaussian gusts) and a "
+            "**discrete gust** (1-cos, off at 0 m/s). Press **Run** after a change: the 18 s mission takes about a minute."}},
+        slider("wind_x", "Mean wind x", "wind_x", -5.0, 5.0, 0.1, 1, "m/s"),
+        slider("wind_y", "Mean wind y", "wind_y", -5.0, 5.0, 0.1, 1, "m/s"),
+        slider("sigma", "Turbulence", "wind_sigma", 0.0, 2.0, 0.05, 2, "m/s"),
+        slider("gust", "Gust peak", "gust_speed", 0.0, 8.0, 0.25, 2, "m/s"),
+        slider("gust_dir", "Gust towards", "gust_dir", -180.0, 180.0, 5.0, 0, "deg"),
+        slider("gust_t", "Gust at", "gust_t", 1.0, 16.0, 0.25, 2, "s"),
+        slider("gust_T", "Gust duration", "gust_T", 0.25, 5.0, 0.25, 2, "s"),
+        value("wind_speed", "Wind speed", "GustPulse/speed", 2, "m/s"),
+        value("track", "Distance to the set-point", "Err/track", 3, "m"),
+        {"id": "tilt", "kind": "gauge", "size": "1x1", "title": "Tilt (limit 25 deg)", "signals": ["Truth/tilt"],
+         "options": {"min": 0.0, "max": 0.5, "decimals": 3, "unit": "rad",
+                     "zones": [{"from": 0.0, "to": 0.35, "tone": "good"}, {"from": 0.35, "to": 0.436, "tone": "warn"},
+                               {"from": 0.436, "to": 0.5, "tone": "bad"}]}},
+        value("alt", "Altitude", "Truth/z", 3, "m"),
+        {"id": "rotor", "kind": "gauge", "size": "1x1", "title": "Rotor 1 speed", "signals": ["Drv1/rotor/w"],
+         "options": {"min": 0.0, "max": 800.0, "decimals": 0, "unit": "rad/s",
+                     "zones": [{"from": 0.0, "to": 700.0, "tone": "good"}, {"from": 700.0, "to": 775.0, "tone": "warn"},
+                               {"from": 775.0, "to": 800.0, "tone": "bad"}]}},
+        value("current", "Battery current", "Bat/I", 1, "A"),
+        value("soc", "State of charge", "Bat/soc", 4, ""),
+        {"id": "plot_wind", "kind": "plot", "size": "4x2", "title": "Wind at the airframe (m/s)",
+         "signals": ["GustPulse/y[1]", "GustPulse/y[2]", "GustPulse/g"]},
+        {"id": "plot_pos", "kind": "plot", "size": "4x2", "title": "Position and set-point (m)",
+         "signals": ["Truth/x", "Truth/y", "Truth/z", "Mission/p_sp[1]", "Mission/p_sp[2]", "Mission/p_sp[3]"]},
+        {"id": "plot_err", "kind": "plot", "size": "4x2", "title": "Distance to the set-point (m) and tilt (rad)",
+         "signals": ["Err/track", "Truth/tilt"]},
+    ]}
 
 
 # ----------------------------------------------------------------------------- 3D scene
@@ -287,6 +359,17 @@ def build_scene() -> str:
             f'\n    <joint name="rotor_{k}" type="continuous">\n      <parent>body</parent>\n'
             f'      <child>rotor_{k}_link</child>\n      <axis><xyz>0 0 1</xyz></axis>\n    </joint>\n'
         )
+    # wind vane beside the pads: turns to the heading the wind blows towards, coloured by the wind speed
+    out.append('\n    <link name="vane_link">\n      <pose>-1.2 -1.2 0.9 0 0 0</pose>\n')
+    out.append(_visual("vane_mast", _cyl(0.012, 0.9), (0, 0, -0.45, 0, 0, 0), "0.5 0.5 0.55 1"))
+    out.append(_visual("vane_arrow", _box(0.36, 0.03, 0.03), (0.08, 0, 0, 0, 0, 0), "0.9 0.9 0.9 1"))
+    out.append(_visual("vane_tip", _box(0.07, 0.09, 0.03), (0.28, 0, 0, 0, 0, 0), "0.9 0.3 0.1 1"))
+    out.append(_visual("vane_tail", _box(0.03, 0.14, 0.12), (-0.1, 0, 0, 0, 0, 0), "0.5 0.5 0.55 1"))
+    out.append("    </link>\n")
+    out.append(
+        '\n    <joint name="wind_vane" type="continuous">\n      <parent>ground</parent>\n'
+        '      <child>vane_link</child>\n      <axis><xyz>0 0 1</xyz></axis>\n    </joint>\n'
+    )
     out.append("  </model>\n</sdf>\n")
     return "".join(out)
 
@@ -303,6 +386,32 @@ def main() -> int:
     repeat["$comment"] = "Determinism twin of quadcopter: identical diagram, t_end = 9 s on the same output grid; see expected.json."
     repeat["settings"]["t_end"] = 9.0
     repeat["settings"]["output"]["points"] = 901
+    del repeat["dashboard"]
+    # The wind reference: climb to 1 m and hover for 12 s in a steady 4 m/s wind along x, no turbulence. At
+    # rest the tilt balances drag and weight (design.wind_tilt; expected.json checks it).
+    hover = json.loads(json.dumps(model))
+    hover["name"] = "quadcopter-wind-hover"
+    hover["$comment"] = ("The quadcopter of the mission model hovering at 1 m in a steady 4 m/s wind (no turbulence): the "
+                         "settled tilt is the static drag balance of design.wind_tilt. Generated by design/build_model.py.")
+    mission = next(n for n in hover["diagram"]["nodes"] if n["name"] == "Mission")
+    mission["params"].update({"ts": "[1.0, 99.0, 99.0, 99.0, 99.0, 99.0, 99.0, 99.0]", "t_disarm": "99.0"})
+    # the sensor noise makes the attitude jitter; a 2 s low-pass of the pitch gives its mean
+    hover["diagram"]["nodes"].append({
+        "id": "n99", "name": "PitchAvg", "block": {"ref": "stdlib:continuous/FirstOrder"}, "position": {"x": 1400, "y": 1000},
+        "rotation": 0, "flipX": False, "params": {"k": "1.0", "tau": "2.0"}, "constants": {}, "starts": {"x": "0.0"},
+        "ui": {"showLabel": True, "color": None}})
+    truth_id = next(n["id"] for n in hover["diagram"]["nodes"] if n["name"] == "Truth")
+    hover["diagram"]["connections"].append({"id": "s999", "kind": "signal", "from": {"node": truth_id, "port": "pitch"},
+                                            "to": {"node": "n99", "port": "u"}, "route": [], "label": None})
+    hover["plots"].append({"id": "p11", "title": "Pitch and its 2 s mean (rad)", "signals": ["Truth/pitch", "PitchAvg/y"]})
+    values = {"wind_x": "4.0", "wind_y": "0.0", "wind_sigma": "0.0"}
+    for g in hover["parameters"]:
+        g["value"] = values.get(g["name"], g["value"])
+    hover["settings"]["t_end"] = 12.0
+    hover["settings"]["output"]["points"] = 1201
+    del hover["dashboard"]
+    (ROOT / "models" / "quadcopter-wind-hover.bgmodel.json").write_text(
+        json.dumps(hover, indent=2) + "\n", encoding="utf-8", newline="\n")
     (ROOT / "models" / "quadcopter-repeat.bgmodel.json").write_text(
         json.dumps(repeat, indent=2) + "\n", encoding="utf-8", newline="\n")
     sdf = ROOT / "scenes" / "quadcopter.sdf"

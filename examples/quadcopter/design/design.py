@@ -327,7 +327,33 @@ def build() -> tuple[dict, list[str]]:
     return p, report
 
 
+def wind_tilt(w: float) -> float:
+    """Tilt of the airframe hovering in place in a steady horizontal wind w (m/s), the reference of the
+    wind check. At rest the thrust T along the body z axis, the drag and the weight balance. With the body
+    tilted by th into the wind, the air speed in the body frame is (-w cos th, 0, w sin th) (wind along
+    world x, rotated about body y), the drag C (cx, cz) acts on it, and back in the world:
+        x:  -T sin th + w (cx cos^2 th + cz sin^2 th) = 0
+        z:   T cos th + w (cx - cz) sin th cos th - m g = 0.
+    Eliminate T and bisect on th."""
+    cx, cz = CD[0], CD[2]
+
+    def f(th: float) -> float:
+        s, c = math.sin(th), math.cos(th)
+        thrust = (M_TRUE * G - w * (cx - cz) * s * c) / c
+        return -thrust * s + w * (cx * c * c + cz * s * s)
+
+    lo, hi = 0.0, math.pi / 4
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if f(lo) * f(mid) <= 0.0:
+            hi = mid
+        else:
+            lo = mid
+    return 0.5 * (lo + hi)
+
+
 PARAMS, REPORT = build()
+REPORT.append(f"steady wind: tilt {wind_tilt(4.0):.9f} rad in 4 m/s (small-angle cx w/(m g) = {CD[0] * 4.0 / (M_TRUE * G):.6f})")
 
 
 def main() -> int:

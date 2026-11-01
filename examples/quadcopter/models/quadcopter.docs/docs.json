@@ -32,6 +32,12 @@
           "children": []
         },
         {
+          "id": "wind",
+          "title": "Wind, gusts and the dashboard",
+          "file": "pages/wind.md",
+          "children": []
+        },
+        {
           "id": "notes",
           "title": "Notes and reuse",
           "file": "pages/notes.md",

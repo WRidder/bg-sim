@@ -27,6 +27,12 @@
       {"ylabel": "attitude error [deg]", "series": [{"signal": "Err/att", "label": "Err/att", "scale": 57.29577951308232}], "legend": true},
       {"ylabel": "velocity error [m/s]", "series": [{"signal": "Err/vel", "label": "Err/vel"}], "legend": true}
     ]
+  },
+  "wind": {
+    "kind": "plot", "model": "quadcopter", "xlim": [0, 18],
+    "rows": [
+      {"ylabel": "wind [m/s]", "series": [{"signal": "GustPulse/y[1]", "label": "x"}, {"signal": "GustPulse/y[2]", "label": "y"}, {"signal": "GustPulse/speed", "label": "speed", "style": "--"}], "legend": true, "legend_loc": "upper left"}
+    ]
   }
 }
 @@ page quadcopter overview - | Overview
@@ -162,6 +168,20 @@ The stdlib block is a function of $t$ through `floor`; every step of its stairca
 - actuators: rotor speeds at most 774.6 rad/s (peak 557.6, tolerance 25), `Esc1/u` at most 12.6 V, motor current at most 50 A, battery current at most 70 A, state of charge 0.9865 at 18 s;
 - estimator: `Err/att` at most 0.03 (measured peak 0.0188), `Err/pos` at most 0.05 m, `Err/vel` at most 0.2 m/s, the gyro noise RMS against the truth at most 0.0075 rad/s, the attitude controller's rate set-point against the filter at most 0.07;
 - `scene_bindings`, and no E901, E106, E007, W201, W202, W205 or W206.
+@@ page quadcopter wind overview | Wind, gusts and the dashboard
+# Wind, gusts and the dashboard
+
+The wind acts through the linear air drag of `RotorWrench`, $-c_d (v - R^T w)$ per body axis ($c_{d,x} = c_{d,y} = 0.25$, $c_{d,z} = 0.35$ N s/m). It has three parts, all set by global parameters:
+
+- the **mean wind** `wind_x`, `wind_y` (0.4, -0.2 m/s);
+- the **turbulence** of `Wind`: a new Gaussian gust every 0.5 s with standard deviation `wind_sigma` (0.5 m/s), smoothed by the 1 s lag `Gust`;
+- a **discrete gust** of `GustPulse`, the 1-cos shape of the gust load standards, $g(t) = \tfrac{A}{2}\,(1 - \cos(2\pi (t - t_0)/T))$ for $t_0 < t < t_0 + T$. It blows towards the heading `gust_dir` and is off (`gust_speed` = 0) by default.
+
+The **Dashboard** tab has a slider for each of these, readouts of the wind speed, the distance to the set-point, the tilt, the altitude, a rotor speed and the battery, and plots. Press **Run** after a change: the mission takes about a minute to simulate. In the 3D view, the wind vane beside the pads turns to the wind's heading and is coloured by its speed.
+
+![Wind at the airframe during the mission (default settings)|900](@fig:wind)
+
+**Checks.** `quadcopter-wind-hover` validates the drag against statics (below). A 4 m/s gust towards +y from 6 to 8 s, flown in `run_checks.py` as an override, takes the quadcopter at most 19.1 cm off its set-point. Its tilt peaks at 0.254 rad, inside the 25 degree limit, and it still lands.
 @@ page quadcopter notes overview | Notes and reuse
 # Notes
 
@@ -184,3 +204,26 @@ The stdlib block is a function of $t$ through `floor`; every step of its stairca
 The same document as `quadcopter`, stopped at $t = 9$ s on the same output grid (901 points; `reltol` 1e-4, `abstol` 1e-6). It exists so that the example runner can check that two runs of the same model give identical results: the check compares [Truth/z](signal:Truth/z) at 4.9 s with 1.0859 m (tolerance 1e-3) and no E901, E106, E007, W201, W202, W205 or W206 appears. The eight `compare` entries of `expected.json` check that signals of the full 18 s run (for example `Imu/gyro[1]`) agree with this twin to 1e-12 from $t = 0$. The model and its physics are documented in the `quadcopter` model.
 
 ![Mission position over the first 9 s|900](@fig:run)
+@@ figures quadcopter-wind-hover
+{
+  "pitch": {
+    "kind": "plot", "model": "quadcopter-wind-hover", "xlim": [0, 12],
+    "rows": [
+      {"ylabel": "pitch [rad]", "series": [{"signal": "Truth/pitch", "label": "Truth/pitch"}, {"signal": "PitchAvg/y", "label": "2 s mean"}], "legend": true},
+      {"ylabel": "tracking error [m]", "series": [{"signal": "Err/track", "label": "Err/track", "color": "#7570b3"}]}
+    ]
+  },
+  "hover": {"kind": "scene", "model": "quadcopter-wind-hover", "t": 10.0}
+}
+@@ page quadcopter-wind-hover overview - | Overview
+# Hover in a steady wind
+
+The `quadcopter` model climbs to 1 m at 1 s and then hovers for 12 s in a steady 4 m/s wind along +x, with no turbulence and the gust off. The mission table holds only the climb. At rest, the thrust along the body z axis, the drag and the weight balance. With the body pitched by $\theta$ into the wind, the air speed in the body frame is $(-w\cos\theta, 0, w\sin\theta)$, and in world axes the balance reads
+
+$$-T\sin\theta + w\,(c_x\cos^2\theta + c_z\sin^2\theta) = 0,\qquad T\cos\theta + w\,(c_x - c_z)\sin\theta\cos\theta - m g = 0.$$
+
+`design.wind_tilt` solves it: $\theta = 0.075366$ rad for $w = 4$ m/s ($c_x w/(m g) = 0.0755$ in the small-angle limit). The noisy sensors make the attitude jitter, so `PitchAvg`, a 2 s low-pass, gives the mean. It reads $-0.0743$ to $-0.0745$ rad, within 1.3 % of the balance (the check allows 2 %). The quadcopter holds its place within 2.4 cm.
+
+![Pitch, its mean and the tracking error|900](@fig:pitch)
+
+![Hovering in the wind; the vane points downwind|700](@fig:hover)

@@ -9,7 +9,7 @@ A 1.35 kg, 450 mm X quadcopter with a PX4-style cascaded flight controller, flow
 
 The model document and the 3D scene are **generated**: `uv run examples/quadcopter/design/build_model.py` writes `models/*.bgmodel.json` and `scenes/quadcopter.sdf` from the numbers of `design/design.py`; `uv run examples/quadcopter/design/design.py` prints the derivation of the gains and the loop margins.
 
-![The model canvas|900](assets/b7cd3c7a4458.png)
+![The model canvas|900](assets/58b570b3d9eb.png)
 
 ## Run it
 
@@ -19,10 +19,10 @@ Press **Run**. The README measured 41 to 65 s of solve time on a loaded machine 
 
 `scenes/quadcopter.sdf` has the link `body` (pose binding `Truth/q[1..4]`, `Truth/x`, `y`, `z`), the joints `rotor_1..4` (position bindings `Drv<k>/rotor/phi`, gain -1 for the clockwise rotors 3 and 4) and the ground link with the pads. Three moments of the mission: the climb, the first turn and the final descent.
 
-![Climb: t = 3 s|420](assets/600a394b587d.png)
+![Climb: t = 3 s|420](assets/b0ff888f6480.png)
 
-![Yaw turn: t = 9.5 s|420](assets/54e305d50355.png)
+![Yaw turn: t = 9.5 s|420](assets/1bde63d4b9fc.png)
 
-![Descent: t = 16.8 s|420](assets/dd8b2771775f.png)
+![Descent: t = 16.8 s|420](assets/a636f48fb276.png)
 
 Continue with [the architecture](page:architecture), [the flight controller](page:controller), [the estimator](page:estimator), [the results](page:results) and [the notes](page:notes).
