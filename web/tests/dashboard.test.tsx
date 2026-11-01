@@ -312,6 +312,8 @@ describe("startRun", () => {
       { target: "V1/V", value: 2 },
     ]);
     expect(body.parameterSchedule).toHaveLength(2);
+    // kept for the cards: a real worker writes them into the manifest only at the end of the run
+    expect(useRunStore.getState().sentOverrides).toEqual(body.parameterOverrides);
     useRunStore.setState({ status: "idle" });
   });
 
@@ -379,6 +381,50 @@ describe("DashboardTab", () => {
     act(() => useRunStore.getState().setCursorTime(null));
     expect(screen.getByTestId("dash-indicator-c5").getAttribute("data-state")).toBe("on");
     expect(screen.getByTestId("dash-summary").textContent).toMatch(/2 parameter overrides, 2 scheduled changes/);
+  });
+
+  it("says 'applies at the next run' only when the value differs from what the current run was sent", () => {
+    openModel(model());
+    loadRun(); // its manifest has no parameterOverrides yet (a running real worker)
+    useRunStore.setState({
+      status: "running",
+      sentOverrides: [
+        { target: "R1/R", value: 12.5 },
+        { target: "V1/V", value: 2 },
+      ],
+    });
+    render(<DashboardTab />);
+    const pending = (id: string) => within(screen.getByTestId(`dash-card-${id}`)).queryByText("applies at the next run");
+    expect(pending("c7")).toBeNull();
+    expect(pending("c9")).toBeNull();
+    fireEvent.change(screen.getByTestId("dash-slider-c7"), { target: { value: "20" } });
+    expect(pending("c7")).not.toBeNull();
+    expect(pending("c9")).toBeNull();
+  });
+
+  it("re-runs automatically once the inputs settle, never while a slider is held", () => {
+    vi.useFakeTimers();
+    try {
+      openModel(model()); // auto re-run is off in the fixture; the checkbox turns it on
+      const start = vi.fn(async () => undefined);
+      useRunStore.setState({ startRun: start });
+      render(<DashboardTab />);
+      fireEvent.click(screen.getByRole("checkbox", { name: /Auto re-run/ }));
+      const slider = screen.getByTestId("dash-slider-c7");
+      fireEvent.pointerDown(slider);
+      fireEvent.change(slider, { target: { value: "20" } });
+      act(() => vi.advanceTimersByTime(1000));
+      expect(start).not.toHaveBeenCalled(); // still held
+      act(() => {
+        window.dispatchEvent(new Event("pointerup"));
+      });
+      act(() => vi.advanceTimersByTime(200));
+      expect(start).not.toHaveBeenCalled();
+      act(() => vi.advanceTimersByTime(100));
+      expect(start).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("changes input values with the keyboard and the slider", () => {

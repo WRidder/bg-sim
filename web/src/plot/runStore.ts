@@ -24,6 +24,7 @@ import { create } from "zustand";
 import type { DebugStartOptions } from "../contracts/debug";
 import type {
   Diagnostic,
+  ParameterOverride,
   RunManifest,
   RunSignal,
   RunStatus,
@@ -138,6 +139,11 @@ export interface RunStoreState {
   startedAt: number | null;
   /** `Date.now()` when the current phase began. */
   phaseAt: number | null;
+  /**
+   * The dashboard overrides this editor sent with the current run (null: a followed run, or none yet). The
+   * dashboard compares its inputs with these: a real worker publishes them in the manifest only at the end.
+   */
+  sentOverrides: readonly ParameterOverride[] | null;
   progress: RunProgress | null;
   stats: RunStats | null;
   error: string | null;
@@ -862,6 +868,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
   phase: null,
   startedAt: null,
   phaseAt: null,
+  sentOverrides: null,
   progress: null,
   stats: null,
   error: null,
@@ -930,6 +937,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       phase: null,
       startedAt: Date.now(),
       phaseAt: Date.now(),
+      sentOverrides: inputs === null ? null : inputs.parameterOverrides,
       progress: null,
       stats: null,
       error: null,
@@ -1568,6 +1576,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       phase: null,
       startedAt: null,
       phaseAt: null,
+      sentOverrides: null,
       progress: null,
       stats: null,
       error: null,

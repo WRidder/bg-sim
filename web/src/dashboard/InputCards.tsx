@@ -44,12 +44,16 @@ function show(value: number, card: ModelDashboardCard): string {
   return card.options?.decimals === undefined ? formatNumber(value) : value.toFixed(card.options.decimals);
 }
 
-/** "next run" when the value differs from what the shown run used, "model" when not overridden. */
+/**
+ * "next run" when the value differs from what the current run uses, "model" when not overridden. The
+ * current run's overrides are the ones this editor sent with it; a followed run (a replay) has only its
+ * manifest's.
+ */
 function useOverrideState(card: ModelDashboardCard, info: ParameterInfo | null): string | null {
   const used = useRunStore((state) =>
-    state.manifest?.parameterOverrides?.find((entry) => entry.target === card.parameter)?.value,
+    (state.sentOverrides ?? state.manifest?.parameterOverrides)?.find((entry) => entry.target === card.parameter)?.value,
   );
-  const hasRun = useRunStore((state) => state.manifest !== null);
+  const hasRun = useRunStore((state) => state.sentOverrides !== null || state.manifest !== null);
   if (card.value === undefined) {
     return used !== undefined ? "next run: model value" : null;
   }
@@ -57,7 +61,8 @@ function useOverrideState(card: ModelDashboardCard, info: ParameterInfo | null):
     return null;
   }
   const wanted = typedValue(card.value, info);
-  return used === wanted ? null : "applies at the next run";
+  // a manifest may carry a toggle as 1/0
+  return used !== undefined && Number(used) === Number(wanted) ? null : "applies at the next run";
 }
 
 /**
@@ -216,8 +221,12 @@ export function SliderCard({ card, info, titleId }: InputCardProps) {
         aria-labelledby={titleId}
         aria-valuetext={`${show(value, card)} ${unit}`.trim()}
         data-testid={`dash-slider-${card.id}`}
-        onPointerDown={() => beginValueGesture(key)}
-        onPointerUp={() => endValueGesture()}
+        onPointerDown={() => {
+          beginValueGesture(key);
+          // the pointer may be released outside the slider
+          window.addEventListener("pointerup", () => endValueGesture(), { once: true });
+        }}
+        onPointerCancel={() => endValueGesture()}
         onChange={(event) => setCardValue(card.id, Number(event.target.value), key)}
       />
       <div className="dash-slider__limits" aria-hidden="true">
