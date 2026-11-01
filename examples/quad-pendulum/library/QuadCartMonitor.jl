@@ -11,7 +11,11 @@
     # Ledger: E_tot = E_base + sum E_i, W_in = int u * sd dt (work of the actuator), W_loss = int (b_s sd^2 +
     # sum b_j wq_j^2) dt (base and joint friction); E_tot - W_in + W_loss stays constant up to the energy in
     # the stiff pivots.
+    # Travel: lim_hi / lim_lo the limit of the chosen controller (input lim, from the Traj block), use the
+    # base travel in percent of it.
     @inputs begin
+        s::Real, [unit = "m"]
+        lim::Real, [unit = "m"]
         sd::Real, [unit = "m/s"]
         u::Real, [unit = "N"]
         q1::Real, [unit = "rad"]
@@ -51,6 +55,9 @@
         W_in::Real, [unit = "J", description = "Work done by the actuator"]
         W_loss::Real, [unit = "J", description = "Energy dissipated by friction"]
         ledger::Real, [unit = "J", description = "E_tot - W_in + W_loss (constant)"]
+        lim_hi::Real, [unit = "m", description = "Upper travel limit of the chosen controller"]
+        lim_lo::Real, [unit = "m", description = "Lower travel limit of the chosen controller"]
+        use::Real, [description = "Base travel in percent of the chosen controller's limit"]
     end
     @parameters begin
         m::Vec{4} = [0.1, 0.1, 0.1, 0.1], [unit = "kg", description = "Link masses"]
@@ -87,5 +94,8 @@
         W_in ~ Win
         W_loss ~ Wloss
         ledger ~ E_tot - Win + Wloss
+        lim_hi ~ lim
+        lim_lo ~ -lim
+        use ~ 100.0 * abs(s) / lim
     end
 end

@@ -55,6 +55,14 @@
           "note": "hold phase"
         },
         {
+          "kind": "final_value",
+          "signal": "Mon/lim_hi",
+          "t": 10.0,
+          "value": 1.5,
+          "abs": 1e-09,
+          "note": "the dashboard's limit line follows the full-travel controller (Traj/controller = 0): +-1.5 m"
+        },
+        {
           "kind": "cursor_value",
           "signal": "Ctrl/swinging",
           "t": 2.0,
@@ -74,23 +82,23 @@
           "kind": "cursor_value",
           "signal": "Mon/th1",
           "t": 3.0,
-          "value": -102.1247,
+          "value": -102.1521,
           "abs": 2.0,
-          "note": "swing-up tracks the design closed loop (design value -102.12 deg; 2 deg band)"
+          "note": "swing-up tracks the design closed loop (design value -102.15 deg; 2 deg band)"
         },
         {
           "kind": "cursor_value",
           "signal": "Mon/th2",
           "t": 3.0,
-          "value": -86.4807,
+          "value": -86.4977,
           "abs": 2.0,
-          "note": "swing-up tracks the design closed loop (design value -86.48 deg; 2 deg band)"
+          "note": "swing-up tracks the design closed loop (design value -86.50 deg; 2 deg band)"
         },
         {
           "kind": "cursor_value",
           "signal": "Mon/th3",
           "t": 3.0,
-          "value": -81.0197,
+          "value": -81.0212,
           "abs": 2.0,
           "note": "swing-up tracks the design closed loop (design value -81.02 deg; 2 deg band)"
         },
@@ -98,15 +106,15 @@
           "kind": "cursor_value",
           "signal": "Mon/th4",
           "t": 3.0,
-          "value": -77.4735,
+          "value": -77.5397,
           "abs": 2.0,
-          "note": "swing-up tracks the design closed loop (design value -77.47 deg; 2 deg band)"
+          "note": "swing-up tracks the design closed loop (design value -77.54 deg; 2 deg band)"
         },
         {
           "kind": "cursor_value",
           "signal": "Mon/th1",
           "t": 4.5,
-          "value": 0.2445,
+          "value": 0.2387,
           "abs": 2.0,
           "note": "swing-up tracks the design closed loop (design value 0.24 deg; 2 deg band)"
         },
@@ -114,25 +122,25 @@
           "kind": "cursor_value",
           "signal": "Mon/th2",
           "t": 4.5,
-          "value": 0.1156,
+          "value": 0.1099,
           "abs": 2.0,
-          "note": "swing-up tracks the design closed loop (design value 0.12 deg; 2 deg band)"
+          "note": "swing-up tracks the design closed loop (design value 0.11 deg; 2 deg band)"
         },
         {
           "kind": "cursor_value",
           "signal": "Mon/th3",
           "t": 4.5,
-          "value": -0.0241,
+          "value": -0.0296,
           "abs": 2.0,
-          "note": "swing-up tracks the design closed loop (design value -0.02 deg; 2 deg band)"
+          "note": "swing-up tracks the design closed loop (design value -0.03 deg; 2 deg band)"
         },
         {
           "kind": "cursor_value",
           "signal": "Mon/th4",
           "t": 4.5,
-          "value": -0.1613,
+          "value": -0.1664,
           "abs": 2.0,
-          "note": "swing-up tracks the design closed loop (design value -0.16 deg; 2 deg band)"
+          "note": "swing-up tracks the design closed loop (design value -0.17 deg; 2 deg band)"
         },
         {
           "kind": "max_abs_le",
@@ -140,26 +148,32 @@
           "from_t": 7.5,
           "to_t": 10.0,
           "value": 0.5,
-          "note": "balance holds: every link within 0.5 deg of upright from 7.5 s (measured max 0.0007 deg)"
+          "note": "balance holds: every link within 0.5 deg of upright from 7.5 s (measured max 0.0006 deg)"
         },
         {
           "kind": "max_abs_le",
           "signal": "Ctrl/u",
           "value": 40.000000001,
-          "note": "|u| within the actuator limit 40 N (firmware clamp; measured peak 13.61 N, design 13.61)"
+          "note": "|u| within the actuator limit 40 N (firmware clamp; measured peak 14.13 N, design 14.13)"
         },
         {
           "kind": "max_abs",
           "signal": "Ctrl/u",
-          "value": 13.6068,
+          "value": 14.1274,
           "rtol": 0.15,
-          "note": "peak actuator effort 13.61 N (design closed loop 13.61 N); +-15 %"
+          "note": "peak actuator effort 14.13 N (design closed loop 14.13 N); +-15 %"
         },
         {
           "kind": "max_abs_le",
           "signal": "Rail/qout",
           "value": 1.5,
           "note": "the cart stays on the +-1.5 m rail (measured max 0.581 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/use",
+          "value": 100.0,
+          "note": "travel used stays below 100 % of the full-travel controller (Traj/controller = 0)'s limit (measured peak 38.7 %)"
         },
         {
           "kind": "max_abs",
@@ -202,7 +216,7 @@
               "coeff": 1.0
             }
           ],
-          "note": "energy bookkeeping: E_tot - W_in + W_loss stays constant (work of the actuator minus friction losses equals the change of the mechanical energy); measured drift 3.57e-06 J (the stiff pivots' spring and damper energy), tolerance 3x that, at least 1e-3 of E_up"
+          "note": "energy bookkeeping: E_tot - W_in + W_loss stays constant (work of the actuator minus friction losses equals the change of the mechanical energy); measured drift 3.54e-06 J (the stiff pivots' spring and damper energy), tolerance 3x that, at least 1e-3 of E_up"
         }
       ]
     },
@@ -270,7 +284,15 @@
           "kind": "max_abs_le",
           "signal": "Rail/qout",
           "value": 1.5,
-          "note": "inside the travel limit (measured 0.189 m)"
+          "note": "push recovery inside the full-travel controller (Traj/controller = 0)'s travel limit +-1.5 m (measured 0.189 m, 12.6 %)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/lim_hi",
+          "t": 7.0,
+          "value": 1.5,
+          "abs": 1e-09,
+          "note": "the dashboard's limit line follows the full-travel controller (Traj/controller = 0)"
         },
         {
           "kind": "invariant",
@@ -1152,7 +1174,336 @@
           "note": "free swing: mechanical energy + friction losses constant (measured drift 6.44e-07 J)"
         }
       ]
+    },
+    "quad-pendulum-swingup-short": {
+      "model": "quad-pendulum-swingup",
+      "overrides": [
+        {
+          "target": "Traj/controller",
+          "value": 1
+        }
+      ],
+      "run_timeout": 1800,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1e-12,
+          "note": "the actuator is off before the swing-up starts"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qdout",
+          "from_t": 0.02,
+          "to_t": 0.99,
+          "value": 0.0001,
+          "note": "hanging at rest before t_on (5x the start-up residual of the pivot compliance, measured 7.2e-17)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 0.95,
+          "value": -180.0,
+          "abs": 0.01,
+          "note": "link 1 hangs straight down before the swing-up"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.95,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "hold phase"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/lim_hi",
+          "t": 10.0,
+          "value": 0.5,
+          "abs": 1e-09,
+          "note": "the dashboard's limit line follows the short-travel controller (Traj/controller = 1): +-0.5 m"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/swinging",
+          "t": 2.0,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "SWINGING UP (TVLQR)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/balancing",
+          "t": 6.5,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "BALANCING: the catch region was reached (catch at 5.500 s; design closed loop 5.500 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 3.0,
+          "value": -127.8239,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -127.82 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 3.0,
+          "value": -107.9775,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -107.98 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 3.0,
+          "value": -99.0339,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -99.03 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 3.0,
+          "value": -89.893,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value -89.89 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th1",
+          "t": 4.5,
+          "value": 1.3401,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 1.34 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th2",
+          "t": 4.5,
+          "value": 1.1414,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 1.14 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th3",
+          "t": 4.5,
+          "value": 0.9259,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 0.93 deg; 2 deg band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mon/th4",
+          "t": 4.5,
+          "value": 0.7159,
+          "abs": 2.0,
+          "note": "swing-up tracks the design closed loop (design value 0.72 deg; 2 deg band)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/dev",
+          "from_t": 7.5,
+          "to_t": 10.0,
+          "value": 0.5,
+          "note": "balance holds: every link within 0.5 deg of upright from 7.5 s (measured max 0.0011 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "value": 40.000000001,
+          "note": "|u| within the actuator limit 40 N (firmware clamp; measured peak 16.97 N, design 16.97)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "value": 16.9651,
+          "rtol": 0.15,
+          "note": "peak actuator effort 16.97 N (design closed loop 16.97 N); +-15 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qout",
+          "value": 0.5,
+          "note": "travel inside the short-travel controller (Traj/controller = 1)'s limit +-0.5 m (measured max 0.401 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/use",
+          "value": 100.0,
+          "note": "travel used stays below 100 % of the short-travel controller (Traj/controller = 1)'s limit (measured peak 80.2 %)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "value": 0.4011,
+          "abs": 0.05,
+          "note": "peak travel 0.401 m (design closed loop 0.401; collocation bound 0.4)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/S4",
+          "t": 10.0,
+          "value": 4.3164,
+          "abs": 0.04316400000000001,
+          "note": "upright at rest: the stacked energy equals the UPRIGHT level 4.3164 J (measured 4.3164 J)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/E_up",
+          "t": 10.0,
+          "value": 4.3164,
+          "abs": 1e-09,
+          "note": "UPRIGHT level = sum m_i g 2 h_i of the chain"
+        },
+        {
+          "kind": "invariant",
+          "tol": 0.001,
+          "scale": 4.316400000000001,
+          "terms": [
+            {
+              "signal": "Mon/E_tot",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Mon/W_in",
+              "coeff": -1.0
+            },
+            {
+              "signal": "Mon/W_loss",
+              "coeff": 1.0
+            }
+          ],
+          "note": "energy bookkeeping: E_tot - W_in + W_loss stays constant (work of the actuator minus friction losses equals the change of the mechanical energy); measured drift 2.44e-06 J (the stiff pivots' spring and damper energy), tolerance 3x that, at least 1e-3 of E_up"
+        }
+      ]
+    },
+    "quad-pendulum-balance-short": {
+      "model": "quad-pendulum-balance",
+      "overrides": [
+        {
+          "target": "Traj/controller",
+          "value": 1
+        }
+      ],
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no diagnostics"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/balancing",
+          "t": 0.01,
+          "value": 1.0,
+          "abs": 1e-09,
+          "note": "balance-only: BALANCING from the start"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/dev",
+          "from_t": 2.5,
+          "to_t": 2.99,
+          "value": 0.5,
+          "note": "the start lean is caught: inside 0.5 deg before the push (measured 0.327 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/dev",
+          "from_t": 3.0,
+          "to_t": 7.0,
+          "value": 9.3644,
+          "rtol": 0.2,
+          "note": "the 0.018 N, 50 ms tip push is real: peak deviation 9.36 deg (design 9.36 deg); +-20 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/dev",
+          "from_t": 5.530900000000001,
+          "to_t": 7.0,
+          "value": 0.5,
+          "note": "recovered: inside 0.5 deg from 5.53 s (measured 1.79 s after the push)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "value": 40.000000001,
+          "note": "|u| within the actuator limit (measured peak 17.64 N)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qout",
+          "value": 0.5,
+          "note": "push recovery inside the short-travel controller (Traj/controller = 1)'s travel limit +-0.5 m (measured 0.189 m, 37.8 %)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/lim_hi",
+          "t": 7.0,
+          "value": 0.5,
+          "abs": 1e-09,
+          "note": "the dashboard's limit line follows the short-travel controller (Traj/controller = 1)"
+        },
+        {
+          "kind": "invariant",
+          "tol": 0.001,
+          "scale": 4.316400000000001,
+          "terms": [
+            {
+              "signal": "Mon/E_tot",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Mon/W_in",
+              "coeff": -1.0
+            },
+            {
+              "signal": "Mon/W_loss",
+              "coeff": 1.0
+            }
+          ],
+          "note": "energy bookkeeping (measured drift 1.59e-05 J)"
+        }
+      ]
     }
   },
-  "description": "A chain of four pendulum links swung up from hanging and balanced upright, on a cart (planar multibond bond graph, ideal force actuator) and on a rotary arm (Furuta, spatial multibond bond graph, ideal torque). 1 kHz firmware: feed-forward + discrete time-varying LQR along an offline direct-collocation trajectory, latched infinite-horizon LQR in the catch region. Monitors: link angles, energy per link from the body twists and poses, the energy ledger. The -free models compare the bond graph with the Python (Lagrangian) twin."
+  "description": "A chain of four pendulum links swung up from hanging and balanced upright, on a cart (planar multibond bond graph, ideal force actuator) and on a rotary arm (Furuta, spatial multibond bond graph, ideal torque). 1 kHz firmware: feed-forward + discrete time-varying LQR along an offline direct-collocation trajectory, latched infinite-horizon LQR in the catch region. The cart has two controllers, chosen at run time by Traj/controller (dashboard select): the full-travel design and a short-travel design planned and tuned for +-0.5 m on the same plant; the -short entries run the same models with Traj/controller = 1. Monitors: link angles, energy per link from the body twists and poses, the energy ledger, the cart travel against the chosen controller's limit. The -free models compare the bond graph with the Python (Lagrangian) twin."
 }

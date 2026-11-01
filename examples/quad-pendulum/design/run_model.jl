@@ -17,7 +17,8 @@ todict(x::AbstractVector) = Any[todict(v) for v in x]
 todict(x) = x
 
 function override!(doc, path::String, value)
-    sval = value isa Bool ? string(value) : repr(Float64(value))
+    # as the backend does (sim/overrides.jl): whole numbers as integers, so Int parameters accept them
+    sval = value isa Bool ? string(value) : isinteger(Float64(value)) ? string(Int(value)) : repr(Float64(value))
     if startswith(path, "global:")
         name = path[8:end]
         g = only(filter(p -> p["name"] == name, doc["parameters"]))

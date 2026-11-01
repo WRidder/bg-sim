@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "quad-pendulum-swingup",
-  "$comment": "Quadruple inverted pendulum on a cart: swing-up from hanging and balance. Plant: planar multibond bond graph (Prismatic2D rail, four Revolute2DCompliant joints with 1e8 N/m pivots, RigidBody2D cart and links), ideal force actuator with viscous rail friction and soft end stops. Firmware QuadCartCtrl at 1 kHz: hold until 1 s, feed-forward + discrete TVLQR along the offline collocation trajectory (T_s = 5 s), latched LQR once in the catch region. QuadCartMonitor: link angles, energy per link from the body twists and poses, the energy ledger.",
+  "$comment": "Quadruple inverted pendulum on a cart: swing-up from hanging and balance. Plant: planar multibond bond graph (Prismatic2D rail, four Revolute2DCompliant joints with 1e8 N/m pivots, RigidBody2D cart and links), ideal force actuator with viscous rail friction and soft end stops. Firmware QuadCartCtrl at 1 kHz: hold until 1 s, feed-forward + discrete TVLQR along the offline collocation trajectory (T_s = 5 s; short-travel controller 5 s), latched LQR once in the catch region. Traj/controller picks the full-travel (0) or the short-travel (1) controller. QuadCartMonitor: link angles, energy per link from the body twists and poses, the energy ledger.",
   "diagram": {
     "nodes": [
       {
@@ -1809,11 +1809,11 @@
         "kind": "signal",
         "from": {
           "node": "n049",
-          "port": "xs"
+          "port": "Ks"
         },
         "to": {
           "node": "n048",
-          "port": "xs"
+          "port": "Ks"
         }
       },
       {
@@ -1821,11 +1821,11 @@
         "kind": "signal",
         "from": {
           "node": "n049",
-          "port": "Ks"
+          "port": "sel"
         },
         "to": {
           "node": "n048",
-          "port": "Ks"
+          "port": "sel"
         }
       },
       {
@@ -1988,6 +1988,30 @@
         "id": "s043",
         "kind": "signal",
         "from": {
+          "node": "n002",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n050",
+          "port": "s"
+        }
+      },
+      {
+        "id": "s044",
+        "kind": "signal",
+        "from": {
+          "node": "n049",
+          "port": "lim"
+        },
+        "to": {
+          "node": "n050",
+          "port": "lim"
+        }
+      },
+      {
+        "id": "s045",
+        "kind": "signal",
+        "from": {
           "node": "n048",
           "port": "u"
         },
@@ -1997,7 +2021,7 @@
         }
       },
       {
-        "id": "s044",
+        "id": "s046",
         "kind": "signal",
         "from": {
           "node": "n005",
@@ -2009,7 +2033,7 @@
         }
       },
       {
-        "id": "s045",
+        "id": "s047",
         "kind": "signal",
         "from": {
           "node": "n005",
@@ -2021,7 +2045,7 @@
         }
       },
       {
-        "id": "s046",
+        "id": "s048",
         "kind": "signal",
         "from": {
           "node": "n008",
@@ -2033,7 +2057,7 @@
         }
       },
       {
-        "id": "s047",
+        "id": "s049",
         "kind": "signal",
         "from": {
           "node": "n012",
@@ -2045,7 +2069,7 @@
         }
       },
       {
-        "id": "s048",
+        "id": "s050",
         "kind": "signal",
         "from": {
           "node": "n013",
@@ -2057,7 +2081,7 @@
         }
       },
       {
-        "id": "s049",
+        "id": "s051",
         "kind": "signal",
         "from": {
           "node": "n013",
@@ -2069,7 +2093,7 @@
         }
       },
       {
-        "id": "s050",
+        "id": "s052",
         "kind": "signal",
         "from": {
           "node": "n016",
@@ -2081,7 +2105,7 @@
         }
       },
       {
-        "id": "s051",
+        "id": "s053",
         "kind": "signal",
         "from": {
           "node": "n020",
@@ -2093,7 +2117,7 @@
         }
       },
       {
-        "id": "s052",
+        "id": "s054",
         "kind": "signal",
         "from": {
           "node": "n021",
@@ -2105,7 +2129,7 @@
         }
       },
       {
-        "id": "s053",
+        "id": "s055",
         "kind": "signal",
         "from": {
           "node": "n021",
@@ -2117,7 +2141,7 @@
         }
       },
       {
-        "id": "s054",
+        "id": "s056",
         "kind": "signal",
         "from": {
           "node": "n024",
@@ -2129,7 +2153,7 @@
         }
       },
       {
-        "id": "s055",
+        "id": "s057",
         "kind": "signal",
         "from": {
           "node": "n028",
@@ -2141,7 +2165,7 @@
         }
       },
       {
-        "id": "s056",
+        "id": "s058",
         "kind": "signal",
         "from": {
           "node": "n029",
@@ -2153,7 +2177,7 @@
         }
       },
       {
-        "id": "s057",
+        "id": "s059",
         "kind": "signal",
         "from": {
           "node": "n029",
@@ -2165,7 +2189,7 @@
         }
       },
       {
-        "id": "s058",
+        "id": "s060",
         "kind": "signal",
         "from": {
           "node": "n032",
@@ -2177,7 +2201,7 @@
         }
       },
       {
-        "id": "s059",
+        "id": "s061",
         "kind": "signal",
         "from": {
           "node": "n036",
@@ -2227,9 +2251,11 @@
     },
     {
       "id": "p_cart",
-      "title": "Cart position x (m)",
+      "title": "Cart position x (m) and the travel limit of the chosen controller",
       "signals": [
-        "Rail/qout"
+        "Rail/qout",
+        "Mon/lim_hi",
+        "Mon/lim_lo"
       ]
     },
     {
@@ -2299,7 +2325,7 @@
         "title": "Quadruple inverted pendulum",
         "options": {
           "markdown": true,
-          "text": "**Swing-up and balance.** From hanging at rest the cart follows an offline-optimised trajectory (feed-forward + time-varying LQR, **SWINGING UP**) and the 1 kHz LQR catches the chain upright (**BALANCING**). The stacked plot shows the energy of every link (kinetic + potential from the hanging rest) against the UPRIGHT level 4.32 J. The swing-up run takes about a minute: change an input, then press **Run**."
+          "text": "**Swing-up and balance.** From hanging at rest the cart follows an offline-optimised trajectory (feed-forward + time-varying LQR, **SWINGING UP**) and the 1 kHz LQR catches the chain upright (**BALANCING**). The stacked plot shows the energy of every link (kinetic + potential from the hanging rest) against the UPRIGHT level 4.32 J. The swing-up run takes about a minute: change an input, then press **Run**. **Controller:** *full travel* plans the swing-up with the whole rail; *short travel* keeps the cart within \u00b10.5 m (planned with that limit, same plant)."
         }
       },
       {
@@ -2422,6 +2448,44 @@
         }
       },
       {
+        "id": "controller",
+        "kind": "select",
+        "size": "2x1",
+        "title": "Controller (full travel / short travel \u00b10.5 m)",
+        "parameter": "Traj/controller"
+      },
+      {
+        "id": "use",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Travel used",
+        "signals": [
+          "Mon/use"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "% of limit",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0,
+              "to": 80,
+              "tone": "good"
+            },
+            {
+              "from": 80,
+              "to": 100,
+              "tone": "warn"
+            },
+            {
+              "from": 100,
+              "to": 1000,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
         "id": "s",
         "kind": "value",
         "size": "1x1",
@@ -2478,9 +2542,11 @@
         "id": "su",
         "kind": "plot",
         "size": "2x2",
-        "title": "Cart x (m) and f (N)",
+        "title": "Cart x (m) with the controller's travel limit, and f (N)",
         "signals": [
           "Rail/qout",
+          "Mon/lim_hi",
+          "Mon/lim_lo",
           "Ctrl/u"
         ]
       },

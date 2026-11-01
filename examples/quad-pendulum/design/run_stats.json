@@ -1,15 +1,23 @@
 {
   "quad-pendulum-free": {
-    "seconds": 107.1,
+    "seconds": 136.1,
     "points": 3049
   },
   "quad-pendulum-balance": {
-    "seconds": 37.4,
-    "points": 14127
+    "seconds": 53.4,
+    "points": 14135
   },
   "quad-pendulum-swingup": {
-    "seconds": 48.4,
-    "points": 20131
+    "seconds": 85.6,
+    "points": 20153
+  },
+  "quad-pendulum-balance-short": {
+    "seconds": 56.6,
+    "points": 14135
+  },
+  "quad-pendulum-swingup-short": {
+    "seconds": 83.6,
+    "points": 20147
   },
   "quad-rotary-free": {
     "seconds": 109.4,

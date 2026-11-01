@@ -7,8 +7,8 @@ Real worker, Rodas5P, reltol 1e-7:
 | at rest before 1 s | exactly | |
 | all links within 5° | 3.97 s | 3.97 s |
 | catch (BALANCING) | 5.50 s | 5.50 s |
-| largest link deviation from 7.5 s | 0.00066° | 0.00066° |
-| peak force | 13.61 N of 40 N | 13.61 N |
+| largest link deviation from 7.5 s | 0.00057° | 0.00057° |
+| peak force | 14.13 N of 40 N | 14.13 N |
 | peak cart travel | 0.581 m of ±1.5 m | 0.581 m |
 | stacked energy at 10 s | 4.3164 J = UPRIGHT | |
 | actuator work, friction losses | 6.99 J, 2.68 J | |
@@ -22,3 +22,5 @@ the rail friction, +10 % cart mass, 1 or 2 ms of actuator delay and quantised en
 `expected.json` checks the swing-up (catch, the angles against the design closed loop at two instants,
 the 0.5° band from 7.5 s, the force limit, the rail, the final stacked energy and the ledger), the balance
 scenario and the free swing against the twin. The tolerances are named in every check's note.
+
+Continue with [the short-travel controller](page:short).

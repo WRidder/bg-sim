@@ -17,6 +17,17 @@
     "rows": [
       {"ylabel": "energy [J]", "series": [{"signal": "Mon/E_tot", "label": "E_tot"}, {"signal": "Mon/W_in", "label": "W_in"}, {"signal": "Mon/W_loss", "label": "W_loss"}, {"signal": "Mon/ledger", "label": "E_tot − W_in + W_loss"}], "legend": true, "legend_loc": "right"}
     ]
+  },
+  "short": {
+    "kind": "plot", "model": "quad-pendulum-swingup", "overrides": {"Traj/controller": 1}, "xlim": [0, 10],
+    "rows": [
+      {"ylabel": "link angle [deg]", "series": [{"signal": "Mon/th1", "label": "θ1"}, {"signal": "Mon/th2", "label": "θ2"}, {"signal": "Mon/th3", "label": "θ3"}, {"signal": "Mon/th4", "label": "θ4"}], "legend": true, "legend_loc": "right"},
+      {"ylabel": "stacked energy [J]", "series": [{"signal": "Mon/S1", "label": "E1"}, {"signal": "Mon/S2", "label": "E1+E2"}, {"signal": "Mon/S3", "label": "E1..E3"}, {"signal": "Mon/S4", "label": "total"}], "legend": true, "legend_loc": "right",
+       "hlines": [{"y": 4.3164, "label": "UPRIGHT 4.32 J"}]},
+      {"ylabel": "cart x [m]", "series": [{"signal": "Rail/qout", "label": "x"}], "legend": true, "legend_loc": "right",
+       "hlines": [{"y": 0.5, "label": "+0.5 m"}, {"y": -0.5, "label": "−0.5 m"}]},
+      {"ylabel": "F [N]", "series": [{"signal": "Ctrl/u", "label": "F"}], "legend": true, "legend_loc": "right"}
+    ]
   }
 }
 @@ page quad-pendulum-swingup overview - | Overview
@@ -71,8 +82,8 @@ Real worker, Rodas5P, reltol 1e-7:
 | at rest before 1 s | exactly | |
 | all links within 5° | 3.97 s | 3.97 s |
 | catch (BALANCING) | 5.50 s | 5.50 s |
-| largest link deviation from 7.5 s | 0.00066° | 0.00066° |
-| peak force | 13.61 N of 40 N | 13.61 N |
+| largest link deviation from 7.5 s | 0.00057° | 0.00057° |
+| peak force | 14.13 N of 40 N | 14.13 N |
 | peak cart travel | 0.581 m of ±1.5 m | 0.581 m |
 | stacked energy at 10 s | 4.3164 J = UPRIGHT | |
 | actuator work, friction losses | 6.99 J, 2.68 J | |
@@ -86,6 +97,39 @@ the rail friction, +10 % cart mass, 1 or 2 ms of actuator delay and quantised en
 `expected.json` checks the swing-up (catch, the angles against the design closed loop at two instants,
 the 0.5° band from 7.5 s, the force limit, the rail, the final stacked energy and the ledger), the balance
 scenario and the free swing against the twin. The tolerances are named in every check's note.
+
+Continue with [the short-travel controller](page:short).
+@@ page quad-pendulum-swingup short overview | Short-travel controller
+# Short-travel controller (±0.5 m)
+
+The same model has a second controller: set the dashboard's **Controller** select to *short travel*
+(`Traj/controller = 1`) and press **Run**. The plant does not change: the rail with its soft end stops at
+±1.5 m, the cart, the links and the ±40 N actuator are those of the full-travel model. Only the firmware's
+tables and gains differ, and both sets live in [Traj](block:Traj) and [Ctrl](block:Ctrl), so the switch needs
+no recompile. The ±0.5 m limit shows as thin green lines in the 3D view (markers, not stops) and as the two
+limit lines of the dashboard's cart plot, which follow the selected controller; **Travel used** shows |x| in
+percent of the limit.
+
+**Design.** The swing-up is planned again with the travel as a hard collocation constraint, |x| ≤ 0.40 m
+(0.1 m left to the feedback), |F| ≤ 35 N, still in 5 s. The time-varying LQR weighs the link rates harder
+(Q = diag(100, 400×4, 10, 20×4), R = 0.3): with the full-travel weights the swing-up inside ±0.4 m saturated
+the force and fell with three times the joint friction or with quantised encoders.
+
+![Short-travel swing-up: link angles, stacked energy, cart position against ±0.5 m, force|900](@fig:short)
+
+| | full travel | short travel |
+| --- | --- | --- |
+| peak cart travel | 0.581 m | **0.401 m** (80 % of ±0.5 m) |
+| peak force | 14.13 N | 16.97 N |
+| all links within 5° / catch | 3.97 s / 5.50 s | 4.00 s / 5.50 s |
+| actuator work, friction losses | 6.99 J, 2.68 J | 7.14 J, 2.83 J |
+| balance scenario: push peak, travel | 9.36°, 0.189 m | 9.36°, 0.189 m (38 %) |
+| design closed loop: masses ±5 %, lengths +1 %, friction ×3 / ×2, cart +10 %, 1 and 2 ms delay, quantised encoders | all caught | all caught, travel ≤ 0.417 m |
+
+The bond graph matches the design closed loop to the printed digits with both controllers.
+`expected.json` runs this model twice: `quad-pendulum-swingup` and `quad-pendulum-swingup-short` (the override
+`Traj/controller = 1`), and the same for the balance model; the short entries check the travel against
+±0.5 m and the travel used below 100 %.
 @@ figures quad-pendulum-balance
 {
   "run": {
