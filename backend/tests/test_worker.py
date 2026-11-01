@@ -322,6 +322,60 @@ async def test_worker_restart_with_backoff(fake_settings, wait_until) -> None:
         await supervisor.stop()
 
 
+class SlowWarmWorker(ScriptedWorker):
+    """Ignores its first `misses` pings, as a worker busy warming up under full CPU load does."""
+
+    def __init__(self, port: int, misses: int):
+        super().__init__(port, handler=None)
+        self.misses = misses
+        self.pings = 0
+
+    async def _serve(self) -> None:
+        reader, writer = await asyncio.open_connection("127.0.0.1", self.port)
+        try:
+            while True:
+                frame = await read_frame(reader)
+                if frame is None:
+                    break
+                message = json.loads(frame[1])
+                if message.get("method") == "ping":
+                    self.pings += 1
+                    if self.pings > self.misses:
+                        await self.reply(writer, message["id"], {"julia": "slow", "warm": True})
+        except (ConnectionError, OSError):
+            pass
+        finally:
+            writer.close()
+
+
+async def test_a_warming_worker_that_misses_pings_is_not_restarted(
+    fake_settings, monkeypatch
+) -> None:
+    import bgsim_server.worker as worker_module
+
+    monkeypatch.setattr(worker_module, "_PING_TIMEOUT", 0.1)
+    launched: list[SlowWarmWorker] = []
+
+    def factory(port: int) -> SlowWarmWorker:
+        launched.append(SlowWarmWorker(port, misses=5))
+        return launched[-1]
+
+    supervisor = WorkerSupervisor(fake_settings, worker_factory=factory)
+    general = supervisor.subscribe_notifications()
+    await supervisor.start()
+    try:
+        await supervisor.wait_ready(timeout=10.0)
+        assert len(launched) == 1, "the busy worker was kept, not restarted"
+        assert launched[0].pings > 5
+        messages = []
+        while not general.empty():
+            messages.append(general.get_nowait())
+        assert not [m for m in messages if m["method"] == "worker_restarted"]
+    finally:
+        supervisor.unsubscribe_notifications(general)
+        await supervisor.stop()
+
+
 async def test_call_before_start_is_not_ready(fake_settings) -> None:
     supervisor = WorkerSupervisor(fake_settings)
     with pytest.raises(WorkerNotReady):

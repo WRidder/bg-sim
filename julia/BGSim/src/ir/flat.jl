@@ -27,7 +27,7 @@ module Flat
 import ..BGSim
 import ..BGSim: SourceRange, Diagnostic, diag
 import ..BGSim.Units
-import ..BGSim.Units: Dims, unit_string
+import ..BGSim.Units: Dims, unit_string, parse_unit
 
 """    Origin(path, block, range, node, connection, kind)
 
@@ -300,12 +300,17 @@ The plan 3.5 signal entry of one flat variable: `id`, `unit` (a string or `nothi
 `unit` prefers `attrs[:unit_label]`, the catalog spelling a multibond port component was
 declared with (`N*m`, `rad/s`; J-MB2). `unit_string` is dimension-based and cannot tell a
 torque from an energy, so a `Planar`/`Spatial` component that fell back to it would read
-`J`/`1/s`. Every other variable, parameter and computed signal keeps the canonical
-`unit_string`, which is what the editor and the wire format already carry."""
+`J`/`1/s`. A declared variable likewise keeps the spelling of its `unit` attribute (a torque in
+`N*m` is not shown as `J`, an angle in `rad` not as `1`) when that text still parses to the
+variable's dimension; a `Generic` block's `effort`/`flow` units, substituted by the port's
+domain, fall back to the canonical `unit_string`."""
 function signal_namedtuple(v::FlatVar)
     label = get(v.attrs, :unit_label, nothing)
+    declared = get(v.attrs, :unit, nothing)
     unit = if label isa AbstractString
         String(label)
+    elseif declared isa AbstractString && v.unit !== nothing && _same_unit(declared, v.unit)
+        String(declared)
     else
         v.unit === nothing ? nothing : unit_string(v.unit)
     end
@@ -316,6 +321,15 @@ function signal_namedtuple(v::FlatVar)
         path = v.origin.path,
         type = String(v.type),
     )
+end
+
+function _same_unit(text::AbstractString, d)
+    parsed = try
+        parse_unit(String(text))
+    catch
+        nothing
+    end
+    return parsed == d
 end
 
 """    signal_namedtuple(d::DerivedSignal) -> NamedTuple

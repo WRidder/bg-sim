@@ -59,6 +59,11 @@ REQUEST_TIMEOUTS: dict[str, float | None] = {
 _RESTART_BASE_DELAY = 0.25
 _RESTART_MAX_DELAY = 5.0
 _READY_POLL_INTERVAL = 0.05
+# A warming worker that misses its pings is kept this long before it is dropped: under full
+# CPU load (other Julia processes) the warm-up can hold the ping past its 5 s timeout, and
+# dropping it then restarted the worker in a loop that never became ready.
+_PING_GRACE = 120.0
+_PING_TIMEOUT = 5.0
 
 _DEFAULT_TIMEOUT = object()
 
@@ -551,6 +556,7 @@ class WorkerSupervisor:
         self._ready = asyncio.Event()
         self._julia_version: str | None = None
         self._spawned_at = 0.0
+        self._ping_missed_since: float | None = None
 
     # ------------------------------------------------------------------ properties
 
@@ -820,10 +826,23 @@ class WorkerSupervisor:
             if self._state == "ready":
                 return
             try:
-                result = await self.call("ping", {}, timeout=5.0)
-            except WorkerError as exc:
+                result = await self.call("ping", {}, timeout=_PING_TIMEOUT)
+            except WorkerTimeout as exc:
+                # a busy (warming) worker whose process is alive gets `_PING_GRACE`
+                now = time.monotonic()
+                if self._ping_missed_since is None:
+                    self._ping_missed_since = now
+                alive = self._worker is None or self._worker.alive
+                if alive and now - self._ping_missed_since < _PING_GRACE:
+                    return
+                self._ping_missed_since = None
                 await self._drop_client(f"ping failed: {exc}")
                 return
+            except WorkerError as exc:
+                self._ping_missed_since = None
+                await self._drop_client(f"ping failed: {exc}")
+                return
+            self._ping_missed_since = None
             if isinstance(result, dict):
                 if result.get("julia"):
                     self._julia_version = str(result["julia"])

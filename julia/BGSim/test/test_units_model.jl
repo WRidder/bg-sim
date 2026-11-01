@@ -176,8 +176,8 @@ end
         @test rot.domains == Dict("c1" => "Rotation", "c2" => "Rotation")
         @test _um_param(rot, "C1/c").unit == UM.parse_unit("rad/(N*m)")
         @test UM.is_dimensionless(_um_var(rot, "C1/q").unit)   # flow*s = rad
-        @test _um_signal(rot, "C1/p.e").unit == "J"           # N*m is dimension-based
-        @test _um_signal(rot, "C1/p.f").unit == "1/s"
+        @test _um_signal(rot, "C1/p.e").unit == "N*m"         # the domain's spelling, not "J"
+        @test _um_signal(rot, "C1/p.f").unit == "rad/s"
         @test _um_signal(rot, "C1/p.P").unit == "W"
     end
 

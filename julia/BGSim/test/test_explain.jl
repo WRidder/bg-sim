@@ -67,7 +67,7 @@ _xt_explain(signal; model = _XT_DC, project = _XT_DC_PROJECT) =
         r = _xt_explain("Motor1/shaft.f")
         @test r.kind == "alias"
         @test r.aliasOf in ("Damp1/a.f", "Motor1/rotor/w")
-        @test r.unit == "1/s"
+        @test r.unit == "rad/s"
         # The state the alias points at is a state, not an alias.
         @test _xt_explain(r.aliasOf).kind in ("state", "alias")
 

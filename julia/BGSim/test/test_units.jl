@@ -1281,6 +1281,47 @@ end
     end
 
     # -----------------------------------------------------------------------------------
+    @testset "a literal zero term is legal in any unit" begin
+        # `0*q` is zero whatever the unit of `q` (generated code writes it for an unused
+        # coefficient); a non-zero literal factor still keeps `q`'s unit.
+        zero_terms = parse_block(
+            """
+            @block ZeroTerms begin
+                @parameters k::Real = 1.0, [unit = "N*m/rad"]
+                @variables begin
+                    q::Real = 0.0, [unit = "rad"]
+                    tau::Real = 0.0, [unit = "N*m"]
+                end
+                @equations begin
+                    ddt(q) ~ 1.0
+                    tau ~ 0*q + k*q - 0.0*q/k + q*0 + 0/q
+                end
+            end
+            """,
+        )
+        @test isempty(unit_diags(zero_terms))
+        two_q = parse_block(replace(zero_terms.source, "0*q + k*q - 0.0*q/k + q*0 + 0/q" => "2*q"))
+        @test unit_codes(two_q) == ["E006"]
+        # a `@constants` value of zero is not a literal: it may be overridden per instance
+        const_zero = parse_block(
+            """
+            @block ConstZero begin
+                @constants c::Real = 0.0
+                @variables begin
+                    q::Real = 0.0, [unit = "rad"]
+                    tau::Real = 0.0, [unit = "N*m"]
+                end
+                @equations begin
+                    ddt(q) ~ 1.0
+                    tau ~ c*q
+                end
+            end
+            """,
+        )
+        @test unit_codes(const_zero) == ["E006"]
+    end
+
+    # -----------------------------------------------------------------------------------
     @testset "all 36 catalog blocks are unit-clean" begin
         catalog = JSON3.read(read(CATALOG_FIXTURE, String))
         @test length(catalog.blocks) == 36

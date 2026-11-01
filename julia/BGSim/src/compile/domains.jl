@@ -639,10 +639,11 @@ end
 # Units: adoption of Generic declarations, power signals and unit factors
 # ---------------------------------------------------------------------------------------
 
-function _set_var_unit!(b::Builder, id::String, unit)
+function _set_var_unit!(b::Builder, id::String, unit, label = nothing)
     v = var_by_id(b, id)
     v === nothing && return nothing
     v.unit = unit
+    label === nothing || (v.attrs[:unit_label] = label)
     return nothing
 end
 
@@ -736,11 +737,16 @@ function _apply_instance_domains!(b::Builder, plan::ConnPlan)
         for (name, port) in st.ports
             adopted = get(plan.port_domains, _portkey(st.path, name), port.domain)
             port.size == BGSim.Units.component_count(adopted) || continue
+            # ... and the domain's spelling as the signal label (`N*m`, not `J`).
+            elabels = adopted === :Generic ? nothing : BGSim.Units.domain_effort_unit_strings(adopted)
+            flabels = adopted === :Generic ? nothing : BGSim.Units.domain_flow_unit_strings(adopted)
             for (k, id) in enumerate(port.eids)
-                _set_var_unit!(b, id, BGSim.Units.effort_dims(adopted, k))
+                _set_var_unit!(b, id, BGSim.Units.effort_dims(adopted, k),
+                    elabels === nothing ? nothing : elabels[k])
             end
             for (k, id) in enumerate(port.fids)
-                _set_var_unit!(b, id, BGSim.Units.flow_dims(adopted, k))
+                _set_var_unit!(b, id, BGSim.Units.flow_dims(adopted, k),
+                    flabels === nothing ? nothing : flabels[k])
             end
         end
     end

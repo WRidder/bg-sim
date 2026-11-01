@@ -685,6 +685,14 @@ const ROW_OVERRIDES = Dict{Symbol,NamedTuple}(
         @test d !== nothing && occursin("expected `end`", d.message)
         @test d !== nothing && d.hint == "add `end` to close the block or scope"
         @test block_equations(pb) == Any[]
+        # `--1` is not Julia syntax; the hint shows the spellings that are
+        pb = parse_block("@block DoubleMinus begin
+    @variables x::Real = 0.0
+    @equations ddt(x) ~ --1
+end
+")
+        d = only(d for d in pb.diagnostics if d.code == "E000")
+        @test occursin("- -x", something(d.hint, ""))
     end
 
     @testset "negative: E001 not allowed in this scope" begin
