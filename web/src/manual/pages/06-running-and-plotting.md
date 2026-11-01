@@ -57,7 +57,7 @@ Models with a 3D scene show it in the **3D View** tab. The scene follows the run
 - Drag to orbit, right-drag to pan, scroll to zoom. Panning follows the zoom: the point you grab stays under the cursor, so a large or zoomed-out scene pans as fast as a close-up.
 - While a run compiles, initializes or takes its first step, the view shows the stages, the time so far and **Stop**. It clears with the first samples, when the scene starts to move.
 - The toolbar has **Isometric**, **Top**, **Front** and **Side** views, an **Orthographic projection** toggle, **Fit the scene in the view**, **Full screen** (with the playback bar; `Esc` exits) and **Detach** (a separate window).
-- The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** and a time slider.
+- The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** and a time slider. With no run yet, **Play** (or `Space`) runs the model, like **Run**, and the view follows it live.
 - **Bindings** opens the bindings table. Each row binds a scene object's property (position, pose, scale, colour, visibility, deformation, mode shapes or segment) to a signal, with a gain and an offset. **Add binding** adds a row.
 
 ### Bars between two points (segment bindings)

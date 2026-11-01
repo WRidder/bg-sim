@@ -1,5 +1,7 @@
 import { useEffect, useState, type KeyboardEvent, type ReactElement } from "react";
 
+import { useRunStore } from "../plot/runStore";
+import { useDocumentStore } from "../state/documentStore";
 import { PauseChip, PauseMarker, usePlaybackPause } from "./pauseMarker";
 import { PLAYBACK_SPEEDS } from "./playbackClock";
 import type { ViewerPlayback, PlaybackSnapshot } from "./playbackController";
@@ -24,9 +26,26 @@ export function formatTime(t: number | null): string {
   return t === null || !Number.isFinite(t) ? "-" : `${t.toFixed(3)} s`;
 }
 
+/** A model is open and no run is starting or running: Play may start one. */
+function canStartRun(): boolean {
+  const run = useRunStore.getState();
+  const doc = useDocumentStore.getState();
+  return doc.doc !== null && doc.project !== null && run.status !== "starting" && run.status !== "running" && !run.stopping;
+}
+
 /**
- * Space toggles play and pause while the 3D view has focus. A focused button, field or list keeps its own
- * use of the key.
+ * Play with nothing to play yet starts a run (as Run in the top bar); the view then follows it live.
+ * Returns whether a run was started.
+ */
+export function startRunFromPlayback(): boolean {
+  if (!canStartRun()) return false;
+  void useRunStore.getState().startRun();
+  return true;
+}
+
+/**
+ * Space toggles play and pause while the 3D view has focus, or starts a run when there is none to play.
+ * A focused button, field or list keeps its own use of the key.
  */
 export function playbackKeyHandler(playback: ViewerPlayback | null): (event: KeyboardEvent<HTMLElement>) => void {
   return (event) => {
@@ -34,7 +53,8 @@ export function playbackKeyHandler(playback: ViewerPlayback | null): (event: Key
     const el = event.target as HTMLElement;
     if (el.closest("button, input, select, textarea, a, [contenteditable=true]") !== null) return;
     event.preventDefault();
-    playback.toggle();
+    if (playback.snapshot().mode === "empty") startRunFromPlayback();
+    else playback.toggle();
   };
 }
 
@@ -54,11 +74,15 @@ export function PlaybackBar({ playback, snapshot, streamError, streamNote = null
     setScrub(null);
   }, [time]);
   const enabled = playback !== null && mode === "playback";
+  // nothing to play yet: Play runs the model
+  const runnable = useRunStore((r) => r.status !== "starting" && r.status !== "running" && !r.stopping);
+  const hasModel = useDocumentStore((d) => d.doc !== null && d.project !== null);
+  const playRuns = mode === "empty" && runnable && hasModel;
   const live = mode === "live";
   let note: string | null = null;
   if (streamError !== null) note = streamError;
   else if (!hasBindings) note = "No bindings yet. Open Bindings to connect a signal to the scene.";
-  else if (mode === "empty") note = "Run the model to play its signals in 3D.";
+  else if (mode === "empty") note = "Press Play (or Run) to run the model and follow it in 3D.";
 
   return (
     <div
@@ -90,10 +114,13 @@ export function PlaybackBar({ playback, snapshot, streamError, streamNote = null
           className="playback__button playback__button--primary"
           aria-label={playing ? "Pause" : "Play"}
           aria-pressed={playing}
-          disabled={!enabled}
+          disabled={!enabled && !playRuns}
           data-testid="playback-toggle"
+          data-runs={playRuns ? "true" : "false"}
+          title={playRuns ? "Run the model and follow it in 3D (Space)" : undefined}
           onClick={() => {
-            playback?.toggle();
+            if (playRuns) startRunFromPlayback();
+            else playback?.toggle();
           }}
         >
           <span aria-hidden="true">{playing ? "⏸" : "▶"}</span>
