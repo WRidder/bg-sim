@@ -72,6 +72,7 @@ class Simulation:
         self.u = np.zeros(len(INPUTS))
         self.surfaces = ["asphalt"] * 4
         self.steps = 0
+        self.on_step = None          # called after every good FMU step (the telemetry's sampler)
         self.reset(0)
 
     # ---- state
@@ -137,6 +138,8 @@ class Simulation:
         if not np.all(np.isfinite(m.y)):
             self.crashed, self.crash_reason = True, "the FMU returned a non-finite state"
             return
+        if self.on_step is not None:
+            self.on_step()
         if self.track:
             self._lap_update()
         up = quat_matrix(m["chassis_qw"], m["chassis_qx"], m["chassis_qy"], m["chassis_qz"])[2, 2]

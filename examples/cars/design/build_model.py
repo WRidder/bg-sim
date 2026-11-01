@@ -376,6 +376,8 @@ def sim_outputs(v: dict) -> list:
                 (f"motor_{a}_regen", "Motor" + ax, "regen")]
     out += [("soc", "Battery", "soc"), ("battery_v", "Battery", "V"), ("battery_a", "Battery", "I"),
             ("battery_w", "Battery", "P")]
+    # aerodynamics (the telemetry of car-sim): downforce and drag
+    out += [("downforce", "Aero", "downforce"), ("drag", "Aero", "drag")]
     return out
 
 

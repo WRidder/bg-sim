@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["numpy>=2.0", "scipy>=1.13", "trimesh>=4.4", "networkx>=3", "shapely>=2.0", "mapbox-earcut>=1.0"]
+# dependencies = ["numpy>=2.0", "scipy>=1.13", "trimesh>=4.4", "networkx>=3", "shapely>=2.0", "mapbox-earcut>=1.0", "rtree>=1.3"]
 # ///
 """Meshes (`meshes/*.glb`) and 3D scenes (`scenes/*.sdf`) of the `cars` example.
 
@@ -13,6 +13,11 @@ Meshes (built from simple solids; frames as in the bond graph):
 * `racecar_wheel.glb`, `buggy_wheel.glb`: wheel and tyre in the carrier frame (axle = z), a
   coloured sidewall mark and spokes so the spin is visible; `*_hub.glb` the upright and the brake
   (no spin).
+* `racecar_suspension.json`, `buggy_suspension.json`: the suspension rods (arms, push rods or
+  dampers, tie rods, drive shafts), each between a point fixed in the chassis frame and a point
+  fixed in its corner's carrier frame, for car-sim to draw from both ends every frame;
+  `*_suspension.glb` the same rods at rest in the chassis frame (the scenes). The script checks
+  that every rod end lies on the body or on the hub.
 * `flat.glb`: the test pad of the race car runs (600 m x 600 m with a 10 m grid) and a 2 km
   straight with lane dashes; `grade.glb`: the 25 % ramp; `hills.glb`: the buggy's height field
   (design/hills.json) with its dirt track; `track.glb`: the race track (design/track.json:
@@ -179,16 +184,180 @@ RIM = (190, 192, 198)
 BLUE = (30, 70, 160)
 
 
+# ---------------------------------------------------------------------------------------
+# Suspension: rods between a chassis point and a carrier point
+# ---------------------------------------------------------------------------------------
+#
+# The wishbones, push rods, tie rods, dampers and drive shafts join the chassis (sprung) to the
+# carriers (unsprung, steered at the front), so neither the body mesh nor the hub mesh can hold
+# them: each is a rod between an inner point fixed in the chassis frame and an outer point fixed
+# in the carrier frame of its corner (x forward, y down, z the axle; the hub mesh's frame). The
+# outer points of the arms, push rods and dampers lie on the kingpin (the carrier y axis through
+# the wheel centre, the steering axis of the model), so steering does not move them; the tie rods
+# end on the steering arm behind it. car-sim draws every rod from both end points each frame
+# (`<vehicle>_suspension.json`); the scenes draw them at rest (`<vehicle>_suspension.glb`, a
+# second visual of the chassis link).
+
+# per vehicle: the upright's half height (the ball joints at its top and bottom), the push rod or
+# damper mount on it (carrier y), the steering arm end (carrier x, y)
+UPRIGHT = {"racecar": {"h": 0.11, "mount": 0.08, "arm": (-0.10, 0.03)},
+           "buggy": {"h": 0.15, "mount": -0.10, "arm": (-0.12, 0.05)}}
+
+
+def racecar_tub(v) -> list:
+    """Stations (x, half-width, half-height, z-centre) of the race car's tub and nose, front first."""
+    a, b, zg = v["a"], v["b"], -v["h_s"]
+    return [(a + 0.80, 0.04, 0.03, zg + 0.16), (a + 0.55, 0.11, 0.07, zg + 0.19), (a + 0.15, 0.17, 0.12, zg + 0.24),
+            (a - 0.25, 0.23, 0.16, zg + 0.28), (a - 0.75, 0.33, 0.22, zg + 0.31), (a - 1.25, 0.37, 0.26, zg + 0.33),
+            (a - 1.65, 0.37, 0.27, zg + 0.34), (a - 2.15, 0.30, 0.24, zg + 0.34), (-b + 0.25, 0.18, 0.15, zg + 0.31),
+            (-b - 0.10, 0.08, 0.08, zg + 0.29)]
+
+
+def on_tub(stations, x: float, z: float, side: float, inset: float = 0.012) -> tuple[float, float, float]:
+    """A point just inside the loft's surface at (x, z) on the side `side` (+1 left), z clamped to
+    the upper or lower 80 % of the section (the loft is linear between stations, so its section at x
+    is the ellipse of the interpolated station values)."""
+    xs = [st[0] for st in stations]
+    i = next(k for k in range(len(xs) - 1) if xs[k] >= x >= xs[k + 1])
+    t = (xs[i] - x) / (xs[i] - xs[i + 1])
+    ha, hb, zc = (stations[i][j] + (stations[i + 1][j] - stations[i][j]) * t for j in (1, 2, 3))
+    z = min(max(z, zc - 0.8 * hb), zc + 0.8 * hb)
+    y = ha * math.sqrt(1.0 - ((z - zc) / hb) ** 2) - inset
+    return (x, side * y, z)
+
+
+def RACECAR_GEARBOX(v):
+    """The race car's gearbox and motor casing (lo, hi corners in the chassis frame)."""
+    b, zg = v["b"], -v["h_s"]
+    zw = v["corners"]["RL"]["z"]
+    return (-b - 0.40, -0.14, zg + 0.08), (-b + 0.30, 0.14, zw + 0.12)
+
+
+def buggy_frame(v) -> dict:
+    """Nodes of the buggy's tube frame (left side; x, y, z in the chassis frame)."""
+    a, b = v["a"], v["b"]
+    zb = -v["h_s"] + 0.36                       # floor pan underside: 36 cm ground clearance at rest
+    return {
+        "fb": (a + 0.25, 0.42, zb + 0.05), "ft": (a - 0.05, 0.50, zb + 0.55), "rf": (a - 0.75, 0.62, zb + 1.30),
+        "rr": (-b + 0.10, 0.62, zb + 1.30), "rt": (-b - 0.20, 0.55, zb + 0.70), "rb": (-b - 0.35, 0.48, zb + 0.08),
+        "mb": (0.0, 0.58, zb + 0.04), "mt": (0.0, 0.62, zb + 0.62),
+    }
+
+
+def BUGGY_BRACKET(v, c):
+    """The plate on the floor pan that carries a buggy corner's inner pickups (lo, hi corners)."""
+    k = v["corners"][c]
+    s = 1.0 if k["left"] else -1.0
+    h = UPRIGHT["buggy"]["h"]
+    y0, y1 = sorted((s * 0.42, s * 0.48))
+    return (k["x"] - 0.32, y0, k["z"] - h - 0.04), (k["x"] + 0.32, y1, k["z"] + h + 0.04)
+
+
+def carrier_to_chassis(k: dict, p) -> np.ndarray:
+    """A carrier-frame point at rest (no travel, no steer) in the chassis frame: carrier x = x,
+    carrier y = -z, carrier z = y (bg.Q_CARRIER), about the wheel centre."""
+    return np.array([k["x"] + p[0], k["y"] + p[2], k["z"] - p[1]])
+
+
+def suspension(v, veh: str) -> list[dict]:
+    """The rods of the vehicle: per corner, {corner, name, inner (chassis frame), outer (carrier
+    frame), r, rgb}."""
+    up = UPRIGHT[veh]
+    h, mount, (arm_x, arm_y) = up["h"], up["mount"], up["arm"]
+    rods = []
+
+    def rod(c, name, inner, outer, r, rgb):
+        rods.append({"corner": c, "name": name, "inner": [round(float(q), 5) for q in inner],
+                     "outer": [round(float(q), 5) for q in outer], "r": r, "rgb": list(rgb)})
+
+    if veh == "racecar":
+        tub = racecar_tub(v)
+        lo, hi = RACECAR_GEARBOX(v)
+        for c in CORNERS:
+            k = v["corners"][c]
+            s = 1.0 if k["left"] else -1.0
+            x, zw = k["x"], k["z"]
+            for arm, zo, zi in (("upper", -h, zw + 0.8 * h), ("lower", h, zw - 0.8 * h)):
+                for leg, dx in (("front", 0.26), ("rear", -0.22)):
+                    if k["front"]:
+                        inner = on_tub(tub, x + dx, zi, s)
+                    else:
+                        inner = (x + dx, s * (hi[1] - 0.01), zi)
+                    rod(c, f"{arm}-{leg}", inner, (0.0, zo, 0.0), 0.012, CARBON)
+            # push rod: from the bottom of the upright to the rocker on top of the nose / gearbox
+            if k["front"]:
+                inner = on_tub(tub, x - 0.12, 1.0, s, inset=0.04)
+            else:
+                inner = (x + 0.10, s * 0.08, hi[2] - 0.01)
+            rod(c, "push-rod", inner, (0.0, mount, 0.0), 0.012, GREY)
+            if k["front"]:
+                rod(c, "tie-rod", on_tub(tub, x + arm_x, zw - arm_y, s), (arm_x, arm_y, 0.0), 0.010, GREY)
+            else:
+                rod(c, "drive-shaft", (x, s * (hi[1] - 0.01), zw), (0.0, 0.0, 0.0), 0.022, GREY)
+    else:
+        N = buggy_frame(v)
+        for c in CORNERS:
+            k = v["corners"][c]
+            s = 1.0 if k["left"] else -1.0
+            x, zw = k["x"], k["z"]
+            for arm, zo, zi in (("upper", -h, zw + 0.85 * h), ("lower", h, zw - 0.85 * h)):
+                for leg, dx in (("front", 0.26), ("rear", -0.26)):
+                    rod(c, f"{arm}-{leg}", (x + dx, s * 0.45, zi), (0.0, zo, 0.0), 0.02, BLACK)
+            top = N["ft"] if k["front"] else N["rt"]
+            rod(c, "damper", (top[0], s * top[1], top[2]), (0.0, mount, 0.0), 0.035, (220, 60, 30))
+            if k["front"]:
+                rod(c, "tie-rod", (x + arm_x, s * 0.45, zw - arm_y), (arm_x, arm_y, 0.0), 0.014, GREY)
+            # drive shaft from the axle's motor (both axles are driven)
+            rod(c, "drive-shaft", (x, s * 0.16, zw), (0.0, 0.0, 0.0), 0.025, GREY)
+    return rods
+
+
+def suspension_meshes(v, veh: str) -> list:
+    """The rods at rest in the chassis frame (the scenes' static picture of them)."""
+    return [tube(r["inner"], carrier_to_chassis(v["corners"][r["corner"]], r["outer"]), r["r"], r["rgb"], 8)
+            for r in suspension(v, veh)]
+
+
+def _attached(parts: list, p) -> float:
+    """0 when p is inside a closed part, else its distance to the nearest part (m)."""
+    best = math.inf
+    for m in parts:
+        if m.is_watertight and m.contains([p])[0]:
+            return 0.0
+        best = min(best, float(trimesh.proximity.closest_point(m, [p])[1][0]))
+    return best
+
+
+def check_suspension(v, veh: str, body: list, hub_parts: list) -> None:
+    """Every rod end on its part: the inner end inside the body or within the rod's radius of its
+    surface, the outer end likewise on the hub (upright, steering arm, axle)."""
+    bad = []
+    for r in suspension(v, veh):
+        d_in, d_out = _attached(body, r["inner"]), _attached(hub_parts, r["outer"])
+        if max(d_in, d_out) > max(r["r"], 0.012):
+            bad.append(f"{veh} {r['corner']} {r['name']}: inner {d_in * 100:.1f} cm, outer {d_out * 100:.1f} cm off")
+    if bad:
+        raise SystemExit("suspension rods not attached:\n  " + "\n  ".join(bad))
+
+
+def write_suspension(v, veh: str) -> None:
+    data = {"comment": "Generated by design/make_scenes.py. Rods between a point fixed in the chassis frame "
+                       "(inner; x forward, y left, z up, origin at the sprung CG) and a point fixed in the carrier "
+                       "frame of the corner (outer; x forward, y down, z the axle, origin at the wheel centre). "
+                       "Radius r in m, colour rgb 0..255.",
+            "vehicle": veh, "rods": suspension(v, veh)}
+    path = MESHES / f"{veh}_suspension.json"
+    path.write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8", newline="\n")
+    print(f"meshes/{path.name}: {len(data['rods'])} rods")
+
+
 def racecar_body(v) -> list:
     hs = v["h_s"]
     a, b = v["a"], v["b"]
     zg = -hs                                     # ground
     P = []
     P.append(box((-b + 0.1, -0.5, zg + 0.035), (a - 0.25, 0.5, zg + 0.055), CARBON))       # floor / plank
-    P.append(loft([(a + 0.80, 0.04, 0.03, zg + 0.16), (a + 0.55, 0.11, 0.07, zg + 0.19), (a + 0.15, 0.17, 0.12, zg + 0.24),
-                   (a - 0.25, 0.23, 0.16, zg + 0.28), (a - 0.75, 0.33, 0.22, zg + 0.31), (a - 1.25, 0.37, 0.26, zg + 0.33),
-                   (a - 1.65, 0.37, 0.27, zg + 0.34), (a - 2.15, 0.30, 0.24, zg + 0.34), (-b + 0.25, 0.18, 0.15, zg + 0.31),
-                   (-b - 0.10, 0.08, 0.08, zg + 0.29)], RED))
+    P.append(loft(racecar_tub(v), RED))
     # white stripe on the nose
     P.append(loft([(a + 0.70, 0.03, 0.025, zg + 0.19), (a + 0.2, 0.06, 0.04, zg + 0.34), (a - 0.3, 0.07, 0.04, zg + 0.42)], WHITE, 16))
     # sidepods
@@ -215,19 +384,11 @@ def racecar_body(v) -> list:
     for s in (-1, 1):
         P.append(box((-b - 0.70, s * 0.49 - 0.01, zg + 0.35), (-b - 0.10, s * 0.49 + 0.01, zg + 0.95), RED))
     P.append(box((-b - 0.45, -0.015, zg + 0.40), (-b - 0.30, 0.015, zg + 0.83), CARBON))
-    # diffuser and the wishbones to the (static) wheel centres
+    # diffuser, and the gearbox between the rear wheels: it carries the rear suspension pickups,
+    # the drive shafts and the rear wing pylon (the suspension rods are not part of the body,
+    # see `suspension`)
     P.append(box((-b - 0.25, -0.45, zg + 0.04), (-b + 0.2, 0.45, zg + 0.10), CARBON))
-    for c in CORNERS:
-        k = v["corners"][c]
-        y_in = 0.20 if k["front"] else 0.25
-        s = 1.0 if k["left"] else -1.0
-        wc = np.array([k["x"], k["y"], k["z"]])
-        hub_y = k["y"] - s * 0.12
-        for dz in (0.07, -0.07):
-            for dx in (0.12, -0.12):
-                P.append(tube((k["x"] + 2.2 * dx, s * y_in, wc[2] + dz * 0.8), (k["x"], hub_y, wc[2] + dz), 0.012, CARBON, 6))
-        # push rod
-        P.append(tube((k["x"], hub_y, wc[2] - 0.06), (k["x"] - 0.05 * s * 0, s * (y_in + 0.02), wc[2] + 0.22), 0.012, GREY, 6))
+    P.append(box(*RACECAR_GEARBOX(v), CARBON))
     # numbers on the cover
     P += both_sides(box((-0.30, 0.125, zg + 0.46), (0.05, 0.13, zg + 0.56), WHITE))
     return P
@@ -242,11 +403,7 @@ def buggy_body(v) -> list:
     P.append(box((-b - 0.1, -0.55, zb), (a + 0.05, 0.55, zb + 0.04), GREY))
     r = 0.028
     # tube frame: nodes (x, y, z) for the left side, mirrored
-    N = {
-        "fb": (a + 0.25, 0.42, zb + 0.05), "ft": (a - 0.05, 0.50, zb + 0.55), "rf": (a - 0.75, 0.62, zb + 1.30),
-        "rr": (-b + 0.10, 0.62, zb + 1.30), "rt": (-b - 0.20, 0.55, zb + 0.70), "rb": (-b - 0.35, 0.48, zb + 0.08),
-        "mb": (0.0, 0.58, zb + 0.04), "mt": (0.0, 0.62, zb + 0.62),
-    }
+    N = buggy_frame(v)
     edges = [("fb", "ft"), ("ft", "rf"), ("rf", "rr"), ("rr", "rt"), ("rt", "rb"), ("rb", "mb"), ("mb", "fb"),
              ("ft", "mt"), ("mt", "rt"), ("mb", "mt"), ("rf", "mt"), ("mt", "rr")]
     for s in (1, -1):
@@ -274,15 +431,10 @@ def buggy_body(v) -> list:
         P.append(tube((xm, -0.16, zm), (xm, 0.16, zm), 0.13, GREY, 16))
     for s in (1, -1):
         P.append(tube((a - 0.65, s * 0.35, zb + 1.38), (a - 0.55, s * 0.35, zb + 1.38), 0.08, (250, 245, 200)))
-    # suspension arms and long-travel dampers to the static wheel centres
+    # suspension brackets on the floor pan: they carry the inner pickups of the arms and the
+    # steering rack ends (the arms, dampers and shafts are not part of the body, see `suspension`)
     for c in CORNERS:
-        k = v["corners"][c]
-        s = 1.0 if k["left"] else -1.0
-        hub_y = k["y"] - s * 0.18
-        for dz in (0.10, -0.10):
-            for dx in (0.16, -0.16):
-                P.append(tube((k["x"] + 1.6 * dx, s * 0.45, k["z"] + dz * 0.9), (k["x"], hub_y, k["z"] + dz), 0.02, BLACK, 6))
-        P.append(tube((k["x"], hub_y, k["z"] + 0.08), (k["x"], s * 0.50, zb + 0.75), 0.035, (220, 60, 30), 8))
+        P.append(box(*BUGGY_BRACKET(v, c), BLACK))
     return P
 
 
@@ -325,7 +477,11 @@ def hub(v, buggy: bool) -> list:
     for face in (-1, 1):
         cal = box((-0.06, -0.20, face * 0.05 - 0.03), (0.06, -0.12, face * 0.05 + 0.03), (200, 40, 40) if not buggy else (60, 60, 200))
         P.append(cal)
-    P.append(box((-0.04, -0.12, -0.035), (0.04, 0.12, 0.035), CARBON))
+    # the upright along the kingpin (its ends carry the arms' ball joints) and the steering arm
+    up = UPRIGHT["buggy" if buggy else "racecar"]
+    h, (ax, ay) = up["h"], up["arm"]
+    P.append(box((-0.04, -h - 0.015, -0.035), (0.04, h + 0.015, 0.035), CARBON))
+    P.append(box((ax - 0.015, ay - 0.015, -0.015), (-0.03, ay + 0.015, 0.015), CARBON))
     return P
 
 
@@ -500,7 +656,10 @@ def sdf(name: str, comment: str, veh: str, v: dict, world_mesh: str, chassis_pos
              f"        <geometry><mesh><uri>meshes/{world_mesh}</uri></mesh></geometry>", "      </visual>", "    </link>",
              '    <link name="chassis">', f"      <pose>0 0 {cz:.4f} 0 0 0</pose>", '      <visual name="body">',
              "        <pose>0 0 0 0 0 0</pose>",
-             f"        <geometry><mesh><uri>meshes/{veh}_body.glb</uri></mesh></geometry>", "      </visual>", "    </link>"]
+             f"        <geometry><mesh><uri>meshes/{veh}_body.glb</uri></mesh></geometry>", "      </visual>",
+             '      <visual name="suspension">', "        <pose>0 0 0 0 0 0</pose>",
+             f"        <geometry><mesh><uri>meshes/{veh}_suspension.glb</uri></mesh></geometry>", "      </visual>",
+             "    </link>"]
     for c in CORNERS:
         k = v["corners"][c]
         x, y, z = k["x"], k["y"], cz + k["z"]
@@ -521,6 +680,12 @@ def main() -> int:
     write("buggy_wheel.glb", wheel(bg, knobby=True))
     write("racecar_hub.glb", hub(rc, False))
     write("buggy_hub.glb", hub(bg, True))
+    check_suspension(rc, "racecar", racecar_body(rc), hub(rc, False))
+    check_suspension(bg, "buggy", buggy_body(bg), hub(bg, True))
+    write("racecar_suspension.glb", suspension_meshes(rc, "racecar"))
+    write("buggy_suspension.glb", suspension_meshes(bg, "buggy"))
+    write_suspension(rc, "racecar")
+    write_suspension(bg, "buggy")
     write("flat.glb", flat_world())
     write("grade.glb", grade_world(0.25))
     hills = json.loads((HERE / "hills.json").read_text(encoding="utf-8"))
@@ -532,7 +697,9 @@ def main() -> int:
     common = ("  Generated by design/make_scenes.py. Z up, metres. The car stays near the origin: the\n"
               "  link \"world\" (the ground) moves under it by minus the chassis' horizontal position,\n"
               "  bound to View/ground; \"chassis\" to View/body, \"wheel_xx\" (spinning) to View/w1..w4,\n"
-              "  \"hub_xx\" (upright and brake) to View/c1..c4. Link poses: the car at rest.")
+              "  \"hub_xx\" (upright and brake) to View/c1..c4. Link poses: the car at rest. The suspension\n"
+              "  rods (visual \"suspension\" of the chassis) are drawn at rest: they join the chassis to the\n"
+              "  carriers, so a moving wheel leaves them by its travel (car-sim draws them from both ends).")
     scenes = {
         "racecar-flat": ("racecar", rc, "flat.glb", "  Race car on the test pad (600 m grid, 2 km straight).\n" + common),
         "racecar-track": ("racecar", rc, "track.glb", "  Race car on the circuit of design/track.py.\n" + common),
