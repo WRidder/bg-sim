@@ -163,13 +163,16 @@ describe("inspector fields", () => {
 
     const select = screen.getByTestId("inspector-param-mode") as HTMLSelectElement;
     expect(select.tagName).toBe("SELECT");
+    // zero-based, like the library blocks (TimeTable: 0 hold, 1 linear): the default 1 is "linear"
     expect(select.value).toBe("1");
+    expect(select.selectedOptions[0]?.textContent).toBe("1 · linear");
+    expect([...select.options].map((o) => o.value)).toEqual(expect.arrayContaining(["0", "1"]));
     expect(screen.getByTestId("inspector-param-mode-field").textContent).toContain(
       "Interpolation mode",
     );
 
-    fireEvent.change(select, { target: { value: "2" } });
-    expect(docNode("n5")?.params?.mode).toBe("2");
+    fireEvent.change(select, { target: { value: "0" } });
+    expect(docNode("n5")?.params?.mode).toBe("0");
 
     act(() => useDocumentStore.getState().undo());
     expect(docNode("n5")?.params?.mode).toBe("1");

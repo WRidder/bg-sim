@@ -204,6 +204,20 @@ describe("deformation bindings in the binding table", () => {
     fireEvent.change(length, { target: { value: "" } });
     fireEvent.blur(length);
     expect((bindings()[0] as DeformationBinding).beam.length).toBeUndefined();
+    // the neutral axis offset takes signed numbers; back at 0, 0 it is dropped
+    const naY = screen.getByTestId("binding-neutral-y-0");
+    fireEvent.change(naY, { target: { value: "-0.047" } });
+    fireEvent.blur(naY);
+    expect((bindings()[0] as DeformationBinding).beam.neutral).toEqual([-0.047, 0]);
+    const naZ = screen.getByTestId("binding-neutral-z-0");
+    fireEvent.change(naZ, { target: { value: "0.01" } });
+    fireEvent.blur(naZ);
+    expect((bindings()[0] as DeformationBinding).beam.neutral).toEqual([-0.047, 0.01]);
+    for (const field of [naY, naZ]) {
+      fireEvent.change(field, { target: { value: "" } });
+      fireEvent.blur(field);
+    }
+    expect((bindings()[0] as DeformationBinding).beam.neutral).toBeUndefined();
 
     fireEvent.click(screen.getByTestId("binding-signal-0-add-mode"));
     expect((bindings()[0] as DeformationBinding).signal).toEqual(["B/eta_y[1]", ""]);

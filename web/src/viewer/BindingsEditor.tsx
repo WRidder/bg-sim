@@ -120,8 +120,8 @@ function NumberField({ value, label, testId, onCommit }: { value: number; label:
   );
 }
 
-/** An optional positive number: empty means the default (shown as the placeholder). */
-function OptionalNumberField({ value, placeholder, label, testId, onCommit }: { value: number | undefined; placeholder: string; label: string; testId: string; onCommit: (v: number | undefined) => void }): ReactElement {
+/** An optional number, positive unless `signed`: empty means the default (shown as the placeholder). */
+function OptionalNumberField({ value, placeholder, label, testId, signed = false, onCommit }: { value: number | undefined; placeholder: string; label: string; testId: string; signed?: boolean; onCommit: (v: number | undefined) => void }): ReactElement {
   const [draft, setDraft] = useState<string | null>(null);
   const commit = (): void => {
     if (draft === null) return;
@@ -132,7 +132,7 @@ function OptionalNumberField({ value, placeholder, label, testId, onCommit }: { 
       return;
     }
     const v = Number(text);
-    if (Number.isFinite(v) && v > 0 && v !== value) onCommit(v);
+    if (Number.isFinite(v) && (signed || v > 0) && v !== value) onCommit(v);
   };
   return (
     <input
@@ -301,6 +301,24 @@ function DeformationSettings({ binding, index, onChange }: { binding: Deformatio
           }}
         />
       </label>
+      {([0, 1] as const).map((k) => (
+        <label className="bindings__inline" key={k}>
+          <span>{k === 0 ? "NA y" : "NA z"}</span>
+          <OptionalNumberField
+            value={beam.neutral?.[k]}
+            placeholder="0"
+            label={`Neutral axis ${k === 0 ? "y" : "z"} offset of binding ${n} in m (empty: the shape's centre line)`}
+            testId={`binding-neutral-${k === 0 ? "y" : "z"}-${i}`}
+            signed
+            onCommit={(v) => {
+              const { neutral: old, ...rest } = beam;
+              const next: [number, number] = [old?.[0] ?? 0, old?.[1] ?? 0];
+              next[k] = v ?? 0;
+              setBeam(next[0] === 0 && next[1] === 0 ? rest : { ...rest, neutral: next });
+            }}
+          />
+        </label>
+      ))}
       {binding.family !== "torsion" ? (
         <label className="bindings__inline">
           <input

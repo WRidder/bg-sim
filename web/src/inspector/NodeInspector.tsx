@@ -132,9 +132,10 @@ function ParameterField({
   const resetLabel = `Reset ${decl.name} to its default (${decl.default})`;
 
   if (decl.options !== null) {
+    // zero-based, like the blocks that declare the options (`0 floor, 1 ceil, ...`)
     const options: SelectOption[] = decl.options.map((label, position) => ({
-      value: String(position + 1),
-      label: `${position + 1} · ${label}`,
+      value: String(position),
+      label: `${position} · ${label}`,
     }));
     return (
       <SelectField

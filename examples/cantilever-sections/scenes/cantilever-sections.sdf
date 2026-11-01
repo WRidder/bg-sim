@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<!--
+  cantilever-sections: three 2 m steel cantilevers of the same area (7.77 kg/m), clamped to one
+  wall (the plane x = 0, world z up), the tips at x = 2.012 (the beams start at the 12 mm
+  steel plates on the wall face):
+
+    round_bar    a solid round bar, d = 35.51 mm (a cylinder along its own z, turned to world x)
+    square_bar   a solid square bar, a = 31.47 mm
+    ipe_top/web/bottom   an IPE 100 (h 100, b 55, tw 4.1, tf 5.7 mm), web vertical
+
+  Every beam visual takes a deformation binding (bending-y, clamped-free, the three modal
+  coordinates <Beam>/eta[1..3]) with the beam y axis pointing down, and a strain colouring.
+  The I-beam is three boxes: the flanges bend about the neutral axis of the whole section
+  (`neutral` in the beam mapping), so their sections turn with the web's and their strain is
+  the h/2 outer-fibre strain. The link is static: the beams are clamped, only their elastic
+  deformation moves.
+-->
+<sdf version="1.9">
+  <model name="cantilever_sections">
+    <link name="rig">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="wall">
+        <pose>-0.15 0 1.0 0 0 0</pose>
+        <geometry><box><size>0.3 1.8 2</size></box></geometry>
+        <material><diffuse>0.62 0.6 0.56 1</diffuse></material>
+      </visual>
+      <visual name="floor">
+        <pose>1.1 0 -0.01 0 0 0</pose>
+        <geometry><box><size>3 2.2 0.02</size></box></geometry>
+        <material><diffuse>0.5 0.52 0.55 1</diffuse></material>
+      </visual>
+      <visual name="plate_round">
+        <pose>0.006 -0.45 1.2 0 0 0</pose>
+        <geometry><box><size>0.012 0.16 0.18</size></box></geometry>
+        <material><diffuse>0.25 0.26 0.28 1</diffuse></material>
+      </visual>
+      <visual name="plate_square">
+        <pose>0.006 0.0 1.2 0 0 0</pose>
+        <geometry><box><size>0.012 0.16 0.18</size></box></geometry>
+        <material><diffuse>0.25 0.26 0.28 1</diffuse></material>
+      </visual>
+      <visual name="plate_ipe">
+        <pose>0.006 0.45 1.2 0 0 0</pose>
+        <geometry><box><size>0.012 0.16 0.18</size></box></geometry>
+        <material><diffuse>0.25 0.26 0.28 1</diffuse></material>
+      </visual>
+      <visual name="round_bar">
+        <pose>1.012 -0.45 1.2 0 1.5707963267948966 0</pose>
+        <geometry><cylinder><radius>0.0177541</radius><length>2</length></cylinder></geometry>
+        <material><diffuse>0.82 0.83 0.85 1</diffuse></material>
+      </visual>
+      <visual name="square_bar">
+        <pose>1.012 0.0 1.2 0 0 0</pose>
+        <geometry><box><size>2 0.0314684 0.0314684</size></box></geometry>
+        <material><diffuse>0.82 0.83 0.85 1</diffuse></material>
+      </visual>
+      <visual name="ipe_top">
+        <pose>1.012 0.45 1.24715 0 0 0</pose>
+        <geometry><box><size>2 0.055 0.0057</size></box></geometry>
+        <material><diffuse>0.82 0.83 0.85 1</diffuse></material>
+      </visual>
+      <visual name="ipe_web">
+        <pose>1.012 0.45 1.2 0 0 0</pose>
+        <geometry><box><size>2 0.0041 0.0886</size></box></geometry>
+        <material><diffuse>0.82 0.83 0.85 1</diffuse></material>
+      </visual>
+      <visual name="ipe_bottom">
+        <pose>1.012 0.45 1.15285 0 0 0</pose>
+        <geometry><box><size>2 0.055 0.0057</size></box></geometry>
+        <material><diffuse>0.82 0.83 0.85 1</diffuse></material>
+      </visual>
+    </link>
+  </model>
+</sdf>

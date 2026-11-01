@@ -36,6 +36,14 @@
       "cantilever-modes"
     ]
   },
+  "cantilever-sections": {
+    "title": "Cantilever sections",
+    "description": "A round bar, a square bar and an IPE 100 of equal mass, 2 m from one wall, under one step, sine or sweep tip force: bending and stress colour in 3D.",
+    "hasScene": true,
+    "models": [
+      "cantilever-sections"
+    ]
+  },
   "cube-3d": {
     "title": "Cube 3d",
     "description": "A cube balanced on one corner by three reaction wheels.",

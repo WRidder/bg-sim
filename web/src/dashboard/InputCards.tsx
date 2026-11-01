@@ -440,8 +440,8 @@ export function SelectCard({ card, info, titleId }: InputCardProps) {
         onChange={(event) => setCardValue(card.id, Number(event.target.value))}
       >
         {options.map((label, position) => (
-          <option key={label} value={String(position + 1)}>
-            {position + 1} · {label}
+          <option key={label} value={String(position)}>
+            {position} · {label}
           </option>
         ))}
       </select>

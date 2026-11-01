@@ -150,11 +150,15 @@ describe("parameter validation", () => {
     );
     expect(parameterIssue("1/0", realDecl())).toBe("The value must be a finite number.");
     expect(
-      parameterIssue("2", realDecl({ type: "Int", unit: null, options: ["hold", "linear"] })),
+      parameterIssue("1", realDecl({ type: "Int", unit: null, options: ["hold", "linear"] })),
+    ).toBeNull();
+    // zero-based, like the library blocks (TimeTable: 0 hold, 1 linear)
+    expect(
+      parameterIssue("0", realDecl({ type: "Int", unit: null, options: ["hold", "linear"] })),
     ).toBeNull();
     expect(
-      parameterIssue("3", realDecl({ type: "Int", unit: null, options: ["hold", "linear"] })),
-    ).toBe("Choose a number from 1 to 2.");
+      parameterIssue("2", realDecl({ type: "Int", unit: null, options: ["hold", "linear"] })),
+    ).toBe("Choose a number from 0 to 1.");
     expect(parameterIssue("", realDecl())).toBe("Enter a value.");
   });
 

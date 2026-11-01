@@ -572,7 +572,7 @@ function clamp01(v: number): number {
 }
 
 function beamKey(config: BeamConfig): string {
-  return JSON.stringify([config.beam.axis, config.beam.y ?? null, config.beam.length ?? null, config.stripes, config.strain]);
+  return JSON.stringify([config.beam.axis, config.beam.y ?? null, config.beam.length ?? null, config.beam.neutral ?? null, config.stripes, config.strain]);
 }
 
 function diffuseOf(m: Material): Color3 | null {
