@@ -54,7 +54,7 @@ import {
 } from "./runStore";
 import { useDetachStore } from "./detachStore";
 import { readSignalDrag } from "./signalDnd";
-import { assignPanelAxes, groupSignalsByUnit, panelUnitSummary } from "./units";
+import { assignPanelAxes, groupSignalsByUnit, panelUnitSummary, unitLabel } from "./units";
 import { UPlotChart, type ChartSeriesConfig } from "./UPlotChart";
 import { XAxisControl } from "./XAxisControl";
 import { XYChart } from "./XYChart";
@@ -765,7 +765,7 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
                   />
                   <span className="plot-chart__units">
                     {xConfig !== null
-                      ? `${panelUnitSummary(configuration.signals)} against ${xConfig.unit ?? "—"}`
+                      ? `${panelUnitSummary(configuration.signals)} against ${unitLabel(xConfig.unit)}`
                       : panelUnitSummary(configuration.signals)}
                   </span>
                   {configuration.groups > 2 ? (

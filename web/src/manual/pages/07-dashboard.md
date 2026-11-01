@@ -18,7 +18,17 @@ You can also drag a signal from the **Signals** tab onto the dashboard: on empty
 | Display | Plot, Value, Gauge, Bar, Indicator, Text (Markdown) |
 | Input (for the next run) | Number, Slider, Knob, Toggle, Select, Schedule |
 
-Value, Gauge and Bar cards can have colour zones. An Indicator turns on above (or below) a threshold. A Select card picks one option of an enumeration parameter (an `Int` with named options, such as the load mode of example **cantilever-sections**). The options are numbered from 0, as in the block's description (`0 constant, 1 sine, ...`), and the inspector shows the same numbers.
+A Plot card draws its signals against time, or against another signal (an XY plot, see below). Value, Gauge and Bar cards can have colour zones. An Indicator turns on above (or below) a threshold. A Select card picks one option of an enumeration parameter (an `Int` with named options, such as the load mode of example **cantilever-sections**). The options are numbered from 0, as in the block's description (`0 constant, 1 sine, ...`), and the inspector shows the same numbers.
+
+## XY plot cards
+
+A Plot card can draw its signals against another signal instead of time: a phase portrait (x' against x), a force against a deflection, a torque–speed curve.
+
+1. In **Edit dashboard**, open the Plot card's **⚙** settings.
+2. Under **X axis**, set **Plot against** to a signal. A signal of the card moves to the x axis; the others are drawn against it, sample by sample. **Time (t)** switches back.
+3. Check **Equal aspect** to make one unit as long on both axes, so a circle stays round.
+
+The card follows the same run, time window and inspect time as the Plots tab: a ring marks the point at the inspect time, and the legend shows t, x and every y there. Drag a box to zoom, double-click to fit. In the model file the card has `"x": "<signal id>"` and `"equalAspect": true`, like a saved plot. Example **van-der-pol** (`vdp-tunnel-diode`) shows the phase portrait and the diode's current against its voltage.
 
 ## Inputs
 

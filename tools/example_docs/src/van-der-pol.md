@@ -60,7 +60,7 @@ This model is that oscillator as a bond graph, with the textbook equation runnin
 3. Plot [Xc/y](signal:Xc/y) and [Ref/x](signal:Ref/x): the circuit and the textbook equation are the same curve.
 4. Plot [Diode/P](signal:Diode/P): it is negative (the diode supplies energy) for most of the cycle and positive near the voltage peaks.
 
-The plots of BG-Sim are against time. The phase portraits in these pages come from the same runs, drawn by the docs build.
+The phase portrait is an XY plot: open **Phase portrait: x' against x (circuit, scaled)** from **Saved** in the Plots toolbar, or plot [Yc/y](signal:Yc/y) and set the panel's **x** to [Xc/y](signal:Xc/y). The dashboard shows it next to the diode's operating curve, its current against the tank voltage. The phase portraits in these pages come from the same runs, drawn by the docs build.
 
 Continue with [the circuit and the scaling](page:circuit) and [the results](page:results).
 @@ page vdp-tunnel-diode circuit overview | Circuit and scaling
@@ -327,7 +327,7 @@ The four subsystems [Mu01](block:Mu01), [Mu1](block:Mu1), [Mu5](block:Mu5) and [
 - the same equation as an **equation block**, [Mu1/Eq](block:Mu1/Eq) (`VanDerPol`);
 - the cycle meter [Mu1/Meter](block:Mu1/Meter), which reads the period and the amplitude from events.
 
-The plots of BG-Sim are against time. The phase portraits on the [results page](page:results) are drawn by the docs build from the same run.
+The phase portraits are XY plots: open **Phase portrait at mu = 1** or **at mu = 5** from **Saved** in the Plots toolbar, or plot [Mu1/Y/y](signal:Mu1/Y/y) and set the panel's **x** to [Mu1/X/y](signal:Mu1/X/y). The phase portraits on the [results page](page:results) are drawn by the docs build from the same run.
 
 Continue with [the theory](page:theory) and [the results](page:results).
 @@ page vdp-textbook theory overview | Theory: amplitude and period

@@ -200,6 +200,11 @@ The run is read-only after copy: the whole example is a template.
 - Open the **Plots** tab: “Sprung mass, unsprung mass and road” shows the body overshooting
   the 5 cm plateau to 7.5 cm; “Suspension travel” stays inside the ±0.08 m stop; “Tire
   contact force” peaks at 4.95 kN and never reaches zero.
+- Pick the XY plots from **Saved** in the Plots toolbar. “Suspension force against
+  deflection” draws `Susp/a.e` against `Susp/x`: the spring's 20 kN/m line, opened into a loop
+  by the damper (the loop's area is the energy the damper takes per cycle). “Tire force
+  against compression” draws `Tire/F` against `Tire/x`: the 200 kN/m line of the one-sided
+  law; with the 20 cm bump below it runs into the corner at zero force (lift-off).
 - Lower `Stop`'s `lower`/`upper` to ±0.02 m and rerun: the stop makes contact, `Stop/x`
   reaches ±0.02 and `Stop/a.e` becomes non-zero — the guard checks in `expected.json` then
   fail, which is the intended signal to update them.

@@ -45,6 +45,22 @@ Signals go to the **Active** panel, which you choose in the plot toolbar.
 - **Pin run** keeps the current run. Start another run to compare: the pinned run shows as dashed lines.
 - **CSV** downloads the plotted signals. The download runs as a [background task](page:background-tasks).
 - **Detach** opens the plots in a separate browser window.
+- **Saved** lists the plots saved with the model. Pick one to open it as a new panel, with its title and its x axis.
+
+### XY plots
+
+A panel can draw its signals against another signal instead of time: a phase portrait (x' against x), a Lissajous figure, a force–deflection loop or a torque–speed curve.
+
+- In the panel header, set **x** from **Time (t)** to a signal. The list shows the panel's own signals first, then every other signal of the run. Picking one of the panel's signals moves it to the x axis, and the others are drawn against it. **Time (t)** puts it back.
+- You can also drag a signal from the **Signals** tab onto the **x** control.
+- **1:1** (equal aspect) makes one unit as long on both axes, so a circle stays round. It suits a phase portrait in scaled units.
+- The axes show the signals and their units.
+- The XY panel draws the same time window as the other panels. Zoom into a time range in a time panel to see that part of the trajectory; **Reset zoom** shows the whole run again.
+- Drag a box in the XY panel to zoom in on both axes, use the mouse wheel to zoom at the pointer, and double-click to fit the data again. This zoom belongs to the panel only.
+- Hover the curve: the nearest sample becomes the inspect time for every panel and the 3D view. A ring marks the point at the inspect time (the newest point when there is none), and the legend shows t, x and each y there.
+- The curve is drawn from every recorded sample, also while a run streams, so it stays sharp at any zoom. A pinned run shows as dashed lines when it records the x signal too.
+
+In the model file, a saved plot is XY when it has `"x": "<signal id>"`; `"equalAspect": true` turns on 1:1. Example **van-der-pol** saves phase portraits, and **quarter-car** the suspension force against its deflection.
 
 ## Auto Plot
 

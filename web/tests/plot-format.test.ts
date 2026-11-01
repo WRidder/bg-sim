@@ -55,6 +55,11 @@ describe("time formatting", () => {
     expect(formatCursorTime(1.23456)).toBe("1.235 s");
     expect(formatCursorTime(42.346)).toBe("42.35 s");
     expect(formatCursorTime(null)).toBe("—");
+    // Short runs (a 10 MHz oscillator): engineering units, not "0 s".
+    expect(formatCursorTime(1.5234e-6)).toBe("1.523 µs");
+    expect(formatCursorTime(0.0025)).toBe("2.5 ms");
+    expect(formatCursorTime(3e-9)).toBe("3 ns");
+    expect(formatCursorTime(0)).toBe("0 s");
   });
 
   it("formats the x axis without a unit", () => {

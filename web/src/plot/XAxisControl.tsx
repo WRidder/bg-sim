@@ -128,7 +128,7 @@ export function XAxisControl({
           type="button"
           className={`plot-x-axis__aspect${equalAspect ? " is-on" : ""}`}
           aria-pressed={equalAspect}
-          aria-label={`Equal aspect for ${ownerLabel}`}
+          aria-label={`1:1 equal aspect for ${ownerLabel}`}
           title="Equal aspect: one unit is as long on both axes (a circle stays round)"
           data-testid={`${testId}-aspect`}
           onClick={() => onEqualAspect(!equalAspect)}

@@ -750,6 +750,32 @@
         "Meter/T_s",
         "Meter/amp"
       ]
+    },
+    {
+      "id": "p7",
+      "title": "Phase portrait: x' against x (circuit, scaled)",
+      "signals": [
+        "Yc/y"
+      ],
+      "x": "Xc/y",
+      "equalAspect": true
+    },
+    {
+      "id": "p8",
+      "title": "Textbook phase portrait: x' against x",
+      "signals": [
+        "Ref/y"
+      ],
+      "x": "Ref/x",
+      "equalAspect": true
+    },
+    {
+      "id": "p9",
+      "title": "Diode operating curve: current (A) against the tank voltage (V)",
+      "signals": [
+        "Diode/i"
+      ],
+      "x": "Vm/y"
     }
   ],
   "scene": null,
@@ -1002,6 +1028,27 @@
           "decimals": 1,
           "unit": "pF"
         }
+      },
+      {
+        "id": "d15",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Phase portrait x' against x",
+        "signals": [
+          "Yc/y"
+        ],
+        "x": "Xc/y",
+        "equalAspect": true
+      },
+      {
+        "id": "d16",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Diode current (A) against voltage (V)",
+        "signals": [
+          "Diode/i"
+        ],
+        "x": "Vm/y"
       },
       {
         "id": "d12",

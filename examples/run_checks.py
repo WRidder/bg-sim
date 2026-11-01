@@ -19,6 +19,9 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
   ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak``, ``damping``,
   ``scene_bindings`` and ``no_diagnostics``), prints one
   line per check and exits non-zero when any check fails;
+* for every run model, checks that its saved plots (``plots[]``: every ``signals`` entry and the
+  XY axis ``x``) and its dashboard display cards (``signals``, a plot card's ``x``) name signals the
+  run records (one ``plots`` line per model);
 * for every model with a ``models/<model>.docs`` folder, runs one docs check (X5.10): the
   manifest, pages, assets, ``page:``/``block:``/``signal:`` links and every KaTeX math span
   (``tools/example_docs/docs_lint.py``), reporting ``file:line: problem; fix``.
@@ -2475,6 +2478,59 @@ def _check_model_checks(
             report.check(False, label, "unknown check kind")
 
 
+def plot_signal_problems(document: dict[str, Any], recorded: set[str]) -> list[str]:
+    """The saved plots and dashboard display cards of a model that name unrecorded signals.
+
+    A model plot draws ``signals`` against time, or against ``x`` (an XY plot); a dashboard plot
+    card does the same, and the other display cards read ``signals``. Every id must be a signal of
+    the run, so a renamed block cannot leave a plot that silently shows nothing.
+    """
+    problems: list[str] = []
+    for plot in document.get("plots") or []:
+        if not isinstance(plot, dict):
+            continue
+        ids = [str(signal) for signal in plot.get("signals") or []]
+        missing = [signal for signal in ids if signal not in recorded]
+        x = plot.get("x")
+        if x is not None and str(x) not in recorded:
+            missing.append(f"{x} (x axis)")
+        if x is not None and str(x) in ids:
+            problems.append(f"plot {plot.get('id')!r}: x {x!r} is also one of its signals")
+        if missing:
+            problems.append(f"plot {plot.get('id')!r}: unknown signal(s) {', '.join(missing)}")
+    dashboard = document.get("dashboard") or {}
+    for card in dashboard.get("cards") or [] if isinstance(dashboard, dict) else []:
+        if not isinstance(card, dict) or card.get("kind") not in DISPLAY_CARD_KINDS:
+            continue
+        missing = [str(signal) for signal in card.get("signals") or [] if str(signal) not in recorded]
+        x = card.get("x")
+        if x is not None and str(x) not in recorded:
+            missing.append(f"{x} (x axis)")
+        if missing:
+            problems.append(f"dashboard card {card.get('id')!r}: unknown signal(s) {', '.join(missing)}")
+    return problems
+
+
+#: Dashboard cards that show recorded signals (contracts ModelDashboardCard.kind).
+DISPLAY_CARD_KINDS = {"plot", "value", "gauge", "bar", "indicator"}
+
+
+def _plot_signals_check(report: Report, project: str, model: str, run: Run) -> None:
+    document = run.model_document if isinstance(run.model_document, dict) else {}
+    problems = plot_signal_problems(document, set(run.signals))
+    plots = len(document.get("plots") or [])
+    xy = sum(1 for plot in document.get("plots") or [] if isinstance(plot, dict) and plot.get("x") is not None)
+    for problem in problems:
+        print(f"      {problem}", flush=True)
+    report.check(
+        not problems,
+        f"{project}/{model} plots",
+        f"{plots} saved plots ({xy} XY) and the dashboard cards name recorded signals"
+        if not problems
+        else f"{len(problems)} problem(s)",
+    )
+
+
 # --------------------------------------------------------------------------- examples
 
 
@@ -2546,6 +2602,7 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
     try:
         project_dir = Path(_get_json(client, f"/api/projects/{project}")["path"])
         runs: dict[str, Run] = {}
+        plots_checked: set[str] = set()
         for model, entry in models.items():
             checks = entry.get("checks", []) if isinstance(entry, dict) else entry
             source = model
@@ -2569,6 +2626,9 @@ def _check_example(client: httpx.Client, expected_path: Path, report: Report) ->
                 flush=True,
             )
             _check_model_checks(report, project, model, run, checks)
+            if source not in plots_checked:
+                plots_checked.add(source)
+                _plot_signals_check(report, project, model, run)
         _check_docs(client, report, example, project, runs)
         compare = document.get("compare")
         if compare:

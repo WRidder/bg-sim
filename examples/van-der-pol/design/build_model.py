@@ -196,6 +196,14 @@ def model_tunnel_diode() -> dict:
          "signals": ["Tank/E", "Split/W_sup", "Split/W_abs", "Split/W"]},
         {"id": "p6", "title": "Cycle meter: frequency (MHz), scaled period and amplitude",
          "signals": ["Meter/f", "Meter/T_s", "Meter/amp"]},
+        # XY plots: the phase portrait (x' against x, equal aspect: the small-mu cycle is a circle of
+        # radius 2) and the diode's operating curve (its current against the tank voltage).
+        {"id": "p7", "title": "Phase portrait: x' against x (circuit, scaled)", "signals": ["Yc/y"], "x": "Xc/y",
+         "equalAspect": True},
+        {"id": "p8", "title": "Textbook phase portrait: x' against x", "signals": ["Ref/y"], "x": "Ref/x",
+         "equalAspect": True},
+        {"id": "p9", "title": "Diode operating curve: current (A) against the tank voltage (V)",
+         "signals": ["Diode/i"], "x": "Vm/y"},
     ]
     dashboard = {
         "autoRerun": True,
@@ -226,6 +234,10 @@ def model_tunnel_diode() -> dict:
              "options": {"decimals": 1, "unit": "nH"}},
             {"id": "d11", "kind": "value", "size": "1x1", "title": "C", "signals": ["C_pF/y"],
              "options": {"decimals": 1, "unit": "pF"}},
+            {"id": "d15", "kind": "plot", "size": "2x2", "title": "Phase portrait x' against x",
+             "signals": ["Yc/y"], "x": "Xc/y", "equalAspect": True},
+            {"id": "d16", "kind": "plot", "size": "2x2", "title": "Diode current (A) against voltage (V)",
+             "signals": ["Diode/i"], "x": "Vm/y"},
             {"id": "d12", "kind": "plot", "size": "4x2", "title": "Tank voltage (V)", "signals": ["Vm/y"]},
             {"id": "d13", "kind": "plot", "size": "4x2", "title": "Scaled x and x' (circuit and textbook)",
              "signals": ["Xc/y", "Yc/y", "Ref/x"]},
@@ -359,6 +371,12 @@ def model_belt() -> dict:
          "signals": ["Store/E", "Split/W_sup", "Split/W_abs"]},
         {"id": "p6", "title": "Cycle meters: period (s) and velocity amplitude (scaled)",
          "signals": ["Meter/T", "Stribeck/Meter/T", "Meter/amp", "Stribeck/Meter/amp"]},
+        # XY plots: the scaled phase portrait, and the friction force against the slip (the part of the
+        # friction curve the cycle sweeps: the falling, negative-slope branch that feeds the oscillation).
+        {"id": "p7", "title": "Phase portrait of the cubic rig: x' against x (scaled)", "signals": ["Ym/y"],
+         "x": "Xm/y", "equalAspect": True},
+        {"id": "p8", "title": "Friction force (N) against slip (m/s), cubic rig",
+         "signals": ["Fric/F"], "x": "Fric/w"},
     ]
     n_coils = 8
     bindings = [{"target": "joint:block", "property": "position", "signal": "Pos/y"},
@@ -453,6 +471,11 @@ def model_textbook() -> dict:
                                                                  "Mu20/Meter/T_s"]},
         {"id": "p6", "title": "Measured amplitude", "signals": ["Mu01/Meter/amp", "Mu1/Meter/amp", "Mu5/Meter/amp",
                                                                 "Mu20/Meter/amp"]},
+        # XY plots: the phase portraits, from x = 0.5 out to the limit cycle.
+        {"id": "p7", "title": "Phase portrait at mu = 1: x' against x", "signals": ["Mu1/Y/y"], "x": "Mu1/X/y",
+         "equalAspect": True},
+        {"id": "p8", "title": "Phase portrait at mu = 5 (relaxation): x' against x", "signals": ["Mu5/Y/y"],
+         "x": "Mu5/X/y"},
     ]
     parameters = [g(mu_name, num(mu), None, f"mu of subsystem {name}") for name, mu_name, mu in TEXT_MUS] + [
         g("x0", num(DESIGN["x0"]), None, "Start value x(0)"),

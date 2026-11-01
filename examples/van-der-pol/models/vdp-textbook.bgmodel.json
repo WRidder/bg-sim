@@ -1650,6 +1650,23 @@
         "Mu5/Meter/amp",
         "Mu20/Meter/amp"
       ]
+    },
+    {
+      "id": "p7",
+      "title": "Phase portrait at mu = 1: x' against x",
+      "signals": [
+        "Mu1/Y/y"
+      ],
+      "x": "Mu1/X/y",
+      "equalAspect": true
+    },
+    {
+      "id": "p8",
+      "title": "Phase portrait at mu = 5 (relaxation): x' against x",
+      "signals": [
+        "Mu5/Y/y"
+      ],
+      "x": "Mu5/X/y"
     }
   ],
   "scene": null,

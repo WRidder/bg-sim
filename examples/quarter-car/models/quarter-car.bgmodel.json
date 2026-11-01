@@ -484,6 +484,18 @@
       "id": "p4",
       "title": "Body and wheel velocity",
       "signals": ["IMs/p.f", "IMu/p.f"]
+    },
+    {
+      "id": "p5",
+      "title": "Suspension force against deflection: spring line and damper loop (N, m)",
+      "signals": ["Susp/a.e"],
+      "x": "Susp/x"
+    },
+    {
+      "id": "p6",
+      "title": "Tire force against compression (N, m): the one-sided contact law",
+      "signals": ["Tire/F"],
+      "x": "Tire/x"
     }
   ],
   "scene": {

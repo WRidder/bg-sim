@@ -1294,6 +1294,23 @@
         "Meter/amp",
         "Stribeck/Meter/amp"
       ]
+    },
+    {
+      "id": "p7",
+      "title": "Phase portrait of the cubic rig: x' against x (scaled)",
+      "signals": [
+        "Ym/y"
+      ],
+      "x": "Xm/y",
+      "equalAspect": true
+    },
+    {
+      "id": "p8",
+      "title": "Friction force (N) against slip (m/s), cubic rig",
+      "signals": [
+        "Fric/F"
+      ],
+      "x": "Fric/w"
     }
   ],
   "scene": {
