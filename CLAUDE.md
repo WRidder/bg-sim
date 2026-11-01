@@ -12,6 +12,7 @@ A bond-graph / block-diagram / equation modeling and simulation tool:
 - C/FMU export (real-time target, WPs, spike results): `plan/EXPORT_PLAN.md`, spike in `spike/fmu/`
 - Global parameters (SolidWorks-style globals/equations, override hook, FMU exposure design): `plan/GLOBAL_PARAMETERS.md`
 - RL controllers (rsl_rl PPO on exported FMUs, domain randomisation, policy import, progress table): `plan/RL_PLAN.md`
+- Robust classical pendulum control (multi-model LQR, worst-case swing-up, energy-based swing-up, comparison with RL): `plan/ROBUST_CLASSICAL_PLAN.md`
 - Background literature (PDFs, read-only): `background/`
 
 ## Toolchain (this machine: Windows 11)
