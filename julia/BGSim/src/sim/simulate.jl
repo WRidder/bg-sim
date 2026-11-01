@@ -484,8 +484,11 @@ end
 # not structure. If the value *is* zero in this run, the torn system computes Inf/NaN and the
 # run fails at t = 0 with an initialization error or E901. After such a failure this analysis
 # looks for the division by a zero parameter coefficient and names it, and the algebraic loop
-# it sits in, instead of the generic message. It only runs after a failure, so a run that
-# works never pays for it and a guarded division (inside `ifelse`) is never blamed.
+# it sits in, next to the generic diagnostic (never instead of it). It only runs after a
+# failure, so a run that works never pays for it and a guarded division (inside `ifelse`) is
+# never blamed. It only blames a direct-feedthrough coefficient of a signal block (see
+# `_feedthrough_coefficient`): a zero divisor elsewhere (a geometric offset in a rigid
+# mechanism with an index problem) is not what a user should change.
 
 # Every denominator of `ex` outside `ifelse` branches: `a / b` gives `b`, `b^-k` gives `b`.
 function _denominators!(out::Vector{Any}, ex)
@@ -527,13 +530,60 @@ function _parameter_value(den, values::Dict{String,Float64})
     return x isa Real ? Float64(x) : nothing
 end
 
-function _zero_coefficient_diagnostic(model::CompiledModel, flat::Flat.FlatModel)
-    try
-        return _find_zero_coefficient(model, flat)
-    catch
-        # The analysis only refines a failure message; it must never replace it with a crash.
-        return nothing
+# The names an AST expression refers to, without their indices (`P/x[1]` and `P/x` both give
+# `P/x`): a generic walk over the expression's fields.
+_base_name(s::AbstractString) = (i = findfirst('[', s); i === nothing ? String(s) : String(s[1:i-1]))
+
+function _ast_names!(out::Set{String}, ex)
+    if ex isa BGSim.Name
+        push!(out, _base_name(String(ex.name)))
+    elseif ex isa BGSim.Expr
+        for f in fieldnames(typeof(ex))
+            _ast_names!(out, getfield(ex, f))
+        end
+    elseif ex isa AbstractVector
+        for x in ex
+            _ast_names!(out, x)
+        end
     end
+    return out
+end
+
+# Is the parameter `param` a direct-feedthrough coefficient of the block at `path`: does it
+# appear in one of the block's own equations together with one of its signal outputs and one
+# of its signal inputs (`y ~ C*x + D*u`, `y ~ k*u`)? Only such a coefficient decides whether
+# the block closes an algebraic loop. A parameter of a power element (the offset of a
+# `FixedJoint2D`, a mass) can also end up as a divisor of the torn system, but there a zero
+# is not the cause of the failure (an index problem is, DEC-MB-2), so E903 stays silent.
+function _feedthrough_coefficient(flat::Flat.FlatModel, param::String, path::String)
+    inputs = Set{String}()
+    outputs = Set{String}()
+    for v in flat.variables
+        v.origin.path == path || continue
+        v.kind === :input && push!(inputs, _base_name(v.id))
+        v.kind === :output && push!(outputs, _base_name(v.id))
+    end
+    (isempty(inputs) || isempty(outputs)) && return false
+    target = _base_name(param)
+    for e in flat.equations
+        e.origin.path == path || continue
+        names = _ast_names!(Set{String}(), e.lhs)
+        _ast_names!(names, e.rhs)
+        target in names || continue
+        any(in(names), inputs) && any(in(names), outputs) && return true
+    end
+    return false
+end
+
+# The E903 diagnostic as a list (empty or one), added next to the failure's own diagnostic.
+function _zero_coefficient_diagnostics(model::CompiledModel, flat::Flat.FlatModel)
+    found = try
+        _find_zero_coefficient(model, flat)
+    catch
+        # The analysis only adds to a failure message; it must never replace it with a crash.
+        nothing
+    end
+    return found === nothing ? Diagnostic[] : Diagnostic[found]
 end
 
 function _find_zero_coefficient(model::CompiledModel, flat::Flat.FlatModel)
@@ -609,6 +659,10 @@ function _find_zero_coefficient(model::CompiledModel, flat::Flat.FlatModel)
             break
         end
     end
+    # Only a direct-feedthrough coefficient of a signal block is reported; any other zero
+    # divisor leaves the failure to the generic diagnostic.
+    (owner === nothing || owner.path === nothing) && return nothing
+    any(v -> _feedthrough_coefficient(flat, _var_name(v), owner.path), den_vars) || return nothing
     # The equation torn through the coefficient belongs to the coefficient's block, so that
     # block is in the loop even when tearing folded its own variables away (`P/y` substituted
     # into `K/y ~ (… P/y …) / P/D` leaves only `K` and `E` in the variable graph).
@@ -946,9 +1000,9 @@ function _simulate_flat(flat::Flat.FlatModel;
     integ = try
         init(solver_problem, alg; init_kwargs...)
     catch err
-        diagnostic = something(_zero_coefficient_diagnostic(lowered.model, flat),
-            _initialization_diagnostic(err, flat))
-        diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+        diagnostic = _initialization_diagnostic(err, flat)
+        diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic],
+            _zero_coefficient_diagnostics(lowered.model, flat)))
         stats = (
             compile_s = compile_s, sim_s = 0.0, steps = 0, events = 0,
             states = states, equations = equations,
@@ -964,11 +1018,12 @@ function _simulate_flat(flat::Flat.FlatModel;
     prof_init_s = (time_ns() - init_ns) / 1.0e9
     retcode = integ.sol.retcode
     if retcode == ReturnCode.InitialFailure
-        diagnostic = something(_zero_coefficient_diagnostic(lowered.model, flat), diag(
+        diagnostic = diag(
             "E103", "initial conditions are inconsistent";
             hint = "the initialization returned $(retcode)", path = _last_path(flat),
-        ))
-        diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+        )
+        diagnostics = sort_diagnostics(vcat(flat_diagnostics, [diagnostic],
+            _zero_coefficient_diagnostics(lowered.model, flat)))
         stats = (
             compile_s = compile_s, sim_s = 0.0, steps = 0, events = 0,
             states = states, equations = equations,
@@ -1093,6 +1148,7 @@ function _simulate_flat(flat::Flat.FlatModel;
 
     status = "done"
     diagnostic = nothing
+    extra_diagnostics = Diagnostic[]   # E903 next to a failure at the start (never instead)
     loop_ns = time_ns()
     last_progress_ns = time_ns()
     last_flush_ns = time_ns()
@@ -1203,13 +1259,15 @@ function _simulate_flat(flat::Flat.FlatModel;
         if !step_ok || !_ok_retcode(integ.sol.retcode)
             # A zero coefficient breaks the torn system from the first evaluation on, so it
             # only explains a failure at the start of the run.
-            zero_coeff = integ.t <= run_settings.t_start ?
-                         _zero_coefficient_diagnostic(lowered.model, flat) : nothing
-            diagnostic = something(zero_coeff, _solver_diagnostic(integ, lowered.model, flat))
+            # It is added to the solver's own diagnostic, never in place of it.
+            integ.t <= run_settings.t_start &&
+                append!(extra_diagnostics, _zero_coefficient_diagnostics(lowered.model, flat))
+            diagnostic = _solver_diagnostic(integ, lowered.model, flat)
             status = "failed"
             if _dbg_failure!(debug, session, diagnostic)  # M4 debug: pause before the end
                 status = "cancelled"
                 diagnostic = nothing
+                empty!(extra_diagnostics)
             end
             break
         end
@@ -1253,7 +1311,7 @@ function _simulate_flat(flat::Flat.FlatModel;
         equations = equations,
     )
     diagnostics = diagnostic === nothing ? flat_diagnostics :
-                  sort_diagnostics(vcat(flat_diagnostics, [diagnostic]))
+                  sort_diagnostics(vcat(flat_diagnostics, [diagnostic], extra_diagnostics))
     _phase(phase, "write", integ.t)
     _dbg_finalize!(debug, session)  # M4 debug: the manifest keeps `debug`
     manifest = finish_recorder!(rec, status, stats, diagnostics)
