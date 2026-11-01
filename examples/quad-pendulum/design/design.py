@@ -111,7 +111,7 @@ BOND = {"kt_pivot": 1.0e8, "bt_pivot": 1.0e3, "kr_rail": 1.0e5, "br_rail": 2.0, 
 def trajectory(plant: ql.Plant, cfg: dict, cache: Path, fresh: bool) -> dict:
     R = plant.rig
     key = json.dumps({k: cfg[k] for k in ("t_s", "solves", "u_lim", "s_lim", "slew_lim", "w_du", "swings", "s_amp")}
-                     | {"rig": dataclasses.asdict(R)}, sort_keys=True)
+                     | {"rig": ql.rig_key(R)}, sort_keys=True)
     if cache.is_file() and not fresh:
         d = np.load(cache, allow_pickle=False)
         if str(d["key"]) == key:
