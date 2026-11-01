@@ -59,6 +59,8 @@ def build(export_dir: Path, out_dir: Path | None = None, openmp: bool = True) ->
             if r.returncode != 0:
                 raise RuntimeError(f"compiling {name} failed:\n{r.stdout}{r.stderr}")
         objs.append(str(obj))
+    if lib.exists() and all(lib.stat().st_mtime >= Path(o).stat().st_mtime for o in objs):
+        return lib   # up to date (and maybe loaded: Windows cannot overwrite a loaded DLL)
     link = [cc, "-shared", "-static-libgcc", *objs, "-o", str(lib), "-lm"]
     if openmp:
         link.insert(2, "-fopenmp")
@@ -71,9 +73,13 @@ def build(export_dir: Path, out_dir: Path | None = None, openmp: bool = True) ->
 
 
 _DLL_DIRS: list = []
+_LOADED: dict[str, ctypes.CDLL] = {}
 
 
 def load(lib: Path) -> ctypes.CDLL:
+    key = str(Path(lib).resolve())
+    if key in _LOADED:
+        return _LOADED[key]
     cc = find_compiler()
     if os.name == "nt" and cc is not None:
         _DLL_DIRS.append(os.add_dll_directory(str(Path(cc).parent)))  # libgomp, libwinpthread
@@ -100,6 +106,7 @@ def load(lib: Path) -> ctypes.CDLL:
         f = getattr(dll, name)
         f.argtypes = args
         f.restype = res
+    _LOADED[key] = dll
     return dll
 
 
@@ -111,6 +118,7 @@ class BatchedPlant:
     """N instances of the exported plant, stepped together (numpy in, numpy out)."""
 
     def __init__(self, export_dir: Path, n: int, threads: int = 1, lib: Path | None = None):
+        self.h = None
         self.export_dir = Path(export_dir)
         self.dll = load(lib or build(self.export_dir))
         d = self.dll
@@ -132,6 +140,7 @@ class BatchedPlant:
         self.u = np.zeros((n, self.nu))
         self.y = np.zeros((n, self.ny))
         self.status = np.zeros(n, dtype=np.int32)
+        d.bgenv_outputs(self.h, ptr(self.y))   # the outputs at the export's start
 
     def close(self):
         if self.h:

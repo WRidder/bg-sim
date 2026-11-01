@@ -4,7 +4,7 @@
 # ///
 """The RL variants of the double cart pendulum (plan/RL_PLAN.md, step 0).
 
-    uv run examples/pendulum-double-cart/design/rlmodels.py
+    uv run examples/pendulum-double-cart/design/rlmodels.py [--rl]
 
 writes two model documents next to the classical ones (which stay unchanged):
 
@@ -144,18 +144,24 @@ def plant_model() -> dict:
     return doc
 
 
-def rl_model(policy_ts: float, t_end: float = 12.0) -> dict:
-    """The closed loop with the trained policy: hang until 1 s, swing up and balance, push at 7 s."""
-    doc = cm.build(PLANT, "DoubleCart", t_end=t_end, points=int(round(t_end * 1000)) + 1,
-                   push={"amplitude": 0.28, "t_start": 7.0, "duration": 0.04},
-                   scene="scenes/pendulum-double-cart.sdf", title="pendulum-double-cart-rl")
-    _drop(doc, {"Traj", "Ctrl"})
+def rl_model(t_end: float = 12.0, t_on: float = 1.0, push: dict | None = None, th0=None, x0: float = 0.0,
+             title: str = "pendulum-double-cart-rl", points: int | None = None) -> dict:
+    """The closed loop with the trained policy. Default: hang until 1 s, swing up and balance, the
+    README's 40 ms, 0.28 N push at 7 s. ``th0``/``x0`` start the plant at rest in another pose
+    (absolute angles from upright), for the comparison with the training env (R0.5)."""
+    if push is None:
+        push = {"amplitude": 0.28, "t_start": 7.0, "duration": 0.04}
+    doc = cm.build(PLANT, "DoubleCart", t_end=t_end, points=points or int(round(t_end * 1000)) + 1,
+                   push=push, th0=th0, x0=x0, scene="scenes/pendulum-double-cart.sdf", title=title)
+    _drop(doc, {"Traj", "Ctrl", "Clock"})
     M = cm.Model("tmp")
     M.ids = {"n": len(doc["diagram"]["nodes"]) + 100, "b": 900, "s": 900, "w": 900}
     M.nodes, M.conns = doc["diagram"]["nodes"], doc["diagram"]["connections"]
-    clock, motor = _node(doc, "Clock"), _node(doc, "Motor")
-    pol = M.node("Policy", "project:DoubleCartPolicy", 80, 80, params={"t_on": "1.0"})
-    M.sig(clock["id"], "y", pol, "tm")
+    motor = _node(doc, "Motor")
+    th_start = list(th0) if th0 is not None else [-3.141592653589793] * 2
+    pol = M.node("Policy", "project:DoubleCartPolicy", 80, 80,
+                 params={"t_on": repr(float(t_on))},
+                 starts={"xp": repr(float(x0)), "th1p": repr(th_start[0]), "th2p": repr(th_start[1])})
     M.sig(_node(doc, "Rail")["id"], "qout", pol, "x")
     M.sig(_node(doc, "Joint1")["id"], "qout", pol, "q1")
     M.sig(_node(doc, "Joint2")["id"], "qout", pol, "q2")
@@ -175,9 +181,19 @@ def main(argv: list[str]) -> None:
     cm.write(models / "pendulum-double-cart-plant.bgmodel.json", plant_model())
     print("wrote", models / "pendulum-double-cart-plant.bgmodel.json")
     if "--rl" in argv:
-        ts = float(argv[argv.index("--rl") + 1])
-        cm.write(models / "pendulum-double-cart-rl.bgmodel.json", rl_model(ts))
+        cm.write(models / "pendulum-double-cart-rl.bgmodel.json", rl_model())
         print("wrote", models / "pendulum-double-cart-rl.bgmodel.json")
+    if "--cases" in argv:
+        # rl/compare.py: closed-loop variants from given poses at rest, policy from t = 0, no push
+        import json
+
+        spec, out = Path(argv[argv.index("--cases") + 1]), Path(argv[argv.index("--cases") + 2])
+        out.mkdir(parents=True, exist_ok=True)
+        for c in json.loads(spec.read_text(encoding="utf-8")):
+            doc = rl_model(t_end=c["t_end"], t_on=0.0, push={"amplitude": 0.0, "t_start": 1.0e6, "duration": 0.04},
+                           th0=[c["th1"], c["th2"]], x0=c["x"], title=c["name"])
+            cm.write(out / f"{c['name']}.bgmodel.json", doc)
+        print("wrote the cases into", out)
 
 
 if __name__ == "__main__":
