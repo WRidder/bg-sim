@@ -1,0 +1,13 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "f16",
+  "models": [
+    "f16-open-loop",
+    "f16-fbw",
+    "f16-envelope",
+    "f16-pio"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
