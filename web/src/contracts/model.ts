@@ -518,10 +518,17 @@ export interface BeamMapping {
    * Beam length L in m: the mode shapes run over s = 0..L from end A. Default: the extent of the shape along `axis`. Parts of the shape beyond L move rigidly with the section at L.
    */
   length?: number;
+  /**
+   * Where the neutral axis of the bending lies, as [y, z] in m along the beam y and z axes from the centre line of the shape (default [0, 0]: the shape bends about its own centre line). For a shape that is one part of a built-up section, such as a flange of an I-beam drawn as its own box: the sections of the shape then turn about the neutral axis of the whole section, and the outer fibre of its strain colouring is the point of the shape farthest from that axis (|y| + half the size along beam y, and the same along z).
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  neutral?: [number, number];
   $comment?: string;
 }
 /**
- * Colours the visual by the bending strain magnitude along the beam, c * |w''(s)|, with c the distance of the outer fibre from the neutral axis (half the box size across the beam, or the cylinder radius), over the bending families of the visual. Uses the true deformation, never the exaggerated one. `range` is in strain (dimensionless, e.g. [0, 0.001]).
+ * Colours the visual by the bending strain magnitude along the beam, c * |w''(s)|, with c the distance of the outer fibre from the neutral axis (half the box size across the beam, or the cylinder radius, plus the offset of the beam mapping's `neutral` axis), over the bending families of the visual. Uses the true deformation, never the exaggerated one. `range` is in strain (dimensionless, e.g. [0, 0.001]).
  */
 export interface StrainColor {
   colormap: Colormap;

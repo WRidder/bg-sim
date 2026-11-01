@@ -197,7 +197,9 @@ function diag(code: string, binding: Binding, message: string, hint: string): Di
 }
 
 function sameMapping(a: BeamMapping, b: BeamMapping): boolean {
-  return a.axis === b.axis && (a.y ?? null) === (b.y ?? null) && (a.length ?? null) === (b.length ?? null);
+  const na = a.neutral ?? [0, 0];
+  const nb = b.neutral ?? [0, 0];
+  return a.axis === b.axis && (a.y ?? null) === (b.y ?? null) && (a.length ?? null) === (b.length ?? null) && na[0] === nb[0] && na[1] === nb[1];
 }
 
 /** E301 problems of a deformation binding against its shape and the deformation bindings before it. */
@@ -220,7 +222,7 @@ function deformationProblems(binding: DeformationBinding, scene: SceneLookup, ea
       break;
     }
     if (!sameMapping(other.beam, binding.beam)) {
-      out.push(diag("E301", binding, `the beam mapping of this ${binding.family} binding differs from the ${other.family} binding of "${binding.target}"`, "give every deformation binding of a visual the same beam axis, y axis and length"));
+      out.push(diag("E301", binding, `the beam mapping of this ${binding.family} binding differs from the ${other.family} binding of "${binding.target}"`, "give every deformation binding of a visual the same beam axis, y axis, length and neutral axis"));
       break;
     }
   }

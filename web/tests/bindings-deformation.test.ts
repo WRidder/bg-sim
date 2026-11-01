@@ -76,6 +76,12 @@ describe("deformation binding validation", () => {
     expect(rows[2]?.[0]?.message).toMatch(/beam mapping/);
     // another visual is independent
     expect(codes([deform(), deform({ target: "visual:rod", beam: { axis: "+z" } })])).toEqual([]);
+    // the neutral axis is part of the mapping: [0, 0] is the default, another offset differs
+    const at = (neutral: [number, number] | undefined, family: "bending-y" | "bending-z") =>
+      deform({ family, signal: [family === "bending-y" ? "B/eta_y[1]" : "B/eta_z[1]"], beam: neutral === undefined ? { axis: "+x" } : { axis: "+x", neutral } });
+    expect(codes([at(undefined, "bending-y"), at([0, 0], "bending-z")])).toEqual([]);
+    expect(codes([at([0.02, 0], "bending-y"), at([0.02, 0], "bending-z")])).toEqual([]);
+    expect(codes([at([0.02, 0], "bending-y"), at(undefined, "bending-z")])).toEqual(["E301"]);
   });
 
   it("E304: one to three modal coordinates, as a list", () => {

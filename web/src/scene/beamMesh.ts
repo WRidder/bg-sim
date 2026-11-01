@@ -54,6 +54,10 @@ export interface BeamFrame {
   readonly length: number;
   /** The section: a rectangle of half sizes cy, cz along beam y and z, or a circle of radius cy (= cz). */
   readonly section: { readonly round: boolean; readonly cy: number; readonly cz: number };
+  /** The neutral axis (beam y, z) from the shape's centre line: the sections turn about it (mapping `neutral`, default 0, 0). */
+  readonly neutral: readonly [number, number];
+  /** The outer fibre of the strain colouring: the section's half sizes plus the neutral-axis offset (a circle: its radius plus the offset's length). */
+  readonly fibre: { readonly round: boolean; readonly cy: number; readonly cz: number };
 }
 
 function cross(a: Vec3, b: Vec3): Vec3 {
@@ -95,7 +99,13 @@ export function beamFrame(geometry: SdfGeometry, mapping: BeamMapping): BeamFram
   }
   if (!(extent > 0)) return "the shape has no length along the beam axis";
   const length = mapping.length !== undefined && mapping.length > 0 ? mapping.length : extent;
-  return { basis: [ax, ay, az], extent, length, section };
+  const ny = mapping.neutral?.[0] ?? 0;
+  const nz = mapping.neutral?.[1] ?? 0;
+  if (!Number.isFinite(ny) || !Number.isFinite(nz)) return "the neutral axis offset must be two finite numbers (beam y, z in m)";
+  const fibre = section.round
+    ? { round: true, cy: section.cy + Math.hypot(ny, nz), cz: section.cz + Math.hypot(ny, nz) }
+    : { round: false, cy: section.cy + Math.abs(ny), cz: section.cz + Math.abs(nz) };
+  return { basis: [ax, ay, az], extent, length, section, neutral: [ny, nz], fibre };
 }
 
 /** A mesh of the beam shape, with what the deformation needs per vertex. */
@@ -241,6 +251,7 @@ export function buildBeamMesh(frame: BeamFrame, stripes: boolean, segments: numb
 export function deformBeamMesh(mesh: BeamMesh, frame: BeamFrame, sets: readonly ModalSet[], scale: number, positions: Float32Array, normals: Float32Array): void {
   const [bx, by, bz] = frame.basis;
   const half = frame.extent / 2;
+  const [ny0, nz0] = frame.neutral;
   const rings = mesh.ringS.length;
   const rot: ReturnType<typeof sectionRotation>[] = [];
   const states: ReturnType<typeof sectionState>[] = [];
@@ -254,7 +265,10 @@ export function deformBeamMesh(mesh: BeamMesh, frame: BeamFrame, sets: readonly 
     const st = states[r];
     const R = rot[r];
     if (st === undefined || R === undefined) continue;
-    const [px, py, pz] = deformPoint(st, R, mesh.ringS[r] ?? 0, mesh.sy[k] ?? 0, mesh.sz[k] ?? 0);
+    // the section turns about the neutral axis (ny0, nz0), not about the shape's centre line
+    const [px, dy, dz] = deformPoint(st, R, mesh.ringS[r] ?? 0, (mesh.sy[k] ?? 0) - ny0, (mesh.sz[k] ?? 0) - nz0);
+    const py = dy + ny0;
+    const pz = dz + nz0;
     const [nx, ny, nz] = rotateVector(R, mesh.nBeam[3 * k] ?? 0, mesh.nBeam[3 * k + 1] ?? 0, mesh.nBeam[3 * k + 2] ?? 0);
     // shape = B^T (beam - (E/2, 0, 0))
     const qx = px - half;
@@ -267,10 +281,10 @@ export function deformBeamMesh(mesh: BeamMesh, frame: BeamFrame, sets: readonly 
   }
 }
 
-/** Bending strain of the outer fibre at every ring (true deformation: no exaggeration). */
+/** Bending strain of the outer fibre (measured from the neutral axis) at every ring (true deformation: no exaggeration). */
 export function ringStrains(mesh: BeamMesh, frame: BeamFrame, sets: readonly ModalSet[]): Float64Array {
   const out = new Float64Array(mesh.ringS.length);
   const bending = sets.filter((s) => s.family !== "torsion");
-  for (let i = 0; i < out.length; i++) out[i] = outerStrain(sectionState(bending, mesh.ringS[i] ?? 0, frame.length, 1), frame.section);
+  for (let i = 0; i < out.length; i++) out[i] = outerStrain(sectionState(bending, mesh.ringS[i] ?? 0, frame.length, 1), frame.fibre);
   return out;
 }

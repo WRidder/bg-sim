@@ -71,6 +71,9 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
   diagonal and the redundant truss holds, then the strength slider at 0.5 and the bridge collapses. Every run happens off camera;
   frame k sets the playback time to k*s/fps (fixed dt). Writes `bridge-pier.mp4` and stills (before the run, mid and end of each
   segment); `--compose-only` composes again from the saved frames.
+- `capture-beams.mjs <out-dir>`: stills of the `cantilever-sections` example: the settled static bend (x10 and true scale), a
+  close-up at the wall, the step peak, the dashboard with load "1 · sine" selected and run, and two opposite crests of the
+  round bar's resonance.
 
 ## Recorded showcases (Playwright `recordVideo`, 25 fps)
 

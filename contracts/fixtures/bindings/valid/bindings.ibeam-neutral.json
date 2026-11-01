@@ -1,0 +1,32 @@
+{
+  "$comment": "An I-beam drawn as three boxes (two flanges and the web) of a cantilever bent along its beam y (world down): every box takes the same modal coordinates, the flanges set the neutral axis of the whole section ((h - tf)/2 from their own centre line, h = 0.1, tf = 0.0057) so their sections turn about it and their strain colour is the h/2 outer-fibre strain.",
+  "bindings": [
+    {
+      "target": "visual:ipe_top",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": { "axis": "+x", "y": "-z", "neutral": [0.04715, 0] },
+      "signal": ["IPE/eta[1]", "IPE/eta[2]", "IPE/eta[3]"],
+      "strain": { "colormap": "coolwarm", "range": [-0.00112, 0.00112] }
+    },
+    {
+      "target": "visual:ipe_web",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": { "axis": "+x", "y": "-z" },
+      "signal": ["IPE/eta[1]", "IPE/eta[2]", "IPE/eta[3]"],
+      "strain": { "colormap": "coolwarm", "range": [-0.00112, 0.00112] }
+    },
+    {
+      "target": "visual:ipe_bottom",
+      "property": "deformation",
+      "family": "bending-y",
+      "basis": "clamped-free",
+      "beam": { "axis": "+x", "y": "-z", "neutral": [-0.04715, 0] },
+      "signal": ["IPE/eta[1]", "IPE/eta[2]", "IPE/eta[3]"],
+      "strain": { "colormap": "coolwarm", "range": [-0.00112, 0.00112] }
+    }
+  ]
+}

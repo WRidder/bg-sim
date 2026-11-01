@@ -260,6 +260,68 @@ describe("beam mesh", () => {
   });
 });
 
+describe("neutral axis offset (a part of a built-up section)", () => {
+  // the top flange of an I-beam, h = 0.1, tf = 0.0057, as its own box: the beam y points down,
+  // so the neutral axis of the whole section lies (h - tf)/2 along +beam y from the flange's centre
+  const FLANGE: SdfGeometry = { kind: "box", size: [2, 0.055, 0.0057] };
+  const off = (0.1 - 0.0057) / 2;
+  const sets: ModalSet[] = [{ family: "bending-y", basis: "clamped-free", eta: [0.01, -0.001, 0.0002] }];
+
+  it("defaults to the centre line, and reports a non-finite offset", () => {
+    const plain = frameOf(FLANGE, { axis: "+x", y: "-z" });
+    expect(plain.neutral).toEqual([0, 0]);
+    expect(plain.fibre).toEqual(plain.section);
+    expect(beamFrame(FLANGE, { axis: "+x", y: "-z", neutral: [Number.NaN, 0] })).toMatch(/neutral axis/);
+  });
+
+  it("the outer fibre is the offset plus the half size: the flange's strain is the I-beam's h/2 strain", () => {
+    const f = frameOf(FLANGE, { axis: "+x", y: "-z", neutral: [off, 0] });
+    expect(f.section.cy).toBeCloseTo(0.0057 / 2, 12);
+    expect(f.fibre.cy).toBeCloseTo(0.05, 12);
+    expect(f.fibre.cz).toBeCloseTo(0.0275, 12);
+    const m = buildBeamMesh(f, false);
+    const eps = ringStrains(m, f, sets);
+    const curv0 = Math.abs(sectionState(sets, 0, 2).curvY);
+    expect(eps[0]).toBeCloseTo(0.05 * curv0, 12);
+    // a negative offset (the bottom flange) gives the same fibre distance
+    expect(frameOf(FLANGE, { axis: "+x", y: "-z", neutral: [-off, 0] }).fibre.cy).toBeCloseTo(0.05, 12);
+    // a round shape adds the length of the offset to its radius
+    expect(frameOf(ROD, { axis: "+z", neutral: [0.03, 0.04] }).fibre.cy).toBeCloseTo(0.025 + 0.05, 12);
+  });
+
+  it("the sections turn about the neutral axis: the flange slides along the beam by the offset times the slope", () => {
+    const f = frameOf(FLANGE, { axis: "+x", y: "-z", neutral: [off, 0] });
+    const plain = frameOf(FLANGE, { axis: "+x", y: "-z" });
+    const m = buildBeamMesh(f, false);
+    const pos = new Float32Array(m.positions.length);
+    const nor = new Float32Array(m.normals.length);
+    const posPlain = new Float32Array(m.positions.length);
+    deformBeamMesh(m, f, sets, 1, pos, nor);
+    deformBeamMesh(m, plain, sets, 1, posPlain, new Float32Array(m.normals.length));
+    for (const k of [0, 17, 300, m.vertexCount - 1]) {
+      const s = m.ringS[m.ring[k] ?? 0] ?? 0;
+      const st = sectionState(sets, s, 2);
+      const [bx, by, bz] = deformPoint(st, sectionRotation(st), s, (m.sy[k] ?? 0) - off, m.sz[k] ?? 0);
+      // beam (x, y, z) = shape (x + 1, -z, y): shape = (bx - 1, bz, -(by + off))
+      expect(pos[3 * k]).toBeCloseTo(bx - 1, 5);
+      expect(pos[3 * k + 1]).toBeCloseTo(bz, 5);
+      expect(pos[3 * k + 2]).toBeCloseTo(-(by + off), 5);
+    }
+    // the same deflection as the plain mapping (to second order), but at the tip the top flange
+    // (above the neutral axis, at beam y = -off from it) sits off * sin(slope) farther from the wall:
+    // a cantilever bent down stretches its top fibres
+    const tipRing = BEAM_SEGMENTS;
+    const tip = sectionState(sets, 2, 2);
+    for (let k = 0; k < m.vertexCount; k++) {
+      if (m.ring[k] !== tipRing) continue;
+      const dzPlain = (pos[3 * k + 2] ?? 0) - (posPlain[3 * k + 2] ?? 0);
+      expect(dzPlain).toBeCloseTo(0, 4);
+      const dx = (pos[3 * k] ?? 0) - (posPlain[3 * k] ?? 0);
+      expect(dx).toBeCloseTo(off * Math.sin(Math.atan(tip.slopeY)), 4);
+    }
+  });
+});
+
 const engines: NullEngine[] = [];
 afterEach(() => {
   for (const e of engines.splice(0)) e.dispose();

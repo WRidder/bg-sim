@@ -18,7 +18,7 @@ You can also drag a signal from the **Signals** tab onto the dashboard: on empty
 | Display | Plot, Value, Gauge, Bar, Indicator, Text (Markdown) |
 | Input (for the next run) | Number, Slider, Knob, Toggle, Select, Schedule |
 
-Value, Gauge and Bar cards can have colour zones. An Indicator turns on above (or below) a threshold.
+Value, Gauge and Bar cards can have colour zones. An Indicator turns on above (or below) a threshold. A Select card picks one option of an enumeration parameter (an `Int` with named options, such as the load mode of example **cantilever-sections**). The options are numbered from 0, as in the block's description (`0 constant, 1 sine, ...`), and the inspector shows the same numbers.
 
 ## Inputs
 

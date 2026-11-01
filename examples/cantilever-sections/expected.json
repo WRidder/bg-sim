@@ -1,0 +1,654 @@
+{
+  "project": "cantilever-sections",
+  "description": "Three equal-mass steel cantilevers (round, square, IPE 100) under one tip force: static deflection, root moment, stress and utilisation against Euler-Bernoulli, eigenfrequencies against the characteristic equation, step and sine responses against an independent finite element model with modal damping.",
+  "models": {
+    "cantilever-sections": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E006",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/w",
+          "t": 10.0,
+          "value": 0.040681863352960514,
+          "rtol": 0.002,
+          "note": "Euler-Bernoulli F L^3/(3 E I) with I = 7.803485e-08 m^4; three modes give 0.99856 of it"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/M",
+          "t": 10.0,
+          "value": 500.0,
+          "rtol": 0.001,
+          "note": "root bending moment F L (equilibrium)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/sigma",
+          "t": 10.0,
+          "value": 113757771.80782522,
+          "rtol": 0.001,
+          "note": "M / W with W = I / c = 4.395304e-06 m^3"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/util",
+          "t": 10.0,
+          "value": 0.4840756247141499,
+          "rtol": 0.001,
+          "note": "sigma / fy, fy = 235 MPa"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/M_modal",
+          "t": 10.0,
+          "value": 510.47533119326613,
+          "rtol": 0.001,
+          "note": "the root moment from the curvature of three modes, 4 F L (1/l1^2 - 1/l2^2 + 1/l3^2) = 1.0210 F L: the series the viewer's strain colour uses"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/f[1]",
+          "t": 10.0,
+          "value": 6.4232584668352235,
+          "rtol": 1e-06,
+          "note": "first root of 1 + cos(bL) cosh(bL) = 0 (brentq)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/f[2]",
+          "t": 10.0,
+          "value": 40.25387368853192,
+          "rtol": 1e-06,
+          "note": "second root"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Round/w",
+          "from_t": 0.0,
+          "to_t": 10.0,
+          "value": 0.07746572125092188,
+          "rtol": 0.005,
+          "note": "largest tip deflection after the step: the finite element step response (60 elements, every mode damped by zeta), 1.9042 x static"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Round/w",
+          "from_t": 0.2,
+          "to_t": 10.0,
+          "min_hz": 2.0,
+          "max_hz": 100.0,
+          "value": 6.4232584668352235,
+          "rtol": 0.01,
+          "note": "the ring-down after the step is at the first Euler-Bernoulli eigenfrequency (damped by sqrt(1 - zeta^2) = 0.9998)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Round/M",
+          "from_t": 0.0,
+          "to_t": 10.0,
+          "value": 1104.2815439523233,
+          "rtol": 0.02,
+          "note": "largest root moment after the step, 2.209 F L: the finite element step response with every mode (the higher modes add to the first mode's 1.90)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Round/util",
+          "from_t": 0.0,
+          "to_t": 10.0,
+          "value": 1.0691115564980538,
+          "rtol": 0.02,
+          "note": "the largest utilisation after the step (above 1: the elastic model does not yield)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/w",
+          "t": 10.0,
+          "value": 0.038848317880876164,
+          "rtol": 0.002,
+          "note": "Euler-Bernoulli F L^3/(3 E I) with I = 8.171791e-08 m^4; three modes give 0.99856 of it"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/M",
+          "t": 10.0,
+          "value": 500.0,
+          "rtol": 0.001,
+          "note": "root bending moment F L (equilibrium)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/sigma",
+          "t": 10.0,
+          "value": 96271424.8523664,
+          "rtol": 0.001,
+          "note": "M / W with W = I / c = 5.193649e-06 m^3"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/util",
+          "t": 10.0,
+          "value": 0.40966563766964426,
+          "rtol": 0.001,
+          "note": "sigma / fy, fy = 235 MPa"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/M_modal",
+          "t": 10.0,
+          "value": 510.47533119326613,
+          "rtol": 0.001,
+          "note": "the root moment from the curvature of three modes, 4 F L (1/l1^2 - 1/l2^2 + 1/l3^2) = 1.0210 F L: the series the viewer's strain colour uses"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/f[1]",
+          "t": 10.0,
+          "value": 6.573091941155898,
+          "rtol": 1e-06,
+          "note": "first root of 1 + cos(bL) cosh(bL) = 0 (brentq)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/f[2]",
+          "t": 10.0,
+          "value": 41.19286404377914,
+          "rtol": 1e-06,
+          "note": "second root"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Square/w",
+          "from_t": 0.0,
+          "to_t": 10.0,
+          "value": 0.07397431858442478,
+          "rtol": 0.005,
+          "note": "largest tip deflection after the step: the finite element step response (60 elements, every mode damped by zeta), 1.9042 x static"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Square/w",
+          "from_t": 0.2,
+          "to_t": 10.0,
+          "min_hz": 2.0,
+          "max_hz": 100.0,
+          "value": 6.573091941155898,
+          "rtol": 0.01,
+          "note": "the ring-down after the step is at the first Euler-Bernoulli eigenfrequency (damped by sqrt(1 - zeta^2) = 0.9998)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Square/M",
+          "from_t": 0.0,
+          "to_t": 10.0,
+          "value": 1104.2813792912139,
+          "rtol": 0.02,
+          "note": "largest root moment after the step, 2.209 F L: the finite element step response with every mode (the higher modes add to the first mode's 1.90)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Square/util",
+          "from_t": 0.0,
+          "to_t": 10.0,
+          "value": 0.904772270828099,
+          "rtol": 0.02,
+          "note": "the largest utilisation after the step (above 1: the elastic model does not yield)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/w",
+          "t": 10.0,
+          "value": 0.0019437613984070003,
+          "rtol": 0.002,
+          "note": "Euler-Bernoulli F L^3/(3 E I) with I = 1.633227e-06 m^4; three modes give 0.99856 of it"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/M",
+          "t": 10.0,
+          "value": 500.0,
+          "rtol": 0.001,
+          "note": "root bending moment F L (equilibrium)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/sigma",
+          "t": 10.0,
+          "value": 15307121.01245513,
+          "rtol": 0.001,
+          "note": "M / W with W = I / c = 3.266454e-05 m^3"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/util",
+          "t": 10.0,
+          "value": 0.06513668515938353,
+          "rtol": 0.001,
+          "note": "sigma / fy, fy = 235 MPa"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/M_modal",
+          "t": 10.0,
+          "value": 510.47533119326613,
+          "rtol": 0.001,
+          "note": "the root moment from the curvature of three modes, 4 F L (1/l1^2 - 1/l2^2 + 1/l3^2) = 1.0210 F L: the series the viewer's strain colour uses"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/f[1]",
+          "t": 10.0,
+          "value": 29.385584924023732,
+          "rtol": 1e-06,
+          "note": "first root of 1 + cos(bL) cosh(bL) = 0 (brentq)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/f[2]",
+          "t": 10.0,
+          "value": 184.1563172185554,
+          "rtol": 1e-06,
+          "note": "second root"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IPE/w",
+          "from_t": 0.0,
+          "to_t": 10.0,
+          "value": 0.0037012779215998795,
+          "rtol": 0.005,
+          "note": "largest tip deflection after the step: the finite element step response (60 elements, every mode damped by zeta), 1.9042 x static"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "IPE/w",
+          "from_t": 0.2,
+          "to_t": 2.5,
+          "min_hz": 2.0,
+          "max_hz": 100.0,
+          "value": 29.385584924023732,
+          "rtol": 0.01,
+          "note": "the ring-down after the step is at the first Euler-Bernoulli eigenfrequency (damped by sqrt(1 - zeta^2) = 0.9998)"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Round/w",
+          "signal_b": "IPE/w",
+          "t": 10.0,
+          "value": 20.929453268441858,
+          "rtol": 0.002,
+          "note": "same mass, the I-beam is I_ipe / I_rod times stiffer"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Square/w",
+          "signal_b": "IPE/w",
+          "t": 10.0,
+          "value": 19.986155663300085,
+          "rtol": 0.002,
+          "note": "and I_ipe / I_sq times stiffer than the square bar"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Load/F",
+          "value": 250.0,
+          "rtol": 1e-12,
+          "note": "the constant tip force"
+        }
+      ]
+    },
+    "cantilever-sections-sine": {
+      "model": "cantilever-sections",
+      "settings": {
+        "t_end": 12.0,
+        "output": {
+          "points": 24001
+        }
+      },
+      "overrides": {
+        "Load/mode": 1,
+        "Load/Fa": 50.0,
+        "Load/f": 4.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E006",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Round/w",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 0.013130545501120867,
+          "rtol": 0.01,
+          "note": "steady-state amplitude of the finite element frequency response at 4.0000 Hz, zeta on every mode (1.614 x the static deflection of Fa)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Round/M",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 171.7973197118491,
+          "rtol": 0.01,
+          "note": "root-moment amplitude, F L + w^2 int s rho A w ds of the finite element response"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Round/sigma",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 39086560.58595305,
+          "rtol": 0.01,
+          "note": "stress amplitude M / W"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Square/w",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 0.01219796369230017,
+          "rtol": 0.01,
+          "note": "steady-state amplitude of the finite element frequency response at 4.0000 Hz, zeta on every mode (1.570 x the static deflection of Fa)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Square/M",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 166.66136721300592,
+          "rtol": 0.01,
+          "note": "root-moment amplitude, F L + w^2 int s rho A w ds of the finite element response"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Square/sigma",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 32089454.578879084,
+          "rtol": 0.01,
+          "note": "stress amplitude M / W"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IPE/w",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 0.0003958748841434338,
+          "rtol": 0.01,
+          "note": "steady-state amplitude of the finite element frequency response at 4.0000 Hz, zeta on every mode (1.018 x the static deflection of Fa)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IPE/M",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 102.13945991817363,
+          "rtol": 0.01,
+          "note": "root-moment amplitude, F L + w^2 int s rho A w ds of the finite element response"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IPE/sigma",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 3126922.146228588,
+          "rtol": 0.01,
+          "note": "stress amplitude M / W"
+        }
+      ]
+    },
+    "cantilever-sections-resonance": {
+      "model": "cantilever-sections",
+      "settings": {
+        "t_end": 12.0,
+        "output": {
+          "points": 24001
+        }
+      },
+      "overrides": {
+        "Load/mode": 1,
+        "Load/Fa": 10.0,
+        "Load/f": 6.4232584668352235
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E006",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Round/w",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 0.03948971766687506,
+          "rtol": 0.01,
+          "note": "steady-state amplitude of the finite element frequency response at 6.4233 Hz, zeta on every mode (24.267 x the static deflection of Fa)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Round/M",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 569.1734405622465,
+          "rtol": 0.01,
+          "note": "root-moment amplitude, F L + w^2 int s rho A w ds of the finite element response"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Round/sigma",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 129495804.74110961,
+          "rtol": 0.01,
+          "note": "stress amplitude M / W"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Square/w",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 0.02531866575200408,
+          "rtol": 0.01,
+          "note": "steady-state amplitude of the finite element frequency response at 6.4233 Hz, zeta on every mode (16.293 x the static deflection of Fa)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Square/M",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 379.4617508076405,
+          "rtol": 0.01,
+          "note": "root-moment amplitude, F L + w^2 int s rho A w ds of the finite element response"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Square/sigma",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 73062646.8544503,
+          "rtol": 0.01,
+          "note": "stress amplitude M / W"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IPE/w",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 8.153635355707038e-05,
+          "rtol": 0.01,
+          "note": "steady-state amplitude of the finite element frequency response at 6.4233 Hz, zeta on every mode (1.049 x the static deflection of Fa)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IPE/M",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 21.137341658640093,
+          "rtol": 0.01,
+          "note": "root-moment amplitude, F L + w^2 int s rho A w ds of the finite element response"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "IPE/sigma",
+          "from_t": 10.0,
+          "to_t": 12.0,
+          "value": 647103.6933008259,
+          "rtol": 0.01,
+          "note": "stress amplitude M / W"
+        }
+      ]
+    },
+    "cantilever-sections-weight": {
+      "model": "cantilever-sections",
+      "overrides": {
+        "global:g0": 9.81
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E006",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/w",
+          "t": 10.0,
+          "value": 0.04998886931922313,
+          "rtol": 0.002,
+          "note": "F L^3/(3 E I) + q L^4/(8 E I), q = rho A g = 76.2584 N/m; three modes give 0.99885 of it"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/M",
+          "t": 10.0,
+          "value": 652.51687442,
+          "rtol": 0.001,
+          "note": "F L + q L^2 / 2"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Round/sigma",
+          "t": 10.0,
+          "value": 148457731.40205142,
+          "rtol": 0.001,
+          "note": "(F L + q L^2/2) / W"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/w",
+          "t": 10.0,
+          "value": 0.04773585391037491,
+          "rtol": 0.002,
+          "note": "F L^3/(3 E I) + q L^4/(8 E I), q = rho A g = 76.2584 N/m; three modes give 0.99885 of it"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/M",
+          "t": 10.0,
+          "value": 652.51687442,
+          "rtol": 0.001,
+          "note": "F L + q L^2 / 2"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Square/sigma",
+          "t": 10.0,
+          "value": 125637458.48125207,
+          "rtol": 0.001,
+          "note": "(F L + q L^2/2) / W"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/w",
+          "t": 10.0,
+          "value": 0.0023884460180619268,
+          "rtol": 0.002,
+          "note": "F L^3/(3 E I) + q L^4/(8 E I), q = rho A g = 76.2584 N/m; three modes give 0.99885 of it"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/M",
+          "t": 10.0,
+          "value": 652.51687442,
+          "rtol": 0.001,
+          "note": "F L + q L^2 / 2"
+        },
+        {
+          "kind": "final_value",
+          "signal": "IPE/sigma",
+          "t": 10.0,
+          "value": 19976309.518831857,
+          "rtol": 0.001,
+          "note": "(F L + q L^2/2) / W"
+        }
+      ]
+    },
+    "cantilever-sections-sweep": {
+      "model": "cantilever-sections",
+      "overrides": {
+        "Load/mode": 3,
+        "Load/Fa": 10.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E006",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Load/F",
+          "value": 10.0,
+          "rtol": 0.001,
+          "note": "the sweep amplitude"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "IPE/util",
+          "value": 0.08,
+          "note": "passing its 29.4 Hz resonance (near 7.5 s), the 10 N sweep stresses the I-beam about as much as the 250 N static load (0.065), and no more"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Round/util",
+          "value": 0.3,
+          "note": "the sweep crosses the round bar's 6.42 Hz resonance in about 0.07 s, too fast to build up the steady resonance amplitude: it peaks near 0.2, against 0.55 for a steady 10 N sine at 6.42 Hz"
+        }
+      ]
+    }
+  }
+}

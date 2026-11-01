@@ -1844,6 +1844,12 @@ class BeamMapping(BaseModel):
         None,
         description='Beam length L in m: the mode shapes run over s = 0..L from end A. Default: the extent of the shape along `axis`. Parts of the shape beyond L move rigidly with the section at L.',
     )
+    neutral: list[float] | None = Field(
+        None,
+        description='Where the neutral axis of the bending lies, as [y, z] in m along the beam y and z axes from the centre line of the shape (default [0, 0]: the shape bends about its own centre line). For a shape that is one part of a built-up section, such as a flange of an I-beam drawn as its own box: the sections of the shape then turn about the neutral axis of the whole section, and the outer fibre of its strain colouring is the point of the shape farthest from that axis (|y| + half the size along beam y, and the same along z).',
+        max_length=2,
+        min_length=2,
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 

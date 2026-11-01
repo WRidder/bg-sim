@@ -427,6 +427,24 @@ describe("DashboardTab", () => {
     }
   });
 
+  it("a select card offers the options zero-based, like the blocks that declare them", () => {
+    const custom = structuredClone(catalog);
+    const resistor = custom.blocks.find((entry) => entry.name === "Resistor");
+    if (resistor === undefined) throw new Error("the catalog has no Resistor");
+    resistor.parameters.push({
+      name: "mode", type: "Int", default: "0", unit: null, min: null, max: null, tunable: false,
+      description: "Load: 0 constant, 1 sine, 2 sweep", options: ["constant", "sine", "sweep"],
+    });
+    useCatalogStore.getState().setCatalog(custom);
+    openModel(model([{ id: "m", kind: "select", size: "2x1", parameter: "R1/mode" }]));
+    render(<DashboardTab />);
+    const select = screen.getByTestId("dash-select-m") as HTMLSelectElement;
+    expect([...select.options].map((o) => [o.value, o.textContent])).toEqual([["0", "0 · constant"], ["1", "1 · sine"], ["2", "2 · sweep"]]);
+    expect(select.value).toBe("0");
+    fireEvent.change(select, { target: { value: "1" } });
+    expect(useDocumentStore.getState().doc?.dashboard?.cards.find((c) => c.id === "m")?.value).toBe(1);
+  });
+
   it("changes input values with the keyboard and the slider", () => {
     openModel(model());
     render(<DashboardTab />);
