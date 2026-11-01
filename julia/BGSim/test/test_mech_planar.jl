@@ -1010,7 +1010,13 @@ end
         rigid = _mp7_rigid_pendulum()
         checked = _mp7_check(rigid)
         @test isempty(_mp7_errors(checked))
-        @test _mp7_w201(checked) == 1               # one diagnostic, all three components
+        # model.check (SCAP) does not see the index-3 structure: the scalar picture of the joint
+        # (Se and the rate sensor Df imposing effort on the axis 1-junction, the screw passing
+        # the flow) is causally consistent, because SCAP cannot see that the 1-DOF screw cannot
+        # carry the 3-DOF body twist. The model-check W201 this test used to count came from
+        # Df being declared flow-out (fixed in aac5cfe: Df sets p.e = 0, so it imposes effort).
+        # The index problem is reported after compilation: the three W201 below.
+        @test _mp7_w201(checked) == 0
         flat = Compile.flatten(IR.parse_model(rigid))
         @test isempty(_mp7_errors(flat))
         lowered = BGSim.lower_model(flat; t_start = 0.0, t_end = 0.5)
@@ -1030,7 +1036,7 @@ end
         columns, result, _ = bg_run(rigid)
         @test result.status == "failed"
         @test any(d -> d.code in ("E103", "E901"), result.diagnostics)
-        println("J-MB7 rigid variant: 1 model-check W201, 3 post-compile W201 (",
+        println("J-MB7 rigid variant: 0 model-check W201, 3 post-compile W201 (",
             [d.message for d in warnings], "), dummies ", dummies, ", run ",
             result.status)
     end
