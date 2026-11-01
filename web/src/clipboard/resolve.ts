@@ -145,10 +145,13 @@ export function freeGlobalName(
   return `${base}_${value}`;
 }
 
-/** A free data file name: `profile2.csv`, ... (file names ignore case on Windows). */
+/**
+ * A free data file name: `profile2.csv`, `bracket2.modal.json`, ... (file names ignore case on
+ * Windows).
+ */
 export function freeDataName(file: string, taken: Iterable<string>): string {
   const lower = new Set([...taken].map((name) => name.toLowerCase()));
-  const match = /^(.*?)(\.csv)$/i.exec(file);
+  const match = /^(.*?)(\.modal\.json|\.csv)$/i.exec(file);
   const stem = match?.[1] ?? file;
   const extension = match?.[2] ?? ".csv";
   if (!lower.has(file.toLowerCase())) {

@@ -7,7 +7,8 @@
  *
  * Paste: {@link pasteEnvelopeValue} validates a parsed envelope against the schema,
  * then {@link analyse} compares its dependencies with the target (library blocks of the
- * target project, globals of the target model, CSV files, docs images), asks about
+ * target project, globals of the target model, CSV and reduced-model data files, docs
+ * images), asks about
  * conflicts in one dialog, writes what the target lacks (library files, data files,
  * images) and commits the elements, the rewrites and the added globals as ONE undo
  * step. A notice lists what was imported and what was not carried along. Library and
@@ -79,8 +80,9 @@ export const browserPasteIo: PasteIo = {
       return null;
     }
   },
-  dataFileNames: async (project) => (await listDataFiles(project)).map((entry) => entry.file),
-  dataText: fetchDataText,
+  dataFileNames: async (project) =>
+    (await listDataFiles(project, undefined, "all")).map((entry) => entry.file),
+  dataText: (project, file) => fetchDataText(project, file),
   writeData: writeDataText,
   copyAssets: (target, from, files) => copyAssets(target.project, target.model, from, files),
   ask: (conflicts, project, writesFiles) => usePasteUiStore.getState().ask(conflicts, project, writesFiles),
@@ -207,7 +209,7 @@ export async function analyse(envelope: ClipboardEnvelope, target: PasteTarget, 
     }
   }
 
-  // CSV files live in the project.
+  // Data files (CSV, reduced models) live in the project.
   const data: DataEntry[] = [];
   if (!sameProject && target.project !== null && source.project !== null && envelope.dependencies.dataFiles.length > 0) {
     const targetFiles = await quietly(io.dataFileNames(target.project), [] as string[]);

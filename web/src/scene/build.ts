@@ -22,6 +22,7 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { VertexBuffer } from "@babylonjs/core/Buffers/buffer";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import type { Diagnostic } from "../contracts/diagnostic";
 import type { BeamMapping, SegmentBrokenStyle, ShapeAxis, StrainColor } from "../contracts/model";
@@ -69,6 +70,10 @@ interface VisualRec {
   readonly geometry: SdfGeometry;
   /** The plain primitive mesh (box, cylinder, sphere); null for a GLB. Hidden while a beam mesh stands in. */
   readonly primitive: Mesh | null;
+  /** The morph target managers of a GLB's meshes (one target per mode shape); empty for the rest. */
+  readonly morphs: readonly MorphTargetManager[];
+  /** Modal coordinates a mode-shapes binding set last (gain applied, not exaggerated); empty at rest. */
+  modes: readonly number[];
   shown: boolean;
   /** A segment binding drew the bar broken and hidden. */
   segmentHidden: boolean;
@@ -152,7 +157,11 @@ export class BuiltScene {
     geometry.parent = node;
     this.materials.push(...materials);
     const primitive = v.geometry.kind === "mesh" ? null : (geometry as Mesh);
-    this.visuals.set(v.ref, { id: v.node, node, link: v.link, materials, geometry: v.geometry, primitive, shown: true, segmentHidden: false, segmentSnapped: false, twin: null });
+    const morphs = v.geometry.kind === "mesh" ? morphManagers(geometry) : [];
+    this.visuals.set(v.ref, {
+      id: v.node, node, link: v.link, materials, geometry: v.geometry, primitive, morphs, modes: [], shown: true,
+      segmentHidden: false, segmentSnapped: false, twin: null,
+    });
   }
 
   /** @internal */
@@ -286,12 +295,47 @@ export class BuiltScene {
     return true;
   }
 
+  /**
+   * Morph targets (mode shapes) of a mesh visual: the fewest over its meshes that have any, 0 when none
+   * has; null when the ref is not a loaded mesh visual.
+   */
+  morphTargetCount(ref: string): number | null {
+    const v = this.visuals.get(ref);
+    if (v === undefined || v.geometry.kind !== "mesh") return null;
+    return v.morphs.length === 0 ? 0 : Math.min(...v.morphs.map((m) => m.numTargets));
+  }
+
+  /**
+   * Modal coordinates of a mesh visual with morph targets (gain applied, not exaggerated): target k of
+   * every mesh of the visual gets the influence eta[k] * exaggeration; targets beyond `eta` get 0, and
+   * coordinates beyond the targets are ignored. False when the visual is no mesh or has no morph targets.
+   */
+  setModeShapes(ref: string, eta: readonly number[]): boolean {
+    const v = this.visuals.get(ref);
+    if (v === undefined || v.morphs.length === 0) return false;
+    v.modes = eta;
+    this.drawModes(v);
+    this.viewer.invalidate();
+    return true;
+  }
+
+  private drawModes(v: VisualRec): void {
+    const f = this.exaggerationFactor;
+    for (const manager of v.morphs) {
+      for (let k = 0; k < manager.numTargets; k++) {
+        const eta = v.modes[k] ?? 0;
+        manager.getTarget(k).influence = Number.isFinite(eta) ? eta * f : 0;
+      }
+    }
+  }
+
   /** The display factor on every deformation (1: true scale). Strain colours always use the true deformation. */
   setExaggeration(factor: number): void {
     const f = Number.isFinite(factor) && factor > 0 ? factor : 1;
     if (f === this.exaggerationFactor) return;
     this.exaggerationFactor = f;
     for (const rec of this.beams.values()) this.drawBeam(rec);
+    for (const v of this.visuals.values()) if (v.modes.length > 0) this.drawModes(v);
     this.viewer.invalidate();
   }
 
@@ -437,7 +481,7 @@ export class BuiltScene {
     v.twin?.setEnabled(shown && v.segmentSnapped);
   }
 
-  /** Back to the rest pose: joints at zero, link and frame poses as the file wrote them, visuals unscaled and shown. */
+  /** Back to the rest pose: joints at zero, link and frame poses as the file wrote them, visuals unscaled, shown and undeformed. */
   reset(): void {
     for (const k of this.resolved.nodes) {
       this.apply(k.id, k.local);
@@ -449,6 +493,10 @@ export class BuiltScene {
       v.segmentHidden = false;
       v.segmentSnapped = false;
       this.refreshVisibility(v);
+      if (v.morphs.length > 0) {
+        v.modes = [];
+        this.drawModes(v);
+      }
     }
     for (const rec of this.beams.values()) {
       rec.sets = [];
@@ -486,6 +534,28 @@ export class BuiltScene {
     this.visuals.clear();
     this.viewer.invalidate();
   }
+}
+
+/**
+ * The morph target managers of a GLB visual's meshes (the glTF loader creates them from `targets`). In
+ * texture mode (WebGL2) every target is active and the loader pins one shader for all of them; this
+ * makes sure of it. Vertex-attribute mode (no float textures) draws at most
+ * `MorphTargetManager.MaxActiveMorphTargetsInVertexAttributeMode` (8) non-zero targets. The morphed
+ * vertices are not in the CPU bounds, so the meshes are never frustum-culled by their rest shape.
+ */
+function morphManagers(root: TransformNode): MorphTargetManager[] {
+  const out: MorphTargetManager[] = [];
+  for (const mesh of root.getChildMeshes(false)) {
+    const m = mesh.morphTargetManager;
+    if (m === null || m.numTargets === 0) continue;
+    if (m.isUsingTextureForTargets) {
+      m.optimizeInfluencers = false;
+      m.numMaxInfluencers = m.numTargets;
+    }
+    mesh.alwaysSelectAsActiveMesh = true;
+    if (!out.includes(m)) out.push(m);
+  }
+  return out;
 }
 
 /** Sets a plain node (not in the kinematic maps) to a rigid transform. */

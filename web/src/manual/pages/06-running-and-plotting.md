@@ -49,7 +49,7 @@ Models with a 3D scene show it in the **3D View** tab. The scene follows the run
 - Drag to orbit, right-drag to pan, scroll to zoom.
 - The toolbar has **Isometric**, **Top**, **Front** and **Side** views, an **Orthographic projection** toggle, **Fit the scene in the view**, **Full screen** (with the playback bar; `Esc` exits) and **Detach** (a separate window).
 - The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** and a time slider.
-- **Bindings** opens the bindings table. Each row binds a scene object's property (position, pose, scale, colour, visibility, deformation or segment) to a signal, with a gain and an offset. **Add binding** adds a row.
+- **Bindings** opens the bindings table. Each row binds a scene object's property (position, pose, scale, colour, visibility, deformation, mode shapes or segment) to a signal, with a gain and an offset. **Add binding** adds a row.
 
 ### Bars between two points (segment bindings)
 
@@ -67,7 +67,7 @@ A **segment** binding draws a box or cylinder as a bar between two moving points
 
 A box or cylinder in the scene can bend and twist with the run. A flexible beam block gives its rigid motion as a pose (bind it to the link, as for a rigid body) and its elastic motion as modal coordinates: `eta_y[i]` and `eta_z[i]` for bending (in m) and `eta_t[i]` for torsion (in rad). A **deformation** binding draws them on a visual.
 
-1. In **Bindings**, pick the property **deformation** and a box or cylinder as target. Spheres and meshes cannot bend.
+1. In **Bindings**, pick the property **deformation** and a box or cylinder as target. Spheres cannot bend; a mesh bends through a **mode-shapes** binding instead (below).
 2. Pick the **family**: `bending-y` (deflection along the beam's y axis), `bending-z` (along its z axis) or `torsion` (twist about the beam axis).
 3. Pick the **basis**, which must match the block: `clamped-free` (a cantilever, fixed at end A) or `free-free` (both ends free). Torsion also offers `linear` (see below).
 4. Set the **beam axis**: the direction in the shape from end A to end B. End A is the face on the other side. A cylinder runs along its own z axis, so it takes `+z` or `-z`. In the table you can also set the beam's **y** axis (default `+y`) and its length **L** (empty means the shape's length).
@@ -87,8 +87,19 @@ A chain of lumped springs (several C's with small inertias between them) is one 
 
 #### Exaggeration
 
-Real deflections are usually too small to see. Whenever a model has deformation bindings, the top-left corner of the view shows **Deformation** with an exaggeration factor of ×1 (true scale), ×10, ×100 or ×1000. Every factor above ×1 is marked **exaggerated**, so a screenshot cannot pass off the drawing as real motion. The factor you pick is saved per model in this browser, not in the model, and the detached window and full screen use it too.
+Real deflections are usually too small to see. Whenever a model has deformation or mode-shapes bindings, the top-left corner of the view shows **Deformation** with an exaggeration factor of ×1 (true scale), ×10, ×100 or ×1000. Every factor above ×1 is marked **exaggerated**, so a screenshot cannot pass off the drawing as real motion. The factor you pick is saved per model in this browser, not in the model, and the detached window and full screen use it too.
 
 A model can name the factor its view opens with: `"exaggeration": 10` in its `scene` (next to `file`; 1, 10, 100 or 1000). It applies while this browser has no choice of its own for the model; picking the model's own factor again drops the stored choice. On a round shaft a twist only shows as the stripes winding round it, by radius × angle, so even 0.1 rad on a thin rod needs ×10: `drivetrain` and `drivetrain-position` open at ×10, and `drivetrain-kalman`, whose shaft segments twist by a few mrad, at ×1000. A torsion exaggeration only winds the stripes and never distorts the shaft, so a large factor is harmless. Only the deformation is exaggerated: joints and poses always move by their true values, so with an exaggerated twist the stripes at the end of a shaft run ahead of the marker of the disc it meets.
 
 The binding table reports a sphere or mesh, a cylinder bent across its own axis, two bindings of one family, beam axes that differ, or the linear basis on a bending family as E301. It reports a wrong number of modes (or more than one signal on the linear basis) as E304, and a unit that is not m for bending or rad for torsion as E303.
+
+### Flexible bodies from a mesh (mode-shapes bindings)
+
+A part reduced from a finite element mesh (see [Flexible bodies](page:flexible-bodies)) is drawn from the GLB file the reduction tool writes. That GLB holds the part's surface and one morph target per elastic mode: the shape of the mode for one unit of its modal coordinate. Store it in the project's `meshes/` folder and reference it as a mesh visual in the scene, for example `<mesh><uri>bracket.glb</uri></mesh>`. The flexible body block records its frame as `pose` and its modal coordinates as `eta[1]` to `eta[n]` (in m).
+
+1. Bind the block's `pose` to the link that holds the mesh, as for a rigid body.
+2. In **Bindings**, pick the property **mode-shapes** and the mesh as target. Only mesh visuals are offered.
+3. Fill the signals: **Fill eta[1..n] from…** lists the blocks that record `eta[i]` and fills `eta[1]` to `eta[n]` in mode order in one step, up to the number of mode shapes in the mesh. You can also pick them one by one (**+ mode**, **− mode**). The table shows how many mode shapes the mesh has.
+4. **Gain** multiplies every coordinate, for example 0.001 for coordinates in mm. A mode-shapes binding has no offset.
+
+The view moves every vertex by the sum of the mode shapes, each times its coordinate, the gain and the **Deformation** exaggeration factor of the view (×1 is true scale; a model can open at a larger factor with `"exaggeration"` in its `scene`, see above). A mesh can take one mode-shapes binding. The binding table reports a target that is no mesh, a mesh without morph targets, or a second mode-shapes binding of one mesh as E301. It reports more signals than the mesh has mode shapes (or more than 64) as E304, and a coordinate whose unit is not m as E303.

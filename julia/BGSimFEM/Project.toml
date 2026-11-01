@@ -1,0 +1,26 @@
+name = "BGSimFEM"
+uuid = "5b0b7a2e-6f0c-4c1e-9a55-3f2d8e9c1a47"
+version = "0.1.0"
+authors = ["Wilbert van de Ridder <w.vanderidder@awl.nl>"]
+
+[deps]
+Ferrite = "c061ca5d-56c9-439f-9c0e-210fe06d3992"
+FerriteGmsh = "4f95f4f8-b27c-4ae5-9a39-ea55e634e36b"
+Gmsh = "705231aa-382f-11e9-3f0c-b7cb4346fdeb"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+KrylovKit = "0b1a1467-8014-51b9-945f-bf0ae24f4b77"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[compat]
+Ferrite = "1.7.0"
+FerriteGmsh = "1.5.0"
+Gmsh = "0.3.1"
+JSON3 = "1.14.4"
+KrylovKit = "0.10.4"
+LinearAlgebra = "1.13.0"
+Printf = "1.11.0"
+SparseArrays = "1.13.0"
+Test = "1.11.0"

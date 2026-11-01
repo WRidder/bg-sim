@@ -105,14 +105,15 @@ function bg_columns(dir)
     return columns
 end
 
-"""    bg_run(model) -> (columns, result, flat)
+"""    bg_run(model; project_dir = nothing) -> (columns, result, flat)
 
-Flatten and simulate one model document through the real pipeline. A flatten error raises
+Flatten (with the project folder of its data files, if any) and simulate one model document
+through the real pipeline. A flatten error raises
 with the diagnostics instead of returning a half-empty run; the caller asserts
 `result.status == "done"` and the golden values."""
-function bg_run(model)
+function bg_run(model; project_dir = nothing)
     parsed = IR.parse_model(model)
-    flat = Compile.flatten(parsed)
+    flat = Compile.flatten(parsed; project_dir = project_dir)
     errors = [d for d in flat.diagnostics if d.severity == "error"]
     if !isempty(errors)
         error(

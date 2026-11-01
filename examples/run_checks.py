@@ -2054,6 +2054,7 @@ def _read_sdf(path: Path) -> dict[str, Any]:
     links: dict[str, Any] = {}
     visuals: dict[str, str] = {}
     geometry: dict[str, str] = {}
+    mesh_uris: dict[str, str] = {}
     for link in model.findall("link"):
         name = link.get("name", "")
         pose = link.find("pose")
@@ -2063,6 +2064,9 @@ def _read_sdf(path: Path) -> dict[str, Any]:
             shape = visual.find("geometry")
             kinds = [child.tag for child in shape] if shape is not None else []
             geometry[visual.get("name", "")] = kinds[0] if kinds else ""
+            uri = visual.findtext("geometry/mesh/uri")
+            if uri:
+                mesh_uris[visual.get("name", "")] = uri.strip()
     joints: dict[str, Any] = {}
     for joint in model.findall("joint"):
         pose = joint.find("pose")
@@ -2080,7 +2084,37 @@ def _read_sdf(path: Path) -> dict[str, Any]:
             "relative_to": pose.get("relative_to") if pose is not None else None,
         }
     frames = {frame.get("name", "") for frame in model.findall("frame")}
-    return {"links": links, "joints": joints, "visuals": visuals, "geometry": geometry, "frames": frames}
+    return {
+        "links": links,
+        "joints": joints,
+        "visuals": visuals,
+        "geometry": geometry,
+        "mesh_uris": mesh_uris,
+        "frames": frames,
+    }
+
+
+def _glb_morph_targets(path: Path) -> int:
+    """Morph targets of a GLB: the fewest over the primitives of its meshes (0 when none has any).
+
+    The FEM reduction writes one target per elastic mode on the single primitive of its mesh.
+    Raises ``ValueError`` when the file is no GLB.
+    """
+    import struct
+
+    data = path.read_bytes()
+    if len(data) < 20 or data[:4] != b"glTF":
+        raise ValueError("not a GLB file")
+    (length,) = struct.unpack_from("<I", data, 12)
+    if data[16:20] != b"JSON":
+        raise ValueError("the first GLB chunk is not JSON")
+    gltf = json.loads(data[20 : 20 + length].decode("utf-8"))
+    counts = [
+        len(primitive.get("targets") or [])
+        for mesh in gltf.get("meshes") or []
+        for primitive in mesh.get("primitives") or []
+    ]
+    return min(counts) if counts else 0
 
 
 def _sdf_link_worlds(sdf: dict[str, Any], q: dict[str, float]) -> dict[str, np.ndarray]:
@@ -2132,9 +2166,12 @@ def _scene_bindings_check(
     the seven pose signals) and a pose needs exactly seven signals. A ``deformation`` binding
     needs a box or cylinder visual (a cylinder along its own z), one to three modal coordinates
     (lengths for bending, angles for torsion) and at most one binding per family and visual; the
-    `linear` basis (the twist of a lumped torsion spring) takes family torsion and exactly one signal.
-    A `segment` binding needs a box or cylinder visual that stretches along its axis, 4
-    (planar) or 6 (spatial) end-point coordinates that are lengths, and a known `broken` flag.
+    ``linear`` basis (the twist of a lumped torsion spring) takes family torsion and exactly one signal.
+    A ``mode-shapes`` binding needs a mesh visual whose GLB (in the project's ``meshes/`` folder)
+    has at least as many morph targets as the binding has signals, one to 64 modal coordinates
+    in metres, and at most one such binding per visual.
+    A ``segment`` binding needs a box or cylinder visual that stretches along its axis, 4
+    (planar) or 6 (spatial) end-point coordinates that are lengths, and a known ``broken`` flag.
     This is E301 to E304 of the viewer (plan 7.6), checked without a browser.
 
     ``fk`` entries check the sign convention of the joint axes against a model signal::
@@ -2167,6 +2204,7 @@ def _scene_bindings_check(
     counts = {"position": 0, "pose": 0, "visual": 0}
     joint_signals: dict[str, tuple[str, float, float]] = {}
     deformation_families: set[tuple[str, Any]] = set()
+    mode_shape_targets: set[str] = set()
     for binding in bindings:
         target = str(binding.get("target", ""))
         prop = binding.get("property")
@@ -2231,6 +2269,33 @@ def _scene_bindings_check(
             for signal in signals:
                 if signal in units and units[signal] not in allowed:
                     errors.append(f"{where}: unit {units[signal]!r} of {signal} does not fit a {family} modal coordinate")
+        elif prop == "mode-shapes":
+            counts["visual"] += 1
+            if kind != "visual" or name not in sdf["visuals"]:
+                errors.append(f"{where}: no visual named {name!r}")
+            elif sdf["geometry"].get(name) != "mesh":
+                errors.append(f"{where}: a {sdf['geometry'].get(name)} is not a mesh; mode shapes need the GLB of the FEM reduction")
+            else:
+                glb = run.project_dir / "meshes" / Path(sdf["mesh_uris"].get(name, "")).name
+                try:
+                    targets = _glb_morph_targets(glb)
+                except (OSError, ValueError, UnicodeDecodeError) as exc:
+                    errors.append(f"{where}: mesh {glb.name!r} unreadable ({exc}); store it in the project's meshes/ folder")
+                else:
+                    if targets == 0:
+                        errors.append(f"{where}: mesh {glb.name!r} has no morph targets (mode shapes)")
+                    elif len(signals) > targets:
+                        errors.append(
+                            f"{where}: {len(signals)} modal coordinates but mesh {glb.name!r} has {targets} morph targets"
+                        )
+            if not isinstance(binding.get("signal"), list) or not 1 <= len(signals) <= 64:
+                errors.append(f"{where}: needs 1 to 64 modal coordinates, got {len(signals)}")
+            if target in mode_shape_targets:
+                errors.append(f"{where}: a second mode-shapes binding of {target}")
+            mode_shape_targets.add(target)
+            for signal in signals:
+                if signal in units and units[signal] not in _LENGTH_UNITS:
+                    errors.append(f"{where}: unit {units[signal]!r} of {signal} does not fit a modal coordinate (m)")
         elif prop == "segment":
             counts["visual"] += 1
             geometry = sdf["geometry"].get(name) if kind == "visual" else None

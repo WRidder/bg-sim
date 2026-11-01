@@ -1,0 +1,90 @@
+{
+  "project": "fem-bracket",
+  "description": "An aluminium L-bracket as a FEM flexible body (ModalBody3D, Craig-Bampton 4 + 6 modes) carrying a 0.5 kg payload: on an indexing turntable, and clamped for a ring-down whose frequencies match the full finite element model with the payload attached.",
+  "models": {
+    "fem-bracket": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E108",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Table/qout",
+          "t": 3.0,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "the table is back at 0 after the two index moves"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Table/qout",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "value": 1.5707963267948966,
+          "rtol": 0.02,
+          "note": "the first move reaches 90 degrees"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Payload/flow/y[1]",
+          "from_t": 1.0,
+          "to_t": 1.6,
+          "min_hz": 8.0,
+          "max_hz": 40.0,
+          "value": 18.57193040579621,
+          "rtol": 0.06,
+          "note": "the payload rings near the first clamped bracket mode after the move (the servo spring lowers it slightly); full finite element model (39348 dofs) clamped at A with the payload at B: 18.5719 / 30.8750 Hz; reduced model 18.5719 / 30.8750 Hz"
+        }
+      ]
+    },
+    "bracket-ringdown": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E108",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Payload/flow/y[5]",
+          "from_t": 0.0,
+          "to_t": 1.0,
+          "min_hz": 5.0,
+          "max_hz": 25.0,
+          "value": 18.57193040579621,
+          "rtol": 0.003,
+          "note": "full finite element model (39348 dofs) clamped at A with the payload at B: 18.5719 / 30.8750 Hz; reduced model 18.5719 / 30.8750 Hz"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Payload/flow/y[4]",
+          "from_t": 0.0,
+          "to_t": 1.0,
+          "min_hz": 25.0,
+          "max_hz": 60.0,
+          "value": 30.874979823054638,
+          "rtol": 0.003,
+          "note": "full finite element model (39348 dofs) clamped at A with the payload at B: 18.5719 / 30.8750 Hz; reduced model 18.5719 / 30.8750 Hz"
+        }
+      ]
+    }
+  }
+}

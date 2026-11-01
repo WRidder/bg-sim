@@ -22,7 +22,7 @@ export function ExaggerationControl({ factor, onChange }: ExaggerationControlPro
           aria-label="Deformation exaggeration"
           data-testid="deformation-exaggeration"
           value={factor}
-          title={exaggerated ? `Beam deformations are drawn ${formatFactor(factor)} larger than computed` : "Beam deformations are drawn at true scale"}
+          title={exaggerated ? `Deformations (beams and mode shapes) are drawn ${formatFactor(factor)} larger than computed` : "Deformations (beams and mode shapes) are drawn at true scale"}
           onChange={(e) => {
             onChange(Number(e.target.value));
           }}

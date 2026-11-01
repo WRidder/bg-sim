@@ -283,6 +283,9 @@ include("test_drives.jl")
 # (FlexibleBeam2D/3D: energy, Southwell, statics, the two-disk torsion shaft).
 include("test_flex_modes.jl")
 include("test_flex_beam.jl")
+# FEM flexible bodies (ModalBody3D from a reduced-model file of julia/BGSimFEM): the loader,
+# energy, gravity, modal frequency, statics through the interfaces.
+include("test_fem_body.jl")
 # Trusses: bars with member failure, pin nodes, Truss2D, moving loads and wheel-on-deck contact.
 include("test_truss.jl")
 include("test_loader.jl")
@@ -374,7 +377,8 @@ include("test_export_suction.jl")
 # The signal and control blocks (filters, routing, observers, StopSimulation, Assertion, ...)
 # in the C export, and the run monitors in bg_step and fmi2DoStep.
 include("test_export_signal_blocks.jl")
-# The flexible beams (FlexibleBeam3D, FlexibleBeam2D) in the C export.
+# The flexible beams (FlexibleBeam3D, FlexibleBeam2D) and the FEM body (ModalBody3D) in the C
+# export.
 include("test_export_flex.jl")
 # The f16-sim FMU of examples/f16 (the flight-simulator host's FMU): interface, method, trim.
 include("test_export_f16.jl")

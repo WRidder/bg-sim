@@ -14,7 +14,9 @@
   existing mesh replaces it. DAE needs ``pycollada``, which is a dependency, so all
   four formats are supported. Uploads are limited to :data:`MAX_UPLOAD_BYTES`
   (413 above), unknown extensions get 415, unreadable or empty meshes get 422; every
-  message says what to do next.
+  message says what to do next. A GLB with morph targets (the mode shapes of a FEM
+  flexible body, written by julia/BGSimFEM) is stored byte for byte: trimesh would drop
+  the targets on re-export. It is still read once to check it and count the triangles.
 
 Meshes are written with a temp file + ``os.replace`` so a reader never sees a half
 written GLB.
@@ -24,7 +26,9 @@ from __future__ import annotations
 
 import asyncio
 import io
+import json
 import os
+import struct
 import tempfile
 from contextlib import suppress
 from pathlib import Path
@@ -202,8 +206,41 @@ def _stored_stem(upload_name: str) -> tuple[str, str]:
     return safe, extension
 
 
+_GLB_MAGIC = b"glTF"
+_GLB_JSON_CHUNK = 0x4E4F534A
+
+
+def glb_morph_target_count(data: bytes) -> int:
+    """The number of morph targets of the first primitive that has any (0 if none or not a GLB).
+
+    Reads only the GLB header and its JSON chunk (glTF 2.0 binary container).
+    """
+    if len(data) < 20 or data[:4] != _GLB_MAGIC:
+        return 0
+    _, version, _ = struct.unpack_from("<III", data, 0)
+    length, chunk_type = struct.unpack_from("<II", data, 12)
+    if version != 2 or chunk_type != _GLB_JSON_CHUNK or 20 + length > len(data):
+        return 0
+    try:
+        document = json.loads(data[20 : 20 + length].decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return 0
+    meshes = document.get("meshes") if isinstance(document, dict) else None
+    for mesh in meshes if isinstance(meshes, list) else []:
+        primitives = mesh.get("primitives") if isinstance(mesh, dict) else None
+        for primitive in primitives if isinstance(primitives, list) else []:
+            targets = primitive.get("targets") if isinstance(primitive, dict) else None
+            if isinstance(targets, list) and targets:
+                return len(targets)
+    return 0
+
+
 def convert_to_glb(data: bytes, extension: str, label: str) -> tuple[bytes, int, int]:
-    """Convert mesh bytes to ``(glb, vertex_count, face_count)`` with trimesh."""
+    """Convert mesh bytes to ``(glb, vertex_count, face_count)`` with trimesh.
+
+    A GLB with morph targets comes back unchanged (trimesh would drop the targets); it is
+    still loaded to check it and to count its vertices and faces.
+    """
     file_type = MESH_FORMATS[extension]
     try:
         loaded = trimesh.load(io.BytesIO(data), file_type=file_type, force="scene")
@@ -224,12 +261,14 @@ def convert_to_glb(data: bytes, extension: str, label: str) -> tuple[bytes, int,
             f"{label!r} contains no triangle mesh; export the solid body (not only lines, "
             "points or a point cloud) and upload again",
         )
+    vertices = sum(len(geometry.vertices) for geometry in geometries)
+    faces = sum(len(geometry.faces) for geometry in geometries)
+    if extension == "glb" and glb_morph_target_count(data) > 0:
+        return bytes(data), vertices, faces
     try:
         glb = loaded.export(file_type="glb")
     except Exception as exc:
         raise ProjectError(422, f"could not convert {label!r} to GLB: {exc}") from exc
-    vertices = sum(len(geometry.vertices) for geometry in geometries)
-    faces = sum(len(geometry.faces) for geometry in geometries)
     return bytes(glb), vertices, faces
 
 

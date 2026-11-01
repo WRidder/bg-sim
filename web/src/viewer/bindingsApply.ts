@@ -3,7 +3,9 @@
  * (lerp; shortest-path slerp for the pose quaternion), apply `gain` and `offset`, and set the
  * property through the built scene. Only `gain` and `offset` exist; any other math belongs in the model.
  * A `deformation` binding hands its modal coordinates (times `gain`) to the scene, which evaluates the
- * mode shapes per vertex (`beamModes.ts`); all families of one visual go in one call.
+ * mode shapes per vertex (`beamModes.ts`); all families of one visual go in one call. A `mode-shapes`
+ * binding hands its modal coordinates (times `gain`) to the scene, which sets them as the morph target
+ * influences of the visual's mesh (times the exaggeration).
  */
 
 import type { Binding, DeformationBinding, SegmentBinding, SegmentBrokenStyle, ShapeAxis } from "../contracts/model";
@@ -26,6 +28,8 @@ export interface ApplyTarget {
   configureBeams?(configs: ReadonlyMap<string, BeamConfig>): void;
   /** Modal coordinates of a configured beam visual, all its families at once (gain applied). */
   setDeformation?(ref: string, sets: readonly ModalSet[]): boolean;
+  /** Modal coordinates of a mesh visual with morph targets, in morph-target order (gain applied, not exaggerated). */
+  setModeShapes?(ref: string, eta: readonly number[]): boolean;
   /** A bar between two world points (segment binding); `broken` draws a failed bar. */
   setSegment?(ref: string, a: Vec3, b: Vec3, axis: ShapeAxis | undefined, broken: SegmentBrokenStyle | null): boolean;
   /** Back to the rest pose. */
@@ -79,6 +83,8 @@ export class BindingApplier {
   private readonly scales = new Map<string, [number, number, number]>();
   /** Per deformation target: the modal sets of its bindings, applied together after the loop. */
   private readonly deformations = new Map<string, ModalSet[]>();
+  /** Per mode-shapes target: its modal coordinates (gain applied), applied after the loop. */
+  private readonly modeShapes = new Map<string, number[]>();
   /** Last value each position binding set, by target, for tests and the playback bar's readout. */
   readonly applied = new Map<string, number>();
 
@@ -105,6 +111,7 @@ export class BindingApplier {
     let n = 0;
     this.scales.clear();
     this.deformations.clear();
+    this.modeShapes.clear();
     for (const { binding, cols } of this.compiled) {
       const first = cols[0];
       if (first === undefined) continue;
@@ -167,6 +174,15 @@ export class BindingApplier {
           n++;
           break;
         }
+        case "mode-shapes": {
+          const eta = scaled(cols.map((c) => buffer.valueAt(c, t)), binding.gain ?? 1);
+          if (eta === null) break;
+          // one binding per visual (validation, E301); a second one replaces the first
+          this.modeShapes.set(binding.target, eta);
+          this.applied.set(`${binding.target}#mode-shapes`, eta[0] ?? 0);
+          n++;
+          break;
+        }
         case "segment": {
           const seg = segmentEnds(binding, cols.map((c) => buffer.valueAt(c, t)));
           if (seg === null) break;
@@ -179,6 +195,7 @@ export class BindingApplier {
     }
     for (const [target, s] of this.scales) this.scene.setVisualScale(target, s[0], s[1], s[2]);
     for (const [target, sets] of this.deformations) this.scene.setDeformation?.(target, sets);
+    for (const [target, eta] of this.modeShapes) this.scene.setModeShapes?.(target, eta);
     return n;
   }
 }
@@ -214,12 +231,18 @@ export function segmentEnds(binding: SegmentBinding, values: readonly (number | 
   return { a, b, broken };
 }
 
-/** The modal coordinates of a deformation binding from its sampled signals (gain applied), or null when a sample is missing. */
-function modalSet(binding: DeformationBinding, values: readonly (number | null)[]): ModalSet | null {
-  const eta: number[] = [];
+/** The sampled values times `gain`, or null when a sample is missing. */
+function scaled(values: readonly (number | null)[], gain: number): number[] | null {
+  const out: number[] = [];
   for (const v of values) {
     if (v === null) return null;
-    eta.push(v * (binding.gain ?? 1));
+    out.push(v * gain);
   }
-  return { family: binding.family, basis: binding.basis, eta };
+  return out;
+}
+
+/** The modal coordinates of a deformation binding from its sampled signals (gain applied), or null when a sample is missing. */
+function modalSet(binding: DeformationBinding, values: readonly (number | null)[]): ModalSet | null {
+  const eta = scaled(values, binding.gain ?? 1);
+  return eta === null ? null : { family: binding.family, basis: binding.basis, eta };
 }

@@ -1855,6 +1855,25 @@ class StrainColor(BaseModel):
     range: list[float] = Field(..., max_length=2, min_length=2)
 
 
+class ModeShapeBinding(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    target: constr(pattern=r'^visual:[A-Za-z0-9_.-]+$')
+    property: Literal['mode-shapes']
+    signal: list[BindingSignal] = Field(
+        ...,
+        description='The modal coordinates eta_1..eta_n in m, one signal per mode in morph-target order (1 to 64 modes). A ModalBody3D block records them as <Block>/eta[i].',
+        max_length=64,
+        min_length=1,
+    )
+    gain: float | None = Field(
+        None,
+        description="Multiplies every modal coordinate (default 1), e.g. 0.001 for coordinates in mm. The viewer's exaggeration factor is a display setting and is not stored in the binding.",
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class CatalogBlock(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -1965,9 +1984,13 @@ class ClipboardDependencies(BaseModel):
         ...,
         description='Docs images (assets/<hash>.<ext> of the source model) that copied sticky notes show.',
     )
-    dataFiles: list[constr(pattern=r'^[A-Za-z0-9_.-]+\.[Cc][Ss][Vv]$')] = Field(
+    dataFiles: list[
+        constr(
+            pattern=r'^[A-Za-z0-9_.-]+\.(?:[Cc][Ss][Vv]|[Mm][Oo][Dd][Aa][Ll]\.[Jj][Ss][Oo][Nn])$'
+        )
+    ] = Field(
         ...,
-        description="CSV files of the source project's data/ folder that copied CsvSource nodes read.",
+        description="Files of the source project's data/ folder that the copied nodes read: the CSV files of CsvSource nodes and the reduced-model files (*.modal.json) of ModalBody3D nodes.",
     )
     field_comment: str | None = Field(None, alias='$comment')
 
@@ -2896,6 +2919,7 @@ class Binding(
         | VisualColorBinding
         | VisibleBinding
         | DeformationBinding
+        | ModeShapeBinding
         | SegmentBinding
     ]
 ):
@@ -2906,6 +2930,7 @@ class Binding(
         | VisualColorBinding
         | VisibleBinding
         | DeformationBinding
+        | ModeShapeBinding
         | SegmentBinding
     ) = Field(
         ...,

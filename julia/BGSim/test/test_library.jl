@@ -433,6 +433,8 @@ const FLEX_REFS = [
     "stdlib:planar/ModalBeam2D",
     "stdlib:spatial/FlexibleBeam3D",
     "stdlib:spatial/ModalBeam3D",
+    "stdlib:spatial/ModalBody3D",
+    "stdlib:spatial/ModalBodyCore3D",
 ]
 
 # Trusses: pin nodes, bars with member failure, the one-block truss and its deck loads (the

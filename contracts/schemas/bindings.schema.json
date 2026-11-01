@@ -24,6 +24,7 @@
         { "$ref": "#/$defs/visualColorBinding" },
         { "$ref": "#/$defs/visibleBinding" },
         { "$ref": "#/$defs/deformationBinding" },
+        { "$ref": "#/$defs/modeShapeBinding" },
         { "$ref": "#/$defs/segmentBinding" }
       ]
     },
@@ -251,6 +252,32 @@
     "colormap": {
       "title": "Colormap",
       "enum": ["heat", "viridis", "coolwarm"]
+    },
+    "modeShapeBinding": {
+      "title": "ModeShapeBinding",
+      "description": "Elastic deformation of a mesh visual (a GLB) by modal coordinates: a flexible body reduced from a finite element mesh (ModalBody3D). The GLB's single mesh carries one glTF morph target per elastic mode, in mode order, and the POSITION delta of target k is the shape of mode k per unit modal coordinate (m per unit eta_k) in the visual's frame. The viewer draws vertex = rest + sum_k (gain * eta_k * exaggeration) * delta_k, where the exaggeration is the viewer's display factor (not stored). Only a mesh visual takes it, at most one per visual, and its mesh needs at least as many morph targets as the binding has signals. The rigid motion of the body frame is the pose binding of the link the visual belongs to.",
+      "type": "object",
+      "required": ["target", "property", "signal"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "pattern": "^visual:[A-Za-z0-9_.-]+$"
+        },
+        "property": { "const": "mode-shapes" },
+        "signal": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/signalRef" },
+          "description": "The modal coordinates eta_1..eta_n in m, one signal per mode in morph-target order (1 to 64 modes). A ModalBody3D block records them as <Block>/eta[i]."
+        },
+        "gain": {
+          "type": "number",
+          "description": "Multiplies every modal coordinate (default 1), e.g. 0.001 for coordinates in mm. The viewer's exaggeration factor is a display setting and is not stored in the binding."
+        },
+        "$comment": { "type": "string" }
+      },
+      "additionalProperties": false
     },
     "signalRef": {
       "title": "BindingSignal",

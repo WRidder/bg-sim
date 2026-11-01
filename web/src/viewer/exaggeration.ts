@@ -1,5 +1,5 @@
 /**
- * The deformation exaggeration of the 3D View: a display factor on every beam deformation (×1 is the
+ * The deformation exaggeration of the 3D View: a display factor on every deformation, beams and mode shapes (×1 is the
  * true scale). It is view state, not model data, so it never changes the model document (nor its hash
  * or the compile cache): like the breakpoints it is kept per model in `localStorage`, and the docked and
  * the detached view share it through this store. Every storage access is guarded; without storage the

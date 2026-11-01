@@ -91,7 +91,7 @@ export type ModelNodeImageMime = "image/png" | "image/svg+xml" | "image/webp" | 
 export type ModelNodeImageFit = "contain" | "stretch";
 
 /**
- * What the diagram editor puts on the system clipboard (text/plain JSON) when elements are copied: the copied nodes, the connections between them, sticky notes and shapes of one diagram level, plus what a paste into another model or project needs (library block sources, global parameters, docs images, CSV data files). A paste refuses an unknown format or version.
+ * What the diagram editor puts on the system clipboard (text/plain JSON) when elements are copied: the copied nodes, the connections between them, sticky notes and shapes of one diagram level, plus what a paste into another model or project needs (library block sources, global parameters, docs images, CSV and reduced-model data files). A paste refuses an unknown format or version.
  */
 export interface ClipboardEnvelope {
   format: "bgsim-clipboard";
@@ -373,7 +373,7 @@ export interface ClipboardDependencies {
    */
   assets: string[];
   /**
-   * CSV files of the source project's data/ folder that copied CsvSource nodes read.
+   * Files of the source project's data/ folder that the copied nodes read: the CSV files of CsvSource nodes and the reduced-model files (*.modal.json) of ModalBody3D nodes.
    */
   dataFiles: string[];
   $comment?: string;

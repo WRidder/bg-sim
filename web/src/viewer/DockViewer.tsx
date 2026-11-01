@@ -37,7 +37,7 @@ export default function DockViewer({ active, createEngine, hostWindow }: DockVie
   const { playback, snapshot, streamError, streamNote } = useViewerPlayback(built, active, hostWindow ?? null);
   const onKeyDown = useMemo(() => playbackKeyHandler(playback), [playback]);
   const [exaggeration, setExaggeration] = useExaggeration();
-  const deforms = bindings.some((b) => b.property === "deformation");
+  const deforms = bindings.some((b) => b.property === "deformation" || b.property === "mode-shapes");
   useEffect(() => {
     built?.setExaggeration(exaggeration);
   }, [built, exaggeration]);

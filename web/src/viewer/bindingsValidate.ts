@@ -11,8 +11,9 @@
  *    with no concrete domain (`flow*s`; W205 treats the island as dimensionless). An unknown unit is not
  *    evidence of a mismatch: it is unchecked for every target (angle, length, quaternion) and raises no E303.
  *    A physical unit that does not fit (`N`, `1` on a length, `m` on an angle) still raises E303.
- *  - E304 wrong signal count (pose needs exactly 7, deformation 1 to 3 modal coordinates or exactly 1
- *    with the `linear` basis, segment 4 planar or 6 spatial end-point coordinates, every other property 1).
+ *  - E304 wrong signal count (pose needs exactly 7, deformation 1 to 3 modal coordinates, or exactly 1 with
+ *    the `linear` basis, mode-shapes 1 to 64 and no more than its mesh has morph targets, segment 4 planar
+ *    or 6 spatial end-point coordinates, every other property 1).
  *
  * Segment bindings (a bar between two moving points) raise E301 when the visual cannot stretch along the
  * segment axis (a sphere or mesh, a cylinder along anything but its own axis); their coordinates are
@@ -24,15 +25,22 @@
  * twist of a lumped torsion spring) is given to a bending family. Bending coordinates are lengths
  * (m), torsion coordinates angles (rad) for E303.
  *
+ * Mode-shapes bindings (flexible bodies from a finite element reduction) raise E301 when the visual is no
+ * mesh, when its mesh has no morph targets, or when a visual has two of them; their coordinates are lengths
+ * (m) for E303.
+ *
  * Diagnostics have the shape of plan 3.4; `path` is the binding target.
  */
 
-import type { BeamMapping, Binding, DeformationBinding } from "../contracts/model";
+import type { BeamMapping, Binding, DeformationBinding, ModeShapeBinding } from "../contracts/model";
 import type { Diagnostic } from "../contracts/diagnostic";
 import { beamFrame } from "../scene/beamMesh";
 import { segmentAxis } from "../scene/segment";
 import type { SdfGeometry } from "../scene/sdf";
 import { maxModes } from "./beamModes";
+
+/** Modal coordinates a mode-shapes binding may give (the contract's maximum). */
+export const MAX_MESH_MODES = 64;
 
 /** What validation needs from the built scene. */
 export interface SceneLookup {
@@ -40,6 +48,11 @@ export interface SceneLookup {
   joint(ref: string): { readonly type: string } | null;
   /** The geometry of a visual (deformation bindings need a box or cylinder); absent: not checked. */
   visualGeometry?(ref: string): SdfGeometry | null;
+  /**
+   * Morph targets (mode shapes) of a loaded mesh visual: the fewest over its meshes, 0 when it has none;
+   * null when the ref is no loaded mesh visual. Absent: not checked.
+   */
+  morphTargetCount?(ref: string): number | null;
 }
 
 /** Signal id -> unit (null: the model gives none). */
@@ -139,13 +152,18 @@ export function allSignalsOf(binding: Binding): string[] {
 /** How many signals a property takes: [min, max] (a deformation: by its basis, `linear` takes one; a
  * segment takes 4 or 6, see `signalCountOk`). */
 export function signalCount(property: string, basis?: string): readonly [number, number] {
-  return property === "pose"
-    ? [7, 7]
-    : property === "deformation"
-      ? [1, maxModes(basis === "linear" ? "linear" : "clamped-free")]
-      : property === "segment"
-        ? [4, 6]
-        : [1, 1];
+  switch (property) {
+    case "pose":
+      return [7, 7];
+    case "deformation":
+      return [1, maxModes(basis === "linear" ? "linear" : "clamped-free")];
+    case "mode-shapes":
+      return [1, MAX_MESH_MODES];
+    case "segment":
+      return [4, 6];
+    default:
+      return [1, 1];
+  }
 }
 
 /** True when `n` signals fit the property (a segment: 4 planar or 6 spatial coordinates). */
@@ -153,6 +171,11 @@ export function signalCountOk(property: string, n: number, basis?: string): bool
   if (property === "segment") return n === 4 || n === 6;
   const [min, max] = signalCount(property, basis);
   return n >= min && n <= max;
+}
+
+/** Whether a property takes a list of signals (a JSON array), even of one. */
+export function takesSignalList(property: string): boolean {
+  return property === "pose" || property === "deformation" || property === "mode-shapes" || property === "segment";
 }
 
 /** The kind prefixes a property can target. */
@@ -204,6 +227,21 @@ function deformationProblems(binding: DeformationBinding, scene: SceneLookup, ea
   return out;
 }
 
+/** E301 problems of a mode-shapes binding against its visual and the mode-shapes bindings before it. */
+function modeShapeProblems(binding: ModeShapeBinding, scene: SceneLookup, earlier: readonly Binding[]): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  const geometry = scene.visualGeometry?.(binding.target);
+  if (geometry !== undefined && geometry !== null && geometry.kind !== "mesh") {
+    out.push(diag("E301", binding, `visual "${binding.target}" is a ${geometry.kind}, not a mesh; mode shapes need a mesh with morph targets`, "bind the GLB mesh visual written by the FEM reduction (one morph target per mode), or use a deformation binding for a box or cylinder beam"));
+  } else if (scene.morphTargetCount?.(binding.target) === 0) {
+    out.push(diag("E301", binding, `the mesh of visual "${binding.target}" has no morph targets (mode shapes)`, "use the GLB written by the FEM reduction tool, which stores one morph target per elastic mode"));
+  }
+  if (earlier.some((other) => other.property === "mode-shapes" && other.target === binding.target)) {
+    out.push(diag("E301", binding, `visual "${binding.target}" has two mode-shapes bindings`, "list all modal coordinates in one binding, in mode order, and remove the other"));
+  }
+  return out;
+}
+
 /**
  * Validate all bindings. `signals` null skips the signal checks (E302, E303): no check or run has told
  * the viewer which signals exist yet, and a missing list must not turn every binding red.
@@ -246,6 +284,10 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
     const problems = deformationProblems(binding, scene, earlier);
     if (problems.length > 0) targetOk = false;
     out.push(...problems);
+  } else if (binding.property === "mode-shapes") {
+    const problems = modeShapeProblems(binding, scene, earlier);
+    if (problems.length > 0) targetOk = false;
+    out.push(...problems);
   } else if (binding.property === "segment") {
     const geometry = scene.visualGeometry?.(target);
     if (geometry !== undefined && geometry !== null) {
@@ -257,11 +299,25 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
     }
   }
 
-  const isList = property === "pose" || property === "deformation" || property === "segment";
+  const isList = takesSignalList(property);
   const basis = binding.property === "deformation" ? binding.basis : undefined;
   const [min, max] = signalCount(property, basis);
-  const countOk = signalCountOk(property, names.length, basis) && Array.isArray(binding.signal) === isList;
-  if (!countOk) {
+  let countOk = signalCountOk(property, names.length, basis) && Array.isArray(binding.signal) === isList;
+  if (countOk && targetOk && property === "mode-shapes") {
+    const targets = scene.morphTargetCount?.(target);
+    if (typeof targets === "number" && targets > 0 && names.length > targets) {
+      countOk = false;
+      out.push(
+        diag(
+          "E304",
+          binding,
+          `the mesh of visual "${target}" has ${String(targets)} morph target${targets === 1 ? "" : "s"} (mode shapes), but the binding lists ${String(names.length)} modal coordinates`,
+          `bind at most ${String(targets)} signals (eta[1] to eta[${String(targets)}]), or regenerate the GLB with more modes`,
+        ),
+      );
+    }
+  }
+  if (!countOk && !out.some((d) => d.code === "E304")) {
     const want = property === "segment" ? "4 or 6" : min === max ? String(min) : `${String(min)} to ${String(max)}`;
     out.push(
       diag(
@@ -274,9 +330,11 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
             ? binding.property === "deformation" && binding.basis === "linear"
               ? "the linear basis takes one signal: the twist of end B relative to end A"
               : "list the modal coordinates of the family, one signal per mode (1 to 3 modes)"
-            : property === "segment"
-              ? "list the end points A then B: uA, vA, uB, vB in the plane of the binding, or xA, yA, zA, xB, yB, zB"
-              : "bind exactly one signal",
+            : property === "mode-shapes"
+              ? `list the modal coordinates eta[1..n] in mode order, one signal per morph target (1 to ${String(MAX_MESH_MODES)})`
+              : property === "segment"
+                ? "list the end points A then B: uA, vA, uB, vB in the plane of the binding, or xA, yA, zA, xB, yB, zB"
+                : "bind exactly one signal",
       ),
     );
   }
@@ -300,7 +358,7 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
   } else if (binding.property === "deformation") {
     const torsion = binding.family === "torsion";
     need = () => (torsion ? "angle" : "length");
-  } else if (property === "segment") {
+  } else if (property === "mode-shapes" || property === "segment") {
     need = () => "length";
   }
   names.forEach((name, i) => {
@@ -318,9 +376,11 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
             ? wanted === "length"
               ? "m (bending modal coordinate)"
               : "rad (torsion modal coordinate)"
-            : wanted === "length"
-              ? "m"
-              : "dimensionless";
+            : property === "mode-shapes"
+              ? "m (modal coordinate)"
+              : wanted === "length"
+                ? "m"
+                : "dimensionless";
       out.push(
         diag("E303", binding, `signal "${name}" ${problem}; "${property}" on ${target} expects ${expect}`, "bind a signal with the right unit, or convert it in the model with an output of the expected unit"),
       );

@@ -29,6 +29,9 @@ if !isdefined(@__MODULE__, :_fb_free3)
         include_string(@__MODULE__, src[1:(first(cut) - 1)], "test_flex_beam.jl (rigs)")
     end
 end
+if !isdefined(@__MODULE__, :_fem_free)
+    include(joinpath(@__DIR__, "fem_body_rigs.jl"))   # the rigs of test_fem_body.jl
+end
 
 const _EXF = BGSim.Export
 
@@ -76,8 +79,8 @@ end
 """Export `doc` with RK4 at `dt`, build and run it for `t_end`, and compare every C state and
 local that the simulation also recorded at every `stride`-th step (the C runner prints only
 those), relative to the signal's range. Returns name => error (or nothing without gcc)."""
-function _exf_check(doc; dt, t_end, stride)
-    flat = Compile.flatten(IR.parse_model(doc))
+function _exf_check(doc; dt, t_end, stride, project_dir = nothing)
+    flat = Compile.flatten(IR.parse_model(doc); project_dir = project_dir)
     @test isempty([d for d in flat.diagnostics if d.severity == "error"])
     dir = mktempdir()
     r = _EXF.export_model(flat, dir;
@@ -97,7 +100,7 @@ function _exf_check(doc; dt, t_end, stride)
     @test size(rows, 1) == n ÷ stride + 1
     @test rows[:, 1] ≈ (0:stride:n) .* dt
     @test all(isfinite, rows)
-    columns, result, _ = bg_run(doc)
+    columns, result, _ = bg_run(doc; project_dir = project_dir)
     @test result.status == "done"
     t = rows[:, 1]
     errs = Dict{String,Float64}()
@@ -170,5 +173,14 @@ end
         errs = _exf_check(doc; dt = 2.5e-5, t_end = 0.2, stride = 80)
         _exf_assert(errs, ("Beam",), 1.0e-4)
         errs === nothing || @test any(k -> startswith(k, "Beam/eta_y"), keys(errs))
+    end
+
+    @testset "ModalBody3D: FEM body from its reduced-model file, free, spinning (RK4)" begin
+        # the soft test L of test_fem_body.jl: 13 modes up to 1.4 kHz clamped (2.5 kHz free),
+        # so dt * omega_max is about 0.06; the reduced matrices are literals in model.c
+        errs = _exf_check(_fem_free(t_end = 0.02); dt = 4.0e-6, t_end = 0.02, stride = 100,
+            project_dir = FEM_FX)
+        _exf_assert(errs, ("Body",), 1.0e-4)
+        errs === nothing || @test any(k -> startswith(k, "Body/eta"), keys(errs))
     end
 end

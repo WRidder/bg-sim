@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "fem-bracket",
+  "models": [
+    "fem-bracket",
+    "bracket-ringdown"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

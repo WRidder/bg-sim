@@ -1,0 +1,22 @@
+{
+  "$comment": "FEM part spec of the fem-bracket example (BGSimFEM): an aluminium L-bracket, a base plate 120 x 40 x 5 mm bolted to the turntable hub (interface A, the bottom face around the bolt at x = 20 mm) and an upright 40 x 4 x 150 mm (thin along y, the turntable's tangential direction) carrying the payload clamp on its top face (interface B). Run: julia --project=julia/BGSimFEM julia/BGSimFEM/bin/bgsim-fem.jl examples/fem-bracket/design/bracket.fem.json",
+  "name": "bracket",
+  "geometry": {"union": [
+    {"box": {"corner": [0, -0.02, 0], "size": [0.12, 0.04, 0.005]}},
+    {"box": {"corner": [0.08, -0.002, 0.005], "size": [0.04, 0.004, 0.15]}}
+  ]},
+  "material": {"E": 70.0e9, "nu": 0.33, "rho": 2700.0},
+  "mesh": {"size": 0.004, "order": 2},
+  "interfaces": [
+    {"name": "A", "position": [0.02, 0, 0], "select": {"box": {"min": [-1, -1, -1e-6], "max": [0.04, 1, 1e-6]}}},
+    {"name": "B", "position": [0.1, 0, 0.155], "select": {"box": {"min": [-1, -1, 0.154999], "max": [1, 1, 0.155001]}}}
+  ],
+  "modes": {"fixed_interface": 4},
+  "stiffening": true,
+  "validate": 8,
+  "validate_attached": [
+    {"interface": "B", "mass": 0.5, "inertia": [1.3333e-4, 1.3333e-4, 1.3333e-4], "com": [0, 0, 0.02]}
+  ],
+  "visual": {"size": 0.006, "color": [0.72, 0.75, 0.8, 1.0]},
+  "output": {"model": "../data/bracket.modal.json", "glb": "../meshes/bracket.glb", "glb_ref": "bracket.glb"}
+}

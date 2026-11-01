@@ -2,7 +2,7 @@
  * The document side of a paste: fresh ids (unique across the whole document, nested
  * subsystems included), instance names unique in the target diagram, the placement of
  * the pasted group, and the rewrites the dependency resolution decided (renamed or
- * inlined library blocks, renamed globals, renamed CSV files). Pure; the document
+ * inlined library blocks, renamed globals, renamed data files). Pure; the document
  * store commits the result as one undo step.
  */
 
@@ -26,7 +26,10 @@ export interface PasteRewrites {
   inline?: Readonly<Record<string, string>>;
   /** Global renames, applied to every pasted param, start and string constant. */
   globals?: Readonly<Record<string, string>>;
-  /** CsvSource file constants, `data/a.csv` -> `data/a2.csv`. */
+  /**
+   * Data file constants (`file` of a CsvSource or ModalBody3D), `data/a.csv` -> `data/a2.csv`,
+   * `data/b.modal.json` -> `data/b2.modal.json`.
+   */
   dataFiles?: Readonly<Record<string, string>>;
   /** Project blocks instantiated by pasted inline sources under a new name, old -> new. */
   blockRenames?: Readonly<Record<string, string>>;

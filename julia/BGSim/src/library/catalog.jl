@@ -1283,6 +1283,14 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Atomic core of FlexibleBeam3D: the floating-frame modal bond graph (frame momentum with Euler-Poincare gyroscopics, modal I/C/R, the end-port slope transformers and the foreshortening terms that give geometric stiffening) as explicit energy-consistent equations.",
         icon = "sp-modal-beam-3d",
     ),
+    "stdlib:spatial/ModalBody3D" => (
+        description = "FEM flexible body of an arbitrary part, reduced offline by Craig-Bampton (julia/BGSimFEM): reads the reduced-model file named in its settings (mass properties, modal mass and stiffness, inertia invariants, interface mode values, geometric stiffening); floating reference frame at interface A, up to four 6-DOF interfaces A-D, modal damping, own mass and inertia; it replaces a RigidBody3D. Outputs the poses of R and the interfaces, the modal coordinates eta (for a mode-shapes binding of the part's GLB) and the frequencies.",
+        icon = "sp-modal-body-3d",
+    ),
+    "stdlib:spatial/ModalBodyCore3D" => (
+        description = "Atomic core of ModalBody3D: the floating-frame modal bond graph with general inertia invariants (frame momentum with Euler-Poincare gyroscopics, modal I/C/R, the interface MTFs with Gibbs-vector rotations, the second-order field that gives geometric stiffening) as explicit energy-consistent equations.",
+        icon = "sp-modal-body-3d",
+    ),
     "stdlib:spatial/Spherical3D" => (
         description = "Spatial spherical (ball) joint (n = 3): three Rotation ports carrying the relative body-frame angular velocity, the relative orientation stored as an integrated unit quaternion (no gimbal lock), and a compliant pivot translation.",
         icon = "sp-spherical-3d",

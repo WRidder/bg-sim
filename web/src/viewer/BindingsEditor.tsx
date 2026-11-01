@@ -1,6 +1,9 @@
 import { Fragment, useMemo, useState, type ReactElement } from "react";
 
-import type { BeamMapping, Binding, Colormap, DeformationBasis, DeformationBinding, DeformationFamily, SegmentBinding, SegmentBrokenStyle, SegmentPlane, ShapeAxis } from "../contracts/model";
+import type {
+  BeamMapping, Binding, Colormap, DeformationBasis, DeformationBinding, DeformationFamily, ModeShapeBinding, SegmentBinding,
+  SegmentBrokenStyle, SegmentPlane, ShapeAxis,
+} from "../contracts/model";
 import { defaultBeamAxis, defaultBeamY, isBeamCapable } from "../scene/beamMesh";
 import type { BuiltScene } from "../scene/build";
 import type { TreeEntry } from "../scene/resolve";
@@ -8,7 +11,8 @@ import { segmentAxis } from "../scene/segment";
 import { useDocumentStore } from "../state/documentStore";
 import { maxModes } from "./beamModes";
 import { COLORMAPS, colormapGradient } from "./bindingsColormaps";
-import { allowedKinds, signalsOf, validateBindingRows, type SignalUnits } from "./bindingsValidate";
+import { allowedKinds, MAX_MESH_MODES, signalsOf, validateBindingRows, type SignalUnits } from "./bindingsValidate";
+import { modalBlocks, modalSignals } from "./modalBlocks";
 
 export interface BindingsEditorProps {
   readonly built: BuiltScene | null;
@@ -19,7 +23,7 @@ export interface BindingsEditorProps {
   readonly onHover: (target: string | null) => void;
 }
 
-const PROPERTIES = ["position", "pose", "scale.x", "scale.y", "scale.z", "color", "visible", "deformation", "segment"] as const;
+const PROPERTIES = ["position", "pose", "scale.x", "scale.y", "scale.z", "color", "visible", "deformation", "mode-shapes", "segment"] as const;
 type Property = (typeof PROPERTIES)[number];
 const POSE_PARTS = ["q_w", "q_x", "q_y", "q_z", "x", "y", "z"] as const;
 const DEFAULT_RANGE: [number, number] = [0, 1];
@@ -57,7 +61,7 @@ interface Choice {
   readonly label: string;
 }
 
-/** Entities of the scene tree a property can take as target (deformation: box and cylinder visuals only). */
+/** Entities of the scene tree a property can take as target (deformation: box and cylinder visuals only; mode-shapes: mesh visuals). */
 function targetsFor(tree: readonly TreeEntry[], property: Property, built: BuiltScene | null): Choice[] {
   const kinds = allowedKinds(property);
   const out: Choice[] = [];
@@ -74,10 +78,17 @@ function targetsFor(tree: readonly TreeEntry[], property: Property, built: Built
 }
 
 function fitsProperty(ref: string, property: Property, built: BuiltScene | null): boolean {
-  if ((property !== "deformation" && property !== "segment") || built === null) return true;
-  const g = built.visualGeometry(ref);
-  if (g === null) return false;
-  return property === "segment" ? typeof segmentAxis(g) !== "string" : isBeamCapable(g);
+  if (built === null) return true;
+  if (property === "deformation") {
+    const g = built.visualGeometry(ref);
+    return g !== null && isBeamCapable(g);
+  }
+  if (property === "segment") {
+    const g = built.visualGeometry(ref);
+    return g !== null && typeof segmentAxis(g) !== "string";
+  }
+  if (property === "mode-shapes") return built.visualGeometry(ref)?.kind === "mesh";
+  return true;
 }
 
 /** A number that is committed on blur or Enter, so typing is one undo step. */
@@ -177,10 +188,36 @@ function Choose<T extends string>({ value, options, label, testId, onChange }: {
   );
 }
 
-/** The modal coordinates of a deformation binding: one signal per mode, with buttons to add and remove a mode. */
-function ModeSignals({ names, signals, label, testId, max, onChange }: { names: readonly string[]; signals: SignalUnits | null; label: string; testId: string; max: number; onChange: (next: string[]) => void }): ReactElement {
+/**
+ * Fills the modal coordinates of a mode-shapes binding from a block that records `<Block>/eta[1..n]`: all
+ * of them, but no more than `limit` (the mesh's morph targets when known).
+ */
+function ModalFill({ signals, limit, label, testId, onFill }: { signals: SignalUnits | null; limit: number; label: string; testId: string; onFill: (next: string[]) => void }): ReactElement | null {
+  const blocks = useMemo(() => modalBlocks(signals), [signals]);
+  if (blocks.length === 0) return null;
+  return (
+    <select
+      aria-label={`Fill the modal coordinates of ${label} from a block`}
+      data-testid={`${testId}-fill`}
+      value=""
+      onChange={(e) => {
+        const b = blocks.find((x) => x.block === e.target.value);
+        if (b !== undefined) onFill(modalSignals(b.block, Math.min(b.count, limit)));
+      }}
+    >
+      <option value="">Fill eta[1..n] from…</option>
+      {blocks.map((b) => (
+        <option key={b.block} value={b.block}>{`${b.block} (eta[1..${String(Math.min(b.count, limit))}])`}</option>
+      ))}
+    </select>
+  );
+}
+
+/** The modal coordinates of a deformation or mode-shapes binding: one signal per mode, with buttons to add and remove a mode. */
+function ModeSignals({ names, signals, label, testId, max, fillLimit, onChange }: { names: readonly string[]; signals: SignalUnits | null; label: string; testId: string; max: number; fillLimit?: number; onChange: (next: string[]) => void }): ReactElement {
   return (
     <div className="bindings__modes">
+      {fillLimit !== undefined ? <ModalFill signals={signals} limit={fillLimit} label={label} testId={testId} onFill={onChange} /> : null}
       {names.map((name, k) => (
         <SignalSelect
           key={k}
@@ -395,9 +432,28 @@ function makeBinding(property: Property, target: string, signal: readonly string
       return signal.length <= maxModes(deform.basis)
         ? { target, property, family: deform.family, basis: deform.basis, beam: { axis: deform.axis }, signal: signal as DeformationBinding["signal"] }
         : null;
+    case "mode-shapes":
+      return signal.length <= MAX_MESH_MODES ? { target, property, signal: signal as ModeShapeBinding["signal"] } : null;
     case "segment":
       return signal.length === 4 || signal.length === 6 ? { target, property, signal: signal as SegmentBinding["signal"] } : null;
   }
+}
+
+/** The number of mode shapes (morph targets) the mesh of a mode-shapes binding has, when it is loaded. */
+function MeshModesNote({ built, target, testId }: { built: BuiltScene | null; target: string; testId: string }): ReactElement | null {
+  const n = built?.morphTargetCount(target) ?? null;
+  if (n === null) return null;
+  return (
+    <span className="bindings__none" data-testid={testId} title="Morph targets of the GLB: one per elastic mode, in mode order">
+      {`mesh: ${String(n)} mode shape${n === 1 ? "" : "s"}`}
+    </span>
+  );
+}
+
+/** How many modal coordinates a mode-shapes binding of a visual can use: its mesh's morph targets when known. */
+function meshModeLimit(built: BuiltScene | null, target: string): number {
+  const n = built?.morphTargetCount(target) ?? null;
+  return n !== null && n > 0 ? Math.min(n, MAX_MESH_MODES) : MAX_MESH_MODES;
 }
 
 function emptySignals(property: Property, spatial = false): string[] {
@@ -411,8 +467,9 @@ function partLabels(property: string, n: number): readonly string[] {
 
 /**
  * The binding table of the 3D View (plan 7.6): target from the scene tree, property, signal from the model's
- * signals, gain and offset, colormap and range for colour, and family, basis, beam mapping and modes for a
- * beam deformation. Every edit is one undo step of the model document. Hovering or focusing a row outlines
+ * signals, gain and offset, colormap and range for colour, family, basis, beam mapping and modes for a
+ * beam deformation, and the modal coordinates of a mesh's mode shapes (filled from a block's eta[1..n] in
+ * one step). Every edit is one undo step of the model document. Hovering or focusing a row outlines
  * its target in 3D; a row with a problem shows its diagnostic (E301-E304) with the hint.
  */
 export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEditorProps): ReactElement {
@@ -503,6 +560,16 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
                       max={maxModes(b.basis)}
                       onChange={(next) => { replace(i, { ...b, signal: next as DeformationBinding["signal"] }); }}
                     />
+                  ) : b.property === "mode-shapes" ? (
+                    <ModeSignals
+                      names={names}
+                      signals={signals}
+                      label={`binding ${n}`}
+                      testId={`binding-signal-${String(i)}`}
+                      max={meshModeLimit(built, b.target)}
+                      fillLimit={meshModeLimit(built, b.target)}
+                      onChange={(next) => { replace(i, { ...b, signal: next as ModeShapeBinding["signal"] }); }}
+                    />
                   ) : (
                     <div className={b.property === "pose" || b.property === "segment" ? "bindings__pose" : undefined}>
                       {partLabels(b.property, names.length).map((part, k) => (
@@ -530,7 +597,7 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
                   <NumberField value={b.gain ?? 1} label={`Gain of binding ${n}`} testId={`binding-gain-${String(i)}`} onCommit={(v) => { replace(i, { ...b, gain: v }); }} />
                 </td>
                 <td>
-                  {b.property === "deformation" ? (
+                  {b.property === "deformation" || b.property === "mode-shapes" ? (
                     <span className="bindings__none" title="A deformation has no offset">—</span>
                   ) : (
                     <NumberField value={b.offset ?? 0} label={`Offset of binding ${n}`} testId={`binding-offset-${String(i)}`} onCommit={(v) => { replace(i, { ...b, offset: v }); }} />
@@ -554,6 +621,8 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
                     </div>
                   ) : b.property === "deformation" ? (
                     <DeformationSettings binding={b} index={i} onChange={(next) => { replace(i, next); }} />
+                  ) : b.property === "mode-shapes" ? (
+                    <MeshModesNote built={built} target={b.target} testId={`binding-mesh-modes-${String(i)}`} />
                   ) : b.property === "segment" ? (
                     <SegmentSettings binding={b} index={i} signals={signals} onChange={(next) => { replace(i, next); }} />
                   ) : null}
@@ -603,7 +672,7 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
         <label>
           <span className="playback__label">Target</span>
           <select aria-label="New binding target" data-testid="add-target" value={target} onChange={(e) => { pickTarget(e.target.value); }}>
-            <option value="">{property === "deformation" || property === "segment" ? "Choose a box or cylinder" : "Choose a target"}</option>
+            <option value="">{property === "deformation" || property === "segment" ? "Choose a box or cylinder" : property === "mode-shapes" ? "Choose a mesh" : "Choose a target"}</option>
             {choices.map((c) => (
               <option key={c.ref} value={c.ref}>{c.label}</option>
             ))}
@@ -637,6 +706,19 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
               <ModeSignals names={signal} signals={signals} label="the new binding" testId="add-signal" max={maxModes(deform.basis)} onChange={setSignal} />
             </div>
           </>
+        ) : property === "mode-shapes" ? (
+          <div>
+            <span className="playback__label">Modal coordinates</span>
+            <ModeSignals
+              names={signal}
+              signals={signals}
+              label="the new binding"
+              testId="add-signal"
+              max={meshModeLimit(built, target)}
+              fillLimit={meshModeLimit(built, target)}
+              onChange={setSignal}
+            />
+          </div>
         ) : (
           <>
           {property === "segment" ? (
