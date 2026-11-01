@@ -2311,7 +2311,9 @@ end
 function _const_value(d::Decl, consts::AbstractDict)
     if d.default !== nothing
         ok, value = try_eval_const(d.default, consts)
-        ok && (value isa Number || value isa Bool || value isa AbstractArray) && return value
+        # A matrix constant (`conn::Mat{nb,2}` of Truss2D) keeps its source text: JSON has no
+        # matrix, and a flat array would lose the row structure.
+        ok && (value isa Number || value isa Bool || value isa AbstractVector) && return value
     end
     return something(d.default_text, "")
 end

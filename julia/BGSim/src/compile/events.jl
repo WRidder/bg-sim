@@ -619,16 +619,27 @@ function _collect_condition_zeros!(out::Vector{BGSim.Expr}, c::BGSim.Expr)
     return out
 end
 
+# A condition-only callback fires on both edges, so `a - b` and `b - a` are the same kink
+# (`x >= 0` and `x < 0` in one model give exactly that pair). Keep only the first: two
+# callbacks whose conditions are exact negatives of each other trap the integrator inside
+# `step!` (neither progress nor cancel is reached again).
+function _push_kink!(out::Vector{BGSim.Expr}, seen::Set{String}, c::BGSim.Expr)
+    key = sprint(show, c)
+    key in seen && return out
+    if c isa BGSim.BinOp && c.op === :-
+        sprint(show, BGSim.BinOp(:-, c.rhs, c.lhs, c.range)) in seen && return out
+    end
+    push!(seen, key)
+    push!(out, c)
+    return out
+end
+
 function _walk_nonsmooth!(out::Vector{BGSim.Expr}, seen::Set{String}, e::BGSim.Expr)
     if e isa BGSim.Call
         fn = e.fn.name
         if fn in NONSMOOTH_CALLS
             for c in _nonsmooth_zero_conditions(fn, e.args, e.range)
-                key = sprint(show, c)
-                if !(key in seen)
-                    push!(seen, key)
-                    push!(out, c)
-                end
+                _push_kink!(out, seen, c)
             end
         end
         for a in e.args
@@ -638,11 +649,7 @@ function _walk_nonsmooth!(out::Vector{BGSim.Expr}, seen::Set{String}, e::BGSim.E
         # The zero crossings found above must also be deduplicated; collect them through the
         # same set by re-walking the condition as if it were an `ifelse` call.
         for c in _nonsmooth_zero_conditions(:ifelse, BGSim.Expr[e.cond, e.then, e.otherwise], e.range)
-            key = sprint(show, c)
-            if !(key in seen)
-                push!(seen, key)
-                push!(out, c)
-            end
+            _push_kink!(out, seen, c)
         end
         _walk_nonsmooth!(out, seen, e.then)
         _walk_nonsmooth!(out, seen, e.otherwise)

@@ -132,32 +132,29 @@
   "plots": [
     {
       "id": "p1",
-      "title": "Member forces",
+      "title": "Member forces [N]",
       "signals": [
         "Truss/N[3]",
         "Truss/N[9]",
         "Truss/N[12]",
         "Truss/N[13]",
         "Truss/N[17]"
-      ],
-      "yLabel": "N"
+      ]
     },
     {
       "id": "p2",
-      "title": "Midspan deflection",
+      "title": "Midspan deflection [m]",
       "signals": [
         "Truss/y[6]"
-      ],
-      "yLabel": "m"
+      ]
     },
     {
       "id": "p3",
-      "title": "Support reactions",
+      "title": "Support reactions [N]",
       "signals": [
         "Truss/Ry[3]",
         "Truss/Ry[9]"
-      ],
-      "yLabel": "N"
+      ]
     }
   ],
   "scene": {

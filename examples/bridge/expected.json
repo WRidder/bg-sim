@@ -56,30 +56,38 @@
       "checks": [
         {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"], "note": "W217 (the collapse stop) is expected"},
         {"kind": "scene_bindings", "note": "failed bars are drawn snapped"},
-        {"kind": "zero_crossing", "signal": "Truss/nfail", "level": 0.5, "direction": "up", "n": 1, "value": 2.18654, "abs": 0.002, "note": "the 30 t lorry at 15 m/s snaps the first bar when it is 7.8 m onto the bridge"},
-        {"kind": "cursor_value", "signal": "Truss/failed[13]", "t": 2.19, "value": 1.0, "abs": 1e-09, "note": "the first bar to fail is the undersized diagonal 13"},
-        {"kind": "cursor_value", "signal": "Truss/nfail", "t": 2.7, "value": 1.0, "abs": 1e-09, "note": "and it is the only one for half a second, until the sheared panel overloads the bottom chord"},
+        {"kind": "zero_crossing", "signal": "Truss/nfail", "level": 0.5, "direction": "up", "n": 1, "value": 2.01262, "abs": 0.002, "note": "the overloaded 40 t lorry at 15 m/s snaps the first bar when it is 5.2 m onto the bridge"},
+        {"kind": "cursor_value", "signal": "Truss/failed[13]", "t": 2.02, "value": 1.0, "abs": 1e-09, "note": "the first bar to fail is the undersized diagonal 13"},
+        {"kind": "cursor_value", "signal": "Truss/nfail", "t": 2.55, "value": 1.0, "abs": 1e-09, "note": "and it is the only one for 0.6 s, until the sheared panel overloads the bottom chord (bar 4)"},
         {"kind": "max_abs", "signal": "Truss/N[13]", "value": 240641.8, "rtol": 1e-06, "note": "it fails exactly at Ft = fy A = 240.6 kN"},
-        {"kind": "cursor_value", "signal": "Truss/Elost", "t": 2.5, "value": 959.43, "rtol": 0.005, "note": "the energy lost at failure: the strain energy Ft^2 L0 / (2 E A) = 959.4 J (measured 957.1 J: the force at failure includes the bar damping)"},
-        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 10000.0, "tol": 1e-05, "note": "Ebal stays constant through both failures and the collapse (drift 0.005 J against 267 kJ of external work)"},
-        {"kind": "zero_crossing", "signal": "Truss/y[6]", "level": -2.999, "direction": "down", "n": 1, "value": 2.95299, "abs": 0.01, "note": "the bridge folds: the run stops when the midspan has dropped 3 m"}
+        {"kind": "cursor_value", "signal": "Truss/Elost", "t": 2.3, "value": 959.43, "rtol": 0.005, "note": "the energy lost at failure is the strain energy Ft^2 L0 / (2 E A) = 959.4 J (the force at failure also has a small damping part)"},
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 10000.0, "tol": 1e-05, "note": "Ebal stays constant through both failures and the collapse"},
+        {"kind": "zero_crossing", "signal": "Truss/y[6]", "level": -2.999, "direction": "down", "n": 1, "value": 2.8013, "abs": 0.01, "note": "the bridge folds: the run stops when the midspan has dropped 3 m"}
       ]
     },
     "bridge-failure-20t": {
       "model": "bridge-failure",
       "overrides": [{"target": "global:m_truck", "value": 20000.0}],
       "checks": [
-        {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "a 20 t lorry at 15 m/s does not break the undersized diagonal"},
-        {"kind": "max_abs", "signal": "Truss/util[13]", "value": 0.94882, "rtol": 0.01, "note": "it comes to 95 % of its strength"}
+        {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "the 20 t lorry the bridge was checked for crosses at 15 m/s"},
+        {"kind": "max_abs", "signal": "Truss/util[13]", "value": 0.94895, "rtol": 0.01, "note": "bar 13 comes to 95 % of its strength (the bounce from the abutment ramp peaks near its influence peak)"}
       ]
     },
-    "bridge-failure-slow": {
+    "bridge-failure-20t-fast": {
       "model": "bridge-failure",
-      "overrides": [{"target": "global:v_truck", "value": 5.0}],
-      "settings": {"t_end": 12.0},
+      "overrides": [{"target": "global:m_truck", "value": 20000.0}, {"target": "global:v_truck", "value": 30.0}],
+      "settings": {"t_end": 3.0},
       "checks": [
-        {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "the 30 t lorry crosses safely at 5 m/s"},
-        {"kind": "max_abs", "signal": "Truss/util[13]", "value": 0.91347, "rtol": 0.01, "note": "bar 13 at 91 % of its strength"}
+        {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "and at 30 m/s"},
+        {"kind": "max_abs", "signal": "Truss/util[13]", "value": 0.89539, "rtol": 0.01, "note": "bar 13 at 90 % of its strength"}
+      ]
+    },
+    "bridge-failure-28t": {
+      "model": "bridge-failure",
+      "overrides": [{"target": "global:m_truck", "value": 28000.0}],
+      "checks": [
+        {"kind": "zero_crossing", "signal": "Truss/nfail", "level": 0.5, "direction": "up", "n": 1, "value": 2.19382, "abs": 0.002, "note": "a 28 t lorry already snaps the diagonal"},
+        {"kind": "cursor_value", "signal": "Truss/failed[13]", "t": 2.2, "value": 1.0, "abs": 1e-09, "note": "bar 13 again"}
       ]
     }
   }

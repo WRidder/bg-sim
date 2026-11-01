@@ -126,7 +126,7 @@ def _truck() -> str:
             out.append(_visual(f"{name}_spoke", _pose(0.12, 0.21 * np.sign(sy), 0, 0, 0, 0), _box(0.24, 0.02, 0.06),
                                (0.2, 0.2, 0.22, 1)))
             out.append("    </link>\n")
-            joints.append(f'    <joint name="{name}" type="continuous">\n      <parent>truck</parent>\n'
+            joints.append(f'    <joint name="axle_{axle}{side}" type="continuous">\n      <parent>truck</parent>\n'
                           f"      <child>{name}</child>\n      <axis><xyz>0 1 0</xyz></axis>\n    </joint>\n")
     return "".join(out) + "".join(joints)
 
@@ -147,7 +147,7 @@ HEADER = """<?xml version="1.0"?>
 
 def write(path: Path, with_truck: bool) -> None:
     truck_note = ("\n  \"truck\" is the lorry (centre of mass, posed by Truck/q[1..7]); its wheels turn on the\n"
-                  "  joints \"wheel_*\" bound to Truck/wheel.") if with_truck else ""
+                  "  joints \"axle_*\" bound to Truck/wheel.") if with_truck else ""
     text = HEADER.format(hw=HALF_WIDTH, truck=truck_note)
     text += f'<sdf version="1.9">\n  <model name="{path.stem}">\n'
     text += '    <link name="ground">\n      <pose>0 0 0 0 0 0</pose>\n' + _ground() + "    </link>\n"
@@ -155,7 +155,7 @@ def write(path: Path, with_truck: bool) -> None:
     if with_truck:
         text += _truck()
     text += "  </model>\n</sdf>\n"
-    path.write_text(text, encoding="utf-8")
+    path.write_text(text, encoding="utf-8", newline="\n")
     print(f"wrote {path.relative_to(ROOT)}")
 
 
@@ -182,7 +182,7 @@ def bindings(truck: str | None = None, load: str | None = None, broken: bool = T
         out.append({"target": "link:truck", "property": "pose", "signal": [f"{truck}/q[{i}]" for i in range(1, 8)]})
         for axle in "fr":
             for side in "lr":
-                out.append({"target": f"joint:wheel_{axle}{side}", "property": "position", "signal": f"{truck}/wheel"})
+                out.append({"target": f"joint:axle_{axle}{side}", "property": "position", "signal": f"{truck}/wheel"})
     return out
 
 

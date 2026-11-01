@@ -274,28 +274,25 @@
   "plots": [
     {
       "id": "p1",
-      "title": "Axial force and Euler load",
+      "title": "Axial force and Euler load [N]",
       "signals": [
         "Strut/N",
         "Strut/Pcr"
-      ],
-      "yLabel": "N"
+      ]
     },
     {
       "id": "p2",
       "title": "Failure flag",
       "signals": [
         "Strut/broken"
-      ],
-      "yLabel": ""
+      ]
     },
     {
       "id": "p3",
-      "title": "Energy lost at failure",
+      "title": "Energy lost at failure [J]",
       "signals": [
         "Strut/Elost"
-      ],
-      "yLabel": "J"
+      ]
     }
   ]
 }

@@ -55,6 +55,7 @@
         k::Real = 1.0, [unit = "N/m", description = "Axial stiffness EA/L0"]
         Ne::Real = 0.0, [unit = "N", description = "Elastic part of the axial force"]
         Nd::Real = 0.0, [unit = "N", description = "Damping part of the axial force"]
+        Nu::Real = 0.0, [unit = "N", description = "Force the bar would carry intact (the sign of util)"]
     end
     @outputs begin
         N::Real, [unit = "N"]
@@ -92,7 +93,10 @@
         pb.e[3] ~ N * ny
         Ft ~ fy * A
         Pcr ~ 9.869604401089358 * E * I / (K * K * L0 * L0)
-        util ~ ifelse(N > 0, N / Ft, N / Pcr)
+        # the switch reads the intact force: N of a failed bar is identically zero, and a
+        # switching condition that never leaves zero can trap the event root finder
+        Nu ~ k * (e + beta * Ld)
+        util ~ (1 - broken) * ifelse(Nu > 0, Nu / Ft, Nu / Pcr)
         brokenout ~ broken
         m ~ rho * A * L0
         Ee ~ 0.5 * Ne * e

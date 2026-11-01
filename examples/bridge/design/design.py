@@ -241,7 +241,7 @@ def main():
                     "weak_Ft": FY * weak_area},
         "total_mass": float(np.sum(m[[i for i in range(nn) if i not in (0, 1, 9)]])),
     }
-    (HERE / "design.json").write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
+    (HERE / "design.json").write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"node masses: {np.round(m, 1)}")
     print(f"dead load: reactions {R_dead}; midspan uy {u_dead[2 * (mid - 1) + 1]:.6f} m")
     print(f"static (+{P_STATIC / 1e3:.0f} kN at midspan): midspan uy {u_static[2 * (mid - 1) + 1]:.6f} m")

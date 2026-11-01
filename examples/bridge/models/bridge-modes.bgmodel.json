@@ -134,22 +134,20 @@
   "plots": [
     {
       "id": "p1",
-      "title": "Midspan deflection",
+      "title": "Midspan deflection [m]",
       "signals": [
         "Truss/y[6]"
-      ],
-      "yLabel": "m"
+      ]
     },
     {
       "id": "p2",
-      "title": "Energy",
+      "title": "Energy [J]",
       "signals": [
         "Truss/Ek",
         "Truss/Ee",
         "Truss/Eg",
         "Truss/Ebal"
-      ],
-      "yLabel": "J"
+      ]
     }
   ],
   "scene": {

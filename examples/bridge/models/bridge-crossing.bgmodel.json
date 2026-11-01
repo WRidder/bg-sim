@@ -289,31 +289,28 @@
   "plots": [
     {
       "id": "p1",
-      "title": "Member forces",
+      "title": "Member forces [N]",
       "signals": [
         "Truss/N[3]",
         "Truss/N[9]",
         "Truss/N[12]",
         "Truss/N[13]",
         "Truss/N[17]"
-      ],
-      "yLabel": "N"
+      ]
     },
     {
       "id": "p2",
       "title": "Utilisation of the second diagonal",
       "signals": [
         "Truss/util[13]"
-      ],
-      "yLabel": ""
+      ]
     },
     {
       "id": "p3",
-      "title": "Midspan deflection",
+      "title": "Midspan deflection [m]",
       "signals": [
         "Truss/y[6]"
-      ],
-      "yLabel": "m"
+      ]
     },
     {
       "id": "p4",
@@ -322,16 +319,14 @@
         "Truck/v",
         "Truck/fn[1]",
         "Truck/fn[2]"
-      ],
-      "yLabel": ""
+      ]
     },
     {
       "id": "p5",
       "title": "Failed bars",
       "signals": [
         "Truss/nfail"
-      ],
-      "yLabel": ""
+      ]
     }
   ],
   "parameters": [
@@ -1566,22 +1561,22 @@
       ]
     },
     {
-      "target": "joint:wheel_fl",
+      "target": "joint:axle_fl",
       "property": "position",
       "signal": "Truck/wheel"
     },
     {
-      "target": "joint:wheel_fr",
+      "target": "joint:axle_fr",
       "property": "position",
       "signal": "Truck/wheel"
     },
     {
-      "target": "joint:wheel_rl",
+      "target": "joint:axle_rl",
       "property": "position",
       "signal": "Truck/wheel"
     },
     {
-      "target": "joint:wheel_rr",
+      "target": "joint:axle_rr",
       "property": "position",
       "signal": "Truck/wheel"
     }

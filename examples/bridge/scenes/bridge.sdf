@@ -8,7 +8,7 @@
   binding and coloured by Truss/util[k] (coolwarm, -1 = buckling load, +1 = tensile strength);
   a failed bar is drawn snapped. "deck_<p>" are the deck slabs of the six panels.
   "truck" is the lorry (centre of mass, posed by Truck/q[1..7]); its wheels turn on the
-  joints "wheel_*" bound to Truck/wheel.
+  joints "axle_*" bound to Truck/wheel.
   The approach slab on the left has settled 6 cm at the abutment: a short ramp up onto the bridge.
 -->
 <sdf version="1.9">
@@ -449,22 +449,22 @@
         <material><diffuse>0.2 0.2 0.22 1</diffuse></material>
       </visual>
     </link>
-    <joint name="wheel_fl" type="continuous">
+    <joint name="axle_fl" type="continuous">
       <parent>truck</parent>
       <child>wheel_fl</child>
       <axis><xyz>0 1 0</xyz></axis>
     </joint>
-    <joint name="wheel_fr" type="continuous">
+    <joint name="axle_fr" type="continuous">
       <parent>truck</parent>
       <child>wheel_fr</child>
       <axis><xyz>0 1 0</xyz></axis>
     </joint>
-    <joint name="wheel_rl" type="continuous">
+    <joint name="axle_rl" type="continuous">
       <parent>truck</parent>
       <child>wheel_rl</child>
       <axis><xyz>0 1 0</xyz></axis>
     </joint>
-    <joint name="wheel_rr" type="continuous">
+    <joint name="axle_rr" type="continuous">
       <parent>truck</parent>
       <child>wheel_rr</child>
       <axis><xyz>0 1 0</xyz></axis>

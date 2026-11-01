@@ -2,7 +2,7 @@
   "format": "bgsim.model",
   "language": "0.1.0",
   "name": "bridge-failure",
-  "$comment": "The second diagonal is undersized (1.4 x the quasi-static force of a 20 t lorry): a 30 t lorry at 15 m/s bounces off the settled approach slab, snaps it, and the bridge folds; 20 t, or 30 t at 5 m/s, crosses safely.",
+  "$comment": "The second diagonal is undersized (1.4 x the quasi-static force of a 20 t lorry): it holds the 20 t lorry at any speed, but an overloaded 40 t lorry at 15 m/s snaps it and the bridge folds.",
   "diagram": {
     "nodes": [
       {
@@ -289,31 +289,28 @@
   "plots": [
     {
       "id": "p1",
-      "title": "Member forces",
+      "title": "Member forces [N]",
       "signals": [
         "Truss/N[3]",
         "Truss/N[9]",
         "Truss/N[12]",
         "Truss/N[13]",
         "Truss/N[17]"
-      ],
-      "yLabel": "N"
+      ]
     },
     {
       "id": "p2",
       "title": "Utilisation of the second diagonal",
       "signals": [
         "Truss/util[13]"
-      ],
-      "yLabel": ""
+      ]
     },
     {
       "id": "p3",
-      "title": "Midspan deflection",
+      "title": "Midspan deflection [m]",
       "signals": [
         "Truss/y[6]"
-      ],
-      "yLabel": "m"
+      ]
     },
     {
       "id": "p4",
@@ -322,16 +319,14 @@
         "Truck/v",
         "Truck/fn[1]",
         "Truck/fn[2]"
-      ],
-      "yLabel": ""
+      ]
     },
     {
       "id": "p5",
       "title": "Failed bars",
       "signals": [
         "Truss/nfail"
-      ],
-      "yLabel": ""
+      ]
     }
   ],
   "parameters": [
@@ -343,7 +338,7 @@
     },
     {
       "name": "m_truck",
-      "value": "30000.0",
+      "value": "40000.0",
       "unit": "kg",
       "description": "Lorry mass (both trusses; each carries half)"
     },
@@ -1566,22 +1561,22 @@
       ]
     },
     {
-      "target": "joint:wheel_fl",
+      "target": "joint:axle_fl",
       "property": "position",
       "signal": "Truck/wheel"
     },
     {
-      "target": "joint:wheel_fr",
+      "target": "joint:axle_fr",
       "property": "position",
       "signal": "Truck/wheel"
     },
     {
-      "target": "joint:wheel_rl",
+      "target": "joint:axle_rl",
       "property": "position",
       "signal": "Truck/wheel"
     },
     {
-      "target": "joint:wheel_rr",
+      "target": "joint:axle_rr",
       "property": "position",
       "signal": "Truck/wheel"
     }
@@ -1596,7 +1591,7 @@
         "title": "Bridge",
         "options": {
           "markdown": true,
-          "text": "A lorry crosses the truss bridge. The second diagonal from the left is **undersized**: it holds a 20 t lorry at any speed, but the settled approach slab makes the lorry bounce, and a 30 t lorry at 10 to 15 m/s snaps it. Move the **speed** or the **mass** and the model runs again."
+          "text": "An overloaded 40 t lorry crosses the truss bridge. The second diagonal from the left is **undersized**: it holds a 20 t lorry at any speed, but not this one. The settled approach slab makes the lorry bounce, which adds to the load. Move the **speed** or the **mass** and the model runs again."
         }
       },
       {

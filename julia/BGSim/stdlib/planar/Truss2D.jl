@@ -72,6 +72,7 @@
         Ld::Vec{nb}, [unit = "m/s", description = "Elongation rate"]
         Ne::Vec{nb}, [unit = "N", description = "Elastic part of the axial force"]
         Nd::Vec{nb}, [unit = "N", description = "Damping part of the axial force"]
+        Nu::Vec{nb}, [unit = "N", description = "Force the bar would carry intact (the sign of util)"]
         fbx::Vec{nb}, [unit = "N", description = "Bar force on its A node, x"]
         fby::Vec{nb}, [unit = "N", description = "Bar force on its A node, y"]
         Fnx::Vec{nn}, [unit = "N", description = "Net force on each node, x"]
@@ -127,7 +128,10 @@
             fby[k] ~ N[k] * ny[k]
             Ft[k] ~ fy * A[k]
             Pcr[k] ~ 9.869604401089358 * E * I[k] / (K * K * L0[k] * L0[k])
-            util[k] ~ ifelse(N[k] > 0, N[k] / Ft[k], N[k] / Pcr[k])
+            # the switch reads the intact force: N of a failed bar is identically zero, and a
+            # switching condition that never leaves zero can trap the event root finder
+            Nu[k] ~ E * A[k] / L0[k] * (ext[k] + beta * Ld[k])
+            util[k] ~ (1 - broken[k]) * ifelse(Nu[k] > 0, Nu[k] / Ft[k], Nu[k] / Pcr[k])
         end
         mnode ~ mn + 0.5 * transpose(Cm) * mb
         Fnx ~ Fx + transpose(Ca) * fbx

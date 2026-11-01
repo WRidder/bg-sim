@@ -166,12 +166,13 @@ def model(name, comment, Dg, sett, plots, *, globals_=None, bindings=True, dashb
     if dashboard:
         doc["dashboard"] = dashboard
     path = MODELS / f"{name}.bgmodel.json"
-    path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {path.relative_to(ROOT)} ({len(Dg.nodes)} nodes, {len(Dg.conns)} connections)")
 
 
-def plot(pid, title, signals, y_label=""):
-    return {"id": pid, "title": title, "signals": signals, "yLabel": y_label}
+def plot(pid, title, signals, unit=""):
+    # The plot contract has no axis label; the unit goes into the title.
+    return {"id": pid, "title": f"{title} [{unit}]" if unit else title, "signals": signals}
 
 
 MEMBER_PLOT = [f"Truss/N[{k}]" for k in (3, 9, 12, WEAK, 17)]
@@ -259,7 +260,7 @@ def main():
           "A 20 t lorry crossing the bridge at 10 m/s over the settled approach slab: every member stays well inside its strength.",
           Dg, settings(7.0, 1401), truck_plots, globals_=TRUCK_GLOBALS)
 
-    # 6. the same bridge with an undersized diagonal: a 30 t lorry at 15 m/s breaks it
+    # 6. the same bridge with an undersized diagonal: an overloaded 40 t lorry at 15 m/s breaks it
     area = list(D["A"])
     area[WEAK - 1] = D["vehicle"]["weak_area"]
     Dg = Diagram()
@@ -268,9 +269,9 @@ def main():
     collapse_stop(Dg, 300, 420)
     fail_globals = [dict(g) for g in TRUCK_GLOBALS]
     fail_globals[0]["value"] = "15.0"
-    fail_globals[1]["value"] = "30000.0"
+    fail_globals[1]["value"] = "40000.0"
     model("bridge-failure",
-          "The second diagonal is undersized (1.4 x the quasi-static force of a 20 t lorry): a 30 t lorry at 15 m/s bounces off the settled approach slab, snaps it, and the bridge folds; 20 t, or 30 t at 5 m/s, crosses safely.",
+          "The second diagonal is undersized (1.4 x the quasi-static force of a 20 t lorry): it holds the 20 t lorry at any speed, but an overloaded 40 t lorry at 15 m/s snaps it and the bridge folds.",
           Dg, settings(4.0, 1601), truck_plots, globals_=fail_globals, dashboard=dashboard())
 
 
@@ -280,9 +281,9 @@ def dashboard():
         "cards": [
             {"id": "d1", "kind": "text", "size": "2x1", "title": "Bridge",
              "options": {"markdown": True, "text": (
-                 "A lorry crosses the truss bridge. The second diagonal from the left is **undersized**: it holds a 20 t "
-                 "lorry at any speed, but the settled approach slab makes the lorry bounce, and a 30 t lorry at 10 to 15 m/s "
-                 "snaps it. Move the **speed** or the **mass** and the model runs again.")}},
+                 "An overloaded 40 t lorry crosses the truss bridge. The second diagonal from the left is **undersized**: it "
+                 "holds a 20 t lorry at any speed, but not this one. The settled approach slab makes the lorry bounce, which "
+                 "adds to the load. Move the **speed** or the **mass** and the model runs again.")}},
             {"id": "d2", "kind": "slider", "size": "2x1", "title": "Lorry speed", "parameter": "global:v_truck",
              "options": {"min": 2.0, "max": 30.0, "step": 0.5, "decimals": 1, "unit": "m/s"}},
             {"id": "d3", "kind": "slider", "size": "2x1", "title": "Lorry mass", "parameter": "global:m_truck",

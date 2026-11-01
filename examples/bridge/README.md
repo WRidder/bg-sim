@@ -17,7 +17,7 @@ Nodes 1, 2 and 10 are the approach slabs (fixed). They belong to the deck polyli
 
 | model | what it shows |
 | --- | --- |
-| `bridge-failure` | **The main model, with a dashboard.** Bar 13 is undersized (A = 6.78 cm², Ft = 240.6 kN, 1.4 times the quasi-static peak force of a 20 t lorry). A 30 t lorry at 15 m/s bounces off the abutment ramp and snaps it at t = 2.187 s, the second panel shears, and the bridge folds. The run stops when the midspan has dropped 3 m (`Collapsed`, a `StopSimulation`). |
+| `bridge-failure` | **The main model, with a dashboard.** Bar 13 is undersized (A = 6.78 cm², Ft = 240.6 kN, 1.4 times the quasi-static peak force of a 20 t lorry). It holds the 20 t lorry at any speed, but an overloaded 40 t lorry at 15 m/s snaps it at t = 2.013 s, the second panel shears, and the bridge folds. The run stops when the midspan has dropped 3 m (`Collapsed`, a `StopSimulation`). |
 | `bridge-crossing` | the design bridge (all diagonals 20 cm²) and a 20 t lorry at 10 m/s: every member stays below 37 % of its strength |
 | `bridge-static` | dead load plus a 100 kN point load at midspan: member forces and reactions against the method of joints |
 | `bridge-modes` | free vibration in the first vertical bending mode (no damping): frequency against the eigenvalue problem, energy balance |
@@ -42,7 +42,7 @@ The dashboard of `bridge-failure` has sliders for the lorry's speed (global `v_t
 
 A bar fails in tension when N > Ft = fy A and in compression when -N > Pcr = pi^2 E I / (K L0)^2 (Euler). The failure is an event that sets the held flag `failed[k]` (`ddt(broken) ~ 0`, `reinit`), so a failed bar carries no force from then on: **elastic-brittle, also in compression**. A real strut keeps a post-buckling load. This model drops it to zero, which is the simplest behaviour that conserves the energy book: the strain energy a bar held at the instant it failed goes to `Elost`, and `Ebal = Ek + Ee + Eg + Edis + Elost - Wext` stays constant through every failure.
 
-The truss is statically determinate (2 x 13 joint equations = 23 bars + 3 reactions), so losing one bar turns its panel into a mechanism: in `bridge-failure` bar 13 fails alone, the second panel shears, and 0.57 s later the bottom chord (bar 4) fails as the bridge folds.
+The truss is statically determinate (2 x 13 joint equations = 23 bars + 3 reactions), so losing one bar turns its panel into a mechanism: in `bridge-failure` bar 13 fails alone, the second panel shears, and 0.60 s later the bottom chord (bar 4) fails as the bridge folds.
 
 ## Numbers
 
@@ -54,23 +54,23 @@ All reference numbers come from `design/design.py` (numpy only, no bg-sim code).
 | support reactions | 135.250 kN each | 135.268 and 135.234 kN |
 | midspan deflection, dead + 100 kN | -28.875 mm (linear) | -28.881 mm |
 | first vertical bending frequency | 4.39776 Hz (eigenvalues of K, M) | 4.3990 Hz (FFT of the midspan deflection) |
-| energy balance, free vibration | constant | drift 1.5e-6 J of 94 J kinetic energy |
+| energy balance, free vibration | constant | drift 1.7e-6 J of 94 J kinetic energy |
 | Euler load of the strut (2 m, I = 1e-8 m^4) | 5181.54 N | fails at 5181.54 N, t = 0.05197 s |
 | strain energy lost at buckling | Pcr^2 L / (2 E A) = 0.127849 J | 0.127849 J |
-| bar 13 in `bridge-failure` | Ft = 240.6 kN | fails at t = 2.1865 s (lorry at x = 7.8 m), alone for 0.57 s |
+| bar 13 in `bridge-failure` (40 t, 15 m/s) | Ft = 240.6 kN; strain energy Ft² L0 / (2 E A) = 959.4 J | fails at 240.6 kN at t = 2.0126 s (lorry at x = 5.2 m), alone for 0.60 s; `Elost` jumps by 959.2 J |
 
-Crossing results (bar 13 utilisation with the undersized section, the largest over the run):
+Crossing results (largest utilisation of the undersized bar 13; "fails" means it reached 1):
 
-| lorry | 5 m/s | 10 m/s | 15 m/s | 20 m/s | 30 m/s |
-| --- | --- | --- | --- | --- | --- |
-| 20 t | 0.76 | | 0.95 | | |
-| 30 t | 0.91 | fails | fails | 0.97 | 0.95 |
+| lorry | 5 m/s | 10 m/s | 15 m/s | 30 m/s |
+| --- | --- | --- | --- | --- |
+| 20 t | 0.76 | 0.85 | 0.95 | 0.90 |
+| 28 t | | | fails | |
+| 40 t | fails | | fails | |
 
-The dynamic load is not monotonic in the speed: the lorry starts to bounce at the abutment ramp (about 2.8 Hz on its tyres), and at 10 to 15 m/s the bounce peaks just as the lorry reaches the influence peak of bar 13. Faster, the lorry is past that point before the bounce has built up. The mass is the clear threshold: at 15 m/s the diagonal holds 20 t and fails at about 22 t.
-
+The lorry starts to bounce at the abutment ramp (about 2.8 Hz on its tyres), and the bounce adds a dynamic load that depends on where the lorry is when it peaks, so the load is not monotonic in the speed: at 20 t it is largest near 15 m/s. The mass is the clear threshold: the diagonal holds the 20 t lorry at every speed up to 30 m/s, and at 15 m/s it fails between 25 and 28 t.
 ## 3D view
 
-`scenes/bridge.sdf` (with the lorry) and `scenes/bridge-load.sdf` (the point-load models) are written by `design/build_scene.py`. Every bar of both trusses is a cylinder with a `segment` binding on its two end nodes (`Truss/x[a]`, `Truss/y[a]`, `Truss/x[b]`, `Truss/y[b]`, plane `xz`, depth ±3.6 m), a `color` binding on `Truss/util[k]` (coolwarm, -1 to 1: blue compression, red tension, full colour at failure), and the broken signal `Truss/failed[k]` drawn **snapped**. The deck slabs are boxes with segment bindings between the deck nodes. The lorry is one link posed by `Truck/q` (`PlanarPose3D`), with four wheel joints on `Truck/wheel`.
+`scenes/bridge.sdf` (with the lorry) and `scenes/bridge-load.sdf` (the point-load models) are written by `design/build_scene.py`. Every bar of both trusses is a cylinder with a `segment` binding on its two end nodes (`Truss/x[a]`, `Truss/y[a]`, `Truss/x[b]`, `Truss/y[b]`, plane `xz`, depth ±3.6 m), a `color` binding on `Truss/util[k]` (coolwarm, -1 to 1: blue compression, red tension, full colour at failure), and the broken signal `Truss/failed[k]` drawn **snapped**. The deck slabs are boxes with segment bindings between the deck nodes. The lorry is one link posed by `Truck/q` (`PlanarPose3D`), with four wheel joints `axle_*` on `Truck/wheel`.
 
 ## Checks (`expected.json`)
 
@@ -80,7 +80,7 @@ The dynamic load is not monotonic in the speed: the lorry starts to bounce at th
 - the moving load: largest midspan deflection and the largest force in bar 13
 - the strut fails at the Euler load at the expected time and books Pcr^2 L / (2 E A)
 - the design bridge under the 20 t lorry: no bar fails, `Ebal` constant
-- the failure model: bar 13 is the first and only failed bar for 0.5 s, it fails at Ft, `Elost` jumps by its strain energy, `Ebal` stays constant through the failure, and the run stops on the collapse; the same model with a 20 t lorry and with 30 t at 5 m/s (run overrides of the globals) loses no bar
+- the failure model: bar 13 is the first and only failed bar for 0.5 s, it fails at Ft, `Elost` jumps by its strain energy, `Ebal` stays constant through the failures, and the run stops on the collapse; the same model with a 20 t lorry at 15 and 30 m/s (run overrides of the globals) loses no bar, and with 28 t it loses bar 13
 
 ## Files
 
