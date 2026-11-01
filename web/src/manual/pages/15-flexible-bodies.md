@@ -75,7 +75,7 @@ The deflection is accurate to second order: a beam that bends also gets shorter 
 
 ## In the 3D view
 
-Bind the block's `pose` to the link that holds the beam's visual. Then add one **deformation** binding per family with the signals `eta_y[1..ny]`, `eta_z[1..nz]` or `eta_t[1..nt]` and the same `basis` as the block (see [Running and plotting](page:running-and-plotting)). The beam axis of the binding is the visual's direction from end A to end B. Real deflections are small; use the view's deformation exaggeration to see them.
+Bind the block's `pose` to the link that holds the beam's visual. Then add one **deformation** binding per family with the signals `eta_y[1..ny]`, `eta_z[1..nz]` or `eta_t[1..nt]` and the same `basis` as the block (see [Running and plotting](page:running-and-plotting)). The beam axis of the binding is the visual's direction from end A to end B. Real deflections are small; use the view's deformation exaggeration to see them. A lumped torsion spring with no modes (a shaft as one spring between two inertias) is drawn with the `linear` basis and its twist instead.
 
 ## Examples
 

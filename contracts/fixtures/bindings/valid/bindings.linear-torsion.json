@@ -1,0 +1,15 @@
+{
+  "$comment": "A lumped torsion spring drawn as a twisting shaft: the link turns with the motor-side inertia (joint position), and the linear basis twists the rod visual by theta(s) = s / L * twist, where the twist is the load-side minus the motor-side angle (rad). A model whose spring state has the opposite sign uses gain -1.",
+  "bindings": [
+    { "target": "joint:shaft_joint", "property": "position", "signal": "Wheel1/phi" },
+    {
+      "target": "visual:shaft_rod",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "linear",
+      "beam": { "axis": "+z", "length": 0.3 },
+      "signal": ["Rod/phi"],
+      "gain": -1
+    }
+  ]
+}

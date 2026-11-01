@@ -1373,7 +1373,8 @@
     }
   ],
   "scene": {
-    "file": "scenes/drivetrain-kalman.sdf"
+    "file": "scenes/drivetrain-kalman.sdf",
+    "exaggeration": 1000
   },
   "bindings": [
     {
@@ -1407,6 +1408,45 @@
       "target": "joint:seg3_joint",
       "property": "position",
       "signal": "C3/q"
+    },
+    {
+      "target": "visual:rod1",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "linear",
+      "beam": {
+        "axis": "+z",
+        "length": 0.17
+      },
+      "signal": [
+        "C1/q"
+      ]
+    },
+    {
+      "target": "visual:rod2",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "linear",
+      "beam": {
+        "axis": "+z",
+        "length": 0.18
+      },
+      "signal": [
+        "C2/q"
+      ]
+    },
+    {
+      "target": "visual:rod3",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "linear",
+      "beam": {
+        "axis": "+z",
+        "length": 0.165
+      },
+      "signal": [
+        "C3/q"
+      ]
     }
   ]
 }

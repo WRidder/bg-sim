@@ -83,3 +83,12 @@ Notes:
 - Choose the `Luenberger` gain `L` so that the eigenvalues of `A − L·C` are faster than the plant. The default places them at −5 and −6.
 - `KalmanFilter` updates its covariance at every tick, so its gain converges to the steady-state Kalman gain. Set the start value of the variable `P` to the initial uncertainty of the state.
 - `Memory` gives the same values as `UnitDelay`, but it reads `previous(u)`. You can therefore use it to break a loop between discrete blocks (error E105).
+
+## Gain scheduling
+
+A gain that depends on the operating point is a lookup table whose output feeds a gain input of the control law. Use `Lookup1D` for one scheduling variable and `Lookup2D` for two:
+
+- `Lookup2D` takes a square grid: `breaks` holds the x breakpoints in row 1 and the y breakpoints in row 2, and `table[i, j]` is the value at `x = breaks[1, j]`, `y = breaks[2, i]`. Between breakpoints it interpolates bilinearly. Outside the grid it holds the edge values.
+- Write the control law so that it takes the gains as inputs and integrates `Ki·e` rather than multiplying `Ki` by the integral of `e`. Then a gain that changes with the flight condition does not make the output jump.
+
+The **f16** example (in the Example gallery) schedules a pitch-rate law over dynamic pressure and Mach with three `Lookup2D` tables. It also shows a rate-limited actuator built from `Saturation`, `Gain` and `Integrator` blocks, a pilot model with a `TransportDelay`, and a phase-compensated rate limiter that removes a pilot-induced oscillation.

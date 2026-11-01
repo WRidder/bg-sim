@@ -15,7 +15,7 @@ Parts: the electrical 1-junction [Elec](block:Elec) with [R](block:R) and [IL](b
 
 ## 3D view
 
-`scenes/drivetrain-kalman.sdf` has the motor rotor, the gearbox output, wheel 1, the two intermediate inertias of the rod and wheel 2. Only the motor angle [Theta/y](signal:Theta/y) is measured, so the gearbox output is $0.1\times$ `Theta/y` and each rod segment is a joint bound to its twist `C1/q`, `C2/q`, `C3/q`; wheel 2 lags wheel 1 by their sum.
+`scenes/drivetrain-kalman.sdf` has the motor rotor, the gearbox output, wheel 1, the two intermediate inertias of the rod and wheel 2. Only the motor angle [Theta/y](signal:Theta/y) is measured, so the gearbox output is $0.1\times$ `Theta/y` and each disc after it turns by the twist of the segment before it, `C1/q`, `C2/q`, `C3/q` (downstream minus upstream angle); wheel 2 lags wheel 1 by their sum. The rod is three segments between the discs; each belongs to the disc at its upstream end and twists towards the next one through a torsion deformation binding with the **linear** basis, $\theta(s) = (s/L)\,$`C_k/q`, the lumped model's twist (linear in every segment). A segment twists by 3.3 mrad under the 0.5 N·m load and by up to 21 mrad in the transients, so this model opens the 3D view with the deformation drawn **×1000** (`scene.exaggeration`): 3.3 rad per segment under load, so the stripes of the rod wind by about half a turn per segment (a few turns in the brief transients). The discs and their markers always turn by their true angles.
 
 ![3D view at t = 0.5 s|500](assets/7fbf26bf205f.png)
 

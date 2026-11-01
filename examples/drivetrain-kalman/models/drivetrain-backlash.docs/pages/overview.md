@@ -16,7 +16,7 @@ and the ports apply $a.e = T$, $b.e = -T$.
 
 - The run completes (2 s, 4001 points) and the check only demands that the voltage stays within 24 V and that no E901, E106 or W206 appears. Plot [IW2/p.f](signal:IW2/p.f) against [LQG/w_load_hat](signal:LQG/w_load_hat): the loop settles into a limit cycle around 10 rad/s; the README gives an RMS of 0.43 rad/s between the estimate and the plant.
 - Compare with the ideal-gear model: its estimate error RMS is 0.181 rad/s.
-- The 3D scene additionally binds the gear play `Gear/play/phi` (gain -1) between the gear output and wheel 1.
+- The 3D scene additionally binds the gear play `Gear/play/phi` (gain -1) between the gear output and wheel 1. The three rod segments twist like in the ideal-gear model (linear-basis torsion bindings on `C1/q`, `C2/q`, `C3/q`, drawn ×1000 by default).
 
 ![Load speed and voltage with backlash|900](assets/51308a8fe506.png)
 

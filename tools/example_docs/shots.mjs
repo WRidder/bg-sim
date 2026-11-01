@@ -61,6 +61,17 @@ try {
         await page.waitForTimeout(400);
         await page.getByTestId("viewer-fit").click();
         await page.waitForTimeout(800);
+        if (job.zoom) {
+          // optional: mouse-wheel steps towards the canvas centre after the fit
+          const box = await page.getByTestId("viewer-canvas").boundingBox();
+          await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+          for (let i = 0; i < job.zoom; i += 1) {
+            await page.mouse.wheel(0, -120);
+            await page.waitForTimeout(25);
+          }
+          await page.mouse.move(box.x + box.width - 2, box.y + 2);
+          await page.waitForTimeout(800);
+        }
         await page.getByTestId("viewer-canvas").screenshot({ path: job.out });
         console.log(`scene ${project}/${model} t=${job.t ?? 0} -> ${job.out}`);
       }

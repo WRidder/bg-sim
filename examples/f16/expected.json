@@ -1,0 +1,653 @@
+{
+  "project": "f16",
+  "description": "F-16 (Stevens & Lewis, NASA TP-1538 data): open loop, gain-scheduled FBW, envelope protection, PIO. Numbers come from design/design.json (an independent scipy implementation of the book's F16 subroutine and of the same controllers).",
+  "models": {
+    "f16-open-loop": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A30/Air/alpha_deg",
+          "t": 1.0,
+          "value": 2.269121560867618,
+          "abs": 0.0001,
+          "note": "the scipy simulation of the book's F16 subroutine (design/scenarios.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A30/Air/q_deg",
+          "t": 1.0,
+          "value": -0.2854123884639246,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A30/Air/alpha_deg",
+          "t": 3.0,
+          "value": 2.251851918810678,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A30/Air/q_deg",
+          "t": 3.0,
+          "value": 0.025408108419015356,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A30/Air/alpha_deg",
+          "t": 5.0,
+          "value": 2.256011306238259,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A30/Air/q_deg",
+          "t": 5.0,
+          "value": -0.0023531737387459772,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A35/Air/alpha_deg",
+          "t": 1.0,
+          "value": 2.178430949709178,
+          "abs": 0.0001,
+          "note": "the scipy simulation of the book's F16 subroutine (design/scenarios.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A35/Air/q_deg",
+          "t": 1.0,
+          "value": 0.04415374999272085,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A35/Air/alpha_deg",
+          "t": 3.0,
+          "value": 2.1929983589096893,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A35/Air/q_deg",
+          "t": 3.0,
+          "value": 0.054178155671798615,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A35/Air/alpha_deg",
+          "t": 5.0,
+          "value": 2.210905475287932,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A35/Air/q_deg",
+          "t": 5.0,
+          "value": 0.06651004073735281,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A38/Air/alpha_deg",
+          "t": 1.0,
+          "value": 2.041564879384556,
+          "abs": 0.0001,
+          "note": "the scipy simulation of the book's F16 subroutine (design/scenarios.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A38/Air/q_deg",
+          "t": 1.0,
+          "value": 0.02007018715219572,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A38/Air/alpha_deg",
+          "t": 3.0,
+          "value": 2.0716633363690424,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A38/Air/q_deg",
+          "t": 3.0,
+          "value": 0.07470709305030188,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A38/Air/alpha_deg",
+          "t": 5.0,
+          "value": 2.183673670086904,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A38/Air/q_deg",
+          "t": 5.0,
+          "value": 0.2779583405495506,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A38/Air/vt",
+          "t": 0.5,
+          "value": 153.0045655811749,
+          "abs": 0.0001,
+          "note": "book trim (Table 3.6-3, xcg 0.38: alpha 0.03544 rad, throttle 0.1325, elevator -0.0559 deg) holds the speed in bg-sim"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "A38/Forces/nz",
+          "t": 0.0,
+          "value": 1.0,
+          "abs": 0.003,
+          "note": "trimmed: 1 g (the start is 1e-4 rad of alpha off trim, along the unstable mode)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "GrowA38/lambda",
+          "t": 1.0,
+          "value": 0.6572431703962524,
+          "rtol": 0.001,
+          "note": "q/(theta - theta0) of the airframe released on its unstable mode reads the linear eigenvalue (xcg 0.38: +0.657 1/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "GrowA35/lambda",
+          "t": 3.0,
+          "value": 0.10208243335758224,
+          "rtol": 0.002,
+          "note": "xcg 0.35 has a slow unstable real pole too (+0.102 1/s, 6-state linearisation)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "A30/Air/q_deg",
+          "from_t": 8.0,
+          "to_t": 15.0,
+          "value": 0.00011391191169276814,
+          "rtol": 0.02,
+          "note": "xcg 0.30: the short period (-1.204 +- 1.492j) has died out; the phugoid is left"
+        },
+        {
+          "kind": "invariant",
+          "tol": 1e-07,
+          "terms": [
+            {
+              "signal": "A30/Energy/E",
+              "coeff": 1.0
+            },
+            {
+              "signal": "A30/Work/y",
+              "coeff": -1.0
+            }
+          ],
+          "note": "energy ledger: kinetic + potential energy minus the work of the aerodynamic and engine wrench is constant"
+        }
+      ]
+    },
+    "f16-fbw": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "step_response",
+          "signal": "Sched/Air/q_deg",
+          "from_t": 1.0,
+          "to_t": 4.0,
+          "step_t": 1.0,
+          "value": 5.0,
+          "initial": 0.0,
+          "max_rise_time": 0.4,
+          "max_overshoot": 0.15,
+          "settle": 0.05,
+          "max_settling_time": 1.0,
+          "note": "the scheduled law at the low-qbar corner: rise 0.21 s, overshoot 7 %, within 5 % after 0.55 s (the last 2 % take the integrator 2.4 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/q_deg",
+          "t": 1.2,
+          "value": 2.7954666412687215,
+          "abs": 0.002,
+          "note": "nonlinear scipy reference (design/closedloop.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/alpha_deg",
+          "t": 1.2,
+          "value": 10.843520138371552,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/q_deg",
+          "t": 1.2,
+          "value": 0.369197417595373,
+          "abs": 0.002,
+          "note": "nonlinear scipy reference (design/closedloop.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/alpha_deg",
+          "t": 1.2,
+          "value": 10.651108204980245,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/q_deg",
+          "t": 1.5,
+          "value": 5.348044020431189,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/alpha_deg",
+          "t": 1.5,
+          "value": 12.137087414224995,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/q_deg",
+          "t": 1.5,
+          "value": 1.781701470161585,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/alpha_deg",
+          "t": 1.5,
+          "value": 10.947637910515033,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/q_deg",
+          "t": 2.0,
+          "value": 4.978763874208313,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/alpha_deg",
+          "t": 2.0,
+          "value": 14.07819054178469,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/q_deg",
+          "t": 2.0,
+          "value": 4.689828092507902,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/alpha_deg",
+          "t": 2.0,
+          "value": 12.362977646669348,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/q_deg",
+          "t": 3.0,
+          "value": 4.894721652851214,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/alpha_deg",
+          "t": 3.0,
+          "value": 16.987595648076752,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/q_deg",
+          "t": 3.0,
+          "value": 6.895355278213978,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/alpha_deg",
+          "t": 3.0,
+          "value": 17.020319896978673,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/q_deg",
+          "t": 5.0,
+          "value": 0.08151292692233578,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Sched/Air/alpha_deg",
+          "t": 5.0,
+          "value": 17.627916635303382,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/q_deg",
+          "t": 5.0,
+          "value": -0.0855159823034899,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Frozen/Air/alpha_deg",
+          "t": 5.0,
+          "value": 18.912912889074136,
+          "abs": 0.002
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Frozen/Air/q_deg",
+          "from_t": 1.0,
+          "to_t": 4.0,
+          "value": 7.090207246303971,
+          "rtol": 0.002,
+          "note": "the high-qbar gains, frozen, are too weak here: slow rise and about 40 % overshoot"
+        }
+      ]
+    },
+    "f16-envelope": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Protected/Air/alpha_deg",
+          "value": 25.0,
+          "note": "the alpha limiter holds alpha below 25 deg"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Protected/Forces/nz",
+          "value": 9.0,
+          "note": "the g limiter holds nz below 9 g, although the stick asks for 11 g"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Unprotected/Forces/nz",
+          "value": 10.12679012935247,
+          "rtol": 0.005,
+          "note": "without the limiter: over 10 g"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Unprotected/Air/alpha_deg",
+          "value": 81.51284138740309,
+          "rtol": 0.005,
+          "note": "and the low-speed end of the loop departs to beyond 80 deg alpha (tables clamped beyond 45 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Protected/Air/alpha_deg",
+          "t": 2.0,
+          "value": 6.309513579118049,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Protected/Forces/nz",
+          "t": 2.0,
+          "value": 6.837653210536524,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Unprotected/Air/alpha_deg",
+          "t": 2.0,
+          "value": 6.309513579118049,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Unprotected/Forces/nz",
+          "t": 2.0,
+          "value": 6.837653210536524,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Protected/Air/alpha_deg",
+          "t": 4.0,
+          "value": 9.670646307394552,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Protected/Forces/nz",
+          "t": 4.0,
+          "value": 8.80340969478834,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Unprotected/Air/alpha_deg",
+          "t": 4.0,
+          "value": 11.513661886655838,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Unprotected/Forces/nz",
+          "t": 4.0,
+          "value": 10.113108501580825,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Protected/Air/alpha_deg",
+          "t": 8.0,
+          "value": 14.913246174091025,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Protected/Forces/nz",
+          "t": 8.0,
+          "value": 8.544947982043624,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Unprotected/Air/alpha_deg",
+          "t": 8.0,
+          "value": 20.535165591908683,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Unprotected/Forces/nz",
+          "t": 8.0,
+          "value": 8.997031577449318,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Protected/Air/alpha_deg",
+          "t": 12.0,
+          "value": 17.306813623803436,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Protected/Forces/nz",
+          "t": 12.0,
+          "value": 6.675329076376202,
+          "abs": 0.02
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Unprotected/Air/alpha_deg",
+          "t": 12.0,
+          "value": 81.51284138740309,
+          "abs": 0.05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Unprotected/Forces/nz",
+          "t": 12.0,
+          "value": 3.4151594496996,
+          "abs": 0.02
+        }
+      ]
+    },
+    "f16-pio": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "PlainAct/RateLimit/y",
+          "from_t": 6.0,
+          "to_t": 10.0,
+          "value": 60.0,
+          "rtol": 1e-06,
+          "note": "plain: the stabilator is still rate-limited (60 deg/s) after 6 s: a limit cycle"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "CompAct/RateLimit/y",
+          "from_t": 6.0,
+          "to_t": 10.0,
+          "value": 10.0,
+          "note": "compensated: the oscillation has died out"
+        },
+        {
+          "kind": "ripple",
+          "signal": "Comp/Air/theta_deg",
+          "from_t": 8.0,
+          "to_t": 10.0,
+          "measure": "pp",
+          "value": 0.5,
+          "note": "compensated: theta error peak-to-peak 8..10 s 0.14 deg"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Plain/Air/theta_deg",
+          "from_t": 6.0,
+          "to_t": 10.0,
+          "value": 25.395685800995995,
+          "rtol": 0.02,
+          "note": "plain: theta still swings +-20 deg about the 11 deg target after 6 s (peak-to-peak per 2 s: 29, 36, 41, 37 deg)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Plain/Air/theta_deg",
+          "t": 1.5,
+          "value": 10.05668813260079,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Comp/Air/theta_deg",
+          "t": 1.5,
+          "value": 7.9092685376067084,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Plain/Air/theta_deg",
+          "t": 2.0,
+          "value": 20.684220928413268,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Comp/Air/theta_deg",
+          "t": 2.0,
+          "value": 15.519152128318494,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Plain/Air/theta_deg",
+          "t": 3.0,
+          "value": -2.6943807546425202,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Comp/Air/theta_deg",
+          "t": 3.0,
+          "value": 8.753280409079347,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Plain/Air/theta_deg",
+          "t": 4.0,
+          "value": 10.908268995658734,
+          "abs": 0.1
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Comp/Air/theta_deg",
+          "t": 4.0,
+          "value": 12.470938101375259,
+          "abs": 0.1
+        }
+      ]
+    }
+  }
+}

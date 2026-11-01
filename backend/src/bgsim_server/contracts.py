@@ -34,6 +34,7 @@ class DeformationFamily(Enum):
 class DeformationBasis(Enum):
     clamped_free = 'clamped-free'
     free_free = 'free-free'
+    linear = 'linear'
 
 
 class ShapeAxis(Enum):
@@ -1153,6 +1154,13 @@ class ModelPlot(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class SceneExaggeration(Enum):
+    int_1 = 1
+    int_10 = 10
+    int_100 = 100
+    int_1000 = 1000
+
+
 class ModelScene(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -1160,6 +1168,11 @@ class ModelScene(BaseModel):
     file: str = Field(
         ...,
         description='Scene file relative to the project directory, e.g. scenes/drivetrain.sdf.',
+    )
+    exaggeration: SceneExaggeration | None = Field(
+        None,
+        description='The initial deformation exaggeration of the 3D view for this model (a display factor on every beam deformation), used when this browser has no stored choice for the model. A choice the viewer stores still wins. Absent: 1 (true scale).',
+        title='SceneExaggeration',
     )
     field_comment: str | None = Field(None, alias='$comment')
 
