@@ -36,6 +36,22 @@
       "cantilever-modes"
     ]
   },
+  "cars": {
+    "title": "Cars",
+    "description": "An electric race car and an electric four-wheel-drive buggy as full 3D multibond bond graphs: suspension, combined-slip tyres, Ackermann steering, electric drive with…",
+    "hasScene": true,
+    "models": [
+      "racecar-settle",
+      "racecar-skidpad",
+      "racecar-launch",
+      "racecar-straight",
+      "buggy-settle",
+      "buggy-grade",
+      "buggy-hills",
+      "racecar-sim",
+      "buggy-sim"
+    ]
+  },
   "cube-3d": {
     "title": "Cube 3d",
     "description": "A cube balanced on one corner by three reaction wheels.",
