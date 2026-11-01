@@ -343,6 +343,7 @@ M4 adds the debug methods and notifications of section 3.8.
 | `GET /api/health` | `{ backend, worker: "starting" \| "warming" \| "ready" \| "crashed", versions }` |
 | `GET /api/catalog?project=` | Proxies `catalog.get`. Cached, and invalidated when files in the project library change. |
 | `GET/POST /api/projects`, `GET /api/projects/{p}` | List, create (from an example or empty), open. `projects_root` is configurable (default `~/bgsim-projects`). |
+| `GET /api/projects/{p}/models` | The cards of the project's model picker (opening a project shows it before a model opens): per model the name, a description (`$comment`, else the first paragraph of its Docs overview), the first Docs image as thumbnail, the block count and a capped miniature of the top-level diagram. |
 | `GET/PUT/DELETE /api/projects/{p}/models/{m}` | Model documents, validated against `model.schema.json` on PUT. |
 | `GET/PUT/DELETE /api/projects/{p}/library/{block}` | Project library sources. |
 | `POST /api/check/block`, `POST /api/check/model` | Proxy to the worker. |

@@ -231,6 +231,8 @@ test("imports the 2D multibond pendulum, shows two strokes, runs it and reads th
   await expect(sample).toBeVisible();
   await sample.click();
   await expect(page).toHaveURL(/project=multibond-pendulum-2d/);
+  // The import opens the project overview; pick the model there.
+  await page.getByTestId("model-card-pendulum").click();
   await expect(page).toHaveURL(/model=pendulum/);
   project = new URL(page.url()).searchParams.get("project") ?? "";
   expect(project).toMatch(/^multibond-pendulum-2d(-\d+)?$/);

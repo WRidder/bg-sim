@@ -247,6 +247,8 @@ test("imports the 3D robot arm, shows three strokes, runs it and reads the joint
   await expect(sample).toBeVisible();
   await sample.click();
   await expect(page).toHaveURL(/project=robot-arm-3d/);
+  // The import opens the project overview; pick the model there.
+  await page.getByTestId("model-card-arm").click();
   await expect(page).toHaveURL(/model=arm/);
   project = new URL(page.url()).searchParams.get("project") ?? "";
   expect(project).toMatch(/^robot-arm-3d(-\d+)?$/);

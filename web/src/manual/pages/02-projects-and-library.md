@@ -5,9 +5,21 @@
 A **project** is a folder with one or more **models**, the project's own block library, CSV data, 3D scenes and docs. One model is open at a time.
 
 - **Start page** (shown when no project is open): create a project under **New project**, reopen one of the **Recent projects**, or import an example from the **Example gallery**.
-- **Open dialog** (`Ctrl+O`, or click the project name in the top bar): pick a project on the left and a model on the right. Use **New project** and **New model** to create them.
-- **Examples** are read-only templates. **Open sample** (or a sample in the Open dialog) imports an editable copy into your projects; the example itself never changes.
-- **Back to the start page:** click **BG-Sim** at the top left. If something is not saved yet, BG-Sim asks whether to save first.
+- **Project overview:** opening a project (a recent project, an imported sample, or **Open project overview** in the Open dialog) first shows its models as cards, like the example gallery. Each card has a picture, the model name, a short description, the number of blocks and the date of the last change. Click a card (or focus it with `Tab` and press `Enter`) to open that model. `Ctrl+click` opens it in a new browser tab. **Create model** starts a new, empty model in the project. **← All projects** goes back to the start page.
+  - The picture is the first image of the model's [Docs](page:code-and-docs) overview page. Without one, the card shows a miniature of the diagram: boxes for blocks, dots for junctions, dashed lines for signals.
+  - The description is the model's comment (`$comment` in the model file) or, without one, the first paragraph of its Docs overview page.
+- **Open dialog** (`Ctrl+O` on the start page, or click **No project** in the top bar): pick a project on the left and a model on the right. Use **New project** and **New model** to create them.
+- **Examples** are read-only templates. **Open sample** (or a sample in the Open dialog) imports an editable copy into your projects and shows its project overview; the example itself never changes.
+
+### Switching models and projects
+
+In a project, the top bar reads **BG-Sim ▸ project ▸ model ▾**:
+
+- **model ▾** (or `Ctrl+O`) opens the model menu: the models of this project as small cards, with the open model marked **Open**. Click a card to switch to that model. Use the arrow keys to move between cards, `Enter` to open one and `Esc` to close the menu.
+- **project** (the project name) opens the project overview with all models of the project.
+- **BG-Sim** goes back to the start page. To open **another project**, go back to the start page and pick it there. The model menu only lists the models of the open project.
+
+The model saves itself before BG-Sim switches. If other work is not saved yet (a project-library block in the Code tab, or Docs pages), BG-Sim asks first: **Save and leave**, **Leave without saving** or **Cancel**.
 
 ### Saving
 

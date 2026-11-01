@@ -95,6 +95,12 @@ for (const theme of ["light", "dark"] as const) {
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("shortcuts-overlay")).toBeHidden();
 
+    // The project overview (model picker).
+    await page.goto(`/?project=${project}`);
+    await expect(page.getByTestId("model-picker")).toHaveAttribute("data-state", "ready", { timeout: 30_000 });
+    await expect(page.getByTestId("model-card-Arm")).toBeVisible();
+    await expectClean(page, "project overview");
+
     // Editor with a diagram.
     await page.goto(`/?project=${project}&model=Arm`);
     await expect(page.getByTestId("run-button")).toBeEnabled({ timeout: 30_000 });
@@ -185,9 +191,9 @@ for (const theme of ["light", "dark"] as const) {
     await expect(page.getByTestId("bindings-editor")).toBeVisible();
     await expectClean(page, "3D view with the bindings editor");
 
-    // Open dialog over the editor.
+    // The model menu over the editor.
     await page.getByTestId("open-project").click();
-    await expect(page.getByTestId("open-project-list")).toBeVisible();
-    await expectClean(page, "open dialog over the editor");
+    await expect(page.getByTestId("model-menu")).toHaveAttribute("data-state", "ready");
+    await expectClean(page, "model menu over the editor");
   });
 }

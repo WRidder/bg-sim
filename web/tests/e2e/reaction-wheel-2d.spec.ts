@@ -244,6 +244,8 @@ test("imports the planar reaction-wheel balancer, shows two strokes, runs it and
   await expect(sample).toBeVisible();
   await sample.click();
   await expect(page).toHaveURL(/project=reaction-wheel-2d/);
+  // The import opens the project overview; pick the model there.
+  await page.getByTestId("model-card-balancer").click();
   await expect(page).toHaveURL(/model=balancer/);
   project = new URL(page.url()).searchParams.get("project") ?? "";
   expect(project).toMatch(/^reaction-wheel-2d(-\d+)?$/);

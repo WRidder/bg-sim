@@ -895,6 +895,322 @@ body {
   color: var(--color-text-muted);
 }
 
+/* ---------------------------------------------------------- model picker */
+
+.model-picker__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.model-picker__back {
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.model-picker__back:hover {
+  text-decoration: underline;
+}
+
+.model-picker__back:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.model-picker__title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.model-picker__lead {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.model-picker__hero .start-page__new {
+  align-self: stretch;
+}
+
+/* The model cards reuse the example gallery card (src/examples/gallery.css). */
+.model-grid__item {
+  display: flex;
+  min-width: 0;
+}
+
+.model-card {
+  flex: 1 1 auto;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.model-card:hover {
+  border-color: var(--color-accent);
+}
+
+.model-card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.model-card[aria-disabled="true"] {
+  cursor: progress;
+}
+
+.model-card.is-current {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent), var(--shadow-panel);
+}
+
+.model-card__title {
+  overflow-wrap: anywhere;
+}
+
+/* The picture keeps its 8:5 box and the description its line clamp; the meta line sits at the bottom. */
+.model-card .example-card__thumb {
+  flex: none;
+  overflow: hidden;
+}
+
+.model-card .example-card__description {
+  flex: none;
+}
+
+.model-card__meta {
+  margin-top: auto;
+}
+
+.model-card__description--none {
+  font-style: italic;
+  color: var(--color-text-faint);
+}
+
+.model-card__meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+}
+
+.model-card__current {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.model-card__miniature {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  padding: var(--space-2);
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--color-border) 70%, transparent) 1px, transparent 1.5px)
+      0 0 / 14px 14px,
+    var(--color-surface-sunken);
+}
+
+.model-card__preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.model-card__link {
+  stroke: var(--color-text-faint);
+  stroke-width: 1.2;
+}
+
+.model-card__link--s {
+  stroke: var(--color-accent);
+  stroke-dasharray: 3 2;
+}
+
+.model-card__node {
+  fill: var(--color-surface-raised);
+  stroke: var(--color-text-muted);
+  stroke-width: 1.2;
+}
+
+.model-card__node--j {
+  fill: var(--color-text-muted);
+}
+
+.model-card__node--s {
+  stroke: var(--color-accent);
+  stroke-width: 1.6;
+}
+
+.model-grid--compact {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--space-3);
+}
+
+.model-grid--compact .example-card__body {
+  gap: var(--space-1);
+  padding: var(--space-2);
+}
+
+.model-grid--compact .example-card__title {
+  font-size: var(--font-size-sm);
+}
+
+.model-grid--compact .example-card__description {
+  font-size: var(--font-size-xs);
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+/* ------------------------------------------------- top bar breadcrumb */
+
+.top-bar__crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.top-bar__crumb-sep {
+  flex: none;
+  color: var(--color-text-faint);
+  font-size: var(--font-size-sm);
+}
+
+.top-bar__crumb {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 3px var(--space-1);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+a.top-bar__crumb:hover {
+  color: var(--color-text);
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+a.top-bar__crumb:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.top-bar__crumb--static {
+  color: var(--color-text);
+}
+
+.top-bar__crumb--hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-faint);
+}
+
+.top-bar__model {
+  align-items: center;
+}
+
+.top-bar__model-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+}
+
+/* ------------------------------------------------------------ model menu */
+
+.model-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 89;
+}
+
+.model-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: var(--space-3);
+  z-index: 90;
+  width: min(820px, calc(100vw - 2 * var(--space-3)));
+  max-height: min(72vh, 680px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  overflow: auto;
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 28%), var(--shadow-panel);
+  outline: none;
+}
+
+.model-menu .example-card {
+  background: var(--color-surface);
+}
+
+.model-menu__header,
+.model-menu__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.model-menu__footer {
+  padding-top: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.model-menu__title {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-menu__link {
+  flex: none;
+  font-size: var(--font-size-sm);
+  color: var(--color-accent);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.model-menu__link:hover {
+  text-decoration: underline;
+}
+
+.model-menu__link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.model-menu__note {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.model-menu__note--error {
+  color: var(--color-error-text);
+}
+
+.open-dialog__open-project {
+  align-self: flex-start;
+}
+
 kbd {
   padding: 0 var(--space-1);
   font-family: var(--font-mono);

@@ -8,6 +8,7 @@
 import { useDocumentStore } from "../state/documentStore";
 import { createProject, ProjectApiError, type ProjectModelEntry } from "../state/modelApi";
 import { saveCurrentModel } from "../state/persistence";
+import { modelUrl, projectUrl } from "./route";
 
 export const NAME_PATTERN = /^[A-Za-z0-9_.-]+$/;
 
@@ -77,11 +78,17 @@ export async function openSession(project: string, model: string): Promise<OpenR
       };
     }
   }
-  const url = new URL(window.location.href);
-  url.searchParams.set("project", project);
-  url.searchParams.set("model", model);
-  navigation.assign(url.toString());
+  navigation.assign(modelUrl(project, model));
   return { ok: true };
+}
+
+/**
+ * Open a project: its model picker (`?project=` without a model), where the user
+ * chooses the model to edit. Used from the start page and the Open dialog, where
+ * no model is open, so nothing needs saving first.
+ */
+export function openProjectPage(project: string): void {
+  navigation.assign(projectUrl(project));
 }
 
 export class SampleImportError extends Error {
@@ -98,8 +105,8 @@ export class SampleImportError extends Error {
 }
 
 /**
- * Import `sample` as a new project (never writing to the sample) and open its
- * first model. Throws `SampleImportError`; resolves with the open result.
+ * Import `sample` as a new project (never writing to the sample) and open it on
+ * its model picker. Throws `SampleImportError`; resolves with the open result.
  */
 export async function importSample(
   sample: string,
@@ -108,15 +115,9 @@ export async function importSample(
   try {
     const target = uniqueProjectName(sample, existingProjects);
     const opened = await createProject(target, sample);
-    const model = firstModel(opened.models);
-    if (model === null) {
-      throw new SampleImportError(`The sample “${sample}” has no models.`, false, opened.name);
-    }
-    return await openSession(opened.name, model);
+    openProjectPage(opened.name);
+    return { ok: true };
   } catch (cause) {
-    if (cause instanceof SampleImportError) {
-      throw cause;
-    }
     if (cause instanceof ProjectApiError && cause.status === 409) {
       throw new SampleImportError("The project list changed while importing; try again.", true);
     }

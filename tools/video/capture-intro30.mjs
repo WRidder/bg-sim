@@ -117,6 +117,10 @@ const scenes = {
     await hover(page, card.getByTestId("example-open-dc-motor"), { ms: 800 });
     await mark(r, "4-card", 1.0);
     await click(page, page.getByTestId("example-open-dc-motor"));
+    // The imported copy opens on its project overview: pick the model there.
+    await page.getByTestId("model-card-iconic").waitFor({ timeout: 60000 });
+    await sleep(1200);
+    await click(page, page.getByTestId("model-card-iconic"));
     await page.getByTestId("diagram-node").first().waitFor({ timeout: 60000 });
     await sleep(2500);
     await page.addStyleTag({ content: HIDE_TOASTS });

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { ExportDialog } from "../export/ExportDialog";
 import { useExportDialogStore } from "../export/exportStore";
@@ -7,8 +7,10 @@ import { TaskIndicator } from "../tasks/TaskIndicator";
 import type { Theme } from "../theme/theme";
 import { useHelpStore } from "./helpStore";
 import { LeaveProjectDialog } from "./LeaveProjectDialog";
-import { requestLeaveProject } from "./leaveProject";
+import { requestLeaveModel, requestLeaveProject } from "./leaveProject";
+import { ModelMenu } from "./ModelMenu";
 import { OpenDialog } from "./OpenDialog";
+import { projectUrl, readAppRoute, type AppRoute } from "./route";
 import { RunBar } from "./RunBar";
 import { WorkerStatus } from "./WorkerStatus";
 
@@ -48,46 +50,68 @@ function HelpIcon() {
 export interface TopBarProps {
   theme: Theme;
   onToggleTheme: () => void;
+  /** The screen the URL selects; read from the URL when omitted. */
+  route?: AppRoute;
 }
 
 /**
- * The top bar of plan 7.2 in three columns: the project ▸ model picker on the left, Run/Stop,
+ * The top bar of plan 7.2 in three columns: the breadcrumb on the left, Run/Stop,
  * t_end/solver/tol and the run activity centred, Export and the status icons on the right. Run and Stop stay disabled until a model is open (M1
  * wires them); the theme toggle is live. The help icon at the far right opens
  * the user manual (also F1 when no block is selected).
+ *
+ * The breadcrumb depends on the screen. On the start page it opens the Open
+ * dialog (Ctrl+O). In a project it reads `BG-Sim ▸ project ▸ model ▾`: the brand
+ * goes back to the start page (the only way to another project), the project
+ * name to the project's model picker, and the model menu (Ctrl+O) lists the
+ * project's models to switch to.
  */
-export function TopBar({ theme, onToggleTheme }: TopBarProps) {
+export function TopBar({ theme, onToggleTheme, route: routeProp }: TopBarProps) {
   const nextTheme = theme === "dark" ? "light" : "dark";
-  const project = useDocumentStore((state) => state.project);
-  const modelName = useDocumentStore((state) => state.modelName);
+  const [urlRoute] = useState(() => readAppRoute());
+  const route = routeProp ?? urlRoute;
+  const storeProject = useDocumentStore((state) => state.project);
+  const storeModel = useDocumentStore((state) => state.modelName);
+  const project = storeProject ?? (route.kind === "start" ? null : route.project);
+  const modelName = storeModel ?? (route.kind === "editor" ? route.model : null);
   const hasDoc = useDocumentStore((state) => state.doc !== null);
   const openExport = useExportDialogStore((state) => state.openExport);
   const [openDialog, setOpenDialog] = useState(false);
+  const [modelMenu, setModelMenu] = useState(false);
+  const closeOpenDialog = useCallback(() => setOpenDialog(false), []);
+  const closeModelMenu = useCallback(() => setModelMenu(false), []);
   const manualOpen = useHelpStore((state) => state.manualOpen);
   const setManualOpen = useHelpStore((state) => state.setManualOpen);
+  const kind = route.kind;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "o") {
         event.preventDefault();
-        setOpenDialog(true);
+        if (kind === "start") {
+          setOpenDialog(true);
+        } else if (kind === "editor") {
+          setModelMenu(true);
+        } else {
+          document.querySelector<HTMLElement>('[data-testid="model-grid"] .model-card')?.focus();
+        }
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [kind]);
 
   return (
     <header className="top-bar" data-testid="top-bar">
       <div className="top-bar__left">
-        {project === null ? (
+        {kind === "start" ? (
           <div className="top-bar__brand">BG-Sim</div>
         ) : (
           <button
             type="button"
             className="top-bar__brand top-bar__brand--link"
             data-testid="brand-home"
-            title="Back to the library (examples and projects)"
+            title="Back to the start page (all projects and the examples)"
             onClick={requestLeaveProject}
           >
             BG-Sim
@@ -95,25 +119,73 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
         )}
         <LeaveProjectDialog />
 
-        <button
-          type="button"
-          className="top-bar__project"
-          data-testid="open-project"
-          aria-haspopup="dialog"
-          aria-expanded={openDialog}
-          title="Open a project or model (Ctrl+O)"
-          onClick={() => setOpenDialog(true)}
-        >
-          <span className="top-bar__project-name">
-            {project ?? "No project"}
-          </span>
-          <span className="top-bar__hint">
-            {project === null ? "open a project" : (modelName ?? "No model")}
-          </span>
-          <span className="top-bar__chevron" aria-hidden="true">
-            ▾
-          </span>
-        </button>
+        {kind === "start" ? (
+          <button
+            type="button"
+            className="top-bar__project"
+            data-testid="open-project"
+            aria-haspopup="dialog"
+            aria-expanded={openDialog}
+            title="Open a project (Ctrl+O)"
+            onClick={() => setOpenDialog(true)}
+          >
+            <span className="top-bar__project-name">No project</span>
+            <span className="top-bar__hint">open a project</span>
+            <span className="top-bar__chevron" aria-hidden="true">
+              ▾
+            </span>
+          </button>
+        ) : (
+          <nav className="top-bar__crumbs" aria-label="Project and model">
+            <span className="top-bar__crumb-sep" aria-hidden="true">
+              ▸
+            </span>
+            {kind === "picker" ? (
+              <span className="top-bar__crumb top-bar__crumb--static" data-testid="project-crumb" aria-current="page">
+                {project}
+              </span>
+            ) : (
+              <a
+                className="top-bar__crumb"
+                href={projectUrl(project ?? "")}
+                data-testid="project-crumb"
+                title="All models of this project"
+                onClick={(event) => {
+                  if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+                    event.preventDefault();
+                    void requestLeaveModel(projectUrl(project ?? ""), "project");
+                  }
+                }}
+              >
+                {project}
+              </a>
+            )}
+            <span className="top-bar__crumb-sep" aria-hidden="true">
+              ▸
+            </span>
+            {kind === "picker" ? (
+              <span className="top-bar__crumb top-bar__crumb--hint">choose a model</span>
+            ) : (
+              <button
+                type="button"
+                className="top-bar__project top-bar__model"
+                data-testid="open-project"
+                aria-haspopup="dialog"
+                aria-expanded={modelMenu}
+                title="Switch to another model of this project (Ctrl+O)"
+                onClick={() => setModelMenu(true)}
+              >
+                <span className="top-bar__model-name">{modelName ?? "No model"}</span>
+                <span className="top-bar__chevron" aria-hidden="true">
+                  ▾
+                </span>
+              </button>
+            )}
+          </nav>
+        )}
+        {kind === "editor" && project !== null ? (
+          <ModelMenu open={modelMenu} project={project} current={modelName} onClose={closeModelMenu} />
+        ) : null}
       </div>
 
       <div className="top-bar__center">
@@ -161,7 +233,7 @@ export function TopBar({ theme, onToggleTheme }: TopBarProps) {
         </div>
       </div>
 
-      <OpenDialog open={openDialog} onClose={() => setOpenDialog(false)} />
+      {kind === "start" ? <OpenDialog open={openDialog} onClose={closeOpenDialog} /> : null}
       <ExportDialog />
       {manualOpen ? (
         <Suspense fallback={null}>

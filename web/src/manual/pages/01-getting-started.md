@@ -6,7 +6,7 @@ BG-Sim is a modeling and simulation tool for **bond graphs**, **block diagrams**
 
 | Area | What it holds |
 | --- | --- |
-| Top bar | the project and model on the left; **Run** / **Debug** / **Stop**, run settings and the run status in the centre; **Export FMU…**, background tasks, the worker status dot, theme toggle and this manual on the right |
+| Top bar | the project and model on the left (the model menu switches models); **Run** / **Debug** / **Stop**, run settings and the run status in the centre; **Export FMU…**, background tasks, the worker status dot, theme toggle and this manual on the right |
 | Left | the block **Library** and the **Model tree** |
 | Centre | the tabs **Diagram**, **Code**, **Docs**, **Parameters** and **Dashboard** |
 | Right | the **Inspector** of the selection |
@@ -16,7 +16,7 @@ You can resize every panel by dragging its border; the sizes are remembered.
 
 ## Your first model in five steps
 
-1. On the start page, type a project name under **New project** and click **Create project**. Or click **Open sample** on an example to get an editable copy.
+1. On the start page, type a project name under **New project** and click **Create project**. Or click **Open sample** on an example to get an editable copy, then pick one of its models in the [project overview](page:projects-and-library).
 2. Drag blocks from the [library](page:projects-and-library) onto the canvas.
 3. Connect ports by dragging from one port to another (see [Building models](page:building-models)).
 4. Select a block and set its parameters in the inspector.

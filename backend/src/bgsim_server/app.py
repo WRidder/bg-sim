@@ -18,7 +18,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 
-from . import data, debug, docs, exports, meshes, projects, proxy, runs, stream
+from . import data, debug, docs, exports, meshes, model_cards, projects, proxy, runs, stream
 from .config import BACKEND_VERSION, Settings
 from .proxy import CatalogCache, WorkerRpcFailure
 from .worker import WorkerLauncher, WorkerSupervisor
@@ -101,6 +101,7 @@ def create_app(
     # without touching this file. The SPA catch-all below must stay registered last.
     app.include_router(proxy.router, prefix="/api", tags=["proxy"])
     app.include_router(projects.router, prefix="/api", tags=["projects"])
+    app.include_router(model_cards.router, prefix="/api", tags=["projects"])
     app.include_router(runs.router, prefix="/api", tags=["runs"])
     app.include_router(debug.router, prefix="/api", tags=["debug"])
     app.include_router(meshes.router, prefix="/api", tags=["meshes"])

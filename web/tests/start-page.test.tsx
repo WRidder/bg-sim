@@ -138,7 +138,7 @@ describe("start page", () => {
     expect(screen.getByTestId("gallery-empty").textContent).toMatch(/Create an empty project/);
   });
 
-  it("lists the most recent projects first and opens one", async () => {
+  it("lists the most recent projects first and opens one on its model picker", async () => {
     installBackend({
       examples: [],
       projects: [
@@ -159,10 +159,11 @@ describe("start page", () => {
     await waitFor(() => expect(assign).toHaveBeenCalledTimes(1));
     const target = new URL(assign.mock.calls[0]?.[0] ?? "");
     expect(target.searchParams.get("project")).toBe("fresh");
-    expect(target.searchParams.get("model")).toBe("m1");
+    // A project opens on its model picker, not on a model.
+    expect(target.searchParams.has("model")).toBe(false);
   });
 
-  it("imports a sample as a copy through the create-from-example flow", async () => {
+  it("imports a sample as a copy and opens it on its model picker", async () => {
     installBackend({
       examples: ["dc-motor"],
       projects: [{ name: "dc-motor", path: "", language: "0.1.0", models: ["iconic"], modified: null, valid: true, error: null }],
@@ -178,7 +179,7 @@ describe("start page", () => {
     expect(post?.body).toEqual({ name: "dc-motor-2", example: "dc-motor" });
     const target = new URL(assign.mock.calls[0]?.[0] ?? "");
     expect(target.searchParams.get("project")).toBe("dc-motor-2");
-    expect(target.searchParams.get("model")).toBe("iconic");
+    expect(target.searchParams.has("model")).toBe(false);
   });
 
   it("creates a new project from the name field and rejects an invalid name", async () => {

@@ -15,6 +15,7 @@ import {
   firstModel,
   importSample,
   nameIssue,
+  openProjectPage,
   openSession,
   SampleImportError,
 } from "./openSession";
@@ -117,13 +118,10 @@ export function StartPage() {
     [load, projects],
   );
 
-  const openRecent = useCallback(async (entry: ProjectSummary) => {
+  // A project opens on its model picker, where the user chooses the model.
+  const openRecent = useCallback((entry: ProjectSummary) => {
     setBusy(`recent:${entry.name}`);
-    const result = await openSession(entry.name, entry.models[0] ?? DEFAULT_MODEL);
-    setBusy(null);
-    if (!result.ok) {
-      setError(result.error);
-    }
+    openProjectPage(entry.name);
   }, []);
 
   return (
@@ -195,13 +193,9 @@ export function StartPage() {
                     type="button"
                     className="start-page__recent-item"
                     data-testid={`recent-project-${entry.name}`}
-                    disabled={busy !== null || entry.models.length === 0}
-                    title={
-                      entry.models.length === 0
-                        ? "This project has no models yet; open it from the Open dialog to add one."
-                        : `Open ${entry.name}`
-                    }
-                    onClick={() => void openRecent(entry)}
+                    disabled={busy !== null}
+                    title={`Open ${entry.name} and choose a model`}
+                    onClick={() => openRecent(entry)}
                   >
                     <span className="open-dialog__name">{entry.name}</span>
                     <span className="start-page__recent-meta">
