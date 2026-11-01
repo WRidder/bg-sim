@@ -306,6 +306,63 @@ def decimate(
     )
 
 
+def decimate_rows(t: np.ndarray, values: np.ndarray, max_rows: int) -> Decimated:
+    """Thin ``values`` (signals x samples) to whole recorded rows, at most about ``max_rows``.
+
+    :func:`decimate` keeps every signal's own minimum and maximum per bucket, so one output row
+    can combine samples of different instants. That is right for a plot against time, but an XY
+    plot pairs signals sample by sample and needs real rows. This variant therefore *selects*
+    rows: up to ``max_rows`` rows the window is returned unchanged; beyond that it keeps, per
+    bucket, the rows where any signal has its minimum or its maximum, plus the first and last
+    row and every event limit (duplicated timestamps). Each signal's envelope is still intact,
+    and every returned row is a recorded sample of all signals at once.
+
+    The bucket count is ``max_rows // (2 * n_signals)`` (at least one), so the result stays
+    within ``max_rows`` plus the exact rows however many signals are selected.
+    """
+    t = np.asarray(t, dtype=np.float64)
+    values = np.asarray(values, dtype=np.float64)
+    if t.ndim != 1 or values.ndim != 2 or values.shape[1] != t.size:
+        raise ValueError("t must be one-dimensional and values (signals x samples) must match it")
+    if max_rows < 1:
+        raise ValueError(f"max_rows must be positive (got {max_rows})")
+    n = int(t.size)
+    n_signals = int(values.shape[0])
+    if n == 0 or n_signals == 0:
+        return _empty(n_signals)
+    if n <= max_rows:
+        return Decimated(
+            time=np.array(t, dtype=np.float64),
+            values=np.array(values, dtype=np.float64),
+        )
+    buckets = max(1, min(n, max_rows // (2 * n_signals)))
+    k = n // buckets
+    head = (buckets - 1) * k
+    keep = np.zeros(n, dtype=bool)
+    keep[0] = True
+    keep[-1] = True
+    # A NaN makes argmin/argmax pick that row, which is still a recorded row: harmless.
+    offsets = np.arange(buckets - 1, dtype=np.intp) * k
+    for row in range(n_signals):
+        samples = values[row]
+        if buckets > 1:
+            block = np.ascontiguousarray(samples[:head]).reshape(buckets - 1, k)
+            keep[offsets + np.argmin(block, axis=1)] = True
+            keep[offsets + np.argmax(block, axis=1)] = True
+        rest = samples[head:]
+        keep[head + int(np.argmin(rest))] = True
+        keep[head + int(np.argmax(rest))] = True
+    events = np.flatnonzero(t[1:] == t[:-1])
+    if events.size:
+        keep[events] = True
+        keep[events + 1] = True
+    rows = np.flatnonzero(keep)
+    return Decimated(
+        time=np.ascontiguousarray(t[rows], dtype=np.float64),
+        values=np.ascontiguousarray(values[:, rows], dtype=np.float64),
+    )
+
+
 # --------------------------------------------------------------------------- run files
 
 _ROW_DTYPE = np.dtype("<f8")

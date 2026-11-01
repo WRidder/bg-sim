@@ -691,3 +691,104 @@
   color: var(--color-text);
   border-color: var(--domain-hydraulic);
 }
+
+/* ------------------------------------------------------------- XY plots */
+
+.plot-x-axis {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px;
+  border: var(--border-width) dashed transparent;
+  border-radius: var(--radius-sm);
+}
+
+.plot-x-axis.is-dragover {
+  border-color: var(--color-accent);
+  background: rgb(77 139 240 / 12%);
+}
+
+.plot-x-axis__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.plot-x-axis__label select {
+  max-width: 22ch;
+  height: 18px;
+  padding: 0 2px;
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.plot-x-axis.is-xy .plot-x-axis__label select {
+  border-color: var(--color-accent);
+}
+
+.plot-x-axis__aspect {
+  height: 18px;
+  padding: 0 4px;
+  font: inherit;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.plot-x-axis__aspect.is-on {
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border-color: var(--color-accent);
+}
+
+.plot-x-axis select:focus-visible,
+.plot-x-axis__aspect:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+/* The chart fills its host; the host's own height sets the plot size (no resize loop). */
+.plot-xy__canvas {
+  position: relative;
+  height: 240px;
+}
+
+.plot-xy__canvas > .uplot {
+  position: absolute;
+  inset: 0;
+}
+
+.plot-xy__marker {
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 2px solid;
+  border-radius: 50%;
+  background: var(--color-surface);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.plot-xy__marker--compare {
+  border-style: dashed;
+  opacity: 0.8;
+}
+
+.plot-legend__axis {
+  flex: none;
+  padding: 0 3px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}

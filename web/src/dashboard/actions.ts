@@ -82,12 +82,45 @@ export function setCardSignals(id: string, signals: readonly string[]): void {
   });
 }
 
+/**
+ * XY: draw a plot card's signals against `x` (a signal id), or against time again (null), as
+ * `x` of a model plot. The new x leaves the card's signals; the previous x returns to their front.
+ */
+export function setCardX(id: string, x: string | null): void {
+  withCard(id, (card) => {
+    if (card.kind !== "plot" || (x ?? undefined) === card.x) {
+      return;
+    }
+    const previous = card.x;
+    let signals = (card.signals ?? []).filter((signal) => signal !== x);
+    if (previous !== undefined && !signals.includes(previous)) {
+      signals = [previous, ...signals];
+    }
+    if (signals.length > 0) card.signals = signals;
+    else delete card.signals;
+    if (x === null) {
+      delete card.x;
+      delete card.equalAspect;
+    } else {
+      card.x = x;
+    }
+  });
+}
+
+/** XY: equal units per pixel on both axes of a plot card (`equalAspect`; false is not written). */
+export function setCardEqualAspect(id: string, on: boolean): void {
+  withCard(id, (card) => {
+    if (on && card.x !== undefined) card.equalAspect = true;
+    else delete card.equalAspect;
+  });
+}
+
 /** Drop a signal on a display card: a plot adds it, the others replace their binding. */
 export function dropSignalOnCard(id: string, signal: string): void {
   withCard(id, (card) => {
     if (card.kind === "plot") {
       const signals = card.signals ?? [];
-      if (!signals.includes(signal)) {
+      if (!signals.includes(signal) && signal !== card.x) {
         card.signals = [...signals, signal];
       }
     } else {

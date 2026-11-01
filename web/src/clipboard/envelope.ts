@@ -115,7 +115,7 @@ export function countOmitted(
     bindings: (doc.bindings ?? []).filter((binding) => mentions(binding, prefixes)).length,
     probes,
     dashboardCards: (doc.dashboard?.cards ?? []).filter((card) => mentions(card, prefixes)).length,
-    plots: (doc.plots ?? []).filter((plot) => mentions(plot.signals, prefixes)).length,
+    plots: (doc.plots ?? []).filter((plot) => mentions([...plot.signals, plot.x ?? ""], prefixes)).length,
   };
 }
 
