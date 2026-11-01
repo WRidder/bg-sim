@@ -1,0 +1,26 @@
+{
+  "quad-pendulum-free": {
+    "seconds": 107.1,
+    "points": 3049
+  },
+  "quad-pendulum-balance": {
+    "seconds": 37.4,
+    "points": 14127
+  },
+  "quad-pendulum-swingup": {
+    "seconds": 48.4,
+    "points": 20131
+  },
+  "quad-rotary-free": {
+    "seconds": 109.4,
+    "points": 3059
+  },
+  "quad-rotary-balance": {
+    "seconds": 69.1,
+    "points": 14123
+  },
+  "quad-rotary-swingup": {
+    "seconds": 72.3,
+    "points": 20127
+  }
+}
