@@ -21,6 +21,7 @@ using OrdinaryDiffEqRosenbrock
 import OrdinaryDiffEqTsit5, OrdinaryDiffEqBDF, OrdinaryDiffEqVerner
 using PrecompileTools: @setup_workload, @compile_workload
 using JuliaSyntax
+import LinearAlgebra
 
 export mtk_variable, mtk_parameter, mtk_discrete, signal_name
 

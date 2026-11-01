@@ -176,7 +176,22 @@ _temp_slot(w::DiscreteWalk, name::Symbol, k::Integer) =
 
 # Qualify a scalar/array expression in the current local environment.
 function _disc_qualify(w::DiscreteWalk, e)
-    return _qualify(QCtx(w.b, w.st, w.locals), e)
+    return _qualify(QCtx(w.b, w.st, w.locals, _disc_spill(w)), e)
+end
+
+# The spill of a discrete body (`QCtx.spill`): an intermediate value of an unrolled
+# computation (the LU factors of `A \ b`) becomes a local slot, assigned in place before the
+# statement that reads it. The slot names are deterministic (`compile_key` hashes them).
+function _disc_spill(w::DiscreteWalk)
+    return function (e::BGSim.Expr, r, events::Bool)
+        (e isa BGSim.Name || e isa BGSim.Lit) && return e
+        slot = Symbol("__d", w.index, "__ls", length(w.temp_slots) + 1)
+        _push_unique!(w.temp_slots, slot)
+        _push_unique!(w.temp_names, slot)
+        _disc_reads!(w, e, false)
+        _emit_scalar_assign!(w, :temp, slot, e, :assign, r)
+        return BGSim.Name(slot, r)
+    end
 end
 
 function _disc_report!(w::DiscreteWalk; code, message, range = nothing, hint = nothing)

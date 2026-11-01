@@ -69,7 +69,18 @@ end
 
 `:flow_out` means the element sets the flow (the conductance form, `i = g(v)`). `:effort_out` means it sets the effort (the resistance form, `F = F(w)`, such as a friction contact driven by a slip velocity). The **van-der-pol** example (in the Example gallery) builds Van der Pol oscillators this way. One is a tunnel-diode LC oscillator, the other a block on a spring riding a belt with a falling friction curve.
 
-Units are written as attributes, for example `R::Real = 1.0, [unit = "Ohm"]`, and are checked for consistency. The full language is described in the modeling language spec in the repository (`spec/`).
+Units are written as attributes, for example `R::Real = 1.0, [unit = "Ohm"]`, and are checked for consistency. A scaled unit (`deg`, `%`, `mm`, `rpm`) needs an explicit conversion where it meets the SI unit, such as `q_max*deg` (see [Parameters](page:parameters)). The full language is described in the modeling language spec in the repository (`spec/`).
+
+### Vectors, matrices and linear solves
+
+`Vec{n}` and `Mat{n,m}` values support `A * x`, `A * B`, `transpose(A)`, `dot`, `norm`, `cross` and the linear solve `A \ b` (or `A \ B` for several right-hand sides) with a square `A`. The solve is an LU factorisation with partial pivoting, written out by the compiler, so it works in `@equations` (also with a matrix that changes in time) and in `@discrete` code, but not in an `@events` body. A pivot change does not stop the solver. For example, the damped least-squares step of an inverse kinematics block:
+
+```julia
+@discrete Ts = 0.001 begin
+    JJt = J * transpose(J) + lam * [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0]
+    dq = transpose(J) * (JJt \ e)
+end
+```
 
 ## Docs tab
 

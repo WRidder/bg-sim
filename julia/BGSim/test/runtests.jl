@@ -242,6 +242,9 @@ include("test_simulate.jl")
 include("test_worker.jl")
 include("test_language.jl")
 
+# The linear solve `A \ b` on fixed-size arrays (unrolled LU with partial pivoting).
+include("test_linsolve.jl")
+
 # Work package J-MB3: the Lie-group / screw core (numeric, whitelist and registration).
 include("test_mech.jl")
 
@@ -268,6 +271,9 @@ include("test_mech_spatial.jl")
 
 # D-MB7 experiment: the rigid spatial revolute joint through index reduction.
 include("test_rigid_spatial.jl")
+
+# Optional hard stops (q_min/q_max) of Revolute3D, Prismatic3D, Revolute2D and Prismatic2D.
+include("test_joint_stops.jl")
 
 # Work package J-MB13: compliant plane contact (ContactSurface, ContactPoint).
 include("test_contact.jl")

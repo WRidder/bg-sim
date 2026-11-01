@@ -16,10 +16,21 @@
     # The spring sign is fs = +kt*d + bt*V_rel (positive into the joint); it gives the body
     # the restoring force -fs through the child/parent effort pair under the e.f-into-
     # element convention. Do not flip it.
+    #
+    # Optional hard stops (as `Revolute3D`): below `q_min` and above `q_max` a stiff
+    # spring-damper acts on the joint angle, `ts = k_stop (x_hi - x_lo) + d_stop (s_hi + s_lo)
+    # qdot` with the smooth positive part `x = (d + sqrt(d^2 + w_stop^2))/2` of the overshoot
+    # and `s = dx/dd`, between the drive and the link (`drive.e = -child.e[1] + ts`). No
+    # `ifelse`, so no switching event. The limits are structural constants; the default
+    # `-Inf`/`Inf` leaves each stop out of the equations.
     @ports begin
         parent::Power{Planar}
         child::Power{Planar}
         drive::Power{Rotation}
+    end
+    @constants begin
+        q_min::Real = -Inf, [unit = "rad", description = "Lower hard stop (-Inf: none)"]
+        q_max::Real = Inf, [unit = "rad", description = "Upper hard stop (Inf: none)"]
     end
     @parameters begin
         rx::Real = 0.0, [unit = "m", description = "Pivot x in the parent frame"]
@@ -27,6 +38,9 @@
         kt::Real = 1.0e6, [unit = "N/m", min = 0, description = "Pivot translational stiffness"]
         bt::Real = 0.0, [unit = "N*s/m", min = 0, description = "Pivot translational damping"]
         q0::Real = 0.0, [unit = "rad", description = "Initial link angle"]
+        k_stop::Real = 1.0e5, [unit = "N*m/rad", min = 0, description = "Hard-stop stiffness beyond q_min/q_max"]
+        d_stop::Real = 100.0, [unit = "N*m*s/rad", min = 0, description = "Hard-stop damping beyond q_min/q_max"]
+        w_stop::Real = 1.0e-5, [unit = "rad", min = 1.0e-12, description = "Smoothing width of the stop onset"]
     end
     @variables begin
         q::Real = 0.0, [unit = "rad", description = "Link angle"]
@@ -41,6 +55,7 @@
         pose::Vec{3}
         dout::Vec{2}
         Vrelout::Vec{3}
+        tau_stop::Real, [unit = "N*m", description = "Hard-stop torque on the joint angle (0 without stops)"]
     end
     @equations begin
         # g(q) = (q, rx, ry); Ad(g) and its inverse in the angular-first ordering.
@@ -64,7 +79,20 @@
                         (cos(q) * rx + sin(q) * ry) * child.e[3])
         parent.e[2] ~ -(cos(q) * child.e[2] - sin(q) * child.e[3])
         parent.e[3] ~ -(sin(q) * child.e[2] + cos(q) * child.e[3])
-        drive.e ~ -child.e[1]
+        if q_min > -Inf || q_max < Inf
+            tau_stop ~ ifelse(q_max < Inf,
+                0.5 * k_stop * ((q - q_max) + sqrt((q - q_max) * (q - q_max) + w_stop * w_stop)) +
+                0.5 * d_stop * (1.0 + (q - q_max) / sqrt((q - q_max) * (q - q_max) + w_stop * w_stop)) * qdot,
+                0.0) +
+                ifelse(q_min > -Inf,
+                -0.5 * k_stop * ((q_min - q) + sqrt((q_min - q) * (q_min - q) + w_stop * w_stop)) +
+                0.5 * d_stop * (1.0 + (q_min - q) / sqrt((q_min - q) * (q_min - q) + w_stop * w_stop)) * qdot,
+                0.0)
+            drive.e ~ -child.e[1] + tau_stop
+        else
+            tau_stop ~ 0.0
+            drive.e ~ -child.e[1]
+        end
         drive.f ~ qdot
         qout ~ q
         qdout ~ qdot

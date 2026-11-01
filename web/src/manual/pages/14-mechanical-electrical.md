@@ -75,6 +75,22 @@ How it works: the block stores magnetic energy `W = ½·L(h)·i²` with `L(h) = 
 
 Use it in a circuit and a translation diagram, or in a bond graph: bond the coil to an electrical 1-junction and the armature to the mass's 1-junction. The **maglev** example shows it levitating a steel ball with a cascade controller.
 
+## Joint hard stops (2D and 3D)
+
+The joints `Revolute3D`, `Prismatic3D` (Multibody 3D), `Revolute2D` and `Prismatic2D` (Multibody 2D) can stop at a limit of their coordinate `q`, like the mechanical end stops of a robot axis.
+
+| Setting | Kind | Default | Meaning |
+| --- | --- | --- | --- |
+| `q_min`, `q_max` | constant | `-Inf`, `Inf` | the limits (rad for a revolute joint, m for a prismatic one); `-Inf`/`Inf` means no stop |
+| `k_stop` | parameter | 1e5 N·m/rad, 1e6 N/m | stiffness of the stop |
+| `d_stop` | parameter | 100 N·m·s/rad, 1000 N·s/m | damping of the stop, only beyond the limit |
+| `w_stop` | parameter | 1e-5 rad, 1e-6 m | width over which the stop sets in |
+
+- **Set the limits** in the inspector's constants, for example `q_max` = `120*deg`. They are constants: changing one recompiles the model.
+- **Behaviour.** Between the limits the joint is free. Beyond a limit a stiff spring-damper pushes the joint back, and the output `tau_stop` (`f_stop` on a prismatic joint) is that torque or force. The joint goes a little past the limit, about the load divided by `k_stop`. The stop sets in smoothly over `w_stop`, without an event, so a joint that rests on its stop does not slow the solver down.
+- **Choosing the stiffness.** A stiffer stop stays closer to the limit but makes the model stiffer to solve. For a damped bounce choose `d_stop` near `2·sqrt(k_stop·J)` times the damping ratio, with `J` the inertia the joint moves.
+- **Without limits** the joint is exactly the joint it was before: the stop is left out of the equations.
+
 ## Wheels and flywheels (3D)
 
 Two blocks of the 3D mechanics categories model a wheel that rolls on the ground and a fast flywheel. The **gyrover** example uses both.

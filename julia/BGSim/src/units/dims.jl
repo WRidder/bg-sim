@@ -188,11 +188,12 @@ const UNIT_HZ = Dims(s = -1)
 
 Every unit string [`parse_unit`](@ref) accepts: the seven SI base units, the derived units
 of plan 5.3 (N, J, W, V, Ohm, F, H, Pa, bar, Hz, rpm, rad, deg) and the scaled ones
-(mm, cm, g, min, h, L), plus the pseudo-dimensions `effort` and `flow`.
+(mm, cm, g, min, h, L, %), plus the pseudo-dimensions `effort` and `flow`.
 
 `rad` is dimensionless (scale 1); `rpm` is `1/s` with scale 2π/60 (the `rad` dimension is
-dropped, as plan 5.3 says); `deg` is dimensionless with scale π/180. `Ω` is an alias of
-`Ohm` and `°` of `deg`.
+dropped, as plan 5.3 says); `deg` is dimensionless with scale π/180 and `%` dimensionless
+with scale 0.01 (a scaled `1`, as `deg` is a scaled `rad`). `Ω` is an alias of `Ohm` and `°`
+of `deg`.
 """
 const UNIT_TABLE = Dict{String,Dims}(
     "1" => DIMENSIONLESS,
@@ -223,6 +224,7 @@ const UNIT_TABLE = Dict{String,Dims}(
     "rad" => DIMENSIONLESS,
     "deg" => with_scale(DIMENSIONLESS, π / 180),
     "°" => with_scale(DIMENSIONLESS, π / 180),
+    "%" => with_scale(DIMENSIONLESS, 0.01),
     "L" => with_scale(UNIT_M^3, 1e-3),
     "effort" => UNIT_EFFORT,
     "flow" => UNIT_FLOW,
@@ -242,6 +244,7 @@ const DISPLAY_UNITS = Tuple{String,Dims}[
     ("bar", with_scale(UNIT_PA, 1e5)),
     ("rpm", with_scale(UNIT_HZ, 2π / 60)),
     ("deg", with_scale(DIMENSIONLESS, π / 180)),
+    ("%", with_scale(DIMENSIONLESS, 0.01)),
     ("N", UNIT_N),
     ("J", UNIT_J),
     ("W", UNIT_W),

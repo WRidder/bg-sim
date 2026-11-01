@@ -87,6 +87,12 @@ Declaration form: `name::Type = default, [attributes]`. The type defaults to `Re
 | `nominal = 1e-3` | Variables | Scaling hint for solvers |
 | `state = :prefer` / `:avoid` | Variables | Hint for state selection during index reduction |
 
+**Units and scale.** A unit is a dimension plus a scale: `mm` is `m` with scale 0.001, `rpm` is `1/s` with scale 2π/60, `deg` is `rad` (dimensionless) with scale π/180, and `%` is `1` with scale 0.01. The unit attribute documents the number that is stored; it never converts it. A parameter declared `q_max::Real = 120.0, [unit = "deg"]` holds 120, is entered and shown in degrees, and is 120 deg wherever it is read. Consequences:
+
+- `+`, `-`, `~` and comparisons need equal dimensions **and** equal scale. `q - q_max` with `q` in rad is `E006` ("differ only in scale"), because it would subtract 120 from an angle in radians. The hint names the conversion to write.
+- A conversion is written out with the factor between the scales, and the checker accepts exactly that factor. To SI: multiply by the scale (`q_max*deg` is rad, `n*rpm` is rad/s, `p*0.01` or `p/100` is `1` for `p` in %, `x/1000` is m for `x` in mm); the product has the SI unit. From SI: divide by the scale (`q/deg` is deg, `100*f` is % for `f` in `1`), accepted where the other side of the `+`, `-`, `~` or comparison has that unit. The factor may sit anywhere in the product (`2*atan(y, x)/deg`, `100*(q - lo)/(hi - lo)`). Any other factor keeps the term's unit, so a wrong factor is still `E006`.
+- Wires convert automatically: an output in deg feeds an input in rad, and the compiler inserts the factor (see "Editor connection rules").
+
 Scoping rules: names are local to the block. Ports and their fields are reached with dot syntax (`p.e`, `p.f`). Shadowing a whitelisted function name is an error.
 
 ## Operators and statements per scope
@@ -133,7 +139,7 @@ This table is the contract between the language, the simulator and the target bu
 | `mod rem` | `Base` | All | Julia sign conventions |
 | `hypot` | `Base` | All |  |
 | `dot norm cross` | `LinearAlgebra` | All | Static sizes only |
-| `transpose`, `A * x`, `A \ b` | `StaticArrays` | All | `\` via fixed-size LU; `inv` is not offered |
+| `transpose`, `A * x`, `A \ b` | `StaticArrays` | All | `\` via fixed-size LU with partial pivoting, unrolled at compile time (see "Linear solve"); `inv` is not offered |
 | `ddt(x)` | Derivative operator | Equations | Bond graph integral causality uses it |
 | `int(x, x0)` | Integral with start value | Equations | Sugar for a new state with `ddt` |
 | `deadzone(x, a, b)`, `saturate(x, lo, hi)` | Library | All | Nonsmooth |
@@ -157,6 +163,14 @@ These names are numeric constants in every expression: block source, instance va
 | Physics | `g_n` (standard gravity), `c_0`, `G_grav`, `h_P`, `hbar` = `ℏ` = `ħ`, `k_B`, `N_A`, `R_gas`, `q_e`, `mu_0` = `μ₀` = `µ₀`, `eps_0` = `ε₀`, `sigma_SB`, `T_0C` (273.15 K) |
 
 The Unicode spellings are aliases. Julia normalises `ℏ` to `ħ` and the micro sign `µ` to `μ`, so the table lists both forms. Single letters (`e`, `g`, `c`, `k`, `σ`, `μ`) are deliberately not constants. A global must be finite, so `Inf` is for limits inside block source (`clamp(x, -Inf, hi)`).
+
+### Linear solve
+
+`A \ b` solves the square system `A x = b` for a `Mat{n,n}` `A` and a `Vec{n}` `b`; `A \ B` with a `Mat{n,p}` `B` solves for every column. Like `A * x` it is scalarized at compile time: the compiler unrolls Doolittle's LU with partial pivoting (LAPACK `getrf`/`getrs`): at step `k` the pivot is the first row with the largest `|A[i,k]|`, rows `k` and `p` swap, the rows below are eliminated, and the solution follows by back substitution. The pivot is chosen at run time, so the row swap is a selection (`ifelse`) on the current values. Every intermediate value gets its own slot: a hidden algebraic unknown with one explicit equation in `@equations` (eliminated again by the structural simplification, so it adds no state and no solve), a local variable in `@discrete`. The generated code is therefore O(n³) operations, and the results agree with Julia's `\` to round-off.
+
+- A pivot change does not make the solution jump, so the pivot conditions create **no switching event**. A nonsmooth function inside `A` or `b` (an `abs`, a `max`) keeps its own event.
+- Literal entries fold: a literal zero below the diagonal takes no part in the pivot choice and needs no elimination (a triangular or block-diagonal `A` unrolls to its short form), and an all-literal system is solved at compile time. A column whose entries on and below the diagonal are all literal zeros is a singular matrix (`E004`).
+- `A` must be square and the sizes must agree (`E004`). `\` on arrays is available in `@equations` and `@discrete`, not in an `@events` body. On scalars `a \ b` is `b / a`. A singular matrix at run time divides by zero, as `b / a` does.
 
 ### Seeded noise and delay
 
@@ -895,6 +909,8 @@ Each element is the matrix-valued counterpart of a bond graph element. Planar ve
 | Wheel-on-deck contact (`DeckContact2D`) | nonlinear `C` and `R` per wheel and panel (Hunt–Crossley tyre), traction source | `p` (bond to the body); inputs `g`, `x`, `y`, `xd`, `yd`, `Fd`; outputs `Fx`, `Fy`, `fn`, `delta`, `s` | constants `nn`, `nd`, `nw`; `rx`, `ry`, `r`, `k`, `c`, `dref` | v0.3 |
 
 Actuation needs no special component: a DC motor's Rotation port connects to a revolute joint's `drive` port, through a gear if needed.
+
+**Joint hard stops.** `Revolute3D`, `Prismatic3D`, `Revolute2D` and `Prismatic2D` take optional limits on the joint coordinate: the structural constants `q_min`, `q_max` (rad or m, default `-Inf`/`Inf`) and the parameters `k_stop`, `d_stop` and `w_stop`. Beyond a limit a stiff spring-damper acts on the coordinate, `ts = k_stop (x_hi - x_lo) + d_stop (s_hi + s_lo) qdot`, where `x = (d + sqrt(d^2 + w_stop^2))/2` is the smooth positive part of the overshoot `d = q - q_max` (or `q_min - q`) and `s = dx/dd` rises from 0 to 1 over a few `w_stop`. The stop is applied like the drive (`drive.e = -tau + ts`) and reported as `tau_stop` (`f_stop` on a prismatic joint). It has no `ifelse`, `max` or `abs`, so it adds no switching event, and a joint resting on its stop cannot trap the root finder. A limit of `±Inf` is folded out at compile time (a static `if` around the equations), so a joint without stops compiles to exactly the equations it had before the stops existed, and its results are bit-identical. The `...Limit` joint variants keep their tunable `lower`/`upper` parameters with a `tanh` ramp.
 
 ### Trusses and member failure
 

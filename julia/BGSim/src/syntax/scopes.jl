@@ -1957,6 +1957,19 @@ function _arith_result!(ck::Checker, op::Symbol, a::TypeSpec, b::TypeSpec, e)
         return nothing
     end
     if op === Symbol("\\")
+        if a.kind == :Mat && (b.kind == :Vec || b.kind == :Mat)
+            # `A \ b` is a square solve (LU with partial pivoting, unrolled by the compiler).
+            # Sizes that are still symbolic here are checked again after constant folding.
+            differ(x, y) = x isa Integer && y isa Integer && x != y
+            if differ(a.args[1], a.args[2])
+                _report!(ck, "E004", "`A \\ b` needs a square matrix, got `$(type_name(a))`", e;
+                    hint = "a least-squares solve is not offered; form `transpose(A) * A` yourself")
+                return nothing
+            elseif differ(a.args[1], b.args[1])
+                _report!(ck, "E004", "cannot solve `$(type_name(a))` \\ `$(type_name(b))`: the sizes do not match", e)
+                return nothing
+            end
+        end
         a.kind == :Mat && b.kind == :Vec && return TypeSpec(:Vec, (a.args[2],))
         a.kind == :Mat && b.kind == :Mat && return TypeSpec(:Mat, (a.args[2], b.args[2]))
         _scalar_numeric(a) && _scalar_numeric(b) && return REAL
@@ -2329,7 +2342,11 @@ function _const_value(d::Decl, consts::AbstractDict)
     if d.default !== nothing
         ok, value = try_eval_const(d.default, consts)
         # A matrix constant (`conn::Mat{nb,2}` of Truss2D) keeps its source text: JSON has no
-        # matrix, and a flat array would lose the row structure.
+        # matrix, and a flat array would lose the row structure. A non-finite number (the
+        # `-Inf`/`Inf` "no limit" of a joint stop) keeps its text too: JSON has no infinity.
+        if ok && value isa Real && !(value isa Bool) && !isfinite(value)
+            return something(d.default_text, string(value))
+        end
         ok && (value isa Number || value isa Bool || value isa AbstractVector) && return value
     end
     return something(d.default_text, "")

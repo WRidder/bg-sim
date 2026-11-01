@@ -261,7 +261,7 @@ end
         # Errors carry a character position and a useful reason.
         @test parse_error("") !== nothing
         @test occursin("empty", parse_error("").reason)
-        for bad in ("m/", "(m", "m)", "furlong", "*m", "m/*s", "()", "m^-", "m^2.5", "%")
+        for bad in ("m/", "(m", "m)", "furlong", "*m", "m/*s", "()", "m^-", "m^2.5", "%^")
             @test parse_error(bad) !== nothing
         end
         @test occursin("did you mean `V`", parse_error("v").reason)
@@ -912,6 +912,111 @@ end
             """,
         )
         @test isempty(unit_diags(clean))
+    end
+
+    # -----------------------------------------------------------------------------------
+    @testset "percent and explicit scale conversions (deg, rpm, %, mm)" begin
+        # `%` is a unit: dimensionless with scale 0.01, displayed as `%`.
+        pct = Units.parse_unit("%")
+        @test Units.is_dimensionless(pct)
+        @test Units.scale_of(pct) == 0.01
+        @test Units.unit_string(pct) == "%"
+        @test Units.parse_unit(Units.unit_string(pct)) == pct
+        @test Units.parse_unit("%/s") == Units.with_scale(Units.parse_unit("1/s"), 0.01)
+        @test Units.conversion_factor("%", "1") == 0.01
+
+        # The E006 hint names the conversion to write, and that conversion is accepted.
+        bare = parse_block(
+            """
+            @block DegBare begin
+                @parameters q_max::Real = 120.0, [unit = "deg"]
+                @variables q::Real, [unit = "rad"]
+                @outputs y::Real, [unit = "rad"]
+                @equations y ~ q - q_max
+            end
+            """,
+        )
+        d = only(unit_diags(bare))
+        @test occursin("differ only in scale", d.message)
+        @test occursin("q_max*deg", something(d.hint, ""))
+        converted = parse_block(
+            """
+            @block DegConverted begin
+                @parameters q_max::Real = 120.0, [unit = "deg"]
+                @parameters q_lim::Real = 90.0, [unit = "deg"]
+                @variables q::Real, [unit = "rad"]
+                @outputs begin
+                    y::Real, [unit = "rad"]
+                    z::Real, [unit = "rad"]
+                    e_deg::Real, [unit = "deg"]
+                    s::Real, [unit = "deg"]
+                    hit::Real, [unit = "1"]
+                    lim::Real, [unit = "%"]
+                    frac::Real, [unit = "1"]
+                    w::Real, [unit = "rad/s"]
+                end
+                @inputs begin
+                    n::Real, [unit = "rpm"]
+                    p::Real, [unit = "%"]
+                end
+                @equations begin
+                    y ~ q - q_max * deg
+                    z ~ 0.5 * q_max * deg + q
+                    e_deg ~ 2.0 * atan(q) / deg
+                    s ~ q / deg + q_lim
+                    hit ~ ifelse(q > q_lim * deg, 1.0, 0.0)
+                    lim ~ 100 * (q - q_lim * deg) / (q_max * deg - q_lim * deg)
+                    frac ~ p / 100
+                    w ~ n * rpm
+                end
+            end
+            """,
+        )
+        @test isempty(unit_diags(converted))
+        # a converted sum takes the unconverted side's unit, whichever side comes first
+        first_converted = parse_block(
+            """
+            @block DegFirst begin
+                @parameters a::Real = 10.0, [unit = "deg"]
+                @variables q::Real, [unit = "rad"]
+                @outputs y::Real, [unit = "rad"]
+                @equations y ~ a * deg + q
+            end
+            """,
+        )
+        @test isempty(unit_diags(first_converted))
+        # the wrong factor is still E006 (and the hint gives the right one)
+        wrong = parse_block(
+            """
+            @block PctWrong begin
+                @inputs f::Real, [unit = "1"]
+                @outputs lim::Real, [unit = "%"]
+                @equations lim ~ 10 * f
+            end
+            """,
+        )
+        dw = only(unit_diags(wrong))
+        @test occursin("100*(10 * f)", something(dw.hint, ""))
+        mm = parse_block(
+            """
+            @block MmWrong begin
+                @parameters a::Real = 1.0, [unit = "mm"]
+                @outputs y::Real, [unit = "m"]
+                @equations y ~ a
+            end
+            """,
+        )
+        @test occursin("a/1000", something(only(unit_diags(mm)).hint, ""))
+        mm_ok = parse_block(
+            """
+            @block MmOk begin
+                @parameters a::Real = 1.0, [unit = "mm"]
+                @outputs y::Real, [unit = "m"]
+                @equations y ~ a / 1000
+            end
+            """,
+        )
+        @test isempty(unit_diags(mm_ok))
     end
 
     # -----------------------------------------------------------------------------------

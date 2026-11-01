@@ -54,9 +54,11 @@ import ..BGSim.Units: Dims
 import ..BGSim.Library
 import ..BGSim.IR
 import ..BGSim.Flat
+import ..BGSim.LinearAlgebra
 
 include("globals.jl")
 include("instantiate.jl")
+include("linsolve.jl")
 include("connect.jl")
 include("domains.jl")
 include("junctions.jl")
