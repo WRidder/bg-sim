@@ -136,6 +136,14 @@ function _check_declaration_names!(ck::Checker)
                     d;
                     hint = "`t` is the simulation time; choose another name",
                 )
+            elseif haskey(BUILTIN_CONSTANTS, n)
+                _report!(
+                    ck,
+                    "E003",
+                    "`$n` is a built-in constant and cannot be declared",
+                    d;
+                    hint = "built-in constants such as `pi`, `deg` and `g_n` keep their value; choose another name",
+                )
             elseif function_rule(n) !== nothing || n === :ifelse
                 _report!(
                     ck,
@@ -1015,6 +1023,15 @@ function _check_local_name!(ck::Checker, n::Symbol, node)
             "`$n` is predefined and cannot be assigned",
             node;
             hint = "choose another name; `t` is the simulation time and `Ts` the clock period",
+        )
+        return false
+    elseif haskey(BUILTIN_CONSTANTS, n)
+        _report!(
+            ck,
+            "E003",
+            "`$n` is a built-in constant and cannot be assigned",
+            node;
+            hint = "built-in constants such as `pi`, `deg` and `g_n` keep their value; choose another name",
         )
         return false
     elseif function_rule(n) !== nothing || n === :ifelse

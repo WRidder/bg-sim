@@ -2104,7 +2104,8 @@ function _to_expr!(b::BlockBuilder, node, scope::Symbol)
     rng = _range(node, b.filename)
 
     if k == K"Identifier"
-        return Name(node.val, rng)
+        c = get(BUILTIN_CONSTANTS, node.val, nothing)
+        return c === nothing ? Name(node.val, rng) : Lit(c, rng)
     elseif k == K"Integer" || k == K"HexInt" || k == K"OctInt" || k == K"BinInt" ||
            k == K"Float"
         return Lit(node.val, rng)

@@ -146,6 +146,18 @@ This table is the contract between the language, the simulator and the target bu
 
 Determinism note: simulation and the target build run the same Julia function implementations. With the same Julia version, package manifest and CPU target, fixed-step results repeat bit for bit. They can differ across CPU architectures (for example in FMA use), so reference results are generated on the target itself.
 
+### Built-in constants
+
+These names are numeric constants in every expression: block source, instance values and global parameters. The front end turns each one into a literal, so the checker, the simulator and the C/FMU export all see a number. None of them can be declared, assigned or used as a global name (`E003`). The values are in SI units, and the physical ones are CODATA 2018. The table is `contracts/fixtures/constants/builtin_constants.json`, and the Julia front end (`BUILTIN_CONSTANTS` in `syntax/whitelist.jl`) and the web evaluator are both tested against it.
+
+| Group | Names |
+| --- | --- |
+| Math | `pi` = `π`, `ℯ` (Euler's number), `Inf` |
+| Units | `deg` = π/180 rad, `rpm` = 2π/60 rad/s, `atm` = 101325 Pa |
+| Physics | `g_n` (standard gravity), `c_0`, `G_grav`, `h_P`, `hbar` = `ℏ` = `ħ`, `k_B`, `N_A`, `R_gas`, `q_e`, `mu_0` = `μ₀` = `µ₀`, `eps_0` = `ε₀`, `sigma_SB`, `T_0C` (273.15 K) |
+
+The Unicode spellings are aliases. Julia normalises `ℏ` to `ħ` and the micro sign `µ` to `μ`, so the table lists both forms. Single letters (`e`, `g`, `c`, `k`, `σ`, `μ`) are deliberately not constants. A global must be finite, so `Inf` is for limits inside block source (`clamp(x, -Inf, hi)`).
+
 ### Seeded noise and delay
 
 These intrinsics are discrete code: they run once per tick of their block's clock, which is what makes them exactly reproducible. Simulation (`src/library/random.jl`) and the exported C runtime (`bg_intrinsics.c`) implement the same specification, operation for operation; the golden tests compare them bit for bit.
@@ -620,11 +632,11 @@ A model can declare **global parameters** (SolidWorks' "global variables"): name
 
 **Values are equations or plain values.** Every instance value in the model document (a parameter in `params`, a start value in `starts`, a string constant in `constants`) is a constant expression string. A plain number is a plain value; anything else (a global's name, arithmetic, a pure function) is an *equation*, and the editor marks the field with Σ, shows the evaluated value with the unit, and lists it in the Equations manager. A leading `=` typed in the editor (`= 4*m`) is accepted as the SolidWorks equation prefix and dropped; the stored value is always the bare expression.
 
-**Expression language.** A global's `value` and every instance value use the same constant-expression language: number literals, `+ - * / ^`, comparisons, `&&`/`||`/`!`, `ifelse(c, a, b)`, and the pure whitelisted functions (`sqrt`, `exp`, `log`, `log10`, the trigonometric and hyperbolic functions, `abs`, `sign`, `min`, `max`, `clamp`, `floor`, `ceil`, `round`, `mod`, `rem`, `hypot`). Nothing else is a constant: `t`, variables, ports and stateful functions (`ddt`, `previous`, ...) are refused.
+**Expression language.** A global's `value` and every instance value use the same constant-expression language: number literals, `+ - * / ^`, comparisons, `&&`/`||`/`!`, `ifelse(c, a, b)`, the pure whitelisted functions (`sqrt`, `exp`, `log`, `log10`, the trigonometric and hyperbolic functions, `abs`, `sign`, `min`, `max`, `clamp`, `floor`, `ceil`, `round`, `mod`, `rem`, `hypot`), and the built-in constants (`pi`, `deg`, `g_n`, ...; see "Built-in constants"). Nothing else is a constant: `t`, variables, ports and stateful functions (`ddt`, `previous`, ...) are refused.
 
 **Scope.** The names in scope of an instance value are exactly the global parameters, at every diagram level, including the inside of subsystems. A block's own parameters and constants are *not* in scope of an instance value (they never were: a model-level value is literal-only apart from the globals), so no block name can shadow a global and the meaning of a name never depends on the block it is typed into. Global parameters are not visible inside block source (`@block` text, library or inline): blocks stay self-contained; a value reaches a block only through its parameters.
 
-**Names.** A global's name is an identifier (`^[A-Za-z_][A-Za-z0-9_]*$`), unique in the model, and not a reserved word: `t`, `Ts`, `ifelse`, `true`, `false`, `pi`, the Julia keywords, or a built-in function name. Violations are `E003`.
+**Names.** A global's name is an identifier (`^[A-Za-z_][A-Za-z0-9_]*$`), unique in the model, and not a reserved word: `t`, `Ts`, `ifelse`, `true`, `false`, a built-in constant (`pi`, `deg`, `g_n`, ...), the Julia keywords, or a built-in function name. Violations are `E003`.
 
 **Static evaluation.** Globals are folded to numbers once per compile, before any instance is created:
 
