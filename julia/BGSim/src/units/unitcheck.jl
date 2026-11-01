@@ -571,6 +571,17 @@ end
 
 _scalar_value(::_Ctx, ::Any) = nothing
 
+# A term that is zero by its literals (`0`, `-0.0`, `0*x`, `x*0.0`, `0/x`) is legal in any
+# unit, like a bare literal: generated code writes `0*q` for an unused coefficient. Only a
+# literal counts, not a `@constants` value that happens to be zero (it may be overridden).
+_literal_zero(e) = false
+_literal_zero(e::Lit) = e.value isa Real && !(e.value isa Bool) && iszero(e.value)
+_literal_zero(e::UnOp) =
+    (e.op === Symbol("-") || e.op === Symbol("+")) && _literal_zero(e.operand)
+_literal_zero(e::BinOp) =
+    e.op === Symbol("*") ? (_literal_zero(e.lhs) || _literal_zero(e.rhs)) :
+    e.op === Symbol("/") ? _literal_zero(e.lhs) : false
+
 # ---------------------------------------------------------------------------------------
 # Expression units
 # ---------------------------------------------------------------------------------------
@@ -703,9 +714,9 @@ function _add!(ctx::_Ctx, e::BinOp, op::Symbol)
         # A numeric literal is a unitless zero/scale factor and does not hide the other
         # side's unit; any other wildcard makes the sum unknown (plan 5.3: a wildcard term
         # skips the check, it is not inferred).
-        if ld === nothing && _scalar_value(ctx, e.lhs) === nothing
+        if ld === nothing && _scalar_value(ctx, e.lhs) === nothing && !_literal_zero(e.lhs)
             return nothing
-        elseif rd === nothing && _scalar_value(ctx, e.rhs) === nothing
+        elseif rd === nothing && _scalar_value(ctx, e.rhs) === nothing && !_literal_zero(e.rhs)
             return nothing
         end
         return ld === nothing ? rd : ld
@@ -734,6 +745,7 @@ scale of a scaled unit: that converts the term to its SI unit (`_to_si`)."""
 function _mul!(ctx::_Ctx, e::BinOp)
     ld = _dims!(ctx, e.lhs)
     rd = _dims!(ctx, e.rhs)
+    _literal_zero(e) && return nothing    # zero in any unit (`_literal_zero`)
     if ld === nothing
         v = _scalar_value(ctx, e.lhs)
         return v === nothing ? nothing : _to_si(rd, v)
@@ -768,6 +780,7 @@ function _div!(ctx::_Ctx, e::BinOp; solve::Bool = false)
         (ld === nothing || rd === nothing) && return nothing
         return rd / ld
     end
+    _literal_zero(e) && return nothing    # `0/x` is zero in any unit
     if rd === nothing && _scalar_value(ctx, e.rhs) !== nothing
         v = _scalar_value(ctx, e.rhs)
         return v == 0 ? ld : _to_si(ld, 1.0 / v)

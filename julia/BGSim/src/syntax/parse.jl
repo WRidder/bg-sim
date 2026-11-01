@@ -390,13 +390,24 @@ function _parse_all(src::String, filename::String, refs::Vector{String})
     return blocks
 end
 
+# The source line around byte `i` (the syntax error's text may be just the operator).
+function _line_at(src::String, i::Integer)
+    i = clamp(i, 1, max(ncodeunits(src), 1))
+    lo = something(findprev(==(0x0a), codeunits(src), i), 0) + 1
+    hi = something(findnext(==(0x0a), codeunits(src), i), ncodeunits(src) + 1) - 1
+    return String(codeunits(src)[lo:hi])
+end
+
 function _syntax_error_block(src::String, filename::String, ref::String, err)
     diags = Diagnostic[]
     for d in err.diagnostics
         d.level === :error || continue
         r = _range(err.source, d.first_byte, d.last_byte, filename)
         msg = "syntax error: " * lowercasefirst(d.message)
-        hint = d.message == "Expected `end`" ? "add `end` to close the block or scope" : nothing
+        hint = d.message == "Expected `end`" ? "add `end` to close the block or scope" :
+               # `--x` is not an operator (Julia syntax): a double sign needs a space
+               occursin("--", _line_at(src, d.first_byte)) ?
+               "`--` is not an operator: write `-(-x)` or `- -x` (with a space)" : nothing
         push!(
             diags,
             diag(

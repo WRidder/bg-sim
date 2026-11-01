@@ -844,14 +844,14 @@ end
         @test fm.signals[_signal(fm, "Motor1/i")].kind == "observed"
         @test fm.signals[_signal(fm, "Motor1/w_rel")].kind == "observed"
         @test fm.signals[_signal(fm, "Motor1/i")].unit == "A"
-        @test fm.signals[_signal(fm, "Motor1/w_rel")].unit == "1/s"
+        @test fm.signals[_signal(fm, "Motor1/w_rel")].unit == "rad/s"
         @test fm.signals[_signal(fm, "Step1/y")].kind == "output"
         @test fm.signals[_signal(fm, "V1/u")].kind == "input"
         @test fm.signals[_signal(fm, "Motor1/shaft.e")].kind == "port"
-        # `unit_string` is dimension-based (plan 5.3): torque is dimensionally energy, so
-        # the canonical spelling is "J", and rad/s is "1/s" (the radian is dimensionless).
-        @test fm.signals[_signal(fm, "Motor1/shaft.e")].unit == "J"
-        @test fm.signals[_signal(fm, "Motor1/shaft.f")].unit == "1/s"
+        # A port signal carries its domain's spelling: `unit_string` is dimension-based
+        # (plan 5.3), so a torque would read "J" and rad/s "1/s" (the radian is dimensionless).
+        @test fm.signals[_signal(fm, "Motor1/shaft.e")].unit == "N*m"
+        @test fm.signals[_signal(fm, "Motor1/shaft.f")].unit == "rad/s"
         @test fm.signals[_signal(fm, "Motor1/shaft.P")].unit == "W"
         @test fm.signals[_signal(fm, "Motor1/p.e")].unit == "V"
         @test fm.signals[_signal(fm, "Motor1/p.f")].unit == "A"

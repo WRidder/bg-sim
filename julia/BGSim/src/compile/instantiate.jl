@@ -647,10 +647,10 @@ function _create_declarations!(b::Builder, st::BlockState, node::IR.ModelNode)
                String[qport * ".e[" * string(k) * "]" for k in 1:size]
         fids = size == 1 ? String[qport * ".f"] :
                String[qport * ".f[" * string(k) * "]" for k in 1:size]
-        # A multibond component carries the catalog's own spelling (`N*m`, `rad/s`) as a
-        # signal label, because `unit_string` is dimension-based and would print `J`/`1/s`
-        # (a torque is not an energy). Scalar ports keep the canonical `unit_string`.
-        labelled = BGSim.Units.is_multibond_domain(domain)
+        # A port component carries its domain's own spelling (`N*m`, `rad/s`) as a signal
+        # label, because `unit_string` is dimension-based and would print `J`/`1/s` (a torque
+        # is not an energy). A `Generic` port has no spelling until a connection adopts it.
+        labelled = domain !== :Generic
         elabels = labelled ? BGSim.Units.domain_effort_unit_strings(domain) : String[]
         flabels = labelled ? BGSim.Units.domain_flow_unit_strings(domain) : String[]
         for (k, id) in enumerate(eids)

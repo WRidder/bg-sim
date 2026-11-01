@@ -54,7 +54,7 @@ A panel can draw its signals against another signal instead of time: a phase por
 - In the panel header, set **x** from **Time (t)** to a signal. The list shows the panel's own signals first, then every other signal of the run. Picking one of the panel's signals moves it to the x axis, and the others are drawn against it. **Time (t)** puts it back.
 - You can also drag a signal from the **Signals** tab onto the **x** control.
 - **1:1** (equal aspect) makes one unit as long on both axes, so a circle stays round. It suits a phase portrait in scaled units.
-- The axes show the signals and their units.
+- The axes show the signals and their units. A signal keeps the unit it was declared with, and a port field the unit of its domain: a torque reads `N*m` (not `J`) and an angular rate `rad/s`. A panel puts two signals on one y axis only when they have the same unit.
 - The XY panel draws the same time window as the other panels. Zoom into a time range in a time panel to see that part of the trajectory; **Reset zoom** shows the whole run again.
 - Drag a box in the XY panel to zoom in on both axes, use the mouse wheel to zoom at the pointer, and double-click to fit the data again. This zoom belongs to the panel only.
 - Hover the curve: the nearest sample becomes the inspect time for every panel and the 3D view. A ring marks the point at the inspect time (the newest point when there is none), and the legend shows t, x and each y there.

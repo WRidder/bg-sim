@@ -121,7 +121,13 @@ function model_signals(b::Builder)
     # Composite observables (J2.6b): recording aliases at the composite's own path. They are
     # derived signals (one equation each), so they add no state and no reported equation.
     for d in b.observed
-        push!(out, Flat.signal_namedtuple(d))
+        entry = Flat.signal_namedtuple(d)
+        # An alias of one variable shows that variable's unit spelling (`N*m`, not `J`).
+        aliased = d.expr isa BGSim.Name ? var_by_id(b, String(d.expr.name)) : nothing
+        if aliased !== nothing && aliased.unit == d.unit
+            entry = merge(entry, (; unit = Flat.signal_namedtuple(aliased).unit))
+        end
+        push!(out, entry)
         push!(derived, d)
     end
     return out, derived
