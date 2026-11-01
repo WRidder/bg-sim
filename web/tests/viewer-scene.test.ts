@@ -46,9 +46,10 @@ describe("scene constructor", () => {
     expect(s.scene.clearColor.a).toBe(0);
     expect(s.scene.skipPointerMovePicking).toBe(true);
     expect(s.camera.minZ).toBe(0.01);
-    expect(s.camera.lowerRadiusLimit).toBe(0.05);
-    expect(s.camera.wheelDeltaPercentage).toBe(0.02);
-    expect(s.camera.pinchDeltaPercentage).toBe(0.004);
+    expect(s.camera.lowerRadiusLimit).toBe(1e-4);
+    // the wheel is the viewer's own (ViewerScene.zoomAt), the pinch scales the distance to the pivot
+    expect(s.camera.inputs.attached["mousewheel"]).toBeUndefined();
+    expect((s.camera.inputs.attached["pointers"] as unknown as { useNaturalPinchZoom: boolean }).useNaturalPinchZoom).toBe(true);
     expect(s.camera.panningSensibility).toBeGreaterThan(0);
     s.dispose();
   });
@@ -171,6 +172,17 @@ describe("camera", () => {
     s.fit("iso");
     expectClose(s.camera.target, 0, 0.5, 0);
     expect(s.camera.radius).toBeGreaterThan(2);
+    s.dispose();
+  });
+
+  it("fit frames a scene far larger than the last one (the zoom-out limit of the old fit does not clamp it)", () => {
+    const s = make();
+    const ground = CreateBox("ground", { width: 2000, height: 1200, depth: 1 }, s.scene);
+    ground.parent = s.root;
+    tagEntity(ground, "visual:ground");
+    s.fit("iso");
+    const want = (Math.hypot(2000, 1200, 1) / 2 / Math.sin(s.camera.fov / 2)) * 1.05;
+    expect(s.camera.radius).toBeCloseTo(want, 3);
     s.dispose();
   });
 

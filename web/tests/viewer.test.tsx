@@ -29,7 +29,12 @@ function setHidden(hidden: boolean): void {
 
 function pointer(type: string, init: { x: number; y: number; button?: number }): Event {
   const event = new Event(type, { bubbles: true, cancelable: true });
-  return Object.assign(event, { pointerId: 1, button: init.button ?? 0, offsetX: init.x, offsetY: init.y });
+  return Object.assign(event, { pointerId: 1, isPrimary: true, button: init.button ?? 0, offsetX: init.x, offsetY: init.y });
+}
+
+function wheel(init: { x: number; y: number; deltaY: number }): Event {
+  const event = new Event("wheel", { bubbles: true, cancelable: true });
+  return Object.assign(event, { deltaY: init.deltaY, deltaMode: 0, ctrlKey: false, offsetX: init.x, offsetY: init.y });
 }
 
 afterEach(() => {
@@ -189,6 +194,51 @@ describe("Viewer", () => {
     const canvas = screen.getByTestId("viewer-canvas");
     expect(fireEvent.contextMenu(canvas)).toBe(false);
     expect(fireEvent.wheel(canvas, { deltaY: 100 })).toBe(false);
+  });
+
+  it("zooms the wheel toward the part under the cursor, and a drag on it orbits around it with a pivot dot", async () => {
+    let scene: ViewerScene | null = null;
+    const onSelect = vi.fn();
+    render(
+      <Viewer
+        createEngine={nullEngine}
+        onSelect={onSelect}
+        onReady={(s) => {
+          scene = s;
+        }}
+      />,
+    );
+    const s = scene as ViewerScene | null;
+    if (s === null) throw new Error("the viewer did not hand out its scene");
+    const box = CreateBox("part", { size: 1 }, s.scene);
+    box.parent = s.root;
+    box.position.set(0, 0.3, 0.5);
+    tagEntity(box, "body:part");
+    s.fit("front");
+    await waitFor(() => expect(state()).toBe("idle"));
+    s.scene.render();
+    const canvas = screen.getByTestId("viewer-canvas");
+    const part = box.getAbsolutePosition();
+    const before = s.eye().subtract(part).length();
+    canvas.dispatchEvent(wheel({ x: 30, y: 32, deltaY: -100 }));
+    canvas.dispatchEvent(wheel({ x: 30, y: 32, deltaY: -100 }));
+    expect(s.eye().subtract(part).length()).toBeLessThan(before * 0.75);
+    await waitFor(() => expect(state()).toBe("idle"));
+    s.scene.render();
+
+    canvas.dispatchEvent(pointer("pointerdown", { x: 30, y: 32 }));
+    // the press makes the point under it the pivot; the dot shows once the press is a drag
+    expect(s.camera.target.subtract(part).length()).toBeLessThan(0.75);
+    expect(s.pivotPoint()).toBeNull();
+    canvas.dispatchEvent(pointer("pointermove", { x: 50, y: 32 }));
+    expect(s.pivotPoint()).not.toBeNull();
+    canvas.dispatchEvent(pointer("pointerup", { x: 50, y: 32 }));
+    expect(onSelect).not.toHaveBeenCalled();
+    // a tap still selects (and hides the dot of the last drag)
+    canvas.dispatchEvent(pointer("pointerdown", { x: 30, y: 32 }));
+    expect(s.pivotPoint()).toBeNull();
+    canvas.dispatchEvent(pointer("pointerup", { x: 30, y: 32 }));
+    expect(onSelect).toHaveBeenLastCalledWith("body:part");
   });
 
   it("selects on a tap and not after a drag", async () => {

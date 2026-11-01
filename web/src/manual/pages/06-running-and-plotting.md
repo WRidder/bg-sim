@@ -70,7 +70,12 @@ While the **Auto Plot** tab is open, it plots every recorded signal of the selec
 
 Models with a 3D scene show it in the **3D View** tab. The scene follows the run through bindings between scene objects and signals.
 
-- Drag to orbit, right-drag to pan, scroll to zoom. Panning follows the zoom: the point you grab stays under the cursor, so a large or zoomed-out scene pans as fast as a close-up.
+- Camera controls:
+  - **Zoom:** scroll. The view zooms toward the point under the cursor. Each wheel notch brings the camera 20 % closer to that point, so zooming works the same on a 10 cm part and on a 2 km race track. To approach an object, scroll over it. Over empty space the zoom heads for the ground, or for the plane through the current pivot. A trackpad pinch zooms the same way, and a touch-screen pinch zooms toward the pivot.
+  - **Orbit:** drag with the left mouse button (or one finger). The view turns around the point you pressed on, marked by a small dot that fades out when you let go. A press on empty space keeps the last pivot.
+  - **Pan:** right-drag (or `Ctrl`+drag). The point you grab stays under the cursor, so a large or zoomed-out scene pans as fast as a close-up.
+  - **Select:** click without dragging.
+  - **Fit the scene in the view** frames the whole scene again.
 - While a run compiles, initializes or takes its first step, the view shows the stages, the time so far and **Stop**. It clears with the first samples, when the scene starts to move.
 - The toolbar has **Isometric**, **Top**, **Front** and **Side** views, an **Orthographic projection** toggle, **Fit the scene in the view**, **Full screen** (with the playback bar; `Esc` exits) and **Detach** (a separate window).
 - The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** (on by default) and a time slider. With no run yet, **Play** (or `Space`) runs the model, like **Run**: the view follows it live and, when the run is done, plays it back from the start.
