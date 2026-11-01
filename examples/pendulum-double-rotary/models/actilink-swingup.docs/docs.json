@@ -1,0 +1,43 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "hardware",
+          "title": "Hardware and size",
+          "file": "pages/hardware.md",
+          "children": []
+        },
+        {
+          "id": "model",
+          "title": "Model",
+          "file": "pages/model.md",
+          "children": []
+        },
+        {
+          "id": "control",
+          "title": "Control",
+          "file": "pages/control.md",
+          "children": []
+        },
+        {
+          "id": "sysid",
+          "title": "System identification",
+          "file": "pages/sysid.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results",
+          "file": "pages/results.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
