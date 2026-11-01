@@ -418,5 +418,15 @@
     "models": [
       "sequence-contact"
     ]
+  },
+  "van-der-pol": {
+    "title": "Van der Pol oscillator",
+    "description": "The Van der Pol oscillator in practice: a tunnel-diode LC oscillator, a block on a spring riding a belt, and the textbook equation at four values of mu.",
+    "hasScene": true,
+    "models": [
+      "vdp-tunnel-diode",
+      "vdp-belt",
+      "vdp-textbook"
+    ]
   }
 }

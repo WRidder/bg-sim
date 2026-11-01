@@ -1,0 +1,270 @@
+<?xml version="1.0"?>
+<!--
+  vdp-belt: a block on a spring rides a belt (Z up, metres). The prismatic joint "block" (axis +X) is
+  the block position x, 0 at the unstretched spring (the block's left face 0.08 m from the wall); it
+  oscillates about x_s = 0.1892 m by +-4.5 mm. The joints coil1..coil8 move the spring's rings by
+  k/(n+1) of x; "belt" moves the belt's stripes by the belt phase (a sawtooth over one stripe pitch).
+  The block is coloured by the slip velocity. Written by examples/van-der-pol/design/build_model.py.
+-->
+<sdf version="1.9">
+  <model name="vdp_belt">
+    <link name="rig">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="table">
+        <pose>0.1500 0 0.005 0 0 0</pose>
+        <geometry><box><size>0.6600 0.2000 0.0100</size></box></geometry>
+        <material><diffuse>0.28 0.30 0.34 1</diffuse></material>
+      </visual>
+      <visual name="wall">
+        <pose>-0.0900 0 0.1200 0 0 0</pose>
+        <geometry><box><size>0.0200 0.1200 0.1200</size></box></geometry>
+        <material><diffuse>0.62 0.64 0.68 1</diffuse></material>
+      </visual>
+      <visual name="wall_foot">
+        <pose>-0.0900 0 0.0350 0 0 0</pose>
+        <geometry><box><size>0.0200 0.1200 0.0600</size></box></geometry>
+        <material><diffuse>0.50 0.52 0.56 1</diffuse></material>
+      </visual>
+      <visual name="belt_top">
+        <pose>0.1500 0 0.0560 0 0 0</pose>
+        <geometry><box><size>0.5400 0.0800 0.0080</size></box></geometry>
+        <material><diffuse>0.10 0.10 0.11 1</diffuse></material>
+      </visual>
+      <visual name="belt_bottom">
+        <pose>0.1500 0 0.026 0 0 0</pose>
+        <geometry><box><size>0.5400 0.0800 0.0080</size></box></geometry>
+        <material><diffuse>0.10 0.10 0.11 1</diffuse></material>
+      </visual>
+      <visual name="pulley_left">
+        <pose>-0.1200 0 0.043 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.0170</radius><length>0.0860</length></cylinder></geometry>
+        <material><diffuse>0.70 0.72 0.76 1</diffuse></material>
+      </visual>
+      <visual name="pulley_left_hub">
+        <pose>-0.1200 0.046 0.043 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.0060</radius><length>0.0100</length></cylinder></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="pulley_right">
+        <pose>0.4200 0 0.043 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.0170</radius><length>0.0860</length></cylinder></geometry>
+        <material><diffuse>0.70 0.72 0.76 1</diffuse></material>
+      </visual>
+      <visual name="pulley_right_hub">
+        <pose>0.4200 0.046 0.043 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.0060</radius><length>0.0100</length></cylinder></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="pad_bracket">
+        <pose>0.2150 0 0.1550 0 0 0</pose>
+        <geometry><box><size>0.0120 0.1100 0.0120</size></box></geometry>
+        <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
+      </visual>
+      <visual name="pad_post_a">
+        <pose>0.2150 0.05 0.1050 0 0 0</pose>
+        <geometry><box><size>0.0120 0.0100 0.1000</size></box></geometry>
+        <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="belt_marks">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="stripe01">
+        <pose>-0.1100 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe02">
+        <pose>-0.0700 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe03">
+        <pose>-0.0300 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe04">
+        <pose>0.0100 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe05">
+        <pose>0.0500 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe06">
+        <pose>0.0900 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe07">
+        <pose>0.1300 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe08">
+        <pose>0.1700 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe09">
+        <pose>0.2100 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe10">
+        <pose>0.2500 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe11">
+        <pose>0.2900 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe12">
+        <pose>0.3300 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+      <visual name="stripe13">
+        <pose>0.3700 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
+        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="block_link">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="block_body">
+        <pose>0.0250 0 0.0850 0 0 0</pose>
+        <geometry><box><size>0.0500 0.0500 0.0500</size></box></geometry>
+        <material><diffuse>0.25 0.45 0.80 1</diffuse></material>
+      </visual>
+      <visual name="block_pad">
+        <pose>0.0250 0 0.1140 0 0 0</pose>
+        <geometry><box><size>0.0300 0.0300 0.0080</size></box></geometry>
+        <material><diffuse>0.12 0.12 0.13 1</diffuse></material>
+      </visual>
+      <visual name="block_hook">
+        <pose>-0.0040 0 0.0850 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.0060</radius><length>0.0080</length></cylinder></geometry>
+        <material><diffuse>0.8 0.8 0.82 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="coil1_link">
+      <pose>-0.0711 0 0 0 0 0</pose>
+      <visual name="coil1_ring">
+        <pose>0 0 0.0850 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.0140</radius><length>0.0030</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="coil2_link">
+      <pose>-0.0622 0 0 0 0 0</pose>
+      <visual name="coil2_ring">
+        <pose>0 0 0.0850 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.0140</radius><length>0.0030</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="coil3_link">
+      <pose>-0.0533 0 0 0 0 0</pose>
+      <visual name="coil3_ring">
+        <pose>0 0 0.0850 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.0140</radius><length>0.0030</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="coil4_link">
+      <pose>-0.0444 0 0 0 0 0</pose>
+      <visual name="coil4_ring">
+        <pose>0 0 0.0850 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.0140</radius><length>0.0030</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="coil5_link">
+      <pose>-0.0356 0 0 0 0 0</pose>
+      <visual name="coil5_ring">
+        <pose>0 0 0.0850 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.0140</radius><length>0.0030</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="coil6_link">
+      <pose>-0.0267 0 0 0 0 0</pose>
+      <visual name="coil6_ring">
+        <pose>0 0 0.0850 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.0140</radius><length>0.0030</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="coil7_link">
+      <pose>-0.0178 0 0 0 0 0</pose>
+      <visual name="coil7_ring">
+        <pose>0 0 0.0850 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.0140</radius><length>0.0030</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="coil8_link">
+      <pose>-0.0089 0 0 0 0 0</pose>
+      <visual name="coil8_ring">
+        <pose>0 0 0.0850 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.0140</radius><length>0.0030</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="belt" type="prismatic">
+      <parent>rig</parent>
+      <child>belt_marks</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="block" type="prismatic">
+      <parent>rig</parent>
+      <child>block_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="coil1" type="prismatic">
+      <parent>rig</parent>
+      <child>coil1_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="coil2" type="prismatic">
+      <parent>rig</parent>
+      <child>coil2_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="coil3" type="prismatic">
+      <parent>rig</parent>
+      <child>coil3_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="coil4" type="prismatic">
+      <parent>rig</parent>
+      <child>coil4_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="coil5" type="prismatic">
+      <parent>rig</parent>
+      <child>coil5_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="coil6" type="prismatic">
+      <parent>rig</parent>
+      <child>coil6_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="coil7" type="prismatic">
+      <parent>rig</parent>
+      <child>coil7_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+    <joint name="coil8" type="prismatic">
+      <parent>rig</parent>
+      <child>coil8_link</child>
+      <axis><xyz>1 0 0</xyz></axis>
+    </joint>
+  </model>
+</sdf>

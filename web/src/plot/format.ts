@@ -76,6 +76,10 @@ export function formatAxisTime(value: number): string {
     return "";
   }
   const magnitude = Math.abs(value);
+  if (magnitude > 0 && magnitude < 0.01) {
+    // Runs of microseconds or nanoseconds: 1.6e-6, not 0.
+    return Number(value.toPrecision(3)).toExponential();
+  }
   const digits =
     magnitude < 10 ? 3 : magnitude < 100 ? 2 : magnitude < 1000 ? 1 : 0;
   return trimZeros(value.toFixed(digits));

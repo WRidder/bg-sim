@@ -1,0 +1,770 @@
+{
+  "project": "van-der-pol",
+  "description": "The Van der Pol oscillator as a tunnel-diode LC oscillator, a belt-driven mass-spring and the textbook equation. Numbers come from design/design.json, an independent scipy calculation.",
+  "models": {
+    "vdp-tunnel-diode": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality on every store, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "period",
+          "signal": "Vm/y",
+          "direction": "up",
+          "n": 29,
+          "value": 1.0604950409005731e-07,
+          "rtol": 1e-06,
+          "note": "last full cycle of the tank voltage: 9.429558 MHz (scipy, the circuit in SI units)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/T_s",
+          "t": 3.2e-06,
+          "value": 6.663286859323064,
+          "rtol": 1e-07,
+          "note": "the cycle meter's scaled period w0 T equals the textbook limit cycle's period (scipy shooting)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/f",
+          "t": 3.2e-06,
+          "value": 9.429558474416194,
+          "rtol": 1e-07,
+          "note": "frequency in MHz = f0 2 pi / T(mu)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/amp",
+          "t": 3.2e-06,
+          "value": 2.0086198608748083,
+          "rtol": 1e-07,
+          "note": "amplitude of x = v/A on the limit cycle (scipy shooting); averaging theory: 2"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Vpk/y",
+          "t": 3.2e-06,
+          "value": 291.2498798268472,
+          "rtol": 1e-07,
+          "note": "peak voltage deviation A x_max in mV"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Xc/y",
+          "signal_b": "Ref/x",
+          "max_abs": 1e-06,
+          "note": "the circuit's scaled voltage is the textbook x (scipy: 1.9e-11)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Yc/y",
+          "signal_b": "Ref/y",
+          "max_abs": 1e-06,
+          "note": "the circuit's scaled capacitor current is the textbook x' (scipy: 3.1e-11)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Tank/E",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Split/W",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 1e-07,
+          "scale": 1.5050802171263e-11,
+          "note": "energy bookkeeping: the tank loses exactly what the diode absorbs, C v^2/2 + L i^2/2 + int v i_D dt = const"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/dw1",
+          "t": 3.2e-06,
+          "value": 1.3418401935452131e-11,
+          "rtol": 1e-06,
+          "note": "energy the diode supplies per cycle, while |v| < sqrt(a/b) (scipy)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/dw2",
+          "t": 3.2e-06,
+          "value": 1.3418401935450362e-11,
+          "rtol": 1e-06,
+          "note": "energy it dissipates per cycle, at the outer part |v| > sqrt(a/b): the same, so the net is 0"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/T_s",
+          "t": 3.2e-06,
+          "value": 6.675884388878311,
+          "rtol": 0.003,
+          "note": "the small-mu estimate 2 pi (1 + mu^2/16) holds to 0.19 % even at mu = 1"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Split/W_sup",
+          "value": 0.0
+        }
+      ]
+    },
+    "vdp-belt": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality on every store, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Xm/y",
+          "signal_b": "Ref/x",
+          "max_abs": 1e-06,
+          "note": "the block velocity x'/V is the textbook x (scipy: 8.6e-10)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Ym/y",
+          "signal_b": "Ref/y",
+          "max_abs": 1e-06,
+          "note": "and the scaled acceleration x''/(w0 V) is the textbook x' (scipy: 1.1e-09)"
+        },
+        {
+          "kind": "period",
+          "signal": "Vel/y",
+          "direction": "up",
+          "n": 61,
+          "value": 0.6380675801780669,
+          "rtol": 1e-06,
+          "note": "cubic fit: 0.638068 s = T(0.5)/w0 (scipy, the rig in SI units)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/T_s",
+          "t": 40.0,
+          "value": 6.380675801773652,
+          "rtol": 1e-07,
+          "note": "scaled period = the textbook limit cycle at mu = 0.5"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/amp",
+          "t": 40.0,
+          "value": 2.0024879304471335,
+          "rtol": 1e-07,
+          "note": "velocity amplitude 2.002488 V = 0.044135 m/s"
+        },
+        {
+          "kind": "period",
+          "signal": "Stribeck/Vel/y",
+          "direction": "up",
+          "n": 61,
+          "value": 0.6384384225199398,
+          "rtol": 1e-06,
+          "note": "full Stribeck curve: 0.638438 s (+0.058% vs the cubic fit, scipy)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Stribeck/Meter/amp",
+          "t": 40.0,
+          "value": 2.0398852568094865,
+          "rtol": 1e-06,
+          "note": "full curve: velocity amplitude 0.044959 m/s (+1.87% vs the cubic fit)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Stribeck/Fric/w",
+          "value": 0.023176547871263633,
+          "note": "the slip stays positive (scipy minimum 0.02575 m/s): the block never sticks"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Fric/w",
+          "value": 0.023918359366503824
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Store/E",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Split/W",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 1e-07,
+          "scale": 0.0004916241427322412,
+          "note": "oscillation energy m x'^2/2 + k (x - x_s)^2/2 changes by exactly the contact's work -int (F - F0) x' dt"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/dw1",
+          "t": 40.0,
+          "value": 0.00043090424737814945,
+          "rtol": 1e-06,
+          "note": "energy the contact feeds the oscillation per cycle (small |x'|, the falling branch)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/dw2",
+          "t": 40.0,
+          "value": 0.0004309042473781728,
+          "rtol": 1e-06,
+          "note": "energy it takes back per cycle (large |x'|): equal, the net is 0"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Pos/y",
+          "from_t": 20.0,
+          "value": 0.1937532531482572,
+          "rtol": 1e-06,
+          "note": "the block swings between 0.18474 and 0.19375 m"
+        }
+      ]
+    },
+    "vdp-textbook": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality on every store, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Mu01/X/y",
+          "signal_b": "Mu01/Eq/x",
+          "max_abs": 1e-06,
+          "note": "mu = 0.1: the block diagram and the equation block agree"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Mu01/Y/y",
+          "signal_b": "Mu01/Eq/y",
+          "max_abs": 2.0115646497146975e-06
+        },
+        {
+          "kind": "period",
+          "signal": "Mu01/X/y",
+          "direction": "up",
+          "n": 31,
+          "value": 6.287111272288627,
+          "rtol": 1e-06,
+          "note": "mu = 0.1: the limit-cycle period 6.28711127 (scipy shooting)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu01/Meter/T_s",
+          "t": 200.0,
+          "value": 6.287111272288627,
+          "rtol": 1e-07,
+          "note": "the event-based cycle meter"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu01/Meter/amp",
+          "t": 200.0,
+          "value": 2.0001039798716396,
+          "rtol": 1e-07,
+          "note": "limit-cycle amplitude 2.0001040 (averaging theory: 2)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mu01/X/y",
+          "from_t": 100.0,
+          "value": 2.0001039798716396,
+          "abs": 0.0001,
+          "note": "the sampled peak of x on the second half of the run"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu01/X/y",
+          "t": 200.0,
+          "value": 0.8691545672961926,
+          "abs": 1e-05,
+          "note": "x at the end of the run (scipy from the same start)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu01/Meter/T_s",
+          "t": 200.0,
+          "value": 6.287112297996574,
+          "rtol": 3.2628910240362075e-07,
+          "note": "small-mu theory 2 pi (1 + mu^2/16) = 6.287112, +1.63e-07 relative"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu01/Meter/amp",
+          "t": 200.0,
+          "value": 2.0,
+          "rtol": 0.00010397987163957012,
+          "note": "averaging theory: amplitude 2"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Mu1/X/y",
+          "signal_b": "Mu1/Eq/x",
+          "max_abs": 1e-06,
+          "note": "mu = 1: the block diagram and the equation block agree"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Mu1/Y/y",
+          "signal_b": "Mu1/Eq/y",
+          "max_abs": 2.678441479106934e-06
+        },
+        {
+          "kind": "period",
+          "signal": "Mu1/X/y",
+          "direction": "up",
+          "n": 29,
+          "value": 6.663286859323064,
+          "rtol": 1e-06,
+          "note": "mu = 1: the limit-cycle period 6.66328686 (scipy shooting)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu1/Meter/T_s",
+          "t": 200.0,
+          "value": 6.663286859323064,
+          "rtol": 1e-07,
+          "note": "the event-based cycle meter"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu1/Meter/amp",
+          "t": 200.0,
+          "value": 2.0086198608748083,
+          "rtol": 1e-07,
+          "note": "limit-cycle amplitude 2.0086199 (averaging theory: 2)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mu1/X/y",
+          "from_t": 100.0,
+          "value": 2.0086198608748083,
+          "abs": 0.0001,
+          "note": "the sampled peak of x on the second half of the run"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu1/X/y",
+          "t": 200.0,
+          "value": 1.3451815306076738,
+          "abs": 1e-05,
+          "note": "x at the end of the run (scipy from the same start)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu1/Meter/T_s",
+          "t": 200.0,
+          "value": 6.675884388878311,
+          "rtol": 0.0037811758134416174,
+          "note": "small-mu theory 2 pi (1 + mu^2/16) = 6.675884, +1.89e-03 relative"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu1/Meter/amp",
+          "t": 200.0,
+          "value": 2.0,
+          "rtol": 0.00861986087480826,
+          "note": "averaging theory: amplitude 2"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Mu5/X/y",
+          "signal_b": "Mu5/Eq/x",
+          "max_abs": 1e-06,
+          "note": "mu = 5: the block diagram and the equation block agree"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Mu5/Y/y",
+          "signal_b": "Mu5/Eq/y",
+          "max_abs": 7.637158826801046e-06
+        },
+        {
+          "kind": "period",
+          "signal": "Mu5/X/y",
+          "direction": "up",
+          "n": 16,
+          "value": 11.61223066771996,
+          "rtol": 1e-06,
+          "note": "mu = 5: the limit-cycle period 11.61223067 (scipy shooting)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu5/Meter/T_s",
+          "t": 200.0,
+          "value": 11.61223066771996,
+          "rtol": 1e-07,
+          "note": "the event-based cycle meter"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu5/Meter/amp",
+          "t": 200.0,
+          "value": 2.0215080615623267,
+          "rtol": 1e-07,
+          "note": "limit-cycle amplitude 2.0215081 (averaging theory: 2)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mu5/X/y",
+          "from_t": 100.0,
+          "value": 2.0215080615623267,
+          "abs": 0.0001,
+          "note": "the sampled peak of x on the second half of the run"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu5/X/y",
+          "t": 200.0,
+          "value": -1.7106138848555852,
+          "abs": 1e-05,
+          "note": "x at the end of the run (scipy from the same start)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu5/Meter/T_s",
+          "t": 200.0,
+          "value": 12.170528719619334,
+          "rtol": 0.09615690006078648,
+          "note": "relaxation theory (3 - 2 ln 2) mu + 7.014 mu^(-1/3) = 12.1705, +4.81% (the error falls with mu)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Mu20/X/y",
+          "signal_b": "Mu20/Eq/x",
+          "max_abs": 1e-06,
+          "note": "mu = 20: the block diagram and the equation block agree"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Mu20/Y/y",
+          "signal_b": "Mu20/Eq/y",
+          "max_abs": 2.739030930134478e-05
+        },
+        {
+          "kind": "period",
+          "signal": "Mu20/X/y",
+          "direction": "up",
+          "n": 5,
+          "value": 34.682323311654635,
+          "rtol": 1e-06,
+          "note": "mu = 20: the limit-cycle period 34.68232331 (scipy shooting)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu20/Meter/T_s",
+          "t": 200.0,
+          "value": 34.682323311654635,
+          "rtol": 1e-07,
+          "note": "the event-based cycle meter"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu20/Meter/amp",
+          "t": 200.0,
+          "value": 2.0077899708654443,
+          "rtol": 1e-07,
+          "note": "limit-cycle amplitude 2.0077900 (averaging theory: 2)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mu20/X/y",
+          "from_t": 100.0,
+          "value": 2.0077899708654443,
+          "abs": 0.0001,
+          "note": "the sampled peak of x on the second half of the run"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu20/X/y",
+          "t": 200.0,
+          "value": 1.5513354647895583,
+          "abs": 1e-05,
+          "note": "x at the end of the run (scipy from the same start)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Mu20/Meter/T_s",
+          "t": 200.0,
+          "value": 34.858211181803675,
+          "rtol": 0.010142796292423206,
+          "note": "relaxation theory (3 - 2 ln 2) mu + 7.014 mu^(-1/3) = 34.8582, +0.51% (the error falls with mu)"
+        }
+      ]
+    },
+    "vdp-tunnel-diode-mu0p2": {
+      "model": "vdp-tunnel-diode",
+      "overrides": [
+        {
+          "target": "global:mu",
+          "value": 0.2
+        }
+      ],
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality on every store, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "period",
+          "signal": "Vm/y",
+          "direction": "up",
+          "n": 31,
+          "value": 1.002497366395551e-07,
+          "rtol": 1e-06,
+          "note": "last full cycle of the tank voltage: 9.975089 MHz (scipy, the circuit in SI units)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/T_s",
+          "t": 3.2e-06,
+          "value": 6.298876713852566,
+          "rtol": 1e-07,
+          "note": "the cycle meter's scaled period w0 T equals the textbook limit cycle's period (scipy shooting)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/f",
+          "t": 3.2e-06,
+          "value": 9.975088563587107,
+          "rtol": 1e-07,
+          "note": "frequency in MHz = f0 2 pi / T(mu)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/amp",
+          "t": 3.2e-06,
+          "value": 2.000413678992078,
+          "rtol": 1e-07,
+          "note": "amplitude of x = v/A on the limit cycle (scipy shooting); averaging theory: 2"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Vpk/y",
+          "t": 3.2e-06,
+          "value": 290.0599834538513,
+          "rtol": 1e-07,
+          "note": "peak voltage deviation A x_max in mV"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Xc/y",
+          "signal_b": "Ref/x",
+          "max_abs": 1e-06,
+          "note": "the circuit's scaled voltage is the textbook x (scipy: 6.1e-11)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Yc/y",
+          "signal_b": "Ref/y",
+          "max_abs": 1e-06,
+          "note": "the circuit's scaled capacitor current is the textbook x' (scipy: 6.7e-11)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Tank/E",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Split/W",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 1e-07,
+          "scale": 1.692397992574372e-11,
+          "note": "energy bookkeeping: the tank loses exactly what the diode absorbs, C v^2/2 + L i^2/2 + int v i_D dt = const"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/dw1",
+          "t": 3.2e-06,
+          "value": 1.2339707263515614e-11,
+          "rtol": 1e-06,
+          "note": "energy the diode supplies per cycle, while |v| < sqrt(a/b) (scipy)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/dw2",
+          "t": 3.2e-06,
+          "value": 1.2339707263516527e-11,
+          "rtol": 1e-06,
+          "note": "energy it dissipates per cycle, at the outer part |v| > sqrt(a/b): the same, so the net is 0"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "L_nH/y",
+          "t": 0.0,
+          "value": 150.0973447045517,
+          "rtol": 1e-09,
+          "note": "the dashboard's mu = 0.2 gives L = 150.10 nH"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C_pF/y",
+          "t": 0.0,
+          "value": 1687.5912069226836,
+          "rtol": 1e-09,
+          "note": "and C = 1687.59 pF"
+        }
+      ]
+    },
+    "vdp-tunnel-diode-mu5": {
+      "model": "vdp-tunnel-diode",
+      "overrides": [
+        {
+          "target": "global:mu",
+          "value": 5.0
+        }
+      ],
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "integral causality on every store, no algebraic loop, no event storm"
+        },
+        {
+          "kind": "period",
+          "signal": "Vm/y",
+          "direction": "up",
+          "n": 16,
+          "value": 1.8481439109681176e-07,
+          "rtol": 1e-06,
+          "note": "last full cycle of the tank voltage: 5.410834 MHz (scipy, the circuit in SI units)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/T_s",
+          "t": 3.2e-06,
+          "value": 11.61223066771996,
+          "rtol": 1e-07,
+          "note": "the cycle meter's scaled period w0 T equals the textbook limit cycle's period (scipy shooting)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/f",
+          "t": 3.2e-06,
+          "value": 5.41083404814355,
+          "rtol": 1e-07,
+          "note": "frequency in MHz = f0 2 pi / T(mu)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/amp",
+          "t": 3.2e-06,
+          "value": 2.0215080615623267,
+          "rtol": 1e-07,
+          "note": "amplitude of x = v/A on the limit cycle (scipy shooting); averaging theory: 2"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Vpk/y",
+          "t": 3.2e-06,
+          "value": 293.11866892653734,
+          "rtol": 1e-07,
+          "note": "peak voltage deviation A x_max in mV"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Xc/y",
+          "signal_b": "Ref/x",
+          "max_abs": 1e-06,
+          "note": "the circuit's scaled voltage is the textbook x (scipy: 8.9e-11)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "Yc/y",
+          "signal_b": "Ref/y",
+          "max_abs": 1e-06,
+          "note": "the circuit's scaled capacitor current is the textbook x' (scipy: 5.2e-10)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Tank/E",
+              "coeff": 1.0
+            },
+            {
+              "signal": "Split/W",
+              "coeff": 1.0
+            }
+          ],
+          "tol": 1e-07,
+          "scale": 2.8198194710451044e-11,
+          "note": "energy bookkeeping: the tank loses exactly what the diode absorbs, C v^2/2 + L i^2/2 + int v i_D dt = const"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/dw1",
+          "t": 3.2e-06,
+          "value": 2.429398614646264e-11,
+          "rtol": 1e-06,
+          "note": "energy the diode supplies per cycle, while |v| < sqrt(a/b) (scipy)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Meter/dw2",
+          "t": 3.2e-06,
+          "value": 2.429398614646172e-11,
+          "rtol": 1e-06,
+          "note": "energy it dissipates per cycle, at the outer part |v| > sqrt(a/b): the same, so the net is 0"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "L_nH/y",
+          "t": 0.0,
+          "value": 3752.4336176137917,
+          "rtol": 1e-09,
+          "note": "the dashboard's mu = 5 gives L = 3752.43 nH"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "C_pF/y",
+          "t": 0.0,
+          "value": 67.50364827690734,
+          "rtol": 1e-09,
+          "note": "and C = 67.50 pF"
+        }
+      ]
+    }
+  }
+}
