@@ -159,6 +159,27 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
   "pl-modal-beam-2d": () => flexBeam(2, true),
   "sp-flexible-beam-3d": () => flexBeam(3, false),
   "sp-modal-beam-3d": () => flexBeam(3, true),
+  // FEM flexible body: an L-bracket meshed with triangles, its upright bent (a mode
+  // shape) with the dashed rest outline, and the eta of the modal coordinates.
+  "sp-modal-body-3d": () => (
+    <>
+      <path d="M2 21h11v-3H5.5" />
+      <path d="M2 21C2 14 3.2 8 5.5 3h3C6.6 8 5.5 13 5.5 18" strokeWidth={2} />
+      <path d="M2 21V3h3.5v15" strokeDasharray="1.6 1.8" opacity="0.6" />
+      <path d="M2 21l3.5-3M5.5 18l3 3M8.5 21l1.5-3M10 18l3 3M2.6 15l3-1M3.4 10l3.4-1.6M2.6 15l3 3" strokeWidth={1} />
+      <text
+        x="17.5"
+        y="12"
+        textAnchor="middle"
+        fontSize="8"
+        fontFamily="var(--font-ui)"
+        fill="currentColor"
+        stroke="none"
+      >
+        η
+      </text>
+    </>
+  ),
   "ct-impact-body-3d": () => (
     <>
       <path d="M5 13h9v8H5zM5 13l3-3h9v8l-3 3M14 13l3-3" />

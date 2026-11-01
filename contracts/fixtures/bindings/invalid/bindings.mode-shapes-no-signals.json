@@ -1,0 +1,10 @@
+{
+  "$comment": "Invalid: a mode-shapes binding needs at least one modal coordinate.",
+  "bindings": [
+    {
+      "target": "visual:bracket",
+      "property": "mode-shapes",
+      "signal": []
+    }
+  ]
+}

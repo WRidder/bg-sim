@@ -374,8 +374,13 @@ function _bind_constants!(
 )
     consts = constant_env(st.pb)
     overridden = Set{Symbol}()
-    # F5.1 insertion point: a CSV source's file settings become its `N` and `table` constants.
-    for (key, value) in _csv_node_constants(b, st, node)
+    # F5.1 insertion point: a CSV source's file settings become its `N` and `table` constants,
+    # and a modal body's reduced-model file its sizes and matrices. The entries are bound in
+    # declaration order, so a size constant (`nm`) is known before the matrices it sizes.
+    decl_index = Dict(BGSim.decl_name(d) => i for (i, d) in enumerate(BGSim.declarations(st.pb, :constants)))
+    entries = collect(_modal_node_constants(b, st, node, _csv_node_constants(b, st, node)))
+    sort!(entries; by = kv -> get(decl_index, Symbol(first(kv)), 0))
+    for (key, value) in entries
         name = Symbol(key)
         if !haskey(consts, name)
             _report!(
@@ -461,6 +466,34 @@ function _csv_node_constants(b::Builder, st::BlockState, node::IR.ModelNode)
         )
         rest["N"] = 1
         rest["table"] = 0
+    end
+    return rest
+end
+
+# FEM flexible bodies: a `ModalBody3D` node names its reduced-model file in `constants.file`
+# (written by julia/BGSimFEM); the compiler reads it and passes the block its declared
+# constants (sizes, mass properties, the reduced matrices; see `src/library/modaldata.jl`).
+const MODAL_BODY_REFS = ("stdlib:spatial/ModalBody3D",)
+const MODAL_SETTING_KEYS = ("file",)
+
+function _modal_node_constants(b::Builder, st::BlockState, node::IR.ModelNode, constants)
+    st.ref in MODAL_BODY_REFS || return constants
+    rest = Pair{String,Any}[String(k) => v for (k, v) in constants if !(k in MODAL_SETTING_KEYS) && k != "stiffening"]
+    try
+        data = BGSim.load_modal_body(b.project_dir, node.constants)
+        names = Set(first.(data))
+        filter!(kv -> !(first(kv) in names), rest)
+        append!(rest, data)
+    catch err
+        err isa BGSim.ModalDataError || rethrow()
+        _report!(
+            b,
+            st;
+            code = "E108",
+            message = err.message,
+            hint = isempty(err.hint) ? nothing : err.hint,
+            scope = "@constants",
+        )
     end
     return rest
 end
@@ -1241,6 +1274,8 @@ function _qpick(q::QValue, i::Int, j::Int = 1)
     return q.elems[_shape_element(q.shape, i, j)]
 end
 
+_zero_lit(e) = e isa Lit && e.value isa Real && !(e.value isa Bool) && iszero(e.value)
+
 _qsame_shape(a::QValue, b::QValue) = a.shape == b.shape
 
 """
@@ -1636,12 +1671,36 @@ function _qualify_node(q::QCtx, e::BinOp)
             end
             elems = BGSim.Expr[]
             for i in 1:n
+                # a literal zero entry (a folded constant matrix) adds no term
                 terms = BGSim.Expr[
                     BinOp(:*, _qpick(lhs, i, j), rhs.elems[j], r) for j in 1:m
+                    if !_zero_lit(_qpick(lhs, i, j)) && !_zero_lit(rhs.elems[j])
                 ]
                 push!(elems, _sum_exprs(terms, r))
             end
             return QValue((n,), elems)
+        elseif length(lhs.shape) == 2 && length(rhs.shape) == 2
+            # `A * B`, the matrix-matrix product (static sizes): `sum_k A[i,k]*B[k,j]`.
+            n, m = lhs.shape
+            m2, p = rhs.shape
+            if m != m2
+                _qreport!(
+                    q;
+                    code = "E004",
+                    message = "a matrix product needs inner sizes that agree, got $(lhs.shape) and $(rhs.shape)",
+                    range = r,
+                )
+                return nothing
+            end
+            elems = BGSim.Expr[]
+            for i in 1:n, j in 1:p
+                terms = BGSim.Expr[
+                    BinOp(:*, _qpick(lhs, i, k), _qpick(rhs, k, j), r) for k in 1:m
+                    if !_zero_lit(_qpick(lhs, i, k)) && !_zero_lit(_qpick(rhs, k, j))
+                ]
+                push!(elems, _sum_exprs(terms, r))
+            end
+            return QValue((n, p), elems)
         end
         _qreport!(
             q;
@@ -2583,7 +2642,9 @@ function _composite_diagram!(b::Builder, node::IR.ModelNode, path::String, block
                     )
                     continue
                 end
-                constants[String(key)] = _repr_value(value)
+                # a matrix goes on as the folded value (its text form would need the `[a b; c d]`
+                # literal, which cannot tell a 1 x 1 or n x 1 matrix from a vector)
+                constants[String(key)] = value isa AbstractMatrix ? value : _repr_value(value)
                 continue
             end
             _declared_parameter(component, key) || _report_component!(

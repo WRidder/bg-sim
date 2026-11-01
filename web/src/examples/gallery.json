@@ -136,6 +136,23 @@
       "flex-rotary-pendulum-rigid"
     ]
   },
+  "fem-bracket": {
+    "title": "FEM bracket",
+    "description": "An aluminium L-bracket reduced from a finite element mesh (ModalBody3D) carries a payload on an indexing turntable; ring-down checked against the full FE model.",
+    "hasScene": true,
+    "models": [
+      "fem-bracket",
+      "bracket-ringdown"
+    ]
+  },
+  "fem-torsion": {
+    "title": "FEM torsion",
+    "description": "The two-disk torsion shaft as a FEM flexible body (Craig-Bampton): the exact torsion frequency, where three assumed modes are 3.5 % too stiff.",
+    "hasScene": true,
+    "models": [
+      "fem-torsion"
+    ]
+  },
   "flex-torsion": {
     "title": "Flex torsion",
     "description": "Two disks on a flexible shaft (FlexibleBeam3D, three torsion modes) against the exact torsion frequency.",

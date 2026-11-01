@@ -1,0 +1,10 @@
+{
+  "$comment": "Invalid: a mode-shapes binding targets a mesh visual (the GLB with the morph targets), not a link.",
+  "bindings": [
+    {
+      "target": "link:bracket",
+      "property": "mode-shapes",
+      "signal": ["Plant/Bracket/eta[1]", "Plant/Bracket/eta[2]"]
+    }
+  ]
+}

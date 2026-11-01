@@ -48,6 +48,10 @@ include("syntax/watch.jl")
 # Work package F5.1: CSV input sources (project data files as signals).
 include("library/csvdata.jl")
 
+# FEM flexible bodies: the reduced-model files of `stdlib:spatial/ModalBody3D` (julia/BGSimFEM).
+import JSON3
+include("library/modaldata.jl")
+
 # Work package J-EX9: seeded noise draws and the delay line of the discrete intrinsics.
 include("library/random.jl")
 

@@ -1,0 +1,900 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "fem-bracket",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "World",
+        "block": {
+          "ref": "stdlib:multibond/GroundSpatial"
+        },
+        "position": {
+          "x": 40,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n2",
+        "name": "Table",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 220,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "100000000.0",
+          "kr": "100000.0",
+          "bt": "1776.7026476951692",
+          "br": "2.2706602756175296"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n3",
+        "name": "Hub",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 400,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "3.1566722983270243",
+          "J": "[0.005155898087267474, 0.005155898087267474, 0.010101351354646479]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n4",
+        "name": "Seat",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 580,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.01"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n5",
+        "name": "Bracket",
+        "block": {
+          "ref": "stdlib:spatial/ModalBody3D"
+        },
+        "position": {
+          "x": 760,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "zeta": "0.01"
+        },
+        "constants": {
+          "file": "data/bracket.modal.json"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n6",
+        "name": "Clamp",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 940,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.02"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n7",
+        "name": "Payload",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1120,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.5",
+          "J": "[0.00013333333333333334, 0.00013333333333333334, 0.00013333333333333334]"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "MoveOut",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 20
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "1.5707963267948966",
+          "t_start": "0.2",
+          "v_max": "8.0",
+          "a_max": "80.0",
+          "j_max": "4000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "MoveBack",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "-1.5707963267948966",
+          "t_start": "1.6",
+          "v_max": "8.0",
+          "a_max": "80.0",
+          "j_max": "4000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "Moves",
+        "block": {
+          "ref": "stdlib:continuous/Mux2"
+        },
+        "position": {
+          "x": 130,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Speed",
+        "block": {
+          "ref": "stdlib:continuous/Sum"
+        },
+        "position": {
+          "x": 190,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": "2"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Servo",
+        "block": {
+          "ref": "stdlib:rotation/SpeedSource"
+        },
+        "position": {
+          "x": 260,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "w": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "ServoSpring",
+        "block": {
+          "ref": "stdlib:rotation/TorsionSpring"
+        },
+        "position": {
+          "x": 360,
+          "y": 20
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "2000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "ServoDamper",
+        "block": {
+          "ref": "stdlib:rotation/RotationalDamper"
+        },
+        "position": {
+          "x": 360,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "7.381957552723679"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "Origin",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 220,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "PHub",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 400,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "SeatPose",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 580,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.01"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "PBracketA",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 580,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
+        "name": "ClampPose",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 940,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.02"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n25",
+        "name": "PPayload",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 940,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": {
+          "node": "n1",
+          "port": "p"
+        },
+        "to": {
+          "node": "n2",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": {
+          "node": "n2",
+          "port": "child"
+        },
+        "to": {
+          "node": "n3",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "bond",
+        "from": {
+          "node": "n3",
+          "port": "p"
+        },
+        "to": {
+          "node": "n4",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "bond",
+        "from": {
+          "node": "n4",
+          "port": "b"
+        },
+        "to": {
+          "node": "n5",
+          "port": "A"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c5",
+        "kind": "bond",
+        "from": {
+          "node": "n5",
+          "port": "B"
+        },
+        "to": {
+          "node": "n6",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c6",
+        "kind": "bond",
+        "from": {
+          "node": "n6",
+          "port": "b"
+        },
+        "to": {
+          "node": "n7",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c10",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "v"
+        },
+        "to": {
+          "node": "n16",
+          "port": "u1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c11",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "v"
+        },
+        "to": {
+          "node": "n16",
+          "port": "u2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c17",
+        "kind": "signal",
+        "from": {
+          "node": "n16",
+          "port": "y"
+        },
+        "to": {
+          "node": "n12",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c12",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "y"
+        },
+        "to": {
+          "node": "n13",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c13",
+        "kind": "wire",
+        "from": {
+          "node": "n13",
+          "port": "a"
+        },
+        "to": {
+          "node": "n14",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c14",
+        "kind": "wire",
+        "from": {
+          "node": "n13",
+          "port": "a"
+        },
+        "to": {
+          "node": "n15",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c15",
+        "kind": "wire",
+        "from": {
+          "node": "n14",
+          "port": "b"
+        },
+        "to": {
+          "node": "n2",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c16",
+        "kind": "wire",
+        "from": {
+          "node": "n15",
+          "port": "b"
+        },
+        "to": {
+          "node": "n2",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c20",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "g"
+        },
+        "to": {
+          "node": "n21",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c21",
+        "kind": "signal",
+        "from": {
+          "node": "n2",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n21",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c22",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "g"
+        },
+        "to": {
+          "node": "n3",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c23",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "g"
+        },
+        "to": {
+          "node": "n23",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c24",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "g"
+        },
+        "to": {
+          "node": "n23",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c25",
+        "kind": "signal",
+        "from": {
+          "node": "n23",
+          "port": "g"
+        },
+        "to": {
+          "node": "n5",
+          "port": "gA"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c26",
+        "kind": "signal",
+        "from": {
+          "node": "n5",
+          "port": "poseB"
+        },
+        "to": {
+          "node": "n25",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c27",
+        "kind": "signal",
+        "from": {
+          "node": "n24",
+          "port": "g"
+        },
+        "to": {
+          "node": "n25",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c28",
+        "kind": "signal",
+        "from": {
+          "node": "n25",
+          "port": "g"
+        },
+        "to": {
+          "node": "n7",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 3.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-07,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 6001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Table angle (rad) and speed (rad/s)",
+      "signals": [
+        "Table/qout",
+        "Table/qdout"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Modal coordinates (m)",
+      "signals": [
+        "Bracket/eta[1]",
+        "Bracket/eta[2]",
+        "Bracket/eta[3]",
+        "Bracket/eta[4]",
+        "Bracket/eta[5]",
+        "Bracket/eta[6]",
+        "Bracket/eta[7]",
+        "Bracket/eta[8]",
+        "Bracket/eta[9]",
+        "Bracket/eta[10]"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Payload twist (body frame)",
+      "signals": [
+        "Payload/V[1]",
+        "Payload/V[2]",
+        "Payload/V[3]",
+        "Payload/V[4]",
+        "Payload/V[5]",
+        "Payload/V[6]"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Bracket energies (J)",
+      "signals": [
+        "Bracket/Ek",
+        "Bracket/Ee",
+        "Bracket/Eg"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/fem-bracket.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:hub",
+      "property": "pose",
+      "signal": [
+        "PHub/g[1]",
+        "PHub/g[2]",
+        "PHub/g[3]",
+        "PHub/g[4]",
+        "PHub/g[5]",
+        "PHub/g[6]",
+        "PHub/g[7]"
+      ]
+    },
+    {
+      "target": "link:bracket",
+      "property": "pose",
+      "signal": [
+        "Bracket/pose[1]",
+        "Bracket/pose[2]",
+        "Bracket/pose[3]",
+        "Bracket/pose[4]",
+        "Bracket/pose[5]",
+        "Bracket/pose[6]",
+        "Bracket/pose[7]"
+      ]
+    },
+    {
+      "target": "link:payload",
+      "property": "pose",
+      "signal": [
+        "PPayload/g[1]",
+        "PPayload/g[2]",
+        "PPayload/g[3]",
+        "PPayload/g[4]",
+        "PPayload/g[5]",
+        "PPayload/g[6]",
+        "PPayload/g[7]"
+      ]
+    },
+    {
+      "target": "visual:bracket_mesh",
+      "property": "mode-shapes",
+      "signal": [
+        "Bracket/eta[1]",
+        "Bracket/eta[2]",
+        "Bracket/eta[3]",
+        "Bracket/eta[4]",
+        "Bracket/eta[5]",
+        "Bracket/eta[6]",
+        "Bracket/eta[7]",
+        "Bracket/eta[8]",
+        "Bracket/eta[9]",
+        "Bracket/eta[10]"
+      ]
+    }
+  ]
+}

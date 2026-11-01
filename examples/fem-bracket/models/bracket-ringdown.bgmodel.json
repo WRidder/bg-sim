@@ -1,0 +1,409 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "bracket-ringdown",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n1",
+        "name": "Clamp",
+        "block": {
+          "ref": "stdlib:multibond/CSpatial"
+        },
+        "position": {
+          "x": 220,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "krx": "1000000000.0",
+          "kry": "1000000000.0",
+          "krz": "1000000000.0",
+          "kx": "1000000000.0",
+          "ky": "1000000000.0",
+          "kz": "1000000000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n2",
+        "name": "ClampDamping",
+        "block": {
+          "ref": "stdlib:multibond/RSpatial"
+        },
+        "position": {
+          "x": 220,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "brx": "1000.0",
+          "bry": "1000.0",
+          "brz": "1000.0",
+          "bx": "1000.0",
+          "by": "1000.0",
+          "bz": "1000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n3",
+        "name": "Bracket",
+        "block": {
+          "ref": "stdlib:spatial/ModalBody3D"
+        },
+        "position": {
+          "x": 400,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "zeta": "0.0",
+          "g0": "0.0"
+        },
+        "constants": {
+          "file": "data/bracket.modal.json"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n4",
+        "name": "PayloadMount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 580,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.02"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n5",
+        "name": "Payload",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 760,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.5",
+          "J": "[0.00013333333333333334, 0.00013333333333333334, 0.00013333333333333334]",
+          "g0": "0.0"
+        },
+        "constants": {},
+        "starts": {
+          "P": "[0.0, 0.0, 0.0, 0.025, 0.05, 0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "Origin",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 400,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "PayloadPose",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 580,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.02"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "PPayload",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 760,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": {
+          "node": "n3",
+          "port": "A"
+        },
+        "to": {
+          "node": "n1",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": {
+          "node": "n3",
+          "port": "A"
+        },
+        "to": {
+          "node": "n2",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "bond",
+        "from": {
+          "node": "n3",
+          "port": "B"
+        },
+        "to": {
+          "node": "n4",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "bond",
+        "from": {
+          "node": "n4",
+          "port": "b"
+        },
+        "to": {
+          "node": "n5",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c5",
+        "kind": "signal",
+        "from": {
+          "node": "n20",
+          "port": "g"
+        },
+        "to": {
+          "node": "n3",
+          "port": "gA"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c6",
+        "kind": "signal",
+        "from": {
+          "node": "n3",
+          "port": "poseB"
+        },
+        "to": {
+          "node": "n22",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c7",
+        "kind": "signal",
+        "from": {
+          "node": "n21",
+          "port": "g"
+        },
+        "to": {
+          "node": "n22",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c8",
+        "kind": "signal",
+        "from": {
+          "node": "n22",
+          "port": "g"
+        },
+        "to": {
+          "node": "n5",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-07,
+    "abstol": 1e-10,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 20001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Modal coordinates (m)",
+      "signals": [
+        "Bracket/eta[1]",
+        "Bracket/eta[2]",
+        "Bracket/eta[3]",
+        "Bracket/eta[4]",
+        "Bracket/eta[5]",
+        "Bracket/eta[6]",
+        "Bracket/eta[7]",
+        "Bracket/eta[8]",
+        "Bracket/eta[9]",
+        "Bracket/eta[10]"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Payload velocity (m/s, body frame)",
+      "signals": [
+        "Payload/V[4]",
+        "Payload/V[5]",
+        "Payload/V[6]"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Energy (J)",
+      "signals": [
+        "Bracket/Ek",
+        "Bracket/Ee"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/bracket-ringdown.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:bracket",
+      "property": "pose",
+      "signal": [
+        "Bracket/pose[1]",
+        "Bracket/pose[2]",
+        "Bracket/pose[3]",
+        "Bracket/pose[4]",
+        "Bracket/pose[5]",
+        "Bracket/pose[6]",
+        "Bracket/pose[7]"
+      ]
+    },
+    {
+      "target": "link:payload",
+      "property": "pose",
+      "signal": [
+        "PPayload/g[1]",
+        "PPayload/g[2]",
+        "PPayload/g[3]",
+        "PPayload/g[4]",
+        "PPayload/g[5]",
+        "PPayload/g[6]",
+        "PPayload/g[7]"
+      ]
+    },
+    {
+      "target": "visual:bracket_mesh",
+      "property": "mode-shapes",
+      "signal": [
+        "Bracket/eta[1]",
+        "Bracket/eta[2]",
+        "Bracket/eta[3]",
+        "Bracket/eta[4]",
+        "Bracket/eta[5]",
+        "Bracket/eta[6]",
+        "Bracket/eta[7]",
+        "Bracket/eta[8]",
+        "Bracket/eta[9]",
+        "Bracket/eta[10]"
+      ]
+    }
+  ]
+}

@@ -34,6 +34,8 @@ import { ProjectBlockDialog, type ProjectBlockResult } from "../code/ProjectBloc
 import { stripEquationPrefix } from "./expression";
 import { CsvSourceSection } from "./CsvSourceSection";
 import { isCsvSourceRef } from "./csvSource";
+import { ModalBodySection } from "./ModalBodySection";
+import { editableConstants, isModalBodyRef } from "./modalBody";
 import { NodeImageSection } from "./NodeImageSection";
 import { MetaValue, SelectField, TextField, type SelectOption } from "./fields";
 import { liveParameterName } from "./liveEdit";
@@ -597,6 +599,8 @@ export function NodeInspector({
   const iface = interfaceForNode(node, index);
   const ref = nodeRef(node);
   const block = ref === null ? undefined : index.blocksByRef.get(ref);
+  // a ModalBody3D's constants are set from its reduced-model file: not edited here
+  const constantDecls = block === undefined ? [] : editableConstants(ref, block.constants);
   const inlineSource = "inline" in node.block ? node.block.inline.source : null;
   const source = block?.source ?? inlineSource;
   const sourcePath = block?.path ?? (inlineSource !== null ? "inline source" : null);
@@ -790,20 +794,25 @@ export function NodeInspector({
           </section>
 
           {isCsvSourceRef(ref) ? <CsvSourceSection node={node} project={project} /> : null}
+          {isModalBodyRef(ref) ? <ModalBodySection node={node} project={project} /> : null}
 
           <section className="inspector-section" aria-labelledby="inspector-constants-title">
             <h4 className="inspector-section__title" id="inspector-constants-title">
               Constants
-              <span className="inspector-section__count">{block.constants.length}</span>
+              <span className="inspector-section__count">{constantDecls.length}</span>
             </h4>
-            {block.constants.length === 0 ? (
-              <p className="inspector-none">This block has no constants.</p>
+            {constantDecls.length === 0 ? (
+              <p className="inspector-none" data-testid="inspector-constants-none">
+                {constantDecls.length < block.constants.length
+                  ? "The constants of this block come from its reduced-model file (see above)."
+                  : "This block has no constants."}
+              </p>
             ) : (
               <>
-                {block.constants.map((decl) => (
+                {constantDecls.map((decl) => (
                   <ConstantField key={decl.name} node={node} decl={decl} />
                 ))}
-                {block.constants.some((decl) => decl.structural) ? (
+                {constantDecls.some((decl) => decl.structural) ? (
                   <p className="inspector-note" data-testid="inspector-structural-note">
                     Structural constants set the block&apos;s sizes; changing one triggers a
                     recompile (D13).

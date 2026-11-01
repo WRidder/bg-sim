@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import struct
 from pathlib import Path
 
 import pytest
@@ -264,3 +265,73 @@ def test_project_from_an_example_copies_scenes_and_meshes(tmp_path) -> None:
     copied = tmp_path / "projects" / "copy"
     assert (copied / "scenes" / "arm.sdf").read_text(encoding="utf-8") == SDF
     assert (copied / "meshes" / "link.glb").read_bytes() == glb
+
+
+# --------------------------------------------------------------------------- morph targets
+
+
+def _morph_glb(targets: int = 2) -> bytes:
+    """A one-triangle GLB with ``targets`` morph targets (the mode shapes of a FEM body)."""
+    positions = struct.pack("<9f", 0, 0, 0, 1, 0, 0, 0, 1, 0)
+    displacement = struct.pack("<9f", 0, 0, 0.1, 0, 0, 0.2, 0, 0, 0.3)
+    binary = positions + displacement * targets
+    accessors = [
+        {"bufferView": 0, "componentType": 5126, "count": 3, "type": "VEC3",
+         "min": [0, 0, 0], "max": [1, 1, 0]},
+    ] + [
+        {"bufferView": 1 + k, "componentType": 5126, "count": 3, "type": "VEC3",
+         "min": [0, 0, 0.1], "max": [0, 0, 0.3]}
+        for k in range(targets)
+    ]
+    views = [{"buffer": 0, "byteOffset": 36 * k, "byteLength": 36} for k in range(1 + targets)]
+    document = {
+        "asset": {"version": "2.0"},
+        "scene": 0,
+        "scenes": [{"nodes": [0]}],
+        "nodes": [{"mesh": 0, "name": "part"}],
+        "meshes": [{
+            "primitives": [{
+                "attributes": {"POSITION": 0},
+                "targets": [{"POSITION": 1 + k} for k in range(targets)],
+            }],
+            "weights": [0.0] * targets,
+            "extras": {"targetNames": [f"mode {k + 1}" for k in range(targets)]},
+        }],
+        "accessors": accessors,
+        "bufferViews": views,
+        "buffers": [{"byteLength": len(binary)}],
+    }
+    text = json.dumps(document).encode()
+    text += b" " * (-len(text) % 4)
+    binary += b"\0" * (-len(binary) % 4)
+    total = 12 + 8 + len(text) + 8 + len(binary)
+    return (
+        struct.pack("<4sII", b"glTF", 2, total)
+        + struct.pack("<I4s", len(text), b"JSON") + text
+        + struct.pack("<I4s", len(binary), b"BIN\0") + binary
+    )
+
+
+def test_morph_target_count_reads_the_glb_json() -> None:
+    assert meshes.glb_morph_target_count(_morph_glb(3)) == 3
+    assert meshes.glb_morph_target_count(_box().export(file_type="glb")) == 0
+    assert meshes.glb_morph_target_count(b"not a glb at all, not at all") == 0
+
+
+def test_glb_with_morph_targets_is_stored_and_served_byte_for_byte(client, fake_settings) -> None:
+    glb = _morph_glb(2)
+    response = _upload(client, "bracket.glb", glb)
+    assert response.status_code == 201, response.text
+    assert (response.json()["faces"], response.json()["bytes"]) == (1, len(glb))
+    assert (_project_dir(fake_settings) / "meshes" / "bracket.glb").read_bytes() == glb
+    served = client.get("/api/projects/demo/meshes/bracket.glb")
+    assert served.status_code == 200 and served.content == glb
+    assert meshes.glb_morph_target_count(served.content) == 2
+
+
+def test_glb_placed_in_meshes_is_served_unchanged(client, fake_settings) -> None:
+    folder = _project_dir(fake_settings) / "meshes"
+    folder.mkdir(exist_ok=True)
+    glb = _morph_glb(4)
+    (folder / "lbar.glb").write_bytes(glb)
+    assert client.get("/api/projects/demo/meshes/lbar.glb").content == glb

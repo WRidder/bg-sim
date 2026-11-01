@@ -10,6 +10,8 @@ joint axis and fails with the opposite sign.
 from __future__ import annotations
 
 import importlib.util
+import json
+import struct
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -176,3 +178,70 @@ def test_fk_follows_the_joint_axis(runner, tmp_path):
     bad = _check(runner, flipped, fk)
     assert [r[0] for r in bad] == [True, False], bad
     assert "max |SDF point - model signals|" in bad[1][2]
+
+
+MESH_SDF = SDF.replace(
+    '<link name="slider">',
+    '<link name="flex"><visual name="bracket"><geometry><mesh><uri>model://flex/meshes/bracket.glb</uri></mesh>'
+    '</geometry></visual></link>\n  <link name="slider">',
+)
+
+
+def _glb(targets: int) -> bytes:
+    """A GLB whose JSON chunk has one mesh primitive with ``targets`` morph targets (no binary chunk)."""
+    primitive: dict = {"attributes": {"POSITION": 0}}
+    if targets:
+        primitive["targets"] = [{"POSITION": 0} for _ in range(targets)]
+    text = json.dumps({"asset": {"version": "2.0"}, "meshes": [{"primitives": [primitive]}]}).encode("utf-8")
+    chunk = text + b" " * ((4 - len(text) % 4) % 4)
+    return b"glTF" + struct.pack("<II", 2, 20 + len(chunk)) + struct.pack("<I", len(chunk)) + b"JSON" + chunk
+
+
+def _mesh_run(tmp_path: Path, bindings: list[dict], targets: int | None = 4):
+    run = _run(tmp_path, bindings)
+    (tmp_path / "scenes" / "a.sdf").write_text(MESH_SDF, encoding="utf-8")
+    if targets is not None:
+        (tmp_path / "meshes").mkdir(exist_ok=True)
+        (tmp_path / "meshes" / "bracket.glb").write_bytes(_glb(targets))
+    return run
+
+
+def _modes(**over):
+    return {"target": "visual:bracket", "property": "mode-shapes", "signal": ["x", "s"], **over}
+
+
+def test_mode_shapes_binding_passes(runner, tmp_path):
+    results = _check(runner, _mesh_run(tmp_path, [_modes()]))
+    assert [r[0] for r in results] == [True], results
+    assert "1 binding(s) (0 joint position, 0 pose, 1 visual)" in results[0][2]
+
+
+@pytest.mark.parametrize(
+    ("bindings", "targets", "fragment"),
+    [
+        ([_modes(target="visual:nope")], 4, "no visual named 'nope'"),
+        ([_modes(target="link:flex")], 4, "no visual named 'flex'"),
+        ([_modes(target="visual:bar_box")], 4, "a box is not a mesh"),
+        ([_modes(signal="x")], 4, "needs 1 to 64 modal coordinates"),
+        ([_modes(signal=[])], 4, "needs 1 to 64 modal coordinates"),
+        ([_modes(signal=["x"] * 65)], 100, "needs 1 to 64 modal coordinates"),
+        ([_modes(signal=["x", "s", "x"])], 2, "3 modal coordinates but mesh 'bracket.glb' has 2 morph targets"),
+        ([_modes()], 0, "has no morph targets"),
+        ([_modes()], None, "mesh 'bracket.glb' unreadable"),
+        ([_modes(signal=["q", "w"])], 4, "does not fit a modal coordinate (m)"),
+        ([_modes(), _modes(signal=["x"])], 4, "a second mode-shapes binding of visual:bracket"),
+    ],
+)
+def test_each_mode_shapes_mistake_fails(runner, tmp_path, bindings, targets, fragment):
+    results = _check(runner, _mesh_run(tmp_path, bindings, targets))
+    assert results[0][0] is False
+    assert fragment in results[0][2]
+
+
+def test_glb_morph_targets_counts_the_fewest(runner, tmp_path):
+    path = tmp_path / "a.glb"
+    path.write_bytes(_glb(7))
+    assert runner._glb_morph_targets(path) == 7
+    path.write_bytes(b"not a glb at all, really")
+    with pytest.raises(ValueError):
+        runner._glb_morph_targets(path)

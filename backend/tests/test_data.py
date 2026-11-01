@@ -117,3 +117,75 @@ def test_example_copy_carries_the_data_folder(fake_settings, tmp_path):
     store = ProjectStore(tmp_path / "projects", examples_root=examples)
     store.create_project("copy", example="ex")
     assert (tmp_path / "projects" / "copy" / "data" / "traj.csv").read_text(encoding="utf-8") == CSV
+
+
+# --------------------------------------------------------------------------- reduced-model files
+
+MODAL = (
+    '{"format": "bgsim.modal-body", "version": 1, "name": "bracket", "nm": 2, "mass": 0.5,\n'
+    ' "frequency_hz": [120.0, 340.0], "visual": {"glb": "bracket.glb"}}\n'
+)
+
+
+def test_modal_file_upload_list_get_delete(client, fake_settings):
+    assert _upload(client, "traj.csv", CSV).status_code == 201
+    response = _upload(client, "My Bracket.modal.json", MODAL)
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["file"] == "My_Bracket.modal.json"
+    assert body["path"] == "data/My_Bracket.modal.json"
+    assert (body["kind"], body["name"], body["nm"]) == ("modal", "bracket", 2)
+    stored = fake_settings.projects_root / "demo" / "data" / "My_Bracket.modal.json"
+    assert stored.read_text(encoding="utf-8") == MODAL
+
+    # the plain list stays the CSV list; ?kind= selects the reduced models or everything
+    assert [f["file"] for f in client.get("/api/projects/demo/data").json()] == ["traj.csv"]
+    modal = client.get("/api/projects/demo/data?kind=modal").json()
+    assert modal == [{"file": "My_Bracket.modal.json", "bytes": len(MODAL), "kind": "modal"}]
+    every = client.get("/api/projects/demo/data?kind=all").json()
+    assert [(f["file"], f["kind"]) for f in every] == [
+        ("My_Bracket.modal.json", "modal"),
+        ("traj.csv", "csv"),
+    ]
+    assert client.get("/api/projects/demo/data?kind=xlsx").status_code == 422
+
+    fetched = client.get("/api/projects/demo/data/My_Bracket.modal.json")
+    assert fetched.status_code == 200 and fetched.text == MODAL
+    assert fetched.headers["content-type"].startswith("application/json")
+    assert client.get("/api/projects/demo/data/My_Bracket.modal.json/preview").status_code == 400
+
+    assert client.delete("/api/projects/demo/data/My_Bracket.modal.json").status_code == 204
+    assert client.get("/api/projects/demo/data?kind=modal").json() == []
+
+
+def test_modal_put_validates_the_header(client):
+    put = client.put("/api/projects/demo/data/b.modal.json", content=MODAL.replace("\n", "\r\n"))
+    assert put.status_code == 200 and put.json()["kind"] == "modal"
+    assert client.get("/api/projects/demo/data/b.modal.json").text == MODAL
+    broken = client.put("/api/projects/demo/data/b.modal.json", content="{not json")
+    assert broken.status_code == 422 and "BGSimFEM" in broken.text
+    other = client.put("/api/projects/demo/data/b.modal.json", content='{"format": "x"}')
+    assert other.status_code == 422 and "bgsim.modal-body" in other.text
+    newer = client.put(
+        "/api/projects/demo/data/b.modal.json",
+        content='{"format": "bgsim.modal-body", "version": 2}',
+    )
+    assert newer.status_code == 422 and "version" in newer.text
+    assert client.get("/api/projects/demo/data/b.modal.json").text == MODAL, "kept on error"
+    assert _upload(client, "c.modal.json", "[]").status_code == 422
+    assert _upload(client, "c.modal.json", "  ").status_code == 400
+
+
+@pytest.mark.parametrize(
+    "name", ["../a.modal.json", ".modal.json", "a.json", "sub%2Fa.modal.json", "C%3Aa.modal.json"]
+)
+def test_bad_modal_names_are_refused(client, name):
+    assert client.get(f"/api/projects/demo/data/{name}").status_code in (400, 404, 405)
+    assert client.put(f"/api/projects/demo/data/{name}", content=MODAL).status_code in (400, 404, 405)
+
+
+def test_modal_upload_names(client):
+    assert _upload(client, "part.json", MODAL).status_code == 415
+    escaped = _upload(client, "..\\..\\evil/../x.modal.json", MODAL)
+    assert escaped.status_code == 201 and escaped.json()["path"] == "data/x.modal.json"
+    assert _upload(client, "...modal.json", MODAL).status_code == 400

@@ -91,6 +91,7 @@ When the target is another model or project, the paste brings along what the cop
 | a project library block (`project:<Name>`), also inside a subsystem or used by another library block | `library/<Name>.jl` in the target project |
 | a global parameter in a value or start value | a global parameter of the target model, with every global it depends on |
 | a CSV file of a CsvSource block | the same file in the target project's `data/` folder |
+| the reduced-model file (`.modal.json`) of a ModalBody3D block | the same file in the target project's `data/` folder (copy the mode-shape GLB into `meshes/` yourself) |
 | an image in a sticky note's Markdown | the image in the target model's docs |
 
 A subsystem image is part of the block, so it always comes along.

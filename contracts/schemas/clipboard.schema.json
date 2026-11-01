@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bgsim.local/schemas/clipboard.schema.json",
   "title": "ClipboardEnvelope",
-  "description": "What the diagram editor puts on the system clipboard (text/plain JSON) when elements are copied: the copied nodes, the connections between them, sticky notes and shapes of one diagram level, plus what a paste into another model or project needs (library block sources, global parameters, docs images, CSV data files). A paste refuses an unknown format or version.",
+  "description": "What the diagram editor puts on the system clipboard (text/plain JSON) when elements are copied: the copied nodes, the connections between them, sticky notes and shapes of one diagram level, plus what a paste into another model or project needs (library block sources, global parameters, docs images, CSV and reduced-model data files). A paste refuses an unknown format or version.",
   "type": "object",
   "required": [
     "format",
@@ -96,9 +96,9 @@
           "type": "array",
           "items": {
             "type": "string",
-            "pattern": "^[A-Za-z0-9_.-]+\\.[Cc][Ss][Vv]$"
+            "pattern": "^[A-Za-z0-9_.-]+\\.(?:[Cc][Ss][Vv]|[Mm][Oo][Dd][Aa][Ll]\\.[Jj][Ss][Oo][Nn])$"
           },
-          "description": "CSV files of the source project's data/ folder that copied CsvSource nodes read."
+          "description": "Files of the source project's data/ folder that the copied nodes read: the CSV files of CsvSource nodes and the reduced-model files (*.modal.json) of ModalBody3D nodes."
         },
         "$comment": { "type": "string" }
       },

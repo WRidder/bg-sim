@@ -50,6 +50,7 @@ const COMPOSITE_IDS = [
   "sp-helical-3d",
   "sp-local-pose-3d",
   "sp-modal-beam-3d",
+  "sp-modal-body-3d",
   "sp-planar-3d",
   "sp-prismatic-3d",
   "sp-prismatic-3d-compliant",

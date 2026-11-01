@@ -1,0 +1,10 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "fem-torsion",
+  "models": [
+    "fem-torsion"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

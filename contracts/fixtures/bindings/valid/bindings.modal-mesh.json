@@ -1,0 +1,30 @@
+{
+  "$comment": "A flexible body reduced from a finite element mesh (ModalBody3D): the link pose carries the rigid body frame, and a mode-shapes binding deforms the GLB mesh visual of that link by the modal coordinates eta[1..4], one morph target per mode. The second body records its coordinates in mm.",
+  "bindings": [
+    {
+      "target": "link:bracket",
+      "property": "pose",
+      "signal": [
+        "Plant/Bracket/pose[1]",
+        "Plant/Bracket/pose[2]",
+        "Plant/Bracket/pose[3]",
+        "Plant/Bracket/pose[4]",
+        "Plant/Bracket/pose[5]",
+        "Plant/Bracket/pose[6]",
+        "Plant/Bracket/pose[7]"
+      ]
+    },
+    {
+      "target": "visual:bracket",
+      "property": "mode-shapes",
+      "signal": ["Plant/Bracket/eta[1]", "Plant/Bracket/eta[2]", "Plant/Bracket/eta[3]", "Plant/Bracket/eta[4]"]
+    },
+    {
+      "target": "visual:plate.shell",
+      "property": "mode-shapes",
+      "signal": ["Plant/Plate/eta[1]"],
+      "gain": 0.001,
+      "$comment": "coordinates in mm"
+    }
+  ]
+}

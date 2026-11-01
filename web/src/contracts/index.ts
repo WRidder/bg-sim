@@ -31,6 +31,7 @@ export type { DeformationBasis } from "./bindings";
 export type { DeformationBinding } from "./bindings";
 export type { DeformationFamily } from "./bindings";
 export type { JointPositionBinding } from "./bindings";
+export type { ModeShapeBinding } from "./bindings";
 export type { PoseBinding } from "./bindings";
 export type { ShapeAxis } from "./bindings";
 export type { StrainColor } from "./bindings";

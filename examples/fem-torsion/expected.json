@@ -1,0 +1,43 @@
+{
+  "project": "fem-torsion",
+  "description": "Two disks on a torsion shaft, the shaft a FEM flexible body (ModalBody3D, Craig-Bampton: 4 fixed-interface + 6 constraint modes): the first torsional frequency matches the exact transcendental root to 0.2 %, where the assumed-modes beam with 3 torsion modes (flex-torsion) is 3.5 % too high.",
+  "models": {
+    "fem-torsion": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E108",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "Twist/y",
+          "from_t": 0.3,
+          "to_t": 5.0,
+          "min_hz": 1.0,
+          "max_hz": 20.0,
+          "value": 4.0978382281737105,
+          "rtol": 0.004,
+          "note": "exact root of 2 mu z cos z + (1 - mu^2 z^2) sin z = 0 (mu = 29404.3): 25.74748 rad/s = 4.09784 Hz. The assumed-modes beam with 3 torsion modes gives 4.24230 Hz (+3.53 %), outside this tolerance"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Twist/y",
+          "from_t": 0.0,
+          "to_t": 5.0,
+          "value": 0.27,
+          "rtol": 0.05,
+          "note": "the largest twist, about 15 degrees (as flex-torsion)"
+        }
+      ]
+    }
+  }
+}

@@ -433,6 +433,8 @@ const FLEX_REFS = [
     "stdlib:planar/ModalBeam2D",
     "stdlib:spatial/FlexibleBeam3D",
     "stdlib:spatial/ModalBeam3D",
+    "stdlib:spatial/ModalBody3D",
+    "stdlib:spatial/ModalBodyCore3D",
 ]
 
 const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS, EM_FIELD_REFS, FLEX_REFS))

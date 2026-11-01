@@ -5,7 +5,13 @@
  * One binding: a scene target, a property, the signal(s) that drive it, and optional gain and offset.
  */
 export type Binding =
-  JointPositionBinding | PoseBinding | VisualScaleBinding | VisualColorBinding | VisibleBinding | DeformationBinding;
+  | JointPositionBinding
+  | PoseBinding
+  | VisualScaleBinding
+  | VisualColorBinding
+  | VisibleBinding
+  | DeformationBinding
+  | ModeShapeBinding;
 export type BindingSignal = string;
 export type ScaleProperty = "scale.x" | "scale.y" | "scale.z";
 export type Colormap = "heat" | "viridis" | "coolwarm";
@@ -119,4 +125,23 @@ export interface StrainColor {
    * @maxItems 2
    */
   range: [number, number];
+}
+/**
+ * Elastic deformation of a mesh visual (a GLB) by modal coordinates: a flexible body reduced from a finite element mesh (ModalBody3D). The GLB's single mesh carries one glTF morph target per elastic mode, in mode order, and the POSITION delta of target k is the shape of mode k per unit modal coordinate (m per unit eta_k) in the visual's frame. The viewer draws vertex = rest + sum_k (gain * eta_k * exaggeration) * delta_k, where the exaggeration is the viewer's display factor (not stored). Only a mesh visual takes it, at most one per visual, and its mesh needs at least as many morph targets as the binding has signals. The rigid motion of the body frame is the pose binding of the link the visual belongs to.
+ */
+export interface ModeShapeBinding {
+  target: string;
+  property: "mode-shapes";
+  /**
+   * The modal coordinates eta_1..eta_n in m, one signal per mode in morph-target order (1 to 64 modes). A ModalBody3D block records them as <Block>/eta[i].
+   *
+   * @minItems 1
+   * @maxItems 64
+   */
+  signal: [BindingSignal, ...BindingSignal[]];
+  /**
+   * Multiplies every modal coordinate (default 1), e.g. 0.001 for coordinates in mm. The viewer's exaggeration factor is a display setting and is not stored in the binding.
+   */
+  gain?: number;
+  $comment?: string;
 }

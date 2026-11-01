@@ -7,7 +7,9 @@
  * - global parameters: every global a copied param, start or string constant reads,
  *   plus the globals those depend on (the dependency closure, as the compiler folds them);
  * - docs images: `assets/<hash>.<ext>` named in a copied sticky note;
- * - CSV data files: the `data/<file>.csv` of a copied CsvSource.
+ * - data files: the `data/<file>.csv` of a copied CsvSource and the `data/<file>.modal.json` of a
+ *   copied ModalBody3D (the GLB of its mode shapes is not carried: the scene binding that shows
+ *   it is model-level and is not copied either).
  *
  * Pure functions; the paste side (`pasteFlow.ts`) decides what the target lacks.
  */
@@ -25,6 +27,7 @@ import type {
 import { assetRefs } from "../docs/docsImages";
 import { namesIn } from "../globals/globals";
 import { isCsvSourceRef } from "../inspector/csvSource";
+import { isModalBodyRef, MODAL_DATA_FILE } from "../inspector/modalBody";
 
 /** The project library as the copying editor knows it (the open project's catalog). */
 export interface LibraryLookup {
@@ -161,15 +164,26 @@ export function globalClosure(
   return globals.filter((entry) => needed.has(entry.name)).map((entry) => ({ ...entry }));
 }
 
-/** The CSV data file names that the CsvSource nodes of `nodes` read. */
+/**
+ * The data file names that the nodes of `nodes` read: the CSV files of CsvSource nodes and the
+ * reduced-model files of ModalBody3D nodes.
+ */
 export function dataFiles(nodes: readonly ModelNode[]): string[] {
   const files = new Set<string>();
   walkNodes(nodes, (node) => {
-    if (!("ref" in node.block) || !isCsvSourceRef(node.block.ref)) {
+    if (!("ref" in node.block)) {
+      return;
+    }
+    const pattern = isCsvSourceRef(node.block.ref)
+      ? DATA_FILE
+      : isModalBodyRef(node.block.ref)
+        ? MODAL_DATA_FILE
+        : null;
+    if (pattern === null) {
       return;
     }
     const file = node.constants?.file;
-    const match = typeof file === "string" ? DATA_FILE.exec(file.trim()) : null;
+    const match = typeof file === "string" ? pattern.exec(file.trim()) : null;
     if (match?.[1] !== undefined) {
       files.add(match[1]);
     }

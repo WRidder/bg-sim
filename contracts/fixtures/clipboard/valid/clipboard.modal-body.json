@@ -1,0 +1,24 @@
+{
+  "$comment": "A FEM flexible body copied with its reduced-model file: the data file dependency is the .modal.json of the project's data folder.",
+  "format": "bgsim-clipboard",
+  "version": 1,
+  "source": { "project": "lab", "model": "arm", "path": [] },
+  "nodes": [
+    {
+      "id": "n3",
+      "name": "Bracket",
+      "block": { "ref": "stdlib:spatial/ModalBody3D" },
+      "position": { "x": 120, "y": 80 },
+      "constants": { "file": "data/bracket.modal.json", "stiffening": 1 }
+    }
+  ],
+  "connections": [],
+  "annotations": [],
+  "shapes": [],
+  "dependencies": {
+    "libraryBlocks": [],
+    "globals": [],
+    "assets": [],
+    "dataFiles": ["bracket.modal.json"]
+  }
+}
