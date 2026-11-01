@@ -94,263 +94,263 @@
     <link name="bridge">
       <pose>0 0 0 0 0 0</pose>
       <visual name="bar_l_01">
-        <pose>0 0 -20.01 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>2.5 3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_02">
-        <pose>0 0 -20.02 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>7.5 3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_03">
-        <pose>0 0 -20.03 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>12.5 3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_04">
-        <pose>0 0 -20.04 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>17.5 3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_05">
-        <pose>0 0 -20.05 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>22.5 3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_06">
-        <pose>0 0 -20.06 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>27.5 3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_07">
-        <pose>0 0 -20.07 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>5 3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_08">
-        <pose>0 0 -20.08 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>10 3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_09">
-        <pose>0 0 -20.09 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>15 3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_10">
-        <pose>0 0 -20.1 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>20 3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_11">
-        <pose>0 0 -20.11 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>25 3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_12">
-        <pose>0 0 -20.12 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>1.25 3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_13">
-        <pose>0 0 -20.13 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>3.75 3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_14">
-        <pose>0 0 -20.14 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>6.25 3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_15">
-        <pose>0 0 -20.15 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>8.75 3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_16">
-        <pose>0 0 -20.16 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>11.25 3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_17">
-        <pose>0 0 -20.17 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>13.75 3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_18">
-        <pose>0 0 -20.18 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>16.25 3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_19">
-        <pose>0 0 -20.19 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>18.75 3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_20">
-        <pose>0 0 -20.2 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>21.25 3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_21">
-        <pose>0 0 -20.21 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>23.75 3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_22">
-        <pose>0 0 -20.22 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>26.25 3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_l_23">
-        <pose>0 0 -20.23 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>28.75 3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_01">
-        <pose>0 0 -20.01 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>2.5 -3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_02">
-        <pose>0 0 -20.02 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>7.5 -3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_03">
-        <pose>0 0 -20.03 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>12.5 -3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_04">
-        <pose>0 0 -20.04 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>17.5 -3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_05">
-        <pose>0 0 -20.05 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>22.5 -3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_06">
-        <pose>0 0 -20.06 0 0 0</pose>
-        <geometry><cylinder><radius>0.114</radius><length>1</length></cylinder></geometry>
+        <pose>27.5 -3.6 0 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.114</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_07">
-        <pose>0 0 -20.07 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>5 -3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_08">
-        <pose>0 0 -20.08 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>10 -3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_09">
-        <pose>0 0 -20.09 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>15 -3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_10">
-        <pose>0 0 -20.1 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>20 -3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_11">
-        <pose>0 0 -20.11 0 0 0</pose>
-        <geometry><cylinder><radius>0.132</radius><length>1</length></cylinder></geometry>
+        <pose>25 -3.6 4 0 1.570796 0</pose>
+        <geometry><cylinder><radius>0.132</radius><length>5</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_12">
-        <pose>0 0 -20.12 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>1.25 -3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_13">
-        <pose>0 0 -20.13 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>3.75 -3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_14">
-        <pose>0 0 -20.14 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>6.25 -3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_15">
-        <pose>0 0 -20.15 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>8.75 -3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_16">
-        <pose>0 0 -20.16 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>11.25 -3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_17">
-        <pose>0 0 -20.17 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>13.75 -3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_18">
-        <pose>0 0 -20.18 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>16.25 -3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_19">
-        <pose>0 0 -20.19 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>18.75 -3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_20">
-        <pose>0 0 -20.2 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>21.25 -3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_21">
-        <pose>0 0 -20.21 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>23.75 -3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_22">
-        <pose>0 0 -20.22 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>26.25 -3.6 2 0 0.558599 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="bar_r_23">
-        <pose>0 0 -20.23 0 0 0</pose>
-        <geometry><cylinder><radius>0.096</radius><length>1</length></cylinder></geometry>
+        <pose>28.75 -3.6 2 0 2.582993 0</pose>
+        <geometry><cylinder><radius>0.096</radius><length>4.716991</length></cylinder></geometry>
         <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
       </visual>
       <visual name="deck_1">
-        <pose>0 0 -20 0 0 0</pose>
-        <geometry><box><size>1 6.9 0.12</size></box></geometry>
+        <pose>2.5 0 0 0 0 0</pose>
+        <geometry><box><size>5 6.9 0.12</size></box></geometry>
         <material><diffuse>0.5 0.5 0.52 1</diffuse></material>
       </visual>
       <visual name="deck_2">
-        <pose>0 0 -20 0 0 0</pose>
-        <geometry><box><size>1 6.9 0.12</size></box></geometry>
+        <pose>7.5 0 0 0 0 0</pose>
+        <geometry><box><size>5 6.9 0.12</size></box></geometry>
         <material><diffuse>0.5 0.5 0.52 1</diffuse></material>
       </visual>
       <visual name="deck_3">
-        <pose>0 0 -20 0 0 0</pose>
-        <geometry><box><size>1 6.9 0.12</size></box></geometry>
+        <pose>12.5 0 0 0 0 0</pose>
+        <geometry><box><size>5 6.9 0.12</size></box></geometry>
         <material><diffuse>0.5 0.5 0.52 1</diffuse></material>
       </visual>
       <visual name="deck_4">
-        <pose>0 0 -20 0 0 0</pose>
-        <geometry><box><size>1 6.9 0.12</size></box></geometry>
+        <pose>17.5 0 0 0 0 0</pose>
+        <geometry><box><size>5 6.9 0.12</size></box></geometry>
         <material><diffuse>0.5 0.5 0.52 1</diffuse></material>
       </visual>
       <visual name="deck_5">
-        <pose>0 0 -20 0 0 0</pose>
-        <geometry><box><size>1 6.9 0.12</size></box></geometry>
+        <pose>22.5 0 0 0 0 0</pose>
+        <geometry><box><size>5 6.9 0.12</size></box></geometry>
         <material><diffuse>0.5 0.5 0.52 1</diffuse></material>
       </visual>
       <visual name="deck_6">
-        <pose>0 0 -20 0 0 0</pose>
-        <geometry><box><size>1 6.9 0.12</size></box></geometry>
+        <pose>27.5 0 0 0 0 0</pose>
+        <geometry><box><size>5 6.9 0.12</size></box></geometry>
         <material><diffuse>0.5 0.5 0.52 1</diffuse></material>
       </visual>
     </link>

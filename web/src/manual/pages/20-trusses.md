@@ -68,7 +68,7 @@ Put the deck nodes first in `Truss2D`, numbered from left to right: nodes 1 to `
 
 ## In the 3D view
 
-Draw each bar as a cylinder or box in the scene and bind it with a **segment** binding (see [Running and plotting](page:running-and-plotting)). Use the bar's end-node positions, `Truss/x[a]`, `Truss/y[a]`, `Truss/x[b]`, `Truss/y[b]`, and the flag `Truss/failed[k]` as **broken**. Add a **color** binding on `Truss/util[k]` with the `coolwarm` colormap and the range −1 to 1. Bars under compression then turn blue, bars under tension red, and the full colour is the failure load. The 3D view draws positions at true scale.
+Draw each bar as a cylinder or box in the scene and bind it with a **segment** binding (see [Running and plotting](page:running-and-plotting)). Use the bar's end-node positions, `Truss/x[a]`, `Truss/y[a]`, `Truss/x[b]`, `Truss/y[b]`, and the flag `Truss/failed[k]` as **broken**. Add a **color** binding on `Truss/util[k]` with the `coolwarm` colormap and the range −1 to 1. Bars under compression then turn blue, bars under tension red, and the full colour is the failure load. The 3D view draws positions at true scale. In the scene file, put every bar between its two nodes of the undeformed truss, so the bridge shows before the first run.
 
 ## Example
 
