@@ -1,7 +1,7 @@
 @@ figures bridge-failure
 {
   "diagram": {"kind": "diagram", "model": "bridge-failure"},
-  "scene": {"kind": "scene", "model": "bridge-failure", "t": 2.45},
+  "scene": {"kind": "scene", "model": "bridge-failure", "t": 2.45, "zoom": 14},
   "run": {
     "kind": "plot", "model": "bridge-failure",
     "rows": [

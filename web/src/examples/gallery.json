@@ -17,7 +17,7 @@
   },
   "bridge": {
     "title": "Bridge",
-    "description": "A truss road bridge with a lorry: member forces, buckling, and a diagonal that snaps when the lorry is too fast.",
+    "description": "A truss road bridge with a lorry: member forces, buckling, and an undersized diagonal that snaps under an overloaded lorry.",
     "hasScene": true,
     "models": [
       "bridge-failure",
