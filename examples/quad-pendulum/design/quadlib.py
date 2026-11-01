@@ -375,9 +375,10 @@ def riccati(jac, xr, ur, q, r: float, p_end):
     return ks
 
 
-def tvlqr(plant: Plant, traj: dict, qdiag, r: float, k_lqr, p_lqr, ts: float = TS):
+def tvlqr(plant: Plant, traj: dict, qdiag, r: float, k_lqr, p_lqr, ts: float = TS, u_clamp: float | None = None):
     """Discrete TVLQR on the 1 kHz grid; the nominal is made consistent with the sampled model by one
-    closed-loop roll-out (see pendulum-triple-rotary). Returns the 1 kHz nominal, input and gains."""
+    closed-loop roll-out (see pendulum-triple-rotary). Returns the 1 kHz nominal, input and gains.
+    `u_clamp`: clamp the roll-out input to +-u_clamp (the actuator limit), so that the nominal is feasible."""
     step, jac = plant.steps(ts)
     t_s = traj["t_s"]
     n = int(round(t_s / ts))
@@ -394,6 +395,8 @@ def tvlqr(plant: Plant, traj: dict, qdiag, r: float, k_lqr, p_lqr, ts: float = T
     xs[0] = x
     for k in range(n):
         us[k] = ur[k] - ks[k] @ (x - xr[k])
+        if u_clamp is not None:
+            us[k] = min(max(us[k], -u_clamp), u_clamp)
         x = np.array(step(x, us[k], 0.0)).ravel()
         xs[k + 1] = x
     end_err = float(np.max(np.abs(xs[-1])))
@@ -425,6 +428,10 @@ class Firmware:
     res_q: float = 2 * math.pi / 4096 / 4   # joint encoder resolution (rad): 4096 lines, x4
     tau_f: float = 0.002       # rate filter time constant (s) when quantised
     ts: float = TS
+    # the combined feed-forward v = u* + K z* per knot: the firmware computes u = v(t) - K(t) z with v and K
+    # interpolated (one table less per state than u* - K (z - z*): the bond-graph run time grows with the
+    # total table size). None: the separate form.
+    tab_v: np.ndarray | None = None
 
 
 def table_row(fw: Firmware, t: float):
@@ -473,7 +480,14 @@ def tick(fw: Firmware, t: float, z: np.ndarray, st: dict) -> float:
     elif t >= fw.t_on:
         st["phase"] = 1
         xr, ur, k = table_row(fw, t)
-        cmd = ur - float(k @ (x - xr))
+        if fw.tab_v is not None:
+            nt = fw.tab_v.shape[0]
+            s = min(max(tau / fw.dt_tab, 0.0), nt - 1)
+            i = min(int(math.floor(s)), nt - 2)
+            w = s - i
+            cmd = (1 - w) * fw.tab_v[i] + w * fw.tab_v[i + 1] - float(k @ x)
+        else:
+            cmd = ur - float(k @ (x - xr))
     else:
         st["phase"] = 0
         cmd = 0.0

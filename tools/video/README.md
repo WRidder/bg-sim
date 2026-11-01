@@ -75,11 +75,13 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
   the `vdp-belt` model of `van-der-pol`, the dashboard next to the detached 3D viewer, in real time (frame k at t = k/fps) for
   three runs set on the dashboard sliders: mu = 0.5 growing onto the limit cycle, mu = 1.0, and mu = 0.5 shrinking from x0 = 2.5.
   The caption bar shows the simulation time. `--stills` writes only the framing stills (`camera-fit.png`, `camera.png`, segment ends).
-- `capture-quad-pendulum.mjs <out-dir> [--fps 30] [--max-frames n] [--only cart,rotary,push] [--stills] [--compose-only]`: the
+- `capture-quad-pendulum.mjs <out-dir> [--set main|travel] [--fps 30] [--max-frames n] [--only cart,rotary,push] [--stills] [--compose-only]`: the
   `quad-pendulum` example in the same layout as `capture-vdp-belt.mjs` (dashboard plus detached 3D viewer, real time): the cart
   swing-up and balance, the rotary-arm swing-up (`QP_ROTARY_MODEL` picks another rotary model) and the cart balance with 3 ms of
   actuator delay and a tip push. Writes `quad-pendulum.mp4` and per segment `<id>-camera.png`, `<id>-3d-mid|end.png`,
-  `<id>-dashboard-mid|end.png`.
+  `<id>-dashboard-mid|end.png`. `--set travel` records the two cart controllers instead: the full-travel swing-up, the
+  switch of the dashboard's Controller select (highlighted, 2 s) and the short-travel swing-up on the same page; writes
+  `quad-pendulum-short-travel.mp4` (phases are `cart0`, `cart1`).
 - `capture-beams.mjs <out-dir>`: stills of the `cantilever-sections` example: the settled static bend (x10 and true scale), a
   close-up at the wall, the step peak, the dashboard with load "1 · sine" selected and run, and two opposite crests of the
   round bar's resonance.

@@ -28,7 +28,10 @@ def mat(rows) -> str:
     return "[" + "; ".join(" ".join(f"{float(v):.9g}" for v in row) for row in rows) + "]"
 
 
-def ctrl_source(dz: dict) -> str:
+def ctrl_source(dz: dict, dzs: dict | None = None) -> str:
+    """`dz` the full-travel design, `dzs` the short-travel one (same plant, other tables and gains) or None
+    (one controller)."""
+    two = dzs is not None
     kind = dz["kind"]
     name = dz["ctrl_block"]
     n = len(dz["L"])
@@ -46,9 +49,16 @@ def ctrl_source(dz: dict) -> str:
     A("    # design/build_models.py from design/design_" + kind + ".json: do not edit the tables by hand).")
     A("    #")
     A(f"    #   phase 0  t < t_on            hold: {act} 0 (hanging at rest)")
-    A("    #   phase 1  SWINGING UP         u = u*(tau) - K(tau) (z - z*(tau)), tau = t - t_on: the feed-forward and")
-    A("    #                                time-varying LQR of the offline trajectory optimisation (looked up by")
-    A(f"    #                                {dz['ctrl_block'].replace('Ctrl', 'Traj')} and sampled here: ff = u*, xs = z*, Ks = K)")
+    vform = dz.get("ff_form", "x") == "v"
+    assert not two or dzs["ff_form"] == dz["ff_form"]
+    if vform:
+        A("    #   phase 1  SWINGING UP         u = u*(tau) - K(tau) (z - z*(tau)) = v(tau) - K(tau) z, tau = t - t_on: the")
+        A("    #                                feed-forward and time-varying LQR of the offline trajectory optimisation")
+        A(f"    #                                (looked up by {dz['ctrl_block'].replace('Ctrl', 'Traj')} and sampled here: ff = v = u* + K z*, Ks = K)")
+    else:
+        A("    #   phase 1  SWINGING UP         u = u*(tau) - K(tau) (z - z*(tau)), tau = t - t_on: the feed-forward and")
+        A("    #                                time-varying LQR of the offline trajectory optimisation (looked up by")
+        A(f"    #                                {dz['ctrl_block'].replace('Ctrl', 'Traj')} and sampled here: ff = u*, xs = z*, Ks = K)")
     A("    #   phase 2  BALANCING (latched) u = -Klqr z, the infinite-horizon discrete LQR at the upright")
     A("    #")
     A(f"    # z = [s, phi_1 .. phi_{n}, sd, phid_1 .. phid_{n}]: s the {base}, phi_i the absolute angle of link i from")
@@ -56,6 +66,11 @@ def ctrl_source(dz: dict) -> str:
     A("    # tau >= t_s - 0.5 s and the LQR cost-to-go z' Pc z is below catch_tol (the catch region).")
     A("    # balance_only starts in phase 2 (the balance scenario).")
     A("    #")
+    if two:
+        lim2 = f"{dzs['travel']:g} m" if kind == "cart" else f"{math.degrees(dzs['travel']):.0f} deg"
+        A("    # Two controllers, chosen by the input sel (from Traj/controller): 0 the full-travel design (Klqr, Pc, t_s),")
+        A(f"    # 1 the short-travel design (Klqr2, Pc2, t_s2), planned and tuned for |base| <= {lim2}. Same plant.")
+        A("    #")
     A("    # Actuator: the command is clamped to +-u_max, then slew-rate limited (slew per second) and finally")
     A(f"    # delayed by delay_n whole samples (0 .. {N_DELAY}). Sensors: with `quant` the encoders are quantised")
     A("    # (res_s, res_q) and the rates are filtered backward differences (time constant tau_f) instead of the")
@@ -68,9 +83,14 @@ def ctrl_source(dz: dict) -> str:
         A(f'        q{i + 1}::Real, [unit = "rad"]')
     for i in range(n):
         A(f'        wq{i + 1}::Real, [unit = "rad/s"]')
-    A(f'        ff::Real, [unit = "{unit_u}"]')
-    A(f"        xs::Vec{{{nx}}}")
+    if vform:
+        A(f'        ff::Real, [unit = "{unit_u}", description = "Combined feed-forward v = u* + K z*"]')
+    else:
+        A(f'        ff::Real, [unit = "{unit_u}", description = "Feed-forward u*"]' if two else f'        ff::Real, [unit = "{unit_u}"]')
+        A(f"        xs::Vec{{{nx}}}")
     A(f"        Ks::Vec{{{nx}}}")
+    if two:
+        A('        sel::Real, [description = "Controller: 0 full travel, 1 short travel"]')
     A("    end")
     A("    @outputs begin")
     A(f'        u::Real = 0.0, [unit = "{unit_u}", description = "Applied {act}"]')
@@ -83,8 +103,13 @@ def ctrl_source(dz: dict) -> str:
     A("    @parameters begin")
     A(f'        Klqr::Vec{{{nx}}} = {vec(dz["k_lqr"])}, [description = "Balance LQR gain (u = -Klqr z)"]')
     A(f'        Pc::Mat{{{nx},{nx}}} = {mat(dz["p_lqr"])}, [description = "LQR cost-to-go matrix of the catch region"]')
+    if two:
+        A(f'        Klqr2::Vec{{{nx}}} = {vec(dzs["k_lqr"])}, [description = "Balance LQR gain of the short-travel controller"]')
+        A(f'        Pc2::Mat{{{nx},{nx}}} = {mat(dzs["p_lqr"])}, [description = "Cost-to-go matrix of the short-travel controller"]')
     A(f'        t_on::Real = {fmt(dz["t_on"])}, [unit = "s", description = "Start of the swing-up"]')
     A(f'        t_s::Real = {fmt(dz["t_s"])}, [unit = "s", min = 0, description = "Duration of the swing-up trajectory"]')
+    if two:
+        A(f'        t_s2::Real = {fmt(dzs["t_s"])}, [unit = "s", min = 0, description = "Duration of the short-travel swing-up"]')
     A(f'        catch_tol::Real = {fmt(dz["catch_tol"])}, [min = 0, description = "Catch region: z\' Pc z below this"]')
     A(f'        u_max::Real = {fmt(dz["u_max"])}, [unit = "{unit_u}", min = 0, description = "Actuator limit"]')
     A(f'        slew::Real = {fmt(dz["slew"])}, [unit = "{unit_u}/s", min = 0, description = "Actuator slew-rate limit"]')
@@ -143,15 +168,26 @@ def ctrl_source(dz: dict) -> str:
     A("        end")
     z = ["m0"] + [f"p{i + 1}" for i in range(n)] + ["v0"] + [f"v{i + 1}" for i in range(n)]
     A("        tau = tm - t_on")
-    terms_tv = " + ".join(f"Ks[{i + 1}] * ({z[i]} - xs[{i + 1}])" for i in range(nx))
-    terms_l = " + ".join(f"Klqr[{i + 1}] * {z[i]}" for i in range(nx))
+    if vform:
+        terms_tv = " + ".join(f"Ks[{i + 1}] * {z[i]}" for i in range(nx))
+    else:
+        terms_tv = " + ".join(f"Ks[{i + 1}] * ({z[i]} - xs[{i + 1}])" for i in range(nx))
+    if two:
+        terms_l = " + ".join(f"ifelse(sel > 0.5, Klqr2[{i + 1}], Klqr[{i + 1}]) * {z[i]}" for i in range(nx))
+    else:
+        terms_l = " + ".join(f"Klqr[{i + 1}] * {z[i]}" for i in range(nx))
     A(f"        utv = ff - ({terms_tv})")
     A(f"        ulq = -({terms_l})")
-    norm = " + ".join(
-        f"Pc[{i + 1}, {i + 1}] * {z[i]} * {z[i]}" if i == j else f"2.0 * Pc[{i + 1}, {j + 1}] * {z[i]} * {z[j]}"
-        for i in range(nx) for j in range(i, nx))
-    A(f"        en = {norm}")
-    A("        lat = ifelse(balance_only, 1.0, ifelse(latched > 0.5 || (tm >= t_on && tau >= t_s - 0.5 && en < catch_tol), 1.0, 0.0))")
+    for tag, pm in ((("en1", "Pc"), ("en2", "Pc2")) if two else (("en", "Pc"),)):
+        norm = " + ".join(
+            f"{pm}[{i + 1}, {i + 1}] * {z[i]} * {z[i]}" if i == j else f"2.0 * {pm}[{i + 1}, {j + 1}] * {z[i]} * {z[j]}"
+            for i in range(nx) for j in range(i, nx))
+        A(f"        {tag} = {norm}")
+    if two:
+        A("        en = ifelse(sel > 0.5, en2, en1)")
+        A("        tsel = ifelse(sel > 0.5, t_s2, t_s)")
+    tsel = "tsel" if two else "t_s"
+    A(f"        lat = ifelse(balance_only, 1.0, ifelse(latched > 0.5 || (tm >= t_on && tau >= {tsel} - 0.5 && en < catch_tol), 1.0, 0.0))")
     A("        latched = lat")
     A("        cmd = clamp(ifelse(lat > 0.5, ulq, ifelse(tm < t_on, 0.0, utv)), -u_max, u_max)")
     A("        du = slew * 0.001")
@@ -172,8 +208,8 @@ def ctrl_source(dz: dict) -> str:
     return "\n".join(L) + "\n"
 
 
-def traj_source(dz: dict) -> str:
-    """The swing-up tables (feed-forward, nominal state, TVLQR gains) as a continuous lookup (interp1)."""
+def traj_source_single(dz: dict) -> str:
+    """The swing-up tables of one controller (feed-forward, nominal state, TVLQR gains) as a continuous lookup (interp1)."""
     name = dz["ctrl_block"].replace("Ctrl", "Traj")
     n = len(dz["L"])
     nx = 2 * (n + 1)
@@ -217,7 +253,90 @@ def traj_source(dz: dict) -> str:
     return "\n".join(L) + "\n"
 
 
-def monitor_source(dz: dict) -> str:
+def traj_source(dz: dict, dzs: dict | None = None) -> str:
+    """The swing-up tables of both controllers (feed-forward, nominal state, TVLQR gains) as a continuous
+    lookup (interp1), the controller choice and its travel limit; with `dzs` None the one-controller block."""
+    if dzs is None:
+        return traj_source_single(dz)
+    kind = dz["kind"]
+    name = dz["ctrl_block"].replace("Ctrl", "Traj")
+    n = len(dz["L"])
+    nx = 2 * (n + 1)
+    unit_u = "N" if kind == "cart" else "N*m"
+    unit_s = "m" if kind == "cart" else "rad"
+    names = ["s"] + [f"phi{i + 1}" for i in range(n)] + ["sd"] + [f"phid{i + 1}" for i in range(n)]
+    lim2 = f"{dzs['travel']:g} m" if kind == "cart" else f"{math.degrees(dzs['travel']):.0f} deg"
+    lim1 = f"{dz['travel']:g} m" if kind == "cart" else f"{dz['travel']:g} rad"
+    L = []
+    A = L.append
+    A(f"@block {name} begin")
+    A(f"    # Swing-up tables of the quadruple pendulum (design/design.py, {dz['dt_tab'] * 1000:g} ms knots) for two controllers:")
+    A(f"    # controller 0 plans with the full travel (+-{lim1}), controller 1 within +-{lim2}. Per controller: the")
+    vform = dz["ff_form"] == "v"
+    if vform:
+        A("    # TVLQR gain row K and the combined feed-forward v = u* + K z* (u* the feed-forward, z* = [s, phi_1.., sd,")
+        A("    # phid_1..] the nominal state), so that u = u* - K (z - z*) = v - K z: one table per gain plus one, not")
+        A("    # two per state (the run time grows with the total table size),")
+    else:
+        A("    # feed-forward u*, the nominal state z* = [s, phi_1.., sd, phid_1..] and the TVLQR gain row K")
+        A("    # (u = u* - K (z - z*)),")
+    A("    # looked up linearly at tau = t - t_on and held at the ends (the last row is upright at rest with the")
+    A("    # balance LQR gain). interp1 is an equation-scope intrinsic, so the lookup is continuous; the firmware")
+    A("    # samples these outputs at its ticks. `controller` is a run-time parameter (the dashboard's select):")
+    A("    # switching needs no recompile. The table of the other controller is queried at -1 s (before its first")
+    A("    # knot), which returns at once: only the chosen table is searched. Generated by design/build_models.py:")
+    A("    # do not edit by hand.")
+    tabs = []
+    for tag, d in (("", dz), ("2", dzs)):
+        tabs.append((tag, np.array(d["tab_x"]), np.array(d["tab_v"] if vform else d["tab_u"]), np.array(d["tab_k"]), d["dt_tab"]))
+    A("    @constants begin")
+    for tag, tx, tu, tkk, dt in tabs:
+        A(f"        NK{tag}::Int = {len(tu)}")
+    A("    end")
+    A('    @inputs tm::Real, [unit = "s"]')
+    A("    @outputs begin")
+    if vform:
+        A(f'        ff::Real, [unit = "{unit_u}", description = "Combined feed-forward v = u* + K z*"]')
+    else:
+        A(f'        ff::Real, [unit = "{unit_u}", description = "Feed-forward u*"]')
+        A(f"        xs::Vec{{{nx}}}")
+    A(f"        Ks::Vec{{{nx}}}")
+    A('        sel::Real, [description = "The chosen controller (0 full travel, 1 short travel)"]')
+    A(f'        lim::Real, [unit = "{unit_s}", description = "Travel limit of the chosen controller"]')
+    A("    end")
+    A("    @parameters begin")
+    A(f'        controller::Int = 0, [options = ["full travel (+-{lim1})", "short travel (+-{lim2})"], '
+      'description = "Swing-up and balance controller: 0 full travel, 1 short travel"]')
+    A(f'        travel::Real = {fmt(dz["travel"])}, [unit = "{unit_s}", description = "Travel limit of controller 0 (the end stops)"]')
+    A(f'        travel2::Real = {fmt(dzs["travel"])}, [unit = "{unit_s}", description = "Travel limit of controller 1"]')
+    A(f'        t_on::Real = {fmt(dz["t_on"])}, [unit = "s", description = "Start of the swing-up"]')
+    for tag, tx, tu, tkk, dt in tabs:
+        who = "full-travel" if tag == "" else "short-travel"
+        A(f'        tk{tag}::Vec{{NK{tag}}} = {vec(np.arange(len(tu)) * dt)}, [unit = "s", description = "Knots ({who})"]')
+        A(f'        uff{tag}::Vec{{NK{tag}}} = {vec(tu)}, [unit = "{unit_u}", description = "{"Combined feed-forward v" if vform else "Feed-forward u*"} ({who})"]')
+        if not vform:
+            for i in range(nx):
+                A(f'        z{tag}_{i + 1}::Vec{{NK{tag}}} = {vec(tx[:, i])}, [description = "Nominal {names[i]} ({who})"]')
+        for i in range(nx):
+            A(f'        k{tag}_{i + 1}::Vec{{NK{tag}}} = {vec(tkk[:, i])}, [description = "TVLQR gain on {names[i]} ({who})"]')
+    A("    end")
+    A("    @equations begin")
+    q1 = "ifelse(controller > 0, -1.0, tm - t_on)"
+    q2 = "ifelse(controller > 0, tm - t_on, -1.0)"
+    A("        sel ~ ifelse(controller > 0, 1.0, 0.0)")
+    A("        lim ~ ifelse(controller > 0, travel2, travel)")
+    A(f"        ff ~ ifelse(controller > 0, interp1({q2}, tk2, uff2), interp1({q1}, tk, uff))")
+    if not vform:
+        for i in range(nx):
+            A(f"        xs[{i + 1}] ~ ifelse(controller > 0, interp1({q2}, tk2, z2_{i + 1}), interp1({q1}, tk, z_{i + 1}))")
+    for i in range(nx):
+        A(f"        Ks[{i + 1}] ~ ifelse(controller > 0, interp1({q2}, tk2, k2_{i + 1}), interp1({q1}, tk, k_{i + 1}))")
+    A("    end")
+    A("end")
+    return "\n".join(L) + "\n"
+
+
+def monitor_source(dz: dict, two: bool = True) -> str:
     """Angles, energy per link, stacked energy, ledger. Body twists V and poses g come from the bond graph."""
     kind = dz["kind"]
     name = dz["monitor_block"]
@@ -244,7 +363,13 @@ def monitor_source(dz: dict) -> str:
     A("    # Ledger: E_tot = E_base + sum E_i, W_in = int u * sd dt (work of the actuator), W_loss = int (b_s sd^2 +")
     A("    # sum b_j wq_j^2) dt (base and joint friction); E_tot - W_in + W_loss stays constant up to the energy in")
     A("    # the stiff pivots.")
+    if two:
+        A("    # Travel: lim_hi / lim_lo the limit of the chosen controller (input lim, from the Traj block), use the")
+        A("    # base travel in percent of it.")
     A("    @inputs begin")
+    if two:
+        A('        s::Real, [unit = "' + ("m" if kind == "cart" else "rad") + '"]')
+        A('        lim::Real, [unit = "' + ("m" if kind == "cart" else "rad") + '"]')
     A('        sd::Real, [unit = "' + ("m/s" if kind == "cart" else "rad/s") + '"]')
     A(f'        u::Real, [unit = "{unit_u}"]')
     for i in range(n):
@@ -270,6 +395,10 @@ def monitor_source(dz: dict) -> str:
     A('        W_in::Real, [unit = "J", description = "Work done by the actuator"]')
     A('        W_loss::Real, [unit = "J", description = "Energy dissipated by friction"]')
     A('        ledger::Real, [unit = "J", description = "E_tot - W_in + W_loss (constant)"]')
+    if two:
+        A('        lim_hi::Real, [unit = "' + ("m" if kind == "cart" else "rad") + '", description = "Upper travel limit of the chosen controller"]')
+        A('        lim_lo::Real, [unit = "' + ("m" if kind == "cart" else "rad") + '", description = "Lower travel limit of the chosen controller"]')
+        A('        use::Real, [description = "Base travel in percent of the chosen controller\'s limit"]')
     A("    end")
     A("    @parameters begin")
     A(f'        m::Vec{{{n}}} = {vec(dz["m_model"])}, [unit = "kg", description = "Link masses"]')
@@ -320,6 +449,10 @@ def monitor_source(dz: dict) -> str:
     A("        W_in ~ Win")
     A("        W_loss ~ Wloss")
     A("        ledger ~ E_tot - Win + Wloss")
+    if two:
+        A("        lim_hi ~ lim")
+        A("        lim_lo ~ -lim")
+        A("        use ~ 100.0 * abs(s) / lim")
     A("    end")
     A("end")
     return "\n".join(L) + "\n"

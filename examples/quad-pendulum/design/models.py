@@ -71,6 +71,13 @@ class Diagram:
         return {"nodes": self.nodes, "connections": self.conns}
 
 
+def ports(dz, two: bool) -> tuple:
+    """Signals from the Traj block to the firmware: the combined ("v") or the separate ("x") feed-forward,
+    and the controller choice when the firmware holds two controllers."""
+    p = ("ff", "Ks") if dz.get("ff_form", "x") == "v" else ("ff", "xs", "Ks")
+    return p + ("sel",) if two else p
+
+
 def settings(t_end, points, reltol=1e-7, abstol=1e-9, solver="Rodas5P"):
     return {"t_start": 0.0, "t_end": t_end, "solver": solver, "reltol": reltol, "abstol": abstol, "max_step": None,
             "output": {"mode": "points", "points": points}, "event_limit": 100000}
@@ -97,8 +104,9 @@ def cart_static_deflection(dz, th_abs):
 
 
 def build_cart(dz, *, name, mode, t_end, points, th0=None, x0=0.0, comment="", dashboard=None, parameters=None,
-               push=None, reltol=1e-7, abstol=1e-9):
-    """mode: "swingup", "balance" or "free" (controller off). th0: absolute start angles (rad, from upright)."""
+               push=None, reltol=1e-7, abstol=1e-9, two=True):
+    """mode: "swingup", "balance" or "free" (controller off). th0: absolute start angles (rad, from upright).
+    two: the firmware holds two controllers (Traj/controller, the travel limit lines)."""
     n = len(dz["L"])
     L, c = dz["L"], [l / 2 for l in dz["L"]]
     D = Diagram()
@@ -207,7 +215,7 @@ def build_cart(dz, *, name, mode, t_end, points, th0=None, x0=0.0, comment="", d
     ctrl = D.node("Ctrl", f"project:{dz['ctrl_block']}", X(0), 120, params=cparams)
     traj = D.node("Traj", f"project:{dz['ctrl_block'].replace('Ctrl', 'Traj')}", X(0) - 120, 240)
     D.sig(clock, "y", traj, "tm")
-    for port in ("ff", "xs", "Ks"):
+    for port in ports(dz, two):
         D.sig(traj, port, ctrl, port)
     D.sig(clock, "y", ctrl, "tm")
     D.sig(rail, "qout", ctrl, "s")
@@ -222,6 +230,9 @@ def build_cart(dz, *, name, mode, t_end, points, th0=None, x0=0.0, comment="", d
                    "J": "[" + ", ".join(f"m_scale*{num(v)}" for v in dz["J_model"]) + "]"}
     mon = D.node("Mon", f"project:{dz['monitor_block']}", X(0), 780, params=mparams)
     D.sig(rail, "qdout", mon, "sd")
+    if two:
+        D.sig(rail, "qout", mon, "s")
+        D.sig(traj, "lim", mon, "lim")
     D.sig(ctrl, "u", mon, "u")
     for j, jn in enumerate(joints):
         D.sig(jn, "qout", mon, f"q{j + 1}")
@@ -233,7 +244,8 @@ def build_cart(dz, *, name, mode, t_end, points, th0=None, x0=0.0, comment="", d
         {"id": "p_angles", "title": "Link angles from upright (deg)", "signals": [f"Mon/th{i + 1}" for i in range(n)]},
         {"id": "p_energy", "title": "Stacked energy per link (J) and the UPRIGHT level",
          "signals": [f"Mon/S{i + 1}" for i in range(n)] + ["Mon/E_up"]},
-        {"id": "p_cart", "title": "Cart position x (m)", "signals": ["Rail/qout"]},
+        ({"id": "p_cart", "title": "Cart position x (m) and the travel limit of the chosen controller", "signals": ["Rail/qout", "Mon/lim_hi", "Mon/lim_lo"]}
+         if two else {"id": "p_cart", "title": "Cart position x (m)", "signals": ["Rail/qout"]}),
         {"id": "p_force", "title": "Cart force F (N) and controller phase", "signals": ["Ctrl/u", "Ctrl/phase"]},
         {"id": "p_ledger", "title": "Energy ledger (J): E_tot, W_in, W_loss, E_tot - W_in + W_loss",
          "signals": ["Mon/E_tot", "Mon/W_in", "Mon/W_loss", "Mon/ledger"]},
@@ -343,8 +355,9 @@ def vecs(v):
 
 
 def build_rotary(dz, *, name, mode, t_end, points, phi0=None, s0=0.0, comment="", dashboard=None, parameters=None,
-                 push=None, reltol=1e-7, abstol=1e-9):
-    """phi0: absolute link angles from upright (rad); joint coordinates q = [s, phi1, phi2-phi1, ..]."""
+                 push=None, reltol=1e-7, abstol=1e-9, two=True):
+    """phi0: absolute link angles from upright (rad); joint coordinates q = [s, phi1, phi2-phi1, ..].
+    two: as in build_cart."""
     n = len(dz["L"])
     nq = n + 1
     ln, lc, mass, inertia = rotary_geometry(dz)
@@ -462,7 +475,7 @@ def build_rotary(dz, *, name, mode, t_end, points, phi0=None, s0=0.0, comment=""
     ctrl = D.node("Ctrl", f"project:{dz['ctrl_block']}", bx[0] - 140, 60, params=cparams)
     traj = D.node("Traj", f"project:{dz['ctrl_block'].replace('Ctrl', 'Traj')}", bx[0] - 300, 180)
     D.sig(clock, "y", traj, "tm")
-    for port in ("ff", "xs", "Ks"):
+    for port in ports(dz, two):
         D.sig(traj, port, ctrl, port)
     D.sig(clock, "y", ctrl, "tm")
     D.sig(J[0], "qout", ctrl, "s")
@@ -478,6 +491,9 @@ def build_rotary(dz, *, name, mode, t_end, points, phi0=None, s0=0.0, comment=""
             mparams[f"Jp{i + 1}"] = "[" + ", ".join(f"m_scale*{num(v)}" for v in dz["Jp_model"][i]) + "]"
     mon = D.node("Mon", f"project:{dz['monitor_block']}", bx[-1] + 360, 60, params=mparams)
     D.sig(J[0], "qdout", mon, "sd")
+    if two:
+        D.sig(J[0], "qout", mon, "s")
+        D.sig(traj, "lim", mon, "lim")
     D.sig(ctrl, "u", mon, "u")
     for i in range(n):
         D.sig(J[i + 1], "qout", mon, f"q{i + 1}")
@@ -489,7 +505,8 @@ def build_rotary(dz, *, name, mode, t_end, points, phi0=None, s0=0.0, comment=""
         {"id": "p_angles", "title": "Link angles from upright (deg)", "signals": [f"Mon/th{i + 1}" for i in range(n)]},
         {"id": "p_energy", "title": "Stacked energy per link (J) and the UPRIGHT level",
          "signals": [f"Mon/S{i + 1}" for i in range(n)] + ["Mon/E_up"]},
-        {"id": "p_arm", "title": "Arm angle (rad)", "signals": ["J1/qout"]},
+        ({"id": "p_arm", "title": "Arm angle (rad) and the travel limit of the chosen controller", "signals": ["J1/qout", "Mon/lim_hi", "Mon/lim_lo"]}
+         if two else {"id": "p_arm", "title": "Arm angle (rad)", "signals": ["J1/qout"]}),
         {"id": "p_torque", "title": "Arm torque (N m) and controller phase", "signals": ["Ctrl/u", "Ctrl/phase"]},
         {"id": "p_ledger", "title": "Energy ledger (J): E_tot, W_in, W_loss, E_tot - W_in + W_loss",
          "signals": ["Mon/E_tot", "Mon/W_in", "Mon/W_loss", "Mon/ledger"]},

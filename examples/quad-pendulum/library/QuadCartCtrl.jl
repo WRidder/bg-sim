@@ -3,15 +3,18 @@
     # design/build_models.py from design/design_cart.json: do not edit the tables by hand).
     #
     #   phase 0  t < t_on            hold: cart force F 0 (hanging at rest)
-    #   phase 1  SWINGING UP         u = u*(tau) - K(tau) (z - z*(tau)), tau = t - t_on: the feed-forward and
-    #                                time-varying LQR of the offline trajectory optimisation (looked up by
-    #                                QuadCartTraj and sampled here: ff = u*, xs = z*, Ks = K)
+    #   phase 1  SWINGING UP         u = u*(tau) - K(tau) (z - z*(tau)) = v(tau) - K(tau) z, tau = t - t_on: the
+    #                                feed-forward and time-varying LQR of the offline trajectory optimisation
+    #                                (looked up by QuadCartTraj and sampled here: ff = v = u* + K z*, Ks = K)
     #   phase 2  BALANCING (latched) u = -Klqr z, the infinite-horizon discrete LQR at the upright
     #
     # z = [s, phi_1 .. phi_4, sd, phid_1 .. phid_4]: s the cart position x, phi_i the absolute angle of link i from
     # the upward vertical (sums of the relative joint encoder angles). The catch latches phase 2 once, when
     # tau >= t_s - 0.5 s and the LQR cost-to-go z' Pc z is below catch_tol (the catch region).
     # balance_only starts in phase 2 (the balance scenario).
+    #
+    # Two controllers, chosen by the input sel (from Traj/controller): 0 the full-travel design (Klqr, Pc, t_s),
+    # 1 the short-travel design (Klqr2, Pc2, t_s2), planned and tuned for |base| <= 0.5 m. Same plant.
     #
     # Actuator: the command is clamped to +-u_max, then slew-rate limited (slew per second) and finally
     # delayed by delay_n whole samples (0 .. 10). Sensors: with `quant` the encoders are quantised
@@ -29,9 +32,9 @@
         wq2::Real, [unit = "rad/s"]
         wq3::Real, [unit = "rad/s"]
         wq4::Real, [unit = "rad/s"]
-        ff::Real, [unit = "N"]
-        xs::Vec{10}
+        ff::Real, [unit = "N", description = "Combined feed-forward v = u* + K z*"]
         Ks::Vec{10}
+        sel::Real, [description = "Controller: 0 full travel, 1 short travel"]
     end
     @outputs begin
         u::Real = 0.0, [unit = "N", description = "Applied cart force F"]
@@ -44,8 +47,11 @@
     @parameters begin
         Klqr::Vec{10} = [17.204409886, 437.24958162, -2827.43710272, 5990.56705976, -3820.25704819, 28.1530825056, -15.3110970884, -38.8956328813, 236.786452369, -293.84243561], [description = "Balance LQR gain (u = -Klqr z)"]
         Pc::Mat{10,10} = [169451.22 -75375.6912 -286645.063 1539500.48 -1822204.68 138333.855 -39733.928 -25756.7428 -1638.65733 -170802.85; -75375.6912 982477.516 -2331254.47 -98033.8981 1988476.01 -88086.2983 23135.8989 -93265.7278 82436.7506 209484.632; -286645.063 -2331254.47 36290921.6 -90919228.5 60550378.5 -457534.843 342589.35 240834.23 -3571637.79 4713303.39; 1539500.48 -98033.8981 -90919228.5 297898981 -227446649 2598796.94 -1304331.7 138071.592 10200641.9 -18569154.9; -1822204.68 1988476.01 60550378.5 -227446649 186871349 -2907375.54 1199351.41 -196887.119 -6972226.82 15625718.6; 138333.855 -88086.2983 -457534.843 2598796.94 -2907375.54 168203.041 -49308.165 -26677.6662 15683.2416 -267760.206; -39733.928 23135.8989 342589.35 -1304331.7 1199351.41 -49308.165 16311.4307 8023.31004 -27392.6598 104910.786; -25756.7428 -93265.7278 240834.23 138071.592 -196887.119 -26677.6662 8023.31004 22092.1217 8405.92388 -16395.7072; -1638.65733 82436.7506 -3571637.79 10200641.9 -6972226.82 15683.2416 -27392.6598 8405.92388 404376.317 -545015.613; -170802.85 209484.632 4713303.39 -18569154.9 15625718.6 -267760.206 104910.786 -16395.7072 -545015.613 1317003.36], [description = "LQR cost-to-go matrix of the catch region"]
+        Klqr2::Vec{10} = [17.204409886, 437.24958162, -2827.43710272, 5990.56705976, -3820.25704819, 28.1530825056, -15.3110970884, -38.8956328813, 236.786452369, -293.84243561], [description = "Balance LQR gain of the short-travel controller"]
+        Pc2::Mat{10,10} = [169451.22 -75375.6912 -286645.063 1539500.48 -1822204.68 138333.855 -39733.928 -25756.7428 -1638.65733 -170802.85; -75375.6912 982477.516 -2331254.47 -98033.8981 1988476.01 -88086.2983 23135.8989 -93265.7278 82436.7506 209484.632; -286645.063 -2331254.47 36290921.6 -90919228.5 60550378.5 -457534.843 342589.35 240834.23 -3571637.79 4713303.39; 1539500.48 -98033.8981 -90919228.5 297898981 -227446649 2598796.94 -1304331.7 138071.592 10200641.9 -18569154.9; -1822204.68 1988476.01 60550378.5 -227446649 186871349 -2907375.54 1199351.41 -196887.119 -6972226.82 15625718.6; 138333.855 -88086.2983 -457534.843 2598796.94 -2907375.54 168203.041 -49308.165 -26677.6662 15683.2416 -267760.206; -39733.928 23135.8989 342589.35 -1304331.7 1199351.41 -49308.165 16311.4307 8023.31004 -27392.6598 104910.786; -25756.7428 -93265.7278 240834.23 138071.592 -196887.119 -26677.6662 8023.31004 22092.1217 8405.92388 -16395.7072; -1638.65733 82436.7506 -3571637.79 10200641.9 -6972226.82 15683.2416 -27392.6598 8405.92388 404376.317 -545015.613; -170802.85 209484.632 4713303.39 -18569154.9 15625718.6 -267760.206 104910.786 -16395.7072 -545015.613 1317003.36], [description = "Cost-to-go matrix of the short-travel controller"]
         t_on::Real = 1.0, [unit = "s", description = "Start of the swing-up"]
         t_s::Real = 5.0, [unit = "s", min = 0, description = "Duration of the swing-up trajectory"]
+        t_s2::Real = 5.0, [unit = "s", min = 0, description = "Duration of the short-travel swing-up"]
         catch_tol::Real = 1000.0, [min = 0, description = "Catch region: z' Pc z below this"]
         u_max::Real = 40.0, [unit = "N", min = 0, description = "Actuator limit"]
         slew::Real = 4000.0, [unit = "N/s", min = 0, description = "Actuator slew-rate limit"]
@@ -127,10 +133,13 @@
             v4 = wf5
         end
         tau = tm - t_on
-        utv = ff - (Ks[1] * (m0 - xs[1]) + Ks[2] * (p1 - xs[2]) + Ks[3] * (p2 - xs[3]) + Ks[4] * (p3 - xs[4]) + Ks[5] * (p4 - xs[5]) + Ks[6] * (v0 - xs[6]) + Ks[7] * (v1 - xs[7]) + Ks[8] * (v2 - xs[8]) + Ks[9] * (v3 - xs[9]) + Ks[10] * (v4 - xs[10]))
-        ulq = -(Klqr[1] * m0 + Klqr[2] * p1 + Klqr[3] * p2 + Klqr[4] * p3 + Klqr[5] * p4 + Klqr[6] * v0 + Klqr[7] * v1 + Klqr[8] * v2 + Klqr[9] * v3 + Klqr[10] * v4)
-        en = Pc[1, 1] * m0 * m0 + 2.0 * Pc[1, 2] * m0 * p1 + 2.0 * Pc[1, 3] * m0 * p2 + 2.0 * Pc[1, 4] * m0 * p3 + 2.0 * Pc[1, 5] * m0 * p4 + 2.0 * Pc[1, 6] * m0 * v0 + 2.0 * Pc[1, 7] * m0 * v1 + 2.0 * Pc[1, 8] * m0 * v2 + 2.0 * Pc[1, 9] * m0 * v3 + 2.0 * Pc[1, 10] * m0 * v4 + Pc[2, 2] * p1 * p1 + 2.0 * Pc[2, 3] * p1 * p2 + 2.0 * Pc[2, 4] * p1 * p3 + 2.0 * Pc[2, 5] * p1 * p4 + 2.0 * Pc[2, 6] * p1 * v0 + 2.0 * Pc[2, 7] * p1 * v1 + 2.0 * Pc[2, 8] * p1 * v2 + 2.0 * Pc[2, 9] * p1 * v3 + 2.0 * Pc[2, 10] * p1 * v4 + Pc[3, 3] * p2 * p2 + 2.0 * Pc[3, 4] * p2 * p3 + 2.0 * Pc[3, 5] * p2 * p4 + 2.0 * Pc[3, 6] * p2 * v0 + 2.0 * Pc[3, 7] * p2 * v1 + 2.0 * Pc[3, 8] * p2 * v2 + 2.0 * Pc[3, 9] * p2 * v3 + 2.0 * Pc[3, 10] * p2 * v4 + Pc[4, 4] * p3 * p3 + 2.0 * Pc[4, 5] * p3 * p4 + 2.0 * Pc[4, 6] * p3 * v0 + 2.0 * Pc[4, 7] * p3 * v1 + 2.0 * Pc[4, 8] * p3 * v2 + 2.0 * Pc[4, 9] * p3 * v3 + 2.0 * Pc[4, 10] * p3 * v4 + Pc[5, 5] * p4 * p4 + 2.0 * Pc[5, 6] * p4 * v0 + 2.0 * Pc[5, 7] * p4 * v1 + 2.0 * Pc[5, 8] * p4 * v2 + 2.0 * Pc[5, 9] * p4 * v3 + 2.0 * Pc[5, 10] * p4 * v4 + Pc[6, 6] * v0 * v0 + 2.0 * Pc[6, 7] * v0 * v1 + 2.0 * Pc[6, 8] * v0 * v2 + 2.0 * Pc[6, 9] * v0 * v3 + 2.0 * Pc[6, 10] * v0 * v4 + Pc[7, 7] * v1 * v1 + 2.0 * Pc[7, 8] * v1 * v2 + 2.0 * Pc[7, 9] * v1 * v3 + 2.0 * Pc[7, 10] * v1 * v4 + Pc[8, 8] * v2 * v2 + 2.0 * Pc[8, 9] * v2 * v3 + 2.0 * Pc[8, 10] * v2 * v4 + Pc[9, 9] * v3 * v3 + 2.0 * Pc[9, 10] * v3 * v4 + Pc[10, 10] * v4 * v4
-        lat = ifelse(balance_only, 1.0, ifelse(latched > 0.5 || (tm >= t_on && tau >= t_s - 0.5 && en < catch_tol), 1.0, 0.0))
+        utv = ff - (Ks[1] * m0 + Ks[2] * p1 + Ks[3] * p2 + Ks[4] * p3 + Ks[5] * p4 + Ks[6] * v0 + Ks[7] * v1 + Ks[8] * v2 + Ks[9] * v3 + Ks[10] * v4)
+        ulq = -(ifelse(sel > 0.5, Klqr2[1], Klqr[1]) * m0 + ifelse(sel > 0.5, Klqr2[2], Klqr[2]) * p1 + ifelse(sel > 0.5, Klqr2[3], Klqr[3]) * p2 + ifelse(sel > 0.5, Klqr2[4], Klqr[4]) * p3 + ifelse(sel > 0.5, Klqr2[5], Klqr[5]) * p4 + ifelse(sel > 0.5, Klqr2[6], Klqr[6]) * v0 + ifelse(sel > 0.5, Klqr2[7], Klqr[7]) * v1 + ifelse(sel > 0.5, Klqr2[8], Klqr[8]) * v2 + ifelse(sel > 0.5, Klqr2[9], Klqr[9]) * v3 + ifelse(sel > 0.5, Klqr2[10], Klqr[10]) * v4)
+        en1 = Pc[1, 1] * m0 * m0 + 2.0 * Pc[1, 2] * m0 * p1 + 2.0 * Pc[1, 3] * m0 * p2 + 2.0 * Pc[1, 4] * m0 * p3 + 2.0 * Pc[1, 5] * m0 * p4 + 2.0 * Pc[1, 6] * m0 * v0 + 2.0 * Pc[1, 7] * m0 * v1 + 2.0 * Pc[1, 8] * m0 * v2 + 2.0 * Pc[1, 9] * m0 * v3 + 2.0 * Pc[1, 10] * m0 * v4 + Pc[2, 2] * p1 * p1 + 2.0 * Pc[2, 3] * p1 * p2 + 2.0 * Pc[2, 4] * p1 * p3 + 2.0 * Pc[2, 5] * p1 * p4 + 2.0 * Pc[2, 6] * p1 * v0 + 2.0 * Pc[2, 7] * p1 * v1 + 2.0 * Pc[2, 8] * p1 * v2 + 2.0 * Pc[2, 9] * p1 * v3 + 2.0 * Pc[2, 10] * p1 * v4 + Pc[3, 3] * p2 * p2 + 2.0 * Pc[3, 4] * p2 * p3 + 2.0 * Pc[3, 5] * p2 * p4 + 2.0 * Pc[3, 6] * p2 * v0 + 2.0 * Pc[3, 7] * p2 * v1 + 2.0 * Pc[3, 8] * p2 * v2 + 2.0 * Pc[3, 9] * p2 * v3 + 2.0 * Pc[3, 10] * p2 * v4 + Pc[4, 4] * p3 * p3 + 2.0 * Pc[4, 5] * p3 * p4 + 2.0 * Pc[4, 6] * p3 * v0 + 2.0 * Pc[4, 7] * p3 * v1 + 2.0 * Pc[4, 8] * p3 * v2 + 2.0 * Pc[4, 9] * p3 * v3 + 2.0 * Pc[4, 10] * p3 * v4 + Pc[5, 5] * p4 * p4 + 2.0 * Pc[5, 6] * p4 * v0 + 2.0 * Pc[5, 7] * p4 * v1 + 2.0 * Pc[5, 8] * p4 * v2 + 2.0 * Pc[5, 9] * p4 * v3 + 2.0 * Pc[5, 10] * p4 * v4 + Pc[6, 6] * v0 * v0 + 2.0 * Pc[6, 7] * v0 * v1 + 2.0 * Pc[6, 8] * v0 * v2 + 2.0 * Pc[6, 9] * v0 * v3 + 2.0 * Pc[6, 10] * v0 * v4 + Pc[7, 7] * v1 * v1 + 2.0 * Pc[7, 8] * v1 * v2 + 2.0 * Pc[7, 9] * v1 * v3 + 2.0 * Pc[7, 10] * v1 * v4 + Pc[8, 8] * v2 * v2 + 2.0 * Pc[8, 9] * v2 * v3 + 2.0 * Pc[8, 10] * v2 * v4 + Pc[9, 9] * v3 * v3 + 2.0 * Pc[9, 10] * v3 * v4 + Pc[10, 10] * v4 * v4
+        en2 = Pc2[1, 1] * m0 * m0 + 2.0 * Pc2[1, 2] * m0 * p1 + 2.0 * Pc2[1, 3] * m0 * p2 + 2.0 * Pc2[1, 4] * m0 * p3 + 2.0 * Pc2[1, 5] * m0 * p4 + 2.0 * Pc2[1, 6] * m0 * v0 + 2.0 * Pc2[1, 7] * m0 * v1 + 2.0 * Pc2[1, 8] * m0 * v2 + 2.0 * Pc2[1, 9] * m0 * v3 + 2.0 * Pc2[1, 10] * m0 * v4 + Pc2[2, 2] * p1 * p1 + 2.0 * Pc2[2, 3] * p1 * p2 + 2.0 * Pc2[2, 4] * p1 * p3 + 2.0 * Pc2[2, 5] * p1 * p4 + 2.0 * Pc2[2, 6] * p1 * v0 + 2.0 * Pc2[2, 7] * p1 * v1 + 2.0 * Pc2[2, 8] * p1 * v2 + 2.0 * Pc2[2, 9] * p1 * v3 + 2.0 * Pc2[2, 10] * p1 * v4 + Pc2[3, 3] * p2 * p2 + 2.0 * Pc2[3, 4] * p2 * p3 + 2.0 * Pc2[3, 5] * p2 * p4 + 2.0 * Pc2[3, 6] * p2 * v0 + 2.0 * Pc2[3, 7] * p2 * v1 + 2.0 * Pc2[3, 8] * p2 * v2 + 2.0 * Pc2[3, 9] * p2 * v3 + 2.0 * Pc2[3, 10] * p2 * v4 + Pc2[4, 4] * p3 * p3 + 2.0 * Pc2[4, 5] * p3 * p4 + 2.0 * Pc2[4, 6] * p3 * v0 + 2.0 * Pc2[4, 7] * p3 * v1 + 2.0 * Pc2[4, 8] * p3 * v2 + 2.0 * Pc2[4, 9] * p3 * v3 + 2.0 * Pc2[4, 10] * p3 * v4 + Pc2[5, 5] * p4 * p4 + 2.0 * Pc2[5, 6] * p4 * v0 + 2.0 * Pc2[5, 7] * p4 * v1 + 2.0 * Pc2[5, 8] * p4 * v2 + 2.0 * Pc2[5, 9] * p4 * v3 + 2.0 * Pc2[5, 10] * p4 * v4 + Pc2[6, 6] * v0 * v0 + 2.0 * Pc2[6, 7] * v0 * v1 + 2.0 * Pc2[6, 8] * v0 * v2 + 2.0 * Pc2[6, 9] * v0 * v3 + 2.0 * Pc2[6, 10] * v0 * v4 + Pc2[7, 7] * v1 * v1 + 2.0 * Pc2[7, 8] * v1 * v2 + 2.0 * Pc2[7, 9] * v1 * v3 + 2.0 * Pc2[7, 10] * v1 * v4 + Pc2[8, 8] * v2 * v2 + 2.0 * Pc2[8, 9] * v2 * v3 + 2.0 * Pc2[8, 10] * v2 * v4 + Pc2[9, 9] * v3 * v3 + 2.0 * Pc2[9, 10] * v3 * v4 + Pc2[10, 10] * v4 * v4
+        en = ifelse(sel > 0.5, en2, en1)
+        tsel = ifelse(sel > 0.5, t_s2, t_s)
+        lat = ifelse(balance_only, 1.0, ifelse(latched > 0.5 || (tm >= t_on && tau >= tsel - 0.5 && en < catch_tol), 1.0, 0.0))
         latched = lat
         cmd = clamp(ifelse(lat > 0.5, ulq, ifelse(tm < t_on, 0.0, utv)), -u_max, u_max)
         du = slew * 0.001

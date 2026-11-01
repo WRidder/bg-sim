@@ -18,6 +18,12 @@
           "title": "Results and checks",
           "file": "pages/results.md",
           "children": []
+        },
+        {
+          "id": "short",
+          "title": "Short-travel controller",
+          "file": "pages/short.md",
+          "children": []
         }
       ]
     }

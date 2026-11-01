@@ -1808,11 +1808,11 @@
         "kind": "signal",
         "from": {
           "node": "n049",
-          "port": "xs"
+          "port": "Ks"
         },
         "to": {
           "node": "n048",
-          "port": "xs"
+          "port": "Ks"
         }
       },
       {
@@ -1820,11 +1820,11 @@
         "kind": "signal",
         "from": {
           "node": "n049",
-          "port": "Ks"
+          "port": "sel"
         },
         "to": {
           "node": "n048",
-          "port": "Ks"
+          "port": "sel"
         }
       },
       {
@@ -1987,6 +1987,30 @@
         "id": "s043",
         "kind": "signal",
         "from": {
+          "node": "n002",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n050",
+          "port": "s"
+        }
+      },
+      {
+        "id": "s044",
+        "kind": "signal",
+        "from": {
+          "node": "n049",
+          "port": "lim"
+        },
+        "to": {
+          "node": "n050",
+          "port": "lim"
+        }
+      },
+      {
+        "id": "s045",
+        "kind": "signal",
+        "from": {
           "node": "n048",
           "port": "u"
         },
@@ -1996,7 +2020,7 @@
         }
       },
       {
-        "id": "s044",
+        "id": "s046",
         "kind": "signal",
         "from": {
           "node": "n005",
@@ -2008,7 +2032,7 @@
         }
       },
       {
-        "id": "s045",
+        "id": "s047",
         "kind": "signal",
         "from": {
           "node": "n005",
@@ -2020,7 +2044,7 @@
         }
       },
       {
-        "id": "s046",
+        "id": "s048",
         "kind": "signal",
         "from": {
           "node": "n008",
@@ -2032,7 +2056,7 @@
         }
       },
       {
-        "id": "s047",
+        "id": "s049",
         "kind": "signal",
         "from": {
           "node": "n012",
@@ -2044,7 +2068,7 @@
         }
       },
       {
-        "id": "s048",
+        "id": "s050",
         "kind": "signal",
         "from": {
           "node": "n013",
@@ -2056,7 +2080,7 @@
         }
       },
       {
-        "id": "s049",
+        "id": "s051",
         "kind": "signal",
         "from": {
           "node": "n013",
@@ -2068,7 +2092,7 @@
         }
       },
       {
-        "id": "s050",
+        "id": "s052",
         "kind": "signal",
         "from": {
           "node": "n016",
@@ -2080,7 +2104,7 @@
         }
       },
       {
-        "id": "s051",
+        "id": "s053",
         "kind": "signal",
         "from": {
           "node": "n020",
@@ -2092,7 +2116,7 @@
         }
       },
       {
-        "id": "s052",
+        "id": "s054",
         "kind": "signal",
         "from": {
           "node": "n021",
@@ -2104,7 +2128,7 @@
         }
       },
       {
-        "id": "s053",
+        "id": "s055",
         "kind": "signal",
         "from": {
           "node": "n021",
@@ -2116,7 +2140,7 @@
         }
       },
       {
-        "id": "s054",
+        "id": "s056",
         "kind": "signal",
         "from": {
           "node": "n024",
@@ -2128,7 +2152,7 @@
         }
       },
       {
-        "id": "s055",
+        "id": "s057",
         "kind": "signal",
         "from": {
           "node": "n028",
@@ -2140,7 +2164,7 @@
         }
       },
       {
-        "id": "s056",
+        "id": "s058",
         "kind": "signal",
         "from": {
           "node": "n029",
@@ -2152,7 +2176,7 @@
         }
       },
       {
-        "id": "s057",
+        "id": "s059",
         "kind": "signal",
         "from": {
           "node": "n029",
@@ -2164,7 +2188,7 @@
         }
       },
       {
-        "id": "s058",
+        "id": "s060",
         "kind": "signal",
         "from": {
           "node": "n032",
@@ -2176,7 +2200,7 @@
         }
       },
       {
-        "id": "s059",
+        "id": "s061",
         "kind": "signal",
         "from": {
           "node": "n036",
@@ -2226,9 +2250,11 @@
     },
     {
       "id": "p_cart",
-      "title": "Cart position x (m)",
+      "title": "Cart position x (m) and the travel limit of the chosen controller",
       "signals": [
-        "Rail/qout"
+        "Rail/qout",
+        "Mon/lim_hi",
+        "Mon/lim_lo"
       ]
     },
     {

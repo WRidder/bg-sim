@@ -27,7 +27,9 @@ def _harness():
     return module
 
 
-def run_models(example: str, models: list[str], out_dir: Path, timeout: float = 1800.0) -> dict[str, dict]:
+def run_models(example: str, models: list, out_dir: Path, timeout: float = 1800.0) -> dict[str, dict]:
+    """`models`: model names, or `(name, model, overrides)` tuples to run `model` with parameter overrides
+    (a list of {"target", "value"}) and save it as `<name>.npz`."""
     rc = _harness()
     rc._kill_children_with_me()
     root = Path(tempfile.mkdtemp(prefix="bgsim-design-"))
@@ -44,9 +46,10 @@ def run_models(example: str, models: list[str], out_dir: Path, timeout: float = 
         response.raise_for_status()
         project_dir = Path(rc._get_json(client, f"/api/projects/{project}")["path"])
         out_dir.mkdir(parents=True, exist_ok=True)
-        for model in models:
+        for entry in models:
+            model, source, overrides = (entry, entry, None) if isinstance(entry, str) else entry
             started = time.perf_counter()
-            run = rc._run_model(client, project, project_dir, model, None, timeout)
+            run = rc._run_model(client, project, project_dir, source, None, timeout, overrides)
             elapsed = time.perf_counter() - started
             np.savez(out_dir / f"{model}.npz", time=run.time, **{k.replace("/", "__"): v for k, v in run.signals.items()})
             stats[model] = {"seconds": elapsed, "points": int(run.time.size), "diagnostics": run.manifest.get("diagnostics")}
