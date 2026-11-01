@@ -1,0 +1,930 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "humanoid-ik",
+  "$comment": "The firmware of humanoid-hold alone, kinematic: ObjectTrajectory (start pose, quintic move to the dashboard pose, elbow-bias ramp, the 6-DOF switch) drives four ArmIK blocks at 1 kHz: the stacked 7-DOF SRS arms (shoulder and wrist offsets) and an ideal SRS pair (zero offsets, the same link lengths) beside them. Each IK is the interactive page's damped least squares with a null-space pull toward home, one iteration per tick. The 3D view draws the IK solutions.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "traj",
+        "name": "Traj",
+        "block": {
+          "ref": "project:ObjectTrajectory"
+        },
+        "position": {
+          "x": 100,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ikl",
+        "name": "IKL",
+        "block": {
+          "ref": "project:ArmIK"
+        },
+        "position": {
+          "x": 420,
+          "y": 100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "s": "1.0",
+          "q0": "[30.01812456644178, 28.98737075403721, -89.99938531829292, 83.35968637329651, 0.0, -54.371798666043325, 59.98149782912609]"
+        },
+        "constants": {},
+        "starts": {
+          "qr1": "0.5239151089582044",
+          "qr2": "0.5059250611542607",
+          "qr3": "-1.5707855985752563",
+          "qr4": "1.454900990643875",
+          "qr5": "0.0",
+          "qr6": "-0.9489669069539168",
+          "qr7": "1.0468746273960814",
+          "ex": "0.3550773833957638",
+          "ey": "-0.04431907864245824",
+          "ez": "0.17004935921935121"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ikr",
+        "name": "IKR",
+        "block": {
+          "ref": "project:ArmIK"
+        },
+        "position": {
+          "x": 420,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "s": "-1.0",
+          "q0": "[30.01812456644178, 28.98737075403721, -89.99938531829292, 83.35968637329651, 0.0, -54.371798666043325, 59.98149782912609]"
+        },
+        "constants": {},
+        "starts": {
+          "qr1": "0.5239151089582044",
+          "qr2": "0.5059250611542607",
+          "qr3": "-1.5707855985752563",
+          "qr4": "1.454900990643875",
+          "qr5": "0.0",
+          "qr6": "-0.9489669069539168",
+          "qr7": "1.0468746273960814",
+          "ex": "-0.3550773833957638",
+          "ey": "-0.04431907864245824",
+          "ez": "0.17004935921935121"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "idl",
+        "name": "IdealL",
+        "block": {
+          "ref": "project:ArmIK"
+        },
+        "position": {
+          "x": 420,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "s": "1.0",
+          "q0": "[30.018180598239486, 24.72427036600765, -89.99946268398223, 76.16035616254854, 0.0, -51.43574271935594, 59.98142617007124]",
+          "off": "[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 -0.38 0.0; 0.0 -0.28 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 -0.09 0.0]"
+        },
+        "constants": {},
+        "starts": {
+          "qr1": "0.5239160868975602",
+          "qr2": "0.431519923040097",
+          "qr3": "-1.570786948861263",
+          "qr4": "1.3292489745280256",
+          "qr5": "0.0",
+          "qr6": "-0.8977230636614629",
+          "qr7": "1.0468733767096354",
+          "ex": "0.358935713777776",
+          "ey": "-0.048867585551121084",
+          "ez": "0.17267774955909126"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "idr",
+        "name": "IdealR",
+        "block": {
+          "ref": "project:ArmIK"
+        },
+        "position": {
+          "x": 420,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "s": "-1.0",
+          "q0": "[30.018180598239486, 24.72427036600765, -89.99946268398223, 76.16035616254854, 0.0, -51.43574271935594, 59.98142617007124]",
+          "off": "[0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 -0.38 0.0; 0.0 -0.28 0.0; 0.0 0.0 0.0; 0.0 0.0 0.0; 0.0 -0.09 0.0]"
+        },
+        "constants": {},
+        "starts": {
+          "qr1": "0.5239160868975602",
+          "qr2": "0.431519923040097",
+          "qr3": "-1.570786948861263",
+          "qr4": "1.3292489745280256",
+          "qr5": "0.0",
+          "qr6": "-0.8977230636614629",
+          "qr7": "1.0468733767096354",
+          "ex": "-0.358935713777776",
+          "ey": "-0.048867585551121084",
+          "ez": "0.17267774955909126"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "s0001",
+        "kind": "signal",
+        "from": {
+          "node": "traj",
+          "port": "obj"
+        },
+        "to": {
+          "node": "ikl",
+          "port": "obj"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0002",
+        "kind": "signal",
+        "from": {
+          "node": "traj",
+          "port": "obj"
+        },
+        "to": {
+          "node": "ikr",
+          "port": "obj"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0003",
+        "kind": "signal",
+        "from": {
+          "node": "traj",
+          "port": "obj"
+        },
+        "to": {
+          "node": "idl",
+          "port": "obj"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "s0004",
+        "kind": "signal",
+        "from": {
+          "node": "traj",
+          "port": "obj"
+        },
+        "to": {
+          "node": "idr",
+          "port": "obj"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 6.5,
+    "solver": "Tsit5",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1301
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Stacked left arm: joint angles [deg]",
+      "signals": [
+        "IKL/q1",
+        "IKL/q2",
+        "IKL/q3",
+        "IKL/q4",
+        "IKL/q5",
+        "IKL/q6",
+        "IKL/q7"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Stacked right arm: joint angles [deg]",
+      "signals": [
+        "IKR/q1",
+        "IKR/q2",
+        "IKR/q3",
+        "IKR/q4",
+        "IKR/q5",
+        "IKR/q6",
+        "IKR/q7"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Hand pose error of the IK solution (stacked)",
+      "signals": [
+        "IKL/pe",
+        "IKL/oe",
+        "IKR/pe",
+        "IKR/oe"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Nearest joint limit [%]",
+      "signals": [
+        "IKL/lim",
+        "IKR/lim",
+        "IdealL/lim",
+        "IdealR/lim"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Ideal SRS: joint angles [deg]",
+      "signals": [
+        "IdealL/q1",
+        "IdealL/q2",
+        "IdealL/q3",
+        "IdealL/q4",
+        "IdealL/q5",
+        "IdealL/q6",
+        "IdealL/q7"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Object (page frame) and elbow bias",
+      "signals": [
+        "Traj/px",
+        "Traj/py",
+        "Traj/pz",
+        "Traj/elbow_bias"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/humanoid.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:L_joint1",
+      "property": "position",
+      "signal": "IKL/qr1"
+    },
+    {
+      "target": "joint:L_joint2",
+      "property": "position",
+      "signal": "IKL/qr2"
+    },
+    {
+      "target": "joint:L_joint3",
+      "property": "position",
+      "signal": "IKL/qr3"
+    },
+    {
+      "target": "joint:L_joint4",
+      "property": "position",
+      "signal": "IKL/qr4"
+    },
+    {
+      "target": "joint:L_joint5",
+      "property": "position",
+      "signal": "IKL/qr5"
+    },
+    {
+      "target": "joint:L_joint6",
+      "property": "position",
+      "signal": "IKL/qr6"
+    },
+    {
+      "target": "joint:L_joint7",
+      "property": "position",
+      "signal": "IKL/qr7"
+    },
+    {
+      "target": "joint:R_joint1",
+      "property": "position",
+      "signal": "IKR/qr1"
+    },
+    {
+      "target": "joint:R_joint2",
+      "property": "position",
+      "signal": "IKR/qr2"
+    },
+    {
+      "target": "joint:R_joint3",
+      "property": "position",
+      "signal": "IKR/qr3"
+    },
+    {
+      "target": "joint:R_joint4",
+      "property": "position",
+      "signal": "IKR/qr4"
+    },
+    {
+      "target": "joint:R_joint5",
+      "property": "position",
+      "signal": "IKR/qr5"
+    },
+    {
+      "target": "joint:R_joint6",
+      "property": "position",
+      "signal": "IKR/qr6"
+    },
+    {
+      "target": "joint:R_joint7",
+      "property": "position",
+      "signal": "IKR/qr7"
+    },
+    {
+      "target": "joint:GL_joint1",
+      "property": "position",
+      "signal": "IdealL/qr1"
+    },
+    {
+      "target": "joint:GL_joint2",
+      "property": "position",
+      "signal": "IdealL/qr2"
+    },
+    {
+      "target": "joint:GL_joint3",
+      "property": "position",
+      "signal": "IdealL/qr3"
+    },
+    {
+      "target": "joint:GL_joint4",
+      "property": "position",
+      "signal": "IdealL/qr4"
+    },
+    {
+      "target": "joint:GL_joint5",
+      "property": "position",
+      "signal": "IdealL/qr5"
+    },
+    {
+      "target": "joint:GL_joint6",
+      "property": "position",
+      "signal": "IdealL/qr6"
+    },
+    {
+      "target": "joint:GL_joint7",
+      "property": "position",
+      "signal": "IdealL/qr7"
+    },
+    {
+      "target": "joint:GR_joint1",
+      "property": "position",
+      "signal": "IdealR/qr1"
+    },
+    {
+      "target": "joint:GR_joint2",
+      "property": "position",
+      "signal": "IdealR/qr2"
+    },
+    {
+      "target": "joint:GR_joint3",
+      "property": "position",
+      "signal": "IdealR/qr3"
+    },
+    {
+      "target": "joint:GR_joint4",
+      "property": "position",
+      "signal": "IdealR/qr4"
+    },
+    {
+      "target": "joint:GR_joint5",
+      "property": "position",
+      "signal": "IdealR/qr5"
+    },
+    {
+      "target": "joint:GR_joint6",
+      "property": "position",
+      "signal": "IdealR/qr6"
+    },
+    {
+      "target": "joint:GR_joint7",
+      "property": "position",
+      "signal": "IdealR/qr7"
+    },
+    {
+      "target": "link:box",
+      "property": "pose",
+      "signal": [
+        "Traj/g[1]",
+        "Traj/g[2]",
+        "Traj/g[3]",
+        "Traj/g[4]",
+        "Traj/g[5]",
+        "Traj/g[6]",
+        "Traj/g[7]"
+      ]
+    },
+    {
+      "target": "link:box_target",
+      "property": "pose",
+      "signal": [
+        "Traj/g[1]",
+        "Traj/g[2]",
+        "Traj/g[3]",
+        "Traj/g[4]",
+        "Traj/g[5]",
+        "Traj/g[6]",
+        "Traj/g[7]"
+      ]
+    },
+    {
+      "target": "link:ghost_box",
+      "property": "pose",
+      "signal": [
+        "Traj/gi[1]",
+        "Traj/gi[2]",
+        "Traj/gi[3]",
+        "Traj/gi[4]",
+        "Traj/gi[5]",
+        "Traj/gi[6]",
+        "Traj/gi[7]"
+      ]
+    }
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "t",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Two 7-DOF SRS arms on one object",
+        "options": {
+          "markdown": true,
+          "text": "**Redundancy.** A rigid grasp fixes the full pose of each hand (3 position + 3 orientation), so two hands on one object give **12 constraints**. Two 7-DOF arms have **14 joints: 2 left over**, one self-motion per arm (the elbow swings about the shoulder-wrist line while the hand stays put). Two 6-DOF arms (J5 locked) have **12 joints for 12 constraints: no slack**, so the object pose fixes both postures, the elbow bias does nothing, and at the default pose the arms run into J3 and J6 limits and miss the grasp by about 3.5 mm and 3.3 deg."
+        }
+      },
+      {
+        "id": "x",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Object x (right)",
+        "parameter": "Traj/x",
+        "options": {
+          "min": -0.4,
+          "max": 0.4,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "y",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Object y (up)",
+        "parameter": "Traj/y",
+        "options": {
+          "min": -0.5,
+          "max": 0.3,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "z",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Object z (forward)",
+        "parameter": "Traj/z",
+        "options": {
+          "min": 0.05,
+          "max": 0.7,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "roll",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Object roll",
+        "parameter": "Traj/roll",
+        "options": {
+          "min": -60.0,
+          "max": 60.0,
+          "step": 1.0,
+          "decimals": 0,
+          "unit": "deg"
+        }
+      },
+      {
+        "id": "pitch",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Object pitch",
+        "parameter": "Traj/pitch",
+        "options": {
+          "min": -60.0,
+          "max": 60.0,
+          "step": 1.0,
+          "decimals": 0,
+          "unit": "deg"
+        }
+      },
+      {
+        "id": "yaw",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Object yaw",
+        "parameter": "Traj/yaw",
+        "options": {
+          "min": -60.0,
+          "max": 60.0,
+          "step": 1.0,
+          "decimals": 0,
+          "unit": "deg"
+        }
+      },
+      {
+        "id": "bias",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Elbow bias",
+        "parameter": "Traj/bias",
+        "options": {
+          "min": -40.0,
+          "max": 40.0,
+          "step": 1.0,
+          "decimals": 0,
+          "unit": "deg"
+        }
+      },
+      {
+        "id": "dof6",
+        "kind": "toggle",
+        "size": "1x1",
+        "title": "6-DOF arms (lock J5)",
+        "parameter": "Traj/dof6"
+      },
+      {
+        "id": "held",
+        "kind": "indicator",
+        "size": "1x1",
+        "title": "Stacked left holds the pose",
+        "signals": [
+          "IKL/held"
+        ],
+        "options": {
+          "threshold": 0.5,
+          "onWhen": "above"
+        }
+      },
+      {
+        "id": "IKL_pe",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Stacked left: position error",
+        "signals": [
+          "IKL/pe"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "mm",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 2.0,
+              "tone": "good"
+            },
+            {
+              "from": 2.0,
+              "to": 1000.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "IKL_oe",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Stacked left: orientation error",
+        "signals": [
+          "IKL/oe"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 2.0,
+              "tone": "good"
+            },
+            {
+              "from": 2.0,
+              "to": 180.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "IKL_lim",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Stacked left: nearest limit",
+        "signals": [
+          "IKL/lim"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "%",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 5.0,
+              "tone": "bad"
+            },
+            {
+              "from": 5.0,
+              "to": 15.0,
+              "tone": "warn"
+            },
+            {
+              "from": 15.0,
+              "to": 100.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "IKR_pe",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Stacked right: position error",
+        "signals": [
+          "IKR/pe"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "mm",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 2.0,
+              "tone": "good"
+            },
+            {
+              "from": 2.0,
+              "to": 1000.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "IKR_oe",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Stacked right: orientation error",
+        "signals": [
+          "IKR/oe"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 2.0,
+              "tone": "good"
+            },
+            {
+              "from": 2.0,
+              "to": 180.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "IKR_lim",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Stacked right: nearest limit",
+        "signals": [
+          "IKR/lim"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "%",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 5.0,
+              "tone": "bad"
+            },
+            {
+              "from": 5.0,
+              "to": 15.0,
+              "tone": "warn"
+            },
+            {
+              "from": 15.0,
+              "to": 100.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "IdealL_pe",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Ideal left: position error",
+        "signals": [
+          "IdealL/pe"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "mm",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 2.0,
+              "tone": "good"
+            },
+            {
+              "from": 2.0,
+              "to": 1000.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "IdealL_oe",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Ideal left: orientation error",
+        "signals": [
+          "IdealL/oe"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 2.0,
+              "tone": "good"
+            },
+            {
+              "from": 2.0,
+              "to": 180.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "IdealL_lim",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Ideal left: nearest limit",
+        "signals": [
+          "IdealL/lim"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "%",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 5.0,
+              "tone": "bad"
+            },
+            {
+              "from": 5.0,
+              "to": 15.0,
+              "tone": "warn"
+            },
+            {
+              "from": 15.0,
+              "to": 100.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "qL",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Stacked left: joint angles [deg]",
+        "signals": [
+          "IKL/q1",
+          "IKL/q2",
+          "IKL/q3",
+          "IKL/q4",
+          "IKL/q5",
+          "IKL/q6",
+          "IKL/q7"
+        ]
+      },
+      {
+        "id": "qR",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Stacked right: joint angles [deg]",
+        "signals": [
+          "IKR/q1",
+          "IKR/q2",
+          "IKR/q3",
+          "IKR/q4",
+          "IKR/q5",
+          "IKR/q6",
+          "IKR/q7"
+        ]
+      },
+      {
+        "id": "err",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "IK hand pose error (mm, deg)",
+        "signals": [
+          "IKL/pe",
+          "IKL/oe",
+          "IdealL/pe",
+          "IdealL/oe"
+        ]
+      },
+      {
+        "id": "lim",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Nearest joint limit [%]",
+        "signals": [
+          "IKL/lim",
+          "IdealL/lim"
+        ]
+      }
+    ]
+  }
+}

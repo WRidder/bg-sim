@@ -141,6 +141,40 @@
       "f16-sim"
     ]
   },
+  "fem-bracket": {
+    "title": "FEM bracket",
+    "description": "An aluminium L-bracket reduced from a finite element mesh (ModalBody3D) carries a payload on an indexing turntable; ring-down checked against the full FE model.",
+    "hasScene": true,
+    "models": [
+      "fem-bracket",
+      "bracket-ringdown"
+    ]
+  },
+  "fem-torsion": {
+    "title": "FEM torsion",
+    "description": "The two-disk torsion shaft as a FEM flexible body (Craig-Bampton): the exact torsion frequency, where three assumed modes are 3.5 % too stiff.",
+    "hasScene": true,
+    "models": [
+      "fem-torsion"
+    ]
+  },
+  "flex-rotary-pendulum": {
+    "title": "Flex rotary pendulum",
+    "description": "A Furuta pendulum whose rod bends (FlexibleBeam3D, 2 + 2 modes), next to its rigid twin.",
+    "hasScene": true,
+    "models": [
+      "flex-rotary-pendulum",
+      "flex-rotary-pendulum-rigid"
+    ]
+  },
+  "flex-torsion": {
+    "title": "Flex torsion",
+    "description": "Two disks on a flexible shaft (FlexibleBeam3D, three torsion modes) against the exact torsion frequency.",
+    "hasScene": true,
+    "models": [
+      "flex-torsion"
+    ]
+  },
   "gripper": {
     "title": "Gripper",
     "description": "Grip-force sizing of an electric parallel gripper in a fast pick-and-place move.",
@@ -168,38 +202,13 @@
       "fig3-drill"
     ]
   },
-  "flex-rotary-pendulum": {
-    "title": "Flex rotary pendulum",
-    "description": "A Furuta pendulum whose rod bends (FlexibleBeam3D, 2 + 2 modes), next to its rigid twin.",
+  "humanoid-dual-arm": {
+    "title": "Humanoid dual arm",
+    "description": "Two 7-DOF SRS arms hold one box: damped-least-squares IK, elbow self-motion, the 6-DOF failure.",
     "hasScene": true,
     "models": [
-      "flex-rotary-pendulum",
-      "flex-rotary-pendulum-rigid"
-    ]
-  },
-  "fem-bracket": {
-    "title": "FEM bracket",
-    "description": "An aluminium L-bracket reduced from a finite element mesh (ModalBody3D) carries a payload on an indexing turntable; ring-down checked against the full FE model.",
-    "hasScene": true,
-    "models": [
-      "fem-bracket",
-      "bracket-ringdown"
-    ]
-  },
-  "fem-torsion": {
-    "title": "FEM torsion",
-    "description": "The two-disk torsion shaft as a FEM flexible body (Craig-Bampton): the exact torsion frequency, where three assumed modes are 3.5 % too stiff.",
-    "hasScene": true,
-    "models": [
-      "fem-torsion"
-    ]
-  },
-  "flex-torsion": {
-    "title": "Flex torsion",
-    "description": "Two disks on a flexible shaft (FlexibleBeam3D, three torsion modes) against the exact torsion frequency.",
-    "hasScene": true,
-    "models": [
-      "flex-torsion"
+      "humanoid-hold",
+      "humanoid-ik"
     ]
   },
   "hydraulic-circuit": {
