@@ -78,8 +78,11 @@ level, heading north, CG 0.35.
 matched by a part of the device name or by index, with inversion, dead zone, expo and the range
 (`bipolar` for sticks and pedals, `unipolar` for a throttle). Rudder pedals are a separate device
 (`[yaw] device = "pedal"` by default); a throttle quadrant too (`[throttle] device = "throttle"`).
-A control without a matching device falls back to the keyboard. Use `--config other.toml` for
-another set, `--no-joystick` to ignore all devices. Run `--list-devices` and move each axis to find
+A control without a matching device falls back to the keyboard. The keyboard also works next to a
+bound device: per control, the input touched last wins (the keys take over while held, the device
+takes back when its axis moves), so a device that SDL lists first but nobody flies with (a 3D mouse
+driver's "KMJ Emulator", a gamepad) cannot lock out the arrow keys. The bindings are printed at
+start. Use `--config other.toml` for another set, `--no-joystick` to ignore all devices. Run `--list-devices` and move each axis to find
 its number.
 
 ## The HUD

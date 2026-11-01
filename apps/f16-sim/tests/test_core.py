@@ -115,3 +115,25 @@ def test_reset_restarts_from_the_trim(sim):
     m = sim.model
     assert m.time == 0.0 and m["north_m"] == 0.0 and abs(m["phi_deg"]) < 1e-9
     assert math.isclose(m["alt_m"], sim.start.h0, abs_tol=1e-6)
+
+
+def test_keyboard_works_next_to_a_bound_device():
+    from f16sim.inputs import Mixer
+    kb, mix = Keyboard({"stick_rate": 2.5, "spring": 4.0, "throttle_rate": 0.4}), Mixer()
+    centred = {"pitch": 0.0, "roll": 0.0, "throttle": 0.6}   # e.g. a gamepad SDL lists first, at rest
+    # no key held: the device flies
+    assert mix.mix(centred, kb, {}) == (0.0, 0.0, 0.0, 0.6)
+    # the up arrow (push) takes the pitch from the idle device; roll stays with the device
+    held = {"push": True}
+    kb.update(held, 0.2)
+    p, r, _, t = mix.mix(centred, kb, held)
+    assert p == pytest.approx(-0.5) and r == 0.0 and t == 0.6
+    # released: the keyboard stick springs back, still in charge while the device does not move
+    kb.update({}, 0.05)
+    assert mix.mix(centred, kb, {})[0] == pytest.approx(-0.3)
+    # moving the device's axis gives it back
+    assert mix.mix({**centred, "pitch": 0.4}, kb, {})[0] == 0.4
+    # throttle keys continue from the lever's setting, no jump
+    held = {"throttle_up": True}
+    t = mix.mix(centred, kb, held)[3]
+    assert t == pytest.approx(0.6)

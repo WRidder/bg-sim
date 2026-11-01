@@ -142,3 +142,46 @@ def list_devices() -> int:
     for i, s in enumerate(js.sticks):
         print(f"[{i}] {s.get_name()}: {s.get_numaxes()} axes, {s.get_numbuttons()} buttons, {s.get_numhats()} hats")
     return 0
+
+
+class Mixer:
+    """Keyboard and devices together: per control, the input touched last wins.
+
+    A bound device must not lock the keyboard out: a gamepad or virtual controller that SDL lists
+    first would otherwise take the stick, sit centred and swallow the arrow keys. The keyboard takes
+    a control while its keys are held (and while a released stick springs back); the device takes it
+    back when its axis moves by more than ``MOVE``. Taking the throttle over from a device starts the
+    keyboard at the device's setting, so there is no jump.
+    """
+
+    MOVE = 0.05
+
+    def __init__(self) -> None:
+        self.source: dict[str, str] = {}
+        self._anchor: dict[str, float] = {}
+
+    def mix(self, joy: dict[str, float], kb: Keyboard, held: dict[str, bool]) -> tuple[float, float, float, float]:
+        keys = {
+            "pitch": held.get("pull", False) or held.get("push", False),
+            "roll": held.get("left", False) or held.get("right", False),
+            "yaw": held.get("yaw_left", False) or held.get("yaw_right", False),
+            "throttle": held.get("throttle_up", False) or held.get("throttle_down", False),
+        }
+        out = []
+        for c in CONTROLS:
+            kb_value = getattr(kb, c)
+            if c not in joy:
+                out.append(kb_value)
+                continue
+            dev = joy[c]
+            src = self.source.get(c, "device")
+            if keys[c] and src != "keyboard":
+                if c == "throttle":
+                    kb.throttle = dev   # continue from the lever's setting
+                src = "keyboard"
+                self._anchor[c] = dev
+            elif src == "keyboard" and not keys[c] and abs(dev - self._anchor.get(c, dev)) > self.MOVE:
+                src = "device"
+            self.source[c] = src
+            out.append(getattr(kb, c) if src == "keyboard" else dev)
+        return out[0], out[1], out[2], out[3]

@@ -15,7 +15,7 @@ from .aircraft import Aircraft
 from .core import Simulation
 from .fmu import OUTPUTS, Settings, Start, body_to_ned
 from .hud import Hud
-from .inputs import Joysticks, Keyboard, load_config
+from .inputs import Joysticks, Keyboard, Mixer, load_config
 from .scripts import SCRIPTS, wrap180
 from .world import HORIZON, World
 
@@ -50,6 +50,9 @@ class Game(ShowBase):
         maps, kb = load_config(args.config)
         self.joy = Joysticks(maps, enabled=not (args.no_joystick or args.headless or args.record))
         self.kb = Keyboard(kb)
+        self.mixer = Mixer()
+        for line in self.joy.describe():
+            print(line)
         self.kb.throttle = self.sim.start.thtl0
         self.view = "chase"
         self.cam_yaw = self.sim.model["psi_deg"]
@@ -142,10 +145,9 @@ class Game(ShowBase):
         }
 
     def _pilot(self, dt: float) -> None:
-        self.kb.update(self._held(), dt)
-        joy = self.joy.poll()
-        self.sim.set_controls(joy.get("pitch", self.kb.pitch), joy.get("roll", self.kb.roll),
-                              joy.get("yaw", self.kb.yaw), joy.get("throttle", self.kb.throttle))
+        held = self._held()
+        self.kb.update(held, dt)
+        self.sim.set_controls(*self.mixer.mix(self.joy.poll(), self.kb, held))
 
     # ---- frame
     def frame(self, dt: float, script=None) -> None:
