@@ -94,15 +94,33 @@ def _ground() -> str:
     return "".join(out)
 
 
+def _node(n: int) -> np.ndarray:
+    """Rest position (model x, y) of truss node n (1-based, as in Truss/x[n])."""
+    return np.array(D["xy"][n - 1], dtype=float)
+
+
 def _truss() -> str:
+    # Every bar and deck slab is written at its rest place (the undeformed truss), so the bridge shows
+    # before a run and in any model whose results are not loaded yet; a segment binding then moves it
+    # to the simulated nodes (|AB| / length is 1 at rest: no jump at t = 0).
     out = []
-    for side in ("l", "r"):
-        for k in range(1, len(D["bars"]) + 1):
-            out.append(_visual(f"bar_{side}_{k:02d}", _pose(0, 0, -20 - k * 0.01), _cyl(bar_radius(k), 1.0),
-                               (0.55, 0.57, 0.6, 1)))
+    for side, depth in (("l", HALF_WIDTH), ("r", -HALF_WIDTH)):
+        for k, (a, b) in enumerate(D["bars"], start=1):
+            pa, pb = _node(a), _node(b)
+            d = pb - pa
+            L = float(np.hypot(*d))
+            mid = (pa + pb) / 2
+            pitch = float(np.arctan2(d[0], d[1]))   # turns the cylinder's +z onto (dx, 0, dz)
+            out.append(_visual(f"bar_{side}_{k:02d}", _pose(mid[0], depth, mid[1], 0, pitch, 0),
+                               _cyl(bar_radius(k), L), (0.55, 0.57, 0.6, 1)))
     for p in range(6):
-        out.append(_visual(f"deck_{p + 1}", _pose(0, 0, -20), _box(1.0, 2 * HALF_WIDTH - 0.3, DECK_THICK),
-                           (0.5, 0.5, 0.52, 1)))
+        pa, pb = _node(3 + p), _node(4 + p)
+        d = pb - pa
+        L = float(np.hypot(*d))
+        mid = (pa + pb) / 2
+        pitch = -float(np.arctan2(d[1], d[0]))      # turns the box's +x onto (dx, 0, dz)
+        out.append(_visual(f"deck_{p + 1}", _pose(mid[0], 0, mid[1], 0, pitch, 0),
+                           _box(L, 2 * HALF_WIDTH - 0.3, DECK_THICK), (0.5, 0.5, 0.52, 1)))
     return "".join(out)
 
 

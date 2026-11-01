@@ -70,6 +70,8 @@ A **segment** binding draws a box or cylinder as a bar between two moving points
 4. **axis** is the visual's direction that runs from A to B. By default it is a cylinder's own axis (+z) and a box's +x. A cylinder can only stretch along its own axis.
 5. **broken** (optional) is a signal that marks a failed bar when it is above 0.5. A broken bar is drawn **snapped** (two short stubs that hang from the end points, with a gap between them) or **hidden**.
 
+Until a run gives samples, the visual stays where the scene file puts it. So put each bar at its rest place in the SDF: midway between its two undeformed end points, turned along the line between them, at the bar's length. The structure then shows before the first run, and the binding takes over without a jump.
+
 **Gain** and **offset** apply to every coordinate, not to the depth. The binding table reports a sphere, a mesh or a cylinder stretched across its axis as E301, a count other than 4 or 6 as E304, and a coordinate that is not a length as E303.
 
 ### Elastic beams (deformation bindings)
