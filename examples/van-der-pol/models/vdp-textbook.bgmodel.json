@@ -1708,5 +1708,214 @@
       "unit": null,
       "description": "Start rate x'(0)"
     }
-  ]
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Van der Pol: x'' - mu (1 - x^2) x' + x = 0",
+        "options": {
+          "markdown": true,
+          "text": "Four oscillators, each with its own **mu**, from the same start (x0, x0'). Every trajectory winds onto its **limit cycle**: a circle of radius 2 for small mu, a relaxation loop with slow drifts and fast jumps for large mu."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "knob",
+        "size": "1x1",
+        "title": "Start x0",
+        "parameter": "global:x0",
+        "options": {
+          "min": -3.0,
+          "max": 3.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "knob",
+        "size": "1x1",
+        "title": "Start x0'",
+        "parameter": "global:y0",
+        "options": {
+          "min": -3.0,
+          "max": 3.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "mu of Mu01",
+        "parameter": "global:mu_1",
+        "options": {
+          "min": 0.0,
+          "max": 2.0,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "mu of Mu1",
+        "parameter": "global:mu_2",
+        "options": {
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Mu01: x' against x",
+        "signals": [
+          "Mu01/Y/y"
+        ],
+        "x": "Mu01/X/y",
+        "equalAspect": true
+      },
+      {
+        "id": "d7",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Mu1: x' against x",
+        "signals": [
+          "Mu1/Y/y"
+        ],
+        "x": "Mu1/X/y",
+        "equalAspect": true
+      },
+      {
+        "id": "d8",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "mu of Mu5",
+        "parameter": "global:mu_3",
+        "options": {
+          "min": 0.5,
+          "max": 10.0,
+          "step": 0.1,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d9",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "mu of Mu20",
+        "parameter": "global:mu_4",
+        "options": {
+          "min": 2.0,
+          "max": 30.0,
+          "step": 0.5,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d10",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Mu5: x' against x",
+        "signals": [
+          "Mu5/Y/y"
+        ],
+        "x": "Mu5/X/y"
+      },
+      {
+        "id": "d11",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Mu20: x' against x",
+        "signals": [
+          "Mu20/Y/y"
+        ],
+        "x": "Mu20/X/y"
+      },
+      {
+        "id": "d12",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Period, Mu01",
+        "signals": [
+          "Mu01/Meter/T_s"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d13",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Period, Mu1",
+        "signals": [
+          "Mu1/Meter/T_s"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d14",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Period, Mu5",
+        "signals": [
+          "Mu5/Meter/T_s"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d15",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Period, Mu20",
+        "signals": [
+          "Mu20/Meter/T_s"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d16",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "x(tau) of the four oscillators",
+        "signals": [
+          "Mu01/X/y",
+          "Mu1/X/y",
+          "Mu5/X/y",
+          "Mu20/X/y"
+        ]
+      }
+    ]
+  }
 }

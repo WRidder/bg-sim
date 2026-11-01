@@ -71,6 +71,10 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
   diagonal and the redundant truss holds, then the strength slider at 0.5 and the bridge collapses. Every run happens off camera;
   frame k sets the playback time to k*s/fps (fixed dt). Writes `bridge-pier.mp4` and stills (before the run, mid and end of each
   segment); `--compose-only` composes again from the saved frames.
+- `capture-vdp-belt.mjs <out-dir> [--fps 30] [--zoom 2] [--zoom-at 0.5,0.55] [--wheel 120] [--orbit 0,-35] [--stills] [--compose-only]`:
+  the `vdp-belt` model of `van-der-pol`, the dashboard next to the detached 3D viewer, in real time (frame k at t = k/fps) for
+  three runs set on the dashboard sliders: mu = 0.5 growing onto the limit cycle, mu = 1.0, and mu = 0.5 shrinking from x0 = 2.5.
+  The caption bar shows the simulation time. `--stills` writes only the framing stills (`camera-fit.png`, `camera.png`, segment ends).
 - `capture-beams.mjs <out-dir>`: stills of the `cantilever-sections` example: the settled static bend (x10 and true scale), a
   close-up at the wall, the step peak, the dashboard with load "1 · sine" selected and run, and two opposite crests of the
   round bar's resonance.

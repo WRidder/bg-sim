@@ -216,7 +216,7 @@ Continue with [the physics and the scaling](page:physics) and [the results](page
 
 ## 3D view
 
-`scenes/vdp-belt.sdf` is the rig: a belt over two pulleys, a wall, the spring as eight rings and the block. The prismatic joint `block` follows [Pos/y](signal:Pos/y). The rings follow the same signal with gains $k/9$, and the belt's stripes move with the belt phase [BeltPhase/y](signal:BeltPhase/y), a sawtooth over one stripe pitch. Picture at 30 s:
+`scenes/vdp-belt.sdf` is the rig: a belt over two pulleys, a wall, the spring as eight rings and the block. The prismatic joint `block` follows [Pos/y](signal:Pos/y). The rings follow the same signal with gains $k/9$, and the belt's stripes move with the belt phase [BeltPhase/y](signal:BeltPhase/y), a sawtooth over one stripe pitch. The stripes tile the belt, so when the phase wraps only the end stripes change, under the guard hoods over the pulleys. Picture at 30 s:
 
 ![3D view at t = 30 s|500](@fig:scene)
 @@ page vdp-belt physics overview | Physics and scaling

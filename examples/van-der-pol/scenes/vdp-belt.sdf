@@ -3,7 +3,8 @@
   vdp-belt: a block on a spring rides a belt (Z up, metres). The prismatic joint "block" (axis +X) is
   the block position x, 0 at the unstretched spring (the block's left face 0.08 m from the wall); it
   oscillates about x_s = 0.1892 m by +-4.5 mm. The joints coil1..coil8 move the spring's rings by
-  k/(n+1) of x; "belt" moves the belt's stripes by the belt phase (a sawtooth over one stripe pitch).
+  k/(n+1) of x; "belt" moves the belt's stripes by the belt phase (a sawtooth over one stripe pitch; the
+  stripes tile the top run, so a wrap changes only the end stripes, under the guard hoods).
   The block is coloured by the slip velocity. Written by examples/van-der-pol/design/build_model.py.
 -->
 <sdf version="1.9">
@@ -55,6 +56,26 @@
         <geometry><cylinder><radius>0.0060</radius><length>0.0100</length></cylinder></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
+      <visual name="guard_left">
+        <pose>-0.1275 0 0.0680 0 0 0</pose>
+        <geometry><box><size>0.0550 0.1000 0.0120</size></box></geometry>
+        <material><diffuse>0.86 0.62 0.10 1</diffuse></material>
+      </visual>
+      <visual name="guard_left_side">
+        <pose>-0.1275 0.051 0.0480 0 0 0</pose>
+        <geometry><box><size>0.0550 0.0020 0.0520</size></box></geometry>
+        <material><diffuse>0.86 0.62 0.10 1</diffuse></material>
+      </visual>
+      <visual name="guard_right">
+        <pose>0.4200 0 0.0680 0 0 0</pose>
+        <geometry><box><size>0.0700 0.1000 0.0120</size></box></geometry>
+        <material><diffuse>0.86 0.62 0.10 1</diffuse></material>
+      </visual>
+      <visual name="guard_right_side">
+        <pose>0.4200 0.051 0.0480 0 0 0</pose>
+        <geometry><box><size>0.0700 0.0020 0.0520</size></box></geometry>
+        <material><diffuse>0.86 0.62 0.10 1</diffuse></material>
+      </visual>
       <visual name="pad_bracket">
         <pose>0.2150 0 0.1550 0 0 0</pose>
         <geometry><box><size>0.0120 0.1100 0.0120</size></box></geometry>
@@ -69,12 +90,12 @@
     <link name="belt_marks">
       <pose>0 0 0 0 0 0</pose>
       <visual name="stripe01">
-        <pose>-0.1100 0 0.0605 0 0 0</pose>
+        <pose>-0.1200 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
       <visual name="stripe02">
-        <pose>-0.0700 0 0.0605 0 0 0</pose>
+        <pose>-0.0750 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
@@ -84,52 +105,47 @@
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
       <visual name="stripe04">
-        <pose>0.0100 0 0.0605 0 0 0</pose>
+        <pose>0.0150 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
       <visual name="stripe05">
-        <pose>0.0500 0 0.0605 0 0 0</pose>
+        <pose>0.0600 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
       <visual name="stripe06">
-        <pose>0.0900 0 0.0605 0 0 0</pose>
+        <pose>0.1050 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
       <visual name="stripe07">
-        <pose>0.1300 0 0.0605 0 0 0</pose>
+        <pose>0.1500 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
       <visual name="stripe08">
-        <pose>0.1700 0 0.0605 0 0 0</pose>
+        <pose>0.1950 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
       <visual name="stripe09">
-        <pose>0.2100 0 0.0605 0 0 0</pose>
+        <pose>0.2400 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
       <visual name="stripe10">
-        <pose>0.2500 0 0.0605 0 0 0</pose>
+        <pose>0.2850 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
       <visual name="stripe11">
-        <pose>0.2900 0 0.0605 0 0 0</pose>
-        <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
-        <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
-      </visual>
-      <visual name="stripe12">
         <pose>0.3300 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>
-      <visual name="stripe13">
-        <pose>0.3700 0 0.0605 0 0 0</pose>
+      <visual name="stripe12">
+        <pose>0.3750 0 0.0605 0 0 0</pose>
         <geometry><box><size>0.0060 0.0780 0.0010</size></box></geometry>
         <material><diffuse>0.85 0.6 0.15 1</diffuse></material>
       </visual>

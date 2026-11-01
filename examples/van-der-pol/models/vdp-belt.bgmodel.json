@@ -913,6 +913,94 @@
       },
       {
         "id": "n20",
+        "name": "Tsmall",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1600,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "6.283185307179586*(1.0 + mu*mu/16.0)/w0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n21",
+        "name": "Vamp",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 1600,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "V"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n22",
+        "name": "SigmaOut",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1600,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "sigma"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n23",
+        "name": "BeltV",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1600,
+          "y": 660
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "v_b"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n24",
         "name": "BeltPhase",
         "block": {
           "ref": "stdlib:sources/Sawtooth"
@@ -924,8 +1012,8 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "amplitude": "0.04",
-          "period": "0.04/v_b",
+          "amplitude": "0.045",
+          "period": "0.045/v_b",
           "offset": "0.0",
           "t_start": "0.0"
         },
@@ -1190,6 +1278,18 @@
         },
         "to": {
           "node": "n19",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c23",
+        "kind": "signal",
+        "from": {
+          "node": "n12",
+          "port": "amp"
+        },
+        "to": {
+          "node": "n21",
           "port": "u"
         }
       }
@@ -1501,5 +1601,210 @@
       "unit": "m/s",
       "description": "Start velocity of the block"
     }
-  ]
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Belt-driven Van der Pol oscillator",
+        "options": {
+          "markdown": true,
+          "text": "A block on a spring rides a belt at v_b = 7.1 cm/s. Friction that **falls** with slip feeds the swing; **mu** sets the net slope (the viscous sigma follows). Left: the cubic fit, exactly Van der Pol. Right: the full Stribeck curve. The slider stops at mu = 1: near 1.3 the swing reaches the belt speed and the real block would **stick** (stick-slip, no longer Van der Pol). The slip gauge shows how close it gets."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "mu (net falling slope)",
+        "parameter": "global:mu",
+        "options": {
+          "min": 0.05,
+          "max": 1.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Start velocity x0 = x'(0)/V",
+        "parameter": "global:x0",
+        "options": {
+          "min": 0.05,
+          "max": 3.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Period (cubic fit)",
+        "signals": [
+          "Meter/T"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": "s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "value",
+        "size": "1x1",
+        "title": "2 pi (1 + mu^2/16) / w0",
+        "signals": [
+          "Tsmall/y"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Phase portrait x' against x: cubic fit",
+        "signals": [
+          "Ym/y"
+        ],
+        "x": "Xm/y",
+        "equalAspect": true
+      },
+      {
+        "id": "d7",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Phase portrait x' against x: Stribeck curve",
+        "signals": [
+          "Stribeck/Ym/y"
+        ],
+        "x": "Stribeck/Xm/y",
+        "equalAspect": true
+      },
+      {
+        "id": "d8",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Period (Stribeck)",
+        "signals": [
+          "Stribeck/Meter/T"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": "s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d9",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Velocity amplitude",
+        "signals": [
+          "Vamp/y"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "d10",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Slip, Stribeck block",
+        "signals": [
+          "Stribeck/Fric/w"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 0.15,
+          "decimals": 3,
+          "unit": "m/s",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.003,
+              "tone": "bad"
+            },
+            {
+              "from": 0.003,
+              "to": 0.02,
+              "tone": "warn"
+            },
+            {
+              "from": 0.02,
+              "to": 0.15,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d11",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Viscous sigma",
+        "signals": [
+          "SigmaOut/y"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "N s/m"
+        }
+      },
+      {
+        "id": "d12",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Friction force (N) against slip (m/s): cubic fit",
+        "signals": [
+          "Fric/F"
+        ],
+        "x": "Fric/w"
+      },
+      {
+        "id": "d13",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Friction force (N) against slip (m/s): Stribeck",
+        "signals": [
+          "Stribeck/Fric/F"
+        ],
+        "x": "Stribeck/Fric/w"
+      },
+      {
+        "id": "d14",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Block velocity (m/s): cubic fit, Stribeck, belt speed",
+        "signals": [
+          "Vel/y",
+          "Stribeck/Vel/y",
+          "BeltV/y"
+        ]
+      },
+      {
+        "id": "d15",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Block position (m)",
+        "signals": [
+          "Pos/y",
+          "Stribeck/Pos/y"
+        ]
+      }
+    ]
+  }
 }

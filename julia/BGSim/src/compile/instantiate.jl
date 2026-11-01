@@ -130,6 +130,9 @@ mutable struct Builder
     global_param_exprs::Dict{String,Any}
     global_start_exprs::Dict{String,Any}
     global_fixed::Dict{Symbol,Vector{String}}
+    # Nodes whose block did not load (E101, or the block's own errors): their connections are
+    # left out without an E102 each, so the block's error is the one the user sees.
+    failed_nodes::Set{String}
 end
 
 function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
@@ -164,6 +167,7 @@ function Builder(md::IR.ModelDoc, project_dir::Union{String,Nothing})
         Dict{String,Any}(),
         Dict{String,Any}(),
         Dict{Symbol,Vector{String}}(),
+        Set{String}(),
     )
 end
 
@@ -3057,7 +3061,10 @@ function _instantiate_diagram!(
             _bind_boundary!(b, node, path)
         else
             block = resolve_block(b, node, path)
-            block === nothing && continue
+            if block === nothing
+                push!(b.failed_nodes, path)
+                continue
+            end
             if isempty(BGSim.components(block.ast))
                 _instantiate_block!(b, node, path, block)
             else

@@ -11,10 +11,10 @@ The damping `-mu (1 - x^2) x'` is negative at small amplitude and positive at la
 | model | what it shows |
 | --- | --- |
 | `vdp-tunnel-diode` | **Electronics.** A parallel LC tank on a tunnel diode biased in its negative-resistance region, as a bond graph. C, I and a nonlinear R (`TunnelDiode`, `i = -a v + b v^3`) hang on one 0-junction. The textbook equation runs alongside in the circuit's seconds. A cycle meter and an energy split read the limit cycle. Dashboard: mu, start amplitude, frequency/amplitude/period readouts, the component values for the chosen mu, the phase portrait and the diode's operating curve (XY), plots against time. |
-| `vdp-belt` | **Mechanics.** A block on a spring rides a belt. The friction contact is a nonlinear R in resistance causality: `BeltFriction` (the Taylor fit of the friction curve about the belt speed, exactly Rayleigh/Van der Pol) and, in a second rig, `StribeckFriction` (the full Stribeck curve). The textbook equation runs in the rig's seconds. 3D scene of the rig. |
-| `vdp-textbook` | **Reference.** The equation at mu = 0.1, 1, 5 and 20, each as a block diagram (integrators, `Polynomial`, `Product`, `Gain`) and as an equation block (`VanDerPol`), with a cycle meter. |
+| `vdp-belt` | **Mechanics.** A block on a spring rides a belt. The friction contact is a nonlinear R in resistance causality: `BeltFriction` (the Taylor fit of the friction curve about the belt speed, exactly Rayleigh/Van der Pol) and, in a second rig, `StribeckFriction` (the full Stribeck curve). The textbook equation runs in the rig's seconds. 3D scene of the rig. Dashboard: mu (0.05 to 1) and the start velocity, the phase portraits and friction-against-slip curves of both rigs (XY), the periods, the velocity amplitude, a slip gauge, and velocity and position against time. |
+| `vdp-textbook` | **Reference.** The equation at mu = 0.1, 1, 5 and 20, each as a block diagram (integrators, `Polynomial`, `Product`, `Gain`) and as an equation block (`VanDerPol`), with a cycle meter. Dashboard: a mu slider per oscillator above its phase portrait (XY), start-value knobs, the four periods and x against time. |
 
-Every model also saves XY plots: the phase portrait `x'` against `x` (equal aspect, so the small-mu cycle is a circle of radius 2), and in the circuit the diode's current against the tank voltage, in the belt rig the friction force against the slip. Open them from **Saved** in the Plots toolbar, or switch a panel's **x** from time to a signal. The tunnel-diode dashboard shows the phase portrait and the diode's operating curve next to the time plots. The phase portraits in the model docs (`models/<model>.docs/`) come from the same runs, drawn by the docs build.
+Every model also saves XY plots: the phase portrait `x'` against `x` (equal aspect, so the small-mu cycle is a circle of radius 2), and in the circuit the diode's current against the tank voltage, in the belt rig the friction force against the slip. Open them from **Saved** in the Plots toolbar, or switch a panel's **x** from time to a signal. Every dashboard shows the phase portraits; the tunnel-diode one also shows the diode's operating curve and the diode's operating curve next to the time plots. The phase portraits in the model docs (`models/<model>.docs/`) come from the same runs, drawn by the docs build.
 
 ## 1. Tunnel-diode oscillator
 
@@ -52,7 +52,9 @@ so the block obeys **Rayleigh's equation** `m y'' - alpha y' + beta y'^3 + k y =
 
     mu = alpha/sqrt(k m),   tau = sqrt(k/m) t,   x_vdp = x'/V,   V = sqrt(alpha/(3 beta))
 
-The model sets `mu = 0.5`, so `alpha = 5 N s/m`, `sigma = 46.466 N s/m` and `V = 22.04 mm/s`. The viscous term is needed because `V/v_b = sqrt(alpha/alpha_f)`. Without it the velocity swing (about `2V`) would reach the belt speed and the block would stick: that is stick-slip, not Van der Pol. With it the swing is 62 % of `v_b`. A belt-driven oscillator is Van der Pol only near the onset of instability.
+The model sets `mu = 0.5`, so `alpha = 5 N s/m`, `sigma = 46.466 N s/m` and `V = 22.04 mm/s`. The viscous term is needed because `V/v_b = sqrt(alpha/alpha_f)`. Without it the velocity swing (about `2V`) would reach the belt speed and the block would stick: that is stick-slip, not Van der Pol. With it the swing is 62 % of `v_b`. A belt-driven oscillator is Van der Pol only near the onset of instability. The swing grows like `sqrt(mu)`, so near `mu = 1.3` it reaches the belt speed; the dashboard's mu slider stops at 1, where the slip still stays above 6 mm/s (a check runs that end of the slider).
+
+The belt's stripes ride a sawtooth over one stripe pitch (45 mm, 12 pitches over the top run). Because the stripes tile the run exactly, a wrap of the sawtooth only changes the two end stripes, and those sit under the guard hoods over the pulleys.
 
 ## 3. Textbook
 

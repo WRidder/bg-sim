@@ -147,6 +147,11 @@ function _classify_one!(
     t = state.to
     if f.kind == :unknown || t.kind == :unknown
         bad = f.kind == :unknown ? f : t
+        if bad.path in b.failed_nodes
+            # the node's block failed to load and already said why
+            state.valid = false
+            return nothing
+        end
         message = if isempty(bad.path)
             "connection `$(c.id)` refers to unknown node `$(bad.node)`"
         else
