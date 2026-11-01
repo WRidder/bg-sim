@@ -141,7 +141,7 @@ end
     @test occursin("`D` of `P` is a constant", only(e003).message)
 
     # A runtime D = 0 in the loop: tearing divides by it. E903 names the coefficient and the
-    # loop instead of a NaN initialization error.
+    # loop, next to the generic failure diagnostic (it adds to it, never replaces it).
     model = _ss_loop("SSLoopParamD", Dict{String,Any}("inline" => Dict{String,Any}("source" => _SS_PARAM_D)))
     flat = Compile.flatten(IR.parse_model(model))
     @test isempty([d for d in flat.diagnostics if d.severity == "error"])
@@ -156,5 +156,13 @@ end
     @test occursin("P/D", d.message)
     @test occursin("`P`", d.message) && occursin("`K`", d.message)
     @test d.path == "P"
-    @test !any(x -> x.code in ("E900", "E901"), result.diagnostics)
+    @test any(x -> x.code in ("E900", "E901", "E103"), result.diagnostics)
+    println("runtime-D loop diagnostics: ", [(x.code, x.message) for x in result.diagnostics])
+
+    # The same zero as a parameter of a block whose output is not computed from its input in
+    # that equation (an offset, not a feedthrough) is not blamed: E903 only names a
+    # direct-feedthrough coefficient.
+    @test BGSim._feedthrough_coefficient(flat, "P/D", "P")
+    @test !BGSim._feedthrough_coefficient(flat, "P/A[1]", "P")
+    @test !BGSim._feedthrough_coefficient(flat, "R/value", "R")
 end

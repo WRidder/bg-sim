@@ -21,8 +21,12 @@
     # translations are derivative-causal; measured on the compiled model, MTK reports **three
     # momentum W201 aliases** (`Body/inertia/P[1..3]`, all aliases of the twist it
     # parametrises) **plus the two joint-frame translations** (`xform/b.f[2]`, `[3]`), and the
-    # run usually fails to initialise. That is the designed behaviour, not a bug: the
-    # compliant variant (`stdlib:multibond/Revolute2D`, `Revolute2DCompliant`) is the default.
+    # run usually fails to initialise. model.check does not flag it: SCAP works on the scalar
+    # picture, where Se and the rate sensor Df impose effort on `axis` and the screw passes
+    # the flow, which is causally consistent; it cannot see that the 1-DOF screw cannot carry
+    # the 3-DOF body twist. The W201 come after compilation. That is the designed behaviour,
+    # not a bug: the compliant variant (`stdlib:multibond/Revolute2D`, `Revolute2DCompliant`)
+    # is the default.
     # `kt -> Inf` on the compliant pivot converges to this joint's period.
     #
     # `parent` is frame-neutral (like `Revolute2DCompliant`): the joint adopts the parent body
