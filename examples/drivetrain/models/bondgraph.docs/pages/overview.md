@@ -41,6 +41,6 @@ Plot [IJm/p.f](signal:IJm/p.f), [IW1/p.f](signal:IW1/p.f), [IW2/p.f](signal:IW2/
 
 ## 3D view
 
-The bond graph model has speeds only, so the three discs of the scene are coloured by speed (`IJm/p.f`, `IW1/p.f`, `IW2/p.f`).
+The bond graph model has speeds only, so the three discs of the scene are coloured by speed (`IJm/p.f`, `IW1/p.f`, `IW2/p.f`). The rod between the wheels does not turn here, but it still twists: a torsion deformation binding with the linear basis (the lumped spring's twist, $\theta(s) = (s/L)\,\cdot$ twist) is driven by [Crod/q](signal:Crod/q) with gain $-1$, because `Crod/q` is the wheel-1 minus the wheel-2 angle, like `Rod/phi` of the iconic model. The view opens with the twist drawn ×10.
 
 ![3D view at t = 0.3 s|500](assets/1bf286c54fa2.png)

@@ -139,14 +139,17 @@ def common(name: str) -> dict:
 
 
 SCENE = "scenes/drivetrain-position.sdf"
+# the 3D view opens with the shaft twist drawn x10: 0.17-0.33 rad on a 0.7 m, 8 mm shaft turns the stripes by
+# only 1.4-2.6 mm at true scale; x10 makes them wind visibly (README, "3D view")
+SCENE_EXAGGERATION = 10
 BINDINGS = [
     {"target": "joint:rotor_joint", "property": "position", "signal": "Theta/y"},
     {"target": "joint:wheel1_joint", "property": "position", "signal": "Theta/y", "gain": 0.1},
-    {"target": "joint:shaft1_joint", "property": "position", "signal": "C/q", "gain": 0.25},
-    {"target": "joint:shaft2_joint", "property": "position", "signal": "C/q", "gain": 0.25},
-    {"target": "joint:shaft3_joint", "property": "position", "signal": "C/q", "gain": 0.25},
-    {"target": "joint:shaft4_joint", "property": "position", "signal": "C/q", "gain": 0.25},
     {"target": "joint:wheel2_joint", "property": "position", "signal": "ThetaL/y"},
+    # the shaft turns with wheel 1 (its link) and twists linearly towards wheel 2: the lumped spring's
+    # twist distribution, theta(s) = s / L * C/q (C/q is the wheel-2 minus the wheel-1 angle)
+    {"target": "visual:shaft_rod", "property": "deformation", "family": "torsion", "basis": "linear",
+     "beam": {"axis": "+z", "length": 0.705}, "signal": ["C/q"]},
 ]
 
 STRUCTURE = (
@@ -180,7 +183,7 @@ def showcase() -> dict:
         {"id": "p3", "title": "Shaft twist", "signals": ["C/q"]},
         {"id": "p4", "title": "Estimator", "signals": ["ThetaL/y", "Ctrl/theta_L_hat", "Ctrl/T_hat"]},
     ]
-    doc["scene"] = {"file": SCENE}
+    doc["scene"] = {"file": SCENE, "exaggeration": SCENE_EXAGGERATION}
     doc["bindings"] = BINDINGS
     return doc
 
@@ -206,7 +209,7 @@ def naive() -> dict:
         {"id": "p2", "title": "Control voltage", "signals": ["V/p.e"]},
         {"id": "p3", "title": "Shaft twist", "signals": ["C/q"]},
     ]
-    doc["scene"] = {"file": SCENE}
+    doc["scene"] = {"file": SCENE, "exaggeration": SCENE_EXAGGERATION}
     doc["bindings"] = BINDINGS
     return doc
 
@@ -229,7 +232,7 @@ def open_loop() -> dict:
                 "design/design.py integrates the same equations (5-state ODE with the 1 mH inductance) "
                 "and expected.json compares the two."}]
     doc["plots"] = [{"id": "p1", "title": "Load position", "signals": ["ThetaL/y", "Theta/y"]}]
-    doc["scene"] = {"file": SCENE}
+    doc["scene"] = {"file": SCENE, "exaggeration": SCENE_EXAGGERATION}
     doc["bindings"] = BINDINGS
     return doc
 

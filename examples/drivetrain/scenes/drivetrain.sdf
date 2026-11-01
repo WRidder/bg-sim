@@ -4,9 +4,16 @@
 
   Z-up, metres. Every shaft turns about +X. The motor rotor (rotor_joint) is bound to
   Motor1/rotor/phi, the first wheel (wheel1_joint, after the 10:1 gear) to Wheel1/phi and the
-  load wheel (wheel2_joint, behind the flexible rod) to Wheel2/phi, all in rad. The twist of the
-  rod is the angle between the two markers. The bond-graph model has speeds only, so there the
-  three discs are coloured by speed instead.
+  load wheel (wheel2_joint, behind the flexible rod) to Wheel2/phi, all in rad.
+
+  The flexible rod `rod` (0.305 m, from the face of wheel 1 at x = 0.27 to the face of wheel 2 at
+  x = 0.575) belongs to the wheel1 link, so it turns with wheel 1. A torsion deformation binding with
+  the linear basis twists it by theta(s) = s / L * (Wheel2/phi - Wheel1/phi): the lumped spring has
+  a linear twist distribution, so the section at wheel 2 sits exactly at the load wheel's angle.
+  Rod/phi is Wheel1/phi - Wheel2/phi, hence the binding's gain -1; the stripes of the twisted rod
+  show it (drawn x10 by default, scene.exaggeration of both models: 0.1 rad moves the stripes of the
+  8 mm rod by under a millimetre). The bond-graph model has speeds only, so there the three discs are coloured by speed and
+  the rod stays at rest at its wheel-1 end while it twists by -Crod/q.
 -->
 <sdf version="1.9">
   <model name="drivetrain">
@@ -26,11 +33,6 @@
         <pose>0.13 0 0 0 0 0</pose>
         <geometry><box><size>0.12 0.12 0.12</size></box></geometry>
         <material><diffuse>0.35 0.37 0.4 1</diffuse></material>
-      </visual>
-      <visual name="rod">
-        <pose>0.45 0 0 0 1.5707963 0</pose>
-        <geometry><cylinder><radius>0.008</radius><length>0.3</length></cylinder></geometry>
-        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
       </visual>
     </link>
 
@@ -59,6 +61,11 @@
         <pose>0 0 0.07 0 0 0</pose>
         <geometry><box><size>0.044 0.01 0.014</size></box></geometry>
         <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+      <visual name="rod">
+        <pose>0.1725 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.008</radius><length>0.305</length></cylinder></geometry>
+        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
       </visual>
     </link>
 
