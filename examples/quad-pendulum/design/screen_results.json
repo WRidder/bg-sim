@@ -1,0 +1,91 @@
+{
+  "format": "bgsim.screen-results",
+  "version": 1,
+  "date": "2026-11-02",
+  "description": "Phase B step 1: twin-only feasibility screen of the quad-pendulum controllers on the realistic rigs of realism.json (design/screen.py; raw runs in design/_screen/, not in git). Truth: the Lagrangian twin with the realism effects, RK4 with 8 substeps per 1 ms sample. Firmware replica: 1 kHz, the design's tables and LQR, sensors, delay and current loop, rates from filtered differences ('diff', the baseline) or an EKF on the nominal realistic model ('ekf'). Pass ('ok'): the run finishes, the swing-up is caught, every link within 2 deg of upright over the last 2 s, base travel within the controller's limit. Scenarios: swing-up from the hanging rest; balance from a 2 deg lean per link with a 50 ms tip push (the design's push).",
+  "criteria": {"tail_dev_deg_max": 2.0, "tail_window_s": 2.0},
+  "effects": {
+    "mass": "encoder boards, magnets and cables lumped into the links; link and base mass, length and COM spread",
+    "fbase": "base Coulomb + viscous friction (cart: linear guide, belt, motor; rotary: arm bearing, motor)",
+    "fjoint": "pendulum-joint Coulomb (tc_joint) + viscous friction",
+    "cable": "cable springs and dampers across the joints and along the base",
+    "sensor": "14-bit joint encoders with white noise (0.03 deg rms nominal), base encoder",
+    "loop": "2 ms whole-sample delay + 0.3 ms current loop",
+    "ripple": "commutation ripple (2 %) and cogging"
+  },
+  "verdict": {
+    "cart": "Feasible, with conditions. The existing full-travel controller (unchanged) passes all effects together at the nominal values ONLY with (1) the EKF (filtered differences fail with the AS5048-class encoders at every tau_f from 2 to 20 ms), (2) base Coulomb compensation (fc = nominal tc_base), and (3) pendulum-joint Coulomb friction of at most about 5e-5 N m per joint. At the assumed 2e-4 N m of small ball bearings the balance limit-cycles at 5-10 deg and no controller tried avoids it (gain scaling, robust minimax K search, lower-gain redesign). Even inside the budget the margin is thin: Monte Carlo over the realism ranges (tc_joint fixed at 5e-5) passes 11/24 swing-ups and 9/24 balances with the EKF (most failures are 2-3.7 deg limit cycles, a few diverge), 0/24 with filtered differences. Better joint encoders change this: with 16-bit, 0.005 deg encoders all effects pass with both estimators; with 18-bit, 0.001 deg (optical/inductive class) they pass with a third of the force noise.",
+    "cart_short": "Same as the full-travel cart (it shares the balance LQR): all effects pass with EKF + compensation at tc_joint 5e-5 (swing-up 0.75 deg, balance 1.12 deg, peak travel 0.42 m of 0.5 m), fail at 2e-4; Monte Carlo 13/24 swing-ups, 9/24 balances.",
+    "rotary_quad": "Not feasible as a built rig. The balance alone limit-cycles at 2-5 deg with only 2e-5 N m of joint Coulomb friction (10x below small ball bearings) and diverges from 5e-5 N m on (light 30 g, 0.15 m links: the bearing friction is about 1 % of a link's gravity torque). The swing-up (7 s, torque margin, redesigned on the realistic mass) is robust to the base friction, cables, 2 ms delay and ripple, but needs practically perfect rates: filtered differences with tau_f >= 2 ms fail even on exact positions, and the EKF fails with 0.001 deg rms encoder noise. Heavier links (80-100 g, 0.2-0.25 m) still limit-cycle at 4-9 deg at 2e-4 N m.",
+    "rotary_triple_proposal": "A triple rotary with heavier, longer links is the stepping stone: links 0.2/0.2/0.25 m, 80/80/100 g on a 0.25 m arm keep the balance limit cycle at 0.6-0.8 deg at 1e-4 N m and 1.6-2.0 deg at 2e-4 N m (exact sensors, LQR, no delay); the quad with the same links gives 2.0-3.7 deg and 4.3-8.6 deg. The triple's swing-up is not screened yet (next step: design it on the realistic model, then the same ablation and Monte Carlo).",
+    "order": "Cart first: the existing controllers pass the realistic model with an EKF, base friction compensation and selected low-friction bearings, and the cart has authority margin in the swing-up (peak force 65-78 % of the 40 N limit; the balance-with-push run with encoder noise touches the limit briefly). The rotary needs a new rig (triple, heavier links) and a new design."
+  },
+  "recommendations": [
+    "Joint bearings: budget 5e-5 N m Coulomb per pendulum joint for the cart quad (measure the bearings: run-out test of the free swing decay; open or lightly oiled, unshielded miniature bearings, low preload); 2e-4 N m (typical shielded small ball bearings) is not good enough.",
+    "Firmware: an EKF (or a comparable model-based observer) on the realistic nominal model; keep filtered differences only as the baseline. Cart tuning: process noise q_acc = (1, 10) (base, links); (0.3, 3) is too slow, (3, 30) and up diverge.",
+    "Base: Coulomb compensation fc_base tanh(v/2 eps) with fc_base = the measured carriage + belt friction.",
+    "Encoders: AS5048-class (14 bit, 0.03 deg) works only with the EKF and with little margin; 16-bit encoders with 0.005 deg noise make the cart robust with either estimator.",
+    "Lower balance gains do not help the cart: the lower-gain redesign (cart_real, LQR weights / 100) fails the balance with the extra link mass alone (5.8 deg) and every effect after it; the existing gains stay."
+  ],
+  "evidence": {
+    "ablation_cart_current_controller": {
+      "setup": "nominal realism, base compensation 1.0, EKF q_acc (1, 10); tail deviation deg swing-up / balance; ok in brackets",
+      "tc_joint_2e-4": {"fjoint_only": "5.1 / 5.5 (fail)", "sensor_only_diff": "diverges", "sensor_only_ekf": "2.7 / 2.9 (fail)", "all_diff": "diverges", "all_ekf": "6.2 / 6.0 (fail)"},
+      "tc_joint_5e-5": {"fjoint_only": "1.3-1.4 / 1.4-1.7 (ok)", "all_diff": "diverges", "all_ekf": "0.76 / 1.12 (ok), u rms 7.0 N, balance peak u at the limit briefly"},
+      "tc_joint_2e-5": {"fjoint_only": "0.9-1.4 / 1.3 (ok)", "all_ekf": "0.93 / 1.02 (ok)"},
+      "single_effects_ok": ["mass", "fbase (with compensation 0.17 deg)", "cable", "loop (2 ms)", "ripple"],
+      "note": "with compensation on but no base friction the compensation itself chatters (1.5 deg); without compensation the base friction alone gives 1.5 deg"
+    },
+    "ablation_cart_short": {"tc_joint_5e-5_all_ekf": "0.75 / 1.12 (ok), peak travel 0.42 m", "tc_joint_2e-4_all_ekf": "5.95 / 6.0 (fail)"},
+    "estimator_cart": {
+      "setup": "all effects except fjoint, compensation 1.0",
+      "ekf_q_acc": {"(0.3, 3)": "2.1 / 2.2 (fail)", "(1, 10)": "1.11 / 1.29 (ok)", "(3, 30)": "diverges", "(10, 100)": "diverges"},
+      "diff_tau_f_ms": {"2": "diverges", "5": "diverges", "10": "diverges", "20": "diverges"}
+    },
+    "encoder_grade_cart": {
+      "setup": "current controller, tc_joint 5e-5, all effects, compensation 1.0; swing-up / balance tail deg, u rms N",
+      "14 bit, 0 noise": {"diff": "diverges / 2.6", "ekf": "0.64 / 0.80 (ok), 5.3 N"},
+      "14 bit, 0.01 deg": {"diff": "diverges", "ekf": "0.40 / 1.08 (ok), 4.9 N"},
+      "14 bit, 0.03 deg (AS5048 nominal)": {"diff": "diverges", "ekf": "0.76 / 1.12 (ok), 7.0 N"},
+      "16 bit, 0.005 deg": {"diff": "1.01 / 1.55 (ok), 5.3 N", "ekf": "0.71 / 1.13 (ok), 3.8 N"},
+      "18 bit, 0.001 deg": {"diff": "0.63 / 1.07 (ok), 2.2 N", "ekf": "0.59 / 1.05 (ok), 2.3 N"}
+    },
+    "monte_carlo_cart": {
+      "setup": "24 uniform draws over the realism ranges, tc_joint fixed at 5e-5, all effects, compensation 1.0, EKF (1, 10)",
+      "cart": {"ekf_swingup": "11/24 ok (median 1.40 deg, 9 diverge)", "ekf_balance": "9/24 ok (failures mostly 2.0-3.7 deg, 3 diverge)", "diff": "0/24 swing-up, 0/24 balance"},
+      "cart_short": {"ekf_swingup": "13/24 ok", "ekf_balance": "9/24 ok", "diff": "0/24, 0/24"},
+      "full_ranges_tc_joint_1e-4_to_5e-4": "0/12 for both controllers (EKF)",
+      "drivers": "no single parameter dominates (|corr| < 0.6 with the log tail deviation): cable damping, base viscous friction, joint viscous friction, ripple and a fast current loop all add"
+    },
+    "limit_cycle_joint_coulomb": {
+      "setup": "balance from a 1 deg lean, realistic design rig, only joint Coulomb on, exact sensors, no delay; max link deviation over the last 3 s of 8 s, for LQR weight scales 0.001-10",
+      "cart_quad (0.275 m, 100 g)": {"2e-5": "<= 0.06", "5e-5": "0.26-1.1", "1e-4": "1.9-4.8", "2e-4": "4.6-10.7", "5e-4": "11.6-17 or diverges"},
+      "rotary_quad (0.15 m, 30 g)": {"2e-5": "2.3-5.1", "5e-5": "6.1-11.3 or diverges", "1e-4": "12.6 or diverges", "2e-4": "diverges"},
+      "rotary_triple (first 3 quad links)": {"2e-5": "0.7-1.1", "5e-5": "2.1-3.6", "1e-4": "4.2-7.3", "2e-4": "8.3-13 or diverges"},
+      "rotary_double (first 2 quad links)": {"5e-5": "0.5-1.3", "1e-4": "1.1-2.7", "2e-4": "2.2-5.6"},
+      "rotary_triple_heavy (0.2/0.2/0.25 m, 80/80/100 g, 0.25 m arm)": {"5e-5": "0.07-0.15", "1e-4": "0.6-0.84", "2e-4": "1.55-2.0", "5e-4": "3.9-6.4"},
+      "rotary_quad_heavy (0.2/0.2/0.2/0.25 m, 80/80/80/100 g)": {"5e-5": "0.25-0.65", "1e-4": "2.0-3.7", "2e-4": "4.3-8.6", "5e-4": "diverges"}
+    },
+    "linear_robustness": {
+      "setup": "discrete closed loop with the 2-sample delay, spectral radius (> 1 unstable) vs viscous joint damping b (a sticking Coulomb joint sweeps b from 0 to infinity)",
+      "cart_current_lqr": {"b <= 0.002": 0.9988, "b = 0.005": 1.012, "b = 0.02 to 10": "about 1.05", "joint 2 alone at 0.02": 1.066},
+      "rotary_current_lqr": {"b >= 0.002": "1.09-1.14", "joint 2 alone at 0.02": 1.32},
+      "robust_K_search": "minimax over b (Nelder-Mead/Powell from the LQR and its variants): best worst case cart 1.019 (b <= 0.05) and 1.021 (b <= 10), rotary 1.027; no K found that is stable for every joint damping (local search: not found, not proven impossible)"
+    },
+    "rotary": {
+      "current_controller": "swing-up fails with the encoder/cable/link mass (+22 %) alone, with 2 ms delay alone and with the sensors alone; balance fails with the sensors and with joint Coulomb 5e-5 (6-7 deg)",
+      "redesign_rotary_real": "designed on the realistic nominal mass: T_s 7 s, |u| <= 0.7 u_max in the plan, 4 swings, r 30 / r_tv 10. With the realistic mass on: base friction, cables, 2 ms delay, ripple each pass (swing-up tail 0.003-0.35 deg); sensors fail (14-bit and 18-bit, with and without noise, except 18-bit noise-free with the EKF: 0.59 deg); joint Coulomb 5e-5 gives 8.8-9.5 deg",
+      "rate_lag": {"exact positions, difference rates tau_f 5 ms": "diverges", "2 ms": "diverges", "1 ms": "ok 0.019 deg", "0.5 ms": "ok 0.012 deg"},
+      "balance_redesign": "passes every effect except the sensors at 14 bit; with 16-bit 0.005 deg encoders the balance passes all effects (1.0-1.7 deg) at tc_joint 0"
+    }
+  },
+  "runs": {
+    "commands": [
+      "uv run examples/quad-pendulum/design/screen.py ablation cart,cart_real --comp 1.0 --ekf-q \"[1,10]\" --p '{\"tc_joint\": 5e-5}'",
+      "uv run examples/quad-pendulum/design/screen.py ablation cart_short --comp 1.0 --ekf-q \"[1,10]\" --p '{\"tc_joint\": 5e-5}'",
+      "uv run examples/quad-pendulum/design/screen.py ablation rotary,rotary_real --comp 1.0 --p '{\"tc_joint\": 0.0}'",
+      "uv run examples/quad-pendulum/design/screen.py redesign cart_real | rotary_real",
+      "uv run examples/quad-pendulum/design/screen.py mc cart,cart_short --n 24 --est ekf,diff --comp 1.0 --ekf-q \"[1,10]\" --p '{\"tc_joint\": 5e-5}'"
+    ]
+  }
+}

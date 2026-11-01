@@ -150,6 +150,37 @@ the same as on the full rail (0.037 N).
 The price of the short travel: a 20 % larger peak force (still less than half the actuator), no loss of
 robustness and no longer swing-up.
 
+## Realism screen (twin only, `design/screen.py`)
+
+`design/realism.json` holds the non-idealities of a built rig, per rig, with nominal, min, max and unit. It
+covers encoder and cable mass on the links, Coulomb friction on the base and on every pendulum joint (smooth
+`tc tanh(ω/ε)`), cable springs, 14-bit AS5048-class encoders with noise, a 1–2 ms loop delay, the current
+loop, and torque/force ripple and cogging. `quadlib.realistic_setup(rig, p, ...)` builds the truth twin and
+the firmware-replica options for one parameter set. The firmware estimates rates with filtered differences
+(the baseline) or an EKF. `screen.py` runs the controllers against it: one effect at a time, all together,
+and a Monte Carlo over the ranges. The summary is in `design/screen_results.json`; the raw runs go to
+`design/_screen/` (not in git).
+
+```
+uv run examples/quad-pendulum/design/screen.py ablation cart,cart_short --comp 1.0 --ekf-q "[1,10]" --p '{"tc_joint": 5e-5}'
+uv run examples/quad-pendulum/design/screen.py mc cart --n 24 --est ekf,diff --comp 1.0 --ekf-q "[1,10]"
+uv run examples/quad-pendulum/design/screen.py redesign rotary_real     # a redesign on the realistic model
+```
+
+The result, in short:
+
+- **Cart (both controllers): feasible, with conditions.**
+  - The firmware needs an EKF: filtered differences fail with AS5048-class encoders.
+  - The base needs Coulomb compensation.
+  - The pendulum joints may have at most about 5e-5 N m of Coulomb friction each. With typical small ball
+    bearings (2e-4 N m) the balance limit-cycles at 5–10°.
+  - 16-bit encoders with 0.005° of noise make the cart robust with either estimator.
+- **Rotary quad: not feasible as a built rig.**
+  - Joint friction of only 2e-5 N m already gives a 2–5° limit cycle, and the balance diverges from 5e-5 N m.
+  - The swing-up needs rates with less than 1 ms of lag and practically noise-free encoders.
+  - The proposed stepping stone is a **triple** rotary with heavier links: 0.2/0.2/0.25 m and 80/80/100 g.
+    Its balance holds 0.6–0.8° at 1e-4 N m and 1.6–2° at 2e-4 N m.
+
 ## Results (bond graph)
 
 Real worker, Rodas5P, reltol 1e-7 (the free models 1e-10), `design/measured.json`:
@@ -241,7 +272,9 @@ limit (±0.5 m): visual markers only, the plant has no stop there.
 
 | path | what |
 | --- | --- |
-| `design/quadlib.py` | twin, LQR, collocation, TVLQR, firmware replica |
+| `design/quadlib.py` | twin, LQR, collocation, TVLQR, firmware replica (sensors, delay, EKF), the realistic twin of a `realism.json` parameter set (`realistic_setup`) |
+| `design/realism.json` | non-idealities of a built rig per rig (nominal, min, max, unit); also the RL domain randomisation and the robust classical designs |
+| `design/screen.py`, `design/screen_results.json` | the twin-only feasibility screen on the realistic rigs, and its summary |
 | `design/design.py` | the design of both rigs and of the short-travel cart controller, writes `design/design_<kind>.json` (and caches `_traj_<kind>.npz`) |
 | `design/blocks.py`, `design/models.py`, `design/scenes.py`, `design/build_models.py` | the generator of the library blocks, models, scenes and dashboards |
 | `design/finish.py` | backend runs, twin comparison, `design/measured.json`, `expected.json` |

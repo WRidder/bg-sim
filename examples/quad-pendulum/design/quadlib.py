@@ -24,13 +24,23 @@ arm, joint 1 at the arm tip; Revolute3D coordinates q_1 = s, q_2 = phi_1, q_{k+1
 
 Input. The actuator is ideal: a force F on the cart (N) or a torque on the arm (N m). The firmware
 saturates it, limits its slew rate and can delay it by whole samples (dashboard options).
+
+Realism (phase B). `realism.json` holds the non-idealities of both rigs (nominal, min, max, unit):
+encoder and cable masses, smooth Coulomb friction, cable springs and dampers, sensor resolution and
+noise, loop delay, current-loop lag, torque ripple and cogging. `realistic_rig` turns a parameter set
+(`realism_nominal` or `sample_realism`) into a Rig for the twin; `sensor_options` (Firmware fields) and
+the `tau_act` of `closed_loop` carry the sensor and loop parts into the firmware replica and the closed loop. All new
+Rig fields default to the ideal rig, so the existing designs are unchanged.
 """
 
 from __future__ import annotations
 
+import dataclasses
+import json
 import math
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import casadi as ca
 import numpy as np
@@ -68,6 +78,23 @@ class Rig:
     J_cart: float = 2.0e-3  # cart yaw inertia (bond graph only, never moves)
     r_link: float = 0.006  # rod radius for the axial inertia (rotary) (m)
     r_arm: float = 0.008
+    # ---- realism (realism.json); the defaults are the ideal rig
+    c_eq: list | None = None     # COM of each link from its pivot (m); default L/2
+    J_eq: list | None = None     # inertia of each link about its COM, perpendicular to it (kg m^2)
+    J_ax: list | None = None     # rotary: axial inertia of each link (kg m^2)
+    tc_joint: float = 0.0        # Coulomb friction of every pendulum joint (N m), tc tanh(w / eps_joint)
+    eps_joint: float = 0.01
+    tc_base: float = 0.0         # Coulomb friction of the base (N or N m)
+    eps_base: float = 0.01
+    k_cable: list | None = None  # spring across each pendulum joint (N m/rad), neutral at the upright
+    b_cable: list | None = None  # damper across each pendulum joint (N m s/rad)
+    k_cable_base: float = 0.0    # cable spring on the base (N/m or N m/rad), neutral at 0
+    b_cable_base: float = 0.0
+    ripple_rel: float = 0.0      # u (1 + ripple_rel sin(ripple_n th_m)) + cogging sin(cogging_n th_m)
+    ripple_n: float = 0.0
+    cogging: float = 0.0
+    cogging_n: float = 0.0
+    motor_per_base: float = 1.0  # motor angle th_m per base coordinate (rad/m or rad/rad)
 
     @property
     def n(self) -> int:
@@ -83,12 +110,25 @@ class Rig:
 
     @property
     def c(self) -> list:
-        return [l / 2 for l in self.L]
+        return list(self.c_eq) if self.c_eq is not None else [l / 2 for l in self.L]
 
     @property
     def J(self) -> list:
         """Rod inertia about the COM, perpendicular to the rod (kg m^2)."""
+        if self.J_eq is not None:
+            return list(self.J_eq)
         return [mi * li * li / 12.0 for mi, li in zip(self.m, self.L)]
+
+    def J_trans(self, k: int) -> float:
+        """Rotary: inertia of link k about its COM, perpendicular to the rod (with the rod radius)."""
+        if self.J_eq is not None:
+            return self.J_eq[k]
+        return self.m[k] * (self.L[k] ** 2 / 12 + self.r_link**2 / 4)
+
+    def J_axial(self, k: int) -> float:
+        if self.J_ax is not None:
+            return self.J_ax[k]
+        return 0.5 * self.m[k] * self.r_link**2
 
     @property
     def hang_sign(self) -> float:
@@ -106,6 +146,103 @@ class Rig:
             h = 2.0 * (sum(self.L[:i]) + self.c[i])
             out.append(self.m[i] * G * h)
         return out
+
+
+# ---------------------------------------------------------------- realism (realism.json)
+REALISM_PATH = Path(__file__).resolve().with_name("realism.json")
+_NEW_FIELDS = ("c_eq", "J_eq", "J_ax", "tc_joint", "eps_joint", "tc_base", "eps_base", "k_cable", "b_cable",
+               "k_cable_base", "b_cable_base", "ripple_rel", "ripple_n", "cogging", "cogging_n", "motor_per_base")
+
+
+def rig_key(rig: Rig) -> dict:
+    """The Rig as a dict for cache keys, without the realism fields that are at their (ideal) defaults, so
+    that the keys of the ideal designs do not change."""
+    d = dataclasses.asdict(rig)
+    defaults = {f.name: f.default for f in dataclasses.fields(Rig) if f.name in _NEW_FIELDS}
+    return {k: v for k, v in d.items() if k not in defaults or v != defaults[k]}
+
+
+def load_realism(path: Path = REALISM_PATH) -> dict:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def realism_nominal(kind: str, path: Path = REALISM_PATH) -> dict:
+    """The nominal non-ideality parameters of a rig: {name: value}."""
+    return {k: v["nominal"] for k, v in load_realism(path)["rigs"][kind]["params"].items()}
+
+
+def sample_realism(kind: str, rng: np.random.Generator, path: Path = REALISM_PATH) -> dict:
+    """One random parameter set: uniform between min and max (integers for integer ranges)."""
+    out = {}
+    for k, v in load_realism(path)["rigs"][kind]["params"].items():
+        lo, hi = v["min"], v["max"]
+        if lo == hi:
+            out[k] = v["nominal"]
+        elif isinstance(lo, int) and isinstance(hi, int):
+            out[k] = int(rng.integers(lo, hi + 1))
+        else:
+            out[k] = float(rng.uniform(lo, hi))
+    return out
+
+
+def realistic_rig(rig: Rig, p: dict) -> Rig:
+    """The rig with the non-idealities `p` (realism.json names): link masses, lengths and centres of mass
+    with the encoder boards, magnets and cables lumped into each link; base mass (cart) or hub inertia
+    (arm) with the first encoder board and the cables along the arm; Coulomb friction, cable springs and
+    dampers, motor ripple and cogging. Sensors and loop delays are not part of the plant (see
+    `sensor_options`)."""
+    n = rig.n
+    L = [l * p["link_length_scale"] for l in rig.L]
+    m_rod = [mi * p["link_mass_scale"] for mi in rig.m]
+    mb, mm, rho = p["m_enc_board"], p["m_enc_magnet"], p["rho_cable"]
+    m, c, J, Jax = [], [], [], []
+    for k in range(n):
+        if rig.kind == "cart":
+            j_rod = m_rod[k] * L[k] ** 2 / 12
+        else:
+            j_rod = m_rod[k] * (L[k] ** 2 / 12 + rig.r_link**2 / 4)
+        parts = [(m_rod[k], L[k] * (0.5 + p["com_shift"]), j_rod), (mm, 0.0, 0.0)]
+        if k < n - 1:
+            parts.append((mb, L[k], 0.0))                       # board of the joint above, at the tip
+        ncab = n - 1 - k                                        # cables of the encoders above this link
+        if ncab:
+            mc = ncab * rho * L[k]
+            parts.append((mc, L[k] / 2, mc * L[k] ** 2 / 12))
+        mt = sum(a for a, _, _ in parts)
+        ct = sum(a * x for a, x, _ in parts) / mt
+        jt = sum(j + a * (x - ct) ** 2 for a, x, j in parts)
+        m.append(mt)
+        c.append(ct)
+        J.append(jt)
+        Jax.append(0.5 * m_rod[k] * rig.r_link**2)
+    ncross = [n - 1 - k for k in range(n)]                      # cables across each pendulum joint
+    kw = dict(L=L, m=m, c_eq=c, J_eq=J, b_joint=p["b_joint"], b_base=p["b_base"],
+              tc_joint=p["tc_joint"], eps_joint=p["eps_joint"], tc_base=p["tc_base"], eps_base=p["eps_base"],
+              k_cable=[nc * p["k_cable"] for nc in ncross], b_cable=[nc * p["b_cable"] for nc in ncross],
+              k_cable_base=p["k_cable_base"], b_cable_base=p["b_cable_base"],
+              ripple_rel=p["ripple_rel"], ripple_n=p["ripple_per_rev"], cogging=p["cogging"],
+              cogging_n=p["cogging_per_rev"], motor_per_base=p["motor_per_base"])
+    if rig.kind == "cart":
+        kw["m_base"] = rig.m_base * p["base_mass_scale"] + mb
+    else:
+        kw["m_base"] = rig.m_base * p["base_mass_scale"]
+        kw["J_ax"] = Jax
+        # board of joint 1 at the arm tip, the cables of all encoders along the arm
+        kw["J_hub"] = rig.J_hub + mb * rig.arm_l**2 + n * rho * rig.arm_l * rig.arm_l**2 / 3
+    return dataclasses.replace(rig, **kw)
+
+
+def design_rig(rig: Rig) -> Rig:
+    """What a designer would model of a realistic rig: masses, inertias, viscous friction and cable springs,
+    no Coulomb friction (non-smooth; left to the feedback) and no motor ripple."""
+    return dataclasses.replace(rig, tc_joint=0.0, tc_base=0.0, ripple_rel=0.0, cogging=0.0)
+
+
+def sensor_options(kind: str, p: dict) -> dict:
+    """Firmware replica options of the sensors and the loop for the parameter set `p`."""
+    return {"quant": True, "res_q": 2 * math.pi / 2 ** int(p["joint_bits"]), "noise_q": math.radians(p["joint_noise"]),
+            "res_s": p["base_res"], "noise_s": (math.radians(p["base_noise"]) if kind == "rotary" else p["base_noise"]),
+            "delay": int(p["delay"])}
 
 
 class Plant:
@@ -173,14 +310,14 @@ class Plant:
         pos = []
         for k in range(self.n):
             l = R.L[k]
-            pos.append(origin + r @ ca.vertcat(l / 2, 0, 0))
+            pos.append(origin + r @ ca.vertcat(R.c[k], 0, 0))
             origin = origin + r @ ca.vertcat(l, 0, 0)
             if k + 1 < self.n:
                 r = r @ rotz(jq[k + 2])
                 rots.append(r)
         for k in range(self.n):
-            jt = R.m[k] * (R.L[k] ** 2 / 12 + R.r_link**2 / 4)
-            bodies.append((R.m[k], pos[k], rots[k], (0.5 * R.m[k] * R.r_link**2, jt, jt)))
+            jt = R.J_trans(k)
+            bodies.append((R.m[k], pos[k], rots[k], (R.J_axial(k), jt, jt)))
         ke, pe = [], []
         for idx, (mm, p, rot, j) in enumerate(bodies):
             vel = ca.jtimes(p, q, qd)
@@ -212,7 +349,7 @@ class Plant:
         fd = ca.SX.sym("fd")
         M = ca.hessian(T, qd)[0]
         cor = ca.jacobian(ca.gradient(T, qd), q) @ qd
-        gen = ca.vertcat(u, ca.SX.zeros(self.n)) - ca.gradient(self.D, qd)
+        gen = ca.vertcat(self.actuator(u, q[0]), ca.SX.zeros(self.n)) - ca.gradient(self.D, qd) + self.extra_forces(q, qd)
         rhs = ca.gradient(T, q) - cor - ca.gradient(V, q) + gen
         self.mass_fn = ca.Function("M", [q], [M])
         self.rhs_fn = ca.Function("rhs", [q, qd, u], [rhs])
@@ -225,6 +362,32 @@ class Plant:
         self.link_energy = ca.Function("El", [z], [ca.vertcat(*[k + p for k, p in zip(self.ke, self.pe)])])
         self.power_loss = ca.Function("Pl", [z], [2 * self.D])   # Rayleigh: dissipated power = 2 D
         self.tip_fn = ca.Function("tip", [z], [self.tip])
+
+    def actuator(self, u, s):
+        """Force or torque the actuator applies for the command u at base coordinate s: ripple and cogging
+        of the motor (realism), else u."""
+        R = self.rig
+        if R.ripple_rel == 0.0 and R.cogging == 0.0:
+            return u
+        th = R.motor_per_base * s
+        return u * (1 + R.ripple_rel * ca.sin(R.ripple_n * th)) + R.cogging * ca.sin(R.cogging_n * th)
+
+    def extra_forces(self, q, qd):
+        """Generalised forces of the realism terms: smooth Coulomb friction on the base and the pendulum
+        joints, cable springs (neutral at the upright) and dampers. Zero for the ideal rig."""
+        R = self.rig
+        out = ca.SX.zeros(self.nq)
+        if R.tc_base or R.k_cable_base or R.b_cable_base:
+            out[0] += -R.tc_base * ca.tanh(qd[0] / R.eps_base) - R.k_cable_base * q[0] - R.b_cable_base * qd[0]
+        kc = R.k_cable or [0.0] * self.n
+        bc = R.b_cable or [0.0] * self.n
+        if R.tc_joint or any(kc) or any(bc):
+            relq = ca.vertcat(q[1], *[q[1 + i] - q[i] for i in range(1, self.n)])
+            relw = ca.vertcat(qd[1], *[qd[1 + i] - qd[i] for i in range(1, self.n)])
+            tau = ca.vertcat(*[-R.tc_joint * ca.tanh(relw[k] / R.eps_joint) - kc[k] * relq[k] - bc[k] * relw[k]
+                               for k in range(self.n)])
+            out += ca.jacobian(relw, qd).T @ tau
+        return out
 
     def rhs(self, z, u=0.0, fd=0.0) -> np.ndarray:
         return np.array(self.f(z, u, fd)).ravel()
@@ -432,6 +595,17 @@ class Firmware:
     # interpolated (one table less per state than u* - K (z - z*): the bond-graph run time grows with the
     # total table size). None: the separate form.
     tab_v: np.ndarray | None = None
+    # realism of the sensors: white noise (rms, before the quantisation) and the rate estimator: "diff"
+    # filtered backward differences (tau_f), "ekf" an extended Kalman filter on a design model (`ekf`)
+    noise_q: float = 0.0       # joint angle noise (rad rms)
+    noise_s: float = 0.0       # base noise (m or rad rms)
+    estimator: str = "diff"
+    ekf: object | None = None
+    ekf_delay: int | None = None   # the delay the estimator assumes (None: delay)
+    seed: int = 0
+    # Coulomb friction compensation of the base: u += fc_base tanh(rate / fc_eps) (0: off)
+    fc_base: float = 0.0
+    fc_eps: float = 0.01
 
 
 def table_row(fw: Firmware, t: float):
@@ -444,15 +618,25 @@ def table_row(fw: Firmware, t: float):
 
 
 def measure(fw: Firmware, z: np.ndarray, st: dict, nq: int) -> np.ndarray:
-    """What the firmware sees: the exact state, or quantised positions with filtered difference rates."""
+    """What the firmware sees: the exact state, or quantised (and noisy) positions with filtered
+    difference rates or the EKF estimate."""
     if not fw.quant:
         return z
     pos = z[:nq].copy()
-    pos[0] = fw.res_s * np.round(pos[0] / fw.res_s)
     # the encoders measure the relative joint angles
     rel = np.concatenate([[pos[1]], np.diff(z[1:nq])])
+    if fw.noise_q or fw.noise_s:
+        rng = st.setdefault("rng", np.random.default_rng(fw.seed))
+        pos[0] += fw.noise_s * rng.standard_normal()
+        rel = rel + fw.noise_q * rng.standard_normal(nq - 1)
+    pos[0] = fw.res_s * np.round(pos[0] / fw.res_s)
     rel = fw.res_q * np.round(rel / fw.res_q)
     pos[1:] = np.cumsum(rel)
+    if fw.estimator == "ekf":
+        line = st.get("line")
+        d = fw.delay if fw.ekf_delay is None else fw.ekf_delay
+        u_prev = line[d] if line is not None else 0.0
+        return fw.ekf.update(st, np.concatenate([[pos[0]], rel]), u_prev)
     prev = st.get("prev")
     wf = st.get("wf")
     if prev is None:
@@ -491,6 +675,9 @@ def tick(fw: Firmware, t: float, z: np.ndarray, st: dict) -> float:
     else:
         st["phase"] = 0
         cmd = 0.0
+    if fw.fc_base and st["phase"] > 0:
+        # Coulomb friction compensation on the base from the measured (estimated) base rate
+        cmd += fw.fc_base * math.tanh(x[nq] / fw.fc_eps)
     cmd = min(max(cmd, -fw.u_max), fw.u_max)
     last = st.get("last", 0.0)
     du = fw.slew * fw.ts
@@ -503,8 +690,49 @@ def tick(fw: Firmware, t: float, z: np.ndarray, st: dict) -> float:
     return line[fw.delay]
 
 
-def closed_loop(step, fw: Firmware, x0, t_end: float, force=None):
-    """Sampled closed loop: firmware tick, zero-order hold, `step` (RK4) over each sample."""
+class EKF:
+    """Extended Kalman filter of the firmware option `estimator="ekf"`: the sampled design model (RK4) for
+    the prediction with the command the firmware applied one sample earlier (its own delay line), the
+    measured base coordinate and relative joint angles (linear in the state) for the update. Process noise
+    as random accelerations (q_acc: base, links), measurement noise from the encoder resolution and noise."""
+
+    def __init__(self, plant: "Plant", q_acc, r_meas, ts: float = TS):
+        self.step, self.jac = plant.steps(ts)
+        nq, nx = plant.nq, plant.nx
+        self.nq, self.nx = nq, nx
+        h = np.zeros((nq, nx))
+        h[0, 0] = 1.0
+        h[1, 1] = 1.0
+        for k in range(2, nq):
+            h[k, k] = 1.0
+            h[k, k - 1] = -1.0
+        self.H = h
+        qv = np.array([q_acc[0]] + [q_acc[1]] * (nq - 1)) * ts
+        self.Q = np.diag(np.concatenate([(0.5 * qv * ts) ** 2, qv**2]))
+        self.R = np.diag(r_meas)
+
+    def update(self, st: dict, y: np.ndarray, u_prev: float) -> np.ndarray:
+        if "xh" not in st:
+            xh = np.zeros(self.nx)
+            xh[: self.nq] = np.concatenate([[y[0]], np.cumsum(y[1:])])
+            p = np.diag(np.concatenate([np.diag(self.R), np.full(self.nq, 1e-2)]))
+        else:
+            x0, p = st["xh"], st["P"]
+            xh = np.array(self.step(x0, u_prev, 0.0)).ravel()
+            a = np.array(self.jac(x0, u_prev, 0.0)[0])
+            p = a @ p @ a.T + self.Q
+        h = self.H
+        s_ = h @ p @ h.T + self.R
+        k = np.linalg.solve(s_, h @ p).T
+        xh = xh + k @ (y - h @ xh)
+        p = p - k @ h @ p
+        st["xh"], st["P"] = xh, 0.5 * (p + p.T)
+        return xh
+
+
+def closed_loop(step, fw: Firmware, x0, t_end: float, force=None, tau_act: float = 0.0):
+    """Sampled closed loop: firmware tick, zero-order hold, `step` (RK4) over each sample. `tau_act`: a
+    first-order current loop after the firmware's delay; the plant sees its mean over each sample."""
     n = int(round(t_end / fw.ts))
     x = np.array(x0, float)
     st = {"phase": 0}
@@ -513,8 +741,14 @@ def closed_loop(step, fw: Firmware, x0, t_end: float, force=None):
     us = np.zeros(n + 1)
     ph = np.zeros(n + 1)
     xs[0] = x
+    uf = 0.0
+    if tau_act > 0:
+        ea = math.exp(-fw.ts / tau_act)
+        wa = 1.0 - tau_act / fw.ts * (1.0 - ea)
     for i in range(n):
         u = tick(fw, ts[i], x, st)
+        if tau_act > 0:
+            u, uf = uf + (u - uf) * wa, u + (uf - u) * ea
         us[i] = u
         ph[i] = st["phase"]
         x = np.array(step(x, u, force(ts[i] + 0.5 * fw.ts) if force else 0.0)).ravel()
@@ -524,6 +758,128 @@ def closed_loop(step, fw: Firmware, x0, t_end: float, force=None):
     us[n] = us[n - 1]
     ph[n] = ph[n - 1]
     return ts, xs, us, ph, st
+
+
+# ----------------------------------------------------------------------------- realistic twin + replica
+# One parameter set of realism.json -> the truth twin and the firmware-replica options. Shared by the
+# feasibility screen (screen.py), multi-model designs and the RL domain randomisation.
+EFFECTS = ("mass", "fbase", "fjoint", "cable", "sensor", "loop", "ripple")
+# EKF process noise (random accelerations: base, links) covering the unmodelled Coulomb friction, ripple
+# and model errors; per rig (the cart value is the screen's tuning)
+EKF_Q = {"cart": (1.0, 10.0), "rotary": (15.0, 60.0)}
+
+
+def effects_only(rig: Rig, p: dict, effects=EFFECTS) -> dict:
+    """`p` with the effects not in `effects` switched back to the ideal rig `rig` (mass: link and base
+    masses, encoders, cables; fbase/fjoint: base/joint friction; cable: cable springs; ripple: ripple and
+    cogging; sensor and loop act on the firmware options, see `realistic_setup`)."""
+    q = dict(p)
+    on = set(effects)
+    if "mass" not in on:
+        q |= {"link_mass_scale": 1.0, "link_length_scale": 1.0, "com_shift": 0.0, "base_mass_scale": 1.0,
+              "m_enc_board": 0.0, "m_enc_magnet": 0.0, "rho_cable": 0.0}
+    if "fbase" not in on:
+        q |= {"tc_base": 0.0, "b_base": rig.b_base}
+    if "fjoint" not in on:
+        q |= {"tc_joint": 0.0, "b_joint": rig.b_joint}
+    if "cable" not in on:
+        q |= {"k_cable": 0.0, "b_cable": 0.0, "k_cable_base": 0.0, "b_cable_base": 0.0}
+    if "ripple" not in on:
+        q |= {"ripple_rel": 0.0, "cogging": 0.0}
+    return q
+
+
+def firmware_from_design(dz: dict, **kw) -> Firmware:
+    """The firmware replica of a design file (`design_<variant>.json`), with options `kw` (sensors, loop,
+    estimator, compensation) over the design's own encoder settings."""
+    tab_v = np.array(dz["tab_v"]) if dz.get("tab_v") is not None else None
+    kw = {"res_s": dz["res_s"], "res_q": dz["res_q"], "tau_f": dz["tau_f"]} | kw
+    return Firmware(t_on=dz["t_on"], t_s=dz["t_s"], dt_tab=dz["dt_tab"], tab_x=np.array(dz["tab_x"]),
+                    tab_u=np.array(dz["tab_u"]), tab_k=np.array(dz["tab_k"]), tab_v=tab_v,
+                    k_lqr=np.array(dz["k_lqr"]), p_catch=np.array(dz["p_lqr"]), catch_tol=dz["catch_tol"],
+                    u_max=dz["u_max"], slew=dz["slew"], **kw)
+
+
+def rest_state(plant: Plant) -> np.ndarray:
+    """The hanging rest of a (realistic) twin: the cable springs move it slightly off the straight hang.
+    Solved for the link angles with the base at 0 (the cart has no restoring force)."""
+    from scipy.optimize import fsolve
+    z0 = plant.rig.hanging()
+    nq = plant.nq
+
+    def acc(a):
+        z = np.concatenate([[0.0], a, np.zeros(nq)])
+        return plant.rhs(z, 0.0)[nq + 1:]
+
+    a, info, ier, msg = fsolve(acc, z0[1:nq], xtol=1e-13, full_output=True)
+    if ier != 1 or np.max(np.abs(a - z0[1:nq])) > 0.2:
+        raise RuntimeError(f"rest state: {msg}")
+    return np.concatenate([[0.0], a, np.zeros(nq)])
+
+
+@dataclass
+class Realistic:
+    """The truth twin and the firmware-replica options of one realism parameter set."""
+    p: dict              # the parameter set with the switched-off effects at their ideal values
+    truth: Rig           # the realistic rig
+    plant: Plant         # its twin
+    step: object         # RK4 sample step of the twin (sub substeps)
+    fw_kw: dict          # Firmware options: sensors, delay, estimator (with the EKF), compensation, seed
+    tau_act: float       # current-loop time constant for closed_loop
+
+
+def realistic_setup(rig: Rig, p: dict, effects=EFFECTS, estimator: str = "diff", ekf_q=None, comp: float = 0.0,
+                    seed: int = 0, sub: int = 8, make_plant=None, make_ekf=None) -> Realistic:
+    """The truth twin and the firmware replica of the ideal rig `rig` with the realism parameters `p` (a
+    `realism_nominal` or `sample_realism` dict), effects `effects` on.
+
+    - sensor: quantised, noisy encoders (`sensor_options`); off: exact positions (the EKF still gets them
+      through its measurement update);
+    - loop: the whole-sample delay and the current loop (`tau_act`);
+    - estimator "diff" (filtered differences, the design's tau_f) or "ekf": an EKF on the observer model,
+      the nominal realistic rig with its Coulomb friction (calibrated) and without ripple, process noise
+      `ekf_q` (default EKF_Q), measurement noise from the encoder resolution and noise;
+    - comp: base Coulomb compensation, the fraction `comp` of the nominal tc_base.
+
+    The firmware's own model knowledge (observer rig, EKF delay, compensation) is the nominal parameter
+    set; only the truth follows `p`.
+
+    `make_plant(rig) -> (plant, step)` and `make_ekf(observer_rig, q_acc, r_meas) -> EKF` let a caller cache
+    the CasADi builds (default: build fresh). Use with `firmware_from_design(dz, **setup.fw_kw)` and
+    `closed_loop(setup.step, fw, x0, t_end, tau_act=setup.tau_act)`."""
+    kind = rig.kind
+    q = effects_only(rig, p, effects)
+    truth = realistic_rig(rig, q)
+    if make_plant is None:
+        plant = Plant(truth)
+        step = plant.steps(sub=sub)[0]
+    else:
+        plant, step = make_plant(truth)
+    on = set(effects)
+    kw = {}
+    if "sensor" in on:
+        so = sensor_options(kind, q)
+        kw |= {k: so[k] for k in ("quant", "res_q", "noise_q", "res_s", "noise_s")}
+    elif estimator == "ekf":
+        kw |= {"quant": True, "res_q": 1e-12, "res_s": 1e-12}     # exact positions through the estimator
+    if "loop" in on:
+        kw["delay"] = int(q["delay"])
+    if estimator == "ekf":
+        obs = dataclasses.replace(realistic_rig(rig, realism_nominal(kind)), ripple_rel=0.0, cogging=0.0)
+        res_q, res_s = kw.get("res_q", 1e-9), kw.get("res_s", 1e-9)
+        r_meas = tuple([max(res_s**2 / 12 + kw.get("noise_s", 0.0) ** 2, 1e-12)]
+                       + [max(res_q**2 / 12 + kw.get("noise_q", 0.0) ** 2, 1e-12)] * rig.n)
+        q_acc = tuple(ekf_q or EKF_Q[kind])
+        kw["estimator"] = "ekf"
+        kw["ekf"] = EKF(Plant(obs), q_acc, r_meas) if make_ekf is None else make_ekf(obs, q_acc, r_meas)
+        kw["ekf_delay"] = int(realism_nominal(kind)["delay"]) if "loop" in on else 0   # designed for the nominal delay
+    kw["seed"] = int(seed)
+    if comp:
+        nom = realism_nominal(kind)
+        kw["fc_base"] = comp * nom["tc_base"]
+        kw["fc_eps"] = 2.0 * nom["eps_base"]
+    return Realistic(p=q, truth=truth, plant=plant, step=step, fw_kw=kw,
+                     tau_act=q["tau_current"] if "loop" in on else 0.0)
 
 
 def free_swing(plant: Plant, z0, t_grid, h: float = 2e-4):
