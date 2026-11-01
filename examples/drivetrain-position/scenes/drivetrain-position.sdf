@@ -6,11 +6,13 @@
   Joint angles come from the model (rad):
     rotor_joint    motor rotor                       Theta/y
     wheel1_joint   wheel 1 behind the 10:1 gear       0.1 * Theta/y
-    shaft1..4      the shaft in four equal segments, each twisting by a quarter of the twist C/q
-                   (downstream minus upstream angle), chained from wheel 1
     wheel2_joint   wheel 2                           ThetaL/y   (= wheel 1 + C/q)
-  The wheels and the rotor carry markers and the shaft carries a light stripe, so the rotation and the
-  twist of the 1.2 N m/rad shaft are visible.
+  The shaft `shaft_rod` (0.705 m, from the face of wheel 1 at x = 0.27 to the face of wheel 2 at
+  x = 0.975) belongs to the wheel1 link, so it turns with wheel 1, and a torsion deformation binding
+  with the linear basis twists it by theta(s) = s / L * C/q (C/q is the downstream minus the upstream
+  angle): the lumped spring's linear twist, so its far end sits at the wheel-2 angle. The wheels and
+  the rotor carry markers and the rod's stripes show the twist of the 1.2 N m/rad shaft (drawn x10 by
+  default, scene.exaggeration: 0.17 rad moves the stripes of the 8 mm shaft by only 1.4 mm).
 -->
 <sdf version="1.9">
   <model name="drivetrain_position">
@@ -62,57 +64,10 @@
         <geometry><box><size>0.044 0.01 0.014</size></box></geometry>
         <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
       </visual>
-    </link>
-    <link name="shaft1">
-      <pose>0.270 0 0 0 0 0</pose>
-      <visual name="shaft1_rod">
-        <pose>0.0875 0 0 0 1.5707963 0</pose>
-        <geometry><cylinder><radius>0.008</radius><length>0.175</length></cylinder></geometry>
+      <visual name="shaft_rod">
+        <pose>0.3725 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.008</radius><length>0.705</length></cylinder></geometry>
         <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
-      </visual>
-      <visual name="shaft1_stripe">
-        <pose>0.0875 0 0.0085 0 0 0</pose>
-        <geometry><box><size>0.175 0.004 0.003</size></box></geometry>
-        <material><diffuse>0.95 0.2 0.2 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="shaft2">
-      <pose>0.445 0 0 0 0 0</pose>
-      <visual name="shaft2_rod">
-        <pose>0.0875 0 0 0 1.5707963 0</pose>
-        <geometry><cylinder><radius>0.008</radius><length>0.175</length></cylinder></geometry>
-        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
-      </visual>
-      <visual name="shaft2_stripe">
-        <pose>0.0875 0 0.0085 0 0 0</pose>
-        <geometry><box><size>0.175 0.004 0.003</size></box></geometry>
-        <material><diffuse>0.95 0.2 0.2 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="shaft3">
-      <pose>0.620 0 0 0 0 0</pose>
-      <visual name="shaft3_rod">
-        <pose>0.0875 0 0 0 1.5707963 0</pose>
-        <geometry><cylinder><radius>0.008</radius><length>0.175</length></cylinder></geometry>
-        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
-      </visual>
-      <visual name="shaft3_stripe">
-        <pose>0.0875 0 0.0085 0 0 0</pose>
-        <geometry><box><size>0.175 0.004 0.003</size></box></geometry>
-        <material><diffuse>0.95 0.2 0.2 1</diffuse></material>
-      </visual>
-    </link>
-    <link name="shaft4">
-      <pose>0.795 0 0 0 0 0</pose>
-      <visual name="shaft4_rod">
-        <pose>0.0875 0 0 0 1.5707963 0</pose>
-        <geometry><cylinder><radius>0.008</radius><length>0.175</length></cylinder></geometry>
-        <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
-      </visual>
-      <visual name="shaft4_stripe">
-        <pose>0.0875 0 0.0085 0 0 0</pose>
-        <geometry><box><size>0.175 0.004 0.003</size></box></geometry>
-        <material><diffuse>0.95 0.2 0.2 1</diffuse></material>
       </visual>
     </link>
     <link name="wheel2">
@@ -136,26 +91,6 @@
     <joint name="wheel1_joint" type="continuous">
       <parent>frame</parent>
       <child>wheel1</child>
-      <axis><xyz>1 0 0</xyz></axis>
-    </joint>
-    <joint name="shaft1_joint" type="continuous">
-      <parent>wheel1</parent>
-      <child>shaft1</child>
-      <axis><xyz>1 0 0</xyz></axis>
-    </joint>
-    <joint name="shaft2_joint" type="continuous">
-      <parent>shaft1</parent>
-      <child>shaft2</child>
-      <axis><xyz>1 0 0</xyz></axis>
-    </joint>
-    <joint name="shaft3_joint" type="continuous">
-      <parent>shaft2</parent>
-      <child>shaft3</child>
-      <axis><xyz>1 0 0</xyz></axis>
-    </joint>
-    <joint name="shaft4_joint" type="continuous">
-      <parent>shaft3</parent>
-      <child>shaft4</child>
       <axis><xyz>1 0 0</xyz></axis>
     </joint>
     <joint name="wheel2_joint" type="continuous">

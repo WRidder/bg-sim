@@ -1,5 +1,5 @@
 {
-  "$comment": "Invalid: the basis must be clamped-free or free-free.",
+  "$comment": "Invalid: the basis must be clamped-free, free-free or linear.",
   "bindings": [
     {
       "target": "visual:beam_box",

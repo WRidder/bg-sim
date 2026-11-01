@@ -61,6 +61,8 @@ The samples are deterministic. Each one is a fixed function of the block's integ
 | `ZOH` | Discrete and logic | samples the input and holds it until the next tick |
 | `OnOffDelay` | Discrete and logic | the Boolean output follows the input after `t_on` / `t_off` |
 
+A clocked block runs for the first time one sample period after the start of the run (at `t = sample_period`), not at `t = 0`. Until then a held output keeps its start value, 0 by default. The inspector lists the held outputs under **Start values**, so you can give a `ZOH` or an `ADC` the value it should read before its first sample. An output that the block computes from its equations, such as the output of `Noise`, takes no start value (E003); use the block's own parameter (`mean`, `initial`) instead.
+
 ## Sinks
 
 - `Scope` opens a plot panel for its inputs; it has no effect on the simulation.

@@ -45,6 +45,7 @@ class DeformationFamily(Enum):
 class DeformationBasis(Enum):
     clamped_free = 'clamped-free'
     free_free = 'free-free'
+    linear = 'linear'
 
 
 class ShapeAxis(Enum):
@@ -139,6 +140,10 @@ class IoDecl(BaseModel):
     unit: str | None = Field(
         ...,
         description="One unit for the whole declaration. For a vector or matrix signal it applies to every element; null means unit-free or mixed (a wrench, twist or pose chart whose elements have different units). The catalog carries no per-element signal units: the per-component units of a multibond quantity live on the power port, in the domain 'components' arrays (D-MB1, C-MB2).",
+    )
+    start: str | None = Field(
+        None,
+        description="Only on an output that a @discrete (or @events) body holds: its declared start value as a constant expression string (empty: zero of its type), the value it holds before the first tick. A node's `starts` may override it like a variable's. Absent on inputs and on outputs the equations compute.",
     )
 
 
@@ -1160,6 +1165,13 @@ class ModelPlot(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class SceneExaggeration(Enum):
+    int_1 = 1
+    int_10 = 10
+    int_100 = 100
+    int_1000 = 1000
+
+
 class ModelScene(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -1167,6 +1179,11 @@ class ModelScene(BaseModel):
     file: str = Field(
         ...,
         description='Scene file relative to the project directory, e.g. scenes/drivetrain.sdf.',
+    )
+    exaggeration: SceneExaggeration | None = Field(
+        None,
+        description='The initial deformation exaggeration of the 3D view for this model (a display factor on every beam deformation), used when this browser has no stored choice for the model. A choice the viewer stores still wins. Absent: 1 (true scale).',
+        title='SceneExaggeration',
     )
     field_comment: str | None = Field(None, alias='$comment')
 

@@ -1,0 +1,331 @@
+<?xml version="1.0"?>
+<!--
+The 3D scene of the suction-gripper example (``scenes/suction-gripper.sdf``), written by
+``build_model.py`` from the numbers in ``params.py``.
+
+Z up, metres. The pick conveyor and the place table both have their top at z = 0 (the plane of
+the model's ``Table`` contact surface); the parcel starts at x = 0 and is placed at
+x = L_move. Links whose poses are bound to signals:
+
+* ``parcel``   the parcel's centre of mass (``Pose/qw..pz``); the box is offset by -(cx, cy, cz);
+* ``gripper``  the cup mount plane G (``Path/g``), z up; the bellows hang from it to z = -L0;
+* ``zaxis``    the untilted flange above G (``Path/gfl``), the vertical axis tube;
+* ``carriage`` the gantry carriage on the beam (``Path/gcar``).
+
+The visuals ``bellows_<n>`` (coloured by the cup utilisation U) and ``lip_<n>`` (coloured by
+the cup vacuum) belong to the gripper link.
+-->
+<sdf version="1.9">
+  <model name="suction-gripper">
+    <link name="world_fixed">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="floor">
+        <pose>0.5 0 -0.81 0 0 0</pose>
+        <geometry><box><size>3.4 2 0.02</size></box></geometry>
+        <material><diffuse>0.5 0.52 0.54 1</diffuse></material>
+      </visual>
+      <visual name="belt">
+        <pose>-0.15 0 -0.01 0 0 0</pose>
+        <geometry><box><size>1.2 0.62 0.02</size></box></geometry>
+        <material><diffuse>0.12 0.13 0.14 1</diffuse></material>
+      </visual>
+      <visual name="roller_0">
+        <pose>-0.75 0 -0.03 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.03</radius><length>0.64</length></cylinder></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+      <visual name="roller_1">
+        <pose>0.45 0 -0.03 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.03</radius><length>0.64</length></cylinder></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+      <visual name="conv_side_r">
+        <pose>-0.15 -0.34 -0.03 0 0 0</pose>
+        <geometry><box><size>1.28 0.04 0.08</size></box></geometry>
+        <material><diffuse>0.2 0.45 0.75 1</diffuse></material>
+      </visual>
+      <visual name="conv_side_l">
+        <pose>-0.15 0.34 -0.03 0 0 0</pose>
+        <geometry><box><size>1.28 0.04 0.08</size></box></geometry>
+        <material><diffuse>0.2 0.45 0.75 1</diffuse></material>
+      </visual>
+      <visual name="conv_leg_0">
+        <pose>-0.7 0.3 -0.435 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.73</size></box></geometry>
+        <material><diffuse>0.55 0.58 0.62 1</diffuse></material>
+      </visual>
+      <visual name="conv_leg_1">
+        <pose>-0.7 -0.3 -0.435 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.73</size></box></geometry>
+        <material><diffuse>0.55 0.58 0.62 1</diffuse></material>
+      </visual>
+      <visual name="conv_leg_2">
+        <pose>0.4 0.3 -0.435 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.73</size></box></geometry>
+        <material><diffuse>0.55 0.58 0.62 1</diffuse></material>
+      </visual>
+      <visual name="conv_leg_3">
+        <pose>0.4 -0.3 -0.435 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.73</size></box></geometry>
+        <material><diffuse>0.55 0.58 0.62 1</diffuse></material>
+      </visual>
+      <visual name="table_top">
+        <pose>1.05 0 -0.015 0 0 0</pose>
+        <geometry><box><size>1.1 0.8 0.03</size></box></geometry>
+        <material><diffuse>0.42 0.44 0.47 1</diffuse></material>
+      </visual>
+      <visual name="table_leg_0">
+        <pose>0.55 0.35 -0.415 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.77</size></box></geometry>
+        <material><diffuse>0.55 0.58 0.62 1</diffuse></material>
+      </visual>
+      <visual name="table_leg_1">
+        <pose>0.55 -0.35 -0.415 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.77</size></box></geometry>
+        <material><diffuse>0.55 0.58 0.62 1</diffuse></material>
+      </visual>
+      <visual name="table_leg_2">
+        <pose>1.55 0.35 -0.415 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.77</size></box></geometry>
+        <material><diffuse>0.55 0.58 0.62 1</diffuse></material>
+      </visual>
+      <visual name="table_leg_3">
+        <pose>1.55 -0.35 -0.415 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.77</size></box></geometry>
+        <material><diffuse>0.55 0.58 0.62 1</diffuse></material>
+      </visual>
+      <visual name="place_mark_0">
+        <pose>1 0.162 0.0005 0 0 0</pose>
+        <geometry><box><size>0.524 0.012 0.001</size></box></geometry>
+        <material><diffuse>0.95 0.78 0.1 1</diffuse></material>
+      </visual>
+      <visual name="place_mark_1">
+        <pose>1 -0.162 0.0005 0 0 0</pose>
+        <geometry><box><size>0.524 0.012 0.001</size></box></geometry>
+        <material><diffuse>0.95 0.78 0.1 1</diffuse></material>
+      </visual>
+      <visual name="place_mark_2">
+        <pose>1.262 0 0.0005 0 0 0</pose>
+        <geometry><box><size>0.012 0.3 0.001</size></box></geometry>
+        <material><diffuse>0.95 0.78 0.1 1</diffuse></material>
+      </visual>
+      <visual name="place_mark_3">
+        <pose>0.738 0 0.0005 0 0 0</pose>
+        <geometry><box><size>0.012 0.3 0.001</size></box></geometry>
+        <material><diffuse>0.95 0.78 0.1 1</diffuse></material>
+      </visual>
+      <visual name="post_0">
+        <pose>-0.95 0.45 0.45 0 0 0</pose>
+        <geometry><box><size>0.1 0.1 2.5</size></box></geometry>
+        <material><diffuse>0.95 0.55 0.12 1</diffuse></material>
+      </visual>
+      <visual name="post_1">
+        <pose>1.85 0.45 0.45 0 0 0</pose>
+        <geometry><box><size>0.1 0.1 2.5</size></box></geometry>
+        <material><diffuse>0.95 0.55 0.12 1</diffuse></material>
+      </visual>
+      <visual name="beam">
+        <pose>0.45 0.45 1.7 0 0 0</pose>
+        <geometry><box><size>2.9 0.12 0.14</size></box></geometry>
+        <material><diffuse>0.95 0.55 0.12 1</diffuse></material>
+      </visual>
+      <visual name="rail">
+        <pose>0.45 0.375 1.7 0 0 0</pose>
+        <geometry><box><size>2.9 0.03 0.04</size></box></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="carriage">
+      <pose>0 0 1.6 0 0 0</pose>
+      <visual name="carriage_plate">
+        <pose>0 0.33 0.1 0 0 0</pose>
+        <geometry><box><size>0.26 0.04 0.26</size></box></geometry>
+        <material><diffuse>0.25 0.27 0.3 1</diffuse></material>
+      </visual>
+      <visual name="carriage_arm">
+        <pose>0 0.16 0.1 0 0 0</pose>
+        <geometry><box><size>0.1 0.3 0.12</size></box></geometry>
+        <material><diffuse>0.25 0.27 0.3 1</diffuse></material>
+      </visual>
+      <visual name="z_guide">
+        <pose>0 0 0.1 0 0 0</pose>
+        <geometry><box><size>0.12 0.12 0.3</size></box></geometry>
+        <material><diffuse>0.95 0.55 0.12 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="zaxis">
+      <pose>0 0 0.6 0 0 0</pose>
+      <visual name="z_tube">
+        <pose>0 0 0.75 0 0 0</pose>
+        <geometry><box><size>0.07 0.07 1.5</size></box></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+      <visual name="z_flange">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.06</radius><length>0.02</length></cylinder></geometry>
+        <material><diffuse>0.18 0.19 0.21 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="gripper">
+      <pose>0 0 0.19 0 0 0</pose>
+      <visual name="wrist">
+        <pose>0 0 0.07 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.035</radius><length>0.08</length></cylinder></geometry>
+        <material><diffuse>0.18 0.19 0.21 1</diffuse></material>
+      </visual>
+      <visual name="wrist_post">
+        <pose>0 0 0.08 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.1</size></box></geometry>
+        <material><diffuse>0.18 0.19 0.21 1</diffuse></material>
+      </visual>
+      <visual name="head_plate">
+        <pose>0 0 0.012 0 0 0</pose>
+        <geometry><box><size>0.46 0.24 0.024</size></box></geometry>
+        <material><diffuse>0.82 0.84 0.86 1</diffuse></material>
+      </visual>
+      <visual name="manifold">
+        <pose>0 0 0.04 0 0 0</pose>
+        <geometry><box><size>0.36 0.05 0.032</size></box></geometry>
+        <material><diffuse>0.2 0.42 0.78 1</diffuse></material>
+      </visual>
+      <visual name="generator">
+        <pose>0.03 0.06 0.05 0 0 0</pose>
+        <geometry><box><size>0.09 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.15 0.6 0.35 1</diffuse></material>
+      </visual>
+      <visual name="fitting_1">
+        <pose>-0.18 0.08 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+      <visual name="bellows_1">
+        <pose>-0.18 0.08 -0.02 0 0 0</pose>
+        <geometry><cylinder><radius>0.019</radius><length>0.024</length></cylinder></geometry>
+        <material><diffuse>0.35 0.35 0.38 1</diffuse></material>
+      </visual>
+      <visual name="lip_1">
+        <pose>-0.18 0.08 -0.036 0 0 0</pose>
+        <geometry><cylinder><radius>0.025</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.12 1</diffuse></material>
+      </visual>
+      <visual name="fitting_2">
+        <pose>-0.18 -0.08 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+      <visual name="bellows_2">
+        <pose>-0.18 -0.08 -0.02 0 0 0</pose>
+        <geometry><cylinder><radius>0.019</radius><length>0.024</length></cylinder></geometry>
+        <material><diffuse>0.35 0.35 0.38 1</diffuse></material>
+      </visual>
+      <visual name="lip_2">
+        <pose>-0.18 -0.08 -0.036 0 0 0</pose>
+        <geometry><cylinder><radius>0.025</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.12 1</diffuse></material>
+      </visual>
+      <visual name="fitting_3">
+        <pose>0 0.08 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+      <visual name="bellows_3">
+        <pose>0 0.08 -0.02 0 0 0</pose>
+        <geometry><cylinder><radius>0.019</radius><length>0.024</length></cylinder></geometry>
+        <material><diffuse>0.35 0.35 0.38 1</diffuse></material>
+      </visual>
+      <visual name="lip_3">
+        <pose>0 0.08 -0.036 0 0 0</pose>
+        <geometry><cylinder><radius>0.025</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.12 1</diffuse></material>
+      </visual>
+      <visual name="fitting_4">
+        <pose>0 -0.08 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+      <visual name="bellows_4">
+        <pose>0 -0.08 -0.02 0 0 0</pose>
+        <geometry><cylinder><radius>0.019</radius><length>0.024</length></cylinder></geometry>
+        <material><diffuse>0.35 0.35 0.38 1</diffuse></material>
+      </visual>
+      <visual name="lip_4">
+        <pose>0 -0.08 -0.036 0 0 0</pose>
+        <geometry><cylinder><radius>0.025</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.12 1</diffuse></material>
+      </visual>
+      <visual name="fitting_5">
+        <pose>0.18 0.08 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+      <visual name="bellows_5">
+        <pose>0.18 0.08 -0.02 0 0 0</pose>
+        <geometry><cylinder><radius>0.019</radius><length>0.024</length></cylinder></geometry>
+        <material><diffuse>0.35 0.35 0.38 1</diffuse></material>
+      </visual>
+      <visual name="lip_5">
+        <pose>0.18 0.08 -0.036 0 0 0</pose>
+        <geometry><cylinder><radius>0.025</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.12 1</diffuse></material>
+      </visual>
+      <visual name="fitting_6">
+        <pose>0.18 -0.08 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.012</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.74 0.76 0.79 1</diffuse></material>
+      </visual>
+      <visual name="bellows_6">
+        <pose>0.18 -0.08 -0.02 0 0 0</pose>
+        <geometry><cylinder><radius>0.019</radius><length>0.024</length></cylinder></geometry>
+        <material><diffuse>0.35 0.35 0.38 1</diffuse></material>
+      </visual>
+      <visual name="lip_6">
+        <pose>0.18 -0.08 -0.036 0 0 0</pose>
+        <geometry><cylinder><radius>0.025</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.1 0.1 0.12 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="parcel">
+      <pose>0 0 0.15 0 0 0</pose>
+      <visual name="carton">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><box><size>0.5 0.3 0.3</size></box></geometry>
+        <material><diffuse>0.72 0.53 0.32 1</diffuse></material>
+      </visual>
+      <visual name="tape_top">
+        <pose>0 0 0.1505 0 0 0</pose>
+        <geometry><box><size>0.502 0.05 0.001</size></box></geometry>
+        <material><diffuse>0.84 0.7 0.45 1</diffuse></material>
+      </visual>
+      <visual name="tape_front">
+        <pose>0.2505 0 0.11 0 0 0</pose>
+        <geometry><box><size>0.001 0.05 0.08</size></box></geometry>
+        <material><diffuse>0.84 0.7 0.45 1</diffuse></material>
+      </visual>
+      <visual name="tape_back">
+        <pose>-0.2505 0 0.11 0 0 0</pose>
+        <geometry><box><size>0.001 0.05 0.08</size></box></geometry>
+        <material><diffuse>0.84 0.7 0.45 1</diffuse></material>
+      </visual>
+      <visual name="flap_seam">
+        <pose>0 0 0.1508 0 0 0</pose>
+        <geometry><box><size>0.502 0.003 0.0012</size></box></geometry>
+        <material><diffuse>0.55 0.4 0.22 1</diffuse></material>
+      </visual>
+      <visual name="label">
+        <pose>0.125 -0.1505 0.03 0 0 0</pose>
+        <geometry><box><size>0.12 0.001 0.08</size></box></geometry>
+        <material><diffuse>0.96 0.96 0.94 1</diffuse></material>
+      </visual>
+      <visual name="label_bar">
+        <pose>0.125 -0.1512 0.045 0 0 0</pose>
+        <geometry><box><size>0.09 0.001 0.02</size></box></geometry>
+        <material><diffuse>0.1 0.1 0.1 1</diffuse></material>
+      </visual>
+      <visual name="arrow_up">
+        <pose>-0.125 -0.1505 0.05 0 0 0</pose>
+        <geometry><box><size>0.012 0.001 0.07</size></box></geometry>
+        <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
+      </visual>
+    </link>
+  </model>
+</sdf>

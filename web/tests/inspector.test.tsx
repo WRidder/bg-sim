@@ -297,6 +297,34 @@ describe("inspector fields", () => {
     expect(input("inspector-start-i").value).toBe("0.5");
   });
 
+  it("lists a held output (catalog start) under start values, but not a computed one", () => {
+    // A discrete block's output that its @discrete body holds carries `start` in the catalog.
+    const held: CatalogBlock = {
+      ...structuredClone(block("Gain")),
+      name: "HeldGain",
+      ref: "stdlib:discrete/HeldGain",
+    };
+    held.outputs = held.outputs.map((output) => ({ ...output, start: "1.5" }));
+    useCatalogStore.getState().setCatalog({ ...catalog, blocks: [...catalog.blocks, held] });
+    open([
+      createNodeFromBlock(held, { x: 0, y: 0 }, "n1", "Zoh1"),
+      node("Gain", "n2", "K1"),
+    ]);
+    useDocumentStore.getState().setSelection(["n1"], []);
+    const view = render(<Inspector />);
+
+    const field = input("inspector-start-y");
+    expect(field.placeholder).toBe("1.5");
+    fireEvent.change(field, { target: { value: "0.25" } });
+    fireEvent.blur(field);
+    expect(docNode("n1")?.starts?.y).toBe("0.25");
+    view.unmount();
+
+    act(() => useDocumentStore.getState().setSelection(["n2"], []));
+    render(<Inspector />);
+    expect(screen.queryByTestId("inspector-start-y")).toBeNull();
+  });
+
   it("edits a structural constant as a number and undoes it", () => {
     const sum = node("Sum", "n1", "Sum1");
     open([sum]);

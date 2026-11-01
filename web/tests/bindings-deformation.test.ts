@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { Binding, DeformationBinding } from "../src/contracts/model";
 import type { BeamConfig } from "../src/scene/build";
@@ -83,6 +86,18 @@ describe("deformation binding validation", () => {
     expect(d?.message).toMatch(/needs 1 to 3 signals/);
   });
 
+  it("linear basis: one twist on a torsion binding; a bending family or a second signal is refused", () => {
+    const twist = deform({ target: "visual:rod", family: "torsion", basis: "linear", beam: { axis: "+z" }, signal: ["B/eta_t[1]"], gain: -1 });
+    expect(validateBindings([twist], scene, signals)).toEqual([]);
+    const bent = validateBindings([{ ...twist, family: "bending-y", signal: ["B/eta_y[1]"] }], scene, signals);
+    expect(bent.map((d) => d.code)).toEqual(["E301"]);
+    expect(bent[0]?.message).toMatch(/linear basis is the twist of a torsion spring/);
+    const two = validateBindings([{ ...twist, signal: ["B/eta_t[1]", "B/plain"] }], scene, signals);
+    expect(two.map((d) => d.code)).toEqual(["E304"]);
+    expect(two[0]?.message).toMatch(/needs 1 signal, got 2/);
+    expect(two[0]?.hint).toMatch(/twist of end B relative to end A/);
+  });
+
   it("E302: an unknown modal coordinate", () => {
     expect(codes([deform({ signal: ["B/eta_y[1]", "B/eta_y[9]"] })])).toEqual(["E302"]);
   });
@@ -96,6 +111,25 @@ describe("deformation binding validation", () => {
     const d = validateBindings([deform({ family: "bending-z", signal: ["B/eta_t[1]"] })], scene, signals)[0];
     // rad is dimensionless, which is no length
     expect(d?.message).toMatch(/m \(bending modal coordinate\)/);
+  });
+});
+
+/*
+ * The bindings fixtures under contracts/fixtures/bindings/semantic are schema-valid but break a rule the
+ * viewer enforces (the linear basis: torsion only, one signal). Each names its code in `$comment`.
+ */
+const SEMANTIC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "contracts", "fixtures", "bindings", "semantic");
+
+describe("bindings semantic fixtures", () => {
+  const files = readdirSync(SEMANTIC_DIR).filter((f) => f.endsWith(".json")).sort();
+  it("exist", () => {
+    expect(files.length).toBeGreaterThanOrEqual(2);
+  });
+  it.each(files)("%s raises the code its comment names", (file) => {
+    const doc = JSON.parse(readFileSync(path.join(SEMANTIC_DIR, file), "utf8")) as { $comment: string; bindings: Binding[] };
+    const code = /^expected (E\d{3}): /.exec(doc.$comment)?.[1];
+    const lookup: SceneLookup = { has: () => true, joint: () => null, visualGeometry: () => ({ kind: "cylinder", radius: 0.01, length: 0.3 }) };
+    expect(validateBindings(doc.bindings, lookup, null).map((d) => d.code)).toEqual([code]);
   });
 });
 
@@ -156,6 +190,15 @@ describe("applying deformation bindings", () => {
     expect(sets[0]?.eta[1]).toBeCloseTo(-0.001, 12);
     expect(sets[1]?.eta[0]).toBeCloseTo(0.05, 12);
     expect(applier.applied.get("visual:beam#torsion")).toBeCloseTo(0.05, 12);
+  });
+
+  it("a linear twist reaches the scene with its basis and the gain; two signals on it are skipped", () => {
+    const twist = deform({ target: "visual:rod", family: "torsion", basis: "linear", beam: { axis: "+z" }, signal: ["B/eta_t[1]"], gain: -1 });
+    const rec = new Recorder();
+    const applier = new BindingApplier(rec, [twist], ids);
+    expect(applier.apply(buffer(), 1)).toBe(1);
+    expect(rec.deformations[0]).toEqual(["visual:rod", [{ family: "torsion", basis: "linear", eta: [-0.1] }]]);
+    expect(new BindingApplier(new Recorder(), [{ ...twist, signal: ["B/eta_t[1]", "B/eta_y[1]"] }], ids).count).toBe(0);
   });
 
   it("skips a deformation binding with an unknown signal", () => {

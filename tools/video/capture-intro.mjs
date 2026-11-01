@@ -3,7 +3,7 @@
 // Output: media/video/frames/intro/<scene>-<name>.png
 // usage: node capture-intro.mjs [--scene s02,s03,...]   (default: all)
 // Flows and selectors are taken from web/tests/e2e/{walkthrough,debug,domain-visual,example-docs,polish,plot-v2}.spec.ts
-import { chromium, BASE, createProject, newPage, openModel, runAndWait, outDir, sleep } from "./lib.mjs";
+import { launchBrowser, BASE, createProject, newPage, openModel, runAndWait, outDir, sleep } from "./lib.mjs";
 
 const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
 const only = arg("--scene")?.split(",") ?? null;
@@ -540,7 +540,7 @@ const scenes = {
   },
 };
 
-browser = await chromium.launch();
+browser = await launchBrowser();
 const todo = Object.keys(scenes).filter((s) => !only || only.includes(s));
 for (const s of todo) {
   console.log("scene", s);

@@ -129,6 +129,12 @@ def test_deformation_bindings_pass(runner, tmp_path):
     assert "2 binding(s) (0 joint position, 0 pose, 2 visual)" in results[0][2]
 
 
+def test_linear_torsion_binding_passes(runner, tmp_path):
+    bindings = [_deform(family="torsion", basis="linear", signal=["q"], gain=-1)]
+    results = _check(runner, _run(tmp_path, bindings))
+    assert [r[0] for r in results] == [True], results
+
+
 @pytest.mark.parametrize(
     ("bindings", "fragment"),
     [
@@ -138,6 +144,8 @@ def test_deformation_bindings_pass(runner, tmp_path):
         ([_deform(signal=["q"], family="bending-z")], "does not fit a bending-z modal coordinate"),
         ([_deform(signal=["x"], family="torsion")], "does not fit a torsion modal coordinate"),
         ([_deform(), _deform(signal=["s"])], "a second bending-y binding"),
+        ([_deform(basis="linear")], "the linear basis is the twist of a torsion spring, not bending-y"),
+        ([_deform(family="torsion", basis="linear", signal=["q", "s"])], "the linear basis needs 1 signal"),
     ],
 )
 def test_each_deformation_mistake_fails(runner, tmp_path, bindings, fragment):

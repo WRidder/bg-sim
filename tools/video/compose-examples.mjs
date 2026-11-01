@@ -3,7 +3,7 @@
 // usage: node compose-examples.mjs [--only a,b] [--no-encode]
 import { existsSync, readFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { chromium, framesDir, repoRoot } from "./lib.mjs";
+import { launchBrowser, framesDir, repoRoot } from "./lib.mjs";
 import { writeHtml, fileUrl, esc } from "./theme.mjs";
 import { encode } from "./encode.mjs";
 
@@ -43,7 +43,7 @@ function appFrame(card, idx, total, info, dir, i) {
   </div>`;
 }
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 async function shot(name, body, extra = "") {
   const url = writeHtml(name, body, extra);

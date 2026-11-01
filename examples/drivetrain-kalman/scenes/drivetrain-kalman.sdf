@@ -13,7 +13,16 @@
     seg3_joint    third rod segment, mid 2 to wheel 2  C3/q
   Each C_k/q is the downstream minus the upstream angle of the segment (checked against the
   flows of the wheels). The ideal-gear model has no play state, so there play_joint stays at zero.
-  The discs carry markers so that the twist of the rod can be seen.
+
+  The rod is three segments between the discs: rod1 from wheel 1 (x = 0.27) to mid 1 (0.44), rod2
+  from mid 1 (0.46) to mid 2 (0.64), rod3 from mid 2 (0.66) to wheel 2 (0.825). Each belongs to the
+  link at its upstream end, so it turns with that disc, and a torsion deformation binding with the
+  linear basis twists it by theta(s) = s / L * C_k/q: the lumped model's twist, linear in each
+  segment, so the rod meets every downstream disc at its angle. The segment twist is small (3.3
+  mrad under the 0.5 N m load, up to 21 mrad in the transients), so the models open the 3D view with
+  the deformation drawn x1000 (scene.exaggeration): 3.3 rad per segment under load, a few turns in
+  the brief transients. The discs and their markers always turn by their true angles, so the
+  stripes at a downstream disc run ahead of its marker by 999 x the segment twist.
 -->
 <sdf version="1.9">
   <model name="drivetrain_kalman">
@@ -72,8 +81,8 @@
         <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
       </visual>
       <visual name="rod1">
-        <pose>0.1 0 0 0 1.5707963 0</pose>
-        <geometry><cylinder><radius>0.006</radius><length>0.2</length></cylinder></geometry>
+        <pose>0.105 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.006</radius><length>0.17</length></cylinder></geometry>
         <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
       </visual>
     </link>
@@ -92,7 +101,7 @@
       </visual>
       <visual name="rod2">
         <pose>0.1 0 0 0 1.5707963 0</pose>
-        <geometry><cylinder><radius>0.006</radius><length>0.2</length></cylinder></geometry>
+        <geometry><cylinder><radius>0.006</radius><length>0.18</length></cylinder></geometry>
         <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
       </visual>
     </link>
@@ -110,8 +119,8 @@
         <material><diffuse>0.15 0.15 0.15 1</diffuse></material>
       </visual>
       <visual name="rod3">
-        <pose>0.1 0 0 0 1.5707963 0</pose>
-        <geometry><cylinder><radius>0.006</radius><length>0.2</length></cylinder></geometry>
+        <pose>0.0925 0 0 0 1.5707963 0</pose>
+        <geometry><cylinder><radius>0.006</radius><length>0.165</length></cylinder></geometry>
         <material><diffuse>0.7 0.7 0.72 1</diffuse></material>
       </visual>
     </link>

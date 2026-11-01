@@ -90,7 +90,8 @@ export class BindingApplier {
     for (const binding of bindings) {
       const names = allSignalsOf(binding);
       const cols = names.map((n) => ids.indexOf(n));
-      if (!signalCountOk(binding.property, signalsOf(binding).length) || cols.some((c) => c < 0)) continue;
+      const basis = binding.property === "deformation" ? binding.basis : undefined;
+      if (!signalCountOk(binding.property, signalsOf(binding).length, basis) || cols.some((c) => c < 0)) continue;
       this.compiled.push({ binding, cols });
     }
   }

@@ -367,8 +367,14 @@ include("test_export_rolling.jl")
 include("test_export_components.jl")
 # The hydraulic components (valves, accumulator, pipe, pumps, motor) in the C export.
 include("test_export_hydraulic.jl")
+# The moving-face contact (MovingPlaneContact, a jaw clamp) in the C export.
+include("test_export_contact.jl")
+# The vacuum gripping blocks (SuctionCup, VacuumGenerator) in the C export.
+include("test_export_suction.jl")
 # The signal and control blocks (filters, routing, observers, StopSimulation, Assertion, ...)
 # in the C export, and the run monitors in bg_step and fmi2DoStep.
 include("test_export_signal_blocks.jl")
 # The flexible beams (FlexibleBeam3D, FlexibleBeam2D) in the C export.
 include("test_export_flex.jl")
+# The f16-sim FMU of examples/f16 (the flight-simulator host's FMU): interface, method, trim.
+include("test_export_f16.jl")

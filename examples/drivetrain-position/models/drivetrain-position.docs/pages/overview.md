@@ -18,7 +18,7 @@ The plant is a **pure bond graph**: the voltage source [V](block:V) on the elect
 
 ## 3D view
 
-`scenes/drivetrain-position.sdf` shows the motor, the gearbox, wheel 1, a thin 0.7 m shaft with a red stripe, and wheel 2. Wheel 1 turns by $0.1\,$[Theta/y](signal:Theta/y), wheel 2 by [ThetaL/y](signal:ThetaL/y), and the shaft is four segments that each twist by a quarter of [C/q](signal:C/q). The markers on the wheels and the stripe on the shaft show the rotation and the twist.
+`scenes/drivetrain-position.sdf` shows the motor, the gearbox, wheel 1, a thin 0.705 m shaft from the face of wheel 1 to the face of wheel 2, and wheel 2. Wheel 1 turns by $0.1\,$[Theta/y](signal:Theta/y), wheel 2 by [ThetaL/y](signal:ThetaL/y). The shaft belongs to wheel 1, so it turns with it, and twists towards wheel 2 through a torsion deformation binding with the **linear** basis, $\theta(s) = (s/L)\,$[C/q](signal:C/q): the lumped spring's twist is linear along the shaft, so its far end sits at the wheel-2 angle. The twist is up to 0.33 rad in the move and 0.17 rad under the load; the wheel markers show it at true scale, but on the shaft it only shows as the stripes winding round it, by radius × angle (1.4 mm for 0.17 rad), so the view opens with the deformation drawn **×10** (`scene.exaggeration`).
 
 ![3D view at t = 1.5 s, the load wheel 1 rad ahead of the start|500](assets/0c6b27d6634f.png)
 

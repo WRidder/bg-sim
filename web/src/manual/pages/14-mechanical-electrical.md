@@ -22,6 +22,20 @@ Notes:
 - **Worm gear.** `eta` is the efficiency while the worm drives the wheel, `eta_back` while the wheel drives the worm. With `eta_back ≤ 0` the gear is **self-locking**: a load on the wheel cannot turn the worm (it creeps at most at the smoothing speed `w_eps`).
 - **Belt drive.** The belt stretch `x` is the state; in steady state the belt speeds match, `r_a·w_a = r_b·w_b`. The belt does not slip and does not go slack.
 
+## Contact
+
+The **Contact** category holds compliant contacts for 3D rigid bodies: a Hunt-Crossley normal force (`k·x·sqrt(x/xref)·(1 + c·xdot)`, it never pulls) and regularised Coulomb friction. Mount a contact on a body through a `FixedTransform3DNeutral` (contact on side `a`, body on side `b`).
+
+| Block | Ports | What it does | Key parameters |
+| --- | --- | --- | --- |
+| `ContactPoint` | `p` (spatial), inputs `g`, `o`, `fr` (from a `ContactSurface`) | a point of a body against a fixed plane | `k`, `xref`, `c`, `mu`, `vs` |
+| `MovingPlaneContact` | `p` (spatial), `j` (translation), inputs `g`, `pc`, `vc`, `xs` | a sphere of a body against a finite rectangular face that moves: a carrier translates it (`pc`, `vc`) and the port `j` slides it along an axis, for a gripper jaw pad or a pusher | `r`, face `ox..oz`, normal `nx..nz`, tangent `tx..tz`, slide axis `ax..az`, half-widths `w1`, `w2`, `we`, `k`, `xref`, `c`, `mu`, `vs` |
+
+Notes:
+
+- **Moving face.** The face origin is `pc + o + a·xs`: connect the jaw position (for example a `PositionSensor` on the jaw) to `xs`. The face pushes back on the jaw with `j.e = F·a`, and `Pc` is the power the carrier puts in. Outside the half-widths the normal force fades out over `we`, so a part can slide off the face and fall.
+- **Holding.** Below the friction limit a held part creeps at `s = vs·atanh(F_t/(mu·f_n))`; the output `util = F_t/(mu·f_n)` is the share of the friction limit in use (1 = slipping). `examples/gripper` sizes a parallel gripper with it.
+
 ## Electrical
 
 | Block | Ports | What it does | Key parameters |

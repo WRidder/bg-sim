@@ -170,6 +170,7 @@ function _resolve_bond_islands!(
             key in list || push!(list, key)
         end
     end
+    linked = _linked_island_domains(b, islands, order)
     for root in order
         island = islands[root]
         concrete = Symbol[d for d in island.domain_order if d != :Generic]
@@ -179,6 +180,14 @@ function _resolve_bond_islands!(
                 plan.states[i].valid = false
             end
             continue
+        end
+        # An island without a concrete port of its own takes the one concrete domain of the
+        # islands it is linked to through Generic blocks (a PowerSensor or a TF between a
+        # Generic bond graph and an electrical circuit): such a block adopts one domain for
+        # all its Generic ports anyway, so that is the only domain the island can have.
+        if isempty(concrete)
+            via = get(linked, root, nothing)
+            via === nothing || (concrete = Symbol[via])
         end
         adopted = isempty(concrete) ? :Generic : concrete[1]
         if isempty(concrete)
@@ -197,6 +206,49 @@ function _resolve_bond_islands!(
         end
     end
     return nothing
+end
+
+"""    _linked_island_domains(b, islands, order) -> Dict{root,Symbol}
+
+Islands are linked through every Generic block that has Generic ports on more than one of
+them (a two-port sensor, a TF or GY): that block adopts a single domain for all its Generic
+ports. For every group of linked islands whose own concrete domains (islands with a conflict
+of their own left out) are exactly one, map each island of the group to that domain. A group
+with two concrete domains is left alone: the block that links them reports E102."""
+function _linked_island_domains(
+    b::Builder,
+    islands::Dict{Tuple{String,Symbol},_Island},
+    order::Vector{Tuple{String,Symbol}},
+)
+    linked = Dict{Tuple{String,Symbol},Symbol}()
+    length(order) > 1 || return linked
+    island_of = Dict{Tuple{String,Symbol},Tuple{String,Symbol}}()
+    for root in order, key in islands[root].ports
+        island_of[key] = root
+    end
+    uf = UnionFind()
+    for st in b.states
+        st.domain == :Generic || continue
+        first_root = nothing
+        for (name, port) in st.ports
+            port.domain == :Generic || continue
+            root = get(island_of, _portkey(st.path, name), nothing)
+            root === nothing && continue
+            first_root === nothing ? (first_root = root) : _uf_union!(uf, first_root, root)
+        end
+    end
+    groups = Dict{Tuple{String,Symbol},Vector{Symbol}}()
+    for root in order
+        own = Symbol[d for d in islands[root].domain_order if d != :Generic]
+        length(own) == 1 || continue
+        list = get!(groups, _uf_find!(uf, root), Symbol[])
+        own[1] in list || push!(list, own[1])
+    end
+    for root in order
+        domains = get(groups, _uf_find!(uf, root), nothing)
+        (domains !== nothing && length(domains) == 1) && (linked[root] = domains[1])
+    end
+    return linked
 end
 
 function _report_w205!(b::Builder, plan::ConnPlan, island::_Island)

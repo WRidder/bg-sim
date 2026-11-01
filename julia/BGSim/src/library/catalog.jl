@@ -1301,6 +1301,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Rigid contact plane (world point and normal, tangent heading) as a signal source for any number of ContactPoint elements.",
         icon = "ct-contact-surface",
     ),
+    "stdlib:contact/MovingPlaneContact" => (
+        description = "Compliant contact of a sphere (or point) on a spatial body against a finite face that moves: carried in translation by a prescribed carrier and slid along an axis by a Translation port (a gripper jaw, a pusher). ContactPoint's Hunt-Crossley normal law with an edge gate, isotropic regularised Coulomb friction, the wrench on the body and the slide force on the port.",
+        icon = "ct-moving-plane-contact",
+    ),
     "stdlib:contact/RollingDisk" => (
         description = "Compliant rolling contact of a wheel (disc, optional toroidal crown) on a ContactSurface plane: the contact point is recomputed as the lowest rim point, smooth Hunt-Crossley normal force, isotropic regularised Coulomb friction on the slip of the rim material point, optional drilling damping; slip, forces, contact point and dissipated power as outputs.",
         icon = "ct-rolling-disk",
@@ -1317,6 +1321,15 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
     "stdlib:contact/SwitchedPivot3D" => (
         description = "Mode-switched spatial pivot between ground and one body (free, corner, edge about the local z axis, face): the relative pose is integrated as in Free3D and the held directions are pulled back to an anchor by a mask-multiplied stiff spring-damper, re-anchored at each switch.",
         icon = "ct-switched-pivot-3d",
+    ),
+    # Vacuum gripping (examples/suction-gripper): a bellows suction cup and its generator.
+    "stdlib:contact/SuctionCup" => (
+        description = "Bellows suction cup between a gripper (spatial port a) and a part (b), with its vacuum chamber on a Hydraulic port: axial, lateral and tilt bellows compliance, a seal that pushes freely but pulls only up to A_eff times the vacuum, lip slip at mu times the lip force, a lip lift that opens a leak (pull-off, peeling), Darcy leakage through a porous part and a seal-lost latch.",
+        icon = "ct-suction-cup",
+    ),
+    "stdlib:contact/VacuumGenerator" => (
+        description = "Vacuum generator (ejector or pump) on a Hydraulic port by its suction capacity curve: free-air flow Q_max at zero vacuum falling to zero at dp_max (linear for an ejector, exponent n for a pump), with an on/release input that vents or blows off.",
+        icon = "ct-vacuum-generator",
     ),
 )
 

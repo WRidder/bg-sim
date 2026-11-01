@@ -69,12 +69,26 @@ A box or cylinder in the scene can bend and twist with the run. A flexible beam 
 
 1. In **Bindings**, pick the property **deformation** and a box or cylinder as target. Spheres and meshes cannot bend.
 2. Pick the **family**: `bending-y` (deflection along the beam's y axis), `bending-z` (along its z axis) or `torsion` (twist about the beam axis).
-3. Pick the **basis**, which must match the block: `clamped-free` (a cantilever, fixed at end A) or `free-free` (both ends free).
+3. Pick the **basis**, which must match the block: `clamped-free` (a cantilever, fixed at end A) or `free-free` (both ends free). Torsion also offers `linear` (see below).
 4. Set the **beam axis**: the direction in the shape from end A to end B. End A is the face on the other side. A cylinder runs along its own z axis, so it takes `+z` or `-z`. In the table you can also set the beam's **y** axis (default `+y`) and its length **L** (empty means the shape's length).
 5. Pick one signal per mode, in mode order (up to three: **+ mode**, **− mode**). **Gain** multiplies every coordinate, for example 0.001 for coordinates in mm.
 
 Add one binding per family. A beam can bend in y and z and twist at the same time, and all bindings of one visual must give the same beam axis. While torsion is bound, the beam shows dark longitudinal stripes: a dark band on each side of a box, four lines on a cylinder. They wind around the beam as it twists, so the twist is visible. For a bending binding, **strain** colours the beam by the bending strain of its outer fibres along its length, with a colormap and range (for example 0 to 0.001). The strain colours always come from the true deformation.
 
-Real deflections are usually too small to see. Whenever a model has deformation bindings, the top-left corner of the view shows **Deformation** with an exaggeration factor of ×1 (true scale), ×10, ×100 or ×1000. Every factor above ×1 is marked **exaggerated**, so a screenshot cannot pass off the drawing as real motion. The factor is saved per model in this browser, not in the model, and the detached window and full screen use it too.
+#### A lumped torsion spring: the linear basis
 
-The binding table reports a sphere or mesh, a cylinder bent across its own axis, two bindings of one family, or beam axes that differ as E301. It reports a wrong number of modes as E304, and a unit that is not m for bending or rad for torsion as E303.
+A shaft modelled as one spring between two inertias (a `TorsionSpring`, or a C on a 1-junction in a bond graph) has no modes, only its twist: the angle of the load end minus the angle of the drive end. Its twist is linear along the shaft. To draw such a shaft:
+
+- put the shaft's cylinder in the link of the drive-side inertia (or bind a joint to that inertia's angle), so the shaft turns with it;
+- add a deformation binding with family `torsion`, basis **`linear`** and **one** signal, the twist in rad. The section at distance s from end A turns by s/L of it, so end B sits exactly at the load's angle;
+- if the model's twist is the drive-side minus the load-side angle (as `phi` of `TorsionSpring` is, a minus b), set the gain to −1.
+
+A chain of lumped springs (several C's with small inertias between them) is one cylinder per segment, each on the link of its upstream inertia with its own spring's twist. The `drivetrain`, `drivetrain-kalman` and `drivetrain-position` examples draw their shafts this way. The linear basis is torsion only, with exactly one signal; a bending family or a second signal on it is E301 or E304.
+
+#### Exaggeration
+
+Real deflections are usually too small to see. Whenever a model has deformation bindings, the top-left corner of the view shows **Deformation** with an exaggeration factor of ×1 (true scale), ×10, ×100 or ×1000. Every factor above ×1 is marked **exaggerated**, so a screenshot cannot pass off the drawing as real motion. The factor you pick is saved per model in this browser, not in the model, and the detached window and full screen use it too.
+
+A model can name the factor its view opens with: `"exaggeration": 10` in its `scene` (next to `file`; 1, 10, 100 or 1000). It applies while this browser has no choice of its own for the model; picking the model's own factor again drops the stored choice. On a round shaft a twist only shows as the stripes winding round it, by radius × angle, so even 0.1 rad on a thin rod needs ×10: `drivetrain` and `drivetrain-position` open at ×10, and `drivetrain-kalman`, whose shaft segments twist by a few mrad, at ×1000. A torsion exaggeration only winds the stripes and never distorts the shaft, so a large factor is harmless. Only the deformation is exaggerated: joints and poses always move by their true values, so with an exaggerated twist the stripes at the end of a shaft run ahead of the marker of the disc it meets.
+
+The binding table reports a sphere or mesh, a cylinder bent across its own axis, two bindings of one family, beam axes that differ, or the linear basis on a bending family as E301. It reports a wrong number of modes (or more than one signal on the linear basis) as E304, and a unit that is not m for bending or rad for torsion as E303.

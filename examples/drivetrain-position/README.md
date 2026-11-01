@@ -107,7 +107,7 @@ uv run examples/run_checks.py --only drivetrain-position
 
 ## 3D view
 
-`scenes/drivetrain-position.sdf`: motor, gearbox, wheel 1, a thin 0.7 m shaft with a red stripe, wheel 2. Bindings: `rotor_joint ← Theta/y`, `wheel1_joint ← 0.1·Theta/y`, `shaft1..4_joint ← 0.25·C/q` (four segments that each twist by a quarter of the twist, chained from wheel 1) and `wheel2_joint ← ThetaL/y`. The markers on the rotor and the wheels and the stripe on the shaft show the rotation and the twist.
+`scenes/drivetrain-position.sdf`: motor, gearbox, wheel 1, a thin shaft (0.705 m, from the face of wheel 1 to the face of wheel 2), wheel 2. Bindings: `rotor_joint ← Theta/y`, `wheel1_joint ← 0.1·Theta/y`, `wheel2_joint ← ThetaL/y`, and a torsion deformation of `visual:shaft_rod` with the **linear** basis driven by `C/q` (the wheel-2 minus the wheel-1 angle: `0.1·Theta/y + C/q = ThetaL/y` to 1e-13). The shaft belongs to the wheel-1 link, so it turns with wheel 1 and twists linearly towards wheel 2, θ(s) = s/L · `C/q`, the lumped spring's twist distribution; its far end sits at the wheel-2 angle. The twist (up to 0.33 rad in the showcase move, 0.9 rad in the `naive` ringing, 0.17 rad under the load) shows at true scale between the wheel markers, but on the shaft only as its stripes winding round it, by radius × angle (1.4 mm for 0.17 rad on the 8 mm shaft). All three models therefore set `scene.exaggeration` to **10** (`SCENE_EXAGGERATION` in `design/build_model.py`): the view opens with the twist drawn ×10, 1.7 to 3.3 rad in the showcase (the `naive` ringing briefly winds the stripes by more than a turn). Joints are never exaggerated; switch to ×1 for the true geometry.
 
 ## Read-only sample
 

@@ -67,7 +67,7 @@ Links can point into the model:
 
 | Link | Does |
 | --- | --- |
-| `[text](page:<id>)` | opens another docs page |
+| `[text](page:<id>)` | opens another page of this model's docs (a page link cannot reach the docs of another model; name that model in the text) |
 | `[text](block:Motor)` | opens the Diagram, selects the block and centres it (`block:Sub/Motor` inside a subsystem) |
 | `[text](signal:Motor/w)` | plots the signal |
 | `[text](https://…)` | opens a website in a new tab |

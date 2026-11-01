@@ -11,8 +11,8 @@
  *    with no concrete domain (`flow*s`; W205 treats the island as dimensionless). An unknown unit is not
  *    evidence of a mismatch: it is unchecked for every target (angle, length, quaternion) and raises no E303.
  *    A physical unit that does not fit (`N`, `1` on a length, `m` on an angle) still raises E303.
- *  - E304 wrong signal count (pose needs exactly 7, deformation 1 to 3 modal coordinates, segment 4
- *    planar or 6 spatial end-point coordinates, every other property 1).
+ *  - E304 wrong signal count (pose needs exactly 7, deformation 1 to 3 modal coordinates or exactly 1
+ *    with the `linear` basis, segment 4 planar or 6 spatial end-point coordinates, every other property 1).
  *
  * Segment bindings (a bar between two moving points) raise E301 when the visual cannot stretch along the
  * segment axis (a sphere or mesh, a cylinder along anything but its own axis); their coordinates are
@@ -20,7 +20,8 @@
  *
  * Deformation bindings (elastic beams) also raise E301 when the visual is no beam (a sphere or mesh, a
  * cylinder bent across its own axis, a beam y along the beam axis), when a visual has two bindings of one
- * family, or when two bindings of one visual give different beam mappings. Bending coordinates are lengths
+ * family, when two bindings of one visual give different beam mappings, or when the `linear` basis (the
+ * twist of a lumped torsion spring) is given to a bending family. Bending coordinates are lengths
  * (m), torsion coordinates angles (rad) for E303.
  *
  * Diagnostics have the shape of plan 3.4; `path` is the binding target.
@@ -31,7 +32,7 @@ import type { Diagnostic } from "../contracts/diagnostic";
 import { beamFrame } from "../scene/beamMesh";
 import { segmentAxis } from "../scene/segment";
 import type { SdfGeometry } from "../scene/sdf";
-import { MAX_MODES } from "./beamModes";
+import { maxModes } from "./beamModes";
 
 /** What validation needs from the built scene. */
 export interface SceneLookup {
@@ -135,15 +136,22 @@ export function allSignalsOf(binding: Binding): string[] {
   return out;
 }
 
-/** How many signals a property takes: [min, max] (a segment takes 4 or 6, see `signalCountOk`). */
-export function signalCount(property: string): readonly [number, number] {
-  return property === "pose" ? [7, 7] : property === "deformation" ? [1, MAX_MODES] : property === "segment" ? [4, 6] : [1, 1];
+/** How many signals a property takes: [min, max] (a deformation: by its basis, `linear` takes one; a
+ * segment takes 4 or 6, see `signalCountOk`). */
+export function signalCount(property: string, basis?: string): readonly [number, number] {
+  return property === "pose"
+    ? [7, 7]
+    : property === "deformation"
+      ? [1, maxModes(basis === "linear" ? "linear" : "clamped-free")]
+      : property === "segment"
+        ? [4, 6]
+        : [1, 1];
 }
 
 /** True when `n` signals fit the property (a segment: 4 planar or 6 spatial coordinates). */
-export function signalCountOk(property: string, n: number): boolean {
+export function signalCountOk(property: string, n: number, basis?: string): boolean {
   if (property === "segment") return n === 4 || n === 6;
-  const [min, max] = signalCount(property);
+  const [min, max] = signalCount(property, basis);
   return n >= min && n <= max;
 }
 
@@ -172,6 +180,9 @@ function sameMapping(a: BeamMapping, b: BeamMapping): boolean {
 /** E301 problems of a deformation binding against its shape and the deformation bindings before it. */
 function deformationProblems(binding: DeformationBinding, scene: SceneLookup, earlier: readonly Binding[]): Diagnostic[] {
   const out: Diagnostic[] = [];
+  if (binding.basis === "linear" && binding.family !== "torsion") {
+    out.push(diag("E301", binding, `the linear basis is the twist of a torsion spring and cannot drive ${binding.family}`, "use the family torsion with the linear basis, or a modal basis (clamped-free, free-free) for bending"));
+  }
   const geometry = scene.visualGeometry?.(binding.target);
   if (geometry !== undefined && geometry !== null) {
     const frame = beamFrame(geometry, binding.beam);
@@ -247,8 +258,9 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
   }
 
   const isList = property === "pose" || property === "deformation" || property === "segment";
-  const [min, max] = signalCount(property);
-  const countOk = signalCountOk(property, names.length) && Array.isArray(binding.signal) === isList;
+  const basis = binding.property === "deformation" ? binding.basis : undefined;
+  const [min, max] = signalCount(property, basis);
+  const countOk = signalCountOk(property, names.length, basis) && Array.isArray(binding.signal) === isList;
   if (!countOk) {
     const want = property === "segment" ? "4 or 6" : min === max ? String(min) : `${String(min)} to ${String(max)}`;
     out.push(
@@ -259,7 +271,9 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
         property === "pose"
           ? "list exactly 7 signals: q_w, q_x, q_y, q_z, x, y, z"
           : property === "deformation"
-            ? "list the modal coordinates of the family, one signal per mode (1 to 3 modes)"
+            ? binding.property === "deformation" && binding.basis === "linear"
+              ? "the linear basis takes one signal: the twist of end B relative to end A"
+              : "list the modal coordinates of the family, one signal per mode (1 to 3 modes)"
             : property === "segment"
               ? "list the end points A then B: uA, vA, uB, vB in the plane of the binding, or xA, yA, zA, xB, yB, zB"
               : "bind exactly one signal",

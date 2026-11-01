@@ -5,7 +5,7 @@
 // usage: node capture-sim60.mjs [--only a,b] [--skip a,b] [--max-frames n] [--force]
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
-import { chromium, createProject, newPage, openModel, runAndWait, framesDir, repoRoot, gallery, sleep, BASE } from "./lib.mjs";
+import { launchBrowser, createProject, newPage, openModel, runAndWait, framesDir, repoRoot, gallery, sleep, BASE } from "./lib.mjs";
 
 const arg = (n) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : null; };
 const only = arg("--only")?.split(",") ?? null;
@@ -109,7 +109,7 @@ async function capture(browser, id) {
   }
 }
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 for (const c of cards) {
   if ((only && !only.includes(c.id)) || skip.includes(c.id)) continue;
   try { await capture(browser, c.id); } catch (e) { console.log("FAIL", c.id, String(e).split("\n")[0]); }

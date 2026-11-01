@@ -1,0 +1,32 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "laws",
+          "title": "Control laws",
+          "file": "pages/laws.md",
+          "children": [
+            {
+              "id": "results",
+              "title": "Results",
+              "file": "pages/results.md",
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "fmu",
+          "title": "The FMU",
+          "file": "pages/fmu.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

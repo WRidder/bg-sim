@@ -102,6 +102,27 @@
       "drivetrain-position-open-loop"
     ]
   },
+  "f16": {
+    "title": "F-16",
+    "description": "The nonlinear F-16 of Stevens & Lewis: open-loop modes, scheduled pitch FBW, envelope protection, a rate-limit PIO and a flyable three-axis FBW for a simulator FMU.",
+    "hasScene": true,
+    "models": [
+      "f16-open-loop",
+      "f16-fbw",
+      "f16-envelope",
+      "f16-pio",
+      "f16-sim"
+    ]
+  },
+  "gripper": {
+    "title": "Gripper",
+    "description": "Grip-force sizing of an electric parallel gripper in a fast pick-and-place move.",
+    "hasScene": true,
+    "models": [
+      "ball-gripper",
+      "block-gripper"
+    ]
+  },
   "gyrover": {
     "title": "Gyrover",
     "description": "A single-wheel robot balanced and steered by a tilting flywheel.",
@@ -255,11 +276,14 @@
   },
   "pendulum-triple-rotary": {
     "title": "Pendulum triple rotary",
-    "description": "A rotary triple inverted pendulum.",
+    "description": "A rotary triple inverted pendulum, on a rigid and on a flexible arm.",
     "hasScene": true,
     "models": [
       "pendulum-triple-rotary",
-      "pendulum-triple-rotary-free"
+      "pendulum-triple-rotary-free",
+      "pendulum-triple-rotary-flex",
+      "pendulum-triple-rotary-flex-lowpass",
+      "pendulum-triple-rotary-flex-free"
     ]
   },
   "planar-links": {
@@ -353,6 +377,21 @@
       "rrr-multibond",
       "rrr-multibond-soft",
       "rrr-multibond-stiff"
+    ]
+  },
+  "suction-gripper": {
+    "title": "Suction gripper",
+    "description": "A six-cup vacuum gripper moves a carton: profiles, yaw, tilt, porosity and supply layouts decide when cups peel off.",
+    "hasScene": true,
+    "models": [
+      "transfer",
+      "aggressive-trapezoid",
+      "aggressive-scurve",
+      "tilt-tray",
+      "porous-undersized",
+      "edge-leak",
+      "edge-leak-valves",
+      "separate-generators"
     ]
   },
   "tetra-3d": {

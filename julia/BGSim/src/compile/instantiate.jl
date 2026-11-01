@@ -373,6 +373,7 @@ function _bind_constants!(
     node::IR.ModelNode,
 )
     consts = constant_env(st.pb)
+    overridden = Set{Symbol}()
     # F5.1 insertion point: a CSV source's file settings become its `N` and `table` constants.
     values = _csv_node_constants(b, st, node)
     # Bind in declaration order, so a size constant (`nb`) is set before an array constant
@@ -404,9 +405,35 @@ function _bind_constants!(
         folded = _constant_value(b, st, d, resolved, value)
         folded === nothing && continue
         consts[name] = folded
+        push!(overridden, name)
     end
+    # A constant whose default uses another constant (`m::Int = n`) follows that constant's
+    # instance value: re-fold the defaults that were not overridden, in dependency order.
+    isempty(overridden) || _refold_dependent_defaults!(consts, st, overridden)
     st.consts = consts
     return nothing
+end
+
+function _refold_dependent_defaults!(consts::AbstractDict, st::BlockState, overridden::Set{Symbol})
+    pending = [d for d in BGSim.declarations(st.pb, :constants)
+               if !(BGSim.decl_name(d) in overridden) && d.default !== nothing]
+    env = Dict{Symbol,Any}(name => consts[name] for name in overridden if haskey(consts, name))
+    for _ in 1:(length(pending) + 1)
+        isempty(pending) && break
+        rest = eltype(pending)[]
+        for d in pending
+            ok, v = BGSim.try_eval_const(d.default, env)
+            if ok
+                env[BGSim.decl_name(d)] = v
+                consts[BGSim.decl_name(d)] = v
+            else
+                push!(rest, d)
+            end
+        end
+        length(rest) == length(pending) && break
+        pending = rest
+    end
+    return consts
 end
 
 block_name_safe(st::BlockState) = String(st.block.name)
@@ -812,20 +839,51 @@ function _bind_parameters!(b::Builder, st::BlockState, node::IR.ModelNode)
             )
         end
     end
+    # A parameter value for a name that is a constant of the block would otherwise be
+    # dropped without a word (for example a model saved before StateSpace's `D` became a
+    # structural constant). Say where the value belongs instead.
+    for d in BGSim.declarations(st.pb, :constants)
+        name = String(BGSim.decl_name(d))
+        haskey(node.params, name) || continue
+        _report!(
+            b,
+            st;
+            code = "E003",
+            message = "`$name` of `$(st.path)` is a constant, not a parameter, so its parameter value `$(node.params[name])` is not used",
+            hint = "set `$name` under the block's constants (the inspector's Constants section)",
+            scope = "@constants",
+            range = BGSim.decl_range(d),
+        )
+    end
     return nothing
 end
 
 function _bind_starts!(b::Builder, st::BlockState, node::IR.ModelNode)
+    held = isempty(node.starts) ? Set{Symbol}() : BGSim._discrete_assigned_names(st.pb)
     for (key, text) in node.starts
         name = Symbol(key)
         d = get(st.decls, name, nothing)
-        if d === nothing || BGSim.decl_scope(d) != :variables
+        # A `@variables` entry takes a start value, and so does an output that a `@discrete`
+        # (or `@events`) body holds: its start is the value it holds before the first tick
+        # (an ADC's or a ZOH's output, the state of a flip-flop). An output that the equations
+        # compute has no start of its own.
+        if d !== nothing && BGSim.decl_scope(d) == :outputs && !(name in held)
+            _report!(
+                b,
+                st;
+                code = "E003",
+                message = "output `$key` of `$(st.path)` is computed by the block's equations, so it takes no start value",
+                hint = "a start value keys a `@variables` entry, or an output that a `@discrete` body holds until its first tick",
+            )
+            continue
+        end
+        if d === nothing || !(BGSim.decl_scope(d) == :variables || BGSim.decl_scope(d) == :outputs)
             _report!(
                 b,
                 st;
                 code = "E003",
                 message = "`$(st.path)` has no variable `$key` to give a start value",
-                hint = "the start override keys the `@variables` of the block",
+                hint = "the start override keys the `@variables` of the block, or an output that a `@discrete` body holds",
             )
             continue
         end

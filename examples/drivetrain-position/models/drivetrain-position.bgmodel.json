@@ -1092,7 +1092,8 @@
     }
   ],
   "scene": {
-    "file": "scenes/drivetrain-position.sdf"
+    "file": "scenes/drivetrain-position.sdf",
+    "exaggeration": 10
   },
   "bindings": [
     {
@@ -1107,33 +1108,22 @@
       "gain": 0.1
     },
     {
-      "target": "joint:shaft1_joint",
-      "property": "position",
-      "signal": "C/q",
-      "gain": 0.25
-    },
-    {
-      "target": "joint:shaft2_joint",
-      "property": "position",
-      "signal": "C/q",
-      "gain": 0.25
-    },
-    {
-      "target": "joint:shaft3_joint",
-      "property": "position",
-      "signal": "C/q",
-      "gain": 0.25
-    },
-    {
-      "target": "joint:shaft4_joint",
-      "property": "position",
-      "signal": "C/q",
-      "gain": 0.25
-    },
-    {
       "target": "joint:wheel2_joint",
       "property": "position",
       "signal": "ThetaL/y"
+    },
+    {
+      "target": "visual:shaft_rod",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "linear",
+      "beam": {
+        "axis": "+z",
+        "length": 0.705
+      },
+      "signal": [
+        "C/q"
+      ]
     }
   ]
 }

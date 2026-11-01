@@ -200,6 +200,8 @@ Power ports carry a domain tag so connections are checked and units come for fre
 
 A block may mix `Generic` ports with concrete ones (the `RS` element: a Generic resistive port and a `Thermal` heat port). Such a block is Generic for adoption: the `effort`/`flow` pseudo-units of its declarations follow the island of its Generic ports, and its concrete ports keep their own domain.
 
+A Generic block adopts one domain for all its Generic ports, so it also passes a domain between the islands it joins. An island that has only Generic ports (a 1-junction between an `Se` and a `PowerSensor`) takes the concrete domain of the islands linked to it through Generic blocks, when they have exactly one. When the linked islands have two different concrete domains, the block that joins them is `E102`.
+
 A capacitor-type element, as it would appear in the standard library:
 
 ```julia
@@ -309,12 +311,12 @@ The file has a header row (`name` or `name [unit]` per column) and numeric rows;
 | Product / divide | `u[]`, `y` | operations | v0.1 |
 | Integrator | `u`, `y`, optional `reset` | initial value, `lower`, `upper` limits | v0.1 |
 | Filtered derivative | `u`, `y` | time constant | v0.1 |
-| Transfer function | `u`, `y` | `num`, `den` (`Vec{n + 1}`, descending powers of s, proper); order `n` (constant); controllable canonical form | v0.1 |
+| Transfer function | `u`, `y` | `num` (`Vec{m + 1}`), `den` (`Vec{n + 1}`), descending powers of s; order `n` and numerator degree `m` ≤ `n` (constants, `m = n` by default); controllable canonical form; `m < n` has no direct feedthrough | v0.1 |
 | Zero-pole | `u`, `y` | `gain`, `zero_re`, `zero_im`, `pole_re`, `pole_im`; `n` poles, `m` zeros (constants), conjugate pairs from an odd index | v0.1 |
 | Butterworth / Bessel low-pass | `u`, `y` | `k`, `wc` (rad/s, -3 dB); order `n` 1..8 (constant); cascaded second-order sections | v0.1 |
 | Notch / band-pass | `u`, `y` | `k`, `w0` (rad/s), `bandwidth` (rad/s); notch `depth` | v0.1 |
 | Luenberger observer | `u`, `y`, `x_hat`, `y_hat` | `A`, `B`, `C`, `D`, observer gain `L`; `N` (constant) | v0.1 |
-| State space | `u`, `y` | `A`, `B`, `C`, `D`, initial state | v0.1 |
+| State space | `u`, `y` | `A`, `B`, `C`, initial state; `N` and the feedthrough `D` (constants, `D = 0` by default: no direct feedthrough) | v0.1 |
 | First order / second order | `u`, `y` | `k`, `tau` / `k`, `w0`, `zeta` | v0.1 |
 | Lead-lag | `u`, `y` | zero, pole, gain | v0.1 |
 | PID | `u` (error), `y`, optional `track` | `Kp`, `Ti`, `Td`, `N`, limits, anti-windup | v0.1 |
@@ -530,6 +532,7 @@ Hydraulic ports carry pressure \[Pa\] and volume flow \[m^3/s\]. Thermal ports u
 | Proportional valve (4/3, `DirectionalValve43`) | Hydraulic | `P`, `T`, `A`, `B`, input `u` (spool, −1 to 1) | edge area, lap, leakage area | v0.1 |
 | Pressure-compensated flow control valve | Hydraulic | `a`, `b`, input `u` | regulated flow, compensator pressure | v0.1 |
 | Gas-charged accumulator | Hydraulic | `a` | precharge pressure, gas volume, polytropic index, dead volume | v0.1 |
+| Vacuum generator (`VacuumGenerator`, ejector or pump) | Hydraulic | `a`, input `u` (on / release) | `dp_max`, `Q_max` (free air), curve exponent `n`, release conductance and pressure | v0.1 |
 | Heat capacitor (`HeatCapacitor`) | Thermal | `a` | `C` \[J/K\] (= m·c_p), initial temperature `T` | v0.1 |
 | Thermal conductor (`ThermalConductor`) | Thermal | `a`, `b` | `G` \[W/K\] | v0.1 |
 | Thermal resistor (`ThermalResistor`) | Thermal | `a`, `b` | `R` \[K/W\] | v0.1 |
@@ -648,6 +651,7 @@ A model is a hybrid system: one continuous DAE, plus clocked discrete partitions
 - Each `@discrete` scope runs on a periodic clock with period `Ts` and optional `offset`.
 - All periods in one model must be integer multiples of a base tick (their greatest common divisor). This makes the schedule fixed and repeatable.
 - Reading a continuous variable in discrete code samples it at the tick. Discrete outputs are held constant between ticks (zero-order hold).
+- A clock ticks at the instants `t = offset + k·Ts` strictly after the start of the run; a tick at the start time is the initial state, not an execution. Without an offset the first tick is therefore one period after the start, never at `t = 0`. Before it, a held output (an output that a `@discrete` or `@events` body assigns) has its start value, the declaration default unless the instance sets one in `starts`. An output that the equations compute takes no start value (`E003`). The exported code holds the same start values until its first tick.
 
 **Order at a tick.** When several discrete blocks fire at the same tick:
 
@@ -698,6 +702,7 @@ Validation runs in two passes: per block right after parsing (fast, runs as the 
 | `W216` | Model | Random sources share a seed, so they draw the same sequence | `Noise1`, `Prbs1` share seed 1; give each its own `seed` |
 | `W217` | Run | A `StopSimulation` block ended the run | the run was stopped by `Stop1` at t = 1.25 s |
 | `E902` | Run | An `Assertion` block failed: its input fell below `threshold` | assertion `PressureOk` failed at t = 0.8 s |
+| `E903` | Run | An algebraic loop cannot be solved because the compiler solves it through a direct-feedthrough coefficient (a parameter in a block equation that ties a signal output to a signal input, such as `D` in `y ~ C*x + D*u`) that is zero (or not finite) in this run. Parameters stay symbolic, so the compiler assumes they are nonzero; a structural feedthrough (a constant) removes the path. It is reported next to the run's own failure (`E900`, `E901`, `E103`), never instead of it, and only for a failure at the start of the run; a zero divisor that is not a feedthrough coefficient (an offset in a rigid mechanism with an index problem) is left to that failure | the algebraic loop through `E`, `K`, `P` cannot be solved: the compiler solves it for `K/y` by dividing by `P/D`, which is 0 in this run |
 
 Every diagnostic carries the block path (for example `Plant/Motor1`), scope, line and column in the user's source, the code, the message, and a fix hint where one exists. The editor highlights the element on the canvas and the line in the code view.
 
@@ -858,8 +863,10 @@ Each element is the matrix-valued counterpart of a bond graph element. Planar ve
 | Spherical, universal, planar joints | Multi-DOF `MTF` | `parent`, `child`, drives | axes | v0.3 |
 | Compliant joint | Joint plus stiff spatial spring | `parent`, `child` | stiffness, damping | v0.3 |
 | Point contact (compliant) | Nonlinear `C` and `R` | `a`, `b` | stiffness, damping, friction | Later |
+| Moving face contact (`stdlib:contact/MovingPlaneContact`) | Nonlinear `C` and `R` between a body and a finite face on a moving carrier; the face slides along an axis through a Translation port (a gripper jaw pad, a pusher, a belt) | Spatial `p`, Translation `j`; inputs pose `g`, carrier position `pc` and velocity `vc`, slide position `xs` | sphere radius, face origin, normal, tangent and slide axis, half-widths and edge smoothing, Hunt-Crossley stiffness and damping, isotropic regularised Coulomb friction | v0.3 |
 | Rolling disk contact (`RollingDisk`, compliant) | Nonlinear `C` and `R` at the moving lowest rim point | `p`; inputs pose, plane | radius, crown, stiffness, damping, friction, drilling damping | v0.3 |
 | Axisymmetric rotor (`Rotor3D`) | `I` on the axial momentum plus gyroscopic `GY` on the carrier | `p`, Rotation `drive` | axial inertia | v0.3 |
+| Suction cup (`SuctionCup`, bellows and seal) | Nonlinear `C`/`R` two-port plus a vacuum chamber `C` | `a` (gripper), `b` (part), Hydraulic `vac` | `A_eff`, bellows `k_ax`, `k_lat`, `k_tilt`, `mu`, lip `D_lip`, `A_lip0`, part `perm`, chamber `V`; pushes freely, pulls up to `A_eff`·vacuum, lip lift opens a leak, held `lost` latch | v0.1 |
 | Pose, twist, wrench sensors | Detectors | `p`; output `SE3` / `Vec{6}` | frame to report in | v0.2 |
 | Flexible beam, planar (`FlexibleBeam2D`) | Floating-frame `I` plus modal `I`, `C`, `R` per mode, `MTF` to the ends | `A`, `B` (1-junctions), input `gA` (`Vec{3}`); outputs `pose`, `poseB`, `V`, `eta_y`, `f_y`, `dB`, `Ek`, `Ee`, `Eg` | constants `ny` (0..3), `basis`, `section`; `L`, `E`, `rho`, `d`, `di`, `b`, `h`, `zeta_y`, `g0` | v0.3 |
 | Flexible beam, spatial (`FlexibleBeam3D`) | as the planar beam, bending in y and z and torsion | `A`, `B` (1-junctions), input `gA` (`Vec{7}`); outputs `pose`, `poseB`, `V`, `eta_y`, `eta_z`, `eta_t`, `f_y`, `f_z`, `f_t`, `twist`, `dB`, `Ek`, `Ee`, `Eg` | constants `ny`, `nz`, `nt` (0..3), `basis`, `section`; `L`, `E`, `nu`, `rho`, `d`, `di`, `b`, `h`, `zeta_y`, `zeta_z`, `zeta_t`, `g0` | v0.3 |

@@ -1,0 +1,128 @@
+{
+  "project": "gripper",
+  "description": "Grip-force sizing of an electric parallel-jaw gripper (DC motor in current control, gearhead, lead screw with direction-dependent efficiency, wedge hook, two synchronised jaws on guides, compliant pads with friction) holding a part during a fast pick-and-place move. Every reference value comes from design/design.py: the sizing rule F >= S m |a - g| / (2 mu) (plus the tilting moment for the block), the reduced 1-DOF closing model (impact peak and the locked-in grip force) and the slip ODE of the slip-threshold run. The scenarios run the same two models with parameter overrides.",
+  "models": {
+    "ball-sized": {
+      "model": "ball-gripper",
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["W201", "E101", "E102", "E103", "E106", "E007", "W206"]},
+        {"kind": "scene_bindings"},
+        {"kind": "final_value", "signal": "Grip/holds", "t": 2.7, "value": 1.0, "abs": 0.0,
+         "$comment": "(c) the sized grip (setting 46 N per jaw, S = 2) holds the ball through the whole cycle"},
+        {"kind": "max_abs", "signal": "Grip/F_req", "from_t": 0.5, "to_t": 0.9, "value": 14.190639, "rtol": 1e-4,
+         "$comment": "requirement in the lift (a_v = 4 m/s^2): m (g + a_v) / (2 mu)"},
+        {"kind": "max_abs", "signal": "Grip/F_req", "from_t": 0.9, "to_t": 1.4, "value": 22.890352, "rtol": 1e-4,
+         "$comment": "requirement in the transfer (a_h = 20 m/s^2): m sqrt(g^2 + a_h^2) / (2 mu), the sizing case"},
+        {"kind": "max_abs", "signal": "Grip/need", "from_t": 0.9, "to_t": 1.4, "value": 11.445176, "rtol": 1e-4,
+         "$comment": "(b) friction the ball needs, m sqrt((g + a_v)^2 + a_h^2), at the transfer peak"},
+        {"kind": "compare_signals", "signal": "Grip/demand", "signal_b": "Grip/need", "from_t": 0.6, "to_t": 1.84,
+         "max_abs": 0.02,
+         "$comment": "(b) the friction the two jaw contacts deliver follows the requirement over time (the ball creeps but does not slide)"},
+        {"kind": "min_ge", "signal": "Grip/S_act", "from_t": 0.6, "to_t": 1.84, "value": 2.0,
+         "$comment": "the safety factor in effect, mu (fnA + fnB) / need, never drops below S = 2"},
+        {"kind": "cursor_value", "signal": "Grip/F_grip", "t": 0.7, "value": 57.37, "rtol": 0.02,
+         "$comment": "(e) delivered grip force = the stop force of the reduced 1-DOF closing model at v_grip = 3 mm/s: the closing impact is locked in by the drive friction"},
+        {"kind": "min_ge", "signal": "Grip/F_grip", "from_t": 0.6, "to_t": 1.84, "value": 46.0,
+         "$comment": "(d) the setting is the guaranteed minimum: the forward-efficiency force eta G k_t I_grip"},
+        {"kind": "max_abs_le", "signal": "Grip/F_grip", "from_t": 0.6, "to_t": 1.84, "value": 115.0,
+         "$comment": "(d) and stays inside the friction band, below the back-driving force G k_t I_grip / eta_back"},
+        {"kind": "cursor_value", "signal": "Motor/isense/y", "t": 0.7, "value": 0.871557, "rtol": 1e-3,
+         "$comment": "(d) grip current I = F_set / (eta k_t G) = 46 / (0.7 * 0.012 * 6283.2)"},
+        {"kind": "cursor_value", "signal": "Motor/tsense/y", "t": 0.7, "value": 0.0104587, "rtol": 1e-3,
+         "$comment": "(d) motor torque k_t I"},
+        {"kind": "max_abs_le", "signal": "Grip/slipd", "from_t": 0.4, "to_t": 1.84, "value": 0.0005,
+         "$comment": "the ball moves less than 0.5 mm in the jaws (creep of the regularised friction)"},
+        {"kind": "cursor_value", "signal": "JawA/slip", "t": 0.9, "value": 1.4932e-4, "rtol": 0.01,
+         "$comment": "(a) regularisation error: the held ball creeps at vs atanh(need / (2 mu F_grip))"}
+      ]
+    },
+    "ball-undergrip": {
+      "model": "ball-gripper",
+      "overrides": {"Ctrl/F_set": 12.0},
+      "checks": [
+        {"kind": "cursor_value", "signal": "Grip/holds", "t": 0.9, "value": 1.0, "abs": 0.0,
+         "$comment": "(c) the under-gripped ball (setting 12 N) survives the lift ..."},
+        {"kind": "final_value", "signal": "Grip/holds", "t": 2.7, "value": 0.0, "abs": 0.0,
+         "$comment": "(c) ... but slips in the transfer"},
+        {"kind": "final_value", "signal": "Grip/t_slip", "t": 2.7, "value": 0.98, "abs": 0.015,
+         "$comment": "the first slip comes as the transfer acceleration builds up (the move starts at 0.95 s)"},
+        {"kind": "final_value", "signal": "Grip/F_slip", "t": 2.7, "value": 22.41, "rtol": 0.04,
+         "$comment": "(e) the grip force at the slip is the locked-in closing force of the reduced model (12 N setting)"},
+        {"kind": "max_abs_le", "signal": "Grip/F_grip", "from_t": 0.6, "to_t": 0.95, "value": 22.890352,
+         "$comment": "below the transfer requirement: S_act < 1"}
+      ]
+    },
+    "ball-slip-threshold": {
+      "model": "ball-gripper",
+      "overrides": {"Transfer/t_start": 10.0, "Lower/t_start": 10.0, "Retreat/t_start": 10.0, "Ctrl/t_open": 10.0,
+                    "Ctrl/t_ramp": 0.8, "Ctrl/ramp": 10.0},
+      "settings": {"t_end": 5.5, "output": {"mode": "points", "points": 5501}},
+      "checks": [
+        {"kind": "final_value", "signal": "Grip/holds", "t": 5.5, "value": 0.0, "abs": 0.0},
+        {"kind": "final_value", "signal": "Grip/F_slip", "t": 5.5, "value": 10.4242, "rtol": 0.002,
+         "$comment": "(a) static slip threshold: the slip ODE m s' = m g - 2 mu F(t) tanh(s/vs) reaches s_th = 2 mm/s at 10.424 N; F* = m g / (2 mu) = 10.080 N, so the regularised friction slips 3.4 % early"}
+      ]
+    },
+    "ball-impact-10": {
+      "model": "ball-gripper",
+      "overrides": {"Ctrl/v_grip": 0.010},
+      "settings": {"t_end": 0.8, "output": {"mode": "points", "points": 801}},
+      "checks": [
+        {"kind": "max_abs", "signal": "Grip/F_grip", "value": 93.12, "rtol": 0.02,
+         "$comment": "(e) closing impact at 10 mm/s: peak of the reduced 1-DOF model"},
+        {"kind": "cursor_value", "signal": "Grip/F_grip", "t": 0.7, "value": 92.95, "rtol": 0.02,
+         "$comment": "below the band top 115 N the peak stays (locked in)"}
+      ]
+    },
+    "ball-impact-20": {
+      "model": "ball-gripper",
+      "overrides": {"Ctrl/v_grip": 0.020},
+      "settings": {"t_end": 0.8, "output": {"mode": "points", "points": 801}},
+      "checks": [
+        {"kind": "max_abs", "signal": "Grip/F_grip", "value": 148.45, "rtol": 0.02,
+         "$comment": "(e) closing impact at 20 mm/s"},
+        {"kind": "max_abs_le", "signal": "Grip/F_grip", "from_t": 0.6, "to_t": 0.8, "value": 115.0,
+         "$comment": "above the band top the drive is back-driven and the force falls back into the band"}
+      ]
+    },
+    "ball-impact-30": {
+      "model": "ball-gripper",
+      "overrides": {"Ctrl/v_grip": 0.030},
+      "settings": {"t_end": 0.8, "output": {"mode": "points", "points": 801}},
+      "checks": [
+        {"kind": "max_abs", "signal": "Grip/F_grip", "value": 207.28, "rtol": 0.02,
+         "$comment": "(e) closing impact at 30 mm/s (no grip zone: the jaws hit at the travel speed)"},
+        {"kind": "max_abs_le", "signal": "Grip/F_grip", "from_t": 0.6, "to_t": 0.8, "value": 115.0}
+      ]
+    },
+    "block-sized": {
+      "model": "block-gripper",
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["W201", "E101", "E102", "E103", "E106", "E007", "W206"]},
+        {"kind": "scene_bindings"},
+        {"kind": "max_abs", "signal": "Grip/F_req", "from_t": 0.9, "to_t": 1.4, "value": 61.014291, "rtol": 1e-4,
+         "$comment": "requirement with the tilting moment: (m |a - g| + m a_h e / r) / (2 mu)"},
+        {"kind": "final_value", "signal": "Grip/holds", "t": 2.7, "value": 1.0, "abs": 0.0,
+         "$comment": "sized with the moment (123 N, S = 2) the block holds"},
+        {"kind": "max_abs_le", "signal": "Grip/tilt", "from_t": 0.0, "to_t": 1.84, "value": 0.01,
+         "$comment": "and tilts less than 0.6 deg in the grip"},
+        {"kind": "cursor_value", "signal": "Motor/isense/y", "t": 0.7, "value": 2.33047, "rtol": 1e-3,
+         "$comment": "(d) the moment needs 2.33 A of the 2.5 A the motor may draw"}
+      ]
+    },
+    "block-force-only": {
+      "model": "block-gripper",
+      "overrides": {"Ctrl/F_set": 31.0},
+      "checks": [
+        {"kind": "final_value", "signal": "Grip/holds", "t": 2.7, "value": 0.0, "abs": 0.0,
+         "$comment": "sized for the force only (31 N, S = 2) the block swings in the grip in the transfer"},
+        {"kind": "final_value", "signal": "Grip/t_slip", "t": 2.7, "value": 0.976, "abs": 0.015},
+        {"kind": "max_abs", "signal": "Grip/tilt", "from_t": 0.9, "to_t": 1.84, "value": 0.45, "rtol": 0.2,
+         "$comment": "it tilts by about 25 deg"},
+        {"kind": "min_ge", "signal": "Grip/F_grip", "from_t": 0.6, "to_t": 0.95, "value": 31.0},
+        {"kind": "max_abs_le", "signal": "Grip/F_grip", "from_t": 0.6, "to_t": 0.95, "value": 48.145,
+         "$comment": "its grip force (36.9 N) is below even the limit-surface estimate sqrt(F_t^2 + (M/r)^2) / (2 mu) = 48.1 N"}
+      ]
+    }
+  }
+}
