@@ -9,7 +9,8 @@ import { CenterTabs, type CenterTabId } from "./CenterTabs";
 import { SHOW_CENTER_TAB_EVENT, SHOW_PLOTS_EVENT } from "./dockBus";
 import { InspectorPanel } from "./InspectorPanel";
 import { LeftPanel } from "./LeftPanel";
-import { hasProjectRoute } from "./route";
+import { ModelPicker } from "./ModelPicker";
+import { readAppRoute } from "./route";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
 import { StartPage } from "./StartPage";
 import { TopBar } from "./TopBar";
@@ -39,7 +40,8 @@ const NO_DIAGNOSTICS: DiagnosticCounts = { error: 0, warning: 0 };
  * The application shell of plan 7.2: top bar, a resizable three-column body
  * (library + model tree │ centre tabs │ inspector) and the bottom dock.
  * Without `?project=` in the URL the body is the start page (example gallery)
- * instead of the editor. Every split is a `Group`/`Panel`/`Separator` whose sizes persist in
+ * instead of the editor; with a project but no `model=` it is the project's
+ * model picker (src/app/route.ts). Every split is a `Group`/`Panel`/`Separator` whose sizes persist in
  * localStorage (src/state/layout.ts).
  */
 export function App() {
@@ -48,7 +50,7 @@ export function App() {
   const rows = usePersistedPanelSizes("rows", { main: 68, dock: 32 });
   const [centerTab, setCenterTab] = useState<CenterTabId>("diagram");
   const [dockTab, setDockTab] = useState<DockTabId>("plots");
-  const [startPage] = useState(() => !hasProjectRoute());
+  const [route] = useState(() => readAppRoute());
   useAppShortcuts();
   const plotsDetached = useDetachStore((state) => state.detached);
   const autoPlotDetached = useAutoDetachStore((state) => state.detached);
@@ -83,17 +85,18 @@ export function App() {
       <a className="skip-link" href="#main">
         Skip to the main content
       </a>
-      <TopBar theme={theme} onToggleTheme={toggleTheme} />
+      <TopBar theme={theme} onToggleTheme={toggleTheme} route={route} />
       <ShortcutsOverlay />
       <BlockHelp />
-      {startPage ? <StartPage /> : null}
+      {route.kind === "start" ? <StartPage /> : null}
+      {route.kind === "picker" ? <ModelPicker project={route.project} /> : null}
       <Suspense fallback={null}>
         {plotsDetached ? <DetachedPlotWindow /> : null}
         {autoPlotDetached ? <DetachedAutoPlotWindow /> : null}
         {viewerDetached ? <DetachedViewerWindow /> : null}
       </Suspense>
 
-      {startPage ? null : (
+      {route.kind !== "editor" ? null : (
         <main id="main" tabIndex={-1} className="app-shell__main-landmark">
           <Group
             id="bgsim-rows"

@@ -83,6 +83,9 @@ test("the start page lists a card per example, imports a sample and lists the pr
   await page.getByTestId("example-open-dc-motor").click();
   await expect(page).toHaveURL(/project=dc-motor/);
   imported = new URL(page.url()).searchParams.get("project") ?? "";
+  // The copy opens on its project overview; the user picks the model.
+  await page.getByTestId("model-card-iconic").click();
+  await expect(page).toHaveURL(/model=iconic/);
   await expect(page.getByTestId("diagram-node")).toHaveCount(7, { timeout: 30_000 });
   // The sample itself never changes.
   expect(
@@ -136,13 +139,14 @@ test("/ focuses the library search, and a / typed in a field stays text", async 
   await expect(page.getByTestId("library-search")).toHaveValue("a/b");
 });
 
-test("Ctrl+O opens the Open dialog, traps focus and returns it to the project button", async ({ page, request }) => {
+test("Ctrl+O opens the model menu, traps focus and returns it to the model button", async ({ page, request }) => {
   await storeRlc(request);
   await openEditor(page);
 
   await page.getByTestId("open-project").focus();
   await page.keyboard.press("Control+o");
-  const dialog = page.getByTestId("open-dialog");
+  const dialog = page.getByTestId("model-menu");
+  await expect(dialog).toHaveAttribute("data-state", "ready");
   await expect(dialog).toBeVisible();
   for (let press = 0; press < 12; press += 1) {
     await page.keyboard.press("Tab");

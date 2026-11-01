@@ -109,6 +109,8 @@ const scenes = {
     await sleep(500);
     await snap(page, "s02", "4-card", { keepMouse: [960, 540] });
     await page.getByTestId("example-open-dc-motor").click();
+    // The imported copy opens on its project overview: pick the model there.
+    await page.getByTestId("model-card-iconic").click({ timeout: 60000 });
     await page.getByTestId("diagram-node").first().waitFor({ timeout: 60000 });
     await sleep(2500);
     await page.addStyleTag({ content: HIDE_TOASTS });

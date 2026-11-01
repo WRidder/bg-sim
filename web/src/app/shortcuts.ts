@@ -21,7 +21,7 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     title: "Anywhere",
     entries: [
       { keys: [["Ctrl", "Enter"]], description: "Run the model" },
-      { keys: [["Ctrl", "O"]], description: "Open a project, model or sample" },
+      { keys: [["Ctrl", "O"]], description: "Open a project (start page) or switch to another model of the project" },
       { keys: [["/"]], description: "Focus the library search" },
       { keys: [["F1"]], description: "Help for the selected block (the user manual when none is selected)" },
       { keys: [["?"]], description: "Show or hide this list" },

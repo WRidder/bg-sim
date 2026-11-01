@@ -1,11 +1,23 @@
 import { useCallback, useRef } from "react";
 
-import { leaveWithoutSaving, saveAndLeave, useLeaveProjectStore } from "./leaveProject";
+import {
+  leaveWithoutSaving,
+  saveAndLeave,
+  useLeaveProjectStore,
+  type LeaveDestination,
+} from "./leaveProject";
 import { useDialogFocus } from "./useDialogFocus";
 
-/** The prompt before going back to the library with unsaved work (leaveProject.ts). */
+const TITLES: Record<LeaveDestination, string> = {
+  library: "Back to the library?",
+  project: "Back to the project's models?",
+  model: "Open another model?",
+};
+
+/** The prompt before leaving the open model with unsaved work (leaveProject.ts). */
 export function LeaveProjectDialog() {
   const pending = useLeaveProjectStore((state) => state.pending);
+  const destination = useLeaveProjectStore((state) => state.destination);
   const error = useLeaveProjectStore((state) => state.error);
   const busy = useLeaveProjectStore((state) => state.busy);
   const close = useLeaveProjectStore((state) => state.close);
@@ -32,7 +44,7 @@ export function LeaveProjectDialog() {
         tabIndex={-1}
       >
         <h2 id="leave-project-title" className="leave-dialog__title">
-          Back to the library?
+          {TITLES[destination]}
         </h2>
         <div id="leave-project-text">
           <p className="leave-dialog__text">Some changes are not saved yet:</p>

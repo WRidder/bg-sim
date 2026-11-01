@@ -67,7 +67,7 @@ describe("shortcuts overlay", () => {
     const text = overlay.textContent ?? "";
     for (const description of [
       "Run the model",
-      "Open a project, model or sample",
+      "Open a project (start page) or switch to another model of the project",
       "Focus the library search",
       "Undo",
       "Play or pause",
@@ -138,8 +138,8 @@ describe("slash focuses the library search", () => {
 });
 
 describe("Ctrl+O", () => {
-  it("opens the Open dialog", () => {
-    render(<TopBar theme="dark" onToggleTheme={() => {}} />);
+  it("opens the Open dialog on the start page", () => {
+    render(<TopBar theme="dark" onToggleTheme={() => {}} route={{ kind: "start" }} />);
     expect(screen.queryByTestId("open-dialog")).toBeNull();
     fireEvent.keyDown(window, { key: "o", ctrlKey: true });
     expect(screen.getByTestId("open-dialog")).toBeTruthy();

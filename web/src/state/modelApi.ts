@@ -324,3 +324,92 @@ export async function openProject(name: string, signal?: AbortSignal): Promise<O
   }
   return openedProject(answer.body);
 }
+
+// --------------------------------------------------------------- model picker
+
+export type PreviewNodeKind = "b" | "j" | "s";
+export type PreviewLinkKind = "b" | "w" | "s";
+
+/** The miniature of a model's top-level diagram: `[x, y, kind]` nodes, `[from, to, kind]` links. */
+export interface ModelPreview {
+  nodes: [number, number, PreviewNodeKind][];
+  links: [number, number, PreviewLinkKind][];
+}
+
+/** One card of `GET /api/projects/{p}/models` (backend model_cards.py). */
+export interface ModelCardInfo {
+  name: string;
+  modified: string | null;
+  inProject: boolean;
+  /** The model's `$comment`, else the first paragraph of its docs; null when it has neither. */
+  description: string | null;
+  /** The first image of the model's first docs page (an asset file name), or null. */
+  thumbnail: string | null;
+  /** Blocks on the top-level diagram. */
+  nodes: number;
+  preview: ModelPreview;
+  /** Why the model file could not be read, else null. */
+  error: string | null;
+}
+
+const NODE_KINDS: ReadonlySet<unknown> = new Set(["b", "j", "s"]);
+const LINK_KINDS: ReadonlySet<unknown> = new Set(["b", "w", "s"]);
+
+function previewOf(value: unknown): ModelPreview {
+  const record = isRecord(value) ? value : {};
+  const nodes = Array.isArray(record.nodes)
+    ? record.nodes.filter(
+        (entry: unknown): entry is [number, number, PreviewNodeKind] =>
+          Array.isArray(entry) &&
+          Number.isFinite(entry[0]) &&
+          Number.isFinite(entry[1]) &&
+          NODE_KINDS.has(entry[2]),
+      )
+    : [];
+  const links = Array.isArray(record.links)
+    ? record.links.filter(
+        (entry: unknown): entry is [number, number, PreviewLinkKind] =>
+          Array.isArray(entry) &&
+          Number.isInteger(entry[0]) &&
+          Number.isInteger(entry[1]) &&
+          entry[0] >= 0 &&
+          entry[1] >= 0 &&
+          entry[0] < nodes.length &&
+          entry[1] < nodes.length &&
+          LINK_KINDS.has(entry[2]),
+      )
+    : [];
+  return { nodes, links };
+}
+
+/** The models of a project with what their picker cards show. */
+export async function listModelCards(
+  project: string,
+  signal?: AbortSignal,
+): Promise<ModelCardInfo[]> {
+  const answer = await call(`${projectPath(project)}/models`, { method: "GET", signal });
+  if (answer.status !== 200) {
+    throw new ProjectApiError(detailMessage(answer.body, answer.status), answer.status, answer.body);
+  }
+  const entries = isRecord(answer.body) ? answer.body.models : undefined;
+  if (!Array.isArray(entries)) {
+    throw new ProjectApiError("The backend returned an invalid model list.", 0, answer.body);
+  }
+  return entries.filter(isRecord).flatMap((entry) => {
+    if (typeof entry.name !== "string" || entry.name.length === 0) {
+      return [];
+    }
+    return [
+      {
+        name: entry.name,
+        modified: typeof entry.modified === "string" ? entry.modified : null,
+        inProject: entry.inProject === true,
+        description: typeof entry.description === "string" ? entry.description : null,
+        thumbnail: typeof entry.thumbnail === "string" ? entry.thumbnail : null,
+        nodes: typeof entry.nodes === "number" ? entry.nodes : 0,
+        preview: previewOf(entry.preview),
+        error: typeof entry.error === "string" ? entry.error : null,
+      },
+    ];
+  });
+}

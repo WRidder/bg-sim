@@ -1,6 +1,8 @@
 /**
- * The Open dialog (plan 7.2): switch project or model, start a new project or
- * model, or copy an example. The URL is the session route (`?project=&model=`),
+ * The Open dialog of the start page (plan 7.2, Ctrl+O): open a project (its
+ * model picker) or one of its models, start a new project or model, or copy an
+ * example. Inside a project, Ctrl+O opens the model menu of the top bar instead;
+ * another project is opened from the start page. The URL is the session route (`?project=&model=`),
  * so opening a model navigates to a linkable URL after saving the current
  * document; a model that does not exist yet opens as a new empty document
  * (the same rule as `src/state/session.ts`).
@@ -22,6 +24,7 @@ import {
   firstModel,
   importSample as importSampleProject,
   nameIssue,
+  openProjectPage,
   openSession as openSessionRoute,
   SampleImportError,
 } from "./openSession";
@@ -235,11 +238,7 @@ export function OpenDialog({ open, onClose }: OpenDialogProps) {
                       setSelected(entry.name);
                       setError(null);
                     }}
-                    onDoubleClick={() => {
-                      if (entry.models.length > 0) {
-                        void openSession(entry.name, entry.models[0] ?? DEFAULT_MODEL);
-                      }
-                    }}
+                    onDoubleClick={() => openProjectPage(entry.name)}
                   >
                     <span className="open-dialog__name">{entry.name}</span>
                     <span className="open-dialog__meta">
@@ -281,6 +280,18 @@ export function OpenDialog({ open, onClose }: OpenDialogProps) {
               <h3 className="open-dialog__heading">{selected ?? "Models"}</h3>
               <span className="open-dialog__count">{models.length}</span>
             </div>
+            {selected !== null ? (
+              <button
+                type="button"
+                className="button open-dialog__open-project"
+                data-testid="open-project-page"
+                disabled={busy !== null}
+                title="Show the models of this project as cards with descriptions"
+                onClick={() => openProjectPage(selected)}
+              >
+                Open project overview
+              </button>
+            ) : null}
             {selected === null ? (
               <p className="open-dialog__empty">Select a project to see its models.</p>
             ) : models.length === 0 ? (
