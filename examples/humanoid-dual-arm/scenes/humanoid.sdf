@@ -1,0 +1,631 @@
+<?xml version="1.0"?>
+<!--
+  humanoid-dual-arm: the humanoid torso with two stacked 7-DOF SRS arms (left, blue; right, orange)
+  and the ideal SRS pair (green) 1 m to its right. Written by design/build_scene.py. Z-up, metres,
+  the robot faces +X, its left arm on +Y. Link <arm>_link<i> is the child frame of joint i at rest
+  (all joints zero); joint <arm>_joint<i> turns it about its own z by the bound joint angle.
+-->
+<sdf version="1.9">
+  <model name="humanoid">
+    <link name="floor">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="floor_slab">
+        <pose>0.2 -0.5 -0.006 0 0 0</pose>
+        <geometry><box><size>2 2.6 0.012</size></box></geometry>
+        <material><diffuse>0.55 0.57 0.6 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="torso">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="torso_pedestal">
+        <pose>0 0 0.35 0 0 0</pose>
+        <geometry><cylinder><radius>0.06</radius><length>0.7</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="torso_body">
+        <pose>0 0 0.99 0 0 0</pose>
+        <geometry><box><size>0.18 0.3 0.58</size></box></geometry>
+        <material><diffuse>0.24 0.28 0.33 1</diffuse></material>
+      </visual>
+      <visual name="torso_shoulders">
+        <pose>0 0 1.25 1.57079633 0 0</pose>
+        <geometry><cylinder><radius>0.025</radius><length>0.4</length></cylinder></geometry>
+        <material><diffuse>0.24 0.28 0.33 1</diffuse></material>
+      </visual>
+      <visual name="torso_neck">
+        <pose>0 0 1.32 0 0 0</pose>
+        <geometry><cylinder><radius>0.015</radius><length>0.08</length></cylinder></geometry>
+        <material><diffuse>0.24 0.28 0.33 1</diffuse></material>
+      </visual>
+      <visual name="torso_head">
+        <pose>0 0 1.43 0 0 0</pose>
+        <geometry><sphere><radius>0.075</radius></sphere></geometry>
+        <material><diffuse>0.34 0.40 0.48 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="ghost_torso">
+      <pose>0 -1 0 0 0 0</pose>
+      <visual name="ghost_torso_pedestal">
+        <pose>0 0 0.35 0 0 0</pose>
+        <geometry><cylinder><radius>0.06</radius><length>0.7</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="ghost_torso_body">
+        <pose>0 0 0.99 0 0 0</pose>
+        <geometry><box><size>0.18 0.3 0.58</size></box></geometry>
+        <material><diffuse>0.24 0.28 0.33 1</diffuse></material>
+      </visual>
+      <visual name="ghost_torso_shoulders">
+        <pose>0 0 1.25 1.57079633 0 0</pose>
+        <geometry><cylinder><radius>0.025</radius><length>0.4</length></cylinder></geometry>
+        <material><diffuse>0.24 0.28 0.33 1</diffuse></material>
+      </visual>
+      <visual name="ghost_torso_neck">
+        <pose>0 0 1.32 0 0 0</pose>
+        <geometry><cylinder><radius>0.015</radius><length>0.08</length></cylinder></geometry>
+        <material><diffuse>0.24 0.28 0.33 1</diffuse></material>
+      </visual>
+      <visual name="ghost_torso_head">
+        <pose>0 0 1.43 0 0 0</pose>
+        <geometry><sphere><radius>0.075</radius></sphere></geometry>
+        <material><diffuse>0.34 0.40 0.48 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="torso_mount" type="fixed">
+      <parent>floor</parent>
+      <child>torso</child>
+    </joint>
+    <joint name="ghost_torso_mount" type="fixed">
+      <parent>floor</parent>
+      <child>ghost_torso</child>
+    </joint>
+    <link name="L_link1">
+      <pose>0 0.2 1.25 1.57079633 0 0</pose>
+      <visual name="L_hub1">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="L_seg1">
+        <pose>0.0125 -0.03 0 0 1.57079633 -1.17600521</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.065</length></cylinder></geometry>
+        <material><diffuse>0.37 0.78 1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="L_link2">
+      <pose>0.025 0.2 1.19 1.57079633 0 1.57079633</pose>
+      <visual name="L_hub2">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="L_seg2">
+        <pose>0 -0.03 -0.0125 3.14159265 1.17600521 1.57079633</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.065</length></cylinder></geometry>
+        <material><diffuse>0.37 0.78 1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="L_link3">
+      <pose>0 0.2 1.13 0 0 1.57079633</pose>
+      <visual name="L_hub3">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="L_seg3">
+        <pose>0 0 -0.13 3.14159265 0 1.57079633</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.26</length></cylinder></geometry>
+        <material><diffuse>0.37 0.78 1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="L_link4">
+      <pose>0 0.2 0.87 1.57079633 0 0</pose>
+      <visual name="L_hub4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="L_seg4">
+        <pose>0.01 -0.02 0 0 1.57079633 -1.10714872</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.0447214</length></cylinder></geometry>
+        <material><diffuse>0.37 0.78 1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="L_link5">
+      <pose>0.02 0.2 0.83 0 0 1.57079633</pose>
+      <visual name="L_hub5">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="L_seg5">
+        <pose>0 0.01 -0.1 3.14159265 -0.0996686525 1.57079633</pose>
+        <geometry><cylinder><radius>0.017</radius><length>0.200998</length></cylinder></geometry>
+        <material><diffuse>0.37 0.78 1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="L_link6">
+      <pose>0 0.2 0.63 1.57079633 0 0</pose>
+      <visual name="L_hub6">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="L_seg6">
+        <pose>0.01 -0.02 0 0 1.57079633 -1.10714872</pose>
+        <geometry><cylinder><radius>0.017</radius><length>0.0447214</length></cylinder></geometry>
+        <material><diffuse>0.37 0.78 1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="L_link7">
+      <pose>0.02 0.2 0.59 1.57079633 0 1.57079633</pose>
+      <visual name="L_hub7">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="L_seg7">
+        <pose>0 -0.045 0 0 1.57079633 -1.57079633</pose>
+        <geometry><cylinder><radius>0.017</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>0.37 0.78 1 1</diffuse></material>
+      </visual>
+      <visual name="L_palm">
+        <pose>0 -0.09 -0.012 0 0 0</pose>
+        <geometry><box><size>0.07 0.03 0.024</size></box></geometry>
+        <material><diffuse>0.37 0.78 1 1</diffuse></material>
+      </visual>
+      <visual name="L_finger1">
+        <pose>0.028 -0.09 0.012 0 0 0</pose>
+        <geometry><box><size>0.012 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="L_finger2">
+        <pose>-0.028 -0.09 0.012 0 0 0</pose>
+        <geometry><box><size>0.012 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="L_joint1" type="revolute">
+      <parent>torso</parent>
+      <child>L_link1</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.04719755</lower><upper>3.14159265</upper></limit></axis>
+    </joint>
+    <joint name="L_joint2" type="revolute">
+      <parent>L_link1</parent>
+      <child>L_link2</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-0.34906585</lower><upper>2.0943951</upper></limit></axis>
+    </joint>
+    <joint name="L_joint3" type="revolute">
+      <parent>L_link2</parent>
+      <child>L_link3</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <joint name="L_joint4" type="revolute">
+      <parent>L_link3</parent>
+      <child>L_link4</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>0</lower><upper>2.44346095</upper></limit></axis>
+    </joint>
+    <joint name="L_joint5" type="revolute">
+      <parent>L_link4</parent>
+      <child>L_link5</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <joint name="L_joint6" type="revolute">
+      <parent>L_link5</parent>
+      <child>L_link6</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.04719755</lower><upper>1.04719755</upper></limit></axis>
+    </joint>
+    <joint name="L_joint7" type="revolute">
+      <parent>L_link6</parent>
+      <child>L_link7</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <link name="R_link1">
+      <pose>0 -0.2 1.25 1.57079633 0 0</pose>
+      <visual name="R_hub1">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="R_seg1">
+        <pose>0.0125 -0.03 0 0 1.57079633 -1.17600521</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.065</length></cylinder></geometry>
+        <material><diffuse>1 0.70 0.37 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="R_link2">
+      <pose>0.025 -0.2 1.19 -1.57079633 0 1.57079633</pose>
+      <visual name="R_hub2">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="R_seg2">
+        <pose>0 0.03 0.0125 0 -1.17600521 -1.57079633</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.065</length></cylinder></geometry>
+        <material><diffuse>1 0.70 0.37 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="R_link3">
+      <pose>0 -0.2 1.13 3.14159265 0 1.57079633</pose>
+      <visual name="R_hub3">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="R_seg3">
+        <pose>0 0 0.13 0 0 -1.57079633</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.26</length></cylinder></geometry>
+        <material><diffuse>1 0.70 0.37 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="R_link4">
+      <pose>0 -0.2 0.87 1.57079633 0 0</pose>
+      <visual name="R_hub4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="R_seg4">
+        <pose>0.01 -0.02 0 0 1.57079633 -1.10714872</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.0447214</length></cylinder></geometry>
+        <material><diffuse>1 0.70 0.37 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="R_link5">
+      <pose>0.02 -0.2 0.83 3.14159265 0 1.57079633</pose>
+      <visual name="R_hub5">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="R_seg5">
+        <pose>0 -0.01 0.1 0 0.0996686525 -1.57079633</pose>
+        <geometry><cylinder><radius>0.017</radius><length>0.200998</length></cylinder></geometry>
+        <material><diffuse>1 0.70 0.37 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="R_link6">
+      <pose>0 -0.2 0.63 1.57079633 0 0</pose>
+      <visual name="R_hub6">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="R_seg6">
+        <pose>0.01 -0.02 0 0 1.57079633 -1.10714872</pose>
+        <geometry><cylinder><radius>0.017</radius><length>0.0447214</length></cylinder></geometry>
+        <material><diffuse>1 0.70 0.37 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="R_link7">
+      <pose>0.02 -0.2 0.59 -1.57079633 0 1.57079633</pose>
+      <visual name="R_hub7">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="R_seg7">
+        <pose>0 0.045 0 0 -1.57079633 -1.57079633</pose>
+        <geometry><cylinder><radius>0.017</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>1 0.70 0.37 1</diffuse></material>
+      </visual>
+      <visual name="R_palm">
+        <pose>0 0.09 0.012 -3.14159265 0 0</pose>
+        <geometry><box><size>0.07 0.03 0.024</size></box></geometry>
+        <material><diffuse>1 0.70 0.37 1</diffuse></material>
+      </visual>
+      <visual name="R_finger1">
+        <pose>0.028 0.09 -0.012 -3.14159265 0 0</pose>
+        <geometry><box><size>0.012 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="R_finger2">
+        <pose>-0.028 0.09 -0.012 -3.14159265 0 0</pose>
+        <geometry><box><size>0.012 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="R_joint1" type="revolute">
+      <parent>torso</parent>
+      <child>R_link1</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.04719755</lower><upper>3.14159265</upper></limit></axis>
+    </joint>
+    <joint name="R_joint2" type="revolute">
+      <parent>R_link1</parent>
+      <child>R_link2</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-0.34906585</lower><upper>2.0943951</upper></limit></axis>
+    </joint>
+    <joint name="R_joint3" type="revolute">
+      <parent>R_link2</parent>
+      <child>R_link3</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <joint name="R_joint4" type="revolute">
+      <parent>R_link3</parent>
+      <child>R_link4</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>0</lower><upper>2.44346095</upper></limit></axis>
+    </joint>
+    <joint name="R_joint5" type="revolute">
+      <parent>R_link4</parent>
+      <child>R_link5</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <joint name="R_joint6" type="revolute">
+      <parent>R_link5</parent>
+      <child>R_link6</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.04719755</lower><upper>1.04719755</upper></limit></axis>
+    </joint>
+    <joint name="R_joint7" type="revolute">
+      <parent>R_link6</parent>
+      <child>R_link7</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <link name="GL_link1">
+      <pose>0 -0.8 1.25 1.57079633 0 0</pose>
+      <visual name="GL_hub1">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GL_link2">
+      <pose>0 -0.8 1.25 1.57079633 0 1.57079633</pose>
+      <visual name="GL_hub2">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GL_link3">
+      <pose>0 -0.8 1.25 0 0 1.57079633</pose>
+      <visual name="GL_hub3">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="GL_seg3">
+        <pose>0 0 -0.19 3.14159265 0 1.57079633</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.38</length></cylinder></geometry>
+        <material><diffuse>0.50 0.88 0.66 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GL_link4">
+      <pose>0 -0.8 0.87 1.57079633 0 0</pose>
+      <visual name="GL_hub4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="GL_seg4">
+        <pose>0 -0.14 0 0 1.57079633 -1.57079633</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.28</length></cylinder></geometry>
+        <material><diffuse>0.50 0.88 0.66 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GL_link5">
+      <pose>0 -0.8 0.59 0 0 1.57079633</pose>
+      <visual name="GL_hub5">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GL_link6">
+      <pose>0 -0.8 0.59 1.57079633 0 0</pose>
+      <visual name="GL_hub6">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GL_link7">
+      <pose>0 -0.8 0.59 1.57079633 0 1.57079633</pose>
+      <visual name="GL_hub7">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="GL_seg7">
+        <pose>0 -0.045 0 0 1.57079633 -1.57079633</pose>
+        <geometry><cylinder><radius>0.017</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>0.50 0.88 0.66 1</diffuse></material>
+      </visual>
+      <visual name="GL_palm">
+        <pose>0 -0.09 -0.012 0 0 0</pose>
+        <geometry><box><size>0.07 0.03 0.024</size></box></geometry>
+        <material><diffuse>0.50 0.88 0.66 1</diffuse></material>
+      </visual>
+      <visual name="GL_finger1">
+        <pose>0.028 -0.09 0.012 0 0 0</pose>
+        <geometry><box><size>0.012 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="GL_finger2">
+        <pose>-0.028 -0.09 0.012 0 0 0</pose>
+        <geometry><box><size>0.012 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="GL_joint1" type="revolute">
+      <parent>ghost_torso</parent>
+      <child>GL_link1</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.04719755</lower><upper>3.14159265</upper></limit></axis>
+    </joint>
+    <joint name="GL_joint2" type="revolute">
+      <parent>GL_link1</parent>
+      <child>GL_link2</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-0.34906585</lower><upper>2.0943951</upper></limit></axis>
+    </joint>
+    <joint name="GL_joint3" type="revolute">
+      <parent>GL_link2</parent>
+      <child>GL_link3</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <joint name="GL_joint4" type="revolute">
+      <parent>GL_link3</parent>
+      <child>GL_link4</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>0</lower><upper>2.44346095</upper></limit></axis>
+    </joint>
+    <joint name="GL_joint5" type="revolute">
+      <parent>GL_link4</parent>
+      <child>GL_link5</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <joint name="GL_joint6" type="revolute">
+      <parent>GL_link5</parent>
+      <child>GL_link6</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.04719755</lower><upper>1.04719755</upper></limit></axis>
+    </joint>
+    <joint name="GL_joint7" type="revolute">
+      <parent>GL_link6</parent>
+      <child>GL_link7</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <link name="GR_link1">
+      <pose>0 -1.2 1.25 1.57079633 0 0</pose>
+      <visual name="GR_hub1">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GR_link2">
+      <pose>0 -1.2 1.25 -1.57079633 0 1.57079633</pose>
+      <visual name="GR_hub2">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GR_link3">
+      <pose>0 -1.2 1.25 3.14159265 0 1.57079633</pose>
+      <visual name="GR_hub3">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="GR_seg3">
+        <pose>0 0 0.19 0 0 -1.57079633</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.38</length></cylinder></geometry>
+        <material><diffuse>0.50 0.88 0.66 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GR_link4">
+      <pose>0 -1.2 0.87 1.57079633 0 0</pose>
+      <visual name="GR_hub4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.034</radius><length>0.075</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="GR_seg4">
+        <pose>0 -0.14 0 0 1.57079633 -1.57079633</pose>
+        <geometry><cylinder><radius>0.02</radius><length>0.28</length></cylinder></geometry>
+        <material><diffuse>0.50 0.88 0.66 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GR_link5">
+      <pose>0 -1.2 0.59 3.14159265 0 1.57079633</pose>
+      <visual name="GR_hub5">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GR_link6">
+      <pose>0 -1.2 0.59 1.57079633 0 0</pose>
+      <visual name="GR_hub6">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="GR_link7">
+      <pose>0 -1.2 0.59 -1.57079633 0 1.57079633</pose>
+      <visual name="GR_hub7">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.027</radius><length>0.058</length></cylinder></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="GR_seg7">
+        <pose>0 0.045 0 0 -1.57079633 -1.57079633</pose>
+        <geometry><cylinder><radius>0.017</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>0.50 0.88 0.66 1</diffuse></material>
+      </visual>
+      <visual name="GR_palm">
+        <pose>0 0.09 0.012 -3.14159265 0 0</pose>
+        <geometry><box><size>0.07 0.03 0.024</size></box></geometry>
+        <material><diffuse>0.50 0.88 0.66 1</diffuse></material>
+      </visual>
+      <visual name="GR_finger1">
+        <pose>0.028 0.09 -0.012 -3.14159265 0 0</pose>
+        <geometry><box><size>0.012 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+      <visual name="GR_finger2">
+        <pose>-0.028 0.09 -0.012 -3.14159265 0 0</pose>
+        <geometry><box><size>0.012 0.03 0.03</size></box></geometry>
+        <material><diffuse>0.17 0.21 0.25 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="GR_joint1" type="revolute">
+      <parent>ghost_torso</parent>
+      <child>GR_link1</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.04719755</lower><upper>3.14159265</upper></limit></axis>
+    </joint>
+    <joint name="GR_joint2" type="revolute">
+      <parent>GR_link1</parent>
+      <child>GR_link2</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-0.34906585</lower><upper>2.0943951</upper></limit></axis>
+    </joint>
+    <joint name="GR_joint3" type="revolute">
+      <parent>GR_link2</parent>
+      <child>GR_link3</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <joint name="GR_joint4" type="revolute">
+      <parent>GR_link3</parent>
+      <child>GR_link4</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>0</lower><upper>2.44346095</upper></limit></axis>
+    </joint>
+    <joint name="GR_joint5" type="revolute">
+      <parent>GR_link4</parent>
+      <child>GR_link5</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <joint name="GR_joint6" type="revolute">
+      <parent>GR_link5</parent>
+      <child>GR_link6</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.04719755</lower><upper>1.04719755</upper></limit></axis>
+    </joint>
+    <joint name="GR_joint7" type="revolute">
+      <parent>GR_link6</parent>
+      <child>GR_link7</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-1.57079633</lower><upper>1.57079633</upper></limit></axis>
+    </joint>
+    <link name="box">
+      <pose>0.35 0 0.8 1.57079633 0 1.57079633</pose>
+      <visual name="box_shape">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><box><size>0.28 0.1 0.1</size></box></geometry>
+        <material><diffuse>0.79 0.64 1 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="box_target">
+      <pose>0.35 0 0.8 1.57079633 0 1.57079633</pose>
+      <visual name="box_target_shape">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><box><size>0.292 0.112 0.112</size></box></geometry>
+        <material><diffuse>0.79 0.64 1 0.22</diffuse></material>
+      </visual>
+    </link>
+    <link name="ghost_box">
+      <pose>0.35 -1 0.8 1.57079633 0 1.57079633</pose>
+      <visual name="ghost_box_shape">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><box><size>0.28 0.1 0.1</size></box></geometry>
+        <material><diffuse>0.79 0.64 1 0.85</diffuse></material>
+      </visual>
+    </link>
+  </model>
+</sdf>
