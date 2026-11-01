@@ -375,6 +375,28 @@ end
     end
 
     # -----------------------------------------------------------------------------------
+    @testset "a clock much faster than the output grid records thinned tick rows" begin
+        # 1 ms ticks under a 20 ms grid: 20 ticks per output step. Changed ticks off the grid
+        # keep their left/right rows only a tenth of an output step (2 ms) apart; every grid
+        # row still carries the held value, and every tick still ran.
+        doc = _disc_model(
+            "FastUnderCoarseGrid",
+            [_disc_node("n1", "F1", _disc_inline(_DISC_FAST))],
+            Any[];
+            t_end = 0.2, points = 11,
+        )
+        flat, result, dir = _disc_run(doc)
+        @test result.status == "done"
+        time, values = _disc_columns(dir)
+        grid = collect(range(0.0, 0.2; length = 11))
+        @test _disc_sequence(time, values, "F1/n", grid) == Float64.(collect(0:20:200))
+        ticks = filter(t -> !(t in grid), unique(time))
+        @test 80 <= length(ticks) <= 100                  # every second off-grid tick of 190
+        @test all(>=(0.002 * (1 - 1e-6)), diff(sort(ticks)))
+        @test length(time) < 2 * 200                      # not two rows for each of the 200 ticks
+    end
+
+    # -----------------------------------------------------------------------------------
     @testset "offset clock" begin
         doc = _disc_model(
             "OffsetClock",
@@ -1078,9 +1100,13 @@ end
                 n::Real = 0.0
             end
             @discrete Ts = 0.1 begin
-                a = (on && !off) ? 1.0 : 2.0
-                o = (off || on) ? 3.0 : 4.0
-                n = (off || (on && off)) ? 5.0 : 6.0
+                a = ifelse(on && !off, 1.0, 2.0)
+                o = ifelse(off || on, 3.0, 4.0)
+                if off || (on && off)
+                    n = 5.0
+                else
+                    n = 6.0
+                end
             end
         end
         """
