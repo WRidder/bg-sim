@@ -109,7 +109,7 @@ isdefined(@__MODULE__, :_fem_free) || include(joinpath(@__DIR__, "fem_body_rigs.
         # poseB is the deformed interface B (A at the world origin, R = world)
         uB = _fem_mat(FEM_DATA.interfaces[2].translation) * qs
         xB = Float64.(collect(FEM_DATA.interfaces[2].position))
-        @test [cols["Body/poseB[$(4 + a)]"][end] for a in 1:3] ≈ xB .+ uB rtol = 1e-3
-        @test norm(uB) > 1e-4                                            # a visible deflection
+        @test [cols["Body/poseB[$(4 + a)]"][end] for a in 1:3] .- xB ≈ uB rtol = 5e-3
+        @test norm(uB) > 2e-5                                     # 50 um, 0.06 % of the part
     end
 end

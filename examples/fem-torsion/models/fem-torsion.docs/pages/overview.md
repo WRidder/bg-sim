@@ -1,6 +1,6 @@
 # Two disks on a FEM shaft
 
-Two steel disks (m = 3.157 kg, axial inertia J = 0.010101 kg·m²) sit on a slender aluminium shaft (d = 6 mm, L = 1 m) that hangs from a bearing. [Motor](block:Motor) gives the upper disk a 1 N·m torque pulse of 0.1 s, driven by [Pulse](block:Pulse). The disks then spin and twist against each other.
+Two steel disks (m = 3.157 kg, axial inertia J = 0.010101 kg·m²) sit on a slender aluminium shaft (d = 6 mm, L = 1 m) that hangs from a bearing. [Motor](block:Motor) gives the upper disk a 0.1 N·m torque pulse of 0.1 s, driven by [Pulse](block:Pulse). The disks then spin and twist against each other.
 
 This is the rig of the **flex-torsion** example, with one change: the [Shaft](block:Shaft) is a `ModalBody3D`, a flexible body reduced from a finite element model, instead of the assumed-modes beam `FlexibleBeam3D`.
 

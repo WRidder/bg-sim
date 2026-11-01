@@ -9,10 +9,10 @@
 #
 # The part is small: with the modes free its frame has a rotational inertia of about 2e-8
 # kg m^2, so the starts are chosen as frame velocities (P = M_r V, see `_fem_momentum`) and
-# the clamp of `_fem_clamped` is scaled to the part (a clamp of 1e9 N/m would ring at MHz).
-# The rigs run with an explicit Verner method: the body is an explicit ODE whose fastest
-# mode is a few kHz, so a tight explicit run is cheaper than a Rosenbrock method, whose
-# ForwardDiff Jacobian of the large right-hand side is costly to compile.
+# the clamp of `_fem_clamped` is scaled to the part. The free body is an explicit ODE whose
+# fastest mode is 2.5 kHz: it runs with an explicit Verner method. A clamp or joint on
+# interface A acts on the tiny rotational Schur inertia and rings at 100 kHz and more, so
+# those rigs run with Rodas5P (its ForwardDiff Jacobian compiles in about 10 s).
 using BGSim
 using LinearAlgebra
 import JSON3
@@ -80,8 +80,11 @@ function _fem_free(; stiffening = 1, t_end = 0.1, solver = "Vern7", points = 100
         reltol = 1e-10, abstol = 1e-14)
 end
 
-"""A pendulum: interface A on a compliant revolute (axis world y), released horizontal."""
-function _fem_pendulum(; t_end = 0.3, solver = "Vern7")
+"""
+A pendulum: interface A on a compliant revolute (axis world y), released horizontal. The
+fixture is soft (it sags 1.3 mm under its own weight, 1.6 % of its size): the run stops after
+60 ms of the swing (0.4 mm), where the first-order stiffening is still accurate."""
+function _fem_pendulum(; t_end = 0.06, solver = "Rodas5P", reltol = 1e-9, abstol = 1e-13)
     s2 = sqrt(0.5)
     kt, kr = 2.6e7, 1.0e3      # stiff for a 26 g part, but no MHz modes about its thin axis
     nodes = Any[
@@ -108,16 +111,16 @@ function _fem_pendulum(; t_end = 0.3, solver = "Vern7")
         bg_conn("c7", "bond", "n7", "p", "n3", "drive"),
     ]
     return bg_model("FemPendulum", nodes, conns; t_end = t_end, points = 1201, solver = solver,
-        reltol = 1e-10, abstol = 1e-14)
+        reltol = reltol, abstol = abstol)
 end
 
 """
 Clamped at A: a CSpatial + RSpatial scaled to the part (each axis of the rigid part at
 `fc` Hz, well above its modes, critically damped), with an optional constant wrench at B and C."""
 function _fem_clamped(; q0 = zeros(FEM_NM), wB = zeros(6), wC = zeros(6), zeta = 0.0,
-        stiffening = 1, t_end = 0.5, points = 2001, solver = "Vern7", fc = 5000.0)
+        stiffening = 1, t_end = 0.5, points = 2001, solver = "Rodas5P", fc = 5000.0)
     wc = 2pi * fc
-    inertia = vcat(diag(FEM_CONSTS["J0"]), fill(FEM_CONSTS["mass"], 3))
+    inertia = vcat(LinearAlgebra.diag(FEM_CONSTS["J0"]), fill(FEM_CONSTS["mass"], 3))
     k = inertia .* wc^2
     b = 2 .* inertia .* wc
     names_k = ("krx", "kry", "krz", "kx", "ky", "kz")

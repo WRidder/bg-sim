@@ -3,7 +3,7 @@
 A part that is not a beam, as a flexible body reduced from a finite element model. An aluminium L-bracket (base plate 120 × 40 × 5 mm, upright 40 × 4 × 150 mm) carries a 0.5 kg payload (a 40 mm steel cube) on a turntable that indexes 90° and back. The upright is thin along the table's tangential direction, so each move bends it and the payload rings afterwards.
 
 ```
-World ─ Table (Revolute3D, speed servo) ─ Hub ─ Seat ─ Bracket (ModalBody3D) A … B ─ Clamp ─ Payload
+World ─ Table (Revolute3D, speed servo) ─ Hub ─ WeldA ─ Seat ─ Bracket (ModalBody3D) A … B ─ WeldB ─ Offset ─ Payload
 ```
 
 ## The reduced model
@@ -34,12 +34,12 @@ The largest error below the accuracy band (2976 Hz, 80 % of the first fixed-inte
 | `link:payload` pose | `PPayload/g` (deformed interface B + 20 mm) |
 | `visual:bracket_mesh` mode-shapes | `Bracket/eta[1..10]` |
 
-The deflections are a fraction of a millimetre; set the deformation exaggeration to 50 or more to see the upright swing.
+The deflections are a fraction of a millimetre, so both models open the 3D view with the deformation drawn ×100 (`"exaggeration": 100` in the model's `scene`; the view marks it as exaggerated).
 
 ## Checks (`expected.json`)
 
 - fem-bracket: no E101/E102/E108/W201/W202; the scene bindings resolve (10 morph targets); the table reaches 90° and returns to 0; the payload rings near the first clamped mode after the first move.
-- bracket-ringdown: FFT peaks of `Payload/V[5]` and `Payload/V[4]` against the full FE model with the payload (0.3 %).
+- bracket-ringdown: FFT peaks of `Payload/flow/y[5]` and `Payload/flow/y[4]` against the full FE model with the payload (0.3 %).
 
 ## Files
 

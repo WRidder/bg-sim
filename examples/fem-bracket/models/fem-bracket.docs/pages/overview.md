@@ -14,13 +14,14 @@ An aluminium L-bracket carries a 0.5 kg payload (a 40 mm steel cube) on a turnta
 ## The mechanism
 
 - [Table](block:Table) is a `Revolute3D` about the world z axis. A speed servo drives it: [Servo](block:Servo), a speed source fed by the sum of two jerk-limited [MoveOut](block:MoveOut) / [MoveBack](block:MoveBack) velocity profiles, acts through a stiff [ServoSpring](block:ServoSpring) and [ServoDamper](block:ServoDamper) (about 60 Hz, ζ = 0.7).
-- [Hub](block:Hub) is the turntable disk (a `RigidBody3D`). [Seat](block:Seat) places interface A on its top face.
-- [Clamp](block:Clamp) puts the [Payload](block:Payload) centre 20 mm above interface B. The payload's pose is composed from `Bracket/poseB`, the deformed interface.
+- [Hub](block:Hub) is the turntable disk (a `RigidBody3D`). [Seat](block:Seat) places interface A on its top face, behind the weld: an offset between the hub and the weld would leave algebraic equations (see the manual, Flexible bodies, Simulation and export).
+- [WeldA](block:WeldA) and [WeldB](block:WeldB) are the bolted joints, hub to bracket and bracket to payload. Two bodies that each carry their own momentum cannot be joined rigidly (that would be derivative causality), so each joint is a stiff `Revolute3D` whose rotation about its axis is held by a stiff torsion spring ([WeldASpring](block:WeldASpring), [WeldBSpring](block:WeldBSpring)), 100 to 1000 times stiffer than the bracket at that interface.
+- [Offset](block:Offset) puts the [Payload](block:Payload) centre 20 mm above interface B. The payload's pose is composed from `Bracket/poseB`, the deformed interface.
 - Gravity acts on all bodies; the payload's weight is a compressive interface force on the upright, which the geometric stiffening of the reduced model includes.
 
 ## What to look at
 
-- [Payload/V[1]](signal:Payload/V[1]) and [Payload/V[5]](signal:Payload/V[5]): the payload rocks about its x axis and moves sideways at the first bracket mode (about 18.6 Hz with the payload) after each move.
+- [Payload/flow/y[1]](signal:Payload/flow/y[1]) and [Payload/flow/y[5]](signal:Payload/flow/y[5]) (components of the payload twist [ω; v] in its own frame): the payload rocks about its x axis and moves sideways at the first bracket mode (about 18.6 Hz with the payload) after each move.
 - [Bracket/eta[1]](signal:Bracket/eta[1]): the first modal coordinate, the upright bending in its thin direction.
 - [Bracket/Ee](signal:Bracket/Ee): the strain energy in the bracket.
 

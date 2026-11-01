@@ -9,7 +9,7 @@ A slender rod, tube or bar that bends and twists can replace a rigid body in a m
 | `FlexibleBeam2D` | `A`, `B` (planar), input `gA` (pose of end A) | in-plane bending `y` | `RigidBody2D` |
 | `FlexibleBeam3D` | `A`, `B` (spatial), input `gA` (pose of end A) | bending `y`, bending `z`, torsion `t` | `RigidBody3D` |
 
-`ModalBeam2D` and `ModalBeam3D` are the cores of these blocks, with the modal bond graph and the equations. Use the `FlexibleBeam` blocks in models: their ends are 1-junctions, so they bond like a body port in either bond direction.
+`ModalBeam2D` and `ModalBeam3D` are the cores of these blocks, with the modal bond graph and the equations. Use the `FlexibleBeam` blocks in models: their ends are 1-junctions, so they bond like a body port.
 
 ### Constants (structural)
 
@@ -50,6 +50,7 @@ All outputs are also recorded as signals, for example `Rod/eta_y[1]` or `Rod/f_t
 End A sits at s = 0 with the beam axis along its local +x. End B sits at s = L. Connect the beam like a rigid body:
 
 - bond the joint's `child` (or a fixed transform) to `A`. Anything that should move with end B is bonded to `B`. A free end B can stay unconnected;
+- draw every bond **into** the beam, as for a rigid body: the next joint goes `joint.parent → B`, not `B → joint.parent`. A bond out of a body into a joint's `parent` hands the body the reversed reaction: a load hanging from B would push the beam up instead of pulling it down;
 - feed `gA` with the world pose of end A, from the joint's pose chain (the same `ComposePose` signals a rigid body gets as `g`);
 - for the next link, compose its pose from `poseB`.
 
@@ -141,7 +142,7 @@ Add `ModalBody3D`. In the inspector's **Reduced model** section, pick the file f
 
 | Port / signal | Meaning |
 | --- | --- |
-| `A`, `B`, `C`, `D` | the interfaces, in the order of the part spec. `A` is the reference frame. An unused port can stay open |
+| `A`, `B`, `C`, `D` | the interfaces, in the order of the part spec. `A` is the reference frame. An unused port can stay open. Bond into them, as for a rigid body (`joint.child → A`, `joint.parent → B`); with geometric stiffening a reversed bond also turns a hanging load's tension into compression |
 | `gA` | input: world pose of interface A (from the joint's pose chain, as for a rigid body) |
 | `pose` | world pose of the reference frame A. Bind it to the part's link in the 3D view |
 | `poseB`, `poseC`, `poseD` | world poses of the deformed interfaces. Compose the next link from them |
@@ -156,11 +157,19 @@ Parameters: `zeta` (modal damping ratio, all modes) and `g0` (gravity along worl
 - Put an interface wherever the part is **bolted, jointed or loaded**: the constraint modes make the static response to forces and moments at the interfaces exact. That is what the assumed-modes beam misses. On the two-disk torsion shaft it is 3.5 % too stiff with three torsion modes, and the FEM shaft (2 interfaces, 4 fixed-interface modes) gets the exact frequency (example **fem-torsion**).
 - Each extra interface adds 6 coordinates. A load that only pushes on the part (a payload resting on it) is better as an interface than as a distributed force.
 - Choose `fixed_interface` so that the band the tool prints lies above the frequencies that matter (two to three times the highest excitation frequency). Use `modes.drop_above_hz` to drop very stiff modes you do not need.
-- Up to 48 coordinates and 4 interfaces per body. Every coordinate costs compile time (about 1 to 2 minutes for 15 coordinates).
+- Up to 48 coordinates and 4 interfaces per body. Every coordinate costs compile time: the turntable of example **fem-bracket** (10 coordinates, 59 states) compiles in about 15 s, and the stiff solver's Jacobian adds about 10 s to the first run.
 
 ### Simulation and export
 
-The modal frequencies are real: a small steel bracket has modes at several kHz. Use the stiff solver `Rodas5P` for simulation. For a fixed-step [export](page:export), the explicit methods need `dt · 2π f_max < 2.8`, where `f_max` is the highest frequency in `f` (the free body vibrates somewhat above it). Drop modes you do not need (`drop_above_hz`) rather than shrink the step.
+The modal frequencies are real: a small steel bracket has modes at several kHz. Which solver to use depends on what holds the part:
+
+- **Joints, clamps or welds on an interface**: use the stiff solver `Rodas5P`. Once the modes are free, the reference frame of a small part has a very small rotational inertia (the L of the tests, 26 g: about 2·10⁻⁸ kg m²), so a stiff joint on it rings at 100 kHz and more. An explicit method would have to resolve that; `Rodas5P` steps over it. Its Jacobian adds about 10 s to the first run.
+- **A free body** (only forces on it, no joint): an explicit method (`Vern7`, `Tsit5`) is faster; it only has to follow the highest elastic mode.
+- Undamped stiff joints ring for ever: give the joints and clamps some damping (the examples use ζ ≈ 0.05 for their welds) and keep `reltol` at 1e-7 or looser for long runs.
+- Make joints and clamps stiff enough, not stiffer: about 1000 times the part's own stiffness at the interface is plenty. Every factor of 100 in stiffness is a factor of 10 in the frequency the solver has to step over.
+- Keep the model an ODE. A fixed offset (`FixedTransform3DNeutral`) between a rigid body that already has a joint on its port and the joint to the flexible part can leave algebraic equations (a DAE), and a stiff run then crawls. Put the offset on the flexible part's side of the joint instead (joint → offset → `A`), as in example **fem-bracket**.
+
+For a fixed-step [export](page:export), the explicit methods need `dt · 2π f_max < 2.8`, where `f_max` is the highest frequency in `f` (the free body vibrates somewhat above it). Drop modes you do not need (`drop_above_hz`) rather than shrink the step.
 
 ### In the 3D view
 
@@ -168,7 +177,7 @@ Put the GLB (`meshes/bracket.glb`) as a mesh visual on the link bound to the blo
 
 ### Limits
 
-- Linear elastic, isotropic material and small elastic strain. The overall motion can be large (the floating frame is exact), the deformation relative to it must stay small.
+- Linear elastic, isotropic material and small elastic strain. The overall motion can be large (the floating frame is exact), the deformation relative to it must stay small, and so must the elastic rotations: a long thin shaft twisted by 16° rings 0.7 % too high (example **fem-torsion**), at 1.6° the error is gone.
 - Geometric stiffening is first order: the part stiffens by its rotation (centrifugal), by gravity and by forces at the interfaces, not by the acceleration of its reference frame, by interface moments or by other distributed loads. With stiffening on, keep the elastic deflection small against the part (well under 1 % of its size for a light part); a very soft, light part with large deflections should run with stiffening off.
 - No plasticity, contact on the part's surface, or stress output.
 

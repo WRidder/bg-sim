@@ -2262,6 +2262,8 @@ end
 function _const_value(d::Decl, consts::AbstractDict)
     if d.default !== nothing
         ok, value = try_eval_const(d.default, consts)
+        # a matrix is a list of rows (catalog.schema.json), so it survives a JSON round trip
+        ok && value isa AbstractMatrix && return [collect(value[i, :]) for i in axes(value, 1)]
         ok && (value isa Number || value isa Bool || value isa AbstractArray) && return value
     end
     return something(d.default_text, "")

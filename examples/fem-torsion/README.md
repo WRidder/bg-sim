@@ -1,6 +1,6 @@
 # fem-torsion — two disks on a FEM shaft
 
-The rig of [flex-torsion](../flex-torsion/README.md) with the shaft as a **FEM flexible body**. Two steel disks on a slender aluminium shaft (d = 6 mm, L = 1 m) hang from a bearing. A 1 N·m motor torque pulse of 0.1 s on the upper disk sets the pair spinning and twisting against each other.
+The rig of [flex-torsion](../flex-torsion/README.md) with the shaft as a **FEM flexible body**. Two steel disks on a slender aluminium shaft (d = 6 mm, L = 1 m) hang from a bearing. A 0.1 N·m motor torque pulse of 0.1 s on the upper disk sets the pair spinning and twisting against each other (by up to 0.029 rad, 1.6°).
 
 ```
 World ─ Bearing (Revolute3D, motor torque) ─ Disk1 ─ Weld1 ─ Mount ─ Shaft (ModalBody3D) ─ Weld2 ─ Disk2
@@ -22,6 +22,8 @@ In flex-torsion, the assumed-modes beam (`FlexibleBeam3D`, 3 clamped-free torsio
 
 The reduction also checks itself against the full FE model (printed by the tool, stored in the file's `validation`): the clamped bending frequencies 4.2754 / 26.790 / 74.999 Hz are matched to 0.37 %, the free-free ones to 0.44 %.
 
+The pulse is a tenth of flex-torsion's. With 1 N·m the twist reaches 0.29 rad (16°) and the simulated frequency comes out 0.7 % high: the reduced model's displacement field is linear in its coordinates, and although the interface rotation uses an exact chart (Gibbs vector, as in the beam blocks), a 16° rotation of the end face is no longer a small deformation. Keep the elastic rotations of a FEM body to a few degrees.
+
 `Twist/y` is the twist of interface B relative to A: the torsion coordinate `Shaft/eta[9]` (the mode with the largest rotation of B about the shaft axis) times its rotation per unit coordinate, 333.3 rad/m (`EtaT` selects it, `Twist` scales it).
 
 ## 3D view
@@ -37,7 +39,7 @@ The reduction also checks itself against the full FE model (printed by the tool,
 
 - no E101/E102/E108/W201/W202 diagnostics; all scene bindings resolve (the GLB has 10 morph targets)
 - FFT peak of `Twist/y` against the exact root (0.4 %, the assumed-modes value is outside)
-- the largest twist is 0.27 rad (5 %)
+- the largest twist is 0.0287 rad (5 %)
 
 ## Files
 

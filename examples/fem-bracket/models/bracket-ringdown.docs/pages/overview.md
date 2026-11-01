@@ -1,6 +1,6 @@
 # Bracket ring-down: reduced model against the full FE model
 
-The L-bracket of **fem-bracket**, clamped at interface A (a stiff [Clamp](block:Clamp) with [ClampDamping](block:ClampDamping)), with the 0.5 kg payload on interface B and no gravity. At t = 0 the [Payload](block:Payload) moves at 0.1 m/s along y (the upright's thin direction) and 0.05 m/s along x. Nothing damps the bracket (`zeta = 0`), so it rings at its natural frequencies.
+The L-bracket of **fem-bracket**, clamped at interface A (a stiff [Clamp](block:Clamp) with [ClampDamping](block:ClampDamping)), with the 0.5 kg payload on interface B (through the stiff [WeldB](block:WeldB) and the 20 mm [Offset](block:Offset)) and no gravity. At t = 0 the [Payload](block:Payload) moves at 0.1 m/s along y (the upright's thin direction) and 0.05 m/s along x. Nothing damps the bracket (`zeta = 0`), so it rings at its natural frequencies.
 
 ## The reference
 
@@ -17,5 +17,5 @@ The agreement is this close because the payload sits on an interface: the constr
 
 ## What the run shows
 
-- [Payload/V[5]](signal:Payload/V[5]) rings at the first mode, [Payload/V[4]](signal:Payload/V[4]) at the second. Their FFT peaks are checked against the full-model values.
+- [Payload/flow/y[5]](signal:Payload/flow/y[5]) rings at the first mode, [Payload/flow/y[4]](signal:Payload/flow/y[4]) at the second (components of the payload twist [ω; v] in its own frame). Their FFT peaks are checked against the full-model values.
 - [Bracket/Ek](signal:Bracket/Ek) and [Bracket/Ee](signal:Bracket/Ee) trade energy. The bracket's own kinetic energy is small next to the payload's.

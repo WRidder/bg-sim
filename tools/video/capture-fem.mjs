@@ -28,13 +28,13 @@ const MODEL = "fem-bracket";
 const FPS = 30;
 const SIZE = { width: 1280, height: 720 };
 
-// The script: [from, to, speed (simulated s per video s), caption, sub-caption]. About 30 s of video.
+// The script: [from, to, speed (simulated s per video s), caption, sub-caption]. About 23 s of video.
 const PLAN = [
   [0.0, 0.2, 0.2, "A FEM flexible body on a turntable", "Aluminium L-bracket reduced from 39 348 FE DOFs to 10 coordinates (Craig-Bampton). Deformation drawn x100."],
   [0.2, 0.75, 0.1, "Index +90 degrees: the upright bends in its thin direction", "Jerk-limited move, 8 rad/s. The payload (0.5 kg) lags behind."],
-  [0.75, 1.6, 0.2, "After the move the payload rings at 18.6 Hz", "Full FE model with the payload: 18.5719 Hz; the reduced model: 18.5719 Hz."],
+  [0.75, 1.6, 0.15, "After the move the payload rings at about 18 Hz", "Clamped with the payload: full FE model 18.5719 Hz, reduced model 18.5719 Hz."],
   [1.6, 2.15, 0.1, "And back to 0 degrees", "Gravity, geometric stiffening and the servo spring are all in the model."],
-  [2.15, 3.0, 0.2, "Ring-down", "Modal damping 1 %; real Julia simulation, mesh deformed by the morph targets of the GLB."],
+  [2.15, 3.0, 0.15, "Ring-down", "Modal damping 1 %; real Julia simulation, mesh deformed by the morph targets of the GLB."],
 ];
 
 const layout = (th) => {
@@ -75,7 +75,14 @@ async function caption(page, title, sub = "") {
 const frame2 = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
 
 async function setTime(page, t) {
-  await page.getByTestId("playback-time").fill(String(t));
+  // set the slider through the native setter (React listens for input events); the full-screen
+  // stage covers the playback bar, so Playwright's fill() would wait for it to be visible
+  await page.evaluate((v) => {
+    const el = document.querySelector('[data-testid="playback-time"]');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, String(v));
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  }, t);
   await frame2(page);
 }
 

@@ -22,7 +22,7 @@
           "signal": "Table/qout",
           "t": 3.0,
           "value": 0.0,
-          "atol": 0.01,
+          "abs": 0.01,
           "note": "the table is back at 0 after the two index moves"
         },
         {
@@ -36,7 +36,7 @@
         },
         {
           "kind": "fft_peak",
-          "signal": "Payload/V[1]",
+          "signal": "Payload/flow/y[1]",
           "from_t": 1.0,
           "to_t": 1.6,
           "min_hz": 8.0,
@@ -64,7 +64,7 @@
         },
         {
           "kind": "fft_peak",
-          "signal": "Payload/V[5]",
+          "signal": "Payload/flow/y[5]",
           "from_t": 0.0,
           "to_t": 1.0,
           "min_hz": 5.0,
@@ -75,7 +75,7 @@
         },
         {
           "kind": "fft_peak",
-          "signal": "Payload/V[4]",
+          "signal": "Payload/flow/y[4]",
           "from_t": 0.0,
           "to_t": 1.0,
           "min_hz": 25.0,

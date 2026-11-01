@@ -37,6 +37,8 @@ MODAL_FILE = "data/bracket.modal.json"
 MODAL = json.loads((ROOT / MODAL_FILE).read_text())
 NM = MODAL["nm"]
 ATT = MODAL["validation"]["attached"]
+M_BRACKET = MODAL["mass"]
+J_BRACKET_A = MODAL["inertia"][0][0]   # about interface A (x axis), for the weld damping
 
 # payload: 0.5 kg steel cube, 40 mm, its centre 20 mm above interface B
 M_PAY, A_PAY = 0.5, 0.04
@@ -56,9 +58,15 @@ D_SERVO = 2 * 0.7 * math.sqrt(K_SERVO * J_TABLE)
 MOVE = dict(v_max=8.0, a_max=80.0, j_max=4000.0)
 T_END = 3.0
 ZETA = 0.01
-# compliant table joint and clamp
+# compliant table joint
 KT, KR = 1.0e8, 1.0e5
-K_CLAMP, B_CLAMP = 1.0e9, 1.0e3
+# (the clamp of the ring-down: about 10 000 times stiffer than the bracket at A, damped)
+K_CLAMP_R, K_CLAMP_T, B_CLAMP_R, B_CLAMP_T = 1.0e6, 1.0e8, 2.0, 500.0
+# welds: the bolted joints hub-bracket (A) and bracket-payload (B). Two bodies with their own
+# momenta cannot be joined rigidly (derivative causality), so each joint is a stiff Revolute3D
+# about z whose rotation is held by a stiff torsion spring: about 1000 times stiffer than the
+# bracket at that interface.
+KT_W, KR_W, KW = 1.0e8, 1.0e5, 1.0e5
 
 
 def fmt(x: float) -> str:
@@ -111,24 +119,65 @@ def doc(name, nodes, conns, bindings, plots, t_end, points):
         "diagram": {"nodes": nodes, "connections": conns, "subsystemPorts": [], "annotations": []},
         "settings": settings(t_end, points),
         "plots": plots,
-        "scene": {"file": f"scenes/{name}.sdf"},
+        # the deflections are a fraction of a millimetre: the view opens at x100 (marked exaggerated)
+        "scene": {"file": f"scenes/{name}.sdf", "exaggeration": 100},
         "bindings": bindings,
     }
 
 
-def turntable() -> dict:
-    s2 = math.sqrt(0.5)
-    del s2
+def weld(prefix: str, x: int, y: int, mass: float, inertia: float) -> tuple[list, list]:
+    """A stiff weld: Revolute3D `<prefix>` held about z by a torsion spring to a fixed shaft.
+    Returns the nodes and the two wires; the caller connects parent, child and pose."""
     nodes = [
+        node(prefix, prefix, "spatial/Revolute3D", x, y,
+             {"kt": fmt(KT_W), "kr": fmt(KR_W), "bt": fmt(2 * 0.05 * math.sqrt(KT_W * mass)),
+              "br": fmt(2 * 0.05 * math.sqrt(KR_W * inertia))}),
+        node(f"{prefix}Ground", f"{prefix}Ground", "rotation/FixedShaft", x, y - 180),
+        node(f"{prefix}Spring", f"{prefix}Spring", "rotation/TorsionSpring", x, y - 90, {"k": fmt(KW)}),
+    ]
+    conns = [
+        conn(f"w{prefix}1", "wire", f"{prefix}Ground", "a", f"{prefix}Spring", "a"),
+        conn(f"w{prefix}2", "wire", f"{prefix}Spring", "b", prefix, "drive"),
+    ]
+    return nodes, conns
+
+
+def payload_chain(bracket: str, x0: int, y_pose: int) -> tuple[list, list]:
+    """Bracket B -> WeldB -> Offset (20 mm up) -> Payload, and the payload's pose chain."""
+    wn, wc = weld("WeldB", x0, 300, M_PAY, J_PAY)
+    nodes = wn + [
+        node("n6", "Offset", "multibond/FixedTransform3DNeutral", x0 + 180, 300, {"z": fmt(COM_PAY)}),
+        node("n7", "Payload", "spatial/RigidBody3D", x0 + 360, 300,
+             {"m": fmt(M_PAY), "J": vec([J_PAY] * 3)}),
+        node("n26", "PWeldB", "multibond/ComposePose3D", x0, y_pose),
+        node("n24", "OffsetPose", "spatial/LocalPose3D", x0 + 180, y_pose + 80, {"z": fmt(COM_PAY)}),
+        node("n25", "PPayload", "multibond/ComposePose3D", x0 + 180, y_pose),
+    ]
+    conns = wc + [
+        # bonds point into the body they load (joint.parent -> body, as in the library examples)
+        conn("c5", "bond", "WeldB", "parent", bracket, "B"),
+        conn("c5b", "bond", "WeldB", "child", "n6", "a"),
+        conn("c6", "bond", "n6", "b", "n7", "p"),
+        conn("c26", "signal", bracket, "poseB", "n26", "gp"),
+        conn("c26b", "signal", "WeldB", "pose", "n26", "gl"),
+        conn("c27", "signal", "n26", "g", "n25", "gp"),
+        conn("c27b", "signal", "n24", "g", "n25", "gl"),
+        conn("c28", "signal", "n25", "g", "n7", "g"),
+    ]
+    return nodes, conns
+
+
+def turntable() -> dict:
+    wa_nodes, wa_conns = weld("WeldA", 520, 300, M_BRACKET + M_PAY, J_BRACKET_A)
+    pay_nodes, pay_conns = payload_chain("n5", 1000, 480)
+    nodes = wa_nodes + pay_nodes + [
         node("n1", "World", "multibond/GroundSpatial", 40, 300),
         node("n2", "Table", "spatial/Revolute3D", 220, 300,
              {"kt": fmt(KT), "kr": fmt(KR), "bt": fmt(2 * 0.05 * math.sqrt(KT * M_HUB)),
               "br": fmt(2 * 0.05 * math.sqrt(KR * J_HUB[0]))}),
         node("n3", "Hub", "spatial/RigidBody3D", 400, 300, {"m": fmt(M_HUB), "J": vec(J_HUB)}),
-        node("n4", "Seat", "multibond/FixedTransform3DNeutral", 580, 300, {"z": fmt(SEAT_Z)}),
-        node("n5", "Bracket", "spatial/ModalBody3D", 760, 300, {"zeta": fmt(ZETA)}, {"file": MODAL_FILE}),
-        node("n6", "Clamp", "multibond/FixedTransform3DNeutral", 940, 300, {"z": fmt(COM_PAY)}),
-        node("n7", "Payload", "spatial/RigidBody3D", 1120, 300, {"m": fmt(M_PAY), "J": vec([J_PAY] * 3)}),
+        node("n4", "Seat", "multibond/FixedTransform3DNeutral", 670, 300, {"z": fmt(SEAT_Z)}),
+        node("n5", "Bracket", "spatial/ModalBody3D", 820, 300, {"zeta": fmt(ZETA)}, {"file": MODAL_FILE}),
         # servo
         node("n10", "MoveOut", "motion/SCurveProfile", 40, 20,
              {"q_start": "0.0", "q_end": fmt(math.pi / 2), "t_start": "0.2",
@@ -144,18 +193,16 @@ def turntable() -> dict:
         # poses
         node("n20", "Origin", "spatial/LocalPose3D", 220, 480),
         node("n21", "PHub", "multibond/ComposePose3D", 400, 480),
-        node("n22", "SeatPose", "spatial/LocalPose3D", 580, 560, {"z": fmt(SEAT_Z)}),
-        node("n23", "PBracketA", "multibond/ComposePose3D", 580, 480),
-        node("n24", "ClampPose", "spatial/LocalPose3D", 940, 560, {"z": fmt(COM_PAY)}),
-        node("n25", "PPayload", "multibond/ComposePose3D", 940, 480),
+        node("n22", "SeatPose", "spatial/LocalPose3D", 670, 560, {"z": fmt(SEAT_Z)}),
+        node("n27", "PWeldA", "multibond/ComposePose3D", 520, 480),
+        node("n23", "PBracketA", "multibond/ComposePose3D", 670, 480),
     ]
-    conns = [
+    conns = wa_conns + pay_conns + [
         conn("c1", "bond", "n1", "p", "n2", "parent"),
         conn("c2", "bond", "n2", "child", "n3", "p"),
-        conn("c3", "bond", "n3", "p", "n4", "a"),
-        conn("c4", "bond", "n4", "b", "n5", "A"),
-        conn("c5", "bond", "n5", "B", "n6", "a"),
-        conn("c6", "bond", "n6", "b", "n7", "p"),
+        conn("c3", "bond", "WeldA", "parent", "n3", "p"),
+        conn("c4", "bond", "WeldA", "child", "n4", "a"),
+        conn("c4b", "bond", "n4", "b", "n5", "A"),
         conn("c10", "signal", "n10", "v", "n16", "u1"),
         conn("c11", "signal", "n11", "v", "n16", "u2"),
         conn("c17", "signal", "n16", "y", "n12", "u"),
@@ -167,18 +214,17 @@ def turntable() -> dict:
         conn("c20", "signal", "n20", "g", "n21", "gp"),
         conn("c21", "signal", "n2", "pose", "n21", "gl"),
         conn("c22", "signal", "n21", "g", "n3", "g"),
-        conn("c23", "signal", "n21", "g", "n23", "gp"),
-        conn("c24", "signal", "n22", "g", "n23", "gl"),
+        conn("c23", "signal", "n21", "g", "n27", "gp"),
+        conn("c24", "signal", "WeldA", "pose", "n27", "gl"),
+        conn("c24b", "signal", "n27", "g", "n23", "gp"),
+        conn("c24c", "signal", "n22", "g", "n23", "gl"),
         conn("c25", "signal", "n23", "g", "n5", "gA"),
-        conn("c26", "signal", "n5", "poseB", "n25", "gp"),
-        conn("c27", "signal", "n24", "g", "n25", "gl"),
-        conn("c28", "signal", "n25", "g", "n7", "g"),
     ]
     bindings = [pose("hub", "PHub/g"), pose("bracket", "Bracket/pose"), pose("payload", "PPayload/g"), mode_shapes()]
     plots = [
         {"id": "p1", "title": "Table angle (rad) and speed (rad/s)", "signals": ["Table/qout", "Table/qdout"]},
         {"id": "p2", "title": "Modal coordinates (m)", "signals": [f"Bracket/eta[{i}]" for i in range(1, NM + 1)]},
-        {"id": "p3", "title": "Payload twist (body frame)", "signals": [f"Payload/V[{i}]" for i in range(1, 7)]},
+        {"id": "p3", "title": "Payload twist (body frame)", "signals": [f"Payload/flow/y[{i}]" for i in range(1, 7)]},
         {"id": "p4", "title": "Bracket energies (J)", "signals": ["Bracket/Ek", "Bracket/Ee", "Bracket/Eg"]},
     ]
     return doc(NAME, nodes, conns, bindings, plots, T_END, 6001)
@@ -188,33 +234,28 @@ def ringdown() -> dict:
     # the payload starts moving: 0.1 m/s along y (the upright's thin direction) and 0.05 m/s
     # along x, so both bending directions ring
     p0 = [0.0, 0.0, 0.0, 0.05 * M_PAY, 0.1 * M_PAY, 0.0]
-    nodes = [
+    pay_nodes, pay_conns = payload_chain("n3", 580, 480)
+    for n in pay_nodes:
+        if n["name"] == "Payload":
+            n["params"]["g0"] = "0.0"
+            n["starts"] = {"inertia/P": vec(p0)}
+    nodes = pay_nodes + [
         node("n1", "Clamp", "multibond/CSpatial", 220, 300,
-             {k: fmt(K_CLAMP) for k in ("krx", "kry", "krz", "kx", "ky", "kz")}),
+             {k: fmt(K_CLAMP_R if k.startswith("kr") else K_CLAMP_T) for k in ("krx", "kry", "krz", "kx", "ky", "kz")}),
         node("n2", "ClampDamping", "multibond/RSpatial", 220, 420,
-             {k: fmt(B_CLAMP) for k in ("brx", "bry", "brz", "bx", "by", "bz")}),
+             {k: fmt(B_CLAMP_R if k.startswith("br") else B_CLAMP_T) for k in ("brx", "bry", "brz", "bx", "by", "bz")}),
         node("n3", "Bracket", "spatial/ModalBody3D", 400, 300, {"zeta": "0.0", "g0": "0.0"}, {"file": MODAL_FILE}),
-        node("n4", "PayloadMount", "multibond/FixedTransform3DNeutral", 580, 300, {"z": fmt(COM_PAY)}),
-        node("n5", "Payload", "spatial/RigidBody3D", 760, 300,
-             {"m": fmt(M_PAY), "J": vec([J_PAY] * 3), "g0": "0.0"}, starts={"P": vec(p0)}),
         node("n20", "Origin", "spatial/LocalPose3D", 400, 480),
-        node("n21", "PayloadPose", "spatial/LocalPose3D", 580, 560, {"z": fmt(COM_PAY)}),
-        node("n22", "PPayload", "multibond/ComposePose3D", 760, 480),
     ]
-    conns = [
+    conns = pay_conns + [
         conn("c1", "bond", "n3", "A", "n1", "p"),
         conn("c2", "bond", "n3", "A", "n2", "p"),
-        conn("c3", "bond", "n3", "B", "n4", "a"),
-        conn("c4", "bond", "n4", "b", "n5", "p"),
-        conn("c5", "signal", "n20", "g", "n3", "gA"),
-        conn("c6", "signal", "n3", "poseB", "n22", "gp"),
-        conn("c7", "signal", "n21", "g", "n22", "gl"),
-        conn("c8", "signal", "n22", "g", "n5", "g"),
+        conn("c3", "signal", "n20", "g", "n3", "gA"),
     ]
     bindings = [pose("bracket", "Bracket/pose"), pose("payload", "PPayload/g"), mode_shapes()]
     plots = [
         {"id": "p1", "title": "Modal coordinates (m)", "signals": [f"Bracket/eta[{i}]" for i in range(1, NM + 1)]},
-        {"id": "p2", "title": "Payload velocity (m/s, body frame)", "signals": ["Payload/V[4]", "Payload/V[5]", "Payload/V[6]"]},
+        {"id": "p2", "title": "Payload velocity (m/s, body frame)", "signals": ["Payload/flow/y[4]", "Payload/flow/y[5]", "Payload/flow/y[6]"]},
         {"id": "p3", "title": "Energy (J)", "signals": ["Bracket/Ek", "Bracket/Ee"]},
     ]
     return doc(RING, nodes, conns, bindings, plots, 1.0, 20001)
@@ -276,7 +317,7 @@ def scene(name: str, turntable_scene: bool) -> str:
     </link>
 
     <link name="payload">
-      <pose>0.08 0 {a_z + 0.155 + COM_PAY} 0 0 0</pose>
+      <pose>0.1 0 {a_z + 0.155 + COM_PAY} 0 0 0</pose>
       <visual name="payload_cube">
         <geometry><box><size>{A_PAY} {A_PAY} {A_PAY}</size></box></geometry>
         <material><diffuse>0.9 0.55 0.1 1</diffuse></material>
@@ -300,11 +341,11 @@ def expected() -> dict:
                 "checks": [
                     {"kind": "no_diagnostics", "codes": ["E101", "E102", "E108", "W201", "W202"]},
                     {"kind": "scene_bindings"},
-                    {"kind": "final_value", "signal": "Table/qout", "t": T_END, "value": 0.0, "atol": 0.01,
+                    {"kind": "final_value", "signal": "Table/qout", "t": T_END, "value": 0.0, "abs": 0.01,
                      "note": "the table is back at 0 after the two index moves"},
                     {"kind": "max_abs", "signal": "Table/qout", "from_t": 0.0, "to_t": T_END,
                      "value": math.pi / 2, "rtol": 0.02, "note": "the first move reaches 90 degrees"},
-                    {"kind": "fft_peak", "signal": "Payload/V[1]", "from_t": 1.0, "to_t": 1.6,
+                    {"kind": "fft_peak", "signal": "Payload/flow/y[1]", "from_t": 1.0, "to_t": 1.6,
                      "min_hz": 8.0, "max_hz": 40.0, "value": full[0], "rtol": 0.06,
                      "note": "the payload rings near the first clamped bracket mode after the move (the servo spring lowers it slightly); " + note},
                 ]
@@ -313,9 +354,9 @@ def expected() -> dict:
                 "checks": [
                     {"kind": "no_diagnostics", "codes": ["E101", "E102", "E108", "W201", "W202"]},
                     {"kind": "scene_bindings"},
-                    {"kind": "fft_peak", "signal": "Payload/V[5]", "from_t": 0.0, "to_t": 1.0,
+                    {"kind": "fft_peak", "signal": "Payload/flow/y[5]", "from_t": 0.0, "to_t": 1.0,
                      "min_hz": 5.0, "max_hz": 25.0, "value": full[0], "rtol": 0.003, "note": note},
-                    {"kind": "fft_peak", "signal": "Payload/V[4]", "from_t": 0.0, "to_t": 1.0,
+                    {"kind": "fft_peak", "signal": "Payload/flow/y[4]", "from_t": 0.0, "to_t": 1.0,
                      "min_hz": 25.0, "max_hz": 60.0, "value": full[1], "rtol": 0.003, "note": note},
                 ]
             },

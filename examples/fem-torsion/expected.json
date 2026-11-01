@@ -33,9 +33,9 @@
           "signal": "Twist/y",
           "from_t": 0.0,
           "to_t": 5.0,
-          "value": 0.27,
+          "value": 0.0287,
           "rtol": 0.05,
-          "note": "the largest twist, about 15 degrees (as flex-torsion)"
+          "note": "the largest twist, about 1.6 degrees: small, so the linear field of the reduced model holds (at 0.29 rad the twist-dependent kinematics raise the frequency by 0.7 %)"
         }
       ]
     }
