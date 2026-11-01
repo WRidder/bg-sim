@@ -16,7 +16,7 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
 * evaluates every check kind (``final_value``, ``cursor_value``, ``max_abs``,
   ``max_abs_le``, ``min_ge``, ``ratio``, ``zero_crossing``, ``period``, ``energy``,
   ``invariant``, ``planar_fk``, ``energy_ledger``, ``compare_signals``,
-  ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak`` and
+  ``rms_difference``, ``step_response``, ``ripple``, ``fft_peak``, ``damping``,
   ``scene_bindings`` and ``no_diagnostics``), prints one
   line per check and exits non-zero when any check fails;
 * for every model with a ``models/<model>.docs`` folder, runs one docs check (X5.10): the
@@ -133,6 +133,21 @@ centered moving average so a decaying envelope does not dominate a ring-down::
 
     {"kind": "fft_peak", "signal": "SInt/y", "from_t": 1.8, "to_t": 4.0,
      "min_hz": 0.5, "max_hz": 2.5, "value": 1.24, "rtol": 0.05}
+
+``damping`` fits one damped oscillation to ``signal`` over ``[from_t, to_t]`` and reads
+its damping ratio and natural frequency: the model is
+``y = c (+ d t) + exp(-sigma t) (A cos(wd t) + B sin(wd t))`` (``offset``:
+``"constant"``, the default, or ``"linear"`` for a slow drift such as a spiral mode),
+fitted by variable projection (the linear coefficients by least squares for each
+``(sigma, wd)``, a coarse grid and then a shrinking local search).  It collapses the
+event rows and resamples like ``ripple``.  ``zeta = sigma / sqrt(sigma^2 + wd^2)`` is
+compared with ``zeta`` through ``zeta_abs`` and ``wn = sqrt(sigma^2 + wd^2)`` (rad/s)
+with ``wn`` through ``wn_rtol``; ``min_wn``/``max_wn`` (default 0.1 and 50 rad/s) bound
+the search.  It reads, for example, a dutch roll from the sideslip after a rudder kick
+against the linearised mode of a design script::
+
+    {"kind": "damping", "signal": "F16/Air/beta_deg", "from_t": 1.5, "to_t": 10.0,
+     "zeta": 0.124, "zeta_abs": 0.02, "wn": 2.76, "wn_rtol": 0.05}
 
 ``period`` measures the period of ``signal`` from two consecutive crossings of
 ``level`` (default 0) in ``direction`` (default ``"up"``).  ``n`` (default 1) is
@@ -1672,6 +1687,108 @@ def _ripple_check(
     report.check(measured <= limit, label, detail)
 
 
+def _damped_fit(
+    t: np.ndarray, y: np.ndarray, sigma: float, wd: float, linear: bool
+) -> tuple[float, np.ndarray]:
+    """Least-squares residual of c (+ d t) + exp(-sigma t)(A cos wd t + B sin wd t)."""
+    env = np.exp(-sigma * t)
+    cols = [np.ones_like(t), env * np.cos(wd * t), env * np.sin(wd * t)]
+    if linear:
+        cols.append(t)
+    basis = np.stack(cols, axis=1)
+    coef, *_ = np.linalg.lstsq(basis, y, rcond=None)
+    residual = y - basis @ coef
+    return float(residual @ residual), coef
+
+
+def _damping_fit(
+    times: np.ndarray, values: np.ndarray, linear: bool = False,
+    min_wn: float = 0.1, max_wn: float = 50.0,
+) -> tuple[float, float, float] | None:
+    """(zeta, wn, relative residual) of the best damped-oscillation fit, or None."""
+    resampled = _resample_window(times, values)
+    if resampled is None:
+        return None
+    y, dt = resampled
+    t = np.arange(y.size) * dt
+    span = float(t[-1])
+    scale = float(np.sum((y - np.mean(y)) ** 2))
+    if span <= 0.0 or scale <= 0.0:
+        return None
+    max_wn = min(max_wn, np.pi / dt / 2.0)
+    best = None
+    # coarse grid over (log wn, zeta), then a shrinking pattern search in (sigma, wd)
+    for wn in np.geomspace(min_wn, max_wn, 60):
+        for zeta in np.linspace(0.0, 0.98, 50):
+            sigma, wd = zeta * wn, wn * np.sqrt(1.0 - zeta**2)
+            cost, _ = _damped_fit(t, y, sigma, wd, linear)
+            if best is None or cost < best[0]:
+                best = (cost, sigma, wd)
+    cost, sigma, wd = best
+    step_s, step_w = max(0.2 * wd, 1e-3), max(0.2 * wd, 1e-3)
+    while step_s > 1e-7 * max(wd, 1.0) or step_w > 1e-7 * max(wd, 1.0):
+        moved = False
+        for ds, dw in ((step_s, 0.0), (-step_s, 0.0), (0.0, step_w), (0.0, -step_w)):
+            s_try, w_try = sigma + ds, wd + dw
+            if w_try <= 0.0:
+                continue
+            c_try, _ = _damped_fit(t, y, s_try, w_try, linear)
+            if c_try < cost:
+                cost, sigma, wd, moved = c_try, s_try, w_try, True
+        if not moved:
+            step_s *= 0.5
+            step_w *= 0.5
+    wn = float(np.hypot(sigma, wd))
+    return float(sigma / wn), wn, float(np.sqrt(cost / scale))
+
+
+def _damping_check(
+    report: Report, project: str, model: str, run: Run, check: dict[str, Any]
+) -> None:
+    """Damping ratio and natural frequency of one damped oscillation (a fitted mode)."""
+    signal = str(check.get("signal", ""))
+    label = f"{project}/{model} {signal} damping"
+    if signal not in run.signals:
+        report.check(False, label, f"unknown signal; the run records {len(run.signals)} signals")
+        return
+    offset = str(check.get("offset", "constant"))
+    if offset not in {"constant", "linear"}:
+        report.check(False, label, "'offset' must be 'constant' or 'linear'")
+        return
+    try:
+        zeta_ref = float(check["zeta"])
+        zeta_abs = float(check["zeta_abs"])
+        wn_ref = float(check["wn"])
+        wn_rtol = float(check["wn_rtol"])
+        min_wn = float(check.get("min_wn", 0.1))
+        max_wn = float(check.get("max_wn", 50.0))
+    except (KeyError, TypeError, ValueError):
+        report.check(False, label, "the check needs numbers 'zeta', 'zeta_abs', 'wn' and 'wn_rtol'")
+        return
+    if not (0.0 < min_wn < max_wn) or zeta_abs < 0.0 or wn_rtol < 0.0:
+        report.check(False, label, "need 0 < min_wn < max_wn and non-negative tolerances")
+        return
+    first = float(run.time[0])
+    last = float(run.time[-1])
+    from_t = float(check.get("from_t", first))
+    to_t = float(check.get("to_t", last))
+    window = (run.time >= from_t) & (run.time <= to_t)
+    if not window.any():
+        report.check(False, label, f"no samples in [{from_t:g}, {to_t:g}]")
+        return
+    fit = _damping_fit(run.time[window], run.signals[signal][window], offset == "linear", min_wn, max_wn)
+    if fit is None:
+        report.check(False, label, "the window is too short or the signal is constant")
+        return
+    zeta, wn, rel = fit
+    ok = abs(zeta - zeta_ref) <= zeta_abs and abs(wn - wn_ref) <= wn_rtol * abs(wn_ref)
+    detail = (
+        f"over [{from_t:g}, {to_t:g}]: zeta {zeta:.4f} (expected {zeta_ref:.4f} +- {zeta_abs:g}), "
+        f"wn {wn:.4f} rad/s (expected {wn_ref:.4f}, rtol {wn_rtol:g}), fit residual {rel:.2%}"
+    )
+    report.check(ok, label, detail)
+
+
 def _resample_window(
     times: np.ndarray, values: np.ndarray
 ) -> tuple[np.ndarray, float] | None:
@@ -2048,8 +2165,9 @@ def _scene_bindings_check(
     angle for a revolute joint, a length for a prismatic one, dimensionless then metres for
     the seven pose signals) and a pose needs exactly seven signals. A ``deformation`` binding
     needs a box or cylinder visual (a cylinder along its own z), one to three modal coordinates
-    (lengths for bending, angles for torsion) and at most one binding per family and visual. A
-    ``mode-shapes`` binding needs a mesh visual whose GLB (in the project's ``meshes/`` folder)
+    (lengths for bending, angles for torsion) and at most one binding per family and visual; the
+    ``linear`` basis (the twist of a lumped torsion spring) takes family torsion and exactly one signal.
+    A ``mode-shapes`` binding needs a mesh visual whose GLB (in the project's ``meshes/`` folder)
     has at least as many morph targets as the binding has signals, one to 64 modal coordinates
     in metres, and at most one such binding per visual.
     This is E301 to E304 of the viewer (plan 7.6), checked without a browser.
@@ -2134,7 +2252,12 @@ def _scene_bindings_check(
                 errors.append(f"{where}: a {geometry} is not a beam; bind a box or cylinder")
             elif geometry == "cylinder" and str((binding.get("beam") or {}).get("axis", "")) not in ("+z", "-z"):
                 errors.append(f"{where}: a cylinder's beam axis is its local z (+z or -z)")
-            if not isinstance(binding.get("signal"), list) or not 1 <= len(signals) <= 3:
+            if binding.get("basis") == "linear":
+                if family != "torsion":
+                    errors.append(f"{where}: the linear basis is the twist of a torsion spring, not {family}")
+                if not isinstance(binding.get("signal"), list) or len(signals) != 1:
+                    errors.append(f"{where}: the linear basis needs 1 signal (the twist of end B relative to end A), got {len(signals)}")
+            elif not isinstance(binding.get("signal"), list) or not 1 <= len(signals) <= 3:
                 errors.append(f"{where}: needs 1 to 3 modal coordinates, got {len(signals)}")
             key = (target, family)
             if key in deformation_families:
@@ -2321,6 +2444,8 @@ def _check_model_checks(
             _ripple_check(report, project, model, run, check)
         elif kind == "fft_peak":
             _fft_peak_check(report, project, model, run, check)
+        elif kind == "damping":
+            _damping_check(report, project, model, run, check)
         elif kind == "scene_bindings":
             _scene_bindings_check(report, project, model, run, check)
         elif kind == "no_diagnostics":

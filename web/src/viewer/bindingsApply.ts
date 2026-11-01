@@ -92,7 +92,7 @@ export class BindingApplier {
     for (const binding of bindings) {
       const names = signalsOf(binding);
       const cols = names.map((n) => ids.indexOf(n));
-      const [min, max] = signalCount(binding.property);
+      const [min, max] = signalCount(binding.property, binding.property === "deformation" ? binding.basis : undefined);
       if (names.length < min || names.length > max || cols.some((c) => c < 0)) continue;
       this.compiled.push({ binding, cols });
     }

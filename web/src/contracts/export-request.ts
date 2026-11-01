@@ -98,8 +98,13 @@ export type ModelScene = {
    * Scene file relative to the project directory, e.g. scenes/drivetrain.sdf.
    */
   file: string;
+  exaggeration?: SceneExaggeration;
   $comment?: string;
 } | null;
+/**
+ * The initial deformation exaggeration of the 3D view for this model (a display factor on every beam deformation), used when this browser has no stored choice for the model. A choice the viewer stores still wins. Absent: 1 (true scale).
+ */
+export type SceneExaggeration = 1 | 10 | 100 | 1000;
 /**
  * One binding: a scene target, a property, the signal(s) that drive it, and optional gain and offset.
  */
@@ -116,9 +121,9 @@ export type ScaleProperty = "scale.x" | "scale.y" | "scale.z";
 export type Colormap = "heat" | "viridis" | "coolwarm";
 export type DeformationFamily = "bending-y" | "bending-z" | "torsion";
 /**
- * Boundary conditions of the mode shapes. clamped-free: end A clamped to the beam frame, end B free (cantilever). free-free: both ends free (the rigid motion is the beam frame pose).
+ * Boundary conditions of the mode shapes. clamped-free: end A clamped to the beam frame, end B free (cantilever). free-free: both ends free (the rigid motion is the beam frame pose). linear: the lumped (massless spring) twist distribution of a torsion spring, theta(s) = (s / L) * eta, where the single coordinate eta is the twist of end B relative to end A in rad; torsion only, exactly one signal (a semantic rule, not a schema rule: the viewer reports a linear bending binding as E301 and a second signal as E304, like the run checks).
  */
-export type DeformationBasis = "clamped-free" | "free-free";
+export type DeformationBasis = "clamped-free" | "free-free" | "linear";
 export type ShapeAxis = "+x" | "-x" | "+y" | "-y" | "+z" | "-z";
 export type DashboardCardKind =
   | "plot"
@@ -508,7 +513,7 @@ export interface VisibleBinding {
   $comment?: string;
 }
 /**
- * Elastic deformation of a beam-shaped visual (a box or a cylinder) by modal coordinates (assumed modes, Euler-Bernoulli). The beam frame has its origin at end A (s = 0) and its x axis along the beam to end B (s = L). "bending-y" deflects along the beam y axis (sections rotate about z by the slope), "bending-z" along the beam z axis (sections rotate about y), "torsion" rotates the sections about x. Deflection w(s) = sum_n phi_n(s) * eta_n (eta in m), twist theta(s) = sum_n psi_n(s) * eta_n (eta in rad), with the mode shapes of `basis` normalised to (1/L) * integral_0^L phi_n^2 ds = 1. Deformation bindings of one visual (at most one per family) compose and must give the same `beam`. The rigid motion of the beam frame is the pose binding of the link the visual belongs to.
+ * Elastic deformation of a beam-shaped visual (a box or a cylinder) by modal coordinates (assumed modes, Euler-Bernoulli), or by the twist of a lumped torsion spring (basis linear). The beam frame has its origin at end A (s = 0) and its x axis along the beam to end B (s = L). "bending-y" deflects along the beam y axis (sections rotate about z by the slope), "bending-z" along the beam z axis (sections rotate about y), "torsion" rotates the sections about x. Deflection w(s) = sum_n phi_n(s) * eta_n (eta in m), twist theta(s) = sum_n psi_n(s) * eta_n (eta in rad), with the mode shapes of `basis` normalised to (1/L) * integral_0^L phi_n^2 ds = 1. Deformation bindings of one visual (at most one per family) compose and must give the same `beam`. The rigid motion of the beam frame is the pose binding of the link the visual belongs to.
  */
 export interface DeformationBinding {
   target: string;

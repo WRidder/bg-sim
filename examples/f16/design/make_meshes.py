@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["numpy>=2.0", "scipy>=1.13", "networkx>=3", "trimesh>=4.4"]
+# dependencies = ["numpy>=2.0", "scipy>=1.13", "networkx>=3", "trimesh>=4.4", "shapely>=2.0", "mapbox-earcut>=1.0"]
 # ///
 """The F-16 meshes of the 3D scenes (`meshes/*.glb`), built from simple solids.
 
@@ -15,6 +15,11 @@ The all-moving horizontal tails (stabilators) are a separate mesh with its origi
 pivot axis (`STAB_PIVOT`), so the scene can turn them with a revolute joint.
 
 Three paint schemes (grey, sand, blue) tell the aircraft of one model apart.
+
+The f16-sim model (and the f16-sim host, apps/f16-sim) also moves the ailerons and the rudder:
+`f16sim_body.glb` (grey) has the wing cut out for the flaperons and the fin cut out for the
+rudder, and `f16sim_flap_l.glb`, `f16sim_flap_r.glb`, `f16sim_rudder.glb` are those surfaces with
+their origin on their hinge line (`SIM_PIVOTS`, the same numbers as in build_model.py).
 """
 
 from __future__ import annotations
@@ -28,6 +33,11 @@ import trimesh
 
 OUT = Path(__file__).resolve().parent.parent / "meshes"
 STAB_PIVOT = (-5.0, 0.0, 0.05)   # m, body frame
+# Movable surfaces of the f16-sim meshes: hinge point (body frame) of each (build_model.SIM_PIVOTS)
+FLAP_IN, FLAP_OUT = 1.25, 3.6    # m, span of the flaperon (left wing, y > 0)
+FLAP_CHORD = 0.55                # m
+RUDDER = [(-5.75, 0.9), (-5.95, 3.4), (-6.34, 3.4), (-6.22, 0.9)]   # (x, z): hinge bottom, top, trailing edge
+SIM_PIVOTS = {"flap_l": (-2.419, 1.25, 0.0), "flap_r": (-2.419, -1.25, 0.0), "rudder": (-5.75, 0.0, 0.9)}
 
 SCHEMES = {
     "grey": {"skin": (150, 156, 164), "dark": (95, 100, 108)},
@@ -118,7 +128,7 @@ def mirror_y(mesh: trimesh.Trimesh) -> trimesh.Trimesh:
     return m
 
 
-def body(scheme) -> trimesh.Scene:
+def body(scheme, sim: bool = False) -> trimesh.Scene:
     skin, dark = scheme["skin"], scheme["dark"]
     parts = []
     fus = loft([
@@ -142,7 +152,12 @@ def body(scheme) -> trimesh.Scene:
     can.apply_translation([4.9, 0.0, 0.62])
     parts.append(coloured(can, CANOPY))
     # wing with the leading-edge extension (half span, y > 0), mirrored
-    wing = slab([(5.4, 0.45), (2.4, 1.05), (-1.25, 4.6), (-2.45, 4.6), (-3.0, 1.05), (-3.0, 0.45)], 0.12, "xy", 0.0)
+    if sim:   # the wing without the flaperon (the trailing edge between FLAP_IN and FLAP_OUT)
+        hi, ho = flap_hinge()
+        wing = plate([(5.4, 0.45), (2.4, 1.05), (-1.25, 4.6), (-2.45, 4.6), (te_x(FLAP_OUT), FLAP_OUT), ho, hi,
+                      (te_x(FLAP_IN), FLAP_IN), (-3.0, 1.05), (-3.0, 0.45)], 0.12, "xy")
+    else:
+        wing = slab([(5.4, 0.45), (2.4, 1.05), (-1.25, 4.6), (-2.45, 4.6), (-3.0, 1.05), (-3.0, 0.45)], 0.12, "xy", 0.0)
     parts += [coloured(wing, skin), coloured(mirror_y(wing), skin)]
     # wingtip rails with missiles (red nose, white body)
     for sgn in (1.0, -1.0):
@@ -152,10 +167,15 @@ def body(scheme) -> trimesh.Scene:
         tip.apply_translation([0.4, sgn * 4.72, 0.0])
         parts.append(coloured(tip, RED))
     # vertical tail (x-z plane) and the rudder line
-    fin = slab([(-2.2, 0.55), (-5.0, 3.55), (-6.35, 3.55), (-6.2, 0.55)], 0.12, "xz", 0.0)
-    parts.append(coloured(fin, skin))
-    rudder = slab([(-5.75, 0.9), (-5.95, 3.4), (-6.3, 3.4), (-6.2, 0.9)], 0.13, "xz", 0.0)
-    parts.append(coloured(rudder, dark))
+    if sim:   # the fin without the rudder
+        r = RUDDER
+        fin = plate([(-2.2, 0.55), (-5.0, 3.55), (-6.35, 3.55), r[2], r[1], r[0], r[3], (-6.2, 0.55)], 0.12, "xz")
+        parts.append(coloured(fin, skin))
+    else:
+        fin = slab([(-2.2, 0.55), (-5.0, 3.55), (-6.35, 3.55), (-6.2, 0.55)], 0.12, "xz", 0.0)
+        parts.append(coloured(fin, skin))
+        rudder = slab([(-5.75, 0.9), (-5.95, 3.4), (-6.3, 3.4), (-6.2, 0.9)], 0.13, "xz", 0.0)
+        parts.append(coloured(rudder, dark))
     # ventral fins, canted out
     for sgn in (1.0, -1.0):
         vf = slab([(-3.6, 0.0), (-4.6, -0.6), (-5.2, -0.6), (-5.0, 0.0)], 0.06, "xz", 0.0)
@@ -182,8 +202,52 @@ def stabilators(scheme) -> trimesh.Scene:
     return scene
 
 
+def te_x(y):
+    """x of the wing's trailing edge at span y (left wing)."""
+    return -3.0 + (y - 1.05) / (4.6 - 1.05) * 0.55
+
+
+def flap_hinge():
+    """Inboard and outboard hinge points (x, y) of the left flaperon."""
+    return (te_x(FLAP_IN) + FLAP_CHORD, FLAP_IN), (te_x(FLAP_OUT) + FLAP_CHORD, FLAP_OUT)
+
+
+def plate(points, thickness, plane="xy") -> trimesh.Trimesh:
+    """A flat plate of any (also concave) polygon, centred on its plane (shapely + earcut)."""
+    from shapely.geometry import Polygon
+    m = trimesh.creation.extrude_polygon(Polygon(points), thickness)
+    m.apply_translation([0.0, 0.0, -thickness / 2.0])
+    if plane == "xz":   # local (x, y, z) -> (x, -z, y)
+        m.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [1, 0, 0]))
+    m.fix_normals()
+    return m
+
+
+def surfaces(scheme) -> dict[str, trimesh.Scene]:
+    """The flaperons and the rudder of the f16-sim meshes, each with its origin on its hinge."""
+    hi, ho = flap_hinge()
+    left = [hi, ho, (te_x(FLAP_OUT), FLAP_OUT), (te_x(FLAP_IN), FLAP_IN)]
+    px, py, _ = SIM_PIVOTS["flap_l"]
+    flap_l = plate([(x - px, y - py) for x, y in left], 0.07, "xy")
+    flap_r = mirror_y(flap_l)
+    rx, _, rz = SIM_PIVOTS["rudder"]
+    rudder = plate([(x - rx, z - rz) for x, z in RUDDER], 0.1, "xz")
+    out = {}
+    for name, mesh in (("flap_l", flap_l), ("flap_r", flap_r), ("rudder", rudder)):
+        sc = trimesh.Scene()
+        sc.add_geometry(coloured(mesh, scheme["dark"]), node_name=name)
+        out[name] = sc
+    return out
+
+
 def main() -> int:
     OUT.mkdir(exist_ok=True)
+    grey = SCHEMES["grey"]
+    for name, scene in [("body", body(grey, sim=True)), *surfaces(grey).items()]:
+        path = OUT / f"f16sim_{name}.glb"
+        data = scene.export(file_type="glb")
+        path.write_bytes(data)
+        print(f"wrote {path.name}: {len(data) / 1024:.1f} KiB")
     for name, scheme in SCHEMES.items():
         for kind, build in (("body", body), ("stab", stabilators)):
             path = OUT / f"f16_{kind}_{name}.glb"

@@ -372,7 +372,7 @@
          1
         ],
         "unit": null,
-        "node": "n13",
+        "node": "n14",
         "port": "u"
        },
        {
@@ -384,7 +384,7 @@
          1
         ],
         "unit": null,
-        "node": "n14",
+        "node": "n15",
         "port": "u"
        },
        {
@@ -396,7 +396,7 @@
          1
         ],
         "unit": null,
-        "node": "n15",
+        "node": "n16",
         "port": "u"
        },
        {
@@ -408,7 +408,7 @@
          1
         ],
         "unit": null,
-        "node": "n16",
+        "node": "n17",
         "port": "u"
        },
        {
@@ -444,7 +444,7 @@
          1
         ],
         "unit": null,
-        "node": "n39",
+        "node": "n40",
         "port": "nz"
        },
        {
@@ -837,6 +837,28 @@
         },
         {
          "id": "n13",
+         "name": "Calm",
+         "block": {
+          "ref": "stdlib:sources/Constant"
+         },
+         "position": {
+          "x": 220,
+          "y": 300
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "value": "0.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n14",
          "name": "elIn",
          "block": {
           "ref": "stdlib:continuous/Gain"
@@ -858,7 +880,7 @@
          }
         },
         {
-         "id": "n14",
+         "id": "n15",
          "name": "ailIn",
          "block": {
           "ref": "stdlib:continuous/Gain"
@@ -880,7 +902,7 @@
          }
         },
         {
-         "id": "n15",
+         "id": "n16",
          "name": "rdrIn",
          "block": {
           "ref": "stdlib:continuous/Gain"
@@ -902,7 +924,7 @@
          }
         },
         {
-         "id": "n16",
+         "id": "n17",
          "name": "thtlIn",
          "block": {
           "ref": "stdlib:continuous/Gain"
@@ -924,7 +946,7 @@
          }
         },
         {
-         "id": "n17",
+         "id": "n18",
          "name": "CX",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -949,7 +971,7 @@
          }
         },
         {
-         "id": "n18",
+         "id": "n19",
          "name": "CM",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -974,7 +996,7 @@
          }
         },
         {
-         "id": "n19",
+         "id": "n20",
          "name": "CL",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -999,7 +1021,7 @@
          }
         },
         {
-         "id": "n20",
+         "id": "n21",
          "name": "CN",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -1024,7 +1046,7 @@
          }
         },
         {
-         "id": "n21",
+         "id": "n22",
          "name": "DLDA",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -1049,7 +1071,7 @@
          }
         },
         {
-         "id": "n22",
+         "id": "n23",
          "name": "DLDR",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -1074,7 +1096,7 @@
          }
         },
         {
-         "id": "n23",
+         "id": "n24",
          "name": "DNDA",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -1099,7 +1121,7 @@
          }
         },
         {
-         "id": "n24",
+         "id": "n25",
          "name": "DNDR",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -1124,7 +1146,7 @@
          }
         },
         {
-         "id": "n25",
+         "id": "n26",
          "name": "CZ",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1149,7 +1171,7 @@
          }
         },
         {
-         "id": "n26",
+         "id": "n27",
          "name": "CXq",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1174,7 +1196,7 @@
          }
         },
         {
-         "id": "n27",
+         "id": "n28",
          "name": "CYr",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1199,7 +1221,7 @@
          }
         },
         {
-         "id": "n28",
+         "id": "n29",
          "name": "CYp",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1224,7 +1246,7 @@
          }
         },
         {
-         "id": "n29",
+         "id": "n30",
          "name": "CZq",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1249,7 +1271,7 @@
          }
         },
         {
-         "id": "n30",
+         "id": "n31",
          "name": "Clr",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1274,7 +1296,7 @@
          }
         },
         {
-         "id": "n31",
+         "id": "n32",
          "name": "Clp",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1299,7 +1321,7 @@
          }
         },
         {
-         "id": "n32",
+         "id": "n33",
          "name": "Cmq",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1324,7 +1346,7 @@
          }
         },
         {
-         "id": "n33",
+         "id": "n34",
          "name": "Cnr",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1349,7 +1371,7 @@
          }
         },
         {
-         "id": "n34",
+         "id": "n35",
          "name": "Cnp",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -1374,7 +1396,7 @@
          }
         },
         {
-         "id": "n35",
+         "id": "n36",
          "name": "TIdle",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -1399,7 +1421,7 @@
          }
         },
         {
-         "id": "n36",
+         "id": "n37",
          "name": "TMil",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -1424,7 +1446,7 @@
          }
         },
         {
-         "id": "n37",
+         "id": "n38",
          "name": "TMax",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -1449,7 +1471,7 @@
          }
         },
         {
-         "id": "n38",
+         "id": "n39",
          "name": "Engine",
          "block": {
           "ref": "project:F16Engine"
@@ -1471,7 +1493,7 @@
          }
         },
         {
-         "id": "n39",
+         "id": "n40",
          "name": "Forces",
          "block": {
           "ref": "project:F16Forces"
@@ -1661,12 +1683,12 @@
          "id": "c014",
          "kind": "signal",
          "from": {
-          "node": "n12",
-          "port": "alpha_deg"
+          "node": "n13",
+          "port": "y"
          },
          "to": {
-          "node": "n17",
-          "port": "u"
+          "node": "n12",
+          "port": "wn"
          }
         },
         {
@@ -1677,12 +1699,24 @@
           "port": "y"
          },
          "to": {
-          "node": "n17",
-          "port": "v"
+          "node": "n12",
+          "port": "we"
          }
         },
         {
          "id": "c016",
+         "kind": "signal",
+         "from": {
+          "node": "n13",
+          "port": "y"
+         },
+         "to": {
+          "node": "n12",
+          "port": "wd"
+         }
+        },
+        {
+         "id": "c017",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -1694,10 +1728,10 @@
          }
         },
         {
-         "id": "c017",
+         "id": "c018",
          "kind": "signal",
          "from": {
-          "node": "n13",
+          "node": "n14",
           "port": "y"
          },
          "to": {
@@ -1706,7 +1740,7 @@
          }
         },
         {
-         "id": "c018",
+         "id": "c019",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -1715,30 +1749,18 @@
          "to": {
           "node": "n19",
           "port": "u"
-         }
-        },
-        {
-         "id": "c019",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "beta_deg"
-         },
-         "to": {
-          "node": "n19",
-          "port": "v"
          }
         },
         {
          "id": "c020",
          "kind": "signal",
          "from": {
-          "node": "n12",
-          "port": "alpha_deg"
+          "node": "n14",
+          "port": "y"
          },
          "to": {
-          "node": "n20",
-          "port": "u"
+          "node": "n19",
+          "port": "v"
          }
         },
         {
@@ -1746,6 +1768,18 @@
          "kind": "signal",
          "from": {
           "node": "n12",
+          "port": "alpha_deg"
+         },
+         "to": {
+          "node": "n20",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c022",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
           "port": "beta_deg"
          },
          "to": {
@@ -1754,7 +1788,7 @@
          }
         },
         {
-         "id": "c022",
+         "id": "c023",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -1763,18 +1797,6 @@
          "to": {
           "node": "n21",
           "port": "u"
-         }
-        },
-        {
-         "id": "c023",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "beta_deg"
-         },
-         "to": {
-          "node": "n21",
-          "port": "v"
          }
         },
         {
@@ -1782,11 +1804,11 @@
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "alpha_deg"
+          "port": "beta_deg"
          },
          "to": {
-          "node": "n22",
-          "port": "u"
+          "node": "n21",
+          "port": "v"
          }
         },
         {
@@ -1794,6 +1816,18 @@
          "kind": "signal",
          "from": {
           "node": "n12",
+          "port": "alpha_deg"
+         },
+         "to": {
+          "node": "n22",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c026",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
           "port": "beta_deg"
          },
          "to": {
@@ -1802,7 +1836,7 @@
          }
         },
         {
-         "id": "c026",
+         "id": "c027",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -1811,18 +1845,6 @@
          "to": {
           "node": "n23",
           "port": "u"
-         }
-        },
-        {
-         "id": "c027",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "beta_deg"
-         },
-         "to": {
-          "node": "n23",
-          "port": "v"
          }
         },
         {
@@ -1830,6 +1852,18 @@
          "kind": "signal",
          "from": {
           "node": "n12",
+          "port": "beta_deg"
+         },
+         "to": {
+          "node": "n23",
+          "port": "v"
+         }
+        },
+        {
+         "id": "c029",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
           "port": "alpha_deg"
          },
          "to": {
@@ -1838,7 +1872,7 @@
          }
         },
         {
-         "id": "c029",
+         "id": "c030",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -1850,7 +1884,7 @@
          }
         },
         {
-         "id": "c030",
+         "id": "c031",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -1862,27 +1896,15 @@
          }
         },
         {
-         "id": "c031",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "alpha_deg"
-         },
-         "to": {
-          "node": "n26",
-          "port": "u"
-         }
-        },
-        {
          "id": "c032",
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "alpha_deg"
+          "port": "beta_deg"
          },
          "to": {
-          "node": "n27",
-          "port": "u"
+          "node": "n25",
+          "port": "v"
          }
         },
         {
@@ -1893,7 +1915,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n28",
+          "node": "n26",
           "port": "u"
          }
         },
@@ -1905,7 +1927,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n29",
+          "node": "n27",
           "port": "u"
          }
         },
@@ -1917,7 +1939,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n30",
+          "node": "n28",
           "port": "u"
          }
         },
@@ -1929,7 +1951,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n31",
+          "node": "n29",
           "port": "u"
          }
         },
@@ -1941,7 +1963,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n32",
+          "node": "n30",
           "port": "u"
          }
         },
@@ -1953,7 +1975,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n33",
+          "node": "n31",
           "port": "u"
          }
         },
@@ -1965,7 +1987,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n34",
+          "node": "n32",
           "port": "u"
          }
         },
@@ -1974,10 +1996,10 @@
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "h"
+          "port": "alpha_deg"
          },
          "to": {
-          "node": "n35",
+          "node": "n33",
           "port": "u"
          }
         },
@@ -1986,11 +2008,11 @@
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "mach"
+          "port": "alpha_deg"
          },
          "to": {
-          "node": "n35",
-          "port": "v"
+          "node": "n34",
+          "port": "u"
          }
         },
         {
@@ -1998,10 +2020,10 @@
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "h"
+          "port": "alpha_deg"
          },
          "to": {
-          "node": "n36",
+          "node": "n35",
           "port": "u"
          }
         },
@@ -2010,6 +2032,18 @@
          "kind": "signal",
          "from": {
           "node": "n12",
+          "port": "h"
+         },
+         "to": {
+          "node": "n36",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c044",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
           "port": "mach"
          },
          "to": {
@@ -2018,7 +2052,7 @@
          }
         },
         {
-         "id": "c044",
+         "id": "c045",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -2030,7 +2064,7 @@
          }
         },
         {
-         "id": "c045",
+         "id": "c046",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -2042,187 +2076,31 @@
          }
         },
         {
-         "id": "c046",
-         "kind": "signal",
-         "from": {
-          "node": "n16",
-          "port": "y"
-         },
-         "to": {
-          "node": "n38",
-          "port": "thtl"
-         }
-        },
-        {
          "id": "c047",
          "kind": "signal",
          "from": {
-          "node": "n35",
-          "port": "y"
+          "node": "n12",
+          "port": "h"
          },
          "to": {
           "node": "n38",
-          "port": "tidl"
+          "port": "u"
          }
         },
         {
          "id": "c048",
          "kind": "signal",
          "from": {
-          "node": "n36",
-          "port": "y"
+          "node": "n12",
+          "port": "mach"
          },
          "to": {
           "node": "n38",
-          "port": "tmil"
+          "port": "v"
          }
         },
         {
          "id": "c049",
-         "kind": "signal",
-         "from": {
-          "node": "n37",
-          "port": "y"
-         },
-         "to": {
-          "node": "n38",
-          "port": "tmax"
-         }
-        },
-        {
-         "id": "c050",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "vt"
-         },
-         "to": {
-          "node": "n39",
-          "port": "vt"
-         }
-        },
-        {
-         "id": "c051",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "alpha_deg"
-         },
-         "to": {
-          "node": "n39",
-          "port": "alpha_deg"
-         }
-        },
-        {
-         "id": "c052",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "beta_deg"
-         },
-         "to": {
-          "node": "n39",
-          "port": "beta_deg"
-         }
-        },
-        {
-         "id": "c053",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "p"
-         },
-         "to": {
-          "node": "n39",
-          "port": "p"
-         }
-        },
-        {
-         "id": "c054",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "q"
-         },
-         "to": {
-          "node": "n39",
-          "port": "q"
-         }
-        },
-        {
-         "id": "c055",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "r"
-         },
-         "to": {
-          "node": "n39",
-          "port": "r"
-         }
-        },
-        {
-         "id": "c056",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "qbar"
-         },
-         "to": {
-          "node": "n39",
-          "port": "qbar"
-         }
-        },
-        {
-         "id": "c057",
-         "kind": "signal",
-         "from": {
-          "node": "n13",
-          "port": "y"
-         },
-         "to": {
-          "node": "n39",
-          "port": "el"
-         }
-        },
-        {
-         "id": "c058",
-         "kind": "signal",
-         "from": {
-          "node": "n14",
-          "port": "y"
-         },
-         "to": {
-          "node": "n39",
-          "port": "ail"
-         }
-        },
-        {
-         "id": "c059",
-         "kind": "signal",
-         "from": {
-          "node": "n15",
-          "port": "y"
-         },
-         "to": {
-          "node": "n39",
-          "port": "rdr"
-         }
-        },
-        {
-         "id": "c060",
-         "kind": "signal",
-         "from": {
-          "node": "n38",
-          "port": "thrust"
-         },
-         "to": {
-          "node": "n39",
-          "port": "thrust"
-         }
-        },
-        {
-         "id": "c061",
          "kind": "signal",
          "from": {
           "node": "n17",
@@ -2230,266 +2108,446 @@
          },
          "to": {
           "node": "n39",
-          "port": "cx0"
+          "port": "thtl"
+         }
+        },
+        {
+         "id": "c050",
+         "kind": "signal",
+         "from": {
+          "node": "n36",
+          "port": "y"
+         },
+         "to": {
+          "node": "n39",
+          "port": "tidl"
+         }
+        },
+        {
+         "id": "c051",
+         "kind": "signal",
+         "from": {
+          "node": "n37",
+          "port": "y"
+         },
+         "to": {
+          "node": "n39",
+          "port": "tmil"
+         }
+        },
+        {
+         "id": "c052",
+         "kind": "signal",
+         "from": {
+          "node": "n38",
+          "port": "y"
+         },
+         "to": {
+          "node": "n39",
+          "port": "tmax"
+         }
+        },
+        {
+         "id": "c053",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "vt"
+         },
+         "to": {
+          "node": "n40",
+          "port": "vt"
+         }
+        },
+        {
+         "id": "c054",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "alpha_deg"
+         },
+         "to": {
+          "node": "n40",
+          "port": "alpha_deg"
+         }
+        },
+        {
+         "id": "c055",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "beta_deg"
+         },
+         "to": {
+          "node": "n40",
+          "port": "beta_deg"
+         }
+        },
+        {
+         "id": "c056",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "p"
+         },
+         "to": {
+          "node": "n40",
+          "port": "p"
+         }
+        },
+        {
+         "id": "c057",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "q"
+         },
+         "to": {
+          "node": "n40",
+          "port": "q"
+         }
+        },
+        {
+         "id": "c058",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "r"
+         },
+         "to": {
+          "node": "n40",
+          "port": "r"
+         }
+        },
+        {
+         "id": "c059",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "qbar"
+         },
+         "to": {
+          "node": "n40",
+          "port": "qbar"
+         }
+        },
+        {
+         "id": "c060",
+         "kind": "signal",
+         "from": {
+          "node": "n14",
+          "port": "y"
+         },
+         "to": {
+          "node": "n40",
+          "port": "el"
+         }
+        },
+        {
+         "id": "c061",
+         "kind": "signal",
+         "from": {
+          "node": "n15",
+          "port": "y"
+         },
+         "to": {
+          "node": "n40",
+          "port": "ail"
          }
         },
         {
          "id": "c062",
          "kind": "signal",
          "from": {
-          "node": "n25",
+          "node": "n16",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cz0"
+          "node": "n40",
+          "port": "rdr"
          }
         },
         {
          "id": "c063",
          "kind": "signal",
          "from": {
-          "node": "n18",
-          "port": "y"
+          "node": "n39",
+          "port": "thrust"
          },
          "to": {
-          "node": "n39",
-          "port": "cm0"
+          "node": "n40",
+          "port": "thrust"
          }
         },
         {
          "id": "c064",
          "kind": "signal",
          "from": {
-          "node": "n19",
+          "node": "n18",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cl0"
+          "node": "n40",
+          "port": "cx0"
          }
         },
         {
          "id": "c065",
          "kind": "signal",
          "from": {
-          "node": "n20",
+          "node": "n26",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cn0"
+          "node": "n40",
+          "port": "cz0"
          }
         },
         {
          "id": "c066",
          "kind": "signal",
          "from": {
-          "node": "n21",
+          "node": "n19",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "dlda"
+          "node": "n40",
+          "port": "cm0"
          }
         },
         {
          "id": "c067",
          "kind": "signal",
          "from": {
-          "node": "n22",
+          "node": "n20",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "dldr"
+          "node": "n40",
+          "port": "cl0"
          }
         },
         {
          "id": "c068",
          "kind": "signal",
          "from": {
-          "node": "n23",
+          "node": "n21",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "dnda"
+          "node": "n40",
+          "port": "cn0"
          }
         },
         {
          "id": "c069",
          "kind": "signal",
          "from": {
-          "node": "n24",
+          "node": "n22",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "dndr"
+          "node": "n40",
+          "port": "dlda"
          }
         },
         {
          "id": "c070",
          "kind": "signal",
          "from": {
-          "node": "n26",
+          "node": "n23",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cxq"
+          "node": "n40",
+          "port": "dldr"
          }
         },
         {
          "id": "c071",
          "kind": "signal",
          "from": {
-          "node": "n27",
+          "node": "n24",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cyr"
+          "node": "n40",
+          "port": "dnda"
          }
         },
         {
          "id": "c072",
          "kind": "signal",
          "from": {
-          "node": "n28",
+          "node": "n25",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cyp"
+          "node": "n40",
+          "port": "dndr"
          }
         },
         {
          "id": "c073",
          "kind": "signal",
          "from": {
-          "node": "n29",
+          "node": "n27",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "czq"
+          "node": "n40",
+          "port": "cxq"
          }
         },
         {
          "id": "c074",
          "kind": "signal",
          "from": {
-          "node": "n30",
+          "node": "n28",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "clr"
+          "node": "n40",
+          "port": "cyr"
          }
         },
         {
          "id": "c075",
          "kind": "signal",
          "from": {
-          "node": "n31",
+          "node": "n29",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "clp"
+          "node": "n40",
+          "port": "cyp"
          }
         },
         {
          "id": "c076",
          "kind": "signal",
          "from": {
-          "node": "n32",
+          "node": "n30",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cmq"
+          "node": "n40",
+          "port": "czq"
          }
         },
         {
          "id": "c077",
          "kind": "signal",
          "from": {
-          "node": "n33",
+          "node": "n31",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cnr"
+          "node": "n40",
+          "port": "clr"
          }
         },
         {
          "id": "c078",
          "kind": "signal",
          "from": {
-          "node": "n34",
+          "node": "n32",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cnp"
+          "node": "n40",
+          "port": "clp"
          }
         },
         {
          "id": "c079",
          "kind": "signal",
          "from": {
-          "node": "n39",
-          "port": "tx"
+          "node": "n33",
+          "port": "y"
          },
          "to": {
-          "node": "n05",
-          "port": "tx"
+          "node": "n40",
+          "port": "cmq"
          }
         },
         {
          "id": "c080",
          "kind": "signal",
          "from": {
-          "node": "n39",
-          "port": "ty"
+          "node": "n34",
+          "port": "y"
          },
          "to": {
-          "node": "n05",
-          "port": "ty"
+          "node": "n40",
+          "port": "cnr"
          }
         },
         {
          "id": "c081",
          "kind": "signal",
          "from": {
-          "node": "n39",
-          "port": "tz"
+          "node": "n35",
+          "port": "y"
          },
          "to": {
-          "node": "n05",
-          "port": "tz"
+          "node": "n40",
+          "port": "cnp"
          }
         },
         {
          "id": "c082",
          "kind": "signal",
          "from": {
-          "node": "n39",
-          "port": "fx"
+          "node": "n40",
+          "port": "tx"
          },
          "to": {
           "node": "n05",
-          "port": "fx"
+          "port": "tx"
          }
         },
         {
          "id": "c083",
          "kind": "signal",
          "from": {
-          "node": "n39",
+          "node": "n40",
+          "port": "ty"
+         },
+         "to": {
+          "node": "n05",
+          "port": "ty"
+         }
+        },
+        {
+         "id": "c084",
+         "kind": "signal",
+         "from": {
+          "node": "n40",
+          "port": "tz"
+         },
+         "to": {
+          "node": "n05",
+          "port": "tz"
+         }
+        },
+        {
+         "id": "c085",
+         "kind": "signal",
+         "from": {
+          "node": "n40",
+          "port": "fx"
+         },
+         "to": {
+          "node": "n05",
+          "port": "fx"
+         }
+        },
+        {
+         "id": "c086",
+         "kind": "signal",
+         "from": {
+          "node": "n40",
           "port": "fy"
          },
          "to": {
@@ -2498,10 +2556,10 @@
          }
         },
         {
-         "id": "c084",
+         "id": "c087",
          "kind": "signal",
          "from": {
-          "node": "n39",
+          "node": "n40",
           "port": "fz"
          },
          "to": {
@@ -2532,7 +2590,7 @@
           1
          ],
          "unit": null,
-         "node": "n13",
+         "node": "n14",
          "port": "u"
         },
         {
@@ -2544,7 +2602,7 @@
           1
          ],
          "unit": null,
-         "node": "n14",
+         "node": "n15",
          "port": "u"
         },
         {
@@ -2556,7 +2614,7 @@
           1
          ],
          "unit": null,
-         "node": "n15",
+         "node": "n16",
          "port": "u"
         },
         {
@@ -2568,7 +2626,7 @@
           1
          ],
          "unit": null,
-         "node": "n16",
+         "node": "n17",
          "port": "u"
         },
         {
@@ -2604,7 +2662,7 @@
           1
          ],
          "unit": null,
-         "node": "n39",
+         "node": "n40",
          "port": "nz"
         },
         {
@@ -3564,7 +3622,7 @@
          1
         ],
         "unit": null,
-        "node": "n13",
+        "node": "n14",
         "port": "u"
        },
        {
@@ -3576,7 +3634,7 @@
          1
         ],
         "unit": null,
-        "node": "n14",
+        "node": "n15",
         "port": "u"
        },
        {
@@ -3588,7 +3646,7 @@
          1
         ],
         "unit": null,
-        "node": "n15",
+        "node": "n16",
         "port": "u"
        },
        {
@@ -3600,7 +3658,7 @@
          1
         ],
         "unit": null,
-        "node": "n16",
+        "node": "n17",
         "port": "u"
        },
        {
@@ -3636,7 +3694,7 @@
          1
         ],
         "unit": null,
-        "node": "n39",
+        "node": "n40",
         "port": "nz"
        },
        {
@@ -4029,6 +4087,28 @@
         },
         {
          "id": "n13",
+         "name": "Calm",
+         "block": {
+          "ref": "stdlib:sources/Constant"
+         },
+         "position": {
+          "x": 220,
+          "y": 300
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "value": "0.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n14",
          "name": "elIn",
          "block": {
           "ref": "stdlib:continuous/Gain"
@@ -4050,7 +4130,7 @@
          }
         },
         {
-         "id": "n14",
+         "id": "n15",
          "name": "ailIn",
          "block": {
           "ref": "stdlib:continuous/Gain"
@@ -4072,7 +4152,7 @@
          }
         },
         {
-         "id": "n15",
+         "id": "n16",
          "name": "rdrIn",
          "block": {
           "ref": "stdlib:continuous/Gain"
@@ -4094,7 +4174,7 @@
          }
         },
         {
-         "id": "n16",
+         "id": "n17",
          "name": "thtlIn",
          "block": {
           "ref": "stdlib:continuous/Gain"
@@ -4116,7 +4196,7 @@
          }
         },
         {
-         "id": "n17",
+         "id": "n18",
          "name": "CX",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4141,7 +4221,7 @@
          }
         },
         {
-         "id": "n18",
+         "id": "n19",
          "name": "CM",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4166,7 +4246,7 @@
          }
         },
         {
-         "id": "n19",
+         "id": "n20",
          "name": "CL",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4191,7 +4271,7 @@
          }
         },
         {
-         "id": "n20",
+         "id": "n21",
          "name": "CN",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4216,7 +4296,7 @@
          }
         },
         {
-         "id": "n21",
+         "id": "n22",
          "name": "DLDA",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4241,7 +4321,7 @@
          }
         },
         {
-         "id": "n22",
+         "id": "n23",
          "name": "DLDR",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4266,7 +4346,7 @@
          }
         },
         {
-         "id": "n23",
+         "id": "n24",
          "name": "DNDA",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4291,7 +4371,7 @@
          }
         },
         {
-         "id": "n24",
+         "id": "n25",
          "name": "DNDR",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4316,7 +4396,7 @@
          }
         },
         {
-         "id": "n25",
+         "id": "n26",
          "name": "CZ",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4341,7 +4421,7 @@
          }
         },
         {
-         "id": "n26",
+         "id": "n27",
          "name": "CXq",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4366,7 +4446,7 @@
          }
         },
         {
-         "id": "n27",
+         "id": "n28",
          "name": "CYr",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4391,7 +4471,7 @@
          }
         },
         {
-         "id": "n28",
+         "id": "n29",
          "name": "CYp",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4416,7 +4496,7 @@
          }
         },
         {
-         "id": "n29",
+         "id": "n30",
          "name": "CZq",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4441,7 +4521,7 @@
          }
         },
         {
-         "id": "n30",
+         "id": "n31",
          "name": "Clr",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4466,7 +4546,7 @@
          }
         },
         {
-         "id": "n31",
+         "id": "n32",
          "name": "Clp",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4491,7 +4571,7 @@
          }
         },
         {
-         "id": "n32",
+         "id": "n33",
          "name": "Cmq",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4516,7 +4596,7 @@
          }
         },
         {
-         "id": "n33",
+         "id": "n34",
          "name": "Cnr",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4541,7 +4621,7 @@
          }
         },
         {
-         "id": "n34",
+         "id": "n35",
          "name": "Cnp",
          "block": {
           "ref": "stdlib:continuous/Lookup1D"
@@ -4566,7 +4646,7 @@
          }
         },
         {
-         "id": "n35",
+         "id": "n36",
          "name": "TIdle",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4591,7 +4671,7 @@
          }
         },
         {
-         "id": "n36",
+         "id": "n37",
          "name": "TMil",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4616,7 +4696,7 @@
          }
         },
         {
-         "id": "n37",
+         "id": "n38",
          "name": "TMax",
          "block": {
           "ref": "stdlib:continuous/Lookup2D"
@@ -4641,7 +4721,7 @@
          }
         },
         {
-         "id": "n38",
+         "id": "n39",
          "name": "Engine",
          "block": {
           "ref": "project:F16Engine"
@@ -4663,7 +4743,7 @@
          }
         },
         {
-         "id": "n39",
+         "id": "n40",
          "name": "Forces",
          "block": {
           "ref": "project:F16Forces"
@@ -4853,12 +4933,12 @@
          "id": "c014",
          "kind": "signal",
          "from": {
-          "node": "n12",
-          "port": "alpha_deg"
+          "node": "n13",
+          "port": "y"
          },
          "to": {
-          "node": "n17",
-          "port": "u"
+          "node": "n12",
+          "port": "wn"
          }
         },
         {
@@ -4869,12 +4949,24 @@
           "port": "y"
          },
          "to": {
-          "node": "n17",
-          "port": "v"
+          "node": "n12",
+          "port": "we"
          }
         },
         {
          "id": "c016",
+         "kind": "signal",
+         "from": {
+          "node": "n13",
+          "port": "y"
+         },
+         "to": {
+          "node": "n12",
+          "port": "wd"
+         }
+        },
+        {
+         "id": "c017",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -4886,10 +4978,10 @@
          }
         },
         {
-         "id": "c017",
+         "id": "c018",
          "kind": "signal",
          "from": {
-          "node": "n13",
+          "node": "n14",
           "port": "y"
          },
          "to": {
@@ -4898,7 +4990,7 @@
          }
         },
         {
-         "id": "c018",
+         "id": "c019",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -4907,30 +4999,18 @@
          "to": {
           "node": "n19",
           "port": "u"
-         }
-        },
-        {
-         "id": "c019",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "beta_deg"
-         },
-         "to": {
-          "node": "n19",
-          "port": "v"
          }
         },
         {
          "id": "c020",
          "kind": "signal",
          "from": {
-          "node": "n12",
-          "port": "alpha_deg"
+          "node": "n14",
+          "port": "y"
          },
          "to": {
-          "node": "n20",
-          "port": "u"
+          "node": "n19",
+          "port": "v"
          }
         },
         {
@@ -4938,6 +5018,18 @@
          "kind": "signal",
          "from": {
           "node": "n12",
+          "port": "alpha_deg"
+         },
+         "to": {
+          "node": "n20",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c022",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
           "port": "beta_deg"
          },
          "to": {
@@ -4946,7 +5038,7 @@
          }
         },
         {
-         "id": "c022",
+         "id": "c023",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -4955,18 +5047,6 @@
          "to": {
           "node": "n21",
           "port": "u"
-         }
-        },
-        {
-         "id": "c023",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "beta_deg"
-         },
-         "to": {
-          "node": "n21",
-          "port": "v"
          }
         },
         {
@@ -4974,11 +5054,11 @@
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "alpha_deg"
+          "port": "beta_deg"
          },
          "to": {
-          "node": "n22",
-          "port": "u"
+          "node": "n21",
+          "port": "v"
          }
         },
         {
@@ -4986,6 +5066,18 @@
          "kind": "signal",
          "from": {
           "node": "n12",
+          "port": "alpha_deg"
+         },
+         "to": {
+          "node": "n22",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c026",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
           "port": "beta_deg"
          },
          "to": {
@@ -4994,7 +5086,7 @@
          }
         },
         {
-         "id": "c026",
+         "id": "c027",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -5003,18 +5095,6 @@
          "to": {
           "node": "n23",
           "port": "u"
-         }
-        },
-        {
-         "id": "c027",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "beta_deg"
-         },
-         "to": {
-          "node": "n23",
-          "port": "v"
          }
         },
         {
@@ -5022,6 +5102,18 @@
          "kind": "signal",
          "from": {
           "node": "n12",
+          "port": "beta_deg"
+         },
+         "to": {
+          "node": "n23",
+          "port": "v"
+         }
+        },
+        {
+         "id": "c029",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
           "port": "alpha_deg"
          },
          "to": {
@@ -5030,7 +5122,7 @@
          }
         },
         {
-         "id": "c029",
+         "id": "c030",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -5042,7 +5134,7 @@
          }
         },
         {
-         "id": "c030",
+         "id": "c031",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -5054,27 +5146,15 @@
          }
         },
         {
-         "id": "c031",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "alpha_deg"
-         },
-         "to": {
-          "node": "n26",
-          "port": "u"
-         }
-        },
-        {
          "id": "c032",
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "alpha_deg"
+          "port": "beta_deg"
          },
          "to": {
-          "node": "n27",
-          "port": "u"
+          "node": "n25",
+          "port": "v"
          }
         },
         {
@@ -5085,7 +5165,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n28",
+          "node": "n26",
           "port": "u"
          }
         },
@@ -5097,7 +5177,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n29",
+          "node": "n27",
           "port": "u"
          }
         },
@@ -5109,7 +5189,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n30",
+          "node": "n28",
           "port": "u"
          }
         },
@@ -5121,7 +5201,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n31",
+          "node": "n29",
           "port": "u"
          }
         },
@@ -5133,7 +5213,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n32",
+          "node": "n30",
           "port": "u"
          }
         },
@@ -5145,7 +5225,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n33",
+          "node": "n31",
           "port": "u"
          }
         },
@@ -5157,7 +5237,7 @@
           "port": "alpha_deg"
          },
          "to": {
-          "node": "n34",
+          "node": "n32",
           "port": "u"
          }
         },
@@ -5166,10 +5246,10 @@
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "h"
+          "port": "alpha_deg"
          },
          "to": {
-          "node": "n35",
+          "node": "n33",
           "port": "u"
          }
         },
@@ -5178,11 +5258,11 @@
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "mach"
+          "port": "alpha_deg"
          },
          "to": {
-          "node": "n35",
-          "port": "v"
+          "node": "n34",
+          "port": "u"
          }
         },
         {
@@ -5190,10 +5270,10 @@
          "kind": "signal",
          "from": {
           "node": "n12",
-          "port": "h"
+          "port": "alpha_deg"
          },
          "to": {
-          "node": "n36",
+          "node": "n35",
           "port": "u"
          }
         },
@@ -5202,6 +5282,18 @@
          "kind": "signal",
          "from": {
           "node": "n12",
+          "port": "h"
+         },
+         "to": {
+          "node": "n36",
+          "port": "u"
+         }
+        },
+        {
+         "id": "c044",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
           "port": "mach"
          },
          "to": {
@@ -5210,7 +5302,7 @@
          }
         },
         {
-         "id": "c044",
+         "id": "c045",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -5222,7 +5314,7 @@
          }
         },
         {
-         "id": "c045",
+         "id": "c046",
          "kind": "signal",
          "from": {
           "node": "n12",
@@ -5234,187 +5326,31 @@
          }
         },
         {
-         "id": "c046",
-         "kind": "signal",
-         "from": {
-          "node": "n16",
-          "port": "y"
-         },
-         "to": {
-          "node": "n38",
-          "port": "thtl"
-         }
-        },
-        {
          "id": "c047",
          "kind": "signal",
          "from": {
-          "node": "n35",
-          "port": "y"
+          "node": "n12",
+          "port": "h"
          },
          "to": {
           "node": "n38",
-          "port": "tidl"
+          "port": "u"
          }
         },
         {
          "id": "c048",
          "kind": "signal",
          "from": {
-          "node": "n36",
-          "port": "y"
+          "node": "n12",
+          "port": "mach"
          },
          "to": {
           "node": "n38",
-          "port": "tmil"
+          "port": "v"
          }
         },
         {
          "id": "c049",
-         "kind": "signal",
-         "from": {
-          "node": "n37",
-          "port": "y"
-         },
-         "to": {
-          "node": "n38",
-          "port": "tmax"
-         }
-        },
-        {
-         "id": "c050",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "vt"
-         },
-         "to": {
-          "node": "n39",
-          "port": "vt"
-         }
-        },
-        {
-         "id": "c051",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "alpha_deg"
-         },
-         "to": {
-          "node": "n39",
-          "port": "alpha_deg"
-         }
-        },
-        {
-         "id": "c052",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "beta_deg"
-         },
-         "to": {
-          "node": "n39",
-          "port": "beta_deg"
-         }
-        },
-        {
-         "id": "c053",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "p"
-         },
-         "to": {
-          "node": "n39",
-          "port": "p"
-         }
-        },
-        {
-         "id": "c054",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "q"
-         },
-         "to": {
-          "node": "n39",
-          "port": "q"
-         }
-        },
-        {
-         "id": "c055",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "r"
-         },
-         "to": {
-          "node": "n39",
-          "port": "r"
-         }
-        },
-        {
-         "id": "c056",
-         "kind": "signal",
-         "from": {
-          "node": "n12",
-          "port": "qbar"
-         },
-         "to": {
-          "node": "n39",
-          "port": "qbar"
-         }
-        },
-        {
-         "id": "c057",
-         "kind": "signal",
-         "from": {
-          "node": "n13",
-          "port": "y"
-         },
-         "to": {
-          "node": "n39",
-          "port": "el"
-         }
-        },
-        {
-         "id": "c058",
-         "kind": "signal",
-         "from": {
-          "node": "n14",
-          "port": "y"
-         },
-         "to": {
-          "node": "n39",
-          "port": "ail"
-         }
-        },
-        {
-         "id": "c059",
-         "kind": "signal",
-         "from": {
-          "node": "n15",
-          "port": "y"
-         },
-         "to": {
-          "node": "n39",
-          "port": "rdr"
-         }
-        },
-        {
-         "id": "c060",
-         "kind": "signal",
-         "from": {
-          "node": "n38",
-          "port": "thrust"
-         },
-         "to": {
-          "node": "n39",
-          "port": "thrust"
-         }
-        },
-        {
-         "id": "c061",
          "kind": "signal",
          "from": {
           "node": "n17",
@@ -5422,266 +5358,446 @@
          },
          "to": {
           "node": "n39",
-          "port": "cx0"
+          "port": "thtl"
+         }
+        },
+        {
+         "id": "c050",
+         "kind": "signal",
+         "from": {
+          "node": "n36",
+          "port": "y"
+         },
+         "to": {
+          "node": "n39",
+          "port": "tidl"
+         }
+        },
+        {
+         "id": "c051",
+         "kind": "signal",
+         "from": {
+          "node": "n37",
+          "port": "y"
+         },
+         "to": {
+          "node": "n39",
+          "port": "tmil"
+         }
+        },
+        {
+         "id": "c052",
+         "kind": "signal",
+         "from": {
+          "node": "n38",
+          "port": "y"
+         },
+         "to": {
+          "node": "n39",
+          "port": "tmax"
+         }
+        },
+        {
+         "id": "c053",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "vt"
+         },
+         "to": {
+          "node": "n40",
+          "port": "vt"
+         }
+        },
+        {
+         "id": "c054",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "alpha_deg"
+         },
+         "to": {
+          "node": "n40",
+          "port": "alpha_deg"
+         }
+        },
+        {
+         "id": "c055",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "beta_deg"
+         },
+         "to": {
+          "node": "n40",
+          "port": "beta_deg"
+         }
+        },
+        {
+         "id": "c056",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "p"
+         },
+         "to": {
+          "node": "n40",
+          "port": "p"
+         }
+        },
+        {
+         "id": "c057",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "q"
+         },
+         "to": {
+          "node": "n40",
+          "port": "q"
+         }
+        },
+        {
+         "id": "c058",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "r"
+         },
+         "to": {
+          "node": "n40",
+          "port": "r"
+         }
+        },
+        {
+         "id": "c059",
+         "kind": "signal",
+         "from": {
+          "node": "n12",
+          "port": "qbar"
+         },
+         "to": {
+          "node": "n40",
+          "port": "qbar"
+         }
+        },
+        {
+         "id": "c060",
+         "kind": "signal",
+         "from": {
+          "node": "n14",
+          "port": "y"
+         },
+         "to": {
+          "node": "n40",
+          "port": "el"
+         }
+        },
+        {
+         "id": "c061",
+         "kind": "signal",
+         "from": {
+          "node": "n15",
+          "port": "y"
+         },
+         "to": {
+          "node": "n40",
+          "port": "ail"
          }
         },
         {
          "id": "c062",
          "kind": "signal",
          "from": {
-          "node": "n25",
+          "node": "n16",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cz0"
+          "node": "n40",
+          "port": "rdr"
          }
         },
         {
          "id": "c063",
          "kind": "signal",
          "from": {
-          "node": "n18",
-          "port": "y"
+          "node": "n39",
+          "port": "thrust"
          },
          "to": {
-          "node": "n39",
-          "port": "cm0"
+          "node": "n40",
+          "port": "thrust"
          }
         },
         {
          "id": "c064",
          "kind": "signal",
          "from": {
-          "node": "n19",
+          "node": "n18",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cl0"
+          "node": "n40",
+          "port": "cx0"
          }
         },
         {
          "id": "c065",
          "kind": "signal",
          "from": {
-          "node": "n20",
+          "node": "n26",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cn0"
+          "node": "n40",
+          "port": "cz0"
          }
         },
         {
          "id": "c066",
          "kind": "signal",
          "from": {
-          "node": "n21",
+          "node": "n19",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "dlda"
+          "node": "n40",
+          "port": "cm0"
          }
         },
         {
          "id": "c067",
          "kind": "signal",
          "from": {
-          "node": "n22",
+          "node": "n20",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "dldr"
+          "node": "n40",
+          "port": "cl0"
          }
         },
         {
          "id": "c068",
          "kind": "signal",
          "from": {
-          "node": "n23",
+          "node": "n21",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "dnda"
+          "node": "n40",
+          "port": "cn0"
          }
         },
         {
          "id": "c069",
          "kind": "signal",
          "from": {
-          "node": "n24",
+          "node": "n22",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "dndr"
+          "node": "n40",
+          "port": "dlda"
          }
         },
         {
          "id": "c070",
          "kind": "signal",
          "from": {
-          "node": "n26",
+          "node": "n23",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cxq"
+          "node": "n40",
+          "port": "dldr"
          }
         },
         {
          "id": "c071",
          "kind": "signal",
          "from": {
-          "node": "n27",
+          "node": "n24",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cyr"
+          "node": "n40",
+          "port": "dnda"
          }
         },
         {
          "id": "c072",
          "kind": "signal",
          "from": {
-          "node": "n28",
+          "node": "n25",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cyp"
+          "node": "n40",
+          "port": "dndr"
          }
         },
         {
          "id": "c073",
          "kind": "signal",
          "from": {
-          "node": "n29",
+          "node": "n27",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "czq"
+          "node": "n40",
+          "port": "cxq"
          }
         },
         {
          "id": "c074",
          "kind": "signal",
          "from": {
-          "node": "n30",
+          "node": "n28",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "clr"
+          "node": "n40",
+          "port": "cyr"
          }
         },
         {
          "id": "c075",
          "kind": "signal",
          "from": {
-          "node": "n31",
+          "node": "n29",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "clp"
+          "node": "n40",
+          "port": "cyp"
          }
         },
         {
          "id": "c076",
          "kind": "signal",
          "from": {
-          "node": "n32",
+          "node": "n30",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cmq"
+          "node": "n40",
+          "port": "czq"
          }
         },
         {
          "id": "c077",
          "kind": "signal",
          "from": {
-          "node": "n33",
+          "node": "n31",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cnr"
+          "node": "n40",
+          "port": "clr"
          }
         },
         {
          "id": "c078",
          "kind": "signal",
          "from": {
-          "node": "n34",
+          "node": "n32",
           "port": "y"
          },
          "to": {
-          "node": "n39",
-          "port": "cnp"
+          "node": "n40",
+          "port": "clp"
          }
         },
         {
          "id": "c079",
          "kind": "signal",
          "from": {
-          "node": "n39",
-          "port": "tx"
+          "node": "n33",
+          "port": "y"
          },
          "to": {
-          "node": "n05",
-          "port": "tx"
+          "node": "n40",
+          "port": "cmq"
          }
         },
         {
          "id": "c080",
          "kind": "signal",
          "from": {
-          "node": "n39",
-          "port": "ty"
+          "node": "n34",
+          "port": "y"
          },
          "to": {
-          "node": "n05",
-          "port": "ty"
+          "node": "n40",
+          "port": "cnr"
          }
         },
         {
          "id": "c081",
          "kind": "signal",
          "from": {
-          "node": "n39",
-          "port": "tz"
+          "node": "n35",
+          "port": "y"
          },
          "to": {
-          "node": "n05",
-          "port": "tz"
+          "node": "n40",
+          "port": "cnp"
          }
         },
         {
          "id": "c082",
          "kind": "signal",
          "from": {
-          "node": "n39",
-          "port": "fx"
+          "node": "n40",
+          "port": "tx"
          },
          "to": {
           "node": "n05",
-          "port": "fx"
+          "port": "tx"
          }
         },
         {
          "id": "c083",
          "kind": "signal",
          "from": {
-          "node": "n39",
+          "node": "n40",
+          "port": "ty"
+         },
+         "to": {
+          "node": "n05",
+          "port": "ty"
+         }
+        },
+        {
+         "id": "c084",
+         "kind": "signal",
+         "from": {
+          "node": "n40",
+          "port": "tz"
+         },
+         "to": {
+          "node": "n05",
+          "port": "tz"
+         }
+        },
+        {
+         "id": "c085",
+         "kind": "signal",
+         "from": {
+          "node": "n40",
+          "port": "fx"
+         },
+         "to": {
+          "node": "n05",
+          "port": "fx"
+         }
+        },
+        {
+         "id": "c086",
+         "kind": "signal",
+         "from": {
+          "node": "n40",
           "port": "fy"
          },
          "to": {
@@ -5690,10 +5806,10 @@
          }
         },
         {
-         "id": "c084",
+         "id": "c087",
          "kind": "signal",
          "from": {
-          "node": "n39",
+          "node": "n40",
           "port": "fz"
          },
          "to": {
@@ -5724,7 +5840,7 @@
           1
          ],
          "unit": null,
-         "node": "n13",
+         "node": "n14",
          "port": "u"
         },
         {
@@ -5736,7 +5852,7 @@
           1
          ],
          "unit": null,
-         "node": "n14",
+         "node": "n15",
          "port": "u"
         },
         {
@@ -5748,7 +5864,7 @@
           1
          ],
          "unit": null,
-         "node": "n15",
+         "node": "n16",
          "port": "u"
         },
         {
@@ -5760,7 +5876,7 @@
           1
          ],
          "unit": null,
-         "node": "n16",
+         "node": "n17",
          "port": "u"
         },
         {
@@ -5796,7 +5912,7 @@
           1
          ],
          "unit": null,
-         "node": "n39",
+         "node": "n40",
          "port": "nz"
         },
         {

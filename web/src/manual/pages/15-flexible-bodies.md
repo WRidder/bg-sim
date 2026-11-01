@@ -75,13 +75,14 @@ The deflection is accurate to second order: a beam that bends also gets shorter 
 
 ## In the 3D view
 
-Bind the block's `pose` to the link that holds the beam's visual. Then add one **deformation** binding per family with the signals `eta_y[1..ny]`, `eta_z[1..nz]` or `eta_t[1..nt]` and the same `basis` as the block (see [Running and plotting](page:running-and-plotting)). The beam axis of the binding is the visual's direction from end A to end B. Real deflections are small; use the view's deformation exaggeration to see them.
+Bind the block's `pose` to the link that holds the beam's visual. Then add one **deformation** binding per family with the signals `eta_y[1..ny]`, `eta_z[1..nz]` or `eta_t[1..nt]` and the same `basis` as the block (see [Running and plotting](page:running-and-plotting)). The beam axis of the binding is the visual's direction from end A to end B. Real deflections are small; use the view's deformation exaggeration to see them. A lumped torsion spring with no modes (a shaft as one spring between two inertias) is drawn with the `linear` basis and its twist instead.
 
 ## Examples
 
 - **cantilever-modes**: the same method by hand, as a scalar bond graph. Each mode is a 1-junction with I, C and R, coupled to the tip by a TF with modulus |φ_n(L)| = 2. All element values are global parameters.
 - **flex-torsion**: two disks on a 1 m shaft with three torsion modes. The twist is checked against the exact frequency equation and the massless-shaft limit.
 - **flex-rotary-pendulum**: a Furuta pendulum with a bending rod (2 + 2 modes), next to its rigid twin.
+- **pendulum-triple-rotary** (models `-flex`, `-flex-lowpass`, `-flex-free`): the rotary triple inverted pendulum with a flexible arm, a 3 x 50 mm steel strip (2 + 2 bending modes, 1 torsion mode). The rigid arm's controller drives the arm's first bending mode unstable. A controller designed with a 12 Hz low-pass in the loop balances the pendulum. The first mode is checked against the exact frequency equation, with the hinged pendulum chain as the tip load.
 
 ## FEM flexible bodies (any part)
 

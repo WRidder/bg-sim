@@ -5,7 +5,7 @@ import { defaultBeamAxis, defaultBeamY, isBeamCapable } from "../scene/beamMesh"
 import type { BuiltScene } from "../scene/build";
 import type { TreeEntry } from "../scene/resolve";
 import { useDocumentStore } from "../state/documentStore";
-import { MAX_MODES } from "./beamModes";
+import { maxModes } from "./beamModes";
 import { COLORMAPS, colormapGradient } from "./bindingsColormaps";
 import { allowedKinds, MAX_MESH_MODES, signalsOf, validateBindingRows, type SignalUnits } from "./bindingsValidate";
 import { modalBlocks, modalSignals } from "./modalBlocks";
@@ -25,7 +25,20 @@ const POSE_PARTS = ["q_w", "q_x", "q_y", "q_z", "x", "y", "z"] as const;
 const DEFAULT_RANGE: [number, number] = [0, 1];
 const DEFAULT_STRAIN_RANGE: [number, number] = [0, 0.001];
 const FAMILIES: readonly DeformationFamily[] = ["bending-y", "bending-z", "torsion"];
-const BASES: readonly DeformationBasis[] = ["clamped-free", "free-free"];
+const MODAL_BASES: readonly DeformationBasis[] = ["clamped-free", "free-free"];
+/** Torsion also takes the lumped twist of a torsion spring (`linear`, one coordinate). */
+const TORSION_BASES: readonly DeformationBasis[] = [...MODAL_BASES, "linear"];
+
+/** The bases a family offers. */
+function basesFor(family: DeformationFamily): readonly DeformationBasis[] {
+  return family === "torsion" ? TORSION_BASES : MODAL_BASES;
+}
+
+/** A deformation binding (or draft) after a family or basis change: `linear` is torsion only, with one coordinate. */
+function withFamilyBasis<T extends { family: DeformationFamily; basis: DeformationBasis }>(draft: T, family: DeformationFamily, basis: DeformationBasis): T {
+  const fitted = family !== "torsion" && basis === "linear" ? "clamped-free" : basis;
+  return { ...draft, family, basis: fitted };
+}
 const SHAPE_AXES: readonly ShapeAxis[] = ["+x", "-x", "+y", "-y", "+z", "-z"];
 
 interface Choice {
@@ -182,7 +195,7 @@ function ModalFill({ signals, limit, label, testId, onFill }: { signals: SignalU
 }
 
 /** The modal coordinates of a deformation or mode-shapes binding: one signal per mode, with buttons to add and remove a mode. */
-function ModeSignals({ names, signals, label, testId, max = MAX_MODES, fillLimit, onChange }: { names: readonly string[]; signals: SignalUnits | null; label: string; testId: string; max?: number; fillLimit?: number; onChange: (next: string[]) => void }): ReactElement {
+function ModeSignals({ names, signals, label, testId, max, fillLimit, onChange }: { names: readonly string[]; signals: SignalUnits | null; label: string; testId: string; max: number; fillLimit?: number; onChange: (next: string[]) => void }): ReactElement {
   return (
     <div className="bindings__modes">
       {fillLimit !== undefined ? <ModalFill signals={signals} limit={fillLimit} label={label} testId={testId} onFill={onChange} /> : null}
@@ -220,8 +233,18 @@ function DeformationSettings({ binding, index, onChange }: { binding: Deformatio
   const strain = binding.strain;
   return (
     <div className="bindings__deform">
-      <Choose value={binding.family} options={FAMILIES} label={`Family of binding ${n}`} testId={`binding-family-${i}`} onChange={(v) => { onChange({ ...binding, family: v }); }} />
-      <Choose value={binding.basis} options={BASES} label={`Basis of binding ${n}`} testId={`binding-basis-${i}`} onChange={(v) => { onChange({ ...binding, basis: v }); }} />
+      <Choose value={binding.family} options={FAMILIES} label={`Family of binding ${n}`} testId={`binding-family-${i}`} onChange={(v) => { onChange(withFamilyBasis(binding, v, binding.basis)); }} />
+      <Choose
+        value={binding.basis}
+        options={basesFor(binding.family)}
+        label={`Basis of binding ${n}`}
+        testId={`binding-basis-${i}`}
+        onChange={(v) => {
+          const next = withFamilyBasis(binding, binding.family, v);
+          // the linear basis has one coordinate (the twist of end B relative to end A)
+          onChange(v === "linear" && binding.signal.length > 1 ? { ...next, signal: [binding.signal[0]] } : next);
+        }}
+      />
       <label className="bindings__inline">
         <span>axis</span>
         <Choose
@@ -310,7 +333,7 @@ function makeBinding(property: Property, target: string, signal: readonly string
     case "visible":
       return { target, property, signal: signal[0] ?? "" };
     case "deformation":
-      return signal.length <= MAX_MODES
+      return signal.length <= maxModes(deform.basis)
         ? { target, property, family: deform.family, basis: deform.basis, beam: { axis: deform.axis }, signal: signal as DeformationBinding["signal"] }
         : null;
     case "mode-shapes":
@@ -430,6 +453,7 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
                       signals={signals}
                       label={`binding ${n}`}
                       testId={`binding-signal-${String(i)}`}
+                      max={maxModes(b.basis)}
                       onChange={(next) => { replace(i, { ...b, signal: next as DeformationBinding["signal"] }); }}
                     />
                   ) : b.property === "mode-shapes" ? (
@@ -552,19 +576,28 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
           <>
             <label>
               <span className="playback__label">Family</span>
-              <Choose value={deform.family} options={FAMILIES} label="New binding family" testId="add-family" onChange={(v) => { setDeform({ ...deform, family: v }); }} />
+              <Choose value={deform.family} options={FAMILIES} label="New binding family" testId="add-family" onChange={(v) => { setDeform(withFamilyBasis(deform, v, deform.basis)); }} />
             </label>
             <label>
               <span className="playback__label">Basis</span>
-              <Choose value={deform.basis} options={BASES} label="New binding basis" testId="add-basis" onChange={(v) => { setDeform({ ...deform, basis: v }); }} />
+              <Choose
+                value={deform.basis}
+                options={basesFor(deform.family)}
+                label="New binding basis"
+                testId="add-basis"
+                onChange={(v) => {
+                  setDeform(withFamilyBasis(deform, deform.family, v));
+                  if (v === "linear" && signal.length > 1) setSignal(signal.slice(0, 1));
+                }}
+              />
             </label>
             <label>
               <span className="playback__label">Beam axis</span>
               <Choose value={deform.axis} options={SHAPE_AXES} label="New binding beam axis" testId="add-axis" onChange={(v) => { setDeform({ ...deform, axis: v }); }} />
             </label>
             <div>
-              <span className="playback__label">Modal coordinates</span>
-              <ModeSignals names={signal} signals={signals} label="the new binding" testId="add-signal" onChange={setSignal} />
+              <span className="playback__label">{deform.basis === "linear" ? "Twist (B relative to A)" : "Modal coordinates"}</span>
+              <ModeSignals names={signal} signals={signals} label="the new binding" testId="add-signal" max={maxModes(deform.basis)} onChange={setSignal} />
             </div>
           </>
         ) : property === "mode-shapes" ? (

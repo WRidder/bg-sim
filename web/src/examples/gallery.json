@@ -91,13 +91,14 @@
   },
   "f16": {
     "title": "F-16",
-    "description": "The nonlinear F-16 of Stevens & Lewis: open-loop modes, a gain-scheduled pitch fly-by-wire, alpha/g envelope protection and a rate-limit PIO.",
+    "description": "The nonlinear F-16 of Stevens & Lewis: open-loop modes, scheduled pitch FBW, envelope protection, a rate-limit PIO and a flyable three-axis FBW for a simulator FMU.",
     "hasScene": true,
     "models": [
       "f16-open-loop",
       "f16-fbw",
       "f16-envelope",
-      "f16-pio"
+      "f16-pio",
+      "f16-sim"
     ]
   },
   "gripper": {
@@ -279,11 +280,14 @@
   },
   "pendulum-triple-rotary": {
     "title": "Pendulum triple rotary",
-    "description": "A rotary triple inverted pendulum.",
+    "description": "A rotary triple inverted pendulum, on a rigid and on a flexible arm.",
     "hasScene": true,
     "models": [
       "pendulum-triple-rotary",
-      "pendulum-triple-rotary-free"
+      "pendulum-triple-rotary-free",
+      "pendulum-triple-rotary-flex",
+      "pendulum-triple-rotary-flex-lowpass",
+      "pendulum-triple-rotary-flex-free"
     ]
   },
   "planar-links": {

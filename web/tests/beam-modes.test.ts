@@ -4,10 +4,10 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   bendingShape, bendingSigma, LAMBDA, MAX_MODES, modeShape, torsionShape,
-  type DeformationBasis, type DeformationFamily,
+  sectionState, type DeformationFamily, type ModalBasis,
 } from "../src/viewer/beamModes";
 
-const BASES: readonly DeformationBasis[] = ["clamped-free", "free-free"];
+const BASES: readonly ModalBasis[] = ["clamped-free", "free-free"];
 const MODES = [1, 2, 3] as const;
 
 /** Composite Simpson over 0..1. */
@@ -19,7 +19,7 @@ function integrate(f: (xi: number) => number, n = 4000): number {
 }
 
 /** The textbook form, cancellation and all: only trusted where lambda * xi is small. */
-function naiveBending(basis: DeformationBasis, n: number, xi: number): number {
+function naiveBending(basis: ModalBasis, n: number, xi: number): number {
   const l = LAMBDA[basis][n - 1] ?? NaN;
   const x = l * xi;
   if (basis === "clamped-free") {
@@ -31,7 +31,7 @@ function naiveBending(basis: DeformationBasis, n: number, xi: number): number {
 }
 
 /** Third derivative with respect to xi: a second-order one-sided difference of the second, inwards. */
-function third(basis: DeformationBasis, n: number, xi: number): number {
+function third(basis: ModalBasis, n: number, xi: number): number {
   const h = xi < 0.5 ? 1e-4 : -1e-4;
   const d2 = (x: number): number => bendingShape(basis, n, x)[2];
   return (-3 * d2(xi) + 4 * d2(xi + h) - d2(xi + 2 * h)) / (2 * h);
@@ -159,6 +159,20 @@ describe("torsion shapes", () => {
     }
   });
 
+  it("linear: the lumped twist s / L, one coordinate (the twist of B relative to A)", () => {
+    for (const xi of [0, 0.25, 0.5, 1]) expect(torsionShape("linear", 1, xi)).toEqual([xi, 1, 0]);
+    expect(() => torsionShape("linear", 2, 0.5)).toThrow(RangeError);
+    // the section at s turns by s / L of the twist: a quarter of the way along, a quarter of it
+    expect(sectionState([{ family: "torsion", basis: "linear", eta: [0.4] }], 0.05, 0.2).theta).toBeCloseTo(0.1, 12);
+    // beyond L the shape continues rigidly with the end section
+    expect(sectionState([{ family: "torsion", basis: "linear", eta: [0.4] }], 0.25, 0.2).theta).toBeCloseTo(0.4, 12);
+    // a bending family or a second coordinate on the linear basis draws nothing (the validator reports it)
+    expect(modeShape("bending-y", "linear", 1, 0.5)).toEqual([0, 0, 0]);
+    expect(modeShape("torsion", "linear", 2, 0.5)).toEqual([0, 0, 0]);
+    const bent = sectionState([{ family: "bending-y", basis: "linear", eta: [0.4] }], 0.1, 0.2);
+    expect([bent.wy, bent.slopeY, bent.theta]).toEqual([0, 0, 0]);
+  });
+
   it("modeShape picks the family", () => {
     expect(modeShape("torsion", "free-free", 2, 0.3)).toEqual(torsionShape("free-free", 2, 0.3));
     expect(modeShape("bending-z", "free-free", 2, 0.3)).toEqual(bendingShape("free-free", 2, 0.3));
@@ -176,13 +190,13 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const MODE_FIXTURE = path.resolve(here, "..", "..", "contracts", "fixtures", "modes", "mode_shapes.json");
 
 interface FixtureEntry {
-  readonly basis: DeformationBasis;
+  readonly basis: ModalBasis;
   readonly family: DeformationFamily;
   readonly n: number;
   readonly values: readonly number[];
 }
 
-function isBasis(v: unknown): v is DeformationBasis {
+function isBasis(v: unknown): v is ModalBasis {
   return v === "clamped-free" || v === "free-free";
 }
 
@@ -199,11 +213,11 @@ function numbers(v: unknown): number[] | null {
 function fixtureEntries(doc: unknown): { xi: number[]; entries: FixtureEntry[] } {
   const entries: FixtureEntry[] = [];
   let xi: number[] = [0, 0.25, 0.5, 0.75, 1];
-  const walk = (node: unknown, ctx: { basis?: DeformationBasis; family?: DeformationFamily }): void => {
+  const walk = (node: unknown, ctx: { basis?: ModalBasis; family?: DeformationFamily }): void => {
     if (Array.isArray(node)) {
       // basis and family known from the path: an array of mode value arrays
       if (ctx.basis !== undefined && ctx.family !== undefined && node.every((m) => numbers(m) !== null)) {
-        node.forEach((m, i) => entries.push({ basis: ctx.basis as DeformationBasis, family: ctx.family as DeformationFamily, n: i + 1, values: numbers(m) ?? [] }));
+        node.forEach((m, i) => entries.push({ basis: ctx.basis as ModalBasis, family: ctx.family as DeformationFamily, n: i + 1, values: numbers(m) ?? [] }));
         return;
       }
       for (const item of node) walk(item, ctx);

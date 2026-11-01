@@ -767,7 +767,8 @@
     }
   ],
   "scene": {
-    "file": "scenes/drivetrain.sdf"
+    "file": "scenes/drivetrain.sdf",
+    "exaggeration": 10
   },
   "bindings": [
     {
@@ -799,6 +800,20 @@
         0,
         12
       ]
+    },
+    {
+      "target": "visual:rod",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "linear",
+      "beam": {
+        "axis": "+z",
+        "length": 0.305
+      },
+      "signal": [
+        "Crod/q"
+      ],
+      "gain": -1
     }
   ]
 }

@@ -29,3 +29,7 @@ media/video/*.mp4
 # C/FMU export harness output (X-EX1)
 examples/export-out/
 examples/export-tunables-out/
+examples/export-f16-out/
+
+# f16-sim host: the FMU and the start list are built locally (apps/f16-sim/build_fmu.py)
+apps/f16-sim/build/
