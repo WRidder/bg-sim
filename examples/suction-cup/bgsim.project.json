@@ -1,0 +1,16 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "suction-cup",
+  "models": [
+    "hold-release",
+    "bounce",
+    "steps",
+    "swing",
+    "chirp",
+    "overload",
+    "linear-vs-nonlinear"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

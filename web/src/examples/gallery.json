@@ -449,6 +449,20 @@
       "rrr-multibond-stiff"
     ]
   },
+  "suction-cup": {
+    "title": "Suction cup",
+    "description": "One bellows cup holds a box through holds, bounces, steps, swings and a chirp: lift stroke, bottoming, sway and tilt resonances, overload.",
+    "hasScene": true,
+    "models": [
+      "hold-release",
+      "bounce",
+      "steps",
+      "swing",
+      "chirp",
+      "overload",
+      "linear-vs-nonlinear"
+    ]
+  },
   "suction-gripper": {
     "title": "Suction gripper",
     "description": "A six-cup vacuum gripper moves a carton: profiles, yaw, tilt, porosity and supply layouts decide when cups peel off.",

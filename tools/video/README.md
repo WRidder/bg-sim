@@ -75,6 +75,11 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
   the `vdp-belt` model of `van-der-pol`, the dashboard next to the detached 3D viewer, in real time (frame k at t = k/fps) for
   three runs set on the dashboard sliders: mu = 0.5 growing onto the limit cycle, mu = 1.0, and mu = 0.5 shrinking from x0 = 2.5.
   The caption bar shows the simulation time. `--stills` writes only the framing stills (`camera-fit.png`, `camera.png`, segment ends).
+- `capture-suction-cup.mjs <out-dir> [--fps 30] [--zoom 6] [--zoom-at 0.5,0.55] [--orbit 0,-40] [--only a,b] [--stills] [--compose-only]`:
+  the `suction-cup` example, the dashboard next to the detached 3D viewer, one segment per model (hold and release, bounce,
+  steps, swing, chirp, overload, linear vs nonlinear), each in real time (frame k at t = k/fps). Every run happens off camera.
+  The caption bar names the motion and shows the simulation time. Writes `suction-cup.mp4` and stills per model (dashboard
+  before the run, camera framing, mid and end of the segment).
 - `capture-beams.mjs <out-dir>`: stills of the `cantilever-sections` example: the settled static bend (x10 and true scale), a
   close-up at the wall, the step peak, the dashboard with load "1 · sine" selected and run, and two opposite crests of the
   round bar's resonance.

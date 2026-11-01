@@ -1,0 +1,2243 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "chirp",
+  "$comment": "Lateral chirp 1.5 to 20 Hz with 0.4 mm amplitude: the lateral/tilt resonance of the box on the cup, with the transmissibility from the tool to the box.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Lift",
+        "name": "Lift",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0",
+          "v_max": "0.4",
+          "a_max": "3",
+          "j_max": "60",
+          "q_end": "H_lift",
+          "t_start": "t_lift"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Lower",
+        "name": "Lower",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0",
+          "v_max": "0.4",
+          "a_max": "3",
+          "j_max": "60",
+          "q_end": "-(H_lift + 0.003)",
+          "t_start": "t_low"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Retract",
+        "name": "Retract",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0",
+          "v_max": "0.4",
+          "a_max": "3",
+          "j_max": "60",
+          "q_end": "0.05",
+          "t_start": "t_ret"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Tool",
+        "name": "Tool",
+        "block": {
+          "ref": "project:CupTool"
+        },
+        "position": {
+          "x": 260,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "motion": "motion",
+          "t_x0": "t_x0",
+          "A_st": "amp*A_st",
+          "T_st": "T_st",
+          "T_ring": "T_ring",
+          "A_z": "amp*A_z",
+          "f0_z": "fsc*f0_z",
+          "f1_z": "fsc*f1_z",
+          "T_cz": "T_cz",
+          "a_s": "amp*a_s",
+          "T_p": "T_p",
+          "T_c": "T_c",
+          "tau_s": "tau_s",
+          "th_A": "amp*th_A",
+          "T_sw": "T_sw",
+          "T_h": "T_h",
+          "th_B": "amp*th_B",
+          "f_sw": "fsc*f_sw",
+          "N_sw": "N_sw",
+          "A_x": "amp*A_x",
+          "f0_x": "fsc*f0_x",
+          "f1_x": "fsc*f1_x",
+          "T_cx": "T_cx",
+          "a0": "a0",
+          "T_env": "T_env"
+        },
+        "constants": {},
+        "starts": {
+          "z": "z0"
+        }
+      },
+      {
+        "id": "Grip",
+        "name": "Grip",
+        "block": {
+          "ref": "stdlib:multibond/SfSpatial"
+        },
+        "position": {
+          "x": 460,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "TJ",
+        "name": "TJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 560,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Valve",
+        "name": "Valve",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 460,
+          "y": 520
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_rel",
+          "initial": "1",
+          "final": "0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Table",
+        "name": "Table",
+        "block": {
+          "ref": "stdlib:contact/ContactSurface"
+        },
+        "position": {
+          "x": 1400,
+          "y": 980
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "GMount",
+        "name": "GMount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 660,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-0",
+          "y": "-0",
+          "z": "0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cup",
+        "name": "Cup",
+        "block": {
+          "ref": "stdlib:contact/SuctionCup"
+        },
+        "position": {
+          "x": 820,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L0": "L0",
+          "A_eff": "A_eff",
+          "D_lip": "D_lip",
+          "k_ax": "k_ax",
+          "d_ax": "d_ax",
+          "k_lat": "k_lat",
+          "d_lat": "d_lat",
+          "k_tilt": "k_tilt",
+          "k_tor": "k_tor",
+          "d_rot": "d_rot",
+          "mu": "mu",
+          "V": "V_cup",
+          "perm": "perm",
+          "A_lip0": "A_lip0",
+          "F_min": "F_min",
+          "p_atm": "101325",
+          "s_bot": "s_bot",
+          "k_bot": "k_bot",
+          "n_bot": "n_bot",
+          "x_bot": "x_bot",
+          "A_fold": "A_fold",
+          "c_vac": "c_vac",
+          "c_ext": "c_ext"
+        },
+        "constants": {},
+        "starts": {
+          "rz": "-L0"
+        }
+      },
+      {
+        "id": "PMount",
+        "name": "PMount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 980,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "cx",
+          "y": "cy",
+          "z": "-(H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Gen",
+        "name": "Gen",
+        "block": {
+          "ref": "stdlib:contact/VacuumGenerator"
+        },
+        "position": {
+          "x": 820,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "dp_max": "dp_max",
+          "Q_max": "Q_max",
+          "n": "1",
+          "G_rel": "G_rel"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Box",
+        "name": "Box",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1160,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_p",
+          "J": "[Jx, Jy, Jz]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        }
+      },
+      {
+        "id": "Pose",
+        "name": "Pose",
+        "block": {
+          "ref": "stdlib:multibond/PoseIntegrator3D"
+        },
+        "position": {
+          "x": 1160,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "qw": "1",
+          "qx": "0",
+          "qy": "0",
+          "qz": "0",
+          "px": "0 + cx",
+          "py": "0 + cy",
+          "pz": "H_p/2 + cz - pen0"
+        }
+      },
+      {
+        "id": "FMount1",
+        "name": "FMount1",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1400,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-(1*L_p/2 - cx)",
+          "y": "-(1*W_p/2 - cy)",
+          "z": "-(-H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FLocal1",
+        "name": "FLocal1",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1540,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "1*L_p/2 - cx",
+          "y": "1*W_p/2 - cy",
+          "z": "-H_p/2 - cz"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FPose1",
+        "name": "FPose1",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1680,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Floor1",
+        "name": "Floor1",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 1820,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000",
+          "xref": "0.001",
+          "c": "5",
+          "mu": "0.5",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FMount2",
+        "name": "FMount2",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1400,
+          "y": 530
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-(1*L_p/2 - cx)",
+          "y": "-(-1*W_p/2 - cy)",
+          "z": "-(-H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FLocal2",
+        "name": "FLocal2",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1540,
+          "y": 570
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "1*L_p/2 - cx",
+          "y": "-1*W_p/2 - cy",
+          "z": "-H_p/2 - cz"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FPose2",
+        "name": "FPose2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1680,
+          "y": 570
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Floor2",
+        "name": "Floor2",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 1820,
+          "y": 530
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000",
+          "xref": "0.001",
+          "c": "5",
+          "mu": "0.5",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FMount3",
+        "name": "FMount3",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1400,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-(-1*L_p/2 - cx)",
+          "y": "-(1*W_p/2 - cy)",
+          "z": "-(-H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FLocal3",
+        "name": "FLocal3",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1540,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-1*L_p/2 - cx",
+          "y": "1*W_p/2 - cy",
+          "z": "-H_p/2 - cz"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FPose3",
+        "name": "FPose3",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1680,
+          "y": 680
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Floor3",
+        "name": "Floor3",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 1820,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000",
+          "xref": "0.001",
+          "c": "5",
+          "mu": "0.5",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FMount4",
+        "name": "FMount4",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1400,
+          "y": 750
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-(-1*L_p/2 - cx)",
+          "y": "-(-1*W_p/2 - cy)",
+          "z": "-(-H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FLocal4",
+        "name": "FLocal4",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1540,
+          "y": 790
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-1*L_p/2 - cx",
+          "y": "-1*W_p/2 - cy",
+          "z": "-H_p/2 - cz"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FPose4",
+        "name": "FPose4",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1680,
+          "y": 790
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Floor4",
+        "name": "Floor4",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 1820,
+          "y": 750
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000",
+          "xref": "0.001",
+          "c": "5",
+          "mu": "0.5",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Mon",
+        "name": "Mon",
+        "block": {
+          "ref": "project:CupMonitor"
+        },
+        "position": {
+          "x": 1160,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "mx": "0",
+          "my": "0",
+          "bx": "-cx",
+          "by": "-cy",
+          "bz": "H_p/2 - cz",
+          "L0": "L0",
+          "t_rel": "t_rel"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Trans",
+        "name": "Trans",
+        "block": {
+          "ref": "project:Transmissibility"
+        },
+        "position": {
+          "x": 1160,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "w_lp": "w_lp"
+        },
+        "constants": {},
+        "starts": {}
+      }
+    ],
+    "connections": [
+      {
+        "id": "c001",
+        "kind": "signal",
+        "from": {
+          "node": "Lift",
+          "port": "v"
+        },
+        "to": {
+          "node": "Tool",
+          "port": "zv1"
+        }
+      },
+      {
+        "id": "c002",
+        "kind": "signal",
+        "from": {
+          "node": "Lift",
+          "port": "a"
+        },
+        "to": {
+          "node": "Tool",
+          "port": "za1"
+        }
+      },
+      {
+        "id": "c003",
+        "kind": "signal",
+        "from": {
+          "node": "Lower",
+          "port": "v"
+        },
+        "to": {
+          "node": "Tool",
+          "port": "zv2"
+        }
+      },
+      {
+        "id": "c004",
+        "kind": "signal",
+        "from": {
+          "node": "Lower",
+          "port": "a"
+        },
+        "to": {
+          "node": "Tool",
+          "port": "za2"
+        }
+      },
+      {
+        "id": "c005",
+        "kind": "signal",
+        "from": {
+          "node": "Retract",
+          "port": "v"
+        },
+        "to": {
+          "node": "Tool",
+          "port": "zv3"
+        }
+      },
+      {
+        "id": "c006",
+        "kind": "signal",
+        "from": {
+          "node": "Retract",
+          "port": "a"
+        },
+        "to": {
+          "node": "Tool",
+          "port": "za3"
+        }
+      },
+      {
+        "id": "c007",
+        "kind": "signal",
+        "from": {
+          "node": "Tool",
+          "port": "tw"
+        },
+        "to": {
+          "node": "Grip",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c008",
+        "kind": "bond",
+        "from": {
+          "node": "Grip",
+          "port": "p"
+        },
+        "to": {
+          "node": "TJ"
+        }
+      },
+      {
+        "id": "c009",
+        "kind": "bond",
+        "from": {
+          "node": "TJ"
+        },
+        "to": {
+          "node": "GMount",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c010",
+        "kind": "bond",
+        "from": {
+          "node": "GMount",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup",
+          "port": "a"
+        }
+      },
+      {
+        "id": "c011",
+        "kind": "wire",
+        "from": {
+          "node": "Gen",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup",
+          "port": "vac"
+        }
+      },
+      {
+        "id": "c012",
+        "kind": "signal",
+        "from": {
+          "node": "Valve",
+          "port": "y"
+        },
+        "to": {
+          "node": "Gen",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c013",
+        "kind": "signal",
+        "from": {
+          "node": "Box",
+          "port": "V"
+        },
+        "to": {
+          "node": "Pose",
+          "port": "tw"
+        }
+      },
+      {
+        "id": "c014",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "Box",
+          "port": "g"
+        }
+      },
+      {
+        "id": "c015",
+        "kind": "bond",
+        "from": {
+          "node": "Box",
+          "port": "p"
+        },
+        "to": {
+          "node": "PMount",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c016",
+        "kind": "bond",
+        "from": {
+          "node": "PMount",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c017",
+        "kind": "bond",
+        "from": {
+          "node": "Box",
+          "port": "p"
+        },
+        "to": {
+          "node": "FMount1",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c018",
+        "kind": "bond",
+        "from": {
+          "node": "FMount1",
+          "port": "a"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c019",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose1",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c020",
+        "kind": "signal",
+        "from": {
+          "node": "FLocal1",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose1",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c021",
+        "kind": "signal",
+        "from": {
+          "node": "FPose1",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "g"
+        }
+      },
+      {
+        "id": "c022",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "o"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "o"
+        }
+      },
+      {
+        "id": "c023",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "c024",
+        "kind": "bond",
+        "from": {
+          "node": "Box",
+          "port": "p"
+        },
+        "to": {
+          "node": "FMount2",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c025",
+        "kind": "bond",
+        "from": {
+          "node": "FMount2",
+          "port": "a"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c026",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose2",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c027",
+        "kind": "signal",
+        "from": {
+          "node": "FLocal2",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose2",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c028",
+        "kind": "signal",
+        "from": {
+          "node": "FPose2",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "g"
+        }
+      },
+      {
+        "id": "c029",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "o"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "o"
+        }
+      },
+      {
+        "id": "c030",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "c031",
+        "kind": "bond",
+        "from": {
+          "node": "Box",
+          "port": "p"
+        },
+        "to": {
+          "node": "FMount3",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c032",
+        "kind": "bond",
+        "from": {
+          "node": "FMount3",
+          "port": "a"
+        },
+        "to": {
+          "node": "Floor3",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c033",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose3",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c034",
+        "kind": "signal",
+        "from": {
+          "node": "FLocal3",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose3",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c035",
+        "kind": "signal",
+        "from": {
+          "node": "FPose3",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor3",
+          "port": "g"
+        }
+      },
+      {
+        "id": "c036",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "o"
+        },
+        "to": {
+          "node": "Floor3",
+          "port": "o"
+        }
+      },
+      {
+        "id": "c037",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor3",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "c038",
+        "kind": "bond",
+        "from": {
+          "node": "Box",
+          "port": "p"
+        },
+        "to": {
+          "node": "FMount4",
+          "port": "b"
+        }
+      },
+      {
+        "id": "c039",
+        "kind": "bond",
+        "from": {
+          "node": "FMount4",
+          "port": "a"
+        },
+        "to": {
+          "node": "Floor4",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c040",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose4",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c041",
+        "kind": "signal",
+        "from": {
+          "node": "FLocal4",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose4",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "c042",
+        "kind": "signal",
+        "from": {
+          "node": "FPose4",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor4",
+          "port": "g"
+        }
+      },
+      {
+        "id": "c043",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "o"
+        },
+        "to": {
+          "node": "Floor4",
+          "port": "o"
+        }
+      },
+      {
+        "id": "c044",
+        "kind": "signal",
+        "from": {
+          "node": "Table",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor4",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "c045",
+        "kind": "signal",
+        "from": {
+          "node": "Tool",
+          "port": "g"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "gt"
+        }
+      },
+      {
+        "id": "c046",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c047",
+        "kind": "signal",
+        "from": {
+          "node": "Cup",
+          "port": "sealed"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "sealed"
+        }
+      },
+      {
+        "id": "c048",
+        "kind": "signal",
+        "from": {
+          "node": "Cup",
+          "port": "ext"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "ext"
+        }
+      },
+      {
+        "id": "c049",
+        "kind": "signal",
+        "from": {
+          "node": "Cup",
+          "port": "T"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "T"
+        }
+      },
+      {
+        "id": "c050",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "Trans",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "c051",
+        "kind": "signal",
+        "from": {
+          "node": "Tool",
+          "port": "xc"
+        },
+        "to": {
+          "node": "Trans",
+          "port": "xc"
+        }
+      },
+      {
+        "id": "c052",
+        "kind": "signal",
+        "from": {
+          "node": "Tool",
+          "port": "sp"
+        },
+        "to": {
+          "node": "Trans",
+          "port": "sp"
+        }
+      },
+      {
+        "id": "c053",
+        "kind": "signal",
+        "from": {
+          "node": "Tool",
+          "port": "cp"
+        },
+        "to": {
+          "node": "Trans",
+          "port": "cp"
+        }
+      },
+      {
+        "id": "c054",
+        "kind": "signal",
+        "from": {
+          "node": "Tool",
+          "port": "A"
+        },
+        "to": {
+          "node": "Trans",
+          "port": "A"
+        }
+      },
+      {
+        "id": "c055",
+        "kind": "signal",
+        "from": {
+          "node": "Tool",
+          "port": "f"
+        },
+        "to": {
+          "node": "Trans",
+          "port": "f"
+        }
+      },
+      {
+        "id": "c056",
+        "kind": "signal",
+        "from": {
+          "node": "Tool",
+          "port": "g"
+        },
+        "to": {
+          "node": "Trans",
+          "port": "gt"
+        }
+      }
+    ],
+    "annotations": [
+      {
+        "id": "note1",
+        "kind": "text",
+        "text": "One bellows suction cup (nonlinear bellows) on a tool with a prescribed motion holds a box. motion: 1 hold, 2 vertical bounce, 3 horizontal steps, 4 tilt swing, 5 lateral chirp. Mon draws the cup in 3D and latches a drop; Trans demodulates the lateral chirp.",
+        "x": 40,
+        "y": 520,
+        "w": 360,
+        "h": 120,
+        "color": "yellow"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 13.09,
+    "solver": "FBDF",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 6546
+    },
+    "event_limit": 20000
+  },
+  "parameters": [
+    {
+      "name": "m_p",
+      "value": "0.6",
+      "unit": "kg",
+      "description": "Payload (box) mass"
+    },
+    {
+      "name": "L_p",
+      "value": "0.12",
+      "unit": "m",
+      "description": "Box length (x)"
+    },
+    {
+      "name": "W_p",
+      "value": "0.12",
+      "unit": "m",
+      "description": "Box width (y)"
+    },
+    {
+      "name": "H_p",
+      "value": "0.04",
+      "unit": "m",
+      "description": "Box height"
+    },
+    {
+      "name": "cx",
+      "value": "0",
+      "unit": "m",
+      "description": "Centre of mass offset from the box centre, x"
+    },
+    {
+      "name": "cy",
+      "value": "0",
+      "unit": "m",
+      "description": "Centre of mass offset, y"
+    },
+    {
+      "name": "cz",
+      "value": "0",
+      "unit": "m",
+      "description": "Centre of mass offset, z (up)"
+    },
+    {
+      "name": "L0",
+      "value": "0.03",
+      "unit": "m",
+      "description": "Cup rest length (mount to lip)"
+    },
+    {
+      "name": "A_eff",
+      "value": "0.0005",
+      "unit": "m^2",
+      "description": "Effective suction area"
+    },
+    {
+      "name": "D_lip",
+      "value": "0.032",
+      "unit": "m",
+      "description": "Lip diameter"
+    },
+    {
+      "name": "k_ax",
+      "value": "2500",
+      "unit": "N/m",
+      "description": "Bellows axial stiffness"
+    },
+    {
+      "name": "d_ax",
+      "value": "8",
+      "unit": "N*s/m",
+      "description": "Bellows axial damping"
+    },
+    {
+      "name": "k_lat",
+      "value": "1500",
+      "unit": "N/m",
+      "description": "Bellows lateral stiffness"
+    },
+    {
+      "name": "d_lat",
+      "value": "5",
+      "unit": "N*s/m",
+      "description": "Bellows lateral damping"
+    },
+    {
+      "name": "k_tilt",
+      "value": "1",
+      "unit": "N*m/rad",
+      "description": "Bellows bending stiffness"
+    },
+    {
+      "name": "k_tor",
+      "value": "1.5",
+      "unit": "N*m/rad",
+      "description": "Bellows torsional stiffness"
+    },
+    {
+      "name": "d_rot",
+      "value": "0.005",
+      "unit": "N*m*s/rad",
+      "description": "Bellows rotational damping"
+    },
+    {
+      "name": "mu",
+      "value": "0.5",
+      "unit": "1",
+      "description": "Lip friction coefficient"
+    },
+    {
+      "name": "V_cup",
+      "value": "8e-06",
+      "unit": "m^3",
+      "description": "Cup chamber and hose volume"
+    },
+    {
+      "name": "A_lip0",
+      "value": "1.5e-08",
+      "unit": "m^2",
+      "description": "Sealed-lip leak area"
+    },
+    {
+      "name": "F_min",
+      "value": "0.1",
+      "unit": "N",
+      "description": "Residual friction capacity of a free lip"
+    },
+    {
+      "name": "s_bot",
+      "value": "0.006",
+      "unit": "m",
+      "description": "Compression stroke before the folds bottom (estimate)"
+    },
+    {
+      "name": "k_bot",
+      "value": "25000",
+      "unit": "N/m",
+      "description": "Bottoming stiffness scale (estimate)"
+    },
+    {
+      "name": "n_bot",
+      "value": "3",
+      "unit": "1",
+      "description": "Bottoming exponent"
+    },
+    {
+      "name": "x_bot",
+      "value": "0.001",
+      "unit": "m",
+      "description": "Reference over-stroke of the bottoming law"
+    },
+    {
+      "name": "A_fold",
+      "value": "0.00017",
+      "unit": "m^2",
+      "description": "Folded bellows annulus: vacuum lift stroke A_fold*dp/k_ax (estimate)"
+    },
+    {
+      "name": "c_vac",
+      "value": "1",
+      "unit": "1",
+      "description": "Lateral/tilt stiffness rise with vacuum, 1 + c_vac*dp/p_atm (estimate)"
+    },
+    {
+      "name": "c_ext",
+      "value": "3",
+      "unit": "1",
+      "description": "Lateral/tilt stiffness fall with extension, exp(-c_ext*ext/L0) (estimate)"
+    },
+    {
+      "name": "dp_max",
+      "value": "60000",
+      "unit": "Pa",
+      "description": "Ejector end vacuum (the vacuum level)"
+    },
+    {
+      "name": "Q_max",
+      "value": "0.0002",
+      "unit": "m^3/s",
+      "description": "Ejector suction flow at zero vacuum (free air)"
+    },
+    {
+      "name": "G_rel",
+      "value": "2e-07",
+      "unit": "m^3/(s*Pa)",
+      "description": "Release (vent) conductance"
+    },
+    {
+      "name": "perm",
+      "value": "0",
+      "unit": "m/(s*Pa)",
+      "description": "Air permeance of the box surface"
+    },
+    {
+      "name": "motion",
+      "value": "5",
+      "unit": "1",
+      "description": "Excitation: 1 hold, 2 vertical bounce, 3 horizontal steps, 4 tilt swing, 5 lateral chirp"
+    },
+    {
+      "name": "amp",
+      "value": "1",
+      "unit": "1",
+      "description": "Amplitude scale of every excitation"
+    },
+    {
+      "name": "fsc",
+      "value": "1",
+      "unit": "1",
+      "description": "Frequency scale of the chirps and the fast swing"
+    },
+    {
+      "name": "H_lift",
+      "value": "0.06",
+      "unit": "m",
+      "description": "Lift height"
+    },
+    {
+      "name": "A_st",
+      "value": "0.004",
+      "unit": "m",
+      "description": "Bounce: quick step down"
+    },
+    {
+      "name": "T_st",
+      "value": "0.04",
+      "unit": "s",
+      "description": "Bounce: step duration"
+    },
+    {
+      "name": "T_ring",
+      "value": "0.8",
+      "unit": "s",
+      "description": "Bounce: free ring-down before the chirp"
+    },
+    {
+      "name": "A_z",
+      "value": "0.0017",
+      "unit": "m",
+      "description": "Bounce: vertical chirp amplitude (end)"
+    },
+    {
+      "name": "f0_z",
+      "value": "3",
+      "unit": "Hz",
+      "description": "Bounce: chirp start frequency"
+    },
+    {
+      "name": "f1_z",
+      "value": "20",
+      "unit": "Hz",
+      "description": "Bounce: chirp end frequency"
+    },
+    {
+      "name": "T_cz",
+      "value": "5",
+      "unit": "s",
+      "description": "Bounce: chirp duration"
+    },
+    {
+      "name": "a_s",
+      "value": "4.5",
+      "unit": "m/s^2",
+      "description": "Steps: largest acceleration (moves at a_s/3, 2a_s/3, a_s)"
+    },
+    {
+      "name": "T_p",
+      "value": "0.15",
+      "unit": "s",
+      "description": "Steps: acceleration pulse duration"
+    },
+    {
+      "name": "T_c",
+      "value": "0.6",
+      "unit": "s",
+      "description": "Steps: coast and pause"
+    },
+    {
+      "name": "tau_s",
+      "value": "0.008",
+      "unit": "s",
+      "description": "Steps: edge time scale"
+    },
+    {
+      "name": "th_A",
+      "value": "30",
+      "unit": "deg",
+      "description": "Swing: quasi-static tilt"
+    },
+    {
+      "name": "T_sw",
+      "value": "0.8",
+      "unit": "s",
+      "description": "Swing: tilt time each way"
+    },
+    {
+      "name": "T_h",
+      "value": "0.6",
+      "unit": "s",
+      "description": "Swing: hold at th_A"
+    },
+    {
+      "name": "th_B",
+      "value": "10",
+      "unit": "deg",
+      "description": "Swing: amplitude of the fast swing"
+    },
+    {
+      "name": "f_sw",
+      "value": "1.5",
+      "unit": "Hz",
+      "description": "Swing: frequency of the fast swing"
+    },
+    {
+      "name": "N_sw",
+      "value": "3",
+      "unit": "1",
+      "description": "Swing: cycles of the fast swing"
+    },
+    {
+      "name": "A_x",
+      "value": "0.0004",
+      "unit": "m",
+      "description": "Chirp: lateral amplitude (end)"
+    },
+    {
+      "name": "f0_x",
+      "value": "1.5",
+      "unit": "Hz",
+      "description": "Chirp: start frequency"
+    },
+    {
+      "name": "f1_x",
+      "value": "20",
+      "unit": "Hz",
+      "description": "Chirp: end frequency"
+    },
+    {
+      "name": "T_cx",
+      "value": "10",
+      "unit": "s",
+      "description": "Chirp: duration"
+    },
+    {
+      "name": "a0",
+      "value": "0.3",
+      "unit": "1",
+      "description": "Chirps: start amplitude share"
+    },
+    {
+      "name": "T_env",
+      "value": "0.25",
+      "unit": "s",
+      "description": "Chirps: fade-in and fade-out"
+    },
+    {
+      "name": "w_lp",
+      "value": "6",
+      "unit": "rad/s",
+      "description": "Transmissibility demodulator low-pass"
+    },
+    {
+      "name": "t_lift",
+      "value": "0.4",
+      "unit": "s",
+      "description": "Lift start (the vacuum is on from t = 0)"
+    },
+    {
+      "name": "t_x0",
+      "value": "t_lift + 0.5372",
+      "unit": "s",
+      "description": "Start of the excitation"
+    },
+    {
+      "name": "T_exc",
+      "value": "1*max(0, 1 - abs(motion - 1)) + (T_ring + T_cz + 0.6)*max(0, 1 - abs(motion - 2)) + (6*T_p + 6*T_c + 0.3)*max(0, 1 - abs(motion - 3)) + (2*T_sw + T_h + 0.8 + N_sw/(fsc*f_sw))*max(0, 1 - abs(motion - 4)) + (T_cx + 0.6)*max(0, 1 - abs(motion - 5))",
+      "unit": "s",
+      "description": "Length of the excitation window (per motion)"
+    },
+    {
+      "name": "t_low",
+      "value": "t_x0 + T_exc + 0.2",
+      "unit": "s",
+      "description": "Lower start (place)"
+    },
+    {
+      "name": "t_rel",
+      "value": "t_low + 0.4441",
+      "unit": "s",
+      "description": "Vacuum off (release)"
+    },
+    {
+      "name": "t_ret",
+      "value": "t_rel + 0.25",
+      "unit": "s",
+      "description": "Retract start"
+    },
+    {
+      "name": "pen0",
+      "value": "(m_p*9.81/4*sqrt(1e-3)/2e5)^(2/3)",
+      "unit": "m",
+      "description": "Rest penetration of the box corners in the table"
+    },
+    {
+      "name": "z0",
+      "value": "H_p - pen0 + L0",
+      "unit": "m",
+      "description": "Start height of the cup mount (lip on the box top)"
+    },
+    {
+      "name": "Jx",
+      "value": "m_p*(W_p^2 + H_p^2)/12",
+      "unit": "kg*m^2",
+      "description": "Box inertia about x"
+    },
+    {
+      "name": "Jy",
+      "value": "m_p*(L_p^2 + H_p^2)/12",
+      "unit": "kg*m^2",
+      "description": "Box inertia about y"
+    },
+    {
+      "name": "Jz",
+      "value": "m_p*(L_p^2 + W_p^2)/12",
+      "unit": "kg*m^2",
+      "description": "Box inertia about z"
+    }
+  ],
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Cup utilisation U (1 = pull-off, peel or slip)",
+      "signals": [
+        "Cup/U"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Axial: bellows force Fs, transmitted T, holding force Fcap [N]",
+      "signals": [
+        "Cup/Fs",
+        "Cup/T",
+        "Cup/Fcap"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Force-stroke while sealed: transmitted force T [N] against ext [m]",
+      "signals": [
+        "Mon/T_c"
+      ],
+      "x": "Mon/ext_c"
+    },
+    {
+      "id": "p4",
+      "title": "Lateral force Flx [N] against the bellows deflection ex [m]",
+      "signals": [
+        "Cup/Flx"
+      ],
+      "x": "Cup/ex"
+    },
+    {
+      "id": "p5",
+      "title": "Deflections: axial ext, lateral ex [m], lip gap h [m]",
+      "signals": [
+        "Cup/ext",
+        "Cup/ex",
+        "Cup/h"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Vacuum [Pa]",
+      "signals": [
+        "Cup/dp",
+        "Gen/dp"
+      ]
+    },
+    {
+      "id": "p7",
+      "title": "Tool: tilt [deg], payload tilt relative to the tool [deg]",
+      "signals": [
+        "Tool/theta",
+        "Mon/sway"
+      ]
+    },
+    {
+      "id": "p8",
+      "title": "Transmissibility (lateral chirp) against the frequency [Hz]",
+      "signals": [
+        "Trans/TR"
+      ],
+      "x": "Trans/fl"
+    },
+    {
+      "id": "p9",
+      "title": "Nonlinear terms: bottoming push F_bot [N], side stiffness factor kf",
+      "signals": [
+        "Cup/F_bot",
+        "Cup/kf"
+      ]
+    },
+    {
+      "id": "p10",
+      "title": "Grip status",
+      "signals": [
+        "Cup/sealed",
+        "Mon/held"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/suction-cup.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:tool",
+      "property": "pose",
+      "signal": [
+        "Tool/g[1]",
+        "Tool/g[2]",
+        "Tool/g[3]",
+        "Tool/g[4]",
+        "Tool/g[5]",
+        "Tool/g[6]",
+        "Tool/g[7]"
+      ]
+    },
+    {
+      "target": "link:box_1",
+      "property": "pose",
+      "signal": [
+        "Pose/qw",
+        "Pose/qx",
+        "Pose/qy",
+        "Pose/qz",
+        "Pose/px",
+        "Pose/py",
+        "Pose/pz"
+      ]
+    },
+    {
+      "target": "visual:bellows_1",
+      "property": "segment",
+      "signal": [
+        "Mon/bel[1]",
+        "Mon/bel[2]",
+        "Mon/bel[3]",
+        "Mon/bel[4]",
+        "Mon/bel[5]",
+        "Mon/bel[6]"
+      ]
+    },
+    {
+      "target": "visual:ring1_1",
+      "property": "segment",
+      "signal": [
+        "Mon/ring1[1]",
+        "Mon/ring1[2]",
+        "Mon/ring1[3]",
+        "Mon/ring1[4]",
+        "Mon/ring1[5]",
+        "Mon/ring1[6]"
+      ]
+    },
+    {
+      "target": "visual:ring2_1",
+      "property": "segment",
+      "signal": [
+        "Mon/ring2[1]",
+        "Mon/ring2[2]",
+        "Mon/ring2[3]",
+        "Mon/ring2[4]",
+        "Mon/ring2[5]",
+        "Mon/ring2[6]"
+      ]
+    },
+    {
+      "target": "visual:lip_1",
+      "property": "segment",
+      "signal": [
+        "Mon/lip[1]",
+        "Mon/lip[2]",
+        "Mon/lip[3]",
+        "Mon/lip[4]",
+        "Mon/lip[5]",
+        "Mon/lip[6]"
+      ]
+    },
+    {
+      "target": "visual:lip_1",
+      "property": "color",
+      "signal": "Cup/U",
+      "colormap": "coolwarm",
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bellows_1",
+      "property": "color",
+      "signal": "Cup/dp",
+      "colormap": "viridis",
+      "range": [
+        0.0,
+        60000.0
+      ]
+    }
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "fs",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Force-stroke while sealed: transmitted force T [N] against ext [m]",
+        "signals": [
+          "Mon/T_c"
+        ],
+        "x": "Mon/ext_c"
+      },
+      {
+        "id": "lat",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Lateral force Flx [N] against the deflection ex [m]",
+        "signals": [
+          "Cup/Flx"
+        ],
+        "x": "Cup/ex"
+      },
+      {
+        "id": "ut",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Utilisation U over time (1 = pull-off, peel or slip)",
+        "signals": [
+          "Cup/U"
+        ]
+      },
+      {
+        "id": "tr",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Transmissibility against the chirp frequency [Hz] (motion 5)",
+        "signals": [
+          "Trans/TR"
+        ],
+        "x": "Trans/fl"
+      },
+      {
+        "id": "u",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Utilisation U",
+        "signals": [
+          "Cup/U"
+        ],
+        "options": {
+          "min": 0,
+          "max": 1.2,
+          "decimals": 2,
+          "zones": [
+            {
+              "from": 0,
+              "to": 0.5,
+              "tone": "good"
+            },
+            {
+              "from": 0.5,
+              "to": 1.0,
+              "tone": "warn"
+            },
+            {
+              "from": 1.0,
+              "to": 1.2,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "held",
+        "kind": "indicator",
+        "size": "1x1",
+        "title": "Payload held",
+        "signals": [
+          "Mon/held"
+        ],
+        "options": {
+          "threshold": 0.5,
+          "onWhen": "above"
+        }
+      },
+      {
+        "id": "h",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Lip gap h",
+        "signals": [
+          "Cup/h"
+        ],
+        "options": {
+          "decimals": 5,
+          "sparkline": true,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "dp",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Vacuum",
+        "signals": [
+          "Cup/dp"
+        ],
+        "options": {
+          "decimals": 0,
+          "sparkline": true,
+          "unit": "Pa"
+        }
+      },
+      {
+        "id": "ext",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Axial extension",
+        "signals": [
+          "Cup/ext"
+        ],
+        "options": {
+          "decimals": 5,
+          "sparkline": true,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "ex",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Lateral deflection",
+        "signals": [
+          "Cup/ex"
+        ],
+        "options": {
+          "decimals": 5,
+          "sparkline": true,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "sway",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Tilt of the box (to the tool)",
+        "signals": [
+          "Mon/sway"
+        ],
+        "options": {
+          "decimals": 2,
+          "sparkline": true,
+          "unit": "deg"
+        }
+      },
+      {
+        "id": "fcap",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Holding capacity",
+        "signals": [
+          "Cup/Fcap"
+        ],
+        "options": {
+          "decimals": 1,
+          "sparkline": true,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "mass",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Payload mass",
+        "parameter": "global:m_p",
+        "options": {
+          "min": 0.1,
+          "max": 3.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "kg"
+        }
+      },
+      {
+        "id": "cx",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Centre of mass offset x",
+        "parameter": "global:cx",
+        "options": {
+          "min": -0.05,
+          "max": 0.05,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "vac",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Vacuum level (ejector end vacuum)",
+        "parameter": "global:dp_max",
+        "options": {
+          "min": 20000,
+          "max": 80000,
+          "step": 2500,
+          "decimals": 0,
+          "unit": "Pa"
+        }
+      },
+      {
+        "id": "amp",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Motion amplitude (scale)",
+        "parameter": "global:amp",
+        "options": {
+          "min": 0.25,
+          "max": 2.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "fsc",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Motion frequency (scale)",
+        "parameter": "global:fsc",
+        "options": {
+          "min": 0.5,
+          "max": 2.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      }
+    ]
+  }
+}
