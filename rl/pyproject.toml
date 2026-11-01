@@ -1,0 +1,24 @@
+[project]
+name = "bgsim-rl"
+version = "0.1.0"
+description = "RL controllers on bg-sim FMUs (plan/RL_PLAN.md): batched C env, rsl_rl PPO, policy-to-block generator"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "numpy>=2.0",
+    "torch>=2.5",
+    "rsl-rl-lib>=3.0",
+    "tensordict>=0.8",
+    "fmpy>=0.3.20",
+    "matplotlib>=3.9",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
