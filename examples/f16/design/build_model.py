@@ -1312,7 +1312,17 @@ def expected_sim() -> dict:
                   "note": "the HUD's limit flag comes on"}]
     for t in (1.5, 2.0, 3.0):
         checks_pl.append(_cursor("F16/Air/alpha_deg", pl, "alpha", t, 0.1))
-    return {"f16-sim": {"checks": checks_turn},
+    # The X-EX1 export sweep (examples/export_checks.py) drives the inputs with steps, a ramp, a
+    # chirp and a PRBS within these ranges: small ones, so 30 s of it stays in the envelope.
+    export = {"inputs": {"stick_pitch": {"min": -0.1, "max": 0.1}, "stick_roll": {"min": -0.1, "max": 0.1},
+                         "pedals": {"min": -0.1, "max": 0.1}, "throttle": {"min": 0.1, "max": 0.5},
+                         "wind_n": {"min": -2.0, "max": 2.0}, "wind_e": {"min": -2.0, "max": 2.0},
+                         "wind_d": {"min": -2.0, "max": 2.0}},
+              "interface": {"inputs": [m for m, _, _ in SIM_INPUTS],
+                            "outputs": [m for m, _, _ in SIM_OUTPUT_SOURCES]},
+              "note": "the FMU of apps/f16-sim; its own acceptance (the host's settings and tunables, four "
+                      "manoeuvres) is examples/export_f16_check.py"}
+    return {"f16-sim": {"checks": checks_turn, "export": export},
             "f16-sim-roll-step": sim_entry("roll_step", checks_rs),
             "f16-sim-full-roll": sim_entry("full_roll", checks_fr),
             "f16-sim-dutch-open": sim_entry("dutch_open", checks_do),

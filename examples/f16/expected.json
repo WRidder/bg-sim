@@ -746,7 +746,89 @@
           "value": -0.7003436326778666,
           "abs": 0.2
         }
-      ]
+      ],
+      "export": {
+        "inputs": {
+          "stick_pitch": {
+            "min": -0.1,
+            "max": 0.1
+          },
+          "stick_roll": {
+            "min": -0.1,
+            "max": 0.1
+          },
+          "pedals": {
+            "min": -0.1,
+            "max": 0.1
+          },
+          "throttle": {
+            "min": 0.1,
+            "max": 0.5
+          },
+          "wind_n": {
+            "min": -2.0,
+            "max": 2.0
+          },
+          "wind_e": {
+            "min": -2.0,
+            "max": 2.0
+          },
+          "wind_d": {
+            "min": -2.0,
+            "max": 2.0
+          }
+        },
+        "interface": {
+          "inputs": [
+            "stick_pitch",
+            "stick_roll",
+            "pedals",
+            "throttle",
+            "wind_n",
+            "wind_e",
+            "wind_d"
+          ],
+          "outputs": [
+            "north_m",
+            "east_m",
+            "alt_m",
+            "q_w",
+            "q_x",
+            "q_y",
+            "q_z",
+            "phi_deg",
+            "theta_deg",
+            "psi_deg",
+            "gamma_deg",
+            "p_dps",
+            "q_dps",
+            "r_dps",
+            "u_mps",
+            "v_mps",
+            "w_mps",
+            "vs_mps",
+            "tas_mps",
+            "cas_mps",
+            "mach",
+            "qbar_pa",
+            "alpha_deg",
+            "beta_deg",
+            "nz_g",
+            "ny_g",
+            "stab_deg",
+            "ail_deg",
+            "rdr_deg",
+            "power_pct",
+            "thrust_n",
+            "p_lim_dps",
+            "nz_cmd_g",
+            "limiter_active",
+            "departed",
+            "ground_contact"
+          ]
+        },
+        "note": "the FMU of apps/f16-sim; its own acceptance (the host's settings and tunables, four manoeuvres) is examples/export_f16_check.py"
+      }
     },
     "f16-sim-roll-step": {
       "model": "f16-sim",
