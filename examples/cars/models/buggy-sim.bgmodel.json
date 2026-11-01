@@ -11487,7 +11487,7 @@
         "kind": "signal",
         "from": {
           "node": "n032",
-          "port": "rpm"
+          "port": "n_rpm"
         },
         "to": {
           "node": "n149",
@@ -11547,7 +11547,7 @@
         "kind": "signal",
         "from": {
           "node": "n043",
-          "port": "rpm"
+          "port": "n_rpm"
         },
         "to": {
           "node": "n154",
@@ -11680,7 +11680,7 @@
       "id": "p_motor",
       "title": "Rear motor",
       "signals": [
-        "MotorR/rpm",
+        "MotorR/n_rpm",
         "MotorR/tau",
         "MotorR/tlim"
       ]

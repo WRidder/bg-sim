@@ -109,7 +109,16 @@ moves, while the 1-D reference uses steady-state slip. After that the two accele
 
     uv run examples/export_cars_check.py       # export, references, build, fmpy comparison
 
-FMU_TABLE
+| FMU | method, internal step | doStep (5 ms step) | drive | worst deviation from bg-sim (of the signal's peak) |
+| --- | --- | --- | --- | --- |
+| `racecar_sim` (9 inputs, 93 outputs) | RK4, 78.1 us (64 substeps) | 390 us mean, 1.3 ms max | 10 s launch, turn, low-friction patch under one rear wheel, braking | 4.0e-5 (motor torque); speed 4e-6 m/s |
+| `buggy_sim` (9 inputs, 98 outputs) | RK4, 100 us (50 substeps) | 604 us mean, 2.0 ms max | 10 s over the hills, steering, braking, handbrake | 7.7e-4 (FL slip); speed 1.4e-5 m/s |
+
+Both: no allocation after instantiate, no forbidden symbol, fmpy validation clean, a parameter
+outside its range refused. The doStep times come from `apps/car-sim/build_fmu.py` on an idle
+machine (Windows 11, gcc -O2); under load they rise by about half and stay below the 1 ms gate.
+The export reports many W203 notes: the switching conditions (clamps, stops, the motor envelope)
+are evaluated once per internal step, which the fixed step resolves.
 
 `apps/car-sim` is the host (Panda3D, fmpy, wheel/pedal/gamepad input): see its README.
 

@@ -7408,7 +7408,7 @@
       "id": "p_motor",
       "title": "Rear motor",
       "signals": [
-        "MotorR/rpm",
+        "MotorR/n_rpm",
         "MotorR/tau",
         "MotorR/tlim"
       ]

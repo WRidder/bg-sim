@@ -74,7 +74,8 @@ def build(out: Path, vehicles) -> dict:
         info[veh] = {"method": report["method"], "dt": report["dt"], "substeps": report["substeps"],
                      "step": report["step"], "doStepMeanUs": res.step_time_mean_us, "doStepMaxUs": res.step_time_max_us,
                      "allocationsAfterInstantiate": res.allocations_after_instantiate, "compiler": res.compiler,
-                     "ranges": report.get("tunables", {}).get("ranges")}
+                     "ranges": {p["name"]: [p["min"], p["max"]] for p in report.get("parameters", [])
+                                if "min" in p and "max" in p}}
         print(f"wrote {BUILD / f'{veh}_sim.fmu'}: {report['method']} dt {report['dt']} s, doStep "
               f"{res.step_time_mean_us:.1f} us mean ({res.step_time_max_us:.1f} max), "
               f"{res.allocations_after_instantiate} allocations after instantiate")

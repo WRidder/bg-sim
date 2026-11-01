@@ -42,7 +42,7 @@
         regen::Real, [unit = "N*m", description = "Regenerative brake torque at the wheels of the axle"]
         tlim::Real, [unit = "N*m", description = "Torque envelope at the present speed"]
         P::Real, [unit = "W", description = "Mechanical power tau w (negative when regenerating)"]
-        rpm::Real, [unit = "1", description = "Rotor speed in rpm"]
+        n_rpm::Real, [unit = "1", description = "Rotor speed in rpm (`rpm` itself is the built-in constant 2 pi/60)"]
     end
     @parameters begin
         T_max::Real = 300.0, [unit = "N*m", min = 0, description = "Peak torque"]
@@ -79,6 +79,6 @@
         P ~ tau * w
         vbus ~ 0.5 * (ocv + sqrt(max(ocv * ocv - 4 * R * (P + p_aux), 0.01 * ocv * ocv)))
         u ~ tau / vbus
-        rpm ~ w * k_rpm
+        n_rpm ~ w * k_rpm
     end
 end

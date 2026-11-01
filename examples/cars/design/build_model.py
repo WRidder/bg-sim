@@ -109,7 +109,7 @@ PLOTS_RIDE = [
 ]
 PLOTS_DRIVE = [
     plot("p_speed", "Speed", ["Telemetry/kmh"]),
-    plot("p_motor", "Rear motor", ["MotorR/rpm", "MotorR/tau", "MotorR/tlim"]),
+    plot("p_motor", "Rear motor", ["MotorR/n_rpm", "MotorR/tau", "MotorR/tlim"]),
     plot("p_power", "Rear motor power and pedals", ["MotorR/P", "Throttle/y", "Brake/y"]),
     plot("p_battery", "Battery", ["Battery/soc", "Battery/V", "Battery/I"]),
     plot("p_acc", "Accelerations (g)", ["Telemetry/ax", "Telemetry/ay"]),
@@ -371,7 +371,7 @@ def sim_outputs(v: dict) -> list:
     out += [("steer_fl", "Steering", "dl"), ("steer_fr", "Steering", "dr")]
     for ax in v["motors"]:
         a = ax.lower()
-        out += [(f"motor_{a}_rpm", "Motor" + ax, "rpm"), (f"motor_{a}_torque", "Motor" + ax, "tau"),
+        out += [(f"motor_{a}_rpm", "Motor" + ax, "n_rpm"), (f"motor_{a}_torque", "Motor" + ax, "tau"),
                 (f"motor_{a}_tlim", "Motor" + ax, "tlim"), (f"motor_{a}_power", "Motor" + ax, "P"),
                 (f"motor_{a}_regen", "Motor" + ax, "regen")]
     out += [("soc", "Battery", "soc"), ("battery_v", "Battery", "V"), ("battery_a", "Battery", "I"),
@@ -430,7 +430,7 @@ def sim(veh: str) -> dict:
                               "plus a little: the car drops onto its wheels)"},
               {"name": "yaw0", "value": "0.0", "unit": "rad", "description": "Start heading (0 = world x)"}]
     plots = [plot("p_speed", "Speed and pedals", ["Telemetry/kmh", "throttle/y", "brake/y"]),
-             plot("p_motor", "Rear motor", ["MotorR/rpm", "MotorR/tau", "MotorR/tlim"]),
+             plot("p_motor", "Rear motor", ["MotorR/n_rpm", "MotorR/tau", "MotorR/tlim"]),
              plot("p_battery", "Battery", ["Battery/soc", "Battery/V", "Battery/I"]),
              plot("p_fz", "Tyre loads", [f"{c}/Tyre/Fz" for c in CORNERS])]
     world = "the race track (flat, z = 0)" if veh == "racecar" else "the rolling hills of buggy-hills"
@@ -530,7 +530,7 @@ def expected() -> dict:
         ch.append(cv("MotorR/tau", t, 300.0, "at the torque limit below the base speed" if t == 2.0 else None, rtol=1e-3))
     for t in (8.0, 12.0):
         ch.append(cv("MotorR/tau", t, at(la, "motor_torque", t), "at the power limit P_max / w", rtol=1e-2))
-        ch.append(cv("MotorR/rpm", t, at(la, "motor_rpm", t), None, rtol=1e-2))
+        ch.append(cv("MotorR/n_rpm", t, at(la, "motor_rpm", t), None, rtol=1e-2))
     for t in (4.0, 8.0, 12.0):
         ch.append(cv("Battery/soc", t, at(la, "soc", t), "battery charge: open-circuit voltage, R, the motor power"
                      if t == 4.0 else None, abs=3e-4))
@@ -540,7 +540,7 @@ def expected() -> dict:
     ch = [{"kind": "scene_bindings"}, DIAG,
           cv("Telemetry/speed", 9.9, ts["V"], "top speed: 260 kW against the drag, rolling resistance and slip", rtol=5e-3),
           cv("MotorR/tau", 9.9, ts["motor_torque"], "motor at the power limit", rtol=1e-2),
-          cv("MotorR/rpm", 9.9, ts["motor_rpm"], None, rtol=5e-3),
+          cv("MotorR/n_rpm", 9.9, ts["motor_rpm"], None, rtol=5e-3),
           cv("Battery/I", 9.9, ts["battery_current"], "battery current at full power", rtol=1e-2)]
     for t in (11.0, 12.0, 13.0, 14.0):
         ch.append(cv("Telemetry/speed", t, at(st, "V", t), "regenerative plus friction braking at 50 % pedal"
@@ -555,8 +555,8 @@ def expected() -> dict:
           cv("Throttle/y", 12.0, gr["throttle"], "accelerator for 5 m/s up 25 %: steady state of design/reference.py", rtol=1e-2),
           cv("MotorF/tau", 12.0, gr["motor_torque"], "each motor", rtol=1e-2),
           cv("MotorR/tau", 12.0, gr["motor_torque"], None, rtol=1e-2),
-          cv("MotorF/rpm", 12.0, gr["motor_rpm_f"], None, rtol=1e-2),
-          cv("MotorR/rpm", 12.0, gr["motor_rpm_r"], None, rtol=1e-2),
+          cv("MotorF/n_rpm", 12.0, gr["motor_rpm_f"], None, rtol=1e-2),
+          cv("MotorR/n_rpm", 12.0, gr["motor_rpm_r"], None, rtol=1e-2),
           cv("FL/Tyre/Fz", 12.0, gr["Fz"][0], "load transfer to the rear on the slope", rtol=1e-2),
           cv("RL/Tyre/Fz", 12.0, gr["Fz"][2], None, rtol=1e-2),
           cv("Battery/I", 12.0, gr["battery_current"], None, rtol=3e-2)]

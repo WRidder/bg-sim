@@ -1,0 +1,25 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "drive",
+          "title": "The electric drive",
+          "file": "pages/drive.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Results",
+          "file": "pages/results.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
