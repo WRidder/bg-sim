@@ -252,7 +252,10 @@ class World:
         af = self.root.attach_new_node("airfield")
         af.set_pos(e0, n0, 0.0)
         L, W = terrain.RUNWAY_LENGTH, terrain.RUNWAY_WIDTH
+        # the pavement lies on the flat ground (terrain.height is 0 here); depth offsets keep it, and the
+        # markings on it, drawn over the terrain far away, where the depth buffer cannot separate 0.3 m
         rw = box("runway", W, L, 0.3, (0.22, 0.22, 0.24, 1))
+        rw.set_depth_offset(1)
         rw.reparent_to(af)
         mark = af.attach_new_node("markings")
         for y in np.arange(-L / 2 + 120, L / 2 - 120, 60.0):            # centre line
@@ -261,9 +264,13 @@ class World:
             for k in range(8):
                 x = -W / 2 + 4 + k * (W - 8) / 7.0
                 box("thr", 1.8, 40.0, 0.05, (0.95, 0.95, 0.95, 1)).copy_to(mark).set_pos(x, end * (L / 2 - 30), 0.3)
+        mark.set_depth_offset(2)
         mark.flatten_strong()
-        box("taxiway", 23, L * 0.8, 0.25, (0.28, 0.28, 0.30, 1)).copy_to(af).set_pos(-180, 0, 0)
-        box("apron", 260, 220, 0.25, (0.30, 0.30, 0.32, 1)).copy_to(af).set_pos(-330, 200, 0)
+        for name, sx, sy, colour, pos in (("taxiway", 23, L * 0.8, (0.28, 0.28, 0.30, 1), (-180, 0, 0)),
+                                          ("apron", 260, 220, (0.30, 0.30, 0.32, 1), (-330, 200, 0))):
+            pave = box(name, sx, sy, 0.25, colour).copy_to(af)
+            pave.set_pos(*pos)
+            pave.set_depth_offset(1)
         for k in range(4):
             box("hangar", 60, 45, 18, (0.62, 0.64, 0.66, 1), (0.45, 0.47, 0.50, 1)).copy_to(af).set_pos(-500, 80 + 60 * k, 0)
         tower = af.attach_new_node("tower")
