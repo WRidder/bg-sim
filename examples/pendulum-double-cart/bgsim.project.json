@@ -4,7 +4,8 @@
   "name": "pendulum-double-cart",
   "models": [
     "pendulum-double-cart",
-    "pendulum-double-cart-free"
+    "pendulum-double-cart-free",
+    "pendulum-double-cart-plant"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"

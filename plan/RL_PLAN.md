@@ -75,8 +75,8 @@ feasible at all. If end-to-end RL stalls, the fallbacks above.
 
 | # | item | status | notes |
 | --- | --- | --- | --- |
-| R0.1 | plant-only FMU of the double cart with exposed parameter ranges | todo | |
-| R0.2 | batched C env, steps/s measured | todo | |
+| R0.1 | plant-only FMU of the double cart with exposed parameter ranges | done | `models/pendulum-double-cart-plant` (written by `design/rlmodels.py`): `V`, `F_push` in; `x`, `q1`, `q2` (+ `v`, `w1`, `w2`, `i_m` for the critic) out; 11 globals exposed with ranges (masses, lengths, joint friction, motor R/k_t/J_m/b_m), 17 calculated parameters and 3 starts recomputed at init. `rl/export_plant.jl` + `rl/build_plant.py`. `auto` picks RK4 at 2.5 µs (the 1e8 N/m pivots and rail rotation spring, \|λ\| 1.05e5 /s, 400 substeps/ms); fixed **Rodas4P 1 ms** instead (damps those parasitic modes). fmpy validate clean, 0 allocations, C++17 ok, out-of-range refused; driven 3 s vs Rodas5P 1e-8: mechanics 1.4e-4 of peak (nominal and 6 globals changed before init), motor current 3.4e-2 (electrical pole -3000/s not resolved at 1 ms; critic-only signal). ROS2 0.5 ms: 1e-2, rejected. doStep 5-6 µs (harness) |
+| R0.2 | batched C env, steps/s measured | done | `rl/cenv/bgenv.c` (N `bg_model`s, reset + set + `bg_init` + pose override, one `bgenv_step` over numpy via ctypes, OpenMP), `rl/rlpend/cbuild.py`, `rl/bench_env.py`. Shim = fmpy bit for bit (0.0). Env step = 5 × 1 ms (200 Hz). One thread: plant 9.2-10 µs per 1 ms step, ~21k env steps/s at N ≥ 16 (plant 93-100 % of the wall time; N = 1: 6k/s, 63 %). 12 OpenMP threads: 139k (N 1024) / 166k (N 4096); 12 processes × 512: **285k env steps/s**. fmpy fallback: 14k env steps/s per core (70 µs/env step). |
 | R0.3 | `VecEnv` wrapper, PPO swing-up + balance (no DR) | todo | |
 | R0.4 | policy-to-block generator, compile time measured | todo | |
 | R0.5 | bgsim closed loop vs training env | todo | |
