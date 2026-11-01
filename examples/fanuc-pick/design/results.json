@@ -1,0 +1,789 @@
+{
+  "generated_by": "design/optimize.py",
+  "M_req": 0.5,
+  "clearance": 0.02,
+  "r_clear": 0.05,
+  "cart_ref": {
+    "v_c": 2.5,
+    "w_c": 6.0,
+    "a_c": 20.0,
+    "al_c": 40.0,
+    "j_c": 400.0,
+    "jw_c": 800.0
+  },
+  "quick": false,
+  "cases": [
+    {
+      "id": "box",
+      "title": "Carton 1.5 kg, centred CoM",
+      "model": "pick-place-best",
+      "kind": "box",
+      "M_req": 0.5,
+      "overrides": {},
+      "default": {
+        "T_cyc": 1.659,
+        "M_tot": -0.0732,
+        "dropped": false,
+        "util_max": 0.6496
+      },
+      "families": {
+        "1": {
+          "family": 1,
+          "feasible": true,
+          "T_cyc": 1.9504,
+          "M_tot": 0.5009,
+          "margins": [
+            0.614,
+            0.5009,
+            0.5083,
+            0.5036,
+            0.5158
+          ],
+          "util_max": 0.5653,
+          "clear": 0.03,
+          "s": 0.406,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.6,
+            "lam": 0.9,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "1",
+            "lam": "0.9",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0",
+            "kv": "0.406",
+            "ka": "0.244"
+          },
+          "n_plan": 299,
+          "n_dyn": 297
+        },
+        "2": {
+          "family": 2,
+          "feasible": true,
+          "T_cyc": 2.0706,
+          "M_tot": 0.5036,
+          "margins": [
+            0.6357,
+            0.5931,
+            0.5392,
+            0.5036,
+            0.5774
+          ],
+          "util_max": 0.6767,
+          "clear": 0.03,
+          "s": 0.688,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.375,
+            "lam": 0.8,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "2",
+            "lam": "0.8",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0",
+            "v_c": "1.72",
+            "w_c": "4.128",
+            "a_c": "5.16",
+            "al_c": "10.32",
+            "j_c": "103.2",
+            "jw_c": "206.4"
+          },
+          "n_plan": 277,
+          "n_dyn": 272
+        },
+        "3": {
+          "family": 3,
+          "feasible": true,
+          "T_cyc": 1.6352,
+          "M_tot": 0.5008,
+          "margins": [
+            0.6191,
+            0.5876,
+            0.5244,
+            0.5008,
+            0.54
+          ],
+          "util_max": 0.6767,
+          "clear": 0.03,
+          "s": 0.628,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.375,
+            "lam": 0.6,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "3",
+            "lam": "0.6",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0.04",
+            "v_c": "1.57",
+            "w_c": "3.768",
+            "a_c": "4.71",
+            "al_c": "9.42",
+            "j_c": "94.2",
+            "jw_c": "188.4"
+          },
+          "n_plan": 475,
+          "n_dyn": 470
+        },
+        "4": {
+          "family": 4,
+          "feasible": true,
+          "T_cyc": 1.5778,
+          "M_tot": 0.5018,
+          "margins": [
+            0.5597,
+            0.5018,
+            0.5268,
+            0.5249,
+            0.5423
+          ],
+          "util_max": 0.5653,
+          "clear": 0.0678,
+          "s": 0.406,
+          "shape": {
+            "r_b": 0.08,
+            "rho": 0.6,
+            "lam": 0.9,
+            "H_lift": 0.07,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "4",
+            "lam": "0.9",
+            "H_lift": "0.07",
+            "T_seal": "0",
+            "r_b": "0.08",
+            "kv": "0.406",
+            "ka": "0.244"
+          },
+          "n_plan": 522,
+          "n_dyn": 522
+        }
+      },
+      "best": {
+        "family": 4,
+        "T_cyc": 1.5778,
+        "M_tot": 0.5018,
+        "util_max": 0.5653,
+        "comment": "Carton 1.5 kg, centred CoM: the fastest trajectory of design/optimize.py, family 4 (joint, blended), T_cyc 1.578 s at a holding margin of 0.50 (required 0.5) and 57 % of the robot limits.",
+        "globals": {
+          "family": "4",
+          "lam": "0.9",
+          "H_lift": "0.07",
+          "T_seal": "0",
+          "r_b": "0.08",
+          "kv": "0.406",
+          "ka": "0.244"
+        }
+      }
+    },
+    {
+      "id": "offset-com",
+      "title": "Carton 1.5 kg, CoM offset (60, 30) mm, gripped over the CoM",
+      "model": "offset-com-best",
+      "kind": "box",
+      "M_req": 0.5,
+      "overrides": {
+        "cx": "0.06",
+        "cy": "0.03",
+        "gx": "0.06",
+        "gy": "0.03"
+      },
+      "default": {
+        "T_cyc": 1.6827,
+        "M_tot": -0.0817,
+        "dropped": false,
+        "util_max": 0.6324
+      },
+      "families": {
+        "1": {
+          "family": 1,
+          "feasible": true,
+          "T_cyc": 1.9562,
+          "M_tot": 0.5086,
+          "margins": [
+            0.6232,
+            0.531,
+            0.5086,
+            0.5504,
+            0.5176
+          ],
+          "util_max": 0.5488,
+          "clear": 0.02,
+          "s": 0.377,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.6,
+            "lam": 0.9,
+            "H_lift": 0.02,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "1",
+            "lam": "0.9",
+            "H_lift": "0.02",
+            "T_seal": "0",
+            "r_b": "0",
+            "kv": "0.377",
+            "ka": "0.226"
+          },
+          "n_plan": 306,
+          "n_dyn": 306
+        },
+        "2": {
+          "family": 2,
+          "feasible": true,
+          "T_cyc": 2.0968,
+          "M_tot": 0.5032,
+          "margins": [
+            0.6282,
+            0.6142,
+            0.5218,
+            0.5032,
+            0.5407
+          ],
+          "util_max": 0.6592,
+          "clear": 0.03,
+          "s": 0.792,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.3,
+            "lam": 0.7,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "2",
+            "lam": "0.7",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0",
+            "v_c": "1.98",
+            "w_c": "4.752",
+            "a_c": "4.752",
+            "al_c": "9.504",
+            "j_c": "95.04",
+            "jw_c": "190.08"
+          },
+          "n_plan": 256,
+          "n_dyn": 253
+        },
+        "3": {
+          "family": 3,
+          "feasible": true,
+          "T_cyc": 1.6437,
+          "M_tot": 0.5004,
+          "margins": [
+            0.6164,
+            0.5951,
+            0.504,
+            0.5004,
+            0.5389
+          ],
+          "util_max": 0.6592,
+          "clear": 0.03,
+          "s": 0.8,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.3,
+            "lam": 0.7,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "3",
+            "lam": "0.7",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0.04",
+            "v_c": "2",
+            "w_c": "4.8",
+            "a_c": "4.8",
+            "al_c": "9.6",
+            "j_c": "96",
+            "jw_c": "192"
+          },
+          "n_plan": 498,
+          "n_dyn": 471
+        },
+        "4": {
+          "family": 4,
+          "feasible": true,
+          "T_cyc": 1.5966,
+          "M_tot": 0.5062,
+          "margins": [
+            0.5489,
+            0.51,
+            0.5062,
+            0.547,
+            0.5111
+          ],
+          "util_max": 0.5488,
+          "clear": 0.0753,
+          "s": 0.399,
+          "shape": {
+            "r_b": 0.08,
+            "rho": 0.6,
+            "lam": 0.9,
+            "H_lift": 0.08,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "4",
+            "lam": "0.9",
+            "H_lift": "0.08",
+            "T_seal": "0",
+            "r_b": "0.08",
+            "kv": "0.399",
+            "ka": "0.239"
+          },
+          "n_plan": 513,
+          "n_dyn": 513
+        }
+      },
+      "best": {
+        "family": 4,
+        "T_cyc": 1.5966,
+        "M_tot": 0.5062,
+        "util_max": 0.5488,
+        "comment": "Carton 1.5 kg, CoM offset (60, 30) mm, gripped over the CoM: the fastest trajectory of design/optimize.py, family 4 (joint, blended), T_cyc 1.597 s at a holding margin of 0.51 (required 0.5) and 55 % of the robot limits.",
+        "globals": {
+          "cx": "0.06",
+          "cy": "0.03",
+          "gx": "0.06",
+          "gy": "0.03",
+          "family": "4",
+          "lam": "0.9",
+          "H_lift": "0.08",
+          "T_seal": "0",
+          "r_b": "0.08",
+          "kv": "0.399",
+          "ka": "0.239"
+        }
+      }
+    },
+    {
+      "id": "offset-centre",
+      "title": "Carton 1.5 kg, CoM offset (60, 30) mm, gripped at the box centre",
+      "model": null,
+      "kind": "box",
+      "M_req": 0.5,
+      "overrides": {
+        "cx": "0.06",
+        "cy": "0.03"
+      },
+      "default": {
+        "T_cyc": 1.659,
+        "M_tot": -4.055,
+        "dropped": true,
+        "util_max": 0.6496
+      },
+      "families": {
+        "1": {
+          "family": 1,
+          "feasible": false,
+          "crawl_M_tot": -19.2408,
+          "crawl_dropped": true,
+          "n_plan": 32,
+          "n_dyn": 32
+        },
+        "2": {
+          "family": 2,
+          "feasible": false,
+          "crawl_M_tot": 0.1875,
+          "crawl_dropped": false,
+          "n_plan": 32,
+          "n_dyn": 32
+        },
+        "3": {
+          "family": 3,
+          "feasible": false,
+          "crawl_M_tot": 0.0621,
+          "crawl_dropped": false,
+          "n_plan": 64,
+          "n_dyn": 64
+        },
+        "4": {
+          "family": 4,
+          "feasible": false,
+          "crawl_M_tot": 0.0758,
+          "crawl_dropped": false,
+          "n_plan": 64,
+          "n_dyn": 64
+        }
+      }
+    },
+    {
+      "id": "sphere",
+      "title": "Carton 0.6 kg + loose ball 0.5 kg",
+      "model": "loose-sphere-best",
+      "kind": "sphere",
+      "M_req": 0.3,
+      "overrides": {},
+      "default": {
+        "T_cyc": 1.659,
+        "M_tot": 0.0916,
+        "dropped": false,
+        "util_max": 0.6496
+      },
+      "families": {
+        "1": {
+          "family": 1,
+          "feasible": true,
+          "T_cyc": 1.9549,
+          "M_tot": 0.333,
+          "margins": [
+            0.522,
+            0.5922,
+            0.5906,
+            0.333,
+            0.3948
+          ],
+          "util_max": 0.5653,
+          "clear": 0.03,
+          "s": 0.31,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.9,
+            "lam": 0.7,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "1",
+            "lam": "0.7",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0",
+            "kv": "0.31",
+            "ka": "0.279"
+          },
+          "n_plan": 275,
+          "n_dyn": 252
+        },
+        "2": {
+          "family": 2,
+          "feasible": true,
+          "T_cyc": 1.7512,
+          "M_tot": 0.3011,
+          "margins": [
+            0.3611,
+            0.3011,
+            0.3153,
+            0.3593,
+            0.3074
+          ],
+          "util_max": 0.6767,
+          "clear": 0.03,
+          "s": 0.532,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.75,
+            "lam": 0.8,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "2",
+            "lam": "0.8",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0",
+            "v_c": "1.33",
+            "w_c": "3.192",
+            "a_c": "7.98",
+            "al_c": "15.96",
+            "j_c": "159.6",
+            "jw_c": "319.2"
+          },
+          "n_plan": 291,
+          "n_dyn": 288
+        },
+        "3": {
+          "family": 3,
+          "feasible": true,
+          "T_cyc": 1.3917,
+          "M_tot": 0.301,
+          "margins": [
+            0.3752,
+            0.3087,
+            0.3212,
+            0.421,
+            0.301
+          ],
+          "util_max": 0.6767,
+          "clear": 0.03,
+          "s": 0.525,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.75,
+            "lam": 0.8,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "3",
+            "lam": "0.8",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0.04",
+            "v_c": "1.312",
+            "w_c": "3.15",
+            "a_c": "7.875",
+            "al_c": "15.75",
+            "j_c": "157.5",
+            "jw_c": "315"
+          },
+          "n_plan": 444,
+          "n_dyn": 422
+        },
+        "4": {
+          "family": 4,
+          "feasible": true,
+          "T_cyc": 1.4817,
+          "M_tot": 0.3144,
+          "margins": [
+            0.4762,
+            0.5119,
+            0.4469,
+            0.3144,
+            0.3807
+          ],
+          "util_max": 0.5653,
+          "clear": 0.0483,
+          "s": 0.347,
+          "shape": {
+            "r_b": 0.08,
+            "rho": 1.05,
+            "lam": 0.9,
+            "H_lift": 0.05,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "4",
+            "lam": "0.9",
+            "H_lift": "0.05",
+            "T_seal": "0",
+            "r_b": "0.08",
+            "kv": "0.347",
+            "ka": "0.364"
+          },
+          "n_plan": 591,
+          "n_dyn": 504
+        }
+      },
+      "best": {
+        "family": 3,
+        "T_cyc": 1.3917,
+        "M_tot": 0.301,
+        "util_max": 0.6767,
+        "comment": "Carton 0.6 kg + loose ball 0.5 kg: the fastest trajectory of design/optimize.py, family 3 (Cartesian, blended), T_cyc 1.392 s at a holding margin of 0.30 (required 0.3) and 68 % of the robot limits.",
+        "globals": {
+          "family": "3",
+          "lam": "0.8",
+          "H_lift": "0.03",
+          "T_seal": "0",
+          "r_b": "0.04",
+          "v_c": "1.312",
+          "w_c": "3.15",
+          "a_c": "7.875",
+          "al_c": "15.75",
+          "j_c": "157.5",
+          "jw_c": "315"
+        }
+      }
+    },
+    {
+      "id": "cylinder",
+      "title": "Carton 0.6 kg + loose bottle 0.5 kg",
+      "model": "loose-cylinder-best",
+      "kind": "cylinder",
+      "M_req": 0.3,
+      "overrides": {},
+      "default": {
+        "T_cyc": 1.659,
+        "M_tot": 0.0489,
+        "dropped": false,
+        "util_max": 0.6496
+      },
+      "families": {
+        "1": {
+          "family": 1,
+          "feasible": true,
+          "T_cyc": 1.7987,
+          "M_tot": 0.3262,
+          "margins": [
+            0.5249,
+            0.5025,
+            0.3862,
+            0.3262,
+            0.3273
+          ],
+          "util_max": 0.5653,
+          "clear": 0.03,
+          "s": 0.428,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.75,
+            "lam": 0.7,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "1",
+            "lam": "0.7",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0",
+            "kv": "0.428",
+            "ka": "0.321"
+          },
+          "n_plan": 271,
+          "n_dyn": 265
+        },
+        "2": {
+          "family": 2,
+          "feasible": true,
+          "T_cyc": 1.7212,
+          "M_tot": 0.3016,
+          "margins": [
+            0.4178,
+            0.3228,
+            0.3733,
+            0.404,
+            0.3016
+          ],
+          "util_max": 0.6767,
+          "clear": 0.03,
+          "s": 0.569,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.75,
+            "lam": 0.9,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "2",
+            "lam": "0.9",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0",
+            "v_c": "1.422",
+            "w_c": "3.414",
+            "a_c": "8.535",
+            "al_c": "17.07",
+            "j_c": "170.7",
+            "jw_c": "341.4"
+          },
+          "n_plan": 248,
+          "n_dyn": 240
+        },
+        "3": {
+          "family": 3,
+          "feasible": true,
+          "T_cyc": 1.3589,
+          "M_tot": 0.3108,
+          "margins": [
+            0.4729,
+            0.3874,
+            0.3125,
+            0.3108,
+            0.3349
+          ],
+          "util_max": 0.6767,
+          "clear": 0.03,
+          "s": 0.621,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.75,
+            "lam": 1.0,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "3",
+            "lam": "1",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0.04",
+            "v_c": "1.552",
+            "w_c": "3.726",
+            "a_c": "9.315",
+            "al_c": "18.63",
+            "j_c": "186.3",
+            "jw_c": "372.6"
+          },
+          "n_plan": 358,
+          "n_dyn": 340
+        },
+        "4": {
+          "family": 4,
+          "feasible": true,
+          "T_cyc": 1.4614,
+          "M_tot": 0.3007,
+          "margins": [
+            0.5086,
+            0.53,
+            0.4148,
+            0.3017,
+            0.3007
+          ],
+          "util_max": 0.5653,
+          "clear": 0.03,
+          "s": 0.851,
+          "shape": {
+            "r_b": 0.04,
+            "rho": 0.3,
+            "lam": 0.6,
+            "H_lift": 0.03,
+            "T_seal": 0.0
+          },
+          "globals": {
+            "family": "4",
+            "lam": "0.6",
+            "H_lift": "0.03",
+            "T_seal": "0",
+            "r_b": "0.04",
+            "kv": "0.851",
+            "ka": "0.255"
+          },
+          "n_plan": 463,
+          "n_dyn": 455
+        }
+      },
+      "best": {
+        "family": 3,
+        "T_cyc": 1.3589,
+        "M_tot": 0.3108,
+        "util_max": 0.6767,
+        "comment": "Carton 0.6 kg + loose bottle 0.5 kg: the fastest trajectory of design/optimize.py, family 3 (Cartesian, blended), T_cyc 1.359 s at a holding margin of 0.31 (required 0.3) and 68 % of the robot limits.",
+        "globals": {
+          "family": "3",
+          "lam": "1",
+          "H_lift": "0.03",
+          "T_seal": "0",
+          "r_b": "0.04",
+          "v_c": "1.552",
+          "w_c": "3.726",
+          "a_c": "9.315",
+          "al_c": "18.63",
+          "j_c": "186.3",
+          "jw_c": "372.6"
+        }
+      }
+    }
+  ]
+}

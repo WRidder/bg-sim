@@ -75,6 +75,7 @@ Models with a 3D scene show it in the **3D View** tab. The scene follows the run
 - The toolbar has **Isometric**, **Top**, **Front** and **Side** views, an **Orthographic projection** toggle, **Fit the scene in the view**, **Full screen** (with the playback bar; `Esc` exits) and **Detach** (a separate window).
 - The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** (on by default) and a time slider. With no run yet, **Play** (or `Space`) runs the model, like **Run**: the view follows it live and, when the run is done, plays it back from the start.
 - **Bindings** opens the bindings table. Each row binds a scene object's property (position, pose, scale, colour, visibility, deformation, mode shapes or segment) to a signal, with a gain and an offset. **Add binding** adds a row.
+- A visual whose `<material><diffuse>` has an alpha below 1 is drawn see-through, also while a colour binding changes its colour. The cartons of the example **fanuc-pick** use alpha 0.35 to show the loose ball or bottle moving inside.
 
 ### Bars between two points (segment bindings)
 
