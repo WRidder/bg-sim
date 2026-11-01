@@ -1,9 +1,9 @@
 # Aggressive trapezoid: the parcel is lost
 
-This model is the `transfer` plant with `kind` = 1 (trapezoid) and `T_move` = 0.7 s, which gives a peak acceleration of 9.18 m/s² with infinite jerk.
+This model is the `transfer` plant with `kind` = 1 (trapezoid) and `T_move` = 0.74 s, which gives a peak acceleration of 8.2 m/s² with infinite jerk.
 
-![Utilisation, lost cups and vacuum|900](assets/87bc044d7449.png)
+![Utilisation, lost cups and vacuum|900](assets/f7bde537bf87.png)
 
-The carton survives the acceleration (U briefly reaches 1.15) and the cruise. The deceleration step at t ≈ 1.42 s sets the bellows ringing, and within 80 ms the U of the trailing cups 1/2 goes past 1: braking reverses the tipping moment, so they now take the extra pull. A lifted lip leaks, the vacuum in that cup drops, and the capacity falls with it. The first cups lose their seal at 1.50 s, the load moves to the others, and [Monitor/n_lost](signal:Monitor/n_lost) reaches 6 at 1.54 s. The carton falls short of the place position.
+The carton survives the acceleration (U briefly goes past 1) and the cruise. The deceleration step at t ≈ 1.45 s sets the bellows ringing, and within 70 ms the U of the trailing cups 1/2 goes past 1: braking reverses the tipping moment, so they now take the extra pull. A lifted lip leaks, the vacuum in that cup drops, and the capacity falls with it. The first cups lose their seal at 1.51 s, the load moves to the others, and [Monitor/n_lost](signal:Monitor/n_lost) reaches 6 at 1.55 s. The carton leaves the gripper still moving forward and is not placed.
 
-Compare with `aggressive-scurve`: the same 0.7 s as an S-curve holds.
+Compare with `aggressive-scurve`: the same 0.74 s as an S-curve holds. (With the linear bellows of the first version the trapezoid was already lost at 0.7 s and the S-curve still held there; the nonlinear bellows shift both limits, so the pair now runs at 0.74 s.)

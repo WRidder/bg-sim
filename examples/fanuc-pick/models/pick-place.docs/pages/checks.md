@@ -16,4 +16,4 @@
 | power ledger | Tellegen: the bond ports' powers cancel | residual 3e-16 J (tol 1e-6) | `pick-place` |
 | no solver or structure diagnostics | — | none | all 18 |
 
-All 241 checks pass (`run_checks.py --only fanuc-pick`, 800 s). The tilt angle check only pins the planner to its own plan: the optima tilt the tool partially (gain 0.05 to 0.5), so the tool axis stays 10 to 53° off the specific force in the hardest part of the carry.
+All 241 checks pass (`run_checks.py --only fanuc-pick`, 800 s). The tilt angle check only pins the planner to its own plan over the carry between the accelerations: the optima tilt the tool only partially (gain 0.05 to 0.5), so the tool axis stays 10 to 53° off the specific force there, and more in the acceleration peaks.
