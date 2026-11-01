@@ -161,7 +161,8 @@ def rl_model(t_end: float = 12.0, t_on: float = 1.0, push: dict | None = None, t
     th_start = list(th0) if th0 is not None else [-3.141592653589793] * 2
     pol = M.node("Policy", "project:DoubleCartPolicy", 80, 80,
                  params={"t_on": repr(float(t_on))},
-                 starts={"xp": repr(float(x0)), "th1p": repr(th_start[0]), "th2p": repr(th_start[1])})
+                 starts={"xp": repr(float(x0)), "th1p": repr(th_start[0]), "th2p": repr(th_start[1]),
+                         "th1": repr(th_start[0]), "th2": repr(th_start[1])})
     M.sig(_node(doc, "Rail")["id"], "qout", pol, "x")
     M.sig(_node(doc, "Joint1")["id"], "qout", pol, "q1")
     M.sig(_node(doc, "Joint2")["id"], "qout", pol, "q2")
@@ -175,14 +176,25 @@ def rl_model(t_end: float = 12.0, t_on: float = 1.0, push: dict | None = None, t
     return doc
 
 
+RL_TASKS = {
+    "balance": {"t_end": 6.0, "t_on": 0.0, "th0": [0.1, -0.05], "push": {"amplitude": 0.28, "t_start": 3.0,
+                                                                         "duration": 0.04}},
+    "swingup": {},
+}
+
+
 def main(argv: list[str]) -> None:
     _check_hanging_deflection()
     models = ROOT / "models"
     cm.write(models / "pendulum-double-cart-plant.bgmodel.json", plant_model())
     print("wrote", models / "pendulum-double-cart-plant.bgmodel.json")
     if "--rl" in argv:
-        cm.write(models / "pendulum-double-cart-rl.bgmodel.json", rl_model())
-        print("wrote", models / "pendulum-double-cart-rl.bgmodel.json")
+        # --rl balance (default): start at rest at 0.1/-0.05 rad, policy from the first tick, push at 3 s.
+        # --rl swingup: hang until 1 s, swing up and balance, push at 7 s (12 s).
+        task = argv[argv.index("--rl") + 1] if len(argv) > argv.index("--rl") + 1 else "balance"
+        doc = rl_model(**RL_TASKS[task])
+        cm.write(models / "pendulum-double-cart-rl.bgmodel.json", doc)
+        print("wrote", models / "pendulum-double-cart-rl.bgmodel.json", f"({task})")
     if "--cases" in argv:
         # rl/compare.py: closed-loop variants from given poses at rest, policy from t = 0, no push
         import json

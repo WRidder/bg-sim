@@ -35,13 +35,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rlpend import EXAMPLE, ROOT  # noqa: E402
 from rlpend.env import DoubleCartEnv, EnvCfg, wrap  # noqa: E402
 
-CASES = [
+UP_CASES = [
+    {"name": "rlcmp-up-a", "x": 0.0, "th1": 0.1, "th2": -0.05, "t_end": 4.0},
+    {"name": "rlcmp-up-b", "x": 0.05, "th1": -0.12, "th2": 0.1, "t_end": 4.0},
+    {"name": "rlcmp-up-c", "x": -0.1, "th1": 0.2, "th2": 0.15, "t_end": 4.0},
+    {"name": "rlcmp-up-d", "x": 0.1, "th1": -0.05, "th2": -0.25, "t_end": 4.0},
+]
+HANG_CASES = [
     {"name": "rlcmp-hang", "x": 0.0, "th1": -math.pi, "th2": -math.pi, "t_end": 6.0},
     {"name": "rlcmp-hang-a", "x": 0.05, "th1": -math.pi + 0.1, "th2": -math.pi - 0.1, "t_end": 6.0},
     {"name": "rlcmp-hang-b", "x": -0.1, "th1": -math.pi - 0.15, "th2": -math.pi + 0.05, "t_end": 6.0},
-    {"name": "rlcmp-up-a", "x": 0.0, "th1": 0.1, "th2": -0.05, "t_end": 4.0},
-    {"name": "rlcmp-up-b", "x": 0.05, "th1": -0.12, "th2": 0.1, "t_end": 4.0},
 ]
+TASKS = {   # the comparison cases and the default model's timing (design/rlmodels.py RL_TASKS)
+    "balance": {"cases": UP_CASES, "t_on": 0.0, "t_push": 3.0},
+    "swingup": {"cases": HANG_CASES + UP_CASES[:2], "t_on": 1.0, "t_push": 7.0},
+}
 
 
 def read_run(run_dir: Path):
@@ -76,7 +84,7 @@ def env_rollout(run: Path, checkpoint: str, export_dir: Path, cases: list[dict])
     env_cfg.pop("ts", None)
     t_end = max(c["t_end"] for c in cases)
     cfg = EnvCfg(**{**env_cfg, "export_dir": str(export_dir), "num_envs": len(cases), "threads": 1,
-                    "episode_s": t_end + 1.0, "x_rail": 10.0})
+                    "episode_s": t_end + 1.0, "x_rail": 10.0, "drop_angle": 0.0, "catch_end": False})
     env = DoubleCartEnv(cfg)
     n = len(cases)
     mask = np.ones(n, bool)
@@ -99,23 +107,24 @@ def env_rollout(run: Path, checkpoint: str, export_dir: Path, cases: list[dict])
     return {"t": t, **rec}
 
 
-def metrics(run: dict) -> dict:
-    """Swing-up, balance and push numbers of the default run (t_on = 1 s, push at 7 s)."""
+def metrics(run: dict, t_on: float, t_push: float) -> dict:
+    """Swing-up / catch, balance and push numbers of the default run (policy from t_on, push at t_push)."""
     t = run["t"]
     th1, th2, x, u = run["Policy/th1"], run["Policy/th2"], run["Rail/qout"], run["Policy/u"]
     up = (np.abs(th1) < math.radians(2)) & (np.abs(th2) < math.radians(2))
     # first time after which it stays inside 2 deg until the push
-    pre = t < 7.0
+    pre = t < t_push
     idx = np.where(pre & ~up)[0]
     t_up = float(t[idx[-1] + 1]) if len(idx) and idx[-1] + 1 < len(t) else float("nan")
-    band = (t >= t_up + 0.5) & (t < 7.0)
-    post = (t >= 7.0) & (t <= 9.0)
+    band = (t >= t_up + 0.5) & (t < t_push)
+    post = (t >= t_push) & (t <= t_push + 2.0)
     inside = np.abs(th1) < math.radians(0.5)
-    late = np.where((t >= 7.0) & ~inside)[0]
+    late = np.where((t >= t_push) & ~inside)[0]
+    hold = t < t_on - 0.01
     return {
-        "atRestBefore1s": float(np.max(np.abs(x[t < 0.99]))),
-        "uBefore1s": float(np.max(np.abs(u[t < 0.99]))),
-        "upright2degFromS": t_up, "swingUpS": t_up - 1.0,
+        "atRestBeforeOn": float(np.max(np.abs(x[hold]))) if hold.any() else None,
+        "uBeforeOn": float(np.max(np.abs(u[hold]))) if hold.any() else None,
+        "upright2degFromS": t_up, "toUpright2degS": t_up - t_on,
         "bandTh1Deg": float(np.degrees(np.max(np.abs(th1[band])))) if band.any() else float("nan"),
         "bandTh2Deg": float(np.degrees(np.max(np.abs(th2[band])))) if band.any() else float("nan"),
         "bandXmm": float(1e3 * np.max(np.abs(x[band]))) if band.any() else float("nan"),
@@ -129,7 +138,7 @@ def metrics(run: dict) -> dict:
     }
 
 
-def plot(cases, env, runs, out: Path, default_run=None):
+def plot(cases, env, runs, out: Path, default_run=None, t_push: float = 7.0):
     import matplotlib
 
     matplotlib.use("Agg")
@@ -162,7 +171,7 @@ def plot(cases, env, runs, out: Path, default_run=None):
         axes[-1, 0].text(0.02, 0.85, "pendulum-double-cart-rl (bgsim)", transform=axes[-1, 0].transAxes, fontsize=8)
         for ax in axes[-1]:
             ax.grid(alpha=0.3)
-            ax.axvline(7.0, color="0.5", lw=0.8, ls=":")
+            ax.axvline(t_push, color="0.5", lw=0.8, ls=":")
     axes[0, 0].legend(fontsize=8, loc="lower right")
     for ax in axes[-1]:
         ax.set_xlabel("t (s)")
@@ -177,7 +186,11 @@ def main() -> int:
     ap.add_argument("out", type=Path)
     ap.add_argument("--checkpoint", default="model.pt")
     ap.add_argument("--skip-bgsim", action="store_true")
+    ap.add_argument("--task", choices=sorted(TASKS), default="balance",
+                    help="which cases, and the timing of the default pendulum-double-cart-rl model")
     args = ap.parse_args()
+    task = TASKS[args.task]
+    CASES = task["cases"]
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     (out / "cases.json").write_text(json.dumps(CASES, indent=2), encoding="utf-8")
@@ -206,12 +219,12 @@ def main() -> int:
             k: {f"to{h}s": float(np.max(v[t <= h + 1e-9])) for h in (0.5, 1.0, c["t_end"])} for k, v in dev.items()}
         print(c["name"], {k: f"{float(np.max(v[t <= 1.0])):.1e} (1 s) / {float(np.max(v)):.1e}" for k, v in dev.items()})
     default = read_run(out / "bgsim" / "pendulum-double-cart-rl")
-    res["default"] = metrics(default)
+    res["default"] = metrics(default, task["t_on"], task["t_push"])
     print("pendulum-double-cart-rl:", json.dumps(res["default"], indent=1))
     timings = json.loads((out / "bgsim" / "timings.json").read_text(encoding="utf-8"))
     res["timings"] = timings
     (out / "compare.json").write_text(json.dumps(res, indent=2), encoding="utf-8")
-    plot(CASES, env, runs, out / "compare.png", default_run=default)
+    plot(CASES, env, runs, out / "compare.png", default_run=default, t_push=task["t_push"])
     print("wrote", out / "compare.json", out / "compare.png")
     return 0
 

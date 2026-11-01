@@ -53,9 +53,14 @@ class EnvCfg:
     x_rail: float = 0.40             # episode end
     x_soft: float = 0.30             # soft limit of the rail penalty
     episode_s: float = 6.0
-    p_upright_start: float = 0.15    # share of resets near the upright (balance practice)
+    # Reset curriculum (rl/train.py moves it toward hanging as the hanging-rest eval improves):
+    # a share near the upright (catch and balance), a share at random poses along the swing, the
+    # rest hanging. All at rest: the shim sets the pose integrators, the momenta stay zero.
+    p_upright_start: float = 0.15
+    p_random_start: float = 0.0
     hang_noise: tuple = (0.05, 0.15, 0.15)   # x (m), th1, th2 (rad): uniform +- around hanging
-    up_noise: tuple = (0.05, 0.15, 0.15)
+    up_noise: tuple = (0.05, 0.3, 0.3)
+    random_x: float = 0.2
     w_up: float = 1.0
     w_balance: float = 2.0
     w_energy: float = 1.0
@@ -64,6 +69,25 @@ class EnvCfg:
     w_rate: float = 0.05
     w_act: float = 0.01
     fall_penalty: float = 100.0
+    # Drop termination: an env that has been upright (both links within ``catch_angle``) ends its
+    # episode with -drop_penalty when a link then passes ``drop_angle`` (0 = off). It keeps the
+    # balance data dense (no seconds of tumbling after a fall) and makes holding the catch pay.
+    catch_angle: float = 0.3
+    drop_angle: float = 0.0
+    drop_penalty: float = 50.0
+    # Hybrid variant (plan/RL_PLAN.md risk 4 (c); catch_tol 0 = off, a single network): once the
+    # balance LQR's cost-to-go z' P z (z = [x, th1, th2, v, w1, w2] from the t_k sample: wrapped
+    # angles, differenced rates) is below catch_tol, the LQR takes over, latched (rl/classical.json).
+    # With catch_end (training) entering the region ends the episode as a success (+catch_bonus);
+    # the per-step reward is then only the scaled cost -hyb_scale (shaping terms + hyb_time), so
+    # never catching (about -45 over an episode) still beats leaving the rail (-fall_penalty).
+    catch_tol: float = 0.0
+    catch_end: bool = True
+    catch_bonus: float = 20.0
+    hyb_scale: float = 0.1
+    hyb_time: float = 0.5
+    lqr_K: tuple = ()
+    lqr_P: tuple = ()        # row-major 6 x 6
     seed: int = 0
     # the plant geometry for the energy (the export's nominal values; no randomisation in step 0)
     m: tuple = (0.10, 0.08)
@@ -112,6 +136,11 @@ class DoubleCartEnv(VecEnv):
         self.rng = np.random.default_rng(cfg.seed)
         n = self.num_envs
         self.a_prev = np.zeros(n)
+        self.caught = np.zeros(n, bool)
+        self.mode = np.zeros(n, bool)       # hybrid: the LQR is in charge (latched)
+        if cfg.catch_tol > 0:
+            self.K = np.asarray(cfg.lqr_K, float)
+            self.P = np.asarray(cfg.lqr_P, float).reshape(6, 6)
         self.prev = (np.zeros(n), np.zeros(n), np.zeros(n))
         self.ep_ret = np.zeros(n)
         self.u = np.zeros((n, p.nu))
@@ -126,15 +155,21 @@ class DoubleCartEnv(VecEnv):
 
     # -- state -----------------------------------------------------------------------------
     def initial_states(self, mask: np.ndarray) -> dict[str, np.ndarray]:
-        """Poses at rest: around hanging, or (a share) around upright."""
+        """Poses at rest: around hanging, around upright, or anywhere along the swing."""
         n = self.num_envs
         cfg = self.cfg
-        up = self.rng.random(n) < cfg.p_upright_start
+        r = self.rng.random(n)
+        up = r < cfg.p_upright_start
+        rnd = (r >= cfg.p_upright_start) & (r < cfg.p_upright_start + cfg.p_random_start)
         noise = np.where(up[:, None], np.array(cfg.up_noise), np.array(cfg.hang_noise))
         d = self.rng.uniform(-1.0, 1.0, (n, 3)) * noise
         x = d[:, 0]
         th1 = np.where(up, 0.0, -np.pi) + d[:, 1]
         th2 = np.where(up, 0.0, -np.pi) + d[:, 2]
+        u = self.rng.uniform(-1.0, 1.0, (n, 3))
+        x = np.where(rnd, cfg.random_x * u[:, 0], x)
+        th1 = np.where(rnd, np.pi * u[:, 1], th1)
+        th2 = np.where(rnd, np.pi * u[:, 2], th2)
         return {"x": x, "th1": th1, "th2": th2}
 
     def set_pose(self, mask, x, th1, th2):
@@ -153,6 +188,8 @@ class DoubleCartEnv(VecEnv):
         self.prev = (np.where(mask, y[:, self.iy["x"]], px), np.where(mask, th1m, p1),
                      np.where(mask, th1m + y[:, self.iy["q2"]], p2))
         self.a_prev = np.where(mask, 0.0, self.a_prev)
+        self.caught = np.where(mask, False, self.caught)
+        self.mode = np.where(mask, False, self.mode)
         self.episode_length_buf[torch.as_tensor(mask)] = 0
         self.ep_ret[mask] = 0.0
 
@@ -165,6 +202,7 @@ class DoubleCartEnv(VecEnv):
         y = self.plant.y
         x, q1, q2 = y[:, self.iy["x"]], y[:, self.iy["q1"]], y[:, self.iy["q2"]]
         pol, self._next_prev = policy_obs(x, q1, q2, self.prev, self.a_prev, self.cfg.ts)
+        self._pol = pol    # float64 (the actor gets float32); the hybrid's LQR uses it
         th1 = wrap(q1 - math.pi / 2)
         th2 = wrap(q1 - math.pi / 2 + q2)
         w1 = y[:, self.iy["w1"]]
@@ -197,6 +235,9 @@ class DoubleCartEnv(VecEnv):
         t_start = time.perf_counter()
         cfg = self.cfg
         a = np.clip(actions.detach().cpu().numpy().reshape(-1).astype(float), -1.0, 1.0)
+        entered = np.zeros(self.num_envs, bool)
+        if cfg.catch_tol > 0:
+            a, entered = self.hybrid(a)
         self.u[:, 0] = cfg.v_max * a
         self.prev = self._next_prev
         t_p = time.perf_counter()
@@ -210,13 +251,26 @@ class DoubleCartEnv(VecEnv):
         bal = np.exp(-(th1**2 + th2**2) / 0.05) * np.exp(-0.02 * (w1**2 + w2**2))
         e_err = np.abs(E - self.E_up) / (2 * self.E_up)
         soft = np.maximum(np.abs(x) - cfg.x_soft, 0.0)
-        r = (cfg.w_up * up + cfg.w_balance * bal - cfg.w_energy * e_err - cfg.w_x * x**2
-             - cfg.w_soft * soft - cfg.w_rate * (a - a_prev) ** 2 - cfg.w_act * a**2)
+        cost = (cfg.w_energy * e_err + cfg.w_x * x**2 + cfg.w_soft * soft + cfg.w_rate * (a - a_prev) ** 2
+                + cfg.w_act * a**2)
+        if cfg.catch_tol > 0 and cfg.catch_end:
+            r = -cfg.hyb_scale * (cost + cfg.hyb_time) + np.where(entered, cfg.catch_bonus, 0.0)
+        else:
+            r = cfg.w_up * up + cfg.w_balance * bal - cost
         fell = (np.abs(x) > cfg.x_rail) | (self.plant.status != 0)
         r = np.where(fell, r - cfg.fall_penalty, r)
+        dropped = np.zeros_like(fell)
+        if cfg.drop_angle > 0:
+            self.caught |= (np.abs(th1) < cfg.catch_angle) & (np.abs(th2) < cfg.catch_angle)
+            dropped = self.caught & ((np.abs(th1) > cfg.drop_angle) | (np.abs(th2) > cfg.drop_angle)) & ~fell
+            r = np.where(dropped, r - cfg.drop_penalty, r)
         self.episode_length_buf += 1
         timeout = self.episode_length_buf.numpy() >= self.max_episode_length
+        fell = fell | dropped
         done = fell | timeout
+        if cfg.catch_tol > 0 and cfg.catch_end:
+            done = done | entered          # a catch ends the episode as a success (terminal)
+            timeout = timeout & ~entered
         self.ep_ret += r
         extras = {"time_outs": torch.as_tensor(timeout & ~fell)}
         if done.any():
@@ -233,6 +287,18 @@ class DoubleCartEnv(VecEnv):
         self.t_env += time.perf_counter() - t_start
         self.n_steps += 1
         return (obs, torch.as_tensor(r, dtype=torch.float32), torch.as_tensor(done), extras)
+
+    def hybrid(self, a_policy: np.ndarray):
+        """The latched catch on the t_k sample (the generated block repeats it): the LQR takes over
+        once z' P z < catch_tol. Returns the applied action and the envs that entered now."""
+        cfg = self.cfg
+        o = self._pol
+        z = np.stack([self._state[0], self._state[1], self._state[2], o[:, 5], o[:, 6], o[:, 7]], 1)
+        V = np.einsum("ij,jk,ik->i", z, self.P, z)
+        entered = ~self.mode & (V < cfg.catch_tol)
+        self.mode |= entered
+        a_lqr = np.clip(-(z @ self.K) / cfg.v_max, -1.0, 1.0)
+        return np.where(self.mode, a_lqr, a_policy), entered
 
     def close(self):
         self.plant.close()
