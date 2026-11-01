@@ -868,10 +868,18 @@ function _check_events!(ck::Checker)
         empty!(ck.locals)
         empty!(ck.loopvars)
         empty!(ck.loop_ranges)
+        for loop in ev.loops
+            range = _check_for_bounds!(ck, loop.lo, loop.hi, loop.step)
+            _check_local_name!(ck, loop.var, loop)
+            ck.loopvars[loop.var] = INT
+            range === nothing || (ck.loop_ranges[loop.var] = range)
+        end
         _check_event_condition!(ck, ev)
         for stmt in ev.body
             _check_stmt!(ck, stmt)
         end
+        empty!(ck.loopvars)
+        empty!(ck.loop_ranges)
         empty!(ck.locals)
         ck.scope, ck.context = old_scope, old_context
     end
@@ -1818,6 +1826,20 @@ function _check_reinit!(ck::Checker, e::Call)::Union{TypeSpec,Nothing}
             return nothing
         end
     end
+    if arg isa Index && arg.base isa Name && haskey(ck.decls, arg.base.name) &&
+       ck.decls[arg.base.name].scope === :variables
+        # One element of a state array, `reinit(broken[k], 1.0)`.
+        et = _check_expr!(ck, arg)
+        if vt !== nothing && et !== nothing && !assignable(et, vt) && !assignable(vt, et)
+            _report!(
+                ck,
+                "E004",
+                "`reinit` assigns `$(type_name(vt))` to `$(sprint(show, arg))`, which is `$(type_name(et))`",
+                e.args[2];
+            )
+        end
+        return nothing
+    end
     _check_expr!(ck, arg)
     _report!(
         ck,
@@ -1960,11 +1982,38 @@ end
 everywhere in discrete code (the spec's "@discrete / @events" column)."""
 _cond_ok(ck::Checker) = ck.allow_cond || ck.context in (:discrete, :events)
 
+# An index read from a structural constant array, such as the node number `conn[k, 1]` of
+# a truss bar: it reads only `@constants` and `for` loop variables, and folds to an integer
+# at every value of the loops (checked here; the range is checked by `_check_one_index!`).
+function _static_integer_index(ck::Checker, node)
+    names = Set{Symbol}()
+    _collect_expr_refs!(names, node)
+    all(n -> haskey(ck.loopvars, n) || haskey(ck.consts, n), names) || return false
+    vars = sort!([v for v in names if haskey(ck.loopvars, v)])
+    ranges = UnitRange{Int}[]
+    for v in vars
+        r = get(ck.loop_ranges, v, nothing)
+        r === nothing && return false
+        push!(ranges, r[1]:r[2])
+    end
+    prod(length, ranges; init = 1) <= 4096 || return false
+    env = Dict{Symbol,Any}(ck.consts)
+    for combo in Iterators.product(ranges...)
+        for (v, x) in zip(vars, combo)
+            env[v] = x
+        end
+        ok, value = try_eval_const(node, env)
+        (ok && value isa Real && !(value isa Bool) && isinteger(value)) || return false
+    end
+    return true
+end
+
 function _check_index!(ck::Checker, e::Index)::Union{TypeSpec,Nothing}
     base = _check_expr!(ck, e.base)
     for i in e.indices
         it = _check_expr!(ck, i)
-        if it !== nothing && it.kind != :Int && !(i isa Lit && i.value isa Integer)
+        if it !== nothing && it.kind != :Int && !(i isa Lit && i.value isa Integer) &&
+           !_static_integer_index(ck, i)
             _report!(ck, "E004", "an index must be `Int`, got `$(type_name(it))`", i)
         end
     end
@@ -2262,7 +2311,9 @@ end
 function _const_value(d::Decl, consts::AbstractDict)
     if d.default !== nothing
         ok, value = try_eval_const(d.default, consts)
-        ok && (value isa Number || value isa Bool || value isa AbstractArray) && return value
+        # A matrix constant (`conn::Mat{nb,2}` of Truss2D) keeps its source text: JSON has no
+        # matrix, and a flat array would lose the row structure.
+        ok && (value isa Number || value isa Bool || value isa AbstractVector) && return value
     end
     return something(d.default_text, "")
 end

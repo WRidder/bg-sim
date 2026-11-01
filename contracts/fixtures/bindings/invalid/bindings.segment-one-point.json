@@ -1,0 +1,10 @@
+{
+  "$comment": "Invalid: a segment binding needs both end points (at least 4 signals); this one gives only point A.",
+  "bindings": [
+    {
+      "target": "visual:bar_1",
+      "property": "segment",
+      "signal": ["Truss/x[1]", "Truss/y[1]"]
+    }
+  ]
+}

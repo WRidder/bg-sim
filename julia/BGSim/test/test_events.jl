@@ -86,6 +86,17 @@ const _EV_SMOOTH = """
 end
 """
 
+const _EV_NEGATED = """
+@block Negated begin
+    @variables x::Real = -2.0
+    @outputs y::Real
+    @equations begin
+        ddt(x) ~ 1.0
+        y ~ ifelse(x >= 0, 1.0, 0.0) + ifelse(x < 0, 2.0, 0.0)
+    end
+end
+"""
+
 function _ev_node(id, name, source)
     return Dict{String,Any}(
         "id" => id,
@@ -313,5 +324,19 @@ end
         left = findfirst(==(t_kink), columns["time"])
         right = findlast(==(t_kink), columns["time"])
         @test columns["Plant/x"][left] == columns["Plant/x"][right]
+    end
+
+    @testset "a condition and its negation are one kink" begin
+        # `x >= 0` gives `x - 0` and `x < 0` gives `0 - x`: one condition-only callback, not
+        # two (a pair of exactly negated callbacks trapped `step!` in the bridge example).
+        doc = _ev_model("EvNegated", _EV_NEGATED; t_end = 4.0, points = 401,
+            solver = "Tsit5", reltol = 1.0e-9, abstol = 1.0e-11)
+        flat = _ev_flat(doc)
+        @test isempty(_ev_errors(flat))
+        conditions = BGSim.nonsmooth_conditions(flat)
+        @test length(conditions) == 1
+        result, _, columns = _ev_run(doc)
+        @test result.status == "done"
+        @test any(abs(t - 2.0) <= 1.0e-5 for t in _ev_event_groups(columns["time"]))
     end
 end

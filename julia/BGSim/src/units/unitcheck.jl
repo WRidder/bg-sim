@@ -996,6 +996,23 @@ function _check_item!(ctx::_Ctx, item)
     return nothing
 end
 
+# One `@events` entry, inside the `for` headers that enclose it (unrolled like a statement
+# loop, so an index of a loop variable is checked at every value).
+function _check_event_entry!(ctx::_Ctx, ev::EventDecl, level::Int)
+    if level > length(ev.loops)
+        _dims!(ctx, ev.cond)
+        for item in ev.body
+            _check_item!(ctx, item)
+        end
+        return nothing
+    end
+    loop = ev.loops[level]
+    _for_each_iteration(ctx, loop.var, loop.lo, loop.hi, loop.step) do
+        _check_event_entry!(ctx, ev, level + 1)
+    end
+    return nothing
+end
+
 """A discrete assignment needs equal units on both sides. The held value's own `unit`
 attribute is the reference; a numeric literal on the right is legal in any unit."""
 function _check_assign!(ctx::_Ctx, a::Assign)
@@ -1096,10 +1113,7 @@ function check_units(
     end
     ctx.scope = :events
     for ev in events(pb)
-        _dims!(ctx, ev.cond)
-        for item in ev.body
-            _check_item!(ctx, item)
-        end
+        _check_event_entry!(ctx, ev, 1)
     end
     ctx.text = ""
     return ctx.diags

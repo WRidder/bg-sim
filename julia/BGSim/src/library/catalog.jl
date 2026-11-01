@@ -1113,6 +1113,35 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Atomic core of FlexibleBeam2D: the modal bond graph of a planar beam (frame inertia, modal I and C, R by zeta, the slope and foreshortening transformers at the ends) as explicit energy-consistent equations.",
         icon = "pl-modal-beam-2d",
     ),
+    # Trusses: pin-jointed bar structures with member failure (example bridge).
+    "stdlib:planar/PointMass2D" => (
+        description = "Atomic core of PinNode2D: a translating point mass (m) under gravity with zero angular flow, optionally pinned (x and y fixed) or on a roller (y fixed); outputs the pose (0, x, y), velocity, support reaction and energies.",
+        icon = "pl-point-mass-2d",
+    ),
+    "stdlib:planar/PinNode2D" => (
+        description = "Truss pin node: a point mass whose single port is its 1-junction, so any number of bars bond to it; free, pinned or roller support; outputs the pose, velocity and support reaction.",
+        icon = "pl-pin-node-2d",
+    ),
+    "stdlib:planar/AxialBar2D" => (
+        description = "Atomic core of Bar2D: an axial two-force member between two pin nodes (EA, co-rotational strain, rest length from the start positions, stiffness-proportional damping) that fails for good in tension above fy*A or in compression above the Euler load; outputs the axial force, utilisation and failure flag.",
+        icon = "pl-axial-bar-2d",
+    ),
+    "stdlib:planar/Bar2D" => (
+        description = "Truss bar between two pin nodes: axial stiffness EA with large rotations, damping, and member failure by yield in tension or Euler buckling in compression (the failed bar carries no force); outputs N, utilisation, broken, length and the energy lost at failure.",
+        icon = "pl-bar-2d",
+    ),
+    "stdlib:planar/Truss2D" => (
+        description = "Planar pin-jointed truss in one block: node coordinates, bar connectivity and supports as matrices, lumped bar masses, per-bar section, failure in tension or by buckling, node force inputs and an energy balance output.",
+        icon = "pl-truss-2d",
+    ),
+    "stdlib:planar/MovingLoad2D" => (
+        description = "A vertical point load P travelling at speed v along the deck nodes of a truss, shared by the two nodes of its panel through linear shape functions; outputs the node forces for Truss2D.",
+        icon = "pl-moving-load-2d",
+    ),
+    "stdlib:planar/DeckContact2D" => (
+        description = "Compliant wheel-on-deck contact between a planar body and the deck nodes of a truss: per wheel a linear tyre spring with deflection-proportional (Hunt-Crossley) damping, measured to the closest deck segment so the wheel rolls smoothly over the deck nodes, plus a drive traction; the reaction is distributed to the panel nodes.",
+        icon = "pl-deck-contact-2d",
+    ),
     # J-MB11: the drives (composites of the electrical/rotation primitives).
     "stdlib:drives/CurrentControlledDrive" => (
         description = "Current/torque-controlled drive: a signal current reference gives the motor torque k_t*i_ref through an ideal current source and a gyrator, with rotor inertia and viscous loss; taps for current, speed, torque and power.",

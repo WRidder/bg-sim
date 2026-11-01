@@ -158,7 +158,13 @@ export type SceneExaggeration = 1 | 10 | 100 | 1000;
  * One binding: a scene target, a property, the signal(s) that drive it, and optional gain and offset.
  */
 export type Binding =
-  JointPositionBinding | PoseBinding | VisualScaleBinding | VisualColorBinding | VisibleBinding | DeformationBinding;
+  | JointPositionBinding
+  | PoseBinding
+  | VisualScaleBinding
+  | VisualColorBinding
+  | VisibleBinding
+  | DeformationBinding
+  | SegmentBinding;
 export type BindingSignal = string;
 export type ScaleProperty = "scale.x" | "scale.y" | "scale.z";
 export type Colormap = "heat" | "viridis" | "coolwarm";
@@ -168,6 +174,14 @@ export type DeformationFamily = "bending-y" | "bending-z" | "torsion";
  */
 export type DeformationBasis = "clamped-free" | "free-free" | "linear";
 export type ShapeAxis = "+x" | "-x" | "+y" | "-y" | "+z" | "-z";
+/**
+ * The world plane of planar end points (u, v): xy maps them to (u, v, depth), xz to (u, depth, v), yz to (depth, u, v). Default xz: a planar model with y up stands upright in the Z-up world.
+ */
+export type SegmentPlane = "xy" | "xz" | "yz";
+/**
+ * How a broken bar is drawn: snapped (two stubs, about 40 % of the length each, hang from the end points with a gap between them) or hidden. Default snapped.
+ */
+export type SegmentBrokenStyle = "snapped" | "hidden";
 export type DashboardCardKind =
   | "plot"
   | "value"
@@ -675,6 +689,40 @@ export interface StrainColor {
    * @maxItems 2
    */
   range: [number, number];
+}
+/**
+ * A bar between two moving points, such as a truss member between two pin nodes. Each frame the viewer places the visual (a box or a cylinder) so that its `axis` runs from end point A to end point B: the visual is centred between the points, turned onto the line A-B and stretched along `axis` to the distance |AB| (its cross-section keeps its size). The binding replaces the visual's pose in its link. `axis` is the visual-local direction that runs from A to B (default +z for a cylinder, its own axis, and +x for a box). `broken` is an optional failure flag of the bar (for example a Truss2D `failed[k]` or a Bar2D `broken`): above 0.5 the bar is drawn as `brokenStyle`. Colour the bar with a `color` binding of the same visual (for example a utilisation signal on the coolwarm colormap) and hide it with a `visible` binding.
+ */
+export interface SegmentBinding {
+  target: string;
+  property: "segment";
+  /**
+   * The end points, A then B, in metres in the world frame: 4 signals (uA, vA, uB, vB) for a planar model, mapped into the world by `plane` and `depth`, or 6 signals (xA, yA, zA, xB, yB, zB). The count is checked by the viewer (E304: 4 or 6).
+   *
+   * @minItems 4
+   * @maxItems 6
+   */
+  signal:
+    | [BindingSignal, BindingSignal, BindingSignal, BindingSignal]
+    | [BindingSignal, BindingSignal, BindingSignal, BindingSignal, BindingSignal]
+    | [BindingSignal, BindingSignal, BindingSignal, BindingSignal, BindingSignal, BindingSignal];
+  plane?: SegmentPlane;
+  /**
+   * Planar end points only: the world coordinate along the third axis (y for the xz plane), in m. Default 0.
+   */
+  depth?: number;
+  axis?: ShapeAxis;
+  broken?: BindingSignal;
+  brokenStyle?: SegmentBrokenStyle;
+  /**
+   * Multiplies every end point coordinate (default 1), for example 0.001 for coordinates in mm.
+   */
+  gain?: number;
+  /**
+   * Added to every end point coordinate after the gain (default 0).
+   */
+  offset?: number;
+  $comment?: string;
 }
 /**
  * One global parameter. `value` is a constant expression string (`2.5`, `4*m`, `sqrt(k/m)`); `unit` and `description` document it and are not checked against the value.

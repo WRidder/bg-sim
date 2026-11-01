@@ -435,7 +435,19 @@ const FLEX_REFS = [
     "stdlib:spatial/ModalBeam3D",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS, EM_FIELD_REFS, FLEX_REFS))
+# Trusses: pin nodes, bars with member failure, the one-block truss and its deck loads (the
+# bridge example).
+const TRUSS_REFS = [
+    "stdlib:planar/AxialBar2D",
+    "stdlib:planar/Bar2D",
+    "stdlib:planar/DeckContact2D",
+    "stdlib:planar/MovingLoad2D",
+    "stdlib:planar/PinNode2D",
+    "stdlib:planar/PointMass2D",
+    "stdlib:planar/Truss2D",
+]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS, EM_FIELD_REFS, FLEX_REFS, TRUSS_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`

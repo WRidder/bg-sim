@@ -270,6 +270,27 @@ describe("block icons", () => {
     expect(glyphs.size).toBe(beamIcons.length);
   });
 
+  it("draws seven distinct truss glyphs", () => {
+    // The truss blocks of stdlib/planar (src/library/catalog.jl), used by the bridge example.
+    const trussIcons = [
+      "pl-point-mass-2d",
+      "pl-pin-node-2d",
+      "pl-axial-bar-2d",
+      "pl-bar-2d",
+      "pl-truss-2d",
+      "pl-moving-load-2d",
+      "pl-deck-contact-2d",
+    ];
+    const ids = new Set(svgIconIds());
+    const glyphs = new Set<string>();
+    for (const icon of trussIcons) {
+      expect(ids.has(icon), icon).toBe(true);
+      const html = renderToStaticMarkup(<BlockIcon icon={icon} name={icon} />);
+      glyphs.add(html.replace(/(aria-label|data-icon)="[^"]*"/g, ""));
+    }
+    expect(glyphs.size).toBe(trussIcons.length);
+  });
+
   it("draws distinct glyphs for the vacuum gripping blocks", () => {
     // stdlib/contact SuctionCup and VacuumGenerator (src/library/catalog.jl).
     const vacuumIcons = ["ct-suction-cup", "ct-vacuum-generator", "hyd-pressure-source", "hyd-orifice"];

@@ -44,6 +44,7 @@ const EXPECTED_PAGES = [
   "thermal-domain",
   "background-tasks",
   "keyboard-shortcuts",
+  "trusses",
 ];
 
 const LINKS: LinkContext = { pageIds: MANUAL_PAGE_IDS, model: null, signalIds: null };

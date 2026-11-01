@@ -151,7 +151,82 @@ function prismatic(dim: 2 | 3): ReactNode {
   );
 }
 
+/** A pin joint: a ring with a centre dot. */
+function pin(cx: number, cy: number, r = 2.2): ReactNode {
+  return (
+    <>
+      <circle cx={cx} cy={cy} r={r} />
+      <circle cx={cx} cy={cy} r="0.8" fill="currentColor" stroke="none" />
+    </>
+  );
+}
+
+/**
+ * A truss bar between two pins with axial arrows (tension); `core` marks the atomic core
+ * with a small N.
+ */
+function bar(core: boolean): ReactNode {
+  return (
+    <>
+      {pin(4.5, 17.5)}
+      {pin(19.5, 6.5)}
+      <path d="M6.3 16.2L17.7 7.8" strokeWidth={2.4} />
+      <path d="M8.5 18.7l-2.6.4.6-2.6M15.5 5.3l2.6-.4-.6 2.6" opacity="0.6" />
+      {core ? (
+        <text x="17" y="21.5" textAnchor="middle" fontSize="8" fontFamily="var(--font-ui)" fill="currentColor" stroke="none">
+          N
+        </text>
+      ) : null}
+    </>
+  );
+}
+
 export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
+  // ---------------------------------------------------------------- trusses
+  "pl-point-mass-2d": () => (
+    <>
+      <circle cx="12" cy="10" r="5" fill="currentColor" fillOpacity="0.25" />
+      <path d="M12 15v5M10 18l2 2 2-2" />
+      <path d="M3 22h3M18 22h3" opacity="0.5" />
+    </>
+  ),
+  "pl-pin-node-2d": () => (
+    <>
+      <path d="M3.5 6.5L10 10.8M20.5 6.5L14 10.8M2.5 12h7M21.5 12h-7" />
+      {pin(12, 12, 2.6)}
+      <path d="M12 14.6l-4 6h8z" />
+      <path d="M6 22.5h12" />
+    </>
+  ),
+  "pl-axial-bar-2d": () => bar(true),
+  "pl-bar-2d": () => bar(false),
+  "pl-truss-2d": () => (
+    <>
+      <path d="M2 18h20M7 8h10M2 18l5-10 5 10 5-10 5 10" />
+      <path d="M2 18l-1.5 3h3zM22 18l-1.5 3h3z" />
+    </>
+  ),
+  "pl-moving-load-2d": () => (
+    <>
+      <path d="M2 19h20" />
+      <path d="M2 19l1.6 3M9 19l1.6 3M16 19l1.6 3" opacity="0.5" />
+      <path d="M10 3v12M7.5 12.5L10 15l2.5-2.5" strokeWidth={2} />
+      <path d="M14 6h7M19 4l2 2-2 2" />
+    </>
+  ),
+  "pl-deck-contact-2d": () => (
+    <>
+      <rect x="4" y="3" width="16" height="6" rx="1" />
+      <circle cx="8" cy="13" r="3" />
+      <circle cx="16" cy="13" r="3" />
+      <path d="M2 17.5l10-1 10 1" />
+      <circle cx="2.5" cy="17.5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="16.5" r="1" fill="currentColor" stroke="none" />
+      <circle cx="21.5" cy="17.5" r="1" fill="currentColor" stroke="none" />
+    </>
+  ),
+
+
   // ---------------------------------------------------------------- bodies
   "pl-rigid-body-2d": () => body(2),
   "sp-rigid-body-3d": () => body(3),

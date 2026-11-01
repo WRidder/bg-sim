@@ -1,0 +1,11 @@
+{
+  "$comment": "Invalid: plane must be xy, xz or yz.",
+  "bindings": [
+    {
+      "target": "visual:bar_1",
+      "property": "segment",
+      "signal": ["Truss/x[1]", "Truss/y[1]", "Truss/x[2]", "Truss/y[2]"],
+      "plane": "zx"
+    }
+  ]
+}
