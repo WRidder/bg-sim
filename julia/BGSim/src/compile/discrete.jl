@@ -1247,8 +1247,11 @@ function _step_value(e, prev::Bool, held, inputs, params, temp_slots::Set{Symbol
         rhs = _step_value(e.rhs, prev, held, inputs, params, temp_slots, helpers)
         return Expr(:call, e.op, lhs, rhs)
     elseif e isa BGSim.BoolOp
+        # A `Bool` parameter or held value reaches the step function as 1.0/0.0, which Julia's
+        # `&&`/`||` refuse as a condition; `__truthy` makes every operand a Bool.
         args = Any[
-            _step_value(a, prev, held, inputs, params, temp_slots, helpers) for
+            Expr(:call, GlobalRef(helpers, :__truthy),
+                _step_value(a, prev, held, inputs, params, temp_slots, helpers)) for
             a in e.operands
         ]
         op = e.op === Symbol("&&") ? :&& : :||

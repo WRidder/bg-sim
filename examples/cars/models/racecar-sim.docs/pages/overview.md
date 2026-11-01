@@ -2,7 +2,7 @@
 
 The race car with the interface of the `apps/car-sim` driving simulator, on the race track (flat, z = 0).
 
-![The model canvas|900](assets/52f9f52c5b17.png)
+![The model canvas|900](assets/e0d7978a9dfc.png)
 
 - **Inputs** (`ExportInputPass`): [steer](block:steer), [throttle](block:throttle), [brake](block:brake), [reverse](block:reverse), [handbrake](block:handbrake) and the friction scale under each tyre, [mu_fl](block:mu_fl) .. [mu_rr](block:mu_rr). In bg-sim they pass a short test drive through; in the FMU the host supplies them.
 - **Outputs** (`ExportOutput`): the chassis and carrier poses, the spin angles, the tyre and suspension states, the contact points, the telemetry, the motor and the battery.

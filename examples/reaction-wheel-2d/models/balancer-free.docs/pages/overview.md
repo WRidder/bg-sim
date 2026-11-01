@@ -12,9 +12,9 @@ must then stay constant at 0.06 kg·m²/s: the motor only exchanges momentum bet
 
 ![Body angle, wheel speed and motor torque without gravity|900](assets/ea8a2370ada2.png)
 
-The same 0.012 rad pulse leans the body; the wheel **spins down to 25.99 rad/s** as the body leans and **back up to 32.70 rad/s** as it returns, ending at 30.0007 rad/s. $H$ stays at 0.06 kg·m²/s: $\max\lvert H - H_0\rvert = 5.27\cdot10^{-9}$, that is $8.78\cdot10^{-8}$ of $H$ (tolerance 1e-6, the `invariant` check on `Pivot/qdout` with coefficient 0.257 and `WheelJ/qdout` with 0.002). $\lvert\theta\rvert$ stays below 0.011967 rad (band 0.02).
+The same 0.012 rad pulse leans the body; the wheel **spins down to 26.00 rad/s** as the body leans and **back up to 32.70 rad/s** as it returns, ending at 30.0007 rad/s. $H$ stays at 0.06 kg·m²/s: $\max\lvert H - H_0\rvert = 6.68\cdot10^{-9}$, that is $1.11\cdot10^{-7}$ of $H$ (tolerance 1e-6, the `invariant` check on `Pivot/qdout` with coefficient 0.257 and `WheelJ/qdout` with 0.002). $\lvert\theta\rvert$ stays below 0.011967 rad (band 0.02).
 
-Checks: $\theta_0 = 0$, wheel 30 rad/s; the wheel dips to 25.99 and rises to 32.70 rad/s; torque bound; the invariant; no W201, E101, E102, E103, E106, W206.
+Checks: $\theta_0 = 0$, wheel 30 rad/s; the wheel dips to 26.00 and rises to 32.70 rad/s; torque bound; the invariant; no W201, E101, E102, E103, E106, W206.
 
 ## What to try
 
