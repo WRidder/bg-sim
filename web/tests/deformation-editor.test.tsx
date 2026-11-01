@@ -107,7 +107,7 @@ describe("the deformation exaggeration in the 3D View", () => {
     const badge = screen.getByTestId("deformation-badge");
     expect(badge.dataset["factor"]).toBe("10");
     expect(badge.dataset["exaggerated"]).toBe("true");
-    expect(spy).toHaveBeenLastCalledWith(10);
+    await waitFor(() => expect(spy).toHaveBeenLastCalledWith(10));
     // nothing stored yet: the model's default is in charge
     expect(localStorage.getItem("bgsim.viewer.exaggeration.p/Beam")).toBeNull();
     // true scale is a choice of its own now, so it is stored
