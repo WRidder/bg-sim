@@ -155,7 +155,15 @@
       "pick-place-best",
       "offset-com-best",
       "loose-sphere-best",
-      "loose-cylinder-best"
+      "loose-cylinder-best",
+      "pick-place-tilt-best",
+      "pick-place-opt",
+      "offset-com-tilt-best",
+      "offset-com-opt",
+      "loose-sphere-tilt-best",
+      "loose-sphere-opt",
+      "loose-cylinder-tilt-best",
+      "loose-cylinder-opt"
     ]
   },
   "fem-bracket": {

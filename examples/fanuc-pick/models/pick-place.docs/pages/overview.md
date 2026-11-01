@@ -4,7 +4,7 @@ A FANUC LR-10iA/10 picks a 1.5 kg carton (300 x 200 x 120 mm) from a conveyor an
 
 **The arm is kinematic.** It follows the planned joint trajectory exactly, as long as the plan stays inside the LR-10iA/10 datasheet limits: the joint ranges and rates, an acceleration and jerk limit per joint, the payload, and the allowable wrist moment and inertia. These limits are checked in every run as `Planner/util_*` (in % of the limit) and are constraints of the optimiser. There are no arm dynamics, drives or joint servos. The dynamics are in the gripper (cylinders, compliant rods, bellows cups, vacuum), the carton and its contents.
 
-![The model canvas|900](assets/366fd1c61cb6.png)
+![The model canvas|900](assets/1ca5b0d4a5c8.png)
 
 The signal chain:
 
@@ -37,9 +37,9 @@ The run: about 2 s with `Rodas5P`, `reltol` 1e-6, `abstol` 1e-8, 500 output poin
 - the robot limits [Planner/util_max](signal:Planner/util_max) and the wrist load [Planner/util_M](signal:Planner/util_M);
 - the drop detection [Monitor/sep](signal:Monitor/sep) and [Monitor/held_ok](signal:Monitor/held_ok).
 
-![The cell at the lift: LR Mate 200iD/7L geometry, the gripper with its five cylinders, the carton|700](assets/3053c41890d7.png)
+![The cell at the lift: LR Mate 200iD/7L geometry, the gripper with its five cylinders, the carton|700](assets/df4a795f48bc.png)
 
-![The default run: gripper path, strokes, vacuum, cup utilisation and robot limits|900](assets/485c06ab92e1.png)
+![The default run: gripper path, strokes, vacuum, cup utilisation and robot limits|900](assets/256b2f1edafb.png)
 
 ## 3D view
 

@@ -5,4 +5,5 @@
 - **Reduced model.** It holds the rods rigid, while bg-sim keeps them compliant (about 145 Hz laterally). The margins agree within a few hundredths (see Validation and checks).
 - **Solver.** The models use `Rodas5P`. With FBDF the run stops when the cup lips land: the lip gap then falls through the `h_lost` level of the cup's `lost` latch, and FBDF forces its step below machine precision.
 - **Contents.** The loose ball and bottle are rigid bodies with Hunt–Crossley wall contacts and regularised Coulomb friction. They have no rolling resistance, so the ball keeps rolling.
-- **Regenerating.** See the README: `build_library.py`, `build_scene.py`, `optimize.py` (about 25 min on 20 cores), `build_models.py`, `reference.py` and `build_expected.py`.
+- **Regenerating.** See the README: `build_library.py`, `build_scene.py`, `optimize.py` (about 25 min on 20 cores), `optimize_free.py` (about 75 min per pass), `build_models.py`, `reference.py` and `build_expected.py`.
+- **Bellows.** The nonlinear bellows parameters (bottoming, lift stroke, side-stiffness laws) are estimates for a 1.5-fold bellows cup, not datasheet values.

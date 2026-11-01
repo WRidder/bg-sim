@@ -50,7 +50,7 @@ D_DROP = 0.02
 #: the numeric parameters of the kernel, in this order
 PNAMES = ("A_eff", "L0", "k_ax", "d_ax", "k_tilt", "k_tor", "d_rot", "D_lip", "mu", "F_min", "k_lat", "d_lat",
           "A_lip0", "perm", "V_cup", "Q_max", "dp_max", "G_rel", "k_w", "xref_w", "c_w", "mu_w", "vs_w", "z_s",
-          "r_s", "r_c", "l_c")
+          "r_s", "r_c", "l_c", "k_bot", "s_bot", "n_bot", "x_bot", "A_fold", "c_vac", "c_ext")
 KIND = {"box": 0, "sphere": 1, "cylinder": 2}
 
 
@@ -102,6 +102,28 @@ def rotz(a):
 
 
 @nb.njit(cache=True)
+def rodrigues(v):
+    """exp([v]x) (rotation by |v| about v)."""
+    th = math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2])
+    r = np.eye(3)
+    if th < 1e-14:
+        return r
+    k = v / th
+    K = np.zeros((3, 3))
+    K[0, 1], K[0, 2], K[1, 0], K[1, 2], K[2, 0], K[2, 1] = -k[2], k[1], k[2], -k[0], -k[1], k[0]
+    return r + math.sin(th) * K + (1.0 - math.cos(th)) * (K @ K)
+
+
+@nb.njit(cache=True)
+def grip_rot(Rk, wb, wbd, k, tau):
+    """Gripper rotation and world angular velocity between the ticks: the body rate held to first
+    order (as ToolMotion), R = R_k exp([w_b tau + wd_b tau^2/2]x)."""
+    v = wb[k] * tau + 0.5 * wbd[k] * tau * tau
+    RG = Rk[k] @ rodrigues(v)
+    return RG, RG @ (wb[k] + wbd[k] * tau)
+
+
+@nb.njit(cache=True)
 def cross(a, b):
     out = np.empty(3)
     out[0] = a[1] * b[2] - a[2] * b[1]
@@ -124,6 +146,7 @@ def qdot(q, w):
 # ------------------------------------------------------------------ the laws
 CD, RHO_AIR, P_TR, H_REF, F_EPS, V_EPS, P_EPS, H_EPS = (CUP_DEF[k] for k in
                                                          ("Cd", "rho", "p_tr", "h_ref", "F_eps", "v_eps", "p_eps", "h_eps"))
+P_ATM = P.P_ATM
 FL_K, FL_XREF, FL_C, FL_MU, FL_VS = (P.FLOOR[k] for k in ("k", "xref", "c", "mu", "vs"))
 
 
@@ -132,13 +155,19 @@ def cup_law(gp, r, R, rd, wr, e, p, out):
     """SuctionCup: fills out = [f_cup (3, cup frame), tau_pt (3, point frame), de (2), U, h, Qin]."""
     A_eff, L0, k_ax, d_ax, k_tilt, k_tor, d_rot, D_lip = gp[0], gp[1], gp[2], gp[3], gp[4], gp[5], gp[6], gp[7]
     mu, F_min, k_lat, d_lat, A_lip0, perm = gp[8], gp[9], gp[10], gp[11], gp[12], gp[13]
+    k_bot, s_bot, n_bot, x_bot, A_fold, c_vac, c_ext = gp[27], gp[28], gp[29], gp[30], gp[31], gp[32], gp[33]
     q = R_quat(R)
     dp = 0.5 * (-p + math.sqrt(p * p + P_EPS * P_EPS))
     Fcap = A_eff * dp
     ext = -r[2] - L0
-    Fs = k_ax * ext - d_ax * rd[2]
-    Mb0 = 2 * q[0] * k_tilt * q[1] + d_rot * wr[0]
-    Mb1 = 2 * q[0] * k_tilt * q[2] + d_rot * wr[1]
+    # nonlinear bellows (stdlib SuctionCup): bottoming, vacuum lift stroke, stiffness factor kf
+    xo = -ext - s_bot
+    xb = 0.5 * (xo + math.sqrt(xo * xo + H_EPS * H_EPS))
+    F_bot = k_bot * xb * (xb / x_bot) ** (n_bot - 1)
+    Fs = k_ax * ext - d_ax * rd[2] + A_fold * dp - F_bot
+    kf = (1 + c_vac * dp / P_ATM) * math.exp(-c_ext * ext / L0)
+    Mb0 = 2 * q[0] * k_tilt * kf * q[1] + d_rot * wr[0]
+    Mb1 = 2 * q[0] * k_tilt * kf * q[2] + d_rot * wr[1]
     Mb2 = 2 * q[0] * k_tor * q[3] + d_rot * wr[2]
     Mbt = math.sqrt(Mb0 * Mb0 + Mb1 * Mb1 + 1e-12 * k_tilt * k_tilt)
     a = (Fs + 4 * Mbt / D_lip - Fcap) / k_ax
@@ -148,13 +177,13 @@ def cup_law(gp, r, R, rd, wr, e, p, out):
     chi = 1.0 / (1.0 + (h / H_REF) ** 2)
     Fc = mu * N + F_min
     vn = math.sqrt(rd[0] * rd[0] + rd[1] * rd[1] + V_EPS * V_EPS)
-    rx, ry = k_lat * e[0] / Fc, k_lat * e[1] / Fc
+    rx, ry = k_lat * kf * e[0] / Fc, k_lat * kf * e[1] / Fc
     rho4 = (rx * rx + ry * ry) ** 2
     gs = rho4 / (1 + 0.01 * rho4)
     dex = rd[0] - vn * rx * gs
     dey = rd[1] - vn * ry * gs
-    Flx = k_lat * e[0] + d_lat * dex
-    Fly = k_lat * e[1] + d_lat * dey
+    Flx = k_lat * kf * e[0] + d_lat * dex
+    Fly = k_lat * kf * e[1] + d_lat * dey
     F_lat = math.sqrt(Flx * Flx + Fly * Fly)
     out[0], out[1], out[2] = -Flx, -Fly, T
     out[3], out[4], out[5] = -chi * Mb0, -chi * Mb1, -chi * Mb2
@@ -257,7 +286,7 @@ def content_forces(gp, kind, hbox, cb, Rb, vb_w, wb_w, cc, Rc, vc_w, wc_w, res):
 
 
 @nb.njit(cache=True)
-def carry_rhs(t, y, gp, tg, pos, vel, acc, psi, wz, wzd, uv, cupG, ptB, Rpt, corners, m, J, kind, mc, Jc,
+def carry_rhs(t, y, gp, tg, pos, vel, acc, Rk, wb, wbd, uv, cupG, ptB, Rpt, corners, m, J, kind, mc, Jc,
               hbox, rec):
     """The carry phase right-hand side; rec gets the utilisation of every active cup and the
     content wall force."""
@@ -267,9 +296,7 @@ def carry_rhs(t, y, gp, tg, pos, vel, acc, psi, wz, wzd, uv, cupG, ptB, Rpt, cor
     tau = t - tg[k]
     pG = pos[k] + vel[k] * tau + 0.5 * acc[k] * tau * tau
     vG = vel[k] + acc[k] * tau
-    RG = rotz(psi[k] + wz[k] * tau + 0.5 * wzd[k] * tau * tau)
-    wG = np.zeros(3)
-    wG[2] = wz[k] + wzd[k] * tau
+    RG, wG = grip_rot(Rk, wb, wbd, k, tau)
     c, q, v, w = y[0:3], y[3:7], y[7:10], y[10:13]
     R = quat_R(q)
     F = np.zeros(3)
@@ -353,18 +380,16 @@ class Pick:
         self.dt = float(self.t[1] - self.t[0])
         tl = r["tl"]
         self.tB, self.tL, self.tE = tl["tB"], tl["tL"], tl["tE"]
-        # gripper world position, yaw and their rates per tick
+        # gripper world position, rotation and the body rates per tick
         self.pos = np.ascontiguousarray(r["g"][4:7].T)
-        self.psi = np.ascontiguousarray(2 * np.arctan2(r["g"][3], r["g"][0]))
-        cps, sps = np.cos(self.psi), np.sin(self.psi)
-        vb, ab = r["V"][3:6], r["Vd"][3:6]
-        wz = r["V"][2]
-        # world rates from the body twist: v = Rz v_b, a = Rz (vd_b + w x v_b)
-        ax_b = ab[0] - wz * vb[1]
-        ay_b = ab[1] + wz * vb[0]
-        self.vel = np.ascontiguousarray(np.stack([cps * vb[0] - sps * vb[1], sps * vb[0] + cps * vb[1], vb[2]], axis=1))
-        self.acc = np.ascontiguousarray(np.stack([cps * ax_b - sps * ay_b, sps * ax_b + cps * ay_b, ab[2]], axis=1))
-        self.wz, self.wzd = np.ascontiguousarray(wz, dtype=float), np.ascontiguousarray(r["Vd"][2], dtype=float)
+        qg = r["g"][0:4].T
+        self.Rk = np.ascontiguousarray(np.array([quat_R(np.ascontiguousarray(q)) for q in qg]))
+        self.wb = np.ascontiguousarray(r["V"][0:3].T)
+        self.wbd = np.ascontiguousarray(r["Vd"][0:3].T)
+        vb, ab = r["V"][3:6].T, r["Vd"][3:6].T
+        # world rates from the body twist: v = R v_b, a = R (vd_b + w_b x v_b)
+        self.vel = np.ascontiguousarray(np.einsum("kij,kj->ki", self.Rk, vb))
+        self.acc = np.ascontiguousarray(np.einsum("kij,kj->ki", self.Rk, ab + np.cross(self.wb, vb)))
         # active cups and geometry
         self.act = [k for k in range(P.N_ZONES) if r["act"][k] > 0.5]
         self.uv = np.ascontiguousarray(np.array([r["uv"][k] for k in self.act], dtype=float).reshape(len(self.act), -1))
@@ -419,9 +444,8 @@ class Pick:
         tau = t - self.t[k]
         p = self.pos[k] + self.vel[k] * tau + 0.5 * self.acc[k] * tau * tau
         v = self.vel[k] + self.acc[k] * tau
-        psi = self.psi[k] + self.wz[k] * tau + 0.5 * self.wzd[k] * tau * tau
-        wz = self.wz[k] + self.wzd[k] * tau
-        return p, v, psi, wz, k
+        RG, wG = grip_rot(self.Rk, self.wb, self.wbd, k, tau)
+        return p, v, RG, wG, k
 
     # -------------------------------------------------------------- initial state at the lift start
     def initial(self, p_cups: np.ndarray) -> np.ndarray:
@@ -468,7 +492,7 @@ class Pick:
 
     # -------------------------------------------------------------- carry phase
     def rhs(self, t: float, y: np.ndarray) -> np.ndarray:
-        return carry_rhs(t, y, self.gp, self.t, self.pos, self.vel, self.acc, self.psi, self.wz, self.wzd,
+        return carry_rhs(t, y, self.gp, self.t, self.pos, self.vel, self.acc, self.Rk, self.wb, self.wbd,
                          self.uv, self.cup_G, self.pt_B, self.R_pt, self.corners, float(self.m), self.J,
                          self.kind_i, float(self.mc), self.Jc, self.hbox, self._rec)
 
@@ -491,8 +515,8 @@ class Pick:
             self.rhs(tt, yy)
             Ut[:, n] = self._rec[:self.na]
             Fw[n] = self._rec[self.na]
-            pG, _, psi, _, _ = self.gripper(tt)
-            rel = rotz(psi).T @ (yy[0:3] - pG)
+            pG, _, RG, _, _ = self.gripper(tt)
+            rel = RG.T @ (yy[0:3] - pG)
             if rel0 is None:
                 rel0 = rel
             sep[n] = float(np.linalg.norm(rel - rel0))

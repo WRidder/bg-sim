@@ -26,6 +26,12 @@
           "children": []
         },
         {
+          "id": "freeopt",
+          "title": "Highest pick rate",
+          "file": "pages/freeopt.md",
+          "children": []
+        },
+        {
           "id": "checks",
           "title": "Validation and checks",
           "file": "pages/checks.md",

@@ -142,7 +142,9 @@ def build(kind: str) -> Diagram:
         d.node(f"Cup{k}", "stdlib:contact/SuctionCup", x0 + 700, y0, {
             "L0": "L0", "A_eff": "A_eff", "D_lip": "D_lip", "k_ax": "k_ax", "d_ax": "d_ax", "k_lat": "k_lat",
             "d_lat": "d_lat", "k_tilt": "k_tilt", "k_tor": "k_tor", "d_rot": "d_rot", "mu": "mu", "V": "V_cup",
-            "perm": "perm", "A_lip0": "A_lip0", "F_min": "F_min", "p_atm": num(P.P_ATM)},
+            "perm": "perm", "A_lip0": "A_lip0", "F_min": "F_min", "p_atm": num(P.P_ATM),
+            "s_bot": "s_bot", "k_bot": "k_bot", "n_bot": "n_bot", "x_bot": "x_bot", "A_fold": "A_fold",
+            "c_vac": "c_vac", "c_ext": "c_ext"},
             {"rz": "rz0"})
         d.node(f"Gen{k}", "stdlib:contact/VacuumGenerator", x0 + 700, y0 + 140,
                {"dp_max": "dp_max", "Q_max": "Q_max", "n": "1", "G_rel": "G_rel"})
@@ -322,6 +324,10 @@ def plots(kind: str) -> list[dict]:
          "signals": ["Monitor/sep", "Monitor/held_ok", "Planner/held"]},
         {"id": "wrench", "title": "Wrench of the gripper load on the flange (gripper frame) [N, N m]",
          "signals": [f"Tool/W[{k}]" for k in range(1, 7)]},
+        {"id": "tilt", "title": "Waiter tilt [deg]: tool tilt, angle of the specific force, tool axis to force",
+         "signals": ["Planner/tilt", "Planner/f_ang", "Planner/tilt_err"]},
+        {"id": "bellows", "title": "Bellows extension [m] (negative: compressed or lifted by the vacuum)",
+         "signals": [f"Cup{k}/ext" for k in z]},
     ]
     if kind != "box":
         out.append({"id": "content", "title": "Content position in the carton [m]",
@@ -370,9 +376,25 @@ def dashboard(kind: str) -> dict:
          "signals": [f"Monitor/margin{k}" for k in range(1, 6)]},
         {"id": "util", "kind": "plot", "size": "2x2", "title": "Joint rate / acc / jerk, wrist moment [% of limit]",
          "signals": ["Planner/util_v", "Planner/util_a", "Planner/util_j", "Planner/util_M"]},
+        {"id": "tiltplot", "kind": "plot", "size": "2x2",
+         "title": "Waiter tilt [deg]: tool tilt, specific-force angle, tool axis to force",
+         "signals": ["Planner/tilt", "Planner/f_ang", "Planner/tilt_err"]},
+        {"id": "tiltpk", "kind": "gauge", "size": "1x1", "title": "Peak tool tilt", "signals": ["Planner/tilt_pk"],
+         "options": {"min": 0, "max": 40, "decimals": 1, "unit": "deg"}},
+        {"id": "tiltnow", "kind": "value", "size": "1x1", "title": "Tool tilt", "signals": ["Planner/tilt"],
+         "options": {"decimals": 1, "unit": "deg"}},
+        {"id": "axial", "kind": "plot", "size": "2x2", "title": "Axial cup force T per cup [N] (pull > 0)",
+         "signals": [f"Cup{k}/T" for k in range(1, 6)]},
+        {"id": "shear", "kind": "plot", "size": "2x2", "title": "Shear (lateral) cup force per cup [N]",
+         "signals": [f"Cup{k}/F_lat" for k in range(1, 6)]},
         {"id": "family", "kind": "slider", "size": "2x1",
-         "title": "Family: 1 joint PTP, 2 Cartesian, 3 Cartesian blended, 4 joint blended",
-         "parameter": "global:family", "options": {"min": 1, "max": 4, "step": 1, "decimals": 0, "unit": ""}},
+         "title": "Family: 1 joint PTP, 2 Cartesian, 3 Cartesian blended, 4 joint blended, 5 free timing",
+         "parameter": "global:family", "options": {"min": 1, "max": 5, "step": 1, "decimals": 0, "unit": ""}},
+        {"id": "tiltgain", "kind": "slider", "size": "2x1",
+         "title": "Waiter tilt gain (0 level, 1 tool axis along the specific force)",
+         "parameter": "global:tilt_gain", "options": {"min": 0, "max": 1.5, "step": 0.05, "decimals": 2, "unit": ""}},
+        {"id": "tiltmax", "kind": "slider", "size": "2x1", "title": "Largest tilt",
+         "parameter": "global:tilt_max_deg", "options": {"min": 0, "max": 40, "step": 1, "decimals": 0, "unit": "deg"}},
         {"id": "kv", "kind": "slider", "size": "2x1", "title": "Joint moves: share of the rate limits", "parameter": "global:kv",
          "options": {"min": 0.2, "max": 1.0, "step": 0.05, "decimals": 2, "unit": ""}},
         {"id": "ka", "kind": "slider", "size": "2x1", "title": "Joint moves: share of the acc/jerk limits", "parameter": "global:ka",
@@ -471,6 +493,31 @@ def all_scenarios() -> dict:
             best = case.get("best")
             if best and case.get("model"):
                 out[case["model"]] = (case["kind"], best["comment"], best["globals"])
+        models = {c["id"]: c for c in data.get("cases", [])}
+        for ab in data.get("ablation", {}).get("cases", []):
+            base = models.get(ab["id"], {}).get("model")
+            if ab.get("strict") or not base:
+                continue
+            stem = base.removesuffix("-best")
+            st = ab["stages"]
+            if st.get("A1", {}).get("ok"):
+                r = st["A1"]
+                out[f"{stem}-tilt-best"] = (ab["kind"], (
+                    f"{ab['title']}: the fastest family {r['family']} trajectory with the waiter's tilt "
+                    f"(design/optimize_free.py, stage A1): T_cyc {r['T_cyc']:.3f} s, {r['picks_per_min']:.1f} picks/min "
+                    f"with the return, margin {r['M_tot']:.2f} (required {ab['M_req']}), peak tilt "
+                    f"{r['tilt_pk']:.1f} deg, {100 * r['util']:.0f} % of the robot limits."), r["globals"])
+            ok = [(s, st[s]) for s in ("A1", "A2", "A3", "A4") if st.get(s, {}).get("ok")]
+            if ok:
+                s, r = min(ok, key=lambda sr: sr[1]["period"])
+                what = {"A1": "families 3/4 with the tilt", "A2": "free timing and tilt",
+                        "A3": "free timing, tilt and yaw window",
+                        "A4": "free timing, tilt, yaw window and gripper timing"}[s]
+                out[f"{stem}-opt"] = (ab["kind"], (
+                    f"{ab['title']}: the highest pick rate of design/optimize_free.py (stage {s}, family {r['family']}, "
+                    f"{what}): T_cyc {r['T_cyc']:.3f} s + return {r['T_ret']:.3f} s = "
+                    f"{r['picks_per_min']:.1f} picks/min, margin {r['M_tot']:.2f} (required {ab['M_req']}), peak tilt "
+                    f"{r['tilt_pk']:.1f} deg, {100 * r['util']:.0f} % of the robot limits."), r["globals"])
     return out
 
 

@@ -57,6 +57,17 @@ CUP = dict(
     V_cup=8.0e-6,     # m^3    cup chamber and hose
     A_lip0=1.5e-8,    # m^2    sealed-lip roughness leak
     F_min=0.1,        # N      residual friction capacity of a free lip
+    # nonlinear bellows (stdlib SuctionCup). ESTIMATES for a 1.5-fold bellows cup with a 32-33 mm
+    # lip (the class of e.g. Schmalz FSGA 33 / Piab BL30-2): about 6 mm usable compression before
+    # the folds stack, a vacuum lift stroke of about 4 mm at 60 kPa, and a bellows that is
+    # noticeably stiffer sideways when evacuated and softer when pulled out.
+    s_bot=0.006,      # m      compression stroke before the folds bottom
+    k_bot=2.5e4,      # N/m    bottoming stiffness scale (slope n_bot k_bot at x_bot over-stroke)
+    n_bot=3.0,        # 1      bottoming exponent
+    x_bot=1.0e-3,     # m      reference over-stroke
+    A_fold=1.7e-4,    # m^2    folded annulus: lift stroke A_fold dp / k_ax = 4.1 mm at 60 kPa
+    c_vac=1.0,        # 1      lateral/tilt stiffness x (1 + dp/p_atm): +59 % at 60 kPa
+    c_ext=3.0,        # 1      lateral/tilt stiffness x exp(-3 ext/L0): -26 % at 3 mm extension
 )
 
 #: vacuum: one compact ejector per zone (see README: isolation and zone switching)
@@ -107,9 +118,20 @@ MOTION = dict(
     T_rel=0.08,       # s      wait at the place after the vacuum is off (vent)
     d_press=0.003,    # m      bellows press at the pick contact pose
     M_req=0.5,        # 1      required holding margin 1 - U (safety factor 2)
+    # waiter (bartender) motion: the tool axis follows the specific force of the carried load
+    tilt_gain=0.0,    # 1      share of the tilt that aligns the cup axis with a - g (0 off, 1 full)
+    tilt_max_deg=25.0,  # deg  largest tilt (smooth saturation)
+    T_tw=0.08,        # s      tilt filter: the acceleration is averaged over a triangle of +-T_tw
+    T_tr=0.10,        # s      the tilt fades in after the lift start and out before the place contact
+    # family 5 (free timing): every move has its own duration and start
+    f5_Ta=0.20, f5_Tp=0.20,   # s  approach and depart durations
+    f5_Tl=0.15, f5_Td=0.15,   # s  lift and lower durations (within the carry)
+    f5_Tx=0.80, f5_ox=0.05, f5_ex=0.10,  # s  transfer duration, its start after the lift start, the carry after it
+    f5_ax=0.40, f5_dx=0.40,   # 1  acceleration and deceleration phase of the transfer (fractions of f5_Tx)
+    f5_y0=0.0, f5_y1=1.0,     # 1  the yaw turns between these fractions of the carry
 )
 
-FAMILY_NAMES = {1: "joint PTP, stops", 2: "Cartesian, stops", 3: "Cartesian, blended", 4: "joint, blended"}
+FAMILY_NAMES = {1: "joint PTP, stops", 2: "Cartesian, stops", 3: "Cartesian, blended", 4: "joint, blended", 5: "free timing"}
 
 TS = 0.001            # s      planner period (the robot interpolation tick)
 T_END_PAD = 0.30      # s      simulated time after the cycle end
@@ -158,6 +180,21 @@ def global_rows() -> list[tuple[str, str, str, str]]:
         ("T_rel", _n(m["T_rel"]), "s", "Wait at the place after the vacuum is switched off"),
         ("d_press", _n(m["d_press"]), "m", "Bellows press at the pick contact pose"),
         ("M_req", _n(m["M_req"]), "1", "Required holding margin 1 - U (0.5 = safety factor 2)"),
+        ("tilt_gain", _n(m["tilt_gain"]), "1", "Waiter motion: share of the tilt that turns the cup axis into the specific force a - g of the load (0 off, 1 full)"),
+        ("tilt_max_deg", _n(m["tilt_max_deg"]), "deg", "Waiter motion: largest tool tilt (smooth saturation)"),
+        ("T_tw", _n(m["T_tw"]), "s", "Waiter motion: the planned load acceleration is averaged over a triangle window of +-T_tw (smooth wrist motion)"),
+        ("T_tr", _n(m["T_tr"]), "s", "Waiter motion: the tilt fades in over T_tr after the lift start and out over T_tr before the place contact"),
+        ("f5_Ta", _n(m["f5_Ta"]), "s", "Family 5: approach duration"),
+        ("f5_Tp", _n(m["f5_Tp"]), "s", "Family 5: depart duration"),
+        ("f5_Tl", _n(m["f5_Tl"]), "s", "Family 5: lift duration (H_lift, from the lift start)"),
+        ("f5_Td", _n(m["f5_Td"]), "s", "Family 5: lower duration (H_lift, ending at the place contact)"),
+        ("f5_Tx", _n(m["f5_Tx"]), "s", "Family 5: transfer duration (straight line, own profile)"),
+        ("f5_ox", _n(m["f5_ox"]), "s", "Family 5: transfer start after the lift start"),
+        ("f5_ex", _n(m["f5_ex"]), "s", "Family 5: carry time after the transfer end (the lower finishes)"),
+        ("f5_ax", _n(m["f5_ax"]), "1", "Family 5: acceleration phase of the transfer, share of its duration"),
+        ("f5_dx", _n(m["f5_dx"]), "1", "Family 5: deceleration phase of the transfer, share of its duration"),
+        ("f5_y0", _n(m["f5_y0"]), "1", "Family 5: the yaw turn starts at this share of the carry"),
+        ("f5_y1", _n(m["f5_y1"]), "1", "Family 5: the yaw turn ends at this share of the carry"),
         # cell
         ("z_s", _n(ce["z_s"]), "m", "Support surface (conveyor and place table) above the robot base"),
         ("xp", _n(ce["xp"]), "m", "Pick: parcel centre x"),
@@ -234,6 +271,13 @@ def global_rows() -> list[tuple[str, str, str, str]]:
         ("V_cup", _n(c["V_cup"]), "m^3", "Cup chamber and hose volume"),
         ("A_lip0", _n(c["A_lip0"]), "m^2", "Sealed-lip leak area per cup"),
         ("F_min", _n(c["F_min"]), "N", "Residual friction capacity of a free lip"),
+        ("s_bot", _n(c["s_bot"]), "m", "Cup compression stroke before the folds bottom (estimate)"),
+        ("k_bot", _n(c["k_bot"]), "N/m", "Cup bottoming stiffness scale (estimate)"),
+        ("n_bot", _n(c["n_bot"]), "1", "Cup bottoming exponent"),
+        ("x_bot", _n(c["x_bot"]), "m", "Reference over-stroke of the bottoming law"),
+        ("A_fold", _n(c["A_fold"]), "m^2", "Folded bellows annulus: vacuum lift stroke A_fold*dp/k_ax (estimate)"),
+        ("c_vac", _n(c["c_vac"]), "1", "Cup lateral/tilt stiffness rise with vacuum, 1 + c_vac*dp/p_atm (estimate)"),
+        ("c_ext", _n(c["c_ext"]), "1", "Cup lateral/tilt stiffness fall with extension, exp(-c_ext*ext/L0) (estimate)"),
         ("h_stack", "h_base + L_cyl + rod0 + stroke + L0 - d_press", "m", "Flange to the pressed cup lip with the cylinders extended"),
         ("dp_max", _n(v["dp_max"]), "Pa", "Ejector end vacuum (per zone)"),
         ("Q_max", _n(v["Q_max"]), "m^3/s", "Ejector suction flow at zero vacuum (free air, per zone)"),

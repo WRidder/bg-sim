@@ -26,7 +26,9 @@ The model docs (Docs tab, `models/*.docs`) hold the derivations and the tables. 
 | `loose-cylinder` | a 0.6 kg carton shell with a loose 0.5 kg bottle (cylinder 70 x 120 mm) lying in it |
 | `too-aggressive` | a trajectory beyond the gripper's holding capacity: the cups peel and the carton drops |
 | `static-hold` | validation: the offset-CoM carton carried slowly, so it hangs still in the cruise |
-| `pick-place-best`, `offset-com-best`, `loose-sphere-best`, `loose-cylinder-best` | the optimum of `design/optimize.py` for each load case |
+| `pick-place-best`, `offset-com-best`, `loose-sphere-best`, `loose-cylinder-best` | the optimum of `design/optimize.py` for each load case (families 1–4, tool level) |
+| `*-tilt-best` | the same families with the waiter tilt: the tool leans with the specific force of the carton (`design/optimize_free.py`, stage A1) |
+| `*-opt` | the highest pick rate of `design/optimize_free.py`: free timing (family 5), tilt, yaw window and the gripper timing |
 
 All models share one plant (`design/build_models.py`). They differ only in their global parameters,
 and the loose-content models add the content body. In the editor every global is in the Equations
@@ -73,6 +75,7 @@ parameter.
 | cylinders | 16 mm bore, stroke 75 mm, 120 N extend and 100 N retract force at 6 bar, free speed 0.5 m/s (meter-out), end stops 2e5 N/m with cushions |
 | rods | 60 g moving mass, compliant in their guides (5e4 N/m lateral, 200 N·m/rad bending) |
 | cups | 1.5-fold bellows, lip 32 mm, effective area 5 cm², rest length 30 mm, axial 2500 N/m, lateral 1500 N/m, tilt 1 N·m/rad, lip friction 0.5 |
+| cup bellows (nonlinear, estimates) | the folds bottom after 6 mm of compression (`k_bot` 2.5e4 N/m, cubic); the vacuum lifts the bellows by `A_fold`·dp/k_ax = 4.1 mm at 60 kPa; lateral and tilt stiffness × (1 + dp/p_atm) × exp(−3·ext/L0), so +59 % under 60 kPa and softer when the cup is pulled long |
 | vacuum | one compact ejector per zone, 60 kPa end vacuum, 12 l/min free air; cardboard permeance 4e-7 m/(s·Pa) |
 | gripper mass | 1.3 kg (base 0.5 kg, 5 x (cylinder 0.1 kg + rod 0.06 kg)) |
 
@@ -134,31 +137,92 @@ and `build_models.py` turns each case's optimum into the model `<case>-best`.
 <!-- results:start -->
 | Load case | Default (family 3) | Family 1 joint PTP | Family 2 Cartesian | Family 3 Cartesian blended | Family 4 joint blended | Best |
 | --- | --- | --- | --- | --- | --- | --- |
-| Carton 1.5 kg, centred CoM | 1.659 s, M -0.07 | 1.950 s (M 0.50, robot 57 %) | 2.071 s (M 0.50, robot 68 %) | 1.635 s (M 0.50, robot 68 %) | 1.578 s (M 0.50, robot 57 %) | **1.578 s** (family 4) |
-| Carton 1.5 kg, CoM offset (60, 30) mm, gripped over the CoM | 1.683 s, M -0.08 | 1.956 s (M 0.51, robot 55 %) | 2.097 s (M 0.50, robot 66 %) | 1.644 s (M 0.50, robot 66 %) | 1.597 s (M 0.51, robot 55 %) | **1.597 s** (family 4) |
-| Carton 1.5 kg, CoM offset (60, 30) mm, gripped at the box centre | 1.659 s, M -4.05 (drop) | infeasible | infeasible | infeasible | infeasible | none: margin 0.19 at 5 % speed (needs 0.5) |
-| Carton 0.6 kg + loose ball 0.5 kg | 1.659 s, M +0.09 | 1.955 s (M 0.33, robot 57 %) | 1.751 s (M 0.30, robot 68 %) | 1.392 s (M 0.30, robot 68 %) | 1.482 s (M 0.31, robot 57 %) | **1.392 s** (family 3) |
-| Carton 0.6 kg + loose bottle 0.5 kg | 1.659 s, M +0.05 | 1.799 s (M 0.33, robot 57 %) | 1.721 s (M 0.30, robot 68 %) | 1.359 s (M 0.31, robot 68 %) | 1.461 s (M 0.30, robot 57 %) | **1.359 s** (family 3) |
+| Carton 1.5 kg, centred CoM | 1.659 s, M -0.05 | 1.976 s (M 0.50, robot 57 %) | 2.044 s (M 0.50, robot 68 %) | 1.625 s (M 0.50, robot 66 %) | 1.612 s (M 0.50, robot 57 %) | **1.612 s** (family 4) |
+| Carton 1.5 kg, CoM offset (60, 30) mm, gripped over the CoM | 1.683 s, M -0.04 | 1.947 s (M 0.50, robot 55 %) | 2.073 s (M 0.50, robot 66 %) | 1.631 s (M 0.50, robot 66 %) | 1.626 s (M 0.50, robot 55 %) | **1.626 s** (family 4) |
+| Carton 1.5 kg, CoM offset (60, 30) mm, gripped at the box centre | 1.659 s, drop | infeasible | infeasible | infeasible | infeasible | none: margin 0.16 at 5 % speed (needs 0.5) |
+| Carton 0.6 kg + loose ball 0.5 kg | 1.659 s, M -0.20 | 2.106 s (M 0.30, robot 57 %) | 1.955 s (M 0.30, robot 68 %) | 1.506 s (M 0.30, robot 68 %) | 1.626 s (M 0.30, robot 57 %) | **1.506 s** (family 3) |
+| Carton 0.6 kg + loose bottle 0.5 kg | 1.659 s, M -0.11 | 1.901 s (M 0.30, robot 57 %) | 1.862 s (M 0.33, robot 68 %) | 1.492 s (M 0.31, robot 67 %) | 1.502 s (M 0.30, robot 57 %) | **1.492 s** (family 3) |
 <!-- results:end -->
 
 What the optimiser finds:
 - **The gripper sets the cycle time, not the robot.** Every optimum uses only 55–68 % of the
-  LR-10iA/10 limits. The peak gripper acceleration while carrying is 8.4–9.8 m/s², about 1 g. Going
-  faster is possible for the arm (`too-aggressive`: 1.36 s at 83 % of the limits) but not for the cups.
+  LR-10iA/10 limits. Going faster is possible for the arm (`too-aggressive`: 83 % of the limits) but not
+  for the cups.
 - **The default trajectory is not safe.** Family 3 at its default limits takes 1.659 s, but its margin
-  is −0.07: the most loaded cup goes past its capacity during the transfer. The carton just stays on
-  (bg-sim and the reduced model agree). The optimum, family 4 (joint blended), takes 1.578 s with a margin
-  of 0.50: 5 % faster and safe.
-- **Blending is what pays.** The families that stop at the corners take 1.95 s (joint PTP) and 2.07 s
-  (Cartesian). Blending cuts 0.34–0.47 s. For the solid carton the joint blend is fastest (1.578 s against
-  1.635 s for the Cartesian blend). For the loose contents the Cartesian blend is fastest (by 0.09–0.10 s).
+  is −0.05: the most loaded cup goes past its capacity during the transfer. The carton just stays on
+  (bg-sim and the reduced model agree). The optimum, family 4 (joint blended), takes 1.612 s with a margin
+  of 0.50: 3 % faster and safe.
+- **Blending is what pays.** The families that stop at the corners take 1.98 s (joint PTP) and 2.04 s
+  (Cartesian). Blending cuts 0.36–0.43 s. For the solid carton the joint blend is fastest (1.612 s against
+  1.625 s for the Cartesian blend). For the loose contents the Cartesian blend is fastest (by 0.01–0.12 s).
 - **No vacuum wait.** Every optimum has `T_seal` = 0: the vacuum is ready within the time the
-  cylinders and the approach take. The Cartesian optima lift only 30 mm; the joint-blended optima lift
-  70–80 mm with an 80 mm blend, so the transfer starts while the carton still rises.
+  cylinders and the approach take. The Cartesian optima lift 30–50 mm; the joint-blended optima lift
+  50–70 mm with an 80 mm blend, so the transfer starts while the carton still rises.
 - **Grip over the centre of mass.** With the CoM 60/30 mm off centre, gripping over the CoM costs only
-  1 % (1.597 s). Gripping at the box centre is infeasible at any speed: at 5 % speed the margin is 0.19.
-- **Loose contents.** The 1.1 kg load with M_req 0.3 can go faster (1.39 s with the ball, 1.36 s with the
-  bottle). The content's impacts on the walls set the margin.
+  1 % (1.626 s). Gripping at the box centre is infeasible at any speed: at 5 % speed the margin is 0.16.
+- **Loose contents.** The 1.1 kg load with M_req 0.3 can go a little faster (1.51 s with the ball, 1.49 s
+  with the bottle). The content's impacts on the walls set the margin.
+- **The nonlinear bellows cost 2–10 %.** With the linear cups of the first version the optima were
+  1.578 / 1.597 / 1.392 / 1.359 s. The bellows laws (vacuum lift stroke, vacuum- and stroke-dependent
+  side stiffness) change how the carton swings on the cups, and the peaks of the most loaded cup rise.
+  The loose contents lose most (8–10 %): the default trajectory goes from M +0.09 / +0.05 to −0.20 / −0.11.
+
+## Free optimisation: the highest pick rate
+
+`uv run examples/fanuc-pick/design/optimize_free.py [--refine] [--loose-strict]` (about 75 min per pass on
+20 cores) drops the fixed families and optimises every freedom the cell has, for the highest **pick rate**:
+picks per minute = 60 / (T_cyc + T_ret), where T_ret is the empty joint move from the depart end back to
+the approach start at the robot's full rates. The constraints are those of `optimize.py` (margin, no drop,
+every LR-10iA/10 limit at 100 % or below, the carton corners clear of the support, now with the tilted
+carton) plus a vent condition: the residual holding force at the depart start is at most 20 % of the
+parcel weight.
+
+The freedoms are added one at a time, each stage warm-started from the one before (CMA-ES on the reduced
+model, then a push along the stage's own time scale to the constraint boundary; two passes, the second
+restarting every stage from the first pass's optimum):
+
+| stage | freedoms |
+| --- | --- |
+| A0 | the best of families 1–4 (`optimize.py`) |
+| A1 | families 3 and 4 with the **waiter tilt**: the tool axis leans towards the specific force g − a of the carton (`tilt_gain`, largest tilt `tilt_max_deg`, filter `T_tw`, fade at the pick and the place `T_tr`); level at both contacts |
+| A2 | **family 5, free timing**: own durations for lift, transfer and lower, the transfer starts and ends anywhere inside the carry (lift and lower overlap it), asymmetric acceleration and deceleration shares, with the tilt |
+| A3 | + the **yaw turn spread** over its own window of the carry |
+| A4 | + the **gripper timing**: vacuum on before the contact, seal wait, vent time, approach and depart durations |
+
+Picks per minute (T_cyc + T_ret, holding margin, peak tool tilt, robot limit use); "no gain" means the
+stage did not beat the best so far:
+
+<!-- ablation:start -->
+| Load case | A0 baseline (best of families 1-4) | A1 + tilt (waiter) | A2 + free timing (family 5) | A3 + yaw spreading | A4 + vacuum/approach/depart overlap |
+| --- | --- | --- | --- | --- | --- |
+| Carton 1.5 kg, centred CoM (M ≥ 0.5) | **28.3/min** (1.612 + 0.504 s, M 0.50, tilt 0°, robot 57 %) | **30.4/min** (1.534 + 0.440 s, M 0.50, tilt 4°, robot 58 %) | no gain | **30.7/min** (1.522 + 0.433 s, M 0.50, tilt 1°, robot 95 %) | **32.6/min** (1.394 + 0.447 s, M 0.50, tilt 0°, robot 94 %) |
+| Carton 1.5 kg, CoM offset (60, 30) mm, gripped over the CoM (M ≥ 0.5) | **28.7/min** (1.626 + 0.467 s, M 0.50, tilt 0°, robot 55 %) | **30.0/min** (1.556 + 0.443 s, M 0.50, tilt 4°, robot 55 %) | **30.4/min** (1.525 + 0.446 s, M 0.50, tilt 3°, robot 65 %) | no gain | **32.4/min** (1.400 + 0.451 s, M 0.50, tilt 1°, robot 94 %) |
+| Carton 0.6 kg + loose ball 0.5 kg (M ≥ 0.3) | **30.5/min** (1.506 + 0.464 s, M 0.30, tilt 0°, robot 68 %) | **31.5/min** (1.471 + 0.434 s, M 0.30, tilt 1°, robot 57 %) | **32.7/min** (1.399 + 0.434 s, M 0.30, tilt 2°, robot 81 %) | no gain | **33.9/min** (1.326 + 0.445 s, M 0.30, tilt 7°, robot 100 %) |
+| Carton 0.6 kg + loose bottle 0.5 kg (M ≥ 0.3) | **30.1/min** (1.492 + 0.504 s, M 0.31, tilt 0°, robot 67 %) | **32.9/min** (1.354 + 0.472 s, M 0.30, tilt 7°, robot 80 %) | **33.2/min** (1.367 + 0.438 s, M 0.30, tilt 3°, robot 74 %) | **33.6/min** (1.344 + 0.440 s, M 0.30, tilt 1°, robot 74 %) | **34.9/min** (1.277 + 0.441 s, M 0.34, tilt 1°, robot 100 %) |
+| Carton 0.6 kg + loose ball 0.5 kg (M ≥ 0.5) | not feasible | **25.4/min** (1.916 + 0.449 s, M 0.50, tilt 4°, robot 67 %) | **25.7/min** (1.899 + 0.437 s, M 0.50, tilt 11°, robot 85 %) | no gain | **27.5/min** (1.747 + 0.435 s, M 0.50, tilt 3°, robot 64 %) |
+| Carton 0.6 kg + loose bottle 0.5 kg (M ≥ 0.5) | not feasible | **26.5/min** (1.825 + 0.443 s, M 0.50, tilt 11°, robot 58 %) | **28.5/min** (1.656 + 0.446 s, M 0.50, tilt 9°, robot 98 %) | no gain | no gain |
+<!-- ablation:end -->
+
+What the free optimisation finds:
+- **15 % more picks for the solid carton**: 28.3 → 32.6 picks/min (box), 28.7 → 32.4 (offset CoM), at the
+  same margin of 0.5. The loose contents gain 11 % (ball, 30.5 → 33.9) and 16 % (bottle, 30.1 → 34.9).
+- **The waiter tilt pays within the fixed families** (A1: +1.0 to +2.8 picks/min; 1–7° of tilt, gain
+  0.05–0.5). With free timing (A2–A4) the optimiser shapes the transfer itself (asymmetric
+  acceleration and deceleration, the transfer overlapping the lift and the lower), and the tilt drops to
+  0–1° for the solid carton: the smooth profile already keeps the shear low. The loose ball keeps 7°.
+- **The gripper timing adds as much again** (A4: +1.2 to +2.0 picks/min). The vacuum opens
+  0.02–0.17 s before the contact so the seal wait is zero, the vent takes 10–76 ms instead of 80 ms (the
+  cup chamber vents in about 0.4 ms), and the approach and depart run in 0.18–0.20 s instead of 0.24–0.26 s.
+- **Spreading the yaw turn** adds little (0–0.4 picks/min): the 90° turn is not what loads the cups.
+- **The robot becomes the limit.** The fixed-family optima use 55–68 % of the LR-10iA/10 limits; the free
+  optima 94–100 %. For the bottle the robot limit is active and the margin (0.34) is above the required
+  0.3.
+- **Loose contents at a margin of 0.5** (`--loose-strict`): reachable with the tilt and free timing, at
+  27.5 picks/min (ball, 3° tilt) and 28.5 picks/min (bottle, 9° tilt). The fixed-family optima for 0.3 (A0)
+  do not hold 0.5; families 3/4 with the tilt (A1) do, at 25.4 and 26.5 picks/min.
+- The models `<case>-tilt-best` (stage A1) and `<case>-opt` (the best stage) carry these optima; the
+  `-best` models keep the fixed-family optima. CMA-ES is a stochastic local search: the numbers are good
+  optima, not proven global ones (the second pass still gained up to 4 % in some stages).
 
 ## Validation
 
@@ -168,18 +232,24 @@ What the optimiser finds:
 
 | check | reference | bg-sim | models |
 | --- | --- | --- | --- |
-| forward kinematics: the URDF joint tree of the 3D scene, driven by `Planner/qr`, against the planner's flange position | closed-form IK/FK of `planner.py`; URDF chain error 3e-16 m (`reference.py`) | at most 3.3e-16 m (tol 1e-6) | all 10 |
-| cycle time `Planner/T_cyc` | `planner.reference`, e.g. 1.659034 s (default), 1.577796 s (`pick-place-best`) | equal within 1e-6 | all 10 |
+| forward kinematics: the URDF joint tree of the 3D scene, driven by `Planner/qr`, against the planner's flange position | closed-form IK/FK of `planner.py`; URDF chain error 3e-16 m (`reference.py`) | at most 2.8e-16 m (tol 1e-6) | all 18 |
+| cycle time `Planner/T_cyc` | `planner.reference`, e.g. 1.659034 s (default), 1.612353 s (`pick-place-best`), 1.3937 s (`pick-place-opt`) | equal within 1e-6 | all 18 |
 | vacuum at the lift start `Cup1/dp` | seal ODE of `reduced.py`: 55,762 Pa | 55,761 Pa | `pick-place` |
-| operating vacuum `Cup1/dp` at rest | ejector curve = lip leak + Darcy flow: 55,826.8 Pa | 55,826.6 Pa | `static-hold` |
-| static cup forces `Cup1..5/T` at rest (N) | hand calculation: 2.943, 9.281, 6.112, −3.395, −0.226 | 2.943, 9.274, 6.100, −3.387, −0.213 | `static-hold` |
-| most loaded cup at rest `Cup2/U` | hand calculation: 0.650 | 0.658 | `static-hold` |
-| holding margin `M_tot` | reduced model: −0.073 / 0.092 / 0.049 / 0.165 | −0.076 / 0.087 / 0.063 / 0.164 | `pick-place` / `loose-sphere` / `loose-cylinder` / `static-hold` |
-| holding margin of the optima (≥ M_req − 0.02) | reduced model: 0.502 / 0.506 / 0.301 / 0.311 | 0.504 / 0.507 / 0.298 / 0.301 | the four `*-best` |
-| robot limits `Planner/util_max` of the optima (≤ 100 %) | `planner.reference`: 56.5 / 54.9 / 67.7 / 67.7 % | the same | the four `*-best` |
+| operating vacuum `Cup1/dp` at rest | ejector curve = lip leak + Darcy flow: 55,826.8 Pa | 55,826.5 Pa | `static-hold` |
+| static cup forces `Cup1..5/T` at rest (N) | hand calculation with the bellows taken at the hang point: 2.943, 7.571, 5.257, −1.685, 0.629 | 2.942, 7.554, 5.251, −1.670, 0.633 | `static-hold` |
+| most loaded cup at rest `Cup2/U` | hand calculation: 0.658 | 0.666 | `static-hold` |
+| holding margin `M_tot` | reduced model: −0.053 / −0.200 / −0.108 / 0.145 | −0.054 / −0.207 / −0.067 / 0.146 | `pick-place` / `loose-sphere` / `loose-cylinder` / `static-hold` |
+| holding margin of the optima (≥ M_req − 0.02, tol 0.03 solid, 0.05 loose) | reduced model: 0.503 / 0.503 / 0.301 / 0.310 (`*-best`), 0.500 / 0.501 / 0.301 / 0.302 (`*-tilt-best`), 0.500 / 0.501 / 0.301 / 0.340 (`*-opt`) | 0.498 / 0.504 / 0.320 / 0.313, 0.500 / 0.500 / 0.307 / 0.312, 0.500 / 0.500 / 0.307 / 0.334 | the twelve optima |
+| robot limits `Planner/util_max` of the optima (≤ 100 %) | `planner.reference`: 56.5 / 54.9 / 67.7 / 66.7 % (`*-best`), 58.0 / 54.9 / 57.2 / 80.0 % (`*-tilt-best`), 94.3 / 94.1 / 99.8 / 100.0 % (`*-opt`) | the same | the twelve optima |
+| tool axis against the specific force `Planner/tilt_err` while carried | the planned angle + 10 % + 0.5° | 24.4 / 25.1 / 10.3 / 28.9° (`*-tilt-best`), 29.5 / 30.6 / 52.8 / 38.3° (`*-opt`) | the eight tilt models |
 | drop: `Monitor/held_ok` falls to 0 and the carton is 20 mm off | reduced model drops both | both drop | `offset-com`, `too-aggressive` |
 | power ledger | Tellegen: the bond ports' powers cancel | residual 3e-16 J (tol 1e-6) | `pick-place` |
-| no solver or structure diagnostics | — | none | all 10 |
+| no solver or structure diagnostics | — | none | all 18 |
+
+All 241 checks pass (`run_checks.py --only fanuc-pick`, 800 s). The tilt angle check only pins the
+planner to its own plan over the carry between the accelerations: the optima tilt the tool only
+partially (gain 0.05 to 0.5), so the tool axis stays 10 to 53° off the specific force there, and
+more in the acceleration peaks.
 
 ## Rebuild
 
@@ -188,6 +258,8 @@ uv run examples/fanuc-pick/design/convert_meshes.py   # URDF meshes -> meshes/*.
 uv run examples/fanuc-pick/design/build_library.py    # library/PickPlanner.jl, ToolMotion, SphereInBox, CylinderInBox, PickMonitor
 uv run examples/fanuc-pick/design/build_scene.py      # scenes/fanuc-pick-{box,sphere,cylinder}.sdf
 uv run examples/fanuc-pick/design/optimize.py         # design/results.json and the results table above
+uv run examples/fanuc-pick/design/optimize_free.py --loose-strict            # the ablation (results.json "ablation")
+uv run examples/fanuc-pick/design/optimize_free.py --refine --loose-strict   # a second pass from the first one's optima
 uv run examples/fanuc-pick/design/build_models.py     # models/*.bgmodel.json, bgsim.project.json
 uv run examples/fanuc-pick/design/reference.py        # design/reference.json
 uv run examples/fanuc-pick/design/build_expected.py   # expected.json
