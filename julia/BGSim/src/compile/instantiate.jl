@@ -374,7 +374,14 @@ function _bind_constants!(
 )
     consts = constant_env(st.pb)
     # F5.1 insertion point: a CSV source's file settings become its `N` and `table` constants.
-    for (key, value) in _csv_node_constants(b, st, node)
+    values = _csv_node_constants(b, st, node)
+    # Bind in declaration order, so a size constant (`nb`) is set before an array constant
+    # whose type it sizes (`conn::Mat{nb,2}`), whatever order the model JSON lists them in.
+    order = Dict(String(BGSim.decl_name(d)) => i
+                 for (i, d) in enumerate(BGSim.declarations(st.pb, :constants)))
+    keys_in_order = sort!(collect(keys(values)); by = k -> (get(order, k, typemax(Int)), k))
+    for key in keys_in_order
+        value = values[key]
         name = Symbol(key)
         if !haskey(consts, name)
             _report!(
@@ -1461,6 +1468,15 @@ function _qualify_node(q::QCtx, e::MatrixLit)
     return QValue((n, m), BGSim.Expr[rows[i][j] for i in 1:n for j in 1:m])
 end
 
+"""    _static_bool(st, c) -> Union{Bool,Nothing}
+
+The value of a qualified condition that folds to a Bool from literals and the block's
+structural constants alone, or `nothing` when it depends on anything else."""
+function _static_bool(st::BlockState, c::BGSim.Expr)
+    ok, value = try_eval_const(c, st.consts)
+    return ok && value isa Bool ? value : nothing
+end
+
 function _qualify_node(q::QCtx, e::IfElse)
     cond = _qualify(q, e.cond)
     then = _qualify(q, e.then)
@@ -1477,6 +1493,13 @@ function _qualify_node(q::QCtx, e::IfElse)
     end
     r = BGSim.expr_range(e)
     c = cond.elems[1]
+    # A condition on structural constants only (`ifelse(conn[k, 1] == i, ...)` after `for`
+    # unrolling) is a static selection: keep the chosen branch, so no switching event and no
+    # dead branch reach the equations.
+    static = _static_bool(q.st, c)
+    if static !== nothing && _qmap2(then, otherwise, (a, b) -> a) !== nothing
+        return static ? then : otherwise
+    end
     out = _qmap2(then, otherwise, (a, b) -> IfElse(c, a, b, r))
     out === nothing && _qreport!(
         q;
@@ -1994,8 +2017,11 @@ function _emit_if!(
         rhs_expr = rows[end][3].elems[1]
         for idx in (length(rows) - 1):-1:1
             cond = rows[idx][2]
-            if cond === nothing
+            static = cond === nothing ? nothing : _static_bool(st, cond)
+            if cond === nothing || static === true
                 rhs_expr = rows[idx][3].elems[1]
+            elseif static === false
+                # A condition that folds to `false` (a structural constant) drops its branch.
             else
                 rhs_expr = IfElse(
                     cond,

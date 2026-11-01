@@ -1325,12 +1325,35 @@ function _parse_events_scope!(b::BlockBuilder, args, stmt)
         return nothing
     end
     for item in items
-        _parse_event!(b, item)
+        _parse_event_item!(b, item, Any[])
     end
     return nothing
 end
 
-function _parse_event!(b::BlockBuilder, node)
+# An `@events` item: an entry, or a `for i in lo:hi ... end` around entries (and loops).
+function _parse_event_item!(b::BlockBuilder, node, loops::Vector{Any})
+    if kind(node) == K"for"
+        header = _parse_for_header!(b, node, :events)
+        header === nothing && return nothing
+        ch = _children(node)
+        inner = Any[loops..., header]
+        body = ch[2]
+        entries = _flatten_blocks(kind(body) == K"block" ? _children(body) : [body])
+        if isempty(entries)
+            _error!(b, "E001", "the `for` loop in `@events` holds no entry", node;
+                scope = :events, hint = "put `cond => begin ... end` entries inside the loop")
+            return nothing
+        end
+        for entry in entries
+            _parse_event_item!(b, entry, inner)
+        end
+        return nothing
+    end
+    _parse_event!(b, node, loops)
+    return nothing
+end
+
+function _parse_event!(b::BlockBuilder, node, loops::Vector{Any} = Any[])
     rng = _range(node, b.filename)
     ch = _children(node)
     if !(kind(node) == K"call" && length(ch) == 3 && _is_operator_node(ch[2]) &&
@@ -1348,7 +1371,7 @@ function _parse_event!(b::BlockBuilder, node)
     cond = _to_expr!(b, ch[1], :events)
     cond === nothing && return nothing
     body = _parse_stmt_list!(b, ch[3], :events)
-    push!(b.event_items, EventDecl(cond, body, rng))
+    push!(b.event_items, EventDecl(cond, body, rng, loops))
     return nothing
 end
 
@@ -1901,6 +1924,15 @@ function _if_stmt_rest!(b::BlockBuilder, branches::Vector{StmtBranch}, rest, sco
 end
 
 function _parse_for_stmt!(b::BlockBuilder, node, scope::Symbol)
+    header = _parse_for_header!(b, node, scope)
+    header === nothing && return nothing
+    body = _parse_stmt_list!(b, _children(node)[2], scope)
+    return ForStatement(header.var, header.lo, header.hi, header.step, body, header.range, scope)
+end
+
+# The `for i in lo:hi` (or `lo:step:hi`) header of a statement loop, as a `ForStatement`
+# with an empty body, or `nothing` after reporting E001.
+function _parse_for_header!(b::BlockBuilder, node, scope::Symbol)
     ch = _children(node)
     rng = _range(node, b.filename)
     if length(ch) < 2
@@ -1958,8 +1990,7 @@ function _parse_for_stmt!(b::BlockBuilder, node, scope::Symbol)
     step = parts[3] === nothing ? nothing : _to_expr!(b, parts[3], scope)
     (lo === nothing || hi === nothing || (parts[3] !== nothing && step === nothing)) &&
         return nothing
-    body = _parse_stmt_list!(b, ch[2], scope)
-    return ForStatement(var, lo, hi, step, body, rng, scope)
+    return ForStatement(var, lo, hi, step, Any[], rng, scope)
 end
 
 # ---------------------------------------------------------------------------------------
@@ -2419,6 +2450,9 @@ function _collect_structural_refs!(b::BlockBuilder)
         end
     end
     for ev in b.event_items
+        for loop in ev.loops
+            _collect_for_bounds!(found, loop)
+        end
         for stmt in ev.body
             _collect_for_bounds!(found, stmt)
         end

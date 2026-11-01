@@ -1,0 +1,86 @@
+{
+  "project": "bridge",
+  "description": "A 30 m Warren truss road bridge (Truss2D: nodes, bars and supports as matrices; co-rotational bars that fail in tension at fy A and in compression at the Euler load). Statics against the method of joints, the first bending frequency against the eigenvalue problem, the energy balance, a strut that buckles at the Euler load, and a lorry on compliant tyres that snaps the undersized diagonal (bar 13) only when it is heavy enough. Reference numbers: design/design.py (numpy, no bg-sim code).",
+  "models": {
+    "bridge-static": {
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"]},
+        {"kind": "scene_bindings", "note": "every bar and deck slab of both trusses follows its end nodes; the colours read the utilisations"},
+        {"kind": "final_value", "signal": "Truss/N[3]", "t": 2.0, "value": 308803.9, "rtol": 0.002, "note": "bottom chord, middle panel: method of joints, dead load + 100 kN at midspan (measured 308987.6 N; the 0.06 % is the deformed geometry)"},
+        {"kind": "final_value", "signal": "Truss/N[9]", "t": 2.0, "value": -348306.0, "rtol": 0.002, "note": "top chord at midspan (measured -348211.0 N)"},
+        {"kind": "final_value", "signal": "Truss/N[12]", "t": 2.0, "value": -143923.0, "rtol": 0.002, "note": "end diagonal (measured -143901.4 N)"},
+        {"kind": "final_value", "signal": "Truss/N[13]", "t": 2.0, "value": 142158.2, "rtol": 0.002, "note": "second diagonal (measured 142184.6 N)"},
+        {"kind": "final_value", "signal": "Truss/N[17]", "t": 2.0, "value": 74532.4, "rtol": 0.01, "note": "a lightly loaded diagonal near midspan: the deformed geometry shifts it by 0.6 % (measured 74069.4 N)"},
+        {"kind": "final_value", "signal": "Truss/Ry[3]", "t": 2.0, "value": 135249.79, "rtol": 0.0005, "note": "pinned support reaction (measured 135267.6 N)"},
+        {"kind": "final_value", "signal": "Truss/Ry[9]", "t": 2.0, "value": 135249.79, "rtol": 0.0005, "note": "roller support reaction (measured 135234.0 N)"},
+        {"kind": "final_value", "signal": "Truss/y[6]", "t": 2.0, "value": -0.028874703, "rtol": 0.001, "note": "midspan deflection, linear stiffness solve (measured -0.0288809 m)"}
+      ]
+    },
+    "bridge-modes": {
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"]},
+        {"kind": "fft_peak", "signal": "Truss/y[6]", "min_hz": 2.0, "max_hz": 8.0, "value": 4.397761581, "rtol": 0.002, "note": "first vertical bending mode: eigenvalue of the linearised K and lumped M (measured 4.3990 Hz)"},
+        {"kind": "max_abs", "signal": "Truss/Ek", "value": 94.294, "rtol": 0.01, "note": "the start velocity is the mode shape at 5 mm midspan amplitude"},
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 94.3, "tol": 1e-06, "note": "no damping: Ek + Ee + Eg - Wext is constant (drift 1.5e-6 J)"}
+      ]
+    },
+    "bridge-moving-load": {
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"]},
+        {"kind": "max_abs", "signal": "Truss/y[6]", "value": 0.028874703, "rtol": 0.005, "note": "largest midspan deflection, as the 100 kN load passes midspan at 5 m/s: the static value (measured 0.0288242 m)"},
+        {"kind": "max_abs", "signal": "Truss/N[9]", "value": 348306.0, "rtol": 0.005, "note": "largest top-chord force: the static value with the load at midspan (measured 347750.7 N)"},
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 1000.0, "tol": 1e-08, "note": "the energy book holds with damping and a moving load (drift 1.2e-7 J)"}
+      ]
+    },
+    "strut-buckling": {
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"]},
+        {"kind": "max_abs", "signal": "Strut/N", "value": 5181.542310572, "rtol": 1e-06, "note": "the strut carries exactly the Euler load pi^2 E I / L^2 = 5181.54 N, then fails"},
+        {"kind": "zero_crossing", "signal": "Strut/broken", "level": 0.5, "direction": "up", "n": 1, "value": 0.05197, "abs": 0.00015, "note": "the push grows at 100 kN/s, so the failure comes at Pcr/1e5 = 0.0518 s plus the strut's dynamic lag (sqrt(m/k) = 0.14 ms)"},
+        {"kind": "final_value", "signal": "Strut/Elost", "t": 0.1, "value": 0.127849432, "rtol": 1e-05, "note": "the strain energy at failure Pcr^2 L / (2 E A)"},
+        {"kind": "max_abs_le", "signal": "Strut/N", "from_t": 0.06, "value": 1e-06, "note": "a failed bar carries no force"}
+      ]
+    },
+    "bridge-crossing": {
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"]},
+        {"kind": "scene_bindings", "note": "the lorry link follows Truck/q and its wheels turn on Truck/wheel"},
+        {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "the design bridge carries the 20 t lorry at 10 m/s"},
+        {"kind": "max_abs_le", "signal": "Truss/util[12]", "value": 0.4, "note": "the most loaded member, the end diagonal, at 37 % of its buckling load"},
+        {"kind": "max_abs", "signal": "Truss/N[13]", "value": 204800.8, "rtol": 0.01, "note": "the dynamic peak of the second diagonal: 1.19 times the quasi-static 171.9 kN of design.py"},
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 1000.0, "tol": 1e-07, "note": "the truss energy book, the tyre forces counted in Wext (drift 6e-7 J)"},
+        {"kind": "cursor_value", "signal": "Truck/v", "t": 7.0, "value": 10.0, "abs": 0.01, "note": "the cruise control holds the set speed"}
+      ]
+    },
+    "bridge-failure": {
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"], "note": "W217 (the collapse stop) is expected"},
+        {"kind": "scene_bindings", "note": "failed bars are drawn snapped"},
+        {"kind": "zero_crossing", "signal": "Truss/nfail", "level": 0.5, "direction": "up", "n": 1, "value": 2.18654, "abs": 0.002, "note": "the 30 t lorry at 15 m/s snaps the first bar when it is 7.8 m onto the bridge"},
+        {"kind": "cursor_value", "signal": "Truss/failed[13]", "t": 2.19, "value": 1.0, "abs": 1e-09, "note": "the first bar to fail is the undersized diagonal 13"},
+        {"kind": "cursor_value", "signal": "Truss/nfail", "t": 2.7, "value": 1.0, "abs": 1e-09, "note": "and it is the only one for half a second, until the sheared panel overloads the bottom chord"},
+        {"kind": "max_abs", "signal": "Truss/N[13]", "value": 240641.8, "rtol": 1e-06, "note": "it fails exactly at Ft = fy A = 240.6 kN"},
+        {"kind": "cursor_value", "signal": "Truss/Elost", "t": 2.5, "value": 959.43, "rtol": 0.005, "note": "the energy lost at failure: the strain energy Ft^2 L0 / (2 E A) = 959.4 J (measured 957.1 J: the force at failure includes the bar damping)"},
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 10000.0, "tol": 1e-05, "note": "Ebal stays constant through both failures and the collapse (drift 0.005 J against 267 kJ of external work)"},
+        {"kind": "zero_crossing", "signal": "Truss/y[6]", "level": -2.999, "direction": "down", "n": 1, "value": 2.95299, "abs": 0.01, "note": "the bridge folds: the run stops when the midspan has dropped 3 m"}
+      ]
+    },
+    "bridge-failure-20t": {
+      "model": "bridge-failure",
+      "overrides": [{"target": "global:m_truck", "value": 20000.0}],
+      "checks": [
+        {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "a 20 t lorry at 15 m/s does not break the undersized diagonal"},
+        {"kind": "max_abs", "signal": "Truss/util[13]", "value": 0.94882, "rtol": 0.01, "note": "it comes to 95 % of its strength"}
+      ]
+    },
+    "bridge-failure-slow": {
+      "model": "bridge-failure",
+      "overrides": [{"target": "global:v_truck", "value": 5.0}],
+      "settings": {"t_end": 12.0},
+      "checks": [
+        {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "the 30 t lorry crosses safely at 5 m/s"},
+        {"kind": "max_abs", "signal": "Truss/util[13]", "value": 0.91347, "rtol": 0.01, "note": "bar 13 at 91 % of its strength"}
+      ]
+    }
+  }
+}

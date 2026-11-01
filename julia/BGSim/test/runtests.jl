@@ -283,6 +283,8 @@ include("test_drives.jl")
 # (FlexibleBeam2D/3D: energy, Southwell, statics, the two-disk torsion shaft).
 include("test_flex_modes.jl")
 include("test_flex_beam.jl")
+# Trusses: bars with member failure, pin nodes, Truss2D, moving loads and wheel-on-deck contact.
+include("test_truss.jl")
 include("test_loader.jl")
 include("test_csv.jl")
 

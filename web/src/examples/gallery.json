@@ -15,6 +15,19 @@
       "bouncing-ball"
     ]
   },
+  "bridge": {
+    "title": "Bridge",
+    "description": "A truss road bridge with a lorry: member forces, buckling, and a diagonal that snaps when the lorry is too fast.",
+    "hasScene": true,
+    "models": [
+      "bridge-failure",
+      "bridge-crossing",
+      "bridge-static",
+      "bridge-modes",
+      "bridge-moving-load",
+      "strut-buckling"
+    ]
+  },
   "cantilever-modes": {
     "title": "Cantilever modes",
     "description": "A cantilever in two eigenmodes as a scalar bond graph, with global parameters and a tip force step.",

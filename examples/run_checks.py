@@ -2009,6 +2009,8 @@ def _scene_bindings_check(
     the seven pose signals) and a pose needs exactly seven signals. A ``deformation`` binding
     needs a box or cylinder visual (a cylinder along its own z), one to three modal coordinates
     (lengths for bending, angles for torsion) and at most one binding per family and visual.
+    A ``segment`` binding needs a box or cylinder visual that stretches along its axis, 4
+    (planar) or 6 (spatial) end-point coordinates that are lengths, and a known ``broken`` flag.
     This is E301 to E304 of the viewer (plan 7.6), checked without a browser.
 
     ``fk`` entries check the sign convention of the joint axes against a model signal::
@@ -2100,6 +2102,24 @@ def _scene_bindings_check(
             for signal in signals:
                 if signal in units and units[signal] not in allowed:
                     errors.append(f"{where}: unit {units[signal]!r} of {signal} does not fit a {family} modal coordinate")
+        elif prop == "segment":
+            counts["visual"] += 1
+            geometry = sdf["geometry"].get(name) if kind == "visual" else None
+            axis = str(binding.get("axis") or ("+z" if geometry == "cylinder" else "+x"))
+            if kind != "visual" or name not in sdf["visuals"]:
+                errors.append(f"{where}: no visual named {name!r}")
+            elif geometry not in ("box", "cylinder"):
+                errors.append(f"{where}: a {geometry} cannot be stretched as a bar; bind a box or cylinder")
+            elif geometry == "cylinder" and axis not in ("+z", "-z"):
+                errors.append(f"{where}: a cylinder stretches along its own axis only (+z or -z)")
+            if not isinstance(binding.get("signal"), list) or len(signals) not in (4, 6):
+                errors.append(f"{where}: needs 4 (planar) or 6 (spatial) end-point coordinates, got {len(signals)}")
+            for signal in signals:
+                if signal in units and units[signal] not in _LENGTH_UNITS:
+                    errors.append(f"{where}: unit {units[signal]!r} of {signal} is not a length")
+            broken = binding.get("broken")
+            if broken is not None and broken not in units:
+                errors.append(f"{where}: unknown broken signal {broken!r}")
         else:
             counts["visual"] += 1
             known = (kind == "visual" and name in sdf["visuals"]) or (

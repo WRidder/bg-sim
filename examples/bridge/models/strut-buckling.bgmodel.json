@@ -1,0 +1,301 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "strut-buckling",
+  "$comment": "A 2 m pin-ended strut pushed by a load growing at 100 kN/s: it fails at the Euler load pi^2 E I / L^2 = 5181.5 N.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "A",
+        "block": {
+          "ref": "stdlib:planar/PinNode2D"
+        },
+        "position": {
+          "x": 40,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "1.0",
+          "x0": "0.0",
+          "y0": "0.0",
+          "g0": "0.0"
+        },
+        "constants": {
+          "support": "1"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Strut",
+        "block": {
+          "ref": "stdlib:planar/Bar2D"
+        },
+        "position": {
+          "x": 260,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "A": "1.0e-3",
+          "I": "1.0e-8",
+          "rho": "0.0",
+          "beta": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "B",
+        "block": {
+          "ref": "stdlib:planar/PinNode2D"
+        },
+        "position": {
+          "x": 480,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "100.0",
+          "x0": "2.0",
+          "y0": "0.0",
+          "g0": "0.0"
+        },
+        "constants": {
+          "support": "2"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Push",
+        "block": {
+          "ref": "stdlib:multibond/ExternalWrenchPlanar"
+        },
+        "position": {
+          "x": 700,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Ramp",
+        "block": {
+          "ref": "stdlib:sources/Ramp"
+        },
+        "position": {
+          "x": 700,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "slope": "-1.0e5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "Zero",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 480,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c001",
+        "kind": "bond",
+        "from": {
+          "node": "n01",
+          "port": "p"
+        },
+        "to": {
+          "node": "n02",
+          "port": "a"
+        },
+        "label": null
+      },
+      {
+        "id": "c002",
+        "kind": "bond",
+        "from": {
+          "node": "n02",
+          "port": "b"
+        },
+        "to": {
+          "node": "n03",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c003",
+        "kind": "bond",
+        "from": {
+          "node": "n04",
+          "port": "p"
+        },
+        "to": {
+          "node": "n03",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "c004",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "g"
+        },
+        "to": {
+          "node": "n02",
+          "port": "ga"
+        },
+        "label": null
+      },
+      {
+        "id": "c005",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "g"
+        },
+        "to": {
+          "node": "n02",
+          "port": "gb"
+        },
+        "label": null
+      },
+      {
+        "id": "c006",
+        "kind": "signal",
+        "from": {
+          "node": "n05",
+          "port": "y"
+        },
+        "to": {
+          "node": "n04",
+          "port": "wx"
+        },
+        "label": null
+      },
+      {
+        "id": "c007",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "y"
+        },
+        "to": {
+          "node": "n04",
+          "port": "wr"
+        },
+        "label": null
+      },
+      {
+        "id": "c008",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "y"
+        },
+        "to": {
+          "node": "n04",
+          "port": "wy"
+        },
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.1,
+    "solver": "Rodas5P",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 2001
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Axial force and Euler load",
+      "signals": [
+        "Strut/N",
+        "Strut/Pcr"
+      ],
+      "yLabel": "N"
+    },
+    {
+      "id": "p2",
+      "title": "Failure flag",
+      "signals": [
+        "Strut/broken"
+      ],
+      "yLabel": ""
+    },
+    {
+      "id": "p3",
+      "title": "Energy lost at failure",
+      "signals": [
+        "Strut/Elost"
+      ],
+      "yLabel": "J"
+    }
+  ]
+}

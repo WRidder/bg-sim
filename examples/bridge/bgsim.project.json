@@ -1,0 +1,15 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "bridge",
+  "models": [
+    "bridge-failure",
+    "bridge-crossing",
+    "bridge-static",
+    "bridge-modes",
+    "bridge-moving-load",
+    "strut-buckling"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

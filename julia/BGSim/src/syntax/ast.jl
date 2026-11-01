@@ -473,16 +473,23 @@ end
 source_range(s::CallStatement) = s.range
 stmt_call(s::CallStatement) = s.call
 
-"""    EventDecl(cond, body, range)
+"""    EventDecl(cond, body, range, loops = [])
 
 One `cond => begin ... end` entry of `@events` (plan D19). `cond` is either a real
 expression (an upward zero crossing) or a `Comparison` with `<` / `>`; `body` is a
-statement list. Events are order-free across entries but ordered inside one body."""
+statement list. Events are order-free across entries but ordered inside one body.
+
+`loops` are the `for i in lo:hi` headers that enclose the entry, outermost first (each a
+`ForStatement` with an empty body). An entry inside `for k in 1:N` stands for N events, one
+per value of `k`, unrolled when the block is instantiated (one failure event per truss bar)."""
 struct EventDecl
     cond::Expr
     body::Vector{Any}
     range::SourceRange
+    loops::Vector{Any}
 end
+
+EventDecl(cond::Expr, body::Vector{Any}, range::SourceRange) = EventDecl(cond, body, range, Any[])
 
 source_range(e::EventDecl) = e.range
 event_condition(e::EventDecl) = e.cond
