@@ -12,6 +12,6 @@ The four subsystems [Mu01](block:Mu01), [Mu1](block:Mu1), [Mu5](block:Mu5) and [
 - the same equation as an **equation block**, [Mu1/Eq](block:Mu1/Eq) (`VanDerPol`);
 - the cycle meter [Mu1/Meter](block:Mu1/Meter), which reads the period and the amplitude from events.
 
-The plots of BG-Sim are against time. The phase portraits on the [results page](page:results) are drawn by the docs build from the same run.
+The phase portraits are XY plots: open **Phase portrait at mu = 1** or **at mu = 5** from **Saved** in the Plots toolbar, or plot [Mu1/Y/y](signal:Mu1/Y/y) and set the panel's **x** to [Mu1/X/y](signal:Mu1/X/y). The phase portraits on the [results page](page:results) are drawn by the docs build from the same run.
 
 Continue with [the theory](page:theory) and [the results](page:results).

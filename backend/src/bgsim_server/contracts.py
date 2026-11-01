@@ -1161,7 +1161,23 @@ class ModelPlot(BaseModel):
         constr(
             pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?(?:\.[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?)?$'
         )
-    ]
+    ] = Field(
+        ...,
+        description='The plotted signals: against time, or against `x` when it is set.',
+    )
+    x: (
+        constr(
+            pattern=r'^(?:[A-Za-z_][A-Za-z0-9_]*/)+[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?(?:\.[A-Za-z_][A-Za-z0-9_]*(?:\[\d+(?:,\d+)?\])?)?$'
+        )
+        | None
+    ) = Field(
+        None,
+        description='XY plot: the signal on the horizontal axis; every signal in `signals` is drawn against it, sample by sample (a phase portrait, a Lissajous figure, a force-deflection loop). Absent: time.',
+    )
+    equalAspect: bool | None = Field(
+        None,
+        description='XY plot: one unit on the x axis is as long as one unit on the y axis (a circle stays round). Absent: false. Ignored without `x`.',
+    )
     field_comment: str | None = Field(None, alias='$comment')
 
 
@@ -2776,6 +2792,14 @@ class ModelDashboardCard(BaseModel):
     signals: list[constr(min_length=1)] | None = Field(
         None,
         description='Display cards: the bound signal ids (a plot may have several, the other display cards use the first).',
+    )
+    x: constr(min_length=1) | None = Field(
+        None,
+        description='Plot cards: the signal on the horizontal axis, as `x` of a model plot (an XY plot of every bound signal against it). Absent: time.',
+    )
+    equalAspect: bool | None = Field(
+        None,
+        description='Plot cards with `x`: equal units per pixel on both axes, as `equalAspect` of a model plot. Absent: false.',
     )
     parameter: (
         constr(

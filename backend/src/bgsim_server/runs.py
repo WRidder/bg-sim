@@ -21,7 +21,10 @@ The router owns the run lifecycle on the backend side:
   ``app.py`` includes this router under ``/api``) forwards ``run.phase``,
   ``run.progress`` and ``run.done`` and, after the client sends
   ``{"subscribe": ["signal/id", ...]}``, a decimated ``run.tail`` at most 20
-  times per second::
+  times per second. With ``"exact": true`` in the subscribe message (the editor
+  sends it while an XY plot is open) the tail keeps whole recorded rows (raw up
+  to ``EXACT_TAIL_ROWS`` rows per message, row-selected beyond), so signals
+  stay paired sample by sample::
 
       {"method": "run.tail", "params": {"runId", "ids", "t0", "t1",
                                         "time": [...], "values": [[...], ...]}}
@@ -74,7 +77,7 @@ from starlette.routing import WebSocketRoute
 
 from .config import Settings
 from .contracts import DebugStartOptions, Model, ParameterOverride, ParameterStep, RunManifest
-from .decimate import DEFAULT_POINTS, decimate, open_columns, open_stream
+from .decimate import DEFAULT_POINTS, decimate, decimate_rows, open_columns, open_stream
 from .proxy import BlockCheckBody, WorkerRpcFailure
 from .proxy import check_block as proxy_check_block
 from .proxy import router as proxy_router
@@ -95,6 +98,9 @@ RUN_HISTORY_ENV = "BGSIM_RUN_HISTORY"
 TAIL_POINTS = 200
 #: At most 20 tail messages per second (the plan's rate limit for the run WS).
 TAIL_MIN_INTERVAL = 0.05
+#: Row budget of an ``exact`` tail (XY plots): raw up to this many rows per message, beyond it
+#: whole recorded rows are selected (:func:`decimate_rows`), never per-signal envelopes.
+EXACT_TAIL_ROWS = 4000
 
 _RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _PROJECT_NAME = re.compile(r"^[A-Za-z0-9_.-]+$")
@@ -1021,8 +1027,13 @@ def _tail_payload(
     id_names: list[str],
     start_row: int,
     end_row: int | None,
+    exact: bool = False,
 ) -> tuple[dict[str, Any], int] | None:
-    """A decimated tail of rows ``[start_row, end_row)``, and the row it reached."""
+    """A decimated tail of rows ``[start_row, end_row)``, and the row it reached.
+
+    ``exact`` (a subscriber with XY plots) keeps whole recorded rows, so the signals stay paired
+    sample by sample: raw up to :data:`EXACT_TAIL_ROWS`, row-selected beyond.
+    """
     width = 1 + len(signals)
     stream_path = run_dir / "stream.f64"
     columns_path = run_dir / "columns.f64"
@@ -1049,7 +1060,11 @@ def _tail_payload(
             chunk_v = np.array(data[1:][ids, start:end], dtype=np.float64)
     except (OSError, ValueError):
         return None
-    result = decimate(chunk_t, chunk_v, px=TAIL_POINTS)
+    result = (
+        decimate_rows(chunk_t, chunk_v, EXACT_TAIL_ROWS)
+        if exact
+        else decimate(chunk_t, chunk_v, px=TAIL_POINTS)
+    )
     payload = {
         "runId": run_dir.name,
         "ids": id_names,
@@ -1067,6 +1082,8 @@ class _Subscription:
     names: list[str] = field(default_factory=list)
     rows_sent: int = 0
     last_tail: float = 0.0
+    #: ``{"subscribe": [...], "exact": true}``: whole recorded rows (XY plots), see _tail_payload.
+    exact: bool = False
     #: Serialises the progress-driven tail and the backlog send of a (re)subscribe,
     #: so the row cursor and the 20/s budget have one owner at a time.
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
@@ -1190,6 +1207,7 @@ async def _send_tail(
             names,
             subscription.rows_sent,
             end_row,
+            subscription.exact,
         )
         if tail is None:
             return
@@ -1291,6 +1309,7 @@ async def _receive_loop(
             subscription.ids = [lookup[name] for name in wanted]
             subscription.names = list(wanted)
             subscription.rows_sent = 0
+            subscription.exact = message.get("exact") is True
         await _send_tail(
             websocket,
             run_dir,

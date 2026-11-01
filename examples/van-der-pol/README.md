@@ -10,11 +10,11 @@ The damping `-mu (1 - x^2) x'` is negative at small amplitude and positive at la
 
 | model | what it shows |
 | --- | --- |
-| `vdp-tunnel-diode` | **Electronics.** A parallel LC tank on a tunnel diode biased in its negative-resistance region, as a bond graph. C, I and a nonlinear R (`TunnelDiode`, `i = -a v + b v^3`) hang on one 0-junction. The textbook equation runs alongside in the circuit's seconds. A cycle meter and an energy split read the limit cycle. Dashboard: mu, start amplitude, frequency/amplitude/period readouts, the component values for the chosen mu, plots. |
+| `vdp-tunnel-diode` | **Electronics.** A parallel LC tank on a tunnel diode biased in its negative-resistance region, as a bond graph. C, I and a nonlinear R (`TunnelDiode`, `i = -a v + b v^3`) hang on one 0-junction. The textbook equation runs alongside in the circuit's seconds. A cycle meter and an energy split read the limit cycle. Dashboard: mu, start amplitude, frequency/amplitude/period readouts, the component values for the chosen mu, the phase portrait and the diode's operating curve (XY), plots against time. |
 | `vdp-belt` | **Mechanics.** A block on a spring rides a belt. The friction contact is a nonlinear R in resistance causality: `BeltFriction` (the Taylor fit of the friction curve about the belt speed, exactly Rayleigh/Van der Pol) and, in a second rig, `StribeckFriction` (the full Stribeck curve). The textbook equation runs in the rig's seconds. 3D scene of the rig. |
 | `vdp-textbook` | **Reference.** The equation at mu = 0.1, 1, 5 and 20, each as a block diagram (integrators, `Polynomial`, `Product`, `Gain`) and as an equation block (`VanDerPol`), with a cycle meter. |
 
-The plots of BG-Sim are against time: there is no XY plot. Plot `x` and `x'` against time. The phase portraits in the model docs (`models/<model>.docs/`) come from the same runs, drawn by the docs build.
+Every model also saves XY plots: the phase portrait `x'` against `x` (equal aspect, so the small-mu cycle is a circle of radius 2), and in the circuit the diode's current against the tank voltage, in the belt rig the friction force against the slip. Open them from **Saved** in the Plots toolbar, or switch a panel's **x** from time to a signal. The tunnel-diode dashboard shows the phase portrait and the diode's operating curve next to the time plots. The phase portraits in the model docs (`models/<model>.docs/`) come from the same runs, drawn by the docs build.
 
 ## 1. Tunnel-diode oscillator
 

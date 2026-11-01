@@ -12,9 +12,10 @@ import remarkGfm from "remark-gfm";
 import type { ModelDashboardCard } from "../contracts/model";
 import type { RunSignal } from "../contracts/run-manifest";
 import { formatNumber } from "../plot/format";
-import { panelConfiguration, PLOT_SYNC_KEY } from "../plot/PlotPanel";
+import { panelConfiguration, PLOT_SYNC_KEY, xSeriesConfig } from "../plot/PlotPanel";
 import { useRunStore } from "../plot/runStore";
 import { UPlotChart } from "../plot/UPlotChart";
+import { XYChart } from "../plot/XYChart";
 import { autoLimits, decimatedPath } from "../probe/MiniPlot";
 import {
   formatCardValue,
@@ -337,6 +338,7 @@ export function PlotCard({ card, series }: DisplayCardProps) {
     // `ids` is the card's array, stable until the card changes.
     [card.signals, series.signalsById],
   );
+  const xConfig = useMemo(() => xSeriesConfig(card.x, series.signalsById), [card.x, series.signalsById]);
   const onZoom = useCallback((next: { t0: number; t1: number } | null, px: number) => {
     useRunStore.getState().setView(next, px);
   }, []);
@@ -346,6 +348,23 @@ export function PlotCard({ card, series }: DisplayCardProps) {
   }, []);
   if (ids.length === 0 || series.manifest === null || configuration.current.length === 0) {
     return <EmptyBinding card={card} series={series} />;
+  }
+  if (card.x !== undefined && xConfig !== null) {
+    return (
+      <div className="dash-plot dash-plot--xy" data-testid={`dash-plot-${card.id}`}>
+        <XYChart
+          xSignal={xConfig}
+          signals={configuration.current}
+          compareSignals={[]}
+          data={series.data}
+          compare={null}
+          view={view}
+          cursorTime={series.cursorTime}
+          equalAspect={card.equalAspect === true}
+          onCursorTime={onCursor}
+        />
+      </div>
+    );
   }
   return (
     <div className="dash-plot" data-testid={`dash-plot-${card.id}`}>

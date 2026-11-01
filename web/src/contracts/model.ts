@@ -431,7 +431,18 @@ export interface ModelOutputInterval {
 export interface ModelPlot {
   id: string;
   title: string;
+  /**
+   * The plotted signals: against time, or against `x` when it is set.
+   */
   signals: string[];
+  /**
+   * XY plot: the signal on the horizontal axis; every signal in `signals` is drawn against it, sample by sample (a phase portrait, a Lissajous figure, a force-deflection loop). Absent: time.
+   */
+  x?: string;
+  /**
+   * XY plot: one unit on the x axis is as long as one unit on the y axis (a circle stays round). Absent: false. Ignored without `x`.
+   */
+  equalAspect?: boolean;
   $comment?: string;
 }
 export interface JointPositionBinding {
@@ -624,6 +635,14 @@ export interface ModelDashboardCard {
    * Display cards: the bound signal ids (a plot may have several, the other display cards use the first).
    */
   signals?: string[];
+  /**
+   * Plot cards: the signal on the horizontal axis, as `x` of a model plot (an XY plot of every bound signal against it). Absent: time.
+   */
+  x?: string;
+  /**
+   * Plot cards with `x`: equal units per pixel on both axes, as `equalAspect` of a model plot. Absent: false.
+   */
+  equalAspect?: boolean;
   /**
    * Input cards: the bound parameter, a block parameter <instance path>/<param> or a global parameter global:<name> (number, slider and knob cards).
    */

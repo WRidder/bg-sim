@@ -19,7 +19,7 @@ import {
   type ChartSeriesData,
   type RunUiStatus,
 } from "../plot/runStore";
-import { dashboardSignalIds } from "./model";
+import { dashboardHasXY, dashboardSignalIds } from "./model";
 
 export interface RunSeries {
   manifest: RunManifest | null;
@@ -83,9 +83,10 @@ export function useRunSeries(): RunSeries {
 export function useDashboardSignalSubscription(dashboard: ModelDashboard | undefined): void {
   const manifestId = useRunStore((state) => state.manifest?.id ?? null);
   const ids = useMemo(() => dashboardSignalIds(dashboard), [dashboard]);
-  const key = ids.join(",");
+  const exact = useMemo(() => dashboardHasXY(dashboard), [dashboard]);
+  const key = `${ids.join(",")}${exact ? "|xy" : ""}`;
   useEffect(() => {
-    useRunStore.getState().setDashboardSignals(ids);
+    useRunStore.getState().setDashboardSignals(ids, exact);
     if (manifestId !== null) {
       void useRunStore.getState().ensureData();
     }
@@ -93,7 +94,7 @@ export function useDashboardSignalSubscription(dashboard: ModelDashboard | undef
   }, [key, manifestId]);
   useEffect(
     () => () => {
-      useRunStore.getState().setDashboardSignals([]);
+      useRunStore.getState().setDashboardSignals([], false);
     },
     [],
   );

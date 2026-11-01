@@ -628,6 +628,24 @@
   overflow: hidden;
 }
 
+/* An XY card fills the card: the chart takes the height the legend leaves. */
+.dash-plot--xy,
+.dash-plot--xy .plot-xy {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.dash-plot--xy .plot-xy {
+  flex: 1 1 auto;
+}
+
+.dash-plot--xy .plot-xy__canvas {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 140px;
+}
+
 .dash-text {
   flex: 1 1 auto;
   min-height: 0;

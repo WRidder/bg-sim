@@ -7,6 +7,11 @@
  * third unit group starts a new panel. A panel that was deliberately given a
  * third group (drag-and-drop) offers "Split panel" in its header.
  *
+ * A panel's "x" control switches its horizontal axis from time to a signal (an
+ * XY plot, `XYChart`): its signals are then drawn against that signal over the
+ * shared time window, and "1:1" keeps the axes at equal aspect. "Saved plots"
+ * opens a model plot (`plots[]`, with its `x`) as a new panel.
+ *
  * Every zoom reports its window and the canvas width in device pixels, and the
  * store re-requests `/data`. "Show all" is a raw request (`px=0`); a zoom is
  * min/max decimated (`px = canvas width × devicePixelRatio`). A pinned run is
@@ -25,7 +30,9 @@ import {
 } from "react";
 
 import { EmptyState } from "../app/EmptyState";
+import type { ModelPlot } from "../contracts/model";
 import type { RunManifest, RunSignal } from "../contracts/run-manifest";
+import { useDocumentStore } from "../state/documentStore";
 import { startCsvExport } from "../tasks/csvTask";
 import { signalColor } from "./colors";
 import {
@@ -47,8 +54,10 @@ import {
 } from "./runStore";
 import { useDetachStore } from "./detachStore";
 import { readSignalDrag } from "./signalDnd";
-import { assignPanelAxes, groupSignalsByUnit, panelUnitSummary } from "./units";
+import { assignPanelAxes, groupSignalsByUnit, panelUnitSummary, unitLabel } from "./units";
 import { UPlotChart, type ChartSeriesConfig } from "./UPlotChart";
+import { XAxisControl } from "./XAxisControl";
+import { XYChart } from "./XYChart";
 import "uplot/dist/uPlot.min.css";
 import "./plot.css";
 
@@ -134,6 +143,60 @@ export function panelConfiguration(
   };
 }
 
+/** The series config of an XY plot's x signal, or null when the run does not record it. */
+export function xSeriesConfig(
+  id: string | undefined,
+  signalsById: ReadonlyMap<string, RunSignal>,
+): ChartSeriesConfig | null {
+  const signal = id === undefined ? undefined : signalsById.get(id);
+  if (signal === undefined) {
+    return null;
+  }
+  return {
+    id: signal.id,
+    label: signal.id,
+    unit: signal.unit ?? null,
+    type: signal.type,
+    kind: signal.kind,
+    color: signalColor(signal.id),
+    axis: "y",
+    compare: false,
+  };
+}
+
+/** The toolbar's "Saved plots" menu: opens a model plot (`plots[]`) as a new panel. */
+function SavedPlots({ plots }: { plots: readonly ModelPlot[] }) {
+  const openModelPlot = useRunStore((state) => state.openModelPlot);
+  if (plots.length === 0) {
+    return null;
+  }
+  return (
+    <label className="plot-toolbar__target">
+      <span>Saved</span>
+      <select
+        value=""
+        onChange={(event) => {
+          const plot = plots.find((entry) => entry.id === event.target.value);
+          if (plot !== undefined) {
+            openModelPlot(plot);
+          }
+        }}
+        data-testid="saved-plot-select"
+        aria-label="Open a saved plot of the model as a new panel"
+        title="Open one of the model's saved plots as a new panel"
+      >
+        <option value="">Saved plots…</option>
+        {plots.map((plot) => (
+          <option key={plot.id} value={plot.id}>
+            {plot.title.trim().length > 0 ? plot.title : plot.id}
+            {plot.x !== undefined ? ` (against ${plot.x})` : ""}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function PanelTitle({
   panel,
   index,
@@ -211,6 +274,9 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
   const splitPanel = useRunStore((state) => state.splitPanel);
   const setActivePanel = useRunStore((state) => state.setActivePanel);
   const renamePanel = useRunStore((state) => state.renamePanel);
+  const setPanelX = useRunStore((state) => state.setPanelX);
+  const setPanelEqualAspect = useRunStore((state) => state.setPanelEqualAspect);
+  const savedPlots = useDocumentStore((state) => state.doc?.plots);
   const setNotice = useRunStore((state) => state.setNotice);
   const detachPlots = useDetachStore((state) => state.detach);
   const attachPlots = useDetachStore((state) => state.attach);
@@ -476,6 +542,7 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
           </span>
         ) : null}
         <span className="plot-toolbar__spacer" />
+        <SavedPlots plots={savedPlots ?? []} />
         {panels.length > 0 ? (
           <label className="plot-toolbar__target">
             <span>Active</span>
@@ -669,6 +736,8 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
               signalsById,
               pinnedSignals,
             );
+            const xConfig = xSeriesConfig(panel.x, signalsById);
+            const label = panelLabel(panel, index);
             return (
               <section
                 className={`plot-chart-panel${panel.id === activePanelId ? " is-active" : ""}`}
@@ -684,8 +753,20 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
                     onActivate={() => setActivePanel(panel.id)}
                     onRename={(name) => renamePanel(panel.id, name)}
                   />
+                  <XAxisControl
+                    ownerLabel={label}
+                    x={panel.x}
+                    ownSignals={panel.signals}
+                    allSignals={manifest.signals}
+                    equalAspect={panel.equalAspect === true}
+                    onChange={(x) => setPanelX(panel.id, x)}
+                    onEqualAspect={(on) => setPanelEqualAspect(panel.id, on)}
+                    testId={`plot-panel-x-${index + 1}`}
+                  />
                   <span className="plot-chart__units">
-                    {panelUnitSummary(configuration.signals)}
+                    {xConfig !== null
+                      ? `${panelUnitSummary(configuration.signals)} against ${unitLabel(xConfig.unit)}`
+                      : panelUnitSummary(configuration.signals)}
                   </span>
                   {configuration.groups > 2 ? (
                     <>
@@ -721,19 +802,35 @@ export function PlotPanel({ detached = false }: { detached?: boolean }) {
                     ×
                   </button>
                 </header>
-                <UPlotChart
-                  signals={configuration.current}
-                  compareSignals={configuration.compare}
-                  data={chartData}
-                  compare={compareData}
-                  view={view}
-                  fullRange={fullRange}
-                  syncKey={PLOT_SYNC_KEY}
-                  cursorTime={cursorTime}
-                  onZoom={handleZoom}
-                  onReset={handleReset}
-                  onCursorTime={handleCursor}
-                />
+                {xConfig !== null ? (
+                  <XYChart
+                    xSignal={xConfig}
+                    signals={configuration.current}
+                    compareSignals={
+                      pinnedSignals.has(xConfig.id) ? configuration.compare : []
+                    }
+                    data={chartData}
+                    compare={compareData}
+                    view={view}
+                    cursorTime={cursorTime}
+                    equalAspect={panel.equalAspect === true}
+                    onCursorTime={handleCursor}
+                  />
+                ) : (
+                  <UPlotChart
+                    signals={configuration.current}
+                    compareSignals={configuration.compare}
+                    data={chartData}
+                    compare={compareData}
+                    view={view}
+                    fullRange={fullRange}
+                    syncKey={PLOT_SYNC_KEY}
+                    cursorTime={cursorTime}
+                    onZoom={handleZoom}
+                    onReset={handleReset}
+                    onCursorTime={handleCursor}
+                  />
+                )}
               </section>
             );
           })}

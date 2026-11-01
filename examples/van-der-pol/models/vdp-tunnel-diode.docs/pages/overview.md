@@ -4,7 +4,7 @@ Balthasar van der Pol found his equation in 1920 in a triode oscillator. The sam
 
 This model is that oscillator as a bond graph, with the textbook equation running alongside in the circuit's own seconds.
 
-![The model canvas|900](assets/c72c424ae577.png)
+![The model canvas|900](assets/375fddfe35f8.png)
 
 | block | role |
 | --- | --- |
@@ -25,6 +25,6 @@ This model is that oscillator as a bond graph, with the textbook equation runnin
 3. Plot [Xc/y](signal:Xc/y) and [Ref/x](signal:Ref/x): the circuit and the textbook equation are the same curve.
 4. Plot [Diode/P](signal:Diode/P): it is negative (the diode supplies energy) for most of the cycle and positive near the voltage peaks.
 
-The plots of BG-Sim are against time. The phase portraits in these pages come from the same runs, drawn by the docs build.
+The phase portrait is an XY plot: open **Phase portrait: x' against x (circuit, scaled)** from **Saved** in the Plots toolbar, or plot [Yc/y](signal:Yc/y) and set the panel's **x** to [Xc/y](signal:Xc/y). The dashboard shows it next to the diode's operating curve, its current against the tank voltage. The phase portraits in these pages come from the same runs, drawn by the docs build.
 
 Continue with [the circuit and the scaling](page:circuit) and [the results](page:results).
