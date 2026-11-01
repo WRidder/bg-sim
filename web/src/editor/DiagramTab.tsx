@@ -4,6 +4,8 @@
  * reload. Auto-save runs here, next to the editor it saves.
  */
 
+import { useWorkerStore, workerNotReady } from "../api/workerStore";
+import { WaitingForWorker } from "../app/WaitingForWorker";
 import { useCatalogStore } from "../library/catalogStore";
 import { useDocumentStore } from "../state/documentStore";
 import { useModelAutosave } from "../state/persistence";
@@ -17,6 +19,7 @@ export function DiagramTab() {
   const saveError = useDocumentStore((state) => state.saveError);
   const modelName = useDocumentStore((state) => state.modelName);
   const index = useCatalogStore((state) => state.index);
+  const waitForWorker = useWorkerStore(workerNotReady);
 
   useModelAutosave();
   useInlineInterfaceSync();
@@ -25,6 +28,14 @@ export function DiagramTab() {
     return (
       <div className="diagram-state" data-testid="diagram-loading" role="status">
         <p>Opening {modelName ?? "the model"}…</p>
+      </div>
+    );
+  }
+
+  if (status === "error" && waitForWorker) {
+    return (
+      <div className="diagram-state" data-testid="diagram-waiting">
+        <WaitingForWorker what={modelName ?? "the model"} detail={error} onRetry={retry} />
       </div>
     );
   }

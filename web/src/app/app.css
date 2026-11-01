@@ -58,12 +58,32 @@ body {
 /* ---------------------------------------------------------------- top bar */
 
 .top-bar {
-  display: flex;
+  position: relative;
+  display: grid;
+  /* the run controls stay centred whatever the project name or the status icons take */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-3);
   padding: 0 var(--space-3);
   background: var(--color-surface);
   border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.top-bar__left,
+.top-bar__center,
+.top-bar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.top-bar__right {
+  justify-content: flex-end;
+}
+
+.top-bar__right > .button {
+  white-space: nowrap;
 }
 
 .top-bar__brand {
@@ -105,7 +125,8 @@ body {
 }
 
 .top-bar__project {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-width: 280px;
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
@@ -253,16 +274,70 @@ body {
   white-space: nowrap;
 }
 
+.worker-status {
+  /* a dot only; the state is in the tooltip and for screen readers */
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  cursor: help;
+}
+
 .worker-status__dot {
+  position: relative;
   flex: none;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--status-starting);
+  color: var(--status-starting);
+}
+
+/* Not ready yet, or down: the dot breathes and sends out a ring, so a stuck start is noticed. */
+.worker-status:not([data-state="ready"]) .worker-status__dot {
+  animation: worker-breathe 1.6s ease-in-out infinite;
+}
+
+.worker-status:not([data-state="ready"]) .worker-status__dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: worker-ring 1.6s ease-out infinite;
+}
+
+.worker-status[data-state="crashed"] .worker-status__dot,
+.worker-status[data-state="crashed"] .worker-status__dot::after {
+  animation-duration: 0.9s;
+}
+
+@keyframes worker-breathe {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes worker-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .worker-status .worker-status__dot,
+  .worker-status .worker-status__dot::after {
+    animation: none;
+  }
 }
 
 .worker-status[data-state="warming"] .worker-status__dot {
   background: var(--status-warming);
+  color: var(--status-warming);
 }
 
 .worker-status[data-state="ready"] .worker-status__dot {
@@ -271,6 +346,7 @@ body {
 
 .worker-status[data-state="crashed"] .worker-status__dot {
   background: var(--status-crashed);
+  color: var(--status-crashed);
 }
 
 .worker-status__label {
@@ -1020,4 +1096,74 @@ kbd {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+/* ---------------------------------------------------- waiting for the worker */
+
+.worker-wait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 420px;
+  margin: auto;
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.worker-wait--compact {
+  max-width: none;
+  margin: var(--space-4) var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.worker-wait__ring {
+  width: 22px;
+  height: 22px;
+  border: 2.25px solid var(--color-border-strong);
+  border-top-color: var(--status-warming);
+  border-radius: 50%;
+  animation: worker-wait-spin 1s linear infinite;
+}
+
+.worker-wait[data-state="starting"] .worker-wait__ring {
+  border-top-color: var(--color-accent);
+}
+
+.worker-wait[data-state="crashed"] .worker-wait__ring {
+  border-top-color: var(--status-crashed);
+  animation-duration: 2.4s;
+}
+
+@keyframes worker-wait-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .worker-wait__ring {
+    animation: none;
+  }
+}
+
+.worker-wait__title {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.worker-wait__hint,
+.worker-wait__detail {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.worker-wait__detail {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
 }

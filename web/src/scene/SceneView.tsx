@@ -4,6 +4,7 @@ import { EmptyState } from "../app/EmptyState";
 import type { Diagnostic } from "../contracts/diagnostic";
 import { useDiagnosticsStore } from "../diagnostics/store";
 import { useDocumentStore } from "../state/documentStore";
+import { RunActivityOverlay } from "../viewer/RunActivityOverlay";
 import { Viewer, type ViewerProps } from "../viewer/Viewer";
 import type { ViewerScene } from "../viewer/viewerScene";
 import { fetchSceneText, meshSource, SceneFetchError } from "./api";
@@ -142,6 +143,7 @@ export function SceneView({ active, createEngine, onBuilt, highlight = null, onK
       <div className="scene-view__stage" ref={stageRef} tabIndex={0} role="group" aria-label="3D view" onKeyDown={onKeyDown} data-testid="scene-stage">
         <div className="scene-view__viewer">
           <Viewer active={active} createEngine={createEngine} onReady={setViewer} onSelect={setSelected} selection={selection} overlay={overlay} toolbarEnd={toolbarEnd} badge={status === "loaded" ? badge : null} fullscreenRef={stageRef} />
+          <RunActivityOverlay />
         </div>
         {extras}
       </div>

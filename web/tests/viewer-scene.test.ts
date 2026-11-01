@@ -49,7 +49,21 @@ describe("scene constructor", () => {
     expect(s.camera.lowerRadiusLimit).toBe(0.05);
     expect(s.camera.wheelDeltaPercentage).toBe(0.02);
     expect(s.camera.pinchDeltaPercentage).toBe(0.004);
-    expect(s.camera.panningSensibility).toBe(2000);
+    expect(s.camera.panningSensibility).toBeGreaterThan(0);
+    s.dispose();
+  });
+
+  it("pans by the visible size at the target: zooming out 10x makes a drag move 10x as far", () => {
+    const s = make();
+    s.camera.radius = 1;
+    s.scene.render();
+    const near = s.camera.panningSensibility;
+    s.camera.radius = 10;
+    s.scene.render();
+    expect(near / s.camera.panningSensibility).toBeCloseTo(10, 9);
+    // a drag across the full view height moves the target by about the visible height (5.3 = Babylon world/px)
+    const visible = 2 * 10 * Math.tan(s.camera.fov / 2);
+    expect((5.3 * SIZE) / s.camera.panningSensibility).toBeCloseTo(visible, 9);
     s.dispose();
   });
 

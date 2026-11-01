@@ -47,6 +47,9 @@ const AXIS_LENGTH_M = 1;
 const EMPTY_SCENE_CENTRE: readonly [number, number, number] = [0, 0, 0.5];
 const EMPTY_SCENE_RADIUS_M = 2;
 const FIT_MARGIN = 1.05;
+/** Babylon pans about this many world units per dragged pixel times 1/panningSensibility (measured on 9.28,
+ *  independent of zoom and frame rate). `updatePanning` divides it out so the grabbed point follows the cursor. */
+const PAN_WORLD_PER_PX = 5.3;
 
 const ENTITY_KEY = "bgsimEntity";
 const HELPER_KEY = "bgsimHelper";
@@ -134,9 +137,10 @@ export class ViewerScene {
     this.camera.lowerRadiusLimit = 0.05;
     this.camera.wheelDeltaPercentage = 0.02;
     this.camera.pinchDeltaPercentage = 0.004;
-    this.camera.panningSensibility = 2000;
+    this.updatePanning();
     this.scene.onBeforeCameraRenderObservable.add(() => {
       this.updateOrthoBounds();
+      this.updatePanning();
     });
     for (const l of LIGHT_RIG) {
       const light = new DirectionalLight(l.name, new Vector3(0, 0, -1), this.scene);
@@ -273,6 +277,18 @@ export class ViewerScene {
     this.camera.orthoBottom = -half;
     this.camera.orthoLeft = -half * aspect;
     this.camera.orthoRight = half * aspect;
+  }
+
+  /**
+   * Pan speed follows the zoom: one dragged pixel moves the view by one pixel's worth of the scene at the
+   * target, so a zoomed-out or large scene pans as fast as a close-up. The visible height at the target is the
+   * same in both projections (the orthographic frustum is the perspective cross-section there).
+   */
+  private updatePanning(): void {
+    const engine = this.scene.getEngine();
+    const heightPx = engine.getRenderingCanvas()?.clientHeight || engine.getRenderHeight(true) || 1;
+    const visible = 2 * this.camera.radius * Math.tan(this.camera.fov / 2);
+    this.camera.panningSensibility = (PAN_WORLD_PER_PX * heightPx) / Math.max(visible, 1e-6);
   }
 
   /** The ray pick under the finger (canvas CSS px), else the nearest entity centre within the touch radius. */

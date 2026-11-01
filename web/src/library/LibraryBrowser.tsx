@@ -27,6 +27,8 @@ import { useEffect, useId, useMemo, useState, type DragEvent, type ReactNode } f
 import type { CatalogBlock, DomainName } from "../contracts/catalog";
 import type { JunctionType } from "../contracts/model";
 import { retrySession } from "../state/session";
+import { useWorkerStore, workerNotReady } from "../api/workerStore";
+import { WaitingForWorker } from "../app/WaitingForWorker";
 import { useCatalogStore } from "./catalogStore";
 import {
   blockSummary,
@@ -160,6 +162,7 @@ export function LibraryBrowser() {
   const index = useCatalogStore((state) => state.index);
   const status = useCatalogStore((state) => state.status);
   const error = useCatalogStore((state) => state.error);
+  const waitForWorker = useWorkerStore(workerNotReady);
   const savedExpanded = useLibraryPrefs((state) => state.expanded);
   const hidden = useLibraryPrefs((state) => state.hidden);
   const searchCollapsed = useLibraryPrefs((state) => state.searchCollapsed);
@@ -344,7 +347,9 @@ export function LibraryBrowser() {
   if (index === null) {
     return (
       <div className="library library--status" data-testid="library-browser">
-        {status === "error" ? (
+        {status === "error" && waitForWorker ? (
+          <WaitingForWorker what="the library" detail={error} onRetry={retrySession} compact testId="library-waiting" />
+        ) : status === "error" ? (
           <div className="library__error" role="alert">
             <p className="library__error-title">The library is unavailable</p>
             <p className="library__error-detail">{error ?? "The backend could not load the catalog."}</p>

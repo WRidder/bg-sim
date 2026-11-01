@@ -1,7 +1,8 @@
 /* Run bar additions (plan 7.2). Shared control sizing comes from app.css. */
 
 .run-bar__status {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 260px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -36,14 +37,6 @@
   white-space: nowrap;
 }
 
-.run-bar__progress progress {
-  width: 56px;
-  height: 4px;
-  accent-color: var(--color-accent);
-  border: none;
-  border-radius: 999px;
-  overflow: hidden;
-}
 
 .setting__value--solver {
   width: 90px;
@@ -58,4 +51,245 @@
 
 .setting__value:enabled {
   color: var(--color-text);
+}
+
+/* ------------------------------------------------------------ run activity */
+
+/* Fixed width, so the centred controls do not shift as the text changes. */
+.run-activity {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 290px;
+  min-width: 0;
+}
+
+.run-activity[data-busy="true"] .run-bar__status {
+  color: var(--color-text);
+}
+
+.run-activity__spinner {
+  flex: none;
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: run-spin 0.9s linear infinite;
+}
+
+.run-activity__spinner--button {
+  width: 11px;
+  height: 11px;
+}
+
+.top-bar__run [data-testid="run-button"] {
+  min-width: 86px;
+}
+
+/* A track with a fill: the simulation time, or a sweeping segment while the model compiles. */
+.run-activity__bar {
+  position: relative;
+  flex: none;
+  display: inline-block;
+  width: 56px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.run-activity__bar > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: width 0.2s linear;
+}
+
+.run-activity__bar.is-indeterminate > span,
+.top-bar__activity.is-indeterminate > span {
+  width: 35%;
+  animation: run-sweep 1.3s ease-in-out infinite;
+}
+
+/* Along the bottom edge of the top bar while a run is busy. */
+.top-bar__activity {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.top-bar__activity > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--color-accent);
+  transition: width 0.2s linear;
+}
+
+@keyframes run-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes run-sweep {
+  from {
+    left: -35%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .run-activity__spinner {
+    animation: none;
+    border-color: var(--color-accent);
+  }
+
+  .run-activity__bar.is-indeterminate > span,
+  .top-bar__activity.is-indeterminate > span {
+    animation: none;
+    left: 0;
+    width: 100%;
+    opacity: 0.5;
+  }
+}
+
+/* -------------------------------------------- 3D view while the model compiles */
+
+.run-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--color-bg) 55%, transparent);
+  animation: run-overlay-in 0.25s ease-out;
+}
+
+.run-overlay__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: min(340px, 100%);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.run-overlay__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.run-overlay__title {
+  flex: 1;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.run-overlay__time,
+.run-overlay__step-time {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.run-overlay__steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.run-overlay__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-faint);
+}
+
+.run-overlay__step[data-state="done"] {
+  color: var(--color-text-muted);
+}
+
+.run-overlay__step[data-state="done"] .run-overlay__mark {
+  color: var(--color-ok-text);
+}
+
+.run-overlay__step[data-state="active"] {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.run-overlay__step[data-state="active"] .run-overlay__mark {
+  color: var(--color-accent);
+}
+
+.run-overlay__mark {
+  width: 1em;
+  text-align: center;
+}
+
+.run-overlay__step-time {
+  margin-left: auto;
+  font-weight: normal;
+}
+
+.run-overlay .run-activity__bar {
+  width: 100%;
+}
+
+.run-overlay__hint {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.run-overlay .button {
+  align-self: flex-end;
+}
+
+.run-overlay__card {
+  max-height: 100%;
+  overflow: auto;
+}
+
+@container (max-height: 340px) {
+  .run-overlay__steps,
+  .run-overlay__hint {
+    display: none;
+  }
+
+  .run-overlay__card {
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+  }
+}
+
+@keyframes run-overlay-in {
+  from {
+    opacity: 0;
+  }
 }

@@ -7,6 +7,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { useWorkerStore } from "../src/api/workerStore";
 import { WorkerStatus } from "../src/app/WorkerStatus";
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -22,8 +23,11 @@ function health(worker: string, versions: Record<string, string | number | boole
 
 const fetchMock = vi.fn<typeof fetch>();
 
+const initialWorker = useWorkerStore.getState();
+
 afterEach(() => {
   fetchMock.mockReset();
+  useWorkerStore.setState(initialWorker, true);
 });
 
 describe("worker health indicator", () => {
@@ -85,5 +89,29 @@ describe("worker health indicator", () => {
     const callsAtUnmount = fetchMock.mock.calls.length;
     await new Promise((resolve) => setTimeout(resolve, 80));
     expect(fetchMock.mock.calls.length).toBe(callsAtUnmount);
+  });
+});
+
+describe("worker store", () => {
+  it("bumps readyEpoch when the worker becomes ready, not on every ready poll", () => {
+    const { report } = useWorkerStore.getState();
+    report({ state: "starting", fake: false, detail: "" });
+    expect(useWorkerStore.getState().readyEpoch).toBe(0);
+    report({ state: "ready", fake: false, detail: "" });
+    report({ state: "ready", fake: false, detail: "" });
+    expect(useWorkerStore.getState().readyEpoch).toBe(1);
+    report({ state: "crashed", fake: false, detail: "" });
+    report({ state: "ready", fake: false, detail: "" });
+    expect(useWorkerStore.getState().readyEpoch).toBe(2);
+  });
+
+  it("shows only the dot; the state is in the tooltip and the accessible name", async () => {
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockResolvedValue(health("starting"));
+    render(<WorkerStatus pollIntervalMs={60_000} />);
+    const status = await screen.findByTestId("worker-status");
+    await waitFor(() => expect(useWorkerStore.getState().known).toBe(true));
+    expect(status.querySelector(".worker-status__label")?.classList.contains("visually-hidden")).toBe(true);
+    expect(status.getAttribute("title")).toMatch(/available when it is ready/);
   });
 });

@@ -25,6 +25,9 @@
 }
 
 .scene-view__viewer {
+  position: relative;
+  /* the run overlay drops its step list and hint when the dock is short */
+  container-type: size;
   flex: 1;
   min-height: 0;
 }

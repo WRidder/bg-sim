@@ -12,8 +12,16 @@ Next to the buttons are the run settings. They are saved with the model. Press `
 | **solver** | `auto`, `Rodas5P`, `Rodas5`, `Rosenbrock23`, `Tsit5` or `Vern7` |
 | **tol** | relative tolerance |
 
-- The status next to the settings shows the progress (`t / t_end`), then `done in …`, `cancelled` or `failed: …`.
-- The **worker status** pill at the right shows whether the simulation worker is starting, warming up, ready or has crashed. Hover it for details. The first run after a start takes longer while the worker warms up.
+The project and model picker sits on the left of the top bar; Run, Stop, the settings and the run status are in the centre.
+
+- While a run is busy, **Run** shows a spinner and reads **Running**, and a thin line runs along the bottom of the top bar.
+- The status next to the settings names the stage and counts the time since you pressed Run, for example `Compiling… 12 s`. Hover it for the time in the current stage.
+  - The stages are **Preparing** (check and flatten), **Compiling**, **Initializing**, **Starting the solver** (the first step) and **Simulating**.
+  - Before the first sample the line and the small bar sweep; while simulating they fill with `t / t_end`.
+  - Afterwards the status shows `done in …`, `cancelled` or `failed: …`.
+- A large model can spend a minute or more compiling or taking its first step; the stage and the clock show it is still working.
+- The **worker status** dot at the right is steady green when the simulation worker is ready. It pulses grey while the worker starts, amber while it warms up and red when it does not answer; hover it for what that means.
+- While the worker starts, the library and the model show **Waiting for the worker** and open by themselves when it is ready. The first run after a start takes longer while the worker warms up.
 
 ## The bottom dock
 
@@ -46,7 +54,8 @@ While the **Auto Plot** tab is open, it plots every recorded signal of the selec
 
 Models with a 3D scene show it in the **3D View** tab. The scene follows the run through bindings between scene objects and signals.
 
-- Drag to orbit, right-drag to pan, scroll to zoom.
+- Drag to orbit, right-drag to pan, scroll to zoom. Panning follows the zoom: the point you grab stays under the cursor, so a large or zoomed-out scene pans as fast as a close-up.
+- While a run compiles, initializes or takes its first step, the view shows the stages, the time so far and **Stop**. It clears with the first samples, when the scene starts to move.
 - The toolbar has **Isometric**, **Top**, **Front** and **Side** views, an **Orthographic projection** toggle, **Fit the scene in the view**, **Full screen** (with the playback bar; `Esc` exits) and **Detach** (a separate window).
 - The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** and a time slider.
 - **Bindings** opens the bindings table. Each row binds a scene object's property (position, pose, scale, colour, visibility, deformation, mode shapes or segment) to a signal, with a gain and an offset. **Add binding** adds a row.

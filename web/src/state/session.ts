@@ -12,6 +12,7 @@
 
 import { useEffect } from "react";
 
+import { useWorkerStore } from "../api/workerStore";
 import type { Model } from "../contracts/model";
 import { fetchCatalog } from "../library/catalogClient";
 import { useCatalogStore } from "../library/catalogStore";
@@ -94,6 +95,14 @@ export function startSession(force = false): Promise<void> {
   sessionPromise = promise;
   return promise;
 }
+
+// A session that failed while the worker was starting (503 from the catalog) opens by itself once the
+// worker reports ready; the panels show "waiting for the worker" meanwhile, not the error.
+useWorkerStore.subscribe((now, before) => {
+  if (now.readyEpoch !== before.readyEpoch && useDocumentStore.getState().status === "error") {
+    retrySession();
+  }
+});
 
 /** Retry the session after a failure (the canvas error state's button). */
 export function retrySession(): void {

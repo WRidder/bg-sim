@@ -26,6 +26,7 @@ import {
   updateModelSettings,
 } from "../plot/settings";
 import "../plot/runbar.css";
+import { describeRunActivity, formatElapsed, hasSamples, useElapsed, type RunActivity } from "./runActivity";
 
 /** The solvers offered by the top bar; the model may name any of them. */
 const SOLVER_OPTIONS = [
@@ -58,6 +59,11 @@ export function RunBar() {
   const debugBreakpoints = useBreakpointStore((state) => state.breakpoints);
   const startRun = useRunStore((state) => state.startRun);
   const stopRun = useRunStore((state) => state.stopRun);
+  const startedAt = useRunStore((state) => state.startedAt);
+  const phaseAt = useRunStore((state) => state.phaseAt);
+  const activity = describeRunActivity(status, phase, debugPaused, hasSamples(progress));
+  const elapsed = useElapsed(startedAt, activity.busy);
+  const phaseElapsed = useElapsed(phaseAt, activity.busy);
 
   const [endDraft, setEndDraft] = useState("1");
   const [tolDraft, setTolDraft] = useState("1e-6");
@@ -171,15 +177,20 @@ export function RunBar() {
     ? SOLVER_OPTIONS
     : [solver, ...SOLVER_OPTIONS];
 
+  const fraction = tEnd > 0 ? Math.max(0, Math.min(1, (t - (settings?.t_start ?? 0)) / (tEnd - (settings?.t_start ?? 0) || 1))) : 0;
+
   let statusText = "ready";
+  let statusTitle: string | null = null;
   if (!hasModel) {
     statusText = "open a model to run";
-  } else if (status === "starting") {
-    statusText = "starting…";
   } else if (status === "running" && debugPaused && pausedInfo !== null) {
     statusText = pausedStatusText(pausedInfo, debugBreakpoints, doc);
+  } else if (activity.busy) {
+    // the stage and the time since Run; the stage's own time goes in the tooltip
+    statusText = `${activity.label}… ${formatElapsed(elapsed)}`;
+    statusTitle = `${activity.label} (${formatElapsed(phaseElapsed)} in this stage, ${formatElapsed(elapsed)} since Run)`;
   } else if (status === "running") {
-    statusText = `${phase ?? "running"} · ${formatProgress(t, tEnd)}`;
+    statusText = "paused";
   } else if (status === "done") {
     statusText = `done in ${formatDuration(stats?.sim_s ?? manifestStats?.sim_s)}`;
   } else if (status === "cancelled") {
@@ -207,9 +218,9 @@ export function RunBar() {
           }
         >
           <span className="button__glyph" aria-hidden="true">
-            <RunIcon size={14} />
+            {activity.busy ? <span className="run-activity__spinner run-activity__spinner--button" /> : <RunIcon size={14} />}
           </span>
-          Run
+          {activity.busy ? "Running" : "Run"}
         </button>
         <DebugControls canStart={canRun} />
         <button
@@ -301,31 +312,58 @@ export function RunBar() {
         </label>
       </div>
 
-      {status === "starting" || (status === "running" && !debugPaused) ? (
+      <div className="run-activity" data-stage={activity.stage ?? ""} data-busy={activity.busy ? "true" : "false"}>
+        {activity.busy ? <span className="run-activity__spinner" aria-hidden="true" /> : null}
         <span
-          className="run-bar__progress"
-          data-testid="run-progress"
-          title={`Simulation time ${formatProgress(t, tEnd)}`}
+          className="run-bar__status"
+          data-testid="run-status"
+          data-status={status === "running" && debugPaused && pausedInfo !== null ? "paused" : status}
+          role="status"
+          aria-live="polite"
+          title={error ?? statusTitle ?? statusText}
         >
-          <progress
-            value={Math.max(0, Math.min(t, tEnd))}
-            max={tEnd > 0 ? tEnd : 1}
-            aria-label="Simulation progress"
-          />
-          <span>{formatProgress(t, tEnd)}</span>
+          {statusText}
         </span>
-      ) : null}
-
-      <span
-        className="run-bar__status"
-        data-testid="run-status"
-        data-status={status === "running" && debugPaused && pausedInfo !== null ? "paused" : status}
-        role="status"
-        aria-live="polite"
-        title={error ?? statusText}
-      >
-        {statusText}
-      </span>
+        {activity.busy ? (
+          <span
+            className="run-bar__progress"
+            data-testid="run-progress"
+            title={activity.preparing ? `${activity.label} the model, ${formatElapsed(elapsed)} so far` : `Simulation time ${formatProgress(t, tEnd)}`}
+          >
+            <span
+              className={`run-activity__bar${activity.preparing ? " is-indeterminate" : ""}`}
+              role="progressbar"
+              aria-label="Simulation progress"
+              aria-valuemin={0}
+              aria-valuemax={activity.preparing ? undefined : tEnd > 0 ? tEnd : 1}
+              aria-valuenow={activity.preparing ? undefined : Math.max(0, Math.min(t, tEnd))}
+              aria-valuetext={activity.preparing ? activity.label : formatProgress(t, tEnd)}
+            >
+              <span style={activity.preparing ? undefined : { width: `${fraction * 100}%` }} />
+            </span>
+            {activity.preparing ? null : <span>{formatProgress(t, tEnd)}</span>}
+          </span>
+        ) : null}
+      </div>
+      <TopBarActivityLine activity={activity} fraction={fraction} />
     </>
+  );
+}
+
+/**
+ * A thin line along the bottom edge of the top bar while a run is busy: it sweeps while the model compiles
+ * and initializes, and fills with the simulation time after that, so a long run is visible from anywhere.
+ */
+function TopBarActivityLine({ activity, fraction }: { activity: RunActivity; fraction: number }) {
+  if (!activity.busy) return null;
+  return (
+    <span
+      className={`top-bar__activity${activity.preparing ? " is-indeterminate" : ""}`}
+      data-testid="top-bar-activity"
+      data-stage={activity.stage ?? ""}
+      aria-hidden="true"
+    >
+      <span style={activity.preparing ? undefined : { width: `${fraction * 100}%` }} />
+    </span>
   );
 }

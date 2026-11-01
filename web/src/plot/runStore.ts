@@ -134,6 +134,10 @@ export interface RunStoreState {
   manifest: RunManifest | null;
   status: RunUiStatus;
   phase: string | null;
+  /** `Date.now()` when Run was pressed; the run indicators show the elapsed time from it. */
+  startedAt: number | null;
+  /** `Date.now()` when the current phase began. */
+  phaseAt: number | null;
   progress: RunProgress | null;
   stats: RunStats | null;
   error: string | null;
@@ -707,7 +711,9 @@ function handleSocketMessage(raw: unknown): void {
         return;
       }
       const phase = typeof params.phase === "string" ? params.phase : null;
-      useRunStore.setState({ phase });
+      if (phase !== state.phase) {
+        useRunStore.setState({ phase, phaseAt: Date.now() });
+      }
       break;
     }
     case "run.progress": {
@@ -854,6 +860,8 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
   manifest: null,
   status: "idle",
   phase: null,
+  startedAt: null,
+  phaseAt: null,
   progress: null,
   stats: null,
   error: null,
@@ -920,6 +928,8 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       manifest: null,
       status: "starting",
       phase: null,
+      startedAt: Date.now(),
+      phaseAt: Date.now(),
       progress: null,
       stats: null,
       error: null,
@@ -981,7 +991,7 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
     set({ stopping: true });
     try {
       await cancelRun(runId);
-      set({ phase: "cancelling" });
+      set({ phase: "cancelling", phaseAt: Date.now() });
     } catch (error) {
       set({ stopping: false, error: messageOf(error) });
     }
@@ -1556,6 +1566,8 @@ export const useRunStore = create<RunStoreState>()((set, get) => ({
       manifest: null,
       status: "idle",
       phase: null,
+      startedAt: null,
+      phaseAt: null,
       progress: null,
       stats: null,
       error: null,

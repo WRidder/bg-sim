@@ -6,7 +6,7 @@ BG-Sim is a modeling and simulation tool for **bond graphs**, **block diagrams**
 
 | Area | What it holds |
 | --- | --- |
-| Top bar | the project and model, **Run** / **Debug** / **Stop**, run settings, **Export FMU…**, background tasks, worker status, theme toggle and this manual |
+| Top bar | the project and model on the left; **Run** / **Debug** / **Stop**, run settings and the run status in the centre; **Export FMU…**, background tasks, the worker status dot, theme toggle and this manual on the right |
 | Left | the block **Library** and the **Model tree** |
 | Centre | the tabs **Diagram**, **Code**, **Docs**, **Parameters** and **Dashboard** |
 | Right | the **Inspector** of the selection |
