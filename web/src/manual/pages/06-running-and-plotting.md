@@ -12,6 +12,8 @@ Next to the buttons are the run settings. They are saved with the model. Press `
 | **solver** | `auto`, `Rodas5P`, `Rodas5`, `Rosenbrock23`, `Tsit5` or `Vern7` |
 | **tol** | relative tolerance |
 
+A run records every signal at its output points, plus a left and a right value at each event and at each clock tick that changes a value, so a step or a held output shows as a vertical edge. A clock that ticks more than ten times per output step (a fast current loop under a coarse output grid) records its ticks at most a tenth of an output step apart; the output points still show every held value.
+
 The project and model picker sits on the left of the top bar; Run, Stop, the settings and the run status are in the centre.
 
 - While a run is busy, **Run** shows a spinner and reads **Running**, and a thin line runs along the bottom of the top bar.

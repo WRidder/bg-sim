@@ -1284,6 +1284,13 @@ function _simulate_flat(flat::Flat.FlatModel;
     extra_diagnostics = Diagnostic[]   # E903 next to a failure at the start (never instead)
     loop_ns = time_ns()
     last_progress_ns = time_ns()
+    # A changed tick off the output grid records a left and a right row of every signal. A
+    # clock much faster than the grid (a 16 kHz current loop under a 1 ms grid) would write
+    # gigabytes that way, so such rows are kept only a tenth of an output step apart; the
+    # grid rows still carry the held values. A clock no faster than that (a 1 ms controller
+    # under a 10 ms grid) records every change, as before.
+    tick_row_gap = length(grid) > 1 ? 0.1 * minimum(diff(grid)) * (1 - 1.0e-9) : Inf
+    last_tick_rows = -Inf
     last_flush_ns = time_ns()
     next_index = 1
     event_cursor = 0
@@ -1314,6 +1321,7 @@ function _simulate_flat(flat::Flat.FlatModel;
             # A discrete tick runs before the row for this instant is recorded, so the row
             # carries the state the continuous solver has at `tt` plus the new held outputs.
             changed = false
+            tick_only = true    # nothing but a tick changed values at `tt`
             before = nothing
             if _steps_due(live_steps, next_step, tt)
                 # A parameter step: the left limit is the state before it, the right limit
@@ -1323,6 +1331,7 @@ function _simulate_flat(flat::Flat.FlatModel;
                     live_steps, next_step, tt, integ, lowered.model.algebraic
                 )
                 changed = true
+                tick_only = false
             end
             if target.tick && run !== nothing
                 before === nothing && (before = values())
@@ -1337,11 +1346,14 @@ function _simulate_flat(flat::Flat.FlatModel;
                 if apply_inputs!(drive, integ, tt)
                     before === nothing && (before = before_inputs)
                     changed = true
+                    tick_only = false
                 end
             end
-            if changed
+            dense = changed && tick_only && !target.grid && tt - last_tick_rows < tick_row_gap
+            if changed && !dense
                 _record_event!(record_event, rec, tt, :left, before)
                 _record_event!(record_event, rec, tt, :right, values())
+                last_tick_rows = tt
             elseif target.grid
                 record_row!(rec, tt, values())
             end
