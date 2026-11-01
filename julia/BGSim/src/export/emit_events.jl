@@ -19,9 +19,17 @@
 #   4. the discrete partitions due at the end of the step run (`bg_tick`), so they sample
 #      the state after the `reinit`. The simulator has the same order: a tick at `t` runs
 #      after every event up to and including `t`.
+#   5. a jump: a tick that changes a held value can make a condition cross zero at the tick
+#      itself (a condition that reads only held values changes nowhere else). The conditions
+#      are evaluated before and after the tick, and `bg_events` fires every event that crossed
+#      upward across it, at the tick, as the simulator does (`fire_jump_events!` in
+#      src/sim/simulate.jl). The conditions after the step (`ezl`) are kept, so an input or a
+#      parameter the host sets between two steps fires its events at the start of the next
+#      step, at the same instant as in the simulator.
 #
-# So an event fires up to one `dt` late (W203 per event). Events that cross in the same step
-# fire in declaration order, not in the order of their crossing instants.
+# So an event fires up to one `dt` late (W203 per event), except one caused by a jump, which
+# fires at the jump. Events that cross in the same step fire in declaration order, not in
+# the order of their crossing instants.
 #
 # Supported targets are the states of the compiled system. Everything else (a parameter
 # written by an event, a target the compiler eliminated, an `int` inside an event) is
@@ -107,18 +115,19 @@ function emit_events(io, events, env, obs, names_x)
         emit_function(io, "static void bg_event_$(k - 1)(const bg_model *m, double t, const double *x, double *r)",
             [("r[$(j - 1)]", v, names_x[ev.targets[j]]) for (j, v) in enumerate(ev.values)], env, obs)
     end
-    println(io, "/* After an internal step that ends at t: apply every event whose condition crossed upward")
-    println(io, "   in the step, in declaration order. An event reads the state left by the earlier ones;")
-    println(io, "   its own assignments all read the state before it. Returns the number fired. */")
-    println(io, "int bg_events(bg_model *m, double t) {")
+    println(io, "/* At t: apply every event whose condition crossed upward from z0 (its values at the start")
+    println(io, "   of the step, or just before a jump at t) to now (left in m->ez), in declaration order.")
+    println(io, "   An event reads the state left by the earlier ones; its own assignments all read the")
+    println(io, "   state before it. Returns the number fired. */")
+    println(io, "int bg_events(bg_model *m, double t, const double *z0) {")
     if isempty(events)
-        println(io, "    (void)m; (void)t;\n    return 0;\n}\n")
+        println(io, "    (void)m; (void)t; (void)z0;\n    return 0;\n}\n")
         return
     end
     println(io, "    int fired = 0;")
     println(io, "    bg_event_conditions(m, t, m->x, m->ez);")
     for (k, ev) in enumerate(events)
-        println(io, "    if (m->ez0[$(k - 1)] < 0.0 && m->ez[$(k - 1)] >= 0.0) {")
+        println(io, "    if (z0[$(k - 1)] < 0.0 && m->ez[$(k - 1)] >= 0.0) {")
         println(io, "        bg_event_$(k - 1)(m, t, m->x, m->er);")
         for (j, i) in enumerate(ev.targets)
             println(io, "        m->x[$(i - 1)] = m->er[$(j - 1)]; /* $(ccomment(names_x[i])) */")

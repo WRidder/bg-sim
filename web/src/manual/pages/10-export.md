@@ -64,7 +64,7 @@ The report lists the chosen method and step, the number of states, timings, and 
 The FMU runs with a fixed step and allocates no memory after instantiation, so some constructs are restricted:
 
 - Clock periods and offsets of discrete blocks must be whole multiples of `dt` (E104).
-- Switches (`ifelse`, `abs`, `min`, `max`) and events are evaluated once per step, so an event can be up to one step late (W203).
+- Switches (`ifelse`, `abs`, `min`, `max`) and events are evaluated once per step, so an event can be up to one step late (W203). An event whose condition jumps across zero at a discrete tick, or when the host sets an input or parameter, fires at that instant, as in BG-Sim.
 - Index-1 DAEs need a Rosenbrock method; Euler and RK4 refuse them (E111).
 - `CsvSource` cannot be exported (E110). Replace it with an `ExportInput`.
 - Delays (`TransportDelay`, `IntegerDelay`) and `Noise` are supported. A `Noise` block gives the same sequence in the FMU as in BG-Sim for the same seed.

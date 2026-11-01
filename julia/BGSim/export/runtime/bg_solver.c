@@ -1,4 +1,4 @@
-/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.6.0).
+/* bg-sim fixed-step solver core (hand-written, model independent; runtime 0.7.0).
  *
  * One call of bg_step advances exactly BG_DT:
  *   1. integrate the continuous states over [t, t + BG_DT] with the held discrete values
@@ -10,6 +10,9 @@
  *   3. run the discrete partitions due at t + BG_DT, in topological order, with the same
  *      operation order as the Julia scheduler (`run_tick!` in src/sim/scheduler.jl).
  * Events before ticks is the simulator's order: a tick at t runs after every event up to t.
+ * A tick, or an input or parameter the host sets between two steps, is a jump: an event whose
+ * condition crosses zero upward across it fires at the jump itself (after the tick, or at the
+ * start of the next step), as in the simulator (fire_jump_events! in src/sim/simulate.jl).
  * Then the run monitors (StopSimulation, Assertion; BG_NMON > 0) are checked: bg_step returns
  * BG_STEP_STOP or BG_STEP_ASSERT, with m->monitor naming the block, when one has triggered.
  *
@@ -357,8 +360,9 @@ void bg_reset(bg_model *m, double t_start) {
 }
 
 /* The Julia scheduler's tick (run_tick!): snapshot for previous(x), then each due partition
-   samples the continuous values and runs; finally the inputs are re-sampled. */
-static void bg_tick(bg_model *m, double t, int64_t ns) {
+   samples the continuous values and runs; finally the inputs are re-sampled. Returns 1 when a
+   partition ran. */
+static int bg_tick(bg_model *m, double t, int64_t ns) {
     int any = 0;
     for (int k = 0; k < BG_NPART; ++k) {
         const bg_partition *p = &bg_partitions[k];
@@ -373,33 +377,54 @@ static void bg_tick(bg_model *m, double t, int64_t ns) {
         bg_sample(m, t, m->x, m->din);
         p->run(m, t);
     }
-    if (!any) return;
+    if (!any) return 0;
 #if BG_NALG > 0
     bg_project(m, t);
 #endif
     bg_sample(m, t, m->x, m->din);
+    return 1;
+}
+
+/* After a fired event: a reinit moved the states, so the algebraic unknowns are re-solved as
+   after a tick. */
+static void bg_after_events(bg_model *m, double t) {
+#if BG_NALG > 0 && BG_NSTAGE > 0
+    bg_project(m, t);
+#else
+    (void)m; (void)t;
+#endif
 }
 
 int bg_step(bg_model *m) {
     double t0 = m->t;
     int64_t ns1 = m->t_start_ns + (m->n + 1) * BG_DT_NS;
     double t1 = (double)ns1 / 1e9;
+    /* A jump between two steps: an input or a parameter the host set since the last step can
+       make an event condition cross zero without any integration (a condition that reads only
+       held values and inputs). Such an event fires now, at t0, the instant of the change, as in
+       the simulator. ezl holds the conditions after the last step's events and tick. */
+    if (BG_NE > 0 && m->ezl_valid && bg_events(m, t0, m->ezl) > 0) bg_after_events(m, t0);
     /* Every switching condition is evaluated once, at the start of the step, and held for all
        stages, so each step integrates a smooth right-hand side. A switch exactly on a step
        boundary is then exact; one inside a step takes effect at the next boundary (W203). */
     if (BG_NC > 0) bg_modes(m, t0, m->x, m->c);
     if (BG_NE > 0) bg_event_conditions(m, t0, m->x, m->ez0);
     if (bg_integrate(m, t0, t1 - t0) != 0) return -1;
-    if (BG_NE > 0 && bg_events(m, t1) > 0) {
-#if BG_NALG > 0 && BG_NSTAGE > 0
-        /* A reinit moved the states, so the algebraic unknowns are re-solved as after a tick. */
-        bg_project(m, t1);
-#endif
-    }
+    if (BG_NE > 0 && bg_events(m, t1, m->ez0) > 0) bg_after_events(m, t1);
     if (!bg_finite(m->x, BG_NX)) return -2;
     m->n += 1;
     m->t = t1;
-    if (BG_NPART > 0) bg_tick(m, t1, ns1);
+    if (BG_NPART > 0) {
+        /* A tick that changes a held value is a jump too: the events whose condition crossed
+           zero across it fire at the tick, after it (the simulator's fire_jump_events!). */
+        if (BG_NE > 0) bg_event_conditions(m, t1, m->x, m->ezl);
+        if (bg_tick(m, t1, ns1) && BG_NE > 0 && bg_events(m, t1, m->ezl) > 0)
+            bg_after_events(m, t1);
+    }
+    if (BG_NE > 0) {
+        bg_event_conditions(m, t1, m->x, m->ezl);
+        m->ezl_valid = 1;
+    }
     m->y_valid = 0;
 #if BG_NMON > 0
     /* StopSimulation / Assertion: checked once per step, after its events and tick. */
