@@ -49,9 +49,12 @@ end
 
 The bond graph in the form SCAP needs: the bonds in connection order with their two ends,
 the junction incidence, the causality declaration of every bonded port, and the
-transformer/gyrator relations between bonded port pairs."""
+transformer/gyrator relations between bonded port pairs. A bond's key is its connection id
+qualified by its diagram path (ids repeat across subsystems); `conn_id` maps a key back to the
+connection id that diagnostics and the causality map report."""
 struct _ScapGraph
     ids::Vector{String}
+    conn_id::Dict{String,String}
     ends::Dict{String,Tuple{_ScapEnd,_ScapEnd}}
     junction_kind::Dict{String,Int}
     junction_bonds::Dict{String,Vector{Tuple{String,Symbol}}}
@@ -82,6 +85,7 @@ end
 
 function _scap_graph(b::Builder, plan::ConnPlan)
     ids = String[]
+    conn_id = Dict{String,String}()
     ends = Dict{String,Tuple{_ScapEnd,_ScapEnd}}()
     junction_kind = Dict{String,Int}()
     junction_bonds = Dict{String,Vector{Tuple{String,Symbol}}}()
@@ -102,7 +106,8 @@ function _scap_graph(b::Builder, plan::ConnPlan)
         f = _scap_end(state.from)
         t = _scap_end(state.to)
         (f === nothing || t === nothing) && continue
-        id = state.conn.id
+        id = isempty(state.diagram) ? state.conn.id : string(state.diagram, "#", state.conn.id)
+        conn_id[id] = state.conn.id
         push!(ids, id)
         ends[id] = (f, t)
         for (side, ep) in ((:from, f), (:to, t))
@@ -121,7 +126,7 @@ function _scap_graph(b::Builder, plan::ConnPlan)
         end
     end
 
-    return _ScapGraph(ids, ends, junction_kind, junction_bonds, junction_order,
+    return _ScapGraph(ids, conn_id, ends, junction_kind, junction_bonds, junction_order,
         port_decl, relations)
 end
 
@@ -422,11 +427,11 @@ function analyze_causality!(b::Builder, plan::ConnPlan)
         at_port === nothing && continue
         preferred_at_port = value === :flow_out
         at_port == preferred_at_port && continue
-        push!(b.diagnostics, _w201(b, key, _port_bond(graph, key)[1]))
+        push!(b.diagnostics, _w201(b, key, graph.conn_id[_port_bond(graph, key)[1]]))
     end
 
     return CausalityMap(
-        bond => (strokeAt = st.stroke[bond] === :from ? "from" : "to",)
+        graph.conn_id[bond] => (strokeAt = st.stroke[bond] === :from ? "from" : "to",)
         for bond in graph.ids
     )
 end
@@ -546,7 +551,7 @@ function _e106(
 )
     path = key[1]
     bond = _port_bond(graph, key)
-    connection = bond === nothing ? nothing : bond[1]
+    connection = bond === nothing ? nothing : graph.conn_id[bond[1]]
     block = _block_of(b, path)
     node = _node_of(b, path)
     names = _conflict_names(graph, st, key, value, conflict)
@@ -656,7 +661,7 @@ function _w202(b::Builder, graph::_ScapGraph, component::Vector{String}, free::V
         path = first_path,
         block = _block_of(b, first_path),
         node = _node_of(b, first_path),
-        connection = first_bond,
+        connection = graph.conn_id[first_bond],
     )
 end
 

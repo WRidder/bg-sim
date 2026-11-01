@@ -50,6 +50,39 @@ _cz_with_code(diagnostics, code) = [d for d in diagnostics if d.code == code]
         @test count(v -> v.kind === :state, flat.variables) == 2
     end
 
+    @testset "two subsystems that repeat connection ids" begin
+        # Connection ids are unique per diagram only: two copies of the RLC bond graph as
+        # subsystems both have c1..c4. Each copy must get its own causality (no spurious
+        # W201/E106 from bonds of one copy landing on the junctions of the other).
+        raw = JSON3.read(read(joinpath(_CZ_MODEL_FIXTURES, "model.rlc.bondgraph.json"), String), Dict{String,Any})
+        sub(id, name) = Dict{String,Any}(
+            "id" => id, "name" => name,
+            "block" => Dict{String,Any}("subsystem" => Dict{String,Any}("ports" => Any[], "diagram" => raw["diagram"])),
+            "position" => Dict{String,Any}("x" => 0, "y" => 0), "rotation" => 0, "flipX" => false,
+            "params" => Dict{String,Any}(), "constants" => Dict{String,Any}(), "starts" => Dict{String,Any}(),
+            "ui" => Dict{String,Any}("showLabel" => true, "color" => nothing),
+        )
+        doc = Dict{String,Any}(
+            "format" => raw["format"], "language" => raw["language"], "name" => "TwoRLC",
+            "settings" => raw["settings"],
+            "diagram" => Dict{String,Any}("nodes" => Any[sub("n1", "A"), sub("n2", "B")], "connections" => Any[]),
+        )
+        result = Compile.model_check(IR.parse_model(doc))
+        @test isempty(_cz_with_code(result.diagnostics, "W201"))
+        @test isempty(_cz_with_code(result.diagnostics, "W202"))
+        @test isempty(_cz_with_code(result.diagnostics, "E106"))
+        @test isempty([d for d in result.diagnostics if d.severity == "error"])
+        # the map is keyed by connection id (the contract); both copies agree with the single model
+        @test result.causality == Dict(
+            "c1" => (strokeAt = "to",),
+            "c2" => (strokeAt = "from",),
+            "c3" => (strokeAt = "to",),
+            "c4" => (strokeAt = "from",),
+        )
+        flat = Compile.flatten(IR.parse_model(doc))
+        @test count(v -> v.kind === :state, flat.variables) == 4
+    end
+
     @testset "DC motor bond graph: gyrator propagation" begin
         result = Compile.model_check(_cz_contract("model.dcmotor.bondgraph.json"))
         # The Se fixes J1, the two I elements keep their preferred stroke at their port, so
