@@ -13,7 +13,7 @@ import { mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import { launchBrowser, createProject, openModel, runAndWait, sleep, BASE } from "./lib.mjs";
+import { launchBrowser, createProject, sleep, BASE } from "./lib.mjs";
 
 const arg = (name) => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : undefined);
 const out = path.resolve(process.argv[2] ?? "flexarm.mp4");
@@ -37,14 +37,18 @@ const layout = (th) => {
 
 async function caption(page, title, sub = "") {
   await page.evaluate(([t, s]) => {
+    // inside the full-screen stage: only its subtree is drawn while it is full screen
+    const host = document.querySelector('[data-testid="scene-stage"]') ?? document.body;
     let el = document.getElementById("vid-caption");
-    if (!el) {
+    if (!el || el.parentElement !== host) {
+      el?.remove();
       el = document.createElement("div");
       el.id = "vid-caption";
-      el.style.cssText = "position:fixed;left:84px;bottom:52px;z-index:99999;max-width:700px;padding:10px 16px;" +
+      el.style.cssText = "position:absolute;left:24px;bottom:64px;z-index:99999;max-width:760px;padding:10px 16px;" +
         "border-radius:8px;background:rgba(15,17,22,0.86);color:#fff;font:600 19px/1.3 'Segoe UI',sans-serif;" +
-        "border-left:4px solid #f5a623;box-shadow:0 4px 18px rgba(0,0,0,0.35)";
-      document.body.appendChild(el);
+        "border-left:4px solid #f5a623;box-shadow:0 4px 18px rgba(0,0,0,0.35);pointer-events:none";
+      if (getComputedStyle(host).position === "static") host.style.position = "relative";
+      host.appendChild(el);
     }
     el.innerHTML = "";
     const a = document.createElement("div");
@@ -98,48 +102,62 @@ async function load(page, project, model, factor, at) {
   await page.waitForFunction(() => document.querySelector('[data-testid="scene-view"]')?.getAttribute("data-state") === "loaded", null, { timeout: 90000 });
   await page.waitForFunction(() => document.querySelector('[data-testid="playback-bar"]')?.getAttribute("data-mode") === "playback", null, { timeout: 120000 });
   await sleep(1000);
-  const tree = page.getByTestId("scene-tree-toggle");
-  if (await tree.count()) { const exp = await tree.getAttribute("aria-expanded"); if (exp !== "false") await tree.click().catch(() => {}); }
+  // the 3D stage (view and playback bar) over the whole page. Not the full-screen button: headless
+  // Chromium shrinks a full-screen page to its 800x600 default screen, and the recording shows that.
+  await page.addStyleTag({ content: '[data-testid="scene-stage"] { position: fixed !important; inset: 0 !important; z-index: 9000 !important; width: 100vw !important; height: 100vh !important; background: var(--color-bg); }' });
+  await sleep(1500);
   if (factor) await page.getByTestId("deformation-exaggeration").selectOption(String(factor));
-  await page.getByTestId("playback-time").fill(String(at));
   await camera(page);
+  await page.getByTestId("playback-time").fill(String(at));
   await sleep(800);
 }
 
+// The same camera for every model: framed on the hanging chain, orbited up, the hub panned to the
+// centre and zoomed out so the chain fits both hanging and upright.
 async function camera(page) {
+  await page.getByTestId("playback-time").fill("0.5");
+  await sleep(500);
   await page.getByTestId("viewer-preset-iso").dispatchEvent("click");
   await sleep(300);
   await page.getByTestId("viewer-fit").dispatchEvent("click");
   await sleep(300);
   const cb = await page.getByTestId("viewer-canvas").boundingBox();
   const cx = cb.x + cb.width / 2, cy = cb.y + cb.height / 2;
-  // orbit a little so the arm runs across the view, tilt down, zoom in on the arm
-  await page.mouse.move(cx - 40, cy); await page.mouse.down(); await page.mouse.move(cx + 40, cy - 30, { steps: 10 }); await page.mouse.up();
-  await page.mouse.move(cx, cy + cb.height * 0.1);
-  for (let z = 0; z < 4; z++) { await page.mouse.wheel(0, -300); await sleep(100); }
-  await page.addStyleTag({ content: '[data-testid^="viewer-preset"], [data-testid="viewer-fit"], [data-testid="viewer-ortho"], [data-testid="viewer-fullscreen"] { visibility: hidden !important; }' });
+  await page.mouse.move(cx - 60, cy); await page.mouse.down(); await page.mouse.move(cx + 60, cy + 50, { steps: 10 }); await page.mouse.up();
+  await sleep(200);
+  await page.mouse.move(cx, cy); await page.mouse.down({ button: "right" }); await page.mouse.move(cx, cy + 210, { steps: 10 }); await page.mouse.up({ button: "right" });
+  await sleep(200);
+  await page.mouse.move(cx, cy);
+  await page.mouse.wheel(0, 300); await sleep(150);
+  await page.mouse.wheel(0, 300); await sleep(150);
+  await page.mouse.move(cb.x + cb.width - 5, cb.y + 60);
+  await page.addStyleTag({ content: '[data-testid^="viewer-preset"], [data-testid="viewer-fit"], [data-testid="viewer-ortho"], [data-testid="viewer-fullscreen"], [data-testid="detach-viewer"] { visibility: hidden !important; }' });
 }
 
+// Paused stills of the arm for the docs: a close-up from the video camera (`<file>.png`) and a view from
+// above (`<file>-top.png`), where the horizontal bending shows best. Runs after cut(): not in the video.
 async function shot(page, file, t) {
   if (!shots) return;
+  await page.evaluate(() => document.getElementById("vid-caption")?.remove());
   await page.getByTestId("playback-time").fill(String(t));
-  await sleep(700);
-  await page.getByTestId("viewer-canvas").screenshot({ path: path.join(shots, file) });
+  const cb = await page.getByTestId("viewer-canvas").boundingBox();
+  await page.mouse.move(cb.x + cb.width / 2, cb.y + cb.height / 2);
+  for (let z = 0; z < 2; z++) { await page.mouse.wheel(0, -300); await sleep(150); }
+  await sleep(800);
+  await page.getByTestId("viewer-canvas").screenshot({ path: path.join(shots, `${file}.png`) });
+  await page.getByTestId("viewer-preset-top").dispatchEvent("click");
+  await sleep(300);
+  await page.getByTestId("viewer-fit").dispatchEvent("click");
+  await sleep(300);
+  await page.mouse.wheel(0, -300);
+  await sleep(800);
+  await page.getByTestId("viewer-canvas").screenshot({ path: path.join(shots, `${file}-top.png`) });
 }
 
 const browser = await launchBrowser();
 const project = await createProject(RIGID, "flexvid");
 try {
-  // warm-up (not recorded): compile the three plants once
-  {
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
-    const page = await ctx.newPage();
-    for (const m of [RIGID, FLEX, LOWPASS]) {
-      await openModel(page, project, m);
-      await runAndWait(page, 900000);
-    }
-    await ctx.close();
-  }
+  // every model is run on the page itself (one to two and a half minutes each); the waits are cut
   const ctx = await browser.newContext({
     viewport: { width: 1280, height: 720 }, colorScheme: theme,
     recordVideo: { dir: work, size: { width: 1280, height: 720 } },
@@ -154,7 +172,7 @@ try {
     "1 kHz LQR firmware tracking a collocation swing-up; real Julia simulation of the bond graph.");
   keep();
   await sleep(1200);
-  await play(page, 1.0, 5.6, 1);
+  await play(page, 1.0, 4.6, 1);
   await sleep(800);
 
   // 2. the flexible arm, same firmware
@@ -165,13 +183,13 @@ try {
   await sleep(1500);
   await play(page, 1.0, 2.55, 1);
   await caption(page, "Near the top the gains grow: the loop shakes the arm's bending mode (shown at 0.1x)",
-    "The link encoders read the bending as link motion; the controller has no roll-off above 3 Hz.");
+    "The link encoders read the bending as link motion, and the loop has no roll-off.");
   await play(page, null, 3.25, 0.1);
   await caption(page, "The amplifier saturates at 15 V: the swing-up is lost", "The chain is never caught.");
   await play(page, null, 6.0, 1);
   await sleep(600);
   cut();
-  await shot(page, "flex-3d.png", 3.06);
+  await shot(page, "flex-3d", 4.055);
 
   // 3. the fix
   await load(page, project, LOWPASS, 100, 1.0);
@@ -179,12 +197,12 @@ try {
     "The loop rolls off below the arm mode. Deformation drawn x100: the swing-up bends the strip by about 1.6 mm.");
   keep();
   await sleep(1500);
-  await play(page, 1.0, 5.6, 0.5);
+  await play(page, 1.0, 4.3, 0.5);
   await caption(page, "Caught at 5.0 s; a 0.1 N push on the tip link at 8.5 s", "It recovers in about 2 s (rigid arm: 1.35 s).");
   await play(page, 8.3, 10.0, 1);
   await sleep(1000);
   cut();
-  await shot(page, "flex-lowpass-3d.png", 2.05);
+  await shot(page, "flex-lowpass-3d", 2.953);
   await ctx.close();
 
   const webm = readdirSync(work).find((f) => f.endsWith(".webm"));

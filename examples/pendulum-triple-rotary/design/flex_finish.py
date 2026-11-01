@@ -217,8 +217,10 @@ def main(argv: list[str]) -> None:
     f_tap_z = fft_peak(t_tap, s_tap["Arm/eta_z[1]"], 0.0, 1.0, 60.0, 200.0)
     stiff = {k: compare(t_fs, s_fs[k], t_rf, s_rf[k], 0.0, 1.0) for k in ("J1/qout", "Angles/phi1", "Angles/phi2", "Angles/phi3")}
     stiff2 = {k: compare(t_fs, s_fs[k], t_rf, s_rf[k], 0.0, 2.0) for k in ("J1/qout", "Angles/phi1", "Angles/phi2", "Angles/phi3")}
+    t_e, s_e = load("flex-e100")
+    m_e = measure_lowpass(dz, t_e, s_e)
     meas = {"lowpass": m_lp, "rigid_ctrl": m_fail, "tap": {"f_y": f_tap_y, "f_z": f_tap_z},
-            "stiff_1s": stiff, "stiff_2s": stiff2}
+            "stiff_1s": stiff, "stiff_2s": stiff2, "e100": m_e}
     print(json.dumps(meas, indent=2))
     (HERE / "flex_measured.json").write_text(json.dumps(meas, indent=2) + "\n", encoding="utf-8", newline="\n")
     write_expected(dz, fz, meas)
@@ -293,6 +295,20 @@ def write_expected(dz: dict, fz: dict, meas: dict) -> None:
          "note": (f"first vertical arm mode (the arm starts without its gravity sag and rings): the pendulum assembly is a rigid tip mass "
                   f"{freq['chain_mass']:.3f} kg with {freq['chain_j_perp']:.4f} kg m^2 about the tip. Two assumed modes give {freq['am_v']:.2f} Hz; "
                   f"the exact frequency equation {freq['exact_v']:.2f} Hz: the large tip inertia needs more modes (three: 118.4 Hz). Measured {meas['tap']['f_z']:.2f} Hz")},
+    ]}
+    me = meas["e100"]
+    band_e = max(1.0, 2.0 * me["band_pre_deg"])
+    models["flex-e100"] = {"model": FLEX, "run_timeout": 1800.0, "overrides": {"Arm/E": fz["arm"]["E"] * E100},
+                           "checks": [
+        {"kind": "no_diagnostics", "codes": ["W201", "E901"]},
+        {"kind": "cursor_value", "signal": "Ctrl/phase", "t": t_catch + 1.0, "value": 2.0, "abs": 1e-9,
+         "note": (f"the rigid firmware works on an arm {E100:g} times stiffer (bare first mode {math.sqrt(E100) * freq['bare_y'][0]:.0f} Hz): "
+                  f"caught at {me['t_catch']:.2f} s. The linear loop at the upright needs E x {fz['rigid_needs_e_scale']:.0f}, "
+                  "but the swing-up's larger gains need more (on the design model it fails at x26 and is marginal at x50)")},
+        {"kind": "max_abs_le", "signal": "Angles/dev", "from_t": t_catch + 1.5, "to_t": t_dist - 0.01, "value": math.radians(band_e),
+         "note": f"upright inside {band_e:.1f} deg (measured {me['band_pre_deg']:.4f} deg)"},
+        {"kind": "max_abs", "signal": "Angles/phi3", "from_t": t_dist, "to_t": t_dist + 2.0, "value": math.radians(me["peak_defl_deg"]), "rtol": 0.1,
+         "note": f"the push deflects the tip link by {me['peak_defl_deg']:.2f} deg, as on the rigid arm (3.55 deg); band +-10 %"},
     ]}
     worst = max(meas["stiff_1s"].values())
     models["flex-free-stiff"] = {"model": FREE, "run_timeout": 1800.0, "overrides": {"Arm/E": fz["arm"]["E"] * STIFF},

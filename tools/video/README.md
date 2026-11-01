@@ -66,3 +66,10 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
 - `capture-sim60.mjs` accepts per-example camera settings in `examples.json`: `view` (preset), `orbitX` (pixels of horizontal orbit drag), `zoom` (wheel notches), `--scan` (zoom scan).
   aerial-contact uses the iso preset orbited to the drone side (orbitX 3000, zoom 11) so the hexarotor and the wall contact fill the panel.
 - `_sheet2.mjs <dir> [regex]` makes a contact sheet of scan images.
+
+## Recorded showcases (Playwright `recordVideo`, 25 fps)
+
+- `capture-suction.mjs <out.mp4>`: the suction-gripper video.
+- `capture-flexarm.mjs <out.mp4> [--shots <dir>]`: the triple rotary pendulum on a rigid arm, on the flexible arm with the rigid
+  firmware (slow motion of the arm mode), and with the low-pass firmware. The 3D stage runs full screen; the model runs are cut.
+  `--shots examples/pendulum-triple-rotary/design/_shots` also writes the paused close-ups that `flex_finish.py --docs` puts in the docs.

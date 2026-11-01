@@ -470,6 +470,47 @@
           "tol": 1e-06
         }
       ]
+    },
+    "flex-e100": {
+      "model": "pendulum-triple-rotary-flex",
+      "run_timeout": 1800.0,
+      "overrides": {
+        "Arm/E": 19300000000000.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 6.0,
+          "value": 2.0,
+          "abs": 1e-09,
+          "note": "the rigid firmware works on an arm 100 times stiffer (bare first mode 513 Hz): caught at 5.00 s. The linear loop at the upright needs E x 23, but the swing-up's larger gains need more (on the design model it fails at x26 and is marginal at x50)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Angles/dev",
+          "from_t": 6.5,
+          "to_t": 8.49,
+          "value": 0.017453292519943295,
+          "note": "upright inside 1.0 deg (measured 0.0008 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Angles/phi3",
+          "from_t": 8.5,
+          "to_t": 10.5,
+          "value": 0.06192160226953303,
+          "rtol": 0.1,
+          "note": "the push deflects the tip link by 3.55 deg, as on the rigid arm (3.55 deg); band +-10 %"
+        }
+      ]
     }
   },
   "compare": [

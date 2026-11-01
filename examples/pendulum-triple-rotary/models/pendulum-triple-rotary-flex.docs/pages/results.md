@@ -27,11 +27,15 @@
 
 ![The push: recovery and arm deflection|700](assets/3597df47b65b.png)
 
+![3D view from above at 2.95 s, in the swing-up: the low-pass firmware bends the strip by 1.6 mm, drawn ×100 (the hinge follows the true tip)|600](assets/8d6de47bb92f.png)
+
 ## Stiff limit
 
-The free model with the arm's E overridden to 10000 times the steel's (`flex-free-stiff`) against the rigid free model: the largest difference over the first second is 1.6e-05 rad (J1 2.1e-06, links 1.1e-05, 1.6e-05, 1.2e-05 rad). The free swing is chaotic, so the difference grows afterwards, as it does between any two slightly different models. With the real strip the swing departs from the rigid one within a second.
+The free model with the arm's E overridden to 10000 times the steel's (`flex-free-stiff`) against the rigid free model: the largest difference over the first second is 1.6e-05 rad (J1 2.1e-06, links 1.1e-05, 1.6e-05, 1.2e-05 rad). The free swing is chaotic, so the difference grows afterwards, as it does between any two slightly different models. The real steel strip differs from the rigid arm by up to 0.0056 rad over the same second.
 
 ![Stiff limit|700](assets/e9cf86df05d9.png)
+
+The controlled model with E overridden to 100 times the steel's (`flex-e100`, bare first mode 513 Hz): the rigid firmware catches at 5.00 s, the push deflects the tip link by 3.548 deg (rigid arm 3.550 deg) and the recovery takes 1.349 s (rigid arm 1.349 s).
 
 ## Checks (`expected.json`)
 
@@ -39,6 +43,7 @@ The free model with the arm's E overridden to 10000 times the steel's (`flex-fre
 - `-flex`: the balance phase is never reached, the voltage saturates in the swing-up, the arm mode rings at 106 Hz before that (10 %), the arm tip deflection, the chain is not upright at the end;
 - `-flex-lowpass`: caught one second after t_on + T_s, upright band, the push and the recovery, the voltage limit, the arm deflection while balancing and in the swing-up;
 - `flex-tap`: the first horizontal arm mode against the exact frequency equation (42.68 Hz, 1 %) and the first vertical mode against the two-mode model (122.3 Hz, 1 %);
-- `flex-free-stiff` against `pendulum-triple-rotary-free`: J1 and the three link angles over the first second.
+- `flex-free-stiff` against `pendulum-triple-rotary-free`: J1 and the three link angles over the first second;
+- `flex-e100`: the rigid firmware on an arm 100 times stiffer catches, holds and sees the rigid arm's deflection after the push.
 
 Back to the [overview](page:overview).

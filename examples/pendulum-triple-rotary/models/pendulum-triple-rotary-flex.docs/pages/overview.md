@@ -11,6 +11,8 @@ The rig of [pendulum-triple-rotary](page:overview), with one change: the horizon
 
 ![The rigid firmware on the flexible arm, against the rigid arm|700](assets/b38b5f6cc07d.png)
 
+![3D view from above at 4.06 s: the chain is lost and the saturated loop whips the arm (tip deflection 7.5 mm, drawn ×10)|600](assets/b1f05c8dfe22.png)
+
 ## In short
 
 - **The arm.** Bending in the horizontal plane (the plane of the motor torque) is soft: 51.3 Hz as a bare cantilever, **42.7 Hz** clamped with the pendulum on its hinge, about 75 Hz in the running rig (the hub is not clamped). Vertical bending (111 Hz) and torsion (418 Hz) are stiff. See [the arm](page:arm).
@@ -19,8 +21,8 @@ The rig of [pendulum-triple-rotary](page:overview), with one change: the horizon
 
 ## What to try
 
-- Open the **3D View**: the strip bends ([Arm/eta_y[1]](signal:Arm/eta_y[1])) and twists ([Arm/eta_t[1]](signal:Arm/eta_t[1])) with the deformation bindings; the view opens with exaggeration x10.
-- Open the **Dashboard**: link angles, tip deflection ([Arm/dB[2]](signal:Arm/dB[2])), modal coordinates and the voltage. Set the arm's Young's modulus to 5e12 Pa (about 26 times the steel) and run again: the rigid firmware now catches.
+- Open the **3D View**: the strip bends ([Arm/eta_y[1]](signal:Arm/eta_y[1])) and twists ([Arm/eta_t[1]](signal:Arm/eta_t[1])) with the deformation bindings; the view opens with exaggeration ×10. The pendulum hinge follows the computed tip (`Arm/poseB`) at true scale, so with exaggeration the drawn strip end moves away from the hinge.
+- Open the **Dashboard**: link angles, tip deflection ([Arm/dB[2]](signal:Arm/dB[2])), modal coordinates and the voltage. Set the arm's Young's modulus to 1.93e13 Pa (100 times the steel) and run again: the rigid firmware now catches and recovers exactly as on the rigid arm. At 5e12 Pa (26 times) it still fails: that is enough for the loop at the upright, but not for the larger gains near the top of the swing-up.
 - Run `pendulum-triple-rotary-flex-lowpass`, the fixed controller, and compare.
 
 The pages: [the arm](page:arm), [the controller](page:controller), [results and checks](page:results).

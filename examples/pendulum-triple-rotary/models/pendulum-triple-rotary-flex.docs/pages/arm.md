@@ -4,7 +4,7 @@
 
 The arm is a [FlexibleBeam3D](block:Arm) with `section` = rectangle: `b` = 3 mm along the arm's local y (horizontal) and `h` = 50 mm along local z (vertical), AISI 304 stainless steel (E = 193 GPa, nu = 0.29). The density 7936 kg/m³ (the stainless grades lie at 7900 to 8000) makes the strip weigh 0.2570 kg, the rigid arm's mass, and its rigid inertia about the motor axis is the rigid arm's to 0.1 %. So the flexibility is the only difference, and the stiff limit can be checked against the rigid model.
 
-A flat strip on edge is the classic flexible link (the Quanser rotary flexible link is one): it bends easily in the plane of the motor torque and hardly at all under the pendulum's weight. The bending stiffness is EI = 21.7 N·m² horizontally and 6031 N·m² vertically; the torsion stiffness GJ = 32.3903 N·m². Modes: `ny` = 2, `nz` = 2, `nt` = 1, clamped-free, modal damping 0.01.
+A flat strip on edge is the classic flexible link (the Quanser rotary flexible link is one): it bends easily in the plane of the motor torque and hardly at all under the pendulum's weight. The bending stiffness is EI = 21.7 N·m² horizontally and 6031 N·m² vertically; the torsion stiffness GJ = 32.4 N·m². Modes: `ny` = 2, `nz` = 2, `nt` = 1, clamped-free, modal damping 0.01.
 
 The first horizontal mode was put a few times above the controller's fastest closed-loop pole (131 1/s, 21 Hz) and the pendulum's fastest unstable pole (23.7 1/s, 3.8 Hz): a real arm can be that flexible, and a controller designed for a rigid arm may or may not live with it. Here it does not.
 

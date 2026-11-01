@@ -3,7 +3,7 @@
 Run through `flex_finish.py --docs` (after `flex_finish.py`, which saves the runs in `design/_runs/`
 and the measurements in `design/flex_measured.json`). Plots are matplotlib; every asset is named by
 the first 12 hex digits of its SHA-256. The 3D screenshots come from `design/_shots/` when present
-(`flex-3d.png`, `flex-lowpass-3d.png`; see `tools/video/capture-flexarm.mjs`).
+(`flex-3d-top.png`, `flex-lowpass-3d-top.png`, views from above; see `tools/video/capture-flexarm.mjs`).
 """
 
 from __future__ import annotations
@@ -302,6 +302,9 @@ def plots(dz: dict, fz: dict, meas: dict, runs: Path, docs: Path) -> dict:
     ax[1].legend(loc="lower right", fontsize=8, ncol=2)
     fig.suptitle("Free swing: the flexible arm in the stiff limit against the rigid arm")
     _save(fig, docs, img, "stiff")
+    g1 = trf[trf <= 1.0]
+    img["_steel_1s"] = max(float(np.max(np.abs(np.interp(g1, tff, sff[s]) - np.interp(g1, trf, srf[s]))))
+                           for s in ("J1/qout", "Angles/phi1", "Angles/phi2", "Angles/phi3"))
     return img
 
 
@@ -311,8 +314,8 @@ def pages(dz: dict, fz: dict, meas: dict, img: dict, shots: dict) -> dict:
     worst = fz["rigid_on_flex_poles"][0]
     rigid_m = dz["metrics"]
     stiff = meas["stiff_1s"]
-    shot_flex = f"\n![3D view: the rigid firmware shakes the flexible arm (exaggeration x10)|600]({shots['flex']})\n" if shots.get("flex") else ""
-    shot_lp = f"\n![3D view: the low-pass firmware balances on the flexible arm (exaggeration x100)|600]({shots['lowpass']})\n" if shots.get("lowpass") else ""
+    shot_flex = f"\n![3D view from above at 4.06 s: the chain is lost and the saturated loop whips the arm (tip deflection 7.5 mm, drawn ×10)|600]({shots['flex']})\n" if shots.get("flex") else ""
+    shot_lp = f"\n![3D view from above at 2.95 s, in the swing-up: the low-pass firmware bends the strip by 1.6 mm, drawn ×100 (the hinge follows the true tip)|600]({shots['lowpass']})\n" if shots.get("lowpass") else ""
     ov = f"""# Triple rotary pendulum on a flexible arm
 
 The rig of [pendulum-triple-rotary](page:overview), with one change: the horizontal arm that the motor turns is no longer rigid. It is a [FlexibleBeam3D](block:Arm) (assumed modes, clamped at the motor hub): a **{arm['b'] * 1e3:g} x {arm['h'] * 1e3:g} mm stainless-steel strip on edge**, {arm['L']:g} m long, with the density set so it weighs exactly the rigid arm's {arm['mass']:.3f} kg. The pendulum chain, the servo, the swing-up trajectory and the disturbance are the rigid example's.
@@ -334,8 +337,8 @@ The rig of [pendulum-triple-rotary](page:overview), with one change: the horizon
 
 ## What to try
 
-- Open the **3D View**: the strip bends ([Arm/eta_y[1]](signal:Arm/eta_y[1])) and twists ([Arm/eta_t[1]](signal:Arm/eta_t[1])) with the deformation bindings; the view opens with exaggeration x10.
-- Open the **Dashboard**: link angles, tip deflection ([Arm/dB[2]](signal:Arm/dB[2])), modal coordinates and the voltage. Set the arm's Young's modulus to 5e12 Pa (about 26 times the steel) and run again: the rigid firmware now catches.
+- Open the **3D View**: the strip bends ([Arm/eta_y[1]](signal:Arm/eta_y[1])) and twists ([Arm/eta_t[1]](signal:Arm/eta_t[1])) with the deformation bindings; the view opens with exaggeration ×10. The pendulum hinge follows the computed tip (`Arm/poseB`) at true scale, so with exaggeration the drawn strip end moves away from the hinge.
+- Open the **Dashboard**: link angles, tip deflection ([Arm/dB[2]](signal:Arm/dB[2])), modal coordinates and the voltage. Set the arm's Young's modulus to 1.93e13 Pa (100 times the steel) and run again: the rigid firmware now catches and recovers exactly as on the rigid arm. At 5e12 Pa (26 times) it still fails: that is enough for the loop at the upright, but not for the larger gains near the top of the swing-up.
 - Run `pendulum-triple-rotary-flex-lowpass`, the fixed controller, and compare.
 
 The pages: [the arm](page:arm), [the controller](page:controller), [results and checks](page:results).
@@ -346,7 +349,7 @@ The pages: [the arm](page:arm), [the controller](page:controller), [results and 
 
 The arm is a [FlexibleBeam3D](block:Arm) with `section` = rectangle: `b` = {arm['b'] * 1e3:g} mm along the arm's local y (horizontal) and `h` = {arm['h'] * 1e3:g} mm along local z (vertical), AISI 304 stainless steel (E = {arm['E'] / 1e9:g} GPa, nu = {arm['nu']:g}). The density {arm['rho']:.0f} kg/m³ (the stainless grades lie at 7900 to 8000) makes the strip weigh {arm['mass']:.4f} kg, the rigid arm's mass, and its rigid inertia about the motor axis is the rigid arm's to 0.1 %. So the flexibility is the only difference, and the stiff limit can be checked against the rigid model.
 
-A flat strip on edge is the classic flexible link (the Quanser rotary flexible link is one): it bends easily in the plane of the motor torque and hardly at all under the pendulum's weight. The bending stiffness is EI = {arm['EI_y']:.1f} N·m² horizontally and {arm['EI_z']:.0f} N·m² vertically; the torsion stiffness GJ = {arm['GJ']:.4f} N·m². Modes: `ny` = {arm['ny']}, `nz` = {arm['nz']}, `nt` = {arm['nt']}, clamped-free, modal damping {arm['zeta']:g}.
+A flat strip on edge is the classic flexible link (the Quanser rotary flexible link is one): it bends easily in the plane of the motor torque and hardly at all under the pendulum's weight. The bending stiffness is EI = {arm['EI_y']:.1f} N·m² horizontally and {arm['EI_z']:.0f} N·m² vertically; the torsion stiffness GJ = {arm['GJ']:.1f} N·m². Modes: `ny` = {arm['ny']}, `nz` = {arm['nz']}, `nt` = {arm['nt']}, clamped-free, modal damping {arm['zeta']:g}.
 
 The first horizontal mode was put a few times above the controller's fastest closed-loop pole (131 1/s, 21 Hz) and the pendulum's fastest unstable pole (23.7 1/s, 3.8 Hz): a real arm can be that flexible, and a controller designed for a rigid arm may or may not live with it. Here it does not.
 
@@ -398,7 +401,7 @@ What does not help (checked in the design study with the linear loop at the upri
 
 - **A notch** at the arm mode. The loop gain is 3 to 4 over a wide band around the mode, and the closed-loop mode moves when the notch removes gain. A notch centred anywhere from 55 to 90 Hz left a pole in the right half plane.
 - **A gentler LQR.** The gains are set by the three unstable pendulum poles (up to 23.7 1/s). Raising R by up to four orders of magnitude lowers the gains only a little, and the loop stays unstable.
-- **A stiffer arm** works only with E about {fz['rigid_needs_e_scale']:.0f} times the steel's (bare first mode about {math.sqrt(fz['rigid_needs_e_scale']) * fq['bare_y'][0]:.0f} Hz).
+- **A stiffer arm** stabilises the linear loop at the upright from E about {fz['rigid_needs_e_scale']:.0f} times the steel's (bare first mode about {math.sqrt(fz['rigid_needs_e_scale']) * fq['bare_y'][0]:.0f} Hz). The whole scenario needs more, because the gains near the top of the swing-up are larger: on the design model the rigid firmware still fails at 26 times, is marginal at 50 times (it saturates and never latches the balance LQR) and works at 100 times (`flex-e100` in the checks).
 
 ## The fix: roll-off in the loop
 
@@ -443,9 +446,11 @@ Back to the [overview](page:overview).
 {shot_lp}
 ## Stiff limit
 
-The free model with the arm's E overridden to {1e4:g} times the steel's (`flex-free-stiff`) against the rigid free model: the largest difference over the first second is {max(stiff.values()):.2g} rad (J1 {stiff['J1/qout']:.2g}, links {stiff['Angles/phi1']:.2g}, {stiff['Angles/phi2']:.2g}, {stiff['Angles/phi3']:.2g} rad). The free swing is chaotic, so the difference grows afterwards, as it does between any two slightly different models. With the real strip the swing departs from the rigid one within a second.
+The free model with the arm's E overridden to {1e4:g} times the steel's (`flex-free-stiff`) against the rigid free model: the largest difference over the first second is {max(stiff.values()):.2g} rad (J1 {stiff['J1/qout']:.2g}, links {stiff['Angles/phi1']:.2g}, {stiff['Angles/phi2']:.2g}, {stiff['Angles/phi3']:.2g} rad). The free swing is chaotic, so the difference grows afterwards, as it does between any two slightly different models. The real steel strip differs from the rigid arm by up to {img['_steel_1s']:.2g} rad over the same second.
 
 ![Stiff limit|700]({img['stiff']})
+
+The controlled model with E overridden to {100:g} times the steel's (`flex-e100`, bare first mode {10 * fq['bare_y'][0]:.0f} Hz): the rigid firmware catches at {meas['e100']['t_catch']:.2f} s, the push deflects the tip link by {meas['e100']['peak_defl_deg']:.3f} deg (rigid arm {rigid_m['peak_defl_deg']:.3f} deg) and the recovery takes {meas['e100']['t_recover']:.3f} s (rigid arm {rigid_m['t_recover']:.3f} s).
 
 ## Checks (`expected.json`)
 
@@ -453,7 +458,8 @@ The free model with the arm's E overridden to {1e4:g} times the steel's (`flex-f
 - `-flex`: the balance phase is never reached, the voltage saturates in the swing-up, the arm mode rings at {mf['f_chatter']:.0f} Hz before that (10 %), the arm tip deflection, the chain is not upright at the end;
 - `-flex-lowpass`: caught one second after t_on + T_s, upright band, the push and the recovery, the voltage limit, the arm deflection while balancing and in the swing-up;
 - `flex-tap`: the first horizontal arm mode against the exact frequency equation ({fq['exact_h']:.2f} Hz, 1 %) and the first vertical mode against the two-mode model ({fq['am_v']:.1f} Hz, 1 %);
-- `flex-free-stiff` against `pendulum-triple-rotary-free`: J1 and the three link angles over the first second.
+- `flex-free-stiff` against `pendulum-triple-rotary-free`: J1 and the three link angles over the first second;
+- `flex-e100`: the rigid firmware on an arm 100 times stiffer catches, holds and sees the rigid arm's deflection after the push.
 
 Back to the [overview](page:overview).
 """
@@ -473,7 +479,7 @@ It catches at {ml['t_catch']:.2f} s, balances inside {ml['band_pre_deg']:.3f} de
 {shot_md}
 ## What to try
 
-- **3D View**: the strip's bending and twist are bound to [Arm/eta_y[1]](signal:Arm/eta_y[1]), [Arm/eta_z[1]](signal:Arm/eta_z[1]) and [Arm/eta_t[1]](signal:Arm/eta_t[1]); the view opens with exaggeration x100.
+- **3D View**: the strip's bending and twist are bound to [Arm/eta_y[1]](signal:Arm/eta_y[1]), [Arm/eta_z[1]](signal:Arm/eta_z[1]) and [Arm/eta_t[1]](signal:Arm/eta_t[1]); the view opens with exaggeration ×100. The hinge follows the true-scale tip, so at ×100 the drawn strip end swings well past it.
 - **Dashboard**: set the arm's Young's modulus between 1e11 Pa and 2e13 Pa: the low-pass firmware holds over that range.
 - Plot [Ctrl/ufb](signal:Ctrl/ufb), the filtered feedback voltage, against [Ctrl/u](signal:Ctrl/u).
 """
@@ -513,7 +519,7 @@ def write(example_dir: Path, dz: dict, fz: dict) -> None:
     docs = models / f"{FLEX}.docs"
     _clean(docs)
     img = plots(dz, fz, meas, runs, docs)
-    sh = {"flex": _copy_shot(shots / "flex-3d.png", docs), "lowpass": _copy_shot(shots / "flex-lowpass-3d.png", docs)}
+    sh = {"flex": _copy_shot(shots / "flex-3d-top.png", docs), "lowpass": _copy_shot(shots / "flex-lowpass-3d-top.png", docs)}
     for pid, text in pages(dz, fz, meas, img, sh).items():
         (docs / "pages" / f"{pid}.md").write_text(text, encoding="utf-8", newline="\n")
     (docs / "docs.json").write_text(json.dumps(_tree([("overview", "Overview"), ("arm", "The flexible arm"), ("controller", "The controller"),
@@ -528,7 +534,7 @@ def write(example_dir: Path, dz: dict, fz: dict) -> None:
             (d / "assets" / src.name).write_bytes(src.read_bytes())
             local[key] = img[key]
         if name == LOWPASS:
-            texts = lowpass_pages(dz, fz, meas, local, _copy_shot(shots / "flex-lowpass-3d.png", d))
+            texts = lowpass_pages(dz, fz, meas, local, _copy_shot(shots / "flex-lowpass-3d-top.png", d))
         else:
             texts = free_pages(fz, meas, local)
         for pid, text in texts.items():

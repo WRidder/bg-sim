@@ -18,5 +18,10 @@
     "seconds": 63.9810262999963,
     "points": 4061,
     "diagnostics": []
+  },
+  "flex-e100": {
+    "seconds": 176.93024860002333,
+    "points": 22750,
+    "diagnostics": []
   }
 }

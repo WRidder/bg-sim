@@ -2413,7 +2413,8 @@
     }
   ],
   "scene": {
-    "file": "scenes/pendulum-triple-rotary-flex.sdf"
+    "file": "scenes/pendulum-triple-rotary-flex.sdf",
+    "exaggeration": 10
   },
   "bindings": [
     {

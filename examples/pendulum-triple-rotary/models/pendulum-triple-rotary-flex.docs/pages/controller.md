@@ -18,7 +18,7 @@ What does not help (checked in the design study with the linear loop at the upri
 
 - **A notch** at the arm mode. The loop gain is 3 to 4 over a wide band around the mode, and the closed-loop mode moves when the notch removes gain. A notch centred anywhere from 55 to 90 Hz left a pole in the right half plane.
 - **A gentler LQR.** The gains are set by the three unstable pendulum poles (up to 23.7 1/s). Raising R by up to four orders of magnitude lowers the gains only a little, and the loop stays unstable.
-- **A stiffer arm** works only with E about 23 times the steel's (bare first mode about 247 Hz).
+- **A stiffer arm** stabilises the linear loop at the upright from E about 23 times the steel's (bare first mode about 247 Hz). The whole scenario needs more, because the gains near the top of the swing-up are larger: on the design model the rigid firmware still fails at 26 times, is marginal at 50 times (it saturates and never latches the balance LQR) and works at 100 times (`flex-e100` in the checks).
 
 ## The fix: roll-off in the loop
 
