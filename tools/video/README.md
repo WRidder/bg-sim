@@ -66,6 +66,11 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
 - `capture-sim60.mjs` accepts per-example camera settings in `examples.json`: `view` (preset), `orbitX` (pixels of horizontal orbit drag), `zoom` (wheel notches), `--scan` (zoom scan).
   aerial-contact uses the iso preset orbited to the drone side (orbitX 3000, zoom 11) so the hexarotor and the wall contact fill the panel.
 - `_sheet2.mjs <dir> [regex]` makes a contact sheet of scan images.
+- `capture-bridge-pier.mjs <out-dir> [--fps 25] [--max-frames n] [--zoom 9] [--compose-only]`: the `bridge-pier` example, the
+  dashboard (library, inspector and dock hidden) next to the detached 3D viewer, in two segments: the 40 t lorry buckles the slender
+  diagonal and the redundant truss holds, then the strength slider at 0.5 and the bridge collapses. Every run happens off camera;
+  frame k sets the playback time to k*s/fps (fixed dt). Writes `bridge-pier.mp4` and stills (before the run, mid and end of each
+  segment); `--compose-only` composes again from the saved frames.
 
 ## Recorded showcases (Playwright `recordVideo`, 25 fps)
 

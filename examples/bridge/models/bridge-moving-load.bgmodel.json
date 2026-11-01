@@ -1343,5 +1343,107 @@
       "depth": 0.0,
       "axis": "+x"
     }
-  ]
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Moving load",
+        "options": {
+          "markdown": true,
+          "text": "A point load crosses the bridge slowly: the member forces trace their **influence lines**. Change the load or its speed; the run repeats."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Load",
+        "parameter": "Load/P",
+        "options": {
+          "min": 0.0,
+          "max": 300000.0,
+          "step": 10000.0,
+          "decimals": 0,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Speed",
+        "parameter": "Load/v",
+        "options": {
+          "min": 5.0,
+          "max": 20.0,
+          "step": 0.5,
+          "decimals": 1,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Midspan deflection",
+        "signals": [
+          "Truss/y[6]"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": "m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Failed bars",
+        "signals": [
+          "Truss/nfail"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Member forces (influence lines)",
+        "signals": [
+          "Truss/N[3]",
+          "Truss/N[9]",
+          "Truss/N[12]",
+          "Truss/N[13]",
+          "Truss/N[17]"
+        ]
+      },
+      {
+        "id": "d7",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Midspan deflection",
+        "signals": [
+          "Truss/y[6]"
+        ]
+      },
+      {
+        "id": "d8",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Support reactions",
+        "signals": [
+          "Truss/Ry[3]",
+          "Truss/Ry[9]"
+        ]
+      }
+    ]
+  }
 }

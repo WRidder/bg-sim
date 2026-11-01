@@ -33,6 +33,7 @@ HALF_WIDTH = 3.6          # the trusses stand at y = +/-HALF_WIDTH
 LANE = 1.75               # the lorry drives at y = -LANE (the right-hand lane seen from the start)
 DECK_THICK = 0.12
 TRUCK_START = (-25.0, 1.5)
+SEAT = 0.3                # roller travel to either edge of its seat (build_model.SEAT)
 
 
 def _f(x: float) -> str:
@@ -71,14 +72,17 @@ def _ground() -> str:
     out.append(_visual("bank_right", _pose(65.0, 0, -3.05), _box(70, 40, 6), (0.42, 0.55, 0.32, 1)))
     out.append(_visual("river", _pose(15.0, 0, -5.2), _box(31.0, 40, 0.4), (0.24, 0.42, 0.58, 1)))
     out.append(_visual("riverbed", _pose(15.0, 0, -6.2), _box(31.0, 40, 1.6), (0.36, 0.33, 0.27, 1)))
-    # abutments under the bearings
-    for name, x in (("abutment_left", -1.0), ("abutment_right", 31.0)):
-        out.append(_visual(name, _pose(x, 0, -3.1), _box(2.0, 2 * HALF_WIDTH + 1.4, 6.0), (0.66, 0.65, 0.62, 1)))
-    # bearings (small plinths under the end nodes of the bottom chords)
+    # abutments under the bearings; each reaches SEAT past its bearing, so the roller's seat on the
+    # right ends at the abutment's river face
+    for name, x0, x1 in (("abutment_left", -2.0, SEAT), ("abutment_right", 30.0 - SEAT, 32.0)):
+        out.append(_visual(name, _pose((x0 + x1) / 2, 0, -3.1), _box(x1 - x0, 2 * HALF_WIDTH + 1.4, 6.0),
+                           (0.66, 0.65, 0.62, 1)))
+    # bearings under the end nodes of the bottom chords: the pinned one on the left and, on the
+    # right, the roller's seat, 2 SEAT long (the roller rolls off an edge after SEAT of travel)
     for x in (0.0, 30.0):
         for side in (1, -1):
             out.append(_visual(f"bearing_{'l' if x == 0 else 'r'}{'p' if side > 0 else 'm'}",
-                               _pose(x, side * HALF_WIDTH, -0.22), _box(0.6, 0.6, 0.3), (0.3, 0.3, 0.32, 1)))
+                               _pose(x, side * HALF_WIDTH, -0.22), _box(2 * SEAT, 0.6, 0.3), (0.3, 0.3, 0.32, 1)))
     # approach slabs: the far slab, the settled ramp at the left abutment, the right slab
     for name, (a, b) in (("approach_left", (0, 1)), ("ramp_left", (1, 2)), ("approach_right", (8, 9))):
         pa, pb = xy[a], xy[b]
@@ -124,8 +128,8 @@ def _truss() -> str:
     return "".join(out)
 
 
-def _truck() -> str:
-    x0, z0 = TRUCK_START
+def _truck(start: tuple[float, float] = TRUCK_START) -> str:
+    x0, z0 = start
     out = ['    <link name="truck">\n', f"      <pose>{_pose(x0, -LANE, z0)}</pose>\n"]
     # body frame at the centre of mass; the wheel centres are 1 m below it, axles at +/-2 m
     out.append(_visual("chassis", _pose(0, 0, -0.55), _box(7.4, 2.3, 0.3), (0.18, 0.18, 0.2, 1)))
@@ -177,8 +181,15 @@ def write(path: Path, with_truck: bool) -> None:
     print(f"wrote {path.relative_to(ROOT)}")
 
 
-def bindings(truck: str | None = None, load: str | None = None, broken: bool = True) -> list[dict]:
-    """The bindings of a model whose truss node is `Truss` (and lorry node `truck`)."""
+def seat_bindings(seat: str, visuals: tuple[str, ...]) -> list[dict]:
+    """The roller's seat turns red once the roller has rolled off it (`<seat>/unseated` = 1)."""
+    return [{"target": f"visual:{v}", "property": "color", "signal": f"{seat}/unseated",
+             "colormap": "coolwarm", "range": [-1.0, 1.0]} for v in visuals]
+
+
+def bindings(truck: str | None = None, load: str | None = None, broken: bool = True,
+             seat: str | None = None) -> list[dict]:
+    """The bindings of a model whose truss node is `Truss` (and lorry node `truck`, roller seat `seat`)."""
     out = []
     for side, depth in (("l", HALF_WIDTH), ("r", -HALF_WIDTH)):
         for k, (a, b) in enumerate(D["bars"], start=1):
@@ -196,6 +207,8 @@ def bindings(truck: str | None = None, load: str | None = None, broken: bool = T
         out.append({"target": f"visual:deck_{p + 1}", "property": "segment",
                     "signal": [f"Truss/x[{a}]", f"Truss/y[{a}]", f"Truss/x[{b}]", f"Truss/y[{b}]"],
                     "plane": "xz", "depth": 0.0, "axis": "+x"})
+    if seat:
+        out += seat_bindings(seat, ("bearing_rp", "bearing_rm"))
     if truck:
         out.append({"target": "link:truck", "property": "pose", "signal": [f"{truck}/q[{i}]" for i in range(1, 8)]})
         for axle in "fr":
