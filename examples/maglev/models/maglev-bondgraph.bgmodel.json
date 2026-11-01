@@ -929,6 +929,52 @@
           "showLabel": true,
           "color": null
         }
+      },
+      {
+        "id": "n31",
+        "name": "DistSig",
+        "block": {
+          "ref": "stdlib:sources/Step"
+        },
+        "position": {
+          "x": 1620,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "t_step": "t_dist",
+          "initial": "0.0",
+          "final": "F_dist"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n32",
+        "name": "Dist",
+        "block": {
+          "ref": "stdlib:bondgraph/MSe"
+        },
+        "position": {
+          "x": 1440,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "gain": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
       }
     ],
     "connections": [
@@ -1360,6 +1406,29 @@
           "node": "n30",
           "port": "u"
         }
+      },
+      {
+        "id": "c38",
+        "kind": "signal",
+        "from": {
+          "node": "n31",
+          "port": "y"
+        },
+        "to": {
+          "node": "n32",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c39",
+        "kind": "bond",
+        "from": {
+          "node": "n32",
+          "port": "p"
+        },
+        "to": {
+          "node": "n17"
+        }
       }
     ],
     "annotations": [
@@ -1448,6 +1517,13 @@
       "signals": [
         "EM/F",
         "Grav/p.e"
+      ]
+    },
+    {
+      "id": "p7",
+      "title": "Disturbance force on the ball",
+      "signals": [
+        "DistSig/y"
       ]
     }
   ],
@@ -1584,6 +1660,18 @@
       "value": "30.0",
       "unit": "V/m",
       "description": "IR sensor gain"
+    },
+    {
+      "name": "F_dist",
+      "value": "0.0",
+      "unit": "N",
+      "description": "Disturbance force on the ball from t_dist on, positive downward like the weight (0: off; the weight is m_b*g0 = 0.196 N)"
+    },
+    {
+      "name": "t_dist",
+      "value": "0.9",
+      "unit": "s",
+      "description": "Time the disturbance force starts"
     }
   ],
   "dashboard": {
@@ -1596,14 +1684,14 @@
         "title": "Maglev",
         "options": {
           "markdown": true,
-          "text": "Move the **setpoint** and the model runs again: the ball steps from 0.15 m to the new gap at 0.2 s. Keep it between 0.08 and 0.22 m; outside the LPV design range the gains are clamped at the end points."
+          "text": "Change an input and the model runs again. Keep the gap within **0.08 to 0.22 m** (the LPV design range). Delete the program rows for the single documented step."
         }
       },
       {
         "id": "d2",
         "kind": "slider",
-        "size": "2x1",
-        "title": "Setpoint after the step",
+        "size": "1x1",
+        "title": "Step (0.2 s) to",
         "parameter": "global:h_step",
         "options": {
           "min": 0.08,
@@ -1634,15 +1722,73 @@
             },
             {
               "from": 0.05,
-              "to": 0.25,
+              "to": 0.08,
+              "tone": "warn"
+            },
+            {
+              "from": 0.08,
+              "to": 0.22,
               "tone": "good"
             },
             {
-              "from": 0.25,
+              "from": 0.22,
               "to": 0.3,
               "tone": "warn"
             }
           ]
+        }
+      },
+      {
+        "id": "d8",
+        "kind": "schedule",
+        "size": "2x2",
+        "title": "Setpoint program (after the first step)",
+        "schedule": {
+          "parameters": [
+            "Ref/final"
+          ],
+          "rows": [
+            {
+              "t": 0.7,
+              "values": [
+                0.12
+              ]
+            },
+            {
+              "t": 1.05,
+              "values": [
+                0.17
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "d9",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Disturbance force (0 = off, + down)",
+        "parameter": "global:F_dist",
+        "options": {
+          "min": -0.1,
+          "max": 0.1,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "d10",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Disturbance at",
+        "parameter": "global:t_dist",
+        "options": {
+          "min": 0.25,
+          "max": 1.35,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "s"
         }
       },
       {
@@ -1670,6 +1816,20 @@
               "tone": "warn"
             }
           ]
+        }
+      },
+      {
+        "id": "d11",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Reference prefilter time constant",
+        "parameter": "global:tau_pre",
+        "options": {
+          "min": 0.02,
+          "max": 0.3,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "s"
         }
       },
       {
@@ -1723,11 +1883,22 @@
         "id": "d7",
         "kind": "plot",
         "size": "4x2",
-        "title": "Gap and setpoint",
+        "title": "Gap, setpoint and prefiltered reference",
         "signals": [
           "BallPos/y",
-          "Pre/y",
-          "Ref/y"
+          "Ref/y",
+          "Pre/y"
+        ]
+      },
+      {
+        "id": "d12",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Coil current, amplifier voltage and disturbance",
+        "signals": [
+          "EM/i",
+          "Sat/y",
+          "DistSig/y"
         ]
       }
     ]

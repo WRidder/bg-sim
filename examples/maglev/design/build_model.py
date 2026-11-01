@@ -152,6 +152,41 @@ SCENARIO_GLOBALS = [
     g("tau_pre", "0.1", "s", "Reference prefilter 1/(tau_pre*s + 1), the reference's 10/(s + 10)"),
     g("Tf", "0.001", "s", "Derivative filter time constant of the PID"),
 ]
+DIST_GLOBALS = [
+    g("F_dist", "0.0", "N",
+      "Disturbance force on the ball from t_dist on, positive downward like the weight (0: off; the weight is m_b*g0 = 0.196 N)"),
+    g("t_dist", "0.9", "s", "Time the disturbance force starts"),
+]
+
+# Dashboard pieces shared by the current-driven and the bond-graph model.
+GAP_ZONES = [{"from": 0.0, "to": 0.05, "tone": "bad"}, {"from": 0.05, "to": 0.08, "tone": "warn"},
+             {"from": 0.08, "to": 0.22, "tone": "good"}, {"from": 0.22, "to": 0.3, "tone": "warn"}]
+SLIDER_GAP = {"min": 0.08, "max": 0.22, "step": 0.0025, "decimals": 4, "unit": "m"}
+CURRENT_ZONES = [{"from": 0.0, "to": 25.0, "tone": "good"}, {"from": 25.0, "to": 30.0, "tone": "warn"}]
+
+
+def dash_intro(card_id: str, title: str, range_name: str) -> dict:
+    return {"id": card_id, "kind": "text", "size": "2x1", "title": title, "options": {"markdown": True, "text":
+            f"Change an input and the model runs again. Keep the gap within **0.08 to 0.22 m** ({range_name}). "
+            "Delete the program rows for the single documented step."}}
+
+
+def dash_program(card_id: str) -> dict:
+    return {"id": card_id, "kind": "schedule", "size": "2x2", "title": "Setpoint program (after the first step)",
+            "schedule": {"parameters": ["Ref/final"],
+                         "rows": [{"t": 0.7, "values": [0.12]}, {"t": 1.05, "values": [0.17]}]}}
+
+
+def dash_inputs(ids: tuple[str, str, str]) -> tuple[dict, dict, dict]:
+    """Disturbance force and time, and the prefilter time constant."""
+    return (
+        {"id": ids[0], "kind": "slider", "size": "2x1", "title": "Disturbance force (0 = off, + down)",
+         "parameter": "global:F_dist", "options": {"min": -0.1, "max": 0.1, "step": 0.005, "decimals": 3, "unit": "N"}},
+        {"id": ids[1], "kind": "slider", "size": "1x1", "title": "Disturbance at", "parameter": "global:t_dist",
+         "options": {"min": 0.25, "max": 1.35, "step": 0.05, "decimals": 2, "unit": "s"}},
+        {"id": ids[2], "kind": "slider", "size": "2x1", "title": "Reference prefilter time constant",
+         "parameter": "global:tau_pre", "options": {"min": 0.02, "max": 0.3, "step": 0.005, "decimals": 3, "unit": "s"}},
+    )
 
 
 def gain_tables(d: Diagram, x: float, y: float, h_source: tuple[str, str], prefix: str = "",
@@ -188,8 +223,8 @@ def model_current_driven() -> dict:
     d.node("Trim", "stdlib:continuous/Gain", 440, 120, params={"k": "c_trim"})
     gain_tables(d, 440, 240, ("Ball", "h"))
     d.node("PID", "project:ScheduledPID", 680, 160, params={"Tf": "Tf"})
-    d.node("Ball", "project:MaglevBall", 920, 160,
-           params={"m": "m_b", "g": "g0", "alpha": "alpha"}, starts={"x": "h_start", "w": "0.0"})
+    d.node("Ball", "project:MaglevBallLoad", 920, 160,
+           params={"m": "m_ball", "g": "g0", "alpha": "alpha"}, starts={"x": "h_start", "w": "0.0"})
     d.sig("Ref", "y", "Pre", "u")
     d.sig("Pre", "y", "Ideal", "u")
     d.sig("Pre", "y", "PID", "r")
@@ -229,13 +264,16 @@ def model_current_driven() -> dict:
            "PID05/u, PID15/u and PID25/u at 1.4 s with 4.444, 13.333 and 22.222 A.",
            40, 500, 1000, 70, "green")
     d.node("Statics", {"subsystem": {"ports": [], "diagram": s.doc()}}, 920, 420)
+    d.node("Dist", "stdlib:sources/Step", 720, 320, params={"t_step": "t_dist", "initial": "0.0", "final": "F_dist"})
+    d.sig("Dist", "y", "Ball", "F_d")
 
     d.note("**Maglev, current-driven (MathWorks reproduction).** m*h'' = m*g - alpha*i^2/h^2 with "
            "the current as the input. The PID gains are designed at h = 0.05, 0.15 and 0.25 m "
            "(crossover 50 rad/s, phase margin 60 deg, Tf = 1 ms) and interpolated over the measured "
            "gap (KpTab, KiTab, KdTab). Trim feedforward c_trim*h, prefilter 10/(s + 10) on the "
            "0.15 -> 0.1875 m step at 0.2 s. Ideal is the reference behaviour 900/(s^2 + 42 s + 900) "
-           "of the prefiltered setpoint, for comparison only.", 40, 580, 1100, 90)
+           "of the prefiltered setpoint, for comparison only. Dist is a force on the ball (F_dist from "
+           "t_dist, positive downward), off (0 N) by default.", 40, 580, 1100, 90)
 
     plots = [
         {"id": "p1", "title": "Gap h and setpoint", "signals": ["Ball/h", "Pre/y", "Ref/y", "Ideal/y"]},
@@ -244,7 +282,36 @@ def model_current_driven() -> dict:
         {"id": "p4", "title": "Control error", "signals": ["PID/e"]},
         {"id": "p5", "title": "Statics: currents found by integral action",
          "signals": ["Statics/PID05/u", "Statics/PID15/u", "Statics/PID25/u"]},
+        {"id": "p6", "title": "Disturbance force on the ball", "signals": ["Dist/y"]},
     ]
+    dist_f, dist_t, tau = dash_inputs(("dist_F", "dist_t", "tau_pre"))
+    dashboard = {"autoRerun": True, "cards": [
+        dash_intro("intro", "Maglev: gain-scheduled PID", "the gain schedule's range"),
+        {"id": "h_start", "kind": "slider", "size": "1x1", "title": "Start gap", "parameter": "global:h_start",
+         "options": SLIDER_GAP},
+        {"id": "h_step", "kind": "slider", "size": "1x1", "title": "Step (0.2 s) to", "parameter": "global:h_step",
+         "options": SLIDER_GAP},
+        dash_program("program"),
+        dist_f,
+        dist_t,
+        {"id": "err", "kind": "value", "size": "1x1", "title": "Control error", "signals": ["PID/e"],
+         "options": {"decimals": 4, "unit": "m", "sparkline": True}},
+        tau,
+        {"id": "mass", "kind": "slider", "size": "2x1", "title": "Ball mass (the controller assumes 20 g)",
+         "parameter": "global:m_ball", "options": {"min": 0.01, "max": 0.04, "step": 0.001, "decimals": 3, "unit": "kg"}},
+        {"id": "gap", "kind": "gauge", "size": "1x1", "title": "Gap h", "signals": ["Ball/h"],
+         "options": {"min": 0.0, "max": 0.3, "decimals": 4, "unit": "m", "zones": GAP_ZONES}},
+        {"id": "current", "kind": "gauge", "size": "1x1", "title": "Coil current", "signals": ["PID/u"],
+         "options": {"min": 0.0, "max": 30.0, "decimals": 2, "unit": "A", "zones": CURRENT_ZONES}},
+        {"id": "speed", "kind": "value", "size": "1x1", "title": "Ball velocity (+ down)", "signals": ["Ball/v"],
+         "options": {"decimals": 3, "unit": "m/s", "sparkline": True}},
+        {"id": "kp", "kind": "value", "size": "1x1", "title": "Scheduled Kp", "signals": ["KpTab/y"],
+         "options": {"decimals": 0, "unit": "A/m", "sparkline": True}},
+        {"id": "plot_gap", "kind": "plot", "size": "4x2", "title": "Gap, setpoint and prefiltered reference",
+         "signals": ["Ball/h", "Ref/y", "Pre/y"]},
+        {"id": "plot_current", "kind": "plot", "size": "4x2", "title": "Coil current, trim current and disturbance",
+         "signals": ["PID/u", "Trim/y", "Dist/y"]},
+    ]}
     bindings = [
         {"target": "joint:gap", "property": "position", "signal": "Ball/h"},
         {"target": "joint:setpoint", "property": "position", "signal": "Ref/y"},
@@ -257,7 +324,9 @@ def model_current_driven() -> dict:
         "a coil, the current is the input. Gain-scheduled PID (designed at 0.05/0.15/0.25 m, "
         "interpolated over the measured gap) plus trim feedforward and a 10/(s+10) prefilter; "
         "0.15 -> 0.1875 m step at 0.2 s, 1.4 s.",
-        d, settings(1.4, 2801), plots, SCENE_CURRENT, bindings, PLANT_GLOBALS + SCENARIO_GLOBALS)
+        d, settings(1.4, 2801), plots, SCENE_CURRENT, bindings, PLANT_GLOBALS + SCENARIO_GLOBALS + DIST_GLOBALS + [
+            g("m_ball", "m_b", "kg", "Mass of the simulated ball (plant only; the trim and the gains are designed for m_b)")],
+        dashboard)
 
 
 # --------------------------------------------------------------------------- model 2
@@ -470,6 +539,13 @@ def model_bondgraph() -> dict:
     d.sig("Vball", "y", "Pmech", "u2")
     d.sig("Pmech", "y", "Emech", "u")
 
+    # Disturbance: its own effort source on the ball's 1-junction, oriented like the weight (positive
+    # pushes the ball down, the gap opens); 0 N by default.
+    d.node("DistSig", "stdlib:sources/Step", 1620, 1000, params={"t_step": "t_dist", "initial": "0.0", "final": "F_dist"})
+    d.node("Dist", "stdlib:bondgraph/MSe", 1440, 1000, params={"gain": "1.0"})
+    d.sig("DistSig", "y", "Dist", "u")
+    d.bond("Dist", "p", "Jb", None)
+
     d.note("**Maglev as a bond graph.** Electrical 1-junction Jc (coil current): amplifier MSe Amp "
            "(+-60 V rail in Sat), coil resistance Rc, current detector Imeas and the coil port of EM. "
            "EM is the two-port IC-field electromagnet: co-energy W' = L(h)*i^2/2 with "
@@ -489,6 +565,7 @@ def model_bondgraph() -> dict:
         {"id": "p4", "title": "Field energy terms [J]", "signals": ["EM/W", "Eel/y", "Emech/y"]},
         {"id": "p5", "title": "Field port powers [W]", "signals": ["Pel/y", "Pmech/y"]},
         {"id": "p6", "title": "Magnetic force and weight", "signals": ["EM/F", "Grav/p.e"]},
+        {"id": "p7", "title": "Disturbance force on the ball", "signals": ["DistSig/y"]},
     ]
     bindings = [
         {"target": "joint:gap", "property": "position", "signal": "BallPos/y"},
@@ -496,27 +573,33 @@ def model_bondgraph() -> dict:
         {"target": "visual:coil_winding", "property": "color", "signal": "EM/i", "colormap": "heat",
          "range": [0.0, 30.0]},
     ]
+    dist_f, dist_t, tau = dash_inputs(("d9", "d10", "d11"))
+    # rows of four columns: text, step, gap | program, disturbance | (program), at, current |
+    # prefilter, voltage, energy | plots
     dashboard = {
         "autoRerun": True,
         "cards": [
-            {"id": "d1", "kind": "text", "size": "2x1", "title": "Maglev",
-             "options": {"markdown": True, "text": "Move the **setpoint** and the model runs again: the ball steps from 0.15 m to the new gap at 0.2 s. Keep it between 0.08 and 0.22 m; outside the LPV design range the gains are clamped at the end points."}},
-            {"id": "d2", "kind": "slider", "size": "2x1", "title": "Setpoint after the step",
-             "parameter": "global:h_step", "options": {"min": 0.08, "max": 0.22, "step": 0.0025, "decimals": 4, "unit": "m"}},
+            dash_intro("d1", "Maglev", "the LPV design range"),
+            {"id": "d2", "kind": "slider", "size": "1x1", "title": "Step (0.2 s) to",
+             "parameter": "global:h_step", "options": SLIDER_GAP},
             {"id": "d3", "kind": "gauge", "size": "1x1", "title": "Gap h", "signals": ["BallPos/y"],
-             "options": {"min": 0.0, "max": 0.3, "decimals": 4, "unit": "m",
-                         "zones": [{"from": 0.0, "to": 0.05, "tone": "bad"}, {"from": 0.05, "to": 0.25, "tone": "good"},
-                                   {"from": 0.25, "to": 0.3, "tone": "warn"}]}},
+             "options": {"min": 0.0, "max": 0.3, "decimals": 4, "unit": "m", "zones": GAP_ZONES}},
+            dash_program("d8"),
+            dist_f,
+            dist_t,
             {"id": "d4", "kind": "gauge", "size": "1x1", "title": "Coil current", "signals": ["EM/i"],
-             "options": {"min": 0.0, "max": 30.0, "decimals": 2, "unit": "A",
-                         "zones": [{"from": 0.0, "to": 25.0, "tone": "good"}, {"from": 25.0, "to": 30.0, "tone": "warn"}]}},
+             "options": {"min": 0.0, "max": 30.0, "decimals": 2, "unit": "A", "zones": CURRENT_ZONES}},
+            tau,
             {"id": "d5", "kind": "bar", "size": "1x1", "title": "Amplifier voltage", "signals": ["Sat/y"],
              "options": {"min": -60.0, "max": 60.0, "decimals": 1, "unit": "V", "orientation": "horizontal",
                          "zones": [{"from": -60.0, "to": -55.0, "tone": "warn"}, {"from": -55.0, "to": 55.0, "tone": "good"},
                                    {"from": 55.0, "to": 60.0, "tone": "warn"}]}},
             {"id": "d6", "kind": "value", "size": "1x1", "title": "Magnetic energy", "signals": ["EM/W"],
              "options": {"decimals": 3, "unit": "J", "sparkline": True}},
-            {"id": "d7", "kind": "plot", "size": "4x2", "title": "Gap and setpoint", "signals": ["BallPos/y", "Pre/y", "Ref/y"]},
+            {"id": "d7", "kind": "plot", "size": "4x2", "title": "Gap, setpoint and prefiltered reference",
+             "signals": ["BallPos/y", "Ref/y", "Pre/y"]},
+            {"id": "d12", "kind": "plot", "size": "4x2", "title": "Coil current, amplifier voltage and disturbance",
+             "signals": ["EM/i", "Sat/y", "DistSig/y"]},
         ],
     }
     return model_doc(
@@ -537,7 +620,7 @@ def model_bondgraph() -> dict:
             g("Ti_i", "L0/R_coil", "s", "Current PI integral time: the PI zero cancels the coil pole"),
             g("i_start", "c_trim*h_start", "A", "Trim current at the start gap"),
             g("k_s", num(sens["k_s"]), "V/m", "IR sensor gain"),
-        ],
+        ] + DIST_GLOBALS,
         dashboard,
     )
 
@@ -801,6 +884,38 @@ def expected() -> dict:
                 "settings": {"t_end": 6.0, "output": {"points": 12001}},
                 "overrides": [{"target": "IR/Noise/std", "value": 0.0}, {"target": "IR/ADC/bits", "value": 52}],
                 "checks": ideal,
+            },
+            # The dashboard's disturbance (0.05 N, a quarter of the weight, from t_dist = 0.9 s). The peaks are
+            # bgsim's own (regression values); the setpoint return is the integral action's property.
+            "maglev-current-driven-disturbance": {
+                "model": "maglev-current-driven",
+                "overrides": [{"target": "global:F_dist", "value": 0.05}],
+                "checks": [
+                    {"kind": "cursor_value", "signal": "Dist/y", "t": 1.0, "value": 0.05, "abs": 1e-12,
+                     "note": "the dashboard's disturbance: 0.05 N downward (a quarter of the weight) from t_dist = 0.9 s"},
+                    {"kind": "cursor_value", "signal": "Dist/y", "t": 0.85, "value": 0.0, "abs": 1e-12,
+                     "note": "off before t_dist"},
+                    {"kind": "max_abs", "signal": "Ball/h", "from_t": 0.9, "to_t": 1.4, "value": 0.189206957839,
+                     "rtol": 1e-4, "note": "the push opens the gap (positive downward) by 1.7 mm"},
+                    {"kind": "max_abs", "signal": "PID/e", "from_t": 0.9, "to_t": 1.4, "value": 0.00172060054553,
+                     "rtol": 1e-3, "note": "peak control error"},
+                    {"kind": "cursor_value", "signal": "Ball/h", "t": 1.4, "value": h1, "abs": 1e-4,
+                     "note": "integral action returns the ball to the setpoint (0.05 mm left at 1.4 s)"},
+                ],
+            },
+            "maglev-bondgraph-disturbance": {
+                "model": "maglev-bondgraph",
+                "settings": {"t_end": 3.0, "output": {"points": 6001}},
+                "overrides": [{"target": "global:F_dist", "value": 0.05}, {"target": "IR/Noise/std", "value": 0.0},
+                              {"target": "IR/ADC/bits", "value": 52}],
+                "checks": [
+                    {"kind": "cursor_value", "signal": "DistSig/y", "t": 1.0, "value": 0.05, "abs": 1e-12,
+                     "note": "the disturbance enters through its own effort source on the ball's 1-junction"},
+                    {"kind": "max_abs", "signal": "BallPos/y", "from_t": 0.9, "to_t": 1.4, "value": 0.19086365699,
+                     "rtol": 1e-4, "note": "the push opens the gap by 3.4 mm (softer gains than the current-driven loop)"},
+                    {"kind": "cursor_value", "signal": "BallPos/y", "t": 3.0, "value": h1, "abs": 1e-4,
+                     "note": "integral action has returned the ball to the setpoint"},
+                ],
             },
         },
         "compare": [
