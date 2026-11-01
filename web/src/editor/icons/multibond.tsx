@@ -436,6 +436,24 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
       <path d="M17 17.5l4-3.5M21 14v3" />
     </>
   ),
+  "ct-tyre": () => (
+    <>
+      <path d="M2 21.5h20" />
+      <circle cx="12" cy="11.5" r="8.5" />
+      <circle cx="12" cy="11.5" r="4.5" />
+      <path d="M5.5 6l1.4 1.1M12 3v1.8M18.5 6l-1.4 1.1M3.5 11.5h1.8M20.5 11.5h-1.8" />
+      <circle cx="12" cy="11.5" r="1.2" fill="currentColor" stroke="none" />
+      <path d="M8.5 20.3c2.2.9 4.8.9 7 0" strokeWidth="2.2" />
+    </>
+  ),
+  "ct-terrain-surface": () => (
+    <>
+      <path d="M2 17c3-6 5-7 8-3s5 3 7-2 3-4 5-3" />
+      <path d="M2 21h20" opacity="0.55" />
+      <path d="M13 12.5l2.5-3.5M13 12.5l3.7 1.6" />
+      <circle cx="13" cy="12.5" r="1.2" fill="currentColor" stroke="none" />
+    </>
+  ),
   "ct-switched-pivot-3d": () => (
     <>
       <path d="M2 20.5h20" />

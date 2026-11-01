@@ -365,6 +365,8 @@ include("test_export_motion.jl")
 include("test_export_thermal.jl")
 # The rolling wheel contact and the flywheel rotor (RollingDisk, Rotor3D) in the C export.
 include("test_export_rolling.jl")
+# The vehicle tyre on a terrain plane (Tyre, TerrainSurface) in the C export.
+include("test_export_tyre.jl")
 # The common rotation and electrical components (clutch, gears, op-amp, switches, ...) in the
 # C export.
 include("test_export_components.jl")
@@ -382,3 +384,5 @@ include("test_export_signal_blocks.jl")
 include("test_export_flex.jl")
 # The f16-sim FMU of examples/f16 (the flight-simulator host's FMU): interface, method, trim.
 include("test_export_f16.jl")
+# The racecar-sim and buggy-sim FMUs of examples/cars (the car-sim host's FMUs): interface, method, rest.
+include("test_export_cars.jl")

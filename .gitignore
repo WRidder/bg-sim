@@ -30,6 +30,10 @@ media/video/*.mp4
 examples/export-out/
 examples/export-tunables-out/
 examples/export-f16-out/
+examples/export-cars-out/
 
 # f16-sim host: the FMU and the start list are built locally (apps/f16-sim/build_fmu.py)
 apps/f16-sim/build/
+
+# car-sim host: the FMUs are built locally (apps/car-sim/build_fmu.py)
+apps/car-sim/build/

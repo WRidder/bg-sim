@@ -1,0 +1,18 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "cars",
+  "models": [
+    "racecar-settle",
+    "racecar-skidpad",
+    "racecar-launch",
+    "racecar-straight",
+    "buggy-settle",
+    "buggy-grade",
+    "buggy-hills",
+    "racecar-sim",
+    "buggy-sim"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

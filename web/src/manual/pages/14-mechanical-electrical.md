@@ -87,3 +87,18 @@ Two blocks of the 3D mechanics categories model a wheel that rolls on the ground
 - **Mounting.** Bond the wheel body's port `p` straight to the block's `p`, with the body frame at the wheel centre and the axle along body z. Feed `RollingDisk` the body pose (`g`) and the plane (`o`, `fr` from a `ContactSurface`). Put the rotor's mass and transverse inertia into the carrier body; only the axial inertia `Ja` belongs to `Rotor3D`.
 - **Rolling.** The normal force is the smooth Hertz/Hunt-Crossley law of `ContactPoint`. Friction is isotropic regularised Coulomb friction on the slip of the rim point: a wheel rolling under a side force `F` creeps at about `vs F / (mu f_n)`. The block outputs `f_n`, `s_lon`/`s_lat` (slip), `f_lon`/`f_lat`, the contact point, `camber`, the spring energy `Ec` and the dissipated power `Pd`.
 - **Rotor.** Only the axial momentum `h` is a state, so a flywheel at 15 000 rpm costs no more than one at rest. The motor between carrier and rotor bonds to `drive`, and its reaction acts on the carrier. `w_rel`, `w_abs`, `H` and `Ek` are outputs.
+
+## Vehicle tyres and terrain (3D)
+
+Two more contact blocks build road vehicles. The **cars** example (a race car and an off-road buggy) uses both.
+
+| Block | Category | Ports | What it does | Key parameters |
+| --- | --- | --- | --- | --- |
+| `Tyre` | Contact | `p` (spatial, the wheel carrier), `spin` (rotation), inputs `g`, `o`, `fr`, `mus` | a pneumatic tyre: radial spring at the lowest rim point, Magic Formula forces for longitudinal and lateral slip, combined on the friction ellipse, rolling resistance | `R0`, `kz`, `cz`, `Fz0`, `mux`, `muy`, `dmu`, `Kx`, `Cx`, `Ex`, `Ky`, `Ky2`, `Cy`, `Ey`, `cx`, `cy`, `dx`, `dy`, `frr` |
+| `TerrainSurface` | Contact | inputs `g`; outputs `o`, `fr`, `hq`, `slope` | hills as a formula, `h(x, y) = h0 + sx·x + sy·y + Σ a·cos(kx·x + ky·y + ph)`: gives the ground plane under a wheel to a `Tyre` (or any contact block) | `h0`, `sx`, `sy`, `a`, `kx`, `ky`, `ph` (constant `N` components) |
+
+- **Mounting.** The carrier is the wheel hub that does not spin: a `RigidBody3D` with the wheel's mass and transverse inertia, frame at the wheel centre, axle along body z. Bond its port to the tyre's `p` and to a `Rotor3D` (the wheel's spin inertia). Put the rotor's `drive`, the tyre's `spin`, a brake and a drive shaft on one 1-junction: the wheel's spin.
+- **Forces.** `Fz` is the radial spring and damper on the deflection. `Fx` and `Fy` follow the Magic Formula of the slips `kappa` and `alpha` (the peak is `mux·Fz` and `muy·Fz`, a little lower at high load through `dmu`), and act through a small deflection of the contact patch. So a parked car stays parked on a slope, and nothing goes stiff at low speed. `mus` scales the friction, for example 1 on asphalt and 0.6 on grass.
+- **Outputs.** `Fz`, `Fx`, `Fy`, `kappa`, `alpha`, the forward speed `Vx`, the wheel speed `omega`, the deflection `delta`, the contact point `xc`, `yc`, `zc`, the force in world axes `Fwx`..`Fwz`, `camber`, the stored energy `Ec` and the dissipated power `Pd`.
+- **Terrain.** Feed `TerrainSurface` the wheel carrier pose; it returns the tangent plane below the wheel centre. Use one per wheel. The same formula can draw the ground in a 3D view or a simulator, so what you see is what the tyres drive on.
+- **Not modelled.** The tyre has no aligning moment and no camber thrust.

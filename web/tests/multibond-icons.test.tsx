@@ -75,6 +75,8 @@ const COMPOSITE_IDS = [
   "ct-contact-point",
   "ct-contact-surface",
   "ct-rolling-disk",
+  "ct-tyre",
+  "ct-terrain-surface",
   "ct-impact-body-3d",
   "ct-impact-inertia-3d",
   "ct-moving-plane-contact",
