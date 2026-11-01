@@ -284,6 +284,8 @@ const M3_CONTACT_REFS = [
     "stdlib:contact/MovingPlaneContact",
     "stdlib:contact/RollingDisk",
     "stdlib:contact/SwitchedPivot3D",
+    "stdlib:contact/TerrainSurface",
+    "stdlib:contact/Tyre",
     "stdlib:contact/SuctionCup",
     "stdlib:contact/VacuumGenerator",
 ]

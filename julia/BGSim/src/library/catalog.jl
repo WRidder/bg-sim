@@ -1317,6 +1317,14 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Compliant rolling contact of a wheel (disc, optional toroidal crown) on a ContactSurface plane: the contact point is recomputed as the lowest rim point, smooth Hunt-Crossley normal force, isotropic regularised Coulomb friction on the slip of the rim material point, optional drilling damping; slip, forces, contact point and dissipated power as outputs.",
         icon = "ct-rolling-disk",
     ),
+    "stdlib:contact/Tyre" => (
+        description = "Vehicle tyre on a ContactSurface or TerrainSurface: radial spring and damper at the lowest rim point, Magic Formula longitudinal and lateral forces with load sensitivity combined on the friction ellipse, first-order patch deflection (holds a parked car, no stiffness at low speed), rolling resistance; carrier port and a spin port for the wheel's spin junction; ISO slips, forces, contact point, stored energy and dissipated power as outputs.",
+        icon = "ct-tyre",
+    ),
+    "stdlib:contact/TerrainSurface" => (
+        description = "Analytic terrain h(x, y) = h0 + sx x + sy y + sum of cosines as a contact surface: the tangent plane (o, fr) at the point below the query pose, for a Tyre, RollingDisk or ContactPoint; also the height and the slope there.",
+        icon = "ct-terrain-surface",
+    ),
     # J-MB14: mode-switched pivot and the impact map.
     "stdlib:contact/ImpactBody3D" => (
         description = "Spatial rigid body whose port is the pivot frame of a SwitchedPivot3D (CoM offset r mounted inside): ImpactInertia3D, CoriolisSpatial and GravitySpatial on the CoM 1-junction, with the impact map applied to the body momentum at a mode switch.",

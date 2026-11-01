@@ -182,6 +182,27 @@ an equation-based (Kane) model of the robot with exact rolling, and by golden te
 (`test/golden/contact/test_RollingDisk.jl`, `test/golden/spatial/test_Rotor3D.jl`) and the C
 export (`test/test_export_rolling.jl`).
 
+`Tyre` is the vehicle counterpart of `RollingDisk`: the same lowest-rim-point geometry and a
+smooth radial spring `kz` with damping `cz` (the vertical force), but the tangential forces are a
+Magic Formula per direction (`D sin(C atan(B s - E (B s - atan(B s))))`, peak friction with
+load sensitivity `mu (1 + dmu (Fz - Fz0)/Fz0)`, cornering stiffness `Ky Fz0 sin(2 atan(Fz/(Ky2 Fz0)))`)
+on the ISO slips `kappa = -Vsx/|Vx|`, `tan alpha = -Vsy/|Vx|`, combined by the normalised slip so
+that the saturated resultant lies on the friction ellipse. The forces act through a first-order
+patch deflection (`xe`, `ye`, Rill's model): `d xe/dt = -(cx xe |Vx| + G Vsx)/(dx |Vx| + G)`,
+`Fx = cx xe + dx d xe/dt`, so the slip has no singularity at standstill (a parked car stands still
+on a slope) and the force builds up over the relaxation length. The wheel spin is NOT part of the
+carrier: the carrier port carries the hub (a non-spinning `RigidBody3D`), and the `spin` port
+joins the wheel's spin 1-junction (the `Rotor3D` drive, a brake, a drive shaft); the tyre puts
+the moment about the axle on the spin port and its reaction on the carrier. Rolling resistance
+is a moment `frr Fz R0 tanh(w/wrr)`. Power: `p.P + spin.P = dEc/dt + Pd`, `Pd >= 0`.
+`TerrainSurface` is an analytic height field `h0 + sx x + sy y + sum a cos(kx x + ky y + ph)` that
+outputs the tangent plane below a query pose in the `ContactSurface` format, so any contact block
+drives over hills; a host can draw the identical ground. Golden tests:
+`test/golden/contact/test_Tyre.jl` (Magic Formula steady states on a kinematic rig, coast-down
+on rolling resistance with the energy book, rolling down a terrain plane),
+`test/golden/contact/test_TerrainSurface.jl`; C export: `test/test_export_tyre.jl`. The
+`cars` example builds a race car and a buggy on them.
+
 ## 7. Switched pivot and impact map (v1 limits)
 
 `SwitchedPivot3D`, `ImpactInertia3D` and `ImpactBody3D` (`src/mech/impulse.jl`) model a body
