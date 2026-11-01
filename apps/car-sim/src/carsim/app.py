@@ -30,6 +30,7 @@ def parse_args(argv=None):
     p.add_argument("--start", type=int, default=0, help="index of the start (0-based)")
     p.add_argument("--list-devices", action="store_true")
     p.add_argument("--no-joystick", action="store_true")
+    p.add_argument("--no-telemetry", action="store_true", help="start with the telemetry panel hidden (T shows it)")
     p.add_argument("--headless", action="store_true", help="offscreen, scripted, as fast as possible")
     p.add_argument("--seconds", type=float, default=None, help="sim time of --headless (default the script's) "
                    "or of --record (default the script's duration)")

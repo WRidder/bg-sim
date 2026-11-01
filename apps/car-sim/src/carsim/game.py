@@ -12,18 +12,19 @@ import numpy as np
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import ClockObject, Filename, KeyboardButton, PNMImage, Point3, Vec3
 
-from .core import Simulation
+from .core import IDX as INPUT_IDX, Simulation
 from .fmu import CORNERS, Start
 from .hud import Hud, fmt_lap
 from .inputs import Joysticks, Keyboard, Mixer, load_config
 from .scripts import SCRIPTS, Driver, Path as DrivePath, hills_loop
+from .telemetry import Telemetry
 from .vehicle import Car
 from .world import HORIZON, World
 
 VIEWS = ("chase", "cockpit", "tv")
 CHASE = {"racecar": (7.5, 2.4, 0.25), "buggy": (8.5, 3.2, 0.35)}     # back, up (m), yaw lag (s)
 STEER = {"racecar": (2.80, math.radians(20.0)), "buggy": (2.70, math.radians(30.0))}   # wheelbase, full lock
-HELP = ("P pause   R reset   1-9 start   C view (chase, cockpit, track side)   F1 help   Esc quit\n"
+HELP = ("P pause   R reset   1-9 start   C view (chase, cockpit, track side)   T telemetry   F1 help   Esc quit\n"
         "arrows or W/A/S/D: steer, accelerator, brake   space handbrake   V forward/reverse (at rest)")
 
 
@@ -51,6 +52,10 @@ class Game(ShowBase):
         self.world = World(self.render, self.camera, self.vehicle)
         self.car = Car(self.render, self.vehicle, self.sim.model.index)
         self.hud = Hud(self.aspect2d, self.getAspectRatio(), line_scale=self.win.get_y_size() / 720.0)
+        self.telemetry = Telemetry(self.aspect2d, self.getAspectRatio(), set(self.sim.model.outputs),
+                                   self.sim.model.motors, line_scale=self.win.get_y_size() / 720.0,
+                                   visible=not getattr(args, "no_telemetry", False))
+        self.sim.on_step = self._telemetry_sample
         maps, buttons, kb = load_config(args.config)
         self.joy = Joysticks(maps, buttons, enabled=not (args.no_joystick or args.headless or args.record))
         self.kb = Keyboard(kb)
@@ -81,9 +86,18 @@ class Game(ShowBase):
         self.accept("c", self.toggle_view)
         self.accept("v", self.toggle_reverse)
         self.accept("f1", self.toggle_help)
+        self.accept("t", self.telemetry.toggle)
+
+    def _telemetry_sample(self) -> None:
+        """After each FMU step: the telemetry takes a sample when its next instant has come (the
+        model's outputs and the pedal inputs of that step)."""
+        u = self.sim.u
+        self.telemetry.sample(self.sim.model.time, self.sim.model,
+                              {"throttle": float(u[INPUT_IDX["throttle"]]), "brake": float(u[INPUT_IDX["brake"]])})
 
     def toggle_help(self):
         self.hud.show_help = not self.hud.show_help
+        self.telemetry.suppress(self.hud.show_help)        # the help text runs down over the panel
 
     def toggle_pause(self):
         self.sim.paused = not self.sim.paused
@@ -95,6 +109,7 @@ class Game(ShowBase):
         if index is not None and index >= len(self.sim.starts):
             return
         self.sim.reset(index)
+        self.telemetry.clear()
         self.kb.steer = self.kb.throttle = self.kb.brake = 0.0
         self.cam_yaw = self.sim.start.yaw0
 
@@ -186,6 +201,7 @@ class Game(ShowBase):
         elif self.view == "tv":
             self._tv(p)
         y = m.snapshot()
+        self.telemetry.draw(m.time)
         info = (f"{'REC' if self.recording else 'FPS'} {self.fps:3.0f}   RT {self.rt:4.2f}x   t {m.time:6.1f} s   "
                 f"{self.vehicle}   {self.view}   {sim.start.label}" + (f"   behind {sim.pacer.behind}" if sim.pacer.behind else ""))
         lap = ""

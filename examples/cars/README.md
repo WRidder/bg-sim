@@ -103,7 +103,8 @@ moves, while the 1-D reference uses steady-state slip. After that the two accele
   carrier pose, the spin angle and speed, the tyre load, slip, slip angle, the suspension travel
   and the contact point (`fl_xc`, `fl_yc`, `fl_zc`, ...); the road-wheel angles; the speed, the
   accelerations, the attitude, yaw rate and body slip; per motor its speed, torque, limit, power
-  and regen torque; the battery's state of charge, voltage, current and power.
+  and regen torque; the battery's state of charge, voltage, current and power; the aero
+  `downforce` and `drag` (N).
 * FMU parameters with ranges: the start pose `x0`, `y0`, `z0`, `yaw0` and charge `soc0`
   (globals whose expressions set the start state), the motor limits and the brake torques.
 

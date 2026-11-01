@@ -8424,6 +8424,46 @@
           "showLabel": true,
           "color": null
         }
+      },
+      {
+        "id": "n147",
+        "name": "downforce",
+        "block": {
+          "ref": "stdlib:converters/ExportOutput"
+        },
+        "position": {
+          "x": 3560,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n148",
+        "name": "drag",
+        "block": {
+          "ref": "stdlib:converters/ExportOutput"
+        },
+        "position": {
+          "x": 3560,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
       }
     ],
     "connections": [
@@ -10824,6 +10864,30 @@
         },
         "to": {
           "node": "n146",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c202",
+        "kind": "signal",
+        "from": {
+          "node": "n021",
+          "port": "downforce"
+        },
+        "to": {
+          "node": "n147",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c203",
+        "kind": "signal",
+        "from": {
+          "node": "n021",
+          "port": "drag"
+        },
+        "to": {
+          "node": "n148",
           "port": "u"
         }
       }

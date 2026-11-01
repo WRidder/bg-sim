@@ -31,7 +31,7 @@ The **f16-sim** model of the f16 example shows a complete interface:
 The **racecar-sim** and **buggy-sim** models of the cars example do the same for a driving simulator (`apps/car-sim`):
 
 - the steering, the pedals, the handbrake, the reverse switch and a friction scale per wheel come in through `ExportInputPass` markers (the host sets the friction from the surface under each tyre);
-- the outputs are the chassis and wheel poses, the tyre and suspension states, the motor speeds, torques and powers and the battery's state of charge, voltage and current;
+- the outputs are the chassis and wheel poses, the tyre and suspension states, the motor speeds, torques and powers, the battery's state of charge, voltage and current, and the aerodynamic downforce and drag (the host's live telemetry panel plots them);
 - the start position, heading and charge are globals whose expressions set the start state, and the motor and brake limits are block parameters kept tunable, all with ranges.
 
 For a subsystem export, the power ports of the subsystem are part of the interface too. For each one, choose whether the host imposes the **effort** or the **flow**.

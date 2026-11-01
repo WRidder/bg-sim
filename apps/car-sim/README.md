@@ -48,6 +48,7 @@ symbol, the doStep timing) and writes into `build/` (not committed):
 | space | handbrake (rear wheels) |
 | V | forward / reverse (only below 1 m/s) |
 | C | view: chase, cockpit, track side |
+| T | telemetry panel on / off (or click its TELEMETRY button) |
 | P | pause |
 | R | reset to the current start |
 | 1 .. 5 | reset to start N |
@@ -75,6 +76,32 @@ number, the current, last and best lap times (the timer starts at the first cros
 start/finish line), the surface under each wheel. Top left: frame rate, real-time factor, sim time,
 vehicle, view, start, frames whose backlog was dropped. Warnings: rolled over, the edge of the map.
 
+## Telemetry
+
+On the left, a live telemetry panel in the style of a race broadcast: a dark translucent panel of
+strip charts that scroll over the last 15 s of sim time, newest on the right, each with its
+current values in the colour of its trace. The panel has these charts:
+
+| chart | traces |
+| --- | --- |
+| SPEED | km/h |
+| THROTTLE / BRAKE | the pedals, % |
+| STEERING | the mean front road-wheel angle, degrees |
+| AERO | downforce and drag, kN (the FMU outputs `downforce`, `drag`) |
+| G-FORCE | lateral and longitudinal acceleration, g |
+| MOTOR | motor speed, 1000 rpm (the rear motor of the buggy) |
+| POWER | total motor power, kW (negative while regenerating) |
+| TYRE Fz | the four tyre loads, kN |
+
+The scales fit the data in the window and snap to round numbers; the steering and g charts are
+symmetric about zero. The charts are sampled at 30 Hz of sim time, so they stop while the
+simulation is paused, and a reset clears them. Press T or click the TELEMETRY button to hide or
+show the panel. `--no-telemetry` starts with it hidden, and the help (F1) hides it while shown.
+An FMU built before the aero outputs existed shows the panel without the AERO chart.
+
+Each chart is one Panda3D Geom of line strips. Every frame, a single copy writes its vertex
+heights from a numpy ring buffer. The value texts change 8 times per second.
+
 ## The worlds
 
 * **Race track** (`racecar`): the 1735 m circuit of `examples/cars/design/track.py`, 12 m of
@@ -98,7 +125,7 @@ vehicle, view, start, frames whose backlog was dropped. Warnings: rolled over, t
     scripts.py (pure-pursuit driver) ----------------------------+--> core.Simulation --> fmu.VehicleModel --> FMU (fmpy)
                                                                        |  pacer, friction per wheel, laps, warnings
     game.py (Panda3D ShowBase, one thread) <---------------------------+
-       world.py (track or hills, sky), vehicle.py (meshes, poses), hud.py
+       world.py (track or hills, sky), vehicle.py (meshes, poses), hud.py, telemetry.py
 
 * **One thread, fixed steps.** The FMUs are exported for a 5 ms communication step (200 Hz; the
   export analysis picks the integrator and the internal step, `build/build.json`). Each frame the
