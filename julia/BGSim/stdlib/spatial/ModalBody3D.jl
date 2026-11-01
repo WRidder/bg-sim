@@ -48,9 +48,6 @@
         Gj4::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: inertia component xy"]
         Gj5::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: inertia component xz"]
         Gj6::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: inertia component yz"]
-        Gr1::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: rotational coupling x"]
-        Gr2::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: rotational coupling y"]
-        Gr3::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: rotational coupling z"]
         Gb1::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: unit force x at interface B"]
         Gb2::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: unit force y at interface B"]
         Gb3::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: unit force z at interface B"]
@@ -93,7 +90,7 @@
             J0 = J0, mk = mk, kk = kk, St = St, Sr = Sr, J1 = J1, Exx = Exx, Eyy = Eyy, Ezz = Ezz,
             Exy = Exy, Exz = Exz, Eyz = Eyz, XP = XP, QP = QP, RP = RP, PT = PT, PR = PR, Gt1 = Gt1,
             Gt2 = Gt2, Gt3 = Gt3, Gj1 = Gj1, Gj2 = Gj2, Gj3 = Gj3, Gj4 = Gj4, Gj5 = Gj5, Gj6 = Gj6,
-            Gr1 = Gr1, Gr2 = Gr2, Gr3 = Gr3, Gb1 = Gb1, Gb2 = Gb2, Gb3 = Gb3, Gc1 = Gc1, Gc2 = Gc2,
+            Gb1 = Gb1, Gb2 = Gb2, Gb3 = Gb3, Gc1 = Gc1, Gc2 = Gc2,
             Gc3 = Gc3, Gd1 = Gd1, Gd2 = Gd2, Gd3 = Gd3,
             zeta = zeta, g0 = g0)
     end

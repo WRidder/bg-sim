@@ -169,7 +169,7 @@ Put the GLB (`meshes/bracket.glb`) as a mesh visual on the link bound to the blo
 ### Limits
 
 - Linear elastic, isotropic material and small elastic strain. The overall motion can be large (the floating frame is exact), the deformation relative to it must stay small.
-- Geometric stiffening is first order. It does not include the stiffening by interface moments or by distributed loads other than gravity.
+- Geometric stiffening is first order: the part stiffens by its rotation (centrifugal), by gravity and by forces at the interfaces, not by the acceleration of its reference frame, by interface moments or by other distributed loads. With stiffening on, keep the elastic deflection small against the part (well under 1 % of its size for a light part); a very soft, light part with large deflections should run with stiffening off.
 - No plasticity, contact on the part's surface, or stress output.
 
 ## For library authors

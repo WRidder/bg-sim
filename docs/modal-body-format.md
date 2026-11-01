@@ -83,14 +83,19 @@ geometric stiffness matrix. The file holds `G` for the load cases the equations 
 
 | Key | Count | Load `f` | Enters |
 |---|---|---|---|
-| `translation` | 3 | `ρ e_a` | first moment `S(q)` and the translational coupling |
-| `inertia` | 6 | `ρ (2 δ_ab x − x_a e_b − x_b e_a)`, ab = xx yy zz xy xz yz | inertia tensor `J(q)` (centrifugal and Euler stiffening) |
-| `rotation` | 3 | `ρ e_a × x` | rotational coupling |
+| `translation` | 3 | `ρ e_a` | first moment `S(q)` (gravity and the rotation–translation coupling) |
+| `inertia` | 6 | `ρ (2 δ_ab x − x_a e_b − x_b e_a)`, ab = xx yy zz xy xz yz | inertia tensor `J(q)` (centrifugal stiffening) |
+| `rotation` | 3 | `ρ e_a × x` | not used by `ModalBody3D` (kept for other consumers) |
 | `interface_force` | 3 (ni − 1) | unit force `e_a` at interface j ≥ 2 | interface positions (stiffening by interface forces) |
 
 Each is a list of nm × nm matrices (rows). The terms are part of the kinetic energy and of the
-port kinematics, so the stiffened body still conserves energy. Not included: stiffening by
-interface moments and by distributed loads other than gravity. The node setting
+port kinematics, so the stiffened body still conserves energy. `ModalBody3D` puts them into
+`S(q)` and `J(q)` (second order in q) but not into the coupling rows between the frame and the
+modes (first order in q): without the matching third-order terms of the modal mass block those
+make the mass matrix indefinite already at moderate deflections of a light part. So the body
+stiffens by its rotation, by gravity and by interface forces, not by the acceleration of its
+reference frame. Not included either: stiffening by interface moments and by distributed loads
+other than gravity. The node setting
 `stiffening = 0` drops the terms (they cost equations); a file written with
 `"stiffening": false` has `null` here.
 

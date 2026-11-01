@@ -1,10 +1,7 @@
 # FEM flexible bodies: `stdlib:spatial/ModalBody3D` with a reduced-model file of
 # julia/BGSimFEM (format `bgsim.modal-body`, docs/modal-body-format.md) on the real pipeline.
 #
-# The fixture `fixtures/fem/lbar.modal.json` is a small L of a soft test material (E = 70 MPa,
-# modes 14 Hz to 1.4 kHz) with three interfaces (A root, B leg end, C on the arm), reduced by
-# Craig-Bampton to 1 fixed-interface + 12 constraint modes; regenerate it with
-# `julia --project=julia/BGSimFEM julia/BGSimFEM/bin/bgsim-fem.jl test/fixtures/fem/lbar.fem.json`.
+# The fixture and the rigs are in fem_body_rigs.jl.
 #
 #   * the loader: sizes, symmetric mass properties, the invariant identity
 #     E_xx + E_yy + E_zz = diag(mk), E108 for a missing or foreign file, the compile key follows
@@ -17,116 +14,10 @@
 using Test
 using BGSim
 using LinearAlgebra
-import JSON3
-
-if !isdefined(@__MODULE__, :BondGraphGolden)
-    include(joinpath(@__DIR__, "golden", "bondgraph", "golden_helpers.jl"))
-end
-using .BondGraphGolden
 import BGSim.IR
 import BGSim.Compile
 
-const FEM_FX = joinpath(@__DIR__, "fixtures", "fem")
-const FEM_DATA = JSON3.read(read(joinpath(FEM_FX, "lbar.modal.json"), String))
-const FEM_NM = Int(FEM_DATA.nm)
-
-_femv(v) = "[" * join(string.(Float64.(v)), ", ") * "]"
-_fem_errors(flat) = [d for d in flat.diagnostics if d.severity == "error"]
-_fem_drift(E) = (maximum(E) - minimum(E)) / maximum(abs.(E))
-_fem_mat(rows) = permutedims(reduce(hcat, [Float64.(collect(r)) for r in rows]))
-
-function _fem_body(id, name; file = "lbar.modal.json", stiffening = 1, zeta = 0.0, g0 = 0.0,
-        starts = Dict{String,Any}())
-    node = bg_node(id, name, bg_ref("stdlib:spatial/ModalBody3D");
-        params = Dict{String,Any}("zeta" => string(zeta), "g0" => string(g0)), starts = starts)
-    node["constants"] = Dict{String,Any}("file" => file, "stiffening" => stiffening)
-    return node
-end
-
-"""Mean frequency (Hz) of a signal from its upward mean crossings."""
-function _fem_freq(t, x)
-    xm = x .- (maximum(x) + minimum(x)) / 2
-    cr = Float64[]
-    for i in 1:(length(x) - 1)
-        if xm[i] < 0 && xm[i + 1] >= 0
-            push!(cr, t[i] - xm[i] * (t[i + 1] - t[i]) / (xm[i + 1] - xm[i]))
-        end
-    end
-    return (length(cr) - 1) / (cr[end] - cr[1])
-end
-
-# ---- rigs ----------------------------------------------------------------------------------
-
-"""A free body, no gravity, no damping: frame momentum and modal displacements at t = 0."""
-function _fem_free(; stiffening = 1, t_end = 0.1)
-    q0 = zeros(FEM_NM)
-    q0[1], q0[2], q0[4] = 2e-3, -1e-3, 5e-4
-    P0 = [2e-4, -1e-4, 3e-4, 0.01, 0.0, -0.005]
-    body = _fem_body("n1", "Body"; stiffening = stiffening,
-        starts = Dict{String,Any}("core/q" => _femv(q0), "core/P" => _femv(P0)))
-    nodes = Any[body, bg_node("n2", "Mount", bg_ref("stdlib:spatial/LocalPose3D"))]
-    conns = Any[bg_conn("c1", "signal", "n2", "g", "n1", "gA")]
-    return bg_model("FemFree", nodes, conns; t_end = t_end, points = 1001, reltol = 1e-10, abstol = 1e-13)
-end
-
-"""A pendulum: interface A on a compliant revolute (axis world y), released horizontal."""
-function _fem_pendulum(; t_end = 0.3)
-    s2 = sqrt(0.5)
-    kk = 1.0e6
-    nodes = Any[
-        bg_node("n1", "World", bg_ref("stdlib:multibond/GroundSpatial")),
-        bg_node("n2", "Axis", bg_ref("stdlib:multibond/FixedTransform3DNeutral");
-            params = Dict{String,Any}("qw" => string(s2), "qx" => string(-s2))),
-        bg_node("n3", "Hinge", bg_ref("stdlib:spatial/Revolute3D");
-            params = Dict{String,Any}("kt" => string(kk), "kr" => string(kk))),
-        _fem_body("n4", "Body"; g0 = 9.81),
-        bg_node("n5", "AxisPose", bg_ref("stdlib:spatial/LocalPose3D");
-            params = Dict{String,Any}("qw" => string(s2), "qx" => string(s2))),
-        bg_node("n6", "PoseA", bg_ref("stdlib:multibond/ComposePose3D")),
-        bg_node("n7", "Free", bg_ref("stdlib:bondgraph/Se"); params = Dict{String,Any}("e" => "0.0")),
-    ]
-    conns = Any[
-        bg_conn("c1", "bond", "n1", "p", "n2", "b"),
-        bg_conn("c2", "bond", "n2", "a", "n3", "parent"),
-        bg_conn("c3", "bond", "n3", "child", "n4", "A"),
-        bg_conn("c4", "signal", "n5", "g", "n6", "gp"),
-        bg_conn("c5", "signal", "n3", "pose", "n6", "gl"),
-        bg_conn("c6", "signal", "n6", "g", "n4", "gA"),
-        bg_conn("c7", "bond", "n7", "p", "n3", "drive"),
-    ]
-    return bg_model("FemPendulum", nodes, conns; t_end = t_end, points = 1201, reltol = 1e-10, abstol = 1e-13)
-end
-
-"""Clamped at A (stiff CSpatial + RSpatial), with an optional constant wrench at B and C."""
-function _fem_clamped(; q0 = zeros(FEM_NM), wB = zeros(6), wC = zeros(6), zeta = 0.0,
-        stiffening = 1, t_end = 0.5, points = 2001)
-    k, b = 1.0e9, 1.0e3
-    nodes = Any[
-        _fem_body("n1", "Body"; zeta = zeta, stiffening = stiffening,
-            starts = Dict{String,Any}("core/q" => _femv(q0))),
-        bg_node("n2", "Clamp", bg_ref("stdlib:multibond/CSpatial");
-            params = Dict{String,Any}(p => string(k) for p in ("krx", "kry", "krz", "kx", "ky", "kz"))),
-        bg_node("n3", "ClampR", bg_ref("stdlib:multibond/RSpatial");
-            params = Dict{String,Any}(p => string(b) for p in ("brx", "bry", "brz", "bx", "by", "bz"))),
-        bg_node("n5", "Mount", bg_ref("stdlib:spatial/LocalPose3D")),
-    ]
-    conns = Any[
-        bg_conn("c1", "bond", "n1", "A", "n2", "p"),
-        bg_conn("c2", "bond", "n1", "A", "n3", "p"),
-        bg_conn("c4", "signal", "n5", "g", "n1", "gA"),
-    ]
-    for (tag, port, w) in (("B", "B", wB), ("C", "C", wC))
-        any(!iszero, w) || continue
-        push!(nodes, bg_node("L$tag", "Load$tag", bg_ref("stdlib:multibond/ExternalWrenchSpatial")))
-        push!(conns, bg_conn("cl$tag", "bond", "L$tag", "p", "n1", port))
-        for (i, (p, v)) in enumerate(zip(("tx", "ty", "tz", "fx", "fy", "fz"), w))
-            push!(nodes, bg_node("k$tag$i", "W$tag$i", bg_ref("stdlib:sources/Constant");
-                params = Dict{String,Any}("value" => string(v))))
-            push!(conns, bg_conn("w$tag$i", "signal", "k$tag$i", "y", "L$tag", p))
-        end
-    end
-    return bg_model("FemClamped", nodes, conns; t_end = t_end, points = points, reltol = 1e-9, abstol = 1e-13)
-end
+isdefined(@__MODULE__, :_fem_free) || include(joinpath(@__DIR__, "fem_body_rigs.jl"))
 
 # ---- tests ---------------------------------------------------------------------------------
 

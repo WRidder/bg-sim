@@ -30,11 +30,7 @@ if !isdefined(@__MODULE__, :_fb_free3)
     end
 end
 if !isdefined(@__MODULE__, :_fem_free)
-    # the rigs of test_fem_body.jl (the FEM flexible body), without its testsets
-    let src = read(joinpath(@__DIR__, "test_fem_body.jl"), String)
-        cut = findfirst("@testset \"FEM flexible body (ModalBody3D)\"", src)
-        include_string(@__MODULE__, src[1:(first(cut) - 1)], "test_fem_body.jl (rigs)")
-    end
+    include(joinpath(@__DIR__, "fem_body_rigs.jl"))   # the rigs of test_fem_body.jl
 end
 
 const _EXF = BGSim.Export
@@ -180,8 +176,8 @@ end
     end
 
     @testset "ModalBody3D: FEM body from its reduced-model file, free, spinning (RK4)" begin
-        # the soft test L of test_fem_body.jl: 13 modes up to 1.4 kHz clamped (about 2 kHz
-        # free), so dt * omega_max is about 0.05; the reduced matrices are literals in model.c
+        # the soft test L of test_fem_body.jl: 13 modes up to 1.4 kHz clamped (2.5 kHz free),
+        # so dt * omega_max is about 0.06; the reduced matrices are literals in model.c
         errs = _exf_check(_fem_free(t_end = 0.02); dt = 4.0e-6, t_end = 0.02, stride = 100,
             project_dir = FEM_FX)
         _exf_assert(errs, ("Body",), 1.0e-4)

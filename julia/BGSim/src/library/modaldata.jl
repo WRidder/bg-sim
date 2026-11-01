@@ -206,6 +206,9 @@ function load_modal_body(project_dir, settings::AbstractDict)
     end
     append!(out, Pair{String,Any}["XP" => XP, "QP" => QP, "RP" => RP, "PT" => PT, "PR" => PR])
     for (b, name) in enumerate(MODAL_G_NAMES)
+        # the rotational-acceleration cases stay in the file but the block does not use them
+        # (ModalBodyCore3D, header: they would enter the coupling rows of the mass matrix)
+        startswith(name, "Gr") && continue
         push!(out, name => G[:, ((b - 1) * nm + 1):(b * nm)])
     end
     return out

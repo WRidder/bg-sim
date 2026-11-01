@@ -9,15 +9,23 @@
     # to it (Craig–Bampton with interface A clamped, the general form of the beam blocks'
     # clamped-free basis): a material point at x (in R) moves to r = x + Phi(x) q, q the nm
     # modal coordinates (m; diagonal modal mass mk and stiffness kk). The kinetic energy is
-    # exact for this linear field and carries the second-order field u2(q) through the
-    # geometric-stiffening matrices (int f . u2 = -1/2 q' G(f) q, see julia/BGSimFEM):
+    # exact for this linear field; the second-order field u2(q) enters through the
+    # geometric-stiffening matrices (int f . u2 = -1/2 q' G(f) q, see julia/BGSimFEM) in the
+    # first moment S(q) and the inertia J(q) only:
     #
     #   T = 1/2 m |v|^2 + v.(w x S(q)) + 1/2 w.J(q) w + V.C(q)' q' + 1/2 sum mk q'^2
     #   S(q) = S0 + St q - 1/2 (q' Gt_a q)_a
     #   J(q) = J0 + sum_k q_k J1_k + (tr U I - U) - 1/2 (q' Gj_ab q)_ab,  U_ab = q' E_ab q
-    #   C rows: rotation   Sr[:,k] - (W_a q)_k - (Gr_a q)_k,  W_x = Eyz - Eyz', W_y = Exz' - Exz,
-    #                                                         W_z = Exy - Exy'
-    #           translation St[:,k] - (Gt_a q)_k
+    #   C rows: rotation   Sr[:,k] - (W_a q)_k,  W_x = Eyz - Eyz', W_y = Exz' - Exz, W_z = Exy - Exy'
+    #           translation St[:,k]
+    #
+    # So the body stiffens by its rotation (centrifugal, through J(q) and S(q)), by gravity
+    # (through S(q) in U_g) and by the interface forces (below). The u2 terms of the coupling
+    # rows C (stiffening by the frame's translational and angular acceleration) are left out on
+    # purpose: they are first order in q, and without the matching third-order terms of the
+    # modal mass block they make the mass matrix indefinite already at moderate deflections of a
+    # light part (the rotational Schur complement of a free body is small). The file's
+    # rotational-acceleration matrices (`stiffening.rotation`) are therefore not used.
     #
     # This is the multibond bond graph of `ModalBeam3D` with arbitrary invariants: the frame
     # 1-junction with the reduced rigid inertia and the Euler gyrator, the modal 1-junctions
@@ -70,9 +78,6 @@
         Gj4::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: inertia component xy"]
         Gj5::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: inertia component xz"]
         Gj6::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: inertia component yz"]
-        Gr1::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: rotational coupling x"]
-        Gr2::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: rotational coupling y"]
-        Gr3::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: rotational coupling z"]
         Gb1::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: unit force x at interface B"]
         Gb2::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: unit force y at interface B"]
         Gb3::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: unit force z at interface B"]
@@ -143,9 +148,6 @@
         gq7::Vec{nm}
         gq8::Vec{nm}
         gq9::Vec{nm}
-        gq10::Vec{nm}
-        gq11::Vec{nm}
-        gq12::Vec{nm}
         gq13::Vec{nm}
         gq14::Vec{nm}
         gq15::Vec{nm}
@@ -157,12 +159,6 @@
         gq21::Vec{nm}
         sg::Vec{21}, [description = "q' G_c q"]
         spd::Vec{9}, [description = "qd' G_c q of the interface-force cases (minus the rate of the second-order interface position)"]
-        gtd1::Vec{nm}, [description = "Gt1 q'"]
-        gtd2::Vec{nm}, [description = "Gt2 q'"]
-        gtd3::Vec{nm}, [description = "Gt3 q'"]
-        grd1::Vec{nm}, [description = "Gr1 q'"]
-        grd2::Vec{nm}, [description = "Gr2 q'"]
-        grd3::Vec{nm}, [description = "Gr3 q'"]
         kq::Vec{nm}, [unit = "N", description = "kk q"]
         # deflection-dependent inertia
         S::Vec{3}, [unit = "kg*m", description = "First moment of the deformed body in R"]
@@ -255,9 +251,6 @@
             gq7 ~ Gj4 * q
             gq8 ~ Gj5 * q
             gq9 ~ Gj6 * q
-            gq10 ~ Gr1 * q
-            gq11 ~ Gr2 * q
-            gq12 ~ Gr3 * q
             gq13 ~ Gb1 * q
             gq14 ~ Gb2 * q
             gq15 ~ Gb3 * q
@@ -276,9 +269,9 @@
             sg[7] ~ dot(q, gq7)
             sg[8] ~ dot(q, gq8)
             sg[9] ~ dot(q, gq9)
-            sg[10] ~ dot(q, gq10)
-            sg[11] ~ dot(q, gq11)
-            sg[12] ~ dot(q, gq12)
+            sg[10] ~ 0.0               # the rotational-acceleration cases are not used (see the header)
+            sg[11] ~ 0.0
+            sg[12] ~ 0.0
             sg[13] ~ dot(q, gq13)
             sg[14] ~ dot(q, gq14)
             sg[15] ~ dot(q, gq15)
@@ -297,12 +290,6 @@
             spd[7] ~ dot(qd, gq19)
             spd[8] ~ dot(qd, gq20)
             spd[9] ~ dot(qd, gq21)
-            gtd1 ~ Gt1 * qd
-            gtd2 ~ Gt2 * qd
-            gtd3 ~ Gt3 * qd
-            grd1 ~ Gr1 * qd
-            grd2 ~ Gr2 * qd
-            grd3 ~ Gr3 * qd
         end
         for s in 1:(1 - stiffening)
             for k in 1:nm
@@ -315,9 +302,6 @@
                 gq7[k] ~ 0.0
                 gq8[k] ~ 0.0
                 gq9[k] ~ 0.0
-                gq10[k] ~ 0.0
-                gq11[k] ~ 0.0
-                gq12[k] ~ 0.0
                 gq13[k] ~ 0.0
                 gq14[k] ~ 0.0
                 gq15[k] ~ 0.0
@@ -327,12 +311,6 @@
                 gq19[k] ~ 0.0
                 gq20[k] ~ 0.0
                 gq21[k] ~ 0.0
-                gtd1[k] ~ 0.0
-                gtd2[k] ~ 0.0
-                gtd3[k] ~ 0.0
-                grd1[k] ~ 0.0
-                grd2[k] ~ 0.0
-                grd3[k] ~ 0.0
             end
             for c in 1:21
                 sg[c] ~ 0.0
@@ -351,14 +329,14 @@
         Jc[4] ~ J0[1, 2] + j1q[4] - U[4] - 0.5 * sg[7]
         Jc[5] ~ J0[1, 3] + j1q[5] - U[5] - 0.5 * sg[8]
         Jc[6] ~ J0[2, 3] + j1q[6] - U[6] - 0.5 * sg[9]
-        # ---- coupling rows C_k = [rotation; translation] ----
+        # ---- coupling rows C_k = [rotation; translation] (first-order field only, see the header) ----
         for k in 1:nm
-            C[k, 1] ~ Sr[1, k] - (eyzq[k] - eyzt[k]) - gq10[k]
-            C[k, 2] ~ Sr[2, k] - (exzt[k] - exzq[k]) - gq11[k]
-            C[k, 3] ~ Sr[3, k] - (exyq[k] - exyt[k]) - gq12[k]
-            C[k, 4] ~ St[1, k] - gq1[k]
-            C[k, 5] ~ St[2, k] - gq2[k]
-            C[k, 6] ~ St[3, k] - gq3[k]
+            C[k, 1] ~ Sr[1, k] - (eyzq[k] - eyzt[k])
+            C[k, 2] ~ Sr[2, k] - (exzt[k] - exzq[k])
+            C[k, 3] ~ Sr[3, k] - (exyq[k] - exyt[k])
+            C[k, 4] ~ St[1, k]
+            C[k, 5] ~ St[2, k]
+            C[k, 6] ~ St[3, k]
             for i in 1:6
                 Cm[k, i] ~ C[k, i] / mk[k]
             end
@@ -470,9 +448,7 @@
                     0.5 * ((exyq[k] + exyt[k]) * ww[4] + (exzq[k] + exzt[k]) * ww[5] + (eyzq[k] + eyzt[k]) * ww[6]) -
                     0.5 * (gq4[k] * ww[1] + gq5[k] * ww[2] + gq6[k] * ww[3] + gq7[k] * ww[4] + gq8[k] * ww[5] + gq9[k] * ww[6]) +
                     stv[k] - (gq1[k] * vw[1] + gq2[k] * vw[2] + gq3[k] * vw[3]) +
-                    V[1] * (eyzd[k] - eyztd[k]) + V[2] * (exztd[k] - exzd[k]) + V[3] * (exyd[k] - exytd[k]) -
-                    (V[1] * grd1[k] + V[2] * grd2[k] + V[3] * grd3[k]) -
-                    (V[4] * gtd1[k] + V[5] * gtd2[k] + V[6] * gtd3[k])
+                    V[1] * (eyzd[k] - eyztd[k]) + V[2] * (exztd[k] - exzd[k]) + V[3] * (exyd[k] - exytd[k])
         end
         # ---- interfaces B, C, D (j = 1, 2, 3): position, rotation, flows, efforts ----
         uP ~ PT * q
