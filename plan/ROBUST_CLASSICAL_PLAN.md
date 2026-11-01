@@ -15,10 +15,20 @@ Status and progress: the tracking table at the end. Update it in the same commit
 
 ## Work items
 
-1. **Multi-model balance gain.** One balance gain designed against several models at once: the corners and samples
-   of the parameter box, with the delay and the sensor filter included. Candidates are an LQR on stacked models
-   (minimising the summed or worst-case cost) or a structured H∞ / mixed-sensitivity design. Verify over the box
-   with the closed-loop eigenvalues, and with gain, phase and delay margins.
+1. **Multi-model / robust balance controller.** One balance controller designed against the whole parameter box,
+   with the delay and the sensor filter included. Candidates, compared on the same test:
+   - an LQR on stacked models (minimising the summed or worst-case cost over the box corners and samples);
+   - structured (fixed-order) H∞, with the firmware structure fixed in advance (state feedback plus estimator, or a
+     low-order output feedback) and tuned by nonsmooth optimisation against all models at once;
+   - μ-synthesis (D-K iteration), with the masses, lengths and friction as real parametric uncertainty in an LFT and
+     the delay and unmodelled dynamics as a multiplicative weight;
+   - Glover–McFarlane loop shaping (robust to coprime-factor uncertainty, well suited to unstable plants).
+
+   The controller is discretised at the firmware rate (state space in a `@discrete` block, order reduced if needed).
+   Verification: μ-analysis over the box (robust stability and robust performance margins), the closed-loop
+   eigenvalues at the corners, the disk margins and the delay margin. The same μ-analysis also applies to the learned
+   policies, linearised at the upright. A μ peak above 1 for the rotary quad would be a quantitative infeasibility
+   statement for robust balance with those sensors and that delay.
 2. **Worst-case swing-up plan.** The swing-up trajectory planned over the parameter range, not on the nominal model.
    Options are multi-model collocation (one feed-forward that brings every sampled model into the catch region), a
    min-max cost, or a plan with margins on the actuator and the travel, followed by a TVLQR designed against the
@@ -44,7 +54,7 @@ One table per rig compares five controllers:
 
 | # | item | rig | status | notes |
 | --- | --- | --- | --- | --- |
-| C1 | multi-model balance gain | double cart | todo | after the phase B ranges exist |
+| C1 | robust balance: multi-model LQR, structured H∞, μ-synthesis, loop shaping; μ-analysis of all balance controllers | double cart | todo | after the phase B ranges exist |
 | C2 | worst-case swing-up plan | double cart | todo | |
 | C3 | energy-based swing-up with re-arm | double cart | todo | |
 | C4 | items 1 to 3 on the quad cart, then the rotary rigs | quad cart, rotary | todo | |
