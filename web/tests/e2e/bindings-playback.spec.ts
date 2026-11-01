@@ -145,6 +145,10 @@ test("space toggles playback while the 3D view has focus, and the run plays thro
   await openViewer(page);
   const bar = page.getByTestId("playback-bar");
   await page.getByTestId("playback-speed").selectOption("4");
+  // loop is on by default
+  await expect(page.getByTestId("playback-loop")).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("playback-loop").click();
+  await expect(page.getByTestId("playback-loop")).toHaveAttribute("aria-pressed", "false");
   await page.getByTestId("scene-stage").focus();
   await page.keyboard.press("Space");
   await expect(bar).toHaveAttribute("data-playing", "true");
@@ -197,4 +201,24 @@ test("an unknown target is reported as E301 and does not stop the other bindings
   await page.getByRole("tab", { name: /^Diagnostics/ }).click();
   await expect(page.getByTestId("diagnostics-panel")).toContainText("E301");
   await expect(page.getByTestId("diagnostics-panel")).toContainText("joint:elbow");
+});
+
+test("Play with no run runs the model, then plays it back from the start, looping", async ({ page, request }) => {
+  await store(request, [COUNTER_BINDING]);
+  await page.goto(`/?project=${project}&model=Arm`);
+  await expect(page.getByTestId("run-button")).toBeEnabled({ timeout: 30_000 });
+  await page.getByRole("tab", { name: "3D View" }).click();
+  await expect(page.getByTestId("scene-view")).toHaveAttribute("data-state", "loaded", { timeout: 30_000 });
+  const bar = page.getByTestId("playback-bar");
+  await expect(bar).toHaveAttribute("data-mode", "empty");
+  await expect(page.getByTestId("playback-loop")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("playback-toggle")).toHaveAttribute("data-runs", "true");
+  await page.getByTestId("playback-toggle").click();
+  await expect(page.getByTestId("run-status")).toHaveAttribute("data-status", "done", { timeout: 30_000 });
+  await expect(bar).toHaveAttribute("data-mode", "playback", { timeout: 30_000 });
+  await expect(bar).toHaveAttribute("data-playing", "true");
+  // the 1 s run loops: still playing well past its end, and the head comes round to the start again
+  await page.waitForTimeout(1500);
+  await expect(bar).toHaveAttribute("data-playing", "true");
+  await expect.poll(() => barTime(page), { timeout: 3000 }).toBeLessThan(0.3);
 });

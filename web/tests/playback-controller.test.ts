@@ -53,7 +53,7 @@ function harness() {
     reset: () => undefined,
   };
   const playback = new ViewerPlayback(port, { now: () => now, frames });
-  return { playback, step, port, joint, target, queue, advance: (ms: number) => { now += ms; } };
+  return { playback, step, port, joint, target, queue, now: () => now, advance: (ms: number) => { now += ms; } };
 }
 
 const bindings: Binding[] = [{ target: "joint:j", property: "position", signal: "s" }];
@@ -89,6 +89,7 @@ describe("ViewerPlayback", () => {
     h.playback.setData(ramp(), false);
     h.step();
     h.playback.setSpeed(0.5);
+    h.playback.setLoop(false); // loop is on by default
     h.playback.play();
     h.step();
     h.step(1000); // 1 s wall = 0.5 s sim
@@ -173,6 +174,46 @@ describe("ViewerPlayback", () => {
     expect(h.playback.mode).toBe("playback");
     expect(h.playback.clock.time(0)).toBeCloseTo(0.15);
     expect(h.playback.clock.end).toBe(0.3);
+  });
+
+  it("loops by default", () => {
+    const h = harness();
+    expect(h.playback.snapshot().loop).toBe(true);
+    expect(h.playback.clock.loop).toBe(true);
+  });
+
+  it("a run started from Play plays from its start once complete; without it the head stays", () => {
+    for (const armed of [true, false]) {
+      const h = harness();
+      h.playback.setTarget(h.target);
+      h.playback.setBindings(bindings);
+      if (armed) h.playback.playWhenDone();
+      const buffer = new SignalBuffer(["s"]);
+      h.playback.setData(buffer, true);
+      buffer.append(new Float64Array([0, 0, 0.1, 1, 0.2, 2, 0.3, 3]));
+      h.playback.dataChanged();
+      h.step();
+      h.playback.complete();
+      h.step();
+      expect(h.playback.mode).toBe("playback");
+      expect(h.playback.clock.playing(h.now())).toBe(armed);
+      expect(h.playback.clock.time(h.now())).toBeCloseTo(armed ? 0 : 0.15);
+      // consumed: the next run does not start on its own
+      h.playback.pause();
+      h.playback.setData(buffer, false);
+      h.playback.complete();
+      expect(h.playback.clock.playing(h.now())).toBe(false);
+    }
+  });
+
+  it("a finished run loaded at once (no live phase) also plays when armed", () => {
+    const h = harness();
+    h.playback.setTarget(h.target);
+    h.playback.setBindings(bindings);
+    h.playback.playWhenDone();
+    h.playback.setData(ramp(), false);
+    h.playback.complete();
+    expect(h.playback.clock.playing(h.now())).toBe(true);
   });
 
   it("changing the bindings resets the scene and applies the new ones", () => {
