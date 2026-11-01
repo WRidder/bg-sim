@@ -1,0 +1,5300 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "offset-com-best",
+  "$comment": "Carton 1.5 kg, CoM offset (60, 30) mm, gripped over the CoM: the fastest trajectory of design/optimize.py, family 4 (joint, blended), T_cyc 1.597 s at a holding margin of 0.51 (required 0.5) and 55 % of the robot limits.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Planner",
+        "name": "Planner",
+        "block": {
+          "ref": "project:PickPlanner"
+        },
+        "position": {
+          "x": 80,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "family": "family",
+          "kv": "kv",
+          "ka": "ka",
+          "v_c": "v_c",
+          "a_c": "a_c",
+          "j_c": "j_c",
+          "w_c": "w_c",
+          "al_c": "al_c",
+          "jw_c": "jw_c",
+          "lam": "lam",
+          "r_b": "r_b",
+          "H_lift": "H_lift",
+          "h_app": "h_app",
+          "h_dep": "h_dep",
+          "t0": "t0",
+          "t_ext": "t_ext",
+          "t_vac": "t_vac",
+          "T_seal": "T_seal",
+          "ret_hold": "ret_hold",
+          "t_ret": "t_ret",
+          "t_ext2": "t_ext2",
+          "T_rel": "T_rel",
+          "xp": "xp",
+          "yp": "yp",
+          "psip_deg": "psip_deg",
+          "xq": "xq",
+          "yq": "yq",
+          "psiq_deg": "psiq_deg",
+          "psig_deg": "psig_deg",
+          "gx": "gx",
+          "gy": "gy",
+          "z_s": "z_s",
+          "L_p": "L_p",
+          "W_p": "W_p",
+          "H_p": "H_p",
+          "h_stack": "h_stack",
+          "r_p": "r_p",
+          "lay_deg": "lay_deg",
+          "D_lip": "D_lip",
+          "e_m": "e_m",
+          "zone1": "zone1",
+          "zone2": "zone2",
+          "zone3": "zone3",
+          "zone4": "zone4",
+          "zone5": "zone5",
+          "qdmax1": "qdmax1",
+          "qdmax2": "qdmax2",
+          "qdmax3": "qdmax3",
+          "qdmax4": "qdmax4",
+          "qdmax5": "qdmax5",
+          "qdmax6": "qdmax6",
+          "qddmax1": "qddmax1",
+          "qddmax2": "qddmax2",
+          "qddmax3": "qddmax3",
+          "qddmax4": "qddmax4",
+          "qddmax5": "qddmax5",
+          "qddmax6": "qddmax6",
+          "qdddmax1": "qdddmax1",
+          "qdddmax2": "qdddmax2",
+          "qdddmax3": "qdddmax3",
+          "qdddmax4": "qdddmax4",
+          "qdddmax5": "qdddmax5",
+          "qdddmax6": "qdddmax6",
+          "qmin1": "qmin1",
+          "qmin2": "qmin2",
+          "qmin3": "qmin3",
+          "qmin4": "qmin4",
+          "qmin5": "qmin5",
+          "qmin6": "qmin6",
+          "qmax1": "qmax1",
+          "qmax2": "qmax2",
+          "qmax3": "qmax3",
+          "qmax4": "qmax4",
+          "qmax5": "qmax5",
+          "qmax6": "qmax6",
+          "m_g": "m_g",
+          "zc_g": "zc_g",
+          "Jg45": "Jg45",
+          "Jg6": "Jg6",
+          "m_p": "m_p",
+          "cx": "cx",
+          "cy": "cy",
+          "cz": "cz",
+          "Jpx": "Jpx",
+          "Jpy": "Jpy",
+          "Jpz": "Jpz",
+          "m_max": "m_max",
+          "M45_max": "M45_max",
+          "M6_max": "M6_max",
+          "I45_max": "I45_max",
+          "I6_max": "I6_max"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Tool",
+        "name": "Tool",
+        "block": {
+          "ref": "project:ToolMotion"
+        },
+        "position": {
+          "x": 360,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "TJ",
+        "name": "TJ",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 520,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "JM1",
+        "name": "JM1",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 700,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "-(0)",
+          "y": "0",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Rod1",
+        "name": "Rod1",
+        "block": {
+          "ref": "stdlib:spatial/Prismatic3DLimit"
+        },
+        "position": {
+          "x": 860,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kr": "kr_rod",
+          "br": "br_rod",
+          "kt": "kt_rod",
+          "bt": "bt_rod",
+          "q0": "q_r0",
+          "lower": "0",
+          "upper": "stroke",
+          "kL": "k_stop",
+          "bL": "b_stop",
+          "delta": "1e-4"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cyl1",
+        "name": "Cyl1",
+        "block": {
+          "ref": "project:PneumaticCylinder"
+        },
+        "position": {
+          "x": 860,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F_ext": "F_ext",
+          "F_ret": "F_ret",
+          "v_ext": "v_ext",
+          "v_ret": "v_ret"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RM1",
+        "name": "RM1",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1020,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RJ1",
+        "name": "RJ1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1140,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RodBody1",
+        "name": "RodBody1",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1140,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_rod",
+          "J": "[J_rod, J_rod, J_rod/4]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        }
+      },
+      {
+        "id": "LJ1",
+        "name": "LJ1",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 700,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "0",
+          "y": "0",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CJ1",
+        "name": "CJ1",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 860,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CR1",
+        "name": "CR1",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1020,
+          "y": 280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CM1",
+        "name": "CM1",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1260,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cup1",
+        "name": "Cup1",
+        "block": {
+          "ref": "stdlib:contact/SuctionCup"
+        },
+        "position": {
+          "x": 1400,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L0": "L0",
+          "A_eff": "A_eff",
+          "D_lip": "D_lip",
+          "k_ax": "k_ax",
+          "d_ax": "d_ax",
+          "k_lat": "k_lat",
+          "d_lat": "d_lat",
+          "k_tilt": "k_tilt",
+          "k_tor": "k_tor",
+          "d_rot": "d_rot",
+          "mu": "mu",
+          "V": "V_cup",
+          "perm": "perm",
+          "A_lip0": "A_lip0",
+          "F_min": "F_min",
+          "p_atm": "101325"
+        },
+        "constants": {},
+        "starts": {
+          "rz": "rz0"
+        }
+      },
+      {
+        "id": "Gen1",
+        "name": "Gen1",
+        "block": {
+          "ref": "stdlib:contact/VacuumGenerator"
+        },
+        "position": {
+          "x": 1400,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "dp_max": "dp_max",
+          "Q_max": "Q_max",
+          "n": "1",
+          "G_rel": "G_rel"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "PM1",
+        "name": "PM1",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1560,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "cos(psig_deg*deg/2)",
+          "qx": "0",
+          "qy": "0",
+          "qz": "-sin(psig_deg*deg/2)",
+          "x": "-((0) + cos(psig_deg*deg)*(gx - cx) + sin(psig_deg*deg)*(gy - cy))",
+          "y": "-((0) - sin(psig_deg*deg)*(gx - cx) + cos(psig_deg*deg)*(gy - cy))",
+          "z": "-(H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "ZJ1",
+        "name": "ZJ1",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 860,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "JM2",
+        "name": "JM2",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 700,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "-(r_p*(1*cos(lay_deg*deg) - 0*sin(lay_deg*deg)))",
+          "y": "r_p*(1*sin(lay_deg*deg) + 0*cos(lay_deg*deg))",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Rod2",
+        "name": "Rod2",
+        "block": {
+          "ref": "stdlib:spatial/Prismatic3DLimit"
+        },
+        "position": {
+          "x": 860,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kr": "kr_rod",
+          "br": "br_rod",
+          "kt": "kt_rod",
+          "bt": "bt_rod",
+          "q0": "q_r0",
+          "lower": "0",
+          "upper": "stroke",
+          "kL": "k_stop",
+          "bL": "b_stop",
+          "delta": "1e-4"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cyl2",
+        "name": "Cyl2",
+        "block": {
+          "ref": "project:PneumaticCylinder"
+        },
+        "position": {
+          "x": 860,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F_ext": "F_ext",
+          "F_ret": "F_ret",
+          "v_ext": "v_ext",
+          "v_ret": "v_ret"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RM2",
+        "name": "RM2",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1020,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RJ2",
+        "name": "RJ2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1140,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RodBody2",
+        "name": "RodBody2",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1140,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_rod",
+          "J": "[J_rod, J_rod, J_rod/4]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        }
+      },
+      {
+        "id": "LJ2",
+        "name": "LJ2",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 700,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "r_p*(1*cos(lay_deg*deg) - 0*sin(lay_deg*deg))",
+          "y": "r_p*(1*sin(lay_deg*deg) + 0*cos(lay_deg*deg))",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CJ2",
+        "name": "CJ2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 860,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CR2",
+        "name": "CR2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1020,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CM2",
+        "name": "CM2",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1260,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cup2",
+        "name": "Cup2",
+        "block": {
+          "ref": "stdlib:contact/SuctionCup"
+        },
+        "position": {
+          "x": 1400,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L0": "L0",
+          "A_eff": "A_eff",
+          "D_lip": "D_lip",
+          "k_ax": "k_ax",
+          "d_ax": "d_ax",
+          "k_lat": "k_lat",
+          "d_lat": "d_lat",
+          "k_tilt": "k_tilt",
+          "k_tor": "k_tor",
+          "d_rot": "d_rot",
+          "mu": "mu",
+          "V": "V_cup",
+          "perm": "perm",
+          "A_lip0": "A_lip0",
+          "F_min": "F_min",
+          "p_atm": "101325"
+        },
+        "constants": {},
+        "starts": {
+          "rz": "rz0"
+        }
+      },
+      {
+        "id": "Gen2",
+        "name": "Gen2",
+        "block": {
+          "ref": "stdlib:contact/VacuumGenerator"
+        },
+        "position": {
+          "x": 1400,
+          "y": 480
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "dp_max": "dp_max",
+          "Q_max": "Q_max",
+          "n": "1",
+          "G_rel": "G_rel"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "PM2",
+        "name": "PM2",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1560,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "cos(psig_deg*deg/2)",
+          "qx": "0",
+          "qy": "0",
+          "qz": "-sin(psig_deg*deg/2)",
+          "x": "-((r_p*(1*cos(lay_deg*deg) - 0*sin(lay_deg*deg))) + cos(psig_deg*deg)*(gx - cx) + sin(psig_deg*deg)*(gy - cy))",
+          "y": "-((r_p*(1*sin(lay_deg*deg) + 0*cos(lay_deg*deg))) - sin(psig_deg*deg)*(gx - cx) + cos(psig_deg*deg)*(gy - cy))",
+          "z": "-(H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "ZJ2",
+        "name": "ZJ2",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 860,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "JM3",
+        "name": "JM3",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 700,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "-(r_p*(0*cos(lay_deg*deg) - 1*sin(lay_deg*deg)))",
+          "y": "r_p*(0*sin(lay_deg*deg) + 1*cos(lay_deg*deg))",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Rod3",
+        "name": "Rod3",
+        "block": {
+          "ref": "stdlib:spatial/Prismatic3DLimit"
+        },
+        "position": {
+          "x": 860,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kr": "kr_rod",
+          "br": "br_rod",
+          "kt": "kt_rod",
+          "bt": "bt_rod",
+          "q0": "q_r0",
+          "lower": "0",
+          "upper": "stroke",
+          "kL": "k_stop",
+          "bL": "b_stop",
+          "delta": "1e-4"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cyl3",
+        "name": "Cyl3",
+        "block": {
+          "ref": "project:PneumaticCylinder"
+        },
+        "position": {
+          "x": 860,
+          "y": 720
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F_ext": "F_ext",
+          "F_ret": "F_ret",
+          "v_ext": "v_ext",
+          "v_ret": "v_ret"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RM3",
+        "name": "RM3",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1020,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RJ3",
+        "name": "RJ3",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1140,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RodBody3",
+        "name": "RodBody3",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1140,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_rod",
+          "J": "[J_rod, J_rod, J_rod/4]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        }
+      },
+      {
+        "id": "LJ3",
+        "name": "LJ3",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 700,
+          "y": 760
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "r_p*(0*cos(lay_deg*deg) - 1*sin(lay_deg*deg))",
+          "y": "r_p*(0*sin(lay_deg*deg) + 1*cos(lay_deg*deg))",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CJ3",
+        "name": "CJ3",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 860,
+          "y": 800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CR3",
+        "name": "CR3",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1020,
+          "y": 800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CM3",
+        "name": "CM3",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1260,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cup3",
+        "name": "Cup3",
+        "block": {
+          "ref": "stdlib:contact/SuctionCup"
+        },
+        "position": {
+          "x": 1400,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L0": "L0",
+          "A_eff": "A_eff",
+          "D_lip": "D_lip",
+          "k_ax": "k_ax",
+          "d_ax": "d_ax",
+          "k_lat": "k_lat",
+          "d_lat": "d_lat",
+          "k_tilt": "k_tilt",
+          "k_tor": "k_tor",
+          "d_rot": "d_rot",
+          "mu": "mu",
+          "V": "V_cup",
+          "perm": "perm",
+          "A_lip0": "A_lip0",
+          "F_min": "F_min",
+          "p_atm": "101325"
+        },
+        "constants": {},
+        "starts": {
+          "rz": "rz0"
+        }
+      },
+      {
+        "id": "Gen3",
+        "name": "Gen3",
+        "block": {
+          "ref": "stdlib:contact/VacuumGenerator"
+        },
+        "position": {
+          "x": 1400,
+          "y": 740
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "dp_max": "dp_max",
+          "Q_max": "Q_max",
+          "n": "1",
+          "G_rel": "G_rel"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "PM3",
+        "name": "PM3",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1560,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "cos(psig_deg*deg/2)",
+          "qx": "0",
+          "qy": "0",
+          "qz": "-sin(psig_deg*deg/2)",
+          "x": "-((r_p*(0*cos(lay_deg*deg) - 1*sin(lay_deg*deg))) + cos(psig_deg*deg)*(gx - cx) + sin(psig_deg*deg)*(gy - cy))",
+          "y": "-((r_p*(0*sin(lay_deg*deg) + 1*cos(lay_deg*deg))) - sin(psig_deg*deg)*(gx - cx) + cos(psig_deg*deg)*(gy - cy))",
+          "z": "-(H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "ZJ3",
+        "name": "ZJ3",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 860,
+          "y": 660
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "JM4",
+        "name": "JM4",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 700,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "-(r_p*(-1*cos(lay_deg*deg) - 0*sin(lay_deg*deg)))",
+          "y": "r_p*(-1*sin(lay_deg*deg) + 0*cos(lay_deg*deg))",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Rod4",
+        "name": "Rod4",
+        "block": {
+          "ref": "stdlib:spatial/Prismatic3DLimit"
+        },
+        "position": {
+          "x": 860,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kr": "kr_rod",
+          "br": "br_rod",
+          "kt": "kt_rod",
+          "bt": "bt_rod",
+          "q0": "q_r0",
+          "lower": "0",
+          "upper": "stroke",
+          "kL": "k_stop",
+          "bL": "b_stop",
+          "delta": "1e-4"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cyl4",
+        "name": "Cyl4",
+        "block": {
+          "ref": "project:PneumaticCylinder"
+        },
+        "position": {
+          "x": 860,
+          "y": 980
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F_ext": "F_ext",
+          "F_ret": "F_ret",
+          "v_ext": "v_ext",
+          "v_ret": "v_ret"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RM4",
+        "name": "RM4",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1020,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RJ4",
+        "name": "RJ4",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1140,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RodBody4",
+        "name": "RodBody4",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1140,
+          "y": 960
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_rod",
+          "J": "[J_rod, J_rod, J_rod/4]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        }
+      },
+      {
+        "id": "LJ4",
+        "name": "LJ4",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 700,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "r_p*(-1*cos(lay_deg*deg) - 0*sin(lay_deg*deg))",
+          "y": "r_p*(-1*sin(lay_deg*deg) + 0*cos(lay_deg*deg))",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CJ4",
+        "name": "CJ4",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 860,
+          "y": 1060
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CR4",
+        "name": "CR4",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1020,
+          "y": 1060
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CM4",
+        "name": "CM4",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1260,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cup4",
+        "name": "Cup4",
+        "block": {
+          "ref": "stdlib:contact/SuctionCup"
+        },
+        "position": {
+          "x": 1400,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L0": "L0",
+          "A_eff": "A_eff",
+          "D_lip": "D_lip",
+          "k_ax": "k_ax",
+          "d_ax": "d_ax",
+          "k_lat": "k_lat",
+          "d_lat": "d_lat",
+          "k_tilt": "k_tilt",
+          "k_tor": "k_tor",
+          "d_rot": "d_rot",
+          "mu": "mu",
+          "V": "V_cup",
+          "perm": "perm",
+          "A_lip0": "A_lip0",
+          "F_min": "F_min",
+          "p_atm": "101325"
+        },
+        "constants": {},
+        "starts": {
+          "rz": "rz0"
+        }
+      },
+      {
+        "id": "Gen4",
+        "name": "Gen4",
+        "block": {
+          "ref": "stdlib:contact/VacuumGenerator"
+        },
+        "position": {
+          "x": 1400,
+          "y": 1000
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "dp_max": "dp_max",
+          "Q_max": "Q_max",
+          "n": "1",
+          "G_rel": "G_rel"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "PM4",
+        "name": "PM4",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1560,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "cos(psig_deg*deg/2)",
+          "qx": "0",
+          "qy": "0",
+          "qz": "-sin(psig_deg*deg/2)",
+          "x": "-((r_p*(-1*cos(lay_deg*deg) - 0*sin(lay_deg*deg))) + cos(psig_deg*deg)*(gx - cx) + sin(psig_deg*deg)*(gy - cy))",
+          "y": "-((r_p*(-1*sin(lay_deg*deg) + 0*cos(lay_deg*deg))) - sin(psig_deg*deg)*(gx - cx) + cos(psig_deg*deg)*(gy - cy))",
+          "z": "-(H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "ZJ4",
+        "name": "ZJ4",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 860,
+          "y": 920
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "JM5",
+        "name": "JM5",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 700,
+          "y": 1120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "-(r_p*(0*cos(lay_deg*deg) - -1*sin(lay_deg*deg)))",
+          "y": "r_p*(0*sin(lay_deg*deg) + -1*cos(lay_deg*deg))",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Rod5",
+        "name": "Rod5",
+        "block": {
+          "ref": "stdlib:spatial/Prismatic3DLimit"
+        },
+        "position": {
+          "x": 860,
+          "y": 1120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kr": "kr_rod",
+          "br": "br_rod",
+          "kt": "kt_rod",
+          "bt": "bt_rod",
+          "q0": "q_r0",
+          "lower": "0",
+          "upper": "stroke",
+          "kL": "k_stop",
+          "bL": "b_stop",
+          "delta": "1e-4"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cyl5",
+        "name": "Cyl5",
+        "block": {
+          "ref": "project:PneumaticCylinder"
+        },
+        "position": {
+          "x": 860,
+          "y": 1240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F_ext": "F_ext",
+          "F_ret": "F_ret",
+          "v_ext": "v_ext",
+          "v_ret": "v_ret"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RM5",
+        "name": "RM5",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1020,
+          "y": 1120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RJ5",
+        "name": "RJ5",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 1140,
+          "y": 1120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "RodBody5",
+        "name": "RodBody5",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1140,
+          "y": 1220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_rod",
+          "J": "[J_rod, J_rod, J_rod/4]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        }
+      },
+      {
+        "id": "LJ5",
+        "name": "LJ5",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 700,
+          "y": 1280
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0",
+          "x": "r_p*(0*cos(lay_deg*deg) - -1*sin(lay_deg*deg))",
+          "y": "r_p*(0*sin(lay_deg*deg) + -1*cos(lay_deg*deg))",
+          "z": "-(h_base + L_cyl + rod0)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CJ5",
+        "name": "CJ5",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 860,
+          "y": 1320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CR5",
+        "name": "CR5",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1020,
+          "y": 1320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "CM5",
+        "name": "CM5",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1260,
+          "y": 1120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0",
+          "qx": "1",
+          "qy": "0",
+          "qz": "0"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Cup5",
+        "name": "Cup5",
+        "block": {
+          "ref": "stdlib:contact/SuctionCup"
+        },
+        "position": {
+          "x": 1400,
+          "y": 1120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "L0": "L0",
+          "A_eff": "A_eff",
+          "D_lip": "D_lip",
+          "k_ax": "k_ax",
+          "d_ax": "d_ax",
+          "k_lat": "k_lat",
+          "d_lat": "d_lat",
+          "k_tilt": "k_tilt",
+          "k_tor": "k_tor",
+          "d_rot": "d_rot",
+          "mu": "mu",
+          "V": "V_cup",
+          "perm": "perm",
+          "A_lip0": "A_lip0",
+          "F_min": "F_min",
+          "p_atm": "101325"
+        },
+        "constants": {},
+        "starts": {
+          "rz": "rz0"
+        }
+      },
+      {
+        "id": "Gen5",
+        "name": "Gen5",
+        "block": {
+          "ref": "stdlib:contact/VacuumGenerator"
+        },
+        "position": {
+          "x": 1400,
+          "y": 1260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "dp_max": "dp_max",
+          "Q_max": "Q_max",
+          "n": "1",
+          "G_rel": "G_rel"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "PM5",
+        "name": "PM5",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1560,
+          "y": 1120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "cos(psig_deg*deg/2)",
+          "qx": "0",
+          "qy": "0",
+          "qz": "-sin(psig_deg*deg/2)",
+          "x": "-((r_p*(0*cos(lay_deg*deg) - -1*sin(lay_deg*deg))) + cos(psig_deg*deg)*(gx - cx) + sin(psig_deg*deg)*(gy - cy))",
+          "y": "-((r_p*(0*sin(lay_deg*deg) + -1*cos(lay_deg*deg))) - sin(psig_deg*deg)*(gx - cx) + cos(psig_deg*deg)*(gy - cy))",
+          "z": "-(H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "ZJ5",
+        "name": "ZJ5",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 860,
+          "y": 1180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Parcel",
+        "name": "Parcel",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1800,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_p",
+          "J": "[Jpx, Jpy, Jpz]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        }
+      },
+      {
+        "id": "Pose",
+        "name": "Pose",
+        "block": {
+          "ref": "stdlib:multibond/PoseIntegrator3D"
+        },
+        "position": {
+          "x": 1800,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "qw": "cos(psip_deg*deg/2)",
+          "qx": "0",
+          "qy": "0",
+          "qz": "sin(psip_deg*deg/2)",
+          "px": "xp + cos(psip_deg*deg)*cx - sin(psip_deg*deg)*cy",
+          "py": "yp + sin(psip_deg*deg)*cx + cos(psip_deg*deg)*cy",
+          "pz": "z_s + H_p/2 + cz - pen0"
+        }
+      },
+      {
+        "id": "BoxOff",
+        "name": "BoxOff",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1960,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-cx",
+          "y": "-cy",
+          "z": "-cz"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "BoxPose",
+        "name": "BoxPose",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 2100,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Support",
+        "name": "Support",
+        "block": {
+          "ref": "stdlib:contact/ContactSurface"
+        },
+        "position": {
+          "x": 2000,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "oz": "z_s"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FMount1",
+        "name": "FMount1",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1800,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-(1*L_p/2 - cx)",
+          "y": "-(1*W_p/2 - cy)",
+          "z": "-(-H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FLocal1",
+        "name": "FLocal1",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1940,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "1*L_p/2 - cx",
+          "y": "1*W_p/2 - cy",
+          "z": "-H_p/2 - cz"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FPose1",
+        "name": "FPose1",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 2080,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Floor1",
+        "name": "Floor1",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 2220,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000",
+          "xref": "0.001",
+          "c": "5",
+          "mu": "0.5",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FMount2",
+        "name": "FMount2",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1800,
+          "y": 710
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-(1*L_p/2 - cx)",
+          "y": "-(-1*W_p/2 - cy)",
+          "z": "-(-H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FLocal2",
+        "name": "FLocal2",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1940,
+          "y": 750
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "1*L_p/2 - cx",
+          "y": "-1*W_p/2 - cy",
+          "z": "-H_p/2 - cz"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FPose2",
+        "name": "FPose2",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 2080,
+          "y": 750
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Floor2",
+        "name": "Floor2",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 2220,
+          "y": 710
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000",
+          "xref": "0.001",
+          "c": "5",
+          "mu": "0.5",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FMount3",
+        "name": "FMount3",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1800,
+          "y": 820
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-(-1*L_p/2 - cx)",
+          "y": "-(1*W_p/2 - cy)",
+          "z": "-(-H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FLocal3",
+        "name": "FLocal3",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1940,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-1*L_p/2 - cx",
+          "y": "1*W_p/2 - cy",
+          "z": "-H_p/2 - cz"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FPose3",
+        "name": "FPose3",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 2080,
+          "y": 860
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Floor3",
+        "name": "Floor3",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 2220,
+          "y": 820
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000",
+          "xref": "0.001",
+          "c": "5",
+          "mu": "0.5",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FMount4",
+        "name": "FMount4",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1800,
+          "y": 930
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-(-1*L_p/2 - cx)",
+          "y": "-(-1*W_p/2 - cy)",
+          "z": "-(-H_p/2 - cz)"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FLocal4",
+        "name": "FLocal4",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1940,
+          "y": 970
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "-1*L_p/2 - cx",
+          "y": "-1*W_p/2 - cy",
+          "z": "-H_p/2 - cz"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "FPose4",
+        "name": "FPose4",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 2080,
+          "y": 970
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Floor4",
+        "name": "Floor4",
+        "block": {
+          "ref": "stdlib:contact/ContactPoint"
+        },
+        "position": {
+          "x": 2220,
+          "y": 930
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000",
+          "xref": "0.001",
+          "c": "5",
+          "mu": "0.5",
+          "vs": "0.001"
+        },
+        "constants": {},
+        "starts": {}
+      },
+      {
+        "id": "Monitor",
+        "name": "Monitor",
+        "block": {
+          "ref": "project:PickMonitor"
+        },
+        "position": {
+          "x": 1500,
+          "y": 1400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d_drop": "0.02",
+          "M_req": "M_req"
+        },
+        "constants": {},
+        "starts": {}
+      }
+    ],
+    "connections": [
+      {
+        "id": "fp001",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "V"
+        },
+        "to": {
+          "node": "Tool",
+          "port": "V"
+        }
+      },
+      {
+        "id": "fp002",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "Vd"
+        },
+        "to": {
+          "node": "Tool",
+          "port": "Vd"
+        }
+      },
+      {
+        "id": "fp003",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "tk"
+        },
+        "to": {
+          "node": "Tool",
+          "port": "tk"
+        }
+      },
+      {
+        "id": "fp004",
+        "kind": "bond",
+        "from": {
+          "node": "Tool",
+          "port": "p"
+        },
+        "to": {
+          "node": "TJ"
+        }
+      },
+      {
+        "id": "fp005",
+        "kind": "bond",
+        "from": {
+          "node": "JM1",
+          "port": "b"
+        },
+        "to": {
+          "node": "TJ"
+        }
+      },
+      {
+        "id": "fp006",
+        "kind": "bond",
+        "from": {
+          "node": "JM1",
+          "port": "a"
+        },
+        "to": {
+          "node": "Rod1",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "fp007",
+        "kind": "bond",
+        "from": {
+          "node": "Rod1",
+          "port": "child"
+        },
+        "to": {
+          "node": "RM1",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp008",
+        "kind": "bond",
+        "from": {
+          "node": "RM1",
+          "port": "b"
+        },
+        "to": {
+          "node": "RJ1"
+        }
+      },
+      {
+        "id": "fp009",
+        "kind": "bond",
+        "from": {
+          "node": "RodBody1",
+          "port": "p"
+        },
+        "to": {
+          "node": "RJ1"
+        }
+      },
+      {
+        "id": "fp010",
+        "kind": "bond",
+        "from": {
+          "node": "Cyl1",
+          "port": "p"
+        },
+        "to": {
+          "node": "ZJ1"
+        }
+      },
+      {
+        "id": "fp011",
+        "kind": "bond",
+        "from": {
+          "node": "ZJ1"
+        },
+        "to": {
+          "node": "Rod1",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "fp012",
+        "kind": "bond",
+        "from": {
+          "node": "RJ1"
+        },
+        "to": {
+          "node": "CM1",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp013",
+        "kind": "bond",
+        "from": {
+          "node": "CM1",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup1",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp014",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "PM1",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp015",
+        "kind": "bond",
+        "from": {
+          "node": "PM1",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup1",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp016",
+        "kind": "wire",
+        "from": {
+          "node": "Gen1",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup1",
+          "port": "vac"
+        }
+      },
+      {
+        "id": "fp017",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "ue1"
+        },
+        "to": {
+          "node": "Cyl1",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp018",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "uv1"
+        },
+        "to": {
+          "node": "Gen1",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp019",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "gref"
+        },
+        "to": {
+          "node": "CJ1",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp020",
+        "kind": "signal",
+        "from": {
+          "node": "LJ1",
+          "port": "g"
+        },
+        "to": {
+          "node": "CJ1",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp021",
+        "kind": "signal",
+        "from": {
+          "node": "CJ1",
+          "port": "g"
+        },
+        "to": {
+          "node": "CR1",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp022",
+        "kind": "signal",
+        "from": {
+          "node": "Rod1",
+          "port": "pose"
+        },
+        "to": {
+          "node": "CR1",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp023",
+        "kind": "signal",
+        "from": {
+          "node": "CR1",
+          "port": "g"
+        },
+        "to": {
+          "node": "RodBody1",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp024",
+        "kind": "bond",
+        "from": {
+          "node": "JM2",
+          "port": "b"
+        },
+        "to": {
+          "node": "TJ"
+        }
+      },
+      {
+        "id": "fp025",
+        "kind": "bond",
+        "from": {
+          "node": "JM2",
+          "port": "a"
+        },
+        "to": {
+          "node": "Rod2",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "fp026",
+        "kind": "bond",
+        "from": {
+          "node": "Rod2",
+          "port": "child"
+        },
+        "to": {
+          "node": "RM2",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp027",
+        "kind": "bond",
+        "from": {
+          "node": "RM2",
+          "port": "b"
+        },
+        "to": {
+          "node": "RJ2"
+        }
+      },
+      {
+        "id": "fp028",
+        "kind": "bond",
+        "from": {
+          "node": "RodBody2",
+          "port": "p"
+        },
+        "to": {
+          "node": "RJ2"
+        }
+      },
+      {
+        "id": "fp029",
+        "kind": "bond",
+        "from": {
+          "node": "Cyl2",
+          "port": "p"
+        },
+        "to": {
+          "node": "ZJ2"
+        }
+      },
+      {
+        "id": "fp030",
+        "kind": "bond",
+        "from": {
+          "node": "ZJ2"
+        },
+        "to": {
+          "node": "Rod2",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "fp031",
+        "kind": "bond",
+        "from": {
+          "node": "RJ2"
+        },
+        "to": {
+          "node": "CM2",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp032",
+        "kind": "bond",
+        "from": {
+          "node": "CM2",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup2",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp033",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "PM2",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp034",
+        "kind": "bond",
+        "from": {
+          "node": "PM2",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup2",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp035",
+        "kind": "wire",
+        "from": {
+          "node": "Gen2",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup2",
+          "port": "vac"
+        }
+      },
+      {
+        "id": "fp036",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "ue2"
+        },
+        "to": {
+          "node": "Cyl2",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp037",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "uv2"
+        },
+        "to": {
+          "node": "Gen2",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp038",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "gref"
+        },
+        "to": {
+          "node": "CJ2",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp039",
+        "kind": "signal",
+        "from": {
+          "node": "LJ2",
+          "port": "g"
+        },
+        "to": {
+          "node": "CJ2",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp040",
+        "kind": "signal",
+        "from": {
+          "node": "CJ2",
+          "port": "g"
+        },
+        "to": {
+          "node": "CR2",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp041",
+        "kind": "signal",
+        "from": {
+          "node": "Rod2",
+          "port": "pose"
+        },
+        "to": {
+          "node": "CR2",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp042",
+        "kind": "signal",
+        "from": {
+          "node": "CR2",
+          "port": "g"
+        },
+        "to": {
+          "node": "RodBody2",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp043",
+        "kind": "bond",
+        "from": {
+          "node": "JM3",
+          "port": "b"
+        },
+        "to": {
+          "node": "TJ"
+        }
+      },
+      {
+        "id": "fp044",
+        "kind": "bond",
+        "from": {
+          "node": "JM3",
+          "port": "a"
+        },
+        "to": {
+          "node": "Rod3",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "fp045",
+        "kind": "bond",
+        "from": {
+          "node": "Rod3",
+          "port": "child"
+        },
+        "to": {
+          "node": "RM3",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp046",
+        "kind": "bond",
+        "from": {
+          "node": "RM3",
+          "port": "b"
+        },
+        "to": {
+          "node": "RJ3"
+        }
+      },
+      {
+        "id": "fp047",
+        "kind": "bond",
+        "from": {
+          "node": "RodBody3",
+          "port": "p"
+        },
+        "to": {
+          "node": "RJ3"
+        }
+      },
+      {
+        "id": "fp048",
+        "kind": "bond",
+        "from": {
+          "node": "Cyl3",
+          "port": "p"
+        },
+        "to": {
+          "node": "ZJ3"
+        }
+      },
+      {
+        "id": "fp049",
+        "kind": "bond",
+        "from": {
+          "node": "ZJ3"
+        },
+        "to": {
+          "node": "Rod3",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "fp050",
+        "kind": "bond",
+        "from": {
+          "node": "RJ3"
+        },
+        "to": {
+          "node": "CM3",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp051",
+        "kind": "bond",
+        "from": {
+          "node": "CM3",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup3",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp052",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "PM3",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp053",
+        "kind": "bond",
+        "from": {
+          "node": "PM3",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup3",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp054",
+        "kind": "wire",
+        "from": {
+          "node": "Gen3",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup3",
+          "port": "vac"
+        }
+      },
+      {
+        "id": "fp055",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "ue3"
+        },
+        "to": {
+          "node": "Cyl3",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp056",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "uv3"
+        },
+        "to": {
+          "node": "Gen3",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp057",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "gref"
+        },
+        "to": {
+          "node": "CJ3",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp058",
+        "kind": "signal",
+        "from": {
+          "node": "LJ3",
+          "port": "g"
+        },
+        "to": {
+          "node": "CJ3",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp059",
+        "kind": "signal",
+        "from": {
+          "node": "CJ3",
+          "port": "g"
+        },
+        "to": {
+          "node": "CR3",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp060",
+        "kind": "signal",
+        "from": {
+          "node": "Rod3",
+          "port": "pose"
+        },
+        "to": {
+          "node": "CR3",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp061",
+        "kind": "signal",
+        "from": {
+          "node": "CR3",
+          "port": "g"
+        },
+        "to": {
+          "node": "RodBody3",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp062",
+        "kind": "bond",
+        "from": {
+          "node": "JM4",
+          "port": "b"
+        },
+        "to": {
+          "node": "TJ"
+        }
+      },
+      {
+        "id": "fp063",
+        "kind": "bond",
+        "from": {
+          "node": "JM4",
+          "port": "a"
+        },
+        "to": {
+          "node": "Rod4",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "fp064",
+        "kind": "bond",
+        "from": {
+          "node": "Rod4",
+          "port": "child"
+        },
+        "to": {
+          "node": "RM4",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp065",
+        "kind": "bond",
+        "from": {
+          "node": "RM4",
+          "port": "b"
+        },
+        "to": {
+          "node": "RJ4"
+        }
+      },
+      {
+        "id": "fp066",
+        "kind": "bond",
+        "from": {
+          "node": "RodBody4",
+          "port": "p"
+        },
+        "to": {
+          "node": "RJ4"
+        }
+      },
+      {
+        "id": "fp067",
+        "kind": "bond",
+        "from": {
+          "node": "Cyl4",
+          "port": "p"
+        },
+        "to": {
+          "node": "ZJ4"
+        }
+      },
+      {
+        "id": "fp068",
+        "kind": "bond",
+        "from": {
+          "node": "ZJ4"
+        },
+        "to": {
+          "node": "Rod4",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "fp069",
+        "kind": "bond",
+        "from": {
+          "node": "RJ4"
+        },
+        "to": {
+          "node": "CM4",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp070",
+        "kind": "bond",
+        "from": {
+          "node": "CM4",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup4",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp071",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "PM4",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp072",
+        "kind": "bond",
+        "from": {
+          "node": "PM4",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup4",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp073",
+        "kind": "wire",
+        "from": {
+          "node": "Gen4",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup4",
+          "port": "vac"
+        }
+      },
+      {
+        "id": "fp074",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "ue4"
+        },
+        "to": {
+          "node": "Cyl4",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp075",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "uv4"
+        },
+        "to": {
+          "node": "Gen4",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp076",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "gref"
+        },
+        "to": {
+          "node": "CJ4",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp077",
+        "kind": "signal",
+        "from": {
+          "node": "LJ4",
+          "port": "g"
+        },
+        "to": {
+          "node": "CJ4",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp078",
+        "kind": "signal",
+        "from": {
+          "node": "CJ4",
+          "port": "g"
+        },
+        "to": {
+          "node": "CR4",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp079",
+        "kind": "signal",
+        "from": {
+          "node": "Rod4",
+          "port": "pose"
+        },
+        "to": {
+          "node": "CR4",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp080",
+        "kind": "signal",
+        "from": {
+          "node": "CR4",
+          "port": "g"
+        },
+        "to": {
+          "node": "RodBody4",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp081",
+        "kind": "bond",
+        "from": {
+          "node": "JM5",
+          "port": "b"
+        },
+        "to": {
+          "node": "TJ"
+        }
+      },
+      {
+        "id": "fp082",
+        "kind": "bond",
+        "from": {
+          "node": "JM5",
+          "port": "a"
+        },
+        "to": {
+          "node": "Rod5",
+          "port": "parent"
+        }
+      },
+      {
+        "id": "fp083",
+        "kind": "bond",
+        "from": {
+          "node": "Rod5",
+          "port": "child"
+        },
+        "to": {
+          "node": "RM5",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp084",
+        "kind": "bond",
+        "from": {
+          "node": "RM5",
+          "port": "b"
+        },
+        "to": {
+          "node": "RJ5"
+        }
+      },
+      {
+        "id": "fp085",
+        "kind": "bond",
+        "from": {
+          "node": "RodBody5",
+          "port": "p"
+        },
+        "to": {
+          "node": "RJ5"
+        }
+      },
+      {
+        "id": "fp086",
+        "kind": "bond",
+        "from": {
+          "node": "Cyl5",
+          "port": "p"
+        },
+        "to": {
+          "node": "ZJ5"
+        }
+      },
+      {
+        "id": "fp087",
+        "kind": "bond",
+        "from": {
+          "node": "ZJ5"
+        },
+        "to": {
+          "node": "Rod5",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "fp088",
+        "kind": "bond",
+        "from": {
+          "node": "RJ5"
+        },
+        "to": {
+          "node": "CM5",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp089",
+        "kind": "bond",
+        "from": {
+          "node": "CM5",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup5",
+          "port": "a"
+        }
+      },
+      {
+        "id": "fp090",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "PM5",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp091",
+        "kind": "bond",
+        "from": {
+          "node": "PM5",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup5",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp092",
+        "kind": "wire",
+        "from": {
+          "node": "Gen5",
+          "port": "a"
+        },
+        "to": {
+          "node": "Cup5",
+          "port": "vac"
+        }
+      },
+      {
+        "id": "fp093",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "ue5"
+        },
+        "to": {
+          "node": "Cyl5",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp094",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "uv5"
+        },
+        "to": {
+          "node": "Gen5",
+          "port": "u"
+        }
+      },
+      {
+        "id": "fp095",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "gref"
+        },
+        "to": {
+          "node": "CJ5",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp096",
+        "kind": "signal",
+        "from": {
+          "node": "LJ5",
+          "port": "g"
+        },
+        "to": {
+          "node": "CJ5",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp097",
+        "kind": "signal",
+        "from": {
+          "node": "CJ5",
+          "port": "g"
+        },
+        "to": {
+          "node": "CR5",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp098",
+        "kind": "signal",
+        "from": {
+          "node": "Rod5",
+          "port": "pose"
+        },
+        "to": {
+          "node": "CR5",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp099",
+        "kind": "signal",
+        "from": {
+          "node": "CR5",
+          "port": "g"
+        },
+        "to": {
+          "node": "RodBody5",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp100",
+        "kind": "signal",
+        "from": {
+          "node": "Parcel",
+          "port": "V"
+        },
+        "to": {
+          "node": "Pose",
+          "port": "tw"
+        }
+      },
+      {
+        "id": "fp101",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "Parcel",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp102",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "BoxPose",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp103",
+        "kind": "signal",
+        "from": {
+          "node": "BoxOff",
+          "port": "g"
+        },
+        "to": {
+          "node": "BoxPose",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp104",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "FMount1",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp105",
+        "kind": "bond",
+        "from": {
+          "node": "FMount1",
+          "port": "a"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "p"
+        }
+      },
+      {
+        "id": "fp106",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose1",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp107",
+        "kind": "signal",
+        "from": {
+          "node": "FLocal1",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose1",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp108",
+        "kind": "signal",
+        "from": {
+          "node": "FPose1",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp109",
+        "kind": "signal",
+        "from": {
+          "node": "Support",
+          "port": "o"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "o"
+        }
+      },
+      {
+        "id": "fp110",
+        "kind": "signal",
+        "from": {
+          "node": "Support",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor1",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "fp111",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "FMount2",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp112",
+        "kind": "bond",
+        "from": {
+          "node": "FMount2",
+          "port": "a"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "p"
+        }
+      },
+      {
+        "id": "fp113",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose2",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp114",
+        "kind": "signal",
+        "from": {
+          "node": "FLocal2",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose2",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp115",
+        "kind": "signal",
+        "from": {
+          "node": "FPose2",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp116",
+        "kind": "signal",
+        "from": {
+          "node": "Support",
+          "port": "o"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "o"
+        }
+      },
+      {
+        "id": "fp117",
+        "kind": "signal",
+        "from": {
+          "node": "Support",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor2",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "fp118",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "FMount3",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp119",
+        "kind": "bond",
+        "from": {
+          "node": "FMount3",
+          "port": "a"
+        },
+        "to": {
+          "node": "Floor3",
+          "port": "p"
+        }
+      },
+      {
+        "id": "fp120",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose3",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp121",
+        "kind": "signal",
+        "from": {
+          "node": "FLocal3",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose3",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp122",
+        "kind": "signal",
+        "from": {
+          "node": "FPose3",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor3",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp123",
+        "kind": "signal",
+        "from": {
+          "node": "Support",
+          "port": "o"
+        },
+        "to": {
+          "node": "Floor3",
+          "port": "o"
+        }
+      },
+      {
+        "id": "fp124",
+        "kind": "signal",
+        "from": {
+          "node": "Support",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor3",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "fp125",
+        "kind": "bond",
+        "from": {
+          "node": "Parcel",
+          "port": "p"
+        },
+        "to": {
+          "node": "FMount4",
+          "port": "b"
+        }
+      },
+      {
+        "id": "fp126",
+        "kind": "bond",
+        "from": {
+          "node": "FMount4",
+          "port": "a"
+        },
+        "to": {
+          "node": "Floor4",
+          "port": "p"
+        }
+      },
+      {
+        "id": "fp127",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose4",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp128",
+        "kind": "signal",
+        "from": {
+          "node": "FLocal4",
+          "port": "g"
+        },
+        "to": {
+          "node": "FPose4",
+          "port": "gl"
+        }
+      },
+      {
+        "id": "fp129",
+        "kind": "signal",
+        "from": {
+          "node": "FPose4",
+          "port": "g"
+        },
+        "to": {
+          "node": "Floor4",
+          "port": "g"
+        }
+      },
+      {
+        "id": "fp130",
+        "kind": "signal",
+        "from": {
+          "node": "Support",
+          "port": "o"
+        },
+        "to": {
+          "node": "Floor4",
+          "port": "o"
+        }
+      },
+      {
+        "id": "fp131",
+        "kind": "signal",
+        "from": {
+          "node": "Support",
+          "port": "fr"
+        },
+        "to": {
+          "node": "Floor4",
+          "port": "fr"
+        }
+      },
+      {
+        "id": "fp132",
+        "kind": "signal",
+        "from": {
+          "node": "Cup1",
+          "port": "U"
+        },
+        "to": {
+          "node": "Monitor",
+          "port": "U1"
+        }
+      },
+      {
+        "id": "fp133",
+        "kind": "signal",
+        "from": {
+          "node": "Cup2",
+          "port": "U"
+        },
+        "to": {
+          "node": "Monitor",
+          "port": "U2"
+        }
+      },
+      {
+        "id": "fp134",
+        "kind": "signal",
+        "from": {
+          "node": "Cup3",
+          "port": "U"
+        },
+        "to": {
+          "node": "Monitor",
+          "port": "U3"
+        }
+      },
+      {
+        "id": "fp135",
+        "kind": "signal",
+        "from": {
+          "node": "Cup4",
+          "port": "U"
+        },
+        "to": {
+          "node": "Monitor",
+          "port": "U4"
+        }
+      },
+      {
+        "id": "fp136",
+        "kind": "signal",
+        "from": {
+          "node": "Cup5",
+          "port": "U"
+        },
+        "to": {
+          "node": "Monitor",
+          "port": "U5"
+        }
+      },
+      {
+        "id": "fp137",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "act"
+        },
+        "to": {
+          "node": "Monitor",
+          "port": "act"
+        }
+      },
+      {
+        "id": "fp138",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "held"
+        },
+        "to": {
+          "node": "Monitor",
+          "port": "held"
+        }
+      },
+      {
+        "id": "fp139",
+        "kind": "signal",
+        "from": {
+          "node": "Pose",
+          "port": "g"
+        },
+        "to": {
+          "node": "Monitor",
+          "port": "gp"
+        }
+      },
+      {
+        "id": "fp140",
+        "kind": "signal",
+        "from": {
+          "node": "Planner",
+          "port": "gref"
+        },
+        "to": {
+          "node": "Monitor",
+          "port": "gt"
+        }
+      }
+    ],
+    "annotations": [
+      {
+        "id": "note1",
+        "kind": "text",
+        "text": "Kinematic arm: the LR-10iA/10 follows the planned joint trajectory exactly (no arm dynamics). PickPlanner checks the datasheet limits (util_*); ToolMotion prescribes the gripper frame's twist.",
+        "x": 40,
+        "y": 40,
+        "w": 520,
+        "h": 90,
+        "color": "yellow"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.947,
+    "solver": "Rodas5P",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 975
+    },
+    "event_limit": 20000
+  },
+  "parameters": [
+    {
+      "name": "family",
+      "value": "4",
+      "unit": "1",
+      "description": "Trajectory family: 1 joint PTP with stops, 2 Cartesian with stops, 3 Cartesian blended, 4 joint blended"
+    },
+    {
+      "name": "kv",
+      "value": "0.399",
+      "unit": "1",
+      "description": "Joint moves: share of the datasheet joint rate limits"
+    },
+    {
+      "name": "ka",
+      "value": "0.239",
+      "unit": "1",
+      "description": "Joint moves: share of the joint acceleration and jerk limits"
+    },
+    {
+      "name": "v_c",
+      "value": "1.5",
+      "unit": "m/s",
+      "description": "Cartesian moves: TCP speed limit"
+    },
+    {
+      "name": "a_c",
+      "value": "8",
+      "unit": "m/s^2",
+      "description": "Cartesian moves: TCP acceleration limit"
+    },
+    {
+      "name": "j_c",
+      "value": "150",
+      "unit": "m/s^3",
+      "description": "Cartesian moves: TCP jerk limit"
+    },
+    {
+      "name": "w_c",
+      "value": "4",
+      "unit": "rad/s",
+      "description": "Cartesian moves: yaw rate limit"
+    },
+    {
+      "name": "al_c",
+      "value": "25",
+      "unit": "rad/s^2",
+      "description": "Cartesian moves: yaw acceleration limit"
+    },
+    {
+      "name": "jw_c",
+      "value": "500",
+      "unit": "rad/s^3",
+      "description": "Cartesian moves: yaw jerk limit"
+    },
+    {
+      "name": "lam",
+      "value": "0.9",
+      "unit": "1",
+      "description": "Jerk phase as a share of each acceleration phase (0 trapezoid, 1 pure S-curve)"
+    },
+    {
+      "name": "r_b",
+      "value": "0.08",
+      "unit": "m",
+      "description": "Blend distance (families 3, 4): the transfer starts when the lift has r_b to go"
+    },
+    {
+      "name": "H_lift",
+      "value": "0.08",
+      "unit": "m",
+      "description": "Robot lift above the pick contact pose (and lowering at the place)"
+    },
+    {
+      "name": "h_app",
+      "value": "0.06",
+      "unit": "m",
+      "description": "Approach height above the pick contact pose"
+    },
+    {
+      "name": "h_dep",
+      "value": "0.06",
+      "unit": "m",
+      "description": "Depart height above the place contact pose"
+    },
+    {
+      "name": "t0",
+      "value": "0.05",
+      "unit": "s",
+      "description": "Start of the approach"
+    },
+    {
+      "name": "t_ext",
+      "value": "0.2",
+      "unit": "s",
+      "description": "Cylinder extension starts this long before the pick contact"
+    },
+    {
+      "name": "t_vac",
+      "value": "0.05",
+      "unit": "s",
+      "description": "Vacuum on this long before the pick contact"
+    },
+    {
+      "name": "T_seal",
+      "value": "0",
+      "unit": "s",
+      "description": "Wait at the pick for the vacuum to build"
+    },
+    {
+      "name": "ret_hold",
+      "value": "0",
+      "unit": "1",
+      "description": "Retract the cylinders while holding (1) or keep them extended (0)"
+    },
+    {
+      "name": "t_ret",
+      "value": "0.05",
+      "unit": "s",
+      "description": "Retract this long after the lift start (ret_hold = 1)"
+    },
+    {
+      "name": "t_ext2",
+      "value": "0.2",
+      "unit": "s",
+      "description": "Extend again this long before the place contact (ret_hold = 1)"
+    },
+    {
+      "name": "T_rel",
+      "value": "0.08",
+      "unit": "s",
+      "description": "Wait at the place after the vacuum is switched off"
+    },
+    {
+      "name": "d_press",
+      "value": "0.003",
+      "unit": "m",
+      "description": "Bellows press at the pick contact pose"
+    },
+    {
+      "name": "M_req",
+      "value": "0.5",
+      "unit": "1",
+      "description": "Required holding margin 1 - U (0.5 = safety factor 2)"
+    },
+    {
+      "name": "z_s",
+      "value": "0",
+      "unit": "m",
+      "description": "Support surface (conveyor and place table) above the robot base"
+    },
+    {
+      "name": "xp",
+      "value": "0.5",
+      "unit": "m",
+      "description": "Pick: parcel centre x"
+    },
+    {
+      "name": "yp",
+      "value": "-0.35",
+      "unit": "m",
+      "description": "Pick: parcel centre y"
+    },
+    {
+      "name": "psip_deg",
+      "value": "0",
+      "unit": "deg",
+      "description": "Pick: parcel yaw"
+    },
+    {
+      "name": "xq",
+      "value": "0.5",
+      "unit": "m",
+      "description": "Place: parcel centre x"
+    },
+    {
+      "name": "yq",
+      "value": "0.35",
+      "unit": "m",
+      "description": "Place: parcel centre y"
+    },
+    {
+      "name": "psiq_deg",
+      "value": "90",
+      "unit": "deg",
+      "description": "Place: parcel yaw"
+    },
+    {
+      "name": "psig_deg",
+      "value": "0",
+      "unit": "deg",
+      "description": "Gripper yaw relative to the parcel"
+    },
+    {
+      "name": "gx",
+      "value": "0.06",
+      "unit": "m",
+      "description": "Grip point (gripper centre) in the parcel frame, x"
+    },
+    {
+      "name": "gy",
+      "value": "0.03",
+      "unit": "m",
+      "description": "Grip point in the parcel frame, y"
+    },
+    {
+      "name": "e_m",
+      "value": "0.005",
+      "unit": "m",
+      "description": "Edge margin of an active cup (its lip inside the top face)"
+    },
+    {
+      "name": "zone1",
+      "value": "1",
+      "unit": "1",
+      "description": "Zone 1 (centre) allowed (1) or off (0)"
+    },
+    {
+      "name": "zone2",
+      "value": "1",
+      "unit": "1",
+      "description": "Zone 2 (+x) allowed"
+    },
+    {
+      "name": "zone3",
+      "value": "1",
+      "unit": "1",
+      "description": "Zone 3 (+y) allowed"
+    },
+    {
+      "name": "zone4",
+      "value": "1",
+      "unit": "1",
+      "description": "Zone 4 (-x) allowed"
+    },
+    {
+      "name": "zone5",
+      "value": "1",
+      "unit": "1",
+      "description": "Zone 5 (-y) allowed"
+    },
+    {
+      "name": "L_p",
+      "value": "0.3",
+      "unit": "m",
+      "description": "Parcel length (parcel x)"
+    },
+    {
+      "name": "W_p",
+      "value": "0.2",
+      "unit": "m",
+      "description": "Parcel width (parcel y)"
+    },
+    {
+      "name": "H_p",
+      "value": "0.12",
+      "unit": "m",
+      "description": "Parcel height"
+    },
+    {
+      "name": "m_shell",
+      "value": "0.6",
+      "unit": "kg",
+      "description": "Carton shell mass (loose-content models)"
+    },
+    {
+      "name": "wall",
+      "value": "0.004",
+      "unit": "m",
+      "description": "Carton wall thickness (loose-content models)"
+    },
+    {
+      "name": "r_s",
+      "value": "0.04",
+      "unit": "m",
+      "description": "Loose sphere radius"
+    },
+    {
+      "name": "m_s",
+      "value": "0.5",
+      "unit": "kg",
+      "description": "Loose sphere mass"
+    },
+    {
+      "name": "r_c",
+      "value": "0.035",
+      "unit": "m",
+      "description": "Loose cylinder radius"
+    },
+    {
+      "name": "l_c",
+      "value": "0.12",
+      "unit": "m",
+      "description": "Loose cylinder length"
+    },
+    {
+      "name": "m_c",
+      "value": "0.5",
+      "unit": "kg",
+      "description": "Loose cylinder mass"
+    },
+    {
+      "name": "m_p",
+      "value": "1.5",
+      "unit": "kg",
+      "description": "Parcel mass (the plain carton; shell + content in the loose-content models)"
+    },
+    {
+      "name": "cx",
+      "value": "0.06",
+      "unit": "m",
+      "description": "Centre of mass offset from the box centre, x (parcel frame)"
+    },
+    {
+      "name": "cy",
+      "value": "0.03",
+      "unit": "m",
+      "description": "Centre of mass offset, y"
+    },
+    {
+      "name": "cz",
+      "value": "0",
+      "unit": "m",
+      "description": "Centre of mass offset, z (up)"
+    },
+    {
+      "name": "Jpx",
+      "value": "m_p*(W_p^2 + H_p^2)/12",
+      "unit": "kg*m^2",
+      "description": "Parcel inertia about its x axis (uniform box)"
+    },
+    {
+      "name": "Jpy",
+      "value": "m_p*(L_p^2 + H_p^2)/12",
+      "unit": "kg*m^2",
+      "description": "Parcel inertia about y"
+    },
+    {
+      "name": "Jpz",
+      "value": "m_p*(L_p^2 + W_p^2)/12",
+      "unit": "kg*m^2",
+      "description": "Parcel inertia about z"
+    },
+    {
+      "name": "k_w",
+      "value": "30000",
+      "unit": "N/m",
+      "description": "Content-wall contact stiffness"
+    },
+    {
+      "name": "c_w",
+      "value": "3",
+      "unit": "s/m",
+      "description": "Content-wall Hunt-Crossley damping"
+    },
+    {
+      "name": "mu_w",
+      "value": "0.35",
+      "unit": "1",
+      "description": "Content-wall friction coefficient"
+    },
+    {
+      "name": "h_base",
+      "value": "0.045",
+      "unit": "m",
+      "description": "Flange to the cylinder mounting face"
+    },
+    {
+      "name": "m_base",
+      "value": "0.5",
+      "unit": "kg",
+      "description": "Adapter plate, valve block and fittings"
+    },
+    {
+      "name": "L_cyl",
+      "value": "0.15",
+      "unit": "m",
+      "description": "Cylinder body length"
+    },
+    {
+      "name": "D_cyl",
+      "value": "0.032",
+      "unit": "m",
+      "description": "Cylinder body diameter"
+    },
+    {
+      "name": "m_cyl",
+      "value": "0.1",
+      "unit": "kg",
+      "description": "Mass of one cylinder body"
+    },
+    {
+      "name": "rod0",
+      "value": "0.015",
+      "unit": "m",
+      "description": "Rod length out of the body when retracted (to the cup mount)"
+    },
+    {
+      "name": "m_rod",
+      "value": "0.06",
+      "unit": "kg",
+      "description": "Moving mass of a zone: rod, cup holder and cup"
+    },
+    {
+      "name": "stroke",
+      "value": "0.075",
+      "unit": "m",
+      "description": "Cylinder stroke"
+    },
+    {
+      "name": "r_p",
+      "value": "0.04",
+      "unit": "m",
+      "description": "Pitch radius of the four outer cylinders"
+    },
+    {
+      "name": "lay_deg",
+      "value": "0",
+      "unit": "deg",
+      "description": "Rotation of the outer four cylinders (0 '+', 45 'x')"
+    },
+    {
+      "name": "F_ext",
+      "value": "120",
+      "unit": "N",
+      "description": "Cylinder extend force"
+    },
+    {
+      "name": "F_ret",
+      "value": "100",
+      "unit": "N",
+      "description": "Cylinder retract force"
+    },
+    {
+      "name": "v_ext",
+      "value": "0.5",
+      "unit": "m/s",
+      "description": "Cylinder extend speed (flow control)"
+    },
+    {
+      "name": "v_ret",
+      "value": "0.5",
+      "unit": "m/s",
+      "description": "Cylinder retract speed"
+    },
+    {
+      "name": "k_stop",
+      "value": "200000",
+      "unit": "N/m",
+      "description": "Cylinder end-stop stiffness"
+    },
+    {
+      "name": "b_stop",
+      "value": "300",
+      "unit": "N*s/m",
+      "description": "Cylinder end-stop damping (cushion)"
+    },
+    {
+      "name": "kt_rod",
+      "value": "50000",
+      "unit": "N/m",
+      "description": "Lateral stiffness of a rod in its guide"
+    },
+    {
+      "name": "bt_rod",
+      "value": "0.6*sqrt(kt_rod*m_rod)",
+      "unit": "N*s/m",
+      "description": "Lateral damping of a rod (damping ratio 0.3)"
+    },
+    {
+      "name": "kr_rod",
+      "value": "200",
+      "unit": "N*m/rad",
+      "description": "Bending stiffness of a rod in its guide"
+    },
+    {
+      "name": "J_rod",
+      "value": "2e-05",
+      "unit": "kg*m^2",
+      "description": "Rod inertia about its tip (bending)"
+    },
+    {
+      "name": "br_rod",
+      "value": "0.6*sqrt(kr_rod*J_rod)",
+      "unit": "N*m*s/rad",
+      "description": "Bending damping of a rod (damping ratio 0.3)"
+    },
+    {
+      "name": "q_r0",
+      "value": "-(F_ret - m_rod*9.81)/k_stop",
+      "unit": "m",
+      "description": "Rod start position: pressed into the retract stop"
+    },
+    {
+      "name": "L0",
+      "value": "0.03",
+      "unit": "m",
+      "description": "Cup rest length (mount to lip)"
+    },
+    {
+      "name": "A_eff",
+      "value": "0.0005",
+      "unit": "m^2",
+      "description": "Effective suction area per cup"
+    },
+    {
+      "name": "D_lip",
+      "value": "0.032",
+      "unit": "m",
+      "description": "Lip diameter"
+    },
+    {
+      "name": "k_ax",
+      "value": "2500",
+      "unit": "N/m",
+      "description": "Bellows axial stiffness"
+    },
+    {
+      "name": "d_ax",
+      "value": "8",
+      "unit": "N*s/m",
+      "description": "Bellows axial damping"
+    },
+    {
+      "name": "k_lat",
+      "value": "1500",
+      "unit": "N/m",
+      "description": "Bellows lateral stiffness"
+    },
+    {
+      "name": "d_lat",
+      "value": "5",
+      "unit": "N*s/m",
+      "description": "Bellows lateral damping"
+    },
+    {
+      "name": "k_tilt",
+      "value": "1",
+      "unit": "N*m/rad",
+      "description": "Bellows bending stiffness"
+    },
+    {
+      "name": "k_tor",
+      "value": "1.5",
+      "unit": "N*m/rad",
+      "description": "Bellows torsional stiffness"
+    },
+    {
+      "name": "d_rot",
+      "value": "0.005",
+      "unit": "N*m*s/rad",
+      "description": "Bellows rotational damping"
+    },
+    {
+      "name": "mu",
+      "value": "0.5",
+      "unit": "1",
+      "description": "Lip friction coefficient on cardboard"
+    },
+    {
+      "name": "V_cup",
+      "value": "8e-06",
+      "unit": "m^3",
+      "description": "Cup chamber and hose volume"
+    },
+    {
+      "name": "A_lip0",
+      "value": "1.5e-08",
+      "unit": "m^2",
+      "description": "Sealed-lip leak area per cup"
+    },
+    {
+      "name": "F_min",
+      "value": "0.1",
+      "unit": "N",
+      "description": "Residual friction capacity of a free lip"
+    },
+    {
+      "name": "h_stack",
+      "value": "h_base + L_cyl + rod0 + stroke + L0 - d_press",
+      "unit": "m",
+      "description": "Flange to the pressed cup lip with the cylinders extended"
+    },
+    {
+      "name": "dp_max",
+      "value": "60000",
+      "unit": "Pa",
+      "description": "Ejector end vacuum (per zone)"
+    },
+    {
+      "name": "Q_max",
+      "value": "0.0002",
+      "unit": "m^3/s",
+      "description": "Ejector suction flow at zero vacuum (free air, per zone)"
+    },
+    {
+      "name": "perm",
+      "value": "4e-07",
+      "unit": "m/(s*Pa)",
+      "description": "Air permeance of the parcel (cardboard)"
+    },
+    {
+      "name": "G_rel",
+      "value": "2e-07",
+      "unit": "m^3/(s*Pa)",
+      "description": "Release (vent) conductance of an ejector"
+    },
+    {
+      "name": "m_g",
+      "value": "m_base + 5*(m_cyl + m_rod)",
+      "unit": "kg",
+      "description": "Gripper mass"
+    },
+    {
+      "name": "zc_g",
+      "value": "(m_base*h_base/2 + 5*m_cyl*(h_base + L_cyl/2) + 5*m_rod*(h_base + L_cyl + rod0 + stroke))/m_g",
+      "unit": "m",
+      "description": "Gripper centre of mass below the flange (cylinders extended)"
+    },
+    {
+      "name": "Jg45",
+      "value": "m_base*(h_base/2 - zc_g)^2 + 5*m_cyl*((h_base + L_cyl/2 - zc_g)^2 + L_cyl^2/12) + 5*m_rod*(h_base + L_cyl + rod0 + stroke - zc_g)^2 + 2*(m_cyl + m_rod)*r_p^2",
+      "unit": "kg*m^2",
+      "description": "Gripper inertia about a horizontal axis through its centre of mass (point-mass estimate)"
+    },
+    {
+      "name": "Jg6",
+      "value": "4*(m_cyl + m_rod)*r_p^2 + m_base*0.1^2/6",
+      "unit": "kg*m^2",
+      "description": "Gripper inertia about the tool axis (point-mass estimate)"
+    },
+    {
+      "name": "m_max",
+      "value": "10",
+      "unit": "kg",
+      "description": "LR-10iA/10 payload"
+    },
+    {
+      "name": "M45_max",
+      "value": "21",
+      "unit": "N*m",
+      "description": "LR-10iA/10 allowable load moment at the wrist, J4 and J5"
+    },
+    {
+      "name": "M6_max",
+      "value": "10",
+      "unit": "N*m",
+      "description": "LR-10iA/10 allowable load moment at the wrist, J6"
+    },
+    {
+      "name": "I45_max",
+      "value": "0.77",
+      "unit": "kg*m^2",
+      "description": "LR-10iA/10 allowable load inertia at the wrist, J4 and J5"
+    },
+    {
+      "name": "I6_max",
+      "value": "0.28",
+      "unit": "kg*m^2",
+      "description": "LR-10iA/10 allowable load inertia at the wrist, J6"
+    },
+    {
+      "name": "qdmax1",
+      "value": "5.235987755982989",
+      "unit": "rad/s",
+      "description": "J1 rate limit (LR-10iA/10 datasheet 300 deg/s)"
+    },
+    {
+      "name": "qdmax2",
+      "value": "4.014257279586958",
+      "unit": "rad/s",
+      "description": "J2 rate limit (LR-10iA/10 datasheet 230 deg/s)"
+    },
+    {
+      "name": "qdmax3",
+      "value": "5.934119456780721",
+      "unit": "rad/s",
+      "description": "J3 rate limit (LR-10iA/10 datasheet 340 deg/s)"
+    },
+    {
+      "name": "qdmax4",
+      "value": "8.726646259971648",
+      "unit": "rad/s",
+      "description": "J4 rate limit (LR-10iA/10 datasheet 500 deg/s)"
+    },
+    {
+      "name": "qdmax5",
+      "value": "6.981317007977318",
+      "unit": "rad/s",
+      "description": "J5 rate limit (LR-10iA/10 datasheet 400 deg/s)"
+    },
+    {
+      "name": "qdmax6",
+      "value": "13.962634015954636",
+      "unit": "rad/s",
+      "description": "J6 rate limit (LR-10iA/10 datasheet 800 deg/s)"
+    },
+    {
+      "name": "qddmax1",
+      "value": "34.90658503988659",
+      "unit": "rad/s^2",
+      "description": "J1 acceleration limit (assumed: the rate limit in 0.15 s)"
+    },
+    {
+      "name": "qddmax2",
+      "value": "26.761715197246385",
+      "unit": "rad/s^2",
+      "description": "J2 acceleration limit (assumed: the rate limit in 0.15 s)"
+    },
+    {
+      "name": "qddmax3",
+      "value": "39.56079637853814",
+      "unit": "rad/s^2",
+      "description": "J3 acceleration limit (assumed: the rate limit in 0.15 s)"
+    },
+    {
+      "name": "qddmax4",
+      "value": "87.26646259971648",
+      "unit": "rad/s^2",
+      "description": "J4 acceleration limit (assumed: the rate limit in 0.10 s)"
+    },
+    {
+      "name": "qddmax5",
+      "value": "69.81317007977317",
+      "unit": "rad/s^2",
+      "description": "J5 acceleration limit (assumed: the rate limit in 0.10 s)"
+    },
+    {
+      "name": "qddmax6",
+      "value": "139.62634015954634",
+      "unit": "rad/s^2",
+      "description": "J6 acceleration limit (assumed: the rate limit in 0.10 s)"
+    },
+    {
+      "name": "qdddmax1",
+      "value": "698.1317007977318",
+      "unit": "rad/s^3",
+      "description": "J1 jerk limit (assumed: the acceleration limit in 0.05 s)"
+    },
+    {
+      "name": "qdddmax2",
+      "value": "535.2343039449277",
+      "unit": "rad/s^3",
+      "description": "J2 jerk limit (assumed: the acceleration limit in 0.05 s)"
+    },
+    {
+      "name": "qdddmax3",
+      "value": "791.2159275707628",
+      "unit": "rad/s^3",
+      "description": "J3 jerk limit (assumed: the acceleration limit in 0.05 s)"
+    },
+    {
+      "name": "qdddmax4",
+      "value": "1745.3292519943295",
+      "unit": "rad/s^3",
+      "description": "J4 jerk limit (assumed: the acceleration limit in 0.05 s)"
+    },
+    {
+      "name": "qdddmax5",
+      "value": "1396.2634015954634",
+      "unit": "rad/s^3",
+      "description": "J5 jerk limit (assumed: the acceleration limit in 0.05 s)"
+    },
+    {
+      "name": "qdddmax6",
+      "value": "2792.526803190927",
+      "unit": "rad/s^3",
+      "description": "J6 jerk limit (assumed: the acceleration limit in 0.05 s)"
+    },
+    {
+      "name": "qmin1",
+      "value": "-3.2288591161895095",
+      "unit": "rad",
+      "description": "J1 lower range limit (-185 deg)"
+    },
+    {
+      "name": "qmax1",
+      "value": "3.2288591161895095",
+      "unit": "rad",
+      "description": "J1 upper range limit (185 deg)"
+    },
+    {
+      "name": "qmin2",
+      "value": "-1.6755160819145565",
+      "unit": "rad",
+      "description": "J2 lower range limit (-96 deg)"
+    },
+    {
+      "name": "qmax2",
+      "value": "2.426007660272118",
+      "unit": "rad",
+      "description": "J2 upper range limit (139 deg)"
+    },
+    {
+      "name": "qmin3",
+      "value": "-1.2217304763960306",
+      "unit": "rad",
+      "description": "J3 lower range limit (-70 deg)"
+    },
+    {
+      "name": "qmax3",
+      "value": "3.717551306747922",
+      "unit": "rad",
+      "description": "J3 upper range limit (213 deg)"
+    },
+    {
+      "name": "qmin4",
+      "value": "-3.3161255787892263",
+      "unit": "rad",
+      "description": "J4 lower range limit (-190 deg)"
+    },
+    {
+      "name": "qmax4",
+      "value": "3.3161255787892263",
+      "unit": "rad",
+      "description": "J4 upper range limit (190 deg)"
+    },
+    {
+      "name": "qmin5",
+      "value": "-2.181661564992912",
+      "unit": "rad",
+      "description": "J5 lower range limit (-125 deg)"
+    },
+    {
+      "name": "qmax5",
+      "value": "2.181661564992912",
+      "unit": "rad",
+      "description": "J5 upper range limit (125 deg)"
+    },
+    {
+      "name": "qmin6",
+      "value": "-6.283185307179586",
+      "unit": "rad",
+      "description": "J6 lower range limit (-360 deg)"
+    },
+    {
+      "name": "qmax6",
+      "value": "6.283185307179586",
+      "unit": "rad",
+      "description": "J6 upper range limit (360 deg)"
+    },
+    {
+      "name": "psA",
+      "value": "(psip_deg + psig_deg)*deg",
+      "unit": "rad",
+      "description": "Gripper yaw at the pick"
+    },
+    {
+      "name": "xA",
+      "value": "xp + cos(psip_deg*deg)*gx - sin(psip_deg*deg)*gy",
+      "unit": "m",
+      "description": "Gripper (flange) x at the pick"
+    },
+    {
+      "name": "yA",
+      "value": "yp + sin(psip_deg*deg)*gx + cos(psip_deg*deg)*gy",
+      "unit": "m",
+      "description": "Gripper (flange) y at the pick"
+    },
+    {
+      "name": "zA",
+      "value": "z_s + H_p + h_stack + h_app",
+      "unit": "m",
+      "description": "Gripper (flange) height at the approach start"
+    },
+    {
+      "name": "pen0",
+      "value": "6.968086281442739e-05",
+      "unit": "m",
+      "description": "Rest penetration of the parcel corners in the support"
+    },
+    {
+      "name": "rz0",
+      "value": "-(h_app + stroke + L0 - d_press + pen0 - q_r0)",
+      "unit": "m",
+      "description": "Cup lip to parcel top at the start, cylinders retracted (cup frame z)"
+    }
+  ],
+  "plots": [
+    {
+      "id": "u",
+      "title": "Cup utilisation U (1 = pull-off, peel or slip)",
+      "signals": [
+        "Cup1/U",
+        "Cup2/U",
+        "Cup3/U",
+        "Cup4/U",
+        "Cup5/U"
+      ]
+    },
+    {
+      "id": "margin",
+      "title": "Holding margin per zone and in total (1 - peak U while carried)",
+      "signals": [
+        "Monitor/margin1",
+        "Monitor/margin2",
+        "Monitor/margin3",
+        "Monitor/margin4",
+        "Monitor/margin5",
+        "Monitor/M_tot"
+      ]
+    },
+    {
+      "id": "force",
+      "title": "Axial cup force T [N] (pull > 0)",
+      "signals": [
+        "Cup1/T",
+        "Cup2/T",
+        "Cup3/T",
+        "Cup4/T",
+        "Cup5/T"
+      ]
+    },
+    {
+      "id": "shear",
+      "title": "Lateral cup force [N]",
+      "signals": [
+        "Cup1/F_lat",
+        "Cup2/F_lat",
+        "Cup3/F_lat",
+        "Cup4/F_lat",
+        "Cup5/F_lat"
+      ]
+    },
+    {
+      "id": "vac",
+      "title": "Vacuum per zone [Pa]",
+      "signals": [
+        "Cup1/dp",
+        "Cup2/dp",
+        "Cup3/dp",
+        "Cup4/dp",
+        "Cup5/dp"
+      ]
+    },
+    {
+      "id": "stroke",
+      "title": "Cylinder strokes [m] (0 retracted)",
+      "signals": [
+        "Rod1/qout",
+        "Rod2/qout",
+        "Rod3/qout",
+        "Rod4/qout",
+        "Rod5/qout"
+      ]
+    },
+    {
+      "id": "joints",
+      "title": "Joint angles [rad] (the arm follows the plan exactly)",
+      "signals": [
+        "Planner/qr[1]",
+        "Planner/qr[2]",
+        "Planner/qr[3]",
+        "Planner/qr[4]",
+        "Planner/qr[5]",
+        "Planner/qr[6]"
+      ]
+    },
+    {
+      "id": "jrate",
+      "title": "Joint rates [rad/s]",
+      "signals": [
+        "Planner/qdr[1]",
+        "Planner/qdr[2]",
+        "Planner/qdr[3]",
+        "Planner/qdr[4]",
+        "Planner/qdr[5]",
+        "Planner/qdr[6]"
+      ]
+    },
+    {
+      "id": "util",
+      "title": "Use of the LR-10iA/10 limits [%] (running maxima)",
+      "signals": [
+        "Planner/util_v",
+        "Planner/util_a",
+        "Planner/util_j",
+        "Planner/util_r",
+        "Planner/util_M",
+        "Planner/util_I"
+      ]
+    },
+    {
+      "id": "xy",
+      "title": "Gripper path, top view [m]",
+      "signals": [
+        "Planner/gref[6]"
+      ],
+      "x": "Planner/gref[5]",
+      "equalAspect": true
+    },
+    {
+      "id": "xz",
+      "title": "Gripper height against x [m]",
+      "signals": [
+        "Planner/gref[7]"
+      ],
+      "x": "Planner/gref[5]",
+      "equalAspect": true
+    },
+    {
+      "id": "sep",
+      "title": "Parcel drop detection: displacement from the gripper [m] and held flag",
+      "signals": [
+        "Monitor/sep",
+        "Monitor/held_ok",
+        "Planner/held"
+      ]
+    },
+    {
+      "id": "wrench",
+      "title": "Wrench of the gripper load on the flange (gripper frame) [N, N m]",
+      "signals": [
+        "Tool/W[1]",
+        "Tool/W[2]",
+        "Tool/W[3]",
+        "Tool/W[4]",
+        "Tool/W[5]",
+        "Tool/W[6]"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/fanuc-pick-box.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:joint_1",
+      "property": "position",
+      "signal": "Planner/qr[1]"
+    },
+    {
+      "target": "joint:joint_2",
+      "property": "position",
+      "signal": "Planner/qr[2]"
+    },
+    {
+      "target": "joint:joint_3",
+      "property": "position",
+      "signal": "Planner/qr[3]"
+    },
+    {
+      "target": "joint:joint_4",
+      "property": "position",
+      "signal": "Planner/qr[4]"
+    },
+    {
+      "target": "joint:joint_5",
+      "property": "position",
+      "signal": "Planner/qr[5]"
+    },
+    {
+      "target": "joint:joint_6",
+      "property": "position",
+      "signal": "Planner/qr[6]"
+    },
+    {
+      "target": "link:parcel",
+      "property": "pose",
+      "signal": [
+        "BoxPose/g[1]",
+        "BoxPose/g[2]",
+        "BoxPose/g[3]",
+        "BoxPose/g[4]",
+        "BoxPose/g[5]",
+        "BoxPose/g[6]",
+        "BoxPose/g[7]"
+      ]
+    },
+    {
+      "target": "link:com",
+      "property": "pose",
+      "signal": [
+        "Pose/g[1]",
+        "Pose/g[2]",
+        "Pose/g[3]",
+        "Pose/g[4]",
+        "Pose/g[5]",
+        "Pose/g[6]",
+        "Pose/g[7]"
+      ]
+    },
+    {
+      "target": "joint:rod_1",
+      "property": "position",
+      "signal": "Rod1/qout"
+    },
+    {
+      "target": "visual:bellows_1",
+      "property": "color",
+      "signal": "Cup1/U",
+      "colormap": "coolwarm",
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:lip_1",
+      "property": "color",
+      "signal": "Cup1/dp",
+      "colormap": "viridis",
+      "range": [
+        0.0,
+        60000.0
+      ]
+    },
+    {
+      "target": "joint:rod_2",
+      "property": "position",
+      "signal": "Rod2/qout"
+    },
+    {
+      "target": "visual:bellows_2",
+      "property": "color",
+      "signal": "Cup2/U",
+      "colormap": "coolwarm",
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:lip_2",
+      "property": "color",
+      "signal": "Cup2/dp",
+      "colormap": "viridis",
+      "range": [
+        0.0,
+        60000.0
+      ]
+    },
+    {
+      "target": "joint:rod_3",
+      "property": "position",
+      "signal": "Rod3/qout"
+    },
+    {
+      "target": "visual:bellows_3",
+      "property": "color",
+      "signal": "Cup3/U",
+      "colormap": "coolwarm",
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:lip_3",
+      "property": "color",
+      "signal": "Cup3/dp",
+      "colormap": "viridis",
+      "range": [
+        0.0,
+        60000.0
+      ]
+    },
+    {
+      "target": "joint:rod_4",
+      "property": "position",
+      "signal": "Rod4/qout"
+    },
+    {
+      "target": "visual:bellows_4",
+      "property": "color",
+      "signal": "Cup4/U",
+      "colormap": "coolwarm",
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:lip_4",
+      "property": "color",
+      "signal": "Cup4/dp",
+      "colormap": "viridis",
+      "range": [
+        0.0,
+        60000.0
+      ]
+    },
+    {
+      "target": "joint:rod_5",
+      "property": "position",
+      "signal": "Rod5/qout"
+    },
+    {
+      "target": "visual:bellows_5",
+      "property": "color",
+      "signal": "Cup5/U",
+      "colormap": "coolwarm",
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:lip_5",
+      "property": "color",
+      "signal": "Cup5/dp",
+      "colormap": "viridis",
+      "range": [
+        0.0,
+        60000.0
+      ]
+    }
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "u",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Cup utilisation U (1 = pull-off, peel or slip)",
+        "signals": [
+          "Cup1/U",
+          "Cup2/U",
+          "Cup3/U",
+          "Cup4/U",
+          "Cup5/U"
+        ]
+      },
+      {
+        "id": "xy",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Gripper path, top view [m]",
+        "signals": [
+          "Planner/gref[6]"
+        ],
+        "x": "Planner/gref[5]",
+        "equalAspect": true
+      },
+      {
+        "id": "tcyc",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Cycle time",
+        "signals": [
+          "Planner/T_cyc"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "margin",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Holding margin (min over zones)",
+        "signals": [
+          "Monitor/M_tot"
+        ],
+        "options": {
+          "min": -0.5,
+          "max": 1.0,
+          "decimals": 2,
+          "unit": "",
+          "zones": [
+            {
+              "from": -0.5,
+              "to": 0.0,
+              "tone": "bad"
+            },
+            {
+              "from": 0.0,
+              "to": 0.5,
+              "tone": "warn"
+            },
+            {
+              "from": 0.5,
+              "to": 1.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "held",
+        "kind": "indicator",
+        "size": "1x1",
+        "title": "Parcel held",
+        "signals": [
+          "Monitor/held_ok"
+        ],
+        "options": {
+          "threshold": 0.5,
+          "onWhen": "above"
+        }
+      },
+      {
+        "id": "umax",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Peak use of the robot limits",
+        "signals": [
+          "Planner/util_max"
+        ],
+        "options": {
+          "min": 0,
+          "max": 120,
+          "decimals": 0,
+          "unit": "%",
+          "zones": [
+            {
+              "from": 0,
+              "to": 90,
+              "tone": "good"
+            },
+            {
+              "from": 90,
+              "to": 100,
+              "tone": "warn"
+            },
+            {
+              "from": 100,
+              "to": 120,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "margins",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Holding margin per zone",
+        "signals": [
+          "Monitor/margin1",
+          "Monitor/margin2",
+          "Monitor/margin3",
+          "Monitor/margin4",
+          "Monitor/margin5"
+        ]
+      },
+      {
+        "id": "util",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Joint rate / acc / jerk, wrist moment [% of limit]",
+        "signals": [
+          "Planner/util_v",
+          "Planner/util_a",
+          "Planner/util_j",
+          "Planner/util_M"
+        ]
+      },
+      {
+        "id": "family",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Family: 1 joint PTP, 2 Cartesian, 3 Cartesian blended, 4 joint blended",
+        "parameter": "global:family",
+        "options": {
+          "min": 1,
+          "max": 4,
+          "step": 1,
+          "decimals": 0,
+          "unit": ""
+        }
+      },
+      {
+        "id": "kv",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Joint moves: share of the rate limits",
+        "parameter": "global:kv",
+        "options": {
+          "min": 0.2,
+          "max": 1.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "ka",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Joint moves: share of the acc/jerk limits",
+        "parameter": "global:ka",
+        "options": {
+          "min": 0.2,
+          "max": 1.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "vc",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Cartesian speed",
+        "parameter": "global:v_c",
+        "options": {
+          "min": 0.2,
+          "max": 3.0,
+          "step": 0.1,
+          "decimals": 1,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "ac",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Cartesian acceleration",
+        "parameter": "global:a_c",
+        "options": {
+          "min": 1,
+          "max": 30,
+          "step": 0.5,
+          "decimals": 1,
+          "unit": "m/s^2"
+        }
+      },
+      {
+        "id": "lam",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Jerk phase share (0 trapezoid, 1 S-curve)",
+        "parameter": "global:lam",
+        "options": {
+          "min": 0.1,
+          "max": 1.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "rb",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Blend distance",
+        "parameter": "global:r_b",
+        "options": {
+          "min": 0,
+          "max": 0.08,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "hlift",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Lift height",
+        "parameter": "global:H_lift",
+        "options": {
+          "min": 0.02,
+          "max": 0.2,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "text",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Cylinder extension lead before the pick",
+        "parameter": "global:t_ext",
+        "options": {
+          "min": 0,
+          "max": 0.4,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "tseal",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Vacuum wait at the pick",
+        "parameter": "global:T_seal",
+        "options": {
+          "min": 0,
+          "max": 0.3,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "cx",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Centre of mass offset x",
+        "parameter": "global:cx",
+        "options": {
+          "min": -0.1,
+          "max": 0.1,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "cy",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Centre of mass offset y",
+        "parameter": "global:cy",
+        "options": {
+          "min": -0.06,
+          "max": 0.06,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "psip",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Pick yaw of the parcel",
+        "parameter": "global:psip_deg",
+        "options": {
+          "min": -90,
+          "max": 90,
+          "step": 15,
+          "decimals": 0,
+          "unit": "deg"
+        }
+      },
+      {
+        "id": "psiq",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Place yaw of the parcel",
+        "parameter": "global:psiq_deg",
+        "options": {
+          "min": -90,
+          "max": 180,
+          "step": 15,
+          "decimals": 0,
+          "unit": "deg"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,904 @@
+{
+  "project": "fanuc-pick",
+  "description": "FANUC LR-10iA/10 (LR Mate 200iD/7L geometry, kinematic: it follows the plan inside the datasheet limits) picks a carton with a five-zone suction gripper (pneumatic cylinders, bellows cups, one ejector per zone) and places it turned. The checks pin the planner kinematics to the URDF, the cycle times, the vacuum and the static cup forces to hand calculations, and the holding outcome of every model to the reduced model of the optimiser.",
+  "models": {
+    "pick-place": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.70903,
+          "value": 1.659034318,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.70903,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.70903,
+          "value": -0.0731564,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), -0.073, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.409464,
+          "to_t": 1.36957,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.409464,
+          "to_t": 1.36957,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup1/dp",
+          "t": 0.407464,
+          "value": 55762.2,
+          "rtol": 0.002,
+          "note": "vacuum at the lift start: the seal ODE from the lip contact (reduced.Pick.seal)"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "the port-power ledger closes (Tellegen: every bond's two ports carry opposite power)"
+        }
+      ]
+    },
+    "offset-com": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.70903,
+          "value": 1.659034318,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/held_ok",
+          "t": 1.70903,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "the reduced model drops the parcel too: the cups peel and the drop latch is set"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 1.35157,
+          "to_t": 1.36957,
+          "value": 0.02,
+          "note": "the parcel is more than d_drop = 20 mm from where it sat in the gripper at the place"
+        }
+      ]
+    },
+    "loose-sphere": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.70903,
+          "value": 1.659034318,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.70903,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.70903,
+          "value": 0.0916094,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.092, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.409464,
+          "to_t": 1.36957,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.409464,
+          "to_t": 1.36957,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        }
+      ]
+    },
+    "loose-cylinder": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.70903,
+          "value": 1.659034318,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.70903,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.70903,
+          "value": 0.0488906,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.049, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.409464,
+          "to_t": 1.36957,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.409464,
+          "to_t": 1.36957,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        }
+      ]
+    },
+    "too-aggressive": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.40913,
+          "value": 1.359127916,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/held_ok",
+          "t": 1.40913,
+          "value": 0.0,
+          "abs": 1e-09,
+          "note": "the reduced model drops the parcel too: the cups peel and the drop latch is set"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 1.05166,
+          "to_t": 1.06966,
+          "value": 0.02,
+          "note": "the parcel is more than d_drop = 20 mm from where it sat in the gripper at the place"
+        }
+      ]
+    },
+    "static-hold": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 4e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 12.9745,
+          "value": 12.924485234,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 12.9745,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 12.9745,
+          "value": 0.164894,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.165, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 1.14409,
+          "to_t": 11.9004,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 1.14409,
+          "to_t": 11.9004,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup1/T",
+          "t": 6.52224,
+          "value": 2.943,
+          "rtol": 0.02,
+          "abs": 0.05,
+          "note": "static cup force of zone 1 (hand calculation of reference.py: rigid plate on five bellows, axial and tilt springs, CoM below the lip plane)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup2/T",
+          "t": 6.52224,
+          "value": 9.28055,
+          "rtol": 0.02,
+          "abs": 0.05,
+          "note": "static cup force of zone 2 (hand calculation of reference.py: rigid plate on five bellows, axial and tilt springs, CoM below the lip plane)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup3/T",
+          "t": 6.52224,
+          "value": 6.11178,
+          "rtol": 0.02,
+          "abs": 0.05,
+          "note": "static cup force of zone 3 (hand calculation of reference.py: rigid plate on five bellows, axial and tilt springs, CoM below the lip plane)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup4/T",
+          "t": 6.52224,
+          "value": -3.39455,
+          "rtol": 0.02,
+          "abs": 0.05,
+          "note": "static cup force of zone 4 (hand calculation of reference.py: rigid plate on five bellows, axial and tilt springs, CoM below the lip plane)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup5/T",
+          "t": 6.52224,
+          "value": -0.225775,
+          "rtol": 0.02,
+          "abs": 0.05,
+          "note": "static cup force of zone 5 (hand calculation of reference.py: rigid plate on five bellows, axial and tilt springs, CoM below the lip plane)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup2/U",
+          "t": 6.52224,
+          "value": 0.649819,
+          "rtol": 0.03,
+          "note": "utilisation of the most loaded cup at rest: (T + 4 k_t |phi| / D_lip) / (A_eff dp): the centre grip cannot reach the margin of 0.5 with this carton"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cup1/dp",
+          "t": 6.52224,
+          "value": 55826.8,
+          "rtol": 0.001,
+          "note": "operating vacuum: the ejector curve meets the lip leak plus the Darcy flow through the carton"
+        }
+      ]
+    },
+    "pick-place-best": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.6278,
+          "value": 1.577795913,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.6278,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.6278,
+          "value": 0.501799,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.502, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.286706,
+          "to_t": 1.31109,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.286706,
+          "to_t": 1.31109,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.31309,
+          "to_t": 1.6278,
+          "value": 0.48,
+          "note": "the optimum keeps the required margin 0.5 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.6278,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        }
+      ]
+    },
+    "offset-com-best": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.64657,
+          "value": 1.596569771,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.64657,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.64657,
+          "value": 0.506218,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.506, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.286706,
+          "to_t": 1.32986,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.286706,
+          "to_t": 1.32986,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.33186,
+          "to_t": 1.64657,
+          "value": 0.48,
+          "note": "the optimum keeps the required margin 0.5 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.64657,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        }
+      ]
+    },
+    "loose-sphere-best": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 3e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.44169,
+          "value": 1.391686461,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.44169,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.44169,
+          "value": 0.301027,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.301, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.285301,
+          "to_t": 1.12639,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.285301,
+          "to_t": 1.12639,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.12839,
+          "to_t": 1.44169,
+          "value": 0.28,
+          "note": "the optimum keeps the required margin 0.3 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.44169,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        }
+      ]
+    },
+    "loose-cylinder-best": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "gripper",
+              "point": [
+                0,
+                0,
+                0
+              ],
+              "signals": [
+                "Planner/gref[5]",
+                "Planner/gref[6]",
+                "Planner/gref[7]"
+              ],
+              "tol": 1e-06
+            }
+          ],
+          "note": "the URDF joint tree of the scene, driven by Planner/qr, puts the flange where the planner's closed-form kinematics say (reference.py: URDF chain against gref 2e-16 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W205",
+            "W206",
+            "E006",
+            "E007",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901"
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Planner/T_cyc",
+          "t": 1.40891,
+          "value": 1.35891384,
+          "rtol": 1e-06,
+          "note": "the cycle time of planner.reference (approach start to depart end)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/held_ok",
+          "from_t": 0.0,
+          "to_t": 1.40891,
+          "value": 0.5,
+          "note": "held from the pick to the place (no drop)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Monitor/M_tot",
+          "t": 1.40891,
+          "value": 0.310752,
+          "abs": 0.03,
+          "note": "holding margin of the reduced model (reduced.py), 0.311, within 0.03"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/sep",
+          "from_t": 0.279002,
+          "to_t": 1.09991,
+          "value": -1e-09
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Monitor/sep",
+          "from_t": 0.279002,
+          "to_t": 1.09991,
+          "value": 0.02,
+          "note": "the parcel stays within d_drop of its grip position while carried"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Monitor/M_tot",
+          "from_t": 1.10191,
+          "to_t": 1.40891,
+          "value": 0.28,
+          "note": "the optimum keeps the required margin 0.3 (bg-sim within 0.02 of the reduced model)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Planner/util_max",
+          "from_t": 0.0,
+          "to_t": 1.40891,
+          "value": 100.0,
+          "note": "inside the LR-10iA/10 limits (joint ranges, rates, accelerations, jerks, wrist moment and inertia)"
+        }
+      ]
+    }
+  }
+}

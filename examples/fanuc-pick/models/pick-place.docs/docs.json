@@ -1,0 +1,43 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "robot",
+          "title": "Robot and trajectories",
+          "file": "pages/robot.md",
+          "children": []
+        },
+        {
+          "id": "gripper",
+          "title": "Gripper, cups and vacuum",
+          "file": "pages/gripper.md",
+          "children": []
+        },
+        {
+          "id": "results",
+          "title": "Optimisation and results",
+          "file": "pages/results.md",
+          "children": []
+        },
+        {
+          "id": "checks",
+          "title": "Validation and checks",
+          "file": "pages/checks.md",
+          "children": []
+        },
+        {
+          "id": "notes",
+          "title": "Notes and limitations",
+          "file": "pages/notes.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

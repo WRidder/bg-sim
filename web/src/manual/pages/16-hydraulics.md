@@ -73,7 +73,10 @@ The **Contact** category has two blocks for suction grippers that use the hydrau
 - When the tension or the moment exceeds the vacuum force, the lip lifts (`h > 0`). The lifted lip opens a leak, the chamber loses its vacuum, and above `h_lost` the `sealed` latch drops to 0 for the rest of the run.
 - Air leaks through the part (`perm`, a Darcy permeance: 0 for sealed film, about 4e-7 m/(s·Pa) for cardboard, 2e-6 for porous material) and past the lip (`A_lip0`). The generator must supply this flow: the steady vacuum is where the generator curve meets the leak demand of all cups.
 - Use solver **FBDF** for gripper models: the air chambers are very stiff, and the default automatic choice (Tsit5) takes too many steps.
+- A cup that starts away from the part (the gripper approaches from above, so the start `rz` is below `-L0`) has its lip gap `h` fall through `h_lost` when the lip lands. FBDF can stop there ("dt was forced below floating point epsilon"); use **Rodas5P** for such models.
 
 The example **suction-gripper** is a six-cup gripper that moves a carton: profiles, gripper yaw and tilt, parcel porosity, generator size and manifold layouts.
+
+The example **fanuc-pick** is a pick and place of a carton by a FANUC LR-10iA/10 with a five-zone gripper (a pneumatic cylinder per zone extends its bellows cup, one ejector per zone). It compares four trajectory families and finds the shortest cycle time that keeps a holding margin, for a carton with a centred or offset centre of mass and for a carton with a loose ball or bottle inside. The arm is kinematic: it follows the plan exactly, and the plan is checked against the robot's datasheet limits.
 
 The example **hydraulic-circuit** (in the Example gallery) is a complete circuit: an electric motor speed drives a fixed-displacement pump with a relief valve and an accumulator, and a 4/3 valve extends and retracts a loaded cylinder.

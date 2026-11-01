@@ -141,6 +141,23 @@
       "f16-sim"
     ]
   },
+  "fanuc-pick": {
+    "title": "FANUC pick",
+    "description": "Cycle-time optimisation of a FANUC LR-10iA/10 pick and place with a five-zone suction gripper.",
+    "hasScene": true,
+    "models": [
+      "pick-place",
+      "offset-com",
+      "loose-sphere",
+      "loose-cylinder",
+      "too-aggressive",
+      "static-hold",
+      "pick-place-best",
+      "offset-com-best",
+      "loose-sphere-best",
+      "loose-cylinder-best"
+    ]
+  },
   "fem-bracket": {
     "title": "FEM bracket",
     "description": "An aluminium L-bracket reduced from a finite element mesh (ModalBody3D) carries a payload on an indexing turntable; ring-down checked against the full FE model.",

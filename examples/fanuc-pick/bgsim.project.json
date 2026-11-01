@@ -1,0 +1,19 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "fanuc-pick",
+  "models": [
+    "pick-place",
+    "offset-com",
+    "loose-sphere",
+    "loose-cylinder",
+    "too-aggressive",
+    "static-hold",
+    "pick-place-best",
+    "offset-com-best",
+    "loose-sphere-best",
+    "loose-cylinder-best"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

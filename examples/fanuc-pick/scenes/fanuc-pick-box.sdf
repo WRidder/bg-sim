@@ -1,0 +1,325 @@
+<?xml version="1.0"?>
+<!--
+  fanuc-pick (box): written by design/build_scene.py. Z-up, metres; the world frame is the robot
+  base. Robot: FANUC LR Mate 200iD/7L geometry (ros-industrial/fanuc d8f42bd7, BSD-3-Clause,
+  meshes/LICENSE) standing in for the cell's LR-10iA/10; links at their rest poses, joint frames =
+  child link frames with the URDF axes (bound to Planner/qr[i]). The gripper hangs from link_6
+  (z_G = -x_flange); rod_<k> are prismatic along -z_G (Rod<k>/qout). The carton is semi-transparent
+  (diffuse alpha 0.55); `com` marks the centre of mass.
+-->
+<sdf version="1.9">
+  <model name="fanuc_pick">
+    <link name="cell">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="floor_slab">
+        <pose>0.4 0 -0.606 0 0 0</pose>
+        <geometry><box><size>2.4 2 0.012</size></box></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="pedestal">
+        <pose>0 0 -0.3 0 0 0</pose>
+        <geometry><box><size>0.36 0.36 0.598</size></box></geometry>
+        <material><diffuse>0.30 0.31 0.33 1</diffuse></material>
+      </visual>
+      <visual name="conveyor">
+        <pose>0.5 -0.35 -0.31 0 0 0</pose>
+        <geometry><box><size>1.4 0.36 0.58</size></box></geometry>
+        <material><diffuse>0.40 0.42 0.45 1</diffuse></material>
+      </visual>
+      <visual name="belt">
+        <pose>0.5 -0.35 -0.005 0 0 0</pose>
+        <geometry><box><size>1.4 0.34 0.01</size></box></geometry>
+        <material><diffuse>0.16 0.17 0.18 1</diffuse></material>
+      </visual>
+      <visual name="place_table">
+        <pose>0.5 0.35 -0.305 0 0 0</pose>
+        <geometry><box><size>0.5 0.5 0.59</size></box></geometry>
+        <material><diffuse>0.78 0.79 0.80 1</diffuse></material>
+      </visual>
+      <visual name="place_mark">
+        <pose>0.5 0.35 -0.004 0 0 1.570796</pose>
+        <geometry><box><size>0.3 0.2 0.002</size></box></geometry>
+        <material><diffuse>0.20 0.60 0.30 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="base_link">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="base_link_mesh">
+        <geometry><mesh><uri>meshes/base_link.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="link_1">
+      <pose>0 0 0.33 0 0 0</pose>
+      <visual name="link_1_mesh">
+        <geometry><mesh><uri>meshes/link_1.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="link_2">
+      <pose>0.05 0 0.33 0 0 0</pose>
+      <visual name="link_2_mesh">
+        <geometry><mesh><uri>meshes/link_2.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="link_3">
+      <pose>0.05 0 0.77 0 0 0</pose>
+      <visual name="link_3_mesh">
+        <geometry><mesh><uri>meshes/link_3.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="link_4">
+      <pose>0.05 0 0.805 0 0 0</pose>
+      <visual name="link_4_mesh">
+        <geometry><mesh><uri>meshes/link_4.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="link_5">
+      <pose>0.47 0 0.805 0 0 0</pose>
+      <visual name="link_5_mesh">
+        <geometry><mesh><uri>meshes/link_5.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="link_6">
+      <pose>0.55 0 0.805 0 0 0</pose>
+      <visual name="link_6_mesh">
+        <geometry><mesh><uri>meshes/link_6.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="gripper">
+      <pose>0.55 0 0.805 0 -1.570796 0</pose>
+      <visual name="adapter">
+        <pose>0 0 -0.0225 0 0 0</pose>
+        <geometry><cylinder><radius>0.045</radius><length>0.045</length></cylinder></geometry>
+        <material><diffuse>0.55 0.57 0.60 1</diffuse></material>
+      </visual>
+      <visual name="manifold">
+        <pose>0 0 -0.039 0 0 0</pose>
+        <geometry><box><size>0.122 0.122 0.012</size></box></geometry>
+        <material><diffuse>0.70 0.72 0.75 1</diffuse></material>
+      </visual>
+      <visual name="cylinder_1">
+        <pose>0 0 -0.12 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.15</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+      <visual name="cylinder_2">
+        <pose>0.04 0 -0.12 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.15</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+      <visual name="cylinder_3">
+        <pose>0 0.04 -0.12 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.15</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+      <visual name="cylinder_4">
+        <pose>-0.04 0 -0.12 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.15</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+      <visual name="cylinder_5">
+        <pose>0 -0.04 -0.12 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.15</length></cylinder></geometry>
+        <material><diffuse>0.80 0.82 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="rod_link_1">
+      <pose>0.76 0 0.805 0 -1.570796 0</pose>
+      <visual name="rod_1">
+        <pose>0 0 0.045 0 0 0</pose>
+        <geometry><cylinder><radius>0.003</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>0.85 0.86 0.88 1</diffuse></material>
+      </visual>
+      <visual name="holder_1">
+        <pose>0 0 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.008</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.25 0.25 0.27 1</diffuse></material>
+      </visual>
+      <visual name="bellows_1">
+        <pose>0 0 -0.017 0 0 0</pose>
+        <geometry><cylinder><radius>0.013</radius><length>0.018</length></cylinder></geometry>
+        <material><diffuse>0.10 0.10 0.11 1</diffuse></material>
+      </visual>
+      <visual name="lip_1">
+        <pose>0 0 -0.028 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.004</length></cylinder></geometry>
+        <material><diffuse>0.15 0.15 0.16 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="rod_link_2">
+      <pose>0.76 0 0.845 0 -1.570796 0</pose>
+      <visual name="rod_2">
+        <pose>0 0 0.045 0 0 0</pose>
+        <geometry><cylinder><radius>0.003</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>0.85 0.86 0.88 1</diffuse></material>
+      </visual>
+      <visual name="holder_2">
+        <pose>0 0 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.008</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.25 0.25 0.27 1</diffuse></material>
+      </visual>
+      <visual name="bellows_2">
+        <pose>0 0 -0.017 0 0 0</pose>
+        <geometry><cylinder><radius>0.013</radius><length>0.018</length></cylinder></geometry>
+        <material><diffuse>0.10 0.10 0.11 1</diffuse></material>
+      </visual>
+      <visual name="lip_2">
+        <pose>0 0 -0.028 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.004</length></cylinder></geometry>
+        <material><diffuse>0.15 0.15 0.16 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="rod_link_3">
+      <pose>0.76 0.04 0.805 0 -1.570796 0</pose>
+      <visual name="rod_3">
+        <pose>0 0 0.045 0 0 0</pose>
+        <geometry><cylinder><radius>0.003</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>0.85 0.86 0.88 1</diffuse></material>
+      </visual>
+      <visual name="holder_3">
+        <pose>0 0 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.008</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.25 0.25 0.27 1</diffuse></material>
+      </visual>
+      <visual name="bellows_3">
+        <pose>0 0 -0.017 0 0 0</pose>
+        <geometry><cylinder><radius>0.013</radius><length>0.018</length></cylinder></geometry>
+        <material><diffuse>0.10 0.10 0.11 1</diffuse></material>
+      </visual>
+      <visual name="lip_3">
+        <pose>0 0 -0.028 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.004</length></cylinder></geometry>
+        <material><diffuse>0.15 0.15 0.16 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="rod_link_4">
+      <pose>0.76 0 0.765 0 -1.570796 0</pose>
+      <visual name="rod_4">
+        <pose>0 0 0.045 0 0 0</pose>
+        <geometry><cylinder><radius>0.003</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>0.85 0.86 0.88 1</diffuse></material>
+      </visual>
+      <visual name="holder_4">
+        <pose>0 0 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.008</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.25 0.25 0.27 1</diffuse></material>
+      </visual>
+      <visual name="bellows_4">
+        <pose>0 0 -0.017 0 0 0</pose>
+        <geometry><cylinder><radius>0.013</radius><length>0.018</length></cylinder></geometry>
+        <material><diffuse>0.10 0.10 0.11 1</diffuse></material>
+      </visual>
+      <visual name="lip_4">
+        <pose>0 0 -0.028 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.004</length></cylinder></geometry>
+        <material><diffuse>0.15 0.15 0.16 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="rod_link_5">
+      <pose>0.76 -0.04 0.805 0 -1.570796 0</pose>
+      <visual name="rod_5">
+        <pose>0 0 0.045 0 0 0</pose>
+        <geometry><cylinder><radius>0.003</radius><length>0.09</length></cylinder></geometry>
+        <material><diffuse>0.85 0.86 0.88 1</diffuse></material>
+      </visual>
+      <visual name="holder_5">
+        <pose>0 0 -0.004 0 0 0</pose>
+        <geometry><cylinder><radius>0.008</radius><length>0.008</length></cylinder></geometry>
+        <material><diffuse>0.25 0.25 0.27 1</diffuse></material>
+      </visual>
+      <visual name="bellows_5">
+        <pose>0 0 -0.017 0 0 0</pose>
+        <geometry><cylinder><radius>0.013</radius><length>0.018</length></cylinder></geometry>
+        <material><diffuse>0.10 0.10 0.11 1</diffuse></material>
+      </visual>
+      <visual name="lip_5">
+        <pose>0 0 -0.028 0 0 0</pose>
+        <geometry><cylinder><radius>0.016</radius><length>0.004</length></cylinder></geometry>
+        <material><diffuse>0.15 0.15 0.16 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="parcel">
+      <pose>0.5 -0.35 0.06 0 0 0</pose>
+      <visual name="carton">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><box><size>0.3 0.2 0.12</size></box></geometry>
+        <material><diffuse>0.76 0.56 0.33 0.55</diffuse></material>
+      </visual>
+      <visual name="tape">
+        <pose>0 0 0.0605 0 0 0</pose>
+        <geometry><box><size>0.2985 0.05 0.001</size></box></geometry>
+        <material><diffuse>0.88 0.80 0.62 0.8</diffuse></material>
+      </visual>
+    </link>
+    <link name="com">
+      <pose>0.5 -0.35 0.06 0 0 0</pose>
+      <visual name="com_marker">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.012</radius></sphere></geometry>
+        <material><diffuse>0.85 0.10 0.10 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="cell_base" type="fixed">
+      <parent>cell</parent>
+      <child>base_link</child>
+    </joint>
+    <joint name="joint_1" type="revolute">
+      <parent>base_link</parent>
+      <child>link_1</child>
+      <axis><xyz>0 0 1</xyz><limit><lower>-2.96706</lower><upper>2.96706</upper></limit></axis>
+    </joint>
+    <joint name="joint_2" type="revolute">
+      <parent>link_1</parent>
+      <child>link_2</child>
+      <axis><xyz>0 1 0</xyz><limit><lower>-1.745329</lower><upper>2.530727</upper></limit></axis>
+    </joint>
+    <joint name="joint_3" type="revolute">
+      <parent>link_2</parent>
+      <child>link_3</child>
+      <axis><xyz>0 -1 0</xyz><limit><lower>-1.22173</lower><upper>3.717551</upper></limit></axis>
+    </joint>
+    <joint name="joint_4" type="revolute">
+      <parent>link_3</parent>
+      <child>link_4</child>
+      <axis><xyz>-1 0 0</xyz><limit><lower>-3.316126</lower><upper>3.316126</upper></limit></axis>
+    </joint>
+    <joint name="joint_5" type="revolute">
+      <parent>link_4</parent>
+      <child>link_5</child>
+      <axis><xyz>0 -1 0</xyz><limit><lower>-2.181662</lower><upper>2.181662</upper></limit></axis>
+    </joint>
+    <joint name="joint_6" type="revolute">
+      <parent>link_5</parent>
+      <child>link_6</child>
+      <axis><xyz>-1 0 0</xyz><limit><lower>-6.283185</lower><upper>6.283185</upper></limit></axis>
+    </joint>
+    <joint name="flange_gripper" type="fixed">
+      <parent>link_6</parent>
+      <child>gripper</child>
+    </joint>
+    <joint name="rod_1" type="prismatic">
+      <parent>gripper</parent>
+      <child>rod_link_1</child>
+      <axis><xyz>0 0 -1</xyz><limit><lower>-0.002</lower><upper>0.077</upper></limit></axis>
+    </joint>
+    <joint name="rod_2" type="prismatic">
+      <parent>gripper</parent>
+      <child>rod_link_2</child>
+      <axis><xyz>0 0 -1</xyz><limit><lower>-0.002</lower><upper>0.077</upper></limit></axis>
+    </joint>
+    <joint name="rod_3" type="prismatic">
+      <parent>gripper</parent>
+      <child>rod_link_3</child>
+      <axis><xyz>0 0 -1</xyz><limit><lower>-0.002</lower><upper>0.077</upper></limit></axis>
+    </joint>
+    <joint name="rod_4" type="prismatic">
+      <parent>gripper</parent>
+      <child>rod_link_4</child>
+      <axis><xyz>0 0 -1</xyz><limit><lower>-0.002</lower><upper>0.077</upper></limit></axis>
+    </joint>
+    <joint name="rod_5" type="prismatic">
+      <parent>gripper</parent>
+      <child>rod_link_5</child>
+      <axis><xyz>0 0 -1</xyz><limit><lower>-0.002</lower><upper>0.077</upper></limit></axis>
+    </joint>
+  </model>
+</sdf>
