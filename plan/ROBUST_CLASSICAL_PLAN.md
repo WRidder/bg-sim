@@ -7,14 +7,15 @@ pendulum leaves its planned path (a failed catch, a push, a large parameter erro
 design robust over the realistic parameter ranges, so it can be compared fairly with the learned controllers of
 `plan/RL_PLAN.md`.
 
-**Scope for now: the double cart only** (`examples/pendulum-double-cart`, 2 links). The question is whether the
-workflow is viable: realistic ranges, then robust design, robustness test and comparison with RL. More links and the
-rotary rigs come later, if at all.
+**Scope for now: the double-cart lab rig only** (`examples/pendulum-double-cart-lab`: 2 links of 0.35 m and about
+0.25 / 0.20 kg, rail ±1.0 m, the motor, gearbox and belt of `pendulum-double-cart`). The question is whether the
+workflow is viable: realistic ranges, then robust design, robustness test and comparison with RL. The RL work (`plan/RL_PLAN.md`) uses
+the same rig. More links and the rotary rigs come later, if at all.
 
-Parameter ranges and non-idealities: one shared set for the double cart, used both by this plan and by RL step R1
-(`examples/pendulum-double-cart/design/realism.json`: masses, lengths, friction (viscous and Coulomb), motor and belt
-constants, encoder quantisation and noise, loop delay). It starts from the ranges of the RL spike's plant FMU and
-follows the approach of the quad-pendulum phase B realism work.
+Parameter ranges and non-idealities: one shared set for the lab rig, used both by this plan and by RL step R1
+(`examples/pendulum-double-cart-lab/design/realism.json`: masses, lengths, friction (viscous and Coulomb), motor and
+belt constants, encoder quantisation and noise, loop delay), following the approach of the quad-pendulum phase B
+realism screen (`examples/quad-pendulum/design/realism.json`, `quadlib.realistic_setup`).
 
 Status and progress: the tracking table at the end. Update it in the same commit as the work.
 
@@ -48,7 +49,7 @@ non-idealities, plus pushes. Success rate, catch time, peak actuator and travel 
 
 ## Comparison
 
-One table (double cart) compares five controllers:
+One table (double-cart lab rig) compares five controllers:
 - the nominal classical design (today's examples);
 - the robust classical design (items 1 to 3);
 - pure RL;
@@ -59,9 +60,9 @@ One table (double cart) compares five controllers:
 
 | # | item | rig | status | notes |
 | --- | --- | --- | --- | --- |
-| C0 | shared realistic ranges for the double cart (`design/realism.json`) | double cart | todo | with RL R1 |
-| C1 | robust balance: multi-model LQR, structured H∞, μ-synthesis, loop shaping; μ-analysis of all balance controllers | double cart | todo | after C0 |
-| C2 | worst-case swing-up plan | double cart | todo | |
-| C3 | energy-based swing-up with re-arm | double cart | todo | |
+| C0 | lab rig: the example, its classical redesign, `design/realism.json` and a twin realism screen | double-cart lab rig | todo | |
+| C1 | robust balance: multi-model LQR, structured H∞, μ-synthesis, loop shaping; μ-analysis of all balance controllers | double-cart lab rig | todo | after C0 |
+| C2 | worst-case swing-up plan | double-cart lab rig | todo | |
+| C3 | energy-based swing-up with re-arm | double-cart lab rig | todo | |
 | C4 | items 1 to 3 on the quad cart, then the rotary rigs | quad cart, rotary | deferred | only after the 2-link workflow proves viable |
-| C5 | comparison table: classical vs robust classical vs RL vs hybrid | double cart | todo | with RL step R1 |
+| C5 | comparison table: classical vs robust classical vs RL vs hybrid | double-cart lab rig | todo | with RL step R1 |
