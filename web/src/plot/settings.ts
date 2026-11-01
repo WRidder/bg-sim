@@ -24,6 +24,18 @@ export function parseFiniteNumber(text: string): number | null {
 }
 
 /**
+ * The text of a number in the compact inputs: all its digits, in exponent notation below 1e-3
+ * and from 1e6 on, so a microsecond run reads `3.2e-6` and not a cut-off `0.00000…`.
+ */
+export function formatSettingNumber(value: number): string {
+  const magnitude = Math.abs(value);
+  if (magnitude !== 0 && Number.isFinite(value) && (magnitude < 1e-3 || magnitude >= 1e6)) {
+    return value.toExponential().replace("e+", "e");
+  }
+  return String(value);
+}
+
+/**
  * Apply a partial settings change to the open model. Returns false when no
  * model is open. The revision bump is what makes the existing auto-save pick
  * the change up; `saveState: "dirty"` mirrors every other document edit.

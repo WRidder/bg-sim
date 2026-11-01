@@ -21,6 +21,7 @@
 import type { Model, ModelDiagram, ModelGlobalParameter, ModelNode } from "../contracts/model";
 import { WHITELIST_FUNCTIONS } from "../code/completion";
 import {
+  BUILTIN_CONSTANTS,
   evaluateExpression,
   expressionNames,
   isPlainLiteral,
@@ -32,7 +33,8 @@ export const GLOBAL_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 /** The compiler's `RESERVED_GLOBAL_NAMES` (Julia `globals.jl`); keep the two in step. */
 export const RESERVED_GLOBAL_NAMES: ReadonlySet<string> = new Set([
-  "t", "Ts", "ifelse", "true", "false", "pi", "begin", "end", "if", "else", "elseif", "for",
+  ...BUILTIN_CONSTANTS.keys(),
+  "t", "Ts", "ifelse", "true", "false", "begin", "end", "if", "else", "elseif", "for",
   "while", "function", "return", "let", "local", "global", "const", "struct", "module",
   "using", "import", "do", "try", "catch", "finally", "quote", "macro", "abstract",
   "primitive", "mutable", "baremodule", "export", "in", "isa", "where", "break", "continue",
@@ -115,7 +117,7 @@ export function evaluateGlobals(globals: readonly ModelGlobalParameter[]): Globa
       status.error = parsed.message;
       continue;
     }
-    const names = expressionNames(parsed.ast).filter((name) => name !== "pi");
+    const names = expressionNames(parsed.ast).filter((name) => !BUILTIN_CONSTANTS.has(name));
     const unknown = names.filter((name) => !globals.some((other) => other.name === name));
     status.deps = names.filter((name) => !unknown.includes(name));
     if (unknown.length > 0) {

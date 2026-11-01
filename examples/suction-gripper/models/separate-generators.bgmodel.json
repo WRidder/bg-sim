@@ -3135,12 +3135,6 @@
   },
   "parameters": [
     {
-      "name": "deg",
-      "value": "0.017453292519943295",
-      "unit": "rad",
-      "description": "One degree"
-    },
-    {
       "name": "m_p",
       "value": "10",
       "unit": "kg",
