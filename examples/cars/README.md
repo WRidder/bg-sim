@@ -122,6 +122,15 @@ are evaluated once per internal step, which the fixed step resolves.
 
 `apps/car-sim` is the host (Panda3D, fmpy, wheel/pedal/gamepad input): see its README.
 
+The suspension rods (wishbones, push rods or dampers, tie rods, drive shafts) join the chassis to a
+wheel carrier, so they belong to neither the body mesh nor the hub mesh.
+`meshes/<vehicle>_suspension.json` lists each rod's inner end in the chassis frame and its outer end
+in the carrier frame. The outer ends of the arms, push rods and dampers lie on the kingpin, so
+steering does not move them. car-sim lays every rod between its two end points each frame, so the
+rods stay attached through the suspension travel and the steering. The bg-sim scenes draw the same
+rods at rest (`*_suspension.glb`, a second visual of the chassis link): there, a wheel that moves
+off its rest position leaves the rod ends by its travel.
+
 ## Limitations
 
 * The tyre has no aligning moment, camber thrust or relaxation length beyond the contact-patch
@@ -154,7 +163,7 @@ are evaluated once per internal step, which the fixed step resolves.
 | `design/bg.py`, `design/car.py` | the diagram builder and the vehicle bond graph |
 | `design/track.py` | the race track's centre line (a periodic spline through control points), written to `design/track.json` |
 | `design/build_model.py` | writes the models, `bgsim.project.json`, `design/hills.json` and `expected.json` |
-| `design/make_scenes.py` | writes `meshes/*.glb` and `scenes/*.sdf` |
+| `design/make_scenes.py` | writes `meshes/*.glb`, `meshes/*_suspension.json` and `scenes/*.sdf`; checks that every suspension rod ends on the body and on the upright |
 | `library/` | `TractionBattery`, `TractionMachine`, `EMotorControl`, `BrakeSystem`, `Strut`, `AntiRollBar`, `Steering`, `SteerServo`, `Aero`, `Telemetry`, `SpeedHold`, `CarView`, `PoseSplit`, `XYPose` |
 | `../export_cars.jl`, `../export_cars_check.py` | the two FMUs: export, references and the fmpy acceptance |
 

@@ -8,7 +8,7 @@ electric drivetrain with regenerative braking, the battery, the brakes, aerodyna
 adds the driver's inputs, the world, the cameras and the dashboard. It follows `apps/f16-sim`.
 
 The vehicle meshes are the example's own (`examples/cars/meshes`, written by
-`examples/cars/design/make_scenes.py`); the track ribbons, the terrain, the trees and the sky are
+`examples/cars/design/make_scenes.py`), and so are the suspension rods (`*_suspension.json`); the track ribbons, the terrain, the trees and the sky are
 procedural, from the same data the models use (`examples/cars/design/track.json`, `hills.json`).
 
 ## Install and build
@@ -106,6 +106,11 @@ vehicle, view, start, frames whose backlog was dropped. Warnings: rolled over, t
   remainder; a frame later than 100 ms runs 20 steps and drops the rest of the backlog (`behind`).
 * **Interpolation.** The chassis, carrier and wheel poses are interpolated between the last two
   steps (positions linearly, quaternions by nlerp, spin angles linearly).
+* **Suspension rods.** The wishbones, push rods (race car) or dampers (buggy), tie rods and drive
+  shafts join the chassis to a carrier, so they are in neither mesh. Each frame each rod, a unit
+  cylinder, is laid from its inner end (a point fixed in the chassis frame) to its outer end (a point
+  fixed in the carrier frame of its corner). The rods stay attached through the suspension travel
+  and the steering.
 * **Inputs** are held over each step (zero-order hold), as in the FMUs' reference runs.
 * **Coordinates.** The FMU's world is x, y horizontal and z up, the same as Panda3D's. The body
   mesh is in the chassis frame (x forward, y left, z up), the wheel and hub meshes in the carrier

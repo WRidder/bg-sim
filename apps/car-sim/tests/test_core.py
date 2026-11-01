@@ -248,3 +248,59 @@ def test_buggy_climbs_with_four_wheel_drive(buggy):
     assert m["speed"] > 5.0
     assert m["motor_f_torque"] > 5.0 and m["motor_r_torque"] > 5.0
     assert buggy.warning == ""
+
+
+# ---------------------------------------------------------------- suspension rods
+def _vehicle_geometry(vehicle: str) -> dict:
+    import sys
+
+    sys.path.insert(0, str(ROOT / "examples" / "cars" / "design"))
+    from vehicles import vehicles
+
+    return vehicles()[vehicle]
+
+
+def _rx(a: float) -> np.ndarray:
+    c, s = math.cos(a), math.sin(a)
+    return np.array([[1.0, 0.0, 0.0], [0.0, c, -s], [0.0, s, c]])
+
+
+@pytest.mark.parametrize("vehicle", ["racecar", "buggy"])
+def test_suspension_rods_stay_attached(vehicle):
+    """Each rod is laid from its chassis point to its carrier point, whatever the chassis pose,
+    the suspension travel and the steer; the kingpin-mounted ends do not move with the steer."""
+    from panda3d.core import NodePath, Point3
+
+    from carsim.vehicle import Car, rz
+
+    v = _vehicle_geometry(vehicle)
+    car = Car(NodePath("test"), vehicle, {})
+    assert len(car.rods) >= 20
+    R = quat_matrix(0.9, 0.1, -0.2, 0.3)
+    p = np.array([12.0, -4.0, 0.4])
+
+    def carriers(travel: float, steer: float) -> dict:
+        out = {}
+        for c in CORNERS:
+            k = v["corners"][c.upper()]
+            local = np.array([k["x"], k["y"], k["z"] + travel])
+            Rl = (rz(steer) if k["steered"] else np.eye(3)) @ _rx(-math.pi / 2)
+            out[c] = (R @ Rl, R @ local + p)
+        return out
+
+    rest = car.lay_rods(R, p, carriers(0.0, 0.0))
+    for travel, steer in ((0.05, 0.0), (-0.06, 0.35), (0.12, -0.35)):
+        cs = carriers(travel, steer)
+        ends = car.lay_rods(R, p, cs)
+        for i, (a, b) in enumerate(ends):
+            rod = car.rods[i]
+            Rc, pc = cs[rod["corner"].lower()]
+            assert np.allclose(a, R @ rod["inner"] + p) and np.allclose(b, Rc @ rod["outer"] + pc)
+            m = car.rod_nodes[i].get_mat()
+            assert np.allclose(m.xform_point(Point3(0, 0, 0)), a, atol=1e-5)
+            assert np.allclose(m.xform_point(Point3(0, 0, 1)), b, atol=1e-5)
+            radial = np.array(m.xform_point(Point3(1, 0, 0))) - a
+            assert np.linalg.norm(radial) == pytest.approx(rod["r"], rel=1e-4)      # float32 matrix
+            assert abs(float(np.dot(radial, b - a))) < 1e-4 * rod["r"] * np.linalg.norm(b - a)
+            if rod["outer"][0] == 0.0 and rod["outer"][2] == 0.0:       # on the kingpin
+                assert np.allclose(b - rest[i][1], R @ [0.0, 0.0, travel], atol=1e-9)
