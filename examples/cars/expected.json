@@ -1,0 +1,995 @@
+{
+  "project": "cars",
+  "description": "Electric race car and buggy (3D multibond bond graphs). Numbers come from design/design.json: the independent scipy references of design/reference.py (7-DOF ride model, four-wheel steady-state cornering, 1-D longitudinal model with the motor envelope and the battery, the grade equilibrium).",
+  "models": {
+    "racecar-settle": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no domain mismatch, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.05,
+          "value": 0.324084997878957,
+          "abs": 0.0002,
+          "note": "CG height of the 7-DOF ride model (design/reference.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.1,
+          "value": 0.3086099837105281,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.15,
+          "value": 0.29673893125124823,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.2,
+          "value": 0.29389197477494244,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.3,
+          "value": 0.29948811910015327,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.4,
+          "value": 0.3004400163631867,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.6,
+          "value": 0.2999663298125914,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 1.0,
+          "value": 0.3000004633759571,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 2.0,
+          "value": 0.3000000005477295,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 3.0,
+          "value": 0.300000000538241,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 0.3,
+          "value": 1439.1802561945049,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 0.3,
+          "value": 1835.6800756894838,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 0.4,
+          "value": 1518.776199165193,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 0.4,
+          "value": 2012.5624417834983,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 0.6,
+          "value": 1525.8769877195841,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 0.6,
+          "value": 2021.4710109740843,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 1.0,
+          "value": 1526.9889214387601,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 1.0,
+          "value": 2024.1235743899176,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 2.0,
+          "value": 1527.0244357134236,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 2.0,
+          "value": 2024.1952753590601,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 3.0,
+          "value": 1527.0244362829171,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 3.0,
+          "value": 2024.1952764941202,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 3.0,
+          "value": 1527.0246,
+          "rtol": 0.001,
+          "note": "static corner load"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FR/Tyre/Fz",
+          "t": 3.0,
+          "value": 1527.0246,
+          "rtol": 0.001,
+          "note": "static corner load"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 3.0,
+          "value": 2024.1954000000003,
+          "rtol": 0.001,
+          "note": "static corner load"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RR/Tyre/Fz",
+          "t": 3.0,
+          "value": 2024.1954000000003,
+          "rtol": 0.001,
+          "note": "static corner load"
+        }
+      ]
+    },
+    "buggy-settle": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no domain mismatch, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.05,
+          "value": 0.7780426170510703,
+          "abs": 0.0002,
+          "note": "CG height of the 7-DOF ride model (design/reference.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.1,
+          "value": 0.7724131117990946,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.15,
+          "value": 0.7646641444921641,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.2,
+          "value": 0.7568594319752029,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.3,
+          "value": 0.7455819749280165,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.4,
+          "value": 0.7424406234522319,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 0.6,
+          "value": 0.7481505210749944,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 1.0,
+          "value": 0.7502327333214854,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 2.0,
+          "value": 0.7499963545948313,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pose/pz",
+          "t": 3.0,
+          "value": 0.7499999776348935,
+          "abs": 0.0002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 0.3,
+          "value": 2140.17225384172,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 0.3,
+          "value": 2645.0230576820177,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 0.4,
+          "value": 2087.0126185444824,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 0.4,
+          "value": 2590.12849532835,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 0.6,
+          "value": 1983.3447972194433,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 0.6,
+          "value": 2413.2397896220596,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 1.0,
+          "value": 2005.6248586548352,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 1.0,
+          "value": 2452.866150159549,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 2.0,
+          "value": 2004.2270108338291,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 2.0,
+          "value": 2449.636487132776,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 3.0,
+          "value": 2004.1826645361523,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 3.0,
+          "value": 2449.556396870098,
+          "rtol": 0.005,
+          "abs": 2.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 3.0,
+          "value": 2004.183,
+          "rtol": 0.001,
+          "note": "static corner load"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FR/Tyre/Fz",
+          "t": 3.0,
+          "value": 2004.183,
+          "rtol": 0.001,
+          "note": "static corner load"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 3.0,
+          "value": 2449.5570000000002,
+          "rtol": 0.001,
+          "note": "static corner load"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RR/Tyre/Fz",
+          "t": 3.0,
+          "value": 2449.5570000000002,
+          "rtol": 0.001,
+          "note": "static corner load"
+        }
+      ]
+    },
+    "racecar-skidpad": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no domain mismatch, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/r",
+          "t": 7.0,
+          "value": 0.11582425903559306,
+          "rtol": 0.005,
+          "note": "yaw rate at steer -0.04: four-wheel steady state"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/beta",
+          "t": 7.0,
+          "value": -0.011323420261846276,
+          "rtol": 0.01,
+          "abs": 0.0002,
+          "note": "body slip angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 7.0,
+          "value": 1478.9840561212318,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FR/Tyre/Fz",
+          "t": 7.0,
+          "value": 1931.4309717533122,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 7.0,
+          "value": 2150.4296932719326,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RR/Tyre/Fz",
+          "t": 7.0,
+          "value": 2536.780165491956,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/r",
+          "t": 13.0,
+          "value": 0.2274194636309357,
+          "rtol": 0.005,
+          "note": "yaw rate at steer -0.08: four-wheel steady state"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/beta",
+          "t": 13.0,
+          "value": -0.023349467484828607,
+          "rtol": 0.01,
+          "abs": 0.0002,
+          "note": "body slip angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 13.0,
+          "value": 1257.3191578359408,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FR/Tyre/Fz",
+          "t": 13.0,
+          "value": 2145.408545199996,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 13.0,
+          "value": 1968.0654242506105,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RR/Tyre/Fz",
+          "t": 13.0,
+          "value": 2726.4168293040734,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/r",
+          "t": 19.0,
+          "value": 0.32992622881949274,
+          "rtol": 0.005,
+          "note": "yaw rate at steer -0.12: four-wheel steady state"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/beta",
+          "t": 19.0,
+          "value": -0.03662263620948285,
+          "rtol": 0.01,
+          "abs": 0.0002,
+          "note": "body slip angle"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 19.0,
+          "value": 1051.0029769930716,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FR/Tyre/Fz",
+          "t": 19.0,
+          "value": 2338.632784794683,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 19.0,
+          "value": 1803.6290454637283,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RR/Tyre/Fz",
+          "t": 19.0,
+          "value": 2903.15335892654,
+          "rtol": 0.01
+        }
+      ]
+    },
+    "racecar-launch": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no domain mismatch, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 2.0,
+          "value": 16.250122196144776,
+          "abs": 0.35,
+          "note": "1-D longitudinal model; the model's tyre patch transient costs 0.2 m/s in the first 0.1 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 4.0,
+          "value": 31.735222845516045,
+          "abs": 0.35
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 6.0,
+          "value": 44.991546507249666,
+          "abs": 0.35
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 8.0,
+          "value": 53.758266197457814,
+          "abs": 0.35
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 10.0,
+          "value": 59.70597532974422,
+          "abs": 0.35
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 12.0,
+          "value": 63.83592961882614,
+          "abs": 0.35
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/tau",
+          "t": 2.0,
+          "value": 300.0,
+          "rtol": 0.001,
+          "note": "at the torque limit below the base speed"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/tau",
+          "t": 4.0,
+          "value": 300.0,
+          "rtol": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/tau",
+          "t": 8.0,
+          "value": 212.91972395374447,
+          "rtol": 0.01,
+          "note": "at the power limit P_max / w"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/rpm",
+          "t": 8.0,
+          "value": 11660.809217669892,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/tau",
+          "t": 12.0,
+          "value": 179.43797238685246,
+          "rtol": 0.01,
+          "note": "at the power limit P_max / w"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/rpm",
+          "t": 12.0,
+          "value": 13836.628267265096,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Battery/soc",
+          "t": 4.0,
+          "value": 0.8966508823814643,
+          "abs": 0.0003,
+          "note": "battery charge: open-circuit voltage, R, the motor power"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Battery/soc",
+          "t": 8.0,
+          "value": 0.8885834087546899,
+          "abs": 0.0003
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Battery/soc",
+          "t": 12.0,
+          "value": 0.8803603950226757,
+          "abs": 0.0003
+        }
+      ]
+    },
+    "racecar-straight": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no domain mismatch, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 9.9,
+          "value": 73.66228117730665,
+          "rtol": 0.005,
+          "note": "top speed: 260 kW against the drag, rolling resistance and slip"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/tau",
+          "t": 9.9,
+          "value": 155.06329366077043,
+          "rtol": 0.01,
+          "note": "motor at the power limit"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/rpm",
+          "t": 9.9,
+          "value": 16011.633779099824,
+          "rtol": 0.005
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Battery/I",
+          "t": 9.9,
+          "value": 737.7209009998945,
+          "rtol": 0.01,
+          "note": "battery current at full power"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 11.0,
+          "value": 57.88535073135878,
+          "abs": 0.6,
+          "note": "regenerative plus friction braking at 50 % pedal"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 12.0,
+          "value": 42.920973759533716,
+          "abs": 0.6
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 13.0,
+          "value": 28.972845333457634,
+          "abs": 0.6
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 14.0,
+          "value": 15.667510120824605,
+          "abs": 0.6
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/tau",
+          "t": 10.5,
+          "value": -140.00341261164237,
+          "rtol": 0.03,
+          "note": "regen torque: power limit, then the pedal share"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/tau",
+          "t": 12.0,
+          "value": -185.71428571428572,
+          "rtol": 0.03
+        }
+      ]
+    },
+    "buggy-grade": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no domain mismatch, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Throttle/y",
+          "t": 12.0,
+          "value": 0.3237427108641918,
+          "rtol": 0.01,
+          "note": "accelerator for 5 m/s up 25 %: steady state of design/reference.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorF/tau",
+          "t": 12.0,
+          "value": 48.56140662962877,
+          "rtol": 0.01,
+          "note": "each motor"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/tau",
+          "t": 12.0,
+          "value": 48.56140662962877,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorF/rpm",
+          "t": 12.0,
+          "value": 1190.6895445010875,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "MotorR/rpm",
+          "t": 12.0,
+          "value": 1198.9763323828786,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "FL/Tyre/Fz",
+          "t": 12.0,
+          "value": 1649.2232664976264,
+          "rtol": 0.01,
+          "note": "load transfer to the rear on the slope"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RL/Tyre/Fz",
+          "t": 12.0,
+          "value": 2671.5391920996444,
+          "rtol": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Battery/I",
+          "t": 12.0,
+          "value": 30.82499259756395,
+          "rtol": 0.03
+        }
+      ]
+    },
+    "buggy-hills": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no domain mismatch, no event storm"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "FL/Tyre/zc",
+          "signal_b": "TerrainProbe/hq",
+          "from_t": 0.5,
+          "max_abs": 0.002,
+          "note": "the FL contact point lies on the terrain (a second TerrainSurface at the contact x, y)"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "FL/Tyre/Fz",
+          "from_t": 0.5,
+          "value": 300.0,
+          "note": "the wheels stay on the ground"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "RR/Tyre/Fz",
+          "from_t": 0.5,
+          "value": 300.0
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Telemetry/speed",
+          "t": 30.0,
+          "value": 8.0,
+          "abs": 1.0,
+          "note": "the speed hold"
+        }
+      ]
+    },
+    "racecar-sim": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no domain mismatch, no event storm"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Telemetry/speed",
+          "value": 40.0,
+          "note": "the bg-sim test drive of the FMU source runs"
+        }
+      ]
+    },
+    "buggy-sim": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E101",
+            "E102",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no domain mismatch, no event storm"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Telemetry/speed",
+          "value": 40.0,
+          "note": "the bg-sim test drive of the FMU source runs"
+        }
+      ]
+    }
+  }
+}
