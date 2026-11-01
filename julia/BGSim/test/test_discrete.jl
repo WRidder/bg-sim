@@ -1061,4 +1061,37 @@ end
         @test length(e003) == 1
         @test occursin("computed by the block's equations", only(e003).message)
     end
+
+    # -----------------------------------------------------------------------------------
+    @testset "&& and || on a Bool parameter in @discrete" begin
+        # A Bool parameter reaches the step function as 1.0/0.0, which a plain Julia `&&`
+        # refuses ("non-boolean (Float64) used in boolean context") at the first tick.
+        src = """
+        @block BoolGate begin
+            @parameters begin
+                on::Bool = true
+                off::Bool = false
+            end
+            @outputs begin
+                a::Real = 0.0
+                o::Real = 0.0
+                n::Real = 0.0
+            end
+            @discrete Ts = 0.1 begin
+                a = (on && !off) ? 1.0 : 2.0
+                o = (off || on) ? 3.0 : 4.0
+                n = (off || (on && off)) ? 5.0 : 6.0
+            end
+        end
+        """
+        doc = _disc_model("BoolGate", [_disc_node("n1", "G1", _disc_inline(src))], Any[];
+            t_end = 0.2, points = 3)
+        flat, result, dir = _disc_run(doc)
+        @test isempty(_disc_errors(flat))
+        @test result.status == "done"
+        time, values = _disc_columns(dir)
+        @test _disc_at(time, values, "G1/a", 0.1) == 1.0
+        @test _disc_at(time, values, "G1/o", 0.1) == 3.0
+        @test _disc_at(time, values, "G1/n", 0.1) == 6.0
+    end
 end

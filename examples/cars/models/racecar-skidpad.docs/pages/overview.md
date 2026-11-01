@@ -2,7 +2,7 @@
 
 25 m/s with three left steering levels (0.04, 0.08 and 0.12 of full lock, held for 6 s each). A PI on the accelerator ([Throttle](block:Throttle)) holds the speed. The lateral acceleration reaches 0.85 g at the last level; the loads move to the right-hand tyres and the rear motor drives through the open differential with its viscous limited-slip coupling.
 
-![The model canvas|900](assets/32bf15e5135d.png)
+![The model canvas|900](assets/e3614a184d90.png)
 
 ## What to try
 

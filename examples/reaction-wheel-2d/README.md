@@ -55,14 +55,14 @@ only one pulse is inside the 3 s run).
 
 **Gravity-on variant (`balancer`).** The body starts 0.01 rad off upright, the
 controller recovers it in about 0.5 s, then the 0.012 rad pulse tilts it and it
-returns. The wheel spins up to **47.05 rad/s** and keeps **46.21 rad/s**: the
+returns. The wheel spins up to **47.08 rad/s** and keeps **46.25 rad/s**: the
 gravity torque has delivered a net angular impulse (6.3765 ∫sin θ dt) that the
 wheel must store. That is the momentum-management story a real reaction wheel has
 to unload.
 
 **Gravity-off variant (`balancer-free`).** `g0 = 0` in both bodies and in the
 controller; the wheel starts at **30 rad/s** (`inertia/P = [0.06, 0, 0]`). The same
-pulse leans the body; the wheel **spins down to 25.99 rad/s** as the body leans and
+pulse leans the body; the wheel **spins down to 26.00 rad/s** as the body leans and
 **back up to 32.70 rad/s** as it returns, ending at 30.0007 rad/s. `H` stays at
 0.06 kg·m²/s.
 
@@ -119,12 +119,12 @@ count encodes the model dimension, not the port size (plan section 7).
 | `|θ|` over the whole run, gravity on | **0.011969 rad** at the pulse (band 0.02) |
 | `θ` at 0.5 s (initial tilt recovered) | 0.000907 rad |
 | tracked error before the pulse | `max|e| = 1.72e-3` rad over `[0.4, 0.5] s` |
-| wheel speed, gravity on | 0 → **47.046 rad/s** (peak at 1.782 s) → 46.213 rad/s |
+| wheel speed, gravity on | 0 → **47.084 rad/s** (peak at 1.782 s) → 46.252 rad/s |
 | motor torque | `−0.195 … 0.269 N·m` (limit 1.5) |
 | mechanical energy, gravity on | 6.3762 J → **8.5877 J** peak (the wheel's 2.211 J) |
 | `|θ|` over the whole run, gravity off | 0.011967 rad |
 | wheel speed, gravity off | 30 → **25.989** → **32.699** → 30.0007 rad/s |
-| total angular momentum `H` | **0.06 kg·m²/s** constant; `max|H−H0| = 5.27e-9` = **8.78e-8** of `H` (tol 1e-6) |
+| total angular momentum `H` | **0.06 kg·m²/s** constant; `max|H−H0| = 6.68e-9` = **1.11e-7** of `H` (tol 1e-6) |
 | states / equations | 12 differential states (2 × P[3], 2 × d[2], 2 × q), no `W201` |
 | run cost | 98 560 / 82 077 adaptive steps, 6 007 / 5 507 rows |
 | diagnostics | none (`W201`, `E101`, `E102`, `E103`, `E106`, `W206` absent) |
@@ -137,11 +137,11 @@ solver stops with `E901` (MaxIters) at t = 2.285 s.
 
 `balancer`: `θ0 = 0.01`; `|θ| ≤ 0.02 rad` over the whole run; the tilt is recovered
 to 0.9 mrad at 0.5 s and the tracked error is under 2 mrad before the pulse; the
-wheel starts at rest, peaks at 47.05 rad/s and keeps 46.21 rad/s; the torque stays
+wheel starts at rest, peaks at 47.08 rad/s and keeps 46.25 rad/s; the torque stays
 inside 1.5 N·m; the wheel speed stays under 50 rad/s (so the stored energy is
 bounded); the mechanical energy is bounded by 8.9 J = `E0 + ½J_w·50²`; no
 diagnostics.
-`balancer-free`: `θ0 = 0`, wheel 30 rad/s; `|θ| ≤ 0.02`; the wheel dips to 25.99
+`balancer-free`: `θ0 = 0`, wheel 30 rad/s; `|θ| ≤ 0.02`; the wheel dips to 26.00
 and rises to 32.70 rad/s; the torque bound; the **invariant** `H = 0.257 θ̇ + 0.002
 q̇_w` constant to 1e-6 relative; no diagnostics.
 

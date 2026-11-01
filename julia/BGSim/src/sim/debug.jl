@@ -992,9 +992,20 @@ _dbg_target!(::Nothing, ::Nothing, target) = nothing
 # (src/integrator_interface.jl) as an explicit loop, with the checkpoint after each internal
 # step. The `try` covers the same statements as in the normal run (the `add_tstop!` and the
 # single steps), the checkpoint stays outside of it so a bug there is never reported as E901.
-function _dbg_step!(::Nothing, ::Nothing, integ, dt, event_cursor)
+# Both step to the target time `next_t` itself, set as a tstop: `step!(integ, dt, true)` stops
+# at `integ.t + dt`, which can round to a neighbour of the target, and a switching root on the
+# target (a ramp ending at 10.0 + 0.05 on the output time 10.05) is then an ulp after the step:
+# the root finder traps there until W206.
+function _dbg_step!(::Nothing, ::Nothing, integ, next_t, event_cursor)
     step_ok = try
-        step!(integ, dt, true)
+        # a model with no state runs on a `NullODEIntegrator`, which has no tstops (nor `tdir`)
+        hasproperty(integ, :opts) || (step!(integ, next_t - integ.t, true); return true)
+        (next_t - integ.t) * integ.tdir < 0 && error("Cannot step backward.")
+        ModelingToolkit.SciMLBase.add_tstop!(integ, next_t)
+        while (integ.t - next_t) * integ.tdir < 0
+            step!(integ)
+            integ.sol.retcode in (ReturnCode.Default, ReturnCode.Success) || break
+        end
         true
     catch err
         false
@@ -1002,11 +1013,11 @@ function _dbg_step!(::Nothing, ::Nothing, integ, dt, event_cursor)
     return step_ok
 end
 
-function _dbg_step!(ctx::DebugCtx, s::DebugSession, integ, dt, event_cursor)
+function _dbg_step!(ctx::DebugCtx, s::DebugSession, integ, next_t, event_cursor)
     s.event_cursor = event_cursor
-    next_t = integ.t + dt
     ok = try
-        (dt * integ.tdir) < 0 * oneunit(dt) && error("Cannot step backward.")
+        hasproperty(integ, :opts) || (step!(integ, next_t - integ.t, true); return true)
+        (next_t - integ.t) * integ.tdir < 0 && error("Cannot step backward.")
         ModelingToolkit.SciMLBase.add_tstop!(integ, next_t)
         true
     catch err
