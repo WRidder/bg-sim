@@ -1,0 +1,1695 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "vdp-textbook",
+  "$comment": "The textbook Van der Pol equation x'' - mu (1 - x^2) x' + x = 0 at mu = 0.1, 1, 5 and 20, each as a block diagram and as an equation block, from x = 0.5, x' = 0; time is tau.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Mu01",
+        "block": {
+          "subsystem": {
+            "ports": [],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "mu01_n01",
+                  "name": "Sq",
+                  "block": {
+                    "ref": "stdlib:continuous/Polynomial"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "p": "[-1.0, 0.0, 1.0]"
+                  },
+                  "constants": {
+                    "N": "3"
+                  },
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu01_n02",
+                  "name": "Prod",
+                  "block": {
+                    "ref": "stdlib:continuous/Product"
+                  },
+                  "position": {
+                    "x": 220,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu01_n03",
+                  "name": "Mu",
+                  "block": {
+                    "ref": "stdlib:continuous/Gain"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k": "mu_1"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu01_n04",
+                  "name": "Acc",
+                  "block": {
+                    "ref": "project:Lin2"
+                  },
+                  "position": {
+                    "x": 580,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k1": "1.0",
+                    "k2": "-1.0",
+                    "c": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu01_n05",
+                  "name": "Y",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 760,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "y0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu01_n06",
+                  "name": "X",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 940,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "x0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu01_n07",
+                  "name": "Eq",
+                  "block": {
+                    "ref": "project:VanDerPol"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "mu": "mu_1",
+                    "w0": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "xs": "x0",
+                    "ys": "y0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu01_n08",
+                  "name": "Zero",
+                  "block": {
+                    "ref": "stdlib:sources/Constant"
+                  },
+                  "position": {
+                    "x": 760,
+                    "y": 480
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "value": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu01_n09",
+                  "name": "Meter",
+                  "block": {
+                    "ref": "project:CycleMeter"
+                  },
+                  "position": {
+                    "x": 940,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "w0": "1.0",
+                    "f_scale": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "side": "ifelse(x0 > 0.0, 1.0, 0.0)",
+                    "dside": "ifelse(y0 > 0.0, 1.0, 0.0)"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "mu01_c01",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n01",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu01_c02",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n01",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n02",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "mu01_c03",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n02",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "mu01_c04",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n02",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n03",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu01_c05",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n03",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n04",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "mu01_c06",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n04",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "mu01_c07",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n04",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n05",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu01_c08",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n06",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu01_c09",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n09",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu01_c10",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n09",
+                    "port": "du"
+                  }
+                },
+                {
+                  "id": "mu01_c11",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n08",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n09",
+                    "port": "w1"
+                  }
+                },
+                {
+                  "id": "mu01_c12",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu01_n08",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu01_n09",
+                    "port": "w2"
+                  }
+                }
+              ],
+              "annotations": [
+                {
+                  "id": "a1",
+                  "kind": "text",
+                  "text": "**Block diagram** of x'' = mu (1 - x^2) x' - x: Sq = 1 - x^2, times x' (Prod), times mu, minus x, integrated twice (Y gives x', X gives x). **Eq** is the same equation as an equation block; the cycle Meter reads the block diagram's period T_s and amplitude.",
+                  "x": 40,
+                  "y": 560,
+                  "w": 900,
+                  "h": 70
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 80,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Mu1",
+        "block": {
+          "subsystem": {
+            "ports": [],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "mu1_n01",
+                  "name": "Sq",
+                  "block": {
+                    "ref": "stdlib:continuous/Polynomial"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "p": "[-1.0, 0.0, 1.0]"
+                  },
+                  "constants": {
+                    "N": "3"
+                  },
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu1_n02",
+                  "name": "Prod",
+                  "block": {
+                    "ref": "stdlib:continuous/Product"
+                  },
+                  "position": {
+                    "x": 220,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu1_n03",
+                  "name": "Mu",
+                  "block": {
+                    "ref": "stdlib:continuous/Gain"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k": "mu_2"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu1_n04",
+                  "name": "Acc",
+                  "block": {
+                    "ref": "project:Lin2"
+                  },
+                  "position": {
+                    "x": 580,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k1": "1.0",
+                    "k2": "-1.0",
+                    "c": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu1_n05",
+                  "name": "Y",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 760,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "y0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu1_n06",
+                  "name": "X",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 940,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "x0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu1_n07",
+                  "name": "Eq",
+                  "block": {
+                    "ref": "project:VanDerPol"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "mu": "mu_2",
+                    "w0": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "xs": "x0",
+                    "ys": "y0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu1_n08",
+                  "name": "Zero",
+                  "block": {
+                    "ref": "stdlib:sources/Constant"
+                  },
+                  "position": {
+                    "x": 760,
+                    "y": 480
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "value": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu1_n09",
+                  "name": "Meter",
+                  "block": {
+                    "ref": "project:CycleMeter"
+                  },
+                  "position": {
+                    "x": 940,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "w0": "1.0",
+                    "f_scale": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "side": "ifelse(x0 > 0.0, 1.0, 0.0)",
+                    "dside": "ifelse(y0 > 0.0, 1.0, 0.0)"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "mu1_c01",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n01",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu1_c02",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n01",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n02",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "mu1_c03",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n02",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "mu1_c04",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n02",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n03",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu1_c05",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n03",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n04",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "mu1_c06",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n04",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "mu1_c07",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n04",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n05",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu1_c08",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n06",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu1_c09",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n09",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu1_c10",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n09",
+                    "port": "du"
+                  }
+                },
+                {
+                  "id": "mu1_c11",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n08",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n09",
+                    "port": "w1"
+                  }
+                },
+                {
+                  "id": "mu1_c12",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu1_n08",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu1_n09",
+                    "port": "w2"
+                  }
+                }
+              ],
+              "annotations": [
+                {
+                  "id": "a1",
+                  "kind": "text",
+                  "text": "**Block diagram** of x'' = mu (1 - x^2) x' - x: Sq = 1 - x^2, times x' (Prod), times mu, minus x, integrated twice (Y gives x', X gives x). **Eq** is the same equation as an equation block; the cycle Meter reads the block diagram's period T_s and amplitude.",
+                  "x": 40,
+                  "y": 560,
+                  "w": 900,
+                  "h": 70
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 320,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Mu5",
+        "block": {
+          "subsystem": {
+            "ports": [],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "mu5_n01",
+                  "name": "Sq",
+                  "block": {
+                    "ref": "stdlib:continuous/Polynomial"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "p": "[-1.0, 0.0, 1.0]"
+                  },
+                  "constants": {
+                    "N": "3"
+                  },
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu5_n02",
+                  "name": "Prod",
+                  "block": {
+                    "ref": "stdlib:continuous/Product"
+                  },
+                  "position": {
+                    "x": 220,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu5_n03",
+                  "name": "Mu",
+                  "block": {
+                    "ref": "stdlib:continuous/Gain"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k": "mu_3"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu5_n04",
+                  "name": "Acc",
+                  "block": {
+                    "ref": "project:Lin2"
+                  },
+                  "position": {
+                    "x": 580,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k1": "1.0",
+                    "k2": "-1.0",
+                    "c": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu5_n05",
+                  "name": "Y",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 760,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "y0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu5_n06",
+                  "name": "X",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 940,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "x0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu5_n07",
+                  "name": "Eq",
+                  "block": {
+                    "ref": "project:VanDerPol"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "mu": "mu_3",
+                    "w0": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "xs": "x0",
+                    "ys": "y0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu5_n08",
+                  "name": "Zero",
+                  "block": {
+                    "ref": "stdlib:sources/Constant"
+                  },
+                  "position": {
+                    "x": 760,
+                    "y": 480
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "value": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu5_n09",
+                  "name": "Meter",
+                  "block": {
+                    "ref": "project:CycleMeter"
+                  },
+                  "position": {
+                    "x": 940,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "w0": "1.0",
+                    "f_scale": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "side": "ifelse(x0 > 0.0, 1.0, 0.0)",
+                    "dside": "ifelse(y0 > 0.0, 1.0, 0.0)"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "mu5_c01",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n01",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu5_c02",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n01",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n02",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "mu5_c03",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n02",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "mu5_c04",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n02",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n03",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu5_c05",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n03",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n04",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "mu5_c06",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n04",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "mu5_c07",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n04",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n05",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu5_c08",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n06",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu5_c09",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n09",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu5_c10",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n09",
+                    "port": "du"
+                  }
+                },
+                {
+                  "id": "mu5_c11",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n08",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n09",
+                    "port": "w1"
+                  }
+                },
+                {
+                  "id": "mu5_c12",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu5_n08",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu5_n09",
+                    "port": "w2"
+                  }
+                }
+              ],
+              "annotations": [
+                {
+                  "id": "a1",
+                  "kind": "text",
+                  "text": "**Block diagram** of x'' = mu (1 - x^2) x' - x: Sq = 1 - x^2, times x' (Prod), times mu, minus x, integrated twice (Y gives x', X gives x). **Eq** is the same equation as an equation block; the cycle Meter reads the block diagram's period T_s and amplitude.",
+                  "x": 40,
+                  "y": 560,
+                  "w": 900,
+                  "h": 70
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 560,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Mu20",
+        "block": {
+          "subsystem": {
+            "ports": [],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "mu20_n01",
+                  "name": "Sq",
+                  "block": {
+                    "ref": "stdlib:continuous/Polynomial"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "p": "[-1.0, 0.0, 1.0]"
+                  },
+                  "constants": {
+                    "N": "3"
+                  },
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu20_n02",
+                  "name": "Prod",
+                  "block": {
+                    "ref": "stdlib:continuous/Product"
+                  },
+                  "position": {
+                    "x": 220,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu20_n03",
+                  "name": "Mu",
+                  "block": {
+                    "ref": "stdlib:continuous/Gain"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k": "mu_4"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu20_n04",
+                  "name": "Acc",
+                  "block": {
+                    "ref": "project:Lin2"
+                  },
+                  "position": {
+                    "x": 580,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k1": "1.0",
+                    "k2": "-1.0",
+                    "c": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu20_n05",
+                  "name": "Y",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 760,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "y0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu20_n06",
+                  "name": "X",
+                  "block": {
+                    "ref": "stdlib:continuous/Integrator"
+                  },
+                  "position": {
+                    "x": 940,
+                    "y": 200
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "x0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu20_n07",
+                  "name": "Eq",
+                  "block": {
+                    "ref": "project:VanDerPol"
+                  },
+                  "position": {
+                    "x": 400,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "mu": "mu_4",
+                    "w0": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "xs": "x0",
+                    "ys": "y0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu20_n08",
+                  "name": "Zero",
+                  "block": {
+                    "ref": "stdlib:sources/Constant"
+                  },
+                  "position": {
+                    "x": 760,
+                    "y": 480
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "value": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "mu20_n09",
+                  "name": "Meter",
+                  "block": {
+                    "ref": "project:CycleMeter"
+                  },
+                  "position": {
+                    "x": 940,
+                    "y": 380
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "w0": "1.0",
+                    "f_scale": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "side": "ifelse(x0 > 0.0, 1.0, 0.0)",
+                    "dside": "ifelse(y0 > 0.0, 1.0, 0.0)"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "mu20_c01",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n01",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu20_c02",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n01",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n02",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "mu20_c03",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n02",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "mu20_c04",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n02",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n03",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu20_c05",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n03",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n04",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "mu20_c06",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n04",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "mu20_c07",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n04",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n05",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu20_c08",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n06",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu20_c09",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n06",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n09",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "mu20_c10",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n05",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n09",
+                    "port": "du"
+                  }
+                },
+                {
+                  "id": "mu20_c11",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n08",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n09",
+                    "port": "w1"
+                  }
+                },
+                {
+                  "id": "mu20_c12",
+                  "kind": "signal",
+                  "from": {
+                    "node": "mu20_n08",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "mu20_n09",
+                    "port": "w2"
+                  }
+                }
+              ],
+              "annotations": [
+                {
+                  "id": "a1",
+                  "kind": "text",
+                  "text": "**Block diagram** of x'' = mu (1 - x^2) x' - x: Sq = 1 - x^2, times x' (Prod), times mu, minus x, integrated twice (Y gives x', X gives x). **Eq** is the same equation as an equation block; the cycle Meter reads the block diagram's period T_s and amplitude.",
+                  "x": 40,
+                  "y": 560,
+                  "w": 900,
+                  "h": 70
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 800,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "**Van der Pol, x'' - mu (1 - x^2) x' + x = 0**, from x = 0.5, x' = 0, in tau (the run time). Four subsystems at mu = 0.1, 1, 5 and 20; open one for its block diagram and equation block. Small mu: a near-sine of amplitude 2 and period 2 pi (1 + mu^2/16). Large mu: relaxation oscillations, slow drifts along the branches |x| > 1 and fast jumps, period about (3 - 2 ln 2) mu + 7.014 mu^(-1/3).",
+        "x": 40,
+        "y": 220,
+        "w": 940,
+        "h": 110
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 200.0,
+    "solver": "auto",
+    "reltol": 1e-11,
+    "abstol": 1e-12,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 20001
+    },
+    "event_limit": 20000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "x(tau) at mu = 0.1, 1, 5, 20",
+      "signals": [
+        "Mu01/X/y",
+        "Mu1/X/y",
+        "Mu5/X/y",
+        "Mu20/X/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "x'(tau) at mu = 0.1, 1, 5 (mu = 20 peaks at 27)",
+      "signals": [
+        "Mu01/Y/y",
+        "Mu1/Y/y",
+        "Mu5/Y/y"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "x'(tau) at mu = 20",
+      "signals": [
+        "Mu20/Y/y"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Block diagram against the equation block (mu = 5)",
+      "signals": [
+        "Mu5/X/y",
+        "Mu5/Eq/x"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Measured period T_s",
+      "signals": [
+        "Mu01/Meter/T_s",
+        "Mu1/Meter/T_s",
+        "Mu5/Meter/T_s",
+        "Mu20/Meter/T_s"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Measured amplitude",
+      "signals": [
+        "Mu01/Meter/amp",
+        "Mu1/Meter/amp",
+        "Mu5/Meter/amp",
+        "Mu20/Meter/amp"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": [],
+  "parameters": [
+    {
+      "name": "mu_1",
+      "value": "0.1",
+      "unit": null,
+      "description": "mu of subsystem Mu01"
+    },
+    {
+      "name": "mu_2",
+      "value": "1.0",
+      "unit": null,
+      "description": "mu of subsystem Mu1"
+    },
+    {
+      "name": "mu_3",
+      "value": "5.0",
+      "unit": null,
+      "description": "mu of subsystem Mu5"
+    },
+    {
+      "name": "mu_4",
+      "value": "20.0",
+      "unit": null,
+      "description": "mu of subsystem Mu20"
+    },
+    {
+      "name": "x0",
+      "value": "0.5",
+      "unit": null,
+      "description": "Start value x(0)"
+    },
+    {
+      "name": "y0",
+      "value": "0.0",
+      "unit": null,
+      "description": "Start rate x'(0)"
+    }
+  ]
+}

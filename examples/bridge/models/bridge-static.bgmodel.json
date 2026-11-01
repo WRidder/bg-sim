@@ -1343,5 +1343,84 @@
       "depth": 0.0,
       "axis": "+x"
     }
-  ]
+  ],
+  "dashboard": {
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x2",
+        "title": "About",
+        "options": {
+          "markdown": true,
+          "text": "Dead load plus a **100 kN** point load at midspan. The Warren truss is statically determinate, so the member forces follow from the method of joints (`design/design.py`): bottom chord bar 3 308.8 kN, top chord bar 9 -348.3 kN, both reactions 135.25 kN."
+        }
+      },
+      {
+        "kind": "value",
+        "size": "1x1",
+        "title": "Left reaction",
+        "signals": [
+          "Truss/Ry[3]"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "N"
+        },
+        "id": "d2"
+      },
+      {
+        "kind": "value",
+        "size": "1x1",
+        "title": "Right reaction",
+        "signals": [
+          "Truss/Ry[9]"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "N"
+        },
+        "id": "d3"
+      },
+      {
+        "kind": "value",
+        "size": "1x1",
+        "title": "Midspan deflection",
+        "signals": [
+          "Truss/y[6]"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": "m"
+        },
+        "id": "d4"
+      },
+      {
+        "kind": "value",
+        "size": "1x1",
+        "title": "Bottom chord, bar 3",
+        "signals": [
+          "Truss/N[3]"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "N"
+        },
+        "id": "d5"
+      },
+      {
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Member forces",
+        "signals": [
+          "Truss/N[3]",
+          "Truss/N[9]",
+          "Truss/N[12]",
+          "Truss/N[13]",
+          "Truss/N[17]"
+        ],
+        "id": "d6"
+      }
+    ]
+  }
 }

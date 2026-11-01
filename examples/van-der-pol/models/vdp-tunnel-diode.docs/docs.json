@@ -1,0 +1,26 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "circuit",
+          "title": "Circuit and scaling",
+          "file": "pages/circuit.md",
+          "children": [
+            {
+              "id": "results",
+              "title": "Results",
+              "file": "pages/results.md",
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

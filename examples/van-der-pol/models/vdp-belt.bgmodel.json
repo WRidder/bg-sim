@@ -1,0 +1,1488 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "vdp-belt",
+  "$comment": "Van der Pol's oscillator in mechanics: a block on a spring rides a belt; the falling friction-velocity curve about the belt speed is a negative damper. the curve's Taylor fit (Rayleigh's equation, exactly Van der Pol in the velocity); Stribeck: the full curve. Ref: the textbook equation in seconds.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Belt",
+        "block": {
+          "ref": "stdlib:bondgraph/Sf"
+        },
+        "position": {
+          "x": 40,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "f": "-v_b"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Jb",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 240,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Fric",
+        "block": {
+          "ref": "project:BeltFriction"
+        },
+        "position": {
+          "x": 240,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F0": "F0",
+          "alpha": "alpha",
+          "beta": "beta",
+          "v_b": "v_b"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Fm",
+        "block": {
+          "ref": "stdlib:bondgraph/De"
+        },
+        "position": {
+          "x": 240,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Jm",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 480,
+          "y": 220
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "Mass",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 480,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "m"
+        },
+        "constants": {},
+        "starts": {
+          "P": "m*xd0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Spring",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 680,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "1.0/k"
+        },
+        "constants": {},
+        "starts": {
+          "q": "x_s"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "Vel",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 680,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Pos",
+        "block": {
+          "ref": "stdlib:converters/PositionSensor"
+        },
+        "position": {
+          "x": 480,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "x": "x_s"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Xm",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 900,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0/V"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Ym",
+        "block": {
+          "ref": "project:Lin2"
+        },
+        "position": {
+          "x": 900,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k1": "1.0/(m*w0*V)",
+          "k2": "-k/(m*w0*V)",
+          "c": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Meter",
+        "block": {
+          "ref": "project:CycleMeter"
+        },
+        "position": {
+          "x": 1120,
+          "y": 260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "w0": "w0",
+          "f_scale": "1.0"
+        },
+        "constants": {},
+        "starts": {
+          "side": "ifelse(x0 > 0.0, 1.0, 0.0)",
+          "dside": "ifelse(mu*(x0 - x0^3/3.0) > 0.0, 1.0, 0.0)"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Dev",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 680,
+          "y": 560
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "Pc",
+        "block": {
+          "ref": "stdlib:continuous/Product"
+        },
+        "position": {
+          "x": 900,
+          "y": 580
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "Split",
+        "block": {
+          "ref": "project:EnergySplit"
+        },
+        "position": {
+          "x": 1120,
+          "y": 580
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "Store",
+        "block": {
+          "ref": "project:StoredEnergy"
+        },
+        "position": {
+          "x": 1120,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c1": "k",
+          "c2": "m",
+          "o1": "x_s"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "Stribeck",
+        "block": {
+          "subsystem": {
+            "ports": [],
+            "diagram": {
+              "nodes": [
+                {
+                  "id": "str_n01",
+                  "name": "Belt",
+                  "block": {
+                    "ref": "stdlib:bondgraph/Sf"
+                  },
+                  "position": {
+                    "x": 40,
+                    "y": 220
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "f": "-v_b"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n02",
+                  "name": "Jb",
+                  "block": {
+                    "junction": "0"
+                  },
+                  "position": {
+                    "x": 240,
+                    "y": 220
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n03",
+                  "name": "Fric",
+                  "block": {
+                    "ref": "project:StribeckFriction"
+                  },
+                  "position": {
+                    "x": 240,
+                    "y": 60
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "F_n": "F_n",
+                    "mu_c": "mu_c",
+                    "mu_s": "mu_s",
+                    "v_s": "v_s",
+                    "sigma": "sigma",
+                    "v_eps": "v_eps"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n04",
+                  "name": "Fm",
+                  "block": {
+                    "ref": "stdlib:bondgraph/De"
+                  },
+                  "position": {
+                    "x": 240,
+                    "y": 400
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n05",
+                  "name": "Jm",
+                  "block": {
+                    "junction": "1"
+                  },
+                  "position": {
+                    "x": 480,
+                    "y": 220
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n06",
+                  "name": "Mass",
+                  "block": {
+                    "ref": "stdlib:bondgraph/I"
+                  },
+                  "position": {
+                    "x": 480,
+                    "y": 60
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "i": "m"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "P": "m*xd0"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n07",
+                  "name": "Spring",
+                  "block": {
+                    "ref": "stdlib:bondgraph/C"
+                  },
+                  "position": {
+                    "x": 680,
+                    "y": 120
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "c": "1.0/k"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "q": "x_s"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n08",
+                  "name": "Vel",
+                  "block": {
+                    "ref": "stdlib:bondgraph/Df"
+                  },
+                  "position": {
+                    "x": 680,
+                    "y": 300
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n09",
+                  "name": "Pos",
+                  "block": {
+                    "ref": "stdlib:converters/PositionSensor"
+                  },
+                  "position": {
+                    "x": 480,
+                    "y": 400
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {},
+                  "constants": {},
+                  "starts": {
+                    "x": "x_s"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n10",
+                  "name": "Xm",
+                  "block": {
+                    "ref": "stdlib:continuous/Gain"
+                  },
+                  "position": {
+                    "x": 900,
+                    "y": 300
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k": "1.0/V"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n11",
+                  "name": "Ym",
+                  "block": {
+                    "ref": "project:Lin2"
+                  },
+                  "position": {
+                    "x": 900,
+                    "y": 440
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "k1": "1.0/(m*w0*V)",
+                    "k2": "-k/(m*w0*V)",
+                    "c": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n12",
+                  "name": "Meter",
+                  "block": {
+                    "ref": "project:CycleMeter"
+                  },
+                  "position": {
+                    "x": 1120,
+                    "y": 260
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "w0": "w0",
+                    "f_scale": "1.0"
+                  },
+                  "constants": {},
+                  "starts": {
+                    "side": "ifelse(x0 > 0.0, 1.0, 0.0)",
+                    "dside": "ifelse(mu*(x0 - x0^3/3.0) > 0.0, 1.0, 0.0)"
+                  },
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                },
+                {
+                  "id": "str_n13",
+                  "name": "Zero",
+                  "block": {
+                    "ref": "stdlib:sources/Constant"
+                  },
+                  "position": {
+                    "x": 900,
+                    "y": 580
+                  },
+                  "rotation": 0,
+                  "flipX": false,
+                  "params": {
+                    "value": "0.0"
+                  },
+                  "constants": {},
+                  "starts": {},
+                  "ui": {
+                    "showLabel": true,
+                    "color": null
+                  }
+                }
+              ],
+              "connections": [
+                {
+                  "id": "str_c01",
+                  "kind": "bond",
+                  "from": {
+                    "node": "str_n01",
+                    "port": "p"
+                  },
+                  "to": {
+                    "node": "str_n02"
+                  }
+                },
+                {
+                  "id": "str_c02",
+                  "kind": "bond",
+                  "from": {
+                    "node": "str_n02"
+                  },
+                  "to": {
+                    "node": "str_n03",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "str_c03",
+                  "kind": "bond",
+                  "from": {
+                    "node": "str_n02"
+                  },
+                  "to": {
+                    "node": "str_n04",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "str_c04",
+                  "kind": "bond",
+                  "from": {
+                    "node": "str_n02"
+                  },
+                  "to": {
+                    "node": "str_n05"
+                  }
+                },
+                {
+                  "id": "str_c05",
+                  "kind": "bond",
+                  "from": {
+                    "node": "str_n05"
+                  },
+                  "to": {
+                    "node": "str_n06",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "str_c06",
+                  "kind": "bond",
+                  "from": {
+                    "node": "str_n05"
+                  },
+                  "to": {
+                    "node": "str_n07",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "str_c07",
+                  "kind": "bond",
+                  "from": {
+                    "node": "str_n05"
+                  },
+                  "to": {
+                    "node": "str_n08",
+                    "port": "p"
+                  }
+                },
+                {
+                  "id": "str_c08",
+                  "kind": "bond",
+                  "from": {
+                    "node": "str_n05"
+                  },
+                  "to": {
+                    "node": "str_n09",
+                    "port": "a"
+                  }
+                },
+                {
+                  "id": "str_c09",
+                  "kind": "signal",
+                  "from": {
+                    "node": "str_n08",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "str_n10",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "str_c10",
+                  "kind": "signal",
+                  "from": {
+                    "node": "str_n04",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "str_n11",
+                    "port": "u1"
+                  }
+                },
+                {
+                  "id": "str_c11",
+                  "kind": "signal",
+                  "from": {
+                    "node": "str_n09",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "str_n11",
+                    "port": "u2"
+                  }
+                },
+                {
+                  "id": "str_c12",
+                  "kind": "signal",
+                  "from": {
+                    "node": "str_n10",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "str_n12",
+                    "port": "u"
+                  }
+                },
+                {
+                  "id": "str_c13",
+                  "kind": "signal",
+                  "from": {
+                    "node": "str_n11",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "str_n12",
+                    "port": "du"
+                  }
+                },
+                {
+                  "id": "str_c14",
+                  "kind": "signal",
+                  "from": {
+                    "node": "str_n13",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "str_n12",
+                    "port": "w1"
+                  }
+                },
+                {
+                  "id": "str_c15",
+                  "kind": "signal",
+                  "from": {
+                    "node": "str_n13",
+                    "port": "y"
+                  },
+                  "to": {
+                    "node": "str_n12",
+                    "port": "w2"
+                  }
+                }
+              ],
+              "annotations": [
+                {
+                  "id": "a1",
+                  "kind": "text",
+                  "text": "**Belt drive.** Sf Belt imposes the belt speed v_b on the 0-junction Jb, whose effort is the friction force F. The slip w = v_b - x' goes to the friction contact Fric (a nonlinear R, F = F(w)); the rest drives the block's 1-junction Jm: mass m (I), spring k (C), velocity detector Vel and position sensor Pos.",
+                  "x": 40,
+                  "y": 680,
+                  "w": 760,
+                  "h": 90
+                }
+              ]
+            }
+          }
+        },
+        "position": {
+          "x": 1340,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "Ref",
+        "block": {
+          "ref": "project:VanDerPol"
+        },
+        "position": {
+          "x": 1340,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "mu": "mu",
+          "w0": "w0"
+        },
+        "constants": {},
+        "starts": {
+          "xs": "x0",
+          "ys": "mu*(x0 - x0^3/3.0)"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "RefV",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 1340,
+          "y": 580
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "V"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "BeltPhase",
+        "block": {
+          "ref": "stdlib:sources/Sawtooth"
+        },
+        "position": {
+          "x": 1340,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "amplitude": "0.04",
+          "period": "0.04/v_b",
+          "offset": "0.0",
+          "t_start": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c01",
+        "kind": "bond",
+        "from": {
+          "node": "n01",
+          "port": "p"
+        },
+        "to": {
+          "node": "n02"
+        }
+      },
+      {
+        "id": "c02",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n03",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c03",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n04",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c04",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n05"
+        }
+      },
+      {
+        "id": "c05",
+        "kind": "bond",
+        "from": {
+          "node": "n05"
+        },
+        "to": {
+          "node": "n06",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c06",
+        "kind": "bond",
+        "from": {
+          "node": "n05"
+        },
+        "to": {
+          "node": "n07",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c07",
+        "kind": "bond",
+        "from": {
+          "node": "n05"
+        },
+        "to": {
+          "node": "n08",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c08",
+        "kind": "bond",
+        "from": {
+          "node": "n05"
+        },
+        "to": {
+          "node": "n09",
+          "port": "a"
+        }
+      },
+      {
+        "id": "c09",
+        "kind": "signal",
+        "from": {
+          "node": "n08",
+          "port": "y"
+        },
+        "to": {
+          "node": "n10",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c10",
+        "kind": "signal",
+        "from": {
+          "node": "n04",
+          "port": "y"
+        },
+        "to": {
+          "node": "n11",
+          "port": "u1"
+        }
+      },
+      {
+        "id": "c11",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n11",
+          "port": "u2"
+        }
+      },
+      {
+        "id": "c12",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "y"
+        },
+        "to": {
+          "node": "n12",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c13",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n12",
+          "port": "du"
+        }
+      },
+      {
+        "id": "c14",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "dF"
+        },
+        "to": {
+          "node": "n13",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c15",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "y"
+        },
+        "to": {
+          "node": "n14",
+          "port": "u1"
+        }
+      },
+      {
+        "id": "c16",
+        "kind": "signal",
+        "from": {
+          "node": "n08",
+          "port": "y"
+        },
+        "to": {
+          "node": "n14",
+          "port": "u2"
+        }
+      },
+      {
+        "id": "c17",
+        "kind": "signal",
+        "from": {
+          "node": "n14",
+          "port": "y"
+        },
+        "to": {
+          "node": "n15",
+          "port": "P"
+        }
+      },
+      {
+        "id": "c18",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n16",
+          "port": "u1"
+        }
+      },
+      {
+        "id": "c19",
+        "kind": "signal",
+        "from": {
+          "node": "n08",
+          "port": "y"
+        },
+        "to": {
+          "node": "n16",
+          "port": "u2"
+        }
+      },
+      {
+        "id": "c20",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "W_sup"
+        },
+        "to": {
+          "node": "n12",
+          "port": "w1"
+        }
+      },
+      {
+        "id": "c21",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "W_abs"
+        },
+        "to": {
+          "node": "n12",
+          "port": "w2"
+        }
+      },
+      {
+        "id": "c22",
+        "kind": "signal",
+        "from": {
+          "node": "n18",
+          "port": "x"
+        },
+        "to": {
+          "node": "n19",
+          "port": "u"
+        }
+      }
+    ],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "**Belt drive.** Sf Belt imposes the belt speed v_b on the 0-junction Jb, whose effort is the friction force F. The slip w = v_b - x' goes to the friction contact Fric (a nonlinear R, F = F(w)); the rest drives the block's 1-junction Jm: mass m (I), spring k (C), velocity detector Vel and position sensor Pos.",
+        "x": 40,
+        "y": 680,
+        "w": 760,
+        "h": 90
+      },
+      {
+        "id": "a2",
+        "kind": "text",
+        "text": "**Belt-driven Van der Pol oscillator.** This diagram: the friction curve's third-order fit about the belt speed, F = F0 - alpha (w - v_b) + beta (w - v_b)^3, which makes the block obey Rayleigh's equation m x'' - alpha x' + beta x'^3 + k (x - x_s) = 0; its velocity obeys Van der Pol with mu = alpha/sqrt(k m), tau = sqrt(k/m) t, x_vdp = x'/V, V = sqrt(alpha/(3 beta)). Stribeck: the same rig on the full curve. Ref: the textbook equation in the rig's seconds (RefV = V x, in m/s).",
+        "x": 40,
+        "y": 790,
+        "w": 1000,
+        "h": 90
+      },
+      {
+        "id": "a3",
+        "kind": "text",
+        "text": "**Why the viscous term.** alpha = alpha_f - sigma: the Stribeck drop alone (alpha_f = 51.5 N s/m) would grow the velocity swing to the belt speed, and the block would stick (stick-slip, not Van der Pol). The viscous friction sigma = 46.5 N s/m keeps the net slope small: mu = 0.5, peak slip variation 62 % of v_b.",
+        "x": 840,
+        "y": 680,
+        "w": 560,
+        "h": 100,
+        "color": "blue"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 40.0,
+    "solver": "auto",
+    "reltol": 1e-11,
+    "abstol": 1e-13,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 8001
+    },
+    "event_limit": 20000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Block velocity (m/s): cubic fit, Stribeck curve, textbook V x",
+      "signals": [
+        "Vel/y",
+        "Stribeck/Vel/y",
+        "RefV/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Block position (m)",
+      "signals": [
+        "Pos/y",
+        "Stribeck/Pos/y"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Scaled states x, x' of the cubic rig and the textbook equation",
+      "signals": [
+        "Xm/y",
+        "Ref/x",
+        "Ym/y",
+        "Ref/y"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Friction force (N) and slip (m/s)",
+      "signals": [
+        "Fric/F",
+        "Stribeck/Fric/F",
+        "Fric/w",
+        "Stribeck/Fric/w"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Oscillation energy, supplied and absorbed by the contact (J)",
+      "signals": [
+        "Store/E",
+        "Split/W_sup",
+        "Split/W_abs"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Cycle meters: period (s) and velocity amplitude (scaled)",
+      "signals": [
+        "Meter/T",
+        "Stribeck/Meter/T",
+        "Meter/amp",
+        "Stribeck/Meter/amp"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/vdp-belt.sdf"
+  },
+  "bindings": [
+    {
+      "target": "joint:block",
+      "property": "position",
+      "signal": "Pos/y"
+    },
+    {
+      "target": "joint:belt",
+      "property": "position",
+      "signal": "BeltPhase/y"
+    },
+    {
+      "target": "visual:block_body",
+      "property": "color",
+      "signal": "Fric/w",
+      "colormap": "heat",
+      "range": [
+        0.0,
+        0.1414213562373095
+      ]
+    },
+    {
+      "target": "joint:coil1",
+      "property": "position",
+      "signal": "Pos/y",
+      "gain": 0.1111111111111111
+    },
+    {
+      "target": "joint:coil2",
+      "property": "position",
+      "signal": "Pos/y",
+      "gain": 0.2222222222222222
+    },
+    {
+      "target": "joint:coil3",
+      "property": "position",
+      "signal": "Pos/y",
+      "gain": 0.3333333333333333
+    },
+    {
+      "target": "joint:coil4",
+      "property": "position",
+      "signal": "Pos/y",
+      "gain": 0.4444444444444444
+    },
+    {
+      "target": "joint:coil5",
+      "property": "position",
+      "signal": "Pos/y",
+      "gain": 0.5555555555555556
+    },
+    {
+      "target": "joint:coil6",
+      "property": "position",
+      "signal": "Pos/y",
+      "gain": 0.6666666666666666
+    },
+    {
+      "target": "joint:coil7",
+      "property": "position",
+      "signal": "Pos/y",
+      "gain": 0.7777777777777778
+    },
+    {
+      "target": "joint:coil8",
+      "property": "position",
+      "signal": "Pos/y",
+      "gain": 0.8888888888888888
+    }
+  ],
+  "parameters": [
+    {
+      "name": "m",
+      "value": "1.0",
+      "unit": "kg",
+      "description": "Block mass"
+    },
+    {
+      "name": "k",
+      "value": "100.0",
+      "unit": "N/m",
+      "description": "Spring stiffness"
+    },
+    {
+      "name": "F_n",
+      "value": "40.0",
+      "unit": "N",
+      "description": "Normal force on the belt (the block's weight and a spring-loaded pressure pad)"
+    },
+    {
+      "name": "mu_c",
+      "value": "0.3",
+      "unit": null,
+      "description": "Coulomb (kinetic) friction coefficient"
+    },
+    {
+      "name": "mu_s",
+      "value": "0.45",
+      "unit": null,
+      "description": "Static friction coefficient"
+    },
+    {
+      "name": "v_s",
+      "value": "0.1",
+      "unit": "m/s",
+      "description": "Stribeck velocity of the Gaussian drop exp(-(w/v_s)^2)"
+    },
+    {
+      "name": "v_eps",
+      "value": "0.001",
+      "unit": "m/s",
+      "description": "Smooth-sign velocity of the Stribeck block"
+    },
+    {
+      "name": "v_b",
+      "value": "v_s/sqrt(2.0)",
+      "unit": "m/s",
+      "description": "Belt speed: the inflection point of the Stribeck drop"
+    },
+    {
+      "name": "w0",
+      "value": "sqrt(k/m)",
+      "unit": "rad/s",
+      "description": "Time scale of the Van der Pol form: tau = w0 t"
+    },
+    {
+      "name": "mu",
+      "value": "0.5",
+      "unit": null,
+      "description": "Van der Pol parameter mu = alpha/sqrt(k m) (chosen; sets sigma)"
+    },
+    {
+      "name": "alpha_f",
+      "value": "F_n*(mu_s - mu_c)*sqrt(2.0)*exp(-0.5)/v_s",
+      "unit": "N*s/m",
+      "description": "Falling slope of the Stribeck drop at v_b"
+    },
+    {
+      "name": "alpha",
+      "value": "mu*sqrt(k*m)",
+      "unit": "N*s/m",
+      "description": "Net falling slope of the friction curve at v_b"
+    },
+    {
+      "name": "sigma",
+      "value": "alpha_f - alpha",
+      "unit": "N*s/m",
+      "description": "Viscous friction coefficient"
+    },
+    {
+      "name": "beta",
+      "value": "F_n*(mu_s - mu_c)*4.0*sqrt(2.0)*exp(-0.5)/(6.0*v_s^3)",
+      "unit": "N*s^3/m^3",
+      "description": "Cubic coefficient F'''(v_b)/6"
+    },
+    {
+      "name": "F0",
+      "value": "F_n*(mu_c + (mu_s - mu_c)*exp(-0.5)) + sigma*v_b",
+      "unit": "N",
+      "description": "Friction force at the belt speed"
+    },
+    {
+      "name": "x_s",
+      "value": "F0/k",
+      "unit": "m",
+      "description": "Spring stretch at the force balance F0 = k x_s"
+    },
+    {
+      "name": "V",
+      "value": "sqrt(alpha/(3.0*beta))",
+      "unit": "m/s",
+      "description": "Velocity scale: x_vdp = x'/V"
+    },
+    {
+      "name": "x0",
+      "value": "0.5",
+      "unit": null,
+      "description": "Start velocity in units of V (the block starts at x_s)"
+    },
+    {
+      "name": "xd0",
+      "value": "V*x0",
+      "unit": "m/s",
+      "description": "Start velocity of the block"
+    }
+  ]
+}

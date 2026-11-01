@@ -1,0 +1,1037 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "vdp-tunnel-diode",
+  "$comment": "Van der Pol's oscillator in electronics: a parallel LC tank on a tunnel diode biased in its negative-resistance region, as a bond graph (C, I and a nonlinear R on one 0-junction). mu = a sqrt(L/C), tau = t/sqrt(L C), x = v/A with A = sqrt(a/(3 b)). The textbook equation runs alongside in the circuit's seconds; the cycle meter and the energy split read the limit cycle.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Vm",
+        "block": {
+          "ref": "stdlib:bondgraph/De"
+        },
+        "position": {
+          "x": 400,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "J0",
+        "block": {
+          "junction": "0"
+        },
+        "position": {
+          "x": 400,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Diode",
+        "block": {
+          "ref": "project:TunnelDiode"
+        },
+        "position": {
+          "x": 640,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "a": "a",
+          "b": "b"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Jc",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 240,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Cap",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 120,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "C"
+        },
+        "constants": {},
+        "starts": {
+          "q": "C*v0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n06",
+        "name": "Ic",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 340,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n07",
+        "name": "Jl",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 560,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n08",
+        "name": "Ind",
+        "block": {
+          "ref": "stdlib:bondgraph/I"
+        },
+        "position": {
+          "x": 460,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "i": "L"
+        },
+        "constants": {},
+        "starts": {
+          "P": "L*iL0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n09",
+        "name": "Il",
+        "block": {
+          "ref": "stdlib:bondgraph/Df"
+        },
+        "position": {
+          "x": 680,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n10",
+        "name": "Xc",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 900,
+          "y": 60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0/A"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n11",
+        "name": "Yc",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 900,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0/(w0*C*A)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n12",
+        "name": "Ref",
+        "block": {
+          "ref": "project:VanDerPol"
+        },
+        "position": {
+          "x": 900,
+          "y": 720
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "mu": "mu",
+          "w0": "w0"
+        },
+        "constants": {},
+        "starts": {
+          "xs": "x0",
+          "ys": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n13",
+        "name": "Split",
+        "block": {
+          "ref": "project:EnergySplit"
+        },
+        "position": {
+          "x": 900,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n14",
+        "name": "Tank",
+        "block": {
+          "ref": "project:StoredEnergy"
+        },
+        "position": {
+          "x": 900,
+          "y": 380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c1": "C",
+          "c2": "L"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n15",
+        "name": "Meter",
+        "block": {
+          "ref": "project:CycleMeter"
+        },
+        "position": {
+          "x": 1160,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "w0": "w0",
+          "f_scale": "1.0e-6"
+        },
+        "constants": {},
+        "starts": {
+          "side": "ifelse(x0 > 0.0, 1.0, 0.0)",
+          "dside": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n16",
+        "name": "Vpk",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 1400,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1000.0*A"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n17",
+        "name": "Tsmall",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1400,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "6.283185307179586*(1.0 + mu*mu/16.0)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n18",
+        "name": "Trelax",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1400,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "(3.0 - 2.0*log(2.0))*mu + 7.014322231379302*mu^(-1.0/3.0)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n19",
+        "name": "L_nH",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1400,
+          "y": 640
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "L*1.0e9"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n20",
+        "name": "C_pF",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1400,
+          "y": 740
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "C*1.0e12"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c01",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n01",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c02",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n03",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c03",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n04"
+        }
+      },
+      {
+        "id": "c04",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n05",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c05",
+        "kind": "bond",
+        "from": {
+          "node": "n04"
+        },
+        "to": {
+          "node": "n06",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c06",
+        "kind": "bond",
+        "from": {
+          "node": "n02"
+        },
+        "to": {
+          "node": "n07"
+        }
+      },
+      {
+        "id": "c07",
+        "kind": "bond",
+        "from": {
+          "node": "n07"
+        },
+        "to": {
+          "node": "n08",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c08",
+        "kind": "bond",
+        "from": {
+          "node": "n07"
+        },
+        "to": {
+          "node": "n09",
+          "port": "p"
+        }
+      },
+      {
+        "id": "c09",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n10",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c10",
+        "kind": "signal",
+        "from": {
+          "node": "n06",
+          "port": "y"
+        },
+        "to": {
+          "node": "n11",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c11",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "P"
+        },
+        "to": {
+          "node": "n13",
+          "port": "P"
+        }
+      },
+      {
+        "id": "c12",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n14",
+          "port": "u1"
+        }
+      },
+      {
+        "id": "c13",
+        "kind": "signal",
+        "from": {
+          "node": "n09",
+          "port": "y"
+        },
+        "to": {
+          "node": "n14",
+          "port": "u2"
+        }
+      },
+      {
+        "id": "c14",
+        "kind": "signal",
+        "from": {
+          "node": "n10",
+          "port": "y"
+        },
+        "to": {
+          "node": "n15",
+          "port": "u"
+        }
+      },
+      {
+        "id": "c15",
+        "kind": "signal",
+        "from": {
+          "node": "n11",
+          "port": "y"
+        },
+        "to": {
+          "node": "n15",
+          "port": "du"
+        }
+      },
+      {
+        "id": "c16",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "W_sup"
+        },
+        "to": {
+          "node": "n15",
+          "port": "w1"
+        }
+      },
+      {
+        "id": "c17",
+        "kind": "signal",
+        "from": {
+          "node": "n13",
+          "port": "W_abs"
+        },
+        "to": {
+          "node": "n15",
+          "port": "w2"
+        }
+      },
+      {
+        "id": "c18",
+        "kind": "signal",
+        "from": {
+          "node": "n15",
+          "port": "amp"
+        },
+        "to": {
+          "node": "n16",
+          "port": "u"
+        }
+      }
+    ],
+    "annotations": [
+      {
+        "id": "a1",
+        "kind": "text",
+        "text": "**Tunnel-diode oscillator.** One 0-junction carries the tank voltage v. Its branches: the capacitor C (1-junction Jc with the current detector Ic), the inductor L (1-junction Jl, Il), the tunnel diode (a nonlinear R, i = -a v + b v^3 about its bias point) and the voltage detector Vm. C v' = -i_L + a v - b v^3 and L i_L' = v.",
+        "x": 40,
+        "y": 640,
+        "w": 720,
+        "h": 90
+      },
+      {
+        "id": "a2",
+        "kind": "text",
+        "text": "**Van der Pol scaling.** tau = w0 t with w0 = 1/sqrt(L C), x = v/A with A = sqrt(a/(3 b)): x'' - mu (1 - x^2) x' + x = 0 with mu = a sqrt(L/C). Xc and Yc are the circuit's x and x'; Ref integrates the textbook equation in the circuit's seconds.",
+        "x": 40,
+        "y": 760,
+        "w": 720,
+        "h": 80,
+        "color": "blue"
+      },
+      {
+        "id": "a3",
+        "kind": "text",
+        "text": "**Energy.** Tank/E = C v^2/2 + L i_L^2/2; Split integrates the diode power: W_sup while it supplies (|v| < sqrt(a/b)), W_abs while it dissipates. Tank/E + Split/W stays constant; on the limit cycle Meter/dw1 = Meter/dw2 (supplied = dissipated per cycle).",
+        "x": 860,
+        "y": 840,
+        "w": 700,
+        "h": 90,
+        "color": "green"
+      }
+    ]
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 3.2e-06,
+    "solver": "auto",
+    "reltol": 1e-11,
+    "abstol": 1e-22,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 32001
+    },
+    "event_limit": 20000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Tank voltage v (V) and inductor current (A)",
+      "signals": [
+        "Vm/y",
+        "Il/y"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Scaled state x = v/A: circuit and textbook equation",
+      "signals": [
+        "Xc/y",
+        "Ref/x"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Scaled rate x' = i_C/(w0 C A): circuit and textbook equation",
+      "signals": [
+        "Yc/y",
+        "Ref/y"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Diode current (A) and absorbed power (W)",
+      "signals": [
+        "Diode/i",
+        "Diode/P"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Energy: tank, supplied and absorbed by the diode (J)",
+      "signals": [
+        "Tank/E",
+        "Split/W_sup",
+        "Split/W_abs",
+        "Split/W"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Cycle meter: frequency (MHz), scaled period and amplitude",
+      "signals": [
+        "Meter/f",
+        "Meter/T_s",
+        "Meter/amp"
+      ]
+    }
+  ],
+  "scene": null,
+  "bindings": [],
+  "parameters": [
+    {
+      "name": "I_p",
+      "value": "0.0047",
+      "unit": "A",
+      "description": "Tunnel diode peak current (a 4.7 mA germanium diode, rounded)"
+    },
+    {
+      "name": "V_p",
+      "value": "0.065",
+      "unit": "V",
+      "description": "Peak voltage"
+    },
+    {
+      "name": "I_v",
+      "value": "0.0006",
+      "unit": "A",
+      "description": "Valley current"
+    },
+    {
+      "name": "V_v",
+      "value": "0.355",
+      "unit": "V",
+      "description": "Valley voltage"
+    },
+    {
+      "name": "V0",
+      "value": "0.5*(V_p + V_v)",
+      "unit": "V",
+      "description": "Bias point: midpoint of the negative-resistance region (set by the DC supply)"
+    },
+    {
+      "name": "A",
+      "value": "0.5*(V_v - V_p)",
+      "unit": "V",
+      "description": "Amplitude scale sqrt(a/(3 b)): half the peak-to-valley voltage"
+    },
+    {
+      "name": "a",
+      "value": "3.0*(I_p - I_v)/(4.0*A)",
+      "unit": "A/V",
+      "description": "Negative conductance at the bias point (the diode is -1/a = -47 Ohm there)"
+    },
+    {
+      "name": "b",
+      "value": "a/(3.0*A*A)",
+      "unit": "A/V^3",
+      "description": "Cubic coefficient: the fit's extrema sit at the peak and the valley"
+    },
+    {
+      "name": "f0",
+      "value": "10000000.0",
+      "unit": "Hz",
+      "description": "Tank resonance 1/(2 pi sqrt(L C))"
+    },
+    {
+      "name": "w0",
+      "value": "6.283185307179586*f0",
+      "unit": "rad/s",
+      "description": "Time scale of the Van der Pol form: tau = w0 t"
+    },
+    {
+      "name": "mu",
+      "value": "1.0",
+      "unit": null,
+      "description": "Van der Pol parameter mu = a sqrt(L/C)"
+    },
+    {
+      "name": "Z0",
+      "value": "mu/a",
+      "unit": "Ohm",
+      "description": "Tank characteristic impedance sqrt(L/C) that gives this mu"
+    },
+    {
+      "name": "L",
+      "value": "Z0/w0",
+      "unit": "H",
+      "description": "Tank inductance"
+    },
+    {
+      "name": "C",
+      "value": "1.0/(Z0*w0)",
+      "unit": "F",
+      "description": "Tank capacitance"
+    },
+    {
+      "name": "x0",
+      "value": "0.5",
+      "unit": null,
+      "description": "Start voltage in units of A (x(0) = x0, x'(0) = 0)"
+    },
+    {
+      "name": "v0",
+      "value": "A*x0",
+      "unit": "V",
+      "description": "Start voltage of the tank capacitor"
+    },
+    {
+      "name": "iL0",
+      "value": "a*v0 - b*v0^3",
+      "unit": "A",
+      "description": "Start inductor current: the diode current, so the capacitor current is 0 (x'(0) = 0)"
+    }
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Tunnel-diode Van der Pol oscillator",
+        "options": {
+          "markdown": true,
+          "text": "Change an input and the circuit runs again. **mu** = a sqrt(L/C) sets the tank impedance sqrt(L/C) = mu/a at a fixed resonance of 10 MHz (L and C follow); **x0** is the start voltage in units of A = 145 mV. Small mu: a 10 MHz sine of 2A = 290 mV. Large mu: relaxation oscillations, slower than 10 MHz."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "mu (nonlinearity)",
+        "parameter": "global:mu",
+        "options": {
+          "min": 0.05,
+          "max": 10.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Start voltage x0 = v(0)/A",
+        "parameter": "global:x0",
+        "options": {
+          "min": 0.05,
+          "max": 3.0,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Frequency",
+        "signals": [
+          "Meter/f"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "MHz"
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Peak voltage",
+        "signals": [
+          "Vpk/y"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "mV"
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Amplitude x (theory: 2)",
+        "signals": [
+          "Meter/amp"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d7",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Period in tau",
+        "signals": [
+          "Meter/T_s"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d8",
+        "kind": "value",
+        "size": "1x1",
+        "title": "2 pi (1 + mu^2/16)",
+        "signals": [
+          "Tsmall/y"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d9",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Relaxation estimate",
+        "signals": [
+          "Trelax/y"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d10",
+        "kind": "value",
+        "size": "1x1",
+        "title": "L",
+        "signals": [
+          "L_nH/y"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "nH"
+        }
+      },
+      {
+        "id": "d11",
+        "kind": "value",
+        "size": "1x1",
+        "title": "C",
+        "signals": [
+          "C_pF/y"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "pF"
+        }
+      },
+      {
+        "id": "d12",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Tank voltage (V)",
+        "signals": [
+          "Vm/y"
+        ]
+      },
+      {
+        "id": "d13",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Scaled x and x' (circuit and textbook)",
+        "signals": [
+          "Xc/y",
+          "Yc/y",
+          "Ref/x"
+        ]
+      },
+      {
+        "id": "d14",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Diode power (W): negative = supplies the tank",
+        "signals": [
+          "Diode/P"
+        ]
+      }
+    ]
+  }
+}

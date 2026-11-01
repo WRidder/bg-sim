@@ -17,7 +17,7 @@
   },
   "bridge": {
     "title": "Bridge",
-    "description": "A truss road bridge with a lorry: member forces, buckling, and an undersized diagonal that snaps under an overloaded lorry.",
+    "description": "Truss road bridges with a lorry: member forces, buckling, an undersized diagonal that snaps, and a redundant two-span truss on a pier that survives a buckled diagonal.",
     "hasScene": true,
     "models": [
       "bridge-failure",
@@ -25,7 +25,10 @@
       "bridge-static",
       "bridge-modes",
       "bridge-moving-load",
-      "strut-buckling"
+      "strut-buckling",
+      "bridge-pier",
+      "bridge-pier-static",
+      "bridge-pier-modes"
     ]
   },
   "cantilever-modes": {
@@ -425,6 +428,16 @@
     "hasScene": true,
     "models": [
       "sequence-contact"
+    ]
+  },
+  "van-der-pol": {
+    "title": "Van der Pol oscillator",
+    "description": "The Van der Pol oscillator in practice: a tunnel-diode LC oscillator, a block on a spring riding a belt, and the textbook equation at four values of mu.",
+    "hasScene": true,
+    "models": [
+      "vdp-tunnel-diode",
+      "vdp-belt",
+      "vdp-textbook"
     ]
   }
 }

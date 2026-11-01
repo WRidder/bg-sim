@@ -47,22 +47,113 @@
         {"kind": "scene_bindings", "note": "the lorry link follows Truck/q and its wheels turn on Truck/wheel"},
         {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "the design bridge carries the 20 t lorry at 10 m/s"},
         {"kind": "max_abs_le", "signal": "Truss/util[12]", "value": 0.4, "note": "the most loaded member, the end diagonal, at 37 % of its buckling load"},
-        {"kind": "max_abs", "signal": "Truss/N[13]", "value": 204800.8, "rtol": 0.01, "note": "the dynamic peak of the second diagonal: 1.19 times the quasi-static 171.9 kN of design.py"},
-        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 1000.0, "tol": 1e-07, "note": "the truss energy book, the tyre forces counted in Wext (drift 6e-7 J)"},
-        {"kind": "cursor_value", "signal": "Truck/v", "t": 7.0, "value": 10.0, "abs": 0.01, "note": "the cruise control holds the set speed"}
+        {"kind": "max_abs", "signal": "Truss/N[13]", "value": 204735.7, "rtol": 0.01, "note": "the dynamic peak of the second diagonal: 1.19 times the quasi-static 171.9 kN of design.py"},
+        {"kind": "max_abs", "signal": "Peak/peak", "value": 0.36960, "rtol": 0.01, "note": "the dashboard gauge (PeakUtil, a smooth peak hold) reads the largest utilisation of the run, the end diagonal's 0.3696"},
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 1000.0, "tol": 1e-07, "note": "the truss energy book, the tyre and seat forces counted in Wext (drift 3.6e-7 J)"},
+        {"kind": "cursor_value", "signal": "Truck/v", "t": 7.0, "value": 10.0, "abs": 0.01, "note": "the cruise control holds the set speed"},
+        {"kind": "cursor_value", "signal": "Seat/travel", "t": 0.0, "value": 0.004988813, "rtol": 0.001, "note": "the roller starts on its seat at the dead-load travel of node 9: ux[9] = 4.989 mm of the stiffness solve in design.py"},
+        {"kind": "max_abs_le", "signal": "Seat/travel", "value": 0.02, "note": "the roller moves 4.8 to 10.6 mm, far inside its 0.3 m seat"},
+        {"kind": "max_abs_le", "signal": "Seat/unseated", "value": 0.5, "note": "the 20 t design crossing does not unseat the bridge"},
+        {"kind": "invariant", "terms": [{"signal": "Seat/Ebal", "coeff": 1.0}], "scale": 1000.0, "tol": 1e-08, "note": "the seat's own book: spring energy + work on the truss is constant (drift 3.4e-8 J)"}
+      ]
+    },
+    "bridge-crossing-weak-holds": {
+      "model": "bridge-crossing",
+      "overrides": [{"target": "global:strength", "value": 0.4}],
+      "checks": [
+        {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "at 40 % of the design strength the bridge still carries the 20 t lorry"},
+        {"kind": "max_abs", "signal": "Truss/util[12]", "value": 0.92399, "rtol": 0.002, "note": "the stiffness is unchanged, so every utilisation scales with 1/strength: 0.36960 / 0.4 = 0.9240"}
+      ]
+    },
+    "bridge-crossing-weak-fails": {
+      "model": "bridge-crossing",
+      "overrides": [{"target": "global:strength", "value": 0.3}],
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"], "note": "W217 (the collapse stop) is expected"},
+        {"kind": "zero_crossing", "signal": "Truss/nfail", "level": 0.5, "direction": "up", "n": 1, "value": 2.9377, "abs": 0.002, "note": "at 30 % (0.3696 / 0.3 = 1.23) the end diagonal buckles"},
+        {"kind": "cursor_value", "signal": "Truss/failed[12]", "t": 2.95, "value": 1.0, "abs": 1e-09, "note": "bar 12, the end diagonal, is the first to fail"},
+        {"kind": "zero_crossing", "signal": "Seat/unseated", "level": 0.5, "direction": "up", "n": 1, "value": 3.39447, "abs": 0.005, "note": "the folding truss pulls the roller off its seat"},
+        {"kind": "zero_crossing", "signal": "Truss/y[6]", "level": -2.999, "direction": "down", "n": 1, "value": 3.77449, "abs": 0.01, "note": "and the run stops on the collapse"}
       ]
     },
     "bridge-failure": {
       "checks": [
         {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"], "note": "W217 (the collapse stop) is expected"},
         {"kind": "scene_bindings", "note": "failed bars are drawn snapped"},
-        {"kind": "zero_crossing", "signal": "Truss/nfail", "level": 0.5, "direction": "up", "n": 1, "value": 2.01262, "abs": 0.002, "note": "the overloaded 40 t lorry at 15 m/s snaps the first bar when it is 5.2 m onto the bridge"},
+        {"kind": "zero_crossing", "signal": "Truss/nfail", "level": 0.5, "direction": "up", "n": 1, "value": 2.0092, "abs": 0.002, "note": "the overloaded 40 t lorry at 15 m/s snaps the first bar when it is 5.2 m onto the bridge (the event is at t = 2.00976 s; the sampled step crosses 0.5 up to one output interval earlier)"},
         {"kind": "cursor_value", "signal": "Truss/failed[13]", "t": 2.02, "value": 1.0, "abs": 1e-09, "note": "the first bar to fail is the undersized diagonal 13"},
-        {"kind": "cursor_value", "signal": "Truss/nfail", "t": 2.55, "value": 1.0, "abs": 1e-09, "note": "and it is the only one for 0.6 s, until the sheared panel overloads the bottom chord (bar 4)"},
+        {"kind": "cursor_value", "signal": "Truss/nfail", "t": 2.8, "value": 1.0, "abs": 1e-09, "note": "and it is the only one: the second panel shears and the bridge folds about it"},
         {"kind": "max_abs", "signal": "Truss/N[13]", "value": 240641.8, "rtol": 1e-06, "note": "it fails exactly at Ft = fy A = 240.6 kN"},
         {"kind": "cursor_value", "signal": "Truss/Elost", "t": 2.3, "value": 959.43, "rtol": 0.005, "note": "the energy lost at failure is the strain energy Ft^2 L0 / (2 E A) = 959.4 J (the force at failure also has a small damping part)"},
-        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 10000.0, "tol": 1e-05, "note": "Ebal stays constant through both failures and the collapse"},
-        {"kind": "zero_crossing", "signal": "Truss/y[6]", "level": -2.999, "direction": "down", "n": 1, "value": 2.8013, "abs": 0.01, "note": "the bridge folds: the run stops when the midspan has dropped 3 m"}
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 10000.0, "tol": 1e-05, "note": "Ebal stays constant through the failure, the unseating and the collapse (drift 5e-4 J)"},
+        {"kind": "zero_crossing", "signal": "Seat/unseated", "level": 0.5, "direction": "up", "n": 1, "value": 2.44909, "abs": 0.005, "note": "the folding truss pulls the roller towards the river: it leaves its seat"},
+        {"kind": "zero_crossing", "signal": "Seat/travel", "level": -0.3, "direction": "down", "n": 1, "value": 2.44909, "abs": 1e-05, "note": "at the instant its travel reaches the seat length, 0.3 m"},
+        {"kind": "max_abs_le", "signal": "Seat/R", "from_t": 2.4495, "value": 1e-06, "note": "from then on the seat carries nothing"},
+        {"kind": "zero_crossing", "signal": "Truss/y[9]", "level": -0.5, "direction": "down", "n": 1, "value": 2.64124, "abs": 0.01, "note": "and the right end of the truss falls"},
+        {"kind": "invariant", "terms": [{"signal": "Seat/Ebal", "coeff": 1.0}], "scale": 10000.0, "tol": 1e-06, "note": "the seat's book: spring energy + energy lost at release + work on the truss is constant (drift 4.5e-4 J)"},
+        {"kind": "zero_crossing", "signal": "Truss/y[6]", "level": -2.999, "direction": "down", "n": 1, "value": 2.81803, "abs": 0.01, "note": "the bridge folds: the run stops when the midspan has dropped 3 m"}
+      ]
+    },
+    "bridge-pier-static": {
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"]},
+        {"kind": "scene_bindings", "note": "every bar, the pier column and the deck slabs follow their end nodes"},
+        {"kind": "final_value", "signal": "Truss/N[1]", "t": 2.0, "value": 90183.83, "rtol": 0.003, "note": "first bottom-chord bar: stiffness method of design_pier.py (3 redundants), dead load + 100 kN at x = 12 m (measured 90342.6 N)"},
+        {"kind": "final_value", "signal": "Truss/N[9]", "t": 2.0, "value": -135797.56, "rtol": 0.002, "note": "top chord over the load (measured -135755.8 N)"},
+        {"kind": "final_value", "signal": "Truss/N[15]", "t": 2.0, "value": -117393.03, "rtol": 0.002, "note": "left end post (measured -117329.0 N)"},
+        {"kind": "final_value", "signal": "Truss/N[20]", "t": 2.0, "value": -87649.16, "rtol": 0.002, "note": "the post over the pier (measured -87708.9 N)"},
+        {"kind": "final_value", "signal": "Truss/N[25]", "t": 2.0, "value": 149403.10, "rtol": 0.002, "note": "a diagonal of the loaded span (measured 149477.8 N)"},
+        {"kind": "final_value", "signal": "Truss/N[27]", "t": 2.0, "value": -101454.86, "rtol": 0.002, "note": "the X-braced diagonal next to the pier, the slender one in bridge-pier (measured -101423.2 N)"},
+        {"kind": "final_value", "signal": "Truss/N[32]", "t": 2.0, "value": -233593.65, "rtol": 0.0005, "note": "the pier column (measured -233592.4 N)"},
+        {"kind": "final_value", "signal": "Truss/Ry[3]", "t": 2.0, "value": 90839.28, "rtol": 0.0005, "note": "left bearing (measured 90827.3 N)"},
+        {"kind": "final_value", "signal": "Truss/Ry[11]", "t": 2.0, "value": 40839.28, "rtol": 0.0005, "note": "right roller (measured 40835.0 N)"},
+        {"kind": "final_value", "signal": "Truss/Ry[20]", "t": 2.0, "value": 236375.77, "rtol": 0.0005, "note": "the pier foot: the indeterminate reaction (measured 236374.5 N)"},
+        {"kind": "final_value", "signal": "Truss/y[5]", "t": 2.0, "value": -0.016018, "rtol": 0.002, "note": "deflection under the load, linear stiffness solve (measured -0.0160248 m)"},
+        {"kind": "final_value", "signal": "Truss/y[7]", "t": 2.0, "value": -0.0022247, "rtol": 0.002, "note": "the top of the pier: the column shortens (measured -0.0022252 m)"}
+      ]
+    },
+    "bridge-pier-modes": {
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"]},
+        {"kind": "fft_peak", "signal": "Truss/y[5]", "min_hz": 2.0, "max_hz": 10.0, "value": 4.614802, "rtol": 0.002, "note": "first bending mode, the spans swing in opposite directions: eigenvalue of K and the lumped M of design_pier.py (measured 4.6159 Hz)"},
+        {"kind": "max_abs", "signal": "Truss/Ek", "value": 554.3376, "rtol": 0.002, "note": "the start velocity is the mode shape at 5 mm: Ek0 = (omega a)^2 phi^T M phi / 2 = 554.34 J (design_pier.py)"},
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 554.3, "tol": 1e-07, "note": "no damping: the energy book is constant (drift 2.2e-7 J)"}
+      ]
+    },
+    "bridge-pier": {
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"]},
+        {"kind": "scene_bindings", "note": "bars, deck, lorry and seats"},
+        {"kind": "zero_crossing", "signal": "Truss/nfail", "level": 0.5, "direction": "up", "n": 1, "value": 1.6335, "abs": 0.003, "note": "the 40 t lorry at 15 m/s buckles the slender diagonal when it is 14.5 m onto the bridge (the event is at t = 1.6347 s; the sampled step crosses 0.5 up to one output interval earlier)"},
+        {"kind": "cursor_value", "signal": "Truss/failed[27]", "t": 1.64, "value": 1.0, "abs": 1e-09, "note": "bar 27, next to the pier"},
+        {"kind": "max_abs", "signal": "Truss/N[27]", "value": 153952.90, "rtol": 1e-06, "note": "it fails at its Euler load pi^2 E (0.35 I) / L0^2 = 153.95 kN (design_pier.py)"},
+        {"kind": "final_value", "signal": "Truss/Elost", "t": 7.0, "value": 263.572, "rtol": 0.005, "note": "and books its strain energy Pcr^2 L0 / (2 E A) = 263.6 J (measured 263.1 J: the force at failure has a small damping part)"},
+        {"kind": "final_value", "signal": "Truss/nfail", "t": 7.0, "value": 1.0, "abs": 1e-09, "note": "the redundant truss redistributes the load: no other bar fails and the lorry crosses"},
+        {"kind": "max_abs", "signal": "Truss/N[26]", "value": 325866.5, "rtol": 0.01, "note": "the X-partner takes the panel's shear: 115 kN when 27 fails, then up to 326 kN, 1.10 times the 297 kN of the quasi-static envelope without bar 27"},
+        {"kind": "max_abs_le", "signal": "Truss/util[32]", "value": 0.7, "note": "the pier column at 63 % of its buckling load"},
+        {"kind": "max_abs_le", "signal": "Seat/unseated", "value": 0.5, "note": "the roller stays on its seat"},
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 10000.0, "tol": 1e-06, "note": "Ebal constant through the buckling (drift 4.7e-5 J)"},
+        {"kind": "invariant", "terms": [{"signal": "Seat/Ebal", "coeff": 1.0}], "scale": 1000.0, "tol": 1e-08, "note": "the seat's own book"}
+      ]
+    },
+    "bridge-pier-20t": {
+      "model": "bridge-pier",
+      "overrides": [{"target": "global:m_truck", "value": 20000.0}],
+      "checks": [
+        {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "the 20 t lorry crosses with the slender diagonal intact"},
+        {"kind": "max_abs", "signal": "Truss/util[27]", "value": 0.76831, "rtol": 0.01, "note": "bar 27 at 77 % of its buckling load: 1.15 times the quasi-static 0.667 of design_pier.py"}
+      ]
+    },
+    "bridge-pier-collapse": {
+      "model": "bridge-pier",
+      "overrides": [{"target": "global:strength", "value": 0.5}],
+      "checks": [
+        {"kind": "no_diagnostics", "codes": ["E101", "E102", "W201", "W202"], "note": "W217 (the collapse stop) is expected"},
+        {"kind": "zero_crossing", "signal": "Truss/nfail", "level": 0.5, "direction": "up", "n": 1, "value": 0.8866, "abs": 0.002, "note": "at half strength the slender diagonal buckles earlier"},
+        {"kind": "cursor_value", "signal": "Truss/failed[27]", "t": 0.89, "value": 1.0, "abs": 1e-09, "note": "bar 27 again"},
+        {"kind": "zero_crossing", "signal": "Truss/failed[32]", "level": 0.5, "direction": "up", "n": 1, "value": 1.41527, "abs": 0.005, "note": "the redistributed load is too much: the post (19) and the bottom chord next to bar 27 fail, then the pier column buckles"},
+        {"kind": "zero_crossing", "signal": "Truss/y[5]", "level": -2.999, "direction": "down", "n": 1, "value": 1.95015, "abs": 0.01, "note": "the run stops when the left span has dropped 3 m"},
+        {"kind": "invariant", "terms": [{"signal": "Truss/Ebal", "coeff": 1.0}], "scale": 100000.0, "tol": 1e-06, "note": "Ebal constant through seven failures (drift 2.4e-3 J)"}
       ]
     },
     "bridge-failure-20t": {
@@ -70,6 +161,7 @@
       "overrides": [{"target": "global:m_truck", "value": 20000.0}],
       "checks": [
         {"kind": "max_abs_le", "signal": "Truss/nfail", "value": 0.5, "note": "the 20 t lorry the bridge was checked for crosses at 15 m/s"},
+        {"kind": "max_abs_le", "signal": "Seat/unseated", "value": 0.5, "note": "on its seat"},
         {"kind": "max_abs", "signal": "Truss/util[13]", "value": 0.94895, "rtol": 0.01, "note": "bar 13 comes to 95 % of its strength (the bounce from the abutment ramp peaks near its influence peak)"}
       ]
     },

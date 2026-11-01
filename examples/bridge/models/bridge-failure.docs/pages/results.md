@@ -1,8 +1,8 @@
 # Results and checks
 
-![Member forces, failed bars, midspan and axle loads|900](assets/b7677dc5d285.png)
+![Member forces, failed bars, roller travel, deflections and axle loads|900](assets/674fb3861ac1.png)
 
-The overloaded lorry rolls onto the bridge over the 6 cm ramp and starts to bounce. Bar 13 reaches $F_t$ = 240.64 kN at t = 2.0126 s, when the lorry's centre is 5.2 m onto the bridge, and fails. `Elost` jumps by 959.2 J, its strain energy (959.4 J from $F_t^2 L_0 / (2 E A)$; the force at failure also has a small damping part). The second panel shears, the other members take its load for 0.6 s, and the bottom chord (bar 4) fails at t = 2.613 s. The run stops at t = 2.801 s with the midspan 3 m down. `Ebal` changes by less than 0.004 J over the run, against 248 kJ of work done by the lorry on the truss.
+The overloaded lorry rolls onto the bridge over the 6 cm ramp and starts to bounce. Bar 13 reaches $F_t$ = 240.64 kN at t = 2.0098 s, when the lorry's centre is 5.2 m onto the bridge, and fails. `Elost` jumps by 959.1 J, its strain energy (959.4 J from $F_t^2 L_0 / (2 E A)$; the force at failure also has a small damping part). The second panel shears and the truss folds about it, pulling the roller towards the river. At t = 2.4491 s its travel reaches the seat edge, -0.3 m, and it rolls off; the right end is 0.5 m down at t = 2.641 s. No other bar fails. The run stops at t = 2.818 s with the midspan 3 m down. The `Ebal` of the truss changes by less than 0.001 J over the run, and so does the seat's.
 
 | lorry | 5 m/s | 10 m/s | 15 m/s | 30 m/s |
 | --- | --- | --- | --- | --- |
@@ -20,7 +20,9 @@ The table gives the largest utilisation of bar 13. The bounce from the ramp adds
 | `bridge-modes` | 4.3990 Hz (FFT of the midspan), `Ebal` drift 1.7e-6 J | 4.39776 Hz (eigenvalues of K and M) |
 | `bridge-moving-load` | largest midspan deflection 28.82 mm, top chord 347.75 kN | static, load at midspan: 28.87 mm, 348.31 kN |
 | `strut-buckling` | fails at 5181.54 N at t = 0.05197 s, `Elost` 0.127849 J | Euler load 5181.54 N; $P_{cr}^2 L / (2 E A)$ = 0.127849 J |
-| `bridge-crossing` | 20 t at 10 m/s on the design bridge: no failure, largest utilisation 0.37 (bar 12) | quasi-static envelope: 0.31 |
+| `bridge-crossing` | 20 t at 10 m/s on the design bridge: no failure, largest utilisation 0.370 (bar 12); the roller starts at 4.989 mm travel and stays within 10.6 mm | quasi-static envelope: 0.31; dead-load travel 4.989 mm |
+| `bridge-crossing`, `strength` 0.4 and 0.3 | 0.924: holds; at 0.3 bar 12 buckles at t = 2.939 s, the roller rolls off at 3.394 s | 0.3696 / 0.4 = 0.924 |
+| `bridge-pier` | a two-span truss on a pier: see its own docs | `design/design_pier.py` |
 
 The static member forces differ from the method of joints by up to 0.13 % of the largest force: the model is geometrically exact, and the deflected truss carries its load in a slightly different shape.
 
@@ -28,6 +30,6 @@ The static member forces differ from the method of joints by up to 0.13 % of the
 
 - statics against the method of joints, the first bending frequency against the eigenvalue problem, and the energy balance of every model;
 - the strut fails at the Euler load, at the expected time, and books its strain energy;
-- the design bridge carries the 20 t lorry;
-- bar 13 is the first and only failed bar for 0.5 s, fails at $F_t$, and `Elost` jumps by its strain energy; the run stops on the collapse;
+- the design bridge carries the 20 t lorry and its roller stays on its seat; at `strength` 0.4 it still holds, at 0.3 it fails and falls;
+- bar 13 is the first and only failed bar, fails at $F_t$, and `Elost` jumps by its strain energy; the roller rolls off when its travel reaches 0.3 m, the seat then carries nothing, and the right end falls; the run stops on the collapse;
 - run overrides of the globals: a 20 t lorry at 15 and at 30 m/s loses no bar, a 28 t lorry loses bar 13.

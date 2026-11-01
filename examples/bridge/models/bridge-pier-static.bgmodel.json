@@ -1,0 +1,1887 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "bridge-pier-static",
+  "$comment": "Two-span truss on a centre pier under its dead load and 100 kN in the middle of the left span; member forces, reactions and deflection against the stiffness method (design_pier.py).",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Truss",
+        "block": {
+          "ref": "stdlib:planar/Truss2D"
+        },
+        "position": {
+          "x": 300,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "xy": "[-40.0 0.0; -1.0 -0.06; 0.0 0.0; 6.0 0.0; 12.0 0.0; 18.0 0.0; 24.0 0.0; 30.0 0.0; 36.0 0.0; 42.0 0.0; 48.0 0.0; 88.0 0.0; 6.0 5.0; 12.0 5.222222222222222; 18.0 5.888888888888889; 24.0 7.0; 30.0 5.888888888888889; 36.0 5.222222222222222; 42.0 5.0; 24.0 -12.0]",
+          "A": "[0.0016, 0.0016, 0.0016, 0.0016, 0.0016, 0.0016, 0.0016, 0.0016, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.0014, 0.0014, 0.0014, 0.0024, 0.0014, 0.0014, 0.0014, 0.0014, 0.0014, 0.0018, 0.0018, 0.0018, 0.0018, 0.0014, 0.0014, 0.006]",
+          "I": "[8e-06, 8e-06, 8e-06, 8e-06, 8e-06, 8e-06, 8e-06, 8e-06, 1.2e-05, 1.2e-05, 1.2e-05, 1.2e-05, 1.2e-05, 1.2e-05, 1.6e-05, 1.6e-05, 4e-06, 4e-06, 4e-06, 1.6e-05, 4e-06, 4e-06, 4e-06, 1e-05, 1e-05, 1.5e-05, 1.5e-05, 1.5e-05, 1.5e-05, 1e-05, 1e-05, 4.3e-05]",
+          "mn": "[1.0, 1.0, 1500.0, 3000.0, 3000.0, 3000.0, 3000.0, 3000.0, 3000.0, 3000.0, 1500.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]",
+          "beta": "0.001",
+          "E": "210000000000.0",
+          "rho": "7850.0",
+          "fy": "355000000.0",
+          "K": "1.0",
+          "g0": "9.81"
+        },
+        "constants": {
+          "nn": "20",
+          "nb": "32",
+          "conn": "[3 4; 4 5; 5 6; 6 7; 7 8; 8 9; 9 10; 10 11; 13 14; 14 15; 15 16; 16 17; 17 18; 18 19; 3 13; 19 11; 4 13; 5 14; 6 15; 7 16; 8 17; 9 18; 10 19; 13 5; 5 15; 6 16; 15 7; 7 17; 16 8; 17 9; 9 19; 20 7]",
+          "fix": "[1 1; 1 1; 1 1; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 1; 1 1; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0; 1 1]"
+        },
+        "starts": {
+          "ux": "[0.0, 0.0, 0.0, 0.0016104254665651502, 0.0032208509331303004, 0.0037400992553489254, 0.003587441131757854, 0.0028718399633629274, 0.002481384781538427, 0.0030203816766750033, 0.00355937857181158, 0.0, 0.005839234498303605, 0.004111458235160457, 0.001209164506133381, 0.0010404166617709828, 0.0021442315079335753, 0.001602913568334286, 0.0013388405680255502, 0.0]",
+          "uy": "[0.0, 0.0, 0.0, -0.010934736362889526, -0.016017996801440535, -0.007613373365482904, -0.0022247014502321224, -0.002771040111601981, -0.004670703015368357, -0.004323608996943172, 0.0, 0.0, -0.010417069503195648, -0.016218021372068268, -0.007869203025109595, -0.0034420508439887477, -0.0025730844788908603, -0.004719556006253079, -0.003805942137249294, 0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Load",
+        "block": {
+          "ref": "stdlib:planar/MovingLoad2D"
+        },
+        "position": {
+          "x": 40,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "P": "100000.0",
+          "s0": "12.0",
+          "v": "0.0"
+        },
+        "constants": {
+          "nn": "20",
+          "nd": "12"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c001",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "x"
+        },
+        "to": {
+          "node": "n02",
+          "port": "x"
+        },
+        "label": null
+      },
+      {
+        "id": "c002",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "Fx"
+        },
+        "to": {
+          "node": "n01",
+          "port": "Fx"
+        },
+        "label": null
+      },
+      {
+        "id": "c003",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "Fy"
+        },
+        "to": {
+          "node": "n01",
+          "port": "Fy"
+        },
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 2.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 401
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Member forces [N]",
+      "signals": [
+        "Truss/N[27]",
+        "Truss/N[26]",
+        "Truss/N[20]",
+        "Truss/N[32]",
+        "Truss/N[2]"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Deflection [m]",
+      "signals": [
+        "Truss/y[5]",
+        "Truss/y[7]",
+        "Truss/y[9]"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Support reactions [N]",
+      "signals": [
+        "Truss/Ry[3]",
+        "Truss/Ry[11]",
+        "Truss/Ry[20]"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/bridge-pier-load.sdf"
+  },
+  "bindings": [
+    {
+      "target": "visual:bar_l_01",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[4]",
+        "Truss/y[4]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[1]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_01",
+      "property": "color",
+      "signal": "Truss/util[1]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_02",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[2]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_02",
+      "property": "color",
+      "signal": "Truss/util[2]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_03",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[6]",
+        "Truss/y[6]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[3]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_03",
+      "property": "color",
+      "signal": "Truss/util[3]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_04",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[4]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_04",
+      "property": "color",
+      "signal": "Truss/util[4]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_05",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[5]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_05",
+      "property": "color",
+      "signal": "Truss/util[5]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_06",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[6]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_06",
+      "property": "color",
+      "signal": "Truss/util[6]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_07",
+      "property": "segment",
+      "signal": [
+        "Truss/x[9]",
+        "Truss/y[9]",
+        "Truss/x[10]",
+        "Truss/y[10]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[7]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_07",
+      "property": "color",
+      "signal": "Truss/util[7]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_08",
+      "property": "segment",
+      "signal": [
+        "Truss/x[10]",
+        "Truss/y[10]",
+        "Truss/x[11]",
+        "Truss/y[11]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[8]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_08",
+      "property": "color",
+      "signal": "Truss/util[8]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_09",
+      "property": "segment",
+      "signal": [
+        "Truss/x[13]",
+        "Truss/y[13]",
+        "Truss/x[14]",
+        "Truss/y[14]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[9]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_09",
+      "property": "color",
+      "signal": "Truss/util[9]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_10",
+      "property": "segment",
+      "signal": [
+        "Truss/x[14]",
+        "Truss/y[14]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[10]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_10",
+      "property": "color",
+      "signal": "Truss/util[10]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_11",
+      "property": "segment",
+      "signal": [
+        "Truss/x[15]",
+        "Truss/y[15]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[11]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_11",
+      "property": "color",
+      "signal": "Truss/util[11]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_12",
+      "property": "segment",
+      "signal": [
+        "Truss/x[16]",
+        "Truss/y[16]",
+        "Truss/x[17]",
+        "Truss/y[17]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[12]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_12",
+      "property": "color",
+      "signal": "Truss/util[12]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_13",
+      "property": "segment",
+      "signal": [
+        "Truss/x[17]",
+        "Truss/y[17]",
+        "Truss/x[18]",
+        "Truss/y[18]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[13]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_13",
+      "property": "color",
+      "signal": "Truss/util[13]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_14",
+      "property": "segment",
+      "signal": [
+        "Truss/x[18]",
+        "Truss/y[18]",
+        "Truss/x[19]",
+        "Truss/y[19]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[14]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_14",
+      "property": "color",
+      "signal": "Truss/util[14]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_15",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[13]",
+        "Truss/y[13]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[15]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_15",
+      "property": "color",
+      "signal": "Truss/util[15]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_16",
+      "property": "segment",
+      "signal": [
+        "Truss/x[19]",
+        "Truss/y[19]",
+        "Truss/x[11]",
+        "Truss/y[11]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[16]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_16",
+      "property": "color",
+      "signal": "Truss/util[16]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_17",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[13]",
+        "Truss/y[13]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[17]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_17",
+      "property": "color",
+      "signal": "Truss/util[17]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_18",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[14]",
+        "Truss/y[14]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[18]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_18",
+      "property": "color",
+      "signal": "Truss/util[18]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_19",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[19]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_19",
+      "property": "color",
+      "signal": "Truss/util[19]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_20",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[20]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_20",
+      "property": "color",
+      "signal": "Truss/util[20]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_21",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[17]",
+        "Truss/y[17]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[21]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_21",
+      "property": "color",
+      "signal": "Truss/util[21]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_22",
+      "property": "segment",
+      "signal": [
+        "Truss/x[9]",
+        "Truss/y[9]",
+        "Truss/x[18]",
+        "Truss/y[18]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[22]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_22",
+      "property": "color",
+      "signal": "Truss/util[22]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_23",
+      "property": "segment",
+      "signal": [
+        "Truss/x[10]",
+        "Truss/y[10]",
+        "Truss/x[19]",
+        "Truss/y[19]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[23]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_23",
+      "property": "color",
+      "signal": "Truss/util[23]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_24",
+      "property": "segment",
+      "signal": [
+        "Truss/x[13]",
+        "Truss/y[13]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[24]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_24",
+      "property": "color",
+      "signal": "Truss/util[24]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_25",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[25]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_25",
+      "property": "color",
+      "signal": "Truss/util[25]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_26",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[26]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_26",
+      "property": "color",
+      "signal": "Truss/util[26]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_27",
+      "property": "segment",
+      "signal": [
+        "Truss/x[15]",
+        "Truss/y[15]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[27]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_27",
+      "property": "color",
+      "signal": "Truss/util[27]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_28",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[17]",
+        "Truss/y[17]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[28]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_28",
+      "property": "color",
+      "signal": "Truss/util[28]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_29",
+      "property": "segment",
+      "signal": [
+        "Truss/x[16]",
+        "Truss/y[16]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[29]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_29",
+      "property": "color",
+      "signal": "Truss/util[29]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_30",
+      "property": "segment",
+      "signal": [
+        "Truss/x[17]",
+        "Truss/y[17]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[30]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_30",
+      "property": "color",
+      "signal": "Truss/util[30]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_31",
+      "property": "segment",
+      "signal": [
+        "Truss/x[9]",
+        "Truss/y[9]",
+        "Truss/x[19]",
+        "Truss/y[19]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[31]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_31",
+      "property": "color",
+      "signal": "Truss/util[31]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_32",
+      "property": "segment",
+      "signal": [
+        "Truss/x[20]",
+        "Truss/y[20]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[32]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_32",
+      "property": "color",
+      "signal": "Truss/util[32]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_01",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[4]",
+        "Truss/y[4]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[1]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_01",
+      "property": "color",
+      "signal": "Truss/util[1]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_02",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[2]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_02",
+      "property": "color",
+      "signal": "Truss/util[2]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_03",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[6]",
+        "Truss/y[6]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[3]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_03",
+      "property": "color",
+      "signal": "Truss/util[3]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_04",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[4]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_04",
+      "property": "color",
+      "signal": "Truss/util[4]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_05",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[5]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_05",
+      "property": "color",
+      "signal": "Truss/util[5]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_06",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[6]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_06",
+      "property": "color",
+      "signal": "Truss/util[6]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_07",
+      "property": "segment",
+      "signal": [
+        "Truss/x[9]",
+        "Truss/y[9]",
+        "Truss/x[10]",
+        "Truss/y[10]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[7]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_07",
+      "property": "color",
+      "signal": "Truss/util[7]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_08",
+      "property": "segment",
+      "signal": [
+        "Truss/x[10]",
+        "Truss/y[10]",
+        "Truss/x[11]",
+        "Truss/y[11]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[8]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_08",
+      "property": "color",
+      "signal": "Truss/util[8]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_09",
+      "property": "segment",
+      "signal": [
+        "Truss/x[13]",
+        "Truss/y[13]",
+        "Truss/x[14]",
+        "Truss/y[14]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[9]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_09",
+      "property": "color",
+      "signal": "Truss/util[9]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_10",
+      "property": "segment",
+      "signal": [
+        "Truss/x[14]",
+        "Truss/y[14]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[10]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_10",
+      "property": "color",
+      "signal": "Truss/util[10]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_11",
+      "property": "segment",
+      "signal": [
+        "Truss/x[15]",
+        "Truss/y[15]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[11]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_11",
+      "property": "color",
+      "signal": "Truss/util[11]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_12",
+      "property": "segment",
+      "signal": [
+        "Truss/x[16]",
+        "Truss/y[16]",
+        "Truss/x[17]",
+        "Truss/y[17]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[12]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_12",
+      "property": "color",
+      "signal": "Truss/util[12]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_13",
+      "property": "segment",
+      "signal": [
+        "Truss/x[17]",
+        "Truss/y[17]",
+        "Truss/x[18]",
+        "Truss/y[18]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[13]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_13",
+      "property": "color",
+      "signal": "Truss/util[13]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_14",
+      "property": "segment",
+      "signal": [
+        "Truss/x[18]",
+        "Truss/y[18]",
+        "Truss/x[19]",
+        "Truss/y[19]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[14]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_14",
+      "property": "color",
+      "signal": "Truss/util[14]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_15",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[13]",
+        "Truss/y[13]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[15]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_15",
+      "property": "color",
+      "signal": "Truss/util[15]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_16",
+      "property": "segment",
+      "signal": [
+        "Truss/x[19]",
+        "Truss/y[19]",
+        "Truss/x[11]",
+        "Truss/y[11]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[16]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_16",
+      "property": "color",
+      "signal": "Truss/util[16]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_17",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[13]",
+        "Truss/y[13]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[17]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_17",
+      "property": "color",
+      "signal": "Truss/util[17]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_18",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[14]",
+        "Truss/y[14]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[18]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_18",
+      "property": "color",
+      "signal": "Truss/util[18]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_19",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[19]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_19",
+      "property": "color",
+      "signal": "Truss/util[19]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_20",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[20]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_20",
+      "property": "color",
+      "signal": "Truss/util[20]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_21",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[17]",
+        "Truss/y[17]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[21]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_21",
+      "property": "color",
+      "signal": "Truss/util[21]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_22",
+      "property": "segment",
+      "signal": [
+        "Truss/x[9]",
+        "Truss/y[9]",
+        "Truss/x[18]",
+        "Truss/y[18]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[22]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_22",
+      "property": "color",
+      "signal": "Truss/util[22]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_23",
+      "property": "segment",
+      "signal": [
+        "Truss/x[10]",
+        "Truss/y[10]",
+        "Truss/x[19]",
+        "Truss/y[19]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[23]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_23",
+      "property": "color",
+      "signal": "Truss/util[23]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_24",
+      "property": "segment",
+      "signal": [
+        "Truss/x[13]",
+        "Truss/y[13]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[24]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_24",
+      "property": "color",
+      "signal": "Truss/util[24]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_25",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[25]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_25",
+      "property": "color",
+      "signal": "Truss/util[25]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_26",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[26]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_26",
+      "property": "color",
+      "signal": "Truss/util[26]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_27",
+      "property": "segment",
+      "signal": [
+        "Truss/x[15]",
+        "Truss/y[15]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[27]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_27",
+      "property": "color",
+      "signal": "Truss/util[27]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_28",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[17]",
+        "Truss/y[17]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[28]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_28",
+      "property": "color",
+      "signal": "Truss/util[28]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_29",
+      "property": "segment",
+      "signal": [
+        "Truss/x[16]",
+        "Truss/y[16]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[29]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_29",
+      "property": "color",
+      "signal": "Truss/util[29]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_30",
+      "property": "segment",
+      "signal": [
+        "Truss/x[17]",
+        "Truss/y[17]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[30]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_30",
+      "property": "color",
+      "signal": "Truss/util[30]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_31",
+      "property": "segment",
+      "signal": [
+        "Truss/x[9]",
+        "Truss/y[9]",
+        "Truss/x[19]",
+        "Truss/y[19]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[31]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_31",
+      "property": "color",
+      "signal": "Truss/util[31]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_32",
+      "property": "segment",
+      "signal": [
+        "Truss/x[20]",
+        "Truss/y[20]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[32]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_32",
+      "property": "color",
+      "signal": "Truss/util[32]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:deck_1",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[4]",
+        "Truss/y[4]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_2",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_3",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[6]",
+        "Truss/y[6]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_4",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_5",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_6",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_7",
+      "property": "segment",
+      "signal": [
+        "Truss/x[9]",
+        "Truss/y[9]",
+        "Truss/x[10]",
+        "Truss/y[10]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_8",
+      "property": "segment",
+      "signal": [
+        "Truss/x[10]",
+        "Truss/y[10]",
+        "Truss/x[11]",
+        "Truss/y[11]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    }
+  ],
+  "dashboard": {
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x2",
+        "title": "About",
+        "options": {
+          "markdown": true,
+          "text": "Dead load plus a **100 kN** point load in the middle of the left span. The truss is statically indeterminate (3 redundants), so the reference is the stiffness method of `design/design_pier.py`: the pier column carries 236.4 kN, the abutments 90.8 and 40.8 kN."
+        }
+      },
+      {
+        "kind": "value",
+        "size": "1x1",
+        "title": "Pier reaction",
+        "signals": [
+          "Truss/Ry[20]"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "N"
+        },
+        "id": "d2"
+      },
+      {
+        "kind": "value",
+        "size": "1x1",
+        "title": "Left abutment",
+        "signals": [
+          "Truss/Ry[3]"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "N"
+        },
+        "id": "d3"
+      },
+      {
+        "kind": "value",
+        "size": "1x1",
+        "title": "Right abutment",
+        "signals": [
+          "Truss/Ry[11]"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "N"
+        },
+        "id": "d4"
+      },
+      {
+        "kind": "value",
+        "size": "1x1",
+        "title": "Deflection under the load",
+        "signals": [
+          "Truss/y[5]"
+        ],
+        "options": {
+          "decimals": 4,
+          "unit": "m"
+        },
+        "id": "d5"
+      },
+      {
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Member forces",
+        "signals": [
+          "Truss/N[27]",
+          "Truss/N[26]",
+          "Truss/N[20]",
+          "Truss/N[32]",
+          "Truss/N[2]"
+        ],
+        "id": "d6"
+      }
+    ]
+  }
+}
