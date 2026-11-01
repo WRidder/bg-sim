@@ -111,4 +111,13 @@ machine-readable acceptance used by `examples/run_checks.py` and
 
 ## 3D view
 
-`scenes/drivetrain.sdf` lines up the motor rotor, the first wheel behind the 10:1 gear and the load wheel behind the flexible rod, each a disc with a marker. In `drivetrain` they turn with `Motor1/rotor/phi`, `Wheel1/phi` and `Wheel2/phi`; the rod twist is the angle between the two wheel markers. The `bondgraph` model has speeds only, so its three discs are coloured by speed (`IJm/p.f`, `IW1/p.f`, `IW2/p.f`).
+`scenes/drivetrain.sdf` lines up the motor rotor, the first wheel behind the 10:1 gear and the load wheel behind the flexible rod, each a disc with a marker. In `drivetrain` they turn with `Motor1/rotor/phi`, `Wheel1/phi` and `Wheel2/phi`. The `bondgraph` model has speeds only, so its three discs are coloured by speed (`IJm/p.f`, `IW1/p.f`, `IW2/p.f`).
+
+The rod (`visual:rod`, 0.305 m from the face of wheel 1 to the face of wheel 2) belongs to the wheel-1 link, so it turns with wheel 1, and it twists towards the load wheel through a torsion deformation binding with the **linear** basis: the lumped spring's twist is linear along the rod, θ(s) = s/L · (φ₂ − φ₁), so the far end sits exactly at the load wheel's angle and the stripes on the rod show the twist.
+
+| model | twist signal | gain | why |
+| --- | --- | --- | --- |
+| `drivetrain` | `Rod/phi` | −1 | `Rod/phi` = `Wheel1/phi` − `Wheel2/phi` (to 1e-13 over the run) |
+| `bondgraph` | `Crod/q` | −1 | the same twist (`Crod/q` = `Rod/phi` to 4e-7); the rod does not turn here, it only twists |
+
+The twist reaches 0.19 rad (11°) in the start-up transient and settles at 0.1 rad under the load. The angle between the two wheel markers shows it at true scale, but on the rod itself a twist only shows as the stripes winding round it, by radius × angle: 0.1 rad moves the stripes of the 8 mm rod by 0.8 mm. Both models therefore set `scene.exaggeration` to **10**: the 3D view opens with the twist drawn ×10, the stripes wind by 1 to 2 rad, and the badge says *exaggerated*. Joints are never exaggerated, so at ×10 the far end of the stripes runs ahead of the load wheel's marker by 9 × the twist; switch to ×1 to see the true geometry.

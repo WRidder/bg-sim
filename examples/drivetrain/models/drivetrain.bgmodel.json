@@ -789,7 +789,8 @@
     }
   ],
   "scene": {
-    "file": "scenes/drivetrain.sdf"
+    "file": "scenes/drivetrain.sdf",
+    "exaggeration": 10
   },
   "bindings": [
     {
@@ -806,6 +807,20 @@
       "target": "joint:wheel2_joint",
       "property": "position",
       "signal": "Wheel2/phi"
+    },
+    {
+      "target": "visual:rod",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "linear",
+      "beam": {
+        "axis": "+z",
+        "length": 0.305
+      },
+      "signal": [
+        "Rod/phi"
+      ],
+      "gain": -1
     }
   ]
 }

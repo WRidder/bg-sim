@@ -263,11 +263,14 @@
   },
   "pendulum-triple-rotary": {
     "title": "Pendulum triple rotary",
-    "description": "A rotary triple inverted pendulum.",
+    "description": "A rotary triple inverted pendulum, on a rigid and on a flexible arm.",
     "hasScene": true,
     "models": [
       "pendulum-triple-rotary",
-      "pendulum-triple-rotary-free"
+      "pendulum-triple-rotary-free",
+      "pendulum-triple-rotary-flex",
+      "pendulum-triple-rotary-flex-lowpass",
+      "pendulum-triple-rotary-flex-free"
     ]
   },
   "planar-links": {

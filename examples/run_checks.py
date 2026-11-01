@@ -2131,7 +2131,8 @@ def _scene_bindings_check(
     angle for a revolute joint, a length for a prismatic one, dimensionless then metres for
     the seven pose signals) and a pose needs exactly seven signals. A ``deformation`` binding
     needs a box or cylinder visual (a cylinder along its own z), one to three modal coordinates
-    (lengths for bending, angles for torsion) and at most one binding per family and visual.
+    (lengths for bending, angles for torsion) and at most one binding per family and visual; the
+    ``linear`` basis (the twist of a lumped torsion spring) takes family torsion and exactly one signal.
     This is E301 to E304 of the viewer (plan 7.6), checked without a browser.
 
     ``fk`` entries check the sign convention of the joint axes against a model signal::
@@ -2213,7 +2214,12 @@ def _scene_bindings_check(
                 errors.append(f"{where}: a {geometry} is not a beam; bind a box or cylinder")
             elif geometry == "cylinder" and str((binding.get("beam") or {}).get("axis", "")) not in ("+z", "-z"):
                 errors.append(f"{where}: a cylinder's beam axis is its local z (+z or -z)")
-            if not isinstance(binding.get("signal"), list) or not 1 <= len(signals) <= 3:
+            if binding.get("basis") == "linear":
+                if family != "torsion":
+                    errors.append(f"{where}: the linear basis is the twist of a torsion spring, not {family}")
+                if not isinstance(binding.get("signal"), list) or len(signals) != 1:
+                    errors.append(f"{where}: the linear basis needs 1 signal (the twist of end B relative to end A), got {len(signals)}")
+            elif not isinstance(binding.get("signal"), list) or not 1 <= len(signals) <= 3:
                 errors.append(f"{where}: needs 1 to 3 modal coordinates, got {len(signals)}")
             key = (target, family)
             if key in deformation_families:

@@ -1,0 +1,18 @@
+{
+  "$comment": "expected E304: the linear basis has exactly one coordinate (the twist of end B relative to end A).",
+  "bindings": [
+    {
+      "target": "visual:shaft_rod",
+      "property": "deformation",
+      "family": "torsion",
+      "basis": "linear",
+      "beam": {
+        "axis": "+z"
+      },
+      "signal": [
+        "C1/q",
+        "C2/q"
+      ]
+    }
+  ]
+}
