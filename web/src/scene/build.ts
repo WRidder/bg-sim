@@ -25,17 +25,18 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import type { Diagnostic } from "../contracts/diagnostic";
-import type { BeamMapping, StrainColor } from "../contracts/model";
+import type { BeamMapping, SegmentBrokenStyle, ShapeAxis, StrainColor } from "../contracts/model";
 import type { ModalSet } from "../viewer/beamModes";
 import { colormapColor } from "../viewer/bindingsColormaps";
 import { tagEntity, type ViewerScene } from "../viewer/viewerScene";
 import { beamFrame, buildBeamMesh, deformBeamMesh, ringStrains, type BeamFrame, type BeamMesh } from "./beamMesh";
 import {
   compose, fromPose7, IDENTITY, inverse, jointMotion, positionOf, quaternionOf, rotationX,
-  type Mat4, type Pose7,
+  type Mat4, type Pose7, type Vec3,
 } from "./pose";
 import type { KinNode, ResolvedJoint, ResolvedScene, ResolvedVisual } from "./resolve";
 import { e305, type SdfGeometry } from "./sdf";
+import { segmentAxis, segmentPlacement, snappedPlacements } from "./segment";
 
 /** Bytes of the GLB a scene's `<mesh><uri>` names. */
 export type MeshSource = (uri: string) => Promise<ArrayBufferView>;
@@ -61,6 +62,8 @@ const CYLINDER_TESSELLATION = 32;
 const CYLINDER_TO_Z: Mat4 = rotationX(Math.PI / 2);
 
 interface VisualRec {
+  /** Id of the visual's own kinematic node (its pose in the link). */
+  readonly id: string;
   readonly node: TransformNode;
   readonly link: string;
   readonly materials: Material[];
@@ -72,6 +75,12 @@ interface VisualRec {
   /** Modal coordinates a mode-shapes binding set last (gain applied, not exaggerated); empty at rest. */
   modes: readonly number[];
   shown: boolean;
+  /** A segment binding drew the bar broken and hidden. */
+  segmentHidden: boolean;
+  /** A segment binding drew the bar snapped: the twin shows the second stub. */
+  segmentSnapped: boolean;
+  /** The second stub of a snapped segment (a clone of the primitive), made on first use. */
+  twin: TransformNode | null;
 }
 
 /** What a visual with deformation bindings needs (from `beamConfigs`). */
@@ -149,7 +158,10 @@ export class BuiltScene {
     this.materials.push(...materials);
     const primitive = v.geometry.kind === "mesh" ? null : (geometry as Mesh);
     const morphs = v.geometry.kind === "mesh" ? morphManagers(geometry) : [];
-    this.visuals.set(v.ref, { node, link: v.link, materials, geometry: v.geometry, primitive, morphs, modes: [], shown: true });
+    this.visuals.set(v.ref, {
+      id: v.node, node, link: v.link, materials, geometry: v.geometry, primitive, morphs, modes: [], shown: true,
+      segmentHidden: false, segmentSnapped: false, twin: null,
+    });
   }
 
   /** @internal */
@@ -371,6 +383,59 @@ export class BuiltScene {
     return true;
   }
 
+  /**
+   * A bar between two world points (SDF world frame, m): the visual is centred between A and B, its `axis`
+   * (default per shape) turned onto B - A and stretched to |AB|. `broken` draws a failed bar: `snapped`
+   * as two drooping stubs from A and from B (the second is a clone of the primitive), `hidden` not at all.
+   * False when the visual is not a box or cylinder that fits the axis, or a point is not finite.
+   */
+  setSegment(ref: string, a: Vec3, b: Vec3, axis: ShapeAxis | undefined, broken: SegmentBrokenStyle | null): boolean {
+    const v = this.visuals.get(ref);
+    if (v === undefined || v.primitive === null || [...a, ...b].some((c) => !Number.isFinite(c))) return false;
+    const ax = segmentAxis(v.geometry, axis);
+    if (typeof ax === "string") return false;
+    const toParent = inverse(this.parentWorld(v.id));
+    const scaling = (s: number): [number, number, number] => {
+      const out: [number, number, number] = [1, 1, 1];
+      out[ax.index] = s;
+      return out;
+    };
+    if (broken === "snapped") {
+      const [first, second] = snappedPlacements(a, b, ax);
+      this.apply(v.id, compose(toParent, first.world));
+      v.node.scaling.set(...scaling(first.scale));
+      const twin = this.twinOf(ref, v);
+      setNodeMatrix(twin, compose(toParent, second.world));
+      twin.scaling.set(...scaling(second.scale));
+    } else {
+      const p = segmentPlacement(a, b, ax);
+      this.apply(v.id, compose(toParent, p.world));
+      v.node.scaling.set(...scaling(p.scale));
+    }
+    v.segmentHidden = broken === "hidden";
+    v.segmentSnapped = broken === "snapped";
+    this.refreshVisibility(v);
+    this.viewer.invalidate();
+    return true;
+  }
+
+  /** The second stub of a snapped segment: a sibling of the visual node holding a clone of its primitive. */
+  private twinOf(ref: string, v: VisualRec): TransformNode {
+    if (v.twin !== null) return v.twin;
+    const twin = new TransformNode(`${ref}:twin`, this.viewer.scene);
+    twin.parent = v.node.parent;
+    tagEntity(twin, ref);
+    twin.rotationQuaternion = new Quaternion();
+    v.primitive?.clone(`${ref}:twin-mesh`, twin);
+    v.twin = twin;
+    return twin;
+  }
+
+  /** The second stub of a snapped segment visual, for tests and overlays. */
+  segmentTwinOf(ref: string): TransformNode | null {
+    return this.visuals.get(ref)?.twin ?? null;
+  }
+
   /** Scale of a visual along its own axes. */
   setVisualScale(ref: string, sx: number, sy: number, sz: number): boolean {
     const v = this.visuals.get(ref);
@@ -411,7 +476,9 @@ export class BuiltScene {
   }
 
   private refreshVisibility(v: VisualRec): void {
-    v.node.setEnabled(v.shown && !this.hiddenLinks.has(v.link));
+    const shown = v.shown && !this.hiddenLinks.has(v.link) && !v.segmentHidden;
+    v.node.setEnabled(shown);
+    v.twin?.setEnabled(shown && v.segmentSnapped);
   }
 
   /** Back to the rest pose: joints at zero, link and frame poses as the file wrote them, visuals unscaled, shown and undeformed. */
@@ -423,6 +490,8 @@ export class BuiltScene {
     this.hiddenLinks.clear();
     for (const v of this.visuals.values()) {
       v.shown = true;
+      v.segmentHidden = false;
+      v.segmentSnapped = false;
       this.refreshVisibility(v);
       if (v.morphs.length > 0) {
         v.modes = [];
@@ -459,6 +528,7 @@ export class BuiltScene {
     }
     for (const m of this.materials) m.dispose();
     for (const rec of this.beams.values()) if (!rec.mesh.isDisposed()) rec.mesh.dispose();
+    for (const v of this.visuals.values()) if (v.twin !== null && !v.twin.isDisposed()) v.twin.dispose(false, false);
     this.beams.clear();
     this.nodes.clear();
     this.visuals.clear();
@@ -486,6 +556,15 @@ function morphManagers(root: TransformNode): MorphTargetManager[] {
     if (!out.includes(m)) out.push(m);
   }
   return out;
+}
+
+/** Sets a plain node (not in the kinematic maps) to a rigid transform. */
+function setNodeMatrix(node: TransformNode, m: Mat4): void {
+  const p = positionOf(m);
+  const q = quaternionOf(m);
+  node.position.set(p[0], p[1], p[2]);
+  const r = node.rotationQuaternion ?? (node.rotationQuaternion = new Quaternion());
+  r.set(q[1], q[2], q[3], q[0]);
 }
 
 function clamp01(v: number): number {

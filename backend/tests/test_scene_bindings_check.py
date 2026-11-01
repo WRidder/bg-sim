@@ -167,6 +167,51 @@ def test_deformation_needs_a_beam_shape(runner, tmp_path):
     assert "a sphere is not a beam" in results[0][2]
 
 
+def _segment(**over):
+    return {"target": "visual:bar_box", "property": "segment", "signal": ["x", "x", "s", "s"], **over}
+
+
+def test_segment_bindings_pass(runner, tmp_path):
+    bindings = [_segment(broken="s", brokenStyle="hidden"), _segment(signal=["x"] * 6, axis="-y")]
+    results = _check(runner, _run(tmp_path, bindings))
+    assert [r[0] for r in results] == [True], results
+    assert "2 binding(s) (0 joint position, 0 pose, 2 visual)" in results[0][2]
+
+
+@pytest.mark.parametrize(
+    ("bindings", "fragment"),
+    [
+        ([_segment(target="visual:nope")], "no visual named 'nope'"),
+        ([_segment(signal=["x", "x"])], "needs 4 (planar) or 6 (spatial)"),
+        ([_segment(signal="x")], "needs 4 (planar) or 6 (spatial)"),
+        ([_segment(signal=["x", "q", "x", "x"])], "is not a length"),
+        ([_segment(broken="nope")], "unknown broken signal 'nope'"),
+    ],
+)
+def test_each_segment_mistake_fails(runner, tmp_path, bindings, fragment):
+    results = _check(runner, _run(tmp_path, bindings))
+    assert results[0][0] is False
+    assert fragment in results[0][2]
+
+
+def test_segment_needs_a_box_or_cylinder(runner, tmp_path):
+    run = _run(tmp_path, [_segment()])
+    (tmp_path / "scenes" / "a.sdf").write_text(
+        SDF.replace("<box><size>1 1 1</size></box></geometry></visual></link>\n  <link name=\"slider\">", "<cylinder><radius>0.1</radius><length>1</length></cylinder></geometry></visual></link>\n  <link name=\"slider\">"),
+        encoding="utf-8",
+    )
+    results = _check(runner, run)
+    assert results[0][0] is True, results
+    results = _check(runner, _run_with(run, [_segment(axis="+x")]))
+    assert results[0][0] is False
+    assert "own axis only" in results[0][2]
+
+
+def _run_with(run, bindings):
+    run.model_document["bindings"] = bindings
+    return run
+
+
 def test_model_without_scene_fails(runner, tmp_path):
     run = _run(tmp_path, GOOD)
     run.model_document["scene"] = None

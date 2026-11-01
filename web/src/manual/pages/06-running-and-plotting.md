@@ -49,7 +49,19 @@ Models with a 3D scene show it in the **3D View** tab. The scene follows the run
 - Drag to orbit, right-drag to pan, scroll to zoom.
 - The toolbar has **Isometric**, **Top**, **Front** and **Side** views, an **Orthographic projection** toggle, **Fit the scene in the view**, **Full screen** (with the playback bar; `Esc` exits) and **Detach** (a separate window).
 - The playback bar replays the run: **Play**/**Pause** (`Space` when the 3D view has focus), **Rewind to start**, **Speed** (0.1× to 4×), **Loop** and a time slider.
-- **Bindings** opens the bindings table. Each row binds a scene object's property (position, pose, scale, colour, visibility, deformation or mode shapes) to a signal, with a gain and an offset. **Add binding** adds a row.
+- **Bindings** opens the bindings table. Each row binds a scene object's property (position, pose, scale, colour, visibility, deformation, mode shapes or segment) to a signal, with a gain and an offset. **Add binding** adds a row.
+
+### Bars between two points (segment bindings)
+
+A **segment** binding draws a box or cylinder as a bar between two moving points, for example a truss member between its two nodes. The visual is placed midway between the points, turned along the line between them and stretched to their distance. Its cross-section keeps its size.
+
+1. In **Bindings**, pick the property **segment** and a box or cylinder as target.
+2. Pick the **end points**: `planar` takes four signals (u and v of end A, then of end B), `spatial` takes six (x, y, z of A, then of B). The positions are in m, in the world frame of the scene.
+3. For planar points, set the **plane**: `xz` (the default) puts (u, v) at world (u, depth, v), so the model's y axis points up. `xy` and `yz` are the other planes. **depth** is the third coordinate, for example the y of one of two parallel trusses.
+4. **axis** is the visual's direction that runs from A to B. By default it is a cylinder's own axis (+z) and a box's +x. A cylinder can only stretch along its own axis.
+5. **broken** (optional) is a signal that marks a failed bar when it is above 0.5. A broken bar is drawn **snapped** (two short stubs that hang from the end points, with a gap between them) or **hidden**.
+
+**Gain** and **offset** apply to every coordinate, not to the depth. The binding table reports a sphere, a mesh or a cylinder stretched across its axis as E301, a count other than 4 or 6 as E304, and a coordinate that is not a length as E303.
 
 ### Elastic beams (deformation bindings)
 

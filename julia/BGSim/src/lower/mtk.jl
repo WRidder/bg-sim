@@ -371,13 +371,26 @@ function lower_flat(flat::Flat.FlatModel)
         for c in nonsmooth_conditions(flat)
             ctx.origin = nothing
             ctx.event_values = nothing
-            push!(kinks, SymbolicContinuousCallback(lower_expression(c, ctx) ~ 0))
+            condition = lower_expression(c, ctx)
+            # A condition with no symbol at all (an `ifelse` on constants, such as the
+            # connectivity matrix of `Truss2D`) can never cross zero. Its callback would only
+            # cost time, and one that is identically zero can trap the root finder.
+            _constant_condition(condition) && continue
+            push!(kinks, SymbolicContinuousCallback(condition ~ 0))
         end
     end
     events = vcat(affects, kinks)
 
     return (; vars, params, eqs, initial, events, affects, kinks,
         int_states = ctx.int_states, ctx)
+end
+
+"""True when a lowered switching condition holds no variable, parameter or `t`."""
+function _constant_condition(x)
+    # `Num` is itself a `Number`: unwrap first, so only a plain literal counts as constant
+    raw = Symbolics.unwrap(x)
+    raw isa Number && return true
+    return isempty(Symbolics.get_variables(raw))
 end
 
 # ---------------------------------------------------------------------------------------

@@ -1,0 +1,1704 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "bridge-failure",
+  "$comment": "The second diagonal is undersized (1.4 x the quasi-static force of a 20 t lorry): it holds the 20 t lorry at any speed, but an overloaded 40 t lorry at 15 m/s snaps it and the bridge folds.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n01",
+        "name": "Truss",
+        "block": {
+          "ref": "stdlib:planar/Truss2D"
+        },
+        "position": {
+          "x": 300,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "xy": "[-40.0 0.0; -1.0 -0.06; 0.0 0.0; 5.0 0.0; 10.0 0.0; 15.0 0.0; 20.0 0.0; 25.0 0.0; 30.0 0.0; 70.0 0.0; 2.5 4.0; 7.5 4.0; 12.5 4.0; 17.5 4.0; 22.5 4.0; 27.5 4.0]",
+          "A": "[0.003, 0.003, 0.003, 0.003, 0.003, 0.003, 0.004, 0.004, 0.004, 0.004, 0.004, 0.002, 0.0006778642699114586, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002]",
+          "I": "[1.5e-05, 1.5e-05, 1.5e-05, 1.5e-05, 1.5e-05, 1.5e-05, 3e-05, 3e-05, 3e-05, 3e-05, 3e-05, 6e-06, 6e-06, 6e-06, 6e-06, 6e-06, 6e-06, 6e-06, 6e-06, 6e-06, 6e-06, 6e-06, 6e-06]",
+          "mn": "[1.0, 1.0, 1250.0, 2500.0, 2500.0, 2500.0, 2500.0, 2500.0, 1250.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]",
+          "beta": "0.001",
+          "E": "210000000000.0",
+          "rho": "7850.0",
+          "fy": "355000000.0",
+          "K": "1.0",
+          "g0": "9.81"
+        },
+        "constants": {
+          "nn": "16",
+          "nb": "23",
+          "conn": "[3 4; 4 5; 5 6; 6 7; 7 8; 8 9; 11 12; 12 13; 13 14; 14 15; 15 16; 3 11; 11 4; 4 12; 12 5; 5 13; 13 6; 6 14; 14 7; 7 15; 15 8; 8 16; 16 9]",
+          "fix": "[1 1; 1 1; 1 1; 0 0; 0 0; 0 0; 0 0; 0 0; 0 1; 1 1; 0 0; 0 0; 0 0; 0 0; 0 0; 0 0]"
+        },
+        "starts": {
+          "ux": "[0.0, 0.0, 0.0, 0.00035737339185537136, 0.0012836612871237575, 0.0024944064340986522, 0.0037051515810735476, 0.004631439476341938, 0.004988812868197315, 0.0, 0.004353994899538682, 0.0038235024521425516, 0.0029729955965766006, 0.002015817271620708, 0.0011653104160547567, 0.0006348179686586265]",
+          "uy": "[0.0, 0.0, 0.0, -0.007446207058561709, -0.0125433978498318, -0.014346169819939828, -0.012543397849831802, -0.007446207058561714, 0.0, 0.0, -0.0038464695299308504, -0.01030196783551755, -0.013840842107364896, -0.013840842107364896, -0.010301967835517555, -0.003846469529930855]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n02",
+        "name": "Truck",
+        "block": {
+          "ref": "project:Truck2D"
+        },
+        "position": {
+          "x": 40,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "m_truck/2",
+          "J": "m_truck/2*5.854166666666667",
+          "g0": "9.81",
+          "x0": "x_start",
+          "y0": "y_start - m_truck/2*9.81/(2*k_tyre)",
+          "rx": "[2.0, -2.0]",
+          "ry": "[-1.0, -1.0]",
+          "r": "0.5",
+          "k": "k_tyre",
+          "c": "20000.0",
+          "v_set": "v_truck",
+          "tau": "0.5",
+          "depth": "-1.75"
+        },
+        "constants": {
+          "nn": "16",
+          "nd": "10"
+        },
+        "starts": {
+          "body/inertia/P": "[0.0, m_truck/2*v_truck, 0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n03",
+        "name": "Midspan",
+        "block": {
+          "ref": "stdlib:continuous/Select"
+        },
+        "position": {
+          "x": 300,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "N": "16",
+          "index": "6"
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n04",
+        "name": "Drop",
+        "block": {
+          "ref": "stdlib:continuous/Gain"
+        },
+        "position": {
+          "x": 460,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "-1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n05",
+        "name": "Collapsed",
+        "block": {
+          "ref": "stdlib:sources/StopSimulation"
+        },
+        "position": {
+          "x": 620,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "threshold": "3.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c001",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "x"
+        },
+        "to": {
+          "node": "n02",
+          "port": "x"
+        },
+        "label": null
+      },
+      {
+        "id": "c002",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n02",
+          "port": "y"
+        },
+        "label": null
+      },
+      {
+        "id": "c003",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "xd"
+        },
+        "to": {
+          "node": "n02",
+          "port": "xd"
+        },
+        "label": null
+      },
+      {
+        "id": "c004",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "yd"
+        },
+        "to": {
+          "node": "n02",
+          "port": "yd"
+        },
+        "label": null
+      },
+      {
+        "id": "c005",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "Fx"
+        },
+        "to": {
+          "node": "n01",
+          "port": "Fx"
+        },
+        "label": null
+      },
+      {
+        "id": "c006",
+        "kind": "signal",
+        "from": {
+          "node": "n02",
+          "port": "Fy"
+        },
+        "to": {
+          "node": "n01",
+          "port": "Fy"
+        },
+        "label": null
+      },
+      {
+        "id": "c007",
+        "kind": "signal",
+        "from": {
+          "node": "n01",
+          "port": "y"
+        },
+        "to": {
+          "node": "n03",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c008",
+        "kind": "signal",
+        "from": {
+          "node": "n03",
+          "port": "y"
+        },
+        "to": {
+          "node": "n04",
+          "port": "u"
+        },
+        "label": null
+      },
+      {
+        "id": "c009",
+        "kind": "signal",
+        "from": {
+          "node": "n04",
+          "port": "y"
+        },
+        "to": {
+          "node": "n05",
+          "port": "u"
+        },
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 4.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-06,
+    "abstol": 1e-08,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 1601
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Member forces [N]",
+      "signals": [
+        "Truss/N[3]",
+        "Truss/N[9]",
+        "Truss/N[12]",
+        "Truss/N[13]",
+        "Truss/N[17]"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Utilisation of the second diagonal",
+      "signals": [
+        "Truss/util[13]"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Midspan deflection [m]",
+      "signals": [
+        "Truss/y[6]"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Lorry: speed and axle loads",
+      "signals": [
+        "Truck/v",
+        "Truck/fn[1]",
+        "Truck/fn[2]"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Failed bars",
+      "signals": [
+        "Truss/nfail"
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "name": "v_truck",
+      "value": "15.0",
+      "unit": "m/s",
+      "description": "Lorry speed"
+    },
+    {
+      "name": "m_truck",
+      "value": "40000.0",
+      "unit": "kg",
+      "description": "Lorry mass (both trusses; each carries half)"
+    },
+    {
+      "name": "k_tyre",
+      "value": "1500000.0",
+      "unit": "N/m",
+      "description": "Tyre stiffness per axle and truss"
+    },
+    {
+      "name": "x_start",
+      "value": "-25.0",
+      "unit": "m",
+      "description": "Start position of the lorry's centre of mass"
+    },
+    {
+      "name": "y_start",
+      "value": "1.476923076923077",
+      "unit": "m",
+      "description": "Centre-of-mass height over the unloaded tyres at the start"
+    }
+  ],
+  "scene": {
+    "file": "scenes/bridge.sdf"
+  },
+  "bindings": [
+    {
+      "target": "visual:bar_l_01",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[4]",
+        "Truss/y[4]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[1]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_01",
+      "property": "color",
+      "signal": "Truss/util[1]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_02",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[2]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_02",
+      "property": "color",
+      "signal": "Truss/util[2]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_03",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[6]",
+        "Truss/y[6]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[3]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_03",
+      "property": "color",
+      "signal": "Truss/util[3]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_04",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[4]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_04",
+      "property": "color",
+      "signal": "Truss/util[4]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_05",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[5]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_05",
+      "property": "color",
+      "signal": "Truss/util[5]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_06",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[6]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_06",
+      "property": "color",
+      "signal": "Truss/util[6]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_07",
+      "property": "segment",
+      "signal": [
+        "Truss/x[11]",
+        "Truss/y[11]",
+        "Truss/x[12]",
+        "Truss/y[12]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[7]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_07",
+      "property": "color",
+      "signal": "Truss/util[7]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_08",
+      "property": "segment",
+      "signal": [
+        "Truss/x[12]",
+        "Truss/y[12]",
+        "Truss/x[13]",
+        "Truss/y[13]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[8]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_08",
+      "property": "color",
+      "signal": "Truss/util[8]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_09",
+      "property": "segment",
+      "signal": [
+        "Truss/x[13]",
+        "Truss/y[13]",
+        "Truss/x[14]",
+        "Truss/y[14]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[9]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_09",
+      "property": "color",
+      "signal": "Truss/util[9]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_10",
+      "property": "segment",
+      "signal": [
+        "Truss/x[14]",
+        "Truss/y[14]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[10]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_10",
+      "property": "color",
+      "signal": "Truss/util[10]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_11",
+      "property": "segment",
+      "signal": [
+        "Truss/x[15]",
+        "Truss/y[15]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[11]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_11",
+      "property": "color",
+      "signal": "Truss/util[11]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_12",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[11]",
+        "Truss/y[11]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[12]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_12",
+      "property": "color",
+      "signal": "Truss/util[12]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_13",
+      "property": "segment",
+      "signal": [
+        "Truss/x[11]",
+        "Truss/y[11]",
+        "Truss/x[4]",
+        "Truss/y[4]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[13]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_13",
+      "property": "color",
+      "signal": "Truss/util[13]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_14",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[12]",
+        "Truss/y[12]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[14]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_14",
+      "property": "color",
+      "signal": "Truss/util[14]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_15",
+      "property": "segment",
+      "signal": [
+        "Truss/x[12]",
+        "Truss/y[12]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[15]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_15",
+      "property": "color",
+      "signal": "Truss/util[15]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_16",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[13]",
+        "Truss/y[13]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[16]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_16",
+      "property": "color",
+      "signal": "Truss/util[16]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_17",
+      "property": "segment",
+      "signal": [
+        "Truss/x[13]",
+        "Truss/y[13]",
+        "Truss/x[6]",
+        "Truss/y[6]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[17]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_17",
+      "property": "color",
+      "signal": "Truss/util[17]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_18",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[14]",
+        "Truss/y[14]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[18]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_18",
+      "property": "color",
+      "signal": "Truss/util[18]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_19",
+      "property": "segment",
+      "signal": [
+        "Truss/x[14]",
+        "Truss/y[14]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[19]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_19",
+      "property": "color",
+      "signal": "Truss/util[19]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_20",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[20]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_20",
+      "property": "color",
+      "signal": "Truss/util[20]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_21",
+      "property": "segment",
+      "signal": [
+        "Truss/x[15]",
+        "Truss/y[15]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[21]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_21",
+      "property": "color",
+      "signal": "Truss/util[21]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_22",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[22]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_22",
+      "property": "color",
+      "signal": "Truss/util[22]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_l_23",
+      "property": "segment",
+      "signal": [
+        "Truss/x[16]",
+        "Truss/y[16]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": 3.6,
+      "broken": "Truss/failed[23]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_l_23",
+      "property": "color",
+      "signal": "Truss/util[23]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_01",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[4]",
+        "Truss/y[4]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[1]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_01",
+      "property": "color",
+      "signal": "Truss/util[1]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_02",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[2]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_02",
+      "property": "color",
+      "signal": "Truss/util[2]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_03",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[6]",
+        "Truss/y[6]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[3]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_03",
+      "property": "color",
+      "signal": "Truss/util[3]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_04",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[4]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_04",
+      "property": "color",
+      "signal": "Truss/util[4]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_05",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[5]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_05",
+      "property": "color",
+      "signal": "Truss/util[5]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_06",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[6]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_06",
+      "property": "color",
+      "signal": "Truss/util[6]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_07",
+      "property": "segment",
+      "signal": [
+        "Truss/x[11]",
+        "Truss/y[11]",
+        "Truss/x[12]",
+        "Truss/y[12]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[7]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_07",
+      "property": "color",
+      "signal": "Truss/util[7]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_08",
+      "property": "segment",
+      "signal": [
+        "Truss/x[12]",
+        "Truss/y[12]",
+        "Truss/x[13]",
+        "Truss/y[13]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[8]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_08",
+      "property": "color",
+      "signal": "Truss/util[8]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_09",
+      "property": "segment",
+      "signal": [
+        "Truss/x[13]",
+        "Truss/y[13]",
+        "Truss/x[14]",
+        "Truss/y[14]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[9]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_09",
+      "property": "color",
+      "signal": "Truss/util[9]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_10",
+      "property": "segment",
+      "signal": [
+        "Truss/x[14]",
+        "Truss/y[14]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[10]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_10",
+      "property": "color",
+      "signal": "Truss/util[10]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_11",
+      "property": "segment",
+      "signal": [
+        "Truss/x[15]",
+        "Truss/y[15]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[11]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_11",
+      "property": "color",
+      "signal": "Truss/util[11]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_12",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[11]",
+        "Truss/y[11]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[12]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_12",
+      "property": "color",
+      "signal": "Truss/util[12]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_13",
+      "property": "segment",
+      "signal": [
+        "Truss/x[11]",
+        "Truss/y[11]",
+        "Truss/x[4]",
+        "Truss/y[4]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[13]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_13",
+      "property": "color",
+      "signal": "Truss/util[13]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_14",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[12]",
+        "Truss/y[12]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[14]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_14",
+      "property": "color",
+      "signal": "Truss/util[14]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_15",
+      "property": "segment",
+      "signal": [
+        "Truss/x[12]",
+        "Truss/y[12]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[15]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_15",
+      "property": "color",
+      "signal": "Truss/util[15]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_16",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[13]",
+        "Truss/y[13]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[16]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_16",
+      "property": "color",
+      "signal": "Truss/util[16]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_17",
+      "property": "segment",
+      "signal": [
+        "Truss/x[13]",
+        "Truss/y[13]",
+        "Truss/x[6]",
+        "Truss/y[6]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[17]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_17",
+      "property": "color",
+      "signal": "Truss/util[17]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_18",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[14]",
+        "Truss/y[14]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[18]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_18",
+      "property": "color",
+      "signal": "Truss/util[18]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_19",
+      "property": "segment",
+      "signal": [
+        "Truss/x[14]",
+        "Truss/y[14]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[19]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_19",
+      "property": "color",
+      "signal": "Truss/util[19]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_20",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[15]",
+        "Truss/y[15]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[20]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_20",
+      "property": "color",
+      "signal": "Truss/util[20]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_21",
+      "property": "segment",
+      "signal": [
+        "Truss/x[15]",
+        "Truss/y[15]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[21]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_21",
+      "property": "color",
+      "signal": "Truss/util[21]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_22",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[16]",
+        "Truss/y[16]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[22]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_22",
+      "property": "color",
+      "signal": "Truss/util[22]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:bar_r_23",
+      "property": "segment",
+      "signal": [
+        "Truss/x[16]",
+        "Truss/y[16]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": -3.6,
+      "broken": "Truss/failed[23]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_r_23",
+      "property": "color",
+      "signal": "Truss/util[23]",
+      "colormap": "coolwarm",
+      "range": [
+        -1.0,
+        1.0
+      ]
+    },
+    {
+      "target": "visual:deck_1",
+      "property": "segment",
+      "signal": [
+        "Truss/x[3]",
+        "Truss/y[3]",
+        "Truss/x[4]",
+        "Truss/y[4]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_2",
+      "property": "segment",
+      "signal": [
+        "Truss/x[4]",
+        "Truss/y[4]",
+        "Truss/x[5]",
+        "Truss/y[5]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_3",
+      "property": "segment",
+      "signal": [
+        "Truss/x[5]",
+        "Truss/y[5]",
+        "Truss/x[6]",
+        "Truss/y[6]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_4",
+      "property": "segment",
+      "signal": [
+        "Truss/x[6]",
+        "Truss/y[6]",
+        "Truss/x[7]",
+        "Truss/y[7]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_5",
+      "property": "segment",
+      "signal": [
+        "Truss/x[7]",
+        "Truss/y[7]",
+        "Truss/x[8]",
+        "Truss/y[8]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "visual:deck_6",
+      "property": "segment",
+      "signal": [
+        "Truss/x[8]",
+        "Truss/y[8]",
+        "Truss/x[9]",
+        "Truss/y[9]"
+      ],
+      "plane": "xz",
+      "depth": 0.0,
+      "axis": "+x"
+    },
+    {
+      "target": "link:truck",
+      "property": "pose",
+      "signal": [
+        "Truck/q[1]",
+        "Truck/q[2]",
+        "Truck/q[3]",
+        "Truck/q[4]",
+        "Truck/q[5]",
+        "Truck/q[6]",
+        "Truck/q[7]"
+      ]
+    },
+    {
+      "target": "joint:axle_fl",
+      "property": "position",
+      "signal": "Truck/wheel"
+    },
+    {
+      "target": "joint:axle_fr",
+      "property": "position",
+      "signal": "Truck/wheel"
+    },
+    {
+      "target": "joint:axle_rl",
+      "property": "position",
+      "signal": "Truck/wheel"
+    },
+    {
+      "target": "joint:axle_rr",
+      "property": "position",
+      "signal": "Truck/wheel"
+    }
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "d1",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Bridge",
+        "options": {
+          "markdown": true,
+          "text": "An overloaded 40 t lorry crosses the truss bridge. The second diagonal from the left is **undersized**: it holds a 20 t lorry at any speed, but not this one. The settled approach slab makes the lorry bounce, which adds to the load. Move the **speed** or the **mass** and the model runs again."
+        }
+      },
+      {
+        "id": "d2",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Lorry speed",
+        "parameter": "global:v_truck",
+        "options": {
+          "min": 2.0,
+          "max": 30.0,
+          "step": 0.5,
+          "decimals": 1,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "d3",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Lorry mass",
+        "parameter": "global:m_truck",
+        "options": {
+          "min": 5000.0,
+          "max": 50000.0,
+          "step": 1000.0,
+          "decimals": 0,
+          "unit": "kg"
+        }
+      },
+      {
+        "id": "d4",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Diagonal 13 utilisation",
+        "signals": [
+          "Truss/util[13]"
+        ],
+        "options": {
+          "min": -1.0,
+          "max": 1.2,
+          "decimals": 2,
+          "unit": "",
+          "zones": [
+            {
+              "from": -1.0,
+              "to": 0.8,
+              "tone": "good"
+            },
+            {
+              "from": 0.8,
+              "to": 1.0,
+              "tone": "warn"
+            },
+            {
+              "from": 1.0,
+              "to": 1.2,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "d5",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Failed bars",
+        "signals": [
+          "Truss/nfail"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": ""
+        }
+      },
+      {
+        "id": "d6",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Member forces",
+        "signals": [
+          "Truss/N[3]",
+          "Truss/N[9]",
+          "Truss/N[12]",
+          "Truss/N[13]",
+          "Truss/N[17]"
+        ]
+      },
+      {
+        "id": "d7",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Midspan deflection",
+        "signals": [
+          "Truss/y[6]"
+        ]
+      },
+      {
+        "id": "d8",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Lorry axle loads",
+        "signals": [
+          "Truck/fn[1]",
+          "Truck/fn[2]"
+        ]
+      }
+    ]
+  }
+}

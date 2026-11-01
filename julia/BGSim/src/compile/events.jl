@@ -200,8 +200,9 @@ function _qualify_target(q::QCtx, st::BlockState, target::BGSim.Expr)
         r = BGSim.expr_range(target)
         return QValue(shape, BGSim.Expr[BGSim.Name(Symbol(id), r) for id in ids])
     elseif target isa BGSim.Index
-        value = _qualify(plain, target)
-        return value
+        # the index may read `for` loop variables (`reinit(broken[k], 1.0)`): resolve them through
+        # the event locals; the base is a declaration, so no temporary shadows it
+        return _qualify(isempty(q.locals) ? plain : q, target)
     end
     return nothing
 end
@@ -466,7 +467,45 @@ function collect_events!(b::Builder)
 end
 
 function _collect_event!(out, b::Builder, st::BlockState, ev::BGSim.EventDecl)
-    q = QCtx(b, st, Dict{Symbol,QValue}())
+    isempty(ev.loops) && return _collect_event!(out, b, st, ev, Dict{Symbol,BGSim.Expr}())
+    return _collect_event_loop!(out, b, st, ev, 1, Dict{Symbol,BGSim.Expr}())
+end
+
+# Unroll the `for` headers around an entry, outermost first: one event per combination.
+function _collect_event_loop!(out, b::Builder, st::BlockState, ev::BGSim.EventDecl, level::Int,
+    loopvars::Dict{Symbol,BGSim.Expr})
+    level > length(ev.loops) && return _collect_event!(out, b, st, ev, copy(loopvars))
+    loop = ev.loops[level]
+    ok_lo, lo = BGSim.try_eval_const(loop.lo, st.consts)
+    ok_hi, hi = BGSim.try_eval_const(loop.hi, st.consts)
+    step = 1
+    if loop.step !== nothing
+        ok_step, s = BGSim.try_eval_const(loop.step, st.consts)
+        step = ok_step && s isa Integer ? Int(s) : 0
+    end
+    if !(ok_lo && ok_hi && lo isa Integer && hi isa Integer && step != 0)
+        _report!(
+            b, st;
+            code = "E005",
+            message = "the bounds of `for $(loop.var)` in `@events` must be constant integers",
+            range = loop.range,
+            scope = "@events",
+            hint = "use literals or `@constants`; a size depending on a parameter is not static",
+        )
+        return nothing
+    end
+    for i in collect(Int(lo):step:Int(hi))
+        loopvars[loop.var] = BGSim.Lit(i, loop.range)
+        _collect_event_loop!(out, b, st, ev, level + 1, loopvars)
+    end
+    delete!(loopvars, loop.var)
+    return nothing
+end
+
+function _collect_event!(out, b::Builder, st::BlockState, ev::BGSim.EventDecl,
+    loopvars::Dict{Symbol,BGSim.Expr})
+    q = QCtx(b, st, Dict{Symbol,QValue}(name => QValue((), BGSim.Expr[value])
+                                       for (name, value) in loopvars))
     zero = _qualify(q, BGSim.event_zero_crossing(ev))
     cond = _qualify(q, BGSim.event_condition(ev))
     if zero === nothing || cond === nothing
@@ -483,6 +522,7 @@ function _collect_event!(out, b::Builder, st::BlockState, ev::BGSim.EventDecl)
         return nothing
     end
     env = EventEnv()
+    merge!(env.loopvars, loopvars)
     _walk_event_body!(env, b, st, ev.body) || return nothing
     actions = Pair{String,BGSim.Expr}[]
     for id in env.order
@@ -579,16 +619,27 @@ function _collect_condition_zeros!(out::Vector{BGSim.Expr}, c::BGSim.Expr)
     return out
 end
 
+# A condition-only callback fires on both edges, so `a - b` and `b - a` are the same kink
+# (`x >= 0` and `x < 0` in one model give exactly that pair). Keep only the first: two
+# callbacks whose conditions are exact negatives of each other trap the integrator inside
+# `step!` (neither progress nor cancel is reached again).
+function _push_kink!(out::Vector{BGSim.Expr}, seen::Set{String}, c::BGSim.Expr)
+    key = sprint(show, c)
+    key in seen && return out
+    if c isa BGSim.BinOp && c.op === :-
+        sprint(show, BGSim.BinOp(:-, c.rhs, c.lhs, c.range)) in seen && return out
+    end
+    push!(seen, key)
+    push!(out, c)
+    return out
+end
+
 function _walk_nonsmooth!(out::Vector{BGSim.Expr}, seen::Set{String}, e::BGSim.Expr)
     if e isa BGSim.Call
         fn = e.fn.name
         if fn in NONSMOOTH_CALLS
             for c in _nonsmooth_zero_conditions(fn, e.args, e.range)
-                key = sprint(show, c)
-                if !(key in seen)
-                    push!(seen, key)
-                    push!(out, c)
-                end
+                _push_kink!(out, seen, c)
             end
         end
         for a in e.args
@@ -598,11 +649,7 @@ function _walk_nonsmooth!(out::Vector{BGSim.Expr}, seen::Set{String}, e::BGSim.E
         # The zero crossings found above must also be deduplicated; collect them through the
         # same set by re-walking the condition as if it were an `ifelse` call.
         for c in _nonsmooth_zero_conditions(:ifelse, BGSim.Expr[e.cond, e.then, e.otherwise], e.range)
-            key = sprint(show, c)
-            if !(key in seen)
-                push!(seen, key)
-                push!(out, c)
-            end
+            _push_kink!(out, seen, c)
         end
         _walk_nonsmooth!(out, seen, e.then)
         _walk_nonsmooth!(out, seen, e.otherwise)

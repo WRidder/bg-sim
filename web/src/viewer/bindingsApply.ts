@@ -8,11 +8,13 @@
  * influences of the visual's mesh (times the exaggeration).
  */
 
-import type { Binding, DeformationBinding } from "../contracts/model";
+import type { Binding, DeformationBinding, SegmentBinding, SegmentBrokenStyle, ShapeAxis } from "../contracts/model";
 import type { BeamConfig } from "../scene/build";
+import type { Vec3 } from "../scene/pose";
+import { planarPoint } from "../scene/segment";
 import type { ModalSet } from "./beamModes";
 import { colormapColor } from "./bindingsColormaps";
-import { signalCount, signalsOf } from "./bindingsValidate";
+import { allSignalsOf, signalCountOk, signalsOf } from "./bindingsValidate";
 import { normalizeQuat, type SignalBuffer } from "./timeline";
 
 /** The setters of `BuiltScene` the applier uses. */
@@ -28,6 +30,8 @@ export interface ApplyTarget {
   setDeformation?(ref: string, sets: readonly ModalSet[]): boolean;
   /** Modal coordinates of a mesh visual with morph targets, in morph-target order (gain applied, not exaggerated). */
   setModeShapes?(ref: string, eta: readonly number[]): boolean;
+  /** A bar between two world points (segment binding); `broken` draws a failed bar. */
+  setSegment?(ref: string, a: Vec3, b: Vec3, axis: ShapeAxis | undefined, broken: SegmentBrokenStyle | null): boolean;
   /** Back to the rest pose. */
   reset(): void;
 }
@@ -52,7 +56,7 @@ export function beamConfigs(bindings: readonly Binding[]): Map<string, BeamConfi
 /** The distinct signal ids of the bindings, in first-use order: the ids to request from the stream. */
 export function boundSignalIds(bindings: readonly Binding[]): string[] {
   const seen = new Set<string>();
-  for (const b of bindings) for (const s of signalsOf(b)) seen.add(s);
+  for (const b of bindings) for (const s of allSignalsOf(b)) seen.add(s);
   return [...seen];
 }
 
@@ -90,10 +94,10 @@ export class BindingApplier {
     ids: readonly string[],
   ) {
     for (const binding of bindings) {
-      const names = signalsOf(binding);
+      const names = allSignalsOf(binding);
       const cols = names.map((n) => ids.indexOf(n));
-      const [min, max] = signalCount(binding.property, binding.property === "deformation" ? binding.basis : undefined);
-      if (names.length < min || names.length > max || cols.some((c) => c < 0)) continue;
+      const basis = binding.property === "deformation" ? binding.basis : undefined;
+      if (!signalCountOk(binding.property, signalsOf(binding).length, basis) || cols.some((c) => c < 0)) continue;
       this.compiled.push({ binding, cols });
     }
   }
@@ -179,6 +183,14 @@ export class BindingApplier {
           n++;
           break;
         }
+        case "segment": {
+          const seg = segmentEnds(binding, cols.map((c) => buffer.valueAt(c, t)));
+          if (seg === null) break;
+          this.scene.setSegment?.(binding.target, seg.a, seg.b, binding.axis, seg.broken);
+          this.applied.set(binding.target, seg.broken === null ? 0 : 1);
+          n++;
+          break;
+        }
       }
     }
     for (const [target, s] of this.scales) this.scene.setVisualScale(target, s[0], s[1], s[2]);
@@ -186,6 +198,37 @@ export class BindingApplier {
     for (const [target, eta] of this.modeShapes) this.scene.setModeShapes?.(target, eta);
     return n;
   }
+}
+
+/**
+ * The world end points of a segment binding from its sampled signals (positions first, then the optional
+ * broken flag): planar (u, v) pairs go through `plane` and `depth`, `gain` and `offset` apply to every
+ * coordinate (not to the depth). Null when a sample is missing.
+ */
+export function segmentEnds(binding: SegmentBinding, values: readonly (number | null)[]): { a: Vec3; b: Vec3; broken: SegmentBrokenStyle | null } | null {
+  const n = binding.signal.length;
+  const coords: number[] = [];
+  for (let k = 0; k < n; k++) {
+    const v = values[k];
+    if (v === null || v === undefined) return null;
+    coords.push(gainOffset(v, binding));
+  }
+  const c = (k: number): number => coords[k] ?? 0;
+  let a: Vec3;
+  let b: Vec3;
+  if (n === 4) {
+    a = planarPoint(c(0), c(1), binding.plane, binding.depth ?? 0);
+    b = planarPoint(c(2), c(3), binding.plane, binding.depth ?? 0);
+  } else {
+    a = [c(0), c(1), c(2)];
+    b = [c(3), c(4), c(5)];
+  }
+  let broken: SegmentBrokenStyle | null = null;
+  if (binding.broken !== undefined) {
+    const f = values[n];
+    if (f !== null && f !== undefined && f > 0.5) broken = binding.brokenStyle ?? "snapped";
+  }
+  return { a, b, broken };
 }
 
 /** The sampled values times `gain`, or null when a sample is missing. */

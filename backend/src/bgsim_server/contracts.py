@@ -19,6 +19,17 @@ from pydantic import (
 )
 
 
+class SegmentPlane(Enum):
+    xy = 'xy'
+    xz = 'xz'
+    yz = 'yz'
+
+
+class SegmentBrokenStyle(Enum):
+    snapped = 'snapped'
+    hidden = 'hidden'
+
+
 class ScaleProperty(Enum):
     scale_x = 'scale.x'
     scale_y = 'scale.y'
@@ -1726,6 +1737,37 @@ class DebugResumedNotification(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class SegmentBinding(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    target: constr(pattern=r'^visual:[A-Za-z0-9_.-]+$')
+    property: Literal['segment']
+    signal: list[BindingSignal] = Field(
+        ...,
+        description='The end points, A then B, in metres in the world frame: 4 signals (uA, vA, uB, vB) for a planar model, mapped into the world by `plane` and `depth`, or 6 signals (xA, yA, zA, xB, yB, zB). The count is checked by the viewer (E304: 4 or 6).',
+        max_length=6,
+        min_length=4,
+    )
+    plane: SegmentPlane | None = None
+    depth: float | None = Field(
+        None,
+        description='Planar end points only: the world coordinate along the third axis (y for the xz plane), in m. Default 0.',
+    )
+    axis: ShapeAxis | None = None
+    broken: BindingSignal | None = None
+    brokenStyle: SegmentBrokenStyle | None = None
+    gain: float | None = Field(
+        None,
+        description='Multiplies every end point coordinate (default 1), for example 0.001 for coordinates in mm.',
+    )
+    offset: float | None = Field(
+        None,
+        description='Added to every end point coordinate after the gain (default 0).',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class JointPositionBinding(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2878,6 +2920,7 @@ class Binding(
         | VisibleBinding
         | DeformationBinding
         | ModeShapeBinding
+        | SegmentBinding
     ]
 ):
     root: (
@@ -2888,6 +2931,7 @@ class Binding(
         | VisibleBinding
         | DeformationBinding
         | ModeShapeBinding
+        | SegmentBinding
     ) = Field(
         ...,
         description='One binding: a scene target, a property, the signal(s) that drive it, and optional gain and offset.',

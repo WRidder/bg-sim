@@ -12,8 +12,12 @@
  *    evidence of a mismatch: it is unchecked for every target (angle, length, quaternion) and raises no E303.
  *    A physical unit that does not fit (`N`, `1` on a length, `m` on an angle) still raises E303.
  *  - E304 wrong signal count (pose needs exactly 7, deformation 1 to 3 modal coordinates, or exactly 1 with
- *    the `linear` basis, mode-shapes 1 to 64 and no more than its mesh has morph targets, every other
- *    property 1).
+ *    the `linear` basis, mode-shapes 1 to 64 and no more than its mesh has morph targets, segment 4 planar
+ *    or 6 spatial end-point coordinates, every other property 1).
+ *
+ * Segment bindings (a bar between two moving points) raise E301 when the visual cannot stretch along the
+ * segment axis (a sphere or mesh, a cylinder along anything but its own axis); their coordinates are
+ * lengths (m) for E303, and the optional `broken` flag is checked like any other signal for E302.
  *
  * Deformation bindings (elastic beams) also raise E301 when the visual is no beam (a sphere or mesh, a
  * cylinder bent across its own axis, a beam y along the beam axis), when a visual has two bindings of one
@@ -31,6 +35,7 @@
 import type { BeamMapping, Binding, DeformationBinding, ModeShapeBinding } from "../contracts/model";
 import type { Diagnostic } from "../contracts/diagnostic";
 import { beamFrame } from "../scene/beamMesh";
+import { segmentAxis } from "../scene/segment";
 import type { SdfGeometry } from "../scene/sdf";
 import { maxModes } from "./beamModes";
 
@@ -130,14 +135,22 @@ function unitProblem(need: Need, unit: string | null | undefined, gain: number):
   return `has ${describeUnit(unit)}, which is not a length in m`;
 }
 
-/** The signal ids of a binding, whatever its shape. */
+/** The signal ids of a binding's `signal` field, whatever its shape. */
 export function signalsOf(binding: Binding): string[] {
   const s: unknown = binding.signal;
   if (Array.isArray(s)) return s.filter((x): x is string => typeof x === "string");
   return typeof s === "string" && s !== "" ? [s] : [];
 }
 
-/** How many signals a property takes: [min, max] (a deformation: by its basis, `linear` takes one). */
+/** Every signal id a binding reads: its `signal` field, then a segment's `broken` flag. */
+export function allSignalsOf(binding: Binding): string[] {
+  const out = signalsOf(binding);
+  if (binding.property === "segment" && typeof binding.broken === "string" && binding.broken !== "") out.push(binding.broken);
+  return out;
+}
+
+/** How many signals a property takes: [min, max] (a deformation: by its basis, `linear` takes one; a
+ * segment takes 4 or 6, see `signalCountOk`). */
 export function signalCount(property: string, basis?: string): readonly [number, number] {
   switch (property) {
     case "pose":
@@ -146,14 +159,23 @@ export function signalCount(property: string, basis?: string): readonly [number,
       return [1, maxModes(basis === "linear" ? "linear" : "clamped-free")];
     case "mode-shapes":
       return [1, MAX_MESH_MODES];
+    case "segment":
+      return [4, 6];
     default:
       return [1, 1];
   }
 }
 
+/** True when `n` signals fit the property (a segment: 4 planar or 6 spatial coordinates). */
+export function signalCountOk(property: string, n: number, basis?: string): boolean {
+  if (property === "segment") return n === 4 || n === 6;
+  const [min, max] = signalCount(property, basis);
+  return n >= min && n <= max;
+}
+
 /** Whether a property takes a list of signals (a JSON array), even of one. */
 export function takesSignalList(property: string): boolean {
-  return property === "pose" || property === "deformation" || property === "mode-shapes";
+  return property === "pose" || property === "deformation" || property === "mode-shapes" || property === "segment";
 }
 
 /** The kind prefixes a property can target. */
@@ -266,11 +288,21 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
     const problems = modeShapeProblems(binding, scene, earlier);
     if (problems.length > 0) targetOk = false;
     out.push(...problems);
+  } else if (binding.property === "segment") {
+    const geometry = scene.visualGeometry?.(target);
+    if (geometry !== undefined && geometry !== null) {
+      const axis = segmentAxis(geometry, binding.axis);
+      if (typeof axis === "string") {
+        targetOk = false;
+        out.push(diag("E301", binding, `visual "${target}" cannot be stretched as a bar: ${axis}`, "bind a box or cylinder visual, and set the segment axis along its length"));
+      }
+    }
   }
 
   const isList = takesSignalList(property);
-  const [min, max] = signalCount(property, binding.property === "deformation" ? binding.basis : undefined);
-  let countOk = names.length >= min && names.length <= max && Array.isArray(binding.signal) === isList;
+  const basis = binding.property === "deformation" ? binding.basis : undefined;
+  const [min, max] = signalCount(property, basis);
+  let countOk = signalCountOk(property, names.length, basis) && Array.isArray(binding.signal) === isList;
   if (countOk && targetOk && property === "mode-shapes") {
     const targets = scene.morphTargetCount?.(target);
     if (typeof targets === "number" && targets > 0 && names.length > targets) {
@@ -286,7 +318,7 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
     }
   }
   if (!countOk && !out.some((d) => d.code === "E304")) {
-    const want = min === max ? String(min) : `${String(min)} to ${String(max)}`;
+    const want = property === "segment" ? "4 or 6" : min === max ? String(min) : `${String(min)} to ${String(max)}`;
     out.push(
       diag(
         "E304",
@@ -300,14 +332,16 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
               : "list the modal coordinates of the family, one signal per mode (1 to 3 modes)"
             : property === "mode-shapes"
               ? `list the modal coordinates eta[1..n] in mode order, one signal per morph target (1 to ${String(MAX_MESH_MODES)})`
-              : "bind exactly one signal",
+              : property === "segment"
+                ? "list the end points A then B: uA, vA, uB, vB in the plane of the binding, or xA, yA, zA, xB, yB, zB"
+                : "bind exactly one signal",
       ),
     );
   }
 
   if (signals === null) return out;
   let allKnown = true;
-  for (const name of names) {
+  for (const name of allSignalsOf(binding)) {
     if (!signals.has(name)) {
       allKnown = false;
       out.push(diag("E302", binding, `signal "${name}" is not a signal of the model`, "pick a signal from the list, or run Check after renaming blocks"));
@@ -324,7 +358,7 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
   } else if (binding.property === "deformation") {
     const torsion = binding.family === "torsion";
     need = () => (torsion ? "angle" : "length");
-  } else if (property === "mode-shapes") {
+  } else if (property === "mode-shapes" || property === "segment") {
     need = () => "length";
   }
   names.forEach((name, i) => {

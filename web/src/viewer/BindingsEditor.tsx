@@ -1,9 +1,13 @@
 import { Fragment, useMemo, useState, type ReactElement } from "react";
 
-import type { BeamMapping, Binding, Colormap, DeformationBasis, DeformationBinding, DeformationFamily, ModeShapeBinding, ShapeAxis } from "../contracts/model";
+import type {
+  BeamMapping, Binding, Colormap, DeformationBasis, DeformationBinding, DeformationFamily, ModeShapeBinding, SegmentBinding,
+  SegmentBrokenStyle, SegmentPlane, ShapeAxis,
+} from "../contracts/model";
 import { defaultBeamAxis, defaultBeamY, isBeamCapable } from "../scene/beamMesh";
 import type { BuiltScene } from "../scene/build";
 import type { TreeEntry } from "../scene/resolve";
+import { segmentAxis } from "../scene/segment";
 import { useDocumentStore } from "../state/documentStore";
 import { maxModes } from "./beamModes";
 import { COLORMAPS, colormapGradient } from "./bindingsColormaps";
@@ -19,7 +23,7 @@ export interface BindingsEditorProps {
   readonly onHover: (target: string | null) => void;
 }
 
-const PROPERTIES = ["position", "pose", "scale.x", "scale.y", "scale.z", "color", "visible", "deformation", "mode-shapes"] as const;
+const PROPERTIES = ["position", "pose", "scale.x", "scale.y", "scale.z", "color", "visible", "deformation", "mode-shapes", "segment"] as const;
 type Property = (typeof PROPERTIES)[number];
 const POSE_PARTS = ["q_w", "q_x", "q_y", "q_z", "x", "y", "z"] as const;
 const DEFAULT_RANGE: [number, number] = [0, 1];
@@ -40,6 +44,17 @@ function withFamilyBasis<T extends { family: DeformationFamily; basis: Deformati
   return { ...draft, family, basis: fitted };
 }
 const SHAPE_AXES: readonly ShapeAxis[] = ["+x", "-x", "+y", "-y", "+z", "-z"];
+/** End-point coordinates of a segment: planar (u, v) pairs or spatial (x, y, z) triples, A then B. */
+const SEGMENT_PLANAR = ["u_A", "v_A", "u_B", "v_B"] as const;
+const SEGMENT_SPATIAL = ["x_A", "y_A", "z_A", "x_B", "y_B", "z_B"] as const;
+const PLANES: readonly SegmentPlane[] = ["xz", "xy", "yz"];
+const BROKEN_STYLES: readonly SegmentBrokenStyle[] = ["snapped", "hidden"];
+const POINT_KINDS = ["planar", "spatial"] as const;
+
+/** The coordinate labels of a segment with `n` signals. */
+function segmentParts(n: number): readonly string[] {
+  return n === 6 ? SEGMENT_SPATIAL : SEGMENT_PLANAR;
+}
 
 interface Choice {
   readonly ref: string;
@@ -67,6 +82,10 @@ function fitsProperty(ref: string, property: Property, built: BuiltScene | null)
   if (property === "deformation") {
     const g = built.visualGeometry(ref);
     return g !== null && isBeamCapable(g);
+  }
+  if (property === "segment") {
+    const g = built.visualGeometry(ref);
+    return g !== null && typeof segmentAxis(g) !== "string";
   }
   if (property === "mode-shapes") return built.visualGeometry(ref)?.kind === "mesh";
   return true;
@@ -310,6 +329,83 @@ function DeformationSettings({ binding, index, onChange }: { binding: Deformatio
   );
 }
 
+/** An optional signal: empty means none (the segment's failure flag). */
+function OptionalSignalSelect({ value, signals, label, testId, onChange }: { value: string; signals: SignalUnits | null; label: string; testId: string; onChange: (v: string) => void }): ReactElement {
+  if (signals === null) {
+    return <input type="text" className="bindings__signal" aria-label={label} data-testid={testId} value={value} placeholder="none" onChange={(e) => { onChange(e.target.value); }} />;
+  }
+  return (
+    <select className="bindings__signal" aria-label={label} data-testid={testId} value={value} onChange={(e) => { onChange(e.target.value); }}>
+      <option value="">none</option>
+      {value !== "" && !signals.has(value) ? <option value={value}>{`${value} (unknown)`}</option> : null}
+      {[...signals.keys()].map((id) => (
+        <option key={id} value={id}>{id}</option>
+      ))}
+    </select>
+  );
+}
+
+/** Plane and depth (planar end points), stretch axis, failure flag and broken style of a segment binding row. */
+function SegmentSettings({ binding, index, signals, onChange }: { binding: SegmentBinding; index: number; signals: SignalUnits | null; onChange: (next: SegmentBinding) => void }): ReactElement {
+  const i = String(index);
+  const n = String(index + 1);
+  const planar = binding.signal.length === 4;
+  const withoutAxis = (): SegmentBinding => {
+    const { axis: _drop, ...rest } = binding;
+    void _drop;
+    return rest;
+  };
+  const withoutBroken = (): SegmentBinding => {
+    const { broken: _drop, brokenStyle: _style, ...rest } = binding;
+    void _drop;
+    void _style;
+    return rest;
+  };
+  return (
+    <div className="bindings__deform">
+      {planar ? (
+        <>
+          <label className="bindings__inline">
+            <span>plane</span>
+            <Choose value={binding.plane ?? "xz"} options={PLANES} label={`Plane of binding ${n}`} testId={`binding-plane-${i}`} onChange={(v) => { onChange({ ...binding, plane: v }); }} />
+          </label>
+          <label className="bindings__inline">
+            <span>depth</span>
+            <NumberField value={binding.depth ?? 0} label={`Depth of binding ${n}`} testId={`binding-depth-${i}`} onCommit={(v) => { onChange({ ...binding, depth: v }); }} />
+          </label>
+        </>
+      ) : null}
+      <label className="bindings__inline">
+        <span>axis</span>
+        <select
+          aria-label={`Segment axis of binding ${n}`}
+          data-testid={`binding-axis-${i}`}
+          value={binding.axis ?? ""}
+          onChange={(e) => { onChange(e.target.value === "" ? withoutAxis() : { ...binding, axis: e.target.value as ShapeAxis }); }}
+        >
+          <option value="">shape</option>
+          {SHAPE_AXES.map((a) => (
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+      </label>
+      <label className="bindings__inline">
+        <span>broken</span>
+        <OptionalSignalSelect
+          value={binding.broken ?? ""}
+          signals={signals}
+          label={`Failure flag of binding ${n}`}
+          testId={`binding-broken-${i}`}
+          onChange={(v) => { onChange(v === "" ? withoutBroken() : { ...binding, broken: v }); }}
+        />
+      </label>
+      {binding.broken !== undefined ? (
+        <Choose value={binding.brokenStyle ?? "snapped"} options={BROKEN_STYLES} label={`Broken style of binding ${n}`} testId={`binding-broken-style-${i}`} onChange={(v) => { onChange({ ...binding, brokenStyle: v }); }} />
+      ) : null}
+    </div>
+  );
+}
+
 interface DeformDraft {
   family: DeformationFamily;
   basis: DeformationBasis;
@@ -338,6 +434,8 @@ function makeBinding(property: Property, target: string, signal: readonly string
         : null;
     case "mode-shapes":
       return signal.length <= MAX_MESH_MODES ? { target, property, signal: signal as ModeShapeBinding["signal"] } : null;
+    case "segment":
+      return signal.length === 4 || signal.length === 6 ? { target, property, signal: signal as SegmentBinding["signal"] } : null;
   }
 }
 
@@ -358,8 +456,13 @@ function meshModeLimit(built: BuiltScene | null, target: string): number {
   return n !== null && n > 0 ? Math.min(n, MAX_MESH_MODES) : MAX_MESH_MODES;
 }
 
-function emptySignals(property: Property): string[] {
-  return Array<string>(property === "pose" ? 7 : 1).fill("");
+function emptySignals(property: Property, spatial = false): string[] {
+  return Array<string>(property === "pose" ? 7 : property === "segment" ? (spatial ? 6 : 4) : 1).fill("");
+}
+
+/** The labels of the signal fields of a binding row or of the add form. */
+function partLabels(property: string, n: number): readonly string[] {
+  return property === "pose" ? POSE_PARTS : property === "segment" ? segmentParts(n) : ["signal"];
 }
 
 /**
@@ -378,6 +481,7 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
   const [colormap, setColormap] = useState<Colormap>("heat");
   const [range, setRange] = useState<[number, number]>(DEFAULT_RANGE);
   const [deform, setDeform] = useState<DeformDraft>({ family: "bending-y", basis: "clamped-free", axis: "+x" });
+  const [spatial, setSpatial] = useState(false);
 
   const choices = useMemo(() => (tree === undefined ? [] : targetsFor(tree, property, built)), [tree, property, built]);
   const rowDiagnostics = useMemo(() => (built === null ? bindings.map(() => []) : validateBindingRows(bindings, built, signals)), [bindings, built, signals]);
@@ -392,7 +496,7 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
   const pickProperty = (p: Property): void => {
     setProperty(p);
     setTarget("");
-    setSignal(emptySignals(p));
+    setSignal(emptySignals(p, spatial));
   };
   const pickTarget = (ref: string): void => {
     setTarget(ref);
@@ -467,19 +571,19 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
                       onChange={(next) => { replace(i, { ...b, signal: next as ModeShapeBinding["signal"] }); }}
                     />
                   ) : (
-                    <div className={b.property === "pose" ? "bindings__pose" : undefined}>
-                      {(b.property === "pose" ? POSE_PARTS : ["signal"]).map((part, k) => (
+                    <div className={b.property === "pose" || b.property === "segment" ? "bindings__pose" : undefined}>
+                      {partLabels(b.property, names.length).map((part, k) => (
                         <SignalSelect
                           key={part}
                           value={names[k] ?? ""}
                           signals={signals}
-                          label={b.property === "pose" ? `${part} signal of binding ${n}` : `Signal of binding ${n}`}
-                          testId={`binding-signal-${String(i)}${b.property === "pose" ? `-${String(k)}` : ""}`}
+                          label={b.property === "pose" || b.property === "segment" ? `${part} signal of binding ${n}` : `Signal of binding ${n}`}
+                          testId={`binding-signal-${String(i)}${b.property === "pose" || b.property === "segment" ? `-${String(k)}` : ""}`}
                           onChange={(v) => {
-                            if (b.property === "pose") {
+                            if (b.property === "pose" || b.property === "segment") {
                               const list = [...names];
                               list[k] = v;
-                              replace(i, { ...b, signal: list as [string, ...string[]] });
+                              replace(i, { ...b, signal: list } as Binding);
                             } else {
                               replace(i, { ...b, signal: v } as Binding);
                             }
@@ -519,6 +623,8 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
                     <DeformationSettings binding={b} index={i} onChange={(next) => { replace(i, next); }} />
                   ) : b.property === "mode-shapes" ? (
                     <MeshModesNote built={built} target={b.target} testId={`binding-mesh-modes-${String(i)}`} />
+                  ) : b.property === "segment" ? (
+                    <SegmentSettings binding={b} index={i} signals={signals} onChange={(next) => { replace(i, next); }} />
                   ) : null}
                 </td>
                 <td>
@@ -552,7 +658,7 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
           if (candidate === null) return;
           setBindings([...bindings, candidate]);
           setTarget("");
-          setSignal(emptySignals(property));
+          setSignal(emptySignals(property, spatial));
         }}
       >
         <label>
@@ -566,7 +672,7 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
         <label>
           <span className="playback__label">Target</span>
           <select aria-label="New binding target" data-testid="add-target" value={target} onChange={(e) => { pickTarget(e.target.value); }}>
-            <option value="">{property === "deformation" ? "Choose a box or cylinder" : property === "mode-shapes" ? "Choose a mesh" : "Choose a target"}</option>
+            <option value="">{property === "deformation" || property === "segment" ? "Choose a box or cylinder" : property === "mode-shapes" ? "Choose a mesh" : "Choose a target"}</option>
             {choices.map((c) => (
               <option key={c.ref} value={c.ref}>{c.label}</option>
             ))}
@@ -614,18 +720,35 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
             />
           </div>
         ) : (
-          signal.map((value, k) => (
+          <>
+          {property === "segment" ? (
+            <label>
+              <span className="playback__label">End points</span>
+              <Choose
+                value={spatial ? "spatial" : "planar"}
+                options={POINT_KINDS}
+                label="New binding end points"
+                testId="add-points"
+                onChange={(v) => {
+                  setSpatial(v === "spatial");
+                  setSignal(emptySignals("segment", v === "spatial"));
+                }}
+              />
+            </label>
+          ) : null}
+          {signal.map((value, k) => (
             <label key={k}>
-              <span className="playback__label">{property === "pose" ? POSE_PARTS[k] : "Signal"}</span>
+              <span className="playback__label">{property === "pose" || property === "segment" ? partLabels(property, signal.length)[k] : "Signal"}</span>
               <SignalSelect
                 value={value}
                 signals={signals}
-                label={property === "pose" ? `New binding ${POSE_PARTS[k] ?? "signal"}` : "New binding signal"}
+                label={property === "pose" || property === "segment" ? `New binding ${partLabels(property, signal.length)[k] ?? "signal"}` : "New binding signal"}
                 testId={`add-signal-${String(k)}`}
                 onChange={(v) => { setSignal(signal.map((s, j) => (j === k ? v : s))); }}
               />
             </label>
-          ))
+          ))}
+          </>
         )}
         {property === "color" ? (
           <>

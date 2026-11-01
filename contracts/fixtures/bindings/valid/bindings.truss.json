@@ -1,0 +1,35 @@
+{
+  "$comment": "Segment bindings of a planar truss (Truss2D outputs x[i], y[i], util[k], failed[k]): a cylinder member between nodes 2 and 10 in the xz plane at depth 1.5 m, coloured by its signed utilisation (coolwarm, compression blue, tension red) and drawn snapped once it fails; a deck box stretched along its x axis between two deck nodes and hidden when broken; and a member of a 3D frame between two spatial points.",
+  "bindings": [
+    {
+      "target": "visual:bar_3",
+      "property": "segment",
+      "signal": ["Bridge/Truss/x[2]", "Bridge/Truss/y[2]", "Bridge/Truss/x[10]", "Bridge/Truss/y[10]"],
+      "plane": "xz",
+      "depth": 1.5,
+      "broken": "Bridge/Truss/failed[3]",
+      "brokenStyle": "snapped"
+    },
+    {
+      "target": "visual:bar_3",
+      "property": "color",
+      "signal": "Bridge/Truss/util[3]",
+      "colormap": "coolwarm",
+      "range": [-1, 1]
+    },
+    {
+      "target": "visual:deck_1",
+      "property": "segment",
+      "signal": ["Bridge/Truss/x[1]", "Bridge/Truss/y[1]", "Bridge/Truss/x[2]", "Bridge/Truss/y[2]"],
+      "axis": "+x",
+      "broken": "Bridge/Truss/failed[1]",
+      "brokenStyle": "hidden"
+    },
+    {
+      "target": "visual:strut",
+      "property": "segment",
+      "signal": ["Frame/A/x", "Frame/A/y", "Frame/A/z", "Frame/B/x", "Frame/B/y", "Frame/B/z"],
+      "gain": 0.001
+    }
+  ]
+}
