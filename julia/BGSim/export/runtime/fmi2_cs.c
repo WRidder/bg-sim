@@ -1,4 +1,4 @@
-/* bg-sim FMI 2.0 Co-Simulation wrapper (hand-written, model independent; runtime 0.6.0).
+/* bg-sim FMI 2.0 Co-Simulation wrapper (hand-written, model independent; runtime 0.7.0).
  *
  * Memory: fmi2Instantiate allocates the one instance struct through the environment's
  * allocateMemory callback; nothing else is ever allocated. fmi2DoStep, fmi2GetReal and

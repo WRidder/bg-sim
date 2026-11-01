@@ -386,3 +386,203 @@ end
     @test BGSim._dependent_store_note([w201], false) == ""        # a failure later in the run
     @test BGSim._dependent_store_note(BGSim.Diagnostic[], true) == ""
 end
+
+# A condition that reads only held values changes sign at a tick, never inside a solver step,
+# and the root finder compares the condition at both ends of a step with the parameters the
+# integrator has now, so it never saw the crossing (the fanuc-pick drop latch `zd > 0` with
+# `zd ~ armed * held * (sep - d_drop) - ...`, `armed` and `held` @discrete values). The run
+# loop now fires an event whose condition crosses zero across a jump (a tick, a driven input,
+# a parameter step) at the jump itself.
+const _EV_JUMP = """
+@block JumpLatch begin
+    @variables begin
+        x::Real = 0.0
+        hit::Real = 0.0
+        down::Real = 0.0
+        k::Real = -1.0
+        n::Real = 0.0
+    end
+    @outputs begin
+        y::Real
+        z::Real
+    end
+    @discrete Ts = 0.01 begin
+        n = n + 1
+        k = ifelse(n >= 25 && n < 60, 1.0, -1.0)
+    end
+    @equations begin
+        ddt(x) ~ 1.0
+        ddt(hit) ~ 0.0
+        ddt(down) ~ 0.0
+        y ~ hit
+        z ~ down
+    end
+    @events begin
+        k > 0 => begin
+            reinit(hit, hit + 1.0)
+        end
+        k < 0 => begin
+            reinit(down, down + 1.0)
+        end
+    end
+end
+"""
+
+# The left and the right row at an event instant `t`.
+function _ev_rows_at(columns, id, t)
+    rows = findall(x -> abs(x - t) <= 1.0e-12, columns["time"])
+    return columns[id][rows]
+end
+
+@testset "an event fires when a discrete tick makes its condition cross zero" begin
+    for solver in ("Rodas5P", "FBDF")
+        doc = _ev_model("EvJump", _EV_JUMP; t_end = 1.0, points = 101, solver = solver,
+            reltol = 1.0e-8, abstol = 1.0e-10)
+        result, _, columns = _ev_run(doc)
+        @test result.status == "done"
+        # k steps to +1 at the tick t = 0.25 and back to -1 at t = 0.6: each latch fires once,
+        # at its tick (left row before, right row after), and never again.
+        @test result.stats.events == 2
+        @test _ev_rows_at(columns, "Plant/k", 0.25) == [-1.0, 1.0]
+        @test _ev_rows_at(columns, "Plant/y", 0.25) == [0.0, 1.0]
+        @test _ev_rows_at(columns, "Plant/z", 0.6) == [0.0, 1.0]
+        @test all(==(0.0), columns["Plant/y"][columns["time"] .< 0.25])
+        # the latch states stay put after the event (FBDF to its tolerance: abstol 1e-10)
+        @test maximum(abs.(columns["Plant/y"][columns["time"] .> 0.25] .- 1.0)) <= 1.0e-8
+        @test maximum(abs.(columns["Plant/z"][columns["time"] .> 0.6] .- 1.0)) <= 1.0e-8
+    end
+end
+
+# Five one-directional events whose conditions cross zero downward (no affect) within a few
+# ulps of each other: a tool descends through the lip-loss gap of five cups (examples/fanuc-pick:
+# five SuctionCups land together on a level carton). The root finder locates them one at a time,
+# with steps cut to 1e-13 s and to zero length; FBDF kept the event times as history nodes (the
+# same t twice: "dt was forced below floating point epsilon", retcode Unstable) or two of them
+# fired in turn at the same instant until MaxIters. The offsets (in ulps of the gap) are cases
+# that failed before the root guard (`_with_root_guard`).
+const _EV_TOOL = """
+@block Tool begin
+    @parameters begin
+        K::Real = 400.0
+        c::Real = 6.0
+        z_eq::Real = -0.01
+    end
+    @variables begin
+        z::Real = 0.03
+        w::Real = 0.0
+    end
+    @outputs zt::Real
+    @equations begin
+        ddt(z) ~ w
+        ddt(w) ~ -K * (z - z_eq) - c * w - 50.0 * w * abs(w)
+        zt ~ z
+    end
+end
+"""
+
+const _EV_LIP = """
+@block Lip begin
+    @inputs zt::Real
+    @parameters begin
+        off::Real = 0.0
+        h_lost::Real = 0.002
+    end
+    @variables lost::Real = 0.0
+    @outputs h::Real
+    @equations begin
+        h ~ zt - off
+        ddt(lost) ~ 0.0
+    end
+    @events begin
+        h > h_lost => begin
+            reinit(lost, 1.0)
+        end
+    end
+end
+"""
+
+function _ev_lips_model(offs; solver = "FBDF")
+    doc = _ev_model("EvLips", _EV_TOOL; t_end = 0.4, points = 401, solver = solver,
+        reltol = 1.0e-6, abstol = 1.0e-8)
+    doc["diagram"]["nodes"][1]["name"] = "Tool"
+    for (k, o) in enumerate(offs)
+        push!(doc["diagram"]["nodes"], Dict{String,Any}(
+            "id" => "c$k", "name" => "Cup$k",
+            "block" => Dict{String,Any}("inline" => Dict{String,Any}("source" => _EV_LIP)),
+            "position" => Dict{String,Any}("x" => 0.0, "y" => 0.0),
+            "params" => Dict{String,Any}("off" => o),
+            "constants" => Dict{String,Any}(), "starts" => Dict{String,Any}()))
+        push!(doc["diagram"]["connections"], Dict{String,Any}(
+            "id" => "w$k", "kind" => "signal",
+            "from" => Dict{String,Any}("node" => "n1", "port" => "zt"),
+            "to" => Dict{String,Any}("node" => "c$k", "port" => "zt")))
+    end
+    return doc
+end
+
+@testset "near-simultaneous crossings without an affect: FBDF keeps going" begin
+    u = eps(0.03)
+    reference = nothing
+    # Unstable without the guard: [9, 16, 11, 3, 3], [1, 0, 1, 7, 1]; MaxIters (ping-pong) with
+    # the restart alone: [6, 10, 7, 14, 9], [9, 9, 15, 6, 7]
+    for pattern in ([9, 16, 11, 3, 3], [6, 10, 7, 14, 9], [1, 0, 1, 7, 1], [9, 9, 15, 6, 7])
+        result, _, columns = _ev_run(_ev_lips_model(pattern .* u))
+        @test result.status == "done"
+        @test !any(d -> d.code == "E901", result.diagnostics)
+        @test columns["time"][end] == 0.4
+        # the latches agree with each other and with a one-step method
+        lost = [columns["Cup$k/lost"][end] for k in 1:5]
+        @test all(==(lost[1]), lost)
+        if reference === nothing
+            _, _, ref = _ev_run(_ev_lips_model(pattern .* u; solver = "Rodas5P"))
+            reference = (lost = ref["Cup1/lost"][end], z = ref["Tool/z"][end])
+        end
+        @test lost[1] == reference.lost
+        @test isapprox(columns["Tool/z"][end], reference.z; atol = 1.0e-5)
+    end
+end
+
+const _EV_INPUT_LATCH = """
+@block InputLatch begin
+    @inputs u::Real
+    @variables begin
+        x::Real = 0.0
+        hit::Real = 0.0
+    end
+    @outputs y::Real
+    @equations begin
+        ddt(x) ~ 1.0
+        ddt(hit) ~ 0.0
+        y ~ hit
+    end
+    @events begin
+        u > 0.5 => begin
+            reinit(hit, hit + 1.0)
+        end
+    end
+end
+"""
+
+@testset "an event fires when a driven input makes its condition cross zero" begin
+    doc = _ev_model("EvInputJump", _EV_INPUT_LATCH; t_end = 0.5, points = 51)
+    push!(doc["diagram"]["nodes"], Dict{String,Any}(
+        "id" => "n0", "name" => "In",
+        "block" => Dict{String,Any}("ref" => "stdlib:converters/ExportInput"),
+        "position" => Dict{String,Any}("x" => 0.0, "y" => 0.0),
+        "params" => Dict{String,Any}("value" => "0.0"),
+        "constants" => Dict{String,Any}(), "starts" => Dict{String,Any}()))
+    push!(doc["diagram"]["connections"], Dict{String,Any}(
+        "id" => "c0", "kind" => "signal",
+        "from" => Dict{String,Any}("node" => "n0", "port" => "y"),
+        "to" => Dict{String,Any}("node" => "n1", "port" => "u")))
+    flat = _ev_flat(doc)
+    @test isempty(_ev_errors(flat))
+    dir = mktempdir()
+    result = simulate(flat; run_dir = dir, settings = BGSim.RunSettings(doc["settings"]),
+        inputs = Dict("In/value" => (t = [0.0, 0.3], u = [0.0, 1.0])))
+    @test result.status == "done"
+    columns = _ev_columns(dir)
+    @test result.stats.events == 1
+    @test _ev_rows_at(columns, "Plant/y", 0.3) == [0.0, 1.0]
+    @test columns["Plant/y"][end] == 1.0
+end

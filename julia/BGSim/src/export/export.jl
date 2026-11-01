@@ -52,8 +52,9 @@ const MTK = ModelingToolkit
 
 """The hand-written C runtime copied into every export; bump `RUNTIME_VERSION` on any change."""
 const RUNTIME_DIR = normpath(joinpath(@__DIR__, "..", "..", "export", "runtime"))
-const RUNTIME_VERSION = "0.6.0"   # 0.4.0: J-EX9 noise draws and the delay ring; 0.5.0: J-EX8 bg_init Newton;
-                                   # 0.6.0: the variable-read delay ring and the StopSimulation/Assertion monitors
+const RUNTIME_VERSION = "0.7.0"   # 0.4.0: J-EX9 noise draws and the delay ring; 0.5.0: J-EX8 bg_init Newton;
+                                   # 0.6.0: the variable-read delay ring and the StopSimulation/Assertion monitors;
+                                   # 0.7.0: events on a jump (a tick, a host input or parameter) fire at the jump
 
 """The most `delay` ring slots an exported model may hold (J-EX9): 2^20 doubles, 8 MiB of
 the instance struct. A single ring is capped at `Compile.DELAY_MAX_TICKS` already."""
@@ -1323,6 +1324,8 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
             double c[BG_SZ(BG_NC)];
             double ez0[BG_SZ(BG_NE)];      /* event conditions at the start of the step */
             double ez[BG_SZ(BG_NE)];       /* ... and at its end */
+            double ezl[BG_SZ(BG_NE)];      /* ... after the last step's events and tick (or before a tick) */
+            int ezl_valid;                 /* ezl holds the last step's conditions (0 after bg_reset) */
             double er[BG_SZ(BG_NER)];      /* the new values of the event being applied */
             double y[BG_SZ(BG_NY)];        /* valid when y_valid */
             int y_valid;
@@ -1373,7 +1376,8 @@ function _write_model_h(path, name, ident, guid, nx, np, nd, ni, ny, nu, npart, 
         void bg_outputs(const bg_model *m, double t, const double *x, double *y);
         void bg_sample(const bg_model *m, double t, const double *x, double *din);
         void bg_event_conditions(const bg_model *m, double t, const double *x, double *z);
-        int bg_events(bg_model *m, double t);  /* after a step: apply the events that fired */
+        /* Apply the events whose condition crossed upward from z0 to now (after a step or a jump). */
+        int bg_events(bg_model *m, double t, const double *z0);
         /* After a step: 1 + the first run monitor that has triggered (its latched flag is set
            or its margin is positive), or 0. */
         int bg_monitor(const bg_model *m);

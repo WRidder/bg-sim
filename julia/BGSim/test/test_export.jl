@@ -941,6 +941,73 @@ end
             @test all(0 < switches[i] * 1e-3 - analytic[i] <= 1e-3 for i in 1:3)
         end
 
+        @testset "events on a jump in C: a tick and a host input fire at the jump" begin
+            # `k` (held) steps to +1 at the tick t = 0.25 and back to -1 at t = 0.6; the host
+            # sets the input u to 1 after step 300 (t = 0.3). The conditions cross zero only
+            # across these jumps, never inside a step, so before runtime 0.7.0 no event fired.
+            latch = """
+            @block JumpLatch begin
+                @inputs u::Real
+                @variables begin
+                    x::Real = 0.0
+                    hit::Real = 0.0
+                    down::Real = 0.0
+                    uin::Real = 0.0
+                    k::Real = -1.0
+                    n::Real = 0.0
+                end
+                @discrete Ts = 0.01 begin
+                    n = n + 1
+                    k = ifelse(n >= 25 && n < 60, 1.0, -1.0)
+                end
+                @equations begin
+                    ddt(x) ~ 1.0
+                    ddt(hit) ~ 0.0
+                    ddt(down) ~ 0.0
+                    ddt(uin) ~ 0.0
+                end
+                @events begin
+                    k > 0 => begin
+                        reinit(hit, hit + 1.0)
+                    end
+                    k < 0 => begin
+                        reinit(down, down + 1.0)
+                    end
+                    u > 0.5 => begin
+                        reinit(uin, uin + 1.0)
+                    end
+                end
+            end
+            """
+            doc = bg_model("ExportJumpLatch", Any[
+                    bg_node("n1", "U", bg_ref("stdlib:converters/ExportInput");
+                        params = Dict{String,Any}("value" => "0.0")),
+                    bg_node("n2", "L", _ex_inline(latch))],
+                Any[bg_conn("c1", "signal", "n1", "y", "n2", "u")]; t_end = 1.0, points = 101)
+            dir = mktempdir()
+            r = _EX.export_model(_ex_flat(doc), dir;
+                settings = _EX.ExportSettings(t_end = 1.0, dt = 1e-3))
+            @test r.ok && r.report["events"] == 3
+            runner = replace(_EX_RUNNER,
+                "if (k > 0 && bg_step(&m) != 0) return 2;" =>
+                    "if (k == 301) m.u[0] = 1.0;\n        if (k > 0 && bg_step(&m) != 0) return 2;")
+            src = joinpath(dir, "sources")
+            write(joinpath(dir, "runner.c"), runner)
+            exe = joinpath(dir, Sys.iswindows() ? "runner.exe" : "runner")
+            files = [joinpath(src, f) for f in ("model.c", "bg_solver.c")]
+            run(`$cc -std=c99 -O2 -Wall -Wextra -Werror -Wno-unused-parameter -I $src $files $(joinpath(dir, "runner.c")) -o $exe -lm`)
+            rows = permutedims(reduce(hcat, [parse.(Float64, split(l)) for l in eachline(`$exe 1000`)]))
+            model_c = read(joinpath(src, "model.c"), String)
+            xn = [String(m.captures[2]) for m in eachmatch(r"/\* x\[(\d+)\] = (\S+) \*/", model_c)]
+            col(name) = rows[:, 1 + findfirst(==(name), xn)]
+            step_of(v) = findfirst(>(0.5), v) - 1      # rows are steps 0, 1, 2, ...
+            # the tick at the end of step 250 (t = 0.25) fires `hit` in that step; step 600 `down`
+            @test step_of(col("L/hit")) == 250 && col("L/hit")[end] == 1.0
+            @test step_of(col("L/down")) == 600 && col("L/down")[end] == 1.0
+            # the input set before step 301 fires at its start (t = 0.3), seen after that step
+            @test step_of(col("L/uin")) == 301 && col("L/uin")[end] == 1.0
+        end
+
         @testset "hard stop in C: frozen conditions, exact contact law at the step ends" begin
             dir = mktempdir()
             v = 0.25

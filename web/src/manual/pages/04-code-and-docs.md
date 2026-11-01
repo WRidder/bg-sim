@@ -51,6 +51,8 @@ The main sections of a block:
 
 An event changes only the states its `reinit` lines name; all other states keep their values. A state that only events change is written `ddt(x) ~ 0.0`: it holds its start value until an event sets it.
 
+An event fires when its condition crosses zero upward, also when the crossing is a jump: a condition that reads a `@discrete` value (or an input driven by one, a recorded input trajectory or a scheduled parameter change) can change sign at a tick. The event then fires at the tick itself, after the discrete code has run, and its new values appear in the row at that instant. A condition that is already true before the jump does not fire again.
+
 ### A nonlinear bond-graph element
 
 The standard `R` is linear. A nonlinear resistor is a small library block with one power port. Write its law in the causality it will have on the diagram, and state that causality with `@causality`. For example, a tunnel diode on a capacitor's 0-junction gets the voltage and returns the current:

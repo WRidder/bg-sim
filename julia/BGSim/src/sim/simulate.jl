@@ -223,6 +223,185 @@ end
 _with_event_limit(cb, ::Base.RefValue{Int}, ::Int, args...) = cb
 
 # ---------------------------------------------------------------------------------------
+# Crossings within a few ulps of each other (the root guard)
+# ---------------------------------------------------------------------------------------
+#
+# Every zero crossing of a continuous callback ends the solver step at the root, also an edge
+# without an affect (the falling edge of a one-directional `@events` entry, a nonsmooth kink).
+# The root finder (`LeftRootFind`) puts the event on the last float where the condition still
+# has its old sign. When several conditions cross within a few ulps of each other (five
+# suction cups landing together on a level carton, `h > h_lost` falling at the same instant),
+# they are located one at a time, and two things go wrong:
+#
+#   * zero-length steps. A condition whose root lies within one ulp after the previous event
+#     has its left root at the start of the next step, so that step is cut to length zero.
+#     MTK's EMPTY_AFFECT clears `derivative_discontinuity`, so FBDF keeps its history and
+#     takes the event time as a new node: the same t twice, every predictor through it divides
+#     by zero, and the run aborts with "dt was forced below floating point epsilon" (E901,
+#     retcode Unstable; examples/fanuc-pick with FBDF at t = 0.2525);
+#   * ping-pong. After a condition fired, the next step starts on its left root, where it still
+#     has the old sign. DiffEqBase evaluates the conditions of the *last* firing a little past
+#     the start (`nudge_tprev`), so these are not found again, but a condition that fired
+#     earlier at the same instant is: two of them fire in turn at the same t, with zero-length
+#     steps, until MaxIters.
+#
+# The guard wraps every continuous callback:
+#
+#   * the affect records, per condition that fires, the instant and the condition's value
+#     there (before the affect). A later evaluation at exactly that instant that finds exactly
+#     that value (nothing has changed it: the left-root artifact) and that is not part of the
+#     last firing (DiffEqBase's nudge covers those) reports the condition on its new side
+#     (`floatmin` with the new sign): the crossing has happened, at this instant, once;
+#   * a crossing that cut its step to less than `SHORT_CUT` of the step taken, and whose affect
+#     changed nothing, sets `derivative_discontinuity` as a real affect would: a multistep
+#     method restarts at order 1 from the event time instead of keeping two nodes ulps apart
+#     (a one-step method only refreshes its derivative).
+#
+# Every other crossing behaves as before.
+
+const SHORT_CUT = 1.0e-6
+
+"""The firing record of one callback's conditions (shared `serial` across the callbacks)."""
+struct RootGuard
+    fired_t::Vector{Float64}   # the instant each condition last fired (NaN: never)
+    fired_v::Vector{Float64}   # its value there, before the affect
+    fired_dir::Vector{Int8}    # +1 upward, -1 downward
+    fired_serial::Vector{Int}  # which firing (the shared counter) it was part of
+    serial::Base.RefValue{Int}
+    buffer::Vector{Float64}
+end
+
+RootGuard(n::Int, serial) = RootGuard(fill(NaN, n), zeros(n), zeros(Int8, n), zeros(Int, n),
+    serial, zeros(n))
+
+# The new side of a condition that crossed at `t`, for a value that is still the artifact.
+@inline function _guard_value(g::RootGuard, i::Int, v, t)
+    (g.fired_t[i] == t && g.fired_serial[i] != g.serial[] && v == g.fired_v[i] &&
+     sign(v) != g.fired_dir[i]) || return v
+    return g.fired_dir[i] * floatmin(Float64)
+end
+
+struct GuardedCondition{C}
+    condition::C
+    guard::RootGuard
+end
+
+function (c::GuardedCondition)(out::AbstractVector, u, t, integ)
+    c.condition(out, u, t, integ)
+    for i in eachindex(out)
+        out[i] = _guard_value(c.guard, i, out[i], t)
+    end
+    return nothing
+end
+
+(c::GuardedCondition)(u, t, integ) = _guard_value(c.guard, 1, c.condition(u, t, integ), t)
+
+# Record the firing (`dirs[i]` = +1, -1 or 0 per condition) before the affect runs.
+function _guard_record!(g::RootGuard, condition, integ, dirs)
+    g.serial[] += 1
+    t = Float64(integ.t)
+    if condition isa GuardedCondition && length(g.buffer) > 1
+        condition.condition(g.buffer, integ.u, integ.t, integ)
+    elseif condition isa GuardedCondition
+        g.buffer[1] = condition.condition(integ.u, integ.t, integ)
+    end
+    for (i, d) in enumerate(dirs)
+        d == 0 && continue
+        g.fired_t[i] = t
+        g.fired_v[i] = g.buffer[i]
+        g.fired_dir[i] = d
+        g.fired_serial[i] = g.serial[]
+    end
+    return nothing
+end
+
+# `apply_callback!` proposes the full step it cut (`dtrelax = 1`) before it moves `t` back to
+# the root, so `dtpropose` is the step the solver took and `dt` what is left of it.
+function _restart_short_cut!(integ)
+    if !integ.derivative_discontinuity && abs(integ.dt) <= SHORT_CUT * abs(integ.dtpropose)
+        ModelingToolkit.SciMLBase.derivative_discontinuity!(integ, true)
+    end
+    return nothing
+end
+
+struct GuardedAffect{A,C}
+    affect::A
+    condition::C
+    guard::RootGuard
+    dir::Int8          # the edge of a scalar callback's affect; 0 for a vector callback
+end
+
+function (a::GuardedAffect)(integ)
+    _guard_record!(a.guard, a.condition, integ, (a.dir,))
+    a.affect(integ)
+    _restart_short_cut!(integ)
+    return nothing
+end
+
+function (a::GuardedAffect)(integ, evts)
+    _guard_record!(a.guard, a.condition, integ, evts)
+    a.affect(integ, evts)
+    _restart_short_cut!(integ)
+    return nothing
+end
+
+function _with_root_guard(cb::ModelingToolkit.SciMLBase.ContinuousCallback, serial)
+    guard = RootGuard(1, serial)
+    condition = GuardedCondition(cb.condition, guard)
+    pos = cb.affect! === nothing ? nothing : GuardedAffect(cb.affect!, condition, guard, Int8(1))
+    neg = cb.affect_neg! === nothing ? nothing :
+          GuardedAffect(cb.affect_neg!, condition, guard, Int8(-1))
+    return ModelingToolkit.SciMLBase.ContinuousCallback(
+        condition, pos, neg;
+        initialize = cb.initialize,
+        finalize = cb.finalize,
+        idxs = cb.idxs,
+        rootfind = cb.rootfind,
+        interp_points = cb.interp_points,
+        save_positions = cb.save_positions,
+        dtrelax = cb.dtrelax,
+        abstol = cb.abstol,
+        reltol = cb.reltol,
+        repeat_nudge = cb.repeat_nudge,
+        initializealg = cb.initializealg,
+        saved_clock_partitions = cb.saved_clock_partitions,
+        maybe_discontinuity = cb.maybe_discontinuity,
+        initialize_save_discretes = cb.initialize_save_discretes,
+    )
+end
+
+function _with_root_guard(cb::ModelingToolkit.SciMLBase.VectorContinuousCallback, serial)
+    guard = RootGuard(cb.len, serial)
+    condition = GuardedCondition(cb.condition, guard)
+    affect = cb.affect! === nothing ? nothing : GuardedAffect(cb.affect!, condition, guard, Int8(0))
+    return ModelingToolkit.SciMLBase.VectorContinuousCallback(
+        condition, affect, cb.len;
+        initialize = cb.initialize,
+        finalize = cb.finalize,
+        idxs = cb.idxs,
+        rootfind = cb.rootfind,
+        interp_points = cb.interp_points,
+        save_positions = cb.save_positions,
+        dtrelax = cb.dtrelax,
+        abstol = cb.abstol,
+        reltol = cb.reltol,
+        repeat_nudge = cb.repeat_nudge,
+        initializealg = cb.initializealg,
+        saved_clock_partitions = cb.saved_clock_partitions,
+        maybe_discontinuity = cb.maybe_discontinuity,
+        initialize_save_discretes = cb.initialize_save_discretes,
+    )
+end
+
+function _with_root_guard(cb::ModelingToolkit.SciMLBase.CallbackSet, serial = Ref(0))
+    continuous = [_with_root_guard(c, serial) for c in cb.continuous_callbacks]
+    return ModelingToolkit.SciMLBase.CallbackSet(continuous, collect(cb.discrete_callbacks))
+end
+
+_with_root_guard(cb, serial = Ref(0)) = cb
+
+
+# ---------------------------------------------------------------------------------------
 # StopSimulation and Assertion: the run monitors
 # ---------------------------------------------------------------------------------------
 #
@@ -449,6 +628,145 @@ function _snap_target(probe, integ, tt::Float64)
     catch
         return tt
     end
+end
+
+# ---------------------------------------------------------------------------------------
+# Events on a jump: a discrete tick, a driven input or a parameter step
+# ---------------------------------------------------------------------------------------
+#
+# The solver's root finder only sees a sign change *inside* an integration step: every step
+# compares the condition at `tprev` with the one at `t`, both evaluated with the parameters
+# the integrator has now. A held output, a driven input or a scheduled parameter step changes
+# a parameter *between* two steps, so a condition that reads it (`zd ~ armed * held * ...`
+# with `armed` and `held` @discrete values) can change sign at that instant and the next step
+# already starts on the new side: the crossing is never reported and the event never fires.
+#
+# The run loop closes that gap at every instant where it changes values itself. It evaluates
+# the conditions just before the changes (`_jump_before!`) and right after them, and fires
+# every `@events` entry whose condition crossed zero across the jump in a direction that has
+# an affect (D19: upward, `before < 0 <= after`; a downward affect `before > 0 >= after`).
+# This is the root finder's own test (`prev_sign < 0 && prev_sign * next_sign <= 0`), and the
+# affects are the integrator's callbacks themselves, so a jump event has the semantics of a
+# root-found one: the same wrapped affect (event count and W206, StopSimulation/Assertion),
+# the callbacks fire in their order and the indices of one vector callback together, and the
+# same post-affect re-initialisation. A condition whose inputs did not change evaluates to the
+# same value bit for bit, so only conditions that read a changed value can fire; the cost is
+# two condition evaluations per instant that changes something. Condition-only callbacks (the
+# nonsmooth kinks) have no affect and are never fired here.
+
+struct JumpEvents
+    callbacks::Vector{Any}
+    lengths::Vector{Int}
+    pos::Vector{Bool}       # per condition: an upward affect
+    neg::Vector{Bool}       # per condition: a downward affect
+    before::Vector{Float64}
+    after::Vector{Float64}
+end
+
+function _affect_edges(cb)
+    if cb isa ModelingToolkit.SciMLBase.VectorContinuousCallback
+        va = cb.affect!
+        if va === nothing || !hasproperty(va, :affect_negs)
+            return fill(false, cb.len), fill(false, cb.len)
+        end
+        pos = Bool[!_is_empty_affect(va.affects[va.eq2affect[i]]) for i in 1:cb.len]
+        neg = Bool[!_is_empty_affect(va.affect_negs[va.eq2affect[i]]) for i in 1:cb.len]
+        return pos, neg
+    end
+    return Bool[!_is_empty_affect(cb.affect!)], Bool[!_is_empty_affect(cb.affect_neg!)]
+end
+
+"""    jump_events(compiled, installed) -> JumpEvents or nothing
+
+`compiled` is the callback MTK compiled (which edges have an affect), `installed` the same
+callback after the run wrappers (event limit, monitors, debug), whose affects are fired. Both
+have the same continuous callbacks in the same order. `nothing` without any affect."""
+function jump_events(compiled, installed)
+    raw = _continuous_callbacks(compiled)
+    cbs = _continuous_callbacks(installed)
+    (isempty(raw) || length(raw) != length(cbs)) && return nothing
+    pos = Bool[]
+    neg = Bool[]
+    lengths = Int[]
+    for (r, c) in zip(raw, cbs)
+        p, n = _affect_edges(r)
+        len = c isa ModelingToolkit.SciMLBase.VectorContinuousCallback ? c.len : 1
+        length(p) == len || return nothing
+        append!(pos, p)
+        append!(neg, n)
+        push!(lengths, len)
+    end
+    any(pos) || any(neg) || return nothing
+    total = sum(lengths)
+    return JumpEvents(cbs, lengths, pos, neg, zeros(total), zeros(total))
+end
+
+function _jump_conditions!(out::Vector{Float64}, jump::JumpEvents, integ)
+    k = 0
+    t = integ.t
+    for (cb, n) in zip(jump.callbacks, jump.lengths)
+        if cb isa ModelingToolkit.SciMLBase.VectorContinuousCallback
+            cb.condition(view(out, (k + 1):(k + n)), integ.u, t, integ)
+        else
+            out[k + 1] = cb.condition(integ.u, t, integ)
+        end
+        k += n
+    end
+    return out
+end
+
+"""The conditions just before the run loop changes values at the current instant."""
+_jump_before!(::Nothing, integ) = nothing
+_jump_before!(jump::JumpEvents, integ) = (_jump_conditions!(jump.before, jump, integ); nothing)
+
+# `before < 0 <= after` fires the upward affect, `before > 0 >= after` the downward one
+# (DiffEqBase's `is_event_occurrence`).
+function _jump_edge(jump::JumpEvents, j::Int)
+    a, b = jump.before[j], jump.after[j]
+    jump.pos[j] && a < 0 && b >= 0 && return Int8(1)
+    jump.neg[j] && a > 0 && b <= 0 && return Int8(-1)
+    return Int8(0)
+end
+
+"""    fire_jump_events!(jump, integ) -> Int
+
+Fire every event whose condition crossed zero across the values the run loop just changed
+(since `_jump_before!`), as `DiffEqBase.apply_callback!` does for a root: the affect, then
+the post-affect re-initialisation when it modified the integrator. Returns the number of
+conditions that fired."""
+fire_jump_events!(::Nothing, integ) = 0
+
+function fire_jump_events!(jump::JumpEvents, integ)
+    SB = ModelingToolkit.SciMLBase
+    _jump_conditions!(jump.after, jump, integ)
+    fired = 0
+    modified = false
+    k = 0
+    for (cb, n) in zip(jump.callbacks, jump.lengths)
+        edges = Int8[_jump_edge(jump, k + i) for i in 1:n]
+        k += n
+        any(!iszero, edges) || continue
+        fired += count(!iszero, edges)
+        SB.derivative_discontinuity!(integ, true)
+        if cb isa SB.VectorContinuousCallback
+            cb.affect!(integ, edges)
+        elseif edges[1] > 0
+            cb.affect!(integ)
+        else
+            cb.affect_neg!(integ)
+        end
+        if integ.derivative_discontinuity
+            SB.reeval_internals_due_to_modification!(
+                integ; callback_initializealg = cb.initializealg
+            )
+            # `handle_callbacks!` leaves the flag set after a modifying callback, so the next
+            # step restarts a multistep method (FBDF's history still holds the old state).
+            modified = true
+        end
+        integ.sol.retcode == ReturnCode.Terminated && break
+    end
+    modified && SB.derivative_discontinuity!(integ, true)
+    return fired
 end
 
 # The event-record seam for J2.2: the scheduler's run loop may pass its own record_event
@@ -1024,6 +1342,8 @@ function _simulate_flat(flat::Flat.FlatModel;
             limited = _with_monitors(limited, integ -> monitor_hit(monitors, integ) !== nothing)
         end
         limited = _dbg_wrap_callback(debug, limited, flat)  # M4 debug:
+        # Outermost: crossings within a few ulps of each other (`_with_root_guard`).
+        limited = _with_root_guard(limited)
         solver_problem = remake(lowered.problem; callback = limited)
     end
 
@@ -1149,6 +1469,10 @@ function _simulate_flat(flat::Flat.FlatModel;
 
     prof_init_s = (time_ns() - init_ns) / 1.0e9
     probe = kink_probe(integ)
+    # Events on a jump (a tick, an input, a parameter step): see `fire_jump_events!`.
+    jump = haskey(lowered.problem.kwargs, :callback) && hasproperty(integ, :opts) ?
+           jump_events(lowered.problem.kwargs[:callback], solver_problem.kwargs[:callback]) :
+           nothing
     retcode = integ.sol.retcode
     if retcode == ReturnCode.InitialFailure
         diagnostic = diag(
@@ -1323,7 +1647,14 @@ function _simulate_flat(flat::Flat.FlatModel;
             changed = false
             tick_only = true    # nothing but a tick changed values at `tt`
             before = nothing
-            if _steps_due(live_steps, next_step, tt)
+            steps_due = _steps_due(live_steps, next_step, tt)
+            # An event condition that crosses zero across the values changed here fires at
+            # `tt` (`fire_jump_events!`): its value before the changes is taken first.
+            if steps_due || (target.tick && run !== nothing) ||
+               (drive !== nothing && inputs_due(drive, tt))
+                _jump_before!(jump, integ)
+            end
+            if steps_due
                 # A parameter step: the left limit is the state before it, the right limit
                 # the state after it (and after a tick at the same instant).
                 before = values()
@@ -1347,6 +1678,25 @@ function _simulate_flat(flat::Flat.FlatModel;
                     before === nothing && (before = before_inputs)
                     changed = true
                     tick_only = false
+                end
+            end
+            # The events whose condition the changes above made cross zero fire now, after
+            # the tick and the inputs, so their affects are in the right-hand row at `tt`.
+            if changed && fire_jump_events!(jump, integ) > 0
+                tick_only = false
+                if _event_limit_reached(event_counter, run_settings.event_limit)
+                    _record_event!(record_event, rec, tt, :left, before)
+                    _record_event!(record_event, rec, tt, :right, values())
+                    diagnostic = _event_limit_diagnostic(
+                        flat, integ.t, event_counter[], run_settings.event_limit, event_tally,
+                        lowered.model.system,
+                    )
+                    status = "done"
+                    if _dbg_failure!(debug, session, diagnostic)  # M4 debug: pause before the end
+                        status = "cancelled"
+                        diagnostic = nothing
+                    end
+                    break
                 end
             end
             dense = changed && tick_only && !target.grid && tt - last_tick_rows < tick_row_gap
