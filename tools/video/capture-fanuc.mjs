@@ -86,13 +86,22 @@ async function caption(page, title, sub, speed, half) {
 
 async function play(page, from, to, speed) {
   const slider = page.getByTestId("playback-time");
+  // the 3D view loops by default: with the loop on, a frame step can wrap past `to` back to the start
+  const loop = page.getByTestId("playback-loop");
+  if ((await loop.getAttribute("aria-pressed")) === "true") await loop.click();
   await page.getByTestId("playback-speed").selectOption(speed);
   await slider.fill(String(+Number(from).toFixed(3)));
   await sleep(300);
-  await page.getByTestId("playback-toggle").click();
-  await page.waitForFunction((t) => Number(document.querySelector('[data-testid="playback-time"]')?.value) >= t, to,
-    { timeout: 180000, polling: 20 });
-  await page.getByTestId("playback-toggle").click();
+  const toggle = page.getByTestId("playback-toggle");
+  await toggle.click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="playback-toggle"]')?.getAttribute("aria-pressed") === "true",
+    null, { timeout: 10000, polling: 20 });
+  await page.waitForFunction((t) => {
+    const v = Number(document.querySelector('[data-testid="playback-time"]')?.value);
+    const on = document.querySelector('[data-testid="playback-toggle"]')?.getAttribute("aria-pressed") === "true";
+    return v >= t || !on;
+  }, to, { timeout: 180000, polling: 20 });
+  if ((await toggle.getAttribute("aria-pressed")) === "true") await toggle.click();
 }
 
 const segments = [];
@@ -115,7 +124,7 @@ async function runNow(page) {
   await sleep(600);
 }
 
-async function frameView(page, steps = 4) {
+async function frameView(page, steps = 3) {
   const tree = page.getByTestId("scene-tree-toggle");
   if (await tree.count()) { const exp = await tree.getAttribute("aria-expanded"); if (exp !== "false") await tree.click().catch(() => {}); }
   await page.getByTestId("viewer-fit").click();
@@ -125,7 +134,8 @@ async function frameView(page, steps = 4) {
   const cb = await page.getByTestId("viewer-canvas").boundingBox();
   const cx = cb.x + cb.width / 2, cy = cb.y + cb.height / 2;
   await page.mouse.move(cx + cb.width * 0.08, cy + cb.height * 0.05);
-  for (let z = 0; z < steps; z++) { await page.mouse.wheel(0, -300); await sleep(100); }
+  // one wheel notch (deltaY 100) brings the camera to 0.8 of its distance (viewer/orbitPivot.ts)
+  for (let z = 0; z < steps; z++) { await page.mouse.wheel(0, -100); await sleep(100); }
   await sleep(400);
 }
 
@@ -149,7 +159,7 @@ async function stills() {
         await p.waitForFunction(() => document.querySelector('[data-testid="scene-view"]')?.getAttribute("data-state") === "loaded", null, { timeout: 90000 });
         await sleep(1000);
         const tEnd = Number(await p.getByTestId("playback-time").getAttribute("max"));
-        await frameView(p, 6);
+        await frameView(p, 4);
         await p.getByTestId("playback-time").fill(String(+(0.55 * tEnd).toFixed(3)));
         await sleep(1500);
         await p.getByTestId("viewer-canvas").screenshot({ path: path.join(shots, `${model}-3d.png`) });
@@ -232,14 +242,22 @@ try {
     await play(page, 0, tEnd - 0.01, sc.speed);
     await sleep(sc.pair ? 300 : 800);
     cut({ pair: sc.pair ?? null, model: sc.model, speed: sc.speed });
+    // the recording can run a few tenths of a second off the wall-clock marks: wait before the next model opens,
+    // so a cut never reaches its loading screen
+    await sleep(1000);
     await page.evaluate(() => { for (const id of ["vid-caption", "vid-badge"]) document.getElementById(id)?.remove(); });
   }
+  const wall = (Date.now() - t0) / 1000;
   await ctx.close();
   if (shots) await stills();
 
   const webm = readdirSync(work).find((f) => f.endsWith(".webm"));
   const src = path.join(work, webm);
-  writeFileSync(path.join(path.dirname(out), "fanuc-pick-v2-marks.json"), JSON.stringify({ segments }, null, 1));
+  // the marks are wall-clock times: they only fit the recording if its length matches the wall clock
+  const pr = spawnSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", src], { encoding: "utf8" });
+  const webmLength = Number(pr.stdout);
+  console.log(`recording ${webmLength.toFixed(1)} s, wall clock ${wall.toFixed(1)} s`);
+  writeFileSync(path.join(path.dirname(out), "fanuc-pick-v2-marks.json"), JSON.stringify({ wall, webmLength, segments }, null, 1));
   const ff = spawnSync("ffmpeg", ["-version"]);
   if (ff.status === 0 && out.endsWith(".mp4")) compose(src);
   else renameSync(src, out.replace(/\.mp4$/, ".webm"));
