@@ -5,7 +5,7 @@
 # `docs/modal-body-format.md`). A `ModalBody3D` node names that file in its `constants`
 # (`file`, project-relative, e.g. `data/bracket.modal.json`), exactly like a CsvSource names
 # its CSV file. The compiler reads the file while it instantiates the node and turns its
-# content into the block's structural constants: the mode count `nm`, the interface count `ni`
+# content into the block's structural constants: the mode count `nm`
 # and the reduced matrices (mass properties, modal mass and stiffness, the inertia invariants,
 # the interface mode values and the geometric-stiffening matrices). They are constants, not
 # parameters, so they fold into literals: a zero entry drops out of the equations, the exported
@@ -197,7 +197,7 @@ function load_modal_body(project_dir, settings::AbstractDict)
         _clean!(G)
     end
     out = Pair{String,Any}[
-        "nm" => Int(nm), "ni" => ni, "stiffening" => stiff,
+        "nm" => Int(nm), "stiffening" => stiff,
         "mass" => mass, "S0" => S0, "J0" => J0, "mk" => mk, "kk" => kk,
         "St" => St, "Sr" => Sr, "J1" => J1,
     ]

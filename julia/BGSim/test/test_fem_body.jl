@@ -134,8 +134,8 @@ end
     @testset "reduced-model file: loader, invariants, diagnostics, compile key" begin
         data = BGSim.load_modal_body(FEM_FX, Dict{String,Any}("file" => "lbar.modal.json"))
         d = Dict(data)
-        @test first.(data)[1:3] == ["nm", "ni", "stiffening"]         # sizes first
-        @test d["nm"] == FEM_NM && d["ni"] == 3 && d["stiffening"] == 1
+        @test first.(data)[1:2] == ["nm", "stiffening"]               # sizes first
+        @test d["nm"] == FEM_NM && !haskey(d, "ni") && d["stiffening"] == 1
         @test size(d["St"]) == (3, FEM_NM) && size(d["J1"]) == (6, FEM_NM)
         @test size(d["PT"]) == (12, FEM_NM) && size(d["Gd3"]) == (FEM_NM, FEM_NM)
         @test d["J0"] ≈ d["J0"]'

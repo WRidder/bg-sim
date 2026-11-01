@@ -37,11 +37,10 @@
     # sits at r_j = XP_j + PT_j q - 1/2 (q' G_j,a q)_a (the interface-force stiffening) with
     # the rotation RP_j R(g_j), g_j = 1/2 PR_j q (Gibbs vector in the interface frame, exact
     # chart as in ModalBeam3D): flow [R_j' w + w_rel; R_j' (v + w x r_j + r_j')], effort
-    # through the transpose. An interface the file does not have (beyond `ni`) has zero mode
+    # through the transpose. An interface the file does not have has zero mode
     # values: it is a rigid point at the origin of R; leave it unconnected.
     @constants begin
         nm::Int = 2, [min = 1, max = 48, description = "Number of modal coordinates (from the reduced-model file)"]
-        ni::Int = 2, [min = 1, max = 4, description = "Number of interfaces (from the reduced-model file)"]
         stiffening::Int = 1, [options = ["off", "on"], description = "Geometric stiffening terms: 0 off, 1 on (when the file has them)"]
         mass::Real = 1.0, [unit = "kg", description = "Mass"]
         S0::Vec{3} = [0.5, 0.0, 0.0], [unit = "kg*m", description = "First moment of mass in R"]
@@ -157,7 +156,7 @@
         gq20::Vec{nm}
         gq21::Vec{nm}
         sg::Vec{21}, [description = "q' G_c q"]
-        spd::Vec{9}, [description = "q' G_c q' of the interface-force cases (rate of the second-order interface position)"]
+        spd::Vec{9}, [description = "qd' G_c q of the interface-force cases (minus the rate of the second-order interface position)"]
         gtd1::Vec{nm}, [description = "Gt1 q'"]
         gtd2::Vec{nm}, [description = "Gt2 q'"]
         gtd3::Vec{nm}, [description = "Gt3 q'"]

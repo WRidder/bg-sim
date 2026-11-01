@@ -19,7 +19,6 @@
     # signals of a `mode-shapes` binding), `f` the modal frequencies with A clamped (Hz).
     @constants begin
         nm::Int = 2, [min = 1, max = 48, description = "Number of modal coordinates (from the reduced-model file)"]
-        ni::Int = 2, [min = 1, max = 4, description = "Number of interfaces (from the reduced-model file)"]
         stiffening::Int = 1, [options = ["off", "on"], description = "Geometric stiffening terms: 0 off, 1 on (when the file has them)"]
         mass::Real = 1.0, [unit = "kg", description = "Mass"]
         S0::Vec{3} = [0.5, 0.0, 0.0], [unit = "kg*m", description = "First moment of mass in R"]
@@ -90,7 +89,7 @@
         nodeB = Junction(1)
         nodeC = Junction(1)
         nodeD = Junction(1)
-        core = ModalBodyCore3D(nm = nm, ni = ni, stiffening = stiffening, mass = mass, S0 = S0,
+        core = ModalBodyCore3D(nm = nm, stiffening = stiffening, mass = mass, S0 = S0,
             J0 = J0, mk = mk, kk = kk, St = St, Sr = Sr, J1 = J1, Exx = Exx, Eyy = Eyy, Ezz = Ezz,
             Exy = Exy, Exz = Exz, Eyz = Eyz, XP = XP, QP = QP, RP = RP, PT = PT, PR = PR, Gt1 = Gt1,
             Gt2 = Gt2, Gt3 = Gt3, Gj1 = Gj1, Gj2 = Gj2, Gj3 = Gj3, Gj4 = Gj4, Gj5 = Gj5, Gj6 = Gj6,

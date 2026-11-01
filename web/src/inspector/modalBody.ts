@@ -25,7 +25,6 @@ export const MODAL_CLI = "julia --project=julia/BGSimFEM julia/BGSimFEM/bin/bgsi
  */
 export const MODAL_FILE_CONSTANTS: ReadonlySet<string> = new Set([
   "nm",
-  "ni",
   "stiffening",
   "mass",
   "S0",
