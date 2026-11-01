@@ -68,6 +68,54 @@ from referencing import Registry, Resource
 from .config import BACKEND_VERSION, Settings
 from .contracts import Model, Project
 
+# Generated folders that a new project never copies from an example: run data, exports,
+# logs and caches (the repository's .gitignore). A design script's run folder inside an
+# example can hold gigabytes, which made creating the project time out.
+_EXAMPLE_COPY_SKIP = frozenset({
+    "runs", "exports", "logs", "__pycache__", ".venv", "venv", "node_modules",
+    ".pytest_cache", ".ruff_cache", ".vite", ".git",
+})
+
+
+def _example_copy_ignore(source: Path):
+    """A `shutil.copytree` ignore function for an example: `_EXAMPLE_COPY_SKIP` plus the
+    patterns of the example's own `.gitignore` (`design/_runs/`, `design/_eom_cache.pkl`,
+    `*.npz`). A pattern with a `/` before its end is anchored at the example root; a trailing
+    `/` matches directories only."""
+    import fnmatch
+
+    patterns: list[tuple[str, bool, bool]] = []  # (pattern, anchored, directories only)
+    gitignore = source / ".gitignore"
+    if gitignore.is_file():
+        for raw in gitignore.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or line.startswith("!"):
+                continue
+            dir_only = line.endswith("/")
+            line = line.rstrip("/")
+            anchored = "/" in line
+            patterns.append((line.lstrip("/"), anchored, dir_only))
+
+    def ignore(directory: str, names: list[str]) -> set[str]:
+        skipped: set[str] = set()
+        here = Path(directory)
+        relative_dir = here.relative_to(source).as_posix() if here != source else ""
+        for name in names:
+            if name in _EXAMPLE_COPY_SKIP:
+                skipped.add(name)
+                continue
+            relative = f"{relative_dir}/{name}" if relative_dir else name
+            is_dir = (here / name).is_dir()
+            for pattern, anchored, dir_only in patterns:
+                if dir_only and not is_dir:
+                    continue
+                if fnmatch.fnmatch(relative if anchored else name, pattern):
+                    skipped.add(name)
+                    break
+        return skipped
+
+    return ignore
+
 router = APIRouter()
 
 PROJECT_FILE = "bgsim.project.json"
@@ -549,7 +597,7 @@ class ProjectStore:
             if example:
                 source = self._example_source(example)
                 try:
-                    shutil.copytree(source, staging)
+                    shutil.copytree(source, staging, ignore=_example_copy_ignore(source))
                 except OSError as exc:
                     raise ProjectError(
                         500, f"could not copy example {example!r} from {source}: {exc}"
