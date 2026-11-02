@@ -44,6 +44,7 @@ import type { BlockCheckResult } from "../contracts/worker-rpc";
 import { checkBlockSource } from "./blockCheck";
 import { attachBreakpointSync, breakpointGutter, storeHandlers } from "./breakpoints";
 import { blockCompletionSource } from "./completion";
+import { editingKeymap, indentation, tabKeymap } from "./editing";
 import { juliaSupport } from "./juliaSupport";
 import {
   mapDiagnostics,
@@ -221,6 +222,7 @@ export function CodeEditor({
         drawSelection(),
         dropCursor(),
         EditorState.allowMultipleSelections.of(true),
+        indentation,
         indentOnInput(),
         rectangularSelection(),
         crosshairCursor(),
@@ -246,7 +248,10 @@ export function CodeEditor({
           { key: "Mod-Shift-z", run: redo },
           { key: "Mod-y", run: redo },
           ...closeBracketsKeymap,
+          // Before the editing keys, so Enter accepts an open completion.
           ...completionKeymap,
+          ...tabKeymap,
+          ...editingKeymap,
         ]),
         ...juliaSupport,
         linter(lintSource, { delay: 300 }),

@@ -13,6 +13,14 @@ Every block is defined in the BG-Sim modeling language, a small subset of Julia 
 - Autocomplete suggests allowed functions, declared names, port fields (`p.e`, `p.f`) and units. The source is checked while you type; problems are underlined.
 - Click the gutter (or press `F9`) to set a [breakpoint](page:debugging).
 
+Editing keys in the source editor:
+
+- Sources are indented 4 spaces per level. `Enter` keeps the indentation of the line, goes one level deeper after a line that opens a block (`@block … begin`, `@equations begin`, `for`, `if`, `function`, …), and a typed `end` moves back to the level of its `begin`.
+- `Tab` inserts 4 spaces at the cursor (up to the next indent stop). With a selection it indents every selected line. `Shift+Tab` removes one level from the current or selected lines. `Ctrl+[` and `Ctrl+]` do the same.
+- `Tab` stays in the editor. To move the keyboard focus out of the editor, press `Esc` and then `Tab` (or `Shift+Tab`). `Ctrl+M` switches `Tab` between indenting and moving the focus.
+- `Ctrl+/` comments or uncomments the selected lines with `#`. `Alt+↑` and `Alt+↓` move the line, and `Shift+Ctrl+K` deletes it.
+- `Ctrl+Enter` still runs the model, also from inside the editor.
+
 ### From code to a reusable block
 
 An inline code block belongs to one model. To use the same code as a block you can drag from the library, put it in the [project library](page:projects-and-library):
