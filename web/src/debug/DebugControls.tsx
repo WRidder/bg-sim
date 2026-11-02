@@ -5,7 +5,7 @@
  * bar's own Stop button (Shift+F5 while debugging).
  *
  * Shortcuts: F5 starts a debug run or continues a paused one, F6 pauses, F10
- * and F11 step (on an idle run bar they start the run paused at its entry),
+ * and F11 step (on an idle run bar F10 starts the run paused at its entry),
  * Shift+F5 stops. F9 toggles a breakpoint in the Code tab.
  */
 
@@ -111,7 +111,8 @@ export function DebugControls({ canStart }: DebugControlsProps) {
     return () => window.removeEventListener("mousedown", onPointerDown);
   }, [menuOpen]);
 
-  // F5, Shift+F5, F6, F10 and F11 work anywhere in the editor.
+  // F5, Shift+F5, F6, F10 and F11 work anywhere in the editor. F11 is taken only during a
+  // debug run; otherwise it stays the browser's full screen key.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -154,7 +155,7 @@ export function DebugControls({ canStart }: DebugControlsProps) {
             if (store.status === "paused") {
               void store.step(event.key === "F10" ? "statement" : "tick");
             }
-          } else if (canStart) {
+          } else if (canStart && event.key === "F10") {
             event.preventDefault();
             void store.startDebug({ pauseOnEntry: true });
           }

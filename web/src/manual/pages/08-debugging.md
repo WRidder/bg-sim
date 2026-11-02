@@ -17,7 +17,7 @@ Click **Debug** (`F5`) next to **Run**. While a debug run is active, icon button
 | **More step commands** | | **Step event** and **Step solver step** |
 | **Stop** | `Shift+F5` | ends the debug run |
 
-`F10` or `F11` with nothing running starts a debug run paused at its start. While paused, type a time in **Run to time** and press `Enter` to run on to that time and pause again.
+`F10` with nothing running starts a debug run paused at its start. `F11` is a debugger key only during a debug run; otherwise it switches the browser to full screen as usual. While paused, type a time in **Run to time** and press `Enter` to run on to that time and pause again.
 
 While paused, the plots end at a *paused* marker, the 3D view shows the paused state, and the status shows where and why the run paused.
 

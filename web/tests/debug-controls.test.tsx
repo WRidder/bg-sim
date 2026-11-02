@@ -149,6 +149,16 @@ describe("debug controls", () => {
     expect(calls[0]?.url).toBe("/api/runs/r1/debug/pause");
   });
 
+  it("leaves F11 to the browser (full screen) when no debug run is active", () => {
+    openModel();
+    render(<RunBar />);
+    calls = [];
+    // fireEvent returns false when a handler called preventDefault.
+    expect(fireEvent.keyDown(window, { key: "F11" })).toBe(true);
+    expect(useDebugStore.getState().status).toBe("idle");
+    expect(calls).toHaveLength(0);
+  });
+
   it("runs to a time from the number field and rejects a bad one", async () => {
     openModel();
     render(<RunBar />);
