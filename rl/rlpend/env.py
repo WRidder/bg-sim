@@ -89,9 +89,15 @@ class EnvCfg:
     lqr_K: tuple = ()
     lqr_P: tuple = ()        # row-major 6 x 6
     seed: int = 0
-    # the plant geometry for the energy (the export's nominal values; no randomisation in step 0)
+    # the plant geometry for the energy (the export's nominal values; no randomisation in step 0):
+    # masses, lengths, centres of mass from the pivot and inertias about the centre of mass (c, J
+    # empty: rods, c = L/2, J = m L^2/12)
     m: tuple = (0.10, 0.08)
     L: tuple = (0.25, 0.25)
+    c: tuple = ()
+    J: tuple = ()
+    # the example's classical controller data (rl/classical.py; "" = rl/classical.json)
+    classical: str = ""
 
     @property
     def ts(self) -> float:
@@ -133,6 +139,10 @@ class DoubleCartEnv(VecEnv):
         # output = state + offset (the joint's q0), read once from the export's start
         x0 = p.get_x()[0]
         self.offset = {k: p.y[0, self.iy[k]] - x0[self.ix[k]] for k in self.ix}
+        # soft end stops (the lab rig): their position state follows the cart in a reset
+        self.ix_stop = next((i for i, s in enumerate(p.x_names) if s.startswith("__bgint/EndStops/")), None)
+        if self.ix_stop is not None:
+            self.offset_stop = p.y[0, self.iy["x"]] - x0[self.ix_stop]
         self.rng = np.random.default_rng(cfg.seed)
         n = self.num_envs
         self.a_prev = np.zeros(n)
@@ -149,7 +159,8 @@ class DoubleCartEnv(VecEnv):
         self.n_steps = 0
         m1, m2 = cfg.m
         L1, L2 = cfg.L
-        self.E_up = G0 * (m1 * L1 / 2 + m2 * (L1 + L2 / 2))
+        c1, c2 = cfg.c if cfg.c else (L1 / 2, L2 / 2)
+        self.E_up = G0 * (m1 * c1 + m2 * (L1 + c2))
         self._reset(np.ones(n, bool))
         self.obs = self._observe()
 
@@ -178,6 +189,8 @@ class DoubleCartEnv(VecEnv):
         q2 = th2 - th1
         states = {self.ix["x"]: x - self.offset["x"], self.ix["q1"]: q1 - self.offset["q1"],
                   self.ix["q2"]: q2 - self.offset["q2"]}
+        if self.ix_stop is not None:
+            states[self.ix_stop] = x - self.offset_stop
         self.plant.reset(mask, states=states)
         y = self.plant.y
         th1m = y[:, self.iy["q1"]] - math.pi / 2
@@ -216,11 +229,11 @@ class DoubleCartEnv(VecEnv):
                           batch_size=[self.num_envs])
 
     def energy(self, th1, th2, w1, w2):
-        """Pendulum energy in the cart frame (rods, centre of mass at the middle)."""
+        """Pendulum energy in the cart frame."""
         m1, m2 = self.cfg.m
         L1, L2 = self.cfg.L
-        c1, c2 = L1 / 2, L2 / 2
-        J1, J2 = m1 * L1 * L1 / 12, m2 * L2 * L2 / 12
+        c1, c2 = self.cfg.c if self.cfg.c else (L1 / 2, L2 / 2)
+        J1, J2 = self.cfg.J if self.cfg.J else (m1 * L1 * L1 / 12, m2 * L2 * L2 / 12)
         v1sq = (c1 * w1) ** 2
         v2sq = (L1 * w1) ** 2 + (c2 * w2) ** 2 + 2 * L1 * c2 * w1 * w2 * np.cos(th1 - th2)
         T = 0.5 * m1 * v1sq + 0.5 * J1 * w1**2 + 0.5 * m2 * v2sq + 0.5 * J2 * w2**2

@@ -1,8 +1,13 @@
 # R0.1 (plan/RL_PLAN.md): export the plant-only double cart as an FMU with its physical
 # parameters exposed (globals with ranges, set before initialisation).
 #
-#   julia --project=julia/BGSim rl/export_plant.jl <out_dir> [--no-reference] [--t-end=3]
-#         [--settings=<json>]   default {"method": "rodas4p", "dt": 1e-3}
+#   julia --project=julia/BGSim rl/export_plant.jl <out_dir> [--rig=cart|lab] [--no-reference]
+#         [--t-end=3] [--settings=<json>]   default {"method": "rodas4p", "dt": 1e-3}
+#
+# --rig=cart (default): examples/pendulum-double-cart, model pendulum-double-cart-plant, the
+# ranges below. --rig=lab (R0.7): examples/pendulum-double-cart-lab, model
+# pendulum-double-cart-lab-plant, the exposed globals and ranges of its design/realism.json
+# (design/rl_ranges.json, written by its design/rlmodels.py).
 #
 # The automatic step rule (D-EX7) resolves every lightly damped mode, and this plant has the
 # parasitic ones of its compliant joints (pivot springs kt = 1e8 N/m, the rail's rotation
@@ -23,8 +28,9 @@ using BGSim
 import JSON3
 
 const ROOT = normpath(joinpath(@__DIR__, ".."))
-const PROJECT = joinpath(ROOT, "examples", "pendulum-double-cart")
-const MODEL = "pendulum-double-cart-plant"
+const RIGS = Dict(
+    "cart" => (joinpath(ROOT, "examples", "pendulum-double-cart"), "pendulum-double-cart-plant"),
+    "lab" => (joinpath(ROOT, "examples", "pendulum-double-cart-lab"), "pendulum-double-cart-lab-plant"))
 
 # The ranges of the exposed globals: kept in one place, the table of
 # examples/pendulum-double-cart/design/rlmodels.py (GLOBALS), copied here as id => (min, max).
@@ -36,6 +42,16 @@ const RANGES = Dict(
 # Values set before initialisation in the second check (inside the ranges, away from nominal).
 const MODIFIED = Dict("m1" => 0.115, "m2" => 0.07, "L1" => 0.26, "b1" => 6e-4, "R_m" => 1.8,
     "m_cart" => 0.7)
+const MODIFIED_LAB = Dict("m_tube1" => 0.11, "m_head1" => 0.112, "m_tip2" => 0.044, "L1" => 0.351,
+    "com_shift2" => 0.015, "b_joint1" => 5e-4, "R_m" => 1.7, "m_cart" => 0.78, "k_belt" => 3.0e5)
+
+function rig_setup(rig)
+    project, model = RIGS[rig]
+    rig == "cart" && return project, model, RANGES, MODIFIED
+    raw = JSON3.read(read(joinpath(project, "design", "rl_ranges.json"), String))
+    ranges = Dict(String(k) => (Float64(v[1]), Float64(v[2])) for (k, v) in pairs(raw))
+    return project, model, ranges, MODIFIED_LAB
+end
 
 todict(x::AbstractDict) = Dict{String,Any}(String(k) => todict(v) for (k, v) in pairs(x))
 todict(x::AbstractVector) = Any[todict(v) for v in x]
@@ -81,13 +97,16 @@ function main(args)
     with_ref = !("--no-reference" in args)
     t_end = 3.0
     overrides = Dict{String,Any}("method" => "rodas4p", "dt" => 1.0e-3)
+    rig = "cart"
     for a in args
         startswith(a, "--t-end=") && (t_end = parse(Float64, a[9:end]))
+        startswith(a, "--rig=") && (rig = a[7:end])
         startswith(a, "--settings=") && merge!(overrides, todict(JSON3.read(a[12:end])))
     end
     step = 1e-3
+    PROJECT, MODEL, RANGES, MODIFIED = rig_setup(rig)
     doc = todict(JSON3.read(read(joinpath(PROJECT, "models", MODEL * ".bgmodel.json"), String)))
-    rec = Dict{String,Any}("tEnd" => t_end, "step" => step,
+    rec = Dict{String,Any}("tEnd" => t_end, "step" => step, "rig" => rig,
         "ranges" => Dict(k => [v[1], v[2]] for (k, v) in RANGES), "modified" => MODIFIED)
 
     t0 = time()
