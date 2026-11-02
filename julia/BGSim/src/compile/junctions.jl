@@ -63,10 +63,12 @@ function _junction_virtual_vars!(
     isempty(bond.eids) || return bond
     suffix(k) = width == 1 ? "" : "[" * string(k) * "]"
     # Connection ids are unique only within one diagram, so the virtual variables carry
-    # the diagram path of the junction (both junctions of the bond share it); otherwise
-    # two instances of the same subsystem would share one `(e, f)` pair.
-    slash = findlast('/', junction.path)
-    base = slash === nothing ? bond.connection : junction.path[1:slash] * bond.connection
+    # the path of the connection's diagram (the same from both junction ends); otherwise
+    # two instances of the same subsystem would share one `(e, f)` pair. The ids of a
+    # composite's internal connections already start with the instance path.
+    d = bond.diagram
+    base = isempty(d) || startswith(bond.connection, d * "/") ? bond.connection :
+           d * "/" * bond.connection
     eids = String[base * ".e" * suffix(k) for k in 1:width]
     fids = String[base * ".f" * suffix(k) for k in 1:width]
     for (ids, field) in ((eids, :e), (fids, :f))
@@ -97,6 +99,7 @@ function _junction_virtual_vars!(
         bond.flip,
         eids,
         fids,
+        bond.diagram,
     )
     junction.bonds[index] = updated
     return updated
