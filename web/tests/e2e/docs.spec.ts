@@ -320,6 +320,14 @@ test("tree: keyboard reorder, delete with children, and unsaved changes block le
   await page.keyboard.press("Alt+ArrowRight");
   await expect(page.getByTestId("docs-tree-item-new-page-2")).toHaveAttribute("aria-level", "2");
   await expect(page.getByTestId("docs-tree-item-new-page")).toHaveAttribute("aria-level", "1");
+  // The tree shows the move at once and stores it in the background: wait for the stored
+  // manifest before reloading, or a loaded machine reloads the flat tree.
+  const storedChildren = async (): Promise<string[]> => {
+    const response = await page.request.get(`/api/projects/${project}/docs/Alpha`);
+    const docs = (await response.json()) as { pages: { id: string; children: { id: string }[] }[] };
+    return docs.pages.find((p) => p.id === "overview")?.children.map((c) => c.id) ?? [];
+  };
+  await expect.poll(storedChildren).toEqual(["new-page-2"]);
 
   // The order survives a reload.
   await openDocs(page, "Alpha");

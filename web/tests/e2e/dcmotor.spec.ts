@@ -156,9 +156,9 @@ test("plots the shaft speed and reads 239.8 rad/s at t = 0.2 s", async ({
   );
   await expect(legendItem).toHaveCount(1);
   const readout = legendItem.locator(".plot-legend__value");
-  // The rotation domain's angular velocity unit is 1/s in the manifest (rad is
-  // dimensionless in plan 5.3); the plan quotes the same quantity as rad/s.
-  await expect(readout).toContainText("1/s");
+  // A port signal carries its domain's own spelling in the manifest: the rotation
+  // domain's angular velocity reads rad/s (not the dimension-based 1/s).
+  await expect(readout).toContainText("rad/s");
   const value = Number.parseFloat(await readout.innerText());
   expect(Number.isFinite(value)).toBe(true);
   expect(Math.abs(value - 239.8)).toBeLessThanOrEqual(0.1);

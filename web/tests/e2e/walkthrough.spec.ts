@@ -15,7 +15,8 @@ import { expect, test } from "@playwright/test";
  * 2. open its first gallery model (first model on disk when the gallery lacks the example);
  * 3. press Run, wait for `done` and assert that the Diagnostics tab holds no error;
  * 4. plot one signal, the first named by a check of the model in the example's `expected.json`;
- * 5. open the 3D view, scrub and play it, assert no binding diagnostic and a rendering canvas;
+ * 5. open the 3D view, scrub and play it, assert no binding diagnostic and a rendering canvas
+ *    (a model without a `scene` only shows the empty 3D View);
  * 6. delete the copy.
  *
  * Real worker only (DEC-M5-6): started on a free port when the suite was not started with
@@ -62,6 +63,13 @@ function firstModel(example: string): string {
     throw new Error(`${example} has no model`);
   }
   return file.replace(/\.bgmodel\.json$/, "");
+}
+
+/** The model's 3D scene file (`scene.file`), or null when the model has none. */
+function sceneOf(example: string, model: string): string | null {
+  const file = path.join(examplesRoot, example, "models", `${model}.bgmodel.json`);
+  const doc = JSON.parse(readFileSync(file, "utf8")) as { scene?: { file?: string } };
+  return doc.scene?.file ?? null;
 }
 
 function firstSignal(example: string, model: string): string | null {
@@ -240,6 +248,12 @@ for (const example of examples) {
 
     // 3D view: no binding diagnostics, scrub, play, rendering canvas.
     await page.getByRole("tab", { name: "3D View" }).click();
+    if (sceneOf(example, model) === null) {
+      // A model without a scene (a circuit, a thermal or a control-loop example) shows the
+      // empty 3D View.
+      await expect(page.getByTestId("scene-view")).toHaveAttribute("data-state", "none");
+      return;
+    }
     await expect(page.getByTestId("scene-view")).toHaveAttribute("data-state", "loaded", {
       timeout: 60_000,
     });
@@ -255,7 +269,9 @@ for (const example of examples) {
 
     const slider = page.getByTestId("playback-time");
     const end = Number(await slider.getAttribute("max"));
-    await slider.fill(String(end * 0.5));
+    // fill() fails with "Malformed value" when the range input does not store the text as typed
+    // (it reserialises 1.4090867332490782 or "5.000"); a short canonical number is kept as is.
+    await slider.fill(String(Number((end * 0.5).toFixed(3))));
     await expect.poll(async () => Number(await bar.getAttribute("data-time"))).toBeGreaterThan(0);
     await page.getByTestId("playback-rewind").click();
     await expect.poll(async () => Number(await bar.getAttribute("data-time"))).toBe(0);

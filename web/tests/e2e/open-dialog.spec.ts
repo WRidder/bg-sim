@@ -146,7 +146,9 @@ test("imports a sample as a copy and never writes to the sample", async ({ page,
   await expect(page.getByTestId("open-project")).toBeVisible({ timeout: 30_000 });
 
   await page.getByTestId("open-project").click();
-  await expect(page.getByTestId("sample-option-dc-motor")).toBeVisible();
+  // The dialog lists every project of the projects root before it shows the samples; with a
+  // few hundred projects and a busy backend (the parallel suite) that takes more than 5 s.
+  await expect(page.getByTestId("sample-option-dc-motor")).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("sample-option-drivetrain")).toBeVisible();
   const sample = page.getByTestId("sample-option-dc-motor");
   await expect(sample).toBeVisible();
