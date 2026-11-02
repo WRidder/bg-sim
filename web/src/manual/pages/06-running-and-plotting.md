@@ -87,6 +87,18 @@ Models with a 3D scene show it in the **3D View** tab. The scene follows the run
   - Until a check or a run has listed the model's signals, a signal field is a plain text field: type the signal name. A signal that the model no longer has shows as `name (unknown)`, and a target that is not in the scene as `name (not in scene)`.
 - A visual whose `<material><diffuse>` has an alpha below 1 is drawn see-through, also while a colour binding changes its colour. The cartons of the example **fanuc-pick** use alpha 0.35 to show the loose ball or bottle moving inside.
 
+### Scrolling patterns (periodic poses)
+
+A view can keep a vehicle framed by moving the world instead of the camera. A floor under the vehicle then shows the speed with stripes that scroll with the ground track. The model wraps the stripe offset into one stripe spacing, for example `period * floor((x + period / 2) / period) - x`, so the offset stays small however far the vehicle flies. At each wrap the offset jumps by a whole spacing. The jump itself does not show, because the stripes look the same one spacing on. But between two samples the view interpolates the position, and across a wrap it would slide the stripes back through the whole spacing for a frame or two.
+
+To prevent that, give the pose binding a `period` in the model file. `"period": [50, 0, 0]` makes x periodic with a period of 50 m; y and z (0) are not periodic. The view then interpolates x the shorter way round 50 m, and the stripes move on smoothly.
+
+- The period is in the unit of the position signals, before gain and offset.
+- A position must change by less than half its period between two samples.
+- The bindings table keeps the `period` when you edit the row.
+
+Move each set of stripes along its own axis only: the stripes across x by the wrapped x, and the stripes across y by the wrapped y. Keep the floor itself still under the vehicle. The floor's edges and the stripes' ends then stay put too. The aircraft examples **f16**, **cessna**, **beaver** and **a109** draw their floors this way (blocks `F16View`, `C172View`, `BeaverView` and `HeliView`).
+
 ### Bars between two points (segment bindings)
 
 A **segment** binding draws a box or cylinder as a bar between two moving points, for example a truss member between its two nodes. The visual is placed midway between the points, turned along the line between them and stretched to their distance. Its cross-section keeps its size.

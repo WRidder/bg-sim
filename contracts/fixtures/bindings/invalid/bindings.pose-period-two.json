@@ -1,0 +1,11 @@
+{
+  "$comment": "Invalid: a pose `period` has exactly three entries (x, y, z), each 0 or more; this one has two.",
+  "bindings": [
+    {
+      "target": "link:ground",
+      "property": "pose",
+      "signal": ["V/ground[1]", "V/ground[2]", "V/ground[3]", "V/ground[4]", "V/ground[5]", "V/ground[6]", "V/ground[7]"],
+      "period": [50.0, 50.0]
+    }
+  ]
+}

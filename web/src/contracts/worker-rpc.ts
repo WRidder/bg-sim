@@ -167,6 +167,13 @@ export type Binding =
   | ModeShapeBinding
   | SegmentBinding;
 export type BindingSignal = string;
+/**
+ * Periods of the bound position (x, y, z), in the units of the position signals (before gain and offset); 0 is not periodic, the default for every axis. For a pattern that repeats, such as the stripes of a floor that scroll with an aircraft's ground track: the model wraps the position into one period, so it jumps by a whole period at every wrap, and the viewer interpolates a periodic component between two samples the shorter way round its period. The pattern then moves on smoothly instead of sliding back across a period for a frame or two. A component must change by less than half its period between two samples.
+ *
+ * @minItems 3
+ * @maxItems 3
+ */
+export type PositionPeriod = [number, number, number];
 export type ScaleProperty = "scale.x" | "scale.y" | "scale.z";
 export type Colormap = "heat" | "viridis" | "coolwarm";
 export type DeformationFamily = "bending-y" | "bending-z" | "torsion";
@@ -622,6 +629,7 @@ export interface PoseBinding {
    * @minItems 1
    */
   signal: [BindingSignal, ...BindingSignal[]];
+  period?: PositionPeriod;
   gain?: number;
   offset?: number;
   $comment?: string;

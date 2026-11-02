@@ -66,6 +66,14 @@
       },
       "additionalProperties": false
     },
+    "positionPeriod": {
+      "title": "PositionPeriod",
+      "description": "Periods of the bound position (x, y, z), in the units of the position signals (before gain and offset); 0 is not periodic, the default for every axis. For a pattern that repeats, such as the stripes of a floor that scroll with an aircraft's ground track: the model wraps the position into one period, so it jumps by a whole period at every wrap, and the viewer interpolates a periodic component between two samples the shorter way round its period. The pattern then moves on smoothly instead of sliding back across a period for a frame or two. A component must change by less than half its period between two samples.",
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "number", "minimum": 0 }
+    },
     "segmentPlane": {
       "title": "SegmentPlane",
       "description": "The world plane of planar end points (u, v): xy maps them to (u, v, depth), xz to (u, depth, v), yz to (depth, u, v). Default xz: a planar model with y up stands upright in the Z-up world.",
@@ -109,6 +117,7 @@
           "items": { "$ref": "#/$defs/signalRef" },
           "description": "Exactly 7 signals, in this fixed order: quaternion then position, (q_w, q_x, q_y, q_z, x, y, z), the same chart as the model's spatial pose Vec{7} (PoseIntegrator3D, ComposePose3D, JointTransform3D). The scalar quaternion part q_w comes first and the position is in metres in the world frame. The count is checked by the viewer (E304); the viewer must not reorder or infer the order from signal names."
         },
+        "period": { "$ref": "#/$defs/positionPeriod" },
         "gain": { "type": "number" },
         "offset": { "type": "number" },
         "$comment": { "type": "string" }

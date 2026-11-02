@@ -13820,6 +13820,42 @@
     "PhugoidView/ground[6]",
     "PhugoidView/ground[7]"
    ]
+  },
+  {
+   "target": "link:stripes_x",
+   "property": "pose",
+   "signal": [
+    "PhugoidView/stripes_x[1]",
+    "PhugoidView/stripes_x[2]",
+    "PhugoidView/stripes_x[3]",
+    "PhugoidView/stripes_x[4]",
+    "PhugoidView/stripes_x[5]",
+    "PhugoidView/stripes_x[6]",
+    "PhugoidView/stripes_x[7]"
+   ],
+   "period": [
+    50.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "target": "link:stripes_y",
+   "property": "pose",
+   "signal": [
+    "PhugoidView/stripes_y[1]",
+    "PhugoidView/stripes_y[2]",
+    "PhugoidView/stripes_y[3]",
+    "PhugoidView/stripes_y[4]",
+    "PhugoidView/stripes_y[5]",
+    "PhugoidView/stripes_y[6]",
+    "PhugoidView/stripes_y[7]"
+   ],
+   "period": [
+    0.0,
+    50.0,
+    0.0
+   ]
   }
  ],
  "parameters": [

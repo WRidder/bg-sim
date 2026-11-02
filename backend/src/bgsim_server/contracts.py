@@ -19,6 +19,20 @@ from pydantic import (
 )
 
 
+class PositionPeriodItem(RootModel[confloat(ge=0.0)]):
+    root: confloat(ge=0.0)
+
+
+class PositionPeriod(RootModel[list[PositionPeriodItem]]):
+    root: list[PositionPeriodItem] = Field(
+        ...,
+        description="Periods of the bound position (x, y, z), in the units of the position signals (before gain and offset); 0 is not periodic, the default for every axis. For a pattern that repeats, such as the stripes of a floor that scroll with an aircraft's ground track: the model wraps the position into one period, so it jumps by a whole period at every wrap, and the viewer interpolates a periodic component between two samples the shorter way round its period. The pattern then moves on smoothly instead of sliding back across a period for a frame or two. A component must change by less than half its period between two samples.",
+        max_length=3,
+        min_length=3,
+        title='PositionPeriod',
+    )
+
+
 class SegmentPlane(Enum):
     xy = 'xy'
     xz = 'xz'
@@ -1831,6 +1845,7 @@ class PoseBinding(BaseModel):
         description="Exactly 7 signals, in this fixed order: quaternion then position, (q_w, q_x, q_y, q_z, x, y, z), the same chart as the model's spatial pose Vec{7} (PoseIntegrator3D, ComposePose3D, JointTransform3D). The scalar quaternion part q_w comes first and the position is in metres in the world frame. The count is checked by the viewer (E304); the viewer must not reorder or infer the order from signal names.",
         min_length=1,
     )
+    period: PositionPeriod | None = None
     gain: float | None = None
     offset: float | None = None
     field_comment: str | None = Field(None, alias='$comment')

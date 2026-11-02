@@ -15749,6 +15749,42 @@
     "HoverView/ground[6]",
     "HoverView/ground[7]"
    ]
+  },
+  {
+   "target": "link:stripes_x",
+   "property": "pose",
+   "signal": [
+    "HoverView/stripes_x[1]",
+    "HoverView/stripes_x[2]",
+    "HoverView/stripes_x[3]",
+    "HoverView/stripes_x[4]",
+    "HoverView/stripes_x[5]",
+    "HoverView/stripes_x[6]",
+    "HoverView/stripes_x[7]"
+   ],
+   "period": [
+    10.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "target": "link:stripes_y",
+   "property": "pose",
+   "signal": [
+    "HoverView/stripes_y[1]",
+    "HoverView/stripes_y[2]",
+    "HoverView/stripes_y[3]",
+    "HoverView/stripes_y[4]",
+    "HoverView/stripes_y[5]",
+    "HoverView/stripes_y[6]",
+    "HoverView/stripes_y[7]"
+   ],
+   "period": [
+    0.0,
+    10.0,
+    0.0
+   ]
   }
  ],
  "parameters": [

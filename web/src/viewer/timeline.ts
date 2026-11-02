@@ -59,6 +59,19 @@ export function lerp(a: number, b: number, f: number): number {
   return a + (b - a) * f;
 }
 
+/**
+ * Lerp of a periodic value (a scrolling pattern that the model wraps into one period): the step from `a` to
+ * `b` is taken the shorter way round `period`, so a wrap between two samples (a jump by a whole period) does
+ * not slide the pattern back across the period. The result is measured from the nearer sample, so it stays
+ * within half a step of the values the model wrote. A `period` of 0 (or any non-positive or non-finite one)
+ * is a plain lerp.
+ */
+export function lerpPeriodic(a: number, b: number, f: number, period: number): number {
+  if (!(period > 0) || !Number.isFinite(period)) return lerp(a, b, f);
+  const d = b - a - period * Math.round((b - a) / period);
+  return f < 0.5 ? a + d * f : b - d * (1 - f);
+}
+
 export type Quat = readonly [number, number, number, number];
 
 /** Unit quaternion `(w, x, y, z)`; the identity for a zero or non-finite input. */
@@ -160,12 +173,15 @@ export class SignalBuffer {
     return this.times[i] ?? 0;
   }
 
-  /** Interpolated value of column `col` at time `t`, or null while empty or for an unknown column. */
-  valueAt(col: number, t: number): number | null {
+  /**
+   * Interpolated value of column `col` at time `t`, or null while empty or for an unknown column. With a
+   * positive `period` the column is periodic and is interpolated the shorter way round it ({@link lerpPeriodic}).
+   */
+  valueAt(col: number, t: number, period = 0): number | null {
     const column = this.cols[col];
     const b = bracket(this.times, this.count, t);
     if (column === undefined || b === null) return null;
-    return lerp(column[b.lo] ?? 0, column[b.hi] ?? 0, b.frac);
+    return lerpPeriodic(column[b.lo] ?? 0, column[b.hi] ?? 0, b.frac, period);
   }
 
   /** Interpolated unit quaternion from four columns, or null. */

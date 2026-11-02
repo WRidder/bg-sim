@@ -1,7 +1,8 @@
 /**
  * Applying bindings (spec "Viewer loop"): at one playback time, interpolate the bound signals
- * (lerp; shortest-path slerp for the pose quaternion), apply `gain` and `offset`, and set the
- * property through the built scene. Only `gain` and `offset` exist; any other math belongs in the model.
+ * (lerp; shortest-path slerp for the pose quaternion; a pose's periodic position components the shorter way
+ * round their `period`), apply `gain` and `offset`, and set the property through the built scene. Only `gain`
+ * and `offset` exist (`period` changes only the interpolation); any other math belongs in the model.
  * A `deformation` binding hands its modal coordinates (times `gain`) to the scene, which evaluates the
  * mode shapes per vertex (`beamModes.ts`); all families of one visual go in one call. A `mode-shapes`
  * binding hands its modal coordinates (times `gain`) to the scene, which sets them as the morph target
@@ -145,9 +146,11 @@ export class BindingApplier {
           const [c0, c1, c2, c3, c4, c5, c6] = cols;
           if (c0 === undefined || c1 === undefined || c2 === undefined || c3 === undefined) break;
           const q = buffer.quatAt([c0, c1, c2, c3], t);
-          const x = buffer.valueAt(c4 ?? -1, t);
-          const y = buffer.valueAt(c5 ?? -1, t);
-          const z = buffer.valueAt(c6 ?? -1, t);
+          // a periodic component (a wrapped, scrolling pattern) interpolates the shorter way round its period
+          const [px, py, pz] = binding.period ?? [0, 0, 0];
+          const x = buffer.valueAt(c4 ?? -1, t, px);
+          const y = buffer.valueAt(c5 ?? -1, t, py);
+          const z = buffer.valueAt(c6 ?? -1, t, pz);
           if (q === null || x === null || y === null || z === null) break;
           // gain and offset move the position; scaling the quaternion would leave the rotation chart
           const [qw, qx, qy, qz] = normalizeQuat(q);

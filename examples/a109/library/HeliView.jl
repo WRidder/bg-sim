@@ -4,12 +4,18 @@
     # reference's position, plus a formation slot (dx, dy, dz) and minus a constant drift
     # (vx, vy) t, so a helicopter in steady forward flight is shown relative to its trimmed path.
     #
-    #   pose    the airframe (geometric body frame B)
-    #   disc    the main rotor: at the hub, the shaft tilted forward by IS, the tip-path plane
-    #           tilted by the flapping (a1 aft, b1 right) and the blades turned by the azimuth
-    #   tail    the tail rotor at its hub, turned about the body y axis
-    #   ground  the floor: at z_floor in the world, followed up and down by at most `reach`, its
-    #           stripes (period `period`) scrolling with the reference's ground track
+    #   pose       the airframe (geometric body frame B)
+    #   disc       the main rotor: at the hub, the shaft tilted forward by IS, the tip-path plane
+    #              tilted by the flapping (a1 aft, b1 right) and the blades turned by the azimuth
+    #   tail       the tail rotor at its hub, turned about the body y axis
+    #   ground     the floor: at z_floor in the world, followed up and down by at most `reach`, under
+    #              the reference helicopter; it does not move sideways, so its edges stay put
+    #   stripes_x  the floor stripes across x (lines of constant x) and across y, at the floor's
+    #   stripes_y  height, scrolling with the reference's ground track: each set along its own axis
+    #              only, by the ground track wrapped into one stripe spacing `period` (-period/2 to
+    #              period/2, 0 at the start), so the stripes stay on the floor. A wrap jumps by a whole
+    #              period, which the pattern hides; the scene's bindings declare the period, so the 3D
+    #              view interpolates across the wrap the short way instead of sliding the stripes back.
     #
     # The blades turn at `spin` times the real rotor speed (the real 385 rpm, 6.4 rev/s with 4
     # blades, strobes at a video's frame rate), the tail rotor at `spin` times its own speed.
@@ -25,6 +31,8 @@
         disc::Vec{7}
         tail::Vec{7}
         ground::Vec{7}
+        stripes_x::Vec{7}
+        stripes_y::Vec{7}
     end
     @parameters begin
         dx::Real = 0.0, [description = "Formation slot, x (north, m)"]
@@ -34,7 +42,7 @@
         vy::Real = 0.0, [description = "Drift subtracted from the position, y (m/s)"]
         z_floor::Real = 0.0, [description = "Floor height in the world (m)"]
         reach::Real = 300.0, [description = "Largest climb or descent the floor follows (m)"]
-        period::Real = 20.0, [description = "Floor pattern period (m)"]
+        period::Real = 20.0, [description = "Floor stripe spacing (m)"]
         hub_x::Real = 0.0, [description = "Hub in the body frame, x (m)"]
         hub_z::Real = 1.52, [description = "Hub in the body frame, z (m)"]
         IS::Real = 0.11, [description = "Shaft tilt, forward (rad)"]
@@ -61,6 +69,7 @@
         ox::Real = 0.0
         oy::Real = 0.0
         oz::Real = 0.0
+        zf::Real = 0.0, [description = "Floor height in the view (m)"]
     end
     @equations begin
         ddt(az) ~ spin * om
@@ -118,12 +127,27 @@
         tail[5] ~ ox + R[1, 1] * tr_x + R[1, 2] * tr_y + R[1, 3] * tr_z
         tail[6] ~ oy + R[2, 1] * tr_x + R[2, 2] * tr_y + R[2, 3] * tr_z
         tail[7] ~ oz + R[3, 1] * tr_x + R[3, 2] * tr_y + R[3, 3] * tr_z
+        zf ~ clamp(z_floor - g0[7], -reach, reach) + dz
         ground[1] ~ 1.0
         ground[2] ~ 0.0
         ground[3] ~ 0.0
         ground[4] ~ 0.0
-        ground[5] ~ -(g0[5] - period * floor(g0[5] / period))
-        ground[6] ~ -(g0[6] - period * floor(g0[6] / period))
-        ground[7] ~ clamp(z_floor - g0[7], -reach, reach) + dz
+        ground[5] ~ 0.0
+        ground[6] ~ 0.0
+        ground[7] ~ zf
+        stripes_x[1] ~ 1.0
+        stripes_x[2] ~ 0.0
+        stripes_x[3] ~ 0.0
+        stripes_x[4] ~ 0.0
+        stripes_x[5] ~ period * floor((g0[5] + period / 2) / period) - g0[5]
+        stripes_x[6] ~ 0.0
+        stripes_x[7] ~ zf
+        stripes_y[1] ~ 1.0
+        stripes_y[2] ~ 0.0
+        stripes_y[3] ~ 0.0
+        stripes_y[4] ~ 0.0
+        stripes_y[5] ~ 0.0
+        stripes_y[6] ~ period * floor((g0[6] + period / 2) / period) - g0[6]
+        stripes_y[7] ~ zf
     end
 end

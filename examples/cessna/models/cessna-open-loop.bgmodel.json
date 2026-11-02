@@ -20860,13 +20860,49 @@
    "target": "link:floor",
    "property": "pose",
    "signal": [
-    "SPView/stripes[1]",
-    "SPView/stripes[2]",
-    "SPView/stripes[3]",
-    "SPView/stripes[4]",
-    "SPView/stripes[5]",
-    "SPView/stripes[6]",
-    "SPView/stripes[7]"
+    "SPView/ground[1]",
+    "SPView/ground[2]",
+    "SPView/ground[3]",
+    "SPView/ground[4]",
+    "SPView/ground[5]",
+    "SPView/ground[6]",
+    "SPView/ground[7]"
+   ]
+  },
+  {
+   "target": "link:stripes_x",
+   "property": "pose",
+   "signal": [
+    "SPView/stripes_x[1]",
+    "SPView/stripes_x[2]",
+    "SPView/stripes_x[3]",
+    "SPView/stripes_x[4]",
+    "SPView/stripes_x[5]",
+    "SPView/stripes_x[6]",
+    "SPView/stripes_x[7]"
+   ],
+   "period": [
+    50.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "target": "link:stripes_y",
+   "property": "pose",
+   "signal": [
+    "SPView/stripes_y[1]",
+    "SPView/stripes_y[2]",
+    "SPView/stripes_y[3]",
+    "SPView/stripes_y[4]",
+    "SPView/stripes_y[5]",
+    "SPView/stripes_y[6]",
+    "SPView/stripes_y[7]"
+   ],
+   "period": [
+    0.0,
+    50.0,
+    0.0
    ]
   }
  ],

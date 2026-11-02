@@ -6884,6 +6884,42 @@
     "SchedView/ground[6]",
     "SchedView/ground[7]"
    ]
+  },
+  {
+   "target": "link:stripes_x",
+   "property": "pose",
+   "signal": [
+    "SchedView/stripes_x[1]",
+    "SchedView/stripes_x[2]",
+    "SchedView/stripes_x[3]",
+    "SchedView/stripes_x[4]",
+    "SchedView/stripes_x[5]",
+    "SchedView/stripes_x[6]",
+    "SchedView/stripes_x[7]"
+   ],
+   "period": [
+    50.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "target": "link:stripes_y",
+   "property": "pose",
+   "signal": [
+    "SchedView/stripes_y[1]",
+    "SchedView/stripes_y[2]",
+    "SchedView/stripes_y[3]",
+    "SchedView/stripes_y[4]",
+    "SchedView/stripes_y[5]",
+    "SchedView/stripes_y[6]",
+    "SchedView/stripes_y[7]"
+   ],
+   "period": [
+    0.0,
+    50.0,
+    0.0
+   ]
   }
  ],
  "parameters": [

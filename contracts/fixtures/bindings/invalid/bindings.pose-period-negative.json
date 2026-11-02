@@ -1,0 +1,11 @@
+{
+  "$comment": "Invalid: a pose `period` entry is 0 (not periodic) or a positive period; -50 is neither.",
+  "bindings": [
+    {
+      "target": "link:ground",
+      "property": "pose",
+      "signal": ["V/ground[1]", "V/ground[2]", "V/ground[3]", "V/ground[4]", "V/ground[5]", "V/ground[6]", "V/ground[7]"],
+      "period": [-50.0, 0, 0]
+    }
+  ]
+}

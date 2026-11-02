@@ -348,6 +348,9 @@ def numeric_start(st: dict) -> dict:
 # --------------------------------------------------------------------------- scenes
 VIEW_LIFT = 4.0
 FLOOR_DEPTH = 40.0     # m: the open-loop reference floor below the start altitude (the phugoid moves +-10 m)
+FLOOR_PERIOD = 50.0    # m, stripe spacing of the reference floor (the period of the scrolling pattern)
+FLOOR_HALF = 400.0     # m, half size of the floor patch (a whole number of periods)
+STRIPE_W = 3.0         # m, stripe width
 TRAIL_RGBA = "1.0 0.85 0.45 1"
 PIVOTS = {   # make_meshes.PIVOTS: (hinge point, axis), body frame
     "aileron_l": ((-0.63, 4.09, 0.66), (0.0, 1.0, 0.0)), "aileron_r": ((-0.63, -4.09, 0.66), (0.0, 1.0, 0.0)),
@@ -447,13 +450,24 @@ def ol_scene() -> str:
     L = ['<?xml version="1.0"?>', "<!--",
          "  cessna-open-loop: five Cessnas released from the trim at 100 KTAS, 5000 ft, each on one mode: SP (short period,\n"
          "  framed), Ph (phugoid), DR (dutch roll), Ro (roll), Sl (spiral), in formation slots 30 m apart. A striped floor 40 m\n"
-         "  below the start altitude follows the framed aircraft (C172View).", SCENE_NOTE, "-->",
-         '<sdf version="1.9">', '  <model name="cessna-open-loop">', '    <link name="floor">', "      <pose>0 0 0 0 0 0</pose>"]
-    L += box("floor", (0.0, 0.0, -0.5), (800.0, 800.0, 1.0), "0.36 0.45 0.33 1")
-    for k in range(-8, 9):
-        L += box(f"stripe_x{k + 8}", (50.0 * k, 0.0, 0.05), (3.0, 800.0, 0.1), "0.62 0.66 0.55 1")
-        L += box(f"stripe_y{k + 8}", (0.0, 50.0 * k, 0.05), (800.0, 3.0, 0.1), "0.62 0.66 0.55 1")
+         "  below the start altitude follows the framed aircraft (C172View): link floor stays under it, and the 50 m\n"
+         "  stripes (links stripes_x, stripes_y) scroll with the ground track, each set along its own axis, wrapped into\n"
+         "  one stripe spacing (the bindings declare that period, so the view interpolates across a wrap the short way).",
+         SCENE_NOTE, "-->", '<sdf version="1.9">', '  <model name="cessna-open-loop">', '    <link name="floor">', "      <pose>0 0 0 0 0 0</pose>"]
+    # the stripes sit half a period off the centre and shift by at most half a period either way, so they cover
+    # the floor from edge to edge and their ends stay put; the floor is one stripe width larger than the pattern
+    n = int(round(FLOOR_HALF / FLOOR_PERIOD))
+    side = 2 * FLOOR_HALF + STRIPE_W
+    L += box("floor", (0.0, 0.0, -0.5), (side, side, 1.0), "0.36 0.45 0.33 1")
     L.append("    </link>")
+    for axis in "xy":
+        L += [f'    <link name="stripes_{axis}">', "      <pose>0 0 0 0 0 0</pose>"]
+        for k in range(-n, n):
+            c = (k + 0.5) * FLOOR_PERIOD
+            at, size = (((c, 0.0, 0.05), (STRIPE_W, 2 * FLOOR_HALF, 0.1)) if axis == "x"
+                        else ((0.0, c, 0.05), (2 * FLOOR_HALF, STRIPE_W, 0.1)))
+            L += box(f"stripe_{axis}{k + n}", at, size, "0.62 0.66 0.55 1")
+        L.append("    </link>")
     for tag in OL_TAGS:
         L += aircraft_links(tag)
     L += ["  </model>", "</sdf>", ""]
@@ -480,7 +494,8 @@ def view(d: Diagram, subs: list[str], tags: list[str], offsets: list[float], z0,
     for k, (sub, tag, dy) in enumerate(zip(subs, tags, offsets)):
         vnode = f"{sub}View"
         d.node(vnode, "project:C172View", x, y + 120 * k,
-               params={"dy": num(dy), "dz": num(VIEW_LIFT), "z0": ex(z0), "depth": num(FLOOR_DEPTH + VIEW_LIFT), "period": "50.0"})
+               params={"dy": num(dy), "dz": num(VIEW_LIFT), "z0": ex(z0), "depth": num(FLOOR_DEPTH + VIEW_LIFT),
+                       "period": num(FLOOR_PERIOD)})
         d.sig(sub, "pose", vnode, "g")
         d.sig(ref, "pose", vnode, "g0")
         bindings.append({"target": f"link:ac_{tag}", "property": "pose", "signal": [f"{vnode}/pose[{i}]" for i in range(1, 8)]})
@@ -488,7 +503,10 @@ def view(d: Diagram, subs: list[str], tags: list[str], offsets: list[float], z0,
     if field:
         bindings.append({"target": "link:field", "property": "pose", "signal": [f"{ref}View/field[{i}]" for i in range(1, 8)]})
     else:
-        bindings.append({"target": "link:floor", "property": "pose", "signal": [f"{ref}View/stripes[{i}]" for i in range(1, 8)]})
+        bindings.append({"target": "link:floor", "property": "pose", "signal": [f"{ref}View/ground[{i}]" for i in range(1, 8)]})
+        for axis, period in (("x", [FLOOR_PERIOD, 0.0, 0.0]), ("y", [0.0, FLOOR_PERIOD, 0.0])):
+            bindings.append({"target": f"link:stripes_{axis}", "property": "pose",
+                             "signal": [f"{ref}View/stripes_{axis}[{i}]" for i in range(1, 8)], "period": period})
     return bindings
 
 
