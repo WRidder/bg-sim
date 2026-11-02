@@ -49,10 +49,12 @@ using .SourceGolden
         y = bg_all(columns, "S1/y")
         # The solver lands exactly on t_start: the event pair plus the grid row, all at the
         # value after the jump (the condition t >= t_start already holds there, as for a
-        # Step on an output time). Every row before t_start is the offset, exactly.
+        # Step on an output time). Every row before t_start is the offset, exactly. The grid
+        # row holds the values 1e-12 s after t_start (the run steps past the switching root on
+        # it, `_snap_target`), so it is within A * w * 1e-12 of the value at t_start.
         rows = findall(==(t0), times)
         @test length(rows) == 3
-        @test all(isapprox.(y[rows], off + A * sin(ph); atol = 1e-12))
+        @test all(isapprox.(y[rows], off + A * sin(ph); atol = 1e-10))
         @test all(y[times .< t0] .== off)
         @test y[rows[1] - 1] == off
         ey, ea = source_errors(columns, 1, ref, [t0]; t_end = 1.0, points = 101)
