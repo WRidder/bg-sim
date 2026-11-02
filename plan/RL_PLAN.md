@@ -67,7 +67,7 @@ about 0.25/0.20 kg, a ±1.0 m rail, and the same motor, gearbox and belt. It is 
 with a classical redesign and `design/realism.json` (C0 of `plan/ROBUST_CLASSICAL_PLAN.md`). Its plant-only
 FMU comes from the same generator (`design/rlmodels.py` pattern, `rl/export_plant.jl`), with the exposed
 globals and ranges taken from `realism.json`. The ±1.0 m rail should remove the rail-end terminations that
-ended almost every swing-up episode on the ±0.40 m rail.
+ended almost every swing-up episode on the ±0.40 m rail. Done in R0.7; the result is the final R0.6 below.
 
 ### Step 1: robustness
 
@@ -95,15 +95,41 @@ with the LQR balance); if none works, the classical design stays the controller 
 
 ## Step 0 result: go/no-go (R0.6)
 
-Draft on the double cart (`examples/pendulum-double-cart`). The final R0.6, with the timeboxed swing-up
-variants rerun, is on the lab rig (see "Rig change" below).
+**Verdict: go.** The workflow FMU → batched C env → rsl_rl PPO → generated `@discrete` block → bgsim works
+end to end on both rigs, and with the lab rig's realism parameters as the FMU's exposed globals. It is
+fast enough, agrees with the training env to round-off, and gives single-network controllers that bgsim
+runs like any firmware. **The recommended recipe is the imitation warm start** (behaviour cloning on the
+rig's own TVLQR swing-up and LQR, then PPO with a cloning anchor). On the lab rig it gives a controller as
+good as the classical firmware in about 4 minutes. Pure RL and the hybrid now learn on the lab rig, which
+they did not on the ±0.40 m rail, but within the timebox they reach only 16 % and 53 % of the noisy hanging
+starts and leave the rail more often. Step 1 (robustness) goes ahead on the lab rig, from the imitation
+warm start; pure RL stays a comparison row.
 
-**Verdict (draft): go for the workflow, no-go for "pure RL from scratch" as the default recipe.**
-FMU → batched C env → rsl_rl PPO → generated `@discrete` block → bgsim works end to end. It works for a
-balance policy and for a swing-up-and-balance policy (one network each). It is fast enough and agrees
-with the training env to round-off. On this plant (high-gain balance, saturating at 0.1 rad, ±0.40 m
-rail), useful policies need an imitation warm start from the classical design. Details are in the table
-rows R0.1-R0.5.
+### Lab rig (`examples/pendulum-double-cart-lab`, R0.7)
+
+| question | result |
+| --- | --- |
+| plant FMU | `pendulum-double-cart-lab-plant`: the 27 bond-graph parameters of `realism.json` with min < max exposed with their realism ranges; the lumped link mass, centre of mass and inertia as driven globals. Fixed Rodas4P 1 ms (with the belt, k 2-6e5 N/m), 5.5 µs per doStep, fmpy clean, 0 allocations; 1.5e-4 of the peak against Rodas5P, also with 9 globals changed before initialisation. |
+| env sanity check | The rig's classical controllers as the actor at 200 Hz: the TVLQR swing-up 100 % from hanging, also with ±0.15 rad / ±0.05 m start noise and σ = 0.1 action noise (peak 0.44 m, 23 V); the LQR from rest 1.00 / 0.95 / 0.71 at ±0.1 / 0.2 / 0.3 rad. |
+| swing-up variants (timeboxed) | See the table below. About 1 h 55 min of training (two runs in parallel, 6 OpenMP + 4 torch threads each; 1.7-1.8 M env steps/min per run), ≤ 47 M steps per run. |
+| final performance (swing-up, shipped) | `pendulum-double-cart-lab-rl` (imiL): upright inside 2° 2.7 s after the start (the TVLQR catches at 3.0 s), 0.2° and 3 mm before the push (classical 0.002°), 0.45 N push → 10.9° / 3.7° (classical 10.7°), 15.2 V and 0.388 m peak (classical 15.0 V, 0.387 m). In the env: 0.97 of noisy hanging starts, all 3 hanging test poses, 3 of 4 upright test poses (the fourth, -0.25 rad on link 2, also fails often with the LQR alone). |
+| bgsim vs env | 3 hanging and 2 upright rest poses, 4-6 s: 2e-6 m, 2e-6 rad, 4e-4 V through the whole swing-up (the cloned swing-up is smooth, so round-off does not grow). |
+| compile time | The same block size (4865 weights, 66 KiB): cold flatten 2.4 s, compile 2.3 s, first run 40.8 s (Julia JIT); warm 0.18 s / 1.3 s / 5.1 s for the 12.5 s run. |
+
+Swing-up variants on the lab rig (success = both links within 0.1 rad over the last second of a 6 s episode,
+64 noisy hanging starts, ±0.95 m episode end; "test poses" = the 3 hanging and 4 upright rest poses of
+`rl/compare.py`):
+
+| variant | run | steps, time | from noisy hanging | test poses | notes |
+| --- | --- | --- | --- | --- | --- |
+| classical TVLQR + LQR (reference) | | | 1.00 | 3/3 hanging | 15 V, 0.39 m |
+| (b) imitation warm start | imiL: BC on the TVLQR + LQR (2.3 M samples, 1 min), 20-iteration critic warm-up, PPO with a BC anchor (20 steps/iteration, KL 0.005) | 7.9 M, 4 min (stopped at 0.95 twice) | BC alone 0.98; 0.97 / 0.95 | 3/3 hanging, 3/4 upright | shipped; 15 V, 0.39-0.47 m |
+| (a) pure RL | pureL: fixed observation scale, init_std 0.3, entropy 0.002, reset curriculum | 47 M, 28 min | best 0.16 (34 M), then 0.00-0.12 | 2/3 hanging, 4/4 upright | 24 V bang-bang, 0.6-0.7 m |
+| (a) pure RL | pureL2: as pureL, entropy 0, KL 0.005 | 47 M, 28 min | 0.00 throughout | not evaluated | the action std collapsed (0.28 → 0.02) before any swing-up; never balanced from upright either |
+| (c) hybrid | hybL: RL swing-up, the LQR takes over at z'Pz < 2e4 (catch_calib: smallest failing rest start 3.3e4), dense reward, init_std 0.5, entropy 0.005 | 47 M, 26 min | best 0.53 (45 M), rising | 2/3 hanging, 3/4 upright | 24 V, 0.78-0.86 m; the action std grew to 0.8 before it fell |
+| (c) hybrid | hybL2: as hybL, init_std 0.3, entropy 0, KL 0.005 | 47 M, 29 min | best 0.44 (45 M), last 0.08 | 2/3 hanging, 1/4 upright | 24 V, 0.68-0.89 m; slower and less stable than hybL |
+
+### Double cart (`examples/pendulum-double-cart`, R0.1-R0.5, first rig)
 
 | question | result |
 | --- | --- |
@@ -123,7 +149,13 @@ What worked:
 - An env sanity check against the classical controller (the LQR as the actor). It separated "env bug" from
   "learning problem" in minutes and should be the first test of every new env.
 - Imitation warm starts: behaviour cloning on the LQR, and on the TVLQR swing-up from the example's own design
-  tables (`rl/classical.py`).
+  tables (`rl/classical.py`). On the lab rig cloning alone gives 0.98 (the double cart: 0.48): its classical
+  swing-up was planned with margins (16.8 V of 24 V, 0.8 m of the 1.0 m rail), so the clone's small errors
+  stay inside the TVLQR's region of attraction; the double cart's TVLQR used the rail to its end.
+- The long rail. With ±1.0 m, pure RL (best 0.16) and the hybrid (best 0.53) learn a swing-up within 47 M
+  steps; on the ±0.40 m rail both stayed at 0-16 %.
+- Exposing the realism parameters directly: the FMU's globals are the names of `realism.json`, so step 1
+  samples `lablib.sample` values straight into `bgenv_reset`.
 
 What did not:
 - PPO from scratch on this plant: the needed gains are 10/rad in action units, and the actor stays 6-80× too
@@ -131,23 +163,36 @@ What did not:
 - PPO fine-tuning without an anchor destroys a cloned swing-up within 20 iterations, and does the same to the
   cloned balance once the swing-up is trained.
 - DAgger on the time-indexed TVLQR expert (conflicting labels off the nominal).
+- PPO from scratch is unstable even when it learns: pureL reached 0.16 at 34 M steps and fell back to
+  0.00-0.12, losing the balance from upright as well (0.94 → 0.00 → 0.59). Its policy is bang-bang (24 V)
+  and uses 0.6-0.9 m of the rail, where the clone uses 15 V and 0.4 m.
 
 What step 1 (domain randomisation) needs:
-1. The shared parameter set `design/realism.json` (C0 of `plan/ROBUST_CLASSICAL_PLAN.md`): the plant FMU's
-   11 globals and ranges plus the non-idealities.
-2. Per-env parameter sampling at reset. `bgenv_reset` already takes parameter indices and values; the env
+1. The shared parameter set `examples/pendulum-double-cart-lab/design/realism.json` (C0 of
+   `plan/ROBUST_CLASSICAL_PLAN.md`) is in place, and the lab plant FMU exposes its 27 bond-graph parameters.
+   The effects outside the bond graph (joint and cart Coulomb friction, cable springs, commutation ripple,
+   cogging) need a force path: a cart force input (`F_cart`) and joint torque inputs on the plant FMU, driven
+   by the wrapper, or bond-graph elements. The smooth Coulomb laws (eps 0.005 m/s, 0.01 rad/s) are stiff at a
+   fixed 1 ms step, so an input driven per 1 ms substep from the sampled rates is the cheaper option.
+2. **An estimator.** The lab realism screen (`design/screen_results.json`) found that the classical
+   firmware needs an EKF with the 14-bit joint encoders: filtered differences are marginal (9 V rms
+   chatter, 12 of 48 Monte Carlo draws limit-cycle at 2-4°). The policy's differenced rates have the same
+   problem. Either give the actor an observation history (the last k encoder samples and actions, so it can
+   filter) or feed it the EKF's state estimate, and generate that EKF into the bgsim block next to the
+   network (or as its own `@discrete` block).
+3. Per-env parameter sampling at reset. `bgenv_reset` already takes parameter indices and values; the env
    passes none yet. The sampled values go to the critic as privileged observations.
-3. Non-idealities in the wrapper: action delay (a ring buffer of 1-2 ms and more, which needs a finer
+4. Non-idealities in the wrapper: action delay (a ring buffer of 1-2 ms and more, which needs a finer
    substep or 1 kHz control), encoder quantisation and noise, filtered rates, actuator ripple, random pushes
    through `F_push`.
-4. Resets with velocity: the shim sets only pose integrators (rest starts). Starting with rates needs the
+5. Resets with velocity: the shim sets only pose integrators (rest starts). Starting with rates needs the
    momenta (mass matrix) or a short pre-roll.
-5. The classical controller as the expert, recomputed per parameter set (the LQR/TVLQR robustness of
+6. The classical controller as the expert, recomputed per parameter set (the LQR/TVLQR robustness of
    `ROBUST_CLASSICAL_PLAN.md`) for the imitation warm start. Then PPO with a BC anchor; the anchor weight
    decays as the randomised performance overtakes the expert.
-6. Throughput: the torch update dominates. Larger minibatches or fewer epochs help; a GPU would help most. The
+7. Throughput: the torch update dominates. Larger minibatches or fewer epochs help; a GPU would help most. The
    plant side scales with processes (285k steps/s).
-7. The motor current at 1 ms is off by 3e-2 (electrical pole); keep it critic-only, or export at 0.5 ms if
+8. The motor current at 1 ms is off by 3e-2 (electrical pole); keep it critic-only, or export at 0.5 ms if
    current feedback is wanted.
 
 ## Progress tracking
@@ -159,9 +204,9 @@ What step 1 (domain randomisation) needs:
 | R0.3 | `VecEnv` wrapper, PPO swing-up + balance (no DR) | done on the double cart (balance; swing-up with an imitation warm start, 2 of 3 cases); the swing-up variants move to the lab rig (R0.7) | rsl_rl 5.5.2 (`rl/rlpend/env.py`, `rl/train.py`): 4096 envs, 200 Hz, actor obs sin/cos of th1/th2, x, differenced rates, previous action; critic + true rates, current, energy error; actor [64, 64] tanh, critic [128, 128] elu. 42-48k env steps/s in training (per 131k-step iteration: env 0.9-1.1 s, torch inference + PPO update 1.6-1.9 s; `OMP_WAIT_POLICY=PASSIVE`, 8 torch threads best). **Pure RL from scratch failed** (≈ 120 M steps over 6 runs): run 1 discarded (two env bugs found by R0.5's comparison); run 2 (sum-of-cosines reward) "link 1 up, link 2 spinning", std collapsed by 33 M; run 3 (product reward) both links tumbling at 23 M; run 4 (reset curriculum near upright / random / hanging, coordinator's suggestion) pumps energy and tumbles near E_up, 0 % from hanging and from upright at 23 M; balance-only bal1 (init_std 0.3, 10 M) and bal2 (+ drop termination, 6.6 M) never balance. **Env sanity check**: the example's balance LQR as the actor in this env (200 Hz, differenced rates, ±24 V clamp, resets at rest) balances 100 % of starts up to ±0.2 rad, 91 % at ±0.3 rad (same at 1 kHz), and still 100 % with σ = 0.3 Gaussian action noise (7 V per 5 ms): env, conventions, rate estimate, action scale and exploration noise are fine. **Diagnosis**: the learned actor had the LQR's signs but 6-80× too small gains (da/dth2 +0.14 vs +10.7 needed; the LQR saturates at 0.1 rad) and a normaliser fitted to tumbling data; PPO does not grow such high gains from scratch. **Imitation warm start works** (`--bc-lqr 3000`: 262k samples of the noisy LQR, the LQR within 0.6 rad of upright and 0 V elsewhere, normaliser frozen after BC): **balA** (BC + PPO, upright starts ±0.3 rad, init_std 0.1, entropy 0, drop termination 0.8 rad): 0.94 after BC, best **0.95** from upright (64 starts, 6 s, both links within 0.1 rad over the last second; the LQR's own rate is 0.91 at ±0.3 rad), 13.1 M steps in 5.2 min; PPO is fragile on top (one eval at 0.00, iteration 90). Run 5 (BC + curriculum toward hanging) and run 6 (+ 20-iteration critic warm-up) both lost the balance within 40-60 iterations once PPO moved the actor for the swing-up. Second opinion (Fable subagent): hand-scaled observations instead of the empirical normaliser, entropy 0, small init_std, 50 Hz policy. Hybrid probe (train7, angle catch 0.3 rad, LQR in the training loop): 16 % swing-up success from hanging at 23.6 M steps when stopped. **Swing-up timebox** (pure RL / imitation warm start / hybrid, about 1.5 h, ≤ 50 M steps per run): see the R0.6 draft's "swing-up variants" row. Best: imi2 (BC on the TVLQR swing-up + PPO with a BC anchor, `rlpend/experts.py`, `--bc-expert tvlqr --bc-anchor 20`), 0.66 from noisy hanging at 37 M steps. Pure-RL balance with the fixes (`--fixed-norm --widen`): 0.91 at ±0.20 rad by 26 M, stalls at ±0.25 |
 | R0.4 | policy-to-block generator, compile time measured | done | `rl/make_policy_block.py`: actor weights + rsl_rl normaliser mean/std (+1e-2) + action scale/clamp → `library/DoubleCartPolicy.jl` (`@discrete Ts = 0.005`, the env's observation pipeline operation for operation, `Mat * Vec`, `tanh` loops, `clamp`); numpy twin vs torch actor 9e-7; 66 KiB, 4865 weights; hybrid variant adds the latched catch z'Pz < catch_tol and the LQR (`rl/classical.py` → `rl/classical.json`). `pendulum-double-cart-rl` (`design/rlmodels.py --rl balance`): start at rest at 0.1/-0.05 rad, push 0.28 N at 3 s, 6 s. bgsim (`rl/closed_loop.jl`, Rodas5P 1e-8): **cold** flatten 2.1 s, compile 2.0 s, first run 31.8 s (Julia JIT of the generated code); **warm** flatten 0.16 s, compile 1.3 s, run 2.7 s for 6 s (other models 0.2-0.3 s compile, 1.4-2.0 s run for 4 s). Fine; the cold first run is the only slow part. Swing-up: `--name DoubleCartSwingPolicy` (imi2/model_280.pt, numpy twin 1e-6) and `pendulum-double-cart-rl-swingup` (`--rl swingup`: hang until 1 s, push 0.28 N at 7 s, 12 s): warm flatten 0.16 s, compile 1.2 s, run 4.3 s |
 | R0.5 | bgsim closed loop vs training env | done | `rl/compare.py --task balance` (balA/model_best.pt): 4 rest starts within 0.25 rad, 4 s each, bgsim (plant + generated block) vs the batched FMU env: max deviation **x 8e-7 m, th1 3e-6 rad, th2 8e-7 rad, u 2e-3 V** over the whole 4 s. Default model in bgsim: upright inside 2° from 0.7 s, band before the push 0.81°/0.73° with the cart 47 mm off centre (the LQR firmware: 0.01°, 1 mm), push peak 18.4°/6.4° (LQR 17.8°/6.0°), back inside 1.4° by 5 s, peak 22.5 V, peak cart 0.217 m. `expected.json` entry `pendulum-double-cart-rl` (13 checks) passes with `run_checks.py --only pendulum-double-cart` (78 passed; the 1 failure is the docs KaTeX check of the existing model: `katex` not installed in this worktree's web/node_modules). Plot: `runs/cmpA/compare.png` (not committed). Swing-up: `rl/compare.py --task swingup` (imi2/model_280.pt): 3 hanging cases (6 s) and 2 upright cases (4 s): until 1 s ≤ 1e-6 m / 6e-6 rad, upright cases 3e-7 m / 2e-6 rad / 2e-3 V throughout; through the swing-up 8e-4 m and 1e-3 rad (tumbling amplifies round-off), same outcomes (the third hanging case leaves the rail in both, then 7e-2 rad). `expected.json` entry `pendulum-double-cart-rl-swingup` (13 checks) passes (`run_checks.py --only pendulum-double-cart`: 94 passed, the same 1 KaTeX failure). Plot: `runs/cmpS/compare.png` (not committed) |
-| R0.6 | go/no-go report | draft (double cart) | "Step 0 result" above: the workflow is a go; the final report follows R0.7 on the lab rig |
-| R0.7 | lab rig: plant-only FMU + timeboxed swing-up variants | todo (waits for `examples/pendulum-double-cart-lab`) | plant-only FMU of the lab rig with the generator, exposed globals and ranges from its `design/realism.json`; the env sanity check with its classical controller; then the swing-up timebox: pure RL, imitation warm start, hybrid, as separate rows |
-| R1 | domain randomisation, non-idealities, robustness table | todo | on the lab rig; ranges in `examples/pendulum-double-cart-lab/design/realism.json` (C0 of `plan/ROBUST_CLASSICAL_PLAN.md`); robustness table = its C5 |
+| R0.6 | go/no-go report | done | "Step 0 result" above: **go**, with the imitation warm start as the recipe (lab rig: 0.97 from noisy hanging in 4 min, as good as the classical firmware in bgsim); pure RL (best 0.16) and the hybrid (best 0.53) stay comparison rows |
+| R0.7 | lab rig: plant-only FMU + timeboxed swing-up variants | done | `examples/pendulum-double-cart-lab/design/rlmodels.py` → `pendulum-double-cart-lab-plant` (27 realism parameters exposed with their ranges, `design/rl_ranges.json`; link properties as driven globals, checked against `lablib.link_props`); `rl/export_plant.jl --rig=lab`, `rl/build_plant.py`: Rodas4P 1 ms, 5.5 µs/doStep, 1.5e-4 vs Rodas5P (nominal and 9 globals changed), current 3.1e-2. `rl/classical.py --rig lab` → `rl/classical_lab.json` (K = design.json Klqr, P, TVLQR tables, link properties). Env: link COM/inertia energy, end-stop state reset with the cart, `train.py --rig lab` (episode end 0.95 m). Sanity check: TVLQR 100 % from noisy hanging, LQR 1.00/0.95/0.71 at ±0.1/0.2/0.3 rad. Catch region (`catch_calib.py --rig lab`): smallest failing rest start z'Pz = 3.3e4. Timebox (about 1 h 55 min of training, 5 runs ≤ 47 M steps): imiL 0.97, pureL 0.16, pureL2 0.00, hybL 0.53, hybL2 0.44 (table in the R0.6 section). Shipped: `library/DoubleCartLabPolicy.jl` (imiL/model_best.pt) and `pendulum-double-cart-lab-rl`; `rl/compare.py --task lab`: bgsim vs env 2e-6 m / 2e-6 rad / 4e-4 V; `expected.json` entry (15 checks) passes (`run_checks.py --only pendulum-double-cart-lab`: 104 passed, the 1 failure is the docs KaTeX check, `katex` not installed in this worktree). Plots: `runs/cmpL/compare.png`, `runs/{imiL,pureL,pureL2,hybL,hybL2}/curve.png` (not committed) |
+| R1 | domain randomisation, non-idealities, robustness table | todo | on the lab rig, from the imitation warm start (the expert recomputed per sampled parameter set); ranges from `examples/pendulum-double-cart-lab/design/realism.json` (C0 of `plan/ROBUST_CLASSICAL_PLAN.md`); robustness table = its C5. Needs (R0.6 list): a force path for Coulomb friction, ripple and cogging; an observation history or the EKF's estimate (the 14-bit encoders make differenced rates marginal) |
 | R2.1 | triple cart | deferred | until the 2-link workflow proves viable |
 | R2.2 | quad cart | deferred | until the 2-link workflow proves viable |
 | R2.3 | rotary double, triple | deferred | until the 2-link workflow proves viable |
