@@ -731,8 +731,9 @@ end
 
         # A root junction bonded to a junction inside a component (the double-cart plant:
         # root 1-junctions against the RigidBody2D junctions): both ends name one pair.
-        cart = flat_file(joinpath(_REPO, "examples", "pendulum-double-cart-lab", "models",
-            "pendulum-double-cart-lab-plant.bgmodel.json"))
+        lab = joinpath(_REPO, "examples", "pendulum-double-cart-lab")
+        cart = Compile.flatten(IR.parse_model(joinpath(lab, "models",
+            "pendulum-double-cart-lab-plant.bgmodel.json")); project_dir = lab)
         @test isempty(_errors(cart))
 
         # A junction with no bonds is E101 on the junction node (it can never be solved).

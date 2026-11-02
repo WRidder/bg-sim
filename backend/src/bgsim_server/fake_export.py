@@ -242,9 +242,11 @@ def tunables(model: dict[str, Any], scope: str | None, settings: dict[str, Any]
 def _model_description(ident: str, guid: str, vars_: dict[str, list]) -> str:
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
-        f'<fmiModelDescription fmiVersion="2.0" modelName={quoteattr(ident)} guid={quoteattr(guid)} '
-        'generationTool="bg-sim fake export" variableNamingConvention="structured" '
-        'numberOfEventIndicators="0">',
+        (
+            f'<fmiModelDescription fmiVersion="2.0" modelName={quoteattr(ident)} guid={quoteattr(guid)} '
+            'generationTool="bg-sim fake export" variableNamingConvention="structured" '
+            'numberOfEventIndicators="0">'
+        ),
         f'  <CoSimulation modelIdentifier={quoteattr(ident)} canHandleVariableCommunicationStepSize="true"/>',
         '  <DefaultExperiment startTime="0" stopTime="1" stepSize="0.001"/>',
         "  <ModelVariables>",

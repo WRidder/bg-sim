@@ -73,7 +73,7 @@ def first_paragraph(markdown: str) -> str | None:
     block: list[str] = []
     for raw in markdown.splitlines():
         line = raw.strip()
-        if line.startswith("```") or line.startswith("~~~"):
+        if line.startswith(("```", "~~~")):
             in_code = not in_code
             if block:
                 break

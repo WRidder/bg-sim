@@ -89,7 +89,7 @@ def _example_copy_ignore(source: Path):
     if gitignore.is_file():
         for raw in gitignore.read_text(encoding="utf-8", errors="replace").splitlines():
             line = raw.strip()
-            if not line or line.startswith("#") or line.startswith("!"):
+            if not line or line.startswith(("#", "!")):
                 continue
             dir_only = line.endswith("/")
             line = line.rstrip("/")
