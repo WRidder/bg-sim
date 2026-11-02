@@ -172,6 +172,8 @@ The modal frequencies are real: a small steel bracket has modes at several kHz. 
 - Undamped stiff joints ring for ever: give the joints and clamps some damping (the examples use ζ ≈ 0.05 for their welds) and keep `reltol` at 1e-7 or looser for long runs.
 - Make joints and clamps stiff enough, not stiffer: about 1000 times the part's own stiffness at the interface is plenty. Every factor of 100 in stiffness is a factor of 10 in the frequency the solver has to step over.
 - Keep the model an ODE. A fixed offset (`FixedTransform3DNeutral`) between a rigid body that already has a joint on its port and the joint to the flexible part can leave algebraic equations (a DAE), and a stiff run then crawls. Put the offset on the flexible part's side of the joint instead (joint → offset → `A`), as in example **fem-bracket**.
+- When a `FixedTransform3DNeutral` places a joint on the ground (`GroundSpatial`), put the ground on its side `b` and give the transform the inverse pose (the rotation conjugated, the offset −Rᵀp). The transform computes the flow of `a` from that of `b`; with the ground on `a`, the joint's flows and efforts form a linear algebraic loop (example **fem-gantry**: 24 algebraic unknowns, and the run crawled).
+- A closed kinematic loop through the part (two axes holding the two ends of a beam) needs no special treatment when the joints are compliant: example **fem-gantry** holds its crossbeam on a welded end and a pivoted end, the usual fixed/floating pair.
 
 For a fixed-step [export](page:export), the explicit methods need `dt · 2π f_max < 2.8`, where `f_max` is the highest frequency in `f` (the free body vibrates somewhat above it). Drop modes you do not need (`drop_above_hz`) rather than shrink the step.
 

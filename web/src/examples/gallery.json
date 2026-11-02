@@ -175,6 +175,15 @@
       "bracket-ringdown"
     ]
   },
+  "fem-gantry": {
+    "title": "FEM gantry",
+    "description": "An H-gantry with a FEM aluminium crossbeam: two linear-motor X servos, a Y carriage on its rail, plain and input-shaped moves, racking, von Mises stress.",
+    "hasScene": true,
+    "models": [
+      "fem-gantry",
+      "gantry-static"
+    ]
+  },
   "fem-torsion": {
     "title": "FEM torsion",
     "description": "The two-disk torsion shaft as a FEM flexible body (Craig-Bampton): the exact torsion frequency, where three assumed modes are 3.5 % too stiff.",

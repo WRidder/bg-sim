@@ -1,0 +1,38 @@
+{
+  "$comment": "FEM part spec of the fem-gantry example (BGSimFEM): the crossbeam of an H-gantry, an aluminium box 1400 x 60 x 100 mm (length along y, width along x = the direction the gantry moves, height along z), walls 4 mm except the front wall (the rail seat), 10 mm, and 10 mm end caps. (With a 4 mm front wall the rail's torque bends the wall locally, 15 times softer, a response the reduced model only gets right at its load-mode stations.) Interface A: the first 80 mm of the beam, held in the end bracket on the X1 carriage (every surface node there, the reference frame, at the beam axis), B: the same at the X2 end. The Y carriage runs on a rail on the front wall (x = +30 mm) from y = 150 to 1250 mm. Stress hotspots on the front and back walls 100 mm from the end of the A clamp and on the back wall at mid-span, at mid-height (the extreme fibres of horizontal bending, clear of the clamp and of the rail footprint, so beam theory applies there). Run: julia --project=julia/BGSimFEM julia/BGSimFEM/bin/bgsim-fem.jl examples/fem-gantry/design/beam.fem.json",
+  "name": "beam",
+  "geometry": {"cut": [
+    {"box": {"corner": [-0.03, 0.0, 0.0], "size": [0.06, 1.4, 0.1]}},
+    {"box": {"corner": [-0.026, 0.01, 0.004], "size": [0.046, 1.38, 0.092]}}
+  ]},
+  "material": {"E": 69.0e9, "nu": 0.33, "rho": 2700.0},
+  "mesh": {"size": 0.008, "order": 2},
+  "interfaces": [
+    {"name": "A", "position": [0.0, 0.04, 0.05], "select": {"box": {"min": [-1, -0.001, -1], "max": [1, 0.08, 1]}}},
+    {"name": "B", "position": [0.0, 1.36, 0.05], "select": {"box": {"min": [-1, 1.32, -1], "max": [1, 1.401, 1]}}}
+  ],
+  "rail": {
+    "name": "Y rail",
+    "start": [0.03, 0.15, 0.05],
+    "end": [0.03, 1.25, 0.05],
+    "normal": [1, 0, 0],
+    "stations": 45,
+    "chebyshev": 20,
+    "footprint": {"half_length": 0.05, "select": {"box": {"min": [0.0299, -1, 0.02], "max": [0.0301, 2, 0.08]}}},
+    "load_modes": [0.25, 0.5, 0.75]
+  },
+  "modes": {"fixed_interface": 6},
+  "stiffening": false,
+  "validate": 8,
+  "stress": {
+    "hotspots": [
+      {"name": "front wall 100 mm from A", "position": [0.03, 0.18, 0.05]},
+      {"name": "back wall 100 mm from A", "position": [-0.03, 0.18, 0.05]},
+      {"name": "back wall mid-span", "position": [-0.03, 0.7, 0.05]}
+    ],
+    "peak_points": 24,
+    "exclude_interfaces": 0.015
+  },
+  "visual": {"size": 0.02, "color": [0.78, 0.8, 0.84, 1.0]},
+  "output": {"model": "../data/beam.modal.json", "glb": "../meshes/beam.glb", "glb_ref": "beam.glb"}
+}
