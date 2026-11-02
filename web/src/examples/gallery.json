@@ -142,6 +142,14 @@
       "speed-control"
     ]
   },
+  "dead-time-noise": {
+    "title": "Dead time and noise",
+    "description": "The J-EX9 example: a process with dead time under discrete PI control, with seeded measurement noise.",
+    "hasScene": false,
+    "models": [
+      "dead-time-noise"
+    ]
+  },
   "debug-tour": {
     "title": "Debug tour",
     "description": "A guided tour of the debugger: find and fix an integrator windup.",
@@ -340,6 +348,14 @@
       "maglev-bondgraph"
     ]
   },
+  "motion-servo": {
+    "title": "Motion servo",
+    "description": "A DC motor turns one revolution along a jerk-limited S-curve.",
+    "hasScene": false,
+    "models": [
+      "position-loop"
+    ]
+  },
   "motor-thermal": {
     "title": "Motor thermal",
     "description": "A DC motor's copper loss heats its winding, which conducts to the housing and cools by convection; the hot winding resistance slows the fan.",
@@ -381,7 +397,10 @@
     "models": [
       "pendulum-double-cart-lab",
       "pendulum-double-cart-lab-balance",
-      "pendulum-double-cart-lab-free"
+      "pendulum-double-cart-lab-free",
+      "pendulum-double-cart-lab-rl",
+      "pendulum-double-cart-lab-robust",
+      "pendulum-double-cart-lab-recover"
     ]
   },
   "pendulum-double-fixed": {
