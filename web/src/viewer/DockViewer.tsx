@@ -34,7 +34,7 @@ export default function DockViewer({ active, createEngine, hostWindow }: DockVie
   const [editing, setEditing] = useState(false);
   const bindings = useModelBindings();
   const signals = useBindableSignals();
-  const { playback, snapshot, streamError, streamNote } = useViewerPlayback(built, active, hostWindow ?? null);
+  const { playback, snapshot, streamError, streamNote, streaming } = useViewerPlayback(built, active, hostWindow ?? null);
   const onKeyDown = useMemo(() => playbackKeyHandler(playback), [playback]);
   const [exaggeration, setExaggeration] = useExaggeration();
   const deforms = bindings.some((b) => b.property === "deformation" || b.property === "mode-shapes");
@@ -50,6 +50,7 @@ export default function DockViewer({ active, createEngine, hostWindow }: DockVie
           snapshot={snapshot}
           streamError={streamError}
           streamNote={streamNote}
+          streaming={streaming}
           hasBindings={bindings.length > 0}
           bindingsOpen={editing}
           onToggleBindings={() => {

@@ -16770,16 +16770,29 @@
    "gain": 1.0
   },
   {
-   "target": "link:trail_elevator_3",
+   "target": "link:trail_elevator_2",
    "property": "pose",
    "signal": [
-    "ElevatorTrail/d3[1]",
-    "ElevatorTrail/d3[2]",
-    "ElevatorTrail/d3[3]",
-    "ElevatorTrail/d3[4]",
-    "ElevatorTrail/d3[5]",
-    "ElevatorTrail/d3[6]",
-    "ElevatorTrail/d3[7]"
+    "ElevatorTrail/d2[1]",
+    "ElevatorTrail/d2[2]",
+    "ElevatorTrail/d2[3]",
+    "ElevatorTrail/d2[4]",
+    "ElevatorTrail/d2[5]",
+    "ElevatorTrail/d2[6]",
+    "ElevatorTrail/d2[7]"
+   ]
+  },
+  {
+   "target": "link:trail_elevator_4",
+   "property": "pose",
+   "signal": [
+    "ElevatorTrail/d4[1]",
+    "ElevatorTrail/d4[2]",
+    "ElevatorTrail/d4[3]",
+    "ElevatorTrail/d4[4]",
+    "ElevatorTrail/d4[5]",
+    "ElevatorTrail/d4[6]",
+    "ElevatorTrail/d4[7]"
    ]
   },
   {
@@ -16796,16 +16809,29 @@
    ]
   },
   {
-   "target": "link:trail_elevator_9",
+   "target": "link:trail_elevator_8",
    "property": "pose",
    "signal": [
-    "ElevatorTrail/d9[1]",
-    "ElevatorTrail/d9[2]",
-    "ElevatorTrail/d9[3]",
-    "ElevatorTrail/d9[4]",
-    "ElevatorTrail/d9[5]",
-    "ElevatorTrail/d9[6]",
-    "ElevatorTrail/d9[7]"
+    "ElevatorTrail/d8[1]",
+    "ElevatorTrail/d8[2]",
+    "ElevatorTrail/d8[3]",
+    "ElevatorTrail/d8[4]",
+    "ElevatorTrail/d8[5]",
+    "ElevatorTrail/d8[6]",
+    "ElevatorTrail/d8[7]"
+   ]
+  },
+  {
+   "target": "link:trail_elevator_10",
+   "property": "pose",
+   "signal": [
+    "ElevatorTrail/d10[1]",
+    "ElevatorTrail/d10[2]",
+    "ElevatorTrail/d10[3]",
+    "ElevatorTrail/d10[4]",
+    "ElevatorTrail/d10[5]",
+    "ElevatorTrail/d10[6]",
+    "ElevatorTrail/d10[7]"
    ]
   },
   {
@@ -16877,16 +16903,29 @@
    "gain": 1.0
   },
   {
-   "target": "link:trail_aileron_3",
+   "target": "link:trail_aileron_2",
    "property": "pose",
    "signal": [
-    "AileronTrail/d3[1]",
-    "AileronTrail/d3[2]",
-    "AileronTrail/d3[3]",
-    "AileronTrail/d3[4]",
-    "AileronTrail/d3[5]",
-    "AileronTrail/d3[6]",
-    "AileronTrail/d3[7]"
+    "AileronTrail/d2[1]",
+    "AileronTrail/d2[2]",
+    "AileronTrail/d2[3]",
+    "AileronTrail/d2[4]",
+    "AileronTrail/d2[5]",
+    "AileronTrail/d2[6]",
+    "AileronTrail/d2[7]"
+   ]
+  },
+  {
+   "target": "link:trail_aileron_4",
+   "property": "pose",
+   "signal": [
+    "AileronTrail/d4[1]",
+    "AileronTrail/d4[2]",
+    "AileronTrail/d4[3]",
+    "AileronTrail/d4[4]",
+    "AileronTrail/d4[5]",
+    "AileronTrail/d4[6]",
+    "AileronTrail/d4[7]"
    ]
   },
   {
@@ -16903,16 +16942,29 @@
    ]
   },
   {
-   "target": "link:trail_aileron_9",
+   "target": "link:trail_aileron_8",
    "property": "pose",
    "signal": [
-    "AileronTrail/d9[1]",
-    "AileronTrail/d9[2]",
-    "AileronTrail/d9[3]",
-    "AileronTrail/d9[4]",
-    "AileronTrail/d9[5]",
-    "AileronTrail/d9[6]",
-    "AileronTrail/d9[7]"
+    "AileronTrail/d8[1]",
+    "AileronTrail/d8[2]",
+    "AileronTrail/d8[3]",
+    "AileronTrail/d8[4]",
+    "AileronTrail/d8[5]",
+    "AileronTrail/d8[6]",
+    "AileronTrail/d8[7]"
+   ]
+  },
+  {
+   "target": "link:trail_aileron_10",
+   "property": "pose",
+   "signal": [
+    "AileronTrail/d10[1]",
+    "AileronTrail/d10[2]",
+    "AileronTrail/d10[3]",
+    "AileronTrail/d10[4]",
+    "AileronTrail/d10[5]",
+    "AileronTrail/d10[6]",
+    "AileronTrail/d10[7]"
    ]
   },
   {
@@ -16984,16 +17036,29 @@
    "gain": 1.0
   },
   {
-   "target": "link:trail_rudder_3",
+   "target": "link:trail_rudder_2",
    "property": "pose",
    "signal": [
-    "RudderTrail/d3[1]",
-    "RudderTrail/d3[2]",
-    "RudderTrail/d3[3]",
-    "RudderTrail/d3[4]",
-    "RudderTrail/d3[5]",
-    "RudderTrail/d3[6]",
-    "RudderTrail/d3[7]"
+    "RudderTrail/d2[1]",
+    "RudderTrail/d2[2]",
+    "RudderTrail/d2[3]",
+    "RudderTrail/d2[4]",
+    "RudderTrail/d2[5]",
+    "RudderTrail/d2[6]",
+    "RudderTrail/d2[7]"
+   ]
+  },
+  {
+   "target": "link:trail_rudder_4",
+   "property": "pose",
+   "signal": [
+    "RudderTrail/d4[1]",
+    "RudderTrail/d4[2]",
+    "RudderTrail/d4[3]",
+    "RudderTrail/d4[4]",
+    "RudderTrail/d4[5]",
+    "RudderTrail/d4[6]",
+    "RudderTrail/d4[7]"
    ]
   },
   {
@@ -17010,16 +17075,29 @@
    ]
   },
   {
-   "target": "link:trail_rudder_9",
+   "target": "link:trail_rudder_8",
    "property": "pose",
    "signal": [
-    "RudderTrail/d9[1]",
-    "RudderTrail/d9[2]",
-    "RudderTrail/d9[3]",
-    "RudderTrail/d9[4]",
-    "RudderTrail/d9[5]",
-    "RudderTrail/d9[6]",
-    "RudderTrail/d9[7]"
+    "RudderTrail/d8[1]",
+    "RudderTrail/d8[2]",
+    "RudderTrail/d8[3]",
+    "RudderTrail/d8[4]",
+    "RudderTrail/d8[5]",
+    "RudderTrail/d8[6]",
+    "RudderTrail/d8[7]"
+   ]
+  },
+  {
+   "target": "link:trail_rudder_10",
+   "property": "pose",
+   "signal": [
+    "RudderTrail/d10[1]",
+    "RudderTrail/d10[2]",
+    "RudderTrail/d10[3]",
+    "RudderTrail/d10[4]",
+    "RudderTrail/d10[5]",
+    "RudderTrail/d10[6]",
+    "RudderTrail/d10[7]"
    ]
   },
   {
@@ -17091,16 +17169,29 @@
    "gain": 1.0
   },
   {
-   "target": "link:trail_flap_3",
+   "target": "link:trail_flap_2",
    "property": "pose",
    "signal": [
-    "FlapTrail/d3[1]",
-    "FlapTrail/d3[2]",
-    "FlapTrail/d3[3]",
-    "FlapTrail/d3[4]",
-    "FlapTrail/d3[5]",
-    "FlapTrail/d3[6]",
-    "FlapTrail/d3[7]"
+    "FlapTrail/d2[1]",
+    "FlapTrail/d2[2]",
+    "FlapTrail/d2[3]",
+    "FlapTrail/d2[4]",
+    "FlapTrail/d2[5]",
+    "FlapTrail/d2[6]",
+    "FlapTrail/d2[7]"
+   ]
+  },
+  {
+   "target": "link:trail_flap_4",
+   "property": "pose",
+   "signal": [
+    "FlapTrail/d4[1]",
+    "FlapTrail/d4[2]",
+    "FlapTrail/d4[3]",
+    "FlapTrail/d4[4]",
+    "FlapTrail/d4[5]",
+    "FlapTrail/d4[6]",
+    "FlapTrail/d4[7]"
    ]
   },
   {
@@ -17117,16 +17208,29 @@
    ]
   },
   {
-   "target": "link:trail_flap_9",
+   "target": "link:trail_flap_8",
    "property": "pose",
    "signal": [
-    "FlapTrail/d9[1]",
-    "FlapTrail/d9[2]",
-    "FlapTrail/d9[3]",
-    "FlapTrail/d9[4]",
-    "FlapTrail/d9[5]",
-    "FlapTrail/d9[6]",
-    "FlapTrail/d9[7]"
+    "FlapTrail/d8[1]",
+    "FlapTrail/d8[2]",
+    "FlapTrail/d8[3]",
+    "FlapTrail/d8[4]",
+    "FlapTrail/d8[5]",
+    "FlapTrail/d8[6]",
+    "FlapTrail/d8[7]"
+   ]
+  },
+  {
+   "target": "link:trail_flap_10",
+   "property": "pose",
+   "signal": [
+    "FlapTrail/d10[1]",
+    "FlapTrail/d10[2]",
+    "FlapTrail/d10[3]",
+    "FlapTrail/d10[4]",
+    "FlapTrail/d10[5]",
+    "FlapTrail/d10[6]",
+    "FlapTrail/d10[7]"
    ]
   },
   {
@@ -17198,16 +17302,29 @@
    "gain": 1.0
   },
   {
-   "target": "link:trail_rpm_3",
+   "target": "link:trail_rpm_2",
    "property": "pose",
    "signal": [
-    "RpmTrail/d3[1]",
-    "RpmTrail/d3[2]",
-    "RpmTrail/d3[3]",
-    "RpmTrail/d3[4]",
-    "RpmTrail/d3[5]",
-    "RpmTrail/d3[6]",
-    "RpmTrail/d3[7]"
+    "RpmTrail/d2[1]",
+    "RpmTrail/d2[2]",
+    "RpmTrail/d2[3]",
+    "RpmTrail/d2[4]",
+    "RpmTrail/d2[5]",
+    "RpmTrail/d2[6]",
+    "RpmTrail/d2[7]"
+   ]
+  },
+  {
+   "target": "link:trail_rpm_4",
+   "property": "pose",
+   "signal": [
+    "RpmTrail/d4[1]",
+    "RpmTrail/d4[2]",
+    "RpmTrail/d4[3]",
+    "RpmTrail/d4[4]",
+    "RpmTrail/d4[5]",
+    "RpmTrail/d4[6]",
+    "RpmTrail/d4[7]"
    ]
   },
   {
@@ -17224,16 +17341,29 @@
    ]
   },
   {
-   "target": "link:trail_rpm_9",
+   "target": "link:trail_rpm_8",
    "property": "pose",
    "signal": [
-    "RpmTrail/d9[1]",
-    "RpmTrail/d9[2]",
-    "RpmTrail/d9[3]",
-    "RpmTrail/d9[4]",
-    "RpmTrail/d9[5]",
-    "RpmTrail/d9[6]",
-    "RpmTrail/d9[7]"
+    "RpmTrail/d8[1]",
+    "RpmTrail/d8[2]",
+    "RpmTrail/d8[3]",
+    "RpmTrail/d8[4]",
+    "RpmTrail/d8[5]",
+    "RpmTrail/d8[6]",
+    "RpmTrail/d8[7]"
+   ]
+  },
+  {
+   "target": "link:trail_rpm_10",
+   "property": "pose",
+   "signal": [
+    "RpmTrail/d10[1]",
+    "RpmTrail/d10[2]",
+    "RpmTrail/d10[3]",
+    "RpmTrail/d10[4]",
+    "RpmTrail/d10[5]",
+    "RpmTrail/d10[6]",
+    "RpmTrail/d10[7]"
    ]
   },
   {
@@ -17305,16 +17435,29 @@
    "gain": 1.0
   },
   {
-   "target": "link:trail_manifold_3",
+   "target": "link:trail_manifold_2",
    "property": "pose",
    "signal": [
-    "ManifoldTrail/d3[1]",
-    "ManifoldTrail/d3[2]",
-    "ManifoldTrail/d3[3]",
-    "ManifoldTrail/d3[4]",
-    "ManifoldTrail/d3[5]",
-    "ManifoldTrail/d3[6]",
-    "ManifoldTrail/d3[7]"
+    "ManifoldTrail/d2[1]",
+    "ManifoldTrail/d2[2]",
+    "ManifoldTrail/d2[3]",
+    "ManifoldTrail/d2[4]",
+    "ManifoldTrail/d2[5]",
+    "ManifoldTrail/d2[6]",
+    "ManifoldTrail/d2[7]"
+   ]
+  },
+  {
+   "target": "link:trail_manifold_4",
+   "property": "pose",
+   "signal": [
+    "ManifoldTrail/d4[1]",
+    "ManifoldTrail/d4[2]",
+    "ManifoldTrail/d4[3]",
+    "ManifoldTrail/d4[4]",
+    "ManifoldTrail/d4[5]",
+    "ManifoldTrail/d4[6]",
+    "ManifoldTrail/d4[7]"
    ]
   },
   {
@@ -17331,16 +17474,29 @@
    ]
   },
   {
-   "target": "link:trail_manifold_9",
+   "target": "link:trail_manifold_8",
    "property": "pose",
    "signal": [
-    "ManifoldTrail/d9[1]",
-    "ManifoldTrail/d9[2]",
-    "ManifoldTrail/d9[3]",
-    "ManifoldTrail/d9[4]",
-    "ManifoldTrail/d9[5]",
-    "ManifoldTrail/d9[6]",
-    "ManifoldTrail/d9[7]"
+    "ManifoldTrail/d8[1]",
+    "ManifoldTrail/d8[2]",
+    "ManifoldTrail/d8[3]",
+    "ManifoldTrail/d8[4]",
+    "ManifoldTrail/d8[5]",
+    "ManifoldTrail/d8[6]",
+    "ManifoldTrail/d8[7]"
+   ]
+  },
+  {
+   "target": "link:trail_manifold_10",
+   "property": "pose",
+   "signal": [
+    "ManifoldTrail/d10[1]",
+    "ManifoldTrail/d10[2]",
+    "ManifoldTrail/d10[3]",
+    "ManifoldTrail/d10[4]",
+    "ManifoldTrail/d10[5]",
+    "ManifoldTrail/d10[6]",
+    "ManifoldTrail/d10[7]"
    ]
   },
   {

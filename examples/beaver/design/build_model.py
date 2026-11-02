@@ -499,8 +499,9 @@ def write_scene(name: str, crafts: list[dict], dots: list[int], comment: str) ->
 
 SCHEMES = ["yellow", "red", "blue", "white", "green", "orange"]
 MULTI_DOTS = [2, 4, 6, 8, 10, 12]
-# beaver-steps: six aircraft; fewer dots keep the 3D stream's signal list under the 8 KiB request line
-STEPS_DOTS = [3, 6, 9, 12]
+# beaver-steps: six aircraft with six dots a trail too (315 bound signals, over 8 KiB of ids: the 3D stream
+# sends them in its subscribe message, not in the URL)
+STEPS_DOTS = MULTI_DOTS
 SIM_DOTS = list(range(1, TRAIL_N + 1))
 
 

@@ -11,12 +11,13 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { exampleInfo } from "../src/examples/gallery";
+import { captureSettings } from "../scripts/thumbnail-capture-settings.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const thumbnails = path.join(here, "..", "src", "examples", "thumbnails");
 const manifest = JSON.parse(
   readFileSync(path.join(here, "..", "src", "examples", "gallery.json"), "utf8"),
-) as Record<string, { title?: string; description?: string; hasScene?: boolean; models?: string[] }>;
+) as Record<string, { title?: string; description?: string; hasScene?: boolean; models?: string[]; capture?: Record<string, unknown> }>;
 
 const files = readdirSync(thumbnails).filter((name) => name.endsWith(".png"));
 
@@ -45,6 +46,20 @@ describe("gallery thumbnails", () => {
       expect(description.length).toBeLessThanOrEqual(171);
       expect(description).not.toContain("\n");
     }
+  });
+
+  it("keeps every per-example capture setting valid for capture-thumbnails", () => {
+    for (const [name, entry] of Object.entries(manifest)) {
+      if (entry.capture === undefined) continue;
+      expect(() => captureSettings(entry.capture), name).not.toThrow();
+      const model = entry.capture.model;
+      if (typeof model === "string") expect(entry.models, `${name} capture model`).toContain(model);
+    }
+    expect(() => captureSettings({ run: true, zom: 3 })).toThrow(/unknown capture setting "zom"/);
+    expect(() => captureSettings({ run: true, at: 1.5 })).toThrow(/fraction/);
+    expect(() => captureSettings({ at: 0.5 })).toThrow(/need "run": true/);
+    expect(() => captureSettings({ run: true, orbit: [10] })).toThrow(/orbit/);
+    expect(captureSettings({ run: true, at: 0.5 }, { zoom: 3, orbit: [0, -80] })).toEqual({ run: true, at: 0.5, zoom: 3, orbit: [0, -80] });
   });
 
   it("resolves each captured example to its thumbnail and the manifest text", () => {

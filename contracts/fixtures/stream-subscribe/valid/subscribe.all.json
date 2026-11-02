@@ -1,0 +1,4 @@
+{
+  "$comment": "An empty id list streams every manifest signal in manifest order.",
+  "ids": []
+}

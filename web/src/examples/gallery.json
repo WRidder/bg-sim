@@ -24,7 +24,18 @@
       "beaver-modes",
       "beaver-steps",
       "beaver-sim"
-    ]
+    ],
+    "capture": {
+      "model": "beaver-steps",
+      "run": true,
+      "time": 8,
+      "view": "top",
+      "zoom": 6,
+      "orbit": [
+        0,
+        -80
+      ]
+    }
   },
   "bouncing-ball": {
     "title": "Bouncing ball",

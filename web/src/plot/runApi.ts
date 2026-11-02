@@ -289,6 +289,13 @@ export function runDataUrl(
   return `${API_BASE}/api/runs/${encodeURIComponent(runId)}/data?${params.toString()}`;
 }
 
+/**
+ * Longest `/data` URL sent as a GET. Beyond it (the 3D view loads hundreds of bound signals) the
+ * same parameters go form-encoded in a POST body: servers and proxies refuse request lines over
+ * 8 or 16 KiB.
+ */
+export const MAX_DATA_URL = 4000;
+
 /** Fetch and decode one `/data` answer. */
 export async function fetchRunData(
   runId: string,
@@ -298,18 +305,27 @@ export async function fetchRunData(
   signal?: AbortSignal,
 ): Promise<RunDataFrame> {
   const url = runDataUrl(runId, ids, window, px);
+  const [path = url, query = ""] = url.split("?", 2);
+  const post = url.length > MAX_DATA_URL;
   let response: Response;
   try {
-    response = await fetch(url, {
-      headers: { accept: "application/octet-stream" },
-      signal,
-    });
+    response = await fetch(
+      post ? path : url,
+      post
+        ? {
+            method: "POST",
+            headers: { accept: "application/octet-stream", "content-type": "application/x-www-form-urlencoded" },
+            body: query,
+            signal,
+          }
+        : { headers: { accept: "application/octet-stream" }, signal },
+    );
   } catch (cause) {
     if (signal?.aborted) {
       throw cause;
     }
     throw new RunApiError(
-      `Cannot reach the bg-sim backend at ${url}. Is it running?`,
+      `Cannot reach the bg-sim backend at ${post ? path : url}. Is it running?`,
       0,
       cause,
     );

@@ -3,18 +3,25 @@
 from __future__ import annotations
 
 import json
+import socket as socketlib
 import struct
+import threading
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import numpy as np
 import pytest
+import uvicorn
 from fastapi.testclient import TestClient
 from test_run_tails import SyntheticRunWorker, _app, _make_project, _start, _wait_ready
+from websockets.exceptions import ConnectionClosedOK, InvalidStatus
+from websockets.sync.client import connect as ws_connect
 
+from bgsim_server import stream as stream_module
 from bgsim_server.app import create_app
-from bgsim_server.contracts import StreamHandshake
+from bgsim_server.contracts import StreamHandshake, StreamSubscribe
 from bgsim_server.stream import Thinner, parse_ids
 
 REPO = Path(__file__).resolve().parents[2]
@@ -339,3 +346,233 @@ def test_a_viewer_that_leaves_does_not_stop_the_run(fake_settings) -> None:
             json.loads(socket.receive_text())
         _wait_finished(client, run_id)
         assert client.get(f"/api/runs/{run_id}").json()["status"] == "done"
+
+
+# --------------------------------------------------------------------------- subscribe message
+
+#: Signals of the wide synthetic run: enough that their ids are far over the 8 KiB request line.
+WIDE_SIGNALS = 1500
+
+
+def _wide_ids(count: int = WIDE_SIGNALS) -> list[str]:
+    """Pose-like ids as the 3D view binds them (``Craft12Trail/d6[3]``), some with ``[i,j]``."""
+    ids = []
+    for index in range(count):
+        if index % 50 == 49:
+            ids.append(f"Craft{index // 50}/R[{index % 3 + 1},{index % 7 + 1}]")
+        else:
+            ids.append(f"Craft{index // 50}Trail/d{index % 12 + 1}x{index % 50}[{index % 7 + 1}]")
+    return ids
+
+
+def _make_wide_run(settings, run_id: str, n: int = 121, duration: float = 2.0) -> np.ndarray:
+    """A finished run with :data:`WIDE_SIGNALS` signals; signal ``k`` records ``k + t``."""
+    run_dir = settings.projects_root / "demo" / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    manifest = json.loads(MANIFEST_FIXTURE.read_text(encoding="utf-8"))
+    manifest.update(id=run_id, status="done")
+    manifest["time"] = {"n": n, "t0": 0.0, "t1": duration}
+    manifest["signals"] = [
+        {"id": name, "unit": "m", "kind": "output", "path": name.split("/")[0], "type": "Real"}
+        for name in _wide_ids()
+    ]
+    (run_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    t = np.linspace(0.0, duration, n)
+    data = np.vstack([t, *[k + t for k in range(WIDE_SIGNALS)]]).astype("<f8")
+    data.tofile(run_dir / "columns.f64")
+    return data
+
+
+def _subscribe(client: TestClient, run_id: str, message: Any, query: str = "?subscribe=1"):
+    with client.websocket_connect(f"/api/ws/stream/{run_id}{query}") as socket:
+        if isinstance(message, bytes):
+            socket.send_bytes(message)
+        elif isinstance(message, str):
+            socket.send_text(message)
+        else:
+            socket.send_text(json.dumps(message))
+        return _read_all(socket)
+
+
+def test_subscribe_message_carries_more_than_a_thousand_ids(
+    client, fake_settings, schema_validate
+) -> None:
+    data = _make_wide_run(fake_settings, "run-wide")
+    # every signal but the first ten, in reverse order: the frame order is the message order
+    wanted = list(reversed(_wide_ids()[10:]))
+    assert len(wanted) > 1000
+    assert len(",".join(wanted)) > 16 * 1024, "the list would not fit in a request line"
+    message = {"ids": wanted}
+    schema_validate("stream-subscribe", message)
+    StreamSubscribe.model_validate(message)
+
+    handshake, chunks, code, reason = _subscribe(client, "run-wide", message)
+    assert (code, reason) == (1000, "done")
+    schema_validate("stream-handshake", handshake)
+    assert [s["id"] for s in handshake["signals"]] == wanted
+    assert handshake["mode"] == "playback"
+    frames = _frames(chunks, len(wanted))
+    columns = np.arange(WIDE_SIGNALS - 1, 9, -1, dtype=np.float64)  # signal k records k + t
+    assert np.allclose(frames[:, 1:], columns[None, :] + frames[:, :1])
+    assert frames[0, 0] == 0.0
+    assert frames[-1, 0] == pytest.approx(data[0, -1])
+
+
+def test_subscribe_with_an_empty_list_streams_every_signal(client, fake_settings) -> None:
+    _make_run(fake_settings, "run-a")
+    handshake, _, code, _ = _subscribe(client, "run-a", {"ids": []}, "?subscribe=1&rate=10")
+    assert [s["id"] for s in handshake["signals"]] == [
+        "Synthetic/sine",
+        "Synthetic/step",
+        "Synthetic/counter",
+        "Synthetic/flag",
+    ]
+    assert handshake["rate"] == 10.0
+    assert code == 1000
+
+
+@pytest.mark.parametrize(
+    ("query", "message", "hint"),
+    [
+        ("?subscribe=1&ids=Synthetic/sine", {"ids": ["Synthetic/sine"]}, "not both"),
+        ("?subscribe=1", "not json", "not valid"),
+        ("?subscribe=1", {"ids": "Synthetic/sine,Synthetic/step"}, "ids"),
+        ("?subscribe=1", {"signals": ["Synthetic/sine"]}, "not valid"),
+        ("?subscribe=1", b'{"ids": []}', "JSON text"),
+        ("?subscribe=1", {"ids": ["Synthetic/nope"]}, "unknown signal id 'Synthetic/nope'"),
+        ("?subscribe=yes", {"ids": []}, "subscribe"),
+    ],
+)
+def test_bad_subscribe_messages_are_refused_with_a_reason(
+    client, fake_settings, query, message, hint
+) -> None:
+    _make_run(fake_settings, "run-a")
+    handshake, chunks, code, reason = _subscribe(client, "run-a", message, query)
+    assert handshake is None
+    assert chunks == []
+    assert code == 4400
+    assert hint in reason
+
+
+def test_a_missing_subscribe_message_times_out_with_4400(
+    client, fake_settings, monkeypatch
+) -> None:
+    _make_run(fake_settings, "run-a")
+    monkeypatch.setattr(stream_module, "SUBSCRIBE_TIMEOUT", 0.2)
+    with client.websocket_connect("/api/ws/stream/run-a?subscribe=1") as socket:
+        handshake, chunks, code, reason = _read_all(socket)
+    assert handshake is None
+    assert chunks == []
+    assert code == 4400
+    assert "no subscribe message" in reason
+
+
+def test_live_stream_with_a_subscribe_message(fake_settings) -> None:
+    _make_project(fake_settings)
+    workers: list[SyntheticRunWorker] = []
+    app = _app(fake_settings, workers, rows=401, duration=2.0, batch=20, interval=0.05)
+    with TestClient(app) as client:
+        _wait_ready(client)
+        run_id = _start(client, 2.0)
+        with client.websocket_connect(f"/api/ws/stream/{run_id}?subscribe=1&mode=live") as socket:
+            socket.send_text(json.dumps({"ids": ["Synthetic/step", "Synthetic/sine"]}))
+            handshake, chunks, code, reason = _read_all(socket)
+    assert handshake["mode"] == "live"
+    assert [s["id"] for s in handshake["signals"]] == ["Synthetic/step", "Synthetic/sine"]
+    assert (code, reason) == (1000, "done")
+    assert _frames(chunks, 2)[-1, 0] == 2.0
+
+
+def test_post_data_takes_a_long_id_list_in_the_body(client, fake_settings) -> None:
+    _make_wide_run(fake_settings, "run-wide")
+    # /data splits ids on every comma, so the [i,j] ids are left out here
+    wanted = [name for name in reversed(_wide_ids()) if "," not in name]
+    assert len(wanted) > 1000
+    body = "ids=" + quote(",".join(wanted), safe="") + "&px=0"
+    response = client.post(
+        "/api/runs/run-wide/data",
+        content=body,
+        headers={"content-type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 200, response.text
+    n_signals, n_points = struct.unpack_from("<II", response.content, 0)
+    assert (n_signals, n_points) == (len(wanted), 121)
+    small = client.get("/api/runs/run-wide/data", params={"ids": ",".join(wanted[:3]), "px": 0})
+    head = 8 + 8 * n_points * 4  # the time column and the first three columns are the same bytes
+    assert response.content[8:head] == small.content[8:]
+    bad = client.post("/api/runs/run-wide/data", content="px=lots")
+    assert bad.status_code == 400
+    assert "px" in bad.json()["detail"]
+
+
+# --------------------------------------------------------------------------- real server
+
+
+def _free_88xx_port() -> int:
+    for port in range(8820, 8900):
+        with socketlib.socket(socketlib.AF_INET, socketlib.SOCK_STREAM) as probe:
+            try:
+                probe.bind(("127.0.0.1", port))
+            except OSError:
+                continue
+            return port
+    pytest.skip("no free port in 8820-8899")
+
+
+@pytest.fixture
+def live_server(fake_settings):
+    """The app under a real uvicorn (its request-line limits apply), on a free 88xx port."""
+    port = _free_88xx_port()
+    config = uvicorn.Config(
+        create_app(fake_settings), host="127.0.0.1", port=port, log_level="warning"
+    )
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, name="uvicorn-test", daemon=True)
+    thread.start()
+    deadline = time.monotonic() + 20
+    while not server.started:
+        assert thread.is_alive(), "uvicorn exited"
+        assert time.monotonic() < deadline, "uvicorn did not start"
+        time.sleep(0.02)
+    try:
+        yield f"127.0.0.1:{port}"
+    finally:
+        server.should_exit = True
+        thread.join(timeout=20)
+
+
+def test_real_server_refuses_long_query_ids_but_takes_the_subscribe_message(
+    live_server, fake_settings
+) -> None:
+    _make_wide_run(fake_settings, "run-wide")
+    wanted = _wide_ids()[:1100]
+    query = "ids=" + quote(",".join(wanted), safe="") + "&mode=playback"
+    assert len(query) > 8 * 1024
+    # the old way: the request line is too long and the upgrade fails before the app runs. The
+    # legacy websockets protocol answers 400 (414 behind some proxies); websockets-sansio, the
+    # uvicorn default, never answers at all, so a browser waits without an error.
+    long_url = f"ws://{live_server}/api/ws/stream/run-wide?{query}"
+    with (
+        pytest.raises((InvalidStatus, TimeoutError)) as refused,
+        ws_connect(long_url, open_timeout=3),
+    ):
+        pass
+    if isinstance(refused.value, InvalidStatus):
+        assert refused.value.response.status_code in {400, 414, 431}
+
+    received: list[bytes] = []
+    with ws_connect(
+        f"ws://{live_server}/api/ws/stream/run-wide?subscribe=1&mode=playback",
+        open_timeout=10,
+        max_size=None,
+    ) as socket:
+        socket.send(json.dumps({"ids": wanted}))
+        handshake = json.loads(socket.recv(timeout=10))
+        assert [s["id"] for s in handshake["signals"]] == wanted
+        with pytest.raises(ConnectionClosedOK) as closed:
+            while True:
+                received.append(socket.recv(timeout=10))
+    assert closed.value.rcvd is not None
+    assert (closed.value.rcvd.code, closed.value.rcvd.reason) == (1000, "done")
+    frames = _frames(received, len(wanted))
+    assert frames[-1, 0] == pytest.approx(2.0)

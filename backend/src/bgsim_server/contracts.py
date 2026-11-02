@@ -1440,6 +1440,17 @@ class StreamSignal(BaseModel):
     field_comment: str | None = Field(None, alias='$comment')
 
 
+class StreamSubscribe(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    ids: list[constr(min_length=1)] = Field(
+        ...,
+        description='The signal ids in frame order, each exactly as the run manifest lists it; an empty list streams every manifest signal in manifest order.',
+    )
+    field_comment: str | None = Field(None, alias='$comment')
+
+
 class EmptyParams(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3612,6 +3623,7 @@ class Contracts(
         | Project
         | RunManifest
         | StreamHandshake
+        | StreamSubscribe
         | WorkerRpc
     ]
 ):
@@ -3629,6 +3641,7 @@ class Contracts(
         | Project
         | RunManifest
         | StreamHandshake
+        | StreamSubscribe
         | WorkerRpc
     ) = Field(
         ...,

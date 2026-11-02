@@ -1,0 +1,4 @@
+{
+  "$comment": "Invalid: `ids` must be an array of ids, not the comma separated query form.",
+  "ids": "Motor1/shaft.f,Motor1/i"
+}

@@ -14,6 +14,8 @@ export interface PlaybackBarProps {
   readonly streamError: string | null;
   /** The stream failed and the run was loaded over HTTP instead (W5.5), or absent. */
   readonly streamNote?: string | null;
+  /** A stream of the open run is connecting or open (the note then says the data is on its way). */
+  readonly streaming?: boolean;
   /** The model has bindings. */
   readonly hasBindings: boolean;
   /** The binding table is open. */
@@ -64,7 +66,7 @@ export function playbackKeyHandler(playback: ViewerPlayback | null): (event: Key
  * follow the newest data (the controls wait for the run to finish); `data-*` attributes expose the state:
  * `data-mode`, `data-playing`, `data-time` and `data-applied` (position bindings, JSON) for tests.
  */
-export function PlaybackBar({ playback, snapshot, streamError, streamNote = null, hasBindings, bindingsOpen, onToggleBindings }: PlaybackBarProps): ReactElement {
+export function PlaybackBar({ playback, snapshot, streamError, streamNote = null, streaming = false, hasBindings, bindingsOpen, onToggleBindings }: PlaybackBarProps): ReactElement {
   const { mode, playing, time, start, end, speed, loop, applied } = snapshot;
   // M4 debug (DEC-M4-1): at a pause the bar marks the pause time and the playback ends there
   const pauseTime = usePlaybackPause(playback);
@@ -83,6 +85,7 @@ export function PlaybackBar({ playback, snapshot, streamError, streamNote = null
   let note: string | null = null;
   if (streamError !== null) note = streamError;
   else if (!hasBindings) note = "No bindings yet. Open Bindings to connect a signal to the scene.";
+  else if (mode === "empty" && streaming) note = "Loading the run into the 3D view…";
   else if (mode === "empty") note = "Press Play to run the model: the view follows the run and plays it back when it is done.";
 
   return (

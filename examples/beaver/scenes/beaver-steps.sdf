@@ -257,11 +257,19 @@
       <child>prop_elevator</child>
       <axis><xyz>1 0 0</xyz></axis>
     </joint>
-    <link name="trail_elevator_3">
+    <link name="trail_elevator_2">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_elevator_3">
+      <visual name="dot_elevator_2">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.405</radius></sphere></geometry>
+        <geometry><sphere><radius>0.420</radius></sphere></geometry>
+        <material><diffuse>1.0 0.9 0.4 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_elevator_4">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_elevator_4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.390</radius></sphere></geometry>
         <material><diffuse>1.0 0.9 0.4 1</diffuse></material>
       </visual>
     </link>
@@ -273,11 +281,19 @@
         <material><diffuse>1.0 0.9 0.4 1</diffuse></material>
       </visual>
     </link>
-    <link name="trail_elevator_9">
+    <link name="trail_elevator_8">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_elevator_9">
+      <visual name="dot_elevator_8">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.315</radius></sphere></geometry>
+        <geometry><sphere><radius>0.330</radius></sphere></geometry>
+        <material><diffuse>1.0 0.9 0.4 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_elevator_10">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_elevator_10">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.300</radius></sphere></geometry>
         <material><diffuse>1.0 0.9 0.4 1</diffuse></material>
       </visual>
     </link>
@@ -380,11 +396,19 @@
       <child>prop_aileron</child>
       <axis><xyz>1 0 0</xyz></axis>
     </joint>
-    <link name="trail_aileron_3">
+    <link name="trail_aileron_2">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_aileron_3">
+      <visual name="dot_aileron_2">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.405</radius></sphere></geometry>
+        <geometry><sphere><radius>0.420</radius></sphere></geometry>
+        <material><diffuse>1.0 0.55 0.5 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_aileron_4">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_aileron_4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.390</radius></sphere></geometry>
         <material><diffuse>1.0 0.55 0.5 1</diffuse></material>
       </visual>
     </link>
@@ -396,11 +420,19 @@
         <material><diffuse>1.0 0.55 0.5 1</diffuse></material>
       </visual>
     </link>
-    <link name="trail_aileron_9">
+    <link name="trail_aileron_8">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_aileron_9">
+      <visual name="dot_aileron_8">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.315</radius></sphere></geometry>
+        <geometry><sphere><radius>0.330</radius></sphere></geometry>
+        <material><diffuse>1.0 0.55 0.5 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_aileron_10">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_aileron_10">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.300</radius></sphere></geometry>
         <material><diffuse>1.0 0.55 0.5 1</diffuse></material>
       </visual>
     </link>
@@ -503,11 +535,19 @@
       <child>prop_rudder</child>
       <axis><xyz>1 0 0</xyz></axis>
     </joint>
-    <link name="trail_rudder_3">
+    <link name="trail_rudder_2">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_rudder_3">
+      <visual name="dot_rudder_2">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.405</radius></sphere></geometry>
+        <geometry><sphere><radius>0.420</radius></sphere></geometry>
+        <material><diffuse>0.55 0.75 1.0 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_rudder_4">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_rudder_4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.390</radius></sphere></geometry>
         <material><diffuse>0.55 0.75 1.0 1</diffuse></material>
       </visual>
     </link>
@@ -519,11 +559,19 @@
         <material><diffuse>0.55 0.75 1.0 1</diffuse></material>
       </visual>
     </link>
-    <link name="trail_rudder_9">
+    <link name="trail_rudder_8">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_rudder_9">
+      <visual name="dot_rudder_8">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.315</radius></sphere></geometry>
+        <geometry><sphere><radius>0.330</radius></sphere></geometry>
+        <material><diffuse>0.55 0.75 1.0 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_rudder_10">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_rudder_10">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.300</radius></sphere></geometry>
         <material><diffuse>0.55 0.75 1.0 1</diffuse></material>
       </visual>
     </link>
@@ -626,11 +674,19 @@
       <child>prop_flap</child>
       <axis><xyz>1 0 0</xyz></axis>
     </joint>
-    <link name="trail_flap_3">
+    <link name="trail_flap_2">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_flap_3">
+      <visual name="dot_flap_2">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.405</radius></sphere></geometry>
+        <geometry><sphere><radius>0.420</radius></sphere></geometry>
+        <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_flap_4">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_flap_4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.390</radius></sphere></geometry>
         <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
       </visual>
     </link>
@@ -642,11 +698,19 @@
         <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
       </visual>
     </link>
-    <link name="trail_flap_9">
+    <link name="trail_flap_8">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_flap_9">
+      <visual name="dot_flap_8">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.315</radius></sphere></geometry>
+        <geometry><sphere><radius>0.330</radius></sphere></geometry>
+        <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_flap_10">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_flap_10">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.300</radius></sphere></geometry>
         <material><diffuse>0.95 0.95 0.98 1</diffuse></material>
       </visual>
     </link>
@@ -749,11 +813,19 @@
       <child>prop_rpm</child>
       <axis><xyz>1 0 0</xyz></axis>
     </joint>
-    <link name="trail_rpm_3">
+    <link name="trail_rpm_2">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_rpm_3">
+      <visual name="dot_rpm_2">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.405</radius></sphere></geometry>
+        <geometry><sphere><radius>0.420</radius></sphere></geometry>
+        <material><diffuse>0.6 0.9 0.65 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_rpm_4">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_rpm_4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.390</radius></sphere></geometry>
         <material><diffuse>0.6 0.9 0.65 1</diffuse></material>
       </visual>
     </link>
@@ -765,11 +837,19 @@
         <material><diffuse>0.6 0.9 0.65 1</diffuse></material>
       </visual>
     </link>
-    <link name="trail_rpm_9">
+    <link name="trail_rpm_8">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_rpm_9">
+      <visual name="dot_rpm_8">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.315</radius></sphere></geometry>
+        <geometry><sphere><radius>0.330</radius></sphere></geometry>
+        <material><diffuse>0.6 0.9 0.65 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_rpm_10">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_rpm_10">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.300</radius></sphere></geometry>
         <material><diffuse>0.6 0.9 0.65 1</diffuse></material>
       </visual>
     </link>
@@ -872,11 +952,19 @@
       <child>prop_manifold</child>
       <axis><xyz>1 0 0</xyz></axis>
     </joint>
-    <link name="trail_manifold_3">
+    <link name="trail_manifold_2">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_manifold_3">
+      <visual name="dot_manifold_2">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.405</radius></sphere></geometry>
+        <geometry><sphere><radius>0.420</radius></sphere></geometry>
+        <material><diffuse>1.0 0.7 0.4 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_manifold_4">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_manifold_4">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.390</radius></sphere></geometry>
         <material><diffuse>1.0 0.7 0.4 1</diffuse></material>
       </visual>
     </link>
@@ -888,11 +976,19 @@
         <material><diffuse>1.0 0.7 0.4 1</diffuse></material>
       </visual>
     </link>
-    <link name="trail_manifold_9">
+    <link name="trail_manifold_8">
       <pose>0 0 0 0 0 0</pose>
-      <visual name="dot_manifold_9">
+      <visual name="dot_manifold_8">
         <pose>0 0 0 0 0 0</pose>
-        <geometry><sphere><radius>0.315</radius></sphere></geometry>
+        <geometry><sphere><radius>0.330</radius></sphere></geometry>
+        <material><diffuse>1.0 0.7 0.4 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="trail_manifold_10">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="dot_manifold_10">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>0.300</radius></sphere></geometry>
         <material><diffuse>1.0 0.7 0.4 1</diffuse></material>
       </visual>
     </link>

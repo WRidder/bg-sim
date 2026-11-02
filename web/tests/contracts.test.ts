@@ -33,6 +33,7 @@ const schemaNames = [
   "run-manifest",
   "worker-rpc",
   "stream-handshake",
+  "stream-subscribe",
   "bindings",
   "debug",
   "docs",
@@ -86,8 +87,8 @@ const invalidFixtures = fixtureFiles("invalid");
 const semanticFixtures = fixtureFiles("semantic");
 
 describe("schemas", () => {
-  it("registers all fourteen schemas", () => {
-    expect(schemaNames).toHaveLength(14);
+  it("registers all fifteen schemas", () => {
+    expect(schemaNames).toHaveLength(15);
     for (const name of schemaNames) {
       expect(validator(name)).toBeTypeOf("function");
     }
