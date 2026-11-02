@@ -890,15 +890,16 @@ const DIMENSIONLESS_ARG_FUNCS = (
 )
 
 """Functions with "dimension in = dimension out" (plan 5.3's list) plus the library
-signal shapers, which are in = out by definition. `sign` follows the plan literally:
-the same dimension comes out as went in."""
+signal shapers, which are in = out by definition. `sign` is not one of them: it returns
+-1, 0 or 1, so it is dimensionless whatever the unit of its argument (`Fc * sign(v)` is a
+force)."""
 const SAME_UNIT_FUNCS = (
-    :abs, :sign, :min, :max, :clamp, :hypot, :deadzone, :saturate, :previous, :hold,
+    :abs, :min, :max, :clamp, :hypot, :deadzone, :saturate, :previous, :hold,
     :norm, :transpose,
 )
 
 """Single-argument entries of `SAME_UNIT_FUNCS`."""
-const SAME_UNIT_UNARY_FUNCS = (:abs, :sign, :previous, :hold, :norm, :transpose)
+const SAME_UNIT_UNARY_FUNCS = (:abs, :previous, :hold, :norm, :transpose)
 
 """Walk every argument (for nested findings) and return `nothing` — the fallback for a call
 whose arity is wrong (J1.1 reports E001) or whose unit rule is unknown."""
@@ -942,6 +943,9 @@ function _dims!(ctx::_Ctx, e::Call)
             return nothing
         end
         return Dims(ntuple(i -> d.exps[i] ÷ 2, N_DIMENSIONS), sqrt(d.scale))
+    elseif name === :sign && nargs == 1
+        _dims!(ctx, args[1])
+        return DIMENSIONLESS
     elseif name in SAME_UNIT_FUNCS
         if name in SAME_UNIT_UNARY_FUNCS
             nargs == 1 || return _walk_args!(ctx, e)

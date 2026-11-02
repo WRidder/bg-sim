@@ -92,6 +92,7 @@ Declaration form: `name::Type = default, [attributes]`. The type defaults to `Re
 - `+`, `-`, `~` and comparisons need equal dimensions **and** equal scale. `q - q_max` with `q` in rad is `E006` ("differ only in scale"), because it would subtract 120 from an angle in radians. The hint names the conversion to write.
 - A conversion is written out with the factor between the scales, and the checker accepts exactly that factor. To SI: multiply by the scale (`q_max*deg` is rad, `n*rpm` is rad/s, `p*0.01` or `p/100` is `1` for `p` in %, `x/1000` is m for `x` in mm); the product has the SI unit. From SI: divide by the scale (`q/deg` is deg, `100*f` is % for `f` in `1`), accepted where the other side of the `+`, `-`, `~` or comparison has that unit. The factor may sit anywhere in the product (`2*atan(y, x)/deg`, `100*(q - lo)/(hi - lo)`). Any other factor keeps the term's unit, so a wrong factor is still `E006`.
 - Wires convert automatically: an output in deg feeds an input in rad, and the compiler inserts the factor (see "Editor connection rules").
+- `abs`, `min`, `max`, `clamp`, `hypot`, `deadzone` and `saturate` keep the unit of their arguments. `sign` returns -1, 0 or 1 and is dimensionless whatever its argument's unit, so `Fc * sign(v)` is a force.
 
 Scoping rules: names are local to the block. Ports and their fields are reached with dot syntax (`p.e`, `p.f`). Shadowing a whitelisted function name is an error.
 

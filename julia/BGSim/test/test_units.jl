@@ -1174,6 +1174,30 @@ end
         )
         @test isempty(unit_diags(wild_min))
 
+        # `sign` returns -1, 0 or 1: dimensionless whatever the unit of its argument, so a
+        # Coulomb force `Fc * sign(v)` is in N, and `sign(v)` is not a velocity.
+        coulomb = parse_block(
+            """
+            @block Coulomb begin
+                @parameters Fc::Real = 1.0, [unit = "N"]
+                @variables v::Real, [unit = "m/s"]
+                @variables F::Real, [unit = "N"]
+                @equations F ~ Fc * sign(v)
+            end
+            """,
+        )
+        @test isempty(unit_diags(coulomb))
+        sign_as_velocity = parse_block(
+            """
+            @block SignAsVelocity begin
+                @variables v::Real, [unit = "m/s"]
+                @variables w::Real, [unit = "m/s"]
+                @equations w ~ sign(v)
+            end
+            """,
+        )
+        @test length(unit_diags(sign_as_velocity)) == 1
+
         wild_vector = parse_block(
             """
             @block WildVector begin
