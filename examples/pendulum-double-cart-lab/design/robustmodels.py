@@ -30,7 +30,7 @@ writes, next to the classical models (which stay unchanged):
     at 7 s, the energy removal, the hanging rest, the second swing-up and the re-catch; end 20 s.
 
 ``--replica``: the same firmware as a Python loop on the nominal twin (design model, the armature lag), for
-the comparison with the bgsim runs. ``--expected <bg dir> --replica-npz <out.npz>``: the runs of rl/closed_loop.jl
+the comparison with the bgsim runs. The models get the monitor block and the dashboards of `design/dashboards.py`. ``--expected <bg dir> --replica-npz <out.npz>``: the runs of rl/closed_loop.jl
 measured, compared with the replica and written as the two models' entries of `expected.json` (others kept).
 """
 
@@ -48,6 +48,7 @@ sys.path.insert(0, str(HERE))
 
 import lablib as lb  # noqa: E402
 import cartmodel as cm  # noqa: E402
+import dashboards as dash  # noqa: E402
 import robust_ctrl as rc  # noqa: E402
 import robust_lin as rl  # noqa: E402
 from rlmodels import _drop, _node  # noqa: E402
@@ -679,7 +680,7 @@ def main(argv: list[str]) -> None:
           f"(balance {prm['balance']}, plan {prm['plan']})")
     for k, sc in SCENARIOS.items():
         path = ROOT / "models" / f"{sc['title']}.bgmodel.json"
-        cm.write(path, model(k))
+        cm.write(path, dash.finish(model(k), k, 0.001))
         print("wrote", path)
 
 

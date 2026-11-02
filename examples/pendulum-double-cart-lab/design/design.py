@@ -23,12 +23,14 @@ The mathematics (design model, collocation, TVLQR, LQR, table writer) and the mo
 `examples/pendulum-double-cart/design/` (`cartpend.py`, `cartmodel.py`). The firmware replica, the robustness
 cases and the largest push run on the twin of `lablib.py` (the quadlib twin with the voltage-driven motor).
 
-    uv run examples/pendulum-double-cart-lab/design/design.py [--write] [--robust] [--compare-free <run dir>]
+    uv run examples/pendulum-double-cart-lab/design/design.py [--write] [--robust] [--models] [--compare-free <run dir>]
 
 Without options it prints the design closed loop. `--robust` adds the robustness table (masses, lengths,
 friction, cart mass, delay, quantised encoders), the largest recovered push and the belt-mode check, and
 stores them in `design/design.json`. `--write` writes `library/DoubleCartLab{Traj,Ctrl}.jl`, the three models
-and `design/design.json` (tables, gains, design closed loops, free-swing reference, metrics).
+and `design/design.json` (tables, gains, design closed loops, free-swing reference, metrics). `--models` writes
+only the library blocks and the three models from `design/design.json`, without the design run. The models get
+the monitor block and the dashboards of `design/dashboards.py`.
 """
 
 from __future__ import annotations
@@ -275,6 +277,7 @@ def spec_min(k):
 # ----------------------------------------------------------------------------- writing
 def write_models(tab: cp.Tables):
     import cartmodel
+    import dashboards as dash
     P = PLANT
     sc = SCENARIO
     cp.write_controller(ROOT / "library", sc.prefix, P, tab, sc.doc)
@@ -287,9 +290,10 @@ def write_models(tab: cp.Tables):
                           scene=sc.scene, title=sc.model + "-balance")
     free = cartmodel.build(P, sc.prefix, free=True, th0=sc.free_th0, x0=sc.free_x0, t_end=sc.free_t,
                            points=int(round(sc.free_t / 0.002)) + 1, scene=sc.scene, title=sc.model + "-free")
-    cartmodel.write(ROOT / "models" / f"{sc.model}.bgmodel.json", full)
-    cartmodel.write(ROOT / "models" / f"{sc.model}-balance.bgmodel.json", bal)
-    cartmodel.write(ROOT / "models" / f"{sc.model}-free.bgmodel.json", free)
+    dash.write_monitor_block(ROOT / "library")
+    cartmodel.write(ROOT / "models" / f"{sc.model}.bgmodel.json", dash.finish(full, "swingup", 0.001))
+    cartmodel.write(ROOT / "models" / f"{sc.model}-balance.bgmodel.json", dash.finish(bal, "balance", 0.001))
+    cartmodel.write(ROOT / "models" / f"{sc.model}-free.bgmodel.json", dash.finish(free, "free", 0.001))
 
 
 def design_record(dyn, traj, tab, res, resb) -> dict:
@@ -329,6 +333,11 @@ def design_closed_loops(dyn, tab):
 
 
 def main(argv):
+    if "--models" in argv:
+        # the library blocks and the three models (with their dashboards) from design/design.json, no design run
+        write_models(load_tables())
+        print(f"wrote library/{SCENARIO.prefix}Traj.jl, {SCENARIO.prefix}Ctrl.jl and models/{SCENARIO.model}*.bgmodel.json")
+        return None
     dyn, traj, tab = design()
     P = PLANT
     A, _ = dyn.lin(np.zeros(6))

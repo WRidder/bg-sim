@@ -397,6 +397,24 @@ julia --project=julia/BGSim rl/closed_loop.jl <bg dir> --project=examples/pendul
 uv run examples/pendulum-double-cart-lab/design/robustmodels.py --expected <bg dir> --replica-npz <out.npz>
 ```
 
+## Dashboards and docs
+
+Every model has a **Dashboard** with the same layout, written by `design/dashboards.py` (the generators call it,
+so a regeneration keeps it): a text card on what runs, the phase (or the larger link angle for the learned
+controllers), the peak cart travel, both link angles from upright in degrees (wrapped to [−181°, 179°), so a
+hanging link reads −180°), voltage and current; plots of the angles, the cart with the end stops (±1.0 m) and the robustness test's limit (±0.95 m), voltage and current, and
+the phase with the tip push (the model's own signal where it has no phase); and sliders for the next run (the
+push and its time, a mass, the encoder noise and the loop delay, the knock-down). The degrees, the peak travel
+and the limit lines come from the monitor block `library/DoubleCartLabMonitor.jl` (`Mon`), sampled at the
+controller's rate so it adds no solver stops; the plant model (the FMU source) has none. `uv run
+examples/pendulum-double-cart-lab/design/design.py --models` rewrites the three classical models from
+`design/design.json` without the design run.
+
+The **project docs** (`docs/`: the rig and the model guide, design and margins, realism and the robustness
+test, robust classical control, learned controllers, the comparison) and one "what you're looking at" page per
+model are generated from `tools/example_docs/src/pendulum-double-cart-lab.md` by
+`uv run tools/example_docs/build.py --only pendulum-double-cart-lab`.
+
 ## What to try
 
 - **Plots**: "Link angles from upright" (`Ctrl/th1`, `Ctrl/th2`), "Cart position" (`Rail/qout`), "Motor voltage and
@@ -426,3 +444,5 @@ uv run examples/pendulum-double-cart-lab/design/robustmodels.py --expected <bg d
 | `design/robust_c2.py`, `design/robust_c2.json` | C2: the multi-model swing-up plan and TVLQR |
 | `design/robust_ctrl.py` | the harness controllers (C1 balance, C2 plan, C3 re-arm) |
 | `design/robustmodels.py`, `library/DoubleCartLabRobustCtrl.jl`, `library/DoubleCartLabRobustTraj.jl` | the robust and recover models, their firmware and tables, the Python replica and their checks |
+| `design/dashboards.py`, `library/DoubleCartLabMonitor.jl` | the dashboards of the eight models and the monitor block they read |
+| `docs/`, `models/*.docs/` | the project docs and the model docs (generated, `tools/example_docs/src/pendulum-double-cart-lab.md`) |

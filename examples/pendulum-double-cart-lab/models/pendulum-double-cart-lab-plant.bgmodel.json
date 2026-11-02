@@ -2087,5 +2087,196 @@
       "unit": "N",
       "description": "carriage + motor Coulomb friction at the cart"
     }
-  ]
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "intro",
+        "kind": "text",
+        "size": "2x1",
+        "title": "The plant of the RL environment",
+        "options": {
+          "markdown": true,
+          "text": "**The plant alone, the FMU source for RL.** In: voltage `V`, tip force `F_push`. Out: encoders `x`, `q1`, `q2` (rad), and `v`, `w1`, `w2`, `i_m`. Realism parameters are globals. Set a test voltage, press **Run**."
+        }
+      },
+      {
+        "id": "phase",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Cart x",
+        "signals": [
+          "Rail/qout"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "xpeak",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Cart velocity",
+        "signals": [
+          "Rail/qdout"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "m/s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "th1",
+        "kind": "value",
+        "size": "1x1",
+        "title": "q1: link 1 from the rail axis",
+        "signals": [
+          "Joint1/qout"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "rad"
+        }
+      },
+      {
+        "id": "th2",
+        "kind": "value",
+        "size": "1x1",
+        "title": "q2: link 2 relative to link 1",
+        "signals": [
+          "Joint2/qout"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "rad"
+        }
+      },
+      {
+        "id": "u",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Motor voltage",
+        "signals": [
+          "V/y"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "V",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": -24.0,
+              "to": -23.5,
+              "tone": "bad"
+            },
+            {
+              "from": 23.5,
+              "to": 24.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "i",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Motor current",
+        "signals": [
+          "Motor/isense/y"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "A",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "angles",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Joint encoder angles q1, q2 (rad): the FMU outputs",
+        "signals": [
+          "Joint1/qout",
+          "Joint2/qout"
+        ]
+      },
+      {
+        "id": "cart",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Cart position x (m): the FMU output; end stops at \u00b11.0 m",
+        "signals": [
+          "Rail/qout"
+        ]
+      },
+      {
+        "id": "ui",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Motor voltage (V) and current (A)",
+        "signals": [
+          "V/y",
+          "Motor/isense/y"
+        ]
+      },
+      {
+        "id": "plot4",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Realism forces: cart (N), joints (N m)",
+        "signals": [
+          "Realism/F",
+          "Realism/tau1",
+          "Realism/tau2"
+        ]
+      },
+      {
+        "id": "in_v",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Test voltage V",
+        "parameter": "V/value",
+        "options": {
+          "min": -6.0,
+          "max": 6.0,
+          "step": 0.5,
+          "decimals": 1,
+          "unit": "V"
+        }
+      },
+      {
+        "id": "in_f",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Tip force F_push (constant)",
+        "parameter": "F_push/value",
+        "options": {
+          "min": -0.5,
+          "max": 0.5,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "in_mcart",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Cart mass (global m_cart)",
+        "parameter": "global:m_cart",
+        "options": {
+          "min": 0.76,
+          "max": 0.84,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": "kg"
+        }
+      }
+    ]
+  }
 }

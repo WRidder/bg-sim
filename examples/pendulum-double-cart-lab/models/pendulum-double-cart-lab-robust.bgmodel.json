@@ -777,6 +777,32 @@
           "showLabel": true,
           "color": null
         }
+      },
+      {
+        "id": "n135",
+        "name": "Mon",
+        "block": {
+          "ref": "project:DoubleCartLabMonitor"
+        },
+        "position": {
+          "x": 80,
+          "y": 980
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "sample_time": "0.001"
+        },
+        "starts": {
+          "a1": "-180.0",
+          "a2": "-180.0",
+          "xp": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
       }
     ],
     "connections": [
@@ -1346,6 +1372,42 @@
           "node": "n025",
           "port": "u"
         }
+      },
+      {
+        "id": "s912",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n135",
+          "port": "x"
+        }
+      },
+      {
+        "id": "s913",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n135",
+          "port": "q1"
+        }
+      },
+      {
+        "id": "s914",
+        "kind": "signal",
+        "from": {
+          "node": "n013",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n135",
+          "port": "q2"
+        }
       }
     ]
   },
@@ -1420,5 +1482,251 @@
       "property": "position",
       "signal": "Joint2/qout"
     }
-  ]
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "intro",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Robust classical firmware",
+        "options": {
+          "markdown": true,
+          "text": "**Robust classical firmware** (C1 multi-model LQR on an observer, 2 ms delay in the loop; C2 tables). Timed scenario: swing-up from 1 s, catch 4.0 s, 0.45 N push 7.5 s. Expect 12.9\u00b0, 0.21 m."
+        }
+      },
+      {
+        "id": "phase",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Phase (0 to 3)",
+        "signals": [
+          "Ctrl/phase"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "",
+          "zones": [
+            {
+              "from": -0.5,
+              "to": 0.5,
+              "tone": "info"
+            },
+            {
+              "from": 0.5,
+              "to": 1.5,
+              "tone": "warn"
+            },
+            {
+              "from": 1.5,
+              "to": 2.5,
+              "tone": "good"
+            },
+            {
+              "from": 2.5,
+              "to": 3.5,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "xpeak",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Peak cart travel |x|",
+        "signals": [
+          "Mon/x_peak"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "m",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.8,
+              "tone": "good"
+            },
+            {
+              "from": 0.8,
+              "to": 0.95,
+              "tone": "warn"
+            },
+            {
+              "from": 0.95,
+              "to": 2.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "th1",
+        "kind": "value",
+        "size": "1x1",
+        "title": "\u03b81 from upright",
+        "signals": [
+          "Mon/th1"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "zones": [
+            {
+              "from": -2.0,
+              "to": 2.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "th2",
+        "kind": "value",
+        "size": "1x1",
+        "title": "\u03b82 from upright",
+        "signals": [
+          "Mon/th2"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "zones": [
+            {
+              "from": -2.0,
+              "to": 2.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "u",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Motor voltage",
+        "signals": [
+          "Ctrl/u"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "V",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": -24.0,
+              "to": -23.5,
+              "tone": "bad"
+            },
+            {
+              "from": 23.5,
+              "to": 24.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "i",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Motor current",
+        "signals": [
+          "Motor/isense/y"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "A",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "angles",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Link angles from upright (deg)",
+        "signals": [
+          "Mon/th1",
+          "Mon/th2"
+        ]
+      },
+      {
+        "id": "cart",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Cart position (m), end stops \u00b11.0 m, test limit \u00b10.95 m",
+        "signals": [
+          "Rail/qout",
+          "Mon/stop_hi",
+          "Mon/stop_lo",
+          "Mon/lim_hi",
+          "Mon/lim_lo"
+        ]
+      },
+      {
+        "id": "ui",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Motor voltage (V) and current (A)",
+        "signals": [
+          "Ctrl/u",
+          "Motor/isense/y"
+        ]
+      },
+      {
+        "id": "plot4",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Phase (0 hold, 1 swing-up, 2 balance, 3 settle), link energy (J), tip push (N)",
+        "signals": [
+          "Ctrl/phase",
+          "Ctrl/energy",
+          "PushPulse/y"
+        ]
+      },
+      {
+        "id": "in_push",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Tip push (40 ms)",
+        "parameter": "PushPulse/amplitude",
+        "options": {
+          "min": 0.0,
+          "max": 1.2,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "in_tpush",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Tip push at (40 ms)",
+        "parameter": "PushPulse/t_start",
+        "options": {
+          "min": 5.0,
+          "max": 11.0,
+          "step": 0.5,
+          "decimals": 1,
+          "unit": "s"
+        }
+      },
+      {
+        "id": "in_m2",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Link 2 mass (gains stay nominal)",
+        "parameter": "Body2/m",
+        "options": {
+          "min": 0.15,
+          "max": 0.25,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "kg"
+        }
+      }
+    ]
+  }
 }
