@@ -17,9 +17,12 @@ writes, next to the classical models (which stay unchanged):
     under their own names: every parameter of the bond graph with min < max is exposed in the FMU with
     the realism range (`rl/export_plant.jl --realism=...`); the fixed ones are plain globals; the lumped
     link mass, centre of mass and inertia (`lablib.link_props`), the summed viscous frictions and the
-    static pivot deflections are driven globals, recomputed at the FMU's initialisation. Parameters that
-    are not in the bond graph (Coulomb friction, cable springs, ripple, cogging, sensors, delay) are for
-    the env wrapper (R1).
+    static pivot deflections are driven globals, recomputed at the FMU's initialisation. The realism
+    terms outside the bond-graph elements (R1: Coulomb friction of the joints, the carriage and the
+    motor, the cable springs, commutation ripple and cogging) are the forces of the project block
+    ``LabRealism`` (the twin's laws, from the plant's own signals) on a rail force source and the joint
+    drives, with their globals exposed too (range down to 0, so the FMU also runs the design model).
+    The sensors (quantisation, noise) and the loop delay are the env wrapper's (rl/rlpend/renv.py).
 
 ``pendulum-double-cart-lab-rl`` (``--rl``)
     The same plant (nominal values) with the trained policy block ``project:DoubleCartLabPolicy``
@@ -55,6 +58,14 @@ BOND = ["L1", "L2", "m_tube1", "m_tube2", "tube_od", "tube_wall", "com_shift1", 
         "J_cart", "b_joint1", "b_joint2", "b_cable", "b_carriage", "b_cable_base", "b_motor", "R_m", "L_m", "k_t",
         "J_m", "N_gear", "r_pulley", "k_belt", "d_belt", "x_rail", "k_stop", "d_stop"]
 
+# realism parameters outside the bond-graph elements (R1): the forces of library/LabRealism.jl (the twin's Coulomb
+# friction, cable springs, commutation ripple and cogging), driven from the plant's own signals. Their FMU range
+# reaches down to 0 (ZERO_OK), so that the FMU also runs the design model (no Coulomb friction, ripple or cable
+# spring); the domain randomisation samples the realism.json ranges.
+REAL = ["tc_joint1", "tc_joint2", "eps_joint", "tc_carriage", "tc_motor", "eps_base", "k_cable", "k_cable_base",
+        "ripple_rel", "ripple_per_rev", "cogging", "cogging_per_rev"]
+ZERO_OK = {"tc_joint1", "tc_joint2", "tc_carriage", "tc_motor", "k_cable", "ripple_rel", "cogging"}
+
 # driven globals: lablib.link_props as expressions (parts: mass, position from the pivot, own inertia)
 _RO, _RI = "(tube_od/2)", "(tube_od/2 - tube_wall)"
 _SQ = lambda e: f"{e}*{e}"  # noqa: E731
@@ -89,6 +100,9 @@ def _driven() -> list[tuple[str, str, str, str]]:
         ("d1", f"(m1 + m2)*{G0!r}/{kt!r}", "m", "static pivot deflection of joint 1 (hanging)"),
         ("d2", f"m2*{G0!r}/{kt!r}", "m", "static pivot deflection of joint 2 (hanging)"),
         ("d_rail", f"-(m_cart + m1 + m2)*{G0!r}/{kd!r}", "m", "static rail deflection"),
+        ("n_motor", "N_gear/r_pulley", "rad/m", "motor angle per cart metre"),
+        ("alpha_v", "k_t*N_gear/(r_pulley*R_m)", "N/V", "force per volt at the cart (the twin's alpha)"),
+        ("tc_rail", "tc_carriage + tc_motor*N_gear/r_pulley", "N", "carriage + motor Coulomb friction at the cart"),
     ]
     return out
 
@@ -96,13 +110,14 @@ def _driven() -> list[tuple[str, str, str, str]]:
 def ranges() -> dict:
     """The exposed globals and their realism ranges: the bond-graph parameters with min < max."""
     spec = lb.spec()
-    return {k: (spec[k]["min"], spec[k]["max"]) for k in BOND if spec[k]["min"] < spec[k]["max"]}
+    out = {k: (spec[k]["min"], spec[k]["max"]) for k in BOND + REAL if spec[k]["min"] < spec[k]["max"]}
+    return {k: ((0.0, v[1]) if k in ZERO_OK else v) for k, v in out.items()}
 
 
 def _globals() -> list[dict]:
     spec = lb.spec()
     out = [{"name": k, "value": repr(float(spec[k]["nominal"])), "unit": spec[k]["unit"],
-            "description": spec[k]["description"]} for k in BOND]
+            "description": spec[k]["description"]} for k in BOND + REAL]
     out += [{"name": n, "value": e, "unit": u, "description": d} for n, e, u, d in _driven()]
     return out
 
@@ -117,6 +132,9 @@ def _check_driven():
         for name, ref in ((f"m{j}", m[j - 1]), (f"c{j}", c[j - 1]), (f"J{j}", J[j - 1])):
             assert abs(env[name] - ref) <= 1e-12 * max(1.0, abs(ref)), (name, env[name], ref)
     assert abs(env["b1"] - PLANT.b[0]) < 1e-15 and abs(env["b_rail"] - PLANT.b_cart) < 1e-15
+    d = lb.drive(P_NOM)
+    assert abs(env["alpha_v"] - d["alpha"]) < 1e-12
+    assert abs(env["tc_rail"] - (P_NOM["tc_carriage"] + d["tc_m"])) < 1e-12
 
 
 def _node(doc, name):
@@ -156,6 +174,33 @@ def _bind_globals(doc):
 
 
 
+def add_realism(doc, M, v_src, v_port: str = "y"):
+    """The realism forces of library/LabRealism.jl (from the voltage signal `v_src`.`v_port` and the plant's
+    sensors): a force source on the rail drive (its a.e = F u is the force it takes from the cart, as the
+    damper's, so F = -1 pushes along +x) and modulated effort sources on the joint drives (the passive Se)."""
+    rail = _node(doc, "Rail")["id"]
+    real = M.node("Realism", "project:LabRealism", 520, 820, params={
+        "tc_joint1": "tc_joint1", "tc_joint2": "tc_joint2", "eps_joint": "eps_joint", "tc_rail": "tc_rail",
+        "eps_base": "eps_base", "k_cable": "k_cable", "k_cable_base": "k_cable_base", "alpha": "alpha_v",
+        "n_motor": "n_motor", "ripple_rel": "ripple_rel", "ripple_per_rev": "ripple_per_rev", "cogging": "cogging",
+        "cogging_per_rev": "cogging_per_rev"})
+    M.sig(v_src, v_port, real, "V")
+    for port, (src, sp) in {"x": ("Rail", "qout"), "v": ("Rail", "qdout"), "q1": ("Joint1", "qout"),
+                            "w1": ("Joint1", "qdout"), "w2": ("Joint2", "qdout")}.items():
+        M.sig(_node(doc, src)["id"], sp, real, port)
+    fsrc = M.node("RealismForce", "stdlib:translation/ForceSource", 640, 80, params={"F": "-1.0"})
+    ffix = M.node("FrameR", "stdlib:translation/Fixed", 640, -20)
+    M.wire(fsrc, "a", rail, "drive")
+    M.wire(fsrc, "b", ffix, "a")
+    M.sig(real, "F", fsrc, "u")
+    for j in (1, 2):
+        se = _node(doc, f"Passive{j}")
+        se["block"] = {"ref": "stdlib:bondgraph/MSe"}
+        se["params"] = {"gain": "1.0"}
+        M.sig(real, f"tau{j}", se["id"], "u")
+    return real
+
+
 def plant_model() -> dict:
     doc = cm.build(PLANT, "DoubleCartLab", t_end=5.0, points=5001, scene=SCENE,
                    title="pendulum-double-cart-lab-plant")
@@ -175,6 +220,7 @@ def plant_model() -> dict:
     for k, (name, src, port) in enumerate(sensors):
         out = M.node(name, "stdlib:converters/ExportOutput", 80 + 120 * k, 820)
         M.sig(_node(doc, src)["id"], port, out, "u")
+    add_realism(doc, M, v_in)
     _bind_globals(doc)
     doc["plots"] = [
         {"id": "p_q", "title": "Joint encoder angles (rad)", "signals": ["Joint1/qout", "Joint2/qout"]},
