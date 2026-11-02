@@ -93,6 +93,15 @@
       "buggy-sim"
     ]
   },
+  "cessna": {
+    "title": "Cessna 172",
+    "description": "A Cessna 172P from JSBSim data as a bond graph: open-loop modes against scipy, and a flyable model with landing gear, engine, autopilot and a simulator FMU.",
+    "hasScene": true,
+    "models": [
+      "cessna-open-loop",
+      "cessna-sim"
+    ]
+  },
   "cube-3d": {
     "title": "Cube 3d",
     "description": "A cube balanced on one corner by three reaction wheels.",

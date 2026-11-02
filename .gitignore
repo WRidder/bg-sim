@@ -32,9 +32,13 @@ examples/export-tunables-out/
 examples/export-f16-out/
 examples/export-beaver-out/
 examples/export-cars-out/
+examples/export-cessna-out/
 
 # f16-sim host: the FMU and the start list are built locally (apps/f16-sim/build_fmu.py)
 apps/f16-sim/build/
 
 # car-sim host: the FMUs are built locally (apps/car-sim/build_fmu.py)
 apps/car-sim/build/
+
+# cessna-sim host: the FMU and the start list are built locally (apps/cessna-sim/build_fmu.py)
+apps/cessna-sim/build/

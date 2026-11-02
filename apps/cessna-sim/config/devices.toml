@@ -1,0 +1,86 @@
+# Input devices of the cessna-sim host.
+#
+# Each axis control reads one axis of one device. A device is matched by a case-insensitive part
+# of its name (see `uv run cessnasim --list-devices`), or by its index when `device` is a number.
+# A control without a device (or whose device is missing) is flown from the keyboard.
+#
+#   device    name fragment ("" = the first joystick) or index
+#   axis      SDL axis number on that device
+#   invert    true flips the sign
+#   deadzone  bipolar: fraction of the travel around the centre that reads 0 (the rest is
+#             rescaled); unipolar: the fraction at the bottom of the travel that reads 0
+#   expo      0 = linear .. 1 = cubic: softer around the centre, full deflection unchanged
+#   range     "bipolar" (-1..1: yoke, pedals) or "unipolar" (0..1: throttle, mixture, toe brakes;
+#             the axis' -1..1 becomes 0..1)
+
+[pitch]
+device = ""
+axis = 1
+invert = true        # SDL: forward is -1 on most sticks and yokes; the FMU wants +1 = yoke aft
+deadzone = 0.03
+expo = 0.2
+
+[roll]
+device = ""
+axis = 0
+invert = false       # +1 = roll right
+deadzone = 0.03
+expo = 0.2
+
+[yaw]
+# Rudder pedals are usually a separate device: its name fragment goes here, e.g. "rudder" or
+# "pedal". Without pedals, set the stick's twist axis (often 3 or 5) and device = "".
+device = "pedal"
+axis = 2
+invert = false       # +1 = right pedal = nose right (and the nose wheel steers right)
+deadzone = 0.04
+expo = 0.1
+
+[throttle]
+# A throttle quadrant: its name fragment. Use "" for the throttle lever of the stick.
+device = "throttle"
+axis = 2
+invert = true        # SDL: lever forward is usually -1
+range = "unipolar"
+
+[mixture]
+# The red lever of a quadrant (the third axis of a three-lever quadrant): full forward = rich.
+device = "throttle"
+axis = 4
+invert = true
+range = "unipolar"
+
+[brake_l]
+# The toe brakes of a pedal set: two more axes on the pedal device.
+device = "pedal"
+axis = 0
+invert = false
+deadzone = 0.05
+range = "unipolar"
+
+[brake_r]
+device = "pedal"
+axis = 1
+invert = false
+deadzone = 0.05
+range = "unipolar"
+
+[buttons]
+# Optional joystick buttons: flaps_down, flaps_up, trim_up, trim_down, brakes (both, held),
+# ap_roll (autopilot roll: off -> wing leveller -> heading hold), ap_alt (altitude hold on/off).
+# flaps_down = { device = "", button = 4 }
+# flaps_up = { device = "", button = 5 }
+# trim_up = { device = "", button = 2 }
+# trim_down = { device = "", button = 3 }
+
+[keyboard]
+# Keyboard fallback for every control without a device: arrows (or W/S, A/D) move the yoke and
+# spring back when released, Q/E (or Z/X) the pedals, PgUp/PgDn (or +/-) the throttle, M/N the
+# mixture, F/V the flaps one detent down/up, Home/End (or [ / ]) the trim, B both brakes,
+# , and . the left and right brake.
+stick_rate = 2.0     # 1/s: how fast a held key moves the yoke
+spring = 3.0         # 1/s: how fast a released yoke or pedal returns to the centre
+pedal_rate = 2.0     # 1/s
+throttle_rate = 0.4  # 1/s
+mixture_rate = 0.3   # 1/s
+trim_rate = 0.25     # 1/s of trim travel (-1 .. 1)
