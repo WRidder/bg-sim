@@ -28,6 +28,8 @@ type Property = (typeof PROPERTIES)[number];
 const POSE_PARTS = ["q_w", "q_x", "q_y", "q_z", "x", "y", "z"] as const;
 const DEFAULT_RANGE: [number, number] = [0, 1];
 const DEFAULT_STRAIN_RANGE: [number, number] = [0, 0.001];
+/** von Mises range of a new stress colouring, Pa (0 to 50 MPa). */
+const DEFAULT_STRESS_RANGE: [number, number] = [0, 5e7];
 const FAMILIES: readonly DeformationFamily[] = ["bending-y", "bending-z", "torsion"];
 const MODAL_BASES: readonly DeformationBasis[] = ["clamped-free", "free-free"];
 /** Torsion also takes the lumped twist of a torsion spring (`linear`, one coordinate). */
@@ -468,6 +470,45 @@ function MeshModesNote({ built, target, testId }: { built: BuiltScene | null; ta
   );
 }
 
+const MPA = 1e6;
+/** Pa to the editor's MPa and back (no float noise in the stored value). */
+const toMpa = (pa: number): number => Number((pa / MPA).toPrecision(12));
+const toPa = (mpa: number): number => Number((mpa * MPA).toPrecision(12));
+
+/** The von Mises stress colouring of a mode-shapes binding row: on/off, colormap and range (shown in MPa, stored in Pa). */
+function StressSettings({ binding, index, onChange }: { binding: ModeShapeBinding; index: number; onChange: (next: ModeShapeBinding) => void }): ReactElement {
+  const i = String(index);
+  const n = String(index + 1);
+  const stress = binding.stress;
+  return (
+    <div className="bindings__deform">
+      <label className="bindings__inline">
+        <input
+          type="checkbox"
+          checked={stress !== undefined}
+          aria-label={`Colour binding ${n} by von Mises stress`}
+          data-testid={`binding-stress-${i}`}
+          onChange={(e) => {
+            const { stress: _old, ...rest } = binding;
+            void _old;
+            onChange(e.target.checked ? { ...rest, stress: { colormap: "heat", range: DEFAULT_STRESS_RANGE } } : rest);
+          }}
+        />
+        <span>stress</span>
+      </label>
+      {stress !== undefined ? (
+        <div className="bindings__color">
+          <Choose value={stress.colormap} options={COLORMAPS} label={`Stress colormap of binding ${n}`} testId={`binding-stress-colormap-${i}`} onChange={(v) => { onChange({ ...binding, stress: { ...stress, colormap: v } }); }} />
+          <span className="bindings__swatch" style={{ background: colormapGradient(stress.colormap) }} aria-hidden="true" />
+          <NumberField value={toMpa(stress.range[0])} label={`Stress range minimum of binding ${n} in MPa`} testId={`binding-stress-min-${i}`} onCommit={(v) => { onChange({ ...binding, stress: { ...stress, range: [toPa(v), stress.range[1]] } }); }} />
+          <NumberField value={toMpa(stress.range[1])} label={`Stress range maximum of binding ${n} in MPa`} testId={`binding-stress-max-${i}`} onCommit={(v) => { onChange({ ...binding, stress: { ...stress, range: [stress.range[0], toPa(v)] } }); }} />
+          <span>MPa</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** How many modal coordinates a mode-shapes binding of a visual can use: its mesh's morph targets when known. */
 function meshModeLimit(built: BuiltScene | null, target: string): number {
   const n = built?.morphTargetCount(target) ?? null;
@@ -640,7 +681,10 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
                   ) : b.property === "deformation" ? (
                     <DeformationSettings binding={b} index={i} onChange={(next) => { replace(i, next); }} />
                   ) : b.property === "mode-shapes" ? (
-                    <MeshModesNote built={built} target={b.target} testId={`binding-mesh-modes-${String(i)}`} />
+                    <>
+                      <MeshModesNote built={built} target={b.target} testId={`binding-mesh-modes-${String(i)}`} />
+                      <StressSettings binding={b} index={i} onChange={(next) => { replace(i, next); }} />
+                    </>
                   ) : b.property === "segment" ? (
                     <SegmentSettings binding={b} index={i} signals={signals} onChange={(next) => { replace(i, next); }} />
                   ) : null}

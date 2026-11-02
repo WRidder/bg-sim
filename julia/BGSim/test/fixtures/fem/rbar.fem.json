@@ -1,0 +1,27 @@
+{
+  "$comment": "Test part of test_fem_rail.jl: a bar 200 x 20 x 10 mm of a soft test material (E = 70 MPa, so that its modes are slow) clamped at A (x = 0) with interface B at the far end (x = 200 mm), and a rail along the top face from x = 20 to 180 mm (a carriage's guide; footprint: the top face within 10 mm of the station). One rail load mode at mid-rail. Regenerate: julia --project=julia/BGSimFEM julia/BGSimFEM/bin/bgsim-fem.jl julia/BGSim/test/fixtures/fem/rbar.fem.json",
+  "name": "rbar",
+  "geometry": {"box": {"corner": [0, -0.01, -0.005], "size": [0.2, 0.02, 0.01]}},
+  "material": {"E": 7.0e7, "nu": 0.33, "rho": 2700.0},
+  "mesh": {"size": 0.006, "order": 2},
+  "interfaces": [
+    {"name": "A", "position": [0, 0, 0], "select": {"box": {"min": [-1e-6, -1, -1], "max": [1e-6, 1, 1]}}},
+    {"name": "B", "position": [0.2, 0, 0], "select": {"box": {"min": [0.199999, -1, -1], "max": [0.200001, 1, 1]}}}
+  ],
+  "rail": {
+    "name": "top",
+    "start": [0.02, 0, 0.005],
+    "end": [0.18, 0, 0.005],
+    "normal": [0, 0, 1],
+    "stations": 33,
+    "chebyshev": 16,
+    "footprint": {"half_length": 0.01, "select": {"box": {"min": [-1, -1, 0.004999], "max": [1, 1, 0.005001]}}},
+    "load_modes": [0.5]
+  },
+  "modes": {"fixed_interface": 3},
+  "stiffening": false,
+  "stress": false,
+  "validate": 4,
+  "visual": {"size": 0.02},
+  "output": {"model": "rbar.modal.json"}
+}

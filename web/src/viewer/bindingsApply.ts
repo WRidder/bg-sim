@@ -5,10 +5,11 @@
  * A `deformation` binding hands its modal coordinates (times `gain`) to the scene, which evaluates the
  * mode shapes per vertex (`beamModes.ts`); all families of one visual go in one call. A `mode-shapes`
  * binding hands its modal coordinates (times `gain`) to the scene, which sets them as the morph target
- * influences of the visual's mesh (times the exaggeration).
+ * influences of the visual's mesh (times the exaggeration); with `stress` the scene also colours the mesh by the
+ * von Mises stress of the same (un-exaggerated) coordinates (`stressConfigs`, `glbStress.ts`).
  */
 
-import type { Binding, DeformationBinding, SegmentBinding, SegmentBrokenStyle, ShapeAxis } from "../contracts/model";
+import type { Binding, DeformationBinding, SegmentBinding, SegmentBrokenStyle, ShapeAxis, StressColor } from "../contracts/model";
 import type { BeamConfig } from "../scene/build";
 import type { Vec3 } from "../scene/pose";
 import { planarPoint } from "../scene/segment";
@@ -26,6 +27,8 @@ export interface ApplyTarget {
   setVisible(ref: string, visible: boolean): boolean;
   /** The visuals deformation bindings drive (beam meshes); called whenever the bindings or the scene change. */
   configureBeams?(configs: ReadonlyMap<string, BeamConfig>): void;
+  /** The mesh visuals mode-shapes bindings colour by von Mises stress; called whenever the bindings or the scene change. */
+  configureStress?(configs: ReadonlyMap<string, StressColor>): void;
   /** Modal coordinates of a configured beam visual, all its families at once (gain applied). */
   setDeformation?(ref: string, sets: readonly ModalSet[]): boolean;
   /** Modal coordinates of a mesh visual with morph targets, in morph-target order (gain applied, not exaggerated). */
@@ -53,6 +56,20 @@ export function beamConfigs(bindings: readonly Binding[]): Map<string, BeamConfi
   }
   return out;
 }
+/**
+ * Per mesh visual of a mode-shapes binding with `stress`: its stress colouring (the first such binding of a
+ * visual wins; a second mode-shapes binding of a visual is E301 anyway). The colours come from the same
+ * modal coordinates that deform the mesh (`setModeShapes`).
+ */
+export function stressConfigs(bindings: readonly Binding[]): Map<string, StressColor> {
+  const out = new Map<string, StressColor>();
+  for (const b of bindings) {
+    if (b.property !== "mode-shapes" || b.stress === undefined || out.has(b.target)) continue;
+    out.set(b.target, b.stress);
+  }
+  return out;
+}
+
 /** The distinct signal ids of the bindings, in first-use order: the ids to request from the stream. */
 export function boundSignalIds(bindings: readonly Binding[]): string[] {
   const seen = new Set<string>();

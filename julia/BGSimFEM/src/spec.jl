@@ -26,7 +26,7 @@ function visual_for(fe::FEModel, r::ReducedModel; visual_grid::Union{Nothing,Gri
     if visual_grid === nothing
         tris = boundary_triangles(fe.grid; subdivide = false)
         modes = [dofs_to_nodal(fe, view(r.modes, :, k)) for k in 1:r.nm]
-        return visual_mesh(fe.X, tris, modes)
+        return visual_mesh(fe.X, tris, modes; stress = r.stress_modes)
     end
     tris = boundary_triangles(visual_grid; subdivide = false)
     Pv = node_coordinates(visual_grid)
@@ -52,7 +52,21 @@ function visual_for(fe::FEModel, r::ReducedModel; visual_grid::Union{Nothing,Gri
         end
         push!(modes, U)
     end
-    return visual_mesh(Pv, tris, modes)
+    # the averaged nodal stress is a nodal field like u: interpolate it with the same shape
+    # functions, three components at a time (packed as a displacement-like dof vector)
+    stress = Matrix{Float64}[]
+    for S in r.stress_modes
+        V = zeros(6, size(Pv, 2))
+        for (h, rows) in enumerate((1:3, 4:6))
+            vals = evaluate_at_points(ph, fe.dh, nodal_to_dofs(fe, S[rows, :]), :u)
+            for (j, i) in enumerate(used)
+                v = vals[j]
+                V[rows, i] = any(isnan, v) ? S[rows, nearest[i]] : collect(v)
+            end
+        end
+        push!(stress, V)
+    end
+    return visual_mesh(Pv, tris, modes; stress)
 end
 
 _get(d, k, default) = (d === nothing || !haskey(d, k) || d[k] === nothing) ? default : d[k]
@@ -84,10 +98,30 @@ function reduce_part(spec::AbstractDict; base_dir::AbstractString = pwd(), write
     nf = Int(_get(md, "fixed_interface", 6))
     drop = Float64(something(_get(md, "drop_above_hz", nothing), Inf))
     stiff = Bool(_get(spec, "stiffening", true))
-    r, aux = craig_bampton(fe, ifsR; nf = nf, stiffening = stiff, name = name, drop_above_hz = drop)
+    rs = _get(spec, "rail", nothing)
+    rail = rs === nothing ? nothing : make_rail(part.grid, rs, p1, R1)
+    extra = zeros(0, 0)
+    if rail !== nothing
+        log("rail $(rail.name): $(round(rail.length; sigdigits = 5)) m, $(length(rail.s)) stations, footprint $(minimum(length.(rail.nodes)))..$(maximum(length.(rail.nodes))) nodes")
+        lm = _get(rs, "load_modes", Any[])
+        isempty(lm) || (extra = reduce(hcat, [rail_unit_loads(fe, rail, Float64(f))[1] for f in lm]))
+    end
+    r, aux = craig_bampton(fe, ifsR; nf = nf, stiffening = stiff, name = name, drop_above_hz = drop,
+        extra_loads = extra)
     r.frame_position = p1
     r.frame_rotation = R1
-    log("Craig-Bampton: $(r.nf) fixed-interface + $(6 * (length(ifs) - 1)) constraint modes -> $(r.nm) modes ($(round(r.timings["total"]; digits = 1)) s)")
+    nlm = r.validation["cb"]["load_modes"]
+    log("Craig-Bampton: $(r.nf) fixed-interface + $(6 * (length(ifs) - 1)) constraint" *
+        (nlm > 0 ? " + $nlm rail load" : "") * " modes -> $(r.nm) modes ($(round(r.timings["total"]; digits = 1)) s)")
+    if rail !== nothing
+        rd = rail_tables!(r, fe, rail)
+        log("rail tables: $(rail.nc) Chebyshev terms, fit error $(round(rd["fit_error"]["translation"]; sigdigits = 3)) (translation), $(round(rd["fit_error"]["rotation"]; sigdigits = 3)) (rotation)")
+        vr = validate_rail!(r, fe, aux, rail)
+        log("rail statics, full vs reduced deflection under unit loads: max rel. error forces $(round(vr["max_rel_error_force"]; sigdigits = 3)), torsion $(round(vr["max_rel_error_torsion"]; sigdigits = 3)); against the largest deflection $(round(vr["max_error_of_largest"]; sigdigits = 3))")
+        for c in vr["cases"]
+            log("  s = $(rpad(round(c["station"]; digits = 4), 7)) $(rpad(c["load"], 9)) full $(round(c["full_compliance"]; sigdigits = 5)), reduced $(round(c["reduced_compliance"]; sigdigits = 5)) ($(round(100 * c["rel_error"]; sigdigits = 3)) %, $(round(100 * c["error_of_largest"]; sigdigits = 3)) % of the largest)")
+        end
+    end
     log("mass $(r.mass) kg, CoM $(r.S0 ./ r.mass) m (in R)")
     log("modal frequencies (clamped at $(ifs[1].name)) [Hz]: $(round.(frequencies_hz(r); sigdigits = 5))")
     nval = Int(_get(spec, "validate", 6))
@@ -113,6 +147,21 @@ function reduce_part(spec::AbstractDict; base_dir::AbstractString = pwd(), write
             log("validation clamped at $(ifs[1].name) with attached bodies: full $(round.(va["full_hz"]; sigdigits = 6)) Hz, reduced $(round.(va["reduced_hz"]; sigdigits = 6)) Hz, max rel. error below $(round(v["band_hz"]; sigdigits = 4)) Hz: $(round(va["max_rel_error_in_band"]; sigdigits = 3))")
         end
         r.validation["seconds"] = time() - t2
+    end
+    st = _get(spec, "stress", Dict{String,Any}())
+    if st !== false
+        st isa AbstractDict || (st = Dict{String,Any}())
+        hot = [(String(_get(p, "name", "hotspot $k")), R1' * (Float64.(collect(p["position"])) .- p1))
+               for (k, p) in enumerate(_get(st, "hotspots", Any[]))]
+        sv = modal_stress!(r, fe, aux; hotspots = hot, peak_points = Int(_get(st, "peak_points", 24)),
+            exclude_interfaces = (x -> x isa Bool ? x : Float64(x))(_get(st, "exclude_interfaces", true)))
+        log("stress: $(length(r.stress_points)) points ($(length(hot)) hotspots), static load cases full vs reduced peak von Mises: " *
+            "interface loads $(round(sv["max_peak_rel_error_interface_loads"]; sigdigits = 3)), self weight $(round(sv["max_peak_rel_error_self_weight"]; sigdigits = 3)); " *
+            "points find $(round(100 * sv["peak_coverage"]["min_ratio"]; digits = 1)) % (worst) / $(round(100 * sv["peak_coverage"]["mean_ratio"]; digits = 1)) % (mean) of the surface peak ($(round(sv["seconds"]; digits = 1)) s)")
+        for c in sv["cases"]
+            log("  $(rpad(c["name"], 34)) peak full $(round(c["full_peak"]; sigdigits = 5)) Pa, reduced $(round(c["reduced_peak"]; sigdigits = 5)) Pa ($(round(100 * c["peak_rel_error"]; sigdigits = 3)) %)" *
+                join([", $(h["name"]) $(round(100 * h["rel_error"]; sigdigits = 3)) %" for h in c["hotspots"]]))
+        end
     end
     vis = _get(spec, "visual", Dict{String,Any}())
     vsize = _get(vis, "size", nothing)

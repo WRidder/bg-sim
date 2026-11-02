@@ -514,6 +514,15 @@
         "Bracket/Ek",
         "Bracket/Ee"
       ]
+    },
+    {
+      "id": "p4",
+      "title": "Bracket von Mises stress (Pa): upright 30 mm, upright root, peak",
+      "signals": [
+        "Bracket/sigma_vm[1]",
+        "Bracket/sigma_vm[2]",
+        "Bracket/sigma_max"
+      ]
     }
   ],
   "scene": {
@@ -561,7 +570,14 @@
         "Bracket/eta[8]",
         "Bracket/eta[9]",
         "Bracket/eta[10]"
-      ]
+      ],
+      "stress": {
+        "colormap": "heat",
+        "range": [
+          0.0,
+          20000000.0
+        ]
+      }
     }
   ]
 }

@@ -550,7 +550,7 @@ export interface StrainColor {
   range: [number, number];
 }
 /**
- * Elastic deformation of a mesh visual (a GLB) by modal coordinates: a flexible body reduced from a finite element mesh (ModalBody3D). The GLB's single mesh carries one glTF morph target per elastic mode, in mode order, and the POSITION delta of target k is the shape of mode k per unit modal coordinate (m per unit eta_k) in the visual's frame. The viewer draws vertex = rest + sum_k (gain * eta_k * exaggeration) * delta_k, where the exaggeration is the viewer's display factor (not stored). Only a mesh visual takes it, at most one per visual, and its mesh needs at least as many morph targets as the binding has signals. The rigid motion of the body frame is the pose binding of the link the visual belongs to.
+ * Elastic deformation of a mesh visual (a GLB) by modal coordinates: a flexible body reduced from a finite element mesh (ModalBody3D). The GLB's single mesh carries one glTF morph target per elastic mode, in mode order, and the POSITION delta of target k is the shape of mode k per unit modal coordinate (m per unit eta_k) in the visual's frame. The viewer draws vertex = rest + sum_k (gain * eta_k * exaggeration) * delta_k, where the exaggeration is the viewer's display factor (not stored). Only a mesh visual takes it, at most one per visual, and its mesh needs at least as many morph targets as the binding has signals. The rigid motion of the body frame is the pose binding of the link the visual belongs to. The optional `stress` colours the mesh by the von Mises stress the same modal coordinates cause (the GLB's stress table).
  */
 export interface ModeShapeBinding {
   target: string;
@@ -566,7 +566,21 @@ export interface ModeShapeBinding {
    * Multiplies every modal coordinate (default 1), e.g. 0.001 for coordinates in mm. The viewer's exaggeration factor is a display setting and is not stored in the binding.
    */
   gain?: number;
+  stress?: StressColor;
   $comment?: string;
+}
+/**
+ * Colours a mode-shapes mesh by the per-vertex von Mises stress, recovered from the stress table of its GLB (written by the FEM reduction julia/BGSimFEM as asset.extras.bgsim.stress: the six stress components per vertex per unit modal coordinate). The viewer superposes the table with the binding's modal coordinates (gain applied), sigma(v) = sum_k eta_k S_k(v), and takes von Mises; it uses the true coordinates, never the exaggerated deformation. `range` is in Pa (e.g. [0, 5e7]).
+ */
+export interface StressColor {
+  colormap: Colormap;
+  /**
+   * von Mises stress at the low and the high end of the colormap, in Pa.
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  range: [number, number];
 }
 /**
  * A bar between two moving points, such as a truss member between two pin nodes. Each frame the viewer places the visual (a box or a cylinder) so that its `axis` runs from end point A to end point B: the visual is centred between the points, turned onto the line A-B and stretched along `axis` to the distance |AB| (its cross-section keeps its size). The binding replaces the visual's pose in its link. `axis` is the visual-local direction that runs from A to B (default +z for a cylinder, its own axis, and +x for a box). `broken` is an optional failure flag of the bar (for example a Truss2D `failed[k]` or a Bar2D `broken`): above 0.5 the bar is drawn as `brokenStyle`. Colour the bar with a `color` binding of the same visual (for example a utilisation signal on the coolwarm colormap) and hide it with a `visible` binding.

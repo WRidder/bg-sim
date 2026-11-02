@@ -12,7 +12,8 @@
  *    evidence of a mismatch: it is unchecked for every target (angle, length, quaternion) and raises no E303.
  *    A physical unit that does not fit (`N`, `1` on a length, `m` on an angle) still raises E303.
  *  - E304 wrong signal count (pose needs exactly 7, deformation 1 to 3 modal coordinates, or exactly 1 with
- *    the `linear` basis, mode-shapes 1 to 64 and no more than its mesh has morph targets, segment 4 planar
+ *    the `linear` basis, mode-shapes 1 to 64 and no more than its mesh has morph targets (with `stress`: no
+ *    more than its stress table has modes), segment 4 planar
  *    or 6 spatial end-point coordinates, every other property 1).
  *
  * Segment bindings (a bar between two moving points) raise E301 when the visual cannot stretch along the
@@ -26,7 +27,8 @@
  * (m), torsion coordinates angles (rad) for E303.
  *
  * Mode-shapes bindings (flexible bodies from a finite element reduction) raise E301 when the visual is no
- * mesh, when its mesh has no morph targets, or when a visual has two of them; their coordinates are lengths
+ * mesh, when its mesh has no morph targets, or when a visual has two of them; with a stress colouring also
+ * when the GLB has no stress table or the stress range is not low < high (finite). Their coordinates are lengths
  * (m) for E303.
  *
  * Diagnostics have the shape of plan 3.4; `path` is the binding target.
@@ -53,6 +55,11 @@ export interface SceneLookup {
    * null when the ref is no loaded mesh visual. Absent: not checked.
    */
   morphTargetCount?(ref: string): number | null;
+  /**
+   * Modes of the stress table of a loaded mesh visual's GLB (`asset.extras.bgsim.stress`), 0 when it has
+   * none; null when the ref is no loaded mesh visual. Absent: not checked.
+   */
+  stressModeCount?(ref: string): number | null;
 }
 
 /** Signal id -> unit (null: the model gives none). */
@@ -237,6 +244,19 @@ function modeShapeProblems(binding: ModeShapeBinding, scene: SceneLookup, earlie
     out.push(diag("E301", binding, `visual "${binding.target}" is a ${geometry.kind}, not a mesh; mode shapes need a mesh with morph targets`, "bind the GLB mesh visual written by the FEM reduction (one morph target per mode), or use a deformation binding for a box or cylinder beam"));
   } else if (scene.morphTargetCount?.(binding.target) === 0) {
     out.push(diag("E301", binding, `the mesh of visual "${binding.target}" has no morph targets (mode shapes)`, "use the GLB written by the FEM reduction tool, which stores one morph target per elastic mode"));
+  } else if (binding.stress !== undefined && scene.stressModeCount?.(binding.target) === 0) {
+    out.push(
+      diag(
+        "E301",
+        binding,
+        `the mesh of visual "${binding.target}" has no stress table, so it cannot be coloured by stress`,
+        "re-run the FEM reduction (julia/BGSimFEM) on the part spec: it writes the stress per mode into the GLB; or turn the stress colouring off",
+      ),
+    );
+  }
+  const range = binding.stress?.range;
+  if (range !== undefined && !(Number.isFinite(range[0]) && Number.isFinite(range[1]) && range[0] < range[1])) {
+    out.push(diag("E301", binding, `the stress range of visual "${binding.target}" must be two finite values, low below high (Pa)`, "set the von Mises stress at the low and the high end of the colormap, e.g. 0 to 50 MPa"));
   }
   if (earlier.some((other) => other.property === "mode-shapes" && other.target === binding.target)) {
     out.push(diag("E301", binding, `visual "${binding.target}" has two mode-shapes bindings`, "list all modal coordinates in one binding, in mode order, and remove the other"));
@@ -315,6 +335,18 @@ function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits 
           binding,
           `the mesh of visual "${target}" has ${String(targets)} morph target${targets === 1 ? "" : "s"} (mode shapes), but the binding lists ${String(names.length)} modal coordinates`,
           `bind at most ${String(targets)} signals (eta[1] to eta[${String(targets)}]), or regenerate the GLB with more modes`,
+        ),
+      );
+    }
+    const table = binding.property === "mode-shapes" && binding.stress !== undefined ? scene.stressModeCount?.(target) : undefined;
+    if (countOk && typeof table === "number" && table > 0 && names.length > table) {
+      countOk = false;
+      out.push(
+        diag(
+          "E304",
+          binding,
+          `the stress table of the mesh of visual "${target}" has ${String(table)} mode${table === 1 ? "" : "s"}, but the binding lists ${String(names.length)} modal coordinates`,
+          `bind at most ${String(table)} signals, or re-run the FEM reduction so that the GLB's stress table has every mode`,
         ),
       );
     }

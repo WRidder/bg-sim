@@ -47,6 +47,20 @@
     # chart as in ModalBeam3D): flow [R_j' w + w_rel; R_j' (v + w x r_j + r_j')], effort
     # through the transpose. An interface the file does not have has zero mode
     # values: it is a rigid point at the origin of R; leave it unconnected.
+    #
+    # Rail (nr = 1, the file's `rail`): a moving interface, the frame of a carriage's guide
+    # block at the position sr along a straight rail on the part. Its origin and elastic
+    # rotation follow Chebyshev tables in x = 2 sr / RL - 1 (smooth, exact d/ds, no switching):
+    #
+    #   r_E = XR + sr t + PT(sr) q,   g_E = 1/2 PR(sr) q,   PT = sum_n CT_n T_n(x), PR likewise
+    #
+    # and its rate includes the sliding along the deformed rail, r_E' = PT q' + (t + PT' q) sr'
+    # and g_E' = 1/2 (PR q' + PR' q sr'), so a carriage on pe rides the deformed rail. The slide
+    # sr belongs to a slider of mass ms (the drive's moving part along the rail; its own motion
+    # with the body frame is left out, keep it small and put the carriage's mass on the body at
+    # pe): ms sr'' = ps.e + Fs, with the rail's generalized force Fs = (t + PT' q) . F_E +
+    # g_E,s . TG_E, which makes pe, ps and the body power-continuous. Without a rail both ports
+    # carry zero flow; leave them unconnected.
     @constants begin
         nm::Int = 2, [min = 1, max = 48, description = "Number of modal coordinates (from the reduced-model file)"]
         stiffening::Int = 1, [options = ["off", "on"], description = "Geometric stiffening terms: 0 off, 1 on (when the file has them)"]
@@ -87,12 +101,27 @@
         Gd1::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: unit force x at interface D"]
         Gd2::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: unit force y at interface D"]
         Gd3::Mat{nm,nm} = [0.0 0.0; 0.0 0.0], [description = "Stiffening: unit force z at interface D"]
+        # rail (a moving interface, see the header): Chebyshev tables of the rail frame motion
+        nr::Int = 0, [options = ["none", "rail"], description = "1 when the file has a rail (port pe, slide ps)"]
+        nc::Int = 2, [min = 2, max = 32, description = "Chebyshev terms of the rail tables"]
+        RL::Real = 1.0, [unit = "m", description = "Rail length"]
+        XR::Vec{3} = [0.0, 0.0, 0.0], [unit = "m", description = "Rail start in R"]
+        RR::Mat{3,3} = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0], [description = "Rail frame in R (columns x, y, z = along the rail)"]
+        QR::Vec{4} = [1.0, 0.0, 0.0, 0.0], [description = "Rail frame in R, quaternion (w, x, y, z)"]
+        CT1::Mat{nm,nc} = [0.0 0.0; 0.0 0.0], [description = "Rail translation x per mode (R), Chebyshev coefficients"]
+        CT2::Mat{nm,nc} = [0.0 0.0; 0.0 0.0], [description = "Rail translation y per mode (R)"]
+        CT3::Mat{nm,nc} = [0.0 0.0; 0.0 0.0], [description = "Rail translation z per mode (R)"]
+        CR1::Mat{nm,nc} = [0.0 0.0; 0.0 0.0], [description = "Rail rotation x per mode (rail frame)"]
+        CR2::Mat{nm,nc} = [0.0 0.0; 0.0 0.0], [description = "Rail rotation y per mode (rail frame)"]
+        CR3::Mat{nm,nc} = [0.0 0.0; 0.0 0.0], [description = "Rail rotation z per mode (rail frame)"]
     end
     @ports begin
         pa::Power{Spatial}, [frame = "body"]
         pb::Power{Spatial}, [frame = "body"]
         pc::Power{Spatial}, [frame = "body"]
         pd::Power{Spatial}, [frame = "body"]
+        pe::Power{Spatial}, [frame = "body"]
+        ps::Power{Translation}
     end
     @inputs gA::Vec{7}
     @outputs begin
@@ -100,6 +129,9 @@
         poseB::Vec{7}
         poseC::Vec{7}
         poseD::Vec{7}
+        poseE::Vec{7}
+        s::Real, [unit = "m"]
+        sd::Real, [unit = "m/s"]
         V::Vec{6}
         eta::Vec{nm}, [unit = "m"]
         f::Vec{nm}, [unit = "Hz"]
@@ -110,8 +142,47 @@
     @parameters begin
         zeta::Real = 0.01, [unit = "1", min = 0, description = "Modal damping ratio (every mode)"]
         g0::Real = 9.81, [unit = "m/s^2", min = 0, description = "Gravitational acceleration (world -z)"]
+        ms::Real = 0.5, [unit = "kg", min = 1.0e-6, description = "Rail slider mass (the drive's moving part along the rail)"]
+        s0::Real = 0.0, [unit = "m", description = "Initial rail position (from the rail start)"]
     end
     @variables begin
+        # rail (port pe at the rail position sr, slider momentum psl)
+        sr::Real = 0.0, [unit = "m", description = "Rail position"]
+        psl::Real = 0.0, [unit = "N*s", state = :prefer, description = "Slider momentum"]
+        sdr::Real, [unit = "m/s", description = "Rail speed"]
+        xr::Real, [unit = "1", description = "2 sr / RL - 1"]
+        Tr::Vec{nc}, [description = "Chebyshev polynomials at xr"]
+        dTr::Vec{nc}, [description = "d Tr / d sr"]
+        pt1::Vec{nm}
+        pt2::Vec{nm}
+        pt3::Vec{nm}
+        pr1::Vec{nm}
+        pr2::Vec{nm}
+        pr3::Vec{nm}
+        dpt1::Vec{nm}
+        dpt2::Vec{nm}
+        dpt3::Vec{nm}
+        dpr1::Vec{nm}
+        dpr2::Vec{nm}
+        dpr3::Vec{nm}
+        uE::Vec{3}, [unit = "m", description = "Rail frame displacement PT(s) q (R)"]
+        usE::Vec{3}, [unit = "1", description = "d uE / d s"]
+        rE::Vec{3}, [unit = "m", description = "Rail frame origin in R"]
+        rdE::Vec{3}, [unit = "m/s", description = "Rate of rE"]
+        gE::Vec{3}, [unit = "1", description = "Rail frame Gibbs vector 1/2 PR(s) q"]
+        gsE::Vec{3}, [unit = "1/m", description = "d gE / d s"]
+        gdE::Vec{3}, [description = "Rate of gE"]
+        DE::Real, [unit = "1", description = "1 + |gE|^2"]
+        RgE::Mat{3,3}, [unit = "1", description = "R(gE)"]
+        RE::Mat{3,3}, [unit = "1", description = "Rail frame in R, RR R(gE)"]
+        wE::Vec{3}, [description = "Relative angular rate of the rail frame (its frame)"]
+        vE::Vec{3}, [description = "v + w x rE + rE'"]
+        FE::Vec{3}, [unit = "N", description = "Rail force in R"]
+        TGE::Vec{3}, [description = "Gibbs-conjugate rail torque"]
+        WE::Vec{6}, [description = "Rail wrench on the frame"]
+        QE::Vec{nm}, [unit = "N", description = "Rail generalized modal forces"]
+        FsE::Real, [unit = "N", description = "Rail generalized force on the slide"]
+        QAE::Vec{4}, [unit = "1", description = "gA quaternion times QR"]
         # states
         P::Vec{6} = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [state = :prefer, description = "Frame momentum [angular; linear] (conjugate to V)"]
         q::Vec{nm} = [0.0, 0.0], [unit = "m", state = :prefer, description = "Modal coordinates"]
@@ -519,6 +590,159 @@
             pc.f[i] ~ fP[i, 2]
             pd.f[i] ~ fP[i, 3]
         end
+        # ---- rail (port pe at sr, slide ps), or zero ----
+        for rr in 1:nr
+            sr ~ s0 + int(sdr, 0.0)
+            sdr ~ psl / ms
+            ddt(psl) ~ ps.e + FsE
+            ps.f ~ sdr
+            xr ~ 2.0 * sr / RL - 1.0
+            Tr[1] ~ 1.0
+            Tr[2] ~ xr
+            dTr[1] ~ 0.0
+            dTr[2] ~ 2.0 / RL
+            for n in 3:nc
+                Tr[n] ~ 2.0 * xr * Tr[n - 1] - Tr[n - 2]
+                dTr[n] ~ 4.0 / RL * Tr[n - 1] + 2.0 * xr * dTr[n - 1] - dTr[n - 2]
+            end
+            pt1 ~ CT1 * Tr
+            pt2 ~ CT2 * Tr
+            pt3 ~ CT3 * Tr
+            pr1 ~ CR1 * Tr
+            pr2 ~ CR2 * Tr
+            pr3 ~ CR3 * Tr
+            dpt1 ~ CT1 * dTr
+            dpt2 ~ CT2 * dTr
+            dpt3 ~ CT3 * dTr
+            dpr1 ~ CR1 * dTr
+            dpr2 ~ CR2 * dTr
+            dpr3 ~ CR3 * dTr
+            uE[1] ~ dot(pt1, q)
+            uE[2] ~ dot(pt2, q)
+            uE[3] ~ dot(pt3, q)
+            usE[1] ~ dot(dpt1, q)
+            usE[2] ~ dot(dpt2, q)
+            usE[3] ~ dot(dpt3, q)
+            gE[1] ~ 0.5 * dot(pr1, q)
+            gE[2] ~ 0.5 * dot(pr2, q)
+            gE[3] ~ 0.5 * dot(pr3, q)
+            gsE[1] ~ 0.5 * dot(dpr1, q)
+            gsE[2] ~ 0.5 * dot(dpr2, q)
+            gsE[3] ~ 0.5 * dot(dpr3, q)
+            gdE[1] ~ 0.5 * dot(pr1, qd) + gsE[1] * sdr
+            gdE[2] ~ 0.5 * dot(pr2, qd) + gsE[2] * sdr
+            gdE[3] ~ 0.5 * dot(pr3, qd) + gsE[3] * sdr
+            for a in 1:3
+                rE[a] ~ XR[a] + sr * RR[a, 3] + uE[a]
+            end
+            # the frame rides the deformed rail: r' = PT q' + (t + dPT/ds q) s'
+            rdE[1] ~ dot(pt1, qd) + (RR[1, 3] + usE[1]) * sdr
+            rdE[2] ~ dot(pt2, qd) + (RR[2, 3] + usE[2]) * sdr
+            rdE[3] ~ dot(pt3, qd) + (RR[3, 3] + usE[3]) * sdr
+            DE ~ 1.0 + gE[1] * gE[1] + gE[2] * gE[2] + gE[3] * gE[3]
+            RgE[1, 1] ~ (1.0 + gE[1] * gE[1] - gE[2] * gE[2] - gE[3] * gE[3]) / DE
+            RgE[1, 2] ~ 2.0 * (gE[1] * gE[2] - gE[3]) / DE
+            RgE[1, 3] ~ 2.0 * (gE[1] * gE[3] + gE[2]) / DE
+            RgE[2, 1] ~ 2.0 * (gE[1] * gE[2] + gE[3]) / DE
+            RgE[2, 2] ~ (1.0 - gE[1] * gE[1] + gE[2] * gE[2] - gE[3] * gE[3]) / DE
+            RgE[2, 3] ~ 2.0 * (gE[2] * gE[3] - gE[1]) / DE
+            RgE[3, 1] ~ 2.0 * (gE[1] * gE[3] - gE[2]) / DE
+            RgE[3, 2] ~ 2.0 * (gE[2] * gE[3] + gE[1]) / DE
+            RgE[3, 3] ~ (1.0 - gE[1] * gE[1] - gE[2] * gE[2] + gE[3] * gE[3]) / DE
+            RE ~ RR * RgE
+            wE[1] ~ 2.0 / DE * (gdE[1] - (gE[2] * gdE[3] - gE[3] * gdE[2]))
+            wE[2] ~ 2.0 / DE * (gdE[2] - (gE[3] * gdE[1] - gE[1] * gdE[3]))
+            wE[3] ~ 2.0 / DE * (gdE[3] - (gE[1] * gdE[2] - gE[2] * gdE[1]))
+            vE[1] ~ V[4] + V[2] * rE[3] - V[3] * rE[2] + rdE[1]
+            vE[2] ~ V[5] + V[3] * rE[1] - V[1] * rE[3] + rdE[2]
+            vE[3] ~ V[6] + V[1] * rE[2] - V[2] * rE[1] + rdE[3]
+            for i in 1:3
+                pe.f[i] ~ RE[1, i] * V[1] + RE[2, i] * V[2] + RE[3, i] * V[3] + wE[i]
+                pe.f[3 + i] ~ RE[1, i] * vE[1] + RE[2, i] * vE[2] + RE[3, i] * vE[3]
+                FE[i] ~ RE[i, 1] * pe.e[4] + RE[i, 2] * pe.e[5] + RE[i, 3] * pe.e[6]
+            end
+            TGE[1] ~ 2.0 / DE * (pe.e[1] + gE[2] * pe.e[3] - gE[3] * pe.e[2])
+            TGE[2] ~ 2.0 / DE * (pe.e[2] + gE[3] * pe.e[1] - gE[1] * pe.e[3])
+            TGE[3] ~ 2.0 / DE * (pe.e[3] + gE[1] * pe.e[2] - gE[2] * pe.e[1])
+            WE[1] ~ RE[1, 1] * pe.e[1] + RE[1, 2] * pe.e[2] + RE[1, 3] * pe.e[3] + rE[2] * FE[3] - rE[3] * FE[2]
+            WE[2] ~ RE[2, 1] * pe.e[1] + RE[2, 2] * pe.e[2] + RE[2, 3] * pe.e[3] + rE[3] * FE[1] - rE[1] * FE[3]
+            WE[3] ~ RE[3, 1] * pe.e[1] + RE[3, 2] * pe.e[2] + RE[3, 3] * pe.e[3] + rE[1] * FE[2] - rE[2] * FE[1]
+            for a in 1:3
+                WE[3 + a] ~ FE[a]
+            end
+            for k in 1:nm
+                QE[k] ~ pt1[k] * FE[1] + pt2[k] * FE[2] + pt3[k] * FE[3] +
+                        0.5 * (pr1[k] * TGE[1] + pr2[k] * TGE[2] + pr3[k] * TGE[3])
+            end
+            FsE ~ (RR[1, 3] + usE[1]) * FE[1] + (RR[2, 3] + usE[2]) * FE[2] + (RR[3, 3] + usE[3]) * FE[3] +
+                  gsE[1] * TGE[1] + gsE[2] * TGE[2] + gsE[3] * TGE[3]
+            QAE[1] ~ gA[1] * QR[1] - gA[2] * QR[2] - gA[3] * QR[3] - gA[4] * QR[4]
+            QAE[2] ~ gA[1] * QR[2] + gA[2] * QR[1] + gA[3] * QR[4] - gA[4] * QR[3]
+            QAE[3] ~ gA[1] * QR[3] - gA[2] * QR[4] + gA[3] * QR[1] + gA[4] * QR[2]
+            QAE[4] ~ gA[1] * QR[4] + gA[2] * QR[3] - gA[3] * QR[2] + gA[4] * QR[1]
+            poseE[1] ~ (QAE[1] - QAE[2] * gE[1] - QAE[3] * gE[2] - QAE[4] * gE[3]) / sqrt(DE)
+            poseE[2] ~ (QAE[2] + QAE[1] * gE[1] + QAE[3] * gE[3] - QAE[4] * gE[2]) / sqrt(DE)
+            poseE[3] ~ (QAE[3] + QAE[1] * gE[2] - QAE[2] * gE[3] + QAE[4] * gE[1]) / sqrt(DE)
+            poseE[4] ~ (QAE[4] + QAE[1] * gE[3] + QAE[2] * gE[2] - QAE[3] * gE[1]) / sqrt(DE)
+            for i in 1:3
+                poseE[4 + i] ~ gA[4 + i] + RA[i, 1] * rE[1] + RA[i, 2] * rE[2] + RA[i, 3] * rE[3]
+            end
+        end
+        for rr in 1:(1 - nr)
+            sr ~ 0.0
+            psl ~ 0.0
+            sdr ~ 0.0
+            ps.f ~ 0.0
+            xr ~ 0.0
+            for n in 1:nc
+                Tr[n] ~ 0.0
+                dTr[n] ~ 0.0
+            end
+            for k in 1:nm
+                pt1[k] ~ 0.0
+                pt2[k] ~ 0.0
+                pt3[k] ~ 0.0
+                pr1[k] ~ 0.0
+                pr2[k] ~ 0.0
+                pr3[k] ~ 0.0
+                dpt1[k] ~ 0.0
+                dpt2[k] ~ 0.0
+                dpt3[k] ~ 0.0
+                dpr1[k] ~ 0.0
+                dpr2[k] ~ 0.0
+                dpr3[k] ~ 0.0
+                QE[k] ~ 0.0
+            end
+            for a in 1:3
+                uE[a] ~ 0.0
+                usE[a] ~ 0.0
+                rE[a] ~ 0.0
+                rdE[a] ~ 0.0
+                gE[a] ~ 0.0
+                gsE[a] ~ 0.0
+                gdE[a] ~ 0.0
+                wE[a] ~ 0.0
+                vE[a] ~ 0.0
+                FE[a] ~ 0.0
+                TGE[a] ~ 0.0
+                for b in 1:3
+                    RgE[a, b] ~ 0.0
+                    RE[a, b] ~ 0.0
+                end
+            end
+            DE ~ 1.0
+            FsE ~ 0.0
+            for i in 1:6
+                pe.f[i] ~ 0.0
+                WE[i] ~ 0.0
+            end
+            for i in 1:4
+                QAE[i] ~ 0.0
+            end
+            for i in 1:7
+                poseE[i] ~ gA[i]
+            end
+        end
         # ---- gravity: world z in R (gA is the world pose of R) ----
         sq ~ gA[1] * gA[1] + gA[2] * gA[2] + gA[3] * gA[3] + gA[4] * gA[4]
         c3[1] ~ 2.0 * (gA[2] * gA[4] - gA[1] * gA[3]) / sq
@@ -529,16 +753,16 @@
         end
         stg ~ transpose(St) * gv
         # ---- frame momentum: P' = ad(V)' P + wrenches (Euler-Poincare) ----
-        ddt(P[1]) ~ P[2] * V[3] - P[3] * V[2] + P[5] * V[6] - P[6] * V[5] + pa.e[1] + Wj[1, 1] + Wj[1, 2] + Wj[1, 3] + S[2] * gv[3] - S[3] * gv[2]
-        ddt(P[2]) ~ P[3] * V[1] - P[1] * V[3] + P[6] * V[4] - P[4] * V[6] + pa.e[2] + Wj[2, 1] + Wj[2, 2] + Wj[2, 3] + S[3] * gv[1] - S[1] * gv[3]
-        ddt(P[3]) ~ P[1] * V[2] - P[2] * V[1] + P[4] * V[5] - P[5] * V[4] + pa.e[3] + Wj[3, 1] + Wj[3, 2] + Wj[3, 3] + S[1] * gv[2] - S[2] * gv[1]
-        ddt(P[4]) ~ P[5] * V[3] - P[6] * V[2] + pa.e[4] + Wj[4, 1] + Wj[4, 2] + Wj[4, 3] + mass * gv[1]
-        ddt(P[5]) ~ P[6] * V[1] - P[4] * V[3] + pa.e[5] + Wj[5, 1] + Wj[5, 2] + Wj[5, 3] + mass * gv[2]
-        ddt(P[6]) ~ P[4] * V[2] - P[5] * V[1] + pa.e[6] + Wj[6, 1] + Wj[6, 2] + Wj[6, 3] + mass * gv[3]
+        ddt(P[1]) ~ P[2] * V[3] - P[3] * V[2] + P[5] * V[6] - P[6] * V[5] + pa.e[1] + Wj[1, 1] + Wj[1, 2] + Wj[1, 3] + WE[1] + S[2] * gv[3] - S[3] * gv[2]
+        ddt(P[2]) ~ P[3] * V[1] - P[1] * V[3] + P[6] * V[4] - P[4] * V[6] + pa.e[2] + Wj[2, 1] + Wj[2, 2] + Wj[2, 3] + WE[2] + S[3] * gv[1] - S[1] * gv[3]
+        ddt(P[3]) ~ P[1] * V[2] - P[2] * V[1] + P[4] * V[5] - P[5] * V[4] + pa.e[3] + Wj[3, 1] + Wj[3, 2] + Wj[3, 3] + WE[3] + S[1] * gv[2] - S[2] * gv[1]
+        ddt(P[4]) ~ P[5] * V[3] - P[6] * V[2] + pa.e[4] + Wj[4, 1] + Wj[4, 2] + Wj[4, 3] + WE[4] + mass * gv[1]
+        ddt(P[5]) ~ P[6] * V[1] - P[4] * V[3] + pa.e[5] + Wj[5, 1] + Wj[5, 2] + Wj[5, 3] + WE[5] + mass * gv[2]
+        ddt(P[6]) ~ P[4] * V[2] - P[5] * V[1] + pa.e[6] + Wj[6, 1] + Wj[6, 2] + Wj[6, 3] + WE[6] + mass * gv[3]
         # ---- modal momenta: p' = dT/dq - kk q - ck q' + interface and gravity forces ----
         for k in 1:nm
             kq[k] ~ kk[k] * q[k]
-            Fq[k] ~ dT[k] - kq[k] - ck[k] * qd[k] + ptf[k] + 0.5 * prt[k] -
+            Fq[k] ~ dT[k] - kq[k] - ck[k] * qd[k] + ptf[k] + 0.5 * prt[k] + QE[k] -
                     (gq13[k] * FR[4] + gq14[k] * FR[5] + gq15[k] * FR[6] +
                      gq16[k] * FR[7] + gq17[k] * FR[8] + gq18[k] * FR[9] +
                      gq19[k] * FR[10] + gq20[k] * FR[11] + gq21[k] * FR[12]) +
@@ -586,7 +810,9 @@
         for k in 1:nm
             eta[k] ~ q[k]
         end
-        Ek ~ 0.5 * (dot(P, V) + dot(p, qd))
+        Ek ~ 0.5 * (dot(P, V) + dot(p, qd) + psl * sdr)
+        s ~ sr
+        sd ~ sdr
         Ee ~ 0.5 * dot(q, kq)
         Eg ~ g0 * (mass * gA[7] + RA[3, 1] * S[1] + RA[3, 2] * S[2] + RA[3, 3] * S[3])
     end
@@ -595,5 +821,7 @@
         pb => :flow_out
         pc => :flow_out
         pd => :flow_out
+        pe => :flow_out
+        ps => :flow_out
     end
 end

@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = []
+# dependencies = ["numpy"]
 # ///
 """Write the fem-bracket example: two models, the scene, expected checks.
 
@@ -28,6 +28,8 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
+
+import numpy as np
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -67,6 +69,10 @@ K_CLAMP_R, K_CLAMP_T, B_CLAMP_R, B_CLAMP_T = 1.0e6, 1.0e8, 2.0, 500.0
 # about z whose rotation is held by a stiff torsion spring: about 1000 times stiffer than the
 # bracket at that interface.
 KT_W, KR_W, KW = 1.0e8, 1.0e5, 1.0e5
+# stress view range (Pa) and the material's allowable (6082-T6 aluminium, yield 250 MPa)
+STRESS_RANGE = 20.0e6
+YIELD = 250.0e6
+STRESS = MODAL["stress"]
 
 
 def fmt(x: float) -> str:
@@ -102,8 +108,15 @@ def pose(link, sig):
 
 
 def mode_shapes():
+    # coloured by von Mises from the GLB's per-vertex stress table
     return {"target": "visual:bracket_mesh", "property": "mode-shapes",
-            "signal": [f"Bracket/eta[{i}]" for i in range(1, NM + 1)]}
+            "signal": [f"Bracket/eta[{i}]" for i in range(1, NM + 1)],
+            "stress": {"colormap": "heat", "range": [0.0, STRESS_RANGE]}}
+
+
+def stress_plot(pid):
+    return {"id": pid, "title": "Bracket von Mises stress (Pa): upright 30 mm, upright root, peak",
+            "signals": ["Bracket/sigma_vm[1]", "Bracket/sigma_vm[2]", "Bracket/sigma_max"]}
 
 
 def settings(t_end, points):
@@ -226,14 +239,61 @@ def turntable() -> dict:
         {"id": "p2", "title": "Modal coordinates (m)", "signals": [f"Bracket/eta[{i}]" for i in range(1, NM + 1)]},
         {"id": "p3", "title": "Payload twist (body frame)", "signals": [f"Payload/flow/y[{i}]" for i in range(1, 7)]},
         {"id": "p4", "title": "Bracket energies (J)", "signals": ["Bracket/Ek", "Bracket/Ee", "Bracket/Eg"]},
+        stress_plot("p5"),
     ]
     return doc(NAME, nodes, conns, bindings, plots, T_END, 6001)
 
 
+# the ring-down: the payload starts moving, 0.1 m/s along y (the upright's thin direction) and
+# 0.05 m/s along x, so both bending directions ring
+P0_RING = [0.0, 0.0, 0.0, 0.05 * M_PAY, 0.1 * M_PAY, 0.0]
+# the stress checks compare the first swing (30 ms, past the first peak at a quarter period of
+# 18.6 Hz): the reference is undamped, while the clamp and the welds damp the higher modes
+# (171 Hz and up) that later beat with the first ones
+T_FIRST = 0.03
+
+
+def von_mises(s):
+    s = np.asarray(s)
+    return np.sqrt(0.5 * ((s[0] - s[1]) ** 2 + (s[1] - s[2]) ** 2 + (s[2] - s[0]) ** 2)
+                   + 3.0 * (s[3] ** 2 + s[4] ** 2 + s[5] ** 2))
+
+
+def ringdown_stress_reference(t_end=T_FIRST, n=601):
+    """The ring-down's stress from the reduced model alone, by linear modal superposition (no
+    BGSim): the bracket clamped at A, the payload rigid at B (its centre 20 mm above), the
+    payload's initial momentum shared through the impulse T' p0. Returns the largest von Mises
+    at the two hotspots and over all the stress points in [0, t_end], and the first two
+    frequencies (Hz)."""
+    mk = np.array(MODAL["modal_mass"])
+    kk = np.array(MODAL["modal_stiffness"])
+    ib = MODAL["interfaces"][1]
+    PT, PR = np.array(ib["translation"]), np.array(ib["rotation"])     # B frame = R axes here
+    r = np.array([0.0, 0.0, COM_PAY])
+    rx = np.array([[0, -r[2], r[1]], [r[2], 0, -r[0]], [-r[1], r[0], 0]])
+    T = np.vstack([PR, PT - rx @ PR])                                   # payload twist [w; v_com]
+    M6 = np.diag([J_PAY] * 3 + [M_PAY] * 3)
+    M = np.diag(mk) + T.T @ M6 @ T
+    w2, phi = np.linalg.eig(np.linalg.solve(M, np.diag(kk)))
+    w = np.sqrt(w2.real)
+    phi = phi.real / np.sqrt(np.einsum("ik,ij,jk->k", phi.real, M, phi.real))
+    qd0 = np.linalg.solve(M, T.T @ np.array(P0_RING))
+    t = np.linspace(0.0, t_end, n)
+    a = (phi.T @ M @ qd0) / w
+    q = phi @ (a[:, None] * np.sin(w[:, None] * t[None, :]))           # nm x n
+    vm = np.array([von_mises(np.array(p["sigma"]) @ q) for p in STRESS["points"]])
+    return float(vm[0].max()), float(vm[1].max()), float(vm.max()), sorted(w / 2 / np.pi)[:2]
+
+
+REF = ringdown_stress_reference()
+# the hand estimate at the 30 mm hotspot: the payload swings at the first mode (y), its peak
+# inertia force m w v acts 175 mm above the plate face; sigma_zz = M c / I of the upright
+_F_HAND = M_PAY * 2 * math.pi * ATT["full_hz"][0] * 0.1
+HAND = {"F": _F_HAND, "szz": _F_HAND * (0.175 - 0.03) * 0.002 / (0.04 * 0.004**3 / 12)}
+
+
 def ringdown() -> dict:
-    # the payload starts moving: 0.1 m/s along y (the upright's thin direction) and 0.05 m/s
-    # along x, so both bending directions ring
-    p0 = [0.0, 0.0, 0.0, 0.05 * M_PAY, 0.1 * M_PAY, 0.0]
+    p0 = P0_RING
     pay_nodes, pay_conns = payload_chain("n3", 580, 480)
     for n in pay_nodes:
         if n["name"] == "Payload":
@@ -257,6 +317,7 @@ def ringdown() -> dict:
         {"id": "p1", "title": "Modal coordinates (m)", "signals": [f"Bracket/eta[{i}]" for i in range(1, NM + 1)]},
         {"id": "p2", "title": "Payload velocity (m/s, body frame)", "signals": ["Payload/flow/y[4]", "Payload/flow/y[5]", "Payload/flow/y[6]"]},
         {"id": "p3", "title": "Energy (J)", "signals": ["Bracket/Ek", "Bracket/Ee"]},
+        stress_plot("p4"),
     ]
     return doc(RING, nodes, conns, bindings, plots, 1.0, 20001)
 
@@ -333,6 +394,11 @@ def expected() -> dict:
     red = ATT["reduced_hz"]
     note = (f"full finite element model ({MODAL['mesh']['dofs']} dofs) clamped at A with the payload "
             f"at B: {full[0]:.4f} / {full[1]:.4f} Hz; reduced model {red[0]:.4f} / {red[1]:.4f} Hz")
+    note_s = (f"linear modal superposition of the reduced model with the payload rigid at B "
+              f"(design/build.py, no BGSim), first {T_FIRST * 1e3:.0f} ms: max von Mises {REF[0] / 1e6:.3f} MPa at upright 30 mm, "
+              f"{REF[1] / 1e6:.3f} MPa at the root, {REF[2] / 1e6:.3f} MPa over the stress points")
+    note_hand = (f"beam theory: F = m w v = {HAND['F']:.2f} N at the payload centre, "
+                 f"sigma_zz = F (0.175 - 0.03) c / I = {HAND['szz'] / 1e6:.2f} MPa")
     return {
         "project": NAME,
         "description": "An aluminium L-bracket as a FEM flexible body (ModalBody3D, Craig-Bampton 4 + 6 modes) carrying a 0.5 kg payload: on an indexing turntable, and clamped for a ring-down whose frequencies match the full finite element model with the payload attached.",
@@ -348,6 +414,8 @@ def expected() -> dict:
                     {"kind": "fft_peak", "signal": "Payload/flow/y[1]", "from_t": 1.0, "to_t": 1.6,
                      "min_hz": 8.0, "max_hz": 40.0, "value": full[0], "rtol": 0.06,
                      "note": "the payload rings near the first clamped bracket mode after the move (the servo spring lowers it slightly); " + note},
+                    {"kind": "max_abs_le", "signal": "Bracket/sigma_max", "value": YIELD / 2,
+                     "note": "the index moves keep the bracket below half the 6082-T6 yield strength (250 MPa)"},
                 ]
             },
             RING: {
@@ -358,6 +426,14 @@ def expected() -> dict:
                      "min_hz": 5.0, "max_hz": 25.0, "value": full[0], "rtol": 0.003, "note": note},
                     {"kind": "fft_peak", "signal": "Payload/flow/y[4]", "from_t": 0.0, "to_t": 1.0,
                      "min_hz": 25.0, "max_hz": 60.0, "value": full[1], "rtol": 0.003, "note": note},
+                    {"kind": "max_abs", "signal": "Bracket/sigma_vm[1]", "from_t": 0.0, "to_t": T_FIRST,
+                     "value": REF[0], "rtol": 0.03, "note": note_s + "; " + note_hand},
+                    {"kind": "max_abs", "signal": "Bracket/sigma_vm[2]", "from_t": 0.0, "to_t": T_FIRST,
+                     "value": REF[1], "rtol": 0.03, "note": note_s},
+                    {"kind": "max_abs", "signal": "Bracket/sigma_max", "from_t": 0.0, "to_t": T_FIRST,
+                     "value": REF[2], "rtol": 0.03, "note": note_s + " (the peak sits at the upright's sharp root corner)"},
+                    {"kind": "max_abs_le", "signal": "Bracket/sigma_max", "value": YIELD / 2,
+                     "note": "the bracket stays below half the 6082-T6 yield strength (250 MPa)"},
                 ]
             },
         },
@@ -384,6 +460,9 @@ def main() -> None:
     print(f"clamped with payload: full {ATT['full_hz']} Hz, reduced {ATT['reduced_hz']} Hz")
     print(f"hub m {M_HUB:.3f} kg, table inertia {J_TABLE:.4f}, servo k {K_SERVO}, d {D_SERVO:.3f}, "
           f"servo frequency {math.sqrt(K_SERVO / J_TABLE) / 2 / math.pi:.1f} Hz")
+    print(f"ring-down stress reference: upright 30 mm {REF[0] / 1e6:.4f} MPa, root {REF[1] / 1e6:.4f} MPa, "
+          f"peak {REF[2] / 1e6:.4f} MPa; modes {REF[3][0]:.4f} / {REF[3][1]:.4f} Hz; "
+          f"hand F {HAND['F']:.3f} N, sigma_zz {HAND['szz'] / 1e6:.4f} MPa")
 
 
 if __name__ == "__main__":

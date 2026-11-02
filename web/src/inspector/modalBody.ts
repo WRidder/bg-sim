@@ -63,6 +63,26 @@ export const MODAL_FILE_CONSTANTS: ReadonlySet<string> = new Set([
   "Gd1",
   "Gd2",
   "Gd3",
+  "ns",
+  "nh",
+  "Sxx",
+  "Syy",
+  "Szz",
+  "Sxy",
+  "Sxz",
+  "Syz",
+  "nr",
+  "nc",
+  "RL",
+  "XR",
+  "RR",
+  "QR",
+  "CT1",
+  "CT2",
+  "CT3",
+  "CR1",
+  "CR2",
+  "CR3",
 ]);
 
 export function isModalBodyRef(ref: string | null): boolean {
@@ -118,6 +138,10 @@ export interface ModalSummary {
   hasStiffening: boolean;
   /** File name of the part's GLB with one morph target per mode (looked up in `meshes/`). */
   glb: string | null;
+  /** The stress points: the named hotspots (outputs sigma_vm[1..]) and the count of all points. */
+  stress: { hotspots: string[]; points: number } | null;
+  /** The rail (ports E and S): its name and length (m). */
+  rail: { name: string; length: number | null } | null;
   /** Things that will stop the compile, e.g. more modes than the simulator takes. */
   warnings: string[];
 }
@@ -197,6 +221,23 @@ export function parseModalSummary(text: string): ModalParse {
           freeMaxRelError: finite(record(validationRoot.free)?.max_rel_error_in_band),
         };
   const visual = record(root.visual);
+  const stressRoot = record(root.stress);
+  const points = Array.isArray(stressRoot?.points) ? stressRoot.points : [];
+  const stress =
+    points.length === 0
+      ? null
+      : {
+          hotspots: points
+            .map((entry) => record(entry))
+            .filter((item) => item?.kind === "hotspot")
+            .map((item) => (typeof item?.name === "string" ? item.name : "hotspot")),
+          points: points.length,
+        };
+  const railRoot = record(root.rail);
+  const rail =
+    railRoot === null
+      ? null
+      : { name: typeof railRoot.name === "string" ? railRoot.name : "rail", length: finite(railRoot.length) };
   const warnings: string[] = [];
   if (nm > MODAL_MAX_MODES) {
     warnings.push(
@@ -220,6 +261,8 @@ export function parseModalSummary(text: string): ModalParse {
       validation,
       hasStiffening: record(root.stiffening) !== null,
       glb: typeof visual?.glb === "string" && visual.glb.length > 0 ? visual.glb : null,
+      stress,
+      rail,
       warnings,
     },
   };
