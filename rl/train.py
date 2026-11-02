@@ -97,7 +97,7 @@ def bc_lqr(runner, env: DoubleCartEnv, steps: int, rollout: int = 64, sigma: flo
     upright, 0 V elsewhere (so the swing-up starts from "do nothing", not from the LQR
     extrapolated to hanging, which drives the cart off the rail).
     ``tvlqr``: the example's TVLQR swing-up + LQR balance (rlpend.experts) from hanging starts
-    (the env's hang noise), over 4.4 s per episode (the swing-up takes 2.4 s), plus the LQR on
+    (the env's hang noise), over T_s + 2 s per episode (T_s: the swing-up), plus the LQR on
     upright starts (samples within ``region``), then ``dagger`` rounds of DAgger (the learner's
     own rollouts from hanging, relabelled by the expert).
     Sets the actor's observation normaliser from the same samples and freezes it. The critic is
@@ -152,7 +152,7 @@ def bc_lqr(runner, env: DoubleCartEnv, steps: int, rollout: int = 64, sigma: flo
             opt.step()
         return float(loss)
 
-    t_swing = int(round(4.4 / env.cfg.ts))      # the swing-up takes 2.4 s, then 2 s of balance
+    t_swing = int(round((tv.T_s + 2.0) / env.cfg.ts))      # the swing-up (T_s), then 2 s of balance
     if expert == "tvlqr":
         X1, Y1 = collect(False, t_swing, tv_label, every=2)
         X2, Y2 = collect(True, rollout, lqr_label)

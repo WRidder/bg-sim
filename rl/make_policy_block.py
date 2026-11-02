@@ -31,7 +31,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rlpend import EXAMPLE  # noqa: E402
+from rlpend import EXAMPLES  # noqa: E402
 
 EPS = 1e-2   # EmpiricalNormalization's default
 
@@ -190,9 +190,11 @@ def main() -> int:
     ap.add_argument("--checkpoint", default="model.pt")
     ap.add_argument("--name", default="DoubleCartPolicy", help="block name (DoubleCartSwingPolicy: the swing-up)")
     ap.add_argument("--out", type=Path, help="default: the example's library/<name>.jl")
+    ap.add_argument("--rig", choices=sorted(EXAMPLES), default="cart",
+                    help="the example: cart = pendulum-double-cart, lab = pendulum-double-cart-lab")
     args = ap.parse_args()
     if args.out is None:
-        args.out = EXAMPLE / "library" / f"{args.name}.jl"
+        args.out = EXAMPLES[args.rig] / "library" / f"{args.name}.jl"
     run = args.run_dir.resolve()
     env = json.loads((run / "env.json").read_text(encoding="utf-8"))
     actor = load_actor(run / args.checkpoint)

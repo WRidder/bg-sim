@@ -265,6 +265,10 @@ def main(argv):
         f"{NAME}-free": {"run_timeout": 900, "checks": checks_free(dz, F)},
     }}
     path = ROOT / "expected.json"
+    # keep the entries of models this script does not write (the RL model: rl/compare.py, plan/RL_PLAN.md R0.7)
+    if path.is_file():
+        for k, v in json.loads(path.read_text(encoding="utf-8"))["models"].items():
+            doc["models"].setdefault(k, v)
     path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8", newline="\n")
     print("wrote", path, "and", mpath)
 

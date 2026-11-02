@@ -7,3 +7,4 @@ ROOT = Path(__file__).resolve().parents[2]
 RL = ROOT / "rl"
 RUNTIME = ROOT / "julia" / "BGSim" / "export" / "runtime"
 EXAMPLE = ROOT / "examples" / "pendulum-double-cart"
+EXAMPLES = {"cart": EXAMPLE, "lab": ROOT / "examples" / "pendulum-double-cart-lab"}

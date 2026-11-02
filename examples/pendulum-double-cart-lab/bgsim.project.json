@@ -6,7 +6,8 @@
     "pendulum-double-cart-lab",
     "pendulum-double-cart-lab-balance",
     "pendulum-double-cart-lab-free",
-    "pendulum-double-cart-lab-plant"
+    "pendulum-double-cart-lab-plant",
+    "pendulum-double-cart-lab-rl"
   ],
   "libraryDir": "library",
   "scenesDir": "scenes"
