@@ -20,6 +20,12 @@ export interface DocsTreeProps {
   onMove: (id: string, targetId: string, position: DropPosition) => void;
   /** Alt+Arrow; resolves to whether the tree changed. */
   onMoveKey: (id: string, key: string) => Promise<boolean>;
+  /** The prefix of the `data-testid`s (two trees can share the Docs tab). */
+  testIdPrefix?: string;
+  /** The accessible name of the tree. */
+  ariaLabel?: string;
+  /** Show the keyboard hint below the tree. */
+  hint?: boolean;
 }
 
 const DRAG_MIME = "application/x-bgsim-docs-page";
@@ -66,6 +72,7 @@ function descendantIds(page: DocsPage): string[] {
 
 export function DocsTree(props: DocsTreeProps) {
   const { docs, selected, dirty, onSelect, onNewSibling, onNewChild, onRename, onRemove, onMove, onMoveKey } = props;
+  const { testIdPrefix = "docs", ariaLabel = "Pages", hint = true } = props;
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
   const [editing, setEditing] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
@@ -222,7 +229,7 @@ export function DocsTree(props: DocsTreeProps) {
             tabIndex={active === page.id ? 0 : -1}
             className="docs-tree__row"
             style={{ paddingLeft: `calc(var(--space-2) * ${depth} + var(--space-1))` }}
-            data-testid={`docs-tree-item-${page.id}`}
+            data-testid={`${testIdPrefix}-tree-item-${page.id}`}
             data-page-id={page.id}
             data-dirty={dirty.has(page.id) ? "true" : undefined}
             data-drop={dropHere}
@@ -335,12 +342,12 @@ export function DocsTree(props: DocsTreeProps) {
   const selectedRow = rows.find((row) => row.page.id === selected);
 
   return (
-    <div className="docs-tree" data-testid="docs-tree">
-      <div className="docs-tree__toolbar" role="toolbar" aria-label="Page actions">
+    <div className="docs-tree" data-testid={`${testIdPrefix}-tree`}>
+      <div className="docs-tree__toolbar" role="toolbar" aria-label={ariaLabel === "Pages" ? "Page actions" : `${ariaLabel}: page actions`}>
         <button
           type="button"
           className="icon-button"
-          data-testid="docs-new-page"
+          data-testid={`${testIdPrefix}-new-page`}
           aria-label="New page"
           onClick={() => onNewSibling(selected)}
           title="New page next to the selected page"
@@ -350,7 +357,7 @@ export function DocsTree(props: DocsTreeProps) {
         <button
           type="button"
           className="icon-button"
-          data-testid="docs-new-child"
+          data-testid={`${testIdPrefix}-new-child`}
           aria-label="New child page"
           disabled={selected === null}
           onClick={() => selected !== null && onNewChild(selected)}
@@ -361,7 +368,7 @@ export function DocsTree(props: DocsTreeProps) {
         <button
           type="button"
           className="icon-button"
-          data-testid="docs-rename"
+          data-testid={`${testIdPrefix}-rename`}
           aria-label="Rename page"
           disabled={selected === null}
           onClick={() => setEditing(selected)}
@@ -372,7 +379,7 @@ export function DocsTree(props: DocsTreeProps) {
         <button
           type="button"
           className="icon-button"
-          data-testid="docs-delete"
+          data-testid={`${testIdPrefix}-delete`}
           aria-label="Delete page"
           disabled={selectedRow === undefined}
           onClick={() => selected !== null && onRemove(selected)}
@@ -381,12 +388,14 @@ export function DocsTree(props: DocsTreeProps) {
           <ToolbarIcon name="delete" />
         </button>
       </div>
-      <ul role="tree" aria-label="Pages" className="docs-tree__list">
+      <ul role="tree" aria-label={ariaLabel} className="docs-tree__list">
         {renderList(docs.pages, 0)}
       </ul>
-      <p className="docs-tree__hint">
-        Alt+Up/Down reorders, Alt+Left/Right changes the level, F2 renames. Drag a page to move it.
-      </p>
+      {hint ? (
+        <p className="docs-tree__hint">
+          Alt+Up/Down reorders, Alt+Left/Right changes the level, F2 renames. Drag a page to move it.
+        </p>
+      ) : null}
     </div>
   );
 }

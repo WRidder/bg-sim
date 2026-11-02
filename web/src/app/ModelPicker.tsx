@@ -1,21 +1,53 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { listModelCards, ProjectApiError, type ModelCardInfo } from "../state/modelApi";
+import { EmptyState } from "./EmptyState";
 import { libraryUrl } from "./leaveProject";
 import { ModelCardGrid } from "./ModelCardGrid";
 import { errorMessage, nameIssue, navigation, openSession } from "./openSession";
+import { projectTabUrl, readScreenTab } from "./route";
+import { TabStrip } from "./TabStrip";
+
+// The docs browser pulls in the Markdown stack (KaTeX); it loads when the Docs tab is opened.
+const ProjectDocsBrowser = lazy(() => import("../docs/ProjectDocsBrowser"));
 
 export interface ModelPickerProps {
   project: string;
 }
 
+type PickerTab = "models" | "docs";
+
+const PICKER_TABS = [
+  { id: "models", label: "Models" },
+  { id: "docs", label: "Docs" },
+] as const;
+
+const TAB_KEY = "bgsim.projectTab.";
+
+/** The tab the URL asks for (`tab=docs`), else the one last used in this project. */
+function initialTab(project: string): PickerTab {
+  const { tab } = readScreenTab();
+  if (tab === "docs" || tab === "models") {
+    return tab;
+  }
+  try {
+    return localStorage.getItem(TAB_KEY + project) === "docs" ? "docs" : "models";
+  } catch {
+    return "models";
+  }
+}
+
 /**
- * The page a project opens on (`?project=` without a model): a card per model
- * of the project, in the look of the example gallery, with a short description.
- * The user picks the model to edit; **New model** starts an empty one and
- * **All projects** goes back to the start page.
+ * The page a project opens on (`?project=` without a model), in two tabs. **Models** (the
+ * default): a card per model of the project, in the look of the example gallery, with a short
+ * description; the user picks the model to edit, **New model** starts an empty one.
+ * **Docs**: every docs page of the project (project docs and each model's docs) in one tree
+ * with a reading pane (`?project=p&tab=docs&page=project:<id>`). **All projects** goes back to
+ * the start page.
  */
 export function ModelPicker({ project }: ModelPickerProps) {
+  const [tab, setTab] = useState<PickerTab>(() => initialTab(project));
+  const [docsPage, setDocsPage] = useState<string | null>(() => readScreenTab().page);
   const [cards, setCards] = useState<ModelCardInfo[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "missing" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +73,19 @@ export function ModelPicker({ project }: ModelPickerProps) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // The tab and the docs page live in the URL (deep links) and the tab per project in storage.
+  useEffect(() => {
+    try {
+      localStorage.setItem(TAB_KEY + project, tab);
+    } catch {
+      // Only a convenience; ignore blocked storage.
+    }
+    const url = projectTabUrl(project, tab === "docs" ? "docs" : null, tab === "docs" ? docsPage : null);
+    if (url !== window.location.href) {
+      window.history.replaceState(window.history.state, "", url);
+    }
+  }, [project, tab, docsPage]);
 
   const open = useCallback(
     async (model: string) => {
@@ -154,13 +199,32 @@ export function ModelPicker({ project }: ModelPickerProps) {
           </p>
         ) : null}
 
-        {status === "ready" && cards.length > 0 ? (
-          <section className="start-page__section" aria-labelledby="picker-models-heading">
-            <h2 className="start-page__heading" id="picker-models-heading">
-              Models
-            </h2>
-            <ModelCardGrid project={project} cards={cards} busy={busy} onOpen={(model) => void open(model)} />
-          </section>
+        {status !== "missing" ? (
+          <div className="model-picker__tabs">
+            <TabStrip tabs={PICKER_TABS} active={tab} onSelect={setTab} ariaLabel="Project" idPrefix="picker" />
+            <div
+              className="model-picker__panel"
+              role="tabpanel"
+              id={`picker-panel-${tab}`}
+              aria-labelledby={`picker-tab-${tab}`}
+              data-testid={`picker-panel-${tab}`}
+            >
+              {tab === "models" ? (
+                status === "ready" && cards.length > 0 ? (
+                  <section className="start-page__section" aria-labelledby="picker-models-heading">
+                    <h2 className="start-page__heading" id="picker-models-heading">
+                      Models
+                    </h2>
+                    <ModelCardGrid project={project} cards={cards} busy={busy} onOpen={(model) => void open(model)} />
+                  </section>
+                ) : null
+              ) : (
+                <Suspense fallback={<EmptyState title="Loading the docs" hint="One moment." />}>
+                  <ProjectDocsBrowser project={project} page={docsPage} onPageChange={setDocsPage} />
+                </Suspense>
+              )}
+            </div>
+          </div>
         ) : null}
       </div>
     </main>

@@ -35,6 +35,115 @@
 
 /* ------------------------------------------------------------ page tree */
 
+/* The two sections of the page tree: Project (collapsible, on top) and This model. */
+.docs-sections {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.docs-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.docs-section--project {
+  flex: none;
+  max-height: 45%;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.docs-section--model {
+  flex: 1 1 auto;
+}
+
+.docs-section__header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+button.docs-section__header {
+  cursor: pointer;
+}
+
+button.docs-section__header:hover {
+  color: var(--color-text);
+}
+
+button.docs-section__header:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.docs-section__body {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.docs-section__body--grow {
+  flex: 1 1 auto;
+}
+
+.docs-section__body > .docs-tree {
+  flex: 1 1 auto;
+  height: auto;
+}
+
+.docs-add-project {
+  flex: none;
+  align-self: flex-start;
+  margin: var(--space-1) var(--space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.docs-add-project:hover {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.docs-add-project:focus-visible,
+.docs-crumbs__link:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.docs-crumbs__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.docs-crumbs__link:hover {
+  text-decoration: underline;
+}
+
 .docs-tree {
   display: flex;
   flex-direction: column;
@@ -516,4 +625,114 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-2);
+}
+
+/* ------------------------------------------------- project page: Docs tab */
+
+.project-docs {
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+  min-height: 60vh;
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 720px) {
+  .project-docs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.project-docs__tree {
+  min-width: 0;
+  padding: var(--space-1) 0;
+  overflow: auto;
+  font-size: var(--font-size-sm);
+  border-right: var(--border-width) solid var(--color-border);
+}
+
+.project-docs__group + .project-docs__group {
+  margin-top: var(--space-1);
+}
+
+.project-docs__heading {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.project-docs__group[data-empty="true"] .project-docs__heading {
+  color: var(--color-text-faint);
+}
+
+.project-docs__none-tag {
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.project-docs__none {
+  margin: 0;
+  padding: 0 var(--space-2) var(--space-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+}
+
+.project-docs__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-docs__page {
+  display: block;
+  width: 100%;
+  min-height: var(--control-height);
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-right: var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-docs__page:hover {
+  background: var(--color-surface-raised);
+}
+
+.project-docs__page[aria-current="page"] {
+  background: var(--color-surface-sunken);
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+.project-docs__page:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -2px;
+}
+
+.project-docs__reader {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.project-docs__toolbar a.button {
+  text-decoration: none;
+}
+
+.project-docs__body {
+  flex: 1 1 auto;
+}
+
+.project-docs__state {
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
 }

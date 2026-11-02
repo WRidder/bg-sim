@@ -1,7 +1,11 @@
 /**
- * State of the Docs tab (W5.6): the page tree of the open model, the page texts (saved and
- * draft), the selected page and the view mode. Tree edits are saved at once; page texts are
- * saved with Ctrl+S, when the tab is left, or when another model is opened.
+ * State of the Docs tab (W5.6): the page tree of one wiki, the page texts (saved and draft),
+ * the selected page and the view mode. Tree edits are saved at once; page texts are saved with
+ * Ctrl+S, when the tab is left, or when another model is opened.
+ *
+ * There are two stores of the same shape: `useDocsStore` holds the docs of the open model and
+ * `useProjectDocsStore` the project docs (`model` is then always `null`). `useDocsIndexStore`
+ * holds every page tree of the project (for `model:` links and the project page's Docs tab).
  */
 
 import { create } from "zustand";
@@ -9,12 +13,14 @@ import { create } from "zustand";
 import {
   deleteUnusedAssets,
   deletePage,
+  fetchDocsIndex,
   fetchManifest,
   fetchPage,
   listAssets,
   saveManifest,
   savePage,
 } from "./docsApi";
+import type { DocsIndex } from "./docsApi";
 import { registerLeaveGuard } from "./leaveGuard";
 import {
   EMPTY_DOCS,
@@ -45,6 +51,7 @@ function storedMode(): DocsMode {
 
 export interface DocsState {
   project: string | null;
+  /** The model whose docs these are; always `null` in the project docs store. */
   model: string | null;
   status: "idle" | "loading" | "ready" | "error";
   error: string | null;
@@ -62,7 +69,8 @@ export interface DocsState {
   assets: ReadonlySet<string>;
   unusedImages: number;
 
-  load: (project: string, model: string) => Promise<void>;
+  /** Load the docs of `model`, or the project docs when `model` is `null`. */
+  load: (project: string, model: string | null) => Promise<void>;
   select: (id: string | null) => Promise<void>;
   setMode: (mode: DocsMode) => void;
   setDraft: (id: string, text: string) => void;
@@ -96,8 +104,6 @@ const INITIAL = {
   unusedImages: 0,
 };
 
-let loadToken = 0;
-
 function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -107,12 +113,21 @@ export function dirtyPageIds(state: Pick<DocsState, "saved" | "drafts">): string
   return Object.keys(state.drafts).filter((id) => state.drafts[id] !== state.saved[id]);
 }
 
-export const useDocsStore = create<DocsState>()((set, get) => {
-  /** The open model, or a thrown message when no model is open. */
-  const target = (): { project: string; model: string } => {
+const createDocsStore = (wiki: "model" | "project") =>
+  create<DocsState>()((set, get) => {
+  let loadToken = 0;
+  // A reset (tests) bumps the token through this hook.
+  tokens.set(wiki, () => {
+    loadToken += 1;
+  });
+  /** Whether the store has a wiki loaded (or loading). */
+  const opened = (project: string | null, model: string | null): project is string =>
+    project !== null && (wiki === "project" || model !== null);
+  /** The open wiki, or a thrown message when none is open. */
+  const target = (): { project: string; model: string | null } => {
     const { project, model } = get();
-    if (project === null || model === null) {
-      throw new Error("Open a model before editing its docs.");
+    if (!opened(project, model)) {
+      throw new Error(wiki === "project" ? "Open a project before editing its docs." : "Open a model before editing its docs.");
     }
     return { project, model };
   };
@@ -132,7 +147,7 @@ export const useDocsStore = create<DocsState>()((set, get) => {
 
   const loadPage = async (id: string): Promise<void> => {
     const { project, model, saved } = get();
-    if (project === null || model === null || saved[id] !== undefined) {
+    if (!opened(project, model) || saved[id] !== undefined) {
       return;
     }
     try {
@@ -149,7 +164,8 @@ export const useDocsStore = create<DocsState>()((set, get) => {
     ...INITIAL,
     mode: storedMode(),
 
-    load: async (project, model) => {
+    load: async (project, requested) => {
+      const model = wiki === "project" ? null : requested;
       const state = get();
       if (state.project === project && state.model === model && state.status !== "error") {
         return;
@@ -270,7 +286,7 @@ export const useDocsStore = create<DocsState>()((set, get) => {
 
     remove: async (id, mode) => {
       const { project, model, docs } = get();
-      if (project === null || model === null) {
+      if (!opened(project, model)) {
         return;
       }
       const page = findPage(docs.pages, id);
@@ -341,7 +357,7 @@ export const useDocsStore = create<DocsState>()((set, get) => {
 
     refreshAssets: async () => {
       const { project, model } = get();
-      if (project === null || model === null) {
+      if (!opened(project, model)) {
         return;
       }
       try {
@@ -359,7 +375,7 @@ export const useDocsStore = create<DocsState>()((set, get) => {
 
     cleanUpImages: async () => {
       const { project, model } = get();
-      if (project === null || model === null) {
+      if (!opened(project, model)) {
         return [];
       }
       // References are read from the saved pages, so save the edits first.
@@ -380,13 +396,125 @@ export const useDocsStore = create<DocsState>()((set, get) => {
   };
 });
 
+/** Bumps the load token of each store, so a reset drops loads that are still in flight. */
+const tokens = new Map<"model" | "project", () => void>();
+
+/** The docs of the open model. */
+export const useDocsStore = createDocsStore("model");
+/** The project docs (`<project>/docs/`), shown in the Project section of the Docs tab. */
+export const useProjectDocsStore = createDocsStore("project");
+
+/** The store of a wiki: the project docs for `"project"`, else the open model's docs. */
+export function docsStoreOf(wiki: "model" | "project"): typeof useDocsStore {
+  return wiki === "project" ? useProjectDocsStore : useDocsStore;
+}
+
 registerLeaveGuard({
-  hasUnsaved: () => dirtyPageIds(useDocsStore.getState()).length > 0,
-  saveAll: () => useDocsStore.getState().saveAll(),
+  hasUnsaved: () =>
+    dirtyPageIds(useDocsStore.getState()).length > 0 || dirtyPageIds(useProjectDocsStore.getState()).length > 0,
+  saveAll: async () => {
+    const model = await useDocsStore.getState().saveAll();
+    const project = await useProjectDocsStore.getState().saveAll();
+    return model && project;
+  },
 });
+
+// --------------------------------------------------------------------------- docs index
+
+export interface DocsIndexState {
+  project: string | null;
+  status: "idle" | "loading" | "ready" | "error";
+  error: string | null;
+  index: DocsIndex | null;
+  /** Load every page tree of `project` (again when `force`). */
+  load: (project: string, force?: boolean) => Promise<void>;
+}
+
+let indexToken = 0;
+
+/** Every page tree of the project: `model:` links and the project page's Docs tab. */
+export const useDocsIndexStore = create<DocsIndexState>()((set, get) => ({
+  project: null,
+  status: "idle",
+  error: null,
+  index: null,
+  load: async (project, force = false) => {
+    const state = get();
+    if (!force && state.project === project && (state.status === "ready" || state.status === "loading")) {
+      return;
+    }
+    indexToken += 1;
+    const token = indexToken;
+    set({ project, status: "loading", error: null, ...(state.project === project ? {} : { index: null }) });
+    try {
+      const index = await fetchDocsIndex(project);
+      if (token === indexToken) {
+        set({ status: "ready", index });
+      }
+    } catch (error) {
+      if (token === indexToken) {
+        set({ status: "error", error: message(error) });
+      }
+    }
+  },
+}));
+
+// --------------------------------------------------------------------------- Docs tab view
+
+const PROJECT_OPEN_KEY = "bgsim.docs.projectOpen";
+
+function storedProjectOpen(): boolean {
+  try {
+    return localStorage.getItem(PROJECT_OPEN_KEY) !== "false";
+  } catch {
+    return true;
+  }
+}
+
+export interface DocsViewState {
+  /** The wiki whose page the Docs tab shows. */
+  wiki: "model" | "project";
+  /** Whether the Project section of the page tree is expanded. */
+  projectOpen: boolean;
+  setWiki: (wiki: "model" | "project") => void;
+  setProjectOpen: (open: boolean) => void;
+}
+
+/** Which wiki the Docs tab shows; also set by sticky-note links. */
+export const useDocsViewStore = create<DocsViewState>()((set) => ({
+  wiki: "model",
+  projectOpen: storedProjectOpen(),
+  setWiki: (wiki) => set(wiki === "project" ? { wiki, projectOpen: true } : { wiki }),
+  setProjectOpen: (projectOpen) => {
+    set({ projectOpen });
+    try {
+      localStorage.setItem(PROJECT_OPEN_KEY, String(projectOpen));
+    } catch {
+      // Only a convenience; ignore blocked storage.
+    }
+  },
+}));
+
+/** Show a page of the project docs (`project:` links). */
+export async function openProjectPage(id: string): Promise<void> {
+  useDocsViewStore.getState().setWiki("project");
+  await useProjectDocsStore.getState().select(id);
+}
+
+/** Show a page of the open model's docs (`page:` links in the model docs). */
+export async function openModelPage(id: string): Promise<void> {
+  useDocsViewStore.getState().setWiki("model");
+  await useDocsStore.getState().select(id);
+}
 
 /** Reset to the empty state (tests). */
 export function resetDocsStore(): void {
-  loadToken += 1;
+  useDocsViewStore.setState({ wiki: "model", projectOpen: true });
+  for (const bump of tokens.values()) {
+    bump();
+  }
+  indexToken += 1;
   useDocsStore.setState({ ...INITIAL, mode: "view" });
+  useProjectDocsStore.setState({ ...INITIAL, mode: "view" });
+  useDocsIndexStore.setState({ project: null, status: "idle", error: null, index: null });
 }

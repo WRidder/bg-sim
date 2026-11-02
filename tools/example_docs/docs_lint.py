@@ -1,4 +1,6 @@
-"""Lint the docs of one model (X5.10): used by ``examples/run_checks.py`` and by ``build.py``.
+"""Lint the docs of one model or of a project (X5.10): used by ``examples/run_checks.py`` and by
+``build.py``. A model's docs live in ``<example>/models/<model>.docs/``, the project docs (shared
+by every model of the example) in ``<example>/docs/``; both have the same format.
 
 Checks (every problem is one ``file:line: what is wrong; what to fix`` string):
 
@@ -6,12 +8,15 @@ Checks (every problem is one ``file:line: what is wrong; what to fix`` string):
 * every ``pages/*.md`` is in the tree;
 * every ``assets/<hash>.<ext>`` reference exists, every asset file is referenced and is named by the
   first 12 hex digits of its SHA-256;
-* ``page:`` links name a page, ``block:`` links a node of the model (``Sub/Name`` for a node inside
-  a subsystem), ``signal:`` links a signal the run produced;
+* ``page:`` links name a page of the same docs, ``project:`` links a page of the project docs,
+  ``model:<name>/<id>`` a page of another model's docs (``model:<name>``: a model with docs),
+  ``block:`` links a node of the model (``Sub/Name`` for a node inside a subsystem), ``signal:``
+  links a signal the run produced; the project docs have no ``block:`` or ``signal:`` links;
 * every ``$...$`` / ``$$...$$`` span parses in KaTeX (``katex_check.mjs``), no unmatched ``$``,
   no raw HTML, no ``|`` inside math in a table row.
 
-Standalone: ``uv run tools/example_docs/docs_lint.py <docs-dir> [<model.bgmodel.json> [<signals.txt>]]``.
+Standalone: ``uv run tools/example_docs/docs_lint.py <docs-dir> [<model.bgmodel.json> [<signals.txt>]]``
+(the other docs of the example are found next to ``<docs-dir>``).
 """
 
 from __future__ import annotations
@@ -122,14 +127,54 @@ class Page:
             self.problems.append((block[0], "a '$$' block is never closed"))
 
 
+def manifest_ids(docs_dir: Path) -> list[str] | None:
+    """The page ids of ``docs_dir/docs.json`` in tree order (pre-order), ``None`` without docs."""
+    path = docs_dir / "docs.json"
+    if not path.is_file():
+        return None
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return []
+    return [page.get("id", "") for page in _walk(manifest.get("pages", []))]
+
+
+def example_wikis(example_dir: Path) -> tuple[set[str], dict[str, list[str]]]:
+    """``(project page ids, {model: page ids in tree order})`` of an example or project folder.
+
+    A project without ``docs/`` has no project pages; a model without a docs folder has none.
+    """
+    project_ids = set(manifest_ids(example_dir / "docs") or [])
+    models: dict[str, list[str]] = {}
+    models_dir = example_dir / "models"
+    for path in sorted(models_dir.glob("*.bgmodel.json")) if models_dir.is_dir() else []:
+        name = path.name[: -len(".bgmodel.json")]
+        models[name] = manifest_ids(models_dir / f"{name}.docs") or []
+    return project_ids, models
+
+
 def lint_model_docs(
     docs_dir: Path,
     model_document: dict[str, Any] | None,
     signal_ids: set[str] | None,
     label: str | None = None,
+    *,
+    wiki: str = "model",
+    project_ids: set[str] | None = None,
+    model_pages: dict[str, list[str]] | None = None,
 ) -> list[str]:
-    """All problems of ``docs_dir`` as ``path:line: message`` strings (empty = clean)."""
+    """All problems of ``docs_dir`` as ``path:line: message`` strings (empty = clean).
+
+    ``wiki`` is ``"model"`` for ``models/<m>.docs`` and ``"project"`` for the project docs.
+    ``project_ids`` and ``model_pages`` (from :func:`example_wikis`) check ``project:`` and
+    ``model:`` links; when left out they are read from the folders around ``docs_dir``.
+    """
     label = label or docs_dir.as_posix()
+    if project_ids is None or model_pages is None:
+        example_dir = docs_dir.parent if wiki == "project" else docs_dir.parent.parent
+        found_project, found_models = example_wikis(example_dir)
+        project_ids = found_project if project_ids is None else project_ids
+        model_pages = found_models if model_pages is None else model_pages
     errors: list[str] = []
     manifest_path = docs_dir / "docs.json"
     if not manifest_path.is_file():
@@ -185,13 +230,42 @@ def lint_model_docs(
             scheme, _, rest = target.partition(":")
             if scheme == "page":
                 if rest not in ids:
-                    # The app resolves page: links in the docs of the open model only (there is
-                    # no link to another model's docs), so the lint does the same.
+                    # The app resolves page: links in the docs the link is in, like the lint.
                     errors.append(
-                        f"{where}:{number}: link page:{rest} names no page of this model's docs "
-                        f"(page links cannot reach another model's docs; name that model in the text); "
-                        f"pick one of {sorted(ids)}"
+                        f"{where}:{number}: link page:{rest} names no page of these docs "
+                        f"(page links stay in the same docs; use project:<id> for the project docs "
+                        f"or model:<name>/<id> for another model's docs); pick one of {sorted(ids)}"
                     )
+            elif scheme == "project":
+                if rest not in project_ids:
+                    errors.append(
+                        f"{where}:{number}: link project:{rest} names no page of the project docs; "
+                        + (
+                            f"pick one of {sorted(project_ids)}"
+                            if project_ids
+                            else "the example has no project docs (docs/docs.json); add them or drop the link"
+                        )
+                    )
+            elif scheme == "model":
+                name, _, page_id = rest.partition("/")
+                pages = model_pages.get(name)
+                if pages is None:
+                    errors.append(
+                        f"{where}:{number}: link model:{rest} names no model of the example; "
+                        f"pick one of {sorted(model_pages)}"
+                    )
+                elif not pages:
+                    errors.append(f"{where}:{number}: link model:{rest}: model {name!r} has no docs; write them or drop the link")
+                elif page_id and page_id not in pages:
+                    errors.append(
+                        f"{where}:{number}: link model:{rest} names no page of the docs of {name!r}; "
+                        f"pick one of {sorted(pages)} (or write model:{name} for its first page)"
+                    )
+            elif scheme in {"block", "signal"} and wiki == "project":
+                errors.append(
+                    f"{where}:{number}: {scheme}:{rest} links work in a model's docs only; "
+                    "from the project docs link to a model's page with model:<name>/<id>"
+                )
             elif scheme == "block":
                 if model_document is None:
                     errors.append(f"{where}:{number}: block:{rest} cannot be checked without the model")
@@ -205,7 +279,10 @@ def lint_model_docs(
             elif scheme in {"http", "https", "mailto"} or target.startswith("#"):
                 pass
             else:
-                errors.append(f"{where}:{number}: link {target!r} is not page:, block:, signal: or https; fix the target")
+                errors.append(
+                    f"{where}:{number}: link {target!r} is not page:, project:, model:, block:, signal: or https; "
+                    "fix the target"
+                )
     assets_dir = docs_dir / "assets"
     for path in sorted(assets_dir.iterdir()) if assets_dir.is_dir() else []:
         relative = f"assets/{path.name}"
@@ -254,7 +331,8 @@ def main() -> int:
     docs_dir = Path(sys.argv[1])
     model = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8")) if len(sys.argv) > 2 else None
     signals = set(Path(sys.argv[3]).read_text(encoding="utf-8").split()) if len(sys.argv) > 3 else None
-    errors = lint_model_docs(docs_dir, model, signals)
+    wiki = "model" if docs_dir.resolve().name.endswith(".docs") else "project"
+    errors = lint_model_docs(docs_dir, model, signals, wiki=wiki)
     print("\n".join(errors) if errors else "docs clean")
     return 1 if errors else 0
 

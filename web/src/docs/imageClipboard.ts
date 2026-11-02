@@ -42,7 +42,7 @@ export async function toPngBlob(blob: Blob): Promise<Blob> {
 export async function copyImageToClipboard(
   url: string,
   markdown: string,
-  origin: { project: string; model: string },
+  origin: { project: string; model: string | null },
 ): Promise<void> {
   if (typeof ClipboardItem === "undefined" || navigator.clipboard === undefined) {
     throw new Error("This browser does not allow copying images; open the app over https or localhost.");

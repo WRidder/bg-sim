@@ -1,7 +1,8 @@
 /**
- * The Docs tab (W5.6): a Markdown wiki for the open model. Left: the page tree. Right: the
- * selected page in View, Edit or Split mode. The docs are stored next to the model file
- * (`models/<model>.docs/`) and travel with it.
+ * The Docs tab (W5.6): a Markdown wiki for the open model. Left: the page tree, in two sections
+ * when the project has project docs: **Project** (collapsible, on top; `<project>/docs/`, shared
+ * by every model) and **This model** (`models/<model>.docs/`, travels with the model file).
+ * Right: the selected page of either wiki in View, Edit or Split mode.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
@@ -9,6 +10,8 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 
 import { EmptyState } from "../app/EmptyState";
 import { requestPlotsTab } from "../app/dockBus";
+import { requestLeaveModel } from "../app/leaveProject";
+import { modelDocsUrl, readScreenTab } from "../app/route";
 import { useDialogFocus } from "../app/useDialogFocus";
 import { usePersistedPanelSizes } from "../state/layout";
 import { useRunStore } from "../plot/runStore";
@@ -17,10 +20,20 @@ import { requestCenterNode } from "../editor/canvasFocus";
 import { DocsTree } from "./DocsTree";
 import { MarkdownEditor } from "./MarkdownEditor";
 import { MarkdownView, type LinkActions } from "./MarkdownView";
-import { dirtyPageIds, useDocsStore, type DocsMode } from "./docsStore";
+import {
+  dirtyPageIds,
+  docsStoreOf,
+  openModelPage,
+  openProjectPage,
+  useDocsIndexStore,
+  useDocsStore,
+  useDocsViewStore,
+  useProjectDocsStore,
+  type DocsMode,
+} from "./docsStore";
 import { isLeaveConfirmed } from "./leaveGuard";
 import { allIds, findPage, pathTo } from "./pageTree";
-import type { LinkContext } from "./docsLinks";
+import { modelPagesOf, parseDocsRef, type LinkContext } from "./docsLinks";
 import { useSyncedScroll } from "./useSyncedScroll";
 import "./docs.css";
 
@@ -29,19 +42,31 @@ export interface DocsTabProps {
   onShowDiagram: () => void;
 }
 
+type Wiki = "model" | "project";
+
 const MODES: readonly { id: DocsMode; label: string }[] = [
   { id: "view", label: "View" },
   { id: "edit", label: "Edit" },
   { id: "split", label: "Split" },
 ];
 
+// The `page=` of the URL (a deep link into the Docs tab) is applied once per page load.
+let urlPageApplied = false;
+
+/** Forget that the URL's `page=` was applied (tests). */
+export function resetDocsUrlPage(): void {
+  urlPageApplied = false;
+}
+
 function ConfirmDelete({
   title,
   childCount,
+  wiki,
   onChoose,
 }: {
   title: string;
   childCount: number;
+  wiki: Wiki;
   onChoose: (choice: "subtree" | "promote" | "cancel") => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
@@ -66,7 +91,9 @@ function ConfirmDelete({
             them and move them up one level.
           </p>
         ) : (
-          <p className="docs-dialog__text">The page text is removed from the model&apos;s docs.</p>
+          <p className="docs-dialog__text">
+            The page text is removed from {wiki === "project" ? "the project docs" : "the model's docs"}.
+          </p>
         )}
         <div className="docs-dialog__actions">
           <button type="button" className="button" onClick={() => onChoose("cancel")}>
@@ -92,33 +119,63 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
   const model = useDocumentStore((state) => state.doc);
   const manifest = useRunStore((state) => state.manifest);
 
-  const status = useDocsStore((state) => state.status);
-  const error = useDocsStore((state) => state.error);
-  const docs = useDocsStore((state) => state.docs);
-  const selected = useDocsStore((state) => state.selected);
-  const mode = useDocsStore((state) => state.mode);
-  const saved = useDocsStore((state) => state.saved);
-  const drafts = useDocsStore((state) => state.drafts);
-  const saving = useDocsStore((state) => state.saving);
-  const problem = useDocsStore((state) => state.problem);
-  const assets = useDocsStore((state) => state.assets);
-  const unusedImages = useDocsStore((state) => state.unusedImages);
+  const modelDocs = useDocsStore();
+  const projectDocs = useProjectDocsStore();
+  const wiki = useDocsViewStore((state) => state.wiki);
+  const projectOpen = useDocsViewStore((state) => state.projectOpen);
+  const index = useDocsIndexStore((state) => state.index);
+  const mode = modelDocs.mode;
 
   const layout = usePersistedPanelSizes("docs", { tree: 26, page: 74 });
   const [notice, setNotice] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<{ wiki: Wiki; id: string } | null>(null);
   const pageArea = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (project !== null && modelName !== null) {
       void useDocsStore.getState().load(project, modelName);
+      void useProjectDocsStore.getState().load(project, null);
+      void useDocsIndexStore.getState().load(project);
     }
   }, [project, modelName]);
 
-  // Leaving the page (reload, close) with unsaved edits asks first.
-  const dirty = useMemo(() => new Set(dirtyPageIds({ saved, drafts })), [saved, drafts]);
+  const hasProjectDocs = projectDocs.docs.pages.length > 0;
+  // The Project section exists once the project has docs; until then the model's docs are all.
+  const shown: Wiki = wiki === "project" && hasProjectDocs ? "project" : "model";
+  const current = shown === "project" ? projectDocs : modelDocs;
+  const store = docsStoreOf(shown).getState;
+
+  // A model without docs of its own starts on the project docs; a deep link (`page=`) wins.
+  const bothReady = modelDocs.status === "ready" && projectDocs.status === "ready";
   useEffect(() => {
-    if (dirty.size === 0) {
+    if (!bothReady || urlPageApplied) {
+      return;
+    }
+    urlPageApplied = true;
+    const { tab, page } = readScreenTab();
+    const ref = tab === "docs" ? parseDocsRef(page) : null;
+    if (ref?.wiki === "project" && findPage(useProjectDocsStore.getState().docs.pages, ref.id) !== null) {
+      void openProjectPage(ref.id);
+    } else if (
+      ref?.wiki === "model" &&
+      ref.id !== null &&
+      (ref.model === null || ref.model === modelName) &&
+      findPage(useDocsStore.getState().docs.pages, ref.id) !== null
+    ) {
+      void openModelPage(ref.id);
+    } else if (useDocsStore.getState().docs.pages.length === 0 && useProjectDocsStore.getState().docs.pages.length > 0) {
+      useDocsViewStore.getState().setWiki("project");
+    } else {
+      useDocsViewStore.getState().setWiki("model");
+    }
+  }, [bothReady, modelName]);
+
+  // Leaving the page (reload, close) with unsaved edits asks first.
+  const dirtyModel = useMemo(() => new Set(dirtyPageIds(modelDocs)), [modelDocs]);
+  const dirtyProject = useMemo(() => new Set(dirtyPageIds(projectDocs)), [projectDocs]);
+  const anyDirty = dirtyModel.size + dirtyProject.size;
+  useEffect(() => {
+    if (anyDirty === 0) {
       return;
     }
     const warn = (event: BeforeUnloadEvent): void => {
@@ -129,14 +186,14 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty.size]);
+  }, [anyDirty]);
 
-  const setMode = useDocsStore((state) => state.setMode);
   const focusAfterToggle = useRef(false);
   const toggleMode = useCallback(() => {
     focusAfterToggle.current = true;
-    setMode(useDocsStore.getState().mode === "view" ? "edit" : "view");
-  }, [setMode]);
+    const docs = useDocsStore.getState();
+    docs.setMode(docs.mode === "view" ? "edit" : "view");
+  }, []);
   // Ctrl+E moves the focus with the mode, so the shortcut keeps working from the keyboard.
   useEffect(() => {
     if (!focusAfterToggle.current) {
@@ -148,25 +205,39 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
   }, [mode]);
 
   const saveSelected = useCallback(async () => {
-    const id = useDocsStore.getState().selected;
-    if (id !== null) {
-      const ok = await useDocsStore.getState().save(id);
+    const state = docsStoreOf(shown).getState();
+    if (state.selected !== null) {
+      const ok = await state.save(state.selected);
       setNotice(ok ? "Saved." : null);
     }
-  }, []);
+  }, [shown]);
 
   const links = useMemo<LinkContext>(
     () => ({
-      pageIds: allIds(docs.pages),
+      pageIds: allIds(current.docs.pages),
+      wiki: shown,
       model,
       signalIds: manifest === null ? null : new Set(manifest.signals.map((signal) => signal.id)),
+      projectPageIds: allIds(projectDocs.docs.pages),
+      modelPages: modelPagesOf(index?.models ?? [], modelName === null ? {} : { [modelName]: modelDocs.docs.pages }),
     }),
-    [docs, model, manifest],
+    [current.docs, shown, model, manifest, projectDocs.docs, index, modelName, modelDocs.docs],
   );
 
   const actions = useMemo<LinkActions>(
     () => ({
-      openPage: (id) => void useDocsStore.getState().select(id),
+      openPage: (id) => void (shown === "project" ? openProjectPage(id) : openModelPage(id)),
+      openProjectPage: (id) => void openProjectPage(id),
+      openModelPage: (name, id) => {
+        if (name === useDocumentStore.getState().modelName) {
+          void openModelPage(id);
+          return;
+        }
+        const target = useDocumentStore.getState().project;
+        if (target !== null) {
+          void requestLeaveModel(modelDocsUrl(target, name, id), "model");
+        }
+      },
       showBlock: (target) => {
         void useDocsStore
           .getState()
@@ -187,7 +258,7 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
       },
       notify: setNotice,
     }),
-    [onShowDiagram],
+    [onShowDiagram, shown],
   );
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
@@ -204,16 +275,16 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
     }
   };
 
-  useSyncedScroll(mode === "split", pageArea, `${selected ?? ""}:${mode}:${status}`);
+  useSyncedScroll(mode === "split", pageArea, `${shown}:${current.selected ?? ""}:${mode}:${current.status}`);
 
   if (project === null || modelName === null) {
     return <EmptyState title="No model open" hint="Open a model to read and write its docs." />;
   }
-  if (status === "error") {
+  if (modelDocs.status === "error") {
     return (
       <div className="docs-state" role="alert" data-testid="docs-error">
         <p className="docs-state__title">The docs could not be loaded</p>
-        <p>{error}</p>
+        <p>{modelDocs.error}</p>
         <button
           type="button"
           className="button"
@@ -228,17 +299,79 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
     );
   }
 
-  const store = useDocsStore.getState;
+  const selected = current.selected;
+  const docs = current.docs;
   const page = selected === null ? null : findPage(docs.pages, selected);
-  const text = selected === null ? undefined : (drafts[selected] ?? saved[selected]);
+  const text = selected === null ? undefined : (current.drafts[selected] ?? current.saved[selected]);
+  const dirty = shown === "project" ? dirtyProject : dirtyModel;
   const isDirty = selected !== null && dirty.has(selected);
-  const deletingPage = deleting === null ? null : findPage(docs.pages, deleting);
+  const deletingStore = deleting === null ? null : docsStoreOf(deleting.wiki).getState();
+  const deletingPage = deleting === null || deletingStore === null ? null : findPage(deletingStore.docs.pages, deleting.id);
   const crumbs = selected === null ? [] : (pathTo(docs.pages, selected) ?? []);
+  const problem = current.problem ?? (shown === "model" ? projectDocs.problem : null);
 
-  const requestRemove = (id: string): void => setDeleting(id);
+  const treeHandlers = (target: Wiki) => {
+    const of = docsStoreOf(target).getState;
+    return {
+      onSelect: (id: string) => void (target === "project" ? openProjectPage(id) : openModelPage(id)),
+      onNewSibling: (after: string | null) => {
+        useDocsViewStore.getState().setWiki(target);
+        void of().newSibling(after);
+      },
+      onNewChild: (parent: string) => {
+        useDocsViewStore.getState().setWiki(target);
+        void of().newChild(parent);
+      },
+      onRename: (id: string, title: string) => void of().rename(id, title),
+      onRemove: (id: string) => setDeleting({ wiki: target, id }),
+      onMove: (id: string, to: string, position: "before" | "after" | "inside") => void of().move(id, to, position),
+      onMoveKey: (id: string, key: string) => of().moveByKey(id, key),
+    };
+  };
+
+  const addProjectDocs = (): void => {
+    void useProjectDocsStore
+      .getState()
+      .createFirstPage()
+      .then(() => {
+        if (useProjectDocsStore.getState().docs.pages.length > 0) {
+          useDocsViewStore.getState().setWiki("project");
+        }
+      });
+  };
+
+  const modelSection =
+    modelDocs.docs.pages.length === 0 ? (
+      <div className="docs-empty" data-testid="docs-empty">
+        <EmptyState
+          title={modelDocs.status === "loading" ? "Loading the docs" : "No documentation yet"}
+          hint={`Write notes, equations and pictures for ${modelName}. They are saved with the model.`}
+        />
+        <button
+          type="button"
+          className="button button--primary"
+          data-testid="docs-create-first"
+          disabled={modelDocs.status !== "ready"}
+          onClick={() => {
+            useDocsViewStore.getState().setWiki("model");
+            void useDocsStore.getState().createFirstPage();
+          }}
+        >
+          Create first page
+        </button>
+      </div>
+    ) : (
+      <DocsTree
+        docs={modelDocs.docs}
+        selected={shown === "model" ? modelDocs.selected : null}
+        dirty={dirtyModel}
+        ariaLabel={hasProjectDocs ? "Pages of this model" : "Pages"}
+        {...treeHandlers("model")}
+      />
+    );
 
   return (
-    <div className="docs-tab" data-testid="docs-tab" data-status={status} onKeyDown={onKeyDown}>
+    <div className="docs-tab" data-testid="docs-tab" data-status={modelDocs.status} data-wiki={shown} onKeyDown={onKeyDown}>
       <Group
         id="bgsim-docs"
         orientation="horizontal"
@@ -246,35 +379,59 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
         onLayoutChanged={layout.onLayoutChanged}
       >
         <Panel id="tree" defaultSize="26" minSize={160} maxSize="50" className="docs-panel" style={{ overflow: "hidden" }}>
-          {docs.pages.length === 0 ? (
-            <div className="docs-empty" data-testid="docs-empty">
-              <EmptyState
-                title={status === "loading" ? "Loading the docs" : "No documentation yet"}
-                hint={`Write notes, equations and pictures for ${modelName}. They are saved with the model.`}
-              />
-              <button
-                type="button"
-                className="button button--primary"
-                data-testid="docs-create-first"
-                disabled={status !== "ready"}
-                onClick={() => void store().createFirstPage()}
+          {hasProjectDocs ? (
+            <div className="docs-sections">
+              <section
+                className="docs-section docs-section--project"
+                data-testid="docs-section-project"
+                data-open={projectOpen ? "true" : "false"}
+                aria-label="Project docs"
               >
-                Create first page
-              </button>
+                <button
+                  type="button"
+                  className="docs-section__header"
+                  aria-expanded={projectOpen}
+                  data-testid="docs-section-project-toggle"
+                  onClick={() => useDocsViewStore.getState().setProjectOpen(!projectOpen)}
+                  title="The project docs: shared by every model of the project"
+                >
+                  <span aria-hidden="true">{projectOpen ? "▾" : "▸"}</span> Project
+                  {dirtyProject.size > 0 ? <span className="docs-tree__dirty" aria-label="Unsaved changes"> ●</span> : null}
+                </button>
+                {projectOpen ? (
+                  <div className="docs-section__body">
+                    <DocsTree
+                      docs={projectDocs.docs}
+                      selected={shown === "project" ? projectDocs.selected : null}
+                      dirty={dirtyProject}
+                      testIdPrefix="project-docs"
+                      ariaLabel="Project pages"
+                      hint={false}
+                      {...treeHandlers("project")}
+                    />
+                  </div>
+                ) : null}
+              </section>
+              <section className="docs-section docs-section--model" data-testid="docs-section-model" aria-label="Docs of this model">
+                <div className="docs-section__header docs-section__header--static">This model</div>
+                <div className="docs-section__body docs-section__body--grow">{modelSection}</div>
+              </section>
             </div>
           ) : (
-            <DocsTree
-              docs={docs}
-              selected={selected}
-              dirty={dirty}
-              onSelect={(id) => void store().select(id)}
-              onNewSibling={(after) => void store().newSibling(after)}
-              onNewChild={(parent) => void store().newChild(parent)}
-              onRename={(id, title) => void store().rename(id, title)}
-              onRemove={requestRemove}
-              onMove={(id, target, position) => void store().move(id, target, position)}
-              onMoveKey={(id, key) => store().moveByKey(id, key)}
-            />
+            <div className="docs-sections">
+              <div className="docs-section__body docs-section__body--grow">{modelSection}</div>
+              {projectDocs.status === "ready" ? (
+                <button
+                  type="button"
+                  className="docs-add-project"
+                  data-testid="docs-add-project"
+                  onClick={addProjectDocs}
+                  title="Start the project docs: pages shared by every model of the project, stored in the project's docs/ folder"
+                >
+                  + Add project docs
+                </button>
+              ) : null}
+            </div>
           )}
         </Panel>
 
@@ -284,17 +441,44 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
           <div className="docs-page" ref={pageArea}>
             <div className="docs-toolbar">
               <nav className="docs-crumbs" aria-label="Page path" data-testid="docs-crumbs">
-                {crumbs.map((id, index) => (
+                {hasProjectDocs ? (
+                  <>
+                    <button
+                      type="button"
+                      className="docs-crumbs__link"
+                      data-testid="docs-crumbs-project"
+                      onClick={() => {
+                        const first = useProjectDocsStore.getState().docs.pages[0];
+                        if (first !== undefined) {
+                          void openProjectPage(first.id);
+                        }
+                      }}
+                      title="Open the first page of the project docs"
+                    >
+                      Project docs
+                    </button>
+                    {shown === "model" ? (
+                      <span>
+                        <span aria-hidden="true"> / </span>
+                        {modelName}
+                      </span>
+                    ) : null}
+                    {crumbs.length > 0 ? <span aria-hidden="true"> / </span> : null}
+                  </>
+                ) : null}
+                {crumbs.map((id, position) => (
                   <span key={id}>
-                    {index > 0 ? <span aria-hidden="true"> / </span> : null}
+                    {position > 0 ? <span aria-hidden="true"> / </span> : null}
                     {findPage(docs.pages, id)?.title}
                   </span>
                 ))}
               </nav>
               <span className="docs-toolbar__spacer" />
-              {unusedImages > 0 ? (
+              {current.unusedImages > 0 ? (
                 <span className="docs-unused" data-testid="docs-unused">
-                  <span data-testid="docs-unused-count">{unusedImages} unused image{unusedImages === 1 ? "" : "s"}</span>
+                  <span data-testid="docs-unused-count">
+                    {current.unusedImages} unused image{current.unusedImages === 1 ? "" : "s"}
+                  </span>
                   <button
                     type="button"
                     className="button docs-toolbar__button"
@@ -313,15 +497,15 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
               <span
                 className="docs-save"
                 data-testid="docs-save-status"
-                data-state={saving ? "saving" : isDirty ? "dirty" : "saved"}
+                data-state={current.saving ? "saving" : isDirty ? "dirty" : "saved"}
               >
-                {saving ? "Saving…" : isDirty ? "● Unsaved changes" : page === null ? "" : "Saved"}
+                {current.saving ? "Saving…" : isDirty ? "● Unsaved changes" : page === null ? "" : "Saved"}
               </span>
               <button
                 type="button"
                 className="button docs-toolbar__button"
                 data-testid="docs-save"
-                disabled={!isDirty || saving}
+                disabled={!isDirty || current.saving}
                 onClick={() => void saveSelected()}
                 title="Save the page (Ctrl+S)"
               >
@@ -336,7 +520,7 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
                     data-testid={`docs-mode-${entry.id}`}
                     aria-pressed={mode === entry.id}
                     disabled={page === null}
-                    onClick={() => store().setMode(entry.id)}
+                    onClick={() => useDocsStore.getState().setMode(entry.id)}
                     title={entry.id === "split" ? "Editor and preview side by side" : `${entry.label} (Ctrl+E toggles View and Edit)`}
                   >
                     {entry.label}
@@ -348,7 +532,14 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
             {problem !== null ? (
               <p className="docs-banner docs-banner--error" role="alert" data-testid="docs-problem">
                 {problem}{" "}
-                <button type="button" className="docs-banner__close" onClick={() => store().setProblem(null)}>
+                <button
+                  type="button"
+                  className="docs-banner__close"
+                  onClick={() => {
+                    useDocsStore.getState().setProblem(null);
+                    useProjectDocsStore.getState().setProblem(null);
+                  }}
+                >
                   Dismiss
                 </button>
               </p>
@@ -378,11 +569,11 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
                 {mode !== "view" ? (
                   <div className="docs-pane docs-pane--editor">
                     <MarkdownEditor
-                      pageKey={`${project}/${modelName}/${page.id}`}
+                      pageKey={`${project}/${shown === "project" ? ":project" : modelName}/${page.id}`}
                       value={text}
                       project={project}
-                      model={modelName}
-                      knownAssets={assets}
+                      model={shown === "project" ? null : modelName}
+                      knownAssets={current.assets}
                       ariaLabel={`Markdown of ${page.title}`}
                       onChange={(next) => store().setDraft(page.id, next)}
                       onSave={() => void saveSelected()}
@@ -406,7 +597,13 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
                     {text.trim() === "" ? (
                       <p className="docs-preview__empty">This page is empty. Switch to Edit to write it.</p>
                     ) : (
-                      <MarkdownView text={text} project={project} model={modelName} links={links} actions={actions} />
+                      <MarkdownView
+                        text={text}
+                        project={project}
+                        model={shown === "project" ? null : modelName}
+                        links={links}
+                        actions={actions}
+                      />
                     )}
                   </div>
                 ) : null}
@@ -420,10 +617,12 @@ export function DocsTab({ onShowDiagram }: DocsTabProps) {
         <ConfirmDelete
           title={deletingPage.title}
           childCount={deletingPage.children.length}
+          wiki={deleting.wiki}
           onChoose={(choice) => {
+            const target = deleting;
             setDeleting(null);
             if (choice !== "cancel") {
-              void store().remove(deletingPage.id, choice);
+              void docsStoreOf(target.wiki).getState().remove(deletingPage.id, choice);
             }
           }}
         />

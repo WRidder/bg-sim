@@ -123,6 +123,8 @@ MODEL_SUFFIX = ".bgmodel.json"
 LIBRARY_SUFFIX = ".jl"
 #: The docs folder of a model lives next to its file: ``models/<m>.docs/`` (work package W5.6).
 DOCS_SUFFIX = ".docs"
+#: The project docs, shared by every model of the project, live in ``<project>/docs/``.
+PROJECT_DOCS_DIR = "docs"
 
 _NAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 _BLOCK_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")

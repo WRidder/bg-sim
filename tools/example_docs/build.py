@@ -13,9 +13,21 @@ a line beginning ``@@ ``::
 
 Pages write figures as ``![alt|600](@fig:<name>)``.
 
+The model ``@project`` names the project docs of the example (shared by all its models), with the
+same three sections::
+
+    @@ page @project <page-id> <parent-id | -> | <Title>
+    @@ figures @project                                     figures may run or show any model
+    @@ svg @project <name>
+
+Pages link with ``page:<id>`` (same docs), ``project:<id>`` (the project docs) and
+``model:<model>/<id>`` or ``model:<model>`` (another model's docs); ``block:`` and ``signal:``
+links belong in a model's docs.
+
 The build renders every figure, names it ``assets/<first 12 hex of its SHA-256>.<ext>``, rewrites the
-``@fig:`` references and writes ``examples/<example>/models/<model>.docs/`` (deleting every file the
-new tree does not use). Result plots come from real runs through one real-worker backend (started
+``@fig:`` references and writes ``examples/<example>/models/<model>.docs/`` (``examples/<example>/docs/``
+for ``@project``), deleting every file the new tree does not use. The docs are linted once every docs
+folder of the example is written, so links between them are checked against the new trees. Result plots come from real runs through one real-worker backend (started
 lazily and stopped at the end); run data and screenshots are cached under
 ``%TEMP%/bgsim-example-docs-cache`` (override with ``BGSIM_DOCS_CACHE``), keyed by the model, the
 library files, the scene and the figure spec, so a rebuild without changes is quick.
@@ -61,13 +73,22 @@ sys.path.insert(0, str(EXAMPLES))
 sys.path.insert(0, str(HERE))
 
 import run_checks as rc
-from docs_lint import lint_model_docs
+from docs_lint import example_wikis, lint_model_docs
 
 CACHE = Path(os.environ.get("BGSIM_DOCS_CACHE") or Path(tempfile.gettempdir()) / "bgsim-example-docs-cache")
 #: Bump a kind to retake its cached screenshots after a change of shots.mjs.
 SHOT_VERSION = {"diagram": "3"}
 FIGURE_REF = re.compile(r"!\[([^\]]*)\]\(@fig:([a-z0-9-]+)\)")
 PALETTE = ["#1f77b4", "#d95f02", "#1b9e77", "#7570b3", "#e7298a", "#66a61e", "#a6761d", "#444444"]
+#: The bundle "model" of the project docs (model names never start with "@").
+PROJECT = "@project"
+
+
+def docs_dir_of(example: str, model: str) -> Path:
+    """``examples/<example>/models/<model>.docs``, or ``examples/<example>/docs`` for ``@project``."""
+    if model == PROJECT:
+        return EXAMPLES / example / "docs"
+    return EXAMPLES / example / "models" / f"{model}.docs"
 
 
 def sha(*parts: bytes | str) -> str:
@@ -333,7 +354,7 @@ def build_model(
                 raise SystemExit(f"{source}: page {name} uses @fig:{figure}, which has no entry in '@@ figures {model}'; add it")
             if figure not in used:
                 used.append(figure)
-    if any("(signal:" in text for text in pages.values()):
+    if model != PROJECT and any("(signal:" in text for text in pages.values()):
         cached_run(backend, example, model, None)  # signal links are checked against a real run
     unused = sorted(set(figures) - set(used))
     if unused:
@@ -371,7 +392,7 @@ def build_model(
     for name, path in shot_paths.items():
         images[name] = (path.read_bytes(), "png")
 
-    out_dir = EXAMPLES / example / "models" / f"{model}.docs"
+    out_dir = docs_dir_of(example, model)
     assets: dict[str, bytes] = {}
     names: dict[str, str] = {}
     for name, (data, extension) in images.items():
@@ -418,18 +439,33 @@ def main() -> int:
             example = bundle.stem
             if wanted and example not in wanted:
                 continue
-            for model, entry in parse_bundle(bundle).items():
-                pages, assets, size = build_model(example, model, entry, args, backend)
-                out_dir = EXAMPLES / example / "models" / f"{model}.docs"
-                document = json.loads((EXAMPLES / example / "models" / f"{model}.bgmodel.json").read_text(encoding="utf-8"))
+            built = {
+                model: build_model(example, model, entry, args, backend)
+                for model, entry in parse_bundle(bundle).items()
+            }
+            # Lint after every docs folder of the example is written: links cross the folders.
+            project_ids, model_pages = example_wikis(EXAMPLES / example)
+            for model, (pages, assets, size) in built.items():
+                out_dir = docs_dir_of(example, model)
+                document: dict[str, Any] | None = None
                 signal_ids: set[str] | None = None
-                files = sorted((CACHE / "runs").glob(f"{example}-{model}-" + "[0-9a-f]" * 24 + ".npz"))
-                if files:
-                    newest = max(files, key=lambda p: p.stat().st_mtime)
-                    signal_ids = set(json.loads(str(np.load(newest, allow_pickle=False)["ids"])))
-                problems = lint_model_docs(out_dir, document, signal_ids, out_dir.relative_to(ROOT).as_posix())
-                signal_hint = "" if signal_ids is not None else " (signal links unchecked: no cached run)"
-                print(f"{example}/{model}: {pages} pages, {assets} assets, {size / 1024:.0f} KiB{signal_hint}", flush=True)
+                if model != PROJECT:
+                    model_file = EXAMPLES / example / "models" / f"{model}.bgmodel.json"
+                    document = json.loads(model_file.read_text(encoding="utf-8"))
+                    files = sorted((CACHE / "runs").glob(f"{example}-{model}-" + "[0-9a-f]" * 24 + ".npz"))
+                    if files:
+                        newest = max(files, key=lambda p: p.stat().st_mtime)
+                        signal_ids = set(json.loads(str(np.load(newest, allow_pickle=False)["ids"])))
+                problems = lint_model_docs(
+                    out_dir, document, signal_ids, out_dir.relative_to(ROOT).as_posix(),
+                    wiki="project" if model == PROJECT else "model",
+                    project_ids=project_ids, model_pages=model_pages,
+                )
+                signal_hint = (
+                    "" if signal_ids is not None or model == PROJECT else " (signal links unchecked: no cached run)"
+                )
+                label = "project docs" if model == PROJECT else model
+                print(f"{example}/{label}: {pages} pages, {assets} assets, {size / 1024:.0f} KiB{signal_hint}", flush=True)
                 for problem in problems:
                     print(f"  {problem}", flush=True)
                 failures += len(problems)

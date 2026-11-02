@@ -938,6 +938,23 @@ body {
   align-self: stretch;
 }
 
+/* Models | Docs: the tab strip of the project page sits on the page background. */
+.model-picker__tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.model-picker__tabs > .tab-strip {
+  padding-left: 0;
+  background: transparent;
+}
+
+.model-picker__panel:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 /* The model cards reuse the example gallery card (src/examples/gallery.css). */
 .model-grid__item {
   display: flex;

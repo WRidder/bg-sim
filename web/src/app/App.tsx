@@ -10,7 +10,7 @@ import { SHOW_CENTER_TAB_EVENT, SHOW_PLOTS_EVENT } from "./dockBus";
 import { InspectorPanel } from "./InspectorPanel";
 import { LeftPanel } from "./LeftPanel";
 import { ModelPicker } from "./ModelPicker";
-import { readAppRoute } from "./route";
+import { readAppRoute, readScreenTab } from "./route";
 import { ShortcutsOverlay } from "./ShortcutsOverlay";
 import { StartPage } from "./StartPage";
 import { TopBar } from "./TopBar";
@@ -48,7 +48,10 @@ export function App() {
   const { theme, toggleTheme } = useTheme();
   const columns = usePersistedPanelSizes("columns", { library: 20, center: 58, inspector: 22 });
   const rows = usePersistedPanelSizes("rows", { main: 68, dock: 32 });
-  const [centerTab, setCenterTab] = useState<CenterTabId>("diagram");
+  // `tab=docs` in the editor URL opens the Docs tab (a deep link to a docs page, `page=`).
+  const [centerTab, setCenterTab] = useState<CenterTabId>(() =>
+    readAppRoute().kind === "editor" && readScreenTab().tab === "docs" ? "docs" : "diagram",
+  );
   const [dockTab, setDockTab] = useState<DockTabId>("plots");
   const [route] = useState(() => readAppRoute());
   useAppShortcuts();
