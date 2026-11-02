@@ -751,9 +751,10 @@ end
         @test !haskey(blocks, "stdlib:spatial/JointBasis")
         @test !haskey(blocks, "stdlib:spatial/JointPose3D")
         # the flexible beam and its modal core are checked in test_flex_modes.jl / test_flex_beam.jl,
-        # the rotor in golden/spatial/test_Rotor3D.jl
+        # the rotor in golden/spatial/test_Rotor3D.jl, the FEM body and its stress output in
+        # test_fem_body.jl / test_library.jl
         flex = ["stdlib:spatial/FlexibleBeam3D", "stdlib:spatial/ModalBeam3D", "stdlib:spatial/Rotor3D",
-            "stdlib:spatial/ModalBody3D", "stdlib:spatial/ModalBodyCore3D"]
+            "stdlib:spatial/ModalBody3D", "stdlib:spatial/ModalBodyCore3D", "stdlib:spatial/ModalStress3D"]
         @test sort([r for r in keys(blocks) if startswith(r, "stdlib:spatial/")]) == sort(vcat(_MSP_REFS, flex))
         for ref in _MSP_REFS
             b = blocks[ref]
