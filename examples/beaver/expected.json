@@ -1,0 +1,4292 @@
+{
+  "project": "beaver",
+  "description": "DHC-2 'Beaver' (FDC 1.4, Rauw; Tjee & Mulder flight-test data): the modes and control steps at the thesis' trim point, and the flyable beaver-sim with the drivetrain and the FDC autopilot. Numbers come from design/design.json (an independent scipy implementation of the FDC model, validated against the thesis' Tables 5-1 and 5-3 and FDC's linear models).",
+  "models": {
+    "beaver-modes": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/V",
+          "t": 1.0,
+          "value": 46.89845752885856,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/alpha_deg",
+          "t": 1.0,
+          "value": 8.161115300873178,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/beta_deg",
+          "t": 1.0,
+          "value": -1.1991324594300192,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/phi_deg",
+          "t": 1.0,
+          "value": 0.3327794879768078,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/theta_deg",
+          "t": 1.0,
+          "value": 8.708395338398162,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/V",
+          "t": 5.0,
+          "value": 45.467138638382906,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.242873312740226,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/beta_deg",
+          "t": 5.0,
+          "value": -0.8208215923789842,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/phi_deg",
+          "t": 5.0,
+          "value": 1.218063679990288,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/theta_deg",
+          "t": 5.0,
+          "value": 10.899474719241809,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/V",
+          "t": 20.0,
+          "value": 45.786234048611085,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.220709814748574,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/beta_deg",
+          "t": 20.0,
+          "value": -1.11337105725016,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/phi_deg",
+          "t": 20.0,
+          "value": -0.9744232797683225,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/theta_deg",
+          "t": 20.0,
+          "value": 6.343331409695548,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/V",
+          "t": 60.0,
+          "value": 44.31244288455206,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.316760701270054,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/beta_deg",
+          "t": 60.0,
+          "value": -0.7092777992749454,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/phi_deg",
+          "t": 60.0,
+          "value": -0.17293100256730207,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/theta_deg",
+          "t": 60.0,
+          "value": 8.188665502902706,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/V",
+          "t": 150.0,
+          "value": 44.93102628435113,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/alpha_deg",
+          "t": 150.0,
+          "value": 8.277479503615025,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/beta_deg",
+          "t": 150.0,
+          "value": -0.8196758286924604,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/phi_deg",
+          "t": 150.0,
+          "value": 0.08771013276846512,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Phugoid/Air/theta_deg",
+          "t": 150.0,
+          "value": 8.480943507533267,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/V",
+          "t": 1.0,
+          "value": 44.99850518664155,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/alpha_deg",
+          "t": 1.0,
+          "value": 8.184223154929603,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/beta_deg",
+          "t": 1.0,
+          "value": -0.8486723877814749,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/phi_deg",
+          "t": 1.0,
+          "value": -0.0009989513890478737,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/theta_deg",
+          "t": 1.0,
+          "value": 8.224384512864294,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/V",
+          "t": 5.0,
+          "value": 45.002421206599834,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.272678064736244,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/beta_deg",
+          "t": 5.0,
+          "value": -0.8434482904825319,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/phi_deg",
+          "t": 5.0,
+          "value": 0.000266943275739166,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/theta_deg",
+          "t": 5.0,
+          "value": 8.269660594902355,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/V",
+          "t": 20.0,
+          "value": 44.99776474917096,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.272958873184546,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/beta_deg",
+          "t": 20.0,
+          "value": -0.8423718572552987,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/phi_deg",
+          "t": 20.0,
+          "value": 0.0005683576048516114,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/theta_deg",
+          "t": 20.0,
+          "value": 8.272507298581926,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/V",
+          "t": 60.0,
+          "value": 45.00020103041684,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.272814931520221,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/beta_deg",
+          "t": 60.0,
+          "value": -0.8429140878410941,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/phi_deg",
+          "t": 60.0,
+          "value": 0.0009755906233207838,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/theta_deg",
+          "t": 60.0,
+          "value": 8.274497583183056,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/V",
+          "t": 150.0,
+          "value": 45.0002184598548,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/alpha_deg",
+          "t": 150.0,
+          "value": 8.272812346200993,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/beta_deg",
+          "t": 150.0,
+          "value": -0.8430246685631217,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/phi_deg",
+          "t": 150.0,
+          "value": 3.3326958755305316e-05,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ShortPeriod/Air/theta_deg",
+          "t": 150.0,
+          "value": 8.272823043724449,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/V",
+          "t": 1.0,
+          "value": 44.996783889274646,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/alpha_deg",
+          "t": 1.0,
+          "value": 8.25567705560868,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/beta_deg",
+          "t": 1.0,
+          "value": -0.49059769757099175,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/phi_deg",
+          "t": 1.0,
+          "value": -0.35123807891515313,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/theta_deg",
+          "t": 1.0,
+          "value": 8.279431700456794,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/V",
+          "t": 5.0,
+          "value": 44.99776395701228,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.275760158212046,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/beta_deg",
+          "t": 5.0,
+          "value": -0.8320708792181052,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/phi_deg",
+          "t": 5.0,
+          "value": 0.06495779736696211,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/theta_deg",
+          "t": 5.0,
+          "value": 8.274964774332435,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/V",
+          "t": 20.0,
+          "value": 45.00134588744427,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.27275287905829,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/beta_deg",
+          "t": 20.0,
+          "value": -0.8433514222765701,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/phi_deg",
+          "t": 20.0,
+          "value": -0.00034983454855180965,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/theta_deg",
+          "t": 20.0,
+          "value": 8.274750060914169,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/V",
+          "t": 60.0,
+          "value": 45.0003596791769,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.27280306468166,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/beta_deg",
+          "t": 60.0,
+          "value": -0.8431678331075008,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/phi_deg",
+          "t": 60.0,
+          "value": -0.0008888716860857623,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/theta_deg",
+          "t": 60.0,
+          "value": 8.27137591030801,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/V",
+          "t": 150.0,
+          "value": 44.99983173512203,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/alpha_deg",
+          "t": 150.0,
+          "value": 8.27283624552214,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/beta_deg",
+          "t": 150.0,
+          "value": -0.842952978572661,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/phi_deg",
+          "t": 150.0,
+          "value": -7.859594343928445e-05,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "DutchRoll/Air/theta_deg",
+          "t": 150.0,
+          "value": 8.272654292022262,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/V",
+          "t": 1.0,
+          "value": 44.99810467555667,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/alpha_deg",
+          "t": 1.0,
+          "value": 8.274612811326733,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/beta_deg",
+          "t": 1.0,
+          "value": -0.8450531696721524,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/phi_deg",
+          "t": 1.0,
+          "value": 0.012317093746043029,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/theta_deg",
+          "t": 1.0,
+          "value": 8.285548794085823,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/V",
+          "t": 5.0,
+          "value": 44.99315447857184,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.273282333273977,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/beta_deg",
+          "t": 5.0,
+          "value": -0.841847530635495,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/phi_deg",
+          "t": 5.0,
+          "value": -0.0023373639703583838,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/theta_deg",
+          "t": 5.0,
+          "value": 8.276961335325844,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/V",
+          "t": 20.0,
+          "value": 45.0045111569749,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.272565131541063,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/beta_deg",
+          "t": 20.0,
+          "value": -0.8441078789135834,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/phi_deg",
+          "t": 20.0,
+          "value": 3.853980748826584e-05,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/theta_deg",
+          "t": 20.0,
+          "value": 8.276523690998049,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/V",
+          "t": 60.0,
+          "value": 45.00048153231728,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.272792726363491,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/beta_deg",
+          "t": 60.0,
+          "value": -0.8433413505398466,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/phi_deg",
+          "t": 60.0,
+          "value": -0.002301280181293401,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/theta_deg",
+          "t": 60.0,
+          "value": 8.268696924212964,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/V",
+          "t": 150.0,
+          "value": 44.99952212830265,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/alpha_deg",
+          "t": 150.0,
+          "value": 8.272855929405933,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/beta_deg",
+          "t": 150.0,
+          "value": -0.8428931621695369,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/phi_deg",
+          "t": 150.0,
+          "value": -0.00019508726087675408,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Roll/Air/theta_deg",
+          "t": 150.0,
+          "value": 8.272525382030656,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/V",
+          "t": 1.0,
+          "value": 45.040825149931344,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/alpha_deg",
+          "t": 1.0,
+          "value": 8.255002691018111,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/beta_deg",
+          "t": 1.0,
+          "value": -0.5066588715072086,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/phi_deg",
+          "t": 1.0,
+          "value": 1.9157722353164133,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/theta_deg",
+          "t": 1.0,
+          "value": 8.230306213428827,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/V",
+          "t": 5.0,
+          "value": 45.04772541912591,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.257220456156002,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/beta_deg",
+          "t": 5.0,
+          "value": -0.5616781025721062,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/phi_deg",
+          "t": 5.0,
+          "value": 1.6184995250508338,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/theta_deg",
+          "t": 5.0,
+          "value": 8.222955762308414,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/V",
+          "t": 20.0,
+          "value": 45.00986879649288,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.265682290086257,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/beta_deg",
+          "t": 20.0,
+          "value": -0.6877620843684049,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/phi_deg",
+          "t": 20.0,
+          "value": 0.8764780363185022,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/theta_deg",
+          "t": 20.0,
+          "value": 8.271520893169688,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/V",
+          "t": 60.0,
+          "value": 45.00838620428024,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.271145094490912,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/beta_deg",
+          "t": 60.0,
+          "value": -0.8159179951114393,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/phi_deg",
+          "t": 60.0,
+          "value": 0.16162105028228338,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/theta_deg",
+          "t": 60.0,
+          "value": 8.274832644656621,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/V",
+          "t": 150.0,
+          "value": 45.000986794268584,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/alpha_deg",
+          "t": 150.0,
+          "value": 8.272735570499405,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/beta_deg",
+          "t": 150.0,
+          "value": -0.842655220443555,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/phi_deg",
+          "t": 150.0,
+          "value": 0.002901904689097414,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Spiral/Air/theta_deg",
+          "t": 150.0,
+          "value": 8.271358147354267,
+          "abs": 0.0001
+        },
+        {
+          "kind": "damping",
+          "signal": "Phugoid/Air/V",
+          "from_t": 0.0,
+          "to_t": 150.0,
+          "zeta": 0.06610990447934964,
+          "zeta_abs": 0.003,
+          "wn": 0.2657084578628162,
+          "wn_rtol": 0.003,
+          "note": "phugoid of the coupled linear model: zeta 0.0661, wn 0.2657 rad/s (THESIS Table 5-3, decoupled: [-0.01614, 0.2631])"
+        },
+        {
+          "kind": "damping",
+          "signal": "ShortPeriod/Air/alpha_deg",
+          "from_t": 0.0,
+          "to_t": 3.0,
+          "zeta": 0.6655059026916089,
+          "zeta_abs": 0.005,
+          "wn": 3.2432032333014593,
+          "wn_rtol": 0.005,
+          "note": "short period of the coupled linear model: zeta 0.6655, wn 3.2432 rad/s (THESIS Table 5-3, decoupled: [-2.1606, 2.4112])"
+        },
+        {
+          "kind": "damping",
+          "signal": "DutchRoll/Air/beta_deg",
+          "from_t": 0.0,
+          "to_t": 12.0,
+          "zeta": 0.4442662488806568,
+          "zeta_abs": 0.005,
+          "wn": 1.0785069247285048,
+          "wn_rtol": 0.005,
+          "note": "dutch roll of the coupled linear model: zeta 0.4443, wn 1.0785 rad/s (THESIS Table 5-3, decoupled: [-0.477, 0.9763])"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "GrowRoll/lambda",
+          "t": 0.3,
+          "value": -5.133196934048665,
+          "rtol": 0.002,
+          "note": "roll mode: phidot/phi reads the eigenvalue -5.1332 1/s (THESIS Table 5-3: -5.1351, decoupled)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "GrowSpiral/lambda",
+          "t": 1.0,
+          "value": -0.04289479156001008,
+          "rtol": 0.002,
+          "note": "spiral mode: phidot/phi reads the eigenvalue -0.04289 1/s (THESIS: -0.04573, decoupled)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "GrowSpiral/lambda",
+          "t": 20.0,
+          "value": -0.044362918794302535,
+          "abs": 0.0001,
+          "note": "later the slow spiral drifts from the linear rate (the release also excites the lightly damped phugoid through the nonlinear coupling); bg-sim follows the scipy reference"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "GrowSpiral/lambda",
+          "t": 60.0,
+          "value": -0.035999592488590214,
+          "abs": 0.0001
+        }
+      ]
+    },
+    "beaver-steps": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/V",
+          "t": 0.9,
+          "value": 45.0,
+          "abs": 1e-06,
+          "note": "trimmed: the FDC trim (THESIS Table 5-1, data/cr4560.lin) holds the speed in bg-sim"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/alpha_deg",
+          "t": 0.9,
+          "value": 8.272826296082664,
+          "abs": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/beta_deg",
+          "t": 0.9,
+          "value": -0.8429784384171491,
+          "abs": 1e-06
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/H",
+          "t": 0.9,
+          "value": 1828.8,
+          "abs": 1e-05
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/V",
+          "t": 2.0,
+          "value": 45.2067312258794,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py), exact source mode"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/alpha_deg",
+          "t": 2.0,
+          "value": 5.11303496104719,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/beta_deg",
+          "t": 2.0,
+          "value": -0.5504626068139804,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/p_deg",
+          "t": 2.0,
+          "value": -0.2566810421360216,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/q_deg",
+          "t": 2.0,
+          "value": -5.19186120253966,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/r_deg",
+          "t": 2.0,
+          "value": -0.634603671474085,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/phi_deg",
+          "t": 2.0,
+          "value": -0.10857113626984069,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/theta_deg",
+          "t": 2.0,
+          "value": 3.170695979149931,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/H",
+          "t": 2.0,
+          "value": 1828.3438842931441,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/V",
+          "t": 5.0,
+          "value": 48.290724756033114,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.048997664461158,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/beta_deg",
+          "t": 5.0,
+          "value": -1.326169121389228,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/p_deg",
+          "t": 5.0,
+          "value": 0.5433305490660971,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/q_deg",
+          "t": 5.0,
+          "value": 1.1330460515215897,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/r_deg",
+          "t": 5.0,
+          "value": 0.6233808444732647,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/phi_deg",
+          "t": 5.0,
+          "value": -0.7680874354247266,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/theta_deg",
+          "t": 5.0,
+          "value": 2.149031220327116,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/H",
+          "t": 5.0,
+          "value": 1814.0671633226295,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/V",
+          "t": 10.0,
+          "value": 49.05810369750652,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/alpha_deg",
+          "t": 10.0,
+          "value": 8.020572607292731,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/beta_deg",
+          "t": 10.0,
+          "value": -1.1370065770533189,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/p_deg",
+          "t": 10.0,
+          "value": 0.46236196946038804,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/q_deg",
+          "t": 10.0,
+          "value": 1.6271611876397976,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/r_deg",
+          "t": 10.0,
+          "value": 0.5336240662633105,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/phi_deg",
+          "t": 10.0,
+          "value": 2.582648164452182,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/theta_deg",
+          "t": 10.0,
+          "value": 10.45314142191631,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/H",
+          "t": 10.0,
+          "value": 1806.2682325546114,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/V",
+          "t": 20.0,
+          "value": 41.31939397228979,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.5264634592941,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/beta_deg",
+          "t": 20.0,
+          "value": 0.42229807303701866,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/p_deg",
+          "t": 20.0,
+          "value": -0.9378516776406143,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/q_deg",
+          "t": 20.0,
+          "value": -1.5865027850990752,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/r_deg",
+          "t": 20.0,
+          "value": -0.06718328805005219,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/phi_deg",
+          "t": 20.0,
+          "value": 0.8157232482668012,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/theta_deg",
+          "t": 20.0,
+          "value": 9.280661384789731,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/H",
+          "t": 20.0,
+          "value": 1842.4308999805485,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/V",
+          "t": 40.0,
+          "value": 43.67130225566105,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/alpha_deg",
+          "t": 40.0,
+          "value": 8.357918248776118,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/beta_deg",
+          "t": 40.0,
+          "value": -0.4069035445736946,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/p_deg",
+          "t": 40.0,
+          "value": -0.28064855182343285,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/q_deg",
+          "t": 40.0,
+          "value": -0.4783384659039695,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/r_deg",
+          "t": 40.0,
+          "value": 0.08445237961705472,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/phi_deg",
+          "t": 40.0,
+          "value": 1.4975006564931985,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/theta_deg",
+          "t": 40.0,
+          "value": 12.001101308315217,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/H",
+          "t": 40.0,
+          "value": 1830.6331417925408,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/V",
+          "t": 60.0,
+          "value": 45.77454150974354,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.226827857327471,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/beta_deg",
+          "t": 60.0,
+          "value": -0.9426184887256934,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/p_deg",
+          "t": 60.0,
+          "value": 0.13314739553773183,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/q_deg",
+          "t": 60.0,
+          "value": 0.3619061524541207,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/r_deg",
+          "t": 60.0,
+          "value": 0.10568380877654367,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/phi_deg",
+          "t": 60.0,
+          "value": 0.8350392537521362,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/theta_deg",
+          "t": 60.0,
+          "value": 10.687099466578099,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Elevator/Air/H",
+          "t": 60.0,
+          "value": 1821.2802293712807,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/V",
+          "t": 2.0,
+          "value": 45.00136467455734,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py), exact source mode"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/alpha_deg",
+          "t": 2.0,
+          "value": 8.226174303873664,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/beta_deg",
+          "t": 2.0,
+          "value": -2.0978473715639936,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/p_deg",
+          "t": 2.0,
+          "value": -2.955226969379119,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/q_deg",
+          "t": 2.0,
+          "value": -0.002084897357263765,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/r_deg",
+          "t": 2.0,
+          "value": 1.4510625529277694,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/phi_deg",
+          "t": 2.0,
+          "value": -2.7551341337573416,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/theta_deg",
+          "t": 2.0,
+          "value": 8.287826377015966,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/H",
+          "t": 2.0,
+          "value": 1828.7937983635397,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/V",
+          "t": 5.0,
+          "value": 44.91740294382184,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.392182996451623,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/beta_deg",
+          "t": 5.0,
+          "value": -2.2007335003821877,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/p_deg",
+          "t": 5.0,
+          "value": 0.6308695817077673,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/q_deg",
+          "t": 5.0,
+          "value": -0.020164453622225922,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/r_deg",
+          "t": 5.0,
+          "value": -2.029729059259903,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/phi_deg",
+          "t": 5.0,
+          "value": -1.2686717217849635,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/theta_deg",
+          "t": 5.0,
+          "value": 8.63306641744904,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/H",
+          "t": 5.0,
+          "value": 1828.7777008595465,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/V",
+          "t": 10.0,
+          "value": 44.812332331656734,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/alpha_deg",
+          "t": 10.0,
+          "value": 8.298743452952488,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/beta_deg",
+          "t": 10.0,
+          "value": -1.3276903569102128,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/p_deg",
+          "t": 10.0,
+          "value": 0.2475378155315735,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/q_deg",
+          "t": 10.0,
+          "value": -0.05271926943114844,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/r_deg",
+          "t": 10.0,
+          "value": -0.3595430189565936,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/phi_deg",
+          "t": 10.0,
+          "value": -2.0931595761648016,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/theta_deg",
+          "t": 10.0,
+          "value": 8.313246114578522,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/H",
+          "t": 10.0,
+          "value": 1829.3422110917704,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/V",
+          "t": 20.0,
+          "value": 45.10989942020735,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.274757749718265,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/beta_deg",
+          "t": 20.0,
+          "value": -1.1007818318932436,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/p_deg",
+          "t": 20.0,
+          "value": 0.11568384379582401,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/q_deg",
+          "t": 20.0,
+          "value": 0.05671612119364578,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/r_deg",
+          "t": 20.0,
+          "value": -0.23881032082422582,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/phi_deg",
+          "t": 20.0,
+          "value": -1.3280835069406314,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/theta_deg",
+          "t": 20.0,
+          "value": 8.20054488149996,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/H",
+          "t": 20.0,
+          "value": 1827.9724185640114,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/V",
+          "t": 40.0,
+          "value": 45.01279625955402,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/alpha_deg",
+          "t": 40.0,
+          "value": 8.275592823426612,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/beta_deg",
+          "t": 40.0,
+          "value": -0.9505491039349031,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/p_deg",
+          "t": 40.0,
+          "value": 0.04436414508066925,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/q_deg",
+          "t": 40.0,
+          "value": 0.008270888818241841,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/r_deg",
+          "t": 40.0,
+          "value": -0.10775179703788426,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/phi_deg",
+          "t": 40.0,
+          "value": -0.6111947604888255,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/theta_deg",
+          "t": 40.0,
+          "value": 8.130138945412117,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/H",
+          "t": 40.0,
+          "value": 1828.422538071301,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/V",
+          "t": 60.0,
+          "value": 44.947328066202594,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.277620517872894,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/beta_deg",
+          "t": 60.0,
+          "value": -0.8766653573624742,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/p_deg",
+          "t": 60.0,
+          "value": 0.008090499172586437,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/q_deg",
+          "t": 60.0,
+          "value": -0.0205654498876089,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/r_deg",
+          "t": 60.0,
+          "value": -0.0485850932005174,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/phi_deg",
+          "t": 60.0,
+          "value": -0.26475404322819135,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/theta_deg",
+          "t": 60.0,
+          "value": 8.20555720518565,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aileron/Air/H",
+          "t": 60.0,
+          "value": 1828.6833298583936,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/V",
+          "t": 2.0,
+          "value": 45.01097947039708,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py), exact source mode"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/alpha_deg",
+          "t": 2.0,
+          "value": 8.373767487273211,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/beta_deg",
+          "t": 2.0,
+          "value": 1.706253559843121,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/p_deg",
+          "t": 2.0,
+          "value": -2.654815605327511,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/q_deg",
+          "t": 2.0,
+          "value": 0.28225950327182403,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/r_deg",
+          "t": 2.0,
+          "value": -4.994086283984469,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/phi_deg",
+          "t": 2.0,
+          "value": -1.3933163779229554,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/theta_deg",
+          "t": 2.0,
+          "value": 8.37465767594169,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/H",
+          "t": 2.0,
+          "value": 1828.8091292406557,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/V",
+          "t": 5.0,
+          "value": 44.801914289747394,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.12764012561297,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/beta_deg",
+          "t": 5.0,
+          "value": -1.598406150117468,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/p_deg",
+          "t": 5.0,
+          "value": 0.48010422744931575,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/q_deg",
+          "t": 5.0,
+          "value": 0.013413569841305806,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/r_deg",
+          "t": 5.0,
+          "value": 1.3570300296636886,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/phi_deg",
+          "t": 5.0,
+          "value": -12.81195607862792,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/theta_deg",
+          "t": 5.0,
+          "value": 8.135066283339965,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/H",
+          "t": 5.0,
+          "value": 1829.278857555516,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/V",
+          "t": 10.0,
+          "value": 45.14858882764858,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/alpha_deg",
+          "t": 10.0,
+          "value": 8.291225966978766,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/beta_deg",
+          "t": 10.0,
+          "value": -1.997428343390429,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/p_deg",
+          "t": 10.0,
+          "value": 0.358060391847096,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/q_deg",
+          "t": 10.0,
+          "value": 0.19525968462054333,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/r_deg",
+          "t": 10.0,
+          "value": -1.4643979393133812,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/phi_deg",
+          "t": 10.0,
+          "value": -8.18002472858252,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/theta_deg",
+          "t": 10.0,
+          "value": 7.943102842212919,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/H",
+          "t": 10.0,
+          "value": 1827.2800747339425,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/V",
+          "t": 20.0,
+          "value": 45.10098656461445,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.297550984840758,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/beta_deg",
+          "t": 20.0,
+          "value": -1.7386506161626587,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/p_deg",
+          "t": 20.0,
+          "value": 0.3845059209791468,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/q_deg",
+          "t": 20.0,
+          "value": 0.11826110369640358,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/r_deg",
+          "t": 20.0,
+          "value": -0.8886401498036928,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/phi_deg",
+          "t": 20.0,
+          "value": -4.748897716295678,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/theta_deg",
+          "t": 20.0,
+          "value": 8.882444820097376,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/H",
+          "t": 20.0,
+          "value": 1826.6299764199512,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/V",
+          "t": 40.0,
+          "value": 45.208567930556285,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/alpha_deg",
+          "t": 40.0,
+          "value": 8.273566474474018,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/beta_deg",
+          "t": 40.0,
+          "value": -1.2406807346389515,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/p_deg",
+          "t": 40.0,
+          "value": 0.1854782205730598,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/q_deg",
+          "t": 40.0,
+          "value": 0.10911346680192428,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/r_deg",
+          "t": 40.0,
+          "value": -0.35511424808039604,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/phi_deg",
+          "t": 40.0,
+          "value": -1.9528433823203692,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/theta_deg",
+          "t": 40.0,
+          "value": 8.379734523490516,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/H",
+          "t": 40.0,
+          "value": 1826.0599248257204,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/V",
+          "t": 60.0,
+          "value": 45.11922087432187,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.270859813233695,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/beta_deg",
+          "t": 60.0,
+          "value": -1.0269317743399928,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/p_deg",
+          "t": 60.0,
+          "value": 0.08650232324935728,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/q_deg",
+          "t": 60.0,
+          "value": 0.05587293466780148,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/r_deg",
+          "t": 60.0,
+          "value": -0.15814439139391287,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/phi_deg",
+          "t": 60.0,
+          "value": -0.9135799897533243,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/theta_deg",
+          "t": 60.0,
+          "value": 8.089990331692492,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rudder/Air/H",
+          "t": 60.0,
+          "value": 1826.5341233599183,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/V",
+          "t": 2.0,
+          "value": 44.974096807206585,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py), exact source mode"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/alpha_deg",
+          "t": 2.0,
+          "value": 8.296497589427368,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/beta_deg",
+          "t": 2.0,
+          "value": -0.8509090658071908,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/p_deg",
+          "t": 2.0,
+          "value": 0.009651307945926214,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/q_deg",
+          "t": 2.0,
+          "value": 0.49129510267794346,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/r_deg",
+          "t": 2.0,
+          "value": 0.028101475471211747,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/phi_deg",
+          "t": 2.0,
+          "value": 0.0037973536354660143,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/theta_deg",
+          "t": 2.0,
+          "value": 8.47900118821866,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/H",
+          "t": 2.0,
+          "value": 1828.8462122568735,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/V",
+          "t": 5.0,
+          "value": 44.01721295984248,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.658180321959813,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/beta_deg",
+          "t": 5.0,
+          "value": -0.9720965240899075,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/p_deg",
+          "t": 5.0,
+          "value": 0.09840125826169806,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/q_deg",
+          "t": 5.0,
+          "value": 1.1723271807921118,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/r_deg",
+          "t": 5.0,
+          "value": 0.04946805776851827,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/phi_deg",
+          "t": 5.0,
+          "value": 0.26054754557173415,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/theta_deg",
+          "t": 5.0,
+          "value": 11.716418963941049,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/H",
+          "t": 5.0,
+          "value": 1832.131269920356,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/V",
+          "t": 10.0,
+          "value": 40.18765973631787,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/alpha_deg",
+          "t": 10.0,
+          "value": 8.933555737227698,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/beta_deg",
+          "t": 10.0,
+          "value": -0.16437760613399283,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/p_deg",
+          "t": 10.0,
+          "value": -0.7330857663857211,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/q_deg",
+          "t": 10.0,
+          "value": -0.6127669163292129,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/r_deg",
+          "t": 10.0,
+          "value": -0.7323913671901562,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/phi_deg",
+          "t": 10.0,
+          "value": -1.4647498297317874,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/theta_deg",
+          "t": 10.0,
+          "value": 13.274537982910134,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/H",
+          "t": 10.0,
+          "value": 1848.5251601348589,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/V",
+          "t": 20.0,
+          "value": 42.7321054993625,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.722767296155656,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/beta_deg",
+          "t": 20.0,
+          "value": -2.1960250404314605,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/p_deg",
+          "t": 20.0,
+          "value": 0.33542045137106924,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/q_deg",
+          "t": 20.0,
+          "value": 0.6373849310835403,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/r_deg",
+          "t": 20.0,
+          "value": -1.6933978086138812,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/phi_deg",
+          "t": 20.0,
+          "value": -9.346304114897572,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/theta_deg",
+          "t": 20.0,
+          "value": 4.811895572927838,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/H",
+          "t": 20.0,
+          "value": 1841.3856187400695,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/V",
+          "t": 40.0,
+          "value": 41.766426632910886,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/alpha_deg",
+          "t": 40.0,
+          "value": 8.784527619769218,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/beta_deg",
+          "t": 40.0,
+          "value": -2.4109360189104194,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/p_deg",
+          "t": 40.0,
+          "value": 0.2609599802478352,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/q_deg",
+          "t": 40.0,
+          "value": 0.2663097202578006,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/r_deg",
+          "t": 40.0,
+          "value": -2.261931995773357,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/phi_deg",
+          "t": 40.0,
+          "value": -11.650274228352371,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/theta_deg",
+          "t": 40.0,
+          "value": 5.671540052925672,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/H",
+          "t": 40.0,
+          "value": 1845.3023727795166,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/V",
+          "t": 60.0,
+          "value": 41.11528467092083,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.835714472356857,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/beta_deg",
+          "t": 60.0,
+          "value": -2.3042953735556795,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/p_deg",
+          "t": 60.0,
+          "value": 0.11806872788188924,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/q_deg",
+          "t": 60.0,
+          "value": -0.03207080874063888,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/r_deg",
+          "t": 60.0,
+          "value": -2.4123015730378,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/phi_deg",
+          "t": 60.0,
+          "value": -11.790572699881704,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/theta_deg",
+          "t": 60.0,
+          "value": 6.882236571605355,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Flap/Air/H",
+          "t": 60.0,
+          "value": 1847.2012578840317,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 2.0,
+          "value": 45.009658785153526,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py), exact source mode"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/alpha_deg",
+          "t": 2.0,
+          "value": 8.243667044231323,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/beta_deg",
+          "t": 2.0,
+          "value": -0.8325849791567609,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/p_deg",
+          "t": 2.0,
+          "value": -0.015018142291636501,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/q_deg",
+          "t": 2.0,
+          "value": -0.0466288836938453,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/r_deg",
+          "t": 2.0,
+          "value": -0.033440162062824644,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 2.0,
+          "value": -0.006362917268718766,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 2.0,
+          "value": 8.249615283279327,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 2.0,
+          "value": 1828.8022864263246,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 5.0,
+          "value": 45.170056171766745,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/alpha_deg",
+          "t": 5.0,
+          "value": 8.095244644496137,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/beta_deg",
+          "t": 5.0,
+          "value": -0.6682771130862684,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/p_deg",
+          "t": 5.0,
+          "value": -0.1874154716493159,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/q_deg",
+          "t": 5.0,
+          "value": -0.05420037877491859,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/r_deg",
+          "t": 5.0,
+          "value": -0.17883743504024957,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 5.0,
+          "value": -0.3497149044416212,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 5.0,
+          "value": 8.075987153332221,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 5.0,
+          "value": 1828.786252170281,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 10.0,
+          "value": 45.50564899987979,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/alpha_deg",
+          "t": 10.0,
+          "value": 8.065829295587735,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/beta_deg",
+          "t": 10.0,
+          "value": -0.8611676866069726,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/p_deg",
+          "t": 10.0,
+          "value": -0.07216336581230946,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/q_deg",
+          "t": 10.0,
+          "value": 0.11956536981342424,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/r_deg",
+          "t": 10.0,
+          "value": -0.24465370021050212,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 10.0,
+          "value": -1.2512099293220937,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 10.0,
+          "value": 8.319265451390493,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 10.0,
+          "value": 1828.9813217577203,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 20.0,
+          "value": 45.07425070403431,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/alpha_deg",
+          "t": 20.0,
+          "value": 8.096583824460474,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/beta_deg",
+          "t": 20.0,
+          "value": -0.9755392139372379,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/p_deg",
+          "t": 20.0,
+          "value": -0.07543280211377712,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/q_deg",
+          "t": 20.0,
+          "value": -0.03820588474488247,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/r_deg",
+          "t": 20.0,
+          "value": -0.5077677644585874,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 20.0,
+          "value": -2.4257462754639145,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 20.0,
+          "value": 8.93233364053979,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 20.0,
+          "value": 1834.4362268708928,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 40.0,
+          "value": 45.326892760339966,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/alpha_deg",
+          "t": 40.0,
+          "value": 8.090801345755013,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/beta_deg",
+          "t": 40.0,
+          "value": -1.2946234483537902,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/p_deg",
+          "t": 40.0,
+          "value": 0.08432798716879022,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/q_deg",
+          "t": 40.0,
+          "value": 0.08185324992722139,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/r_deg",
+          "t": 40.0,
+          "value": -0.764153500670755,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 40.0,
+          "value": -3.907856557007246,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 40.0,
+          "value": 8.889031237425845,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 40.0,
+          "value": 1840.5630110777865,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 60.0,
+          "value": 45.44017094291553,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/alpha_deg",
+          "t": 60.0,
+          "value": 8.087035683849633,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/beta_deg",
+          "t": 60.0,
+          "value": -1.4233797597383102,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/p_deg",
+          "t": 60.0,
+          "value": 0.1469568360067395,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/q_deg",
+          "t": 60.0,
+          "value": 0.12997945708754235,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/r_deg",
+          "t": 60.0,
+          "value": -0.8720135571516457,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 60.0,
+          "value": -4.569838805941233,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 60.0,
+          "value": 8.672133177001369,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 60.0,
+          "value": 1847.2933281370154,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/V",
+          "t": 2.0,
+          "value": 45.02997529462819,
+          "abs": 0.0001,
+          "note": "the scipy reference of the FDC model (design/beaver_ref.py, design/design.py), exact source mode"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/alpha_deg",
+          "t": 2.0,
+          "value": 8.182669714589647,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/beta_deg",
+          "t": 2.0,
+          "value": -0.8099271482093903,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/p_deg",
+          "t": 2.0,
+          "value": -0.04761857715887712,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/q_deg",
+          "t": 2.0,
+          "value": -0.14410567297576352,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/r_deg",
+          "t": 2.0,
+          "value": -0.10727570630967116,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/phi_deg",
+          "t": 2.0,
+          "value": -0.02006457438930182,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/theta_deg",
+          "t": 2.0,
+          "value": 8.201050551857191,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/H",
+          "t": 2.0,
+          "value": 1828.8070731641608,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/V",
+          "t": 5.0,
+          "value": 45.400645247832614,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/alpha_deg",
+          "t": 5.0,
+          "value": 7.968637320197938,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/beta_deg",
+          "t": 5.0,
+          "value": -0.4568599996203398,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/p_deg",
+          "t": 5.0,
+          "value": -0.39714039724773353,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/q_deg",
+          "t": 5.0,
+          "value": 0.012593206905423428,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/r_deg",
+          "t": 5.0,
+          "value": -0.2656880511360734,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/phi_deg",
+          "t": 5.0,
+          "value": -0.9743869978089182,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/theta_deg",
+          "t": 5.0,
+          "value": 7.902343023883031,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/H",
+          "t": 5.0,
+          "value": 1828.7392000869104,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/V",
+          "t": 10.0,
+          "value": 45.83149765289809,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/alpha_deg",
+          "t": 10.0,
+          "value": 7.956868490981966,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/beta_deg",
+          "t": 10.0,
+          "value": -0.917853585619737,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/p_deg",
+          "t": 10.0,
+          "value": -0.09329002924706747,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/q_deg",
+          "t": 10.0,
+          "value": 0.21210979425771598,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/r_deg",
+          "t": 10.0,
+          "value": -0.4423417298494903,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/phi_deg",
+          "t": 10.0,
+          "value": -2.183423863537631,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/theta_deg",
+          "t": 10.0,
+          "value": 8.515454686860656,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/H",
+          "t": 10.0,
+          "value": 1829.3402584407272,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/V",
+          "t": 20.0,
+          "value": 45.06840489457854,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/alpha_deg",
+          "t": 20.0,
+          "value": 7.999872973419537,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/beta_deg",
+          "t": 20.0,
+          "value": -1.0745041944882439,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/p_deg",
+          "t": 20.0,
+          "value": -0.12273140687136574,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/q_deg",
+          "t": 20.0,
+          "value": -0.06888227583436206,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/r_deg",
+          "t": 20.0,
+          "value": -0.8604382125646742,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/phi_deg",
+          "t": 20.0,
+          "value": -4.150290646888577,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/theta_deg",
+          "t": 20.0,
+          "value": 9.167064744438703,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/H",
+          "t": 20.0,
+          "value": 1838.3346178685756,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/V",
+          "t": 40.0,
+          "value": 45.49343727263145,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/alpha_deg",
+          "t": 40.0,
+          "value": 7.988332001092241,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/beta_deg",
+          "t": 40.0,
+          "value": -1.542521915530356,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/p_deg",
+          "t": 40.0,
+          "value": 0.1261813677763019,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/q_deg",
+          "t": 40.0,
+          "value": 0.14081494358417476,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/r_deg",
+          "t": 40.0,
+          "value": -1.2059755401614396,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/phi_deg",
+          "t": 40.0,
+          "value": -6.18332469104808,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/theta_deg",
+          "t": 40.0,
+          "value": 9.276861687382606,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/H",
+          "t": 40.0,
+          "value": 1847.362620679881,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/V",
+          "t": 60.0,
+          "value": 45.76102734271671,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/alpha_deg",
+          "t": 60.0,
+          "value": 7.97801994000368,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/beta_deg",
+          "t": 60.0,
+          "value": -1.7328988099781455,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/p_deg",
+          "t": 60.0,
+          "value": 0.2342431516531328,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/q_deg",
+          "t": 60.0,
+          "value": 0.2560601834057809,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/r_deg",
+          "t": 60.0,
+          "value": -1.3326721648233653,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/phi_deg",
+          "t": 60.0,
+          "value": -7.034275632006222,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/theta_deg",
+          "t": 60.0,
+          "value": 9.005088545806174,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Manifold/Air/H",
+          "t": 60.0,
+          "value": 1857.0102542311615,
+          "abs": 0.001
+        }
+      ]
+    },
+    "beaver-steps-drivetrain": {
+      "model": "beaver-steps",
+      "overrides": {
+        "global:drivetrain": 1.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Engine/n_shaft",
+          "t": 2.0,
+          "value": 1837.0304068436076,
+          "abs": 0.001,
+          "note": "drivetrain on: the governed shaft follows the rpm ramp with the designed wn 2.0 rad/s, zeta 0.7"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 2.0,
+          "value": 44.959420367251504,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 2.0,
+          "value": 0.029976579976996594,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 2.0,
+          "value": 8.374211682855382,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 2.0,
+          "value": 1828.789889221524,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Engine/n_shaft",
+          "t": 3.0,
+          "value": 1893.7330726754637,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 3.0,
+          "value": 44.90549268143597,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 3.0,
+          "value": 0.15575153028549107,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 3.0,
+          "value": 8.415785649633875,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 3.0,
+          "value": 1828.7956911045662,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Engine/n_shaft",
+          "t": 5.0,
+          "value": 1995.1243552716353,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 5.0,
+          "value": 44.87448667197023,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 5.0,
+          "value": 0.33247002397391745,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 5.0,
+          "value": 8.281594304398345,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 5.0,
+          "value": 1828.8474442568402,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Engine/n_shaft",
+          "t": 10.0,
+          "value": 2000.0090916882816,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 10.0,
+          "value": 45.399045483761526,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 10.0,
+          "value": -0.9339003851580711,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 10.0,
+          "value": 7.922752784099262,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 10.0,
+          "value": 1828.3607008278893,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Engine/n_shaft",
+          "t": 30.0,
+          "value": 2000.002061922769,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 30.0,
+          "value": 45.08553880728288,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 30.0,
+          "value": -3.5116480130218797,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 30.0,
+          "value": 8.210299884941394,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 30.0,
+          "value": 1837.0985633629095,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Engine/n_shaft",
+          "t": 60.0,
+          "value": 2000.0042888547887,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/V",
+          "t": 60.0,
+          "value": 45.48555181127344,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/phi_deg",
+          "t": 60.0,
+          "value": -4.6220942690155935,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/theta_deg",
+          "t": 60.0,
+          "value": 8.461884271298702,
+          "abs": 0.0001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rpm/Air/H",
+          "t": 60.0,
+          "value": 1845.9285257810743,
+          "abs": 0.001
+        }
+      ]
+    },
+    "beaver-sim": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 10.0,
+          "value": 1835.7969945061766,
+          "abs": 0.01,
+          "note": "the closed-loop scipy reference (design/beaver_sim.py), drivetrain on"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 10.0,
+          "value": 44.210458372745215,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 10.0,
+          "value": -0.35515691203616384,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 10.0,
+          "value": 12.582299469715013,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 10.0,
+          "value": -0.7889105036778119,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 10.0,
+          "value": 2000.78650326859,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 30.0,
+          "value": 1885.6781074219036,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 30.0,
+          "value": 41.408338087320445,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 30.0,
+          "value": -0.5287860099397832,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 30.0,
+          "value": 12.22781749034005,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 30.0,
+          "value": -13.045800066424107,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 30.0,
+          "value": 2000.0568494735116,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 50.0,
+          "value": 1914.7815241654962,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 50.0,
+          "value": 41.4767661840634,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 50.0,
+          "value": 5.340368450450379,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 50.0,
+          "value": 12.56555209253021,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 50.0,
+          "value": 86.07768188345426,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 50.0,
+          "value": 2000.072876877538,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 70.0,
+          "value": 1955.412780500332,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 70.0,
+          "value": 41.25971591977262,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 70.0,
+          "value": 2.704417846256871,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 70.0,
+          "value": 12.273619502012767,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 70.0,
+          "value": 86.6358078608094,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 70.0,
+          "value": 2000.0527392660917,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 90.0,
+          "value": 1985.7155546673418,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 90.0,
+          "value": 42.477809570731196,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 90.0,
+          "value": 3.194377716111013,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 90.0,
+          "value": 8.667141142455538,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 90.0,
+          "value": 87.71035916761423,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 90.0,
+          "value": 1799.2592311455844,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 120.0,
+          "value": 1978.9421099704628,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 120.0,
+          "value": 44.61918945244755,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 120.0,
+          "value": 0.08166297846472605,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 120.0,
+          "value": 8.5642889646187,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 120.0,
+          "value": 89.9389165922633,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 120.0,
+          "value": 1800.0003187265295,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 150.0,
+          "value": 1978.9445760068822,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 150.0,
+          "value": 45.01927782148319,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 150.0,
+          "value": 0.049715081683640513,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 150.0,
+          "value": 8.387357930189953,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 150.0,
+          "value": 89.96102856616511,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 150.0,
+          "value": 1799.9999411450724,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 150.0,
+          "value": 1978.8,
+          "abs": 1.0,
+          "note": "level-off: the altitude hold holds 150 m above the start"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 150.0,
+          "value": 90.0,
+          "abs": 0.5,
+          "note": "the heading hold has turned the aircraft to 090"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Beaver/Air/phi_deg",
+          "value": 31.0,
+          "note": "the bank stays within the roll attitude hold's 30 deg limit"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Beaver/Air/V",
+          "value": 38.0,
+          "note": "the speed stays inside the model's 35-55 m/s range (reference minimum 39.9 m/s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Beaver/Air/H",
+          "value": 1988.8,
+          "note": "altitude capture overshoot below 10 m (reference 7.6 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Beaver/Air/alpha_deg",
+          "value": 13.0,
+          "note": "no stall: alpha stays in the identified range"
+        }
+      ],
+      "export": {
+        "inputs": {
+          "col_pitch": {
+            "min": -0.05,
+            "max": 0.05
+          },
+          "col_roll": {
+            "min": -0.05,
+            "max": 0.05
+          },
+          "pedals": {
+            "min": -0.05,
+            "max": 0.05
+          },
+          "flaps_deg": {
+            "min": 0.0,
+            "max": 3.0
+          },
+          "elev_trim_deg": {
+            "min": -2.9363072272704875,
+            "max": -1.9363072272704875
+          },
+          "pz_inhg": {
+            "min": 20.071588827805652,
+            "max": 22.071588827805652
+          },
+          "rpm": {
+            "min": 1750.0,
+            "max": 1900.0
+          },
+          "theta_ref_deg": {
+            "min": 6.272826296082664,
+            "max": 10.272826296082664
+          },
+          "phi_ref_deg": {
+            "min": -10.0,
+            "max": 10.0
+          },
+          "psi_ref_deg": {
+            "min": -30.0,
+            "max": 30.0
+          },
+          "h_ref_m": {
+            "min": 1798.8,
+            "max": 1858.8
+          },
+          "wind_n": {
+            "min": -2.0,
+            "max": 2.0
+          },
+          "wind_e": {
+            "min": -2.0,
+            "max": 2.0
+          },
+          "wind_d": {
+            "min": -1.0,
+            "max": 1.0
+          }
+        },
+        "interface": {
+          "inputs": [
+            "col_pitch",
+            "col_roll",
+            "pedals",
+            "flaps_deg",
+            "elev_trim_deg",
+            "pz_inhg",
+            "rpm",
+            "ap_pitch",
+            "ap_roll",
+            "theta_ref_deg",
+            "phi_ref_deg",
+            "psi_ref_deg",
+            "h_ref_m",
+            "wind_n",
+            "wind_e",
+            "wind_d"
+          ],
+          "outputs": [
+            "north_m",
+            "east_m",
+            "alt_m",
+            "q_w",
+            "q_x",
+            "q_y",
+            "q_z",
+            "phi_deg",
+            "theta_deg",
+            "psi_deg",
+            "gamma_deg",
+            "p_dps",
+            "q_dps",
+            "r_dps",
+            "tas_mps",
+            "cas_mps",
+            "alpha_deg",
+            "beta_deg",
+            "vs_mps",
+            "nz_g",
+            "elev_deg",
+            "ail_deg",
+            "rud_deg",
+            "flap_deg",
+            "engine_rpm",
+            "power_kw",
+            "dpt",
+            "prop_angle"
+          ]
+        },
+        "note": "the FMU of beaver-sim; its own acceptance (tunables, the demo and manoeuvres against bg-sim) is examples/export_beaver_check.py"
+      }
+    },
+    "beaver-sim-source": {
+      "model": "beaver-sim",
+      "overrides": {
+        "global:drivetrain": 0.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 10.0,
+          "value": 1836.288908230992,
+          "abs": 0.01,
+          "note": "the closed-loop scipy reference (design/beaver_sim.py), exact source mode (drivetrain 0)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 10.0,
+          "value": 44.362830960614566,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 10.0,
+          "value": -0.35048749859070916,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 10.0,
+          "value": 12.660184876081452,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 10.0,
+          "value": -0.9715221480041976,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 10.0,
+          "value": 2000.7905738440832,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 30.0,
+          "value": 1886.6976011967192,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 30.0,
+          "value": 41.432643569552475,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 30.0,
+          "value": -0.5079516347529868,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 30.0,
+          "value": 12.225916905442256,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 30.0,
+          "value": -12.984269741572916,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 30.0,
+          "value": 2000.0570716330894,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 50.0,
+          "value": 1915.912233745649,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 50.0,
+          "value": 41.47658552552231,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 50.0,
+          "value": 5.292241198717008,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 50.0,
+          "value": 12.562839061807644,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 50.0,
+          "value": 86.09744024942563,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 50.0,
+          "value": 2000.0728768939912,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 70.0,
+          "value": 1956.5333825747252,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 70.0,
+          "value": 41.262106209704065,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 70.0,
+          "value": 2.7029735417328533,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 70.0,
+          "value": 12.273610995555684,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 70.0,
+          "value": 86.63641506076095,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 70.0,
+          "value": 2000.0527514693515,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 90.0,
+          "value": 1985.130645590192,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 90.0,
+          "value": 42.53037578142381,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 90.0,
+          "value": 2.638606037614017,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 90.0,
+          "value": 8.583064950128202,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 90.0,
+          "value": 88.34097097577205,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 90.0,
+          "value": 1799.2571855156984,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 120.0,
+          "value": 1978.9622499454629,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 120.0,
+          "value": 44.55066349406883,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 120.0,
+          "value": 0.08990425693226868,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 120.0,
+          "value": 8.590777002667922,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 120.0,
+          "value": 89.93159844803768,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 120.0,
+          "value": 1800.0002786565167,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/H",
+          "t": 150.0,
+          "value": 1978.95213948379,
+          "abs": 0.01
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/V",
+          "t": 150.0,
+          "value": 44.97345909889956,
+          "abs": 0.001
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/phi_deg",
+          "t": 150.0,
+          "value": 0.0544980351488386,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/theta_deg",
+          "t": 150.0,
+          "value": 8.405608746391211,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Air/psi_deg",
+          "t": 150.0,
+          "value": 89.9570372672282,
+          "abs": 0.002
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Beaver/Engine/n_shaft",
+          "t": 150.0,
+          "value": 1799.999938810718,
+          "abs": 0.01
+        }
+      ]
+    }
+  }
+}
