@@ -1,0 +1,202 @@
+# pendulum-double-cart-lab — the double-cart lab rig: 0.35 m tube links on a ±1 m rail, swing-up with margins, balance, push, and the realism parameter set for RL and robust control
+
+The rig of `pendulum-double-cart` (same DC motor, 3:1 gearbox, 16 mm pulley, belt and cart carriage) with two
+**0.35 m** links built the way a lab would build them, on a **±1.0 m** rail with soft end stops. It is the
+shared platform of the RL workflow (`plan/RL_PLAN.md`) and the robust classical work
+(`plan/ROBUST_CLASSICAL_PLAN.md`, item C0): `design/realism.json` is the one definition of the rig, with
+nominal, min, max, unit and a description for every parameter, and `design/lablib.py` builds the design
+model, the bond graph, the twin and the firmware replica for any parameter set. `pendulum-double-cart` itself
+is unchanged.
+
+| model | what it runs |
+| --- | --- |
+| `pendulum-double-cart-lab` | hanging at rest 1 s, the swing-up (3.0 s), the catch at 4.0 s, balance, a 0.45 N / 40 ms tip push at 7.5 s, recovery, end 12.5 s |
+| `pendulum-double-cart-lab-balance` | balance only: both links start leaning 2°, a 0.70 N / 40 ms tip push at 2 s (78 % of the largest the design recovers), end 6 s |
+| `pendulum-double-cart-lab-free` | no control, motor shorted: the free swing from rest at θ = (−2.2, −1.2) rad, x = 0.05 m, checked against the twin |
+
+The firmware has the structure of `pendulum-double-cart` (1 kHz, `library/DoubleCartLabCtrl.jl` with the
+tables of `library/DoubleCartLabTraj.jl`):
+
+| time | phase (`Ctrl/phase`) | what happens |
+| --- | --- | --- |
+| 0 – 1 s | 0, hold | hanging at rest, motor voltage 0 (checked: nothing moves) |
+| 1 s | 1, swing-up | trajectory feed-forward from the offline optimisation, tracked by a time-varying LQR (TVLQR) |
+| 4.0 s | 2, balance | after T_s = 3.0 s the nominal ends upright; the 1 kHz discrete LQR takes over |
+| 7.5 s | 2 | 40 ms, 0.45 N force pulse on the tip link |
+| to 12.5 s | 2 | recovery, then 3 s of quiet balance |
+
+## Rig (`design/realism.json`, nominal column)
+
+| part | value |
+| --- | --- |
+| cart | 0.80 kg carriage (belt clamp, joint-1 bearing block and encoder board, share of the cable chain), J = 1.5e-3 kg m²; viscous 0.5 N s/m (guide, belt) + 0.2 N s/m (cable chain) |
+| rail | ±1.0 m of free travel of the cart centre to rubber end stops (`HardStop`, 2e4 N/m, 200 N s/m) |
+| link 1 | 0.35 m: Al tube 20 × 2 mm 107 g, clamp hub 30 g and encoder magnet 1 g at the pivot, head 105 g (joint-2 bearing block with two 688 bearings) and encoder board 3 g at the tip, joint-2 cable 6 g/m along it: **0.248 kg, COM 0.229 m (65 % of L), J = 4.68e-3 kg m²** |
+| link 2 | 0.35 m: Al tube 107 g, clamp hub 45 g (8 mm shaft) and magnet 1 g at the pivot, tip cap 47 g: **0.200 kg, COM 0.176 m, J = 3.96e-3 kg m²** |
+| joints | viscous 2e-4 N m s/rad each (joint 1 + 1e-5 cable drag); Coulomb 2e-4 N m per joint and 1e-4 N m/rad cable spring on joint 1 in the realism set only |
+| motor | 24 V supply, R = 1.5 Ω, L = 0.5 mH, k_t = k_e = 0.0302 N m/A, rotor 1.4e-5 kg m², bearing 2e-6 N m s/rad (the 90 W-class brushed servo of `pendulum-double-cart`) |
+| transmission | 3:1 gearbox, 16 mm pulley radius, belt 4e5 N/m with 60 N s/m |
+| derived | 3.78 N/V, stall force 90 N (16 A), rotor reflected to the cart 0.49 kg, effective cart 1.29 kg, back-EMF damping 21.4 N s/m |
+
+**How the COM and inertia are set.** `lablib.link_props` lumps the parts list of each link (the same list
+`realism.json` randomises): the tube as a thin-walled cylinder about its own centre (J = m (L²/12 + (r_o² +
+r_i²)/4), its COM at L/2 plus `com_shift` L), the hubs, the head and the tip cap as small cubes at the pivot or
+the tip (J = m s²/6, s = 30, 40, 25 mm), the magnet and the encoder board as point masses, the cable as a
+uniform rod; the link's mass is the sum, its COM the mass-weighted mean, its inertia about the COM the sum of
+the parts' own inertias plus the parallel-axis terms. The heavy head at the tip of link 1 puts its COM at 65 %
+of the length.
+
+**Linearised upright.** Unstable poles **4.55 and 8.92 /s** (stable −4.26, −8.64, −16.9 and the cart's 0).
+As a check of the estimate for uniform 0.25/0.25 kg rods on the same 1.29 kg effective cart: 4.66 and 12.3 /s
+(estimated 5.1 and 12.5 /s). The lab links are slower in the second mode because the head and the tip cap
+give link 2 more inertia about its pivot.
+
+**Energy to swing up.** Hanging to upright raises the potential energy by Σ m g 2h = **3.18 J** (3.8 times the
+0.83 J of `pendulum-double-cart`). The design swing-up draws 10.8 J from the supply over its 3 s, 6.8 J of it
+copper loss; the mechanical power peaks at 38 W, the rms current is 1.2 A.
+
+## Plant (bond graph)
+
+The bond graph of `pendulum-double-cart` (see its README: `Prismatic2D` rail, `Revolute2DCompliant` joints
+with 1e8 N/m pivots, `RigidBody2D` cart and links, `ElectricDrive` → `Gearbox` → `RackAndPinion` →
+`SpringDamper` belt, `ExternalWrenchPlanar` push), generated by the same `cartmodel.py`, plus two elements on
+the rail drive: `RailFriction` (`Damper`, the carriage and cable-chain friction) and `EndStops` (`HardStop` at
+±1.0 m). Both are options of `cartpend.Plant` (`b_cart`, `k_stop`, `d_stop`, default off), so the original
+example regenerates byte-identically (checked, and `pendulum-triple-cart` as well).
+
+## Design (`design/design.py`, `uv run`, CasADi + IPOPT + SciPy)
+
+`design/design.py` builds the plant from `realism.json` (`lablib.design_plant`) and runs the design code of
+`pendulum-double-cart` (`cartpend.py`): the Lagrangian design model (identical to the twin, checked to 1e-15),
+Hermite-Simpson collocation, the continuous TVLQR, the discrete LQR, the table writer, and `cartmodel.py`.
+
+1. **Swing-up plan with margins**: 75 intervals, T_s = 3.0 s, minimum ∫V² dt from hanging to upright at rest,
+   **|V| ≤ 16.8 V (70 % of 24 V)** and **|x| ≤ 0.8 m**. Result: feed-forward 14.8 V peak (62 %), the cart reaches
+   ±0.387 m. Neither bound is active (a 2.4 s plan hits both).
+2. **TVLQR**: Q = diag(300, 400, 400, 10, 8, 8), R = 0.3 V⁻² along the trajectory.
+3. **Balance LQR**: discrete (ZOH, 1 ms), same weights, largest gain 329.
+4. **Firmware replica** (`lablib.firmware`, the quadlib replica with the time-based catch) on the twin: the
+   robustness table, the largest push and the realism screen.
+
+```
+uv run examples/pendulum-double-cart-lab/design/design.py --write --robust   # library, models, design/design.json
+uv run examples/pendulum-double-cart-lab/design/finish.py                    # backend runs, expected.json, measured.json
+uv run examples/pendulum-double-cart-lab/design/screen.py all --jobs 5       # the realism screen (about 10 min)
+```
+
+### Design results and margins (design closed loop; the bond graph agrees, see Results)
+
+| quantity | value |
+| --- | --- |
+| catch (phase 2) | 4.00 s (all links inside 2° for good 2.55 s after the start of the swing-up) |
+| peak voltage, swing-up | **15.0 V of 24 V** (63 %; the plan bound 16.8 V is never reached) |
+| peak current, swing-up / whole run | 5.3 A / 6.0 A (stall 16 A) |
+| peak travel | **0.387 m** of the ±0.8 m plan and the ±1.0 m rail |
+| push 0.45 N / 40 ms at 7.5 s | 10.7° / 4.0°, cart 0.17 m, back inside 0.5° after 2.12 s |
+| balance model push 0.70 N | 17.3° / 5.8°, 20.6 V, 11.0 A, cart 0.24 m, back inside 0.5° after 2.29 s |
+| **largest 40 ms push recovered** (balance from upright) | **0.90 N** (0.87 N with 2 ms delay); 27.6° on link 1, cart 0.34 m, the voltage saturates briefly |
+| belt mode in closed loop (0–2 ms delay) | 177 Hz, ζ 0.07–0.13 (softest belt 2e5 N/m: 124 Hz; lowest damping 30 N s/m: ζ 0.03): stable |
+
+### Robustness (firmware replica on the twin)
+
+Swing-up with the 0.45 N push, and the balance model's 0.70 N push. "ok": inside the rail and within 1° over
+the last second. Every case passes.
+
+| case | swing-up: ok, peak V, peak x | balance: ok, push deflection, peak V |
+| --- | --- | --- |
+| nominal | yes, 15.0 V, 0.387 m | yes, 17.3°, 20.6 V |
+| link masses −5 % / +5 % | yes / yes, 14.9 / 15.1 V | yes / yes, 18.4° / 16.4° |
+| link lengths +1 % / −1 % | yes / yes, 14.8 / 15.3 V | yes / yes, 17.1° / 17.5° |
+| joint friction ×3 | yes, 15.8 V | yes, 17.6° |
+| carriage friction ×3 | yes, 15.3 V | yes, 17.3° |
+| cart mass +10 % | yes, 15.1 V | yes, 17.6° |
+| delay 1 ms / 2 ms | yes / yes, 15.0 / 15.0 V | yes / yes, 17.5° / 17.6° |
+| quantised encoders (14 bit joints, 8.4 µm cart, 2 ms rate filter) | yes, 18.5 V, tail 0.03° | yes, 17.5°, 24 V briefly |
+| quantised encoders + 2 ms delay | yes, 17.4 V | yes, 17.8° |
+| masses +5 %, lengths +1 %, both frictions ×3, 2 ms delay, quantised | yes, 16.6 V, 0.385 m | yes, 16.9° |
+
+## Realism screen (twin only, `design/screen.py`)
+
+`uv run examples/pendulum-double-cart-lab/design/screen.py all --jobs 5 --n 48` (about 4 min on 5 cores; the
+raw runs go to `design/_screen/`, ignored; `screen.py summary` rewrites the summary). The truth is the twin of
+`lablib.setup` with every effect of `realism.json` (RK4, 8 substeps per 1 ms sample); the firmware replica has
+the design's tables and gains unchanged, the sensors, the 2 ms delay and the armature lag L/R. Scenarios: the
+swing-up (to 8 s) and the balance from a 2° lean with the 0.45 N push at 2 s (to 7 s). "ok": the cart stays
+off the end stops and every link is within 2° of upright over the last 2 s. Summary, verdict and the
+per-case evidence: `design/screen_results.json`.
+
+| study (all effects nominal unless noted) | filtered differences (`diff`, τ_f 2 ms) | EKF (q_acc (1, 10)) |
+| --- | --- | --- |
+| all effects together, tail deviation swing-up / balance | ok **0.61° / 0.37°**, but 9 V rms chatter, 24 V peaks, 17 A | ok **0.13° / 0.21°**, 15.1 / 16.3 V, 5.8 / 8.9 A |
+| the effect that matters | the joint encoders (noise alone: 0.5°, 24 V, 20 A) | joint and carriage friction (≈0.1° each) |
+| mass spread, drive, cable, loop delay, ripple and cogging | negligible | negligible |
+| joint-2 Coulomb friction (nominal 2e-4 N m) | 1e-3 ok 0.69°, 2e-3 ok 0.87°, 5e-3 fails (3.6°) | 1e-3 ok 0.41°, 2e-3 marginal 1.7°, 5e-3 fails (3.9°) |
+| joint-1 Coulomb friction | 5e-3 ok 0.93°, 1e-2 ok 1.5°, 2e-2 fails (3.3°) | 5e-3 ok 0.87°, 1e-2 ok 1.8°, 2e-2 fails (3.6°) |
+| both joints | 1e-3 ok 0.73°, 2e-3 ok 1.5°, 5e-3 fails | 1e-3 ok 0.86°, 2e-3 marginal 1.9°, 5e-3 fails |
+| encoders 12 bit 0.08° / 14 bit 0.08° / 16 bit 0.005° / 18 bit | **fail** / **fail** / ok 0.13° (15.7 V) / ok | ok 0.34° / ok 0.41° / ok 0.14° / ok |
+| rate filter τ_f 1 / 5 / 10 ms | 1.4° (24 V) / 0.22° (22 V) / 0.21° (21 V) | — |
+| EKF process noise (0.3, 3) … (10, 100) | — | all ok 0.13–0.21°; (10, 100) raises u to 20 V |
+| cart Coulomb compensation 0 / 0.5 / 1 | 0.63° / 0.55° / 0.61° | 0.44° / 0.14° / 0.13° (carriage at 2 N: 0.44° / 0.19° / 0.15°) |
+| **Monte Carlo, 48 draws over every range** | **36/48** (failures: 2.0–3.7° limit cycles, all with joint noise ≥ 0.055° rms; 24 V, 21 A) | **48/48 swing-up and 48/48 balance**: tail median 0.22°, max 0.41° / 0.48°; worst 18.2 V, 8.5 A, 0.39 m |
+
+**Verdict: feasible with margin.** The unchanged classical controller passes every effect at its nominal
+value and all 48 Monte Carlo draws over the ranges of `realism.json`, provided the rates come from an
+**EKF** on the nominal model (or the joint encoders are 16-bit class). Filtered differences with the
+AS5048-class 14-bit encoders are only marginal (the voltage chatters to the 24 V limit, a quarter of the
+draws limit-cycle at 2–4°). The **joint Coulomb friction budget** is about **1e-3 N m on joint 2** and
+**5e-3 N m on joint 1**, 5–25× the assumed 2e-4 N m of small ball bearings, so the 0.35 m links take
+ordinary bearings (the cart quad needs 5e-5 N m). The cart Coulomb compensation helps (0.44° → 0.13°) but is
+not required. The recommendations (EKF tuning, encoder grade, bearing budget) are in `design/screen_results.json`.
+
+## Results (real worker, Rodas5P, reltol 1e-8, `design/measured.json`)
+
+| quantity | bond graph | design closed loop |
+| --- | --- | --- |
+| design vs bond graph, free swing 2 s (max angle difference / cart) | **4.3e-4 rad** / 4.3e-5 m | — |
+| at rest before 1 s | exactly (0 motion) | |
+| swing-up time (all links inside 2° for good) | 2.55 s after the start | 2.55 s |
+| catch (phase 2) | 4.00 s | 4.00 s |
+| swing-up, max difference to the design closed loop (angles / cart) | 1.5e-3 rad / 0.3 mm | |
+| upright band from 0.1 s after the catch to the push | 0.0023° (cart 0.04 mm) | 0.0017° |
+| push 0.45 N: peak deflection link 1 / link 2 | 10.71° / 3.98° | 10.70° / 3.98° |
+| recovery, inside 1° / 0.5° after the push | 1.06 s / 2.12 s | 2.12 s (0.5°) |
+| peak motor voltage (swing-up and push) | 15.01 V of 24 V | 15.02 V |
+| peak motor current | 5.97 A | 5.98 A |
+| peak cart travel | 0.387 m of ±0.8 m (plan) / ±1.0 m (rail) | 0.387 m |
+| balance model: lean caught, push 0.70 N peak link 1 / link 2 | 0.28° before the push; 17.35° / 5.79° | 17.32° / 5.80° |
+| balance model: peak voltage, current, travel; recovery inside 0.5° | 20.7 V, 11.0 A, 0.241 m; 2.29 s | 20.6 V, 11.0 A, 0.242 m; 2.29 s |
+| run time (backend, swing-up 12.5 s / balance 6 s / free 2 s) | 56 s / 11 s / 4 s | |
+
+## Checks (`expected.json`, written by `design/finish.py`)
+
+Machine-checked by `uv run examples/run_checks.py --only pendulum-double-cart-lab`. Swing-up model: at rest
+before 1 s; the phase signal 0 / 1 / 2; the link angles at 40 %, 70 % and 100 % of the swing-up against the
+design closed loop (0.01 rad); every link within 0.2° of upright from 0.1 s after the catch to the push and
+the cart within 1 cm; the push deflection (the push is real); back inside 0.5° after the recovery and within
+0.2° over the last second; |V| ≤ 24 V, **the swing-up within the planned 16.8 V and the cart within the planned
+±0.8 m** (so the end stops are never touched), the peak voltage, current and travel; the scene bindings; no
+diagnostics. Balance model: balance from the first tick, the lean caught, the push deflection, the recovery,
+the voltage, current and travel. Free model: the cart and joint angles against the design ODE (the twin)
+every 0.25 s.
+
+## What to try
+
+- **Plots**: "Link angles from upright" (`Ctrl/th1`, `Ctrl/th2`), "Cart position" (`Rail/qout`), "Motor voltage and
+  phase" (`Ctrl/u`, `Ctrl/phase`), "Motor current" (`Motor/isense/y`).
+- **3D view**: the cart rides on a 2 m rail between red rubber stops; thin green posts mark the ±0.8 m the
+  swing-up is planned inside.
+- Raise `PushPulse/amplitude` of the balance model above 0.9 N: the voltage saturates longer and the LQR loses the
+  pendulum (or the cart reaches the end stops).
+- Change a mass in the model (e.g. `Body2/m`) to see the controller's robustness on the bond graph.
+
+## Files
+
+| path | what |
+| --- | --- |
+| `design/realism.json` | the rig: every parameter with nominal, min, max, unit, group and description; shared with RL step R1 and the robust classical items |
+| `design/lablib.py` | parameter set → design plant (`design_plant`), link lumping (`link_props`), quadlib twin with the DC motor (`LabPlant`, `twin_rig`), realistic setup (`setup`), firmware replica (`firmware`), belt check |
+| `design/design.py` | the design, the robustness table, the largest push, the belt check; writes the library, the models and `design/design.json` |
+| `design/finish.py`, `design/measured.json` | backend runs, comparison with the design, `expected.json` |
+| `design/screen.py`, `design/screen_results.json` | the realism screen and its summary |
+| `library/` | `DoubleCartLabCtrl` (firmware), `DoubleCartLabTraj` (tables), generated |
+| `scenes/pendulum-double-cart-lab.sdf` | the 3D scene |

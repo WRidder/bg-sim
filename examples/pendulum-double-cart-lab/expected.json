@@ -1,0 +1,739 @@
+{
+  "project": "pendulum-double-cart-lab",
+  "description": "The double-cart lab rig: the motor, gearbox, pulley, belt and cart of pendulum-double-cart with two 0.35 m links built from aluminium tubes with clamp hubs, a bearing head, encoders and a cable (0.248 / 0.200 kg, centres of mass 0.229 / 0.176 m) on a +-1.0 m rail with soft end stops; all values from design/realism.json. 1 kHz firmware (library/DoubleCartLabCtrl.jl with the tables of library/DoubleCartLabTraj.jl, written by design/design.py): 0 V until 1 s, a direct-collocation swing-up (T_s = 3.0 s, planned inside |x| <= 0.8 m and |V| <= 16.8 V = 70 % of 24 V) tracked by a time-varying LQR, the discrete LQR from 4.0 s and a 40 ms tip push at 7.5 s; the balance model starts leaning 2 deg and takes a larger push at 2 s; the -free model releases the plant from rest with the motor shorted and is compared with the design ODE. The reference numbers are design.py's closed loop of the design model under the same sampled firmware.",
+  "models": {
+    "pendulum-double-cart-lab": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.229312777,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.175875,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB2/g[2]",
+                null,
+                "PoseB2/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qdout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "nothing moves before t_on = 1 s: the cart is at rest (the pivot deflections start at their static values)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Joint1/qdout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "nothing moves before t_on = 1 s: link 1 hangs motionless (the pivot deflections start at their static values)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Joint2/qdout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "nothing moves before t_on = 1 s: link 2 hangs motionless (the pivot deflections start at their static values)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th1",
+          "t": 0.5,
+          "value": -3.141592653589793,
+          "abs": 1e-06,
+          "note": "link 1 hangs straight down (-180 deg from the upward vertical) at 0.5 s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "the motor voltage is 0 before the swing-up"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.5,
+          "value": 0,
+          "abs": 1e-09,
+          "note": "hold phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 2.0,
+          "value": 1,
+          "abs": 1e-09,
+          "note": "swing-up (TVLQR) phase"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 4.5,
+          "value": 2,
+          "abs": 1e-09,
+          "note": "balance (LQR) phase from the catch at 4 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th1",
+          "t": 2.2,
+          "value": -3.540927,
+          "abs": 0.01,
+          "note": "swing-up, link 1 angle from upright at t = 2.2 s; the design model's closed loop gives -3.5409 rad (0.01 rad band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th2",
+          "t": 2.2,
+          "value": -4.61115,
+          "abs": 0.01,
+          "note": "swing-up, link 2 angle from upright at t = 2.2 s; the design model's closed loop gives -4.6111 rad (0.01 rad band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th1",
+          "t": 3.1,
+          "value": -0.208133,
+          "abs": 0.01,
+          "note": "swing-up, link 1 angle from upright at t = 3.1 s; the design model's closed loop gives -0.2081 rad (0.01 rad band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th2",
+          "t": 3.1,
+          "value": -0.437292,
+          "abs": 0.01,
+          "note": "swing-up, link 2 angle from upright at t = 3.1 s; the design model's closed loop gives -0.4373 rad (0.01 rad band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th1",
+          "t": 4.0,
+          "value": 3e-05,
+          "abs": 0.01,
+          "note": "swing-up, link 1 angle from upright at t = 4 s; the design model's closed loop gives 0.0000 rad (0.01 rad band)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/th2",
+          "t": 4.0,
+          "value": 2.7e-05,
+          "abs": 0.01,
+          "note": "swing-up, link 2 angle from upright at t = 4 s; the design model's closed loop gives 0.0000 rad (0.01 rad band)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 4.1,
+          "to_t": 7.49,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "upright reached: link 1 stays within 0.2 deg of upright from the catch + 0.1 s to the push (measured 0.0023 deg for both links)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 4.1,
+          "to_t": 7.49,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "upright reached: link 2 stays within 0.2 deg of upright from the catch + 0.1 s to the push"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 4.1,
+          "to_t": 7.49,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "the cart is back within 1 cm of the rail centre (measured 0.0 mm)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 7.5,
+          "to_t": 9.5,
+          "value": 0.18687,
+          "abs": 0.02,
+          "note": "the 0.45 N, 40 ms push is real: link 1 deflects by 10.71 deg (design closed loop 10.67 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 7.5,
+          "to_t": 9.5,
+          "value": 0.069463,
+          "abs": 0.01,
+          "note": "the 0.45 N, 40 ms push is real: link 2 deflects by 3.98 deg (design closed loop 3.98 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 7.5,
+          "to_t": 9.5,
+          "value": 0.172921,
+          "abs": 0.02,
+          "note": "the cart travel while the controller catches the push (measured 0.173 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/th1",
+          "from_t": 9.672,
+          "to_t": 12.5,
+          "value": 0.008726646259971648,
+          "note": "link 1 is back inside 0.5 deg from t = 9.672 s on (2.12 s after the push)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/th2",
+          "from_t": 9.672,
+          "to_t": 12.5,
+          "value": 0.008726646259971648,
+          "note": "link 2 is back inside 0.5 deg as well"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 11.5,
+          "to_t": 12.5,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "recovered: link 1 within 0.2 deg of upright over the last second (both links measured 0.0057 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 11.5,
+          "to_t": 12.5,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "recovered: link 2 within 0.2 deg of upright over the last second"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 11.5,
+          "to_t": 12.5,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "the cart is back at the rail centre by the end"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 24.0,
+          "note": "the motor voltage stays inside the +-24 V supply (the firmware clamps it)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 1.0,
+          "to_t": 4.0,
+          "value": 16.799999999999997,
+          "note": "margin: the swing-up stays inside the planned 16.8 V (70 % of the supply) also with the feedback (measured 15.01 V, design closed loop 15.02 V; feed-forward 14.84 V)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 15.0082,
+          "abs": 1.5,
+          "note": "peak voltage 15.01 V of 24 V (design closed loop 15.02 V)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Motor/isense/y",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 5.9691,
+          "rtol": 0.15,
+          "note": "peak motor current 5.97 A (+-15 %; the stall current at 24 V is 16 A)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 0.8,
+          "note": "margin: the cart stays inside the planned +-0.8 m, the end stops at +-1 m are never touched (measured 0.387 m)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 0.386889,
+          "abs": 0.02,
+          "note": "peak cart travel 0.387 m (design closed loop 0.387 m; the trajectory reaches 0.387 m of its +-0.8 m bound)"
+        }
+      ]
+    },
+    "pendulum-double-cart-lab-balance": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.229312777,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.175875,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB2/g[2]",
+                null,
+                "PoseB2/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no diagnostics"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.01,
+          "value": 2,
+          "abs": 1e-09,
+          "note": "balance from the start (Ctrl/t_on = -10 s: tau >= T_s at the first tick)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.0,
+          "value": 1.605702912,
+          "abs": 1e-06,
+          "note": "the start lean: link 1 at 2 deg from upright (joint angle th1 + pi/2)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/th1",
+          "from_t": 1.5,
+          "to_t": 1.99,
+          "value": 0.008726646259971648,
+          "note": "the lean is caught: inside 0.5 deg before the push (both links measured 0.281 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/th2",
+          "from_t": 1.5,
+          "to_t": 1.99,
+          "value": 0.008726646259971648,
+          "note": "link 2 inside 0.5 deg before the push"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 2.0,
+          "to_t": 6.0,
+          "value": 0.302888,
+          "abs": 0.02,
+          "note": "the 0.7 N, 40 ms push (78 % of the largest the design recovers) is real: link 1 deflects by 17.35 deg (design closed loop 17.32 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 2.0,
+          "to_t": 6.0,
+          "value": 0.10112,
+          "abs": 0.01,
+          "note": "the 0.7 N, 40 ms push (78 % of the largest the design recovers) is real: link 2 deflects by 5.79 deg (design closed loop 5.80 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/th1",
+          "from_t": 4.341,
+          "to_t": 6.0,
+          "value": 0.008726646259971648,
+          "note": "recovered: link 1 inside 0.5 deg from 4.341 s (2.29 s after the push)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/th2",
+          "from_t": 4.341,
+          "to_t": 6.0,
+          "value": 0.008726646259971648,
+          "note": "recovered: link 2 inside 0.5 deg as well"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 5.0,
+          "to_t": 6.0,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "within 0.2 deg over the last second (measured 0.1030 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 5.0,
+          "to_t": 6.0,
+          "value": 0.0,
+          "abs": 0.01,
+          "note": "the cart returns to the centre (measured 2.0 mm)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 6.0,
+          "value": 24.0,
+          "note": "inside the 24 V supply (measured peak 20.75 V)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 6.0,
+          "value": 20.746,
+          "abs": 1.5,
+          "note": "peak voltage 20.75 V (design closed loop 20.28 V)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Motor/isense/y",
+          "from_t": 0.0,
+          "to_t": 6.0,
+          "value": 11.0018,
+          "rtol": 0.15,
+          "note": "peak motor current 11.00 A (+-15 %)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 6.0,
+          "value": 0.8,
+          "note": "the push recovery stays inside +-0.8 m (measured 0.241 m; design 0.242 m)"
+        }
+      ]
+    },
+    "pendulum-double-cart-lab-free": {
+      "run_timeout": 900,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.229312777,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.175875,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB2/g[2]",
+                null,
+                "PoseB2/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 0.25,
+          "value": 0.0638849,
+          "abs": 0.0002,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.25,
+          "value": -1.170131,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 0.25,
+          "value": 0.775903,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 0.5,
+          "value": 0.0778753,
+          "abs": 0.0002,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.5,
+          "value": -1.863706,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 0.5,
+          "value": -0.814325,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 0.75,
+          "value": 0.0585255,
+          "abs": 0.0002,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 0.75,
+          "value": -2.640037,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 0.75,
+          "value": -0.170174,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.0,
+          "value": 0.0338512,
+          "abs": 0.0002,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 1.0,
+          "value": -2.07471,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 1.0,
+          "value": -0.29001,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.25,
+          "value": 0.023462,
+          "abs": 0.0002,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 1.25,
+          "value": -1.139724,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 1.25,
+          "value": 0.276919,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.5,
+          "value": 0.044655,
+          "abs": 0.0002,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 1.5,
+          "value": -0.759911,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 1.5,
+          "value": 0.842449,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 1.75,
+          "value": 0.0628329,
+          "abs": 0.0002,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 1.75,
+          "value": -1.216196,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 1.75,
+          "value": 0.718068,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Rail/qout",
+          "t": 2.0,
+          "value": 0.0745094,
+          "abs": 0.0002,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 2.0,
+          "value": -1.794855,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 2.0,
+          "value": -0.742026,
+          "abs": 0.003,
+          "note": "design ODE (= the Python twin, lablib.check_twin) value, free swing from rest with the motor shorted (V = 0); the bond graph agrees to 4.3e-04 rad / 4.3e-05 m (tolerance 3x that, at least 3e-3 rad / 2e-4 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "the free swing reports no diagnostics"
+        }
+      ]
+    }
+  }
+}

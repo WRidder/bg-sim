@@ -67,7 +67,7 @@ class Rig:
     kind: str
     L: list            # link lengths (m)
     m: list            # link masses (kg), uniform rods: COM at the middle
-    b_joint: float     # viscous friction of every pendulum joint (N m s/rad)
+    b_joint: float     # viscous friction of every pendulum joint (N m s/rad), or a list with one value per joint
     m_base: float      # cart mass (kg) / arm mass (kg)
     b_base: float      # rail friction (N s/m) / arm bearing friction (N m s/rad)
     u_max: float       # actuator limit (N or N m)
@@ -82,7 +82,7 @@ class Rig:
     c_eq: list | None = None     # COM of each link from its pivot (m); default L/2
     J_eq: list | None = None     # inertia of each link about its COM, perpendicular to it (kg m^2)
     J_ax: list | None = None     # rotary: axial inertia of each link (kg m^2)
-    tc_joint: float = 0.0        # Coulomb friction of every pendulum joint (N m), tc tanh(w / eps_joint)
+    tc_joint: float = 0.0        # Coulomb friction of every pendulum joint (N m), tc tanh(w / eps_joint); or a list per joint
     eps_joint: float = 0.01
     tc_base: float = 0.0         # Coulomb friction of the base (N or N m)
     eps_base: float = 0.01
@@ -138,6 +138,10 @@ class Rig:
         z = np.zeros(self.nx)
         z[1 : 1 + self.n] = self.hang_sign * math.pi
         return z
+
+    def per_joint(self, v, k: int):
+        """The value of joint k of a per-joint field that is a scalar (every joint) or a list."""
+        return v[k] if isinstance(v, (list, tuple)) else v
 
     def upright_pe(self) -> list:
         """Potential energy of each link at the upright, measured from its hanging rest (J)."""
@@ -286,7 +290,7 @@ class Plant:
         self.qforce_expr = ca.jacobian(tip, q).T @ nperp
         # generalised forces: input on the base, viscous friction (rail on x, joints on relative rates)
         rel = [qd[1]] + [qd[1 + i] - qd[i] for i in range(1, self.n)]
-        D = 0.5 * R.b_base * qd[0] ** 2 + sum(0.5 * R.b_joint * r**2 for r in rel)
+        D = 0.5 * R.b_base * qd[0] ** 2 + sum(0.5 * R.per_joint(R.b_joint, k) * r**2 for k, r in enumerate(rel))
         self.D = D
         self.tip = tip
 
@@ -340,7 +344,7 @@ class Plant:
         self.ke, self.pe = ke, pe
         self.qforce_expr = ca.jacobian(origin, q).T @ ydir
         rel = [qd[1]] + [qd[1 + i] - qd[i] for i in range(1, self.n)]
-        self.D = 0.5 * R.b_base * qd[0] ** 2 + sum(0.5 * R.b_joint * rr**2 for rr in rel)
+        self.D = 0.5 * R.b_base * qd[0] ** 2 + sum(0.5 * R.per_joint(R.b_joint, k) * rr**2 for k, rr in enumerate(rel))
         self.tip = origin
 
     def _finish(self):
@@ -381,10 +385,11 @@ class Plant:
             out[0] += -R.tc_base * ca.tanh(qd[0] / R.eps_base) - R.k_cable_base * q[0] - R.b_cable_base * qd[0]
         kc = R.k_cable or [0.0] * self.n
         bc = R.b_cable or [0.0] * self.n
-        if R.tc_joint or any(kc) or any(bc):
+        tcj = [R.per_joint(R.tc_joint, k) for k in range(self.n)]
+        if any(tcj) or any(kc) or any(bc):
             relq = ca.vertcat(q[1], *[q[1 + i] - q[i] for i in range(1, self.n)])
             relw = ca.vertcat(qd[1], *[qd[1 + i] - qd[i] for i in range(1, self.n)])
-            tau = ca.vertcat(*[-R.tc_joint * ca.tanh(relw[k] / R.eps_joint) - kc[k] * relq[k] - bc[k] * relw[k]
+            tau = ca.vertcat(*[-tcj[k] * ca.tanh(relw[k] / R.eps_joint) - kc[k] * relq[k] - bc[k] * relw[k]
                                for k in range(self.n)])
             out += ca.jacobian(relw, qd).T @ tau
         return out
@@ -585,6 +590,9 @@ class Firmware:
     u_max: float
     slew: float
     balance_only: bool = False
+    # the catch is armed from tau >= t_s - catch_lead (and latches when z'Pz < catch_tol); catch_lead = 0 with
+    # catch_tol = inf is the time-based catch at tau = t_s of the cart-pendulum firmwares (cartpend.py)
+    catch_lead: float = 0.5
     delay: int = 0             # actuator delay in whole samples
     quant: bool = False        # encoder quantisation + difference rates
     res_s: float = 1e-5        # base encoder resolution (m or rad)
@@ -655,7 +663,7 @@ def tick(fw: Firmware, t: float, z: np.ndarray, st: dict) -> float:
         st["latched"] = 1
     tau = t - fw.t_on
     v = float(x @ fw.p_catch @ x)
-    if st.get("latched", 0) < 0.5 and t >= fw.t_on and tau >= fw.t_s - 0.5 and v < fw.catch_tol:
+    if st.get("latched", 0) < 0.5 and t >= fw.t_on and tau >= fw.t_s - fw.catch_lead and v < fw.catch_tol:
         st["latched"] = 1
         st["t_catch"] = t
     if st.get("latched", 0) > 0.5:

@@ -1,0 +1,750 @@
+{
+  "format": "bgsim.screen-results",
+  "version": 1,
+  "date": "2026-11-02",
+  "description": "Plan C0: twin-only realism screen of the double-cart lab rig's classical controller (design/screen.py; raw runs in design/_screen/, not committed). Truth: the Lagrangian twin of lablib.setup with the realism effects, RK4 with 8 substeps per 1 ms sample. Firmware replica: 1 kHz, the design's tables, TVLQR and discrete LQR, the sensors, delay and current lag, rates from filtered differences ('diff', tau_f 2 ms, the baseline) or an EKF on the nominal twin ('ekf', q_acc (1, 10)). Scenarios: 'swingup' (hanging rest, catch at 4.0 s, to 8 s) and 'balance' (2 deg lean per link, 0.45 N 40 ms tip push at 2 s, to 7 s).",
+  "criteria": {
+    "tail_dev_deg_max": 2.0,
+    "tail_window_s": 2.0,
+    "x_max_m": 1.0,
+    "note": "ok = the run finishes, |x| stays below the rail end, every link within 2 deg of upright over the last 2 s"
+  },
+  "effects": {
+    "mass": "link parts (tube, hubs, encoder head and board, magnet, tip cap, cable) lumped into the links; masses, lengths, COM shifts and the cart spread",
+    "drive": "motor constants (R, L, k_t, J_m), gear ratio, pulley radius, belt stiffness and damping",
+    "fbase": "carriage Coulomb + viscous friction, motor Coulomb + viscous friction (compensated in volts by 'comp')",
+    "fjoint": "Coulomb (tc_joint1/2) + viscous friction in both pendulum joints",
+    "cable": "the encoder cable: a spring and drag across joint 1, drag along the rail",
+    "sensor": "14-bit joint encoders with white noise (0.03 deg rms nominal), the motor encoder through the belt",
+    "loop": "2 ms whole-sample delay + the armature lag L/R (0.33 ms)",
+    "ripple": "commutation ripple (2 %) and cogging (0.2 N), 14 per motor revolution"
+  },
+  "verdict": "Feasible with margin. The unchanged classical controller of design.json (swing-up, catch, discrete LQR) passes with every effect at its nominal value and in all 48 Monte Carlo draws over the ranges of realism.json, provided the rates come from an EKF on the nominal model (or the joint encoders are 16-bit class). With the AS5048-class 14-bit encoders, filtered differences are only marginal: the nominal rig passes (0.6 deg) but the voltage chatters at 9 V rms and peaks at the 24 V limit, and 12 of 48 Monte Carlo draws limit-cycle at 2-4 deg (all with joint noise of 0.055 deg rms or more; the tail deviation follows the noise, Spearman 0.97). The joint Coulomb friction budget is about 1e-3 N m on joint 2 and about 5e-3 N m on joint 1 (5-25x the assumed 2e-4 N m of small ball bearings), so the 0.35 m links take ordinary bearings, unlike the cart quad (5e-5 N m). The cart Coulomb compensation helps (tail 0.44 -> 0.13 deg) but is not required. Mass, drive, cable, loop delay and ripple are negligible.",
+  "recommendations": [
+    "Firmware: an EKF on the nominal realistic model with process noise q_acc = (1, 10) (cart, links); (0.3, 3) to (10, 100) all pass, (10, 100) raises the balance voltage to 20 V. Keep filtered differences only as the baseline (tau_f 5-10 ms if used: 0.2 deg but 21-22 V peaks).",
+    "Joint encoders: 14-bit AS5048 class (0.03 deg rms) with the EKF; a 12-bit AS5600 or a noisy 14-bit part also passes with the EKF (0.3-0.4 deg) but fails with differences; 16 bit and up passes with either estimator.",
+    "Joint bearings: budget 1e-3 N m Coulomb on joint 2 (the limit; 2e-3 is marginal at 1.7 deg) and 5e-3 N m on joint 1. Measure them with the free-swing decay of the free model.",
+    "Cart: Coulomb compensation fc tanh(v / 2 eps) in volts with fc = the measured carriage + motor friction; 0.5 of it already gives most of the gain.",
+    "Margins at the nominal rig with the EKF: swing-up peak 15.1 V and 5.8 A, push balance 16.3 V and 8.9 A, cart within 0.39 m of the 1.0 m rail end; the Monte Carlo worst case 18.2 V, 8.5 A balance current, 0.39 m."
+  ],
+  "evidence": {
+    "ablation": {
+      "setup": "nominal realism, one effect at a time then all; compensation 1.0 when fbase is on; per case: tail deviation over the last 2 s, peak u, peak i, peak |x|, tail u rms",
+      "ideal": {
+        "diff": {
+          "swingup": "ok 0.000 deg, u 15.0 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.085 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.002 deg, u 15.0 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.091 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        }
+      },
+      "mass": {
+        "diff": {
+          "swingup": "ok 0.000 deg, u 15.0 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.085 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.002 deg, u 15.0 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.091 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        }
+      },
+      "drive": {
+        "diff": {
+          "swingup": "ok 0.000 deg, u 15.0 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.085 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.002 deg, u 15.0 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.091 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        }
+      },
+      "fbase": {
+        "diff": {
+          "swingup": "ok 0.099 deg, u 15.4 V, i 5.6 A, x 0.39 m, tail u rms 0.3 V",
+          "balance": "ok 0.135 deg, u 13.2 V, i 6.2 A, x 0.17 m, tail u rms 0.3 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.099 deg, u 15.4 V, i 5.6 A, x 0.39 m, tail u rms 0.3 V",
+          "balance": "ok 0.135 deg, u 13.2 V, i 6.2 A, x 0.17 m, tail u rms 0.3 V"
+        }
+      },
+      "fjoint": {
+        "diff": {
+          "swingup": "ok 0.124 deg, u 15.1 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.129 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.107 deg, u 15.1 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.121 deg, u 12.9 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        }
+      },
+      "cable": {
+        "diff": {
+          "swingup": "ok 0.000 deg, u 15.0 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.085 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.002 deg, u 15.1 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.090 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        }
+      },
+      "sensor": {
+        "diff": {
+          "swingup": "ok 0.510 deg, u 24.0 V, i 19.9 A, x 0.39 m, tail u rms 13.3 V",
+          "balance": "ok 0.339 deg, u 24.0 V, i 19.6 A, x 0.17 m, tail u rms 13.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.143 deg, u 14.7 V, i 5.6 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.178 deg, u 14.9 V, i 8.1 A, x 0.19 m, tail u rms 0.9 V"
+        }
+      },
+      "loop": {
+        "diff": {
+          "swingup": "ok 0.000 deg, u 14.9 V, i 5.4 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.085 deg, u 13.3 V, i 6.4 A, x 0.17 m, tail u rms 0.0 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.002 deg, u 14.9 V, i 5.4 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.091 deg, u 13.4 V, i 6.4 A, x 0.17 m, tail u rms 0.0 V"
+        }
+      },
+      "ripple": {
+        "diff": {
+          "swingup": "ok 0.058 deg, u 15.0 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.077 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.062 deg, u 15.0 V, i 5.3 A, x 0.39 m, tail u rms 0.0 V",
+          "balance": "ok 0.111 deg, u 12.8 V, i 6.0 A, x 0.17 m, tail u rms 0.0 V"
+        }
+      },
+      "all": {
+        "diff": {
+          "swingup": "ok 0.606 deg, u 24.0 V, i 17.3 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.369 deg, u 24.0 V, i 17.5 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.134 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.208 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "all, no compensation": {
+        "diff": {
+          "swingup": "ok 0.625 deg, u 24.0 V, i 17.3 A, x 0.38 m, tail u rms 9.3 V",
+          "balance": "ok 0.485 deg, u 24.0 V, i 17.9 A, x 0.18 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.444 deg, u 15.2 V, i 5.9 A, x 0.38 m, tail u rms 0.9 V",
+          "balance": "ok 0.271 deg, u 16.0 V, i 8.7 A, x 0.19 m, tail u rms 0.9 V"
+        }
+      }
+    },
+    "budget": {
+      "setup": "all effects nominal, compensation 1.0, Coulomb friction (N m) of one joint or both; per case: tail deviation over the last 2 s, peak u, peak i, peak |x|, tail u rms",
+      "tc_joint1 = 0": {
+        "diff": {
+          "swingup": "ok 0.666 deg, u 24.0 V, i 17.2 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.416 deg, u 24.0 V, i 17.3 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.125 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.233 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = 0.0001": {
+        "diff": {
+          "swingup": "ok 0.730 deg, u 23.7 V, i 17.3 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.416 deg, u 24.0 V, i 17.3 A, x 0.17 m, tail u rms 9.1 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.122 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.219 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = 0.0002": {
+        "diff": {
+          "swingup": "ok 0.606 deg, u 24.0 V, i 17.3 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.369 deg, u 24.0 V, i 17.5 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.134 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.208 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = 0.0005": {
+        "diff": {
+          "swingup": "ok 0.455 deg, u 23.8 V, i 17.2 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.439 deg, u 24.0 V, i 17.3 A, x 0.17 m, tail u rms 9.1 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.127 deg, u 15.2 V, i 5.8 A, x 0.39 m, tail u rms 0.8 V",
+          "balance": "ok 0.234 deg, u 16.4 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = 0.001": {
+        "diff": {
+          "swingup": "ok 0.610 deg, u 23.9 V, i 17.3 A, x 0.39 m, tail u rms 9.2 V",
+          "balance": "ok 0.461 deg, u 24.0 V, i 16.9 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.161 deg, u 15.2 V, i 5.7 A, x 0.39 m, tail u rms 0.8 V",
+          "balance": "ok 0.238 deg, u 15.9 V, i 8.6 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = 0.002": {
+        "diff": {
+          "swingup": "ok 0.693 deg, u 23.8 V, i 17.2 A, x 0.39 m, tail u rms 9.2 V",
+          "balance": "ok 0.408 deg, u 24.0 V, i 17.9 A, x 0.17 m, tail u rms 9.1 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.188 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.345 deg, u 16.4 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = 0.005": {
+        "diff": {
+          "swingup": "ok 0.933 deg, u 23.8 V, i 17.1 A, x 0.39 m, tail u rms 9.2 V",
+          "balance": "ok 0.579 deg, u 24.0 V, i 16.6 A, x 0.17 m, tail u rms 9.1 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.871 deg, u 15.1 V, i 5.7 A, x 0.39 m, tail u rms 1.1 V",
+          "balance": "ok 0.914 deg, u 17.0 V, i 9.2 A, x 0.18 m, tail u rms 1.1 V"
+        }
+      },
+      "tc_joint1 = 0.01": {
+        "diff": {
+          "swingup": "ok 1.502 deg, u 23.9 V, i 17.3 A, x 0.39 m, tail u rms 9.2 V",
+          "balance": "ok 1.601 deg, u 24.0 V, i 18.8 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 1.759 deg, u 15.1 V, i 5.7 A, x 0.39 m, tail u rms 1.3 V",
+          "balance": "ok 1.814 deg, u 17.2 V, i 9.3 A, x 0.18 m, tail u rms 1.3 V"
+        }
+      },
+      "tc_joint1 = 0.02": {
+        "diff": {
+          "swingup": "FAIL 3.278 deg, u 23.9 V, i 17.4 A, x 0.40 m, tail u rms 9.4 V",
+          "balance": "FAIL 3.434 deg, u 24.0 V, i 17.5 A, x 0.18 m, tail u rms 9.3 V"
+        },
+        "ekf": {
+          "swingup": "FAIL 3.628 deg, u 15.0 V, i 5.7 A, x 0.40 m, tail u rms 1.8 V",
+          "balance": "FAIL 3.624 deg, u 16.6 V, i 9.5 A, x 0.19 m, tail u rms 1.8 V"
+        }
+      },
+      "tc_joint2 = 0": {
+        "diff": {
+          "swingup": "ok 0.518 deg, u 23.7 V, i 17.3 A, x 0.39 m, tail u rms 9.2 V",
+          "balance": "ok 0.396 deg, u 24.0 V, i 17.4 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.114 deg, u 15.1 V, i 5.7 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.184 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint2 = 0.0001": {
+        "diff": {
+          "swingup": "ok 0.591 deg, u 23.8 V, i 17.3 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.433 deg, u 24.0 V, i 17.8 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.108 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.223 deg, u 16.5 V, i 9.0 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint2 = 0.0002": {
+        "diff": {
+          "swingup": "ok 0.606 deg, u 24.0 V, i 17.3 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.369 deg, u 24.0 V, i 17.5 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.134 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.208 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint2 = 0.0005": {
+        "diff": {
+          "swingup": "ok 0.721 deg, u 24.0 V, i 17.2 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.537 deg, u 24.0 V, i 17.4 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.146 deg, u 15.2 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.252 deg, u 16.5 V, i 9.0 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint2 = 0.001": {
+        "diff": {
+          "swingup": "ok 0.686 deg, u 24.0 V, i 17.2 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.391 deg, u 24.0 V, i 17.9 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.407 deg, u 15.3 V, i 5.7 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.260 deg, u 16.3 V, i 9.0 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint2 = 0.002": {
+        "diff": {
+          "swingup": "ok 0.866 deg, u 24.0 V, i 17.1 A, x 0.39 m, tail u rms 9.4 V",
+          "balance": "ok 0.856 deg, u 24.0 V, i 17.1 A, x 0.17 m, tail u rms 9.1 V"
+        },
+        "ekf": {
+          "swingup": "ok 1.678 deg, u 15.6 V, i 5.7 A, x 0.39 m, tail u rms 1.2 V",
+          "balance": "ok 1.659 deg, u 15.7 V, i 8.7 A, x 0.19 m, tail u rms 1.3 V"
+        }
+      },
+      "tc_joint2 = 0.005": {
+        "diff": {
+          "swingup": "FAIL 3.564 deg, u 24.0 V, i 17.0 A, x 0.39 m, tail u rms 9.4 V",
+          "balance": "FAIL 3.211 deg, u 24.0 V, i 17.3 A, x 0.19 m, tail u rms 9.3 V"
+        },
+        "ekf": {
+          "swingup": "FAIL 3.874 deg, u 16.4 V, i 5.9 A, x 0.39 m, tail u rms 2.0 V",
+          "balance": "FAIL 3.846 deg, u 16.5 V, i 8.3 A, x 0.18 m, tail u rms 2.0 V"
+        }
+      },
+      "tc_joint2 = 0.01": {
+        "diff": {
+          "swingup": "FAIL 7.293 deg, u 24.0 V, i 17.4 A, x 0.39 m, tail u rms 9.7 V",
+          "balance": "FAIL 7.469 deg, u 24.0 V, i 18.5 A, x 0.24 m, tail u rms 9.7 V"
+        },
+        "ekf": {
+          "swingup": "FAIL 8.112 deg, u 17.7 V, i 6.9 A, x 0.39 m, tail u rms 3.4 V",
+          "balance": "FAIL 7.894 deg, u 24.0 V, i 14.2 A, x 0.20 m, tail u rms 3.5 V"
+        }
+      },
+      "tc_joint2 = 0.02": {
+        "diff": {
+          "swingup": "FAIL 15.832 deg, u 24.0 V, i 19.9 A, x 0.41 m, tail u rms 11.3 V",
+          "balance": "FAIL 15.518 deg, u 24.0 V, i 18.5 A, x 0.30 m, tail u rms 11.4 V"
+        },
+        "ekf": {
+          "swingup": "FAIL 15.355 deg, u 20.4 V, i 9.3 A, x 0.47 m, tail u rms 7.1 V",
+          "balance": "FAIL 2422.079 deg, u 24.0 V, i 15.7 A, x 19.22 m, tail u rms 24.0 V"
+        }
+      },
+      "tc_joint1 = tc_joint2 = 0": {
+        "diff": {
+          "swingup": "ok 0.538 deg, u 24.0 V, i 17.2 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.332 deg, u 24.0 V, i 17.0 A, x 0.17 m, tail u rms 9.1 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.133 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.180 deg, u 16.7 V, i 9.1 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = tc_joint2 = 0.0001": {
+        "diff": {
+          "swingup": "ok 0.522 deg, u 23.8 V, i 17.2 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.375 deg, u 24.0 V, i 17.6 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.130 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.205 deg, u 16.4 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = tc_joint2 = 0.0002": {
+        "diff": {
+          "swingup": "ok 0.606 deg, u 24.0 V, i 17.3 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.369 deg, u 24.0 V, i 17.5 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.134 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.208 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = tc_joint2 = 0.0005": {
+        "diff": {
+          "swingup": "ok 0.673 deg, u 24.0 V, i 17.2 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.482 deg, u 24.0 V, i 17.9 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.159 deg, u 15.2 V, i 5.8 A, x 0.39 m, tail u rms 0.8 V",
+          "balance": "ok 0.335 deg, u 16.5 V, i 9.0 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "tc_joint1 = tc_joint2 = 0.001": {
+        "diff": {
+          "swingup": "ok 0.729 deg, u 23.9 V, i 17.3 A, x 0.39 m, tail u rms 9.2 V",
+          "balance": "ok 0.499 deg, u 24.0 V, i 17.2 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.858 deg, u 15.4 V, i 5.7 A, x 0.39 m, tail u rms 1.0 V",
+          "balance": "ok 0.635 deg, u 16.2 V, i 8.8 A, x 0.19 m, tail u rms 1.0 V"
+        }
+      },
+      "tc_joint1 = tc_joint2 = 0.002": {
+        "diff": {
+          "swingup": "ok 1.505 deg, u 24.0 V, i 17.2 A, x 0.39 m, tail u rms 9.2 V",
+          "balance": "ok 0.941 deg, u 24.0 V, i 18.7 A, x 0.17 m, tail u rms 9.3 V"
+        },
+        "ekf": {
+          "swingup": "ok 1.901 deg, u 15.6 V, i 5.6 A, x 0.39 m, tail u rms 1.3 V",
+          "balance": "ok 1.663 deg, u 15.7 V, i 8.4 A, x 0.19 m, tail u rms 1.3 V"
+        }
+      },
+      "tc_joint1 = tc_joint2 = 0.005": {
+        "diff": {
+          "swingup": "FAIL 4.385 deg, u 24.0 V, i 17.1 A, x 0.39 m, tail u rms 9.5 V",
+          "balance": "FAIL 4.345 deg, u 24.0 V, i 17.4 A, x 0.20 m, tail u rms 9.4 V"
+        },
+        "ekf": {
+          "swingup": "FAIL 4.776 deg, u 16.4 V, i 6.0 A, x 0.39 m, tail u rms 2.2 V",
+          "balance": "FAIL 4.405 deg, u 18.0 V, i 8.9 A, x 0.18 m, tail u rms 2.2 V"
+        }
+      },
+      "tc_joint1 = tc_joint2 = 0.01": {
+        "diff": {
+          "swingup": "FAIL 8.805 deg, u 24.0 V, i 18.7 A, x 0.40 m, tail u rms 9.9 V",
+          "balance": "FAIL 324.152 deg, u 24.0 V, i 30.2 A, x 11.04 m, tail u rms 23.9 V"
+        },
+        "ekf": {
+          "swingup": "FAIL 9.693 deg, u 17.8 V, i 7.0 A, x 0.40 m, tail u rms 4.0 V",
+          "balance": "FAIL 9.551 deg, u 24.0 V, i 14.3 A, x 0.20 m, tail u rms 4.0 V"
+        }
+      },
+      "tc_joint1 = tc_joint2 = 0.02": {
+        "diff": {
+          "swingup": "FAIL 1469.528 deg, u 24.0 V, i 21.5 A, x 14.20 m, tail u rms 24.0 V",
+          "balance": "FAIL 1749.802 deg, u 24.0 V, i 21.0 A, x 16.84 m, tail u rms 24.0 V"
+        },
+        "ekf": {
+          "swingup": "FAIL 18.383 deg, u 22.9 V, i 11.1 A, x 0.49 m, tail u rms 9.3 V",
+          "balance": "FAIL 18.682 deg, u 22.9 V, i 11.4 A, x 0.43 m, tail u rms 9.0 V"
+        }
+      }
+    },
+    "encoders": {
+      "setup": "all effects nominal, compensation 1.0, joint-encoder resolution and noise; per case: tail deviation over the last 2 s, peak u, peak i, peak |x|, tail u rms",
+      "12 bit, 0.08 deg (AS5600 class)": {
+        "diff": {
+          "swingup": "FAIL 2.682 deg, u 24.0 V, i 19.8 A, x 0.39 m, tail u rms 14.3 V",
+          "balance": "FAIL 3.390 deg, u 24.0 V, i 21.2 A, x 0.23 m, tail u rms 14.1 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.340 deg, u 15.3 V, i 5.7 A, x 0.39 m, tail u rms 1.1 V",
+          "balance": "ok 0.347 deg, u 14.7 V, i 8.4 A, x 0.19 m, tail u rms 1.2 V"
+        }
+      },
+      "14 bit, 0.03 deg (AS5048 class, nominal)": {
+        "diff": {
+          "swingup": "ok 0.606 deg, u 24.0 V, i 17.3 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.369 deg, u 24.0 V, i 17.5 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.134 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.208 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "14 bit, 0.08 deg (noisy AS5048)": {
+        "diff": {
+          "swingup": "FAIL 3.523 deg, u 24.0 V, i 19.7 A, x 0.39 m, tail u rms 14.1 V",
+          "balance": "FAIL 2.927 deg, u 24.0 V, i 21.1 A, x 0.21 m, tail u rms 14.0 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.268 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 1.1 V",
+          "balance": "ok 0.407 deg, u 14.9 V, i 8.2 A, x 0.19 m, tail u rms 1.2 V"
+        }
+      },
+      "16 bit, 0.005 deg": {
+        "diff": {
+          "swingup": "ok 0.129 deg, u 15.7 V, i 6.3 A, x 0.39 m, tail u rms 1.7 V",
+          "balance": "ok 0.141 deg, u 16.5 V, i 9.1 A, x 0.17 m, tail u rms 1.8 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.150 deg, u 15.3 V, i 5.7 A, x 0.39 m, tail u rms 0.6 V",
+          "balance": "ok 0.146 deg, u 14.6 V, i 7.3 A, x 0.17 m, tail u rms 0.6 V"
+        }
+      },
+      "18 bit, 0.001 deg (optical/inductive)": {
+        "diff": {
+          "swingup": "ok 0.176 deg, u 15.8 V, i 5.7 A, x 0.39 m, tail u rms 0.5 V",
+          "balance": "ok 0.214 deg, u 14.5 V, i 7.4 A, x 0.17 m, tail u rms 0.5 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.203 deg, u 15.2 V, i 5.7 A, x 0.39 m, tail u rms 0.4 V",
+          "balance": "ok 0.209 deg, u 13.9 V, i 7.0 A, x 0.17 m, tail u rms 0.4 V"
+        }
+      }
+    },
+    "estimator": {
+      "setup": "all effects nominal, compensation 1.0, diff time constant and EKF process noise; per case: tail deviation over the last 2 s, peak u, peak i, peak |x|, tail u rms",
+      "diff, tau_f = 1 ms": {
+        "diff": {
+          "swingup": "ok 1.437 deg, u 24.0 V, i 18.0 A, x 0.39 m, tail u rms 11.4 V",
+          "balance": "ok 0.977 deg, u 24.0 V, i 19.1 A, x 0.18 m, tail u rms 11.5 V"
+        }
+      },
+      "diff, tau_f = 2 ms": {
+        "diff": {
+          "swingup": "ok 0.606 deg, u 24.0 V, i 17.3 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.369 deg, u 24.0 V, i 17.5 A, x 0.17 m, tail u rms 9.2 V"
+        }
+      },
+      "diff, tau_f = 5 ms": {
+        "diff": {
+          "swingup": "ok 0.224 deg, u 22.0 V, i 16.0 A, x 0.39 m, tail u rms 5.0 V",
+          "balance": "ok 0.250 deg, u 22.9 V, i 14.3 A, x 0.17 m, tail u rms 5.0 V"
+        }
+      },
+      "diff, tau_f = 10 ms": {
+        "diff": {
+          "swingup": "ok 0.207 deg, u 21.4 V, i 11.5 A, x 0.38 m, tail u rms 2.8 V",
+          "balance": "ok 0.252 deg, u 21.9 V, i 12.0 A, x 0.17 m, tail u rms 2.8 V"
+        }
+      },
+      "ekf, q_acc = (0.3, 3.0)": {
+        "ekf": {
+          "swingup": "ok 0.174 deg, u 15.2 V, i 5.6 A, x 0.39 m, tail u rms 0.4 V",
+          "balance": "ok 0.215 deg, u 13.2 V, i 6.7 A, x 0.19 m, tail u rms 0.5 V"
+        }
+      },
+      "ekf, q_acc = (1.0, 10.0)": {
+        "ekf": {
+          "swingup": "ok 0.134 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.208 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "ekf, q_acc = (3.0, 30.0)": {
+        "ekf": {
+          "swingup": "ok 0.143 deg, u 15.4 V, i 8.2 A, x 0.39 m, tail u rms 1.9 V",
+          "balance": "ok 0.204 deg, u 17.6 V, i 9.6 A, x 0.18 m, tail u rms 2.0 V"
+        }
+      },
+      "ekf, q_acc = (10.0, 100.0)": {
+        "ekf": {
+          "swingup": "ok 0.151 deg, u 20.1 V, i 14.1 A, x 0.39 m, tail u rms 4.4 V",
+          "balance": "ok 0.189 deg, u 21.4 V, i 13.3 A, x 0.17 m, tail u rms 4.4 V"
+        }
+      }
+    },
+    "comp": {
+      "setup": "all effects nominal, the cart Coulomb compensation fraction (EKF and diff); per case: tail deviation over the last 2 s, peak u, peak i, peak |x|, tail u rms",
+      "compensation 0": {
+        "diff": {
+          "swingup": "ok 0.625 deg, u 24.0 V, i 17.3 A, x 0.38 m, tail u rms 9.3 V",
+          "balance": "ok 0.485 deg, u 24.0 V, i 17.9 A, x 0.18 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.444 deg, u 15.2 V, i 5.9 A, x 0.38 m, tail u rms 0.9 V",
+          "balance": "ok 0.271 deg, u 16.0 V, i 8.7 A, x 0.19 m, tail u rms 0.9 V"
+        }
+      },
+      "compensation 0, carriage Coulomb x2 (2 N)": {
+        "diff": {
+          "swingup": "ok 0.790 deg, u 24.0 V, i 17.3 A, x 0.38 m, tail u rms 9.3 V",
+          "balance": "ok 0.402 deg, u 24.0 V, i 16.6 A, x 0.18 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.441 deg, u 15.6 V, i 6.2 A, x 0.38 m, tail u rms 1.0 V",
+          "balance": "ok 0.383 deg, u 16.4 V, i 9.0 A, x 0.19 m, tail u rms 1.0 V"
+        }
+      },
+      "compensation 0.5": {
+        "diff": {
+          "swingup": "ok 0.545 deg, u 24.0 V, i 17.2 A, x 0.38 m, tail u rms 9.3 V",
+          "balance": "ok 0.463 deg, u 24.0 V, i 17.0 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.139 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.8 V",
+          "balance": "ok 0.157 deg, u 16.4 V, i 8.9 A, x 0.19 m, tail u rms 0.9 V"
+        }
+      },
+      "compensation 0.5, carriage Coulomb x2 (2 N)": {
+        "diff": {
+          "swingup": "ok 0.623 deg, u 24.0 V, i 17.4 A, x 0.38 m, tail u rms 9.3 V",
+          "balance": "ok 0.451 deg, u 24.0 V, i 18.5 A, x 0.18 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.192 deg, u 15.5 V, i 6.1 A, x 0.38 m, tail u rms 0.9 V",
+          "balance": "ok 0.223 deg, u 16.8 V, i 9.2 A, x 0.19 m, tail u rms 0.9 V"
+        }
+      },
+      "compensation 1": {
+        "diff": {
+          "swingup": "ok 0.606 deg, u 24.0 V, i 17.3 A, x 0.39 m, tail u rms 9.3 V",
+          "balance": "ok 0.369 deg, u 24.0 V, i 17.5 A, x 0.17 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.134 deg, u 15.1 V, i 5.8 A, x 0.39 m, tail u rms 0.9 V",
+          "balance": "ok 0.208 deg, u 16.3 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      },
+      "compensation 1, carriage Coulomb x2 (2 N)": {
+        "diff": {
+          "swingup": "ok 0.680 deg, u 23.8 V, i 17.1 A, x 0.38 m, tail u rms 9.4 V",
+          "balance": "ok 0.453 deg, u 24.0 V, i 16.5 A, x 0.18 m, tail u rms 9.2 V"
+        },
+        "ekf": {
+          "swingup": "ok 0.151 deg, u 15.6 V, i 6.0 A, x 0.38 m, tail u rms 0.8 V",
+          "balance": "ok 0.188 deg, u 16.4 V, i 8.9 A, x 0.18 m, tail u rms 0.9 V"
+        }
+      }
+    },
+    "monte_carlo": {
+      "setup": "48 uniform draws over the ranges of realism.json (seeds 2000-2047), all effects, compensation 1.0; the diff failures all have joint noise of 0.055-0.079 deg rms (passes up to 0.070)",
+      "diff swingup": {
+        "ok": "36/48",
+        "tail_dev_deg_median": 0.452,
+        "tail_dev_deg_max": 1.988,
+        "peak_u_max": 24.0,
+        "peak_i_max": 20.25,
+        "peak_x_max": 0.39,
+        "failures": [
+          {
+            "tag": "mc2",
+            "tail_dev_deg": 3.67,
+            "peak_x": 0.384
+          },
+          {
+            "tag": "mc3",
+            "tail_dev_deg": 3.41,
+            "peak_x": 0.384
+          },
+          {
+            "tag": "mc12",
+            "tail_dev_deg": 2.11,
+            "peak_x": 0.384
+          },
+          {
+            "tag": "mc18",
+            "tail_dev_deg": 2.57,
+            "peak_x": 0.384
+          },
+          {
+            "tag": "mc21",
+            "tail_dev_deg": 2.5,
+            "peak_x": 0.383
+          },
+          {
+            "tag": "mc29",
+            "tail_dev_deg": 2.24,
+            "peak_x": 0.388
+          },
+          {
+            "tag": "mc31",
+            "tail_dev_deg": 3.5,
+            "peak_x": 0.386
+          },
+          {
+            "tag": "mc32",
+            "tail_dev_deg": 2.45,
+            "peak_x": 0.381
+          },
+          {
+            "tag": "mc35",
+            "tail_dev_deg": 2.5,
+            "peak_x": 0.383
+          },
+          {
+            "tag": "mc42",
+            "tail_dev_deg": 3.36,
+            "peak_x": 0.38
+          },
+          {
+            "tag": "mc43",
+            "tail_dev_deg": 2.45,
+            "peak_x": 0.383
+          },
+          {
+            "tag": "mc44",
+            "tail_dev_deg": 3.44,
+            "peak_x": 0.387
+          }
+        ]
+      },
+      "diff balance": {
+        "ok": "36/48",
+        "tail_dev_deg_median": 0.426,
+        "tail_dev_deg_max": 1.966,
+        "peak_u_max": 24.0,
+        "peak_i_max": 21.36,
+        "peak_x_max": 0.234,
+        "failures": [
+          {
+            "tag": "mc2",
+            "tail_dev_deg": 3.1,
+            "peak_x": 0.21
+          },
+          {
+            "tag": "mc3",
+            "tail_dev_deg": 3.2,
+            "peak_x": 0.233
+          },
+          {
+            "tag": "mc12",
+            "tail_dev_deg": 2.02,
+            "peak_x": 0.204
+          },
+          {
+            "tag": "mc18",
+            "tail_dev_deg": 2.11,
+            "peak_x": 0.216
+          },
+          {
+            "tag": "mc21",
+            "tail_dev_deg": 2.19,
+            "peak_x": 0.186
+          },
+          {
+            "tag": "mc29",
+            "tail_dev_deg": 2.17,
+            "peak_x": 0.21
+          },
+          {
+            "tag": "mc31",
+            "tail_dev_deg": 3.9,
+            "peak_x": 0.191
+          },
+          {
+            "tag": "mc32",
+            "tail_dev_deg": 3.85,
+            "peak_x": 0.226
+          },
+          {
+            "tag": "mc35",
+            "tail_dev_deg": 3.01,
+            "peak_x": 0.209
+          },
+          {
+            "tag": "mc42",
+            "tail_dev_deg": 3.77,
+            "peak_x": 0.187
+          },
+          {
+            "tag": "mc43",
+            "tail_dev_deg": 3.28,
+            "peak_x": 0.193
+          },
+          {
+            "tag": "mc44",
+            "tail_dev_deg": 4.21,
+            "peak_x": 0.201
+          }
+        ]
+      },
+      "ekf swingup": {
+        "ok": "48/48",
+        "tail_dev_deg_median": 0.223,
+        "tail_dev_deg_max": 0.408,
+        "peak_u_max": 18.2,
+        "peak_i_max": 6.89,
+        "peak_x_max": 0.391
+      },
+      "ekf balance": {
+        "ok": "48/48",
+        "tail_dev_deg_median": 0.226,
+        "tail_dev_deg_max": 0.484,
+        "peak_u_max": 17.52,
+        "peak_i_max": 8.52,
+        "peak_x_max": 0.198
+      }
+    }
+  },
+  "runs": {
+    "commands": [
+      "uv run examples/pendulum-double-cart-lab/design/screen.py all --jobs 5 --n 48"
+    ],
+    "wall_time_s": 243
+  }
+}

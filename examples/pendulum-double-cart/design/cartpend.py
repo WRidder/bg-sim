@@ -20,7 +20,7 @@ motor sees the cart through the factor ``N/r``. The armature inductance is negle
 electrical time constant L/R is 70 us), the rotor inertia ``J_m`` is reflected onto the cart mass:
 
     m_eff = m_cart + J_m (N/r)^2
-    F     = alpha V - beta xdot,   alpha = k_t N/(r R),   beta = (k_t^2/R + b_m) (N/r)^2
+    F     = alpha V - beta xdot,   alpha = k_t N/(r R),   beta = (k_t^2/R + b_m) (N/r)^2 + b_cart
 """
 
 from __future__ import annotations
@@ -66,6 +66,10 @@ class Plant:
     bd_rail: float = 2.0e3
     k_belt: float = 4.0e5
     d_belt: float = 60.0
+    # options of the lab rig (pendulum-double-cart-lab); 0 = off, so the original examples are unchanged
+    b_cart: float = 0.0     # viscous friction of the carriage and cable chain (N s/m), a rail damper in the bond graph
+    k_stop: float = 0.0     # soft end stops at +-x_rail (N/m, a HardStop on the rail drive in the bond graph)
+    d_stop: float = 0.0     # end-stop damping (N s/m)
 
     @property
     def n(self) -> int:
@@ -89,7 +93,7 @@ class Plant:
 
     @property
     def beta(self) -> float:
-        return (self.k_t**2 / self.R_m + self.b_m) * (self.N / self.r) ** 2
+        return (self.k_t**2 / self.R_m + self.b_m) * (self.N / self.r) ** 2 + self.b_cart
 
 
 # --------------------------------------------------------------------------------- dynamics

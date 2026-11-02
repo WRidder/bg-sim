@@ -316,6 +316,16 @@
       "pendulum-double-cart-free"
     ]
   },
+  "pendulum-double-cart-lab": {
+    "title": "Pendulum double cart lab",
+    "description": "The double-cart lab rig: 0.35 m tube links on a ±1 m rail, swing-up with margins, balance, push, and the realism parameter set for RL and robust control.",
+    "hasScene": true,
+    "models": [
+      "pendulum-double-cart-lab",
+      "pendulum-double-cart-lab-balance",
+      "pendulum-double-cart-lab-free"
+    ]
+  },
   "pendulum-double-fixed": {
     "title": "Pendulum double fixed",
     "description": "A double pendulum on a fixed pivot: swing-up, catch, balance, recovery.",
