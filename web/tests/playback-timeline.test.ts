@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bracket, decodeFrames, lerp, normalizeQuat, SignalBuffer, slerp, type Quat } from "../src/viewer/timeline";
+import { bracket, decodeFrames, lerp, lerpPeriodic, normalizeQuat, SignalBuffer, slerp, type Quat } from "../src/viewer/timeline";
 
 const times = [0, 1, 2, 4];
 
@@ -26,6 +26,20 @@ describe("bracket", () => {
 describe("lerp and slerp", () => {
   it("lerps", () => {
     expect(lerp(2, 4, 0.25)).toBe(2.5);
+  });
+  it("lerps a periodic value the shorter way round its period", () => {
+    // a floor offset wrapped into [-50, 0]: -49 then -1 is a step of -2 m and one wrap, not +48 m back
+    expect(lerpPeriodic(-49, -1, 0.25, 50)).toBeCloseTo(-49.5, 12);
+    expect(lerpPeriodic(-49, -1, 0.75, 50)).toBeCloseTo(-0.5, 12); // measured from the nearer sample
+    // halfway both directions reach the wrap point (-50 and 0 are the same place mod 50)
+    expect(lerpPeriodic(-49, -1, 0.5, 50)).toBeCloseTo(0, 12);
+    expect(lerpPeriodic(-1, -49, 0.5, 50)).toBeCloseTo(-50, 12);
+    expect(lerpPeriodic(-49, -1, 0, 50)).toBe(-49);
+    expect(lerpPeriodic(-49, -1, 1, 50)).toBe(-1);
+    // within a period it is a plain lerp; a period of 0 is not periodic
+    expect(lerpPeriodic(-30, -20, 0.5, 50)).toBeCloseTo(-25, 12);
+    expect(lerpPeriodic(-49, -1, 0.5, 0)).toBe(-25);
+    expect(lerpPeriodic(-49, -1, 0.5, Number.NaN)).toBe(-25);
   });
   const id: Quat = [1, 0, 0, 0];
   const quarterZ: Quat = [Math.SQRT1_2, 0, 0, Math.SQRT1_2]; // 90 deg about z

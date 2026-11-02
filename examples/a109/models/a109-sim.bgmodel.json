@@ -5903,6 +5903,42 @@
     "HeliView/ground[6]",
     "HeliView/ground[7]"
    ]
+  },
+  {
+   "target": "link:stripes_x",
+   "property": "pose",
+   "signal": [
+    "HeliView/stripes_x[1]",
+    "HeliView/stripes_x[2]",
+    "HeliView/stripes_x[3]",
+    "HeliView/stripes_x[4]",
+    "HeliView/stripes_x[5]",
+    "HeliView/stripes_x[6]",
+    "HeliView/stripes_x[7]"
+   ],
+   "period": [
+    10.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "target": "link:stripes_y",
+   "property": "pose",
+   "signal": [
+    "HeliView/stripes_y[1]",
+    "HeliView/stripes_y[2]",
+    "HeliView/stripes_y[3]",
+    "HeliView/stripes_y[4]",
+    "HeliView/stripes_y[5]",
+    "HeliView/stripes_y[6]",
+    "HeliView/stripes_y[7]"
+   ],
+   "period": [
+    0.0,
+    10.0,
+    0.0
+   ]
   }
  ],
  "parameters": [

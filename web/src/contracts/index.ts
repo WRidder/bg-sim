@@ -34,6 +34,7 @@ export type { DeformationFamily } from "./bindings";
 export type { JointPositionBinding } from "./bindings";
 export type { ModeShapeBinding } from "./bindings";
 export type { PoseBinding } from "./bindings";
+export type { PositionPeriod } from "./bindings";
 export type { SegmentBinding } from "./bindings";
 export type { SegmentBrokenStyle } from "./bindings";
 export type { SegmentPlane } from "./bindings";

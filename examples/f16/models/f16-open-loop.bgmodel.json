@@ -8869,6 +8869,42 @@
     "A30View/ground[6]",
     "A30View/ground[7]"
    ]
+  },
+  {
+   "target": "link:stripes_x",
+   "property": "pose",
+   "signal": [
+    "A30View/stripes_x[1]",
+    "A30View/stripes_x[2]",
+    "A30View/stripes_x[3]",
+    "A30View/stripes_x[4]",
+    "A30View/stripes_x[5]",
+    "A30View/stripes_x[6]",
+    "A30View/stripes_x[7]"
+   ],
+   "period": [
+    50.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "target": "link:stripes_y",
+   "property": "pose",
+   "signal": [
+    "A30View/stripes_y[1]",
+    "A30View/stripes_y[2]",
+    "A30View/stripes_y[3]",
+    "A30View/stripes_y[4]",
+    "A30View/stripes_y[5]",
+    "A30View/stripes_y[6]",
+    "A30View/stripes_y[7]"
+   ],
+   "period": [
+    0.0,
+    50.0,
+    0.0
+   ]
   }
  ],
  "parameters": [

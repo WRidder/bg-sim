@@ -370,8 +370,9 @@ def trail_block() -> str:
     return "\n".join(L)
 
 
-FLOOR_PERIOD = 50.0   # m, stripe spacing of the reference floor
-FLOOR_HALF = 300.0    # m, half size of the floor patch
+FLOOR_PERIOD = 50.0   # m, stripe spacing of the reference floor (the period of the scrolling pattern)
+FLOOR_HALF = 300.0    # m, half size of the floor patch (a whole number of periods)
+STRIPE_W = 3.0        # m, stripe width
 VIEW_LIFT = 8.0       # m, the framed aircraft flies this far above the viewer's 10 m grid at the origin
 BOUNDS = 360.0        # m, the invisible markers that centre the view's Fit on the framed aircraft
 FLOOR_DEPTH = 150.0   # m below the start altitude of the reference aircraft
@@ -379,23 +380,44 @@ STAB_PIVOT = (-5.0, 0.0, 0.05)
 TRAIL_RGBA = {"grey": "0.95 0.95 0.98 1", "sand": "1.0 0.85 0.45 1", "blue": "0.55 0.75 1.0 1"}
 
 
+def floor_links() -> list[str]:
+    """The reference floor: link `ground` (the floor, which stays under the framed aircraft) and the
+    links `stripes_x` (stripes across x, lines of constant x) and `stripes_y`. Each stripe set scrolls
+    along its own axis only, by at most half a period either way (F16View), so the stripes stay on the
+    floor and their ends do not move; the stripes sit half a period off the centre, so the shifted
+    sets cover the floor from edge to edge. The floor is one stripe width larger than the pattern."""
+    n = int(round(FLOOR_HALF / FLOOR_PERIOD))
+    side = 2 * FLOOR_HALF + STRIPE_W
+    L = ['    <link name="ground">', "      <pose>0 0 0 0 0 0</pose>",
+         '      <visual name="floor">', "        <pose>0 0 -0.5 0 0 0</pose>",
+         f"        <geometry><box><size>{side:g} {side:g} 1</size></box></geometry>",
+         "        <material><diffuse>0.36 0.45 0.33 1</diffuse></material>", "      </visual>", "    </link>"]
+    for axis in "xy":
+        L += [f'    <link name="stripes_{axis}">', "      <pose>0 0 0 0 0 0</pose>"]
+        for k in range(-n, n):
+            c = (k + 0.5) * FLOOR_PERIOD
+            at, size = ((f"{c:g} 0", f"{STRIPE_W:g} {2 * FLOOR_HALF:g}") if axis == "x"
+                        else (f"0 {c:g}", f"{2 * FLOOR_HALF:g} {STRIPE_W:g}"))
+            L += [f'      <visual name="stripe_{axis}{k + n}">', f"        <pose>{at} 0.05 0 0 0</pose>",
+                  f"        <geometry><box><size>{size} 0.1</size></box></geometry>",
+                  "        <material><diffuse>0.62 0.66 0.55 1</diffuse></material>", "      </visual>"]
+        L.append("    </link>")
+    return L
+
+
+def floor_bindings(view: str) -> list[dict]:
+    """The floor and its two stripe sets; the stripe offsets wrap with the stripe spacing (`period`)."""
+    return [{"target": "link:ground", "property": "pose", "signal": [f"{view}/ground[{i}]" for i in range(1, 8)]},
+            {"target": "link:stripes_x", "property": "pose", "signal": [f"{view}/stripes_x[{i}]" for i in range(1, 8)],
+             "period": [FLOOR_PERIOD, 0.0, 0.0]},
+            {"target": "link:stripes_y", "property": "pose", "signal": [f"{view}/stripes_y[{i}]" for i in range(1, 8)],
+             "period": [0.0, FLOOR_PERIOD, 0.0]}]
+
+
 def scene_sdf(name: str, aircraft: list[tuple[str, str]], comment: str) -> str:
     """aircraft: (tag, paint scheme); the first one is the reference the view keeps framed."""
     L = ['<?xml version="1.0"?>', "<!--", comment, "-->", '<sdf version="1.9">', f'  <model name="{name}">',
-         '    <link name="ground">', "      <pose>0 0 0 0 0 0</pose>",
-         '      <visual name="floor">', f"        <pose>0 0 -0.5 0 0 0</pose>",
-         f"        <geometry><box><size>{2 * FLOOR_HALF:g} {2 * FLOOR_HALF:g} 1</size></box></geometry>",
-         "        <material><diffuse>0.36 0.45 0.33 1</diffuse></material>", "      </visual>"]
-    n = int(FLOOR_HALF // FLOOR_PERIOD)
-    for k in range(-n, n + 1):
-        c = k * FLOOR_PERIOD
-        L += [f'      <visual name="stripe_x{k + n}">', f"        <pose>{c:g} 0 0.05 0 0 0</pose>",
-              f"        <geometry><box><size>3 {2 * FLOOR_HALF:g} 0.1</size></box></geometry>",
-              "        <material><diffuse>0.62 0.66 0.55 1</diffuse></material>", "      </visual>",
-              f'      <visual name="stripe_y{k + n}">', f"        <pose>0 {c:g} 0.05 0 0 0</pose>",
-              f"        <geometry><box><size>{2 * FLOOR_HALF:g} 3 0.1</size></box></geometry>",
-              "        <material><diffuse>0.62 0.66 0.55 1</diffuse></material>", "      </visual>"]
-    L.append("    </link>")
+         *floor_links()]
     # Two invisible specks at opposite corners: the viewer's Fit frames the bounding box of everything
     # shown, and these make it symmetric about the framed aircraft (the origin), so Fit centres on it and
     # zooming in afterwards keeps it in the middle.
@@ -433,7 +455,9 @@ SCENE_NOTE = (
     "  (blocks F16View and F16Trail). The other aircraft fly in formation slots 30 m to the side, so that\n"
     "  aircraft that start together do not overlap. The floor is a reference plane 150 m below the start\n"
     "  altitude of the first aircraft: it follows climbs and descents of up to 100 m (then it stays in view as\n"
-    "  an attitude reference), and its 50 m stripes scroll with the ground track. The dots behind each aircraft are its flight path over the last second. The\n"
+    "  an attitude reference), and its 50 m stripes (links stripes_x, stripes_y) scroll with the ground track, each\n"
+    "  set along its own axis, wrapped into one stripe spacing (the bindings declare that period, so the view\n"
+    "  interpolates across a wrap the short way). The dots behind each aircraft are its flight path over the last second. The\n"
     "  stabilators (links stabilator_*, revolute joints stab_*) turn with the servo deflection: positive\n"
     "  elevator is trailing edge down, a negative rotation about the body y axis (left), hence gain -pi/180.")
 
@@ -458,7 +482,7 @@ def view(d: Diagram, labs: list[str], offsets: list[float], stab_signals: list[s
         for j in range(1, TRAIL_N + 1):
             bindings.append({"target": f"link:trail_{tag}_{j}", "property": "pose",
                              "signal": [f"{tnode}/d{j}[{i}]" for i in range(1, 8)]})
-    bindings.append({"target": "link:ground", "property": "pose", "signal": [f"{ref}View/ground[{i}]" for i in range(1, 8)]})
+    bindings += floor_bindings(f"{ref}View")
     return bindings
 
 

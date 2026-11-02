@@ -17524,6 +17524,42 @@
     "ElevatorView/ground[6]",
     "ElevatorView/ground[7]"
    ]
+  },
+  {
+   "target": "link:stripes_x",
+   "property": "pose",
+   "signal": [
+    "ElevatorView/stripes_x[1]",
+    "ElevatorView/stripes_x[2]",
+    "ElevatorView/stripes_x[3]",
+    "ElevatorView/stripes_x[4]",
+    "ElevatorView/stripes_x[5]",
+    "ElevatorView/stripes_x[6]",
+    "ElevatorView/stripes_x[7]"
+   ],
+   "period": [
+    50.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "target": "link:stripes_y",
+   "property": "pose",
+   "signal": [
+    "ElevatorView/stripes_y[1]",
+    "ElevatorView/stripes_y[2]",
+    "ElevatorView/stripes_y[3]",
+    "ElevatorView/stripes_y[4]",
+    "ElevatorView/stripes_y[5]",
+    "ElevatorView/stripes_y[6]",
+    "ElevatorView/stripes_y[7]"
+   ],
+   "period": [
+    0.0,
+    50.0,
+    0.0
+   ]
   }
  ],
  "parameters": [

@@ -1,0 +1,25 @@
+{
+  "$comment": "A striped floor that scrolls with an aircraft's ground track (the f16 example): the floor stays under the aircraft, and each stripe set moves along its own axis by the ground track wrapped into one 50 m stripe spacing. `period` tells the viewer to interpolate that component the shorter way round 50 m (0: not periodic).",
+  "bindings": [
+    {
+      "target": "link:ground",
+      "property": "pose",
+      "signal": ["F16View/ground[1]", "F16View/ground[2]", "F16View/ground[3]", "F16View/ground[4]",
+                 "F16View/ground[5]", "F16View/ground[6]", "F16View/ground[7]"]
+    },
+    {
+      "target": "link:stripes_x",
+      "property": "pose",
+      "signal": ["F16View/stripes_x[1]", "F16View/stripes_x[2]", "F16View/stripes_x[3]", "F16View/stripes_x[4]",
+                 "F16View/stripes_x[5]", "F16View/stripes_x[6]", "F16View/stripes_x[7]"],
+      "period": [50.0, 0, 0]
+    },
+    {
+      "target": "link:stripes_y",
+      "property": "pose",
+      "signal": ["F16View/stripes_y[1]", "F16View/stripes_y[2]", "F16View/stripes_y[3]", "F16View/stripes_y[4]",
+                 "F16View/stripes_y[5]", "F16View/stripes_y[6]", "F16View/stripes_y[7]"],
+      "period": [0, 50.0, 0]
+    }
+  ]
+}

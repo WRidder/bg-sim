@@ -7075,6 +7075,42 @@
     "ProtectedView/ground[6]",
     "ProtectedView/ground[7]"
    ]
+  },
+  {
+   "target": "link:stripes_x",
+   "property": "pose",
+   "signal": [
+    "ProtectedView/stripes_x[1]",
+    "ProtectedView/stripes_x[2]",
+    "ProtectedView/stripes_x[3]",
+    "ProtectedView/stripes_x[4]",
+    "ProtectedView/stripes_x[5]",
+    "ProtectedView/stripes_x[6]",
+    "ProtectedView/stripes_x[7]"
+   ],
+   "period": [
+    50.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "target": "link:stripes_y",
+   "property": "pose",
+   "signal": [
+    "ProtectedView/stripes_y[1]",
+    "ProtectedView/stripes_y[2]",
+    "ProtectedView/stripes_y[3]",
+    "ProtectedView/stripes_y[4]",
+    "ProtectedView/stripes_y[5]",
+    "ProtectedView/stripes_y[6]",
+    "ProtectedView/stripes_y[7]"
+   ],
+   "period": [
+    0.0,
+    50.0,
+    0.0
+   ]
   }
  ],
  "parameters": [

@@ -6020,6 +6020,42 @@
     "BeaverView/ground[6]",
     "BeaverView/ground[7]"
    ]
+  },
+  {
+   "target": "link:stripes_x",
+   "property": "pose",
+   "signal": [
+    "BeaverView/stripes_x[1]",
+    "BeaverView/stripes_x[2]",
+    "BeaverView/stripes_x[3]",
+    "BeaverView/stripes_x[4]",
+    "BeaverView/stripes_x[5]",
+    "BeaverView/stripes_x[6]",
+    "BeaverView/stripes_x[7]"
+   ],
+   "period": [
+    50.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "target": "link:stripes_y",
+   "property": "pose",
+   "signal": [
+    "BeaverView/stripes_y[1]",
+    "BeaverView/stripes_y[2]",
+    "BeaverView/stripes_y[3]",
+    "BeaverView/stripes_y[4]",
+    "BeaverView/stripes_y[5]",
+    "BeaverView/stripes_y[6]",
+    "BeaverView/stripes_y[7]"
+   ],
+   "period": [
+    0.0,
+    50.0,
+    0.0
+   ]
   }
  ],
  "parameters": [

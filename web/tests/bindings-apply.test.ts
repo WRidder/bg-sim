@@ -111,6 +111,22 @@ describe("BindingApplier", () => {
     expect(pose.slice(4)).toEqual([2, 3, 4]); // (0.5, 1, 1.5) * 2 + 1
   });
 
+  it("interpolates the periodic position components of a pose the shorter way round their period", () => {
+    // a scrolling floor: x wraps from -49 to -1 (period 50), y is periodic but does not wrap, z is not periodic
+    const b = new SignalBuffer(ids);
+    b.append(new Float64Array([0, 0, 0, 1, 0, 0, 0, -49, -10, -150, 1, 0, 0, 1, 0, 0, 0, -1, -14, -100]));
+    const t = new Recorder();
+    const sig: [string, ...string[]] = ["qw", "qx", "qy", "qz", "x", "y", "z"];
+    new BindingApplier(t, [{ target: "link:l", property: "pose", signal: sig, period: [50, 50, 0] }], ids).apply(b, 0.25);
+    new BindingApplier(t, [{ target: "link:l", property: "pose", signal: sig }], ids).apply(b, 0.25);
+    const periodic = t.calls[0]?.[2] as number[];
+    const plain = t.calls[1]?.[2] as number[];
+    expect(periodic[4]).toBeCloseTo(-49.5, 12); // half a metre on (-2 m and one wrap per second), not 12 m back
+    expect(periodic[5]).toBeCloseTo(-11, 12);
+    expect(periodic[6]).toBeCloseTo(-137.5, 12);
+    expect(plain.slice(4)).toEqual([-37, -11, -137.5]);
+  });
+
   it("combines scale axes of one visual into a single call", () => {
     const t = new Recorder();
     const applier = new BindingApplier(
