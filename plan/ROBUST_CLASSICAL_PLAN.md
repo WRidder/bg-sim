@@ -145,6 +145,38 @@ One table (double-cart lab rig) compares five controllers:
 - RL with an imitation warm start;
 - the hybrid: an RL swing-up into the catch region, with the LQR balance.
 
+### C5 result (2026-11-02)
+
+The shared test (`design/robustness_test.json`, harness `design/robustness.py`, results in
+`design/robustness_results.json`): truth model `lablib.setup` with every effect of `realism.json`, 64 Monte Carlo
+draws (seeds 3000-3063). Pass: |x| < 0.95 m and both links within 2° of upright over the last 2 s (in brackets: within
+5.7°, the RL step-0 criterion). Tail angle and tail V rms are medians over the passing draws; peak V and peak x are the
+maxima over them; catch is the median catch time.
+
+| controller | swing-up | balance + push | knockdown + recover | tail angle | tail V rms | peak V | peak x | design / training |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| nominal, filtered differences | 39/64 (64) | 39/64 (63) | 0/64 | 0.57° | 10.5 V | 24 V | 0.41 m | today's firmware |
+| nominal, EKF | 64/64 | 64/64 | 0/64 | 0.26° | 1.40 V | 21.3 V | 0.41 m | today's firmware |
+| **robust classical**: C1 mm_lqr balance + C3 re-arm (EKF) | 64/64, catch 2.6 s | 64/64 | **64/64**, re-catch 12.9 s | 0.40° | **0.78 V** | 16.1 V (24 V in the knockdown) | 0.80 m (knockdown) | offline design, minutes |
+| RL, imitation warm start + DR (`rl-imitation-dr`) | 64/64, catch 3.0 s | 64/64 | not trained (probe 0/64) | 0.77° | 5.2 V | 24 V | 0.44 m | 25 min imitation (+ 76 min PPO, no gain) |
+| RL, pure + DR (`rl-pure-dr`) | 0/64 | 8/64 (24) | – | 1.82° | 2.2 V | 11.3 V | 0.57 m | 59 M steps, 61 min |
+| hybrid: RL swing-up + LQR catch (`rl-hybrid-dr`) | 15/64, catch 1.7 s | 64/64 | – | 0.78° | 4.1 V | 24 V | 0.80 m | 67 M steps, 60 min (still rising) |
+
+Other C1 balance laws on the same swing-up (balance + push): μ D-K 64/64 (1.26 V rms), GMF tuned 64/64 (riding 24 V,
+0.57 m), GMF 58/64, structured H∞ 49/64 (saturates). C2 swing-up plans (mm_tvlqr, margin) 64/64, the same as the nominal
+plan.
+
+Findings:
+- Robustness over the realistic parameter box is not what separates the controllers: the nominal EKF firmware, the
+  robust classical design and the imitation-trained policy all pass every draw of the two scored scenarios. What
+  separates them is the voltage chatter (the estimator), the margins (C1: delay margin 32 vs 6 samples) and recovery.
+- The robust classical design is the best overall: the lowest chatter, the most headroom, and the only controller that
+  recovers from a knockdown (the C3 state machine re-arms the planned swing-up).
+- The learned policy matches the pass rate but is about 4x noisier than the EKF designs, because it sees 4 encoder
+  samples and imitates an expert labelled on the same short-window estimate; PPO did not improve it. Next step for RL
+  (R2 candidate): the EKF estimate (or a recurrent policy) as the observation, and an expert for re-swing-ups.
+- Pure RL and the hybrid are not competitive within a 1 h training budget.
+
 ## Progress tracking
 
 | # | item | rig | status | notes |
@@ -154,4 +186,4 @@ One table (double-cart lab rig) compares five controllers:
 | C2 | worst-case swing-up plan | double-cart lab rig | done | 2026-11-02. `design/robust_c2.py`, `design/robust_c2.json`. The open-loop min-max plan does not work (with 4 corners the best plan ends 1777 leans off upright): the robustness has to come from the feedback. Kept: the multi-model TVLQR on the nominal plan (`mm_tvlqr`) and a 60 % / 0.7 m margin plan; both 64/64 on swingup, like the nominal plan (the box does not stress the TVLQR). `mm_tvlqr` is in the bgsim robust firmware. |
 | C3 | energy-based swing-up with re-arm | double-cart lab rig | done | 2026-11-02. `design/robust_ctrl.py` (`mode=rearm`): energy removal through the cart (collocated PFL), rail guard, hanging LQR, re-armed TVLQR from the hanging rest, region catch. knockdown_recover 64/64 (nominal firmware 0/64), re-catch median 12.9 s, peak 0.80 m; swingup and balance_push 64/64. Pure energy pumping to the upright never caught (link 2 whirls). bgsim: `pendulum-double-cart-lab-robust` and `-recover` (`design/robustmodels.py`, `library/DoubleCartLabRobust{Ctrl,Traj}.jl`), matching a Python replica on the twin. |
 | C4 | items 1 to 3 on the quad cart, then the rotary rigs | quad cart, rotary | deferred | only after the 2-link workflow proves viable |
-| C5 | comparison table: classical vs robust classical vs RL vs hybrid | double-cart lab rig | todo | with RL step R1 |
+| C5 | comparison table: classical vs robust classical vs RL vs hybrid | double-cart lab rig | done | "C5 result" in the Comparison section; robust classical best (lowest chatter, only knockdown recovery); RL imitation equally robust, 4x chatter |
