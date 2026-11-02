@@ -7,6 +7,16 @@
       "aerial-contact"
     ]
   },
+  "beaver": {
+    "title": "DHC-2 Beaver",
+    "description": "The nonlinear DHC-2 Beaver of the TU Delft FDC toolbox: validated modes and control steps, a bond-graph drivetrain and a flyable model with the FDC autopilot.",
+    "hasScene": true,
+    "models": [
+      "beaver-modes",
+      "beaver-steps",
+      "beaver-sim"
+    ]
+  },
   "bouncing-ball": {
     "title": "Bouncing ball",
     "description": "A continuous event with a velocity reinit.",

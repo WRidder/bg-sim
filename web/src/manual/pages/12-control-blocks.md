@@ -100,3 +100,12 @@ Its model **f16-sim** is a full three-axis fly-by-wire on the same airframe. Fiv
 - Yaw: a yaw damper on the washed-out yaw rate, and the pedals command a sideslip.
 
 The model's inputs and outputs are export markers, and its trim, CG, mass and law switches are globals. It exports as the FMU of a flight-simulator host (`apps/f16-sim`). The dashboard has sliders for the sticks, the pedals, the throttle and the law switches.
+
+The **beaver** example (the DHC-2 Beaver of the TU Delft FDC toolbox) schedules its gains differently: the autopilot's gains are polynomials in the airspeed, written inside the control-law blocks. Its model **beaver-sim** flies that autopilot:
+
+- Pitch: a pitch attitude hold, with an altitude hold as its outer loop.
+- Roll: a roll attitude hold, with a heading hold as its outer loop, and a turn coordinator on the rudder.
+- A mode input selects each loop: 0 off, 1 the attitude hold, 2 the outer loop. A loop that is off bleeds its integrator to zero, so engaging it later does not make the surface jump.
+- A first-order servo with an airspeed-dependent gain drives each surface.
+
+The default run is a climb, a turn to a heading and a level-off.

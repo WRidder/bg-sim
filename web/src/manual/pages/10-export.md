@@ -28,6 +28,12 @@ The **f16-sim** model of the f16 example shows a complete interface:
 - 36 `ExportOutput` markers carry what a flight-simulator host draws;
 - the trim, the CG, the mass and the control-law switches are globals that are kept tunable.
 
+The **beaver-sim** model of the beaver example has a cockpit interface:
+
+- the column, the pedals, the flaps, the elevator trim, the manifold pressure and the rpm lever come in through `ExportInputPass` markers, together with the autopilot modes and references and the wind;
+- the outputs are the position, the attitude, the air data, the surfaces and the engine;
+- the `drivetrain` global is kept tunable. It switches between the bond-graph drivetrain and the source's algebraic engine power.
+
 The **racecar-sim** and **buggy-sim** models of the cars example do the same for a driving simulator (`apps/car-sim`):
 
 - the steering, the pedals, the handbrake, the reverse switch and a friction scale per wheel come in through `ExportInputPass` markers (the host sets the friction from the surface under each tyre);

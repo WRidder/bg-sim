@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "beaver",
+  "models": [
+    "beaver-modes",
+    "beaver-steps",
+    "beaver-sim"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
