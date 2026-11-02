@@ -20,6 +20,10 @@ import { describeLink, resolveLink, type LinkContext, type LinkTarget } from "./
 
 export interface LinkActions {
   openPage: (id: string) => void;
+  /** `project:<id>`; without it the link only says where it leads. */
+  openProjectPage?: (id: string) => void;
+  /** `model:<name>/<id>`; without it the link only says where it leads. */
+  openModelPage?: (model: string, id: string) => void;
   showBlock: (target: Extract<LinkTarget, { kind: "block" }>) => void;
   plotSignal: (id: string) => void;
   /** A short status message ("Image copied", or why a copy failed). */
@@ -29,7 +33,8 @@ export interface LinkActions {
 export interface MarkdownViewProps {
   text: string;
   project: string;
-  model: string;
+  /** The model whose docs the page belongs to (its images); `null` is the project docs. */
+  model: string | null;
   links: LinkContext;
   actions: LinkActions;
   /**
@@ -46,7 +51,7 @@ const sanitizeSchema = {
   ...defaultSchema,
   protocols: {
     ...defaultSchema.protocols,
-    href: [...(defaultSchema.protocols?.href ?? []), "page", "block", "signal"],
+    href: [...(defaultSchema.protocols?.href ?? []), "page", "project", "model", "block", "signal"],
   },
   attributes: {
     ...defaultSchema.attributes,
@@ -62,12 +67,12 @@ const REHYPE_PLUGINS = [[rehypeSanitize, sanitizeSchema], rehypeKatex] as never;
 
 /** Keep the model-aware protocols; everything else goes through the default allow-list. */
 function urlTransform(url: string): string {
-  return /^(?:page|block|signal):/i.test(url) ? url : defaultUrlTransform(url);
+  return /^(?:page|project|model|block|signal):/i.test(url) ? url : defaultUrlTransform(url);
 }
 
 interface ViewContext {
   project: string;
-  model: string;
+  model: string | null;
   links: LinkContext;
   actions: LinkActions;
 }
@@ -109,6 +114,18 @@ function Link({ href, children }: { href: string | undefined; children?: ReactNo
     event.preventDefault();
     if (target.kind === "page") {
       actions.openPage(target.id);
+    } else if (target.kind === "project-page") {
+      if (actions.openProjectPage === undefined) {
+        actions.notify(describeLink(target));
+      } else {
+        actions.openProjectPage(target.id);
+      }
+    } else if (target.kind === "model-page") {
+      if (actions.openModelPage === undefined) {
+        actions.notify(describeLink(target));
+      } else {
+        actions.openModelPage(target.model, target.id);
+      }
     } else if (target.kind === "block") {
       actions.showBlock(target);
     } else {
@@ -146,7 +163,10 @@ function Image({ src, alt }: { src: string | undefined; alt: string | undefined 
   if (failed) {
     return (
       <span className="docs-image docs-image--broken" data-testid="docs-broken-image">
-        Image not found: {src}. {external ? "Check the address or your connection." : "The file is missing from this model's docs; paste the image again."}
+        Image not found: {src}.{" "}
+        {external
+          ? "Check the address or your connection."
+          : `The file is missing from ${model === null ? "the project docs" : "this model's docs"}; paste the image again.`}
       </span>
     );
   }

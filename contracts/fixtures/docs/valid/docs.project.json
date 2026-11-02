@@ -1,0 +1,16 @@
+{
+  "$comment": "The project docs (<project>/docs/docs.json): the same shape as a model's docs, shared by every model of the project.",
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "The lab rig",
+      "file": "pages/overview.md",
+      "children": [
+        { "id": "hardware", "title": "Hardware and sensors", "file": "pages/hardware.md", "children": [] },
+        { "id": "models", "title": "Which model to use", "file": "pages/models.md", "children": [] }
+      ]
+    }
+  ]
+}

@@ -369,3 +369,161 @@ def test_docs_folder_that_is_a_file_is_refused(client, fake_settings) -> None:
     blocker = fake_settings.projects_root / "demo" / "models" / "a.docs"
     blocker.write_text("x", encoding="utf-8")
     assert client.get(base()).status_code == 400
+
+
+# --------------------------------------------------------------------------- project docs
+
+PROJECT = "/api/projects/demo/project-docs"
+
+
+def project_docs_dir(fake_settings) -> Path:
+    return fake_settings.projects_root / "demo" / "docs"
+
+
+def test_project_without_docs_has_an_empty_tree_and_no_folder(
+    client, fake_settings, schema_validate
+) -> None:
+    response = client.get(PROJECT)
+    assert response.status_code == 200
+    assert response.json() == manifest()
+    schema_validate("docs", response.json())
+    assert client.get(f"{PROJECT}/assets").json() == {"assets": [], "unused": 0}
+    assert not project_docs_dir(fake_settings).exists()  # reading never creates the folder
+    assert client.get("/api/projects/nope/project-docs").status_code == 404
+
+
+def test_project_docs_round_trip_in_the_project_folder(client, fake_settings) -> None:
+    tree = manifest(page("overview", [page("rig")]))
+    assert client.put(PROJECT, json=tree).status_code == 200  # creates <project>/docs
+    assert client.get(PROJECT).json() == tree
+    stored = json.loads((project_docs_dir(fake_settings) / "docs.json").read_text(encoding="utf-8"))
+    assert stored == tree
+    assert client.put(f"{PROJECT}/pages/rig", content=b"# Rig\r\n").status_code == 200
+    assert client.get(f"{PROJECT}/pages/rig").text == "# Rig\n"
+    assert (project_docs_dir(fake_settings) / "pages" / "rig.md").read_bytes() == b"# Rig\n"
+    # Project docs and model docs are separate wikis.
+    assert client.get(base()).json() == manifest()
+    assert client.put(f"{base()}/pages/rig", content=b"x").status_code == 404
+
+
+def test_project_docs_check_the_manifest_like_model_docs(client) -> None:
+    assert client.put(PROJECT, json=manifest(page("a"), page("a"))).status_code == 422
+    assert client.put(PROJECT, json=manifest(page("Bad Id"))).status_code == 422
+
+
+def test_project_docs_delete_rename_and_move(client, fake_settings) -> None:
+    client.put(PROJECT, json=manifest(page("root", [page("kid")]), page("other")))
+    for pid in ("root", "kid", "other"):
+        client.put(f"{PROJECT}/pages/{pid}", content=pid.encode())
+    # Rename and move are manifest writes.
+    moved = manifest(page("other"), {**page("root", [page("kid")]), "title": "Renamed"})
+    assert client.put(PROJECT, json=moved).status_code == 200
+    assert [p["id"] for p in client.get(PROJECT).json()["pages"]] == ["other", "root"]
+    assert client.delete(f"{PROJECT}/pages/root").status_code == 409
+    removed = client.delete(f"{PROJECT}/pages/root?children=promote").json()
+    assert removed["removed"] == ["root"]
+    assert [p["id"] for p in removed["pages"]] == ["other", "kid"]
+    assert not (project_docs_dir(fake_settings) / "pages" / "root.md").exists()
+    assert (project_docs_dir(fake_settings) / "pages" / "kid.md").exists()
+
+
+def test_project_docs_path_safety(client, fake_settings) -> None:
+    client.put(PROJECT, json=manifest(page("p")))
+    for bad in ("Bad", "..%2F..%2Fx", "a.b", "-x", "x" * 65):
+        assert client.get(f"{PROJECT}/pages/{bad}").status_code in (400, 404), bad
+        # 405: the client normalises "../" and the request lands on a route without PUT.
+        assert client.put(f"{PROJECT}/pages/{bad}", content=b"x").status_code in (400, 404, 405), bad
+    for bad in ("x.png", "..%2Fdocs.json", "0123456789ab.exe", "..%2F..%2Fbgsim.project.json"):
+        assert client.get(f"{PROJECT}/assets/{bad}").status_code in (400, 404), bad
+    for bad_project in ("..", "..%2F..", "CON"):
+        assert client.get(f"/api/projects/{bad_project}/project-docs").status_code in (400, 404)
+    # Nothing was written outside the docs folder.
+    assert sorted(p.name for p in project_docs_dir(fake_settings).iterdir()) == ["docs.json"]
+
+
+def test_project_docs_folder_that_is_a_file_is_refused(client, fake_settings) -> None:
+    project_docs_dir(fake_settings).write_text("x", encoding="utf-8")
+    assert client.get(PROJECT).status_code == 400
+    assert client.put(PROJECT, json=manifest()).status_code == 400
+
+
+def test_project_docs_assets_upload_serve_and_clean_up(client, fake_settings) -> None:
+    response = client.post(f"{PROJECT}/assets", files={"file": ("x.png", _png(21), "image/png")})
+    assert response.status_code == 201
+    used = response.json()["file"]
+    second = client.post(f"{PROJECT}/assets", files={"file": ("y.png", _png(22), "image/png")})
+    unused = second.json()["file"]
+    assert (project_docs_dir(fake_settings) / "assets" / used).read_bytes() == _png(21)
+    served = client.get(f"{PROJECT}/assets/{used}")
+    assert served.status_code == 200
+    assert served.headers["content-type"] == "image/png"
+    assert "sandbox" in served.headers["content-security-policy"]
+    client.put(PROJECT, json=manifest(page("p")))
+    client.put(f"{PROJECT}/pages/p", content=f"![](assets/{used})\n".encode())
+    assert client.get(f"{PROJECT}/assets").json()["unused"] == 1
+    assert client.delete(f"{PROJECT}/assets/unused").json() == {"deleted": [unused], "kept": 1}
+    missing = client.get(f"{PROJECT}/assets/ffffffffffff.png")
+    assert missing.status_code == 404
+    assert "project docs" in missing.json()["detail"]
+
+
+def test_assets_copy_between_project_and_model_docs(client, fake_settings) -> None:
+    name = upload(client, _png(23), model="a").json()["file"]
+    to_project = {"fromProject": "demo", "fromModel": "a", "files": [name]}
+    assert client.post(f"{PROJECT}/assets/copy", json=to_project).json()["copied"] == [name]
+    assert (project_docs_dir(fake_settings) / "assets" / name).read_bytes() == _png(23)
+    from_project = {"fromProject": "demo", "fromModel": None, "files": [name]}
+    assert client.post(f"{base('b')}/assets/copy", json=from_project).json()["copied"] == [name]
+    assert (docs_dir(fake_settings, "b") / "assets" / name).is_file()
+    # fromModel is still required (null names the project docs, a missing key is a mistake).
+    no_model = {"fromProject": "demo", "files": [name]}
+    assert client.post(f"{base('b')}/assets/copy", json=no_model).status_code == 422
+
+
+def test_docs_index_lists_every_wiki(client, fake_settings) -> None:
+    client.put(PROJECT, json=manifest(page("overview")))
+    client.put(base("b"), json=manifest(page("intro", [page("more")])))
+    index = client.get("/api/projects/demo/docs-index")
+    assert index.status_code == 200
+    body = index.json()
+    assert body["project"] == manifest(page("overview"))
+    assert [(m["name"], m["inProject"], m["error"]) for m in body["models"]] == [
+        ("a", True, None),
+        ("b", True, None),
+    ]
+    assert body["models"][0]["docs"] == manifest()
+    assert body["models"][1]["docs"]["pages"][0]["children"][0]["id"] == "more"
+    # One broken wiki does not hide the others.
+    docs_dir(fake_settings, "a").mkdir()
+    (docs_dir(fake_settings, "a") / "docs.json").write_text("{", encoding="utf-8")
+    broken = client.get("/api/projects/demo/docs-index").json()["models"]
+    assert broken[0]["docs"] == manifest()
+    assert broken[0]["error"]
+    assert broken[1]["error"] is None
+    assert client.get("/api/projects/nope/docs-index").status_code == 404
+
+
+def test_project_docs_survive_model_delete_and_are_not_a_model(client) -> None:
+    client.put(PROJECT, json=manifest(page("p")))
+    assert client.delete("/api/projects/demo/models/a").status_code == 204
+    assert client.get(PROJECT).json() == manifest(page("p"))
+    listing = client.get("/api/projects/demo").json()
+    assert [m["name"] for m in listing["models"]] == ["b"]
+    assert [p["name"] for p in client.get("/api/projects").json()["projects"]] == ["demo"]
+
+
+def test_project_from_example_carries_the_project_docs(tmp_path: Path) -> None:
+    store = ProjectStore(tmp_path / "projects", tmp_path / "examples", SCHEMAS)
+    example = tmp_path / "examples" / "sample"
+    (example / "models").mkdir(parents=True)
+    fixture = MODEL_FIXTURE.read_text(encoding="utf-8")
+    (example / "models" / "m.bgmodel.json").write_text(fixture, encoding="utf-8")
+    (example / "docs" / "pages").mkdir(parents=True)
+    (example / "docs" / "docs.json").write_text(json.dumps(manifest(page("intro"))), encoding="utf-8")
+    (example / "docs" / "pages" / "intro.md").write_text("shared\n", encoding="utf-8")
+
+    store.create_project("copy", example="sample")
+    copied = tmp_path / "projects" / "copy" / "docs"
+    stored = json.loads((copied / "docs.json").read_text(encoding="utf-8"))
+    assert stored["pages"][0]["id"] == "intro"
+    assert (copied / "pages" / "intro.md").read_text(encoding="utf-8") == "shared\n"

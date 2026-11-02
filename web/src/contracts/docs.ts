@@ -2,7 +2,7 @@
  * Do not edit by hand: change the schema and regenerate. */
 
 /**
- * The documentation wiki of one model: a tree of Markdown pages stored in <project>/models/<model>.docs/ (docs.json, pages/<id>.md, assets/<hash>.<ext>). Page ids are stable slugs; renaming a title never renames the file.
+ * A model's or a project's documentation wiki: a tree of Markdown pages stored in <project>/models/<model>.docs/ (a model's docs) or <project>/docs/ (the project docs, shared by all its models), each holding docs.json, pages/<id>.md and assets/<hash>.<ext>. Page ids are stable slugs; renaming a title never renames the file.
  */
 export interface Docs {
   format: "bgsim.docs";

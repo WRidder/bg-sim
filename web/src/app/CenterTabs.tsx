@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { useDebugStore } from "../debug/debugStore";
 import { DiagramTab } from "../editor/DiagramTab";
 import { hasUnsavedDocs, saveUnsavedDocs } from "../docs/leaveGuard";
+import { useProjectSession } from "../state/session";
 import { EmptyState } from "./EmptyState";
 import { TabStrip, type TabDefinition } from "./TabStrip";
 
@@ -47,6 +48,8 @@ export interface CenterTabsProps {
  * unsaved page edits asks first, like closing the browser tab does.
  */
 export function CenterTabs({ active, onSelect }: CenterTabsProps) {
+  // Open the model whichever tab shows first (a `tab=docs` deep link skips the Diagram tab).
+  useProjectSession();
   const pausedPath = useDebugStore((state) => {
     const location = state.pausedInfo?.location;
     return location !== null && location !== undefined && location.scope !== "watch"

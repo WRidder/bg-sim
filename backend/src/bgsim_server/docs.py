@@ -1,13 +1,16 @@
-"""The documentation wiki of a model (work package W5.6).
+"""The documentation wikis of a project: one per model (work package W5.6) and one for the project.
 
-Docs live next to the model file and travel with it::
+A model's docs live next to the model file and travel with it; the project docs, shared by all
+models of the project, live in the project folder. Both have the same format::
 
-    <project>/models/<model>.docs/
+    <project>/models/<model>.docs/     the docs of one model
+    <project>/docs/                    the project docs
       docs.json            the page tree (contracts/schemas/docs.schema.json)
       pages/<id>.md        one Markdown file per page
       assets/<hash>.<ext>  images, named by the first 12 hex digits of their SHA-256
 
-Endpoints (all under ``/api/projects/{p}/docs/{model}``)::
+Endpoints of a model's docs (all under ``/api/projects/{p}/docs/{model}``); the project docs have
+the same ones under ``/api/projects/{p}/project-docs``::
 
     GET    ""                      the manifest (an empty one when no docs exist yet)
     PUT    ""                      replace the manifest (schema and tree checked)
@@ -18,8 +21,15 @@ Endpoints (all under ``/api/projects/{p}/docs/{model}``)::
     GET    /assets                 {assets: [{file, bytes, used}], unused}
     POST   /assets                 multipart upload (field ``file``) -> {file, path, bytes, existed}
     POST   /assets/copy            {fromProject, fromModel, files} -> {copied, existing, missing}
+                                   (``fromModel: null`` copies from the project docs)
     DELETE /assets/unused          remove every asset that no page references
     GET    /assets/{file}          one image with a safe content type and a sandboxing CSP
+
+``GET /api/projects/{p}/docs-index`` returns every page tree of the project at once (the project
+page's Docs tab and the cross-wiki link checks): ``{project: <manifest>, models: [{name,
+inProject, docs, error}]}``; a model whose manifest is broken has an empty tree and the reason in
+``error``. A project or model without docs has an empty tree; the folder is created on the first
+write.
 
 Names are validated like the rest of the store: the model name by the project store, page ids and
 asset names by the strict patterns below, so no request can leave the docs folder. Images are
@@ -36,17 +46,19 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from starlette.datastructures import UploadFile
 
 from .meshes import _atomic_write_bytes
 from .projects import (
     DOCS_SUFFIX,
+    PROJECT_DOCS_DIR,
     ProjectError,
     ProjectStore,
     Store,
     _atomic_write,
+    _detail_message,
     _inside,
     _json_body,
     _json_text,
@@ -129,6 +141,23 @@ def _docs_dir(store: ProjectStore, project: str, model: str) -> Path:
     return directory
 
 
+def _project_docs_dir(store: ProjectStore, project: str) -> Path:
+    """``<project>/docs`` of an existing project (the folder itself may not exist yet)."""
+    directory = _inside(store._require_project(project), PROJECT_DOCS_DIR)
+    if directory.is_symlink() or (directory.exists() and not directory.is_dir()):
+        raise ProjectError(400, f"the docs folder of project {project!r} is a link or a file")
+    return directory
+
+
+def _wiki_dir(store: ProjectStore, project: str, model: str | None) -> Path:
+    """The docs folder of ``model``, or the project docs folder when ``model`` is None."""
+    return _project_docs_dir(store, project) if model is None else _docs_dir(store, project, model)
+
+
+def _owner(model: str | None) -> str:
+    return "the project docs" if model is None else f"the docs of model {model!r}"
+
+
 def _sub(directory: Path, *parts: str) -> Path:
     path = _inside(directory, *parts)
     if path.parent.is_symlink():
@@ -198,19 +227,62 @@ def _ids_of(page: dict[str, Any]) -> list[str]:
     return [page["id"], *(i for child in page["children"] for i in _ids_of(child))]
 
 
+def _get_docs(store: ProjectStore, project: str, model: str | None) -> dict[str, Any]:
+    return _read_manifest(store, _wiki_dir(store, project, model))
+
+
+async def _put_docs(
+    store: ProjectStore, project: str, model: str | None, request: Request
+) -> dict[str, Any]:
+    directory = _wiki_dir(store, project, model)
+    document = _check_manifest(store, await _json_body(request, "docs manifest"))
+    _write_manifest(directory, document)
+    return document
+
+
+@router.get("/projects/{project}/docs-index")
+def get_docs_index(project: str, store: Store) -> dict[str, Any]:
+    """Every page tree of the project: the project docs and the docs of each model."""
+    project_dir = store._require_project(project)
+    project_docs = _read_manifest(store, _project_docs_dir(store, project))
+    models: list[dict[str, Any]] = []
+    for entry in store._model_listing(project_dir, store._load_project(project_dir)):
+        item: dict[str, Any] = {
+            "name": entry["name"],
+            "inProject": entry["inProject"],
+            "docs": empty_manifest(),
+            "error": None,
+        }
+        try:
+            item["docs"] = _get_docs(store, project, entry["name"])
+        except HTTPException as exc:
+            item["error"] = _detail_message(exc.detail)
+        models.append(item)
+    return {"project": project_docs, "models": models}
+
+
 @router.get("/projects/{project}/docs/{model}")
 def get_docs(project: str, model: str, store: Store) -> dict[str, Any]:
     """The page tree of a model; a model without docs has an empty one."""
-    return _read_manifest(store, _docs_dir(store, project, model))
+    return _get_docs(store, project, model)
 
 
 @router.put("/projects/{project}/docs/{model}")
 async def put_docs(project: str, model: str, request: Request, store: Store) -> dict[str, Any]:
     """Replace the page tree (the page files are written through the page routes)."""
-    directory = _docs_dir(store, project, model)
-    document = _check_manifest(store, await _json_body(request, "docs manifest"))
-    _write_manifest(directory, document)
-    return document
+    return await _put_docs(store, project, model, request)
+
+
+@router.get("/projects/{project}/project-docs")
+def get_project_docs(project: str, store: Store) -> dict[str, Any]:
+    """The page tree of the project docs; a project without them has an empty one."""
+    return _get_docs(store, project, None)
+
+
+@router.put("/projects/{project}/project-docs")
+async def put_project_docs(project: str, request: Request, store: Store) -> dict[str, Any]:
+    """Replace the page tree of the project docs (creates ``<project>/docs`` when needed)."""
+    return await _put_docs(store, project, None, request)
 
 
 # --------------------------------------------------------------------------- pages
@@ -229,20 +301,20 @@ def _require_page(store: ProjectStore, directory: Path, page_id: str) -> dict[st
     return siblings[index]
 
 
-@router.get("/projects/{project}/docs/{model}/pages/{page_id}")
-def get_page(project: str, model: str, page_id: str, store: Store) -> PlainTextResponse:
-    directory = _docs_dir(store, project, model)
+def _get_page(
+    store: ProjectStore, project: str, model: str | None, page_id: str
+) -> PlainTextResponse:
+    directory = _wiki_dir(store, project, model)
     _require_page(store, directory, _page_id(page_id))
     path = _sub(directory, PAGES_DIR, f"{page_id}.md")
     text = path.read_text(encoding="utf-8") if path.is_file() else ""
     return PlainTextResponse(text, media_type="text/markdown")
 
 
-@router.put("/projects/{project}/docs/{model}/pages/{page_id}")
-async def put_page(
-    project: str, model: str, page_id: str, request: Request, store: Store
+async def _put_page(
+    store: ProjectStore, project: str, model: str | None, page_id: str, request: Request
 ) -> dict[str, Any]:
-    directory = _docs_dir(store, project, model)
+    directory = _wiki_dir(store, project, model)
     _require_page(store, directory, _page_id(page_id))
     raw = await request.body()
     if len(raw) > MAX_PAGE_BYTES:
@@ -258,12 +330,11 @@ async def put_page(
     return {"id": page_id, "bytes": len(stored)}
 
 
-@router.delete("/projects/{project}/docs/{model}/pages/{page_id}")
-def delete_page(
-    project: str, model: str, page_id: str, store: Store, children: str | None = None
+def _delete_page(
+    store: ProjectStore, project: str, model: str | None, page_id: str, children: str | None
 ) -> dict[str, Any]:
     """Remove a page: manifest first (atomically), then the files of the removed pages."""
-    directory = _docs_dir(store, project, model)
+    directory = _wiki_dir(store, project, model)
     manifest = _read_manifest(store, directory)
     found = _find(manifest["pages"], _page_id(page_id))
     if found is None:
@@ -287,6 +358,44 @@ def delete_page(
         with suppress(OSError):
             _sub(directory, PAGES_DIR, f"{removed_id}.md").unlink(missing_ok=True)
     return {"removed": removed, "pages": manifest["pages"]}
+
+
+@router.get("/projects/{project}/docs/{model}/pages/{page_id}")
+def get_page(project: str, model: str, page_id: str, store: Store) -> PlainTextResponse:
+    return _get_page(store, project, model, page_id)
+
+
+@router.put("/projects/{project}/docs/{model}/pages/{page_id}")
+async def put_page(
+    project: str, model: str, page_id: str, request: Request, store: Store
+) -> dict[str, Any]:
+    return await _put_page(store, project, model, page_id, request)
+
+
+@router.delete("/projects/{project}/docs/{model}/pages/{page_id}")
+def delete_page(
+    project: str, model: str, page_id: str, store: Store, children: str | None = None
+) -> dict[str, Any]:
+    return _delete_page(store, project, model, page_id, children)
+
+
+@router.get("/projects/{project}/project-docs/pages/{page_id}")
+def get_project_page(project: str, page_id: str, store: Store) -> PlainTextResponse:
+    return _get_page(store, project, None, page_id)
+
+
+@router.put("/projects/{project}/project-docs/pages/{page_id}")
+async def put_project_page(
+    project: str, page_id: str, request: Request, store: Store
+) -> dict[str, Any]:
+    return await _put_page(store, project, None, page_id, request)
+
+
+@router.delete("/projects/{project}/project-docs/pages/{page_id}")
+def delete_project_page(
+    project: str, page_id: str, store: Store, children: str | None = None
+) -> dict[str, Any]:
+    return _delete_page(store, project, None, page_id, children)
 
 
 # --------------------------------------------------------------------------- assets
@@ -345,9 +454,8 @@ def _referenced_assets(directory: Path) -> set[str]:
     return names
 
 
-@router.get("/projects/{project}/docs/{model}/assets")
-def list_assets(project: str, model: str, store: Store) -> dict[str, Any]:
-    directory = _docs_dir(store, project, model)
+def _list_assets(store: ProjectStore, project: str, model: str | None) -> dict[str, Any]:
+    directory = _wiki_dir(store, project, model)
     used = _referenced_assets(directory)
     assets = [
         {"file": p.name, "bytes": p.stat().st_size, "used": p.name in used}
@@ -356,9 +464,10 @@ def list_assets(project: str, model: str, store: Store) -> dict[str, Any]:
     return {"assets": assets, "unused": sum(1 for a in assets if not a["used"])}
 
 
-@router.post("/projects/{project}/docs/{model}/assets")
-async def upload_asset(project: str, model: str, request: Request, store: Store) -> Response:
-    directory = _docs_dir(store, project, model)
+async def _upload_asset(
+    store: ProjectStore, project: str, model: str | None, request: Request
+) -> Response:
+    directory = _wiki_dir(store, project, model)
     content_type = request.headers.get("content-type", "").lower()
     if not content_type.startswith("multipart/form-data"):
         raise ProjectError(
@@ -394,26 +503,33 @@ async def upload_asset(project: str, model: str, request: Request, store: Store)
     return JSONResponse(body, status_code=200 if existed else 201)
 
 
-@router.post("/projects/{project}/docs/{model}/assets/copy")
-async def copy_assets(project: str, model: str, request: Request, store: Store) -> dict[str, Any]:
-    """Copy assets from another model so pasted Markdown keeps its images."""
-    target = _docs_dir(store, project, model)
+async def _copy_assets(
+    store: ProjectStore, project: str, model: str | None, request: Request
+) -> dict[str, Any]:
+    """Copy assets from another wiki so pasted Markdown keeps its images.
+
+    ``fromModel`` names the source model; ``null`` is the project docs of ``fromProject``.
+    """
+    target = _wiki_dir(store, project, model)
     body = await _json_body(request, "copy request")
     source_project, source_model, files = (
         body.get("fromProject"),
-        body.get("fromModel"),
+        body.get("fromModel", ""),
         body.get("files"),
     )
     if (
         not isinstance(source_project, str)
-        or not isinstance(source_model, str)
+        or not (source_model is None or isinstance(source_model, str))
+        or source_model == ""
         or not isinstance(files, list)
         or not all(isinstance(f, str) for f in files)
     ):
         raise ProjectError(
-            422, "send {fromProject, fromModel, files: [asset names]} to copy assets"
+            422,
+            "send {fromProject, fromModel, files: [asset names]} to copy assets "
+            "(fromModel null copies from the project docs)",
         )
-    source = _docs_dir(store, source_project, source_model)
+    source = _wiki_dir(store, source_project, source_model)
     copied: list[str] = []
     existing: list[str] = []
     missing: list[str] = []
@@ -431,10 +547,9 @@ async def copy_assets(project: str, model: str, request: Request, store: Store) 
     return {"copied": copied, "existing": existing, "missing": missing}
 
 
-@router.delete("/projects/{project}/docs/{model}/assets/unused")
-def delete_unused_assets(project: str, model: str, store: Store) -> dict[str, Any]:
+def _delete_unused_assets(store: ProjectStore, project: str, model: str | None) -> dict[str, Any]:
     """Remove the assets that no saved page references."""
-    directory = _docs_dir(store, project, model)
+    directory = _wiki_dir(store, project, model)
     used = _referenced_assets(directory)
     deleted: list[str] = []
     for path in _asset_files(directory):
@@ -444,14 +559,62 @@ def delete_unused_assets(project: str, model: str, store: Store) -> dict[str, An
     return {"deleted": deleted, "kept": len(_asset_files(directory))}
 
 
-@router.get("/projects/{project}/docs/{model}/assets/{file}")
-def get_asset(project: str, model: str, file: str, store: Store) -> FileResponse:
-    directory = _docs_dir(store, project, model)
+def _get_asset(store: ProjectStore, project: str, model: str | None, file: str) -> FileResponse:
+    directory = _wiki_dir(store, project, model)
     name = _asset_name(file)
     path = _sub(directory, ASSETS_DIR, name)
     if not path.is_file():
-        raise ProjectError(404, f"unknown image {file!r} in the docs of model {model!r}")
+        raise ProjectError(404, f"unknown image {file!r} in {_owner(model)}")
     return FileResponse(
         path, media_type=MEDIA_TYPES[name.rsplit(".", 1)[1]], headers=ASSET_HEADERS
     )
 
+
+@router.get("/projects/{project}/docs/{model}/assets")
+def list_assets(project: str, model: str, store: Store) -> dict[str, Any]:
+    return _list_assets(store, project, model)
+
+
+@router.post("/projects/{project}/docs/{model}/assets")
+async def upload_asset(project: str, model: str, request: Request, store: Store) -> Response:
+    return await _upload_asset(store, project, model, request)
+
+
+@router.post("/projects/{project}/docs/{model}/assets/copy")
+async def copy_assets(project: str, model: str, request: Request, store: Store) -> dict[str, Any]:
+    return await _copy_assets(store, project, model, request)
+
+
+@router.delete("/projects/{project}/docs/{model}/assets/unused")
+def delete_unused_assets(project: str, model: str, store: Store) -> dict[str, Any]:
+    return _delete_unused_assets(store, project, model)
+
+
+@router.get("/projects/{project}/docs/{model}/assets/{file}")
+def get_asset(project: str, model: str, file: str, store: Store) -> FileResponse:
+    return _get_asset(store, project, model, file)
+
+
+@router.get("/projects/{project}/project-docs/assets")
+def list_project_assets(project: str, store: Store) -> dict[str, Any]:
+    return _list_assets(store, project, None)
+
+
+@router.post("/projects/{project}/project-docs/assets")
+async def upload_project_asset(project: str, request: Request, store: Store) -> Response:
+    return await _upload_asset(store, project, None, request)
+
+
+@router.post("/projects/{project}/project-docs/assets/copy")
+async def copy_project_assets(project: str, request: Request, store: Store) -> dict[str, Any]:
+    return await _copy_assets(store, project, None, request)
+
+
+@router.delete("/projects/{project}/project-docs/assets/unused")
+def delete_unused_project_assets(project: str, store: Store) -> dict[str, Any]:
+    return _delete_unused_assets(store, project, None)
+
+
+@router.get("/projects/{project}/project-docs/assets/{file}")
+def get_project_asset(project: str, file: str, store: Store) -> FileResponse:
+    return _get_asset(store, project, None, file)

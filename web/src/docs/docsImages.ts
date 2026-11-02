@@ -52,9 +52,11 @@ export function assetRefs(text: string): string[] {
   return [...found];
 }
 
-export function assetUrl(project: string, model: string, file: string, base = ""): string {
+/** The URL of an asset of a model's docs, or of the project docs when `model` is `null`. */
+export function assetUrl(project: string, model: string | null, file: string, base = ""): string {
   const enc = encodeURIComponent;
-  return `${base}/api/projects/${enc(project)}/docs/${enc(model)}/assets/${enc(file)}`;
+  const wiki = model === null ? "project-docs" : `docs/${enc(model)}`;
+  return `${base}/api/projects/${enc(project)}/${wiki}/assets/${enc(file)}`;
 }
 
 /** The Markdown that inserts an uploaded asset. */
@@ -147,13 +149,15 @@ export async function addImages(files: readonly File[], deps: ImageDeps): Promis
 
 export interface ClipSource {
   project: string;
-  model: string;
+  /** The model whose docs the text came from; `null` is the project docs. */
+  model: string | null;
   text: string;
 }
 
 export interface ModelRef {
   project: string;
-  model: string;
+  /** `null` is the project docs. */
+  model: string | null;
 }
 
 export type PastePlan =
@@ -185,7 +189,7 @@ export function planPaste(input: {
   if (input.custom !== null) {
     try {
       const parsed = JSON.parse(input.custom) as Partial<ClipSource>;
-      if (typeof parsed.project === "string" && typeof parsed.model === "string") {
+      if (typeof parsed.project === "string" && (typeof parsed.model === "string" || parsed.model === null)) {
         source = { project: parsed.project, model: parsed.model, text: parsed.text ?? input.text };
       }
     } catch {

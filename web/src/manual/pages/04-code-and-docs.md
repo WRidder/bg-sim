@@ -94,13 +94,27 @@ Each model has its own pages of documentation, stored with the model in the proj
 - Pages are Markdown with tables, task lists, footnotes and math (`$…$` inline, `$$…$$` display).
 - **Images:** paste or drop an image into the editor (png, jpg, gif, webp or svg). `![alt|300](…)` sets the width to 300 px. **Clean up** removes images no page uses.
 
-Links can point into the model:
+### Project docs
+
+Most of what you write about an example (the rig, the design, the results) applies to all its models. Put that text in the **project docs** instead of copying it into each model. The project docs are stored in the project's `docs/` folder and every model of the project shows them.
+
+- With project docs, the page tree has two sections. **Project** is at the top and can be collapsed (click its header). **This model** is below. You edit both in the same way: new page, rename, reorder, delete and images.
+- A model opens on its own first page. The path above the page starts with **Project docs**, which opens the first project page. A model without pages of its own opens on the project docs.
+- A project without project docs shows only the model's pages, with a small **+ Add project docs** link below them. It creates the first project page.
+- The project overview's **Docs** tab lists the project docs and the docs of every model together (see [Projects](page:projects-and-library)).
+
+### Links
+
+Links can point into the model and to the other docs of the project:
 
 | Link | Does |
 | --- | --- |
-| `[text](page:<id>)` | opens another page of this model's docs (a page link cannot reach the docs of another model; name that model in the text) |
-| `[text](block:Motor)` | opens the Diagram, selects the block and centres it (`block:Sub/Motor` inside a subsystem) |
-| `[text](signal:Motor/w)` | plots the signal |
+| `[text](page:<id>)` | opens another page of the same docs (in a model's docs: that model's pages; in the project docs: the project pages) |
+| `[text](project:<id>)` | opens a page of the project docs, from any page |
+| `[text](model:<name>/<id>)` | opens a page of another model's docs (the model opens on its Docs tab) |
+| `[text](model:<name>)` | opens the first page of that model's docs |
+| `[text](block:Motor)` | opens the Diagram, selects the block and centres it (`block:Sub/Motor` inside a subsystem); model docs only |
+| `[text](signal:Motor/w)` | plots the signal; model docs only |
 | `[text](https://…)` | opens a website in a new tab |
 
-A link to something that does not exist is shown as broken, with the reason in its tooltip. The same Markdown and links work in [sticky notes](page:building-models).
+A link to something that does not exist is shown as broken, with the reason in its tooltip: a page that is not there, a model without docs, or a `block:` link in the project docs. The same Markdown and links work in [sticky notes](page:building-models).

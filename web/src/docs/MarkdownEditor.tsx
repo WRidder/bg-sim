@@ -37,7 +37,7 @@ export interface MarkdownEditorProps {
   pageKey: string;
   value: string;
   project: string;
-  model: string;
+  model: string | null;
   /** Asset names that exist already (not uploaded again). */
   knownAssets: ReadonlySet<string>;
   ariaLabel: string;
@@ -119,7 +119,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     const pasteMarkdown = async (
       view: EditorView,
       text: string,
-      from: { project: string; model: string },
+      from: { project: string; model: string | null },
       files: string[],
     ): Promise<void> => {
       const { project, model, onAssetAdded, onProblem } = latest.current;
@@ -130,7 +130,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
         }
         onProblem(
           result.missing.length > 0
-            ? `${result.missing.length} image(s) could not be copied because ${from.model} no longer has them: ${result.missing.join(", ")}. Add the images again.`
+            ? `${result.missing.length} image(s) could not be copied because ${from.model ?? "the project docs"} no longer has them: ${result.missing.join(", ")}. Add the images again.`
             : null,
         );
       } catch (error) {

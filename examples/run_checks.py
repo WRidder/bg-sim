@@ -22,8 +22,9 @@ This is the example lane of the integration gate (plan 9 and 10.3). For every
 * for every run model, checks that its saved plots (``plots[]``: every ``signals`` entry and the
   XY axis ``x``) and its dashboard display cards (``signals``, a plot card's ``x``) name signals the
   run records (one ``plots`` line per model);
-* for every model with a ``models/<model>.docs`` folder, runs one docs check (X5.10): the
-  manifest, pages, assets, ``page:``/``block:``/``signal:`` links and every KaTeX math span
+* for every model with a ``models/<model>.docs`` folder, and for the project docs ``docs/`` when
+  the example has them, runs one docs check (X5.10): the manifest, pages, assets,
+  ``page:``/``project:``/``model:``/``block:``/``signal:`` links and every KaTeX math span
   (``tools/example_docs/docs_lint.py``), reporting ``file:line: problem; fix``.
 
 ``columns.f64`` is the columnar layout of plan 3.5: the whole time column
@@ -2589,14 +2590,40 @@ def _check_docs(
     project: str,
     runs: dict[str, Run],
 ) -> None:
-    """X5.10: lint ``models/<model>.docs`` of every documented model of the example.
+    """X5.10: lint ``models/<model>.docs`` of every documented model of the example, and the
+    project docs ``docs/`` when the example has them.
 
-    The manifest is also read through ``GET /api/projects/{p}/docs/{model}``, so the backend's own
-    schema and tree validation judges it; the page, link, asset and KaTeX rules live in
-    ``tools/example_docs/docs_lint.py`` and report ``file:line: problem; fix``.
+    The manifest is also read through ``GET /api/projects/{p}/docs/{model}`` (``/project-docs``),
+    so the backend's own schema and tree validation judges it; the page, link, asset and KaTeX
+    rules live in ``tools/example_docs/docs_lint.py`` and report ``file:line: problem; fix``.
     """
     sys.path.insert(0, str(ROOT / "tools" / "example_docs"))
-    from docs_lint import lint_model_docs  # only the docs check needs it
+    from docs_lint import example_wikis, lint_model_docs  # only the docs check needs it
+
+    project_ids, model_pages = example_wikis(EXAMPLES / example)
+    project_docs = EXAMPLES / example / "docs"
+    if (project_docs / "docs.json").is_file():
+        problems: list[str] = []
+        response = client.get(f"/api/projects/{project}/project-docs")
+        if response.status_code != 200:
+            problems.append(
+                f"{project_docs.as_posix()}/docs.json:1: the backend refuses the manifest "
+                f"({response.status_code}: {response.text[:300]}); fix docs.json"
+            )
+        problems.extend(
+            lint_model_docs(
+                project_docs, None, None, project_docs.relative_to(ROOT).as_posix(),
+                wiki="project", project_ids=project_ids, model_pages=model_pages,
+            )
+        )
+        pages = len(list((project_docs / "pages").glob("*.md")))
+        assets = len(list((project_docs / "assets").glob("*"))) if (project_docs / "assets").is_dir() else 0
+        for problem in problems:
+            print(f"      {problem}", flush=True)
+        report.check(
+            not problems, f"{example} project docs",
+            f"{pages} pages, {assets} assets" if not problems else f"{len(problems)} problem(s)",
+        )
 
     models_dir = EXAMPLES / example / "models"
     for docs_dir in sorted(models_dir.glob("*.docs")):
@@ -2614,7 +2641,12 @@ def _check_docs(
         if document is None:
             document = json.loads((models_dir / f"{model}.bgmodel.json").read_text(encoding="utf-8"))
         signal_ids = set(run.signals) if run is not None else None
-        problems.extend(lint_model_docs(docs_dir, document, signal_ids, docs_dir.relative_to(ROOT).as_posix()))
+        problems.extend(
+            lint_model_docs(
+                docs_dir, document, signal_ids, docs_dir.relative_to(ROOT).as_posix(),
+                project_ids=project_ids, model_pages=model_pages,
+            )
+        )
         pages = len(list((docs_dir / "pages").glob("*.md")))
         assets = len(list((docs_dir / "assets").glob("*"))) if (docs_dir / "assets").is_dir() else 0
         if problems:
