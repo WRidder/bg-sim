@@ -1,0 +1,14 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "wind-turbine",
+  "models": [
+    "wind-turbine-steady",
+    "wind-turbine-step",
+    "wind-turbine-gust",
+    "wind-turbine-turbulent",
+    "wind-turbine-open-loop"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

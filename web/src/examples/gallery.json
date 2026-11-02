@@ -615,5 +615,23 @@
       "vdp-belt",
       "vdp-textbook"
     ]
+  },
+  "wind-turbine": {
+    "title": "Wind turbine (NREL 5 MW)",
+    "description": "The NREL 5 MW reference wind turbine, its drivetrain, its tower's first fore-aft mode and its baseline controller, as a rotational and a translational bond graph.",
+    "hasScene": true,
+    "models": [
+      "wind-turbine-steady",
+      "wind-turbine-step",
+      "wind-turbine-gust",
+      "wind-turbine-turbulent",
+      "wind-turbine-open-loop"
+    ],
+    "capture": {
+      "model": "wind-turbine-step",
+      "run": true,
+      "time": 200,
+      "zoom": 1
+    }
   }
 }

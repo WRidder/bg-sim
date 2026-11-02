@@ -1,0 +1,25 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "turbine",
+      "title": "The NREL 5 MW turbine",
+      "file": "pages/turbine.md",
+      "children": [
+        {
+          "id": "controller",
+          "title": "The baseline controller",
+          "file": "pages/controller.md",
+          "children": []
+        },
+        {
+          "id": "validation",
+          "title": "Validation",
+          "file": "pages/validation.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

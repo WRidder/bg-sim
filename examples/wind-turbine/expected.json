@@ -1,0 +1,1180 @@
+{
+  "project": "wind-turbine",
+  "description": "NREL 5 MW reference wind turbine (NREL/TP-500-38060): rotational and translational bond graph with BEM Cp/Ct tables and the baseline controller. Numbers come from design/design.json (BEM, tower finite elements, the controller law in numpy) and from the report's Table 7-1.",
+  "models": {
+    "wind-turbine-steady": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RotorRPM/y",
+          "t": 260.0,
+          "value": 9.18894253079884,
+          "rtol": 0.02,
+          "note": "ramp at 8 m/s: quasi-steady rotor speed (design/design.py); below rated the rotor lags the ramp by about 1.5 %, as its inertia must be spun up"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ElecPower/y",
+          "t": 260.0,
+          "value": 1.7904065117762131,
+          "rtol": 0.05,
+          "note": "quasi-steady electrical power (below rated about 4 % under the steady value: the speed lag, cubed in K w^2 times w)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RotorRPM/y",
+          "t": 560.0,
+          "value": 12.100002305225331,
+          "rtol": 0.01,
+          "note": "ramp at 14 m/s: quasi-steady rotor speed (design/design.py); below rated the rotor lags the ramp by about 1.5 %, as its inertia must be spun up"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ElecPower/y",
+          "t": 560.0,
+          "value": 4.999999839999999,
+          "rtol": 0.01,
+          "note": "quasi-steady electrical power (below rated about 4 % under the steady value: the speed lag, cubed in K w^2 times w)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RotorRPM/y",
+          "t": 860.0,
+          "value": 12.100002305225331,
+          "rtol": 0.01,
+          "note": "ramp at 20 m/s: quasi-steady rotor speed (design/design.py); below rated the rotor lags the ramp by about 1.5 %, as its inertia must be spun up"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ElecPower/y",
+          "t": 860.0,
+          "value": 4.999999839999999,
+          "rtol": 0.01,
+          "note": "quasi-steady electrical power (below rated about 4 % under the steady value: the speed lag, cubed in K w^2 times w)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aero/beta_deg",
+          "t": 860.0,
+          "value": 17.433904782725175,
+          "abs": 0.3,
+          "note": "pitch at 20 m/s on the ramp"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ElecPower/y",
+          "value": 5.05,
+          "note": "the power never exceeds rated by more than 1 % on the ramp"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 0.0001,
+          "stored": [
+            {
+              "coeff": 1.2900153738872199e-08,
+              "signal": "RotorInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 0.0009361262347505037,
+              "signal": "GenInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 1.129170109674708e-06,
+              "signal": "TowerMass/P",
+              "pow": 2
+            },
+            {
+              "coeff": 433818500.0,
+              "signal": "ShaftC/q",
+              "pow": 2
+            },
+            {
+              "coeff": 904212.1072953058,
+              "signal": "TowerSpring/q",
+              "pow": 2
+            }
+          ],
+          "note": "every bond's two ports carry opposite power (Tellegen); the kinetic and elastic energy of the two inertias, the tower mass, the shaft and the tower spring changes by the work of the sources (aerodynamic torque, thrust, generator) minus the shaft and tower damping; the balances integrate the port powers with the trapezoid rule on the output grid, so their accuracy is set by how many samples per period of the 2.2 Hz shaft oscillation the model records (tol 1e-3 for the step and turbulent runs, 20 to 40 samples per second)"
+        }
+      ]
+    },
+    "wind-turbine-steady-5ms": {
+      "model": "wind-turbine-steady",
+      "settings": {
+        "t_end": 400.0,
+        "output": {
+          "points": 1601
+        }
+      },
+      "overrides": {
+        "global:v_start": 5.0,
+        "global:v_end": 5.0,
+        "global:rpm0": 7.279813610315357,
+        "global:pitch0": 0.0,
+        "global:tq0": 5597.158971772712,
+        "global:x0": 0.09561334259071458
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "RotorRPM/y",
+          "value": 7.504962484861193,
+          "rtol": 0.002,
+          "note": "steady state at 5 m/s, region 1.5 (design/design.py)"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "Converter/y",
+          "value": 5597.158971772712,
+          "rtol": 0.004,
+          "note": "generator torque"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "ElecPower/y",
+          "value": 0.4027991210650946,
+          "rtol": 0.004,
+          "note": "electrical power (MW) = 0.944 x torque x speed"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "Aero/thrust",
+          "value": 172909.48397899608,
+          "rtol": 0.005,
+          "note": "rotor thrust"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "TowerSpring/q",
+          "value": 0.09561334259071458,
+          "rtol": 0.005,
+          "note": "tower-top deflection = thrust / k_tower"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Aero/beta_deg",
+          "from_t": 350.0,
+          "value": 0.01,
+          "note": "below rated the pitch stays at fine pitch (the integrator is clamped at 0)"
+        }
+      ]
+    },
+    "wind-turbine-steady-8ms": {
+      "model": "wind-turbine-steady",
+      "settings": {
+        "t_end": 400.0,
+        "output": {
+          "points": 1601
+        }
+      },
+      "overrides": {
+        "global:v_start": 8.0,
+        "global:v_end": 8.0,
+        "global:rpm0": 8.913274254874874,
+        "global:pitch0": 0.0,
+        "global:tq0": 20319.535076986907,
+        "global:x0": 0.2131056125286887
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "RotorRPM/y",
+          "value": 9.18894253079884,
+          "rtol": 0.002,
+          "note": "steady state at 8 m/s, region 2 (design/design.py)"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "Converter/y",
+          "value": 20319.535076986907,
+          "rtol": 0.004,
+          "note": "generator torque"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "ElecPower/y",
+          "value": 1.7904065117762131,
+          "rtol": 0.004,
+          "note": "electrical power (MW) = 0.944 x torque x speed"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "Aero/thrust",
+          "value": 385385.3499620451,
+          "rtol": 0.005,
+          "note": "rotor thrust"
+        },
+        {
+          "kind": "final_value",
+          "t": 400.0,
+          "signal": "TowerSpring/q",
+          "value": 0.2131056125286887,
+          "rtol": 0.005,
+          "note": "tower-top deflection = thrust / k_tower"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Aero/beta_deg",
+          "from_t": 350.0,
+          "value": 0.01,
+          "note": "below rated the pitch stays at fine pitch (the integrator is clamped at 0)"
+        }
+      ]
+    },
+    "wind-turbine-steady-10ms": {
+      "model": "wind-turbine-steady",
+      "settings": {
+        "t_end": 250.0,
+        "output": {
+          "points": 1001
+        }
+      },
+      "overrides": {
+        "global:v_start": 10.0,
+        "global:v_end": 10.0,
+        "global:rpm0": 11.141592818593569,
+        "global:pitch0": 0.0,
+        "global:tq0": 31749.273557791897,
+        "global:x0": 0.33297751957607574
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "RotorRPM/y",
+          "value": 11.486178163498526,
+          "rtol": 0.002,
+          "note": "steady state at 10 m/s, region 2 (design/design.py)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Converter/y",
+          "value": 31749.273557791897,
+          "rtol": 0.004,
+          "note": "generator torque"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 3.4968877183128924,
+          "rtol": 0.004,
+          "note": "electrical power (MW) = 0.944 x torque x speed"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/thrust",
+          "value": 602164.6093156948,
+          "rtol": 0.005,
+          "note": "rotor thrust"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "TowerSpring/q",
+          "value": 0.33297751957607574,
+          "rtol": 0.005,
+          "note": "tower-top deflection = thrust / k_tower"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Aero/beta_deg",
+          "from_t": 200.0,
+          "value": 0.01,
+          "note": "below rated the pitch stays at fine pitch (the integrator is clamped at 0)"
+        }
+      ]
+    },
+    "wind-turbine-steady-11ms": {
+      "model": "wind-turbine-steady",
+      "settings": {
+        "t_end": 250.0,
+        "output": {
+          "points": 1001
+        }
+      },
+      "overrides": {
+        "global:v_start": 11.0,
+        "global:v_end": 11.0,
+        "global:rpm0": 11.546187597083714,
+        "global:pitch0": 0.0,
+        "global:tq0": 40502.370962011024,
+        "global:x0": 0.38779122776650005
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "RotorRPM/y",
+          "value": 11.90328618256053,
+          "rtol": 0.002,
+          "note": "steady state at 11 m/s, region 2.5 (design/design.py)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Converter/y",
+          "value": 40502.370962011024,
+          "rtol": 0.004,
+          "note": "generator torque"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 4.622955029185316,
+          "rtol": 0.004,
+          "note": "electrical power (MW) = 0.944 x torque x speed"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/thrust",
+          "value": 701291.0464987619,
+          "rtol": 0.005,
+          "note": "rotor thrust"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "TowerSpring/q",
+          "value": 0.38779122776650005,
+          "rtol": 0.005,
+          "note": "tower-top deflection = thrust / k_tower"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Aero/beta_deg",
+          "from_t": 200.0,
+          "value": 0.01,
+          "note": "below rated the pitch stays at fine pitch (the integrator is clamped at 0)"
+        }
+      ]
+    },
+    "wind-turbine-steady-12ms": {
+      "model": "wind-turbine-steady",
+      "settings": {
+        "t_end": 250.0,
+        "output": {
+          "points": 1001
+        }
+      },
+      "overrides": {
+        "global:v_start": 12.0,
+        "global:v_end": 12.0,
+        "global:rpm0": 11.737002236068571,
+        "global:pitch0": 2.91413524742645,
+        "global:tq0": 43093.54192024057,
+        "global:x0": 0.32488074607631495
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "RotorRPM/y",
+          "value": 12.100002305225331,
+          "rtol": 0.002,
+          "note": "steady state at 12 m/s, region 3 (design/design.py)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Converter/y",
+          "value": 43093.54192024057,
+          "rtol": 0.004,
+          "note": "generator torque"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 4.999999839999999,
+          "rtol": 0.004,
+          "note": "electrical power (MW) = 0.944 x torque x speed"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/thrust",
+          "value": 587522.2080586718,
+          "rtol": 0.005,
+          "note": "rotor thrust"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "TowerSpring/q",
+          "value": 0.32488074607631495,
+          "rtol": 0.005,
+          "note": "tower-top deflection = thrust / k_tower"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/beta_deg",
+          "value": 3.91413524742645,
+          "abs": 0.03,
+          "note": "pitch (design/design.py with the BEM tables)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 5.0,
+          "rtol": 0.001,
+          "note": "rated power: 5 MW electrical (5.29661 MW mechanical x 0.944)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/beta_deg",
+          "value": 3.83,
+          "abs": 0.15,
+          "note": "NREL/TP-500-38060 Table 7-1: 3.83 deg at 12 m/s (FAST with flexible blades, the tower and the tilted, coned rotor; the BEM tables here are rigid; wider above 20 m/s, where the pitch is 0.25-0.5 deg lower)"
+        }
+      ]
+    },
+    "wind-turbine-steady-14ms": {
+      "model": "wind-turbine-steady",
+      "settings": {
+        "t_end": 250.0,
+        "output": {
+          "points": 1001
+        }
+      },
+      "overrides": {
+        "global:v_start": 14.0,
+        "global:v_end": 14.0,
+        "global:rpm0": 11.737002236068571,
+        "global:pitch0": 7.620917605966852,
+        "global:tq0": 43093.54192024057,
+        "global:x0": 0.25376949583385033
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "RotorRPM/y",
+          "value": 12.100002305225331,
+          "rtol": 0.002,
+          "note": "steady state at 14 m/s, region 3 (design/design.py)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Converter/y",
+          "value": 43093.54192024057,
+          "rtol": 0.004,
+          "note": "generator torque"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 4.999999839999999,
+          "rtol": 0.004,
+          "note": "electrical power (MW) = 0.944 x torque x speed"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/thrust",
+          "value": 458922.90119038627,
+          "rtol": 0.005,
+          "note": "rotor thrust"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "TowerSpring/q",
+          "value": 0.25376949583385033,
+          "rtol": 0.005,
+          "note": "tower-top deflection = thrust / k_tower"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/beta_deg",
+          "value": 8.620917605966852,
+          "abs": 0.03,
+          "note": "pitch (design/design.py with the BEM tables)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 5.0,
+          "rtol": 0.001,
+          "note": "rated power: 5 MW electrical (5.29661 MW mechanical x 0.944)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/beta_deg",
+          "value": 8.7,
+          "abs": 0.15,
+          "note": "NREL/TP-500-38060 Table 7-1: 8.70 deg at 14 m/s (FAST with flexible blades, the tower and the tilted, coned rotor; the BEM tables here are rigid; wider above 20 m/s, where the pitch is 0.25-0.5 deg lower)"
+        }
+      ]
+    },
+    "wind-turbine-steady-18ms": {
+      "model": "wind-turbine-steady",
+      "settings": {
+        "t_end": 250.0,
+        "output": {
+          "points": 1001
+        }
+      },
+      "overrides": {
+        "global:v_start": 18.0,
+        "global:v_end": 18.0,
+        "global:rpm0": 11.737002236068571,
+        "global:pitch0": 13.8511415857628,
+        "global:tq0": 43093.54192024057,
+        "global:x0": 0.1940156902778424
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "RotorRPM/y",
+          "value": 12.100002305225331,
+          "rtol": 0.002,
+          "note": "steady state at 18 m/s, region 3 (design/design.py)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Converter/y",
+          "value": 43093.54192024057,
+          "rtol": 0.004,
+          "note": "generator torque"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 4.999999839999999,
+          "rtol": 0.004,
+          "note": "electrical power (MW) = 0.944 x torque x speed"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/thrust",
+          "value": 350862.6723089625,
+          "rtol": 0.005,
+          "note": "rotor thrust"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "TowerSpring/q",
+          "value": 0.1940156902778424,
+          "rtol": 0.005,
+          "note": "tower-top deflection = thrust / k_tower"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/beta_deg",
+          "value": 14.8511415857628,
+          "abs": 0.03,
+          "note": "pitch (design/design.py with the BEM tables)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 5.0,
+          "rtol": 0.001,
+          "note": "rated power: 5 MW electrical (5.29661 MW mechanical x 0.944)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/beta_deg",
+          "value": 14.92,
+          "abs": 0.15,
+          "note": "NREL/TP-500-38060 Table 7-1: 14.92 deg at 18 m/s (FAST with flexible blades, the tower and the tilted, coned rotor; the BEM tables here are rigid; wider above 20 m/s, where the pitch is 0.25-0.5 deg lower)"
+        }
+      ]
+    },
+    "wind-turbine-steady-25ms": {
+      "model": "wind-turbine-steady",
+      "settings": {
+        "t_end": 250.0,
+        "output": {
+          "points": 1001
+        }
+      },
+      "overrides": {
+        "global:v_start": 25.0,
+        "global:v_end": 25.0,
+        "global:rpm0": 11.737002236068571,
+        "global:pitch0": 21.971201544169283,
+        "global:tq0": 43093.54192024057,
+        "global:x0": 0.15358658854477955
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "RotorRPM/y",
+          "value": 12.100002305225331,
+          "rtol": 0.002,
+          "note": "steady state at 25 m/s, region 3 (design/design.py)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Converter/y",
+          "value": 43093.54192024057,
+          "rtol": 0.004,
+          "note": "generator torque"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 4.999999839999999,
+          "rtol": 0.004,
+          "note": "electrical power (MW) = 0.944 x torque x speed"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/thrust",
+          "value": 277749.7057607444,
+          "rtol": 0.005,
+          "note": "rotor thrust"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "TowerSpring/q",
+          "value": 0.15358658854477955,
+          "rtol": 0.005,
+          "note": "tower-top deflection = thrust / k_tower"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/beta_deg",
+          "value": 22.971201544169283,
+          "abs": 0.03,
+          "note": "pitch (design/design.py with the BEM tables)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "ElecPower/y",
+          "value": 5.0,
+          "rtol": 0.001,
+          "note": "rated power: 5 MW electrical (5.29661 MW mechanical x 0.944)"
+        },
+        {
+          "kind": "final_value",
+          "t": 250.0,
+          "signal": "Aero/beta_deg",
+          "value": 23.47,
+          "abs": 0.6,
+          "note": "NREL/TP-500-38060 Table 7-1: 23.47 deg at 25 m/s (FAST with flexible blades, the tower and the tilted, coned rotor; the BEM tables here are rigid; wider above 20 m/s, where the pitch is 0.25-0.5 deg lower)"
+        }
+      ]
+    },
+    "wind-turbine-step": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RotorRPM/y",
+          "t": 59.0,
+          "value": 11.486178163498526,
+          "rtol": 0.002,
+          "note": "10 m/s, region 2 (design/design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aero/beta_deg",
+          "t": 239.0,
+          "value": 14.8511415857628,
+          "abs": 0.1,
+          "note": "18 m/s, the pitch of design/design.py; Table 7-1: 14.92 deg"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ElecPower/y",
+          "t": 239.0,
+          "value": 5.0,
+          "rtol": 0.002,
+          "note": "rated power at 18 m/s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RotorRPM/y",
+          "t": 419.0,
+          "value": 11.486178163498526,
+          "rtol": 0.002,
+          "note": "back at 10 m/s: the same region-2 state"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "RotorRPM/y",
+          "value": 13.915,
+          "note": "the rotor overspeeds by less than 15 % after the 4 m/s step to 18 m/s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Aero/beta_deg",
+          "value": 20.0,
+          "note": "pitch stays below 20 deg"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 0.001,
+          "stored": [
+            {
+              "coeff": 1.2900153738872199e-08,
+              "signal": "RotorInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 0.0009361262347505037,
+              "signal": "GenInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 1.129170109674708e-06,
+              "signal": "TowerMass/P",
+              "pow": 2
+            },
+            {
+              "coeff": 433818500.0,
+              "signal": "ShaftC/q",
+              "pow": 2
+            },
+            {
+              "coeff": 904212.1072953058,
+              "signal": "TowerSpring/q",
+              "pow": 2
+            }
+          ],
+          "note": "every bond's two ports carry opposite power (Tellegen); the kinetic and elastic energy of the two inertias, the tower mass, the shaft and the tower spring changes by the work of the sources (aerodynamic torque, thrust, generator) minus the shaft and tower damping; the balances integrate the port powers with the trapezoid rule on the output grid, so their accuracy is set by how many samples per period of the 2.2 Hz shaft oscillation the model records (tol 1e-3 for the step and turbulent runs, 20 to 40 samples per second)"
+        }
+      ]
+    },
+    "wind-turbine-gust": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RotorRPM/y",
+          "t": 19.0,
+          "value": 12.100002305225331,
+          "rtol": 0.002,
+          "note": "12 m/s steady state before the gust"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "RotorRPM/y",
+          "value": 13.915,
+          "note": "the gust overspeeds the rotor by less than 15 %"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "RotorRPM/y",
+          "value": 11.0,
+          "note": "and the dip does not stall it"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Wind/y",
+          "value": 15.839575384615385,
+          "rtol": 0.0001,
+          "note": "EOG peak: v_hub + 0.74 v_gust"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "RotorRPM/y",
+          "t": 59.5,
+          "value": 12.100002305225331,
+          "rtol": 0.005,
+          "note": "recovered 30 s after the gust"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 0.0001,
+          "stored": [
+            {
+              "coeff": 1.2900153738872199e-08,
+              "signal": "RotorInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 0.0009361262347505037,
+              "signal": "GenInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 1.129170109674708e-06,
+              "signal": "TowerMass/P",
+              "pow": 2
+            },
+            {
+              "coeff": 433818500.0,
+              "signal": "ShaftC/q",
+              "pow": 2
+            },
+            {
+              "coeff": 904212.1072953058,
+              "signal": "TowerSpring/q",
+              "pow": 2
+            }
+          ],
+          "note": "every bond's two ports carry opposite power (Tellegen); the kinetic and elastic energy of the two inertias, the tower mass, the shaft and the tower spring changes by the work of the sources (aerodynamic torque, thrust, generator) minus the shaft and tower damping; the balances integrate the port powers with the trapezoid rule on the output grid, so their accuracy is set by how many samples per period of the 2.2 Hz shaft oscillation the model records (tol 1e-3 for the step and turbulent runs, 20 to 40 samples per second)"
+        }
+      ]
+    },
+    "wind-turbine-turbulent": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "TowerSpring/q",
+          "from_t": 100.0,
+          "to_t": 600.0,
+          "min_hz": 0.2,
+          "max_hz": 0.6,
+          "highpass_hz": 0.1,
+          "value": 0.3216362373887004,
+          "rtol": 0.06,
+          "note": "tower fore-aft mode: 0.3216 Hz (design/tower.py; report Table 9-1: 0.3240 Hz FAST, 0.3195 Hz ADAMS); one periodogram, the peak anywhere in the half-power band (5 % damping in operation)"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "ShaftC/q",
+          "from_t": 100.0,
+          "to_t": 600.0,
+          "min_hz": 1.5,
+          "max_hz": 3.5,
+          "highpass_hz": 1.0,
+          "value": 2.222661831605023,
+          "rtol": 0.06,
+          "note": "drivetrain torsion: 2.2227 Hz, two-inertia formula sqrt(k (1/J_r + 1/(N^2 J_g))); the peak of one periodogram of a random response lies anywhere in the resonance's half-power band (+-zeta f_n, 5 %), hence 6 %"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "RotorRPM/y",
+          "from_t": 50.0,
+          "value": 13.915,
+          "note": "the rotor speed stays within 15 % of rated"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "RotorRPM/y",
+          "from_t": 50.0,
+          "value": 10.285,
+          "note": "and above 85 % (region 3 throughout)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ElecPower/y",
+          "from_t": 50.0,
+          "value": 5.6,
+          "note": "constant-power torque law: the power follows the speed within about 10 %"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 0.001,
+          "stored": [
+            {
+              "coeff": 1.2900153738872199e-08,
+              "signal": "RotorInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 0.0009361262347505037,
+              "signal": "GenInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 1.129170109674708e-06,
+              "signal": "TowerMass/P",
+              "pow": 2
+            },
+            {
+              "coeff": 433818500.0,
+              "signal": "ShaftC/q",
+              "pow": 2
+            },
+            {
+              "coeff": 904212.1072953058,
+              "signal": "TowerSpring/q",
+              "pow": 2
+            }
+          ],
+          "note": "every bond's two ports carry opposite power (Tellegen); the kinetic and elastic energy of the two inertias, the tower mass, the shaft and the tower spring changes by the work of the sources (aerodynamic torque, thrust, generator) minus the shaft and tower damping; the balances integrate the port powers with the trapezoid rule on the output grid, so their accuracy is set by how many samples per period of the 2.2 Hz shaft oscillation the model records (tol 1e-3 for the step and turbulent runs, 20 to 40 samples per second)"
+        }
+      ]
+    },
+    "wind-turbine-open-loop": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206"
+          ],
+          "note": "no algebraic loop, no causality conflict, no event storm"
+        },
+        {
+          "kind": "damping",
+          "signal": "TowerSpring/q",
+          "from_t": 0.5,
+          "to_t": 40.0,
+          "zeta": 0.048372048961046514,
+          "zeta_abs": 0.005,
+          "wn": 2.0230811743597314,
+          "wn_rtol": 0.01,
+          "min_wn": 1.0,
+          "max_wn": 4.0,
+          "note": "tower ring-down: wn 2.0231 rad/s (0.3220 Hz), zeta 0.0484 = 1 % structural + aerodynamic damping (linearised plant, design/design.py)"
+        },
+        {
+          "kind": "damping",
+          "signal": "ShaftC/q",
+          "from_t": 120.08,
+          "to_t": 124.0,
+          "offset": "linear",
+          "zeta": 0.05024066679894923,
+          "zeta_abs": 0.005,
+          "wn": 13.965427409301867,
+          "wn_rtol": 0.01,
+          "min_wn": 8.0,
+          "max_wn": 25.0,
+          "note": "drivetrain torsion after the torque step: wn 13.9654 rad/s; the two-inertia formula gives 13.9654 rad/s (2.2227 Hz) and zeta 0.0500"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "TowerSpring/q",
+          "t": 119.0,
+          "value": 0.2131056125286887,
+          "rtol": 0.002,
+          "note": "the tower settles at thrust / k_tower"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Aero/lambda",
+          "t": 119.0,
+          "value": 7.577827516616815,
+          "rtol": 0.0002,
+          "note": "the operating point of design/design.py (region 2 at 8 m/s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Cp/y",
+          "t": 119.0,
+          "value": 0.4850344979949116,
+          "rtol": 0.0001,
+          "note": "Cp at the operating point"
+        },
+        {
+          "kind": "final_value",
+          "t": 320.0,
+          "signal": "RotorRPM/y",
+          "value": 8.698099284075196,
+          "rtol": 0.002,
+          "note": "after the 5 % torque step the rotor slows until the aerodynamic torque matches (design/design.py)"
+        },
+        {
+          "kind": "final_value",
+          "t": 320.0,
+          "signal": "Aero/lambda",
+          "value": 7.1730447628993845,
+          "rtol": 0.002,
+          "note": "the new tip-speed ratio"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-05,
+          "stored": [
+            {
+              "coeff": 1.2900153738872199e-08,
+              "signal": "RotorInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 0.0009361262347505037,
+              "signal": "GenInertia/P",
+              "pow": 2
+            },
+            {
+              "coeff": 1.129170109674708e-06,
+              "signal": "TowerMass/P",
+              "pow": 2
+            },
+            {
+              "coeff": 433818500.0,
+              "signal": "ShaftC/q",
+              "pow": 2
+            },
+            {
+              "coeff": 904212.1072953058,
+              "signal": "TowerSpring/q",
+              "pow": 2
+            }
+          ],
+          "note": "every bond's two ports carry opposite power (Tellegen); the kinetic and elastic energy of the two inertias, the tower mass, the shaft and the tower spring changes by the work of the sources (aerodynamic torque, thrust, generator) minus the shaft and tower damping; the balances integrate the port powers with the trapezoid rule on the output grid, so their accuracy is set by how many samples per period of the 2.2 Hz shaft oscillation the model records (tol 1e-3 for the step and turbulent runs, 20 to 40 samples per second)"
+        }
+      ]
+    }
+  }
+}

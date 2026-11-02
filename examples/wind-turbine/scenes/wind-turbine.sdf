@@ -1,0 +1,186 @@
+<?xml version="1.0"?>
+<!--
+  wind-turbine: the NREL 5 MW reference turbine, built from simple solids at full scale (metres, Z up).
+  The wind blows towards +x; the nacelle is yawed into it, so the rotor (hub 5 m upwind of the tower axis, 90 m
+  above the ground) faces -x. Links and joints:
+    tower    revolute tower_tilt about +y at the ground: the first fore-aft mode drawn as a rigid tilt of the
+             tower, angle = 20 x TowerSpring/q / 87.6 m, so the nacelle moves 20 x its real
+             deflection (0.2 to 0.7 m in operation);
+    nacelle  fixed on the tower top;
+    rotor    revolute rotor_spin about -x (the hub, three blades with the root at the hub and a 63 m tip
+             radius), angle = RotorAngle/y: the rotor turns at its real speed, 12.1 rpm at rated;
+    wind     the arrow upwind of the rotor, its shaft length scaled by the wind speed (scale.x = Wind/y / 10).
+-->
+<sdf version="1.9">
+  <model name="wind-turbine">
+    <link name="ground">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="ground_plane">
+        <pose>0 0 -0.25 0 0 0</pose>
+        <geometry><box><size>220 220 0.5</size></box></geometry>
+        <material><diffuse>0.42 0.55 0.36 1</diffuse></material>
+      </visual>
+      <visual name="foundation">
+        <pose>0 0 0.25 0 0 0</pose>
+        <geometry><cylinder><radius>6</radius><length>0.5</length></cylinder></geometry>
+        <material><diffuse>0.6 0.6 0.6 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="tower">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="tower_0">
+        <pose>0 0 7.3 0 0 0</pose>
+        <geometry><cylinder><radius>2.91125</radius><length>14.65</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="tower_1">
+        <pose>0 0 21.9 0 0 0</pose>
+        <geometry><cylinder><radius>2.73375</radius><length>14.65</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="tower_2">
+        <pose>0 0 36.5 0 0 0</pose>
+        <geometry><cylinder><radius>2.55625</radius><length>14.65</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="tower_3">
+        <pose>0 0 51.1 0 0 0</pose>
+        <geometry><cylinder><radius>2.37875</radius><length>14.65</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="tower_4">
+        <pose>0 0 65.7 0 0 0</pose>
+        <geometry><cylinder><radius>2.20125</radius><length>14.65</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="tower_5">
+        <pose>0 0 80.3 0 0 0</pose>
+        <geometry><cylinder><radius>2.02375</radius><length>14.65</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="tower_tilt" type="revolute">
+      <parent>ground</parent>
+      <child>tower</child>
+      <axis><xyz>0 1 0</xyz></axis>
+    </joint>
+    <link name="nacelle">
+      <pose>0 0 87.6 0 0 0</pose>
+      <visual name="nacelle_body">
+        <pose>1.6 0 1.9 0 0 0</pose>
+        <geometry><box><size>14 4.2 3.8</size></box></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="nacelle_stripe">
+        <pose>1.6 0 3.85 0 0 0</pose>
+        <geometry><box><size>12 2 0.12</size></box></geometry>
+        <material><diffuse>0.15 0.35 0.65 1</diffuse></material>
+      </visual>
+      <visual name="yaw_bearing">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>1.95</radius><length>0.4</length></cylinder></geometry>
+        <material><diffuse>0.5 0.5 0.52 1</diffuse></material>
+      </visual>
+      <visual name="main_shaft">
+        <pose>-2.8 0 2.4 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.6</radius><length>2.2</length></cylinder></geometry>
+        <material><diffuse>0.45 0.45 0.48 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="nacelle_mount" type="fixed">
+      <parent>tower</parent>
+      <child>nacelle</child>
+    </joint>
+    <link name="rotor">
+      <pose>-5 0 90 0 0 0</pose>
+      <visual name="hub">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><sphere><radius>1.8</radius></sphere></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="spinner">
+        <pose>-1.4 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>1.4</radius><length>1.6</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade1_root">
+        <pose>0 0 4.75 -0 0 0</pose>
+        <geometry><cylinder><radius>1.8</radius><length>6.5</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade1_inner">
+        <pose>0 0 19 -0 0 0</pose>
+        <geometry><box><size>1.2 4.4 22</size></box></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade1_outer">
+        <pose>0 0 46.5 -0 0 0</pose>
+        <geometry><box><size>0.6 2.8 33</size></box></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade1_tip">
+        <pose>0 0 61 -0 0 0</pose>
+        <geometry><box><size>0.62 2 4</size></box></geometry>
+        <material><diffuse>0.85 0.2 0.15 1</diffuse></material>
+      </visual>
+      <visual name="blade2_root">
+        <pose>0 4.11362 -2.375 -2.0944 0 0</pose>
+        <geometry><cylinder><radius>1.8</radius><length>6.5</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade2_inner">
+        <pose>0 16.4545 -9.5 -2.0944 0 0</pose>
+        <geometry><box><size>1.2 4.4 22</size></box></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade2_outer">
+        <pose>0 40.2702 -23.25 -2.0944 0 0</pose>
+        <geometry><box><size>0.6 2.8 33</size></box></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade2_tip">
+        <pose>0 52.8275 -30.5 -2.0944 0 0</pose>
+        <geometry><box><size>0.62 2 4</size></box></geometry>
+        <material><diffuse>0.85 0.2 0.15 1</diffuse></material>
+      </visual>
+      <visual name="blade3_root">
+        <pose>0 -4.11362 -2.375 -4.18879 0 0</pose>
+        <geometry><cylinder><radius>1.8</radius><length>6.5</length></cylinder></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade3_inner">
+        <pose>0 -16.4545 -9.5 -4.18879 0 0</pose>
+        <geometry><box><size>1.2 4.4 22</size></box></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade3_outer">
+        <pose>0 -40.2702 -23.25 -4.18879 0 0</pose>
+        <geometry><box><size>0.6 2.8 33</size></box></geometry>
+        <material><diffuse>0.92 0.93 0.95 1</diffuse></material>
+      </visual>
+      <visual name="blade3_tip">
+        <pose>0 -52.8275 -30.5 -4.18879 0 0</pose>
+        <geometry><box><size>0.62 2 4</size></box></geometry>
+        <material><diffuse>0.85 0.2 0.15 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="rotor_spin" type="revolute">
+      <parent>nacelle</parent>
+      <child>rotor</child>
+      <axis><xyz>-1 0 0</xyz></axis>
+    </joint>
+    <link name="wind">
+      <pose>-80 0 90 0 0 0</pose>
+      <visual name="wind_shaft">
+        <pose>0 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>0.9</radius><length>20</length></cylinder></geometry>
+        <material><diffuse>0.25 0.6 0.95 1</diffuse></material>
+      </visual>
+      <visual name="wind_head">
+        <pose>13 0 0 0 1.5708 0</pose>
+        <geometry><cylinder><radius>2.4</radius><length>6</length></cylinder></geometry>
+        <material><diffuse>0.25 0.6 0.95 1</diffuse></material>
+      </visual>
+    </link>
+  </model>
+</sdf>
