@@ -64,6 +64,16 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
     entries: [{ keys: [["Space"]], description: "Play or pause the playback (3D view focused)" }],
   },
   {
+    title: "Code tab",
+    entries: [
+      { keys: [["Tab"]], description: "Indent 4 spaces (with a selection: indent the selected lines)" },
+      { keys: [["Shift", "Tab"]], description: "Dedent the current or selected lines" },
+      { keys: [["Enter"]], description: "New line with the indentation of the block structure" },
+      { keys: [["Esc"]], description: "Then Tab: move the focus out of the source editor" },
+      { keys: [["Ctrl", "/"]], description: "Comment or uncomment the selected lines" },
+    ],
+  },
+  {
     title: "Docs tab",
     entries: [
       { keys: [["Ctrl", "S"]], description: "Save the selected docs page (focus inside the Docs tab)" },
