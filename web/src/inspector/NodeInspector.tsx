@@ -15,7 +15,7 @@ import type { Diagnostic } from "../contracts/diagnostic";
 import type { ModelConnection, ModelNode } from "../contracts/model";
 import { BlockHelpButton } from "../app/BlockHelp";
 import { requestPlotsTab } from "../app/dockBus";
-import { requestSource } from "../code/codeSession";
+import { openNodeSource } from "../code/nodeSource";
 import { DashboardOverrideBadge } from "../dashboard/OverrideBadge";
 import { ExplainButton } from "../debug/explain/ExplainButton";
 import { SignalContextMenu } from "../debug/panels/SignalMenu";
@@ -605,17 +605,10 @@ export function NodeInspector({
   const constantDecls = block === undefined ? [] : editableConstants(ref, block.constants);
   const inlineSource = "inline" in node.block ? node.block.inline.source : null;
   const source = block?.source ?? inlineSource;
+  // The Code tab shows the block with its own editor: long generated lines scroll there,
+  // and a project block can be edited.
   const openSource = () => {
-    if (source === null) {
-      return;
-    }
-    // The Code tab shows the block with its own editor (long generated lines scroll there,
-    // and a project block can be edited); an inline node opens as `inline:<id>`.
-    const target =
-      block !== undefined
-        ? { kind: block.ref.startsWith("stdlib:") ? ("stdlib" as const) : ("project" as const), ref: block.ref }
-        : { kind: "inline" as const, ref: `inline:${node.id}` };
-    requestSource({ ...target, line: 1, col: 1 }, { reveal: true });
+    openNodeSource(node, index);
   };
   const [copy, setCopy] = useState<CopyState>({ status: "idle", message: null });
   const [saveDialog, setSaveDialog] = useState(false);

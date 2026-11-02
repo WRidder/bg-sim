@@ -7,7 +7,7 @@ Models are drawn on the canvas of the **Diagram** tab.
 - **Add:** drag a block from the [library](page:projects-and-library) onto the canvas.
 - **Select:** click a block, or drag on empty canvas for a selection box.
 - **Edit:** the inspector on the right shows the selected block: name, parameters (with units, defaults and limits), constants, start values and ports. Press `Enter` to apply a value, `Esc` to undo the typing. Values can be expressions and can use [global parameters](page:parameters).
-- **Arrange:** `R` rotates, `F` flips, `Del` deletes, `Ctrl+C` / `Ctrl+X` / `Ctrl+V` copy, cut and paste (see **Copy and paste** below). Right-click a block for the same actions.
+- **Arrange:** `R` rotates, `F` flips, `Del` deletes, `Ctrl+C` / `Ctrl+X` / `Ctrl+V` copy, cut and paste (see **Copy and paste** below). Right-click a block for the same actions, and for **Show source**, which opens the block's source in the Code tab.
 - **Undo:** `Ctrl+Z`, redo `Ctrl+Y`.
 - **Navigate:** the mouse wheel zooms. Pan with the middle mouse button, `Space`+drag or the arrow keys. **Fit view** in the canvas toolbar fits the whole diagram.
 
