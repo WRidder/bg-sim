@@ -201,6 +201,8 @@ def compare_robust(args) -> int:
                "th2": np.abs(wrap(at(r, "true/th2", t) - env["th2"][i][m])),
                "u": np.abs(at(r, "Policy/u_cmd", t) - env["u"][i][m])}
         res["cases"][c["name"]] = {k: float(np.max(v)) for k, v in dev.items()}
+        for h in (0.5, 1.0):
+            res["cases"][c["name"]] |= {f"{k}_to{h}s": float(np.max(v[t <= h + 1e-9])) for k, v in dev.items()}
         res["cases"][c["name"]]["tailDegBgsim"] = float(np.degrees(np.max(np.abs(np.stack(
             [r["true/th1"], r["true/th2"]])[:, r["t"] >= c["t_end"] - 1.0]))))
         res["cases"][c["name"]]["tailDegEnv"] = float(np.degrees(np.max(np.abs(np.stack(

@@ -244,6 +244,8 @@ class RobustCfg:
     drop_angle: float = 0.8
     drop_penalty: float = 50.0
     comp: float = 1.0               # the teacher's Coulomb compensation fraction
+    teacher_est: int = 0            # 0: the expert sees the true state; N: a least-squares fit of the last N
+    #                                 encoder samples (what the student sees, so imitation does not shrink gains)
     seed: int = 0
 
     @property
@@ -425,7 +427,21 @@ class RobustLabEnv(VecEnv):
     def teacher_action(self) -> np.ndarray:
         """The expert's action in [-1, 1] at the current tick (true state)."""
         tau = self.episode_length_buf.numpy() * self.cfg.ts
-        return self.teacher(tau, self._z, self.swing) / self.cfg.v_max
+        z = self._z if self.cfg.teacher_est <= 0 else self.estimate(self.cfg.teacher_est)
+        return self.teacher(tau, z, self.swing) / self.cfg.v_max
+
+    def estimate(self, N: int) -> np.ndarray:
+        """(n, 6) state from the last N measured samples: a least-squares line per coordinate, evaluated at the
+        newest sample (positions) and its slope (rates). Regressing the expert's true-state action on the noisy
+        encoder history attenuates the rate gains (errors in variables: the student balanced in a 3 deg limit
+        cycle); labelling with the expert on this estimate gives a target that is a function of the observation."""
+        assert 2 <= N <= self.cfg.hist + 1
+        k = np.arange(N, dtype=float)
+        kc = k - k.mean()
+        P = self.pipe.P[:, :N]
+        slope = -np.einsum("k,nkc->nc", kc, P) / (kc @ kc) / self.cfg.ts
+        pos = P.mean(1) + slope * k.mean() * self.cfg.ts
+        return np.concatenate([pos, slope], 1)
 
     # -- step ------------------------------------------------------------------------------
     def step(self, actions: torch.Tensor):

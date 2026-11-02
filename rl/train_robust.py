@@ -77,7 +77,8 @@ def evaluate(runner, cfg: RobustCfg, export_dir, draws, threads: int, catch=None
 
 
 class Catch:
-    """The hybrid's latched LQR takeover on the observation: z = [x, wrapped th1, th2, the newest differences]."""
+    """The hybrid's latched LQR takeover on the observation: z = a least-squares fit of the encoder history
+    (`RobustLabEnv.estimate`, all H + 1 samples up to 5), angles wrapped."""
 
     def __init__(self, path: Path, tol: float, v_max: float):
         d = json.loads(path.read_text(encoding="utf-8"))
@@ -85,10 +86,9 @@ class Catch:
         self.mode = None
 
     def z(self, env):
-        o = env._pol
-        P0 = env.pipe.P[:, 0]
-        return np.stack([P0[:, 0], np.remainder(P0[:, 1] + np.pi, 2 * np.pi) - np.pi,
-                         np.remainder(P0[:, 2] + np.pi, 2 * np.pi) - np.pi, o[:, 5], o[:, 6], o[:, 7]], 1)
+        z = env.estimate(min(5, env.cfg.hist + 1))
+        z[:, 1:3] = np.remainder(z[:, 1:3] + np.pi, 2 * np.pi) - np.pi
+        return z
 
     def __call__(self, env, a):
         if self.mode is None or len(self.mode) != env.num_envs:
@@ -216,6 +216,7 @@ def main() -> int:
     ap.add_argument("--catch-tol", type=float, default=2e4)
     ap.add_argument("--dr", type=float, default=1.0)
     ap.add_argument("--episode-s", type=float, default=7.0)
+    ap.add_argument("--teacher-est", type=int, default=5, help="expert on a fit of the last N samples (0: true state)")
     ap.add_argument("--resume", type=Path)
     ap.add_argument("--max-minutes", type=float, default=60.0)
     args = ap.parse_args()
@@ -225,7 +226,7 @@ def main() -> int:
     run.mkdir(parents=True, exist_ok=True)
     export_dir = args.export_dir.resolve()
     cfg = RobustCfg(export_dir=str(export_dir), num_envs=args.envs, threads=args.threads, hist=args.hist,
-                    seed=args.seed, dr=args.dr, episode_s=args.episode_s)
+                    seed=args.seed, dr=args.dr, episode_s=args.episode_s, teacher_est=args.teacher_est)
     pure = args.variant == "pure"
     hybrid = args.variant == "hybrid"
     if pure or hybrid:
