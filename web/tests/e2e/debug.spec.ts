@@ -109,9 +109,12 @@ async function hoverPlot(page: Page, fraction: number): Promise<number> {
   const box = await over.boundingBox();
   if (box === null) throw new Error("the plot has no measurable area");
   await page.mouse.move(box.x + box.width * fraction, box.y + box.height * 0.5, { steps: 4 });
+  // The readout scales short times: "inspect t = 4.601 ms" (also µs and ns), else "… s".
+  const scale: Record<string, number> = { s: 1, ms: 1e-3, µs: 1e-6, ns: 1e-9 };
   const read = async () => {
     const text = (await page.getByTestId("plot-inspect-time").textContent()) ?? "";
-    return Number.parseFloat(/=\s*([0-9.eE+-]+)/.exec(text)?.[1] ?? "");
+    const match = /=\s*([0-9.eE+-]+)\s*(ms|µs|ns|s)\b/.exec(text);
+    return match === null ? Number.NaN : Number.parseFloat(match[1] ?? "") * (scale[match[2] ?? ""] ?? Number.NaN);
   };
   await expect.poll(read).toBeGreaterThan(0);
   return read();

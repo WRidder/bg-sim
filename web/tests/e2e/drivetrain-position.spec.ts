@@ -16,7 +16,7 @@ import { expect, test, type Page } from "@playwright/test";
  * 3. press Run, wait for `done`;
  * 4. plot the load angle `ThetaL/y`: before the step (0.1 s) it is at rest, one second after the
  *    disturbance (3.18 s) it is back at 1 rad inside 0.02 rad;
- * 5. open 3D: the scene loads, the seven bindings validate, and the load wheel joint follows
+ * 5. open 3D: the scene loads, the four bindings validate, and the load wheel joint follows
  *    `ThetaL/y` at two times (rest at 0.1 s, 1 rad at 1.5 s), the wheel 1 joint likewise.
  *
  * The fake worker answers every run from a fixed fixture, so this spec uses the real worker: it
@@ -247,7 +247,8 @@ test(`${EXAMPLE}: load-position step on the compliant drivetrain, settled load a
   await timeAt(0.995);
   expect(Math.abs((await legendNumber(page, load)) - 1.0)).toBeLessThan(0.02);
 
-  // The same run in 3D: seven bindings, the wheel joints follow the model at two times.
+  // The same run in 3D: four bindings (three joints and the shaft rod's torsion), the wheel
+  // joints follow the model at two times.
   await page.getByRole("tab", { name: "3D View" }).click();
   await expect(page.getByTestId("scene-view")).toHaveAttribute("data-state", "loaded", {
     timeout: 30_000,
@@ -257,11 +258,14 @@ test(`${EXAMPLE}: load-position step on the compliant drivetrain, settled load a
   const tree = page.getByTestId("scene-tree");
   await expect(tree).toContainText("wheel1");
   await expect(tree).toContainText("wheel2");
-  await expect(tree).toContainText("shaft4");
+  // the shaft is one rod between the discs, twisted by a deformation binding
+  await expect(tree).toContainText("shaft_rod");
 
   await page.getByTestId("bindings-toggle").click();
   await expect(page.getByTestId("bindings-editor")).toBeVisible();
-  for (let row = 0; row < 7; row += 1) {
+  await expect(page.getByTestId("binding-row-3")).toBeVisible();
+  await expect(page.getByTestId("binding-row-4")).toHaveCount(0);
+  for (let row = 0; row < 4; row += 1) {
     await expect(page.getByTestId(`binding-row-${row}`)).not.toHaveAttribute(
       "data-invalid",
       "true",

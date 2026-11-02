@@ -49,6 +49,30 @@ async function store(request: APIRequestContext, bindings: unknown[]): Promise<v
 
 const COUNTER_BINDING = { target: "joint:j1", property: "position", signal: "Synthetic/counter", gain: 0.1 };
 
+/**
+ * The joint angle the viewer sets at playback time `t`. The 3D View thins the 1001 rows
+ * (0.001 s apart) to its 60 frames per simulated second (`thinRows`: the first row, then each
+ * row at least 1/60 s after the last kept one, so t = 0, 0.017, 0.034, ...) and lerps between
+ * frames, so within the frame pair around a counter step (0.187..0.204 around 0.2 s) the angle
+ * is between two steps, not floor(t / 0.1) * 0.1.
+ */
+function shownAngle(t: number): number {
+  const gap = (1 / 60) * (1 - 1e-9);
+  const frames: number[] = [0];
+  for (let i = 1; i <= 1000; i += 1) {
+    const time = i / 1000;
+    if (time >= (frames.at(-1) ?? 0) + gap || i === 1000) frames.push(time);
+  }
+  const counter = (time: number) => Math.floor(time / 0.1 + 1e-9);
+  const hi = frames.findIndex((time) => time >= t);
+  if (hi === 0) return 0;
+  if (hi < 0) return 0.1 * counter(frames.at(-1) ?? 0);
+  const a = frames[hi - 1] ?? 0;
+  const b = frames[hi] ?? 0;
+  const f = (t - a) / (b - a);
+  return 0.1 * (counter(a) + (counter(b) - counter(a)) * f);
+}
+
 async function openAndRun(page: Page): Promise<void> {
   await page.goto(`/?project=${project}&model=Arm`);
   await expect(page.getByTestId("run-button")).toBeEnabled({ timeout: 30_000 });
@@ -101,14 +125,15 @@ test("the plot cursor drives the joint in 3D, and playing in 3D drives the plot 
 
   const t1 = await hoverPlot(page, 0.55);
   await openViewer(page);
-  await expect.poll(() => applied(page)).toBeCloseTo(Math.floor(t1 / 0.1 + 1e-9) * 0.1, 6);
+  await expect.poll(async () => ((await applied(page)) ?? Number.NaN) - shownAngle(await barTime(page))).toBeCloseTo(0, 6);
   expect(await barTime(page)).toBeCloseTo(t1, 2);
 
   await page.getByRole("tab", { name: "Plots" }).click();
   const t2 = await hoverPlot(page, 0.95);
   expect(t2).toBeGreaterThan(t1);
   await page.getByRole("tab", { name: "3D View" }).click();
-  await expect.poll(() => applied(page)).toBeCloseTo(Math.floor(t2 / 0.1 + 1e-9) * 0.1, 6);
+  await expect.poll(async () => ((await applied(page)) ?? Number.NaN) - shownAngle(await barTime(page))).toBeCloseTo(0, 6);
+  expect(await barTime(page)).toBeCloseTo(t2, 2);
   expect(Math.floor(t2 / 0.1 + 1e-9) * 0.1).toBeGreaterThan(Math.floor(t1 / 0.1 + 1e-9) * 0.1);
 
   // scrubbing the 3D time slider moves the joint and the plot cursor
@@ -132,7 +157,8 @@ test("the plot cursor drives the joint in 3D, and playing in 3D drives the plot 
   const held = await barTime(page);
   await page.waitForTimeout(300);
   expect(await barTime(page)).toBe(held);
-  expect(await applied(page)).toBeCloseTo(Math.floor(held / 0.1 + 1e-9) * 0.1, 6);
+  // the head stops anywhere, also between the two frames around a counter step
+  expect(await applied(page)).toBeCloseTo(shownAngle(held), 6);
 
   // the plot cursor stopped where the 3D head stopped
   await page.getByRole("tab", { name: "Plots" }).click();
