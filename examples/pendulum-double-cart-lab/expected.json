@@ -904,6 +904,166 @@
         }
       ]
     },
+    "pendulum-double-cart-lab-rl-robust": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "max_abs",
+          "signal": "Policy/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "the policy is off until t_on = 1 s: 0 V while the links hang"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "the cart rests at the centre until the policy starts"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th1",
+          "from_t": 5.0,
+          "to_t": 7.49,
+          "value": 0.0,
+          "abs": 0.0349,
+          "note": "the R1 robust policy (rl/train_robust.py: behaviour cloning + DAgger on the TVLQR swing-up and LQR over domain-randomised draws, then PPO with a cloning anchor) swings up on the realistic plant (every realism.json effect at its nominal value, 14-bit encoders with seeded noise, the 2 ms loop delay) and holds link 1 within 2 deg before the push (measured 1.38 deg, encoder reading)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th2",
+          "from_t": 5.0,
+          "to_t": 7.49,
+          "value": 0.0,
+          "abs": 0.0349,
+          "note": "link 2 within 2 deg of upright before the push (measured 1.05 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 5.0,
+          "to_t": 7.49,
+          "value": 0.0253,
+          "abs": 0.02,
+          "note": "the cart balances near the centre (measured 25 mm)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th1",
+          "from_t": 7.5,
+          "to_t": 9.5,
+          "value": 0.1883,
+          "abs": 0.02,
+          "note": "the 40 ms, 0.45 N tip push at 7.5 s: link 1 deflects by 10.8 deg (the R0.7 policy on the ideal plant: 10.9 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th2",
+          "from_t": 7.5,
+          "to_t": 9.5,
+          "value": 0.0729,
+          "abs": 0.015,
+          "note": "link 2 deflects by 4.2 deg after the push"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 7.5,
+          "to_t": 9.5,
+          "value": 0.1706,
+          "abs": 0.02,
+          "note": "the cart travels 0.171 m in the push recovery"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th1",
+          "from_t": 11.5,
+          "to_t": 12.5,
+          "value": 0.0,
+          "abs": 0.0349,
+          "note": "recovered: link 1 within 2 deg over the last second (measured 0.59 deg)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Policy/th2",
+          "from_t": 11.5,
+          "to_t": 12.5,
+          "value": 0.0,
+          "abs": 0.0349,
+          "note": "recovered: link 2 within 2 deg over the last second (measured 0.15 deg)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Policy/u",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 24.0,
+          "note": "the policy's output stays inside the +-24 V supply (it reaches the clamp at the catch: the cloned rate estimate is noisy)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 0.3768,
+          "abs": 0.03,
+          "note": "peak cart travel 0.377 m in the swing-up, inside the robustness test's 0.95 m"
+        },
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.229312777,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.175875,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB2/g[2]",
+                null,
+                "PoseB2/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "the closed loop with the 5633-weight policy block, the realism forces and the encoder noise reports no diagnostics"
+        }
+      ]
+    },
     "pendulum-double-cart-lab-robust": {
       "run_timeout": 1200,
       "checks": [

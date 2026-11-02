@@ -98,6 +98,7 @@ def load(lib: Path) -> ctypes.CDLL:
         "bgenv_create": ([ctypes.c_int], P), "bgenv_free": ([P], None),
         "bgenv_reset": ([P, B, I, ctypes.c_int, D, I, ctypes.c_int, D], ctypes.c_int),
         "bgenv_step": ([P, D, ctypes.c_int, D, I], ctypes.c_int),
+        "bgenv_step_delay": ([P, D, D, I, ctypes.c_int, D, I], ctypes.c_int),
         "bgenv_plant_seconds": ([P], ctypes.c_double), "bgenv_outputs": ([P, D], None),
         "bgenv_get_x": ([P, D], None), "bgenv_set_x": ([P, ctypes.c_int, D], None),
         "bgenv_time": ([P, ctypes.c_int], ctypes.c_double),
@@ -180,6 +181,16 @@ class BatchedPlant:
         """Advance every instance by ``nsub`` internal steps with the inputs ``u`` (n x nu)."""
         self.u[:] = u
         self.dll.bgenv_step(self.h, ptr(self.u), nsub, ptr(self.y), ptr(self.status, ctypes.c_int))
+        return self.y
+
+    def step_delay(self, u0: np.ndarray, u1: np.ndarray, d: np.ndarray, nsub: int) -> np.ndarray:
+        """As ``step``, with a loop delay per instance: the first ``d[k]`` internal steps hold ``u0``,
+        the rest ``u1`` (the command computed at the period start acts after d steps)."""
+        a0 = np.ascontiguousarray(u0, dtype=float)
+        a1 = np.ascontiguousarray(u1, dtype=float)
+        dd = np.ascontiguousarray(d, dtype=np.int32)
+        self.dll.bgenv_step_delay(self.h, ptr(a0), ptr(a1), ptr(dd, ctypes.c_int), nsub, ptr(self.y),
+                                  ptr(self.status, ctypes.c_int))
         return self.y
 
     def plant_seconds(self) -> float:

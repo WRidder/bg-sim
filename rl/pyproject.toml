@@ -10,6 +10,8 @@ dependencies = [
     "tensordict>=0.8",
     "fmpy>=0.3.20",
     "matplotlib>=3.9",
+    "casadi>=3.8.2",
+    "scipy>=1.18.1",
 ]
 
 [tool.uv]

@@ -43,7 +43,9 @@ const RANGES = Dict(
 const MODIFIED = Dict("m1" => 0.115, "m2" => 0.07, "L1" => 0.26, "b1" => 6e-4, "R_m" => 1.8,
     "m_cart" => 0.7)
 const MODIFIED_LAB = Dict("m_tube1" => 0.11, "m_head1" => 0.112, "m_tip2" => 0.044, "L1" => 0.351,
-    "com_shift2" => 0.015, "b_joint1" => 5e-4, "R_m" => 1.7, "m_cart" => 0.78, "k_belt" => 3.0e5)
+    "com_shift2" => 0.015, "b_joint1" => 5e-4, "R_m" => 1.7, "m_cart" => 0.78, "k_belt" => 3.0e5,
+    # R1: the realism forces of library/LabRealism.jl
+    "tc_joint2" => 4e-4, "tc_carriage" => 1.6, "ripple_rel" => 0.035, "cogging" => 0.4, "k_cable" => 2.5e-4)
 
 function rig_setup(rig)
     project, model = RIGS[rig]

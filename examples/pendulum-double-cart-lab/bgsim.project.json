@@ -8,6 +8,7 @@
     "pendulum-double-cart-lab-free",
     "pendulum-double-cart-lab-plant",
     "pendulum-double-cart-lab-rl",
+    "pendulum-double-cart-lab-rl-robust",
     "pendulum-double-cart-lab-robust",
     "pendulum-double-cart-lab-recover"
   ],
