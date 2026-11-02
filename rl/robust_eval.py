@@ -3,7 +3,7 @@
 realism forces and the env's sensors and loop delay. Fast (all draws of a scenario in one batch), used during
 training and to explain env-vs-harness differences; the scored numbers come from the harness.
 
-    uv run --project rl rl/robust_eval.py <plant export dir> --teacher | --weights policy.npz
+    uv run --project rl rl/robust_eval.py <plant export dir> --teacher [--teacher-est 5] | --weights policy.npz
         [--scenarios swingup,balance_push,knockdown_recover] [--out results.json]
 
 Differences to the harness: the truth is the FMU (belt, armature inductance) instead of the twin; the start rates
@@ -31,14 +31,14 @@ TEST = json.loads((LAB / "design" / "robustness_test.json").read_text(encoding="
 
 
 def run_scenario(export_dir, policy, scenario: str, threads: int = 4, draws=None, hist: int = 4,
-                 teacher_swing: bool = True) -> dict:
+                 teacher_swing: bool = True, teacher_est: int = 0) -> dict:
     """`policy(env) -> actions (n,) in [-1, 1]`; returns per-draw results and the summary."""
     sc = TEST["scenarios"][scenario]
     draws = draws or test_draws()
     n = len(draws)
     t_end = float(sc["t_end"])
     cfg = RobustCfg(export_dir=str(export_dir), num_envs=n, threads=threads, episode_s=t_end + 1.0, p_push=0.0,
-                    drop_angle=0.0, x_rail=50.0, hist=hist, seed=12345)
+                    drop_angle=0.0, x_rail=50.0, hist=hist, seed=12345, teacher_est=teacher_est)
     env = RobustLabEnv(cfg, draws=[d[1] for d in draws])
     hanging = bool(sc["start"].get("hanging"))
     if hanging:
@@ -125,6 +125,7 @@ def main() -> int:
     ap.add_argument("--weights", type=Path)
     ap.add_argument("--scenarios", default="swingup,balance_push")
     ap.add_argument("--threads", type=int, default=4)
+    ap.add_argument("--teacher-est", type=int, default=0, help="--teacher: the expert on a fit of the last N samples (0: true state)")
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
     pol = teacher_policy if args.teacher else mlp_policy(args.weights)
@@ -133,7 +134,7 @@ def main() -> int:
         hist = int(np.load(args.weights)["hist"])
     out = {}
     for sc in args.scenarios.split(","):
-        r = run_scenario(args.export_dir.resolve(), pol, sc, args.threads, hist=hist)
+        r = run_scenario(args.export_dir.resolve(), pol, sc, args.threads, hist=hist, teacher_est=args.teacher_est)
         print(fmt(sc, r["summary"]), flush=True)
         fails = [f"{x['draw']} ({x['tail_dev_deg']:.1f} deg, x {x['peak_x']:.2f})" for x in r["runs"]
                  if not x["ok"] and x["draw"] != "nominal"]

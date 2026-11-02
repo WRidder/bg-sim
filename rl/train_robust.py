@@ -217,6 +217,8 @@ def main() -> int:
     ap.add_argument("--dr", type=float, default=1.0)
     ap.add_argument("--episode-s", type=float, default=7.0)
     ap.add_argument("--teacher-est", type=int, default=5, help="expert on a fit of the last N samples (0: true state)")
+    ap.add_argument("--w-rate", type=float, help="reward weight of the action rate (a - a_prev)^2 (default RobustCfg.w_rate)")
+    ap.add_argument("--w-act", type=float, help="reward weight of a^2 (default RobustCfg.w_act)")
     ap.add_argument("--resume", type=Path)
     ap.add_argument("--max-minutes", type=float, default=60.0)
     args = ap.parse_args()
@@ -227,6 +229,10 @@ def main() -> int:
     export_dir = args.export_dir.resolve()
     cfg = RobustCfg(export_dir=str(export_dir), num_envs=args.envs, threads=args.threads, hist=args.hist,
                     seed=args.seed, dr=args.dr, episode_s=args.episode_s, teacher_est=args.teacher_est)
+    if args.w_rate is not None:
+        cfg.w_rate = args.w_rate
+    if args.w_act is not None:
+        cfg.w_act = args.w_act
     pure = args.variant == "pure"
     hybrid = args.variant == "hybrid"
     if pure or hybrid:
@@ -324,8 +330,8 @@ def main() -> int:
         curve.flush()
         say(f"[it {it:4d}] {steps / 1e6:6.1f} M steps {wall / 60:5.1f} min: reward "
             f"{np.mean(rewards) if rewards else 0:.3f} | val swing-up {s['mc_ok']}/64 (5.7: {s['mc_ok_5p7']}) tail "
-            f"{s['tail_dev_deg_median']:.2f} deg x {s['peak_x_max']:.2f} | balance+push {b['mc_ok']}/64 (5.7: "
-            f"{b['mc_ok_5p7']}) tail {b['tail_dev_deg_median']:.2f} deg | std {std:.3f}")
+            f"{s['tail_dev_deg_median']:.2f} deg {s['tail_V_rms_median']:.1f} V x {s['peak_x_max']:.2f} | balance+push {b['mc_ok']}/64 (5.7: "
+            f"{b['mc_ok_5p7']}) tail {b['tail_dev_deg_median']:.2f} deg {b['tail_V_rms_median']:.1f} V | std {std:.3f}")
         return s["mc_ok"] + b["mc_ok"] + 0.01 * (s["mc_ok_5p7"] + b["mc_ok_5p7"])
 
     best = record(0, [], 0.0)
