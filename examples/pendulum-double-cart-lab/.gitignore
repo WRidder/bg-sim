@@ -1,0 +1,4 @@
+# run data of design/finish.py (backend runs for expected.json and the docs)
+design/_runs/
+# realism screen output of design/screen.py (summary in design/screen_results.json)
+design/_screen/

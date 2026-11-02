@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "pendulum-double-cart-lab",
+  "models": [
+    "pendulum-double-cart-lab",
+    "pendulum-double-cart-lab-balance",
+    "pendulum-double-cart-lab-free"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

@@ -159,6 +159,20 @@ def build(P: Plant, block: str, *, free: bool = False, th0=None, x0: float = 0.0
     M.wire(gear, "b", pulley, "a")
     M.wire(pulley, "b", belt, "a")
     M.wire(belt, "b", rail, "drive")
+    if P.b_cart > 0.0:
+        # carriage and cable-chain friction: a damper from the rail drive to a fixed frame
+        fric = M.node("RailFriction", "stdlib:translation/Damper", X(5) - 20, 80, params={"d": _num(P.b_cart)})
+        fix_f = M.node("FrameF", "stdlib:translation/Fixed", X(5) - 20, -20)
+        M.wire(fric, "a", rail, "drive")
+        M.wire(fric, "b", fix_f, "a")
+    if P.k_stop > 0.0:
+        # soft end stops at +-x_rail: no force inside, a spring-damper beyond (x = the cart position)
+        stop = M.node("EndStops", "stdlib:translation/HardStop", X(6) - 20, 80,
+                      params={"lower": _num(-P.x_rail), "upper": _num(P.x_rail), "k": _num(P.k_stop),
+                              "d": _num(P.d_stop)}, starts={"x": _num(x0)})
+        fix_s = M.node("FrameS", "stdlib:translation/Fixed", X(6) - 20, -20)
+        M.wire(stop, "a", rail, "drive")
+        M.wire(stop, "b", fix_s, "a")
 
     # firmware
     clock = M.node("Clock", "stdlib:sources/Time", X(0), 220)
