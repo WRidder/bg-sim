@@ -755,50 +755,6 @@
 
 /* ---------------------------------------------------------------- source */
 
-.inspector-source {
-  margin-top: var(--space-2);
-  overflow: hidden;
-  background: var(--color-surface-sunken);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-sm);
-}
-
-.inspector-source__head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 1px 2px 1px var(--space-2);
-  border-bottom: var(--border-width) solid var(--color-border);
-}
-
-.inspector-source__path {
-  min-width: 0;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--color-text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.inspector-source__head .inspector-reset {
-  margin-left: auto;
-  width: 20px;
-  height: 20px;
-}
-
-.inspector-source__text {
-  max-height: 260px;
-  margin: 0;
-  padding: var(--space-2);
-  overflow: auto;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  line-height: 1.45;
-  color: var(--color-text);
-  tab-size: 4;
-}
-
 /* -------------------------------------------------------------- summaries */
 
 .inspector-summary {
