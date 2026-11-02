@@ -167,7 +167,10 @@ def ground_state(throttle=0.0, flap_deg=0.0, psi=0.0, pos=(0.0, 0.0), ground_z=0
         dx = M.deriv(0.0, build(z), c, par)
         return [dx[M.I_V + 2], dx[M.I_W + 1] * 10.0, dx[M.I_H] / 10.0]
 
-    sol = least_squares(res, [ground_z + 1.2, 0.0, 60.0 + 200.0 * throttle], xtol=1e-15, ftol=1e-15, gtol=1e-15)
+    # start from the tricycle's rest attitude (3.5 deg): at full throttle the strong static thrust
+    # (its line below the CG) also balances the aircraft on its main wheels with the nose up
+    # (about 11 deg), an unstable equilibrium a level start can converge to
+    sol = least_squares(res, [ground_z + 1.2, 0.06, 60.0 + 200.0 * throttle], xtol=1e-15, ftol=1e-15, gtol=1e-15)
     x = build(sol.x)
     return x, c, {"h_cg": sol.x[0] - ground_z, "theta": sol.x[1], "omega": sol.x[2],
                   "q": [x[M.I_STRUT + k] for k in range(3)], "residual": float(np.max(np.abs(sol.fun)))}

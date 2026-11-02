@@ -29,7 +29,7 @@ The second is `Propeller`, a resistance whose torque and thrust are
 
 $$\tau = C_P(J)\,\frac{\rho n^2 D^5}{2\pi}, \qquad T = C_T(J)\,\rho n^2 D^4, \qquad J = \frac{u}{n D}$$
 
-with the 75-inch fixed-pitch propeller's tables.
+with the 75-inch fixed-pitch propeller's tables. These are JSBSim's prop_75in2f with a correction that is not JSBSim data: at low advance ratio $C_T$ is raised (by 46 % at $J = 0$) and $C_P$ lowered (by 15 %), fading out by $J = 0.725$, a fit to the POH's static rpm, climb and take-off (the example's README, "The propeller fit"). Cruise and maximum speed keep the JSBSim tables.
 
 ## Validation source
 

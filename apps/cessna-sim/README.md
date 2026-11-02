@@ -3,10 +3,12 @@
 A small, standalone real-time flight simulator around the FMU that bg-sim exports from the
 `cessna-sim` model of the Cessna example (`examples/cessna/models/cessna-sim`). That model is a
 Cessna 172P from JSBSim's c172p data, built as a bond graph: a multibond airframe on three gear
-legs, the engine and propeller on a rotational bond graph, and an autopilot. The FMU is the whole
-aircraft, including the landing gear. This app adds the pilot's controls, the world, the cameras
-and the instrument panel. You start on the runway, take off, fly the circuit and land. If you
-crash, press R.
+legs, the engine and propeller on a rotational bond graph, and an autopilot. The propeller's
+low-speed thrust and power are fitted to the POH's static rpm, climb and take-off (see the
+example's README), so its sea-level climb and take-off roll are close to the handbook's. The
+FMU is the whole aircraft, including the landing gear. This app adds the pilot's controls, the
+world, the cameras and the instrument panel. You start on the runway, take off, fly the circuit
+and land. If you crash, press R.
 
 The aircraft meshes are the example's own (`examples/cessna/meshes`, written by
 `examples/cessna/design/make_meshes.py`). Everything else is procedural:

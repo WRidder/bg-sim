@@ -56,9 +56,12 @@ const SCENARIOS = [
     (name = "takeoff_roll", t_end = 25.0,
      inputs = Dict("throttle" => [(1.0, 0.5), (2.0, 1.0)], "pedals" => [(12.0, 0.2), (13.0, 0.0)],
                    "yoke_pitch" => [(20.0, 0.6)])),
+    # the run-up trims nose down: with nose-up trim, the static propwash of the POH-fitted
+    # propeller over the elevator lifts the nose wheel at full throttle on the brakes, and the
+    # model (no tail contact) then pitches far up
     (name = "runup_brakes", t_end = 12.0,
      inputs = Dict("brake_l" => [(0.5, 1.0)], "brake_r" => [(0.5, 1.0)], "throttle" => [(1.0, 1.0), (8.0, 0.0)],
-                   "mixture" => [(6.0, 0.8)], "flaps" => [(2.0, 0.0), (5.0, 3.0)], "trim" => [(3.0, 0.5)])),
+                   "mixture" => [(6.0, 0.8)], "flaps" => [(2.0, 0.0), (5.0, 3.0)], "trim" => [(3.0, -0.5)])),
     (name = "steer_wind", t_end = 15.0,
      inputs = Dict("throttle" => [(0.5, 0.6)], "pedals" => [(4.0, -1.0), (7.0, 1.0), (10.0, 0.0)],
                    "brake_l" => [(11.0, 0.6)], "wind_n" => [(2.0, -3.0)], "wind_e" => [(2.0, 2.0)])),
