@@ -729,6 +729,12 @@ end
             ("A/c2.e", "A/c2.f", "B/c2.e", "B/c2.f"))
         @test !any(v -> v.id == "c2.e", fmt.variables)
 
+        # A root junction bonded to a junction inside a component (the double-cart plant:
+        # root 1-junctions against the RigidBody2D junctions): both ends name one pair.
+        cart = flat_file(joinpath(_REPO, "examples", "pendulum-double-cart-lab", "models",
+            "pendulum-double-cart-lab-plant.bgmodel.json"))
+        @test isempty(_errors(cart))
+
         # A junction with no bonds is E101 on the junction node (it can never be solved).
         lonely = _model("Lonely", Any[
             _node("n1", "J9", _junction(1)),

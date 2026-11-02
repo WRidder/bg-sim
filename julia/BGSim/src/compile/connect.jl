@@ -447,12 +447,12 @@ function _record_junction_bonds!(b::Builder, states::Vector{ConnState})
             from_j === nothing || push!(
                 from_j.bonds,
                 Flat.JunctionBond(state.conn.id, t.node, t.path, nothing, false, false,
-                    String[], String[]),
+                    String[], String[], state.diagram),
             )
             to_j === nothing || push!(
                 to_j.bonds,
                 Flat.JunctionBond(state.conn.id, f.node, f.path, nothing, true, false,
-                    String[], String[]),
+                    String[], String[], state.diagram),
             )
             continue
         end
