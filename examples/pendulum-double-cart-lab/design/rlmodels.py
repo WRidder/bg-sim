@@ -30,7 +30,10 @@ writes, next to the classical models (which stay unchanged):
     voltage out. The scenario of the classical `pendulum-double-cart-lab`: hanging at rest until 1 s, the
     policy from 1 s, a 40 ms, 0.45 N tip push at 7.5 s, end 12.5 s.
 
-``--cases``: closed-loop variants from given poses at rest (rl/compare.py --rig lab).
+``--cases``: closed-loop variants from given poses at rest (rl/compare.py --rig lab), without dashboards.
+
+The three models get the dashboards of `design/dashboards.py` (the two closed loops also its monitor block,
+sampled at the policy's rate; the plant, the FMU source, none).
 """
 
 from __future__ import annotations
@@ -45,6 +48,7 @@ sys.path.insert(0, str(HERE))
 
 import lablib as lb  # noqa: E402  (puts examples/pendulum-double-cart/design on the path)
 import cartmodel as cm  # noqa: E402
+import dashboards as dash  # noqa: E402
 from cartpend import G0  # noqa: E402
 
 ROOT = HERE.parent
@@ -311,12 +315,12 @@ def rl_robust_model(t_end: float = 12.5, t_on: float = 1.0, push: dict | None = 
 def main(argv: list[str]) -> None:
     _check_driven()
     models = ROOT / "models"
-    cm.write(models / "pendulum-double-cart-lab-plant.bgmodel.json", plant_model())
+    cm.write(models / "pendulum-double-cart-lab-plant.bgmodel.json", dash.finish(plant_model(), "plant", None))
     print("wrote", models / "pendulum-double-cart-lab-plant.bgmodel.json", f"({len(ranges())} exposed globals)")
     (HERE / "rl_ranges.json").write_text(json.dumps({k: list(v) for k, v in ranges().items()}, indent=1) + "\n",
                                          encoding="utf-8", newline="\n")
     if "--rl" in argv:
-        cm.write(models / "pendulum-double-cart-lab-rl.bgmodel.json", rl_model())
+        cm.write(models / "pendulum-double-cart-lab-rl.bgmodel.json", dash.finish(rl_model(), "rl", 0.005))
         print("wrote", models / "pendulum-double-cart-lab-rl.bgmodel.json")
     if "--cases" in argv:
         spec, out = Path(argv[argv.index("--cases") + 1]), Path(argv[argv.index("--cases") + 2])
@@ -334,7 +338,8 @@ def main(argv: list[str]) -> None:
             cm.write(out / f"{c['name']}.bgmodel.json", doc)
         print("wrote the cases into", out)
     if "--rl-robust" in argv:
-        cm.write(models / "pendulum-double-cart-lab-rl-robust.bgmodel.json", rl_robust_model())
+        cm.write(models / "pendulum-double-cart-lab-rl-robust.bgmodel.json",
+                 dash.finish(rl_robust_model(), "rl-robust", 0.001))
         print("wrote", models / "pendulum-double-cart-lab-rl-robust.bgmodel.json")
 
 

@@ -1,0 +1,43 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "rig",
+      "title": "The double-cart lab rig",
+      "file": "pages/rig.md",
+      "children": [
+        {
+          "id": "design",
+          "title": "Design and margins",
+          "file": "pages/design.md",
+          "children": []
+        },
+        {
+          "id": "realism",
+          "title": "Realism and the robustness test",
+          "file": "pages/realism.md",
+          "children": []
+        },
+        {
+          "id": "robust",
+          "title": "Robust classical control",
+          "file": "pages/robust.md",
+          "children": []
+        },
+        {
+          "id": "learned",
+          "title": "Learned controllers",
+          "file": "pages/learned.md",
+          "children": []
+        },
+        {
+          "id": "comparison",
+          "title": "Comparison",
+          "file": "pages/comparison.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

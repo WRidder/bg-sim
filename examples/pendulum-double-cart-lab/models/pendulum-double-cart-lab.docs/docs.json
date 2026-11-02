@@ -4,34 +4,9 @@
   "pages": [
     {
       "id": "overview",
-      "title": "Overview",
+      "title": "What you're looking at",
       "file": "pages/overview.md",
-      "children": [
-        {
-          "id": "rig",
-          "title": "The rig",
-          "file": "pages/rig.md",
-          "children": []
-        },
-        {
-          "id": "design",
-          "title": "Design and margins",
-          "file": "pages/design.md",
-          "children": []
-        },
-        {
-          "id": "realism",
-          "title": "Realism screen",
-          "file": "pages/realism.md",
-          "children": []
-        },
-        {
-          "id": "results",
-          "title": "Results and checks",
-          "file": "pages/results.md",
-          "children": []
-        }
-      ]
+      "children": []
     }
   ]
 }

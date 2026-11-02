@@ -799,6 +799,32 @@
           "showLabel": true,
           "color": null
         }
+      },
+      {
+        "id": "n036",
+        "name": "Mon",
+        "block": {
+          "ref": "project:DoubleCartLabMonitor"
+        },
+        "position": {
+          "x": 80,
+          "y": 980
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "sample_time": "0.001"
+        },
+        "starts": {
+          "a1": "-126.050714929",
+          "a2": "-68.754935416",
+          "xp": "0.05"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
       }
     ],
     "connections": [
@@ -1380,6 +1406,42 @@
           "node": "n025",
           "port": "u"
         }
+      },
+      {
+        "id": "s028",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n036",
+          "port": "x"
+        }
+      },
+      {
+        "id": "s029",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n036",
+          "port": "q1"
+        }
+      },
+      {
+        "id": "s030",
+        "kind": "signal",
+        "from": {
+          "node": "n013",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n036",
+          "port": "q2"
+        }
       }
     ]
   },
@@ -1447,5 +1509,236 @@
       "property": "position",
       "signal": "Joint2/qout"
     }
-  ]
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "intro",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Free swing (no control)",
+        "options": {
+          "markdown": true,
+          "text": "**No control, motor shorted.** Released from rest at \u03b8 = (\u2212126\u00b0, \u221269\u00b0), x = 0.05 m, for 2 s. The bond graph matches the twin to 4.3e-4 rad (the fourth plot: the checked joint angles)."
+        }
+      },
+      {
+        "id": "phase",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Phase (0 = hold)",
+        "signals": [
+          "Ctrl/phase"
+        ],
+        "options": {
+          "decimals": 0,
+          "unit": "",
+          "zones": [
+            {
+              "from": -0.5,
+              "to": 0.5,
+              "tone": "info"
+            },
+            {
+              "from": 0.5,
+              "to": 1.5,
+              "tone": "warn"
+            },
+            {
+              "from": 1.5,
+              "to": 2.5,
+              "tone": "good"
+            },
+            {
+              "from": 2.5,
+              "to": 3.5,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "xpeak",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Peak cart travel |x|",
+        "signals": [
+          "Mon/x_peak"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "m",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.8,
+              "tone": "good"
+            },
+            {
+              "from": 0.8,
+              "to": 0.95,
+              "tone": "warn"
+            },
+            {
+              "from": 0.95,
+              "to": 2.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "th1",
+        "kind": "value",
+        "size": "1x1",
+        "title": "\u03b81 from upright",
+        "signals": [
+          "Mon/th1"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "zones": [
+            {
+              "from": -2.0,
+              "to": 2.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "th2",
+        "kind": "value",
+        "size": "1x1",
+        "title": "\u03b82 from upright",
+        "signals": [
+          "Mon/th2"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "zones": [
+            {
+              "from": -2.0,
+              "to": 2.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "u",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Motor voltage",
+        "signals": [
+          "Ctrl/u"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "V",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": -24.0,
+              "to": -23.5,
+              "tone": "bad"
+            },
+            {
+              "from": 23.5,
+              "to": 24.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "i",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Motor current",
+        "signals": [
+          "Motor/isense/y"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "A",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "angles",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Link angles from upright (deg)",
+        "signals": [
+          "Mon/th1",
+          "Mon/th2"
+        ]
+      },
+      {
+        "id": "cart",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Cart position (m), end stops \u00b11.0 m, test limit \u00b10.95 m",
+        "signals": [
+          "Rail/qout",
+          "Mon/stop_hi",
+          "Mon/stop_lo",
+          "Mon/lim_hi",
+          "Mon/lim_lo"
+        ]
+      },
+      {
+        "id": "ui",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Motor voltage (V) and current (A)",
+        "signals": [
+          "Ctrl/u",
+          "Motor/isense/y"
+        ]
+      },
+      {
+        "id": "plot4",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Joint encoder angles (rad): the twin check",
+        "signals": [
+          "Joint1/qout",
+          "Joint2/qout"
+        ]
+      },
+      {
+        "id": "in_m2",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Link 2 mass",
+        "parameter": "Body2/m",
+        "options": {
+          "min": 0.15,
+          "max": 0.25,
+          "step": 0.005,
+          "decimals": 3,
+          "unit": "kg"
+        }
+      },
+      {
+        "id": "in_b2",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Joint 2 viscous friction",
+        "parameter": "Joint2/b",
+        "options": {
+          "min": 0.0,
+          "max": 0.002,
+          "step": 0.0001,
+          "decimals": 4,
+          "unit": "N m s/rad"
+        }
+      }
+    ]
+  }
 }

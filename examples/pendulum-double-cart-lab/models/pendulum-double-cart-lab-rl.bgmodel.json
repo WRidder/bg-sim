@@ -763,6 +763,32 @@
           "showLabel": true,
           "color": null
         }
+      },
+      {
+        "id": "n134",
+        "name": "Mon",
+        "block": {
+          "ref": "project:DoubleCartLabMonitor"
+        },
+        "position": {
+          "x": 80,
+          "y": 980
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {
+          "sample_time": "0.005"
+        },
+        "starts": {
+          "a1": "-180.0",
+          "a2": "-180.0",
+          "xp": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
       }
     ],
     "connections": [
@@ -1248,6 +1274,42 @@
           "node": "n025",
           "port": "u"
         }
+      },
+      {
+        "id": "s905",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n134",
+          "port": "x"
+        }
+      },
+      {
+        "id": "s906",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n134",
+          "port": "q1"
+        }
+      },
+      {
+        "id": "s907",
+        "kind": "signal",
+        "from": {
+          "node": "n013",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n134",
+          "port": "q2"
+        }
       }
     ]
   },
@@ -1314,5 +1376,222 @@
       "property": "position",
       "signal": "Joint2/qout"
     }
-  ]
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "intro",
+        "kind": "text",
+        "size": "2x1",
+        "title": "Learned controller (R0.7)",
+        "options": {
+          "markdown": true,
+          "text": "**One neural network** (R0.7, 200 Hz, imitation + PPO) on the ideal plant: swing-up from 1 s, balance, a 0.45 N push at 7.5 s. Expect upright 2.7 s after the start, 10.9\u00b0 after the push, 15.2 V, 0.39 m."
+        }
+      },
+      {
+        "id": "phase",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Larger |\u03b8| from upright",
+        "signals": [
+          "Mon/dev"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 2.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "xpeak",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Peak cart travel |x|",
+        "signals": [
+          "Mon/x_peak"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "m",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 0.8,
+              "tone": "good"
+            },
+            {
+              "from": 0.8,
+              "to": 0.95,
+              "tone": "warn"
+            },
+            {
+              "from": 0.95,
+              "to": 2.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "th1",
+        "kind": "value",
+        "size": "1x1",
+        "title": "\u03b81 from upright",
+        "signals": [
+          "Mon/th1"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "zones": [
+            {
+              "from": -2.0,
+              "to": 2.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "th2",
+        "kind": "value",
+        "size": "1x1",
+        "title": "\u03b82 from upright",
+        "signals": [
+          "Mon/th2"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "deg",
+          "zones": [
+            {
+              "from": -2.0,
+              "to": 2.0,
+              "tone": "good"
+            }
+          ]
+        }
+      },
+      {
+        "id": "u",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Motor voltage",
+        "signals": [
+          "Policy/u"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "V",
+          "sparkline": true,
+          "zones": [
+            {
+              "from": -24.0,
+              "to": -23.5,
+              "tone": "bad"
+            },
+            {
+              "from": 23.5,
+              "to": 24.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "i",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Motor current",
+        "signals": [
+          "Motor/isense/y"
+        ],
+        "options": {
+          "decimals": 2,
+          "unit": "A",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "angles",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Link angles from upright (deg)",
+        "signals": [
+          "Mon/th1",
+          "Mon/th2"
+        ]
+      },
+      {
+        "id": "cart",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Cart position (m), end stops \u00b11.0 m, test limit \u00b10.95 m",
+        "signals": [
+          "Rail/qout",
+          "Mon/stop_hi",
+          "Mon/stop_lo",
+          "Mon/lim_hi",
+          "Mon/lim_lo"
+        ]
+      },
+      {
+        "id": "ui",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Motor voltage (V) and current (A)",
+        "signals": [
+          "Policy/u",
+          "Motor/isense/y"
+        ]
+      },
+      {
+        "id": "plot4",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Link angles the policy sees (rad) and tip push (N)",
+        "signals": [
+          "Policy/th1",
+          "Policy/th2",
+          "PushPulse/y"
+        ]
+      },
+      {
+        "id": "in_push",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Tip push (40 ms)",
+        "parameter": "PushPulse/amplitude",
+        "options": {
+          "min": 0.0,
+          "max": 1.2,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "N"
+        }
+      },
+      {
+        "id": "in_tpush",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Tip push at (40 ms)",
+        "parameter": "PushPulse/t_start",
+        "options": {
+          "min": 5.0,
+          "max": 11.0,
+          "step": 0.5,
+          "decimals": 1,
+          "unit": "s"
+        }
+      }
+    ]
+  }
 }
