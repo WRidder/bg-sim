@@ -423,7 +423,28 @@ def save(doc):
     print("wrote", OUT)
 
 
-ORDER = ["nominal", "mm_lqr", "mm_lqr_wc", "gmf", "gmf_tuned", "hinf", "mu"]
+# the 12 dominant uncertain parameters (the largest sampled-model sensitivities, robust_lin.sensitivities): the
+# LFT for the mixed-mu bound (the full 26-parameter LFT is used for the complex bound; the mixed LMI on it takes
+# minutes per frequency)
+TOP = ["R_m", "k_t", "J_m", "m_head1", "m_cart", "m_tube2", "b_carriage", "m_tip2", "m_hub2", "com_shift2",
+       "k_cable_base", "b_cable_base"]
+
+
+def mixed_reduced(name, d, n_mixed=6):
+    K, L = np.asarray(d["K"]), (rl.ekf_gain() if d.get("L") is None else np.asarray(d["L"]))
+    C = rl.ObserverCtrl(K=K, L=L).lti()
+    G = rl.build_lft(params=TOP, ww=WW_HINF, wz=WZ_HINF)
+    t0 = time.time()
+    mu = rl.mu_analysis(G, C, w=rl.grid(60), mixed=True, n_mixed=n_mixed)
+    out = {k: v for k, v in mu.items() if k not in ("w", "rs_complex", "rp_complex", "np")}
+    out["params"] = TOP
+    print(f"  {name}: reduced LFT, complex RS {mu['rs_complex_peak']:.3f} RP {mu['rp_complex_peak']:.3f}; mixed RS "
+          f"{mu['rs_mixed_peak']:.3f} at {mu['rs_mixed_w']:.1f} rad/s, RP {mu['rp_mixed_peak']:.3f} at {mu['rp_mixed_w']:.1f} rad/s "
+          f"({time.time() - t0:.0f} s)")
+    return out
+
+
+ORDER = ["nominal","mm_lqr", "mm_lqr_wc", "gmf", "gmf_tuned", "hinf", "mu"]
 
 
 def main(argv):
@@ -469,6 +490,11 @@ def main(argv):
         for n in names:
             if n in D:
                 D[n]["verify"] = verify(n, D[n], int(opt("--mixed", 16)))
+                save(doc)
+    elif cmd == "mixed":
+        for n in names:
+            if n in D and D[n].get("verify"):
+                D[n]["verify"]["mu_mixed_reduced"] = mixed_reduced(n, D[n], int(opt("--mixed", 6)))
                 save(doc)
     elif cmd == "harness":
         import robustness as rb

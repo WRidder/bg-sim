@@ -903,6 +903,386 @@
           "note": "the closed loop with the 4865-weight policy block reports no diagnostics"
         }
       ]
+    },
+    "pendulum-double-cart-lab-robust": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.229312777,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.175875,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB2/g[2]",
+                null,
+                "PoseB2/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "0 V until t_on = 1 s (the hold, and the 2-tick command delay starts at zero)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qdout",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-06,
+          "note": "the cart rests until the firmware starts"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.5,
+          "value": 0,
+          "abs": 1e-09,
+          "note": "hold"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 2.0,
+          "value": 1,
+          "abs": 1e-09,
+          "note": "swing-up (TVLQR)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 4.5,
+          "value": 2,
+          "abs": 1e-09,
+          "note": "the robust balance law (mm_lqr) from the timed catch at 4 s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 5.0,
+          "to_t": 7.49,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "link 1 within 0.2 deg of upright before the push (measured 0.004 deg; the observer on the encoder angles, the 2 ms delay in the loop)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 5.0,
+          "to_t": 7.49,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "link 2 within 0.2 deg of upright before the push"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 7.5,
+          "to_t": 9.5,
+          "value": 0.2258,
+          "abs": 0.01,
+          "note": "the 40 ms 0.45 N tip push: link 1 deflects 12.9 deg (the classical LQR without the delay: 10.7 deg; the multi-model LQR is softer: lower gains, more travel); bgsim and the Python replica on the twin (design/robustmodels.py --replica) agree to 3.1e-04 m, 7.4e-04 rad"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 7.5,
+          "to_t": 9.5,
+          "value": 0.0863,
+          "abs": 0.005,
+          "note": "link 2 deflects 4.9 deg"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 7.5,
+          "to_t": 9.5,
+          "value": 0.2082,
+          "abs": 0.01,
+          "note": "cart travel 0.208 m in the push recovery"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 11.5,
+          "to_t": 12.5,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "recovered: link 1 within 0.2 deg over the last second"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 11.5,
+          "to_t": 12.5,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "recovered: link 2 within 0.2 deg over the last second"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 24.0,
+          "note": "inside the +-24 V supply"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 14.945,
+          "abs": 0.5,
+          "note": "peak voltage 14.9 V (the swing-up)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 12.5,
+          "value": 0.3868,
+          "abs": 0.01,
+          "note": "peak travel 0.387 m (the swing-up), inside the +-1.0 m rail"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "pendulum-double-cart-lab-recover": {
+      "run_timeout": 1200,
+      "checks": [
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "link1",
+              "point": [
+                0.229312777,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB1/g[2]",
+                null,
+                "PoseB1/g[3]"
+              ],
+              "tol": 1e-06
+            },
+            {
+              "link": "link2",
+              "point": [
+                0.175875,
+                0,
+                0
+              ],
+              "signals": [
+                "PoseB2/g[2]",
+                null,
+                "PoseB2/g[3]"
+              ],
+              "tol": 1e-06
+            }
+          ]
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 0.0,
+          "abs": 1e-12,
+          "note": "0 V until t_on = 1 s"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 0.5,
+          "value": 0,
+          "abs": 1e-09,
+          "note": "hold"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 1.02,
+          "value": 3,
+          "abs": 1e-09,
+          "note": "state-driven: settle first (the links already hang at rest)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 2.0,
+          "value": 1,
+          "abs": 1e-09,
+          "note": "50 ticks at the hanging rest arm the swing-up (measured at 1.049 s)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 4.245,
+          "value": 2,
+          "abs": 1e-09,
+          "note": "region catch at 3.745 s (z'Pz < catch_tol from T_s - 0.6 s)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 4.745,
+          "to_t": 6.99,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "balanced within 0.2 deg before the knock-down"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 4.745,
+          "to_t": 6.99,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "link 2 within 0.2 deg before the knock-down"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 7.596,
+          "value": 3,
+          "abs": 1e-09,
+          "note": "the 100 ms 1.5 N push at 7 s: a link passes 20 deg at 7.096 s, the energy removal through the cart"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/energy",
+          "from_t": 7.0,
+          "to_t": 8.096,
+          "value": 5.235,
+          "abs": 0.2,
+          "note": "the links' energy after the push peaks at 5.23 J (upright: 3.33 J above the hanging rest)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 10.382,
+          "value": 1,
+          "abs": 1e-09,
+          "note": "settled at the hanging rest, re-armed at 9.882 s (the plan shifted to the cart position and the turn count)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/phase",
+          "t": 13.077,
+          "value": 2,
+          "abs": 1e-09,
+          "note": "re-caught at 12.577 s; the Python replica on the twin has the same phase timeline to the tick and agrees to 6.2e-03 m, 1.6e-02 rad"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Ctrl/drops",
+          "t": 20.0,
+          "value": 1,
+          "abs": 1e-09,
+          "note": "one drop, one recovery"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th1",
+          "from_t": 18.0,
+          "to_t": 20.0,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "upright again (wrapped angle) over the last 2 s"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Ctrl/th2",
+          "from_t": 18.0,
+          "to_t": 20.0,
+          "value": 0.0,
+          "abs": 0.0035,
+          "note": "link 2 upright again over the last 2 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 20.0,
+          "value": 0.95,
+          "note": "the cart stays inside the robustness test's 0.95 m (the rail guard brakes on the stopping point)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Rail/qout",
+          "from_t": 0.0,
+          "to_t": 20.0,
+          "value": 0.7671,
+          "abs": 0.02,
+          "note": "peak travel 0.767 m, after the knock-down"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ctrl/u",
+          "from_t": 0.0,
+          "to_t": 20.0,
+          "value": 24.0,
+          "note": "inside the +-24 V supply"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, algebraic loop or event-limit stop"
+        }
+      ]
     }
   }
 }

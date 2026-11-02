@@ -72,7 +72,7 @@ class LabController:
     def __init__(self, p_nominal: dict, balance: str = "nominal", swing: str = "nominal", mode: str = "timed",
                  catch: str | None = None, t_on: float = 1.0, catch_tol: float | None = None, catch_lead: float = 0.6,
                  drop_deg: float = 20.0, comp: float = 1.0, ekf_q=None, pump: bool = False, k_e: float = 40.0,
-                 a_max: float = 25.0, e_lqr: float = 0.3, kc_x: float = 1.0, kc_v: float = 2.0, k_p: float = 10.0):
+                 a_max: float = 25.0, e_lqr: float = 3.8, kc_x: float = 1.0, kc_v: float = 2.0, k_p: float = 10.0, x_guard: float = 0.8, pfl: str = "full"):
         self.p = p_nominal
         rs = lb.setup(p_nominal, lb.EFFECTS, "ekf", ekf_q=ekf_q, comp=comp)
         kw = rs.fw_kw
@@ -91,6 +91,11 @@ class LabController:
         self.k_e, self.a_max, self.e_lqr = float(k_e), float(a_max), float(e_lqr)
         self.kc = (float(kc_x), float(kc_v))
         self.k_p = float(k_p)
+        self.x_guard = float(x_guard)
+        self.pfl = pfl
+        dr = lb.drive(p_nominal)
+        self.beta = dr["beta_m"] + p_nominal["b_carriage"] + p_nominal["b_cable_base"]
+        self.m_all = p_nominal["m_cart"] + dr["m_rot"] + sum(lb.link_props(p_nominal)[0])
         # catch metric: the balance law's P (or the nominal LQR's cost-to-go)
         P = self.bal.get("P")
         if P is None:
@@ -144,7 +149,10 @@ class LabController:
 
     def volts_for_acc(self, z, a):
         """Collocated partial feedback linearisation on the nominal twin: the voltage that gives the cart
-        acceleration a (the back-EMF, the friction and the link coupling included)."""
+        acceleration a (the back-EMF, the friction and the link coupling included). With pfl = "simple" the
+        link coupling is left out: V = ((m_cart + m_rot + m1 + m2) a + beta v) / alpha (the bgsim firmware)."""
+        if self.pfl == "simple":
+            return (self.m_all * a + self.beta * z[3]) / self.alpha
         q, qd = z[:3], z[3:]
         M = np.array(self.twin.mass_fn(q))
         r = np.array(self.twin.rhs_fn(q, qd, 0.0)).ravel()
@@ -188,7 +196,7 @@ class LabController:
         zh = xh.copy()
         zh[1:3] = wrap(zh[1:3] + math.pi)            # deviation from hanging
         x_stop = x + v * abs(v) / (2 * 0.6 * self.a_max)
-        if abs(x_stop) > 0.6:
+        if abs(x_stop) > self.x_guard:
             # the rail first: brake (the stopping point would pass 0.6 m)
             a = -self.a_max * math.copysign(1.0, v) - 4.0 * x
         elif E > self.e_lqr or self.damping:
@@ -203,7 +211,7 @@ class LabController:
         E, Px = self.energy(xh)
         x, v = xh[0], xh[3]
         x_stop = x + v * abs(v) / (2 * 0.6 * self.a_max)
-        if abs(x_stop) > 0.6:
+        if abs(x_stop) > self.x_guard:
             a = -self.a_max * math.copysign(1.0, v) - 4.0 * x       # the rail first
         else:
             a = self.k_p * (self.E_up - E) * Px - self.kc[0] * x - self.kc[1] * v
@@ -217,8 +225,8 @@ class LabController:
 
     def at_rest(self, xh) -> bool:
         dev = wrap(xh[1:3] + math.pi)
-        return bool(np.all(np.abs(dev) < math.radians(3.0)) and np.all(np.abs(xh[4:6]) < 0.15)
-                    and abs(xh[0]) < 0.05 and abs(xh[3]) < 0.05)
+        return bool(np.all(np.abs(dev) < math.radians(4.0)) and np.all(np.abs(xh[4:6]) < 0.25)
+                    and abs(xh[0]) < 0.1 and abs(xh[3]) < 0.1)
 
     # ---------------------------------------------------------------- the tick
     def step(self, s) -> float:
@@ -236,7 +244,7 @@ class LabController:
                 self.mode, self.t_mode = "pump", t
             elif self.at_rest(xh):
                 self.rest_count += 1
-                if self.rest_count >= 100:
+                if self.rest_count >= 50:
                     self.arm(t, xh)
             else:
                 self.rest_count = 0
@@ -318,7 +326,7 @@ def _hang_lqr(p):
     z0 = np.array([0.0, -math.pi, -math.pi, 0, 0, 0])
     A, B = (np.array(m, float) for m in plant.lin_fn(z0, 0.0))
     Ad, Bd = rl.zoh(A, B)
-    Q = np.diag([50.0, 100.0, 100.0, 5.0, 5.0, 5.0])
+    Q = np.diag([50.0, 30.0, 30.0, 5.0, 1.0, 1.0])
     P = sla.solve_discrete_are(Ad, Bd, Q, np.array([[0.3]]))
     return np.linalg.solve(np.array([[0.3]]) + Bd.T @ P @ Bd, Bd.T @ P @ Ad).ravel()
 
@@ -327,7 +335,7 @@ def make(p_nominal: dict, **opts):
     """Factory for the harness: options balance, swing, mode, catch, catch_tol, catch_lead, drop_deg, pump, k_e, a_max."""
     kw = {}
     for k, v in opts.items():
-        if k in ("catch_tol", "catch_lead", "drop_deg", "t_on", "k_e", "a_max", "comp", "e_lqr", "kc_x", "kc_v", "k_p"):
+        if k in ("catch_tol", "catch_lead", "drop_deg", "t_on", "k_e", "a_max", "comp", "e_lqr", "kc_x", "kc_v", "k_p", "x_guard"):
             kw[k] = float(v)
         else:
             kw[k] = v
