@@ -14,9 +14,9 @@ from typing import Any
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
+from test_run_tails import SyntheticRunWorker, _app, _make_project, _start, _wait_ready
 
 from bgsim_server.decimate import decimate_rows
-from test_run_tails import SyntheticRunWorker, _app, _make_project, _start, _wait_ready
 
 
 def test_decimate_rows_returns_a_small_window_unchanged() -> None:

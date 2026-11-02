@@ -95,7 +95,7 @@ def _kill_tree(process: asyncio.subprocess.Process) -> None:
     if process.returncode is not None:
         return
     if sys.platform == "win32":
-        subprocess.run(["taskkill", "/T", "/F", "/PID", str(process.pid)], capture_output=True)
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(process.pid)], check=False, capture_output=True)
     else:
         with suppress(ProcessLookupError):
             process.kill()
@@ -278,7 +278,7 @@ class ExportStore:
             job.timings["totalS"] = time.monotonic() - started
             job.end("cancelled", "the export was cancelled")
             raise
-        except Exception as exc:  # an internal error must end the job, not hang it
+        except Exception as exc:  # noqa: BLE001 - an internal error must end the job, not hang it
             job.timings["totalS"] = time.monotonic() - started
             job.end("failed", f"the export failed: {exc}")
         finally:

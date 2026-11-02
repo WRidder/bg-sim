@@ -142,7 +142,7 @@ def _nm_for(cc: str) -> str | None:
 def _run(cmd: list, result: BuildResult, env: dict[str, str] | None = None
          ) -> subprocess.CompletedProcess:
     result.log.append(" ".join(str(c) for c in cmd))
-    return subprocess.run([str(c) for c in cmd], text=True, capture_output=True, env=env)
+    return subprocess.run([str(c) for c in cmd], check=False, text=True, capture_output=True, env=env)
 
 
 def _library_suffix(plat: str) -> str:
