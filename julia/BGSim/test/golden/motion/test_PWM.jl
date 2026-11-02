@@ -84,7 +84,9 @@ using .BondGraphGolden
     @test bg_value(columns, "I2/y", 0.4) - bg_value(columns, "I2/y", 0.3) ≈ 1 / 30 atol = 1e-9
 
     avg(t) = -2.0 + 5.0 * clamp(-0.2 + 1.5t, 0.0, 1.0)
-    @test maximum(abs(bg_value(columns, "AVG/y", t) - avg(t)) for t in grid) < 1e-12
+    # 1e-10: a grid row where the run stepped 1e-12 s past a switching root (`_snap_target`)
+    # holds the values 1e-12 s later, so the ramp (slope 7.5) is off by 7.5e-12 there.
+    @test maximum(abs(bg_value(columns, "AVG/y", t) - avg(t)) for t in grid) < 1e-10
     # Its integral: -2 until t = 2/15, the ramp until 0.8, then 3.
     t0, t1 = 0.2 / 1.5, 1.2 / 1.5
     @test bg_value(columns, "IA/y", 1.0) ≈ -2.0 * t0 + 0.5 * (t1 - t0) + 3.0 * (1.0 - t1) atol = 1e-8

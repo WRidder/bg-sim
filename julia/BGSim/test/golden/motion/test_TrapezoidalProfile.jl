@@ -63,9 +63,11 @@ end
     end
     # Case 1 reaches v_max (a cruise), case 2 does not (a triangle with its peak at 0.7 s).
     @test bg_value(columns, "P1/v", 2.0) == 1.0
-    @test bg_value(columns, "P1/q", 1.0) ≈ 0.75 atol = 1e-12
-    @test bg_value(columns, "P1/q", 2.5) ≈ 2.25 atol = 1e-12
-    @test bg_value(columns, "P2/v", 0.7) ≈ -2.5 atol = 1e-12
+    # 1e-10: a grid row on a switch holds the values 1e-12 s after it (the run steps past a
+    # switching root on a grid time, `_snap_target`), so q and v are off by v and a times 1e-12.
+    @test bg_value(columns, "P1/q", 1.0) ≈ 0.75 atol = 1e-10
+    @test bg_value(columns, "P1/q", 2.5) ≈ 2.25 atol = 1e-10
+    @test bg_value(columns, "P2/v", 0.7) ≈ -2.5 atol = 1e-10
     @test maximum(abs.(columns["P2/v"])) ≈ 2.5 atol = 1e-12
     # The acceleration jumps at the switches, and the move ends exactly.
     @test (bg_value(columns, "P1/a", 0.99), bg_value(columns, "P1/a", 1.01)) == (2.0, 0.0)
