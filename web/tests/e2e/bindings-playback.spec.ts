@@ -184,7 +184,10 @@ test("the binding table reports E303 and edits the model", async ({ page, reques
   // adding a binding through the form
   await page.getByTestId("add-property").selectOption("scale.z");
   await page.getByTestId("add-target").selectOption("visual:l2_visual");
-  await page.getByTestId("add-signal-0").selectOption({ label: "Synthetic/step [V]" });
+  // the signal field is searchable: type to filter, then take the option
+  await page.getByTestId("add-signal-0").fill("synthetic/step");
+  await page.getByRole("option", { name: "Synthetic/step [V]", exact: true }).click();
+  await expect(page.getByTestId("add-signal-0")).toHaveAttribute("data-value", "Synthetic/step");
   await page.getByTestId("add-binding").click();
   await expect(page.getByTestId("binding-row-2")).toBeVisible();
   await expect(page.getByTestId("binding-property-2")).toHaveText("scale.z");
