@@ -259,6 +259,55 @@ def rl_model(t_end: float = 12.5, t_on: float = 1.0, push: dict | None = None, t
     return doc
 
 
+def rl_robust_model(t_end: float = 12.5, t_on: float = 1.0, push: dict | None = None, th0=None, x0: float = 0.0,
+                    title: str = "pendulum-double-cart-lab-rl-robust", points: int | None = None,
+                    block: str = "DoubleCartLabRobustPolicy", params: dict | None = None, noise: bool = True,
+                    quant: bool = True) -> dict:
+    """The R1 closed loop: the realistic plant (the plant FMU's bond graph with the realism forces and every
+    realism.json parameter as a global, `params` overriding them), the 14-bit encoders with seeded noise
+    (stdlib Noise at 1 kHz, std = joint_noise) and the robust policy block with the loop delay."""
+    if push is None:
+        push = {"amplitude": 0.45, "t_start": 7.5, "duration": 0.04}
+    doc = cm.build(PLANT, "DoubleCartLab", t_end=t_end, points=points or int(round(t_end / 0.005)) + 1,
+                   push=push, th0=th0, x0=x0, scene=SCENE, title=title)
+    _drop(doc, {"Traj", "Ctrl", "Clock"})
+    M = cm.Model("tmp")
+    M.ids = {"n": len(doc["diagram"]["nodes"]) + 100, "b": 900, "s": 900, "w": 900}
+    M.nodes, M.conns = doc["diagram"]["nodes"], doc["diagram"]["connections"]
+    p = dict(P_NOM, **(params or {}))
+    th_start = list(th0) if th0 is not None else [-math.pi] * 2
+    pol = M.node("Policy", f"project:{block}", 80, 80,
+                 params={"t_on": repr(float(t_on)), "delay_ms": "loop_delay", "quant": "1.0" if quant else "0.0"},
+                 starts={"th1": repr(th_start[0]), "th2": repr(th_start[1])})
+    M.sig(_node(doc, "Rail")["id"], "qout", pol, "x")
+    M.sig(_node(doc, "Joint1")["id"], "qout", pol, "q1")
+    M.sig(_node(doc, "Joint2")["id"], "qout", pol, "q2")
+    for j in (1, 2):
+        nz = M.node(f"EncNoise{j}", "stdlib:sources/Noise", -60, 40 + 60 * j,
+                    params={"mean": "0.0", "std": "joint_noise*pi/180" if noise else "0.0", "seed": str(10 + j)},
+                    constants={"sample_time": "0.001"})
+        M.sig(nz, "y", pol, f"e{j}")
+    M.sig(pol, "u", _node(doc, "Motor")["id"], "u")
+    add_realism(doc, M, pol, "u")
+    _bind_globals(doc)
+    spec = lb.spec()
+    for g in doc["parameters"]:
+        if g["name"] in p and g["name"] in spec:
+            g["value"] = repr(float(p[g["name"]]))
+    doc["parameters"] += [
+        {"name": "loop_delay", "value": repr(float(p["delay"])), "unit": "", "description": spec["delay"]["description"]},
+        {"name": "joint_noise", "value": repr(float(p["joint_noise"])), "unit": "deg",
+         "description": spec["joint_noise"]["description"]}]
+    doc["plots"] = [
+        {"id": "p_angles", "title": "Measured link angles from upright (rad)", "signals": ["Policy/th1", "Policy/th2"]},
+        {"id": "p_cart", "title": "Cart position (m)", "signals": ["Rail/qout"]},
+        {"id": "p_volt", "title": "Motor voltage (V): command and after the loop delay", "signals": ["Policy/u_cmd", "Policy/u"]},
+        {"id": "p_cur", "title": "Motor current (A)", "signals": ["Motor/isense/y"]},
+        {"id": "p_real", "title": "Realism forces: cart (N), joints (N m)", "signals": ["Realism/F", "Realism/tau1", "Realism/tau2"]},
+    ]
+    return doc
+
+
 def main(argv: list[str]) -> None:
     _check_driven()
     models = ROOT / "models"
@@ -273,11 +322,20 @@ def main(argv: list[str]) -> None:
         spec, out = Path(argv[argv.index("--cases") + 1]), Path(argv[argv.index("--cases") + 2])
         out.mkdir(parents=True, exist_ok=True)
         for c in json.loads(spec.read_text(encoding="utf-8")):
-            doc = rl_model(t_end=c["t_end"], t_on=0.0, push={"amplitude": 0.0, "t_start": 1.0e6, "duration": 0.04},
-                           th0=[c["th1"], c["th2"]], x0=c["x"], title=c["name"],
-                           block=c.get("block", "DoubleCartLabPolicy"))
+            if c.get("robust"):
+                pz = c.get("push") or {"amplitude": 0.0, "t_start": 1.0e6, "duration": 0.04}
+                doc = rl_robust_model(t_end=c["t_end"], t_on=c.get("t_on", 0.0), push=pz, th0=[c["th1"], c["th2"]], x0=c["x"],
+                                      title=c["name"], block=c.get("block", "DoubleCartLabRobustPolicy"),
+                                      params=c.get("params"), noise=False, quant=c.get("quant", True))
+            else:
+                doc = rl_model(t_end=c["t_end"], t_on=0.0, push={"amplitude": 0.0, "t_start": 1.0e6, "duration": 0.04},
+                               th0=[c["th1"], c["th2"]], x0=c["x"], title=c["name"],
+                               block=c.get("block", "DoubleCartLabPolicy"))
             cm.write(out / f"{c['name']}.bgmodel.json", doc)
         print("wrote the cases into", out)
+    if "--rl-robust" in argv:
+        cm.write(models / "pendulum-double-cart-lab-rl-robust.bgmodel.json", rl_robust_model())
+        print("wrote", models / "pendulum-double-cart-lab-rl-robust.bgmodel.json")
 
 
 if __name__ == "__main__":

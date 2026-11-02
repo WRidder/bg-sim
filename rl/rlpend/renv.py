@@ -217,6 +217,7 @@ class RobustCfg:
     # domain randomisation: fraction of the realism range (0 = nominal; the delay and the noise always follow it)
     dr: float = 1.0
     sensors: bool = True             # noise + quantisation (False: exact positions)
+    noise: bool = True               # with sensors: the joint encoder noise (False: quantisation only)
     delay: bool = True
     # starts: hanging at rest (+- hang_noise), or upright with a lean (+- up_noise), share p_upright
     p_upright: float = 0.3
@@ -316,7 +317,7 @@ class RobustLabEnv(VecEnv):
                 if kk in self.params:
                     self.params[kk][k] = float(v)
         self.delay[mask] = self.params["delay"][mask].astype(np.int32) if self.cfg.delay else 0
-        self.noise_q[mask] = np.radians(self.params["joint_noise"][mask]) if self.cfg.sensors else 0.0
+        self.noise_q[mask] = np.radians(self.params["joint_noise"][mask]) if self.cfg.sensors and self.cfg.noise else 0.0
         ms, cs, Js = link_props({k: v for k, v in self.params.items()})
         self.m_l, self.c_l, self.J_l = ms, cs, Js
         self.E_up = G0 * (ms[0] * cs[0] + ms[1] * (self.params["L1"] + cs[1]))
