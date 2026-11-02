@@ -2,3 +2,5 @@
 design/_runs/
 # realism screen output of design/screen.py (summary in design/screen_results.json)
 design/_screen/
+# robustness test raw runs of design/robustness.py (summary in design/robustness_results.json)
+design/_robustness/
