@@ -1,0 +1,338 @@
+# A109 helicopter
+
+The Agusta A109 of Heffley and Mnich's minimum-complexity helicopter model, as a bond graph on a multibond rigid body. The example covers the open-loop trims and couplings against the report and an independent scipy model. It also has a flyable a109-sim with collective, cyclic and pedals, a switchable SCAS, a demonstration flight and FMU markers.
+
+The source is R. K. Heffley and M. A. Mnich, *Minimum-Complexity Helicopter Simulation Math Model*,
+NASA CR-177476 / USAAVSCOM TR 87-A-7, April 1988
+([NTRS 19880020435](https://ntrs.nasa.gov/citations/19880020435)):
+
+* the model of Section III and the listing of Appendix A;
+* the A109 II data file of Appendix D (p. D-19, `HEL302.DAT`, the file after the report's model
+  matching) with the A109 revisions of the listing (pp. D-20 .. D-24);
+* the "fitted model" trim curves of Appendix D (pp. D-9 .. D-14) as the validation target.
+
+Everything in bg-sim is SI. The design scripts carry the report's ft/lb version (`heli_ref.py`,
+line by line) and an SI mirror of the bg-sim blocks (`heli_si.py`).
+
+## Models
+
+| model | what it shows |
+| --- | --- |
+| `a109-open-loop` | Four A109s released from trim (sea level). **Hover**: the trim holds. **Coll**: a +0.5 deg collective step in hover. The main-rotor torque grows, the reaction yaws the nose right (34 deg/s after 10 s) and the climb starts (13 m in 10 s); the rotor droops 0.25 % and the governor recovers it. **Lon**: a 0.5 deg forward cyclic pulse starts the unstable hover phugoid (+0.21 +- 0.60j 1/s). **Fwd**: a 1 deg pedal pulse at 100 kt shows the yaw-roll coupling of the Dutch roll. A dashboard switch sets the rotor speed the aerodynamics see: the drivetrain's, or the report's constant 385 rpm. |
+| `a109-sim` | The flyable A109 at 15 m with ground effect: Rigging (stick percent to blade angle), a switchable SCAS (attitude command and hold in pitch and roll, yaw-rate command and heading hold, turn coordination) and a demonstration pilot. The 120 s demonstration: hover, transition and climb to 75 kt and about 45 m, a coordinated 20 deg bank turn through 146 deg, deceleration and hover. ExportInputPass markers (collective, cyclic_lon, cyclic_lat, pedals, wind_n/e/d) and ExportOutput markers form the FMU interface. Sliders: demo, SCAS, stick offsets. |
+
+Both models have a 3D scene built from simple solids: cabin, nose and windscreen, tail cone and boom, engine fairing, fin and ventral fin, tailplane, mast and tricycle gear. The main-rotor disc (four blades and a faint disc) sits on the hub, tilted 6.3 deg forward with the shaft and tilted further with the flapping a1, b1. The blades and the two-blade tail rotor spin at a tenth of their real speed, so they do not strobe on video. As in the F-16 example, the view keeps the first helicopter framed by moving the world (block `HeliView`). The other helicopters of the open loop fly 16 m to the side or behind, and the floor stripes scroll with the ground track.
+
+## Structure: what is a bond graph, what is a signal
+
+The physics is a bond graph. Only the measurement and decision parts are signals.
+
+* **Airframe.** A `RigidBody3D` on a `Free3D` joint against `GroundSpatial`, with gravity inside
+  the body. The body sits on its principal axes: the report's Ixz = 800 slug ft² tilts them
+  10.49 deg nose-down from the body x axis.
+* **Component forces.** Each component is a modulated source: an `ExternalWrenchSpatial` bonded
+  through its own `FixedTransform3DNeutral` mount, which carries the component's offset from the
+  CG. The bond graph therefore forms r x F, so the report's moment build-up (for example
+  `M.TR = -Y.TR H.TR`) comes out of the junction structure. The components are the main-rotor hub,
+  fuselage, tail-rotor hub, tailplane and fin. Only three moments that the report writes
+  differently from r x F stay explicit, as torques on the source:
+  * the flapping-spring hub moment DL.DB1·b1 and DL.DB1·a1;
+  * the fuselage centre of pressure D.FW (magnified 3x for the A109);
+  * the cancellation of the tiny yaw terms -D.FUS·Y.FUS and -D.HUB·Y.MR, which the report omits.
+* **Drivetrain (ours, the rotor-speed degree of freedom).** A rotational bond graph:
+  * Rotor 1-junction: an `I` (main rotor plus 10 % for engine, transmission and tail rotor,
+    J = 1265 kg m²), the aerodynamic torque as an `MSe` (`RotorPower`: the report's power method,
+    Q = (P_ind + P_climb + P_para + P_prof)/Omega), and a flow sensor.
+  * Mast 0-junction. Its third bond is `ShaftAxis`, a TF between the rotation bond and the
+    airframe's spatial port along the shaft axis. The rotor's absolute speed is therefore
+    Omega_rel + k·omega_body, and the mast torque acts back on the airframe as -k·tau.
+  * Gearbox 1-junction (the relative speed, which the governor's Nr sensor reads): the engine
+    `MSe`, the 90 hp transmission and accessory loss as an `MSe` (P_LOSS/Omega), and a `TF`
+    (n = 5.40, 2080/385 rpm) to the tail-rotor 1-junction with the tail-rotor torque P_TR/Omega_TR
+    as an `MSe`.
+
+  Collective→yaw coupling, rotor droop and the yaw/rotor-speed interaction therefore come out of
+  the bond graph. The rotor's polar inertia is taken out of the airframe yaw inertia
+  (IZ_airframe = IZ − J), so the total yaw inertia is the report's.
+* **Signal blocks, and why:**
+  * The flapping is an equation block (`MainRotor`). The report's tip-path plane is a first-order
+    lag with no blade inertia of its own: no stored energy, so no bond-graph element. Its forces
+    reach the bond graph through the hub source.
+  * The inflow is an algebraic balance: thrust against momentum, solved by eight unrolled Newton
+    steps.
+  * `HeliAirData` is a sensor tap: air-relative velocities, attitude, height and climb rate.
+  * The rest are control: the trim tables (`Lookup1D`), `Rigging`, `Scas`, `DemoPilot`, and the
+    `Governor`, a PI on the gearbox speed whose output drives the engine `MSe`.
+
+## Sources and data
+
+Every number of the model is the report's (Appendix D, p. D-19, in `design/heli_data.py` with its
+page) unless the table says otherwise. Cross-checks against the EASA type-certificate data sheet,
+TCDS EASA.R.005 A109/A119 (Issue 26, 24 June 2026), section for the A109/A109A/A109A II:
+
+| quantity | model (source) | public source | note |
+| --- | --- | --- | --- |
+| gross weight | 5401 lb = 2450 kg (report, p. D-19; the trim charts: G.W. 2450 kg) | max 2450 kg (A109, A109A), 2600 kg (A109A II) | the report models the 2450 kg certified maximum of the A109A |
+| main rotor | R = 18.0 ft (5.486 m), 4 blades, 385 rpm (report) | 11.00 m diameter, 4 blades, articulated; 100 % = 385 rpm power on | agrees (18.04 ft) |
+| main-rotor speed limits | 100 % nominal (report) | power on 95..100 % (365..385 rpm), power off 90..110 % | used for the governor reference; the model has no rotor-speed limit |
+| tail rotor | R = 3.1 ft (0.945 m), 2 blades, 2080 rpm (report) | 2.03 m diameter (R = 3.33 ft), 2 blades | **the report's 3.1 ft is used** (it is the matched model; the TCDS is 7 % larger) |
+| tail-rotor speed | 2080 rpm (report) | not in the TCDS | the gear ratio n = 2080/385 = 5.40 follows |
+| engines | not in the model (the report holds the rotor speed) | A109A II: 2 x Allison 250-C20B, 370 shp each AEO take-off | the governor's power limit P_max = 740 shp (ours, from the TCDS) |
+| fuselage | stations of the report | length 10.71 m, width 2.88 m, height 3.30 m | used only for the 3D solids |
+| VNE | not modelled | 168 KIAS | the trim sweep stops at 120 kt, as the report's charts do |
+| aircraft of the charts | data file "A109 II" (p. D-19) | the trim charts name "A109K, S/N 7310" | **flagged**: the report matched its A109 II file to flight data of that aircraft; kept as the report has it |
+
+Constants the listing uses but does not print: g = 32.174 ft/s² and rho = 0.002377 slug/ft³ (standard). The atmosphere is ISA sea level.
+
+### Assumptions and additions (ours, not the report's)
+
+* **Rotor-speed DOF and governor.** The report runs at constant rpm and recommends a
+  second-order rotor/engine/governor model (Section V.B). Ours is a PI on the gearbox speed:
+  Kp = 2 zeta wn J, Ki = J wn², with wn = 2.5 rad/s and zeta = 0.8. The engine torque is clamped
+  to 0 .. P_max/Omega (740 shp) and the integrator uses conditional anti-windup. The inertia of
+  the engines, transmission and tail rotor is 10 % of the main rotor's (assumed). The global
+  `rpm_mode` (0/1) lets the rotor aerodynamics see the nominal 385 rpm (the report's model) or
+  the drivetrain's speed. Both give the same trims, because the governor holds 100 % in trim.
+* **Ground effect** (switchable, `ge`, on only in a109-sim at 15 m). The Cheeseman and Bennett
+  factor (ARC R&M 3021, 1955), T_IGE/T_OGE = 1/(1 − (R/4z)²/(1 + (V/v_h)²)), is applied as an
+  induced-velocity factor kg = 1 − (R/4z)²/(1 + V²/v_h²). v_h = 10.18 m/s is the hover induced
+  velocity. z = sqrt(h_hub² + R²/4) keeps the factor bounded on the ground; that bound is ours.
+* **Rigging.** The report gives the controls in percent of travel but no rigging. The mapping
+  percent = a + b·angle is a least-squares line per axis, fitted to the report's fitted-model
+  control positions against our trims:
+  * collective and pedals: all forward, rearward and sideward chart points;
+  * longitudinal cyclic: forward and rearward flight;
+  * lateral cyclic: hover and sideward flight only. In forward flight our lateral cyclic hardly
+    moves (−0.4 .. −0.8 deg) while the report's fitted curve runs from 46 to 36 %. That curve is
+    not reproduced; see Validation.
+
+  | axis | a (%) | b (%/deg) | 0 % at (deg) | 100 % at (deg) | points | rms (%) | max (%) |
+  |---|---:|---:|---:|---:|---:|---:|---:|
+  | collective (from full down) | -29.09 | 7.627 | 3.81 | 16.93 | 21 | 0.84 | 1.72 |
+  | longitudinal (from full aft) | 49.35 | 4.177 | -11.82 | 12.12 | 13 | 1.05 | 1.88 |
+  | lateral (from full left) | 52.49 | 8.252 | -6.36 | 5.76 | 5 | 0.21 | 0.28 |
+  | pedal (left pedal from full aft) | -17.45 | 3.532 | 4.94 | 33.26 | 21 | 1.19 | 3.37 |
+
+  The resulting travels (13 deg collective, ±12 deg longitudinal, ±6 deg lateral, 28 deg tail
+  rotor) are plausible for this class. They are inferred, not published.
+* **Smoothed switches** (`smooth`, on only in a109-sim). The report's model has hard switches:
+  * the dihedral magnification below VTRANS = 30 kt;
+  * the wake edge on the tailplane;
+  * tailplane and fin stall at |wa| > 0.3|u|.
+
+  In closed loop the fin-stall switch (near |va| = 0.3u at 40 .. 55 kt) traps the trajectory on
+  the switching surface (sliding mode) and the integration stalls. With smooth = 1 each switch is
+  a tanh blend over a narrow band:
+  * VTRANS ± ~1 m/s;
+  * D.DW = 0 ± 0.3 m;
+  * (wa/u)² = 0.09 ± 0.01.
+
+  The open-loop model and every trim against the report use the hard switches (smooth = 0).
+* **Numerics.**
+  * |x|·x is written x·sqrt(x² + 1e-6).
+  * 1/x is written x/(x² + 1e-6) where x can pass zero.
+  * The inflow balance is eight unrolled Newton steps from a quadratic start instead of a root
+    finder.
+
+  The scipy mirror uses the same expressions.
+* **Rigid body.** bg-sim's full Newton-Euler `RigidBody3D` replaces the report's simplified rigid
+  body. That changes nothing in trim and is noted where the AH-1S Table 7 is compared.
+* **SCAS and demonstration pilot.** Entirely ours: the report has no control system.
+
+## Validation (design/design.py, an independent scipy implementation)
+
+**1. The reference implementation against the report's own numbers (AH-1S, Appendix C).**
+
+The hover trim printout (Fig. 12):
+
+| quantity | report | ours |
+|---|---:|---:|
+| collective theta0 (deg) | 15.7 | 15.69 |
+| longitudinal cyclic B1 (deg) | -1.3 | -1.13 |
+| lateral cyclic A1 (deg) | -2.05 | -2.11 |
+| tail-rotor pitch (deg) | 10.2 | 10.16 |
+| pitch / roll attitude (deg) | -1.3 / -1.02 | -1.16 / -0.91 |
+| main-rotor thrust (lb) | 9256 | 9271 |
+| tail-rotor thrust (lb) | 618 | 619 |
+| induced velocity MR / TR (ft/s) | 35.8 / 47.9 | 35.81 / 47.91 |
+| power (hp) | 973 | 974.1 |
+| main-rotor torque (ft lb) | 13400 | 13457 |
+
+The step response of Table 7 (1 deg lateral cyclic in hover; report / ours):
+
+| t (s) | u (ft/s) | v (ft/s) | p (deg/s) | q (deg/s) | r (deg/s) |
+|---|---|---|---|---|---|
+| 0.05 | -0.006 / -0.003 | 0.008 / 0.010 | 0.455 / 0.399 | 0.016 / 0.024 | 0.000 / 0.000 |
+| 0.10 | -0.013 / -0.009 | 0.028 / 0.031 | 1.341 / 1.229 | 0.046 / 0.062 | 0.002 / 0.001 |
+| 0.175 | -0.022 / -0.014 | 0.066 / 0.072 | 2.880 / 2.694 | 0.074 / 0.102 | 0.007 / 0.006 |
+
+The trim agrees within 0.2 deg. The roll-rate build-up of Table 7 is about 7 % slower than the
+report's. The trim controls of the Table 7 run (printed with the table) differ from the Fig. 12
+printout, so that run was probably made with a slightly different configuration. Our step
+starts from our own trim; the difference is not resolved.
+
+**2. A109 trims against the report's fitted model (Appendix D)**, 0 .. 120 kt forward, 40 kt
+rearward, 20 kt sideward. Ours / the report's fitted curve, read off the scanned charts (reading
+accuracy about ±0.3 deg, ±1.5 % and ±10 shp). Control positions use the rigging above.
+
+| TAS (kt) | pitch (deg) | roll (deg) | power (shp) | collective (%) | long. cyclic (%) | lat. cyclic (%) | pedal (%) |
+|---:|---|---|---|---|---|---|---|
+| -30 | 2.0 / 2.2 | -1.9 / -2.9 | 482 / 480 | 48 / 49 | 18 / 17 | 49 / 60 | 43 / 43 |
+| -20 | 2.1 / 2.3 | -2.2 / -2.8 | 546 / 545 | 53 / 54 | 23 / 24 | 48 / 57 | 51 / 51 |
+| -10 | 4.5 / 4.5 | -2.5 / -2.6 | 619 / 610 | 59 / 58 | 37 / 36 | 47 / 52 | 59 / 57 |
+| 0 | 5.0 / 5.0 | -2.6 / -2.2 | 640 / 640 | 61 / 60 | 43 / 45 | 46 / 46 | 61 / 61 |
+| 10 | 5.2 / 5.1 | -2.5 / -1.7 | 610 / 610 | 58 / 59 | 48 / 50 | 46 / 43 | 58 / 59 |
+| 20 | 5.0 / 4.9 | -2.2 / -1.3 | 544 / 545 | 53 / 55 | 52 / 53 | 47 / 41 | 51 / 51 |
+| 40 | 3.8 / 4.0 | -1.7 / -1.0 | 435 / 435 | 44 / 45 | 47 / 47 | 49 / 44 | 37 / 37 |
+| 60 | 2.7 / 2.6 | -1.6 / -0.9 | 407 / 400 | 41 / 40 | 48 / 47 | 49 / 43 | 34 / 33 |
+| 80 | 1.6 / 1.4 | -1.6 / -0.8 | 422 / 415 | 42 / 42 | 51 / 51 | 49 / 41 | 29 / 30 |
+| 100 | 0.7 / 0.3 | -1.9 / -0.8 | 474 / 460 | 45 / 45 | 55 / 54 | 47 / 36 | 27 / 28 |
+| 120 | -0.1 / - | -2.3 / - | 563 / 550 | 52 / 50 | 62 / - | 46 / - | 28 / 28 |
+
+Sideward flight (+ right):
+
+| speed (kt) | pitch | roll | collective (%) | long. (%) | lat. (%) | pedal (%) |
+|---:|---|---|---|---|---|---|
+| -20 | 4.7 / 4.3 | -4.6 / -4.6 | 56 / 54 | 42 / 41 | 37 / 37 | 45 / 47 |
+| -10 | 4.9 / 5.0 | -3.1 / -3.6 | 59 / 58 | 43 / 44 | 41 / 41 | 54 / 56 |
+| 10 | 4.9 / 5.4 | -1.9 / -0.9 | 58 / 59 | 43 / 47 | 52 / 52 | 66 / 66 |
+| 20 | 4.6 / 5.5 | 0.1 / 0.6 | 54 / 54 | 42 / 47 | 58 / 58 | 71 / 71 |
+
+Agreement:
+
+* Power, pitch attitude, collective, pedal and longitudinal cyclic follow the fitted model over the
+  whole speed range: pitch within 0.4 deg, the controls within 2 % of travel. Power is within 3 %, and 14 shp high at 100 kt.
+* **Roll attitude** sits 0.5 .. 1 deg more left-wing-down in forward flight.
+* **Lateral cyclic** hardly moves in forward flight, while the report's curve moves 10 % of
+  travel.
+
+So the report's fitted *curves* for the lateral axis are not reproduced by its own printed data
+file and listing as we read them. We flag this and do not tune the data.
+
+The 45 kt trim does not converge with the hard fin-stall switch (the fin is at the stall boundary
+there) and is left out of the sweep.
+
+**3. bg-sim against scipy, open loop.** The bg-sim open-loop runs match the scipy SI model of the
+same blocks (LSODA, 1e-10) to the solver tolerance. These are the largest deviations over the
+four scenarios and the check times 0.5 .. 10 s:
+
+| signal | max deviation |
+|---|---:|
+| u, v, w (m/s) | 9e-6 |
+| p, q, r (deg/s) | 1.6e-5 |
+| phi, theta, psi (deg) | 1.6e-5 |
+| height (m) | 1e-6 |
+| flapping a1, b1 (deg) | 2e-5 |
+| rotor speed (rad/s) | 2e-7 |
+| power (hp) | 3e-5 |
+
+The constant-RPM switch (`rpm_mode = 0`, the report's model) runs the same collective step to
+189 deg of heading at 10 s. With the drivetrain's speed it reaches 170 deg, because the droop
+lowers the torque. Both are checked.
+
+**4. Modes.** The report publishes no eigenvalues, so the reference here is the scipy
+linearisation of the same SI model (12 states: body velocities and rates, attitude, flapping,
+rotor speed, governor). These are its modes. The bg-sim check reads the hover phugoid from the
+Lon run with a damped-oscillation fit, which gives zeta −0.28 and wn 0.66 rad/s against −0.33
+and 0.63 rad/s.
+
+| point | rotor speed | modes (1/s) |
+|---|---|---|
+| hover | drivetrain | +0.211 ± 0.598j, +0.051 ± 0.620j, −0.169, −0.399, −0.988, −2.441 ± 0.762j, −3.104, −18.88, −20.09 |
+| hover | constant | +0.211 ± 0.599j, +0.048 ± 0.622j, −0.119, −0.387, −0.988, −2.336 ± 1.246j, −2.901, −18.89, −20.10 |
+| 60 kt | drivetrain | −0.006 ± 0.168j, −0.032, −0.229 ± 1.574j, −0.716 ± 1.871j, −2.490 ± 1.223j, −2.738, −18.98, −20.10 |
+| 100 kt | drivetrain | −0.021 ± 0.105j, −0.023, −0.452 ± 2.400j, −0.822 ± 3.155j, −2.434 ± 1.484j, −2.695, −18.98, −20.12 |
+
+The hover has two unstable oscillations, the longitudinal and lateral phugoids, the classic
+helicopter result. In forward flight the phugoid is near neutral (−0.006 ± 0.17j at 60 kt).
+The −19/−20 1/s pair are the flapping modes. The governor and rotor-speed modes (about
+−2.4 ± 0.8j in hover) move with `rpm_mode`.
+
+**5. The flyable model against scipy.** The scipy closed loop in `design/heli_sim.py` (Rigging, SCAS and DemoPilot on `heli_si.py`) flies the same demonstration. bg-sim follows it to about 1e-7 over the 120 s:
+
+| t (s) | u (m/s) | h (m) | bank (deg) | pitch (deg) | heading (deg) | collective | power (hp) |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 5 | 0.0 | 15.0 | -2.6 | 5.0 | 0 | 0.604 | 638 |
+| 15 | 6.8 | 23.5 | -2.5 | -1.4 | 1 | 0.609 | 613 |
+| 25 | 21.4 | 32.7 | -1.6 | -4.1 | -3 | 0.566 | 454 |
+| 35 | 32.8 | 37.5 | -1.7 | 0.3 | -5 | 0.486 | 429 |
+| 50 | 38.4 | 41.7 | 18.3 | 3.1 | 68 | 0.445 | 438 |
+| 64 | 38.6 | 43.6 | 18.4 | 3.4 | 141 | 0.431 | 431 |
+| 75 | 36.4 | 46.6 | -1.7 | 2.4 | 146 | 0.394 | 415 |
+| 90 | 23.3 | 40.1 | -1.7 | 8.6 | 134 | 0.304 | 389 |
+| 100 | 9.1 | 27.4 | -7.6 | 11.4 | 117 | 0.451 | 505 |
+| 120 | 1.0 | 15.0 | -2.8 | 5.7 | 116 | 0.603 | 636 |
+
+The two hands-off variants are checked against scipy as well:
+
+* `a109-sim-hold`: SCAS on, 0.1 forward stick. The aircraft settles to the commanded 1.5 deg
+  nose-down attitude and accelerates gently.
+* `a109-sim-bare`: SCAS off, 0.02 forward stick. The bare hover diverges to 21 deg nose-up within
+  10 s.
+
+## The flyable model (a109-sim)
+
+* **Sticks.** Collective 0 .. 1 (0 = full down); cyclic and pedals −1 .. 1 (+ forward, + right).
+  `Rigging` maps them to theta0, B1, A1 and theta_TR with the fits above.
+* **SCAS** (`scas`):
+  * pitch and roll are attitude command, attitude hold: 15 deg of pitch and 30 deg of bank per
+    full stick around the trim attitude;
+  * yaw is rate command, heading hold (30 deg/s per full pedal), with g·tan(phi)/u turn
+    coordination fading in between 10 and 20 m/s;
+  * the trim feedforward comes from `Lookup1D` tables over the forward airspeed (the trim sweep
+    at 15 m with ground effect and smoothed switches);
+  * PI on the attitude and yaw-rate errors, rate damping.
+
+  With the SCAS on, the closed-loop eigenvalues are stable from hover to 45 m/s, apart from the
+  near-neutral speed modes (+0.01 .. +0.02 1/s), which the pilot flies. `scas = 0` passes the rigging's angles
+  straight through.
+* **DemoPilot** flies the schedule (time → forward speed, height, bank, as `Lookup1D` tables):
+  * speed by pitch attitude;
+  * height by collective, with a trim-collective feedforward;
+  * the turn by bank;
+  * the lateral velocity held at zero at low speed.
+
+  `demo = 0` holds the hover sticks. The stick offsets `coll_off`, `lon_off`, `lat_off` and
+  `ped_off` are added from `t_inp`.
+* **FMU interface.** The inputs collective, cyclic_lon, cyclic_lat and pedals pass DemoPilot's
+  sticks through, and wind_n/e/d pass a calm wind (`ExportInputPass`, start values = the hover).
+  The outputs are position (north, east, altitude), attitude, rates, body velocities, climb rate,
+  airspeed and knots, sideslip, rotor speed in %, power, thrust, flapping and the four blade
+  angles (`ExportOutput`). `expected.json` gives the input ranges of the export sweep.
+
+## Limitations
+
+* **Autorotation is not modelled as a scenario.** The Governor has an engine `on` input, which
+  the airframe fixes at 1, and the power method holds in descent. A pilot that lowers the
+  collective and flares is not part of the example.
+* The lateral-axis disagreement with the report's fitted curves (see Validation) is left as the
+  report's data gives it.
+* The demonstration pilot is a simple outer loop:
+  * the height lags its command by up to 8 m in the climb;
+  * the SCAS holds the yaw rate, not the sideslip, so side velocity builds up: 4 m/s in straight
+    flight at speed, 8 m/s in the deceleration.
+* No rotor-speed or power limits act on the pilot; the governor clamps the engine torque only.
+* With `smooth = 0` the flyable model can chatter on the fin-stall switch between 40 and 55 kt.
+
+## Files
+
+| file | content |
+| --- | --- |
+| `design/heli_data.py` | the report's data (A109 II, AH-1S), the Fig. 12 printout, Table 7, the fitted trim curves read off the charts |
+| `design/heli_ref.py` | the report's subroutine in ft units (trim, the report's own integration) |
+| `design/heli_si.py` | the SI model block by block as bg-sim computes it, with the drivetrain, ground effect and smoothed switches |
+| `design/heli_sim.py` | the flyable closed loop: rigging, SCAS, demonstration pilot |
+| `design/design.py` | runs everything and writes `design/design.json` |
+| `design/build_model.py` | writes the models, scenes, `bgsim.project.json` and `expected.json` |
+| `design/run_model.jl` | runs a model headless (development aid) |
+| `library/` | `MainRotor`, `RotorPower`, `Fuselage`, `TailRotor`, `Tailplane`, `Fin`, `HeliAirData`, `ShaftAxis`, `Governor`, `HeliView`; for a109-sim `Rigging`, `Scas`, `DemoPilot` |
+
+    uv run examples/a109/design/design.py
+    uv run examples/a109/design/build_model.py
+    uv run examples/run_checks.py --only a109
+    uv run tools/example_docs/build.py --only a109
+
+A note for model builders: two copies of a subsystem with a junction-to-junction bond need
+distinct connection ids. The compiler names the virtual (e, f) pair of such a bond after the bare
+connection id, so identical copies would share it (E103). `build_model.py` prefixes the ids per
+subsystem.

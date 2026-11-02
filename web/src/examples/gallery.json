@@ -1,4 +1,13 @@
 {
+  "a109": {
+    "title": "A109 helicopter",
+    "description": "The Agusta A109 of Heffley and Mnich's minimum-complexity helicopter model, as a bond graph on a multibond rigid body.",
+    "hasScene": true,
+    "models": [
+      "a109-open-loop",
+      "a109-sim"
+    ]
+  },
   "aerial-contact": {
     "title": "Aerial contact",
     "description": "A multimodal aerial manipulator: free flight, wall approach and contact control.",
