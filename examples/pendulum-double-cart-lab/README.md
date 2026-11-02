@@ -15,6 +15,8 @@ is unchanged.
 | `pendulum-double-cart-lab-free` | no control, motor shorted: the free swing from rest at θ = (−2.2, −1.2) rad, x = 0.05 m, checked against the twin |
 | `pendulum-double-cart-lab-rl` | the swing-up model's scenario with a learned controller: one neural network (`library/DoubleCartLabPolicy.jl`, 200 Hz) swings up, balances and catches the push (see "Learned controller") |
 | `pendulum-double-cart-lab-plant` | the plant without firmware, for the FMU of the RL environment: voltage and tip push in, encoders out, the realism parameters as globals |
+| `pendulum-double-cart-lab-robust` | the swing-up model's scenario with the robust classical firmware: the multi-model LQR balance (C1) on an observer, with the rig's 2 ms loop delay in the loop (see "Robust classical controllers") |
+| `pendulum-double-cart-lab-recover` | the state-driven firmware (C3): swing-up, a 1.5 N / 100 ms knock-down at 7 s, energy removal, the hanging rest, a re-armed swing-up and the re-catch, end 20 s |
 
 The firmware has the structure of `pendulum-double-cart` (1 kHz, `library/DoubleCartLabCtrl.jl` with the
 tables of `library/DoubleCartLabTraj.jl`):
@@ -227,6 +229,124 @@ uv run --project rl rl/compare.py runs/imiL runs/plantL/export runs/cmpL --check
 PPO training is not bit-reproducible across thread counts; the checkpoint refers to the run that produced the
 committed block.
 
+## Robust classical controllers (`pendulum-double-cart-lab-robust`, `pendulum-double-cart-lab-recover`)
+
+Items C1 to C3 of `plan/ROBUST_CLASSICAL_PLAN.md`. Every controller runs on the shared robustness test
+(`design/robustness_test.json`, harness `design/robustness.py`). The truth is the twin with every realism effect:
+Coulomb friction, cable springs, ripple and cogging, 14-bit encoders with noise, the 1-2 sample loop delay and the
+armature lag. The test has the nominal draw plus 64 Monte Carlo draws. The scenarios are `swingup`,
+`balance_push` and the unscored `knockdown_recover`. The pass rule: |x| < 0.95 m throughout, and both links
+within 2° of upright over the last 2 s.
+
+```
+uv run examples/pendulum-double-cart-lab/design/robustness.py run --controller robust_ctrl:make --name <name> --opt balance=mm_lqr [--opt mode=rearm --opt pfl=simple] [--scenarios ...]
+uv run examples/pendulum-double-cart-lab/design/robustness.py show
+```
+
+A controller is any object with `rate_hz`, `reset(seed=, start=)` and `step(sensors) -> volts`: a
+`module:factory`, or a `.npz` MLP policy. It sees the joint and motor encoder counts and its previous command.
+
+**C1, robust balance** (`design/robust_lin.py`, `design/robust_c1.py`, `design/robust_c1.json`). Every design has
+the firmware structure u = -K [x̂; u(k-1); u(k-2)] (8 gains) on the 1 kHz EKF, and is designed with the 2-sample
+delay, the armature lag and the observer in the loop. The 8 gains are designed four ways:
+- **mm_lqr**: the multi-model LQR, mean H2 over 256 box corners and 64 draws.
+- **hinf**: structured H∞, the worst weighted H∞ norm over the same models.
+- **mu**: μ-synthesis by D-K iteration with the fixed structure.
+- **gmf**: Glover-McFarlane loop shaping, in two shapings: `gmf` and `gmf_tuned`.
+
+The verification has three parts:
+- the closed-loop eigenvalues over 320 models;
+- the disk and delay margins at the motor input;
+- μ: the LFT of 12+ parameters (each a real repeated scalar) plus a complex multiplicative drive weight for the
+  delay, lag and unmodelled dynamics. The table gives the complex upper bound over a frequency grid, and the
+  mixed (real/complex) D-G bound of a 12-parameter LFT at the 6 frequencies around the complex peaks. The RP
+  weights are scaled so that the nominal LQR's nominal performance peaks at 0.5.
+
+| balance law | disk margin α (nominal / worst model) | delay margin (samples) | μ RS complex / mixed | μ RP complex / mixed | swingup | balance_push | balance_push peak V / x | tail V rms |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| nominal LQR (design.json) | 0.61 / 0.57 | 6 | 0.86 / 0.27 | 1.42 / 0.96 | 64/64 | 64/64 | 21.3 V / 0.194 m | 1.45 V |
+| **mm_lqr** | **0.78** / 0.57 | **32** | 1.06 / 0.50 | 1.81 / 1.13 | 64/64 | 64/64 | **16.1 V** / 0.225 m | **0.78 V** |
+| hinf | 0.46 / 0.32 | 5 | 1.27 / 0.59 | 1.60 / 0.98 | 64/64 | **49/64** | 24 V / 0.207 m | 1.82 V |
+| mu | 0.55 / 0.47 | 7 | 0.95 / 0.26 | 1.14 / 1.09 | 64/64 | 64/64 | 20.8 V / 0.205 m | 1.26 V |
+| gmf | 0.36 / 0.10 | 14 | 1.73 / 0.77 | 2.07 / 1.42 | 62/64 | 58/64 | 19.2 V / 0.281 m | 0.91 V |
+| gmf_tuned | 0.40 / 0.26 | 5 | 1.25 / 0.37 | 6.13 / 6.12 | 64/64 | 64/64 | 24 V / 0.570 m | 1.25 V |
+
+Findings:
+- With the real structure, every law is robustly stable over the box: mixed RS μ ≤ 0.77. The complex bound
+  overstates it, by 3x for the nominal LQR.
+- The multi-model LQR is the best law on the test. It halves the voltage noise, takes the push with 24 % less
+  voltage, and has the largest disk margin and a 32-sample delay margin. Its RP μ against the H∞ weights is
+  higher, because those weights are tuned to the nominal LQR.
+- The structured H∞ design has the best worst-case linear norm. Its low gains still saturate after the lean plus
+  push, so it fails 15/64.
+- Loop shaping has γ_min ≥ 5.5 for every shaping (ε ≤ 0.18): coprime-factor robustness is poor on this plant.
+
+**C3, state-driven recovery** (`design/robust_ctrl.py`, `mode=rearm`). A drop sends the controller into a
+settle phase, and the swing-up re-arms from the hanging rest:
+- **Drop**: a link more than 20° from upright.
+- **Rail guard**: brakes when the stopping point passes 0.8 m.
+- **Energy removal**: through the cart, a = -k_E P_x - centring (P_x is the links' horizontal momentum). The
+  collocated partial feedback linearisation V = (m_all a + βv)/α applies it.
+- **Hanging LQR**: takes over below 3.8 J.
+- **Re-arm**: 50 ms at the hanging rest re-arms the TVLQR swing-up, shifted to the cart position and the links'
+  turn count, with the catch in the balance law's region z'Pz < tol.
+
+With the mm_lqr balance and the nominal plan (`c3-rearm-mm_lqr`):
+
+| scenario | success | catch time (median / max) | peak V | peak x |
+| --- | --- | --- | --- | --- |
+| swingup | 64/64 | 2.61 / 3.22 s | 18.1 V | 0.40 m |
+| balance_push | 64/64 | 2.93 / 2.97 s | 16.1 V | 0.23 m |
+| knockdown_recover | **64/64** | 12.94 / 13.64 s | 24 V | **0.80 m** (< 0.95 m) |
+
+The timed nominal firmware recovers 0/64 knock-downs. Pure energy pumping to the upright, with the same
+linearisation and the region catch, never caught within 20 s: the energy goes into a whirl of link 2 while link 1
+stays low. So the swing-up itself stays the planned TVLQR, and the state machine re-arms it.
+
+**C2, swing-up for the box** (`design/robust_c2.py`, `design/robust_c2.json`). The models are the design models
+of the nominal set and the 16 corners of four groups: link masses, COM shifts, cart and rotor mass, and drive gain.
+- **Open-loop min-max plan** (`minmax`): one feed-forward for the nominal (hard terminal) and 4 corners, with
+  min-max terminal cost. It ends 1777 times a 2° lean away from upright. One open-loop input cannot swing up a
+  double pendulum over the box, so the robustness has to come from the feedback.
+- **The two plans that are kept**:
+  - `mm_tvlqr`: the nominal plan with a TVLQR designed against all 17 models. It uses a common gain from the
+    models' summed one-step costs, each model with its own cost-to-go.
+  - `margin`: a plan inside 60 % of the supply and ±0.7 m, with the same multi-model TVLQR.
+- **On the corners** (ideal states): the nominal TVLQR already lands every corner within 0.17° at T_s. The
+  multi-model TVLQR gives 0.17° and the margin plan 0.20°.
+- **On the robustness test** (mm_lqr balance, timed catch): both pass swingup 64/64, like the nominal plan.
+  - mm_tvlqr: catch median 3.55 s, 18.1 V, 0.41 m.
+  - margin: catch median 3.57 s, 18.6 V, 0.42 m.
+- **Conclusion**: the box does not stress the TVLQR swing-up. The robust models use the `mm_tvlqr` tables. With
+  them the C3 re-arm passes all three scenarios 64/64 (`c3-rearm-mm_lqr-mm_tvlqr`: the knock-down re-caught at a median
+  12.95 s, peak 0.80 m).
+
+**bgsim models** (`design/robustmodels.py`, `library/DoubleCartLabRobustCtrl.jl`, `library/DoubleCartLabRobustTraj.jl`):
+- **What the block is**: the harness controller as one 1 kHz `@discrete` block on the bond graph's states. It has
+  the mm_lqr gains, the observer (the steady-state EKF gain on the encoder angles and the cart), and the 2 ms loop
+  delay (the output is the command of two ticks ago). It also has the C3 state machine (`rearm = 1`), with the
+  energy, the simple partial feedback linearisation, the hanging LQR and the rail guard. The tables block (the C2 `mm_tvlqr` plan) reads
+  the plan time `tau` that the firmware publishes, so a re-armed swing-up restarts the plan.
+- **`pendulum-double-cart-lab-robust`**: the classical scenario (timed swing-up, catch at 4.0 s, 0.45 N push at
+  7.5 s). The link 1 deflection is 12.9° and the travel 0.208 m; the classical LQR without delay gives 10.7° and
+  0.173 m.
+- **`pendulum-double-cart-lab-recover`**: settle and arm at 1.05 s, catch at 3.75 s, then a 1.5 N / 100 ms
+  knock-down at 7 s. A drop follows at 7.10 s, energy removal from 5.2 J, the hanging rest, the re-arm at
+  9.88 s and the re-catch at 12.58 s. Peak travel is 0.767 m, and the run ends upright.
+- **Agreement**: a Python replica of the block on the twin (`robustmodels.py --replica`) has the same phase
+  timeline (every switch within 1 ms). It agrees with bgsim to 3e-4 m and 7e-4 rad on the robust model, and to 6e-3 m and
+  1.6e-2 rad over the 20 s recover run, through two swing-ups.
+- **Checks**: `expected.json`, written by `robustmodels.py --expected`.
+
+```
+uv run examples/pendulum-double-cart-lab/design/robust_c1.py design|verify|mixed|harness
+uv run examples/pendulum-double-cart-lab/design/robust_c2.py design|harness
+uv run examples/pendulum-double-cart-lab/design/robustmodels.py --balance mm_lqr --plan mm_tvlqr
+uv run examples/pendulum-double-cart-lab/design/robustmodels.py --replica <out.npz>
+julia --project=julia/BGSim rl/closed_loop.jl <bg dir> --project=examples/pendulum-double-cart-lab examples/pendulum-double-cart-lab/models/pendulum-double-cart-lab-robust.bgmodel.json examples/pendulum-double-cart-lab/models/pendulum-double-cart-lab-recover.bgmodel.json
+uv run examples/pendulum-double-cart-lab/design/robustmodels.py --expected <bg dir> --replica-npz <out.npz>
+```
+
 ## What to try
 
 - **Plots**: "Link angles from upright" (`Ctrl/th1`, `Ctrl/th2`), "Cart position" (`Rail/qout`), "Motor voltage and
@@ -250,3 +370,8 @@ committed block.
 | `scenes/pendulum-double-cart-lab.sdf` | the 3D scene |
 | `design/rlmodels.py`, `design/rl_ranges.json` | the RL plant and closed-loop models, the exposed globals and their ranges |
 | `library/DoubleCartLabPolicy.jl` | the learned controller, generated by `rl/make_policy_block.py` |
+| `design/robustness_test.json`, `design/robustness.py`, `design/robustness_results.json` | the shared robustness test, its harness and the results of every controller run on it |
+| `design/robust_lin.py`, `design/robust_c1.py`, `design/robust_c1.json` | C1: the linear toolkit (loops, margins, LFT, μ bounds), the robust balance designs and their verification |
+| `design/robust_c2.py`, `design/robust_c2.json` | C2: the multi-model swing-up plan and TVLQR |
+| `design/robust_ctrl.py` | the harness controllers (C1 balance, C2 plan, C3 re-arm) |
+| `design/robustmodels.py`, `library/DoubleCartLabRobustCtrl.jl`, `library/DoubleCartLabRobustTraj.jl` | the robust and recover models, their firmware and tables, the Python replica and their checks |

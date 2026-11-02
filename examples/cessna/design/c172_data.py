@@ -35,6 +35,8 @@ of the firewall: the baggage arm 95 in and the MAC 58.8 in match the type certif
 
 from __future__ import annotations
 
+import math
+
 # --------------------------------------------------------------------------- metrics
 WING_AREA_FT2 = 174.0
 WING_SPAN_FT = 35.8
@@ -114,21 +116,62 @@ MIXTURE_EFFICIENCY = (
 PROP = {                   # prop_75in2f.xml
     "ixx_slugft2": 1.67, "diameter_in": 75.0, "numblades": 2, "pitch_deg": 22.0,
 }
-# Advance ratio J -> thrust and power coefficients (the active tables of prop_75in2f.xml)
-C_THRUST = (
+# Advance ratio J -> thrust and power coefficients: the active tables of prop_75in2f.xml, as
+# transcribed. The model does not use them directly: see the POH fit below.
+C_THRUST_JSBSIM = (
     (0.0, 0.073), (0.1, 0.073), (0.2, 0.072), (0.3, 0.071), (0.4, 0.069), (0.5, 0.066),
     (0.6, 0.062), (0.7, 0.055), (0.8, 0.045), (0.9, 0.034), (1.0, 0.024), (1.1, 0.013),
     (1.2, -0.006), (1.3, -0.013), (1.4, -0.024), (1.5, -0.034), (1.6, -0.045), (1.7, -0.055),
     (1.8, -0.062), (1.9, -0.066), (2.0, -0.069), (2.1, -0.071), (2.2, -0.072), (2.3, -0.073),
     (5.0, -0.073),
 )
-C_POWER = (
+C_POWER_JSBSIM = (
     (0.0, 0.0660), (0.1, 0.0700), (0.2, 0.0700), (0.3, 0.0660), (0.4, 0.0600), (0.5, 0.0530),
     (0.6, 0.0501), (0.7, 0.0469), (0.8, 0.0426), (0.9, 0.0360), (1.0, 0.0282), (1.1, 0.0191),
     (1.2, 0.0155), (1.3, 0.0191), (1.4, 0.0282), (1.5, 0.0360), (1.6, 0.0426), (1.7, 0.0469),
     (1.8, 0.0501), (1.9, 0.0516), (2.0, 0.0525), (2.1, 0.0525), (2.2, 0.0522), (2.3, 0.0511),
     (2.4, 0.0504), (5.0, 0.0493),
 )
+
+# --------------------------------------------------------------------------- POH fit of the propeller
+# NOT JSBSim data: a correction fitted to the Cessna 172P POH by `prop_fit.py`.
+#
+# With FGPiston's own ISFC calibration (0.418 lb/(hp h): the rated 160 hp at 2700 rpm) the
+# prop_75in2f tables absorb too much power and give too little thrust at low advance ratio: the
+# static rpm is 2195 (POH p. 2-5: 2300 to 2420 rpm at full throttle), the climb at 76 KIAS
+# 512 ft/min (POH Fig. 5-6: 700) and the take-off ground roll 1492 ft (POH Fig. 5-5: 892). The
+# engine's 160 hp is kept; instead both coefficients are scaled by a cosine taper in J,
+#
+#   w(J) = (1 + cos(pi J / J1)) / 2 for J < J1, else 0
+#   C_T(J) = C_T,JSBSim(J) (1 + kT w_T(J)),   C_P(J) = C_P,JSBSim(J) (1 + kP w_P(J)),
+#
+# at the tables' own breakpoints. The scale is 1 + k at J = 0 and fades smoothly to exactly 1 at
+# J1, so the cruise and maximum-speed range (J 0.7 to 0.8) keeps the JSBSim tables. kT, J1T, kP and
+# J1P are a weighted least-squares fit to the POH climb at 76 KIAS (sea level), the static rpm
+# (mid-range 2360), the short-field take-off ground roll and distance over 50 ft, and the climb at
+# 72 KIAS, 8000 ft, with the sea-level maximum speed held (`prop_fit.py`, which gives kT 0.4595,
+# J1T 0.7247, kP -0.152, J1P 0.7253; rounded here). The result: C_T +46 % and C_P -15 % at J = 0,
+# +29 % and -10 % at J = 0.3, +10 % and -3 % at J = 0.5, unchanged from J = 0.725 up. The static
+# figure of merit rises from 0.24 to 0.50 and the efficiency J C_T / C_P now rises monotonically
+# to the unchanged cruise peak of 0.85, both plausible for a fixed-pitch cruise propeller. The
+# numbers against the POH are in the README ("Validation").
+PROP_FIT = (0.460, 0.725, -0.152, 0.725)   # kT, J1T, kP, J1P
+
+
+def prop_taper(j: float, j1: float) -> float:
+    return 0.5 * (1.0 + math.cos(math.pi * j / j1)) if j < j1 else 0.0
+
+
+def prop_correction(kT: float, j1T: float, kP: float, j1P: float):
+    """The corrected (C_T, C_P) tables on the JSBSim breakpoints (see PROP_FIT)."""
+    ct = tuple((j, c * (1.0 + kT * prop_taper(j, j1T))) for j, c in C_THRUST_JSBSIM)
+    cp = tuple((j, c * (1.0 + kP * prop_taper(j, j1P))) for j, c in C_POWER_JSBSIM)
+    return ct, cp
+
+
+# The tables the model uses (the Propeller block and the scipy reference): the POH-fitted ones.
+C_THRUST, C_POWER = prop_correction(*PROP_FIT)
+
 CT_MACH = ((0.85, 1.0), (1.05, 0.8))           # helical tip Mach -> thrust factor
 CP_MACH = ((0.85, 1.0), (1.05, 1.8), (2.00, 1.4))  # helical tip Mach -> power factor
 

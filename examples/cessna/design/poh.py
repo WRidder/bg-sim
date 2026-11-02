@@ -73,3 +73,9 @@ PERFORMANCE = {
                     "the commonly quoted reading of the chart, 1.5 nm per 1000 ft; the scanned curve "
                     "could not be read here, so this value is flagged"),
 }
+
+# the full-throttle static run-up (POH Section 2, page 2-5, Powerplant Limitations, note: "The
+# static RPM range at full throttle (carburetor heat off and mixture leaned to maximum RPM) is
+# 2300 to 2420 RPM"; read from the manualslib scan of the handbook, manual 2382555)
+STATIC_RPM = ((2300.0, 2420.0), "rpm", "POH p. 2-5",
+              "full throttle, carburettor heat off, mixture leaned to maximum rpm; the fit aims at the mid-range 2360")

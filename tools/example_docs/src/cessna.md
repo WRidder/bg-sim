@@ -79,7 +79,7 @@ The second is `Propeller`, a resistance whose torque and thrust are
 
 $$\tau = C_P(J)\,\frac{\rho n^2 D^5}{2\pi}, \qquad T = C_T(J)\,\rho n^2 D^4, \qquad J = \frac{u}{n D}$$
 
-with the 75-inch fixed-pitch propeller's tables.
+with the 75-inch fixed-pitch propeller's tables. These are JSBSim's prop_75in2f with a correction that is not JSBSim data: at low advance ratio $C_T$ is raised (by 46 % at $J = 0$) and $C_P$ lowered (by 15 %), fading out by $J = 0.725$, a fit to the POH's static rpm, climb and take-off (the example's README, "The propeller fit"). Cruise and maximum speed keep the JSBSim tables.
 
 ## Validation source
 
@@ -105,7 +105,7 @@ The spiral's rate wanders between $-0.008$ and $-0.011$ 1/s after the start (ove
 @@ figures cessna-sim
 {
   "diagram": {"kind": "diagram", "model": "cessna-sim"},
-  "scene": {"kind": "scene", "model": "cessna-sim", "t": 36.0, "zoom": 17},
+  "scene": {"kind": "scene", "model": "cessna-sim", "t": 30.0, "zoom": 17},
   "run": {
     "kind": "plot", "model": "cessna-sim", "xlim": [0, 120],
     "rows": [
@@ -146,9 +146,9 @@ The same model is the FMU of the flight simulator `apps/cessna-sim`.
 
 ## 3D view
 
-The airfield has runway 36, a taxiway, an apron, a hangar, a tower and a windsock. The control surfaces, the flaps, the steered nose wheel and the propeller move. Picture at 36 s, in the rotation:
+The airfield has runway 36, a taxiway, an apron, a hangar, a tower and a windsock. The control surfaces, the flaps, the steered nose wheel and the propeller move. Picture at 30 s, climbing out at 25 ft:
 
-![3D view at t = 36 s|600](@fig:scene)
+![3D view at t = 30 s|600](@fig:scene)
 
 Continue with [the landing gear](page:gear), [the results](page:results) and [the FMU](page:fmu).
 @@ page cessna-sim gear overview | Landing gear
@@ -176,15 +176,15 @@ At rest the CG sits 1.2546 m above the runway, with the nose-up attitude of the 
 
 | check | bg-sim | reference |
 | --- | --- | --- |
-| at rest on the runway (20 s, idle) | CG height 1.2546 to 1.2697 m | |
-| 50 ft above the runway | 62.9 s | scipy reference 62.9 s |
-| [Status/kias](signal:Status/kias) at 60 s, 100 s | 69.0, 76.2 kt | scipy within 1e-6 kt |
+| on the runway until rotation (14 s) | CG height 1.2546 to 1.2725 m | |
+| 50 ft above the runway | 37.0 s, 2657 ft from brake release | scipy reference 37.0 s |
+| [Status/kias](signal:Status/kias) at 60 s, 100 s | 77.3, 77.3 kt | scipy within 1e-6 kt |
 | bank in the turn | at most 18.9 deg | limit 20 deg |
 | heading hold (60 deg) and altitude hold (1000 m) | within 2.6 m | `cessna-sim-autopilot` |
-| full-throttle climb at the best-rate speed, 300 m | 583 fpm | POH 700 fpm (rtol 0.2) |
-| full throttle at 8000 ft | 124.0 KTAS | POH 120 KTAS at 75 % power |
+| full-throttle climb at the best-rate speed (84 KCAS), 300 m | 703 fpm | POH 700 fpm at sea level (rtol 0.05) |
+| full throttle at 8000 ft | 124.1 KTAS | POH 120 KTAS at 75 % power |
 
-The climb is short of the handbook: with the engine's rated 160 hp, the c172p propeller makes too little thrust at low advance ratios. The example's README discusses this and the ISFC choice.
+The climb matches the handbook because the propeller's low-speed thrust and power tables are fitted to it (the engine keeps its rated 160 hp). With JSBSim's own propeller tables the model climbed at 583 fpm here and needed 1492 ft of ground roll instead of the POH's 892 (now 855). The demo pilot does not fly the POH's short-field technique, so its 50 ft point is not the POH's 1628 ft. The example's README has the comparison with the POH and the fit.
 @@ page cessna-sim fmu overview | The FMU
 # The FMU
 

@@ -1,6 +1,6 @@
 {
   "project": "cessna",
-  "description": "Cessna 172P (JSBSim c172p data): the open-loop rigid-body modes and the flyable cessna-sim with its landing gear and power train as bond graphs. Numbers come from design/design.json (an independent scipy implementation of the same physics).",
+  "description": "Cessna 172P (JSBSim c172p data, the propeller fitted to the POH): the open-loop rigid-body modes and the flyable cessna-sim with its landing gear and power train as bond graphs. Numbers come from design/design.json (an independent scipy implementation of the same physics).",
   "models": {
     "cessna-open-loop": {
       "checks": [
@@ -21,9 +21,9 @@
           "kind": "cursor_value",
           "signal": "SP/Air/vt",
           "t": 0.0,
-          "value": 51.47216364,
+          "value": 51.47216311,
           "abs": 0.001,
-          "note": "trim at 100 KTAS, 5000 ft: alpha 2.144 deg, throttle 0.8194, 2273 rpm"
+          "note": "trim at 100 KTAS, 5000 ft: alpha 2.144 deg, throttle 0.8189, 2273 rpm"
         },
         {
           "kind": "damping",
@@ -31,9 +31,9 @@
           "from_t": 0.0,
           "to_t": 3.0,
           "offset": "linear",
-          "zeta": 0.6035933857,
+          "zeta": 0.6035933538,
           "zeta_abs": 0.03,
-          "wn": 5.962896529,
+          "wn": 5.962894611,
           "wn_rtol": 0.03,
           "note": "short period: the linearised mode zeta 0.604, wn 5.963 rad/s (period 1.32 s)"
         },
@@ -43,11 +43,11 @@
           "from_t": 0.0,
           "to_t": 120.0,
           "offset": "linear",
-          "zeta": 0.08496908918,
+          "zeta": 0.08532321166,
           "zeta_abs": 0.01,
-          "wn": 0.2535015055,
+          "wn": 0.2535284879,
           "wn_rtol": 0.01,
-          "note": "phugoid: the linearised mode zeta 0.085, wn 0.254 rad/s (period 24.88 s)"
+          "note": "phugoid: the linearised mode zeta 0.085, wn 0.254 rad/s (period 24.87 s)"
         },
         {
           "kind": "damping",
@@ -55,9 +55,9 @@
           "from_t": 0.0,
           "to_t": 12.0,
           "offset": "linear",
-          "zeta": 0.1831127104,
+          "zeta": 0.1831123558,
           "zeta_abs": 0.02,
-          "wn": 2.159732954,
+          "wn": 2.1597344,
           "wn_rtol": 0.02,
           "note": "dutch roll: the linearised mode zeta 0.183, wn 2.160 rad/s (period 2.96 s)"
         },
@@ -65,7 +65,7 @@
           "kind": "cursor_value",
           "signal": "RateRo/lambda",
           "t": 0.3,
-          "value": -5.573515352,
+          "value": -5.57351515,
           "rtol": 0.03,
           "note": "roll: released on its eigenvector, (d phi/dt)/phi reads the eigenvalue -5.5735 1/s (time constant 0.18 s)"
         },
@@ -73,7 +73,7 @@
           "kind": "cursor_value",
           "signal": "RateSl/lambda",
           "t": 0.0,
-          "value": -0.01068560916,
+          "value": -0.01068624784,
           "rtol": 0.03,
           "note": "spiral: released on its eigenvector, (d phi/dt)/phi reads the eigenvalue -0.0107 1/s (time constant 93.58 s)"
         },
@@ -81,7 +81,7 @@
           "kind": "cursor_value",
           "signal": "RateSl/lambda",
           "t": 20.0,
-          "value": -0.008996652235,
+          "value": -0.00899958484,
           "abs": 0.0002,
           "note": "spiral at 20 s: the slow phugoid it excites modulates the rate (the scipy run)"
         },
@@ -89,7 +89,7 @@
           "kind": "cursor_value",
           "signal": "SP/Air/alpha_deg",
           "t": 0.5,
-          "value": 2.021586644,
+          "value": 2.021587001,
           "abs": 0.002,
           "note": "the scipy simulation of the reference model (design/c172_ref.py, design/design.py)"
         },
@@ -97,21 +97,21 @@
           "kind": "cursor_value",
           "signal": "SP/Air/alpha_deg",
           "t": 1.0,
-          "value": 2.144436744,
+          "value": 2.144437134,
           "abs": 0.002
         },
         {
           "kind": "cursor_value",
           "signal": "SP/Air/alpha_deg",
           "t": 2.0,
-          "value": 2.142276904,
+          "value": 2.142277332,
           "abs": 0.002
         },
         {
           "kind": "cursor_value",
           "signal": "Ph/Air/vt",
           "t": 10.0,
-          "value": 50.12817022,
+          "value": 50.12971399,
           "abs": 0.005,
           "note": "the scipy simulation of the reference model (design/c172_ref.py, design/design.py)"
         },
@@ -119,21 +119,21 @@
           "kind": "cursor_value",
           "signal": "Ph/Air/vt",
           "t": 30.0,
-          "value": 51.73520216,
+          "value": 51.73171048,
           "abs": 0.005
         },
         {
           "kind": "cursor_value",
           "signal": "Ph/Air/vt",
           "t": 60.0,
-          "value": 50.97655968,
+          "value": 50.98103629,
           "abs": 0.005
         },
         {
           "kind": "cursor_value",
           "signal": "DR/Air/beta_deg",
           "t": 1.0,
-          "value": -0.3758265689,
+          "value": -0.3757978177,
           "abs": 0.002,
           "note": "the scipy simulation of the reference model (design/c172_ref.py, design/design.py)"
         },
@@ -141,21 +141,21 @@
           "kind": "cursor_value",
           "signal": "DR/Air/beta_deg",
           "t": 2.0,
-          "value": -0.2254590746,
+          "value": -0.2254291784,
           "abs": 0.002
         },
         {
           "kind": "cursor_value",
           "signal": "DR/Air/beta_deg",
           "t": 4.0,
-          "value": -0.1432506256,
+          "value": -0.1432223356,
           "abs": 0.002
         },
         {
           "kind": "cursor_value",
           "signal": "Ro/Air/phi",
           "t": 0.2,
-          "value": 0.011449801496290142,
+          "value": 0.011449801564357981,
           "abs": 2e-05,
           "note": "the scipy simulation of the reference model (design/c172_ref.py, design/design.py)"
         },
@@ -163,14 +163,14 @@
           "kind": "cursor_value",
           "signal": "Ro/Air/phi",
           "t": 0.5,
-          "value": 0.002151682491235694,
+          "value": 0.0021516812555425835,
           "abs": 2e-05
         },
         {
           "kind": "cursor_value",
           "signal": "Sl/Air/phi",
           "t": 10.0,
-          "value": 0.07915097723671814,
+          "value": 0.07914929142319363,
           "abs": 0.0002,
           "note": "the scipy simulation of the reference model (design/c172_ref.py, design/design.py)"
         },
@@ -178,7 +178,7 @@
           "kind": "cursor_value",
           "signal": "Sl/Air/phi",
           "t": 60.0,
-          "value": 0.04966480737643632,
+          "value": 0.049658051311621605,
           "abs": 0.0002
         }
       ]
@@ -202,16 +202,16 @@
           "kind": "cursor_value",
           "signal": "C172/Air/h",
           "t": 0.0,
-          "value": 1.254558469,
+          "value": 1.254559783,
           "abs": 0.0001,
           "note": "the runway start is the static equilibrium on the gear (CG 1.25 m above the runway)"
         },
         {
           "kind": "max_abs_le",
           "signal": "C172/Air/h",
-          "to_t": 20.0,
-          "value": 1.304558469,
-          "note": "the take-off roll: on the runway until rotation"
+          "to_t": 14.0,
+          "value": 1.304559783,
+          "note": "the take-off roll: on the runway until rotation (45 KCAS at about 15 s)"
         },
         {
           "kind": "zero_crossing",
@@ -219,9 +219,9 @@
           "direction": "up",
           "level": 50.0,
           "n": 1,
-          "value": 62.9,
+          "value": 37.0,
           "abs": 1.0,
-          "note": "the scipy run of the reference model with the same demo pilot (design/demo.py): 50 ft above the runway at 62.9 s, 4727 ft from brake release (POH Fig. 5-5: 1628 ft; see the README for the weak c172p static thrust)"
+          "note": "the scipy run of the reference model with the same demo pilot (design/demo.py): 50 ft above the runway at 37.0 s, 2657 ft from brake release (POH Fig. 5-5: 1628 ft, flown by the demo pilot rather than the POH's short-field technique; see the README)"
         },
         {
           "kind": "max_abs_le",
@@ -233,7 +233,7 @@
           "kind": "cursor_value",
           "signal": "C172/Air/h",
           "t": 20.0,
-          "value": 1.269680175,
+          "value": 1.327860213,
           "abs": 0.3,
           "note": "the scipy run of the reference model with the same demo pilot (design/demo.py)"
         },
@@ -241,64 +241,64 @@
           "kind": "cursor_value",
           "signal": "C172/Air/h",
           "t": 40.0,
-          "value": 4.251017535,
+          "value": 20.39255756,
           "abs": 0.5
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/h",
           "t": 60.0,
-          "value": 14.44378795,
+          "value": 81.08861808,
           "abs": 1.0
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/h",
           "t": 90.0,
-          "value": 61.21048908,
+          "value": 178.0102765,
           "abs": 2.0
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/h",
           "t": 120.0,
-          "value": 137.1586755,
+          "value": 281.3637929,
           "abs": 3.0
         },
         {
           "kind": "cursor_value",
           "signal": "Status/kias",
           "t": 20.0,
-          "value": 35.68188494227376,
+          "value": 53.815692487097785,
           "abs": 0.5
         },
         {
           "kind": "cursor_value",
           "signal": "Status/kias",
           "t": 60.0,
-          "value": 69.03100491060994,
+          "value": 77.26605172549984,
           "abs": 0.5
         },
         {
           "kind": "cursor_value",
           "signal": "Status/kias",
           "t": 100.0,
-          "value": 76.19781880665037,
+          "value": 77.25026135183609,
           "abs": 0.5
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/psi",
           "t": 120.0,
-          "value": 1.551430962,
+          "value": 1.552076808,
           "abs": 0.02,
           "note": "the turn to the east (90 deg)"
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/x",
-          "t": 30.0,
-          "value": 384.7975925,
+          "t": 15.0,
+          "value": 129.5943875,
           "abs": 2.0,
           "note": "the ground roll: distance from brake release"
         }
@@ -412,7 +412,7 @@
       "overrides": {
         "global:qw0": 0.9998633453,
         "global:qx0": 0.0,
-        "global:qy0": -0.01653150524,
+        "global:qy0": -0.01653150552,
         "global:qz0": 0.0,
         "global:x0": 0.0,
         "global:y0": 0.0,
@@ -420,21 +420,21 @@
         "global:Pwx0": 0.0,
         "global:Pwy0": 0.0,
         "global:Pwz0": 0.0,
-        "global:Pvx0": 55801.43588,
-        "global:Pvy0": 20.60217935,
-        "global:Pvz0": -1845.720173,
-        "global:hrot0": 532.4317559,
-        "global:map0": 67963.54913,
-        "global:xad0": 0.03305823092,
+        "global:Pvx0": 55801.43589,
+        "global:Pvy0": 20.57613581,
+        "global:Pvz0": -1845.720204,
+        "global:hrot0": 532.2526274,
+        "global:map0": 67907.09049,
+        "global:xad0": 0.03305823147,
         "global:flap0": 0.0,
         "global:qn0": -998.6477631,
         "global:ql0": -998.694728,
         "global:qr0": -998.694728,
         "global:demo": 0.0,
-        "global:yoke_hold": -0.13839745,
-        "global:roll_hold": 0.01730814067,
-        "global:ped_hold": 0.003098674022,
-        "global:thr_hold": 0.8066195939,
+        "global:yoke_hold": -0.1383974381,
+        "global:roll_hold": 0.01728460298,
+        "global:ped_hold": 0.003094756745,
+        "global:thr_hold": 0.806225809,
         "global:flaps_hold": 0.0,
         "global:mixture0": 1.0,
         "global:ap_roll_mode": 2.0,
@@ -447,7 +447,7 @@
           "kind": "cursor_value",
           "signal": "C172/Air/psi",
           "t": 60.0,
-          "value": 1.047033375,
+          "value": 1.047035234,
           "abs": 0.01,
           "note": "heading hold: 60 deg after a 60 deg turn (the scipy run of the reference model with the same autopilot (design/demo.py))"
         },
@@ -472,42 +472,42 @@
           "kind": "cursor_value",
           "signal": "C172/Air/psi",
           "t": 10.0,
-          "value": 0.6114712374,
+          "value": 0.6114689871,
           "abs": 0.01
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/h",
           "t": 10.0,
-          "value": 997.7219417,
+          "value": 997.7220407,
           "abs": 0.3
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/psi",
           "t": 20.0,
-          "value": 1.002428259,
+          "value": 1.002423643,
           "abs": 0.01
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/h",
           "t": 20.0,
-          "value": 1002.029094,
+          "value": 1002.029677,
           "abs": 0.3
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/psi",
           "t": 40.0,
-          "value": 1.046562146,
+          "value": 1.046563994,
           "abs": 0.01
         },
         {
           "kind": "cursor_value",
           "signal": "C172/Air/h",
           "t": 40.0,
-          "value": 1000.000258,
+          "value": 1000.000489,
           "abs": 0.3
         }
       ]
@@ -521,9 +521,9 @@
         }
       },
       "overrides": {
-        "global:qw0": 0.9987427426,
+        "global:qw0": 0.9975065586,
         "global:qx0": 0.0,
-        "global:qy0": -0.05012917363,
+        "global:qy0": -0.0705738299,
         "global:qz0": 0.0,
         "global:x0": 0.0,
         "global:y0": 0.0,
@@ -531,20 +531,20 @@
         "global:Pwx0": 0.0,
         "global:Pwy0": 0.0,
         "global:Pwz0": 0.0,
-        "global:Pvx0": 52568.17229,
-        "global:Pvy0": 24.00796278,
-        "global:Pvz0": -1986.617962,
-        "global:hrot0": 601.0301073,
-        "global:map0": 94737.42333,
-        "global:xad0": 0.03776520462,
+        "global:Pvx0": 47376.62141,
+        "global:Pvy0": 21.92059471,
+        "global:Pvz0": -2808.487563,
+        "global:hrot0": 597.860558,
+        "global:map0": 94510.41838,
+        "global:xad0": 0.0591951488,
         "global:flap0": 0.0,
-        "global:qn0": -298.7432932,
-        "global:ql0": -298.6790642,
-        "global:qr0": -298.6790642,
+        "global:qn0": -298.8043094,
+        "global:ql0": -298.6724436,
+        "global:qr0": -298.6724436,
         "global:demo": 0.0,
-        "global:yoke_hold": -0.1160014825,
-        "global:roll_hold": 0.0279421194,
-        "global:ped_hold": 0.003844605747,
+        "global:yoke_hold": -0.05842805411,
+        "global:roll_hold": 0.03464717583,
+        "global:ped_hold": 0.003968654936,
         "global:thr_hold": 1.0,
         "global:flaps_hold": 0.0,
         "global:mixture0": 1.0
@@ -554,23 +554,23 @@
           "kind": "cursor_value",
           "signal": "Status/vs_fpm",
           "t": 10.0,
-          "value": 582.8364257874015,
+          "value": 692.0154307086615,
           "abs": 5.0,
-          "note": "trimmed full-throttle climb at 300 m, at the model's best-rate speed 93 KCAS: 594 ft/min (POH Fig. 5-6: 700 ft/min at sea level, 76 KIAS; see the README)"
+          "note": "trimmed full-throttle climb at 300 m, at the model's best-rate speed 84 KCAS: 703 ft/min (POH Fig. 5-6: 700 ft/min at sea level, 76 KIAS; see the README)"
         },
         {
           "kind": "cursor_value",
           "signal": "Status/vs_fpm",
           "t": 10.0,
           "value": 700.0,
-          "rtol": 0.2,
-          "note": "POH best rate of climb (sea level, 15 C), within 20 % (the c172p climbs about 15 % slower)"
+          "rtol": 0.05,
+          "note": "POH best rate of climb (sea level, 15 C), within 5 % (the propeller tables are fitted to it, c172_data.PROP_FIT)"
         },
         {
           "kind": "cursor_value",
           "signal": "Status/kias",
           "t": 15.0,
-          "value": 92.6166471923254,
+          "value": 83.5644380484358,
           "abs": 0.3
         }
       ]
@@ -584,9 +584,9 @@
         }
       },
       "overrides": {
-        "global:qw0": 0.9999891153,
+        "global:qw0": 0.99998929,
         "global:qx0": 0.0,
-        "global:qy0": -0.004665753143,
+        "global:qy0": -0.00462816833,
         "global:qz0": 0.0,
         "global:x0": 0.0,
         "global:y0": 0.0,
@@ -594,21 +594,21 @@
         "global:Pwx0": 0.0,
         "global:Pwy0": 0.0,
         "global:Pwz0": 0.0,
-        "global:Pvx0": 69452.10687,
-        "global:Pvy0": 24.73684649,
-        "global:Pvz0": -648.1139354,
-        "global:hrot0": 635.825934,
-        "global:map0": 73598.19361,
-        "global:xad0": 0.009330394099,
+        "global:Pvx0": 69489.57193,
+        "global:Pvy0": 24.72762593,
+        "global:Pvz0": -643.2395395,
+        "global:hrot0": 635.9669468,
+        "global:map0": 73599.47411,
+        "global:xad0": 0.009255234117,
         "global:flap0": 0.0,
-        "global:qn0": -2437.015481,
-        "global:ql0": -2437.10167,
-        "global:qr0": -2437.10167,
+        "global:qn0": -2437.01538,
+        "global:ql0": -2437.101693,
+        "global:qr0": -2437.101693,
         "global:demo": 0.0,
-        "global:yoke_hold": -0.2135504427,
-        "global:roll_hold": 0.01534051237,
-        "global:ped_hold": 0.002949948484,
-        "global:thr_hold": 0.9999991204,
+        "global:yoke_hold": -0.2137890268,
+        "global:roll_hold": 0.01532233625,
+        "global:ped_hold": 0.00294716397,
+        "global:thr_hold": 0.9999999995,
         "global:flaps_hold": 0.0,
         "global:mixture0": 0.8499939219
       },
@@ -617,9 +617,9 @@
           "kind": "cursor_value",
           "signal": "Status/ktas",
           "t": 15.0,
-          "value": 124.01919208986538,
+          "value": 124.08600597113261,
           "abs": 0.3,
-          "note": "full throttle (mixture leaned for best power) at 8000 ft: 124.0 KTAS, 2682 rpm, 130 hp"
+          "note": "full throttle (mixture leaned for best power) at 8000 ft: 124.1 KTAS, 2682 rpm, 130 hp"
         },
         {
           "kind": "cursor_value",

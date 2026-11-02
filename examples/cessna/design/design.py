@@ -113,6 +113,10 @@ def tables() -> dict:
             t[f"{nm}{fl}"] = {"x": col(tab, 0), "y": col(tab, 1 + k)}
     t["C_THRUST"] = {"x": col(D.C_THRUST, 0), "y": col(D.C_THRUST, 1)}
     t["C_POWER"] = {"x": col(D.C_POWER, 0), "y": col(D.C_POWER, 1)}
+    # the JSBSim tables the POH fit starts from (not used by the models), and the fit
+    t["C_THRUST_JSBSIM"] = {"x": col(D.C_THRUST_JSBSIM, 0), "y": col(D.C_THRUST_JSBSIM, 1)}
+    t["C_POWER_JSBSIM"] = {"x": col(D.C_POWER_JSBSIM, 0), "y": col(D.C_POWER_JSBSIM, 1)}
+    t["PROP_FIT"] = dict(zip(("kT", "J1T", "kP", "J1P"), (f(v) for v in D.PROP_FIT)))
     t["MIXTURE_EFFICIENCY"] = {"x": col(D.MIXTURE_EFFICIENCY, 0), "y": col(D.MIXTURE_EFFICIENCY, 1)}
     return t
 
@@ -142,10 +146,16 @@ def engine() -> dict:
 
 # --------------------------------------------------------------------------- 3. performance
 def performance() -> dict:
+    """Three cases: the model (ISFC 0.418, the POH-fitted propeller), the same engine with the
+    JSBSim propeller tables (the fit's starting point), and the engine file's bsfc 0.32 with the
+    JSBSim propeller (the over-powered engine that hides the weak static thrust)."""
     out = {}
     cal = M.ISFC
-    for label, isfc in (("calibrated", cal), ("file", M.ISFC_FILE)):
+    fitted = (D.C_THRUST, D.C_POWER)
+    jsbsim = (D.C_THRUST_JSBSIM, D.C_POWER_JSBSIM)
+    for label, isfc, prop in (("calibrated", cal, fitted), ("jsbsim_prop", cal, jsbsim), ("file", M.ISFC_FILE, jsbsim)):
         M.ISFC = isfc
+        D.C_THRUST, D.C_POWER = prop
         t0 = time.time()
         rec = {"isfc": f(isfc)}
         rec["stall"] = {str(fl): P.stall_speed(fl) for fl in (0.0, 10.0, 30.0)}
@@ -166,6 +176,7 @@ def performance() -> dict:
         print(f"  performance ({label}): {time.time() - t0:.0f} s")
         out[label] = rec
     M.ISFC = cal
+    D.C_THRUST, D.C_POWER = fitted
     return out
 
 

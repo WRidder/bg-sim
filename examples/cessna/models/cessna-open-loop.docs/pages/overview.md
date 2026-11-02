@@ -19,6 +19,6 @@ A Cessna 172P built from the data of JSBSim's c172p, released on each of its fiv
 
 The five aircraft fly side by side over a striped reference floor. The ailerons, elevator, rudder and flaps are separate meshes on their hinge lines, and the propeller turns at the engine's speed. Picture at 4 s:
 
-![3D view at t = 4 s|600](assets/22e47f594142.png)
+![3D view at t = 4 s|600](assets/d5417139ad83.png)
 
 Continue with [the aircraft](page:aircraft) and [the results](page:results).
