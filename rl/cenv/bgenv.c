@@ -148,6 +148,33 @@ BGENV_API int bgenv_step(bgenv *e, const double *u, int nsub, double *y, int *st
     return fails;
 }
 
+/* As bgenv_step, with a whole-sample loop delay per instance (R1): the first d[k] of the nsub
+   internal steps hold the previous inputs u0 (n x BG_NU), the rest the new inputs u1. A d[k]
+   outside [0, nsub] is clamped. */
+BGENV_API int bgenv_step_delay(bgenv *e, const double *u0, const double *u1, const int *d, int nsub,
+                               double *y, int *status) {
+    int fails = 0;
+    double t0 = now_ns();
+#pragma omp parallel for schedule(static) reduction(+ : fails)
+    for (int k = 0; k < e->n; ++k) {
+        bg_model *m = &e->m[k];
+        if (status[k] == 0) {
+            int dk = d[k] < 0 ? 0 : (d[k] > nsub ? nsub : d[k]);
+            for (int s = 0; s < nsub; ++s) {
+                const double *u = (s < dk) ? u0 : u1;
+                for (int i = 0; i < BG_NU; ++i) m->u[i] = u[(size_t)k * BG_NU + i];
+                int r = bg_step(m);
+                if (r != 0) { status[k] = r; break; }
+            }
+        }
+        if (status[k] != 0) fails += 1;
+        bg_update_outputs(m);
+        memcpy(&y[(size_t)k * BG_NY], m->y, sizeof(double) * BG_NY);
+    }
+    e->t_plant_ns += now_ns() - t0;
+    return fails;
+}
+
 BGENV_API double bgenv_plant_seconds(bgenv *e) { return e->t_plant_ns * 1e-9; }
 
 BGENV_API void bgenv_outputs(bgenv *e, double *y) {

@@ -48,6 +48,18 @@ function _junction_width_error!(
     return nothing
 end
 
+"""The longest diagram path (`A/B/`, or "" at the root) that contains both instance paths."""
+function _shared_dir(a::AbstractString, b::AbstractString)
+    da = (s = findlast('/', a); s === nothing ? "" : a[1:s])
+    db = (s = findlast('/', b); s === nothing ? "" : b[1:s])
+    n = 0
+    for (k, (x, y)) in enumerate(zip(da, db))
+        x == y || break
+        x == '/' && (n = k)
+    end
+    return da[1:n]
+end
+
 """Create the virtual `(e, f)` pair of a junction-to-junction bond at the junction width.
 
 A scalar width keeps the historical `conn.e`/`conn.f` ids; a multibond width uses
@@ -63,10 +75,12 @@ function _junction_virtual_vars!(
     isempty(bond.eids) || return bond
     suffix(k) = width == 1 ? "" : "[" * string(k) * "]"
     # Connection ids are unique only within one diagram, so the virtual variables carry
-    # the diagram path of the junction (both junctions of the bond share it); otherwise
-    # two instances of the same subsystem would share one `(e, f)` pair.
-    slash = findlast('/', junction.path)
-    base = slash === nothing ? bond.connection : junction.path[1:slash] * bond.connection
+    # the diagram path of the bond; otherwise two instances of the same subsystem would
+    # share one `(e, f)` pair. Both ends of the bond must name the same pair, and one end
+    # may be a junction inside a subsystem (a component port that resolves to its internal
+    # junction, e.g. RigidBody2D's), so the prefix is the diagram path the two junction
+    # paths share, the same from either end.
+    base = _shared_dir(junction.path, bond.path) * bond.connection
     eids = String[base * ".e" * suffix(k) for k in 1:width]
     fids = String[base * ".f" * suffix(k) for k in 1:width]
     for (ids, field) in ((eids, :e), (fids, :f))

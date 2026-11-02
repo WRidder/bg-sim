@@ -200,7 +200,7 @@
         "id": "n009",
         "name": "Passive1",
         "block": {
-          "ref": "stdlib:bondgraph/Se"
+          "ref": "stdlib:bondgraph/MSe"
         },
         "position": {
           "x": 650,
@@ -209,7 +209,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "e": "0.0"
+          "gain": "1.0"
         },
         "constants": {},
         "starts": {},
@@ -383,7 +383,7 @@
         "id": "n017",
         "name": "Passive2",
         "block": {
-          "ref": "stdlib:bondgraph/Se"
+          "ref": "stdlib:bondgraph/MSe"
         },
         "position": {
           "x": 1030,
@@ -392,7 +392,7 @@
         "rotation": 0,
         "flipX": false,
         "params": {
-          "e": "0.0"
+          "gain": "1.0"
         },
         "constants": {},
         "starts": {},
@@ -884,6 +884,82 @@
         "position": {
           "x": 800,
           "y": 820
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n141",
+        "name": "Realism",
+        "block": {
+          "ref": "project:LabRealism"
+        },
+        "position": {
+          "x": 520,
+          "y": 820
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "tc_joint1": "tc_joint1",
+          "tc_joint2": "tc_joint2",
+          "eps_joint": "eps_joint",
+          "tc_rail": "tc_rail",
+          "eps_base": "eps_base",
+          "k_cable": "k_cable",
+          "k_cable_base": "k_cable_base",
+          "alpha": "alpha_v",
+          "n_motor": "n_motor",
+          "ripple_rel": "ripple_rel",
+          "ripple_per_rev": "ripple_per_rev",
+          "cogging": "cogging",
+          "cogging_per_rev": "cogging_per_rev"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n142",
+        "name": "RealismForce",
+        "block": {
+          "ref": "stdlib:translation/ForceSource"
+        },
+        "position": {
+          "x": 640,
+          "y": 80
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F": "-1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n143",
+        "name": "FrameR",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 640,
+          "y": -20
         },
         "rotation": 0,
         "flipX": false,
@@ -1427,6 +1503,138 @@
           "node": "n140",
           "port": "u"
         }
+      },
+      {
+        "id": "s911",
+        "kind": "signal",
+        "from": {
+          "node": "n132",
+          "port": "y"
+        },
+        "to": {
+          "node": "n141",
+          "port": "V"
+        }
+      },
+      {
+        "id": "s912",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n141",
+          "port": "x"
+        }
+      },
+      {
+        "id": "s913",
+        "kind": "signal",
+        "from": {
+          "node": "n002",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n141",
+          "port": "v"
+        }
+      },
+      {
+        "id": "s914",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "qout"
+        },
+        "to": {
+          "node": "n141",
+          "port": "q1"
+        }
+      },
+      {
+        "id": "s915",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n141",
+          "port": "w1"
+        }
+      },
+      {
+        "id": "s916",
+        "kind": "signal",
+        "from": {
+          "node": "n013",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "n141",
+          "port": "w2"
+        }
+      },
+      {
+        "id": "w901",
+        "kind": "wire",
+        "from": {
+          "node": "n142",
+          "port": "a"
+        },
+        "to": {
+          "node": "n002",
+          "port": "drive"
+        }
+      },
+      {
+        "id": "w902",
+        "kind": "wire",
+        "from": {
+          "node": "n142",
+          "port": "b"
+        },
+        "to": {
+          "node": "n143",
+          "port": "a"
+        }
+      },
+      {
+        "id": "s917",
+        "kind": "signal",
+        "from": {
+          "node": "n141",
+          "port": "F"
+        },
+        "to": {
+          "node": "n142",
+          "port": "u"
+        }
+      },
+      {
+        "id": "s918",
+        "kind": "signal",
+        "from": {
+          "node": "n141",
+          "port": "tau1"
+        },
+        "to": {
+          "node": "n009",
+          "port": "u"
+        }
+      },
+      {
+        "id": "s919",
+        "kind": "signal",
+        "from": {
+          "node": "n141",
+          "port": "tau2"
+        },
+        "to": {
+          "node": "n017",
+          "port": "u"
+        }
       }
     ]
   },
@@ -1712,6 +1920,78 @@
       "description": "Damping of the end stops"
     },
     {
+      "name": "tc_joint1",
+      "value": "0.0002",
+      "unit": "N m",
+      "description": "Coulomb (breakaway) friction of joint 1, a pair of shielded 688 ball bearings; smooth form tc tanh(w / eps_joint). The screen (screen_results.json) gives the budget"
+    },
+    {
+      "name": "tc_joint2",
+      "value": "0.0002",
+      "unit": "N m",
+      "description": "Coulomb (breakaway) friction of joint 2, a pair of shielded 688 ball bearings; smooth form tc tanh(w / eps_joint)"
+    },
+    {
+      "name": "eps_joint",
+      "value": "0.01",
+      "unit": "rad/s",
+      "description": "Velocity scale of the smooth Coulomb law (numerical, fixed)"
+    },
+    {
+      "name": "tc_carriage",
+      "value": "1.0",
+      "unit": "N",
+      "description": "Coulomb friction of the carriage on its linear guide, the belt and the cable chain"
+    },
+    {
+      "name": "tc_motor",
+      "value": "0.002",
+      "unit": "N m",
+      "description": "Coulomb friction at the motor shaft: brushes, bearings, gearbox (x N/r = 0.375 N at the cart)"
+    },
+    {
+      "name": "eps_base",
+      "value": "0.005",
+      "unit": "m/s",
+      "description": "Velocity scale of the smooth Coulomb law on the cart (numerical, fixed)"
+    },
+    {
+      "name": "k_cable",
+      "value": "0.0001",
+      "unit": "N m/rad",
+      "description": "Bending stiffness of the joint-2 encoder cable loop across joint 1 (joint 2 has no cable across it); neutral at the upright"
+    },
+    {
+      "name": "k_cable_base",
+      "value": "0.0",
+      "unit": "N/m",
+      "description": "Spring of the cable chain along the rail, neutral at the rail centre"
+    },
+    {
+      "name": "ripple_rel",
+      "value": "0.02",
+      "unit": "of u",
+      "description": "Commutation torque ripple, relative to the motor force"
+    },
+    {
+      "name": "ripple_per_rev",
+      "value": "14.0",
+      "unit": "per motor rev",
+      "description": "Ripple periods per motor revolution (7 commutator segments x 2)"
+    },
+    {
+      "name": "cogging",
+      "value": "0.2",
+      "unit": "N",
+      "description": "Cogging force at the cart (motor cogging torque x N / r)"
+    },
+    {
+      "name": "cogging_per_rev",
+      "value": "14.0",
+      "unit": "per motor rev",
+      "description": "Cogging periods per motor revolution (7 slots, 2 poles)"
+    },
+    {
       "name": "m1",
       "value": "m_tube1 + m_hub1 + m_enc_magnet + m_head1 + m_enc_board + (rho_cable*L1)",
       "unit": "kg",
@@ -1788,6 +2068,24 @@
       "value": "-(m_cart + m1 + m2)*9.81/100000000.0",
       "unit": "m",
       "description": "static rail deflection"
+    },
+    {
+      "name": "n_motor",
+      "value": "N_gear/r_pulley",
+      "unit": "rad/m",
+      "description": "motor angle per cart metre"
+    },
+    {
+      "name": "alpha_v",
+      "value": "k_t*N_gear/(r_pulley*R_m)",
+      "unit": "N/V",
+      "description": "force per volt at the cart (the twin's alpha)"
+    },
+    {
+      "name": "tc_rail",
+      "value": "tc_carriage + tc_motor*N_gear/r_pulley",
+      "unit": "N",
+      "description": "carriage + motor Coulomb friction at the cart"
     }
   ]
 }
