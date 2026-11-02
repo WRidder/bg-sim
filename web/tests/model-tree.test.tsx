@@ -1,6 +1,7 @@
 /**
- * W2.2: the model tree nests subsystem diagrams recursively and a row click
- * opens the owning diagram and selects the node (or enters the subsystem).
+ * W2.2: the model tree nests subsystem diagrams recursively. A row click opens
+ * the Diagram tab on the owning diagram, selects the node and centres it; a
+ * double-click on a subsystem row enters it.
  */
 
 import { fireEvent, render, screen } from "@testing-library/react";
@@ -9,6 +10,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import catalogJson from "../../contracts/fixtures/catalog/valid/catalog.min.json";
 import type { Catalog } from "../src/contracts/catalog";
 import type { Model, ModelNode } from "../src/contracts/model";
+import { SHOW_CENTER_TAB_EVENT } from "../src/app/dockBus";
+import { clearCenterNode, pendingCenterNode } from "../src/editor/canvasFocus";
 import { ModelTree } from "../src/editor/ModelTree";
 import { resetCatalogStore, useCatalogStore } from "../src/library/catalogStore";
 import { buildCatalogIndex } from "../src/library/catalogIndex";
@@ -113,7 +116,12 @@ describe("model tree subsystems", () => {
     expect(screen.getByTestId("tree-node-Gain1").getAttribute("data-depth")).toBe("2");
   });
 
-  it("selects a nested row in its own diagram and enters a subsystem row", () => {
+  it("selects a nested row in its own diagram, centres it and enters a subsystem row on double-click", () => {
+    const tabs: string[] = [];
+    const onTab = (event: Event): void => {
+      tabs.push((event as CustomEvent<string>).detail);
+    };
+    window.addEventListener(SHOW_CENTER_TAB_EVENT, onTab);
     render(<ModelTree />);
 
     fireEvent.click(screen.getByTestId("tree-node-Gain1"));
@@ -125,13 +133,25 @@ describe("model tree subsystems", () => {
     expect(
       screen.getByTestId("tree-node-Motor1").getAttribute("aria-current"),
     ).toBeNull();
+    expect(pendingCenterNode()).toBe("g2");
+    expect(tabs).toEqual(["diagram"]);
 
+    // A single click on a subsystem row shows the subsystem block on its parent diagram.
     fireEvent.click(screen.getByTestId("tree-node-Subsystem1"));
+    expect(useDocumentStore.getState().activePath).toEqual([]);
+    expect(useDocumentStore.getState().selection.nodes).toEqual(["s1"]);
+    expect(pendingCenterNode()).toBe("s1");
+
+    fireEvent.doubleClick(screen.getByTestId("tree-node-Subsystem1"));
     expect(useDocumentStore.getState().activePath).toEqual(["s1"]);
     expect(useDocumentStore.getState().selection).toEqual({ nodes: [], connections: [] });
+    expect(pendingCenterNode()).toBeNull();
 
     fireEvent.click(screen.getByTestId("tree-node-Ground1"));
     expect(useDocumentStore.getState().activePath).toEqual(["s1"]);
     expect(useDocumentStore.getState().selection.nodes).toEqual(["g1"]);
+    expect(pendingCenterNode()).toBe("g1");
+    clearCenterNode("g1");
+    window.removeEventListener(SHOW_CENTER_TAB_EVENT, onTab);
   });
 });

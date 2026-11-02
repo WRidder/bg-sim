@@ -2,12 +2,15 @@
  * The model tree of plan 7.2: a recursive outline of the open diagram.
  *
  * A subsystem row shows its exposed-port count and nests its children at any
- * depth. Clicking a plain block row opens the diagram that owns it and selects
- * the block; clicking a subsystem row enters that subsystem.
+ * depth. Clicking a row opens the Diagram tab on the diagram that owns the
+ * element, selects it and centres it; double-clicking a subsystem row enters it.
  */
+
+import { requestCenterTab } from "../app/dockBus";
 
 import { useCatalogStore } from "../library/catalogStore";
 import { useDocumentStore } from "../state/documentStore";
+import { clearCenterNode, requestCenterNode } from "./canvasFocus";
 import { interfaceForNode } from "./nodeInterface";
 import { BlockIcon, JunctionGlyph } from "./icons";
 import type { ModelNode } from "../contracts/model";
@@ -53,17 +56,25 @@ function TreeRows({
               data-subsystem={subsystem !== null ? "true" : "false"}
               data-port-count={subsystem?.ports.length ?? 0}
               onClick={() => {
-                const store = useDocumentStore.getState();
-                if (subsystem !== null) {
-                  store.navigateToPath([...path, node.id]);
-                  return;
+                if (useDocumentStore.getState().selectNodeAt(path, node.id)) {
+                  requestCenterNode(node.id);
+                  requestCenterTab("diagram");
                 }
-                store.selectNodeAt(path, node.id);
               }}
+              onDoubleClick={
+                subsystem !== null
+                  ? () => {
+                      // The two clicks before asked to centre the subsystem block; inside it there is none.
+                      clearCenterNode(node.id);
+                      useDocumentStore.getState().navigateToPath([...path, node.id]);
+                      requestCenterTab("diagram");
+                    }
+                  : undefined
+              }
               title={
                 subsystem !== null
-                  ? `Enter ${node.name} (${subsystem.ports.length} exposed ports)`
-                  : `Select ${node.name}`
+                  ? `Show ${node.name} on the diagram; double-click to enter it (${subsystem.ports.length} exposed ports)`
+                  : `Show ${node.name} on the diagram`
               }
             >
               <span className="model-tree__glyph" aria-hidden="true">
