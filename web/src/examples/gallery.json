@@ -399,6 +399,7 @@
       "pendulum-double-cart-lab-balance",
       "pendulum-double-cart-lab-free",
       "pendulum-double-cart-lab-rl",
+      "pendulum-double-cart-lab-rl-robust",
       "pendulum-double-cart-lab-robust",
       "pendulum-double-cart-lab-recover"
     ]
