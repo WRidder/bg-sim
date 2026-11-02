@@ -53,6 +53,7 @@ import { useCatalogStore } from "../library/catalogStore";
 import { readDragPayload } from "../library/dnd";
 import { useOpenSourceEvents, requestSource } from "../code/codeSession";
 import { useInlineInterfaceStore } from "../code/inlineInterfaces";
+import { nodeSourceDetail, openNodeSource } from "../code/nodeSource";
 import {
   connectionPlotTargets,
   nodeForMenu,
@@ -2424,6 +2425,17 @@ function CanvasInner() {
                   }
                 >
                   Expose as subsystem port
+                </button>
+              ) : null}
+              {menuNode !== undefined && nodeSourceDetail(menuNode, index) !== null ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  data-testid="show-source"
+                  title="Open the block source in the Code tab"
+                  onClick={() => runMenuAction(() => void openNodeSource(menuNode, index))}
+                >
+                  Show source
                 </button>
               ) : null}
               <button
