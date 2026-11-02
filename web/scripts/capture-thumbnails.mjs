@@ -16,6 +16,12 @@
  * Nothing is written into `examples/`. `--fake` uses the fixture worker (fast, but blocks beyond the
  * minimal catalog draw without ports); the committed thumbnails come from the real worker.
  * The backend serves the existing `web/dist`: run `npm run build` first.
+ *
+ * A scene whose objects are placed only by a run (aircraft, vehicles) shows as tiny dots before one:
+ * `--run` (or `"capture": {"run": true}` in the example's gallery.json entry) runs the model, seeks the
+ * playback to `--at` (a fraction of the run, default 0.5) or `--time` seconds, fits the view, zooms
+ * `--zoom` wheel notches and only then shoots the inset. `--out DIR` writes the PNGs and gallery.json
+ * there instead of into src/examples. See scripts/README.md.
  */
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -25,6 +31,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { chromium } from "@playwright/test";
+
+import { captureSettings } from "./thumbnail-capture-settings.mjs";
 
 const webDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(webDir, "..");
@@ -41,15 +49,36 @@ function out(text) {
 }
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const USAGE =
+  "usage: node scripts/capture-thumbnails.mjs [--example NAME]... [--fake] [--port N] [--out DIR]\n" +
+  "         [--model NAME] [--run] [--no-run] [--at FRACTION] [--time SECONDS] [--zoom NOTCHES] [--view iso|top|front|side] [--orbit DX,DY]";
+
 function parseArgs(argv) {
-  const options = { examples: [], fake: false, port: null };
+  const options = { examples: [], fake: false, port: null, out: null, capture: {} };
+  const number = (text, name) => {
+    const value = Number(text);
+    if (!Number.isFinite(value)) {
+      console.error(`${name} needs a number, got ${JSON.stringify(text)}\n${USAGE}`);
+      process.exit(2);
+    }
+    return value;
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--fake") options.fake = true;
     else if (arg === "--example") options.examples.push(argv[++i]);
     else if (arg === "--port") options.port = Number(argv[++i]);
+    else if (arg === "--out") options.out = path.resolve(argv[++i]);
+    else if (arg === "--model") options.capture.model = argv[++i];
+    else if (arg === "--run") options.capture.run = true;
+    else if (arg === "--no-run") options.capture.run = false;
+    else if (arg === "--at") options.capture.at = number(argv[++i], "--at");
+    else if (arg === "--time") options.capture.time = number(argv[++i], "--time");
+    else if (arg === "--zoom") options.capture.zoom = number(argv[++i], "--zoom");
+    else if (arg === "--view") options.capture.view = argv[++i];
+    else if (arg === "--orbit") options.capture.orbit = argv[++i].split(",").map((part) => number(part, "--orbit"));
     else {
-      console.error("usage: node scripts/capture-thumbnails.mjs [--example NAME]... [--fake] [--port N]");
+      console.error(USAGE);
       process.exit(2);
     }
   }
@@ -174,8 +203,84 @@ async function settleViewport(page) {
 const HIDE_CHROME =
   '[role="tooltip"], [role="status"], [role="alert"], .toast, .react-flow__attribution, .react-flow__panel, .react-flow__minimap, .react-flow__controls { display: none !important; }';
 
-/** Open `model` of `project` and return PNG buffers of the diagram and (with a scene) the 3D view. */
-async function shoot(page, baseUrl, project, model, nodeCount, hasScene) {
+const HIDE_VIEWER_BUTTONS =
+  '[data-testid^="viewer-preset"], [data-testid="viewer-fit"], [data-testid="viewer-ortho"], [data-testid="detach-viewer"] { visibility: hidden !important; }';
+
+/** Run the open model and wait until the run is done; returns the wall seconds. */
+async function runModel(page, timeoutS) {
+  const t0 = Date.now();
+  const button = page.getByTestId("run-button");
+  await button.waitFor({ state: "visible", timeout: 60_000 });
+  await page.waitForFunction(() => document.querySelector('[data-testid="run-button"]')?.disabled === false, null, { timeout: 120_000 });
+  await button.click();
+  await page.waitForFunction(
+    () => {
+      const status = document.querySelector('[data-testid="run-status"]')?.getAttribute("data-status");
+      if (status === "failed" || status === "cancelled") throw new Error(`the run ended ${status}`);
+      return status === "done";
+    },
+    null,
+    { timeout: timeoutS * 1000, polling: 500 },
+  );
+  return (Date.now() - t0) / 1000;
+}
+
+/**
+ * After a run: wait for the 3D view to hold the run, pause it, seek to `settings.time` seconds or the
+ * `settings.at` fraction (default 0.5), set the camera preset, fit and zoom.
+ */
+async function frameAfterRun(page, settings) {
+  await page.waitForFunction(
+    () => {
+      const bar = document.querySelector('[data-testid="playback-bar"]');
+      const note = document.querySelector('[data-testid="playback-note"]');
+      if (note?.getAttribute("role") === "alert") throw new Error(`the 3D view could not load the run: ${note.textContent}`);
+      return bar?.getAttribute("data-mode") === "playback";
+    },
+    null,
+    { timeout: 120_000, polling: 250 },
+  );
+  const bar = page.getByTestId("playback-bar");
+  if ((await bar.getAttribute("data-playing")) === "true") await page.getByTestId("playback-toggle").click();
+  const slider = page.getByTestId("playback-time");
+  const start = Number((await slider.getAttribute("min")) ?? "0");
+  const end = Number(await slider.getAttribute("max"));
+  const step = Number((await slider.getAttribute("step")) ?? "0") || 0.001;
+  const target = settings.time ?? start + (end - start) * (settings.at ?? 0.5);
+  const clamped = Math.min(end, Math.max(start, Math.round(target / step) * step));
+  await slider.fill(String(Number(clamped.toFixed(6))));
+  await sleep(400);
+  if (settings.view) await page.getByTestId(`viewer-preset-${settings.view}`).dispatchEvent("click");
+  await page.getByTestId("viewer-fit").dispatchEvent("click");
+  await sleep(700);
+  await page.addStyleTag({ content: HIDE_VIEWER_BUTTONS });
+  const box = await page.getByTestId("viewer-canvas").boundingBox();
+  if (box) {
+    // the view zooms toward, and orbits around, the scene point under the cursor: the centre of the view
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await page.mouse.move(cx, cy);
+    const notches = Math.abs(settings.zoom ?? 0);
+    for (let z = 0; z < notches; z += 1) {
+      await page.mouse.wheel(0, settings.zoom > 0 ? -300 : 300);
+      await sleep(120);
+    }
+    if (settings.orbit) {
+      await page.mouse.down();
+      await page.mouse.move(cx + settings.orbit[0], cy + settings.orbit[1], { steps: 10 });
+      await page.mouse.up();
+    }
+    await page.mouse.move(2, 2);
+  }
+  await sleep(600);
+  return Number(await bar.getAttribute("data-time"));
+}
+
+/**
+ * Open `model` of `project` and return PNG buffers of the diagram and (with a scene) the 3D view.
+ * With `settings.run` the model runs first and the 3D view is framed on the run (see {@link frameAfterRun}).
+ */
+async function shoot(page, baseUrl, project, model, nodeCount, hasScene, settings = {}) {
   await page.goto(`${baseUrl}/?project=${encodeURIComponent(project)}&model=${encodeURIComponent(model)}`);
   await page.waitForFunction((n) => document.querySelectorAll('[data-testid="diagram-node"]').length >= n, nodeCount, {
     timeout: 60_000,
@@ -190,7 +295,12 @@ async function shoot(page, baseUrl, project, model, nodeCount, hasScene) {
     () => getComputedStyle(document.querySelector(".react-flow")).backgroundColor || "transparent",
   );
   let scene = null;
+  let framed = null;
   if (hasScene) {
+    const runSeconds = settings.run ? await runModel(page, settings.runTimeout ?? 900) : null;
+    // a framed shot gets a taller dock, so the 3D view is closer to the inset's 1.6 aspect and the inset's
+    // centre crop does not cut the framed objects
+    if (settings.run) await page.setViewportSize({ width: 1280, height: 1600 });
     await page.getByRole("tab", { name: "3D View" }).click();
     await page.getByTestId("scene-view").waitFor({ state: "visible", timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('[data-testid="scene-view"]')?.getAttribute("data-state") === "loaded", null, {
@@ -200,10 +310,11 @@ async function shoot(page, baseUrl, project, model, nodeCount, hasScene) {
       const viewer = document.querySelector('[data-testid="viewer"]');
       return viewer !== null && Number(viewer.getAttribute("data-frames") ?? "0") > 2;
     }, null, { timeout: 30_000 });
+    if (runSeconds !== null) framed = { runSeconds, time: await frameAfterRun(page, settings) };
     await sleep(600);
     scene = await page.getByTestId("viewer-canvas").screenshot({ animations: "disabled" });
   }
-  return { diagram, scene, background };
+  return { diagram, scene, background, framed };
 }
 
 /** Compose the PNG (480 x 300 at scale 1): the diagram, with the 3D view as an inset when there is one. */
@@ -268,15 +379,20 @@ async function main() {
   process.on("exit", () => killTree(backend));
 
   try {
-    await waitForHealth(baseUrl, backend, 300_000, !options.fake);
+    // a cold Julia worker (first start after a change of the package) can take several minutes
+    await waitForHealth(baseUrl, backend, 900_000, !options.fake);
     out(`backend ${baseUrl} ready after ${((Date.now() - started) / 1000).toFixed(1)} s (${options.fake ? "fake" : "real"} worker)`);
 
     const listed = (await json(baseUrl, "/api/examples")).examples;
     const examples = options.examples.length > 0 ? options.examples : listed;
     for (const name of examples) if (!listed.includes(name)) throw new Error(`unknown example ${name}; available: ${listed.join(", ")}`);
 
-    mkdirSync(outDir, { recursive: true });
+    // --out writes the PNGs and a gallery.json copy elsewhere; the settings still come from the committed manifest
+    const thumbDir = options.out ?? outDir;
+    const manifestTarget = options.out ? path.join(options.out, "gallery.json") : manifestFile;
+    mkdirSync(thumbDir, { recursive: true });
     const manifest = existsSync(manifestFile) ? JSON.parse(readFileSync(manifestFile, "utf8")) : {};
+    const settingsOf = new Map(examples.map((name) => [name, captureSettings(manifest[name]?.capture, options.capture)]));
 
     // Software GL: a hardware context per example exhausted the GPU memory after about ten examples.
     browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
@@ -306,15 +422,20 @@ async function main() {
       for (const model of models) {
         docs.push({ name: model, doc: await json(baseUrl, `/api/projects/${project}/models/${model}`) });
       }
+      const settings = settingsOf.get(example) ?? {};
       const withScene = docs.find((entry) => entry.doc.scene?.file);
-      const chosen = withScene ?? docs.find((entry) => entry.name === "iconic") ?? docs[0];
+      const named = settings.model === undefined ? undefined : docs.find((entry) => entry.name === settings.model);
+      if (settings.model !== undefined && named === undefined) {
+        throw new Error(`${example}: capture model ${settings.model} is not one of ${models.join(", ")}`);
+      }
+      const chosen = named ?? withScene ?? docs.find((entry) => entry.name === "iconic") ?? docs[0];
       if (chosen === undefined) {
         await context.close();
         out(`${example}: no models, skipped`);
         continue;
       }
       const nodeCount = (chosen.doc.diagram?.nodes ?? []).length;
-      const shots = await shoot(page, baseUrl, project, chosen.name, nodeCount, Boolean(chosen.doc.scene?.file));
+      const shots = await shoot(page, baseUrl, project, chosen.name, nodeCount, Boolean(chosen.doc.scene?.file), settings);
       await context.close();
       // A dense diagram or a busy 3D view can exceed the budget at full size: step the size down.
       let png = null;
@@ -323,26 +444,29 @@ async function main() {
         if (png.length <= BUDGET_BYTES) break;
       }
       if (png.length > MAX_BYTES) throw new Error(`${example}.png is ${png.length} bytes, over the ${MAX_BYTES} byte budget`);
-      writeFileSync(path.join(outDir, `${example}.png`), png);
+      writeFileSync(path.join(thumbDir, `${example}.png`), png);
 
       const info = readmeInfo(example);
+      const capture = manifest[example]?.capture;
       manifest[example] = {
         ...(info.title ? { title: info.title } : {}),
         ...(info.description ? { description: info.description } : {}),
         hasScene: docs.some((entry) => entry.doc.scene?.file),
         models,
+        ...(capture ? { capture } : {}), // the committed per-example settings stay
       };
       await fetch(`${baseUrl}/api/projects/${project}`, { method: "DELETE" });
-      writeFileSync(manifestFile, `${JSON.stringify(Object.fromEntries(Object.entries(manifest).sort(([a], [b]) => a.localeCompare(b))), null, 2)}
+      writeFileSync(manifestTarget, `${JSON.stringify(Object.fromEntries(Object.entries(manifest).sort(([a], [b]) => a.localeCompare(b))), null, 2)}
 `);
+      const framed = shots.framed ? `, run ${shots.framed.runSeconds.toFixed(1)} s, framed at t = ${shots.framed.time.toFixed(2)} s` : "";
       out(
-        `${example}: ${chosen.name} (${nodeCount} nodes${shots.scene ? ", 3D inset" : ""}) -> ${(statSync(path.join(outDir, `${example}.png`)).size / 1024).toFixed(1)} kB, ${((Date.now() - t0) / 1000).toFixed(1)} s`,
+        `${example}: ${chosen.name} (${nodeCount} nodes${shots.scene ? ", 3D inset" : ""}${framed}) -> ${(statSync(path.join(thumbDir, `${example}.png`)).size / 1024).toFixed(1)} kB, ${((Date.now() - t0) / 1000).toFixed(1)} s`,
       );
     }
 
     const sorted = Object.fromEntries(Object.entries(manifest).sort(([a], [b]) => a.localeCompare(b)));
-    writeFileSync(manifestFile, `${JSON.stringify(sorted, null, 2)}\n`);
-    out(`wrote ${path.relative(webDir, manifestFile)} (${Object.keys(sorted).length} examples) in ${((Date.now() - started) / 1000).toFixed(1)} s`);
+    writeFileSync(manifestTarget, `${JSON.stringify(sorted, null, 2)}\n`);
+    out(`wrote ${path.relative(webDir, manifestTarget)} (${Object.keys(sorted).length} examples) in ${((Date.now() - started) / 1000).toFixed(1)} s`);
   } catch (error) {
     process.exitCode = 1;
     console.error(error instanceof Error ? error.stack ?? error.message : error);

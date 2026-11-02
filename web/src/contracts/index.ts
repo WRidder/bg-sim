@@ -20,6 +20,7 @@ export * as model from "./model";
 export * as project from "./project";
 export * as runManifest from "./run-manifest";
 export * as streamHandshake from "./stream-handshake";
+export * as streamSubscribe from "./stream-subscribe";
 export * as workerRpc from "./worker-rpc";
 
 export type { BeamMapping } from "./bindings";
@@ -155,6 +156,7 @@ export type { RunStats } from "./run-manifest";
 export type { RunTime } from "./run-manifest";
 export type { StreamHandshake } from "./stream-handshake";
 export type { StreamSignal } from "./stream-handshake";
+export type { StreamSubscribe } from "./stream-subscribe";
 export type { BlockCheckParams } from "./worker-rpc";
 export type { BlockCheckRequest } from "./worker-rpc";
 export type { BlockCheckResponse } from "./worker-rpc";

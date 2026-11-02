@@ -14,7 +14,9 @@ The router owns the run lifecycle on the backend side:
 * ``GET /api/runs/{run_id}/data`` returns the binary frame of plan 3.7:
   ``u32 n_signals | u32 n_points | time column | one Float64 column per
   signal``, little-endian. ``px`` (default 1600) min/max decimates each signal
-  to at most ``2*px`` points; ``px=0`` returns the raw window.
+  to at most ``2*px`` points; ``px=0`` returns the raw window. ``POST`` on the
+  same path takes the parameters form-encoded in the body, for id lists too long
+  for a URL.
 * ``GET /api/runs/{run_id}/export.csv`` writes the same selection as CSV.
 * ``DELETE /api/runs/{run_id}`` asks the worker to cancel.
 * ``WS /api/ws/runs/{run_id}`` (also aliased at ``/ws/runs/{run_id}`` because
@@ -67,6 +69,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
+from urllib.parse import parse_qs
 
 import numpy as np
 from fastapi import APIRouter, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
@@ -914,6 +917,53 @@ async def run_data(
     px: int = Query(default=DEFAULT_POINTS, ge=0, le=1_000_000, description="Pixels; 0 = raw."),
 ) -> Response:
     """Plan 3.7: ``u32 n_signals | u32 n_points | time | value columns``, Float64 LE."""
+    return await _run_data(run_id, request, ids, t0, t1, px)
+
+
+def _form_number(text: str | None, name: str) -> float | None:
+    if text is None or text == "":
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"{name}={text!r} is not a number") from None
+
+
+@router.post("/runs/{run_id}/data")
+async def run_data_post(run_id: str, request: Request) -> Response:
+    """``GET .../data`` with its parameters form-encoded in the body (``ids=a,b&t0=&t1=&px=``).
+
+    The 3D view loads a run over HTTP with every bound signal; hundreds of ids do not fit in a
+    URL (servers and proxies refuse request lines over 8 or 16 KiB), so long lists come here.
+    """
+    try:
+        form = parse_qs((await request.body()).decode("utf-8"), keep_blank_values=True)
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="the body must be UTF-8 form data") from None
+
+    def last(name: str) -> str | None:
+        values = form.get(name)
+        return values[-1] if values else None
+
+    px_text = last("px")
+    px = DEFAULT_POINTS
+    if px_text not in (None, ""):
+        try:
+            px = int(px_text)
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail=f"px={px_text!r} is not an integer"
+            ) from None
+        if not 0 <= px <= 1_000_000:
+            raise HTTPException(status_code=400, detail="px must be between 0 and 1000000")
+    t0 = _form_number(last("t0"), "t0")
+    t1 = _form_number(last("t1"), "t1")
+    return await _run_data(run_id, request, last("ids"), t0, t1, px)
+
+
+async def _run_data(
+    run_id: str, request: Request, ids: str | None, t0: float | None, t1: float | None, px: int
+) -> Response:
     _validate_window(t0, t1)
     run_dir, state = _locate(request, run_id)
     document, signals = _manifest_and_signals(run_dir, state)

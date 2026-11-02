@@ -314,7 +314,7 @@ def model_open_loop():
 
 
 # --------------------------------------------------------------------------- the 3D view helpers
-TRAIL_N = 12          # dots per trail (every bound signal id goes into the 3D stream URL: keep it short)
+TRAIL_N = 12          # dots per trail (the 3D stream takes any number of ids; 12 keep the scene light)
 TRAIL_TS = 0.08       # s between dots (a trail of about one second)
 
 

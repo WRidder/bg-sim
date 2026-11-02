@@ -3,6 +3,17 @@
 ``WS /api/ws/stream/{run_id}`` (also mounted at ``/ws/stream/{run_id}``) serves the
 spec's stream for a live or a finished run:
 
+0. **Subscribe** (only with ``?subscribe=1``): the client's first message, one JSON text
+   message, exactly the ``stream-subscribe`` contract::
+
+       {"ids": ["A/x", "A/y", ...]}
+
+   The ids travel in the message body because a long list does not fit in the request
+   line: over 8 KiB, uvicorn's legacy ``websockets`` protocol answers 400 (proxies 414)
+   and the default ``websockets-sansio`` one never answers, so the browser waits. Without ``subscribe`` the ids come from
+   the query, as before. The server waits at most :data:`SUBSCRIBE_TIMEOUT` seconds for
+   the message and refuses a missing or malformed one with 4400.
+
 1. **Handshake**, one JSON text message, exactly the ``stream-handshake`` contract
    (validated against the generated ``StreamHandshake`` before it is sent)::
 
@@ -30,8 +41,9 @@ Query parameters:
 * ``ids`` = the signal subset. Repeat the parameter (``?ids=A/x&ids=A/y``) or comma
   separate (``?ids=A/x,A/y``); commas inside ``[i,j]`` indices are part of an id. The
   frame order is the request order, the default is every manifest signal in manifest
-  order. This was chosen over a first client message so the handshake can be sent
-  immediately and the contract stays exactly the handshake shape.
+  order. Fine for a handful of ids; the web viewer uses ``subscribe`` instead.
+* ``subscribe=1`` = the ids come in the client's first message (step 0), not in the
+  query; ``ids`` must then be absent from the query.
 * ``rate`` = frames per simulated second, ``0 < rate <= 60`` (default 60). The
   handshake reports it.
 
@@ -61,7 +73,7 @@ import numpy as np
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
-from .contracts import StreamHandshake, StreamMode, StreamSignal
+from .contracts import StreamHandshake, StreamMode, StreamSignal, StreamSubscribe
 from .runs import _load_manifest, _locate, _RunState, _store_for
 
 #: The display rate in frames per simulated second (the spec's default and the maximum).
@@ -70,6 +82,8 @@ MAX_RATE = 60.0
 BLOCK_FRAMES = 2048
 #: Rows read from a file per block while thinning.
 _READ_ROWS = 65536
+#: Seconds the server waits for the subscribe message of a ``?subscribe=1`` stream.
+SUBSCRIBE_TIMEOUT = 10.0
 
 router = APIRouter()
 #: The same endpoint without the ``/api`` prefix, as in the plan's API table.
@@ -118,6 +132,49 @@ def _parse_mode(text: str | None) -> str | None:
     if text not in {"live", "playback"}:
         raise StreamRefused(4400, f"mode={text!r} is not allowed; use mode=live or mode=playback")
     return text
+
+
+def _subscribe_flag(text: str | None) -> bool:
+    if text is None or text.strip() in {"", "0", "false"}:
+        return False
+    if text.strip() in {"1", "true"}:
+        return True
+    raise StreamRefused(4400, f"subscribe={text!r} is not allowed; use subscribe=1 or leave it out")
+
+
+def parse_subscribe(message: dict[str, Any]) -> list[str]:
+    """The ids of a subscribe message (an ASGI ``websocket.receive``), validated by the contract."""
+    text = message.get("text")
+    if text is None:
+        raise StreamRefused(
+            4400, 'the subscribe message must be a JSON text message like {"ids": [...]}'
+        )
+    try:
+        subscribe = StreamSubscribe.model_validate_json(text)
+    except ValidationError as exc:
+        first = exc.errors()[0]
+        where = ".".join(str(part) for part in first.get("loc", ())) or "message"
+        raise StreamRefused(
+            4400,
+            f"the subscribe message is not valid ({where}: {first.get('msg', 'invalid')}); "
+            'send {"ids": [...]}',
+        ) from None
+    return [str(name) for name in subscribe.ids]
+
+
+async def _receive_subscribe(websocket: WebSocket) -> list[str]:
+    """Wait for the subscribe message; raises :class:`StreamRefused` or ``WebSocketDisconnect``."""
+    try:
+        message = await asyncio.wait_for(websocket.receive(), timeout=SUBSCRIBE_TIMEOUT)
+    except TimeoutError:
+        raise StreamRefused(
+            4400,
+            f"no subscribe message within {SUBSCRIBE_TIMEOUT:g} s; "
+            'send {"ids": [...]} first on a subscribe=1 stream',
+        ) from None
+    if message["type"] == "websocket.disconnect":
+        raise WebSocketDisconnect(message.get("code", 1000))
+    return parse_subscribe(message)
 
 
 # --------------------------------------------------------------------------- files
@@ -342,13 +399,18 @@ def _end_reason(status: str) -> str:
     return status if status in {"done", "cancelled", "failed"} else "done"
 
 
-async def _serve(websocket: WebSocket, run_id: str) -> tuple[int, str]:
-    """Handshake and frames; returns the close ``(code, reason)``."""
+async def _serve(
+    websocket: WebSocket, run_id: str, subscribed: list[str] | None = None
+) -> tuple[int, str]:
+    """Handshake and frames; returns the close ``(code, reason)``.
+
+    ``subscribed`` holds the ids of the subscribe message; ``None`` takes them from the query.
+    """
     params = websocket.query_params
     try:
         rate = _parse_rate(params.get("rate"))
         mode = _parse_mode(params.get("mode"))
-        wanted = parse_ids(params.getlist("ids"))
+        wanted = parse_ids(params.getlist("ids")) if subscribed is None else subscribed
         try:
             run_dir, state = _locate(websocket, run_id)
         except HTTPException as exc:
@@ -407,16 +469,34 @@ async def _serve(websocket: WebSocket, run_id: str) -> tuple[int, str]:
 
 
 async def _watch_disconnect(websocket: WebSocket) -> None:
-    """Return when the client goes away; messages from the client are ignored."""
+    """Return when the client goes away; messages from the client (after a subscribe) are ignored."""
     while True:
         message = await websocket.receive()
         if message["type"] == "websocket.disconnect":
             return
 
 
+async def _close(websocket: WebSocket, code: int, reason: str) -> None:
+    with suppress(RuntimeError, WebSocketDisconnect):
+        await websocket.close(code=code, reason=reason[:120])
+
+
 async def _serve_stream(websocket: WebSocket, run_id: str) -> None:
     await websocket.accept()
-    server = asyncio.create_task(_serve(websocket, run_id), name=f"stream-{run_id}")
+    subscribed: list[str] | None = None
+    try:
+        if _subscribe_flag(websocket.query_params.get("subscribe")):
+            if websocket.query_params.getlist("ids"):
+                raise StreamRefused(
+                    4400, "give the ids either in the query or in the subscribe message, not both"
+                )
+            subscribed = await _receive_subscribe(websocket)
+    except StreamRefused as refusal:
+        await _close(websocket, refusal.code, refusal.reason)
+        return
+    except (WebSocketDisconnect, RuntimeError):
+        return  # the client left before subscribing
+    server = asyncio.create_task(_serve(websocket, run_id, subscribed), name=f"stream-{run_id}")
     watcher = asyncio.create_task(_watch_disconnect(websocket), name=f"stream-watch-{run_id}")
     try:
         await asyncio.wait({server, watcher}, return_when=asyncio.FIRST_COMPLETED)
@@ -432,8 +512,7 @@ async def _serve_stream(websocket: WebSocket, run_id: str) -> None:
             code, reason = server.result()
         except (WebSocketDisconnect, RuntimeError):
             return  # the client left while frames were being sent
-        with suppress(RuntimeError, WebSocketDisconnect):
-            await websocket.close(code=code, reason=reason[:120])
+        await _close(websocket, code, reason)
     finally:
         for task in (server, watcher):
             if not task.done():

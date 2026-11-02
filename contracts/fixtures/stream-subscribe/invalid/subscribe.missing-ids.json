@@ -1,0 +1,3 @@
+{
+  "$comment": "Invalid: the required `ids` is missing; the server cannot tell which signals to stream."
+}

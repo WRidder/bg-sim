@@ -7,7 +7,7 @@
 import { fetchRunData, RunApiError } from "../plot/runApi";
 import type { RunDataFrame } from "../plot/runData";
 import type { StreamHandshake } from "../contracts/stream-handshake";
-import { isRefusal, openStream, type StreamEnd, type StreamHandlers, type StreamMode } from "./playbackStream";
+import { isRefusal, openStream, type StreamEnd, type StreamHandlers, type StreamMode, type StreamTiming } from "./playbackStream";
 
 /** The display rate of the stream (frames per simulated second, the stream's maximum). */
 export const PLAYBACK_RATE = 60;
@@ -74,6 +74,7 @@ export interface SourceHandlers extends StreamHandlers {
 export interface SourceSeams {
   readonly makeSocket?: (url: string) => WebSocket;
   readonly fetchData?: typeof fetchRunData;
+  readonly timing?: StreamTiming;
 }
 
 /** Load a whole run over HTTP (raw rows, thinned here) and deliver it as one handshake plus one frame block. */
@@ -143,6 +144,7 @@ export function openSamples(
       },
     },
     seams.makeSocket,
+    seams.timing,
   );
   return () => {
     cancelled = true;

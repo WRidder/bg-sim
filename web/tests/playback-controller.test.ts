@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Binding } from "../src/contracts/model";
 import type { ApplyTarget } from "../src/viewer/bindingsApply";
 import { ViewerPlayback, type CursorPort } from "../src/viewer/playbackController";
-import { openStream, streamUrl } from "../src/viewer/playbackStream";
+import { openStream, streamUrl, subscribeMessage, timedOut } from "../src/viewer/playbackStream";
 import { SignalBuffer } from "../src/viewer/timeline";
 
 /** A manual wall clock and frame queue. */
@@ -263,24 +263,110 @@ describe("ViewerPlayback", () => {
 });
 
 describe("stream client", () => {
-  it("builds the stream URL with the ids in order and the mode", () => {
-    const url = new URL(streamUrl("run-1", ["A/x", "A/y[1,2]"], "playback", "http://h:1"));
+  it("builds a short stream URL: the mode and subscribe, never the ids", () => {
+    const url = new URL(streamUrl("run-1", "playback", "http://h:1"));
     expect(url.protocol).toBe("ws:");
     expect(url.pathname).toBe("/ws/stream/run-1");
-    expect(url.searchParams.get("ids")).toBe("A/x,A/y[1,2]");
+    expect(url.searchParams.get("ids")).toBeNull();
+    expect(url.searchParams.get("subscribe")).toBe("1");
     expect(url.searchParams.get("mode")).toBe("playback");
   });
 
   class FakeSocket {
     binaryType = "";
+    onopen: (() => void) | null = null;
     onmessage: ((e: MessageEvent) => void) | null = null;
     onclose: ((e: CloseEvent) => void) | null = null;
     onerror: (() => void) | null = null;
     closed = false;
+    sent: string[] = [];
+    url = "";
+    send(text: string): void {
+      this.sent.push(text);
+    }
     close(): void {
       this.closed = true;
     }
   }
+
+  it("sends the ids as the first message once open, however many there are", () => {
+    const socket = new FakeSocket();
+    // the 3D view of a formation flight: 2000 pose components, far over any request line
+    const ids = Array.from({ length: 2000 }, (_, k) => `Craft${String(k % 6)}Trail/d${String(k % 12)}[${String((k % 7) + 1)}]`);
+    openStream("r", ids, "playback", { onHandshake: () => undefined, onFrames: () => undefined, onEnd: () => undefined }, (url) => {
+      socket.url = url;
+      return socket as unknown as WebSocket;
+    });
+    expect(socket.url.length).toBeLessThan(200);
+    expect(socket.sent).toEqual([]);
+    socket.onopen?.();
+    expect(socket.sent).toHaveLength(1);
+    expect(JSON.parse(socket.sent[0] ?? "")).toEqual({ ids });
+    expect(subscribeMessage(["A/y[1,2]"])).toBe('{"ids":["A/y[1,2]"]}');
+  });
+
+  describe("timeouts", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    function open(mode: "live" | "playback"): { socket: FakeSocket; ends: { ok: boolean; reason: string; code?: number }[]; handshakes: number } {
+      const socket = new FakeSocket();
+      const got = { socket, ends: [] as { ok: boolean; reason: string; code?: number }[], handshakes: 0 };
+      openStream(
+        "r",
+        ["a"],
+        mode,
+        { onHandshake: () => { got.handshakes += 1; }, onFrames: () => undefined, onEnd: (e) => { got.ends.push(e); } },
+        () => socket as unknown as WebSocket,
+        { openMs: 1000, handshakeMs: 2000 },
+      );
+      return got;
+    }
+
+    it("reports a connection that never opens instead of waiting forever", () => {
+      const got = open("live");
+      vi.advanceTimersByTime(999);
+      expect(got.ends).toEqual([]);
+      vi.advanceTimersByTime(1);
+      expect(got.ends).toEqual([{ ok: false, reason: timedOut("open", 1000), code: 1006 }]);
+      expect(got.ends[0]?.reason).toMatch(/did not connect within 1 s/);
+      expect(got.socket.closed).toBe(true);
+      // a late close of the abandoned socket reaches nobody
+      got.socket.onclose?.({ code: 1006, reason: "" } as CloseEvent);
+      expect(got.ends).toHaveLength(1);
+    });
+
+    it("reports a playback stream that opens but sends no handshake", () => {
+      const got = open("playback");
+      vi.advanceTimersByTime(500);
+      got.socket.onopen?.();
+      vi.advanceTimersByTime(1999);
+      expect(got.ends).toEqual([]);
+      vi.advanceTimersByTime(1);
+      expect(got.ends[0]?.reason).toMatch(/connected but sent no data within 2 s/);
+    });
+
+    it("lets a live stream wait for its handshake (the run may still be compiling)", () => {
+      const got = open("live");
+      got.socket.onopen?.();
+      vi.advanceTimersByTime(60_000);
+      expect(got.ends).toEqual([]);
+      got.socket.onmessage?.({ data: JSON.stringify({ signals: [{ id: "a" }], rate: 60, mode: "live" }) } as MessageEvent);
+      expect(got.handshakes).toBe(1);
+    });
+
+    it("stops the clock once the handshake is in", () => {
+      const got = open("playback");
+      got.socket.onopen?.();
+      got.socket.onmessage?.({ data: JSON.stringify({ signals: [{ id: "a" }], rate: 60, mode: "playback" }) } as MessageEvent);
+      vi.advanceTimersByTime(60_000);
+      expect(got.ends).toEqual([]);
+    });
+  });
 
   it("decodes several frames per message after the handshake and reports the close", () => {
     const socket = new FakeSocket();

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bgsim.local/schemas/stream-subscribe.schema.json",
+  "title": "StreamSubscribe",
+  "description": "The first client message of a viewer stream opened with ?subscribe=1 (spec: \"Stream format\"): the signal ids to stream, sent in the message body because a long id list does not fit in the WebSocket request line. The server answers with the stream-handshake.",
+  "type": "object",
+  "required": ["ids"],
+  "properties": {
+    "ids": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "The signal ids in frame order, each exactly as the run manifest lists it; an empty list streams every manifest signal in manifest order."
+    },
+    "$comment": { "type": "string" }
+  },
+  "additionalProperties": false
+}

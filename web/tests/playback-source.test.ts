@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { RunDataFrame } from "../src/plot/runData";
-import { RunApiError } from "../src/plot/runApi";
+import { fetchRunData, MAX_DATA_URL, RunApiError } from "../src/plot/runApi";
 import { fallbackNote, framesOf, loadOverHttp, openSamples, thinRows, UNREACHABLE, type SourceHandlers } from "../src/viewer/playbackSource";
 import { SignalBuffer } from "../src/viewer/timeline";
 
@@ -219,6 +219,51 @@ describe("openSamples", () => {
     expect(b.ends[0]?.reason).toMatch(/dropped \(1006\)/);
     await tick();
     expect(fetched).toBe(0);
+  });
+
+  it("falls back to HTTP when the stream never connects", async () => {
+    vi.useFakeTimers();
+    try {
+      const got = collect();
+      openSamples("r", ids, "playback", got.handlers, {
+        makeSocket: () => new FakeSocket() as unknown as WebSocket,
+        fetchData: () => Promise.resolve(data),
+        timing: { openMs: 500 },
+      });
+      await vi.advanceTimersByTimeAsync(500);
+      expect(got.buffer()?.length).toBeGreaterThan(50);
+      expect(got.notes).toHaveLength(1);
+      expect(got.ends).toEqual([{ ok: true, reason: "done" }]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("loads a long id list over HTTP with a POST body instead of a long URL", async () => {
+    const many = Array.from({ length: 1200 }, (_, k) => `Craft${String(k % 6)}Trail/d${String(k)}[${String((k % 7) + 1)}]`);
+    const header = new Uint32Array([1, 2]);
+    const body = new Uint8Array(8 + 8 * 2 * 2);
+    body.set(new Uint8Array(header.buffer), 0);
+    body.set(new Uint8Array(new Float64Array([0, 1, 5, 6]).buffer), 8);
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(body.buffer)));
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      await fetchRunData("r", many, null, 0);
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+      expect(url).toMatch(/\/api\/runs\/r\/data$/);
+      expect(init.method).toBe("POST");
+      const form = new URLSearchParams(String(init.body));
+      expect(form.get("ids")?.split(",")).toEqual(many);
+      expect(form.get("px")).toBe("0");
+
+      await fetchRunData("r", many.slice(0, 3), null, 0);
+      const [shortUrl, shortInit] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
+      expect(shortUrl).toContain("/data?ids=");
+      expect(shortInit.method).toBeUndefined();
+      expect(MAX_DATA_URL).toBeLessThan(8192);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("loadOverHttp delivers nothing after it is cancelled", async () => {

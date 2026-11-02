@@ -1,0 +1,4 @@
+{
+  "$comment": "The subscribe message of a 3D view bound to the DC motor's shaft and current; ids may carry indices with commas.",
+  "ids": ["Motor1/shaft.f", "Motor1/i", "Pose/g[1]", "Inertia/J[1,2]"]
+}

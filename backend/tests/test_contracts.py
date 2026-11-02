@@ -44,6 +44,7 @@ SCHEMAS: dict[str, str] = {
     "run-manifest": "RunManifest",
     "worker-rpc": "WorkerRpc",
     "stream-handshake": "StreamHandshake",
+    "stream-subscribe": "StreamSubscribe",
     "bindings": "Bindings",
     "debug": "Debug",
     "docs": "Docs",

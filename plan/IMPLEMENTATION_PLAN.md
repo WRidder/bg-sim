@@ -350,10 +350,10 @@ M4 adds the debug methods and notifications of section 3.8.
 | `POST /api/projects/{p}/runs` | `{ model }` gives `{ runId }`. |
 | `DELETE /api/runs/{id}` | Cancel. |
 | `GET /api/runs/{id}` | The manifest. |
-| `GET /api/runs/{id}/data?ids=a,b&t0=&t1=&px=1600` | Binary: `u32 n_signals`, `u32 n_points`, then a time column and value columns (Float64). Min/max decimated to at most `2*px` points per signal over `[t0, t1]`. A `px=0` request returns raw data. |
+| `GET /api/runs/{id}/data?ids=a,b&t0=&t1=&px=1600` | Binary: `u32 n_signals`, `u32 n_points`, then a time column and value columns (Float64). Min/max decimated to at most `2*px` points per signal over `[t0, t1]`. A `px=0` request returns raw data. `POST` on the same path takes the same parameters form-encoded in the body, for id lists too long for a URL. |
 | `GET /api/runs/{id}/export.csv?ids=` | CSV export. |
 | `WS /ws/runs/{id}` | Phases, progress, done, and a live decimated tail for subscribed signal ids (the client sends `{subscribe: [...]}`). |
-| `WS /ws/stream/{id}` | The spec's viewer stream: JSON handshake, then binary frames `[t, v...]` at no more than 60 Hz, for a live or a finished run (`?mode=live` or `playback`). |
+| `WS /ws/stream/{id}` | The spec's viewer stream: JSON handshake, then binary frames `[t, v...]` at no more than 60 Hz, for a live or a finished run (`?mode=live` or `playback`). With `?subscribe=1` the client first sends the signal ids as a `stream-subscribe` message (`{"ids": [...]}`), so hundreds of ids never reach the request line; the web viewer always does this. |
 | `GET/PUT /api/projects/{p}/scenes/{file}`, `POST /api/projects/{p}/meshes` | SDF files, and mesh upload (STL, OBJ, DAE, GLB), which is converted to GLB with trimesh. |
 
 ### 3.8 Debug protocol (M4)
