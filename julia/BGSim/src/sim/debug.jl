@@ -259,7 +259,10 @@ the checkpoints. All fields are only touched on the run task.
     `signal_ids` (their ids), `schedule` (`DiscreteSchedule` or `nothing`), `run`
     (`DiscreteRun` or `nothing`), `targets`, `record_event`, `event_counter` (`Ref{Int}`);
   * `tick`: ticks executed so far; `event_cursor`: the recorder's event cursor;
-  * `info`: the current `PausedInfo` while paused."""
+  * `info`: the current `PausedInfo` while paused;
+  * `instant`: the time of the tick/grid target being executed (`NaN` while stepping). A pause
+    there reports this time: the integrator may stand just past it after a step past a
+    switching root on the target (`_snap_target`)."""
 mutable struct DebugSession
     ctx::DebugCtx
     run_id::String
@@ -278,6 +281,7 @@ mutable struct DebugSession
     tick::Int
     event_cursor::Int
     info::Any
+    instant::Float64
 end
 
 # ---------------------------------------------------------------------------------------
@@ -749,7 +753,7 @@ function dbg_pause!(s::DebugSession, reason::AbstractString; breakpoint_id = not
     ctx.pause_flag[] = false
     ctx.step_mode = :none
     ctx.resume_requested = false
-    t = Float64(s.integ.t)
+    t = isnan(s.instant) ? Float64(s.integ.t) : s.instant
     info = (
         runId = s.run_id,
         t = t,
@@ -965,7 +969,7 @@ function _dbg_begin!(ctx::DebugCtx; run_id, settings, flat, lowered, integ, rec,
     s = DebugSession(
         ctx, String(run_id), settings, flat, lowered, integ, rec, getters,
         String[String(sig.id) for sig in flat.signals], schedule, run, targets,
-        record_event, event_counter, 0, 0, nothing,
+        record_event, event_counter, 0, 0, nothing, NaN,
     )
     lock(ctx.lock) do
         ctx.session = s
@@ -987,6 +991,10 @@ function _dbg_entry!(ctx::DebugCtx, s::DebugSession)
 end
 
 _dbg_target!(::Nothing, ::Nothing, target) = nothing
+
+# Before a tick/grid target is executed: a pause from here until the next step reports `tt`.
+_dbg_instant!(::Nothing, ::Nothing, tt) = nothing
+_dbg_instant!(::DebugCtx, s::DebugSession, tt::Float64) = (s.instant = tt; nothing)
 
 # `SciMLBase.step!(integ, dt, stop_at_tdt = true)` of SciMLBase 7.21.4
 # (src/integrator_interface.jl) as an explicit loop, with the checkpoint after each internal
@@ -1015,6 +1023,7 @@ end
 
 function _dbg_step!(ctx::DebugCtx, s::DebugSession, integ, next_t, event_cursor)
     s.event_cursor = event_cursor
+    s.instant = NaN
     ok = try
         hasproperty(integ, :opts) || (step!(integ, next_t - integ.t, true); return true)
         (next_t - integ.t) * integ.tdir < 0 && error("Cannot step backward.")

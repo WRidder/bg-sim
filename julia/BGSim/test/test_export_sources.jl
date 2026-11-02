@@ -231,7 +231,9 @@ const _EXS_RANDOM_TS = [1e-3, 1e-3, 1e-2, 1e-3]
         end
         # The random sources: the held sample and the output are bit-identical between C,
         # the simulation and the specification at every step of C and every grid time of
-        # the simulation; the integrals agree to rounding.
+        # the simulation. The integrals agree to 1e-10: where an edge of a periodic source
+        # above falls on a tick, the simulation steps 1e-12 s past it (`_snap_target`), so
+        # the old held value is integrated that much longer (|jump| * 1e-12 per such tick).
         for (i, (block, params, var, spec)) in enumerate(_EXS_RANDOM)
             @testset "$block (bit for bit)" begin
                 iv = 1 + length(xn) + findfirst(==("R$i/$var"), yn)
@@ -242,7 +244,7 @@ const _EXS_RANDOM_TS = [1e-3, 1e-3, 1e-2, 1e-3]
                 @test all(rows[k, iv] == bg_value(columns, "R$i/$var", t[k]) for k in 1:10:n + 1)
                 @test all(rows[k, iy] == bg_value(columns, "R$i/y", t[k]) for k in 1:10:n + 1)
                 @test maximum(abs(rows[k, ix] - bg_value(columns, "RI$i/y", t[k]))
-                              for k in 1:10:n + 1) < 1e-12
+                              for k in 1:10:n + 1) < 1e-10
             end
         end
         # A second run of the C model (bg_reset, as fmi2Reset) repeats the first bit for bit.

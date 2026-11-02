@@ -1644,6 +1644,7 @@ function _simulate_flat(flat::Flat.FlatModel;
         if integ.t >= tt - tolerance
             # A discrete tick runs before the row for this instant is recorded, so the row
             # carries the state the continuous solver has at `tt` plus the new held outputs.
+            _dbg_instant!(debug, session, tt)  # M4 debug: a pause here is at `tt`
             changed = false
             tick_only = true    # nothing but a tick changed values at `tt`
             before = nothing
