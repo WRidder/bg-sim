@@ -68,16 +68,25 @@ def evaluate(policy, cfg: EnvCfg, episodes: int = 64, seed: int = 123, upright: 
             "upTimeMedian": float(np.nanmedian(t_up[succ])) if succ.any() else float("nan")}
 
 
-# The example's balance LQR (examples/pendulum-double-cart/library/DoubleCartCtrl.jl, discrete 1 kHz design
-# gain, also stable at 200 Hz in this env): u = -K [x, th1, th2, v, w1, w2] in volts.
-K_LQR = np.array([30.0509285, 128.115493, -257.959052, 23.9559011, -7.47878546, -26.3963107])
+# The rigs: the example, its classical data (rl/classical.py) and the env settings that depend on it.
+# cart: examples/pendulum-double-cart (+-0.40 m rail); lab: examples/pendulum-double-cart-lab (+-1.0 m
+# rail with soft end stops at 1.0 m; the episode ends at 0.95 m, before the stops).
+RIGS = {
+    "cart": {"classical": "classical.json", "x_rail": 0.40, "x_soft": 0.30, "random_x": 0.2, "x_scale": 0.2},
+    "lab": {"classical": "classical_lab.json", "x_rail": 0.95, "x_soft": 0.80, "random_x": 0.5, "x_scale": 0.5},
+}
 
 
 def lqr_action(env: DoubleCartEnv, obs) -> np.ndarray:
+    """The example's balance LQR (its firmware's discrete 1 kHz design gain, also stable at 200 Hz in this
+    env): u = -K [x, th1, th2, v, w1, w2] in volts."""
+    if getattr(env, "_K_lqr", None) is None:
+        from rlpend.experts import classical_path
+        env._K_lqr = np.asarray(json.loads(classical_path(env.cfg).read_text(encoding="utf-8"))["K"])
     p = obs["policy"].numpy().astype(float)
     x, th1, th2 = env._state[0], env._state[1], env._state[2]
     z = np.stack([x, th1, th2, p[:, 5], p[:, 6], p[:, 7]], 1)
-    return np.clip(-(z @ K_LQR) / env.cfg.v_max, -1.0, 1.0)
+    return np.clip(-(z @ env._K_lqr) / env.cfg.v_max, -1.0, 1.0)
 
 
 def bc_lqr(runner, env: DoubleCartEnv, steps: int, rollout: int = 64, sigma: float = 0.2,
@@ -88,12 +97,12 @@ def bc_lqr(runner, env: DoubleCartEnv, steps: int, rollout: int = 64, sigma: flo
     upright, 0 V elsewhere (so the swing-up starts from "do nothing", not from the LQR
     extrapolated to hanging, which drives the cart off the rail).
     ``tvlqr``: the example's TVLQR swing-up + LQR balance (rlpend.experts) from hanging starts
-    (the env's hang noise), over 4.4 s per episode (the swing-up takes 2.4 s), plus the LQR on
+    (the env's hang noise), over T_s + 2 s per episode (T_s: the swing-up), plus the LQR on
     upright starts (samples within ``region``), then ``dagger`` rounds of DAgger (the learner's
     own rollouts from hanging, relabelled by the expert).
     Sets the actor's observation normaliser from the same samples and freezes it. The critic is
     left untrained (see ``--critic-warmup``)."""
-    from rlpend.experts import TvlqrSwingUp
+    from rlpend.experts import TvlqrSwingUp, classical_path
 
     rng = np.random.default_rng(1)
     actor = runner.alg.actor
@@ -126,7 +135,7 @@ def bc_lqr(runner, env: DoubleCartEnv, steps: int, rollout: int = 64, sigma: flo
             return np.where(near, a, 0.0), np.ones(env.num_envs, bool)
         return a, near        # with the TVLQR data: balance samples near upright only
 
-    tv = TvlqrSwingUp()
+    tv = TvlqrSwingUp(classical_path(env.cfg))
 
     def tv_label(env, obs):
         return tv(env), np.ones(env.num_envs, bool)
@@ -143,7 +152,7 @@ def bc_lqr(runner, env: DoubleCartEnv, steps: int, rollout: int = 64, sigma: flo
             opt.step()
         return float(loss)
 
-    t_swing = int(round(4.4 / env.cfg.ts))      # the swing-up takes 2.4 s, then 2 s of balance
+    t_swing = int(round((tv.T_s + 2.0) / env.cfg.ts))      # the swing-up (T_s), then 2 s of balance
     if expert == "tvlqr":
         X1, Y1 = collect(False, t_swing, tv_label, every=2)
         X2, Y2 = collect(True, rollout, lqr_label)
@@ -265,6 +274,10 @@ def main() -> int:
     ap.add_argument("--entropy", type=float, default=TrainCfg.entropy_coef)
     ap.add_argument("--gamma", type=float, default=TrainCfg.gamma)
     ap.add_argument("--resume", type=Path, help="continue from this checkpoint")
+    ap.add_argument("--rig", choices=sorted(RIGS), default="cart",
+                    help="cart: pendulum-double-cart (rl/classical.json); lab: pendulum-double-cart-lab "
+                         "(rl/classical_lab.json, +-1 m rail)")
+    ap.add_argument("--episode-s", type=float, help="episode length (s)")
     args = ap.parse_args()
     torch.set_num_threads(args.torch_threads)
     torch.manual_seed(args.seed)
@@ -273,8 +286,17 @@ def main() -> int:
     ecfg = EnvCfg(export_dir=str(args.export_dir.resolve()), num_envs=args.envs, threads=args.threads,
                   seed=args.seed)
     ecfg.drop_angle, ecfg.drop_penalty = args.drop_angle, args.drop_penalty
+    rig = RIGS[args.rig]
+    cl_path = Path(__file__).resolve().parent / rig["classical"]
+    cl = json.loads(cl_path.read_text(encoding="utf-8"))
+    ecfg.classical = str(cl_path)
+    ecfg.x_rail, ecfg.x_soft, ecfg.random_x = rig["x_rail"], rig["x_soft"], rig["random_x"]
+    if "plant" in cl:
+        pl = cl["plant"]
+        ecfg.m, ecfg.L, ecfg.c, ecfg.J = tuple(pl["m"]), tuple(pl["L"]), tuple(pl["c"]), tuple(pl["J"])
+    if args.episode_s:
+        ecfg.episode_s = args.episode_s
     if args.catch_tol > 0:
-        cl = json.loads((Path(__file__).resolve().parent / "classical.json").read_text(encoding="utf-8"))
         ecfg.catch_tol = args.catch_tol
         ecfg.catch_end = not args.catch_continue
         ecfg.lqr_K = tuple(cl["K"])
@@ -318,7 +340,7 @@ def main() -> int:
         runner.load(str(args.resume))
     if args.fixed_norm:
         norm = runner.alg.actor.obs_normalizer
-        scale = torch.tensor([[0.3, 1.0, 0.3, 1.0, 0.2, 0.5, 3.0, 3.0, 1.0]])
+        scale = torch.tensor([[0.3, 1.0, 0.3, 1.0, rig["x_scale"], 0.5, 3.0, 3.0, 1.0]])
         with torch.no_grad():
             norm._mean.zero_()
             norm._std.copy_(scale - norm.eps)

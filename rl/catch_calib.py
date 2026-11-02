@@ -1,6 +1,6 @@
 """Calibrate the hybrid's catch region z' P z < catch_tol (rl/classical.json) in the training env.
 
-    uv run --project rl rl/catch_calib.py <plant export dir> [--n 2048]
+    uv run --project rl rl/catch_calib.py <plant export dir> [--n 2048] [--rig cart|lab]
 
 Runs the balance LQR (200 Hz, the env's differenced rates, the clamp) from rest poses spread up to
 +-0.45 rad / +-0.25 m, 3 s each, and reports the cost-to-go V0 = z0' P z0 of the starts that fail
@@ -30,11 +30,18 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("export_dir", type=Path)
     ap.add_argument("--n", type=int, default=2048)
+    ap.add_argument("--rig", choices=("cart", "lab"), default="cart")
     args = ap.parse_args()
-    cl = json.loads((Path(__file__).resolve().parent / "classical.json").read_text(encoding="utf-8"))
+    lab = args.rig == "lab"
+    cl = json.loads((Path(__file__).resolve().parent / ("classical_lab.json" if lab else "classical.json"))
+                    .read_text(encoding="utf-8"))
     K, P = np.array(cl["K"]), np.array(cl["P"])
+    extra = {}
+    if lab:
+        pl = cl["plant"]
+        extra = {"x_rail": 0.95, "m": tuple(pl["m"]), "L": tuple(pl["L"]), "c": tuple(pl["c"]), "J": tuple(pl["J"])}
     cfg = EnvCfg(export_dir=str(args.export_dir.resolve()), num_envs=args.n, threads=4, p_upright_start=1.0,
-                 up_noise=(0.25, 0.45, 0.45), episode_s=3.0, seed=11)
+                 up_noise=(0.25, 0.45, 0.45), episode_s=3.0, seed=11, **extra)
     env = DoubleCartEnv(cfg)
     x0, th10, th20 = (np.array(v, copy=True) for v in env._state[:3])
     z0 = np.stack([x0, th10, th20, 0 * x0, 0 * x0, 0 * x0], 1)
@@ -53,7 +60,7 @@ def main() -> int:
     print(f"V0 range {V0.min():.1f} .. {V0.max():.1f}; success {ok.mean():.3f}")
     bad = V0[~ok]
     print(f"smallest failing V0: {bad.min():.1f}" if bad.size else "no failures")
-    for q in (100, 200, 300, 500, 800, 1000, 1500, 2000, 3000):
+    for q in (1000, 2000, 5000, 10000, 20000, 30000, 50000, 100000):
         inside = V0 < q
         print(f"  V0 < {q:5d}: {inside.sum():5d} starts, success {ok[inside].mean() if inside.any() else float('nan'):.3f}")
     _ = order

@@ -1,7 +1,9 @@
 # R0.4/R0.5 (plan/RL_PLAN.md): run model documents of the double cart with the policy block in
 # bgsim and record the compile and run times.
 #
-#   julia --project=julia/BGSim rl/closed_loop.jl <out_dir> <model.bgmodel.json> ...
+#   julia --project=julia/BGSim rl/closed_loop.jl <out_dir> [--project=<example dir>] <model.bgmodel.json> ...
+#
+# The project (library) directory defaults to examples/pendulum-double-cart.
 #
 # Each model runs with its own settings (Rodas5P, reltol 1e-8), output every 1 ms, into
 # <out_dir>/<model name>/ (manifest.json, stream.f64). <out_dir>/timings.json gets, per model,
@@ -13,13 +15,13 @@ using BGSim
 import JSON3
 
 const ROOT = normpath(joinpath(@__DIR__, ".."))
-const PROJECT = joinpath(ROOT, "examples", "pendulum-double-cart")
+const PROJECT_DEFAULT = joinpath(ROOT, "examples", "pendulum-double-cart")
 
 todict(x::AbstractDict) = Dict{String,Any}(String(k) => todict(v) for (k, v) in pairs(x))
 todict(x::AbstractVector) = Any[todict(v) for v in x]
 todict(x) = x
 
-function run_one(out, path; tag = "")
+function run_one(out, path, PROJECT; tag = "")
     doc = todict(JSON3.read(read(path, String)))
     name = doc["name"] * tag
     t0 = time()
@@ -44,9 +46,14 @@ function main(args)
     out = abspath(args[1])
     mkpath(out)
     recs = Any[]
-    for (k, path) in enumerate(args[2:end])
-        k == 1 && push!(recs, run_one(out, path; tag = "-cold"))
-        push!(recs, run_one(out, path))
+    project = PROJECT_DEFAULT
+    paths = String[]
+    for a in args[2:end]
+        startswith(a, "--project=") ? (project = abspath(a[11:end])) : push!(paths, a)
+    end
+    for (k, path) in enumerate(paths)
+        k == 1 && push!(recs, run_one(out, path, project; tag = "-cold"))
+        push!(recs, run_one(out, path, project))
     end
     write(joinpath(out, "timings.json"), JSON3.write(recs))
 end

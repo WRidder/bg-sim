@@ -147,8 +147,11 @@ def main(out: Path) -> int:
     rec["modified"] = compare(rows, names, out / "reference_mod", case["step"])
     for label in ("nominal", "modified"):
         print(label, {k: f"{v['rel']:.2e}" for k, v in rec[label].items()})
-    rec["outOfRangeRefused"] = refused_out_of_range(res.fmu, "m1", 0.2)
-    print("m1 = 0.2 (range [0.08, 0.12]) refused:", rec["outOfRangeRefused"])
+    name = "m1" if "m1" in case["ranges"] else sorted(case["ranges"])[0]
+    lo, hi = case["ranges"][name]
+    bad = hi + (hi - lo)
+    rec["outOfRangeRefused"] = refused_out_of_range(res.fmu, name, bad)
+    print(f"{name} = {bad:g} (range [{lo:g}, {hi:g}]) refused:", rec["outOfRangeRefused"])
     worst = max(v["rel"] for lab in ("nominal", "modified") for k, v in rec[lab].items() if k != "i_m")
     worst_i = max(rec[lab]["i_m"]["rel"] for lab in ("nominal", "modified"))
     rec["worstRel"] = worst

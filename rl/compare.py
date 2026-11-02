@@ -32,7 +32,7 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from rlpend import EXAMPLE, ROOT  # noqa: E402
+from rlpend import EXAMPLES, ROOT  # noqa: E402
 from rlpend.env import DoubleCartEnv, EnvCfg, wrap  # noqa: E402
 
 UP_CASES = [
@@ -51,6 +51,9 @@ TASKS = {   # the comparison cases and the default model's timing (design/rlmode
                 "block": "DoubleCartPolicy"},
     "swingup": {"cases": HANG_CASES + UP_CASES[:2], "t_on": 1.0, "t_push": 7.0,
                 "model": "pendulum-double-cart-rl-swingup", "block": "DoubleCartSwingPolicy"},
+    # the lab rig (examples/pendulum-double-cart-lab/design/rlmodels.py): the classical model's scenario
+    "lab": {"cases": HANG_CASES + UP_CASES[:2], "t_on": 1.0, "t_push": 7.5, "rig": "lab",
+            "model": "pendulum-double-cart-lab-rl", "block": "DoubleCartLabPolicy"},
 }
 
 
@@ -192,6 +195,7 @@ def main() -> int:
                     help="which cases, and the timing of the default pendulum-double-cart-rl model")
     args = ap.parse_args()
     task = TASKS[args.task]
+    EXAMPLE = EXAMPLES[task.get("rig", "cart")]
     CASES = [{**c, "block": task["block"]} for c in task["cases"]]
     out = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -202,7 +206,8 @@ def main() -> int:
                         str(models)], check=True, cwd=ROOT)
         paths = [str(EXAMPLE / "models" / f"{task['model']}.bgmodel.json")]
         paths += [str(models / f"{c['name']}.bgmodel.json") for c in CASES]
-        subprocess.run(["julia", "--project=julia/BGSim", "rl/closed_loop.jl", str(out / "bgsim"), *paths],
+        subprocess.run(["julia", "--project=julia/BGSim", "rl/closed_loop.jl", str(out / "bgsim"),
+                        f"--project={EXAMPLE}", *paths],
                        check=True, cwd=ROOT)
     runs = {c["name"]: read_run(out / "bgsim" / c["name"]) for c in CASES}
     env = env_rollout(args.run_dir.resolve(), args.checkpoint, args.export_dir.resolve(), CASES)

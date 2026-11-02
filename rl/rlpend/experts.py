@@ -20,6 +20,10 @@ def _z(env) -> np.ndarray:
     return np.stack([env._state[0], env._state[1], env._state[2], p[:, 5], p[:, 6], p[:, 7]], 1)
 
 
+def classical_path(cfg) -> Path:
+    return Path(cfg.classical) if getattr(cfg, "classical", "") else CLASSICAL
+
+
 class Lqr:
     def __init__(self, path: Path = CLASSICAL):
         self.K = np.asarray(json.loads(path.read_text(encoding="utf-8"))["K"])
