@@ -10,6 +10,7 @@ Models are drawn on the canvas of the **Diagram** tab.
 - **Arrange:** `R` rotates, `F` flips, `Del` deletes, `Ctrl+C` / `Ctrl+X` / `Ctrl+V` copy, cut and paste (see **Copy and paste** below). Right-click a block for the same actions, and for **Show source**, which opens the block's source in the Code tab.
 - **Undo:** `Ctrl+Z`, redo `Ctrl+Y`.
 - **Navigate:** the mouse wheel zooms. Pan with the middle mouse button, `Space`+drag or the arrow keys. **Fit view** in the canvas toolbar fits the whole diagram.
+- **Find a block:** click it in the **Model tree** (left panel). The Diagram tab opens on the diagram that holds the block, also inside a subsystem, and the block is selected and centred. A `block:` link in the [docs](page:code-and-docs) does the same.
 
 ## Ports and connections
 
@@ -49,7 +50,7 @@ A Generic port takes the domain of the bonds around it. A Generic two-port such 
 ## Subsystems
 
 - **Create:** select blocks and click **⧉ Subsystem** in the canvas toolbar. The selected blocks and the connections between them move into the subsystem.
-- **Enter:** double-click the subsystem. **Leave:** `Esc`, **↑ Up**, or a crumb in the path bar above the canvas.
+- **Enter:** double-click the subsystem, on the canvas or in the Model tree (a single click in the tree only centres it). **Leave:** `Esc`, **↑ Up**, or a crumb in the path bar above the canvas.
 - **Port terminals:** inside a subsystem, each port of the subsystem is a terminal. To add a port, drag an internal port onto the dashed **+ input**, **+ output** or **+ power** terminal, or right-click a port of an internal block and choose **Expose as subsystem port**. Right-click a terminal to **Rename port…**, **Delete port** or **Show outside connection**.
 - A subsystem can be exported on its own as an FMU (see [Export](page:export)).
 
