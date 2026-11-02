@@ -1,0 +1,2092 @@
+{
+ "project": "a109",
+ "description": "Agusta A109 (Heffley & Mnich, NASA CR-177476, Appendix D): open loop with the drivetrain bond graph and the constant-RPM switch, and the flyable a109-sim (SCAS, demonstration pilot, FMU markers). Numbers come from design/design.json (an independent scipy implementation).",
+ "models": {
+  "a109-open-loop": {
+   "checks": [
+    {
+     "kind": "scene_bindings"
+    },
+    {
+     "kind": "no_diagnostics",
+     "codes": [
+      "W201",
+      "W202",
+      "E106",
+      "W206"
+     ],
+     "note": "no algebraic loop, no causality conflict, no event storm"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Hover/Air/theta_deg",
+     "t": 10.0,
+     "value": 5.010394258717467,
+     "abs": 0.001,
+     "note": "the hover trim holds: attitude, flapping, rotor speed and the 640 hp of the power method"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Hover/Air/phi_deg",
+     "t": 10.0,
+     "value": -2.6052606281265835,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Hover/MR/a1_deg",
+     "t": 10.0,
+     "value": 1.4593529654348398,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Hover/MR/b1_deg",
+     "t": 10.0,
+     "value": -0.8186800054958315,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Hover/Gov/nr",
+     "t": 10.0,
+     "value": 100.0,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Hover/Gov/power_hp",
+     "t": 10.0,
+     "value": 640.4600015670238,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/r_deg",
+     "t": 1.5,
+     "value": 2.2380551379404134,
+     "abs": 0.002,
+     "note": "the scipy SI model (design/heli_si.py, LSODA 1e-10) of the same airframe and drivetrain: the collective step climbs, the main-rotor torque yaws the nose right and the rotor droops"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/psi_deg",
+     "t": 1.5,
+     "value": 0.4354805576400338,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/h",
+     "t": 1.5,
+     "value": 0.10557384271192816,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/w",
+     "t": 1.5,
+     "value": -0.40249636479133905,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/nr",
+     "t": 1.5,
+     "value": 99.7572690529696,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/power_hp",
+     "t": 1.5,
+     "value": 683.060097169938,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/OmRotor/y",
+     "t": 1.5,
+     "value": 40.18018219753878,
+     "abs": 0.0001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/r_deg",
+     "t": 3.0,
+     "value": 9.72590034718765,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/psi_deg",
+     "t": 3.0,
+     "value": 10.01267151120706,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/h",
+     "t": 3.0,
+     "value": 1.3664823879246786,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/w",
+     "t": 3.0,
+     "value": -1.185218636883619,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/nr",
+     "t": 3.0,
+     "value": 99.99907119275206,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/power_hp",
+     "t": 3.0,
+     "value": 680.5339633044703,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/OmRotor/y",
+     "t": 3.0,
+     "value": 40.14698226908963,
+     "abs": 0.0001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/r_deg",
+     "t": 5.0,
+     "value": 16.63653402257022,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/psi_deg",
+     "t": 5.0,
+     "value": 36.60717024268604,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/h",
+     "t": 5.0,
+     "value": 4.275913784012534,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/w",
+     "t": 5.0,
+     "value": -1.6485754845179,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/nr",
+     "t": 5.0,
+     "value": 100.01860039717224,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/power_hp",
+     "t": 5.0,
+     "value": 673.985127416003,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/OmRotor/y",
+     "t": 5.0,
+     "value": 40.034242568047574,
+     "abs": 0.0001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/r_deg",
+     "t": 10.0,
+     "value": 33.76619955990269,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/psi_deg",
+     "t": 10.0,
+     "value": 169.86265906017798,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/h",
+     "t": 10.0,
+     "value": 13.073446604271224,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/w",
+     "t": 10.0,
+     "value": -1.899754069018043,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/nr",
+     "t": 10.0,
+     "value": 100.07828791756073,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/power_hp",
+     "t": 10.0,
+     "value": 653.7209181793435,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/OmRotor/y",
+     "t": 10.0,
+     "value": 39.75933778535303,
+     "abs": 0.0001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/p_deg",
+     "t": 3.0,
+     "value": 0.9416238279860796,
+     "abs": 0.002,
+     "note": "and the cyclic cross-coupling rolls and pitches it"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/q_deg",
+     "t": 3.0,
+     "value": 0.13449594184781966,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/phi_deg",
+     "t": 3.0,
+     "value": -0.07979693775203651,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/theta_deg",
+     "t": 3.0,
+     "value": 4.980701512381695,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/p_deg",
+     "t": 5.0,
+     "value": -1.490940391599072,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/q_deg",
+     "t": 5.0,
+     "value": 1.5464786567975592,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/phi_deg",
+     "t": 5.0,
+     "value": 2.1958842189948085,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/theta_deg",
+     "t": 5.0,
+     "value": 5.883567612817758,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/p_deg",
+     "t": 10.0,
+     "value": -7.059607329573359,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/q_deg",
+     "t": 10.0,
+     "value": 6.578505373990337,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/phi_deg",
+     "t": 10.0,
+     "value": 11.349917640129302,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/theta_deg",
+     "t": 10.0,
+     "value": 18.149297546319048,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/q_deg",
+     "t": 1.5,
+     "value": -1.6881632765674666,
+     "abs": 0.002,
+     "note": "the cyclic pulse starts the unstable hover phugoid"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/theta_deg",
+     "t": 1.5,
+     "value": 4.6086406587945055,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/u",
+     "t": 1.5,
+     "value": 0.04766439514759782,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/MR/a1_deg",
+     "t": 1.5,
+     "value": 1.039996193797873,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/q_deg",
+     "t": 3.0,
+     "value": -0.372546512026074,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/theta_deg",
+     "t": 3.0,
+     "value": 2.91561114978863,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/u",
+     "t": 3.0,
+     "value": 0.3952038401232524,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/MR/a1_deg",
+     "t": 3.0,
+     "value": 1.5493752749476761,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/q_deg",
+     "t": 5.0,
+     "value": 2.0106193675450212,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/theta_deg",
+     "t": 5.0,
+     "value": 4.535783627686536,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/u",
+     "t": 5.0,
+     "value": 0.9374875324148193,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/MR/a1_deg",
+     "t": 5.0,
+     "value": 1.538550307204569,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/q_deg",
+     "t": 7.0,
+     "value": 2.6471855009226033,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/theta_deg",
+     "t": 7.0,
+     "value": 9.806028483669923,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/u",
+     "t": 7.0,
+     "value": 0.23454881803179795,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/MR/a1_deg",
+     "t": 7.0,
+     "value": 1.3820223193942087,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/q_deg",
+     "t": 10.0,
+     "value": -5.486011710036069,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/theta_deg",
+     "t": 10.0,
+     "value": 7.876362030625621,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/Air/u",
+     "t": 10.0,
+     "value": -2.6882893437299598,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Lon/MR/a1_deg",
+     "t": 10.0,
+     "value": 1.2208424350816813,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/r_deg",
+     "t": 1.5,
+     "value": -1.1918593781028324,
+     "abs": 0.002,
+     "note": "the pedal pulse at 100 kt"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/v",
+     "t": 1.5,
+     "value": 0.343007750485672,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/p_deg",
+     "t": 1.5,
+     "value": -0.42183498543875264,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/phi_deg",
+     "t": 1.5,
+     "value": -2.005067600582097,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/psi_deg",
+     "t": 1.5,
+     "value": -0.3989745461828136,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/r_deg",
+     "t": 2.0,
+     "value": -0.5400207848796299,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/v",
+     "t": 2.0,
+     "value": 0.7370087604273482,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/p_deg",
+     "t": 2.0,
+     "value": -1.0649597559459738,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/phi_deg",
+     "t": 2.0,
+     "value": -2.3762571759508986,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/psi_deg",
+     "t": 2.0,
+     "value": -0.8764686581409933,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/r_deg",
+     "t": 3.0,
+     "value": 0.7727113313867919,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/v",
+     "t": 3.0,
+     "value": -0.36300822355839035,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/p_deg",
+     "t": 3.0,
+     "value": -0.2661429900598877,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/phi_deg",
+     "t": 3.0,
+     "value": -3.2727258315358956,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/psi_deg",
+     "t": 3.0,
+     "value": 0.13539550016534463,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/r_deg",
+     "t": 5.0,
+     "value": 0.2631576339274997,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/v",
+     "t": 5.0,
+     "value": 0.1143139092216788,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/p_deg",
+     "t": 5.0,
+     "value": -0.28040863854476833,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/phi_deg",
+     "t": 5.0,
+     "value": -2.90357652987157,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/psi_deg",
+     "t": 5.0,
+     "value": -0.8063645392805938,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/r_deg",
+     "t": 7.0,
+     "value": -0.3145076880731171,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/v",
+     "t": 7.0,
+     "value": 0.02162553709600054,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/p_deg",
+     "t": 7.0,
+     "value": 0.049486149828911634,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/phi_deg",
+     "t": 7.0,
+     "value": -2.8449143170001676,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/psi_deg",
+     "t": 7.0,
+     "value": -1.0979288147223372,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/r_deg",
+     "t": 10.0,
+     "value": -0.15607975443595024,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/v",
+     "t": 10.0,
+     "value": -0.017433004521910135,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/p_deg",
+     "t": 10.0,
+     "value": -0.00014683465336913807,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/phi_deg",
+     "t": 10.0,
+     "value": -2.810512705252155,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Fwd/Air/psi_deg",
+     "t": 10.0,
+     "value": -1.604708958626702,
+     "abs": 0.002
+    },
+    {
+     "kind": "damping",
+     "signal": "Lon/Air/theta_deg",
+     "from_t": 1.5,
+     "to_t": 10.0,
+     "offset": "constant",
+     "zeta": -0.3332404075438179,
+     "zeta_abs": 0.08,
+     "wn": 0.6346769335654164,
+     "wn_rtol": 0.15,
+     "min_wn": 0.2,
+     "max_wn": 2.0,
+     "note": "the hover phugoid of the linearised scipy model (+0.211 +- 0.598j 1/s; the report publishes no eigenvalues, so the reference is scipy)"
+    }
+   ]
+  },
+  "a109-open-loop-rpm0": {
+   "model": "a109-open-loop",
+   "overrides": {
+    "global:rpm_mode": 0.0
+   },
+   "checks": [
+    {
+     "kind": "no_diagnostics",
+     "codes": [
+      "W201",
+      "W202",
+      "E106",
+      "W206"
+     ],
+     "note": "no algebraic loop, no causality conflict, no event storm"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/r_deg",
+     "t": 1.5,
+     "value": 2.197049298425055,
+     "abs": 0.002,
+     "note": "rpm_mode = 0: the aerodynamics see the nominal 385 rpm (the report's model)"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/psi_deg",
+     "t": 1.5,
+     "value": 0.4197470487803514,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/h",
+     "t": 1.5,
+     "value": 0.11035801617860128,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/power_hp",
+     "t": 1.5,
+     "value": 686.3517910143399,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/r_deg",
+     "t": 3.0,
+     "value": 10.190392944840843,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/psi_deg",
+     "t": 3.0,
+     "value": 10.288419368656633,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/h",
+     "t": 3.0,
+     "value": 1.4666486022549485,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/power_hp",
+     "t": 3.0,
+     "value": 684.1067810253844,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/r_deg",
+     "t": 5.0,
+     "value": 18.045836313585475,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/psi_deg",
+     "t": 5.0,
+     "value": 38.72349175296711,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/h",
+     "t": 5.0,
+     "value": 4.673861546950201,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/power_hp",
+     "t": 5.0,
+     "value": 679.7668977191697,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/r_deg",
+     "t": 10.0,
+     "value": 38.34232415546248,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/psi_deg",
+     "t": 10.0,
+     "value": -170.69857215066912,
+     "abs": 0.002
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/h",
+     "t": 10.0,
+     "value": 15.095948369159208,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Gov/power_hp",
+     "t": 10.0,
+     "value": 658.9348166869377,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Coll/Air/psi_deg",
+     "t": 10.0,
+     "value": -170.69857215066912,
+     "abs": 9.719384394576451,
+     "note": "the rotor-speed droop matters: heading 189.3 deg here against 169.9 deg with the drivetrain's speed (the tolerance is half the difference)"
+    }
+   ]
+  },
+  "a109-sim": {
+   "checks": [
+    {
+     "kind": "scene_bindings"
+    },
+    {
+     "kind": "no_diagnostics",
+     "codes": [
+      "W201",
+      "W202",
+      "E106",
+      "W206"
+     ],
+     "note": "no algebraic loop, no causality conflict, no event storm"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 5.0,
+     "value": -1.2265906194305302e-15,
+     "abs": 0.02,
+     "note": "the scipy closed loop (design/heli_sim.py: rigging, SCAS, demonstration pilot on heli_si.py)"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 5.0,
+     "value": 14.999999999999998,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 5.0,
+     "value": -2.5932300621117745,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 5.0,
+     "value": 4.991992728586155,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 5.0,
+     "value": 0.0,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 5.0,
+     "value": 99.99999999999999,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 5.0,
+     "value": 0.6043891598836075,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 5.0,
+     "value": -1.5089603812493744,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 15.0,
+     "value": 6.820422163361123,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 15.0,
+     "value": 23.51984626726781,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 15.0,
+     "value": -2.499170975294936,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 15.0,
+     "value": -1.3854747344909433,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 15.0,
+     "value": 1.3397838238930717,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 15.0,
+     "value": 100.08372600587434,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 15.0,
+     "value": 0.6094933321852418,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 15.0,
+     "value": 0.3977657200648997,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 25.0,
+     "value": 21.44359969657879,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 25.0,
+     "value": 32.70589846679809,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 25.0,
+     "value": -1.6399473183212965,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 25.0,
+     "value": -4.097832283833767,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 25.0,
+     "value": -2.5875189435357413,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 25.0,
+     "value": 100.06295500651905,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 25.0,
+     "value": 0.5660436368000352,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 25.0,
+     "value": 1.4194749191257054,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 35.0,
+     "value": 32.7950995851061,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 35.0,
+     "value": 37.48542142011502,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 35.0,
+     "value": -1.651609983751424,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 35.0,
+     "value": 0.3205435885047028,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 35.0,
+     "value": -5.0815979057579455,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 35.0,
+     "value": 99.9978675604989,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 35.0,
+     "value": 0.48592651242638074,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 35.0,
+     "value": 1.1035002955678102,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 50.0,
+     "value": 38.36504898635938,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 50.0,
+     "value": 41.707529861488425,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 50.0,
+     "value": 18.33333071054718,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 50.0,
+     "value": 3.1459528737069284,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 50.0,
+     "value": 68.3973601120189,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 50.0,
+     "value": 100.00503432357435,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 50.0,
+     "value": 0.4450431803386668,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 50.0,
+     "value": 0.20988135489997797,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 64.0,
+     "value": 38.56169983776845,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 64.0,
+     "value": 43.609160044960156,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 64.0,
+     "value": 18.35649841606357,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 64.0,
+     "value": 3.4102968003737213,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 64.0,
+     "value": 140.89522659962893,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 64.0,
+     "value": 100.00113919571388,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 64.0,
+     "value": 0.4306948237256019,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 64.0,
+     "value": -0.056098278117376665,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 75.0,
+     "value": 36.42060055655827,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 75.0,
+     "value": 46.59412004555167,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 75.0,
+     "value": -1.7229467004213803,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 75.0,
+     "value": 2.390912066895957,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 75.0,
+     "value": 146.11951972784152,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 75.0,
+     "value": 100.00449666526018,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 75.0,
+     "value": 0.3938905635636711,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 75.0,
+     "value": -0.32716549969366937,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 90.0,
+     "value": 23.2990808874924,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 90.0,
+     "value": 40.14222071964615,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 90.0,
+     "value": -1.7416460917654357,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 90.0,
+     "value": 8.58362458539329,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 90.0,
+     "value": 133.62461890123058,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 90.0,
+     "value": 99.98760648181575,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 90.0,
+     "value": 0.30445341721409913,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 90.0,
+     "value": -2.03968412741304,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 100.0,
+     "value": 9.100657496503112,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 100.0,
+     "value": 27.446042322920842,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 100.0,
+     "value": -7.609410168274555,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 100.0,
+     "value": 11.374821202794333,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 100.0,
+     "value": 117.49969264912829,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 100.0,
+     "value": 99.88015230225923,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 100.0,
+     "value": 0.4509364868944884,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 100.0,
+     "value": -0.18616153401532154,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 110.0,
+     "value": 2.872040324699852,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 110.0,
+     "value": 16.003700515586406,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 110.0,
+     "value": -3.370369777979007,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 110.0,
+     "value": 6.958712882604501,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 110.0,
+     "value": 116.82285753947224,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 110.0,
+     "value": 99.98834544830268,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 110.0,
+     "value": 0.5929595052797668,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 110.0,
+     "value": -0.7842277199862956,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 120.0,
+     "value": 1.0497199827031627,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 120.0,
+     "value": 14.962250575292675,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 120.0,
+     "value": -2.7598177961007146,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 120.0,
+     "value": 5.685177758208711,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 120.0,
+     "value": 116.39219869872494,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Gov/nr",
+     "t": 120.0,
+     "value": 99.99807137680598,
+     "abs": 0.01
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "collective/y",
+     "t": 120.0,
+     "value": 0.6025568474987522,
+     "abs": 0.001
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Scas/B1",
+     "t": 120.0,
+     "value": -1.216593144157627,
+     "abs": 0.01
+    },
+    {
+     "kind": "min_ge",
+     "signal": "Heli/Air/h",
+     "value": 10.0,
+     "note": "never below 10 m"
+    },
+    {
+     "kind": "max_abs",
+     "signal": "Heli/Air/u",
+     "value": 38.56188229113097,
+     "rtol": 0.002,
+     "note": "the transition to 38.6 m/s (75 kt)"
+    },
+    {
+     "kind": "max_abs",
+     "signal": "Heli/Air/phi_deg",
+     "value": 20.339971556221098,
+     "rtol": 0.005,
+     "note": "the coordinated 20 deg bank turn"
+    },
+    {
+     "kind": "max_abs_le",
+     "signal": "Heli/Gov/power_hp",
+     "value": 740.0,
+     "note": "within the 740 hp take-off power"
+    }
+   ],
+   "export": {
+    "inputs": {
+     "collective": {
+      "min": 0.5843891598836075,
+      "max": 0.6243891598836075
+     },
+     "cyclic_lon": {
+      "min": -0.05,
+      "max": 0.05
+     },
+     "cyclic_lat": {
+      "min": -0.05,
+      "max": 0.05
+     },
+     "pedals": {
+      "min": -0.05,
+      "max": 0.05
+     },
+     "wind_n": {
+      "min": -2.0,
+      "max": 2.0
+     },
+     "wind_e": {
+      "min": -2.0,
+      "max": 2.0
+     },
+     "wind_d": {
+      "min": -1.0,
+      "max": 1.0
+     }
+    },
+    "interface": {
+     "inputs": [
+      "collective",
+      "cyclic_lon",
+      "cyclic_lat",
+      "pedals",
+      "wind_n",
+      "wind_e",
+      "wind_d"
+     ],
+     "outputs": [
+      "north_m",
+      "east_m",
+      "alt_m",
+      "phi_deg",
+      "theta_deg",
+      "psi_deg",
+      "p_dps",
+      "q_dps",
+      "r_dps",
+      "u_mps",
+      "v_mps",
+      "w_mps",
+      "vs_mps",
+      "tas_mps",
+      "kts",
+      "beta_deg",
+      "rotor_pct",
+      "power_hp",
+      "thrust_n",
+      "a1_deg",
+      "b1_deg",
+      "theta0_deg",
+      "B1_deg",
+      "A1_deg",
+      "theta_tr_deg"
+     ]
+    },
+    "note": "the FMU interface of a109-sim: the host flies the sticks (the DemoPilot is then bypassed by the markers)"
+   }
+  },
+  "a109-sim-hold": {
+   "model": "a109-sim",
+   "settings": {
+    "t_end": 15.0,
+    "output": {
+     "points": 301
+    }
+   },
+   "overrides": {
+    "global:demo": 0.0,
+    "global:lon_off": 0.1
+   },
+   "checks": [
+    {
+     "kind": "no_diagnostics",
+     "codes": [
+      "W201",
+      "W202",
+      "E106",
+      "W206"
+     ],
+     "note": "no algebraic loop, no causality conflict, no event storm"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 2.0,
+     "value": 0.1506552108179379,
+     "abs": 0.02,
+     "note": "SCAS on, longitudinal stick 0.1 forward from 1 s: a 1.5 deg nose-down attitude command"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 2.0,
+     "value": 3.407877814539783,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 2.0,
+     "value": -2.5831733934003007,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 2.0,
+     "value": 0.07297052255529479,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 2.0,
+     "value": 15.001629363452981,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 4.0,
+     "value": 0.7571504980436222,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 4.0,
+     "value": 3.482215184096816,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 4.0,
+     "value": -2.5716202878213132,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 4.0,
+     "value": 0.11752671105847412,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 4.0,
+     "value": 14.99463356407632,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 6.0,
+     "value": 1.2868533289985074,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 6.0,
+     "value": 3.554809515694589,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 6.0,
+     "value": -2.567660331387742,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 6.0,
+     "value": 0.18187593868702834,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 6.0,
+     "value": 15.0212302685231,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 8.0,
+     "value": 1.8161595001922952,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 8.0,
+     "value": 3.614397368645016,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 8.0,
+     "value": -2.5599412754785753,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 8.0,
+     "value": 0.2421026411029743,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 8.0,
+     "value": 15.126664481131153,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 10.0,
+     "value": 2.3445301864274692,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 10.0,
+     "value": 3.6478321414960315,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 10.0,
+     "value": -2.5527136244601616,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 10.0,
+     "value": 0.2965135079236063,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 10.0,
+     "value": 15.355111111843655,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 12.0,
+     "value": 2.8748826066312896,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 12.0,
+     "value": 3.682032277346785,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 12.0,
+     "value": -2.5449423786698753,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 12.0,
+     "value": 0.34422637853276683,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 12.0,
+     "value": 15.749439728067944,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 15.0,
+     "value": 3.6730735530570144,
+     "abs": 0.02
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 15.0,
+     "value": 3.7278317359503617,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 15.0,
+     "value": -2.5064819795029347,
+     "abs": 0.05
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 15.0,
+     "value": 0.49409752562780795,
+     "abs": 0.2
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 15.0,
+     "value": 16.73951393957719,
+     "abs": 0.05
+    }
+   ]
+  },
+  "a109-sim-bare": {
+   "model": "a109-sim",
+   "settings": {
+    "t_end": 12.0,
+    "output": {
+     "points": 241
+    }
+   },
+   "overrides": {
+    "global:demo": 0.0,
+    "global:scas": 0.0,
+    "global:lon_off": 0.02
+   },
+   "checks": [
+    {
+     "kind": "no_diagnostics",
+     "codes": [
+      "W201",
+      "W202",
+      "E106",
+      "W206"
+     ],
+     "note": "no algebraic loop, no causality conflict, no event storm"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 2.0,
+     "value": 0.07739352005994049,
+     "abs": 0.1,
+     "note": "SCAS off, longitudinal stick 0.02 forward from 1 s: the bare hover diverges"
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 2.0,
+     "value": 4.221843675187425,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 2.0,
+     "value": -2.4943574892566196,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 2.0,
+     "value": 0.04653444169582599,
+     "abs": 1.0
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 2.0,
+     "value": 15.000955026810368,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 4.0,
+     "value": 1.0018023829850973,
+     "abs": 0.1
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 4.0,
+     "value": 0.47523738434205987,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 4.0,
+     "value": -2.450374076908324,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 4.0,
+     "value": 0.1930452745911282,
+     "abs": 1.0
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 4.0,
+     "value": 14.989621695283766,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 6.0,
+     "value": 2.6752507613693814,
+     "abs": 0.1
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 6.0,
+     "value": 0.9270516967868894,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 6.0,
+     "value": -3.206875676883621,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 6.0,
+     "value": -0.9340173044209052,
+     "abs": 1.0
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 6.0,
+     "value": 14.936079234271357,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 8.0,
+     "value": 2.61656009209515,
+     "abs": 0.1
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 8.0,
+     "value": 10.582337833132742,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 8.0,
+     "value": -4.065161253936424,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 8.0,
+     "value": -4.447889070814341,
+     "abs": 1.0
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 8.0,
+     "value": 15.199844312431075,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 10.0,
+     "value": -1.1427295894790335,
+     "abs": 0.1
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 10.0,
+     "value": 20.947040280961506,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 10.0,
+     "value": -2.4644342518092004,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 10.0,
+     "value": -6.408227588238162,
+     "abs": 1.0
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 10.0,
+     "value": 15.613363596302968,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/u",
+     "t": 12.0,
+     "value": -5.199631049321559,
+     "abs": 0.1
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/theta_deg",
+     "t": 12.0,
+     "value": 7.757162927265258,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/phi_deg",
+     "t": 12.0,
+     "value": -2.568914620644059,
+     "abs": 0.25
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/psi_deg",
+     "t": 12.0,
+     "value": -14.426231410116827,
+     "abs": 1.0
+    },
+    {
+     "kind": "cursor_value",
+     "signal": "Heli/Air/h",
+     "t": 12.0,
+     "value": 14.937142625098002,
+     "abs": 0.25
+    }
+   ]
+  }
+ }
+}

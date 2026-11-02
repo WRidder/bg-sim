@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "a109",
+  "models": [
+    "a109-open-loop",
+    "a109-sim"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
