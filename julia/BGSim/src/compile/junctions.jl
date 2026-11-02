@@ -62,8 +62,13 @@ function _junction_virtual_vars!(
     bond = junction.bonds[index]
     isempty(bond.eids) || return bond
     suffix(k) = width == 1 ? "" : "[" * string(k) * "]"
-    eids = String[bond.connection * ".e" * suffix(k) for k in 1:width]
-    fids = String[bond.connection * ".f" * suffix(k) for k in 1:width]
+    # Connection ids are unique only within one diagram, so the virtual variables carry
+    # the diagram path of the junction (both junctions of the bond share it); otherwise
+    # two instances of the same subsystem would share one `(e, f)` pair.
+    slash = findlast('/', junction.path)
+    base = slash === nothing ? bond.connection : junction.path[1:slash] * bond.connection
+    eids = String[base * ".e" * suffix(k) for k in 1:width]
+    fids = String[base * ".f" * suffix(k) for k in 1:width]
     for (ids, field) in ((eids, :e), (fids, :f))
         for (k, id) in enumerate(ids)
             unit = field === :e ? BGSim.Units.effort_dims(domain, k) :

@@ -713,6 +713,22 @@ end
         @test any(e -> Flat.flat_id(e.lhs) == "c2.f", fmj.equations)
         @test any(v -> v == "c2.e", fmj.junctions[1].bonds[2].eids)
 
+        # The same chain inside two instances of one subsystem: connection ids repeat per
+        # diagram, so the virtual variables carry the instance path (no shared pair, no E103).
+        jj_sub = Dict{String,Any}("ports" => Any[],
+            "diagram" => Dict{String,Any}("nodes" => jj_model["diagram"]["nodes"],
+                "connections" => jj_model["diagram"]["connections"]))
+        jj_twice = _model("JJTwice", Any[
+            _node("n1", "A", Dict{String,Any}("subsystem" => jj_sub)),
+            _node("n2", "B", Dict{String,Any}("subsystem" => deepcopy(jj_sub))),
+        ], Any[])
+        fmt = flat(jj_twice)
+        @test _counts(fmt) == (12, 12)
+        @test isempty(_errors(fmt))
+        @test all(id -> any(v -> v.id == id, fmt.variables),
+            ("A/c2.e", "A/c2.f", "B/c2.e", "B/c2.f"))
+        @test !any(v -> v.id == "c2.e", fmt.variables)
+
         # A junction with no bonds is E101 on the junction node (it can never be solved).
         lonely = _model("Lonely", Any[
             _node("n1", "J9", _junction(1)),
