@@ -35,7 +35,8 @@ The model saves itself before BG-Sim switches. If other work is not saved yet (a
 The **Library** panel at the top left lists every block you can use.
 
 - **Search** (`/` focuses it) matches names, ports, groups and descriptions.
-- **List view** shows names with a summary; click a row for its parameters and ports. **Grid view** shows icons; click a tile for the block help.
+- **List view** shows names with a summary; click a row for its parameters and ports. **Grid view** shows icons only.
+- Right-click a block in either view for **Show source** (the block's source in the Code tab) and **Info** (the block help). A junction offers **Info**.
 - Blocks are grouped in **categories**, collapsed by default: Bond graph, Sources and sinks, Continuous, Discrete and logic, Electrical, Translation, Rotation, Hydraulic, Thermal, Converters and sensors, Drives, Planar and Spatial mechanics, Contact, 2D and 3D multibond, Junctions, and **Project** for blocks in the project's own library.
 - The last category, **Shapes**, holds the background shapes: rectangle, rounded rectangle, ellipse, line and arrow. They are drawing only and ignored by simulation (see [Building models](page:building-models)). Search for "shape" or a shape name to find them.
 - The **cog** (Library settings) switches between list and grid, shows or hides categories, and has **Show all**, **Expand all** and **Collapse all**.

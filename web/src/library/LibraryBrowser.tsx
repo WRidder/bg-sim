@@ -43,11 +43,11 @@ import { searchShapes, SHAPE_DESCRIPTION, type ShapeEntry } from "./libraryShape
 import { requestShapeAtCentre } from "../editor/shapeRequests";
 import { PortGlyph, type PortGlyphProps } from "./PortGlyph";
 import { BlockHelpButton } from "../app/BlockHelp";
-import { useHelpStore } from "../app/helpStore";
 import { BlockIcon, JunctionGlyph } from "../editor/icons";
 import { ChevronIcon, ShapeGlyph } from "./icons";
 import { useLibraryPrefs } from "./libraryPrefs";
 import { REVEAL_HIGHLIGHT_MS, useLibraryReveal } from "./libraryReveal";
+import { LibraryItemMenu, type LibraryMenuState } from "./LibraryItemMenu";
 import "./library.css";
 
 interface BlockEntry {
@@ -167,7 +167,11 @@ export function LibraryBrowser() {
   const hidden = useLibraryPrefs((state) => state.hidden);
   const searchCollapsed = useLibraryPrefs((state) => state.searchCollapsed);
   const grid = useLibraryPrefs((state) => state.view) === "grid";
-  const openHelp = useHelpStore((state) => state.openBlockHelp);
+  const [menu, setMenu] = useState<LibraryMenuState | null>(null);
+  const openMenu = (event: { preventDefault: () => void; clientX: number; clientY: number }, ref: string, label: string, hasSource: boolean) => {
+    event.preventDefault();
+    setMenu({ x: event.clientX, y: event.clientY, ref, label, hasSource });
+  };
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const searching = query.trim().length > 0;
@@ -304,8 +308,8 @@ export function LibraryBrowser() {
     }
   };
 
-  // A grid tile: the icon and the name only. A click (or Enter/Space) opens the block help, the
-  // grid's stand-in for the details the list expands in place; a shape tile adds the shape.
+  // A grid tile: the icon and the name only. A block or junction tile is dragged onto the canvas;
+  // right-click (or the context-menu key) offers Show source and Info. A shape tile adds the shape.
   const renderTile = (
     entry: BlockEntry | JunctionEntry | ShapeEntry,
     tile: {
@@ -328,13 +332,18 @@ export function LibraryBrowser() {
       data-shape={tile.shape}
       data-icon={tile.icon}
       onDragStart={(event) => onDragStart(event, entry)}
+      onContextMenu={
+        tile.onActivate === undefined && tile.ref !== undefined
+          ? (event) => openMenu(event, tile.ref ?? "", entry.name, "block" in entry)
+          : undefined
+      }
       title={tile.title}
     >
       <button
         type="button"
         className="library-item__tile"
-        aria-haspopup={tile.onActivate === undefined ? "dialog" : undefined}
-        onClick={tile.onActivate ?? (() => openHelp(tile.ref ?? ""))}
+        aria-haspopup={tile.onActivate === undefined ? "menu" : undefined}
+        onClick={tile.onActivate}
       >
         <span className="library-item__icon library-item__icon--tile" aria-hidden="true">
           {tile.glyph}
@@ -425,6 +434,7 @@ export function LibraryBrowser() {
                   data-ref={entry.block.ref}
                   data-icon={entry.icon}
                   onDragStart={(event) => onDragStart(event, entry)}
+                  onContextMenu={(event) => openMenu(event, entry.block.ref, entry.name, true)}
                   title={`${entry.block.ref} — ${entry.description}`}
                 >
                   <button
@@ -518,6 +528,7 @@ export function LibraryBrowser() {
                   data-testid={`library-item-junction-${entry.junction}`}
                   data-ref={entry.key}
                   onDragStart={(event) => onDragStart(event, entry)}
+                  onContextMenu={(event) => openMenu(event, entry.key, entry.name, false)}
                   title={`${entry.name} — bonds attach to the circle edge`}
                 >
                   <button
@@ -609,6 +620,7 @@ export function LibraryBrowser() {
           </p>
         ) : null}
       </div>
+      {menu !== null ? <LibraryItemMenu menu={menu} onClose={() => setMenu(null)} /> : null}
     </div>
   );
 }
