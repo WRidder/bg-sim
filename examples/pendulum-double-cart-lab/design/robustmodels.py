@@ -4,7 +4,7 @@
 # ///
 """The robust classical firmware of the double-cart lab rig as bgsim models (plan/ROBUST_CLASSICAL_PLAN.md, C1-C3).
 
-    uv run examples/pendulum-double-cart-lab/design/robustmodels.py [--balance mu] [--plan nominal|robust]
+    uv run examples/pendulum-double-cart-lab/design/robustmodels.py [--balance mm_lqr] [--plan mm_tvlqr|margin|nominal]
         [--replica <out.npz>]
 
 writes, next to the classical models (which stay unchanged):
@@ -30,7 +30,8 @@ writes, next to the classical models (which stay unchanged):
     at 7 s, the energy removal, the hanging rest, the second swing-up and the re-catch; end 20 s.
 
 ``--replica``: the same firmware as a Python loop on the nominal twin (design model, the armature lag), for
-the comparison with the bgsim runs (design/robustmodels.py compare <bgsim run dir>).
+the comparison with the bgsim runs. ``--expected <bg dir> --replica-npz <out.npz>``: the runs of rl/closed_loop.jl
+measured, compared with the replica and written as the two models' entries of `expected.json` (others kept).
 """
 
 from __future__ import annotations
@@ -603,7 +604,7 @@ def checks_recover(r: dict, prm: dict, cmpd: dict) -> list:
     t_arm2 = next(t for t, p in tr if p == 1 and t > t_drop)
     t_c2 = next(t for t, p in tr if p == 2 and t > t_arm2)
     x_pk, e_pk = _peak(r, "Rail/qout", 0.0, t_end), _peak(r, "Ctrl/energy", t_k, t_drop + 1.0)
-    agree = (f"the Python replica on the twin has the same phase timeline to the tick and agrees to {cmpd['max_diff_x']:.1e} m, "
+    agree = (f"the Python replica on the twin switches phase at the same ticks (within 1 ms) and agrees to {cmpd['max_diff_x']:.1e} m, "
              f"{max(cmpd['max_diff_th1'], cmpd['max_diff_th2']):.1e} rad")
     return [
         _scene_check(),
@@ -662,7 +663,7 @@ def main(argv: list[str]) -> None:
     def opt(flag, default=None):
         return argv[argv.index(flag) + 1] if flag in argv else default
 
-    prm = firmware_params(opt("--balance", "mm_lqr"), opt("--plan", "nominal"))
+    prm = firmware_params(opt("--balance", "mm_lqr"), opt("--plan", "mm_tvlqr"))
     if "--expected" in argv:
         write_expected(prm, Path(opt("--expected")), Path(opt("--replica-npz")))
         return
