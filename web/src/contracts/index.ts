@@ -39,6 +39,7 @@ export type { SegmentBrokenStyle } from "./bindings";
 export type { SegmentPlane } from "./bindings";
 export type { ShapeAxis } from "./bindings";
 export type { StrainColor } from "./bindings";
+export type { StressColor } from "./bindings";
 export type { VisibleBinding } from "./bindings";
 export type { VisualColorBinding } from "./bindings";
 export type { VisualScaleBinding } from "./bindings";

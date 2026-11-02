@@ -1,0 +1,949 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "gantry-static",
+  "parameters": [
+    {
+      "name": "g_y",
+      "value": "9.81",
+      "unit": "m/s^2",
+      "description": "Gravity on the Y carriage (0: the beam's own weight only)"
+    }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Beam",
+        "name": "Beam",
+        "block": {
+          "ref": "stdlib:spatial/ModalBody3D"
+        },
+        "position": {
+          "x": 600,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "zeta": "0.3",
+          "g0": "9.81",
+          "ms": "0.05",
+          "s0": "0.55"
+        },
+        "constants": {
+          "file": "data/beam.modal.json",
+          "stiffening": 0
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ClampA",
+        "name": "ClampA",
+        "block": {
+          "ref": "stdlib:multibond/CSpatial"
+        },
+        "position": {
+          "x": 300,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "krx": "1000000000.0",
+          "kry": "1000000000.0",
+          "krz": "1000000000.0",
+          "kx": "100000000000.0",
+          "ky": "100000000000.0",
+          "kz": "100000000000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ClampADamping",
+        "name": "ClampADamping",
+        "block": {
+          "ref": "stdlib:multibond/RSpatial"
+        },
+        "position": {
+          "x": 300,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "brx": "4427.188724235731",
+          "bry": "4427.188724235731",
+          "brz": "4427.188724235731",
+          "bx": "1163901.7690509798",
+          "by": "1163901.7690509798",
+          "bz": "1163901.7690509798"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ClampB",
+        "name": "ClampB",
+        "block": {
+          "ref": "stdlib:multibond/CSpatial"
+        },
+        "position": {
+          "x": 900,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "krx": "1000000000.0",
+          "kry": "1000000000.0",
+          "krz": "1000000000.0",
+          "kx": "100000000000.0",
+          "ky": "100000000000.0",
+          "kz": "100000000000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "ClampBDamping",
+        "name": "ClampBDamping",
+        "block": {
+          "ref": "stdlib:multibond/RSpatial"
+        },
+        "position": {
+          "x": 900,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "brx": "4427.188724235731",
+          "bry": "4427.188724235731",
+          "brz": "4427.188724235731",
+          "bx": "1163901.7690509798",
+          "by": "1163901.7690509798",
+          "bz": "1163901.7690509798"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Origin",
+        "name": "Origin",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 300,
+          "y": 600
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "-0.7071067811865476",
+          "qz": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YGuide",
+        "name": "YGuide",
+        "block": {
+          "ref": "stdlib:spatial/Prismatic3D"
+        },
+        "position": {
+          "x": 1000,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "300000000.0",
+          "kr": "1000000.0",
+          "bt": "6000.0",
+          "br": "34.98571136907181"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YOffset",
+        "name": "YOffset",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1120,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.08",
+          "y": "0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YCar",
+        "name": "YCar",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1240,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "12.0",
+          "J": "[0.1224, 0.057999999999999996, 0.1156]",
+          "g0": "g_y"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YCoupling",
+        "name": "YCoupling",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 880,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YCouplingSpring",
+        "name": "YCouplingSpring",
+        "block": {
+          "ref": "stdlib:translation/Spring"
+        },
+        "position": {
+          "x": 1000,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YCouplingDamper",
+        "name": "YCouplingDamper",
+        "block": {
+          "ref": "stdlib:translation/Damper"
+        },
+        "position": {
+          "x": 1120,
+          "y": 180
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "29393.876913398137"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PYJ",
+        "name": "PYJ",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1000,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PYOffset",
+        "name": "PYOffset",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1120,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.08",
+          "y": "0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PYCar",
+        "name": "PYCar",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1240,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PToolOffset",
+        "name": "PToolOffset",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1360,
+          "y": 500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.02",
+          "y": "0.25"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PTool",
+        "name": "PTool",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1360,
+          "y": 420
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "SlideGround",
+        "name": "SlideGround",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 700,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "SlideSpring",
+        "name": "SlideSpring",
+        "block": {
+          "ref": "stdlib:translation/Spring"
+        },
+        "position": {
+          "x": 820,
+          "y": 0
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1.0e5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "SlideDamper",
+        "name": "SlideDamper",
+        "block": {
+          "ref": "stdlib:translation/Damper"
+        },
+        "position": {
+          "x": 820,
+          "y": 100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "1533.623161014465"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "bond",
+        "from": {
+          "node": "Beam",
+          "port": "A"
+        },
+        "to": {
+          "node": "ClampA",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "bond",
+        "from": {
+          "node": "Beam",
+          "port": "A"
+        },
+        "to": {
+          "node": "ClampADamping",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "bond",
+        "from": {
+          "node": "Beam",
+          "port": "B"
+        },
+        "to": {
+          "node": "ClampB",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "bond",
+        "from": {
+          "node": "Beam",
+          "port": "B"
+        },
+        "to": {
+          "node": "ClampBDamping",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c5",
+        "kind": "signal",
+        "from": {
+          "node": "Origin",
+          "port": "g"
+        },
+        "to": {
+          "node": "Beam",
+          "port": "gA"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c6",
+        "kind": "bond",
+        "from": {
+          "node": "YGuide",
+          "port": "parent"
+        },
+        "to": {
+          "node": "Beam",
+          "port": "E"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c7",
+        "kind": "bond",
+        "from": {
+          "node": "YGuide",
+          "port": "child"
+        },
+        "to": {
+          "node": "YOffset",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c8",
+        "kind": "bond",
+        "from": {
+          "node": "YOffset",
+          "port": "b"
+        },
+        "to": {
+          "node": "YCar",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c9",
+        "kind": "wire",
+        "from": {
+          "node": "YCoupling",
+          "port": "a"
+        },
+        "to": {
+          "node": "YCouplingSpring",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c10",
+        "kind": "wire",
+        "from": {
+          "node": "YCouplingSpring",
+          "port": "b"
+        },
+        "to": {
+          "node": "YGuide",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c11",
+        "kind": "wire",
+        "from": {
+          "node": "YCoupling",
+          "port": "a"
+        },
+        "to": {
+          "node": "YCouplingDamper",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c12",
+        "kind": "wire",
+        "from": {
+          "node": "YCouplingDamper",
+          "port": "b"
+        },
+        "to": {
+          "node": "YGuide",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c16",
+        "kind": "signal",
+        "from": {
+          "node": "Beam",
+          "port": "poseE"
+        },
+        "to": {
+          "node": "PYJ",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c17",
+        "kind": "signal",
+        "from": {
+          "node": "YGuide",
+          "port": "pose"
+        },
+        "to": {
+          "node": "PYJ",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c18",
+        "kind": "signal",
+        "from": {
+          "node": "PYJ",
+          "port": "g"
+        },
+        "to": {
+          "node": "PYCar",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c19",
+        "kind": "signal",
+        "from": {
+          "node": "PYOffset",
+          "port": "g"
+        },
+        "to": {
+          "node": "PYCar",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c20",
+        "kind": "signal",
+        "from": {
+          "node": "PYCar",
+          "port": "g"
+        },
+        "to": {
+          "node": "YCar",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c21",
+        "kind": "signal",
+        "from": {
+          "node": "PYCar",
+          "port": "g"
+        },
+        "to": {
+          "node": "PTool",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c22",
+        "kind": "signal",
+        "from": {
+          "node": "PToolOffset",
+          "port": "g"
+        },
+        "to": {
+          "node": "PTool",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c23",
+        "kind": "wire",
+        "from": {
+          "node": "SlideGround",
+          "port": "a"
+        },
+        "to": {
+          "node": "SlideSpring",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c24",
+        "kind": "wire",
+        "from": {
+          "node": "SlideGround",
+          "port": "a"
+        },
+        "to": {
+          "node": "SlideDamper",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c25",
+        "kind": "bond",
+        "from": {
+          "node": "SlideSpring",
+          "port": "b"
+        },
+        "to": {
+          "node": "Beam",
+          "port": "S"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c26",
+        "kind": "bond",
+        "from": {
+          "node": "SlideDamper",
+          "port": "b"
+        },
+        "to": {
+          "node": "Beam",
+          "port": "S"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 0.5,
+    "solver": "Rodas5P",
+    "reltol": 1e-06,
+    "abstol": 1e-09,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 501
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Rail frame under the carriage, world z (m): the beam's x deflection + 0.03",
+      "signals": [
+        "Beam/poseE[7]"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "Beam von Mises stress (Pa): hotspots and peak",
+      "signals": [
+        "Beam/sigma_vm[1]",
+        "Beam/sigma_vm[2]",
+        "Beam/sigma_vm[3]",
+        "Beam/sigma_max"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Modal coordinates (m)",
+      "signals": [
+        "Beam/eta[1]",
+        "Beam/eta[2]",
+        "Beam/eta[3]",
+        "Beam/eta[4]",
+        "Beam/eta[5]",
+        "Beam/eta[6]",
+        "Beam/eta[7]",
+        "Beam/eta[8]",
+        "Beam/eta[9]",
+        "Beam/eta[10]",
+        "Beam/eta[11]",
+        "Beam/eta[12]",
+        "Beam/eta[13]",
+        "Beam/eta[14]",
+        "Beam/eta[15]",
+        "Beam/eta[16]",
+        "Beam/eta[17]",
+        "Beam/eta[18]",
+        "Beam/eta[19]",
+        "Beam/eta[20]",
+        "Beam/eta[21]"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/gantry-static.sdf",
+    "exaggeration": 1000
+  },
+  "bindings": [
+    {
+      "target": "link:beam",
+      "property": "pose",
+      "signal": [
+        "Beam/pose[1]",
+        "Beam/pose[2]",
+        "Beam/pose[3]",
+        "Beam/pose[4]",
+        "Beam/pose[5]",
+        "Beam/pose[6]",
+        "Beam/pose[7]"
+      ]
+    },
+    {
+      "target": "link:ycar",
+      "property": "pose",
+      "signal": [
+        "PYCar/g[1]",
+        "PYCar/g[2]",
+        "PYCar/g[3]",
+        "PYCar/g[4]",
+        "PYCar/g[5]",
+        "PYCar/g[6]",
+        "PYCar/g[7]"
+      ]
+    },
+    {
+      "target": "link:tool",
+      "property": "pose",
+      "signal": [
+        "PTool/g[1]",
+        "PTool/g[2]",
+        "PTool/g[3]",
+        "PTool/g[4]",
+        "PTool/g[5]",
+        "PTool/g[6]",
+        "PTool/g[7]"
+      ]
+    },
+    {
+      "target": "visual:beam_mesh",
+      "property": "mode-shapes",
+      "signal": [
+        "Beam/eta[1]",
+        "Beam/eta[2]",
+        "Beam/eta[3]",
+        "Beam/eta[4]",
+        "Beam/eta[5]",
+        "Beam/eta[6]",
+        "Beam/eta[7]",
+        "Beam/eta[8]",
+        "Beam/eta[9]",
+        "Beam/eta[10]",
+        "Beam/eta[11]",
+        "Beam/eta[12]",
+        "Beam/eta[13]",
+        "Beam/eta[14]",
+        "Beam/eta[15]",
+        "Beam/eta[16]",
+        "Beam/eta[17]",
+        "Beam/eta[18]",
+        "Beam/eta[19]",
+        "Beam/eta[20]",
+        "Beam/eta[21]"
+      ],
+      "stress": {
+        "colormap": "heat",
+        "range": [
+          0.0,
+          2000000.0
+        ]
+      }
+    }
+  ]
+}

@@ -41,9 +41,15 @@
           "to_t": 1.6,
           "min_hz": 8.0,
           "max_hz": 40.0,
-          "value": 18.57193040579621,
+          "value": 18.571930405796177,
           "rtol": 0.06,
           "note": "the payload rings near the first clamped bracket mode after the move (the servo spring lowers it slightly); full finite element model (39348 dofs) clamped at A with the payload at B: 18.5719 / 30.8750 Hz; reduced model 18.5719 / 30.8750 Hz"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Bracket/sigma_max",
+          "value": 125000000.0,
+          "note": "the index moves keep the bracket below half the 6082-T6 yield strength (250 MPa)"
         }
       ]
     },
@@ -69,7 +75,7 @@
           "to_t": 1.0,
           "min_hz": 5.0,
           "max_hz": 25.0,
-          "value": 18.57193040579621,
+          "value": 18.571930405796177,
           "rtol": 0.003,
           "note": "full finite element model (39348 dofs) clamped at A with the payload at B: 18.5719 / 30.8750 Hz; reduced model 18.5719 / 30.8750 Hz"
         },
@@ -80,9 +86,42 @@
           "to_t": 1.0,
           "min_hz": 25.0,
           "max_hz": 60.0,
-          "value": 30.874979823054638,
+          "value": 30.874979823054723,
           "rtol": 0.003,
           "note": "full finite element model (39348 dofs) clamped at A with the payload at B: 18.5719 / 30.8750 Hz; reduced model 18.5719 / 30.8750 Hz"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Bracket/sigma_vm[1]",
+          "from_t": 0.0,
+          "to_t": 0.03,
+          "value": 8203651.436383128,
+          "rtol": 0.03,
+          "note": "linear modal superposition of the reduced model with the payload rigid at B (design/build.py, no BGSim), first 30 ms: max von Mises 8.204 MPa at upright 30 mm, 4.708 MPa at the root, 21.672 MPa over the stress points; beam theory: F = m w v = 5.83 N at the payload centre, sigma_zz = F (0.175 - 0.03) c / I = 7.93 MPa"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Bracket/sigma_vm[2]",
+          "from_t": 0.0,
+          "to_t": 0.03,
+          "value": 4707765.74446459,
+          "rtol": 0.03,
+          "note": "linear modal superposition of the reduced model with the payload rigid at B (design/build.py, no BGSim), first 30 ms: max von Mises 8.204 MPa at upright 30 mm, 4.708 MPa at the root, 21.672 MPa over the stress points"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Bracket/sigma_max",
+          "from_t": 0.0,
+          "to_t": 0.03,
+          "value": 21672130.087650627,
+          "rtol": 0.03,
+          "note": "linear modal superposition of the reduced model with the payload rigid at B (design/build.py, no BGSim), first 30 ms: max von Mises 8.204 MPa at upright 30 mm, 4.708 MPa at the root, 21.672 MPa over the stress points (the peak sits at the upright's sharp root corner)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Bracket/sigma_max",
+          "value": 125000000.0,
+          "note": "the bracket stays below half the 6082-T6 yield strength (250 MPa)"
         }
       ]
     }

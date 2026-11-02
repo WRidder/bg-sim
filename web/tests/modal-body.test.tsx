@@ -112,6 +112,30 @@ describe("the reduced-model summary", () => {
     expect(big.summary.hasStiffening).toBe(false);
     expect(big.summary.validation).toBeNull();
     expect(big.summary.glb).toBeNull();
+    expect(big.summary.stress).toBeNull();
+    expect(big.summary.rail).toBeNull();
+  });
+
+  it("reads the stress points and the rail", () => {
+    const parsed = parseModalSummary(
+      JSON.stringify(
+        modalDocument({
+          stress: {
+            hotspots: 1,
+            points: [
+              { name: "root top", kind: "hotspot", sigma: [] },
+              { name: "peak 1", kind: "peak", sigma: [] },
+              { name: "peak 2", kind: "peak", sigma: [] },
+            ],
+          },
+          rail: { name: "guide", length: 1.2 },
+        }),
+      ),
+    );
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(parsed.summary.stress).toEqual({ hotspots: ["root top"], points: 3 });
+    expect(parsed.summary.rail).toEqual({ name: "guide", length: 1.2 });
   });
 
   it("formats frequencies and errors, and knows the block and its file-derived constants", () => {
@@ -126,6 +150,9 @@ describe("the reduced-model summary", () => {
     expect(editableConstants(MODAL_BODY_REF, decls).map((decl) => decl.name)).toEqual(["other"]);
     expect(editableConstants("stdlib:sources/Step", decls)).toHaveLength(4);
     expect(MODAL_FILE_CONSTANTS.has("stiffening")).toBe(true);
+    for (const name of ["ns", "nh", "Sxx", "Syz", "nr", "nc", "CT1", "CR3"]) {
+      expect(MODAL_FILE_CONSTANTS.has(name)).toBe(true);
+    }
     expect(modalSettings(undefined)).toEqual({ file: "", stiffening: true });
     expect(modalSettings({ file: "data/a.modal.json", stiffening: 0 })).toEqual({
       file: "data/a.modal.json",

@@ -1,0 +1,751 @@
+{
+  "project": "fem-gantry",
+  "description": "An H-gantry with a FEM crossbeam (ModalBody3D with a rail): two linear-motor X axes with servo drives, a Y carriage on the moving rail interface, point-to-point moves plain and input-shaped, racking, and the beam's stress, against a scipy modal model; plus the beam's static deflection and stress against beam theory.",
+  "models": {
+    "fem-gantry": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E108",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "plain move: X1 reaches the 0.5 m target (the integral action leaves no error)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X2/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "X2 too"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 1.8,
+          "value": 0.0,
+          "abs": 2e-06,
+          "note": "and both are back at 0"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/ex",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 247.7556011813431,
+          "rtol": 0.06,
+          "note": "the largest tool error along x during the move out (um), against design/reference.py, scenario plain"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/rack",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 42.17457138381425,
+          "rtol": 0.12,
+          "note": "racking: the largest x1 - x2 (um), against design/reference.py, scenario plain"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X1Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 236.73940841210566,
+          "rtol": 0.06,
+          "note": "the X1 motor's peak force (N): the welded end carries more of the beam (clamped-pinned), against design/reference.py, scenario plain"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X2Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 166.57020322716699,
+          "rtol": 0.06,
+          "note": "the X2 motor's peak force (N), against design/reference.py, scenario plain"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/util",
+          "value": 100.0,
+          "note": "the beam's peak von Mises stays below the allowable (40 MPa, fatigue of EN AW-6063 T6)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/ex",
+          "from_t": 0.7019200000000001,
+          "to_t": 0.99,
+          "value": 121.2455712503724,
+          "rtol": 0.12,
+          "note": "the residual vibration after the move out (um), against design/reference.py, scenario plain"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/settle",
+          "t": 0.99,
+          "value": 0.03147999999999995,
+          "abs": 0.012,
+          "note": "the settling time into +-10 um after the move out (s), against design/reference.py, scenario plain (a band crossing: up to half a period of the 47 Hz mode apart)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[1]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 594705.8163830289,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'front wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario plain"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[2]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1158333.7265825302,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'back wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario plain"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[3]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1559780.434414319,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'back wall mid-span' (Pa): the modal superposition of the stress table in design/reference.py, scenario plain"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_max",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 2545350.443709051,
+          "rtol": 0.15,
+          "note": "peak von Mises over all stress points (Pa), against design/reference.py, scenario plain"
+        }
+      ]
+    },
+    "fem-gantry-zvd": {
+      "model": "fem-gantry",
+      "overrides": {
+        "global:shaping": 2.0
+      },
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "ZVD-shaped move: X1 reaches the 0.5 m target (the integral action leaves no error)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X2/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "X2 too"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 1.8,
+          "value": 0.0,
+          "abs": 2e-06,
+          "note": "and both are back at 0"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/ex",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 175.3574295619842,
+          "rtol": 0.06,
+          "note": "the largest tool error along x during the move out (um), against design/reference.py, scenario zvd"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/rack",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 29.993065705856413,
+          "rtol": 0.12,
+          "note": "racking: the largest x1 - x2 (um), against design/reference.py, scenario zvd"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X1Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 205.13541131462776,
+          "rtol": 0.06,
+          "note": "the X1 motor's peak force (N): the welded end carries more of the beam (clamped-pinned), against design/reference.py, scenario zvd"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X2Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 151.72338755479686,
+          "rtol": 0.06,
+          "note": "the X2 motor's peak force (N), against design/reference.py, scenario zvd"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/util",
+          "value": 100.0,
+          "note": "the beam's peak von Mises stays below the allowable (40 MPa, fatigue of EN AW-6063 T6)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/ex",
+          "from_t": 0.7258000000000001,
+          "to_t": 0.99,
+          "value": 25.0,
+          "note": "the shaped move's residual vibration stays below 25 um (a fifth of the plain move's; the rigid-joint reference gives 6.0 um, design/reference.py, scenario zvd)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/settle",
+          "t": 0.99,
+          "value": 0.0,
+          "abs": 0.015,
+          "note": "the settling time after the shaped move is at most 15 ms (the plain move's is about 35 ms)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[1]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 420952.30643495003,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'front wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario zvd"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[2]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 924666.1846505567,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'back wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario zvd"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[3]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1276135.2170895387,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'back wall mid-span' (Pa): the modal superposition of the stress table in design/reference.py, scenario zvd"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_max",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1801439.44679633,
+          "rtol": 0.15,
+          "note": "peak von Mises over all stress points (Pa), against design/reference.py, scenario zvd"
+        }
+      ]
+    },
+    "fem-gantry-notch": {
+      "model": "fem-gantry",
+      "overrides": {
+        "global:notch": 0.0
+      },
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "full notch at 167 Hz: X1 reaches the 0.5 m target (the integral action leaves no error)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X2/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "X2 too"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 1.8,
+          "value": 0.0,
+          "abs": 2e-06,
+          "note": "and both are back at 0"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/ex",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 264.10402879756265,
+          "rtol": 0.06,
+          "note": "the largest tool error along x during the move out (um), against design/reference.py, scenario notch"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/rack",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 43.499180387929215,
+          "rtol": 0.12,
+          "note": "racking: the largest x1 - x2 (um), against design/reference.py, scenario notch"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X1Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 259.9306862833775,
+          "rtol": 0.06,
+          "note": "the X1 motor's peak force (N): the welded end carries more of the beam (clamped-pinned), against design/reference.py, scenario notch"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X2Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 183.89230766326781,
+          "rtol": 0.06,
+          "note": "the X2 motor's peak force (N), against design/reference.py, scenario notch"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/util",
+          "value": 100.0,
+          "note": "the beam's peak von Mises stays below the allowable (40 MPa, fatigue of EN AW-6063 T6)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/ex",
+          "from_t": 0.7019200000000001,
+          "to_t": 0.99,
+          "value": 135.68709979500105,
+          "rtol": 0.12,
+          "note": "the residual vibration after the move out (um), against design/reference.py, scenario notch"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/settle",
+          "t": 0.99,
+          "value": 0.03503999999999996,
+          "abs": 0.012,
+          "note": "the settling time into +-10 um after the move out (s), against design/reference.py, scenario notch (a band crossing: up to half a period of the 47 Hz mode apart)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[1]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 604808.8404229413,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'front wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario notch"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[2]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1244340.9831517343,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'back wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario notch"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[3]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1696356.520691175,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'back wall mid-span' (Pa): the modal superposition of the stress table in design/reference.py, scenario notch"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_max",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 2697199.0339134703,
+          "rtol": 0.15,
+          "note": "peak von Mises over all stress points (Pa), against design/reference.py, scenario notch"
+        }
+      ]
+    },
+    "fem-gantry-kf2-0.9": {
+      "model": "fem-gantry",
+      "overrides": {
+        "global:kf2": 0.9
+      },
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "X2 motor 10 % weak: X1 reaches the 0.5 m target (the integral action leaves no error)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X2/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "X2 too"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 1.8,
+          "value": 0.0,
+          "abs": 2e-06,
+          "note": "and both are back at 0"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/ex",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 250.85035477945272,
+          "rtol": 0.06,
+          "note": "the largest tool error along x during the move out (um), against design/reference.py, scenario kf2_0.9"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/rack",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 31.032985414583546,
+          "rtol": 0.12,
+          "note": "racking: the largest x1 - x2 (um), against design/reference.py, scenario kf2_0.9"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X1Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 237.33532178767655,
+          "rtol": 0.06,
+          "note": "the X1 motor's peak force (N): the welded end carries more of the beam (clamped-pinned), against design/reference.py, scenario kf2_0.9"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X2Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 167.22741012510463,
+          "rtol": 0.06,
+          "note": "the X2 motor's peak force (N), against design/reference.py, scenario kf2_0.9"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/util",
+          "value": 100.0,
+          "note": "the beam's peak von Mises stays below the allowable (40 MPa, fatigue of EN AW-6063 T6)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/ex",
+          "from_t": 0.7019200000000001,
+          "to_t": 0.99,
+          "value": 121.99876684299005,
+          "rtol": 0.12,
+          "note": "the residual vibration after the move out (um), against design/reference.py, scenario kf2_0.9"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/settle",
+          "t": 0.99,
+          "value": 0.031359999999999943,
+          "abs": 0.012,
+          "note": "the settling time into +-10 um after the move out (s), against design/reference.py, scenario kf2_0.9 (a band crossing: up to half a period of the 47 Hz mode apart)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[1]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 608822.5941254104,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'front wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario kf2_0.9"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[2]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1183937.9934277132,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'back wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario kf2_0.9"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[3]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1550817.7369663436,
+          "rtol": 0.15,
+          "note": "peak von Mises at the hotspot 'back wall mid-span' (Pa): the modal superposition of the stress table in design/reference.py, scenario kf2_0.9"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_max",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 2526251.6863015164,
+          "rtol": 0.15,
+          "note": "peak von Mises over all stress points (Pa), against design/reference.py, scenario kf2_0.9"
+        }
+      ]
+    },
+    "fem-gantry-y-c-0.15": {
+      "model": "fem-gantry",
+      "overrides": {
+        "global:y_c": 0.15
+      },
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "Y carriage 0.15 m along the rail: X1 reaches the 0.5 m target (the integral action leaves no error)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X2/qout",
+          "t": 0.99,
+          "value": 0.5,
+          "abs": 2e-06,
+          "note": "X2 too"
+        },
+        {
+          "kind": "final_value",
+          "signal": "X1/qout",
+          "t": 1.8,
+          "value": 0.0,
+          "abs": 2e-06,
+          "note": "and both are back at 0"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/ex",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 84.05153654117426,
+          "rtol": 0.08,
+          "note": "the largest tool error along x during the move out (um), against design/reference.py, scenario y_c_0.15"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/rack",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 81.77997912839352,
+          "rtol": 0.12,
+          "note": "racking: the largest x1 - x2 (um), against design/reference.py, scenario y_c_0.15"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X1Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 272.7175319855209,
+          "rtol": 0.06,
+          "note": "the X1 motor's peak force (N): the welded end carries more of the beam (clamped-pinned), against design/reference.py, scenario y_c_0.15"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "X2Servo/F",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 125.8120392932259,
+          "rtol": 0.06,
+          "note": "the X2 motor's peak force (N), against design/reference.py, scenario y_c_0.15"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Mon/util",
+          "value": 100.0,
+          "note": "the beam's peak von Mises stays below the allowable (40 MPa, fatigue of EN AW-6063 T6)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Mon/ex",
+          "from_t": 0.7019200000000001,
+          "to_t": 0.99,
+          "value": 46.946763877953046,
+          "rtol": 0.12,
+          "note": "the residual vibration after the move out (um), against design/reference.py, scenario y_c_0.15"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Mon/settle",
+          "t": 0.99,
+          "value": 0.026919999999999944,
+          "abs": 0.015,
+          "note": "the settling time into +-10 um after the move out (s), against design/reference.py, scenario y_c_0.15 (a band crossing: up to half a period of the 47 Hz mode apart)"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[1]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 315071.96847844817,
+          "rtol": 0.2,
+          "note": "peak von Mises at the hotspot 'front wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario y_c_0.15"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[2]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 685215.5491022493,
+          "rtol": 0.2,
+          "note": "peak von Mises at the hotspot 'back wall 100 mm from A' (Pa): the modal superposition of the stress table in design/reference.py, scenario y_c_0.15"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_vm[3]",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 709203.1954128578,
+          "rtol": 0.2,
+          "note": "peak von Mises at the hotspot 'back wall mid-span' (Pa): the modal superposition of the stress table in design/reference.py, scenario y_c_0.15"
+        },
+        {
+          "kind": "max_abs",
+          "signal": "Beam/sigma_max",
+          "from_t": 0.0,
+          "to_t": 0.99,
+          "value": 1585490.67621089,
+          "rtol": 0.15,
+          "note": "peak von Mises over all stress points (Pa), against design/reference.py, scenario y_c_0.15"
+        }
+      ]
+    },
+    "gantry-static": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E108",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Beam/poseE[7]",
+          "t": 0.5,
+          "value": 0.02997350085521148,
+          "abs": 1.8549401351963207e-06,
+          "note": "the rail under the carriage moves by the beam's deflection (x, up in this view): beam theory, clamped-clamped over the elastic span 1.24 m with shear: the carriage P = 117.72 N at mid-span and the beam's weight w = 46.83 N/m, EI = 6.379e+04 N*m^2: 26.50 um"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Beam/sigma_vm[1]",
+          "t": 0.5,
+          "value": 400058.8992181391,
+          "rtol": 0.05,
+          "note": "front wall 100 mm from A: M = -15.692 N*m at 100 mm from the clamp, sigma = M c / I = 387.3 kPa, torsion shear 57.8 kPa, von Mises 400.1 kPa"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Beam/sigma_vm[2]",
+          "t": 0.5,
+          "value": 678965.2859194631,
+          "rtol": 0.05,
+          "note": "back wall 100 mm from A: M = -15.692 N*m at 100 mm from the clamp, sigma = M c / I = 631.1 kPa, torsion shear 144.6 kPa, von Mises 679.0 kPa"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Beam/sigma_vm[3]",
+          "from_t": 0.4,
+          "to_t": 0.5,
+          "value": 890441.7878820656,
+          "note": "back wall mid-span, under the carriage: below the beam-theory 890.4 kPa (the guide blocks spread the load over 100 mm and the box's walls carry it with shear lag); the self-weight case checks this hotspot against beam theory"
+        }
+      ]
+    },
+    "gantry-static-self-weight": {
+      "model": "gantry-static",
+      "overrides": {
+        "global:g_y": 0.0
+      },
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E108",
+            "W201",
+            "W202"
+          ]
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Beam/poseE[7]",
+          "t": 0.5,
+          "value": 0.029994757376592636,
+          "abs": 3.145574044417683e-07,
+          "note": "the beam's own weight alone (the Y carriage weightless), w = 46.83 N/m: w L^4 / (384 E I) + w L^2 / (8 k G A) = 5.24 um"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Beam/sigma_vm[1]",
+          "t": 0.5,
+          "value": 82220.14653885081,
+          "rtol": 0.06,
+          "note": "front wall 100 mm from A: M = -3.331 N*m, sigma = M c / I = 82.2 kPa"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Beam/sigma_vm[2]",
+          "t": 0.5,
+          "value": 133968.4600653851,
+          "rtol": 0.06,
+          "note": "back wall 100 mm from A: M = -3.331 N*m, sigma = M c / I = 134.0 kPa"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Beam/sigma_vm[3]",
+          "t": 0.5,
+          "value": 120659.50339534675,
+          "rtol": 0.06,
+          "note": "back wall mid-span: M = 3.000 N*m, sigma = M c / I = 120.7 kPa"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,3484 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "fem-gantry",
+  "parameters": [
+    {
+      "name": "Pi",
+      "value": "3.141592653589793",
+      "unit": null,
+      "description": "pi (a global expression cannot use the built-in constant)"
+    },
+    {
+      "name": "dX",
+      "value": "0.5",
+      "unit": "m",
+      "description": "Length of the X move (out at t1, back at t2)"
+    },
+    {
+      "name": "t1",
+      "value": "0.1",
+      "unit": "s",
+      "description": "Start of the move out"
+    },
+    {
+      "name": "t2",
+      "value": "1.0",
+      "unit": "s",
+      "description": "Start of the move back"
+    },
+    {
+      "name": "a_max",
+      "value": "10.0",
+      "unit": "m/s^2",
+      "description": "Largest acceleration of the X move"
+    },
+    {
+      "name": "v_max",
+      "value": "1.0",
+      "unit": "m/s",
+      "description": "Largest speed of the X move"
+    },
+    {
+      "name": "j_max",
+      "value": "5000.0",
+      "unit": "m/s^3",
+      "description": "Jerk of the X move"
+    },
+    {
+      "name": "shaping",
+      "value": "0.0",
+      "unit": null,
+      "description": "Input shaper: 0 none, 1 ZV (two impulses), 2 ZVD (three impulses)"
+    },
+    {
+      "name": "f_s",
+      "value": "46.77",
+      "unit": "Hz",
+      "description": "Frequency the shaper (and the notch) cancel: the dominant tool vibration after a plain move"
+    },
+    {
+      "name": "zeta_s",
+      "value": "0.469",
+      "unit": null,
+      "description": "Damping ratio the shaper assumes (of the same mode)"
+    },
+    {
+      "name": "Kz",
+      "value": "exp(-zeta_s*Pi/sqrt(1 - zeta_s^2))",
+      "unit": null,
+      "description": "Shaper: the decay of the mode over half a damped period"
+    },
+    {
+      "name": "Td",
+      "value": "1/(f_s*sqrt(1 - zeta_s^2))",
+      "unit": "s",
+      "description": "Shaper: the damped period"
+    },
+    {
+      "name": "w0",
+      "value": "(shaping - 1)*(shaping - 2)/2 - shaping*(shaping - 2)/(1 + Kz) + shaping*(shaping - 1)/2/(1 + Kz)^2",
+      "unit": null,
+      "description": "Shaper: the first impulse (1, ZV 1/(1+K), ZVD 1/(1+K)^2; the Lagrange polynomial through shaping = 0, 1, 2)"
+    },
+    {
+      "name": "w1",
+      "value": "-shaping*(shaping - 2)*Kz/(1 + Kz) + shaping*(shaping - 1)*Kz/(1 + Kz)^2",
+      "unit": null,
+      "description": "Shaper: the second impulse at Td/2 (0, ZV K/(1+K), ZVD 2K/(1+K)^2)"
+    },
+    {
+      "name": "w2",
+      "value": "shaping*(shaping - 1)/2*Kz^2/(1 + Kz)^2",
+      "unit": null,
+      "description": "Shaper: the third impulse at Td (ZVD K^2/(1+K)^2)"
+    },
+    {
+      "name": "d0",
+      "value": "0.0",
+      "unit": "s",
+      "description": "Shaper: the time of the first impulse"
+    },
+    {
+      "name": "d1",
+      "value": "Td/2",
+      "unit": "s",
+      "description": "Shaper: the time of the second impulse"
+    },
+    {
+      "name": "d2",
+      "value": "Td",
+      "unit": "s",
+      "description": "Shaper: the time of the third impulse"
+    },
+    {
+      "name": "notch",
+      "value": "1.0",
+      "unit": null,
+      "description": "Notch depth in both X velocity loops at f_n: 1 off, 0 a full notch"
+    },
+    {
+      "name": "f_n",
+      "value": "167.0",
+      "unit": "Hz",
+      "description": "Notch centre frequency: the first lightly damped beam mode in the X loops"
+    },
+    {
+      "name": "b_n",
+      "value": "f_n/2",
+      "unit": "Hz",
+      "description": "Notch width"
+    },
+    {
+      "name": "y_c",
+      "value": "0.55",
+      "unit": "m",
+      "description": "Y carriage position on the rail (0 to 1.1 m; 0.55 is mid-span)"
+    },
+    {
+      "name": "kf2",
+      "value": "1.0",
+      "unit": null,
+      "description": "Force constant of the X2 motor relative to the one its drive assumes (racking: 0.9 is 10 % weak)"
+    },
+    {
+      "name": "M_x",
+      "value": "16.480784",
+      "unit": "kg",
+      "description": "The mass each X drive's gains are tuned for: an X carriage and half of the beam and Y carriage"
+    },
+    {
+      "name": "fp_x",
+      "value": "15.0",
+      "unit": "Hz",
+      "description": "X position loop bandwidth"
+    },
+    {
+      "name": "fv_x",
+      "value": "60.0",
+      "unit": "Hz",
+      "description": "X velocity loop bandwidth"
+    },
+    {
+      "name": "f_i",
+      "value": "1000.0",
+      "unit": "Hz",
+      "description": "Current loop bandwidth of every drive"
+    },
+    {
+      "name": "zeta",
+      "value": "0.01",
+      "unit": null,
+      "description": "Modal damping ratio of the beam"
+    }
+  ],
+  "diagram": {
+    "nodes": [
+      {
+        "id": "Out0",
+        "name": "Out0",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 40
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "dX*w0",
+          "t_start": "t1 + d0",
+          "v_max": "v_max*(w0 + 1e-9)",
+          "a_max": "a_max*(w0 + 1e-9)",
+          "j_max": "j_max*(w0 + 1e-9)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Out1",
+        "name": "Out1",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 140
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "dX*w1",
+          "t_start": "t1 + d1",
+          "v_max": "v_max*(w1 + 1e-9)",
+          "a_max": "a_max*(w1 + 1e-9)",
+          "j_max": "j_max*(w1 + 1e-9)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Out2",
+        "name": "Out2",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 240
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "dX*w2",
+          "t_start": "t1 + d2",
+          "v_max": "v_max*(w2 + 1e-9)",
+          "a_max": "a_max*(w2 + 1e-9)",
+          "j_max": "j_max*(w2 + 1e-9)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Back0",
+        "name": "Back0",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 340
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "-dX*w0",
+          "t_start": "t2 + d0",
+          "v_max": "v_max*(w0 + 1e-9)",
+          "a_max": "a_max*(w0 + 1e-9)",
+          "j_max": "j_max*(w0 + 1e-9)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Back1",
+        "name": "Back1",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 440
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "-dX*w1",
+          "t_start": "t2 + d1",
+          "v_max": "v_max*(w1 + 1e-9)",
+          "a_max": "a_max*(w1 + 1e-9)",
+          "j_max": "j_max*(w1 + 1e-9)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Back2",
+        "name": "Back2",
+        "block": {
+          "ref": "stdlib:motion/SCurveProfile"
+        },
+        "position": {
+          "x": 40,
+          "y": 540
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q_start": "0.0",
+          "q_end": "-dX*w2",
+          "t_start": "t2 + d2",
+          "v_max": "v_max*(w2 + 1e-9)",
+          "a_max": "a_max*(w2 + 1e-9)",
+          "j_max": "j_max*(w2 + 1e-9)"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Ref",
+        "name": "Ref",
+        "block": {
+          "ref": "project:MoveSum"
+        },
+        "position": {
+          "x": 240,
+          "y": 290
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "WorldX1",
+        "name": "WorldX1",
+        "block": {
+          "ref": "stdlib:multibond/GroundSpatial"
+        },
+        "position": {
+          "x": 400,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X1Mount",
+        "name": "X1Mount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 520,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "-0.7071067811865476",
+          "qz": "0.0",
+          "x": "0.5",
+          "y": "-0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X1",
+        "name": "X1",
+        "block": {
+          "ref": "stdlib:spatial/Prismatic3D"
+        },
+        "position": {
+          "x": 640,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "400000000.0",
+          "kr": "1500000.0",
+          "bt": "5291.502622129181",
+          "br": "23.95829710142188"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X1Turn",
+        "name": "X1Turn",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 760,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "-0.7071067811865476",
+          "qz": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X1Car",
+        "name": "X1Car",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 880,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "7.0",
+          "J": "[0.018666666666666668, 0.027066666666666673, 0.03826666666666667]",
+          "g0": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X1Motor",
+        "name": "X1Motor",
+        "block": {
+          "ref": "stdlib:translation/ForceSource"
+        },
+        "position": {
+          "x": 640,
+          "y": 780
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X1Stator",
+        "name": "X1Stator",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 520,
+          "y": 780
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X1Servo",
+        "name": "X1Servo",
+        "block": {
+          "ref": "project:AxisServo"
+        },
+        "position": {
+          "x": 640,
+          "y": 660
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "M": "M_x",
+          "fp": "fp_x",
+          "fv": "fv_x",
+          "kff": "1.0",
+          "fi": "f_i",
+          "kf": "1.0",
+          "fn": "f_n",
+          "bn": "b_n",
+          "dn": "notch"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PX1Mount",
+        "name": "PX1Mount",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 520,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "0.7071067811865476",
+          "qz": "0.0",
+          "y": "0.0",
+          "z": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PX1J",
+        "name": "PX1J",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 640,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PX1Turn",
+        "name": "PX1Turn",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 760,
+          "y": 1100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "-0.7071067811865476",
+          "qz": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PX1Car",
+        "name": "PX1Car",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 880,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "WorldX2",
+        "name": "WorldX2",
+        "block": {
+          "ref": "stdlib:multibond/GroundSpatial"
+        },
+        "position": {
+          "x": 400,
+          "y": 1500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X2Mount",
+        "name": "X2Mount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 520,
+          "y": 1500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "-0.7071067811865476",
+          "qz": "0.0",
+          "x": "0.5",
+          "y": "-1.32"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X2",
+        "name": "X2",
+        "block": {
+          "ref": "stdlib:spatial/Prismatic3D"
+        },
+        "position": {
+          "x": 640,
+          "y": 1500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "400000000.0",
+          "kr": "1500000.0",
+          "bt": "5291.502622129181",
+          "br": "23.95829710142188"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X2Turn",
+        "name": "X2Turn",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 760,
+          "y": 1500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "-0.7071067811865476",
+          "qz": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X2Car",
+        "name": "X2Car",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 880,
+          "y": 1500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "7.0",
+          "J": "[0.018666666666666668, 0.027066666666666673, 0.03826666666666667]",
+          "g0": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X2Motor",
+        "name": "X2Motor",
+        "block": {
+          "ref": "stdlib:translation/ForceSource"
+        },
+        "position": {
+          "x": 640,
+          "y": 1380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X2Stator",
+        "name": "X2Stator",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 520,
+          "y": 1380
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "X2Servo",
+        "name": "X2Servo",
+        "block": {
+          "ref": "project:AxisServo"
+        },
+        "position": {
+          "x": 640,
+          "y": 1260
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "M": "M_x",
+          "fp": "fp_x",
+          "fv": "fv_x",
+          "kff": "1.0",
+          "fi": "f_i",
+          "kf": "kf2",
+          "fn": "f_n",
+          "bn": "b_n",
+          "dn": "notch"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PX2Mount",
+        "name": "PX2Mount",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 520,
+          "y": 1620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "0.7071067811865476",
+          "qz": "0.0",
+          "y": "1.32",
+          "z": "0.5"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PX2J",
+        "name": "PX2J",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 640,
+          "y": 1620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PX2Turn",
+        "name": "PX2Turn",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 760,
+          "y": 1700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.0",
+          "qy": "-0.7071067811865476",
+          "qz": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PX2Car",
+        "name": "PX2Car",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 880,
+          "y": 1620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Beam",
+        "name": "Beam",
+        "block": {
+          "ref": "stdlib:spatial/ModalBody3D"
+        },
+        "position": {
+          "x": 1500,
+          "y": 1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "zeta": "zeta",
+          "g0": "0.0",
+          "ms": "0.05",
+          "s0": "y_c"
+        },
+        "constants": {
+          "file": "data/beam.modal.json",
+          "stiffening": 0
+        },
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "WeldA",
+        "name": "WeldA",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1100,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "400000000.0",
+          "kr": "1500000.0",
+          "bt": "5291.502622129181",
+          "br": "23.95829710142188"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "WeldAGround",
+        "name": "WeldAGround",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 1100,
+          "y": 720
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "WeldASpring",
+        "name": "WeldASpring",
+        "block": {
+          "ref": "stdlib:rotation/TorsionSpring"
+        },
+        "position": {
+          "x": 1100,
+          "y": 810
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "1000000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "WeldADamper",
+        "name": "WeldADamper",
+        "block": {
+          "ref": "stdlib:rotation/RotationalDamper"
+        },
+        "position": {
+          "x": 1190,
+          "y": 810
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "100.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "WeldABracket",
+        "name": "WeldABracket",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1220,
+          "y": 900
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.09999999999999998"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PWeldA",
+        "name": "PWeldA",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1100,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PWeldAOffset",
+        "name": "PWeldAOffset",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1220,
+          "y": 1100
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.09999999999999998"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PWeldABeam",
+        "name": "PWeldABeam",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1220,
+          "y": 1020
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PivotB",
+        "name": "PivotB",
+        "block": {
+          "ref": "stdlib:spatial/Revolute3D"
+        },
+        "position": {
+          "x": 1100,
+          "y": 1500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "400000000.0",
+          "kr": "1500000.0",
+          "bt": "5291.502622129181",
+          "br": "23.95829710142188"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PivotBGround",
+        "name": "PivotBGround",
+        "block": {
+          "ref": "stdlib:rotation/FixedShaft"
+        },
+        "position": {
+          "x": 1100,
+          "y": 1320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PivotBFriction",
+        "name": "PivotBFriction",
+        "block": {
+          "ref": "stdlib:rotation/RotationalDamper"
+        },
+        "position": {
+          "x": 1100,
+          "y": 1410
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PivotBBracket",
+        "name": "PivotBBracket",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 1220,
+          "y": 1500
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.09999999999999998"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PPivotB",
+        "name": "PPivotB",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1100,
+          "y": 1620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PPivotBOffset",
+        "name": "PPivotBOffset",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 1220,
+          "y": 1700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "z": "0.09999999999999998"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PPivotBBeam",
+        "name": "PPivotBBeam",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1220,
+          "y": 1620
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YGuide",
+        "name": "YGuide",
+        "block": {
+          "ref": "stdlib:spatial/Prismatic3D"
+        },
+        "position": {
+          "x": 1900,
+          "y": 1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "kt": "300000000.0",
+          "kr": "1000000.0",
+          "bt": "6000.0",
+          "br": "34.98571136907181"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YOffset",
+        "name": "YOffset",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 2020,
+          "y": 1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.08",
+          "y": "0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YCar",
+        "name": "YCar",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 2140,
+          "y": 1200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "12.0",
+          "J": "[0.1224, 0.057999999999999996, 0.1156]",
+          "g0": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YCoupling",
+        "name": "YCoupling",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 1780,
+          "y": 1080
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YCouplingSpring",
+        "name": "YCouplingSpring",
+        "block": {
+          "ref": "stdlib:translation/Spring"
+        },
+        "position": {
+          "x": 1900,
+          "y": 1080
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "k": "200000000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YCouplingDamper",
+        "name": "YCouplingDamper",
+        "block": {
+          "ref": "stdlib:translation/Damper"
+        },
+        "position": {
+          "x": 2020,
+          "y": 1080
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "d": "29393.876913398137"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YMotor",
+        "name": "YMotor",
+        "block": {
+          "ref": "stdlib:translation/ForceSource"
+        },
+        "position": {
+          "x": 1780,
+          "y": 960
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "F": "1.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YStator",
+        "name": "YStator",
+        "block": {
+          "ref": "stdlib:translation/Fixed"
+        },
+        "position": {
+          "x": 1660,
+          "y": 960
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YRef",
+        "name": "YRef",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1540,
+          "y": 800
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "y_c"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Zero",
+        "name": "Zero",
+        "block": {
+          "ref": "stdlib:sources/Constant"
+        },
+        "position": {
+          "x": 1540,
+          "y": 880
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "value": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "YServo",
+        "name": "YServo",
+        "block": {
+          "ref": "project:AxisServo"
+        },
+        "position": {
+          "x": 1780,
+          "y": 840
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "M": "12.05",
+          "fp": "10.0",
+          "fv": "40.0",
+          "kff": "1.0",
+          "fi": "f_i"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PYJ",
+        "name": "PYJ",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 1900,
+          "y": 1320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PYOffset",
+        "name": "PYOffset",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 2020,
+          "y": 1400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.08",
+          "y": "0.1"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PYCar",
+        "name": "PYCar",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 2140,
+          "y": 1320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PToolOffset",
+        "name": "PToolOffset",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 2260,
+          "y": 1400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x": "0.02",
+          "y": "0.25"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "PTool",
+        "name": "PTool",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 2260,
+          "y": 1320
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "Mon",
+        "name": "Mon",
+        "block": {
+          "ref": "project:GantryMonitor"
+        },
+        "position": {
+          "x": 2400,
+          "y": 700
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "x0": "0.13",
+          "y0": "0.10999999999999999 + y_c",
+          "z0": "0.25",
+          "band": "1e-05",
+          "sigma_allow": "40000000.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "c1",
+        "kind": "signal",
+        "from": {
+          "node": "Out0",
+          "port": "q"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "q1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c2",
+        "kind": "signal",
+        "from": {
+          "node": "Out0",
+          "port": "v"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "v1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c3",
+        "kind": "signal",
+        "from": {
+          "node": "Out0",
+          "port": "a"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "a1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c4",
+        "kind": "signal",
+        "from": {
+          "node": "Out1",
+          "port": "q"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "q2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c5",
+        "kind": "signal",
+        "from": {
+          "node": "Out1",
+          "port": "v"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "v2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c6",
+        "kind": "signal",
+        "from": {
+          "node": "Out1",
+          "port": "a"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "a2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c7",
+        "kind": "signal",
+        "from": {
+          "node": "Out2",
+          "port": "q"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "q3"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c8",
+        "kind": "signal",
+        "from": {
+          "node": "Out2",
+          "port": "v"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "v3"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c9",
+        "kind": "signal",
+        "from": {
+          "node": "Out2",
+          "port": "a"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "a3"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c10",
+        "kind": "signal",
+        "from": {
+          "node": "Back0",
+          "port": "q"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "q4"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c11",
+        "kind": "signal",
+        "from": {
+          "node": "Back0",
+          "port": "v"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "v4"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c12",
+        "kind": "signal",
+        "from": {
+          "node": "Back0",
+          "port": "a"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "a4"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c13",
+        "kind": "signal",
+        "from": {
+          "node": "Back1",
+          "port": "q"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "q5"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c14",
+        "kind": "signal",
+        "from": {
+          "node": "Back1",
+          "port": "v"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "v5"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c15",
+        "kind": "signal",
+        "from": {
+          "node": "Back1",
+          "port": "a"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "a5"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c16",
+        "kind": "signal",
+        "from": {
+          "node": "Back2",
+          "port": "q"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "q6"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c17",
+        "kind": "signal",
+        "from": {
+          "node": "Back2",
+          "port": "v"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "v6"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c18",
+        "kind": "signal",
+        "from": {
+          "node": "Back2",
+          "port": "a"
+        },
+        "to": {
+          "node": "Ref",
+          "port": "a6"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c19",
+        "kind": "bond",
+        "from": {
+          "node": "WorldX1",
+          "port": "p"
+        },
+        "to": {
+          "node": "X1Mount",
+          "port": "b"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c20",
+        "kind": "bond",
+        "from": {
+          "node": "X1Mount",
+          "port": "a"
+        },
+        "to": {
+          "node": "X1",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c21",
+        "kind": "bond",
+        "from": {
+          "node": "X1",
+          "port": "child"
+        },
+        "to": {
+          "node": "X1Turn",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c22",
+        "kind": "bond",
+        "from": {
+          "node": "X1Turn",
+          "port": "b"
+        },
+        "to": {
+          "node": "X1Car",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c23",
+        "kind": "wire",
+        "from": {
+          "node": "X1Motor",
+          "port": "b"
+        },
+        "to": {
+          "node": "X1",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c24",
+        "kind": "wire",
+        "from": {
+          "node": "X1Motor",
+          "port": "a"
+        },
+        "to": {
+          "node": "X1Stator",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c25",
+        "kind": "signal",
+        "from": {
+          "node": "Ref",
+          "port": "q"
+        },
+        "to": {
+          "node": "X1Servo",
+          "port": "x_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c26",
+        "kind": "signal",
+        "from": {
+          "node": "Ref",
+          "port": "v"
+        },
+        "to": {
+          "node": "X1Servo",
+          "port": "v_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c27",
+        "kind": "signal",
+        "from": {
+          "node": "Ref",
+          "port": "a"
+        },
+        "to": {
+          "node": "X1Servo",
+          "port": "a_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c28",
+        "kind": "signal",
+        "from": {
+          "node": "X1",
+          "port": "qout"
+        },
+        "to": {
+          "node": "X1Servo",
+          "port": "x"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c29",
+        "kind": "signal",
+        "from": {
+          "node": "X1",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "X1Servo",
+          "port": "v"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c30",
+        "kind": "signal",
+        "from": {
+          "node": "X1Servo",
+          "port": "F"
+        },
+        "to": {
+          "node": "X1Motor",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c31",
+        "kind": "signal",
+        "from": {
+          "node": "PX1Mount",
+          "port": "g"
+        },
+        "to": {
+          "node": "PX1J",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c32",
+        "kind": "signal",
+        "from": {
+          "node": "X1",
+          "port": "pose"
+        },
+        "to": {
+          "node": "PX1J",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c33",
+        "kind": "signal",
+        "from": {
+          "node": "PX1J",
+          "port": "g"
+        },
+        "to": {
+          "node": "PX1Car",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c34",
+        "kind": "signal",
+        "from": {
+          "node": "PX1Turn",
+          "port": "g"
+        },
+        "to": {
+          "node": "PX1Car",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c35",
+        "kind": "signal",
+        "from": {
+          "node": "PX1Car",
+          "port": "g"
+        },
+        "to": {
+          "node": "X1Car",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c36",
+        "kind": "bond",
+        "from": {
+          "node": "WorldX2",
+          "port": "p"
+        },
+        "to": {
+          "node": "X2Mount",
+          "port": "b"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c37",
+        "kind": "bond",
+        "from": {
+          "node": "X2Mount",
+          "port": "a"
+        },
+        "to": {
+          "node": "X2",
+          "port": "parent"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c38",
+        "kind": "bond",
+        "from": {
+          "node": "X2",
+          "port": "child"
+        },
+        "to": {
+          "node": "X2Turn",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c39",
+        "kind": "bond",
+        "from": {
+          "node": "X2Turn",
+          "port": "b"
+        },
+        "to": {
+          "node": "X2Car",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c40",
+        "kind": "wire",
+        "from": {
+          "node": "X2Motor",
+          "port": "b"
+        },
+        "to": {
+          "node": "X2",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c41",
+        "kind": "wire",
+        "from": {
+          "node": "X2Motor",
+          "port": "a"
+        },
+        "to": {
+          "node": "X2Stator",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c42",
+        "kind": "signal",
+        "from": {
+          "node": "Ref",
+          "port": "q"
+        },
+        "to": {
+          "node": "X2Servo",
+          "port": "x_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c43",
+        "kind": "signal",
+        "from": {
+          "node": "Ref",
+          "port": "v"
+        },
+        "to": {
+          "node": "X2Servo",
+          "port": "v_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c44",
+        "kind": "signal",
+        "from": {
+          "node": "Ref",
+          "port": "a"
+        },
+        "to": {
+          "node": "X2Servo",
+          "port": "a_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c45",
+        "kind": "signal",
+        "from": {
+          "node": "X2",
+          "port": "qout"
+        },
+        "to": {
+          "node": "X2Servo",
+          "port": "x"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c46",
+        "kind": "signal",
+        "from": {
+          "node": "X2",
+          "port": "qdout"
+        },
+        "to": {
+          "node": "X2Servo",
+          "port": "v"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c47",
+        "kind": "signal",
+        "from": {
+          "node": "X2Servo",
+          "port": "F"
+        },
+        "to": {
+          "node": "X2Motor",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c48",
+        "kind": "signal",
+        "from": {
+          "node": "PX2Mount",
+          "port": "g"
+        },
+        "to": {
+          "node": "PX2J",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c49",
+        "kind": "signal",
+        "from": {
+          "node": "X2",
+          "port": "pose"
+        },
+        "to": {
+          "node": "PX2J",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c50",
+        "kind": "signal",
+        "from": {
+          "node": "PX2J",
+          "port": "g"
+        },
+        "to": {
+          "node": "PX2Car",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c51",
+        "kind": "signal",
+        "from": {
+          "node": "PX2Turn",
+          "port": "g"
+        },
+        "to": {
+          "node": "PX2Car",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c52",
+        "kind": "signal",
+        "from": {
+          "node": "PX2Car",
+          "port": "g"
+        },
+        "to": {
+          "node": "X2Car",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c53",
+        "kind": "wire",
+        "from": {
+          "node": "WeldAGround",
+          "port": "a"
+        },
+        "to": {
+          "node": "WeldASpring",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c54",
+        "kind": "wire",
+        "from": {
+          "node": "WeldASpring",
+          "port": "b"
+        },
+        "to": {
+          "node": "WeldA",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c55",
+        "kind": "wire",
+        "from": {
+          "node": "WeldAGround",
+          "port": "a"
+        },
+        "to": {
+          "node": "WeldADamper",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c56",
+        "kind": "wire",
+        "from": {
+          "node": "WeldADamper",
+          "port": "b"
+        },
+        "to": {
+          "node": "WeldA",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c57",
+        "kind": "bond",
+        "from": {
+          "node": "WeldA",
+          "port": "parent"
+        },
+        "to": {
+          "node": "X1Car",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c58",
+        "kind": "bond",
+        "from": {
+          "node": "WeldA",
+          "port": "child"
+        },
+        "to": {
+          "node": "WeldABracket",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c59",
+        "kind": "bond",
+        "from": {
+          "node": "WeldABracket",
+          "port": "b"
+        },
+        "to": {
+          "node": "Beam",
+          "port": "A"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c60",
+        "kind": "signal",
+        "from": {
+          "node": "PX1Car",
+          "port": "g"
+        },
+        "to": {
+          "node": "PWeldA",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c61",
+        "kind": "signal",
+        "from": {
+          "node": "WeldA",
+          "port": "pose"
+        },
+        "to": {
+          "node": "PWeldA",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c62",
+        "kind": "signal",
+        "from": {
+          "node": "PWeldA",
+          "port": "g"
+        },
+        "to": {
+          "node": "PWeldABeam",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c63",
+        "kind": "signal",
+        "from": {
+          "node": "PWeldAOffset",
+          "port": "g"
+        },
+        "to": {
+          "node": "PWeldABeam",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c64",
+        "kind": "wire",
+        "from": {
+          "node": "PivotBGround",
+          "port": "a"
+        },
+        "to": {
+          "node": "PivotBFriction",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c65",
+        "kind": "wire",
+        "from": {
+          "node": "PivotBFriction",
+          "port": "b"
+        },
+        "to": {
+          "node": "PivotB",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c66",
+        "kind": "bond",
+        "from": {
+          "node": "PivotB",
+          "port": "parent"
+        },
+        "to": {
+          "node": "X2Car",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c67",
+        "kind": "bond",
+        "from": {
+          "node": "PivotB",
+          "port": "child"
+        },
+        "to": {
+          "node": "PivotBBracket",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c68",
+        "kind": "bond",
+        "from": {
+          "node": "PivotBBracket",
+          "port": "b"
+        },
+        "to": {
+          "node": "Beam",
+          "port": "B"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c69",
+        "kind": "signal",
+        "from": {
+          "node": "PX2Car",
+          "port": "g"
+        },
+        "to": {
+          "node": "PPivotB",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c70",
+        "kind": "signal",
+        "from": {
+          "node": "PivotB",
+          "port": "pose"
+        },
+        "to": {
+          "node": "PPivotB",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c71",
+        "kind": "signal",
+        "from": {
+          "node": "PPivotB",
+          "port": "g"
+        },
+        "to": {
+          "node": "PPivotBBeam",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c72",
+        "kind": "signal",
+        "from": {
+          "node": "PPivotBOffset",
+          "port": "g"
+        },
+        "to": {
+          "node": "PPivotBBeam",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c73",
+        "kind": "signal",
+        "from": {
+          "node": "PWeldABeam",
+          "port": "g"
+        },
+        "to": {
+          "node": "Beam",
+          "port": "gA"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c74",
+        "kind": "bond",
+        "from": {
+          "node": "YGuide",
+          "port": "parent"
+        },
+        "to": {
+          "node": "Beam",
+          "port": "E"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c75",
+        "kind": "bond",
+        "from": {
+          "node": "YGuide",
+          "port": "child"
+        },
+        "to": {
+          "node": "YOffset",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c76",
+        "kind": "bond",
+        "from": {
+          "node": "YOffset",
+          "port": "b"
+        },
+        "to": {
+          "node": "YCar",
+          "port": "p"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c77",
+        "kind": "wire",
+        "from": {
+          "node": "YCoupling",
+          "port": "a"
+        },
+        "to": {
+          "node": "YCouplingSpring",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c78",
+        "kind": "wire",
+        "from": {
+          "node": "YCouplingSpring",
+          "port": "b"
+        },
+        "to": {
+          "node": "YGuide",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c79",
+        "kind": "wire",
+        "from": {
+          "node": "YCoupling",
+          "port": "a"
+        },
+        "to": {
+          "node": "YCouplingDamper",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c80",
+        "kind": "wire",
+        "from": {
+          "node": "YCouplingDamper",
+          "port": "b"
+        },
+        "to": {
+          "node": "YGuide",
+          "port": "drive"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c81",
+        "kind": "bond",
+        "from": {
+          "node": "YMotor",
+          "port": "b"
+        },
+        "to": {
+          "node": "Beam",
+          "port": "S"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c82",
+        "kind": "wire",
+        "from": {
+          "node": "YMotor",
+          "port": "a"
+        },
+        "to": {
+          "node": "YStator",
+          "port": "a"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c83",
+        "kind": "signal",
+        "from": {
+          "node": "YRef",
+          "port": "y"
+        },
+        "to": {
+          "node": "YServo",
+          "port": "x_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c84",
+        "kind": "signal",
+        "from": {
+          "node": "Zero",
+          "port": "y"
+        },
+        "to": {
+          "node": "YServo",
+          "port": "v_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c85",
+        "kind": "signal",
+        "from": {
+          "node": "Zero",
+          "port": "y"
+        },
+        "to": {
+          "node": "YServo",
+          "port": "a_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c86",
+        "kind": "signal",
+        "from": {
+          "node": "Beam",
+          "port": "s"
+        },
+        "to": {
+          "node": "YServo",
+          "port": "x"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c87",
+        "kind": "signal",
+        "from": {
+          "node": "Beam",
+          "port": "sd"
+        },
+        "to": {
+          "node": "YServo",
+          "port": "v"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c88",
+        "kind": "signal",
+        "from": {
+          "node": "YServo",
+          "port": "F"
+        },
+        "to": {
+          "node": "YMotor",
+          "port": "u"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c89",
+        "kind": "signal",
+        "from": {
+          "node": "Beam",
+          "port": "poseE"
+        },
+        "to": {
+          "node": "PYJ",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c90",
+        "kind": "signal",
+        "from": {
+          "node": "YGuide",
+          "port": "pose"
+        },
+        "to": {
+          "node": "PYJ",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c91",
+        "kind": "signal",
+        "from": {
+          "node": "PYJ",
+          "port": "g"
+        },
+        "to": {
+          "node": "PYCar",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c92",
+        "kind": "signal",
+        "from": {
+          "node": "PYOffset",
+          "port": "g"
+        },
+        "to": {
+          "node": "PYCar",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c93",
+        "kind": "signal",
+        "from": {
+          "node": "PYCar",
+          "port": "g"
+        },
+        "to": {
+          "node": "YCar",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c94",
+        "kind": "signal",
+        "from": {
+          "node": "PYCar",
+          "port": "g"
+        },
+        "to": {
+          "node": "PTool",
+          "port": "gp"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c95",
+        "kind": "signal",
+        "from": {
+          "node": "PToolOffset",
+          "port": "g"
+        },
+        "to": {
+          "node": "PTool",
+          "port": "gl"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c96",
+        "kind": "signal",
+        "from": {
+          "node": "PTool",
+          "port": "g"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "g"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c97",
+        "kind": "signal",
+        "from": {
+          "node": "Ref",
+          "port": "q"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "x_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c98",
+        "kind": "signal",
+        "from": {
+          "node": "Ref",
+          "port": "v"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "v_ref"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c99",
+        "kind": "signal",
+        "from": {
+          "node": "X1",
+          "port": "qout"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "x1"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c100",
+        "kind": "signal",
+        "from": {
+          "node": "X2",
+          "port": "qout"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "x2"
+        },
+        "route": [],
+        "label": null
+      },
+      {
+        "id": "c101",
+        "kind": "signal",
+        "from": {
+          "node": "Beam",
+          "port": "sigma_max"
+        },
+        "to": {
+          "node": "Mon",
+          "port": "sigma"
+        },
+        "route": [],
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 1.8,
+    "solver": "Rodas5P",
+    "reltol": 1e-06,
+    "abstol": 1e-09,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 3601
+    },
+    "event_limit": 10000
+  },
+  "plots": [
+    {
+      "id": "p1",
+      "title": "Tool error (um): x, y, z",
+      "signals": [
+        "Mon/ex",
+        "Mon/ey",
+        "Mon/ez"
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "X reference and axes (m)",
+      "signals": [
+        "Ref/q",
+        "X1/qout",
+        "X2/qout"
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "Racking X1 - X2 (um)",
+      "signals": [
+        "Mon/rack"
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "Motor forces (N)",
+      "signals": [
+        "X1Servo/F",
+        "X2Servo/F",
+        "YServo/F"
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "Beam von Mises stress (Pa): hotspots and peak",
+      "signals": [
+        "Beam/sigma_vm[1]",
+        "Beam/sigma_vm[2]",
+        "Beam/sigma_vm[3]",
+        "Beam/sigma_max"
+      ]
+    },
+    {
+      "id": "p6",
+      "title": "Modal coordinates (m)",
+      "signals": [
+        "Beam/eta[1]",
+        "Beam/eta[2]",
+        "Beam/eta[3]",
+        "Beam/eta[4]",
+        "Beam/eta[5]",
+        "Beam/eta[6]",
+        "Beam/eta[7]",
+        "Beam/eta[8]",
+        "Beam/eta[9]",
+        "Beam/eta[10]",
+        "Beam/eta[11]",
+        "Beam/eta[12]",
+        "Beam/eta[13]",
+        "Beam/eta[14]",
+        "Beam/eta[15]",
+        "Beam/eta[16]",
+        "Beam/eta[17]",
+        "Beam/eta[18]",
+        "Beam/eta[19]",
+        "Beam/eta[20]",
+        "Beam/eta[21]"
+      ]
+    },
+    {
+      "id": "p7",
+      "title": "Settling time of the last move (s)",
+      "signals": [
+        "Mon/settle"
+      ]
+    }
+  ],
+  "scene": {
+    "file": "scenes/fem-gantry.sdf",
+    "exaggeration": 100
+  },
+  "bindings": [
+    {
+      "target": "link:x1car",
+      "property": "pose",
+      "signal": [
+        "PX1Car/g[1]",
+        "PX1Car/g[2]",
+        "PX1Car/g[3]",
+        "PX1Car/g[4]",
+        "PX1Car/g[5]",
+        "PX1Car/g[6]",
+        "PX1Car/g[7]"
+      ]
+    },
+    {
+      "target": "link:x2car",
+      "property": "pose",
+      "signal": [
+        "PX2Car/g[1]",
+        "PX2Car/g[2]",
+        "PX2Car/g[3]",
+        "PX2Car/g[4]",
+        "PX2Car/g[5]",
+        "PX2Car/g[6]",
+        "PX2Car/g[7]"
+      ]
+    },
+    {
+      "target": "link:beam",
+      "property": "pose",
+      "signal": [
+        "Beam/pose[1]",
+        "Beam/pose[2]",
+        "Beam/pose[3]",
+        "Beam/pose[4]",
+        "Beam/pose[5]",
+        "Beam/pose[6]",
+        "Beam/pose[7]"
+      ]
+    },
+    {
+      "target": "link:ycar",
+      "property": "pose",
+      "signal": [
+        "PYCar/g[1]",
+        "PYCar/g[2]",
+        "PYCar/g[3]",
+        "PYCar/g[4]",
+        "PYCar/g[5]",
+        "PYCar/g[6]",
+        "PYCar/g[7]"
+      ]
+    },
+    {
+      "target": "link:tool",
+      "property": "pose",
+      "signal": [
+        "PTool/g[1]",
+        "PTool/g[2]",
+        "PTool/g[3]",
+        "PTool/g[4]",
+        "PTool/g[5]",
+        "PTool/g[6]",
+        "PTool/g[7]"
+      ]
+    },
+    {
+      "target": "visual:beam_mesh",
+      "property": "mode-shapes",
+      "signal": [
+        "Beam/eta[1]",
+        "Beam/eta[2]",
+        "Beam/eta[3]",
+        "Beam/eta[4]",
+        "Beam/eta[5]",
+        "Beam/eta[6]",
+        "Beam/eta[7]",
+        "Beam/eta[8]",
+        "Beam/eta[9]",
+        "Beam/eta[10]",
+        "Beam/eta[11]",
+        "Beam/eta[12]",
+        "Beam/eta[13]",
+        "Beam/eta[14]",
+        "Beam/eta[15]",
+        "Beam/eta[16]",
+        "Beam/eta[17]",
+        "Beam/eta[18]",
+        "Beam/eta[19]",
+        "Beam/eta[20]",
+        "Beam/eta[21]"
+      ],
+      "stress": {
+        "colormap": "heat",
+        "range": [
+          0.0,
+          2000000.0
+        ]
+      }
+    }
+  ],
+  "dashboard": {
+    "autoRerun": false,
+    "cards": [
+      {
+        "id": "intro",
+        "kind": "text",
+        "size": "2x2",
+        "title": "Gantry moves, shaping and stress",
+        "options": {
+          "markdown": true,
+          "text": "An **H-gantry**: two linear-motor X axes carry a 1.4 m aluminium box beam (a FEM flexible body) with a Y carriage and a tool. Pick the **acceleration**, the **input shaper** (0 none, 1 ZV, 2 ZVD) or the **notch**, where the **Y carriage** sits and how much weaker the **X2 motor** is, press **Run**, then open the **3D View**: the beam is coloured by von Mises stress (0 to 2 MPa) and its deflection drawn x100.\n\nThe shaper cancels f_s = 46.8 Hz, the tool's ringing after a plain move; the notch sits in both X velocity loops at 167 Hz, the first lightly damped beam mode. Settling: the tool within +-10 um."
+        }
+      },
+      {
+        "id": "a_max",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Acceleration",
+        "parameter": "global:a_max",
+        "options": {
+          "min": 2.0,
+          "max": 30.0,
+          "step": 1.0,
+          "decimals": 0,
+          "unit": "m/s²"
+        }
+      },
+      {
+        "id": "j_max",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Jerk",
+        "parameter": "global:j_max",
+        "options": {
+          "min": 200.0,
+          "max": 20000.0,
+          "step": 100.0,
+          "decimals": 0,
+          "unit": "m/s³"
+        }
+      },
+      {
+        "id": "shaping",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Shaper: 0 none, 1 ZV, 2 ZVD",
+        "parameter": "global:shaping",
+        "options": {
+          "min": 0.0,
+          "max": 2.0,
+          "step": 1.0,
+          "decimals": 0,
+          "unit": ""
+        }
+      },
+      {
+        "id": "notch",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Notch depth (1 off, 0 full)",
+        "parameter": "global:notch",
+        "options": {
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.1,
+          "decimals": 1,
+          "unit": ""
+        }
+      },
+      {
+        "id": "y_c",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "Y carriage on the rail",
+        "parameter": "global:y_c",
+        "options": {
+          "min": 0.0,
+          "max": 1.1,
+          "step": 0.05,
+          "decimals": 2,
+          "unit": "m"
+        }
+      },
+      {
+        "id": "kf2",
+        "kind": "slider",
+        "size": "1x1",
+        "title": "X2 motor force constant",
+        "parameter": "global:kf2",
+        "options": {
+          "min": 0.8,
+          "max": 1.2,
+          "step": 0.01,
+          "decimals": 2,
+          "unit": ""
+        }
+      },
+      {
+        "id": "settle",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Settling time (last move)",
+        "signals": [
+          "Mon/settle"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "s",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "stress",
+        "kind": "gauge",
+        "size": "1x1",
+        "title": "Peak stress / allowable",
+        "signals": [
+          "Mon/util"
+        ],
+        "options": {
+          "min": 0.0,
+          "max": 100.0,
+          "decimals": 2,
+          "unit": "%",
+          "zones": [
+            {
+              "from": 0.0,
+              "to": 60.0,
+              "tone": "good"
+            },
+            {
+              "from": 60.0,
+              "to": 90.0,
+              "tone": "warn"
+            },
+            {
+              "from": 90.0,
+              "to": 100.0,
+              "tone": "bad"
+            }
+          ]
+        }
+      },
+      {
+        "id": "sigma",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Peak von Mises (allowable 40 MPa)",
+        "signals": [
+          "Mon/sigma_MPa"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "MPa",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "rack",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Racking X1 - X2",
+        "signals": [
+          "Mon/rack"
+        ],
+        "options": {
+          "decimals": 1,
+          "unit": "um",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "tool",
+        "kind": "plot",
+        "size": "4x2",
+        "title": "Tool error (um)",
+        "signals": [
+          "Mon/ex",
+          "Mon/ey",
+          "Mon/ez"
+        ]
+      },
+      {
+        "id": "axes",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "X reference and the two axes (m)",
+        "signals": [
+          "Ref/q",
+          "X1/qout",
+          "X2/qout"
+        ]
+      },
+      {
+        "id": "forces",
+        "kind": "plot",
+        "size": "2x2",
+        "title": "Motor forces (N)",
+        "signals": [
+          "X1Servo/F",
+          "X2Servo/F"
+        ]
+      }
+    ]
+  }
+}

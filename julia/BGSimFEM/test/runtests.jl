@@ -27,6 +27,8 @@ const SPEC = Dict{String,Any}(
     "stiffening" => true,
     "validate" => 6,
     "validate_attached" => Any[Dict("interface" => "B", "mass" => 0.5, "inertia" => [1e-4, 1e-4, 1e-4], "com" => [0.01, 0, 0])],
+    "stress" => Dict("hotspots" => Any[Dict("name" => "top mid", "position" => [L / 2, 0.0, H / 2]),
+                                       Dict("name" => "top root", "position" => [0.03, 0.0, H / 2])]),
 )
 
 # Euler–Bernoulli cantilever: lambda_1 L = 1.8751
@@ -123,5 +125,112 @@ _cantilever_hz(I) = 1.8751^2 / (2pi * L^2) * sqrt(MAT.E * I / (MAT.rho * B * H))
         @test json["meshes"][1]["extras"]["targetNames"][1] == "mode 1"
         @test json["asset"]["extras"]["bgsim"]["modes"] == r.nm
         @test size(vm.positions, 2) == json["accessors"][prim["attributes"]["POSITION"] + 1]["count"]
+    end
+
+    @testset "stress: recovery, superposition, hotspots, peak points, files" begin
+        # a tip force at B on the full model: sigma_xx on the top face is -F (L - x) c / I
+        _, aux = craig_bampton(fe, r.interfaces; nf = 4, stiffening = false)
+        c = aux.c
+        Kc = aux.Kt[c, c]
+        f = zeros(length(c))
+        f[aux.nfree + 3] = 100.0
+        u = aux.T[:, c] * (Kc \ f)
+        S = BGSimFEM.nodal_stress(fe, u)
+        I = B * H^3 / 12
+        for x in (0.05, 0.1, 0.15)
+            top = [i for i in axes(fe.X, 2) if abs(fe.X[1, i] - x) < 1e-3 && abs(fe.X[3, i] - H / 2) < 1e-9 && abs(fe.X[2, i]) < B / 4]
+            @test !isempty(top)
+            @test sum(S[1, top]) / length(top) ≈ -100 * (L - x) * (H / 2) / I rtol = 0.01
+        end
+        # the stress of the reduced static response is the superposition of the mode stresses,
+        # and it is the full model's (the constraint modes make interface loads exact)
+        q = (aux.Y' * f) ./ r.kk
+        Sr = BGSimFEM.superpose(r.stress_modes, q)
+        @test Sr ≈ S rtol = 1e-6 atol = 1e-6 * maximum(abs, S)
+        @test BGSimFEM.von_mises([1.0, 0, 0, 0, 0, 0]) ≈ 1.0
+        @test BGSimFEM.von_mises([0.0, 0, 0, 1.0, 0, 0]) ≈ sqrt(3)
+        v = r.validation["stress"]
+        @test v["max_peak_rel_error_interface_loads"] < 1e-6
+        @test v["max_peak_rel_error_self_weight"] < 0.6        # axial self weight: no axial mode
+        sw = [c for c in v["cases"] if occursin("along z", c["name"])][1]
+        @test abs(sw["peak_rel_error"]) < 0.03                 # bending self weight: 4 modes do
+        @test v["peak_coverage"]["mean_ratio"] > 0.97
+        @test v["peak_coverage"]["within_5_percent"] > 0.9
+        hot = [p for p in r.stress_points if p.kind == "hotspot"]
+        @test [p.name for p in hot] == ["top mid", "top root"]
+        @test norm(hot[1].position .- [L / 2, 0, H / 2]) < 0.006
+        @test count(p -> p.kind == "peak", r.stress_points) == 24
+        tied = Set(i for f in r.interfaces for i in f.nodes)
+        @test !any(p -> p.node in tied, r.stress_points)
+        @test all(p -> size(p.sigma) == (6, r.nm), r.stress_points)
+        # the file: points with 6 x nm stress per unit modal coordinate
+        d = JSON3.read(read(joinpath(dir, "bar.modal.json"), String))
+        @test d.stress.hotspots == 2 && length(d.stress.points) == 26
+        @test d.stress.points[1].name == "top mid" && length(d.stress.points[1].sigma) == 6
+        @test length(d.stress.points[1].sigma[1]) == r.nm
+        @test collect(d.stress.components) == ["xx", "yy", "zz", "xy", "xz", "yz"]
+        # the GLB: the per-vertex table, Float32, (vertex, mode, component)
+        json, bin = read_glb(joinpath(dir, "bar.glb"))
+        st = json["asset"]["extras"]["bgsim"]["stress"]
+        nv = size(vm.positions, 2)
+        @test st["vertices"] == nv && st["modes"] == r.nm && st["layout"] == "vertex, mode, component"
+        bv = json["bufferViews"][st["bufferView"] + 1]
+        @test bv["byteLength"] == nv * r.nm * 6 * 4
+        table = reinterpret(Float32, bin[(bv["byteOffset"] + 1):(bv["byteOffset"] + bv["byteLength"])])
+        @test length(vm.stress) == r.nm
+        for (vtx, k, comp) in ((1, 1, 1), (nv, r.nm, 6), (nv ÷ 2, 3, 4))
+            @test table[((vtx - 1) * r.nm + (k - 1)) * 6 + comp] ≈ Float32(vm.stress[k][comp, vtx])
+        end
+    end
+
+    @testset "rail: tables, load modes, full against reduced" begin
+        # the bar clamped at A only, a rail along its top face from x = 20 to 180 mm, one
+        # load-mode station at mid-rail
+        rspec = Dict{String,Any}(
+            "name" => "railbar",
+            "geometry" => SPEC["geometry"], "material" => SPEC["material"], "mesh" => SPEC["mesh"],
+            "interfaces" => Any[SPEC["interfaces"][1]],
+            "rail" => Dict{String,Any}("name" => "top", "start" => [0.02, 0.0, H / 2], "end" => [0.18, 0.0, H / 2],
+                "normal" => [0.0, 0.0, 1.0], "stations" => 33, "chebyshev" => 16,
+                "footprint" => Dict("half_length" => 0.01,
+                    "select" => Dict("box" => Dict("min" => [-1, -1, H / 2 - 1e-6], "max" => [1, 1, H / 2 + 1e-6]))),
+                "load_modes" => [0.5]),
+            "modes" => Dict("fixed_interface" => 4), "stiffening" => false, "validate" => 4, "stress" => false,
+            "output" => Dict("model" => joinpath(dir, "railbar.modal.json"), "glb" => joinpath(dir, "railbar.glb")),
+        )
+        rr, rfe, _, _ = reduce_part(rspec; base_dir = dir, verbose = false)
+        d = rr.rail
+        @test d !== nothing && d["length"] ≈ 0.16 && d["chebyshev"] == 16
+        @test d["start"] ≈ [0.02, 0.0, H / 2]
+        # rail frame: x the face normal (z), z along the bar (x), y = z x x
+        Rr = reduce(vcat, [collect(row)' for row in d["rotation_matrix"]])
+        @test Rr[:, 1] ≈ [0, 0, 1] && Rr[:, 3] ≈ [1, 0, 0] && Rr[:, 2] ≈ cross(Rr[:, 3], Rr[:, 1])
+        @test rr.validation["cb"]["load_modes"] == 3                # force x, force y, moment
+        @test rr.nm == 4 + 3
+        @test count(==("load"), rr.mode_kind) >= 1
+        @test d["fit_error"]["translation"] < 0.03
+        # the series' derivative is the derivative of the series
+        h = 1e-6
+        PT, PR, dPT, dPR = BGSimFEM.rail_eval(d, 0.07)
+        PTp, PRp, _, _ = BGSimFEM.rail_eval(d, 0.07 + h)
+        PTm, PRm, _, _ = BGSimFEM.rail_eval(d, 0.07 - h)
+        @test dPT ≈ (PTp - PTm) / 2h rtol = 1e-5 atol = 1e-6 * maximum(abs, dPT)
+        @test dPR ≈ (PRp - PRm) / 2h rtol = 1e-5 atol = 1e-6 * maximum(abs, dPR)
+        v = rr.validation["rail"]
+        mid = [c for c in v["cases"] if c["fraction"] == 0.5]
+        @test length(mid) == 3 && all(c -> abs(c["rel_error"]) < 1e-2, mid)      # the load-mode station: exact
+        # between the stations the forces are interpolated well; the torsion (no torsion mode
+        # among the four vibration modes) only at the station
+        @test maximum(abs(c["error_of_largest"]) for c in v["cases"] if c["load"] != "moment z") < 0.05
+        # the full model against beam theory: a unit force along the rail frame's x (the face
+        # normal, z: the bar's thin direction) at mid-rail on the cantilever, a^3 / (3 E I) at
+        # the load
+        c = [c for c in mid if c["load"] == "force x"][1]
+        a = 0.02 + c["station"]
+        @test c["full_compliance"] ≈ a^3 / (3 * MAT.E * B * H^3 / 12) rtol = 0.05
+        # the file carries the tables
+        df = JSON3.read(read(joinpath(dir, "railbar.modal.json"), String))
+        @test df.rail.name == "top" && length(df.rail.translation) == 3
+        @test length(df.rail.translation[1]) == rr.nm && length(df.rail.translation[1][1]) == 16
     end
 end

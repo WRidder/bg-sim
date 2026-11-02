@@ -63,6 +63,9 @@ Base.@kwdef mutable struct ReducedModel
     PT::Vector{Matrix{Float64}} = Matrix{Float64}[]     # per interface 3 x nm (R coordinates)
     PR::Vector{Matrix{Float64}} = Matrix{Float64}[]     # per interface 3 x nm (interface frame)
     stiffening::Union{Nothing,Dict{String,Vector{Matrix{Float64}}}} = nothing
+    stress_modes::Vector{Matrix{Float64}} = Matrix{Float64}[]   # per mode 6 x nn nodal stress (Pa per m)
+    stress_points::Vector{Any} = Any[]                          # hotspots, then peak candidates
+    rail::Union{Nothing,Dict{String,Any}} = nothing              # the rail tables (rail.jl)
     modes::Matrix{Float64} = zeros(0, 0)                 # ndofs x nm (full field)
     frame_position::Vector{Float64} = zeros(3)           # p1 in part coordinates
     frame_rotation::Matrix{Float64} = Matrix{Float64}(I, 3, 3)
@@ -126,7 +129,8 @@ _e(a) = (v = zeros(3); v[a] = 1.0; v)
 Reduce the assembled FE model (grid already in R coordinates, interfaces in R). See the file
 comment for the method."""
 function craig_bampton(fe::FEModel, ifs::Vector{Interface}; nf::Integer, stiffening::Bool = true,
-        name::AbstractString = "part", drop_above_hz::Real = Inf)
+        name::AbstractString = "part", drop_above_hz::Real = Inf,
+        extra_loads::AbstractMatrix{<:Real} = zeros(0, 0))
     t0 = time()
     ni = length(ifs)
     T, nfree = rbe2_transform(fe, ifs)
@@ -163,6 +167,27 @@ function craig_bampton(fe::FEModel, ifs::Vector{Interface}; nf::Integer, stiffen
     for k in 1:nb
         B[nfree + k, length(λf) + k] = 1.0
     end
+    # load modes (modal truncation augmentation): the static responses to given loads (a
+    # carriage on a rail between the interfaces), each with the part of it the basis already
+    # spans removed (M-orthogonal), so that such a load's static deflection becomes exact
+    nl = 0
+    if size(extra_loads, 2) > 0
+        t1 = time()
+        Fc = cholesky(Symmetric(Kc))
+        for j in axes(extra_loads, 2)
+            u = Fc \ (Tc' * extra_loads[:, j])
+            n0 = sqrt(dot(u, Mc * u))
+            for _ in 1:2                                   # Gram-Schmidt, twice for round-off
+                MB = Mc * B
+                u = u - B * ((B' * MB) \ (MB' * u))
+            end
+            nu = sqrt(max(dot(u, Mc * u), 0.0))
+            nu > 1e-6 * n0 || continue                     # already in the span
+            B = hcat(B, u ./ nu)
+            nl += 1
+        end
+        timings["load_modes"] = time() - t1
+    end
     Mr = _sym(B' * (Mc * B))
     Kr = _sym(B' * (Kc * B))
     F = eigen(Symmetric(Kr), Symmetric(Mr))
@@ -189,8 +214,9 @@ function craig_bampton(fe::FEModel, ifs::Vector{Interface}; nf::Integer, stiffen
     for k in 1:nm
         x = X[:, k]
         wf = sum(abs2, x[1:length(λf)])
-        wb = sum(abs2, x[(length(λf) + 1):end])
-        push!(kind, wb > wf ? "constraint" : "fixed-interface")
+        wb = sum(abs2, x[(length(λf) + 1):(length(λf) + nb)])
+        wl = sum(abs2, x[(length(λf) + nb + 1):end])
+        push!(kind, wl > max(wf, wb) ? "load" : wb > wf ? "constraint" : "fixed-interface")
     end
     r = ReducedModel(name = String(name), nm = nm, nf = length(λf), material = fe.material,
         interfaces = ifs, modes = Φ, mk = mk, kk = kk, mode_kind = kind)
@@ -266,8 +292,8 @@ function craig_bampton(fe::FEModel, ifs::Vector{Interface}; nf::Integer, stiffen
     r.timings = timings
     r.validation["cb"] = Dict{String,Any}("fixed_interface_hz" => sqrt.(max.(λf, 0.0)) ./ 2pi,
         "first_discarded_fixed_interface_hz" => first_discarded_hz,
-        "constraint_modes" => nb, "dropped" => size(F.vectors, 2) - nm)
-    return r, (T = T, Kt = Kt, Mt = Mt, nfree = nfree, c = c)
+        "constraint_modes" => nb, "load_modes" => nl, "dropped" => size(F.vectors, 2) - nm)
+    return r, (T = T, Kt = Kt, Mt = Mt, nfree = nfree, c = c, Y = Y)
 end
 
 """

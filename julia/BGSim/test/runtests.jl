@@ -292,6 +292,7 @@ include("test_flex_beam.jl")
 # FEM flexible bodies (ModalBody3D from a reduced-model file of julia/BGSimFEM): the loader,
 # energy, gravity, modal frequency, statics through the interfaces.
 include("test_fem_body.jl")
+include("test_fem_rail.jl")
 # Trusses: bars with member failure, pin nodes, Truss2D, moving loads and wheel-on-deck contact.
 include("test_truss.jl")
 include("test_loader.jl")

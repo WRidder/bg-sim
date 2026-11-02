@@ -245,6 +245,43 @@ export function ModalBodySection({ node, project }: { node: ModelNode; project: 
               ? "in the file"
               : "not in the file (the switch has no effect)"}
           </dd>
+          <dt>Stress</dt>
+          <dd data-testid="inspector-modal-stress">
+            {summary.stress !== null ? (
+              <>
+                {summary.stress.points} points
+                {summary.stress.hotspots.length > 0 ? (
+                  <>
+                    ; hotspots{" "}
+                    {summary.stress.hotspots.map((name, index) => (
+                      <span key={`${name}-${String(index)}`}>
+                        {index > 0 ? ", " : ""}
+                        <code>
+                          sigma_vm[{index + 1}]
+                        </code>{" "}
+                        {name}
+                      </span>
+                    ))}
+                  </>
+                ) : null}
+                ; peak estimate <code>sigma_max</code>
+              </>
+            ) : (
+              "none in the file (sigma_vm and sigma_max read 0)"
+            )}
+          </dd>
+          <dt>Rail</dt>
+          <dd data-testid="inspector-modal-rail">
+            {summary.rail !== null ? (
+              <>
+                {summary.rail.name}
+                {summary.rail.length !== null ? `, ${formatNumber(summary.rail.length)} m` : ""}: ports{" "}
+                <code>E</code> (carriage frame) and <code>S</code> (slide)
+              </>
+            ) : (
+              "none (ports E and S stay open)"
+            )}
+          </dd>
           <dt>Mode-shape mesh</dt>
           <dd data-testid="inspector-modal-glb">
             {summary.glb !== null ? (

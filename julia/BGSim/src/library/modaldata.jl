@@ -196,8 +196,11 @@ function load_modal_body(project_dir, settings::AbstractDict)
         end
         _clean!(G)
     end
+    ns, nh, SP = _modal_stress(d, nm; file)
+    rail = _modal_rail(d, nm; file)
     out = Pair{String,Any}[
-        "nm" => Int(nm), "stiffening" => stiff,
+        "nm" => Int(nm), "stiffening" => stiff, "ns" => ns, "nh" => nh,
+        "nr" => rail.nr, "nc" => rail.nc,
         "mass" => mass, "S0" => S0, "J0" => J0, "mk" => mk, "kk" => kk,
         "St" => St, "Sr" => Sr, "J1" => J1,
     ]
@@ -211,5 +214,89 @@ function load_modal_body(project_dir, settings::AbstractDict)
         startswith(name, "Gr") && continue
         push!(out, name => G[:, ((b - 1) * nm + 1):(b * nm)])
     end
+    for (c, name) in enumerate(MODAL_COMP6)
+        push!(out, "S" * name => SP[c])
+    end
+    append!(out, Pair{String,Any}["RL" => rail.RL, "XR" => rail.XR, "RR" => rail.RR, "QR" => rail.QR])
+    for a in 1:3
+        push!(out, "CT$a" => rail.CT[a])
+    end
+    for a in 1:3
+        push!(out, "CR$a" => rail.CR[a])
+    end
     return out
+end
+
+const MODAL_MAX_CHEBYSHEV = 32
+
+"""
+    _modal_rail(d, nm; file) -> NamedTuple
+
+The file's `rail` (julia/BGSimFEM, rail.jl): a straight rail with Chebyshev tables of the rail
+frame's translation (R) and rotation (rail frame) per mode. Without one, `nr = 0` and zero
+tables (ports E and S of the block carry no flow)."""
+function _modal_rail(d, nm; file)
+    r = get(d, "rail", nothing)
+    if !(r isa AbstractDict)
+        z = zeros(nm, 2)
+        return (nr = 0, nc = 2, RL = 1.0, XR = zeros(3), RR = [1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0],
+            QR = [1.0, 0.0, 0.0, 0.0], CT = [copy(z) for _ in 1:3], CR = [copy(z) for _ in 1:3])
+    end
+    nc = get(r, "chebyshev", 0)
+    (nc isa Integer && 2 <= nc <= MODAL_MAX_CHEBYSHEV) || throw(ModalDataError(
+        "`rail.chebyshev` of `$file` must be 2 to $MODAL_MAX_CHEBYSHEV, is $(repr(nc))", ""))
+    RL = _mf(get(r, "length", 0.0))
+    RL > 0 || throw(ModalDataError("`rail.length` of `$file` must be positive", ""))
+    q = _mvec(r, "quaternion", 4; file)
+    q ./= sqrt(sum(abs2, q))
+    tr, rt = get(r, "translation", nothing), get(r, "rotation", nothing)
+    (tr isa AbstractVector && length(tr) == 3 && rt isa AbstractVector && length(rt) == 3) ||
+        throw(ModalDataError("`rail.translation` and `rail.rotation` of `$file` must hold 3 tables each", ""))
+    CT = [_clean!(_mmat(tr[a], nm, nc, "rail.translation[$a]"; file); rtol = 1e-12) for a in 1:3]
+    CR = [_clean!(_mmat(rt[a], nm, nc, "rail.rotation[$a]"; file); rtol = 1e-12) for a in 1:3]
+    return (nr = 1, nc = Int(nc), RL = RL, XR = _mvec(r, "start", 3; file), RR = _quat_rot(q),
+        QR = q, CT = CT, CR = CR)
+end
+
+const MODAL_MAX_STRESS_POINTS = 64
+
+"""
+    _modal_stress(d, nm; file) -> (ns, nh, [Sxx, Syy, Szz, Sxy, Sxz, Syz])
+
+The stress points of the file's `stress` entry (written by julia/BGSimFEM): `ns` points, the
+first `nh` of them the named hotspots, the others the peak candidates, and per stress
+component an `ns x nm` matrix (Pa per unit modal coordinate). A file without stress points
+gives one zero point (`ns = nh = 1`), so the block's stress outputs read 0. Without named
+hotspots `nh` is 1 and the hotspot output repeats the peak estimate's first candidate."""
+function _modal_stress(d, nm; file)
+    s = get(d, "stress", nothing)
+    pts = s isa AbstractDict ? get(s, "points", Any[]) : Any[]
+    if isempty(pts)
+        return 1, 1, [zeros(1, nm) for _ in 1:6]
+    end
+    ns = length(pts)
+    ns <= MODAL_MAX_STRESS_POINTS || throw(ModalDataError(
+        "`$file` has $ns stress points; the simulator reads at most $MODAL_MAX_STRESS_POINTS",
+        "reduce with fewer `stress.peak_points` or hotspots"))
+    nhot = count(p -> get(p, "kind", "") == "hotspot", pts)
+    all(get(pts[i], "kind", "") == "hotspot" for i in 1:nhot) || throw(ModalDataError(
+        "the hotspots of `$file` must come before the peak candidates in `stress.points`", ""))
+    SP = [zeros(ns, nm) for _ in 1:6]
+    for (i, p) in enumerate(pts)
+        A = _mmat(get(p, "sigma", nothing), 6, nm, "stress.points[$i].sigma"; file)
+        for c in 1:6
+            SP[c][i, :] = A[c, :]
+        end
+    end
+    for c in 1:6
+        _clean!(SP[c]; rtol = 1e-12)
+    end
+    return ns, max(nhot, 1), SP
+end
+
+"""The names of the stress points of a reduced-model file (hotspots first), for the docs and the inspector."""
+function modal_stress_names(d)
+    s = get(d, "stress", nothing)
+    s isa AbstractDict || return String[]
+    return String[String(get(p, "name", "")) for p in get(s, "points", Any[])]
 end

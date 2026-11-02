@@ -20,6 +20,27 @@ Validation printed by the tool (and stored in the file):
 
 The largest error below the accuracy band (2976 Hz, 80 % of the first fixed-interface mode it left out) is 1.1 % clamped and 2.7 % free. With the payload on interface B the first modes agree to 5e-5: the constraint modes make the static response to a load at an interface exact.
 
+## Stress
+
+The part spec names two stress hotspots on the upright's face (y = +2 mm): **upright 30 mm**, 25 mm above the plate where beam theory holds, and **upright root**, on the sharp re-entrant corner where the upright meets the plate. The tool adds 24 peak candidates, so `Bracket/sigma_max` tracks the peak over the part. Every mode carries its stress field (element-wise recovery at the nodes, averaged), so the stress anywhere is Σ σ_k η_k, with von Mises taken of the sum.
+
+Static load cases on the full FE model, interface A clamped, against the reduced model (from `validation.stress` in the file):
+
+| load case | full FE peak von Mises | reduced | error | upright 30 mm (full / reduced) |
+| --- | --- | --- | --- | --- |
+| 1 N along y at B | 1.9615 MPa | 1.9615 MPa | 4e-10 | 1.1088 / 1.1088 MPa |
+| 1 N along x at B | 1.4954 MPa | 1.4954 MPa | 7e-11 | 0.0287 / 0.0287 MPa |
+| 1 N·m about x at B | 12.943 MPa | 12.943 MPa | 7e-10 | 8.935 / 8.935 MPa |
+| self weight along y | 0.6294 MPa | 0.6297 MPa | +0.05 % | 0.2926 / 0.2944 MPa (+0.6 %) |
+| self weight along x | 0.4834 MPa | 0.4753 MPa | −1.7 % | 0.0116 / 0.0100 MPa |
+| self weight along z | 0.3154 MPa | 0.3094 MPa | −1.9 % | 0.0049 / 0.0072 MPa |
+
+Loads at an interface are exact (round-off), because the constraint modes span their static response. A distributed load (self weight, the part's own inertia) converges with the number of fixed-interface modes: four modes give the peak within 2 %, while a hotspot that carries almost no stress in that case can be off by much more in relative terms (the axial self weight at 30 mm: 4.9 kPa against 7.2 kPa). Over 400 random load states, the largest von Mises at the 26 points is on average 99.8 % of the surface peak (98.8 % of the states within 5 %, the worst 86 %).
+
+Beam theory: 1 N along y at B bends the upright with M = F (155 − 30) mm at the 30 mm hotspot, σ_zz = M c / I = 1.172 MPa (c = 2 mm, I = 40 · 4³ / 12 mm⁴). The reduced model gives σ_zz = −1.161 MPa there (0.9 %). Its von Mises is 1.109 MPa, lower, because the wide upright is partly in plane strain (σ_xx ≈ 0.1 σ_zz). The peak (1.96 MPa) sits on the re-entrant corner at the upright's edge (x = 80 mm), 1.4 times the beam-theory root stress. A sharp corner is a stress singularity, so this value grows with mesh refinement. Model a fillet if the peak matters, and judge a sharp design by a hotspot away from the corner.
+
+In the ring-down the stress outputs are checked against a linear modal superposition of the reduced model with the payload rigid at B (computed in `design/build.py`, without BGSim). Over the first swing (30 ms) the reference gives 8.20 MPa at upright 30 mm, 4.71 MPa at the root and 21.7 MPa peak; the simulation gives 8.08, 4.68 and 21.6 MPa (−1.5 %, −0.6 %, −0.2 %). The check stops at 30 ms because the reference is undamped, while the clamp and the welds damp the higher modes (171 Hz and up) that later beat with the first ones. As a sanity check, beam theory gives σ_zz ≈ 7.9 MPa at 30 mm from the payload's inertia force alone (F = m ω v = 5.8 N).
+
 ## Models
 
 - **fem-bracket**: the turntable. A speed source drives the table through a stiff spring and damper (a servo at about 60 Hz, ζ = 0.7) with two jerk-limited moves (+90° at 0.2 s, back at 1.6 s; 8 rad/s, 80 rad/s²). Gravity on. The payload rings at the first bracket mode after each move.
@@ -32,14 +53,14 @@ The largest error below the accuracy band (2976 Hz, 80 % of the first fixed-inte
 | `link:hub` pose (turntable only) | `PHub/g` |
 | `link:bracket` pose | `Bracket/pose` (interface A) |
 | `link:payload` pose | `PPayload/g` (deformed interface B + 20 mm) |
-| `visual:bracket_mesh` mode-shapes | `Bracket/eta[1..10]` |
+| `visual:bracket_mesh` mode-shapes, stress colouring | `Bracket/eta[1..10]`, von Mises 0 to 20 MPa (heat) |
 
-The deflections are a fraction of a millimetre, so both models open the 3D view with the deformation drawn ×100 (`"exaggeration": 100` in the model's `scene`; the view marks it as exaggerated).
+The deflections are a fraction of a millimetre, so both models open the 3D view with the deformation drawn ×100 (`"exaggeration": 100` in the model's `scene`; the view marks it as exaggerated). The mesh is coloured by its von Mises stress, recovered at every visual vertex from the true modal coordinates (the exaggeration does not change the colours).
 
 ## Checks (`expected.json`)
 
-- fem-bracket: no E101/E102/E108/W201/W202; the scene bindings resolve (10 morph targets); the table reaches 90° and returns to 0; the payload rings near the first clamped mode after the first move.
-- bracket-ringdown: FFT peaks of `Payload/flow/y[5]` and `Payload/flow/y[4]` against the full FE model with the payload (0.3 %).
+- fem-bracket: no E101/E102/E108/W201/W202; the scene bindings resolve (10 morph targets, the stress table); the table reaches 90° and returns to 0; the payload rings near the first clamped mode after the first move; the peak stress stays below half the yield strength.
+- bracket-ringdown: FFT peaks of `Payload/flow/y[5]` and `Payload/flow/y[4]` against the full FE model with the payload (0.3 %); the largest `Bracket/sigma_vm[1]`, `sigma_vm[2]` and `sigma_max` against the modal superposition (2 %).
 
 ## Files
 

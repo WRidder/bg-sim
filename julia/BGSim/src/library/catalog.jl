@@ -1284,11 +1284,15 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         icon = "sp-modal-beam-3d",
     ),
     "stdlib:spatial/ModalBody3D" => (
-        description = "FEM flexible body of an arbitrary part, reduced offline by Craig-Bampton (julia/BGSimFEM): reads the reduced-model file named in its settings (mass properties, modal mass and stiffness, inertia invariants, interface mode values, geometric stiffening); floating reference frame at interface A, up to four 6-DOF interfaces A-D, modal damping, own mass and inertia; it replaces a RigidBody3D. Outputs the poses of R and the interfaces, the modal coordinates eta (for a mode-shapes binding of the part's GLB) and the frequencies.",
+        description = "FEM flexible body of an arbitrary part, reduced offline by Craig-Bampton (julia/BGSimFEM): reads the reduced-model file named in its settings (mass properties, modal mass and stiffness, inertia invariants, interface mode values, geometric stiffening); floating reference frame at interface A, up to four 6-DOF interfaces A-D, modal damping, own mass and inertia; it replaces a RigidBody3D. Optional rail (a moving interface E with slide port S: a carriage riding the deformed part). Outputs the poses of R and the interfaces, the modal coordinates eta (for a mode-shapes binding of the part's GLB), the frequencies and the von Mises stress at the hotspots and its peak estimate.",
         icon = "sp-modal-body-3d",
     ),
     "stdlib:spatial/ModalBodyCore3D" => (
         description = "Atomic core of ModalBody3D: the floating-frame modal bond graph with general inertia invariants (frame momentum with Euler-Poincare gyroscopics, modal I/C/R, the interface MTFs with Gibbs-vector rotations, the second-order field that gives geometric stiffening) as explicit energy-consistent equations.",
+        icon = "sp-modal-body-3d",
+    ),
+    "stdlib:spatial/ModalStress3D" => (
+        description = "Modal stress recovery of a FEM flexible body (a component of ModalBody3D): the six stress components at the hotspots and peak candidates of the reduced-model file superposed from the modal coordinates, von Mises of the sum; outputs the hotspot stresses and a smooth peak estimate over the part.",
         icon = "sp-modal-body-3d",
     ),
     "stdlib:spatial/Spherical3D" => (

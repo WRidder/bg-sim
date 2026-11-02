@@ -1,0 +1,16 @@
+{
+  "$comment": "Invalid: the stress colouring of a mode-shapes binding needs a range (von Mises in Pa at the two ends of the colormap).",
+  "bindings": [
+    {
+      "target": "visual:bracket",
+      "property": "mode-shapes",
+      "signal": [
+        "Plant/Bracket/eta[1]",
+        "Plant/Bracket/eta[2]"
+      ],
+      "stress": {
+        "colormap": "heat"
+      }
+    }
+  ]
+}

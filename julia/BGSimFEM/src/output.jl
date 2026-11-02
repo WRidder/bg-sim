@@ -52,6 +52,9 @@ function modal_body_dict(r::ReducedModel; glb = nothing, visual = nothing, mesh_
             Dict(k => [_rows(g) for g in v] for (k, v) in r.stiffening),
         "validation" => r.validation,
     )
+    s = stress_dict(r)
+    s === nothing || (d["stress"] = s)
+    r.rail === nothing || (d["rail"] = r.rail)
     glb === nothing || (d["visual"] = merge(Dict{String,Any}("glb" => glb), something(visual, Dict{String,Any}())))
     return d
 end
@@ -75,14 +78,16 @@ end
     VisualMesh
 
 Surface triangles over `positions` (3 x nv, R coordinates), with per-vertex normals and the
-mode shapes per vertex (`modes[k]` is 3 x nv, displacement per unit modal coordinate).
-`corner` maps a vertex to the incident triangles whose normals it averages."""
+mode shapes per vertex (`modes[k]` is 3 x nv, displacement per unit modal coordinate), and,
+when the stress was recovered, the stress of every mode per vertex (`stress[k]` is 6 x nv, Pa
+per unit modal coordinate, xx yy zz xy xz yz)."""
 struct VisualMesh
     positions::Matrix{Float64}
     normals::Matrix{Float64}
     triangles::Vector{NTuple{3,Int}}
     modes::Vector{Matrix{Float64}}
     normal_deltas::Vector{Matrix{Float64}}
+    stress::Vector{Matrix{Float64}}
 end
 
 function _face_normals(P, tris)
@@ -135,8 +140,10 @@ end
 
 Surface `tris` over node positions `P` (3 x n) with nodal mode shapes `modes[k]` (3 x n): the
 vertices are split at creases (35 degrees) so flat faces stay flat, and each mode gets the
-linearised change of the vertex normals per unit modal coordinate."""
-function visual_mesh(P::AbstractMatrix, tris::Vector{NTuple{3,Int}}, modes::Vector{<:AbstractMatrix})
+linearised change of the vertex normals per unit modal coordinate. `stress[k]` (6 x n, the
+nodal stress of mode k), when given, goes to the split vertices the same way."""
+function visual_mesh(P::AbstractMatrix, tris::Vector{NTuple{3,Int}}, modes::Vector{<:AbstractMatrix};
+        stress::Vector{<:AbstractMatrix} = Matrix{Float64}[])
     used = sort!(unique(reduce(vcat, [collect(t) for t in tris])))
     remap = Dict(v => i for (i, v) in enumerate(used))
     Pu = P[:, used]
@@ -155,7 +162,8 @@ function visual_mesh(P::AbstractMatrix, tris::Vector{NTuple{3,Int}}, modes::Vect
         push!(vmodes, Uu[:, vid])
         push!(dN, (Nε .- N0) ./ ε)
     end
-    return VisualMesh(Pu[:, vid], N0, newtris, vmodes, dN)
+    vstress = Matrix{Float64}[S[:, used][:, vid] for S in stress]
+    return VisualMesh(Pu[:, vid], N0, newtris, vmodes, dN, vstress)
 end
 
 # ---------------------------------------------------------------------------------------
@@ -215,8 +223,23 @@ function write_glb(path::AbstractString, vm::VisualMesh; color = (0.75, 0.77, 0.
         tn = add_vec3(vm.normal_deltas[k])
         push!(targets, Dict("POSITION" => tp, "NORMAL" => tn))
     end
-    _pad4!(bin, 0x00)
     nm = length(vm.modes)
+    stress = nothing
+    if !isempty(vm.stress)
+        length(vm.stress) == nm || error("write_glb: $(length(vm.stress)) stress fields for $nm modes")
+        # Float32, element (v, k, c) at (v * nm + k) * 6 + c (0-based): the viewer sums
+        # eta_k * S[v, k, :] per vertex and takes von Mises of the six components
+        data = Vector{Float32}(undef, nv * nm * 6)
+        for v in 1:nv, k in 1:nm, c in 1:6
+            data[((v - 1) * nm + (k - 1)) * 6 + c] = Float32(vm.stress[k][c, v])
+        end
+        sv = add_view(data, nothing)
+        stress = Dict{String,Any}("bufferView" => sv, "mesh" => 0, "primitive" => 0, "vertices" => nv,
+            "modes" => nm, "components" => collect(COMP6_NAMES), "layout" => "vertex, mode, component",
+            "unit" => "Pa per unit modal coordinate",
+            "recovery" => "element nodal stress averaged at the FE nodes, interpolated to the vertices")
+    end
+    _pad4!(bin, 0x00)
     prim = Dict{String,Any}("attributes" => Dict("POSITION" => pos, "NORMAL" => nor), "indices" => ia,
         "material" => 0, "mode" => 4)
     nm > 0 && (prim["targets"] = targets)
@@ -225,10 +248,11 @@ function write_glb(path::AbstractString, vm::VisualMesh; color = (0.75, 0.77, 0.
         mesh["weights"] = zeros(nm)
         mesh["extras"] = Dict("targetNames" => ["mode $k" for k in 1:nm])
     end
+    bgsim = Dict{String,Any}("kind" => "modal-body", "modes" => nm, "frequency_hz" => frequencies,
+        "frame" => "body reference frame R (interface 1), metres, Z-up")
+    stress === nothing || (bgsim["stress"] = stress)
     gltf = Dict{String,Any}(
-        "asset" => Dict("version" => "2.0", "generator" => "BGSimFEM",
-            "extras" => Dict("bgsim" => Dict("kind" => "modal-body", "modes" => nm, "frequency_hz" => frequencies,
-                "frame" => "body reference frame R (interface 1), metres, Z-up"))),
+        "asset" => Dict("version" => "2.0", "generator" => "BGSimFEM", "extras" => Dict("bgsim" => bgsim)),
         "scene" => 0,
         "scenes" => [Dict("nodes" => [0])],
         "nodes" => [Dict("name" => name, "mesh" => 0)],

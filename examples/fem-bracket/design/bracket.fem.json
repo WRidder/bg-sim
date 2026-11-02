@@ -1,5 +1,5 @@
 {
-  "$comment": "FEM part spec of the fem-bracket example (BGSimFEM): an aluminium L-bracket, a base plate 120 x 40 x 5 mm bolted to the turntable hub (interface A, the bottom face around the bolt at x = 20 mm) and an upright 40 x 4 x 150 mm (thin along y, the turntable's tangential direction) carrying the payload clamp on its top face (interface B). Run: julia --project=julia/BGSimFEM julia/BGSimFEM/bin/bgsim-fem.jl examples/fem-bracket/design/bracket.fem.json",
+  "$comment": "FEM part spec of the fem-bracket example (BGSimFEM): an aluminium L-bracket, a base plate 120 x 40 x 5 mm bolted to the turntable hub (interface A, the bottom face around the bolt at x = 20 mm) and an upright 40 x 4 x 150 mm (thin along y, the turntable's tangential direction) carrying the payload clamp on its top face (interface B). Stress: hotspots on the upright face 25 mm above the plate (beam theory holds there) and at its root (the sharp re-entrant corner, mesh dependent), plus 24 peak candidates. Run: julia --project=julia/BGSimFEM julia/BGSimFEM/bin/bgsim-fem.jl examples/fem-bracket/design/bracket.fem.json",
   "name": "bracket",
   "geometry": {"union": [
     {"box": {"corner": [0, -0.02, 0], "size": [0.12, 0.04, 0.005]}},
@@ -17,6 +17,13 @@
   "validate_attached": [
     {"interface": "B", "mass": 0.5, "inertia": [1.3333e-4, 1.3333e-4, 1.3333e-4], "com": [0, 0, 0.02]}
   ],
+  "stress": {
+    "hotspots": [
+      {"name": "upright 30 mm", "position": [0.1, 0.002, 0.03]},
+      {"name": "upright root", "position": [0.1, 0.002, 0.005]}
+    ],
+    "peak_points": 24
+  },
   "visual": {"size": 0.006, "color": [0.72, 0.75, 0.8, 1.0]},
   "output": {"model": "../data/bracket.modal.json", "glb": "../meshes/bracket.glb", "glb_ref": "bracket.glb"}
 }

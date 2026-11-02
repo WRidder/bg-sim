@@ -279,6 +279,7 @@ gripper runs one model as several scenarios with it (a parameter override does n
 from __future__ import annotations
 
 import json
+import math
 import os
 import shutil
 import socket
@@ -2120,6 +2121,39 @@ def _glb_morph_targets(path: Path) -> int:
     return min(counts) if counts else 0
 
 
+def _glb_stress_problem(path: Path, signals: int) -> str | None:
+    """Why the stress table of a GLB cannot colour ``signals`` modal coordinates, or None when it can.
+
+    The FEM reduction writes ``asset.extras.bgsim.stress`` = ``{"bufferView", "vertices", "modes", ...}``:
+    Float32 values, six stress components per vertex per mode, so the bufferView holds
+    ``vertices * modes * 6 * 4`` bytes. Raises ``ValueError`` when the file is no GLB.
+    """
+    import struct
+
+    data = path.read_bytes()
+    if len(data) < 20 or data[:4] != b"glTF" or data[16:20] != b"JSON":
+        raise ValueError("not a GLB file")
+    (length,) = struct.unpack_from("<I", data, 12)
+    gltf = json.loads(data[20 : 20 + length].decode("utf-8"))
+    bgsim = ((gltf.get("asset") or {}).get("extras") or {}).get("bgsim") or {}
+    table = bgsim.get("stress") if isinstance(bgsim, dict) else None
+    if not isinstance(table, dict):
+        return f"mesh {path.name!r} has no stress table (asset.extras.bgsim.stress); re-run the FEM reduction (julia/BGSimFEM), which writes it"
+    vertices, modes, view = table.get("vertices"), table.get("modes"), table.get("bufferView")
+    views = gltf.get("bufferViews") or []
+    if not (isinstance(vertices, int) and isinstance(modes, int) and isinstance(view, int) and 0 <= view < len(views)):
+        return f"the stress table of mesh {path.name!r} needs integer vertices, modes and a bufferView"
+    length_bytes = views[view].get("byteLength")
+    if length_bytes != vertices * modes * 6 * 4:
+        return (
+            f"the stress table of mesh {path.name!r} has a bufferView of {length_bytes} bytes, "
+            f"{vertices} vertices x {modes} modes x 6 components x 4 bytes = {vertices * modes * 24} expected"
+        )
+    if modes < signals:
+        return f"{signals} modal coordinates but the stress table of mesh {path.name!r} has {modes} modes"
+    return None
+
+
 def _sdf_link_worlds(sdf: dict[str, Any], q: dict[str, float]) -> dict[str, np.ndarray]:
     """World matrix of every link for joint values ``q`` (the kinematic tree of plan 7.6)."""
     rest = {name: link["pose"] for name, link in sdf["links"].items()}
@@ -2172,7 +2206,10 @@ def _scene_bindings_check(
     ``linear`` basis (the twist of a lumped torsion spring) takes family torsion and exactly one signal.
     A ``mode-shapes`` binding needs a mesh visual whose GLB (in the project's ``meshes/`` folder)
     has at least as many morph targets as the binding has signals, one to 64 modal coordinates
-    in metres, and at most one such binding per visual.
+    in metres, and at most one such binding per visual. With a ``stress`` colouring its GLB also needs
+    the stress table of the FEM reduction (``asset.extras.bgsim.stress``, a bufferView of
+    ``vertices * modes * 6`` Float32) with at least as many modes as the binding has signals, and the
+    range is two finite values in Pa, low below high.
     A ``segment`` binding needs a box or cylinder visual that stretches along its axis, 4
     (planar) or 6 (spatial) end-point coordinates that are lengths, and a known ``broken`` flag.
     This is E301 to E304 of the viewer (plan 7.6), checked without a browser.
@@ -2291,6 +2328,17 @@ def _scene_bindings_check(
                         errors.append(
                             f"{where}: {len(signals)} modal coordinates but mesh {glb.name!r} has {targets} morph targets"
                         )
+                    stress = binding.get("stress")
+                    if stress is not None:
+                        rng = stress.get("range") if isinstance(stress, dict) else None
+                        if not (
+                            isinstance(rng, list) and len(rng) == 2
+                            and all(isinstance(x, (int, float)) and math.isfinite(x) for x in rng) and rng[0] < rng[1]
+                        ):
+                            errors.append(f"{where}: the stress range must be two finite values in Pa, low below high")
+                        problem = _glb_stress_problem(glb, len(signals))
+                        if problem is not None:
+                            errors.append(f"{where}: {problem}")
             if not isinstance(binding.get("signal"), list) or not 1 <= len(signals) <= 64:
                 errors.append(f"{where}: needs 1 to 64 modal coordinates, got {len(signals)}")
             if target in mode_shape_targets:

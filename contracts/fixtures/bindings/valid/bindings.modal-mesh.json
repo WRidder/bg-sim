@@ -1,5 +1,5 @@
 {
-  "$comment": "A flexible body reduced from a finite element mesh (ModalBody3D): the link pose carries the rigid body frame, and a mode-shapes binding deforms the GLB mesh visual of that link by the modal coordinates eta[1..4], one morph target per mode. The second body records its coordinates in mm.",
+  "$comment": "A flexible body reduced from a finite element mesh (ModalBody3D): the link pose carries the rigid body frame, and a mode-shapes binding deforms the GLB mesh visual of that link by the modal coordinates eta[1..4], one morph target per mode. The second body records its coordinates in mm. The bracket mesh is also coloured by its von Mises stress (heat, 0 to 30 MPa) from the GLB's stress table.",
   "bindings": [
     {
       "target": "link:bracket",
@@ -17,12 +17,26 @@
     {
       "target": "visual:bracket",
       "property": "mode-shapes",
-      "signal": ["Plant/Bracket/eta[1]", "Plant/Bracket/eta[2]", "Plant/Bracket/eta[3]", "Plant/Bracket/eta[4]"]
+      "signal": [
+        "Plant/Bracket/eta[1]",
+        "Plant/Bracket/eta[2]",
+        "Plant/Bracket/eta[3]",
+        "Plant/Bracket/eta[4]"
+      ],
+      "stress": {
+        "colormap": "heat",
+        "range": [
+          0,
+          30000000.0
+        ]
+      }
     },
     {
       "target": "visual:plate.shell",
       "property": "mode-shapes",
-      "signal": ["Plant/Plate/eta[1]"],
+      "signal": [
+        "Plant/Plate/eta[1]"
+      ],
       "gain": 0.001,
       "$comment": "coordinates in mm"
     }

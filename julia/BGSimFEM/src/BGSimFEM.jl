@@ -28,12 +28,15 @@ import JSON3
 export Material, mesh_part, assemble, make_interfaces, to_reference_frame, craig_bampton,
     validate!, reduce_part, write_modal_body, write_glb, read_glb, frequencies_hz,
     linearized_free, visual_for, modal_body_dict, ReducedModel, Interface, validate_attached!,
-    attached_mass_matrix
+    attached_mass_matrix, nodal_stress, von_mises, modal_stress!, StressPoint, Rail, make_rail,
+    rail_tables!, rail_eval, validate_rail!
 
 include("geometry.jl")
 include("fe.jl")
 include("interfaces.jl")
 include("reduce.jl")
+include("stress.jl")
+include("rail.jl")
 include("output.jl")
 include("spec.jl")
 

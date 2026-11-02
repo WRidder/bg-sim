@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!--
+  gantry-static: the beam clamped at both ends under 1 g along its x axis, the view rotated so that x points up.
+
+  Z-up, metres. The beam link follows Beam/pose, the world pose of its reference frame
+  (interface A, on the beam axis at the A end bracket). Its visual `beam_mesh` is the GLB the
+  reduction wrote (meshes/beam.glb, in that frame, one morph target per mode), deformed by a
+  mode-shapes binding with Beam/eta[1..21] and coloured by von Mises stress. The Y carriage
+  follows PYCar/g (the deformed rail frame E composed with the guide and the offset to its
+  centre of mass), the tool PTool/g.
+-->
+<sdf version="1.9">
+  <model name="gantry_static">
+    <link name="beam">
+      <pose>0 0 0.0 0 -1.5707963267948966 0</pose>
+      <visual name="beam_mesh">
+        <geometry><mesh><uri>meshes/beam.glb</uri></mesh></geometry>
+      </visual>
+    </link>
+    <link name="ycar">
+      <pose>0.11 0.66 0.5 -1.5707963267948966 0 0</pose>
+      <visual name="ycar_body">
+        <geometry><box><size>0.16 0.3 0.18</size></box></geometry>
+        <material><diffuse>0.25 0.5 0.85 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="tool">
+      <pose>0.13 0.66 0.25 -1.5707963267948966 0 0</pose>
+      <visual name="tool_tip">
+        <geometry><sphere><radius>0.012</radius></sphere></geometry>
+        <material><diffuse>0.95 0.3 0.1 1</diffuse></material>
+      </visual>
+    </link>
+  </model>
+</sdf>

@@ -143,3 +143,9 @@ A part reduced from a finite element mesh (see [Flexible bodies](page:flexible-b
 4. **Gain** multiplies every coordinate, for example 0.001 for coordinates in mm. A mode-shapes binding has no offset.
 
 The view moves every vertex by the sum of the mode shapes, each times its coordinate, the gain and the **Deformation** exaggeration factor of the view (×1 is true scale; a model can open at a larger factor with `"exaggeration"` in its `scene`, see above). A mesh can take one mode-shapes binding. The binding table reports a target that is no mesh, a mesh without morph targets, or a second mode-shapes binding of one mesh as E301. It reports more signals than the mesh has mode shapes (or more than 64) as E304, and a coordinate whose unit is not m as E303.
+
+#### Stress colouring
+
+A mode-shapes binding can also colour the mesh by its von Mises stress. Tick **stress** in the binding's row, pick a colormap and set the range: the stress at the low and at the high end of the map, in MPa (the model file stores it in Pa, as `"stress": {"colormap": "heat", "range": [0, 5e7]}`). The view sums each vertex's stress per unit modal coordinate over the modes, each times its coordinate and the gain, and colours the vertex by the von Mises stress of the sum. The colours always come from the true coordinates: the **Deformation** exaggeration changes the shape, not the colours. At rest and after a reset the mesh shows zero stress, the low-end colour of a range from 0.
+
+The stress per mode comes from the GLB: the reduction tool writes a stress table next to the mode shapes (`asset.extras.bgsim.stress`). A GLB written by an older version of the tool has none; run the reduction again (see [Flexible bodies](page:flexible-bodies)). The binding table reports a stress colouring of a mesh without a stress table, or a range that is not low below high, as E301, and more signals than the table has modes as E304.

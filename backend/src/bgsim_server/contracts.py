@@ -63,6 +63,19 @@ class Colormap(Enum):
     coolwarm = 'coolwarm'
 
 
+class StressColor(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    colormap: Colormap
+    range: list[float] = Field(
+        ...,
+        description='von Mises stress at the low and the high end of the colormap, in Pa.',
+        max_length=2,
+        min_length=2,
+    )
+
+
 class BindingSignal(
     RootModel[
         constr(
@@ -1904,6 +1917,7 @@ class ModeShapeBinding(BaseModel):
         None,
         description="Multiplies every modal coordinate (default 1), e.g. 0.001 for coordinates in mm. The viewer's exaggeration factor is a display setting and is not stored in the binding.",
     )
+    stress: StressColor | None = None
     field_comment: str | None = Field(None, alias='$comment')
 
 

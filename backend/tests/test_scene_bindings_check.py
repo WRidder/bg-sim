@@ -240,12 +240,18 @@ MESH_SDF = SDF.replace(
 )
 
 
-def _glb(targets: int) -> bytes:
-    """A GLB whose JSON chunk has one mesh primitive with ``targets`` morph targets (no binary chunk)."""
+def _glb(targets: int, stress: int | None = None, view_bytes: int | None = None) -> bytes:
+    """A GLB whose JSON chunk has one mesh primitive with ``targets`` morph targets (no binary chunk),
+    and with ``stress`` a stress table of that many modes on 5 vertices (its bufferView ``view_bytes``
+    long, by default the right length)."""
     primitive: dict = {"attributes": {"POSITION": 0}}
     if targets:
         primitive["targets"] = [{"POSITION": 0} for _ in range(targets)]
-    text = json.dumps({"asset": {"version": "2.0"}, "meshes": [{"primitives": [primitive]}]}).encode("utf-8")
+    gltf: dict = {"asset": {"version": "2.0"}, "meshes": [{"primitives": [primitive]}]}
+    if stress is not None:
+        gltf["asset"]["extras"] = {"bgsim": {"stress": {"bufferView": 0, "vertices": 5, "modes": stress}}}
+        gltf["bufferViews"] = [{"buffer": 0, "byteLength": 5 * stress * 24 if view_bytes is None else view_bytes}]
+    text = json.dumps(gltf).encode("utf-8")
     chunk = text + b" " * ((4 - len(text) % 4) % 4)
     return b"glTF" + struct.pack("<II", 2, 20 + len(chunk)) + struct.pack("<I", len(chunk)) + b"JSON" + chunk
 
@@ -287,6 +293,33 @@ def test_mode_shapes_binding_passes(runner, tmp_path):
 )
 def test_each_mode_shapes_mistake_fails(runner, tmp_path, bindings, targets, fragment):
     results = _check(runner, _mesh_run(tmp_path, bindings, targets))
+    assert results[0][0] is False
+    assert fragment in results[0][2]
+
+
+HEAT = {"colormap": "heat", "range": [0, 5e7]}
+
+
+def test_mode_shapes_stress_colouring_passes_with_a_table(runner, tmp_path):
+    run = _mesh_run(tmp_path, [_modes(stress=HEAT)])
+    (tmp_path / "meshes" / "bracket.glb").write_bytes(_glb(4, stress=2))
+    results = _check(runner, run)
+    assert [r[0] for r in results] == [True], results
+
+
+@pytest.mark.parametrize(
+    ("glb", "stress", "fragment"),
+    [
+        (_glb(4), HEAT, "has no stress table"),
+        (_glb(4, stress=1), HEAT, "2 modal coordinates but the stress table of mesh 'bracket.glb' has 1 modes"),
+        (_glb(4, stress=2, view_bytes=100), HEAT, "has a bufferView of 100 bytes"),
+        (_glb(4, stress=2), {"colormap": "heat", "range": [5e7, 0]}, "the stress range must be two finite values"),
+    ],
+)
+def test_each_mode_shapes_stress_mistake_fails(runner, tmp_path, glb, stress, fragment):
+    run = _mesh_run(tmp_path, [_modes(stress=stress)])
+    (tmp_path / "meshes" / "bracket.glb").write_bytes(glb)
+    results = _check(runner, run)
     assert results[0][0] is False
     assert fragment in results[0][2]
 

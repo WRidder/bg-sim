@@ -25,8 +25,13 @@ isdefined(@__MODULE__, :_fem_free) || include(joinpath(@__DIR__, "fem_body_rigs.
     @testset "reduced-model file: loader, invariants, diagnostics, compile key" begin
         data = BGSim.load_modal_body(FEM_FX, Dict{String,Any}("file" => "lbar.modal.json"))
         d = Dict(data)
-        @test first.(data)[1:2] == ["nm", "stiffening"]               # sizes first
+        @test first.(data)[1:4] == ["nm", "stiffening", "ns", "nh"]   # sizes first
         @test d["nm"] == FEM_NM && !haskey(d, "ni") && d["stiffening"] == 1
+        @test d["ns"] == length(FEM_DATA.stress.points) && d["nh"] == FEM_DATA.stress.hotspots == 2
+        @test size(d["Sxx"]) == (d["ns"], FEM_NM) && size(d["Syz"]) == (d["ns"], FEM_NM)
+        @test d["Sxx"][1, :] ≈ Float64.(collect(FEM_DATA.stress.points[1].sigma[1]))
+        doc = JSON3.read(read(joinpath(FEM_FX, "lbar.modal.json"), String), Dict{String,Any})
+        @test BGSim.modal_stress_names(doc)[1:2] == ["root top", "knee"]
         @test size(d["St"]) == (3, FEM_NM) && size(d["J1"]) == (6, FEM_NM)
         @test size(d["PT"]) == (12, FEM_NM) && size(d["Gd3"]) == (FEM_NM, FEM_NM)
         @test d["J0"] ≈ d["J0"]'
@@ -111,5 +116,15 @@ isdefined(@__MODULE__, :_fem_free) || include(joinpath(@__DIR__, "fem_body_rigs.
         xB = Float64.(collect(FEM_DATA.interfaces[2].position))
         @test [cols["Body/poseB[$(4 + a)]"][end] for a in 1:3] .- xB ≈ uB rtol = 5e-3
         @test norm(uB) > 2e-5                                     # 50 um, 0.06 % of the part
+        # stress: sigma_vm at the hotspots is von Mises of the file's sigma x q, sigma_max the
+        # largest over all the points (the smooth max is within ns / 2 Pa)
+        st = FEM_DATA.stress
+        vmises(s) = sqrt(0.5 * ((s[1] - s[2])^2 + (s[2] - s[3])^2 + (s[3] - s[1])^2) + 3 * (s[4]^2 + s[5]^2 + s[6]^2))
+        vm = [vmises([dot(Float64.(collect(row)), q) for row in p.sigma]) for p in st.points]
+        @test vm[1] > 1e3                                           # kPa: the wrenches are small
+        for i in 1:st.hotspots
+            @test cols["Body/sigma_vm[$i]"][end] ≈ vm[i] rtol = 1e-6 atol = 1.0
+        end
+        @test cols["Body/sigma_max"][end] ≈ maximum(vm) atol = length(vm) / 2 + 1
     end
 end

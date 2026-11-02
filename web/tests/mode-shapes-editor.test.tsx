@@ -20,6 +20,8 @@ const SDF = `<?xml version="1.0"?>
   </link>
 </model></sdf>`;
 const MODES = 6;
+/** Modes of the stress table of the served bracket GLB (0: none). */
+let stressModes = 0;
 
 const engines: NullEngine[] = [];
 function createEngine(): NullEngine {
@@ -45,6 +47,7 @@ function withSignals(ids: string[]): void {
 
 beforeEach(() => {
   resetDiagnosticsStore();
+  stressModes = 0;
   resetDocumentStore();
   resetRunStore();
   localStorage.clear();
@@ -54,7 +57,7 @@ beforeEach(() => {
     vi.fn((input: RequestInfo | URL) => {
       const u = String(input);
       if (u.endsWith("flex.sdf")) return Promise.resolve(new Response(SDF, { status: 200 }));
-      if (u.endsWith("bracket.glb")) return Promise.resolve(new Response(modalGlb(MODES), { status: 200 }));
+      if (u.endsWith("bracket.glb")) return Promise.resolve(new Response(modalGlb(MODES, { stress: stressModes }), { status: 200 }));
       return Promise.resolve(new Response("not found", { status: 404 }));
     }),
   );
@@ -119,5 +122,33 @@ describe("mode-shapes bindings in the 3D View", () => {
     fireEvent.click(screen.getByTestId("bindings-toggle"));
     expect(screen.getByTestId("binding-problem-0").textContent).toMatch(/E304.*has 6 morph targets/);
     expect(screen.getByTestId("binding-problem-1").textContent).toMatch(/E301.*box, not a mesh/);
+  });
+
+  it("turns the von Mises stress colouring on and off, with the range in MPa stored in Pa", async () => {
+    stressModes = MODES;
+    openModel([BRACKET]);
+    await mount();
+    fireEvent.click(screen.getByTestId("bindings-toggle"));
+    expect(screen.queryByTestId("binding-stress-max-0")).toBeNull();
+    fireEvent.click(screen.getByTestId("binding-stress-0"));
+    expect((bindings()[0] as ModeShapeBinding).stress).toEqual({ colormap: "heat", range: [0, 5e7] });
+    const max = screen.getByTestId("binding-stress-max-0") as HTMLInputElement;
+    expect(max.value).toBe("50");
+    fireEvent.change(max, { target: { value: "120" } });
+    fireEvent.blur(max);
+    fireEvent.change(screen.getByTestId("binding-stress-min-0"), { target: { value: "2.5" } });
+    fireEvent.blur(screen.getByTestId("binding-stress-min-0"));
+    select("binding-stress-colormap-0", "viridis");
+    expect((bindings()[0] as ModeShapeBinding).stress).toEqual({ colormap: "viridis", range: [2.5e6, 1.2e8] });
+    expect(screen.getByTestId("binding-row-0").dataset["invalid"]).toBeUndefined();
+    fireEvent.click(screen.getByTestId("binding-stress-0"));
+    expect(bindings()[0]).toEqual(BRACKET);
+  });
+
+  it("reports a stress colouring of a GLB without a stress table", async () => {
+    openModel([{ ...BRACKET, stress: { colormap: "heat", range: [0, 5e7] } }]);
+    await mount();
+    fireEvent.click(screen.getByTestId("bindings-toggle"));
+    expect(screen.getByTestId("binding-problem-0").textContent).toMatch(/E301.*no stress table.*BGSimFEM/);
   });
 });

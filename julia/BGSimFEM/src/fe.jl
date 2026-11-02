@@ -213,3 +213,81 @@ function geometric_projection(fe::FEModel, modes::AbstractMatrix, displacements:
     end
     return G
 end
+
+# ---------------------------------------------------------------------------------------
+# Stress recovery
+# ---------------------------------------------------------------------------------------
+
+"""
+    nodal_stress(fe, U) -> Vector{Matrix{Float64}}
+
+The stress field of every column of `U` (dof vectors, e.g. the mode shapes) at the grid nodes,
+by element-wise recovery and averaging: in each cell the stress `C : sym(grad u)` is evaluated
+at the cell's own nodes (for ten-node tetrahedra the strain is linear in the cell, so this is
+the cell's exact stress there), then every node takes the plain mean over the cells that share
+it. Returns one `6 x nn` matrix per column, components xx yy zz xy xz yz (Pa per unit of the
+column). Linear in `U`, so the stress of a superposition is the superposition of the stresses."""
+function nodal_stress(fe::FEModel, U::AbstractMatrix)
+    ip, _ = _interp(fe.grid)
+    refc = Ferrite.reference_coordinates(ip)
+    nb = length(refc)
+    qr = QuadratureRule{RefTetrahedron}(fill(1.0 / nb, nb), refc)
+    cv = CellValues(qr, ip^3, ip)
+    C = elasticity_tensor(fe.material)
+    nn = nnodes_fe(fe)
+    ncol = size(U, 2)
+    S = [zeros(6, nn) for _ in 1:ncol]
+    count = zeros(Int, nn)
+    n = ndofs_per_cell(fe.dh)
+    ue = zeros(n)
+    for cell in CellIterator(fe.dh)
+        reinit!(cv, cell)
+        cd = celldofs(cell)
+        nodes = getnodes(cell)
+        for j in 1:nb
+            count[nodes[j]] += 1
+        end
+        for k in 1:ncol
+            Sk = S[k]
+            for i in 1:n
+                ue[i] = U[cd[i], k]
+            end
+            for j in 1:nb
+                σ = C ⊡ function_symmetric_gradient(cv, j, ue)
+                m = nodes[j]
+                Sk[1, m] += σ[1, 1]
+                Sk[2, m] += σ[2, 2]
+                Sk[3, m] += σ[3, 3]
+                Sk[4, m] += σ[1, 2]
+                Sk[5, m] += σ[1, 3]
+                Sk[6, m] += σ[2, 3]
+            end
+        end
+    end
+    for k in 1:ncol, m in 1:nn
+        count[m] > 0 || continue
+        for c in 1:6
+            S[k][c, m] /= count[m]
+        end
+    end
+    return S
+end
+
+nodal_stress(fe::FEModel, u::AbstractVector) = nodal_stress(fe, reshape(u, :, 1))[1]
+
+"""von Mises stress of the six components (xx yy zz xy xz yz)."""
+von_mises(s) = sqrt(0.5 * ((s[1] - s[2])^2 + (s[2] - s[3])^2 + (s[3] - s[1])^2) +
+                    3 * (s[4]^2 + s[5]^2 + s[6]^2))
+
+"""von Mises per column of a `6 x n` stress matrix."""
+von_mises_cols(S::AbstractMatrix) = [von_mises(view(S, :, i)) for i in axes(S, 2)]
+
+"""The superposition `sum_k q_k S[k]` of per-mode stress fields (`6 x n` each)."""
+function superpose(S::AbstractVector{<:AbstractMatrix}, q::AbstractVector)
+    out = zeros(size(S[1]))
+    for k in eachindex(S)
+        q[k] == 0 && continue
+        out .+= q[k] .* S[k]
+    end
+    return out
+end

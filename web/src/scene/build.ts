@@ -25,9 +25,10 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import type { MorphTargetManager } from "@babylonjs/core/Morph/morphTargetManager";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import type { Diagnostic } from "../contracts/diagnostic";
-import type { BeamMapping, SegmentBrokenStyle, ShapeAxis, StrainColor } from "../contracts/model";
+import type { BeamMapping, SegmentBrokenStyle, ShapeAxis, StrainColor, StressColor } from "../contracts/model";
 import type { ModalSet } from "../viewer/beamModes";
 import { colormapColor } from "../viewer/bindingsColormaps";
+import { readStressTable, vonMises, type StressTable } from "../viewer/glbStress";
 import { tagEntity, type ViewerScene } from "../viewer/viewerScene";
 import { beamFrame, buildBeamMesh, deformBeamMesh, ringStrains, type BeamFrame, type BeamMesh } from "./beamMesh";
 import {
@@ -74,6 +75,17 @@ interface VisualRec {
   readonly morphs: readonly MorphTargetManager[];
   /** Modal coordinates a mode-shapes binding set last (gain applied, not exaggerated); empty at rest. */
   modes: readonly number[];
+  /** The stress table of a GLB written by the FEM reduction (`asset.extras.bgsim.stress`); null for the rest. */
+  readonly stress: StressTable | null;
+  /** The meshes of the GLB the table's vertices belong to (same vertex count). */
+  readonly stressMeshes: readonly Mesh[];
+  /** The stress colouring in force (a mode-shapes binding's `stress`); null: the plain material. */
+  stressColor: StressColor | null;
+  /** Diffuse colours of the materials before the stress colouring took them to white. */
+  stressSaved: (Color3 | null)[];
+  /** Scratch: von Mises per vertex and the vertex colours (RGBA). */
+  stressValues: Float32Array | null;
+  stressColors: Float32Array | null;
   shown: boolean;
   /** A segment binding drew the bar broken and hidden. */
   segmentHidden: boolean;
@@ -119,6 +131,8 @@ export class BuiltScene {
   private readonly materials: Material[] = [];
   private readonly containers: AssetContainer[] = [];
   private readonly beams = new Map<string, BeamRec>();
+  /** The stress colourings the bindings ask for, by visual (kept for GLBs that are still loading). */
+  private stressWanted = new Map<string, StressColor>();
   private exaggerationFactor = 1;
   private disposed = false;
 
@@ -151,17 +165,21 @@ export class BuiltScene {
   }
 
   /** @internal Attaches a visual built by `buildScene`. */
-  attachVisual(v: ResolvedVisual, geometry: TransformNode, materials: Material[]): void {
+  attachVisual(v: ResolvedVisual, geometry: TransformNode, materials: Material[], stress: StressTable | null = null): void {
     const node = this.nodes.get(v.node);
     if (node === undefined) return;
     geometry.parent = node;
     this.materials.push(...materials);
     const primitive = v.geometry.kind === "mesh" ? null : (geometry as Mesh);
     const morphs = v.geometry.kind === "mesh" ? morphManagers(geometry) : [];
-    this.visuals.set(v.ref, {
+    const stressMeshes = stress === null ? [] : stressMeshesOf(geometry, stress.vertices);
+    const rec: VisualRec = {
       id: v.node, node, link: v.link, materials, geometry: v.geometry, primitive, morphs, modes: [], shown: true,
       segmentHidden: false, segmentSnapped: false, twin: null,
-    });
+      stress: stressMeshes.length > 0 ? stress : null, stressMeshes, stressColor: null, stressSaved: [], stressValues: null, stressColors: null,
+    };
+    this.visuals.set(v.ref, rec);
+    this.applyStress(v.ref, rec);
   }
 
   /** @internal */
@@ -306,6 +324,79 @@ export class BuiltScene {
   }
 
   /**
+   * Modes of the stress table of a mesh visual's GLB: 0 when it has none (or it does not fit the mesh);
+   * null when the ref is not a loaded mesh visual.
+   */
+  stressModeCount(ref: string): number | null {
+    const v = this.visuals.get(ref);
+    if (v === undefined || v.geometry.kind !== "mesh") return null;
+    return v.stress?.modes ?? 0;
+  }
+
+  /**
+   * The mesh visuals the mode-shapes bindings colour by von Mises stress (from `stressConfigs`): each is
+   * drawn from its GLB's stress table with the coordinates of its mode-shapes binding; visuals no longer
+   * in `configs` get their plain material back. A visual whose GLB has no table is left alone (validation
+   * reports it, E301). A GLB that loads later picks its colouring up when it attaches.
+   */
+  configureStress(configs: ReadonlyMap<string, StressColor>): void {
+    if (this.disposed) return;
+    this.stressWanted = new Map(configs);
+    for (const [ref, v] of this.visuals) this.applyStress(ref, v);
+    this.viewer.invalidate();
+  }
+
+  /** The vertex colours (RGBA per vertex) of a stress-coloured visual, for tests and overlays; null when it is not coloured. */
+  stressColorsOf(ref: string): Float32Array | null {
+    const v = this.visuals.get(ref);
+    return v !== undefined && v.stressColor !== null ? v.stressColors : null;
+  }
+
+  private applyStress(ref: string, v: VisualRec): void {
+    const want = v.stress === null ? null : (this.stressWanted.get(ref) ?? null);
+    if (want === null) {
+      if (v.stressColor === null) return;
+      for (const mesh of v.stressMeshes) if (mesh.isVerticesDataPresent(VertexBuffer.ColorKind)) mesh.removeVerticesData(VertexBuffer.ColorKind);
+      v.stressSaved.forEach((c, i) => {
+        const m = v.materials[i];
+        if (m !== undefined && c !== null) setDiffuse(m, c);
+      });
+      v.stressColor = null;
+      v.stressSaved = [];
+      return;
+    }
+    if (v.stressColor === null) v.stressSaved = v.materials.map((m) => whiten(m));
+    v.stressColor = want;
+    this.drawStress(v);
+  }
+
+  /**
+   * Vertex colours of the von Mises stress under the visual's modal coordinates: the true ones, the
+   * exaggeration only scales the drawn deformation. At rest (no coordinates, after `reset`) every vertex
+   * shows zero stress, the colour of 0 on the map, so a coloured part stays coloured.
+   */
+  private drawStress(v: VisualRec): void {
+    const table = v.stress;
+    const colour = v.stressColor;
+    if (table === null || colour === null) return;
+    const n = table.vertices;
+    const values = (v.stressValues ??= new Float32Array(n));
+    const colours = (v.stressColors ??= new Float32Array(4 * n));
+    vonMises(table, v.modes, values);
+    for (let i = 0; i < n; i++) {
+      const c = colormapColor(colour.colormap, values[i] ?? 0, colour.range);
+      colours[4 * i] = c[0];
+      colours[4 * i + 1] = c[1];
+      colours[4 * i + 2] = c[2];
+      colours[4 * i + 3] = 1;
+    }
+    for (const mesh of v.stressMeshes) {
+      if (mesh.isVerticesDataPresent(VertexBuffer.ColorKind)) mesh.updateVerticesData(VertexBuffer.ColorKind, colours, false, false);
+      else mesh.setVerticesData(VertexBuffer.ColorKind, colours, true, 4);
+    }
+  }
+
+  /**
    * Modal coordinates of a mesh visual with morph targets (gain applied, not exaggerated): target k of
    * every mesh of the visual gets the influence eta[k] * exaggeration; targets beyond `eta` get 0, and
    * coordinates beyond the targets are ignored. False when the visual is no mesh or has no morph targets.
@@ -315,6 +406,7 @@ export class BuiltScene {
     if (v === undefined || v.morphs.length === 0) return false;
     v.modes = eta;
     this.drawModes(v);
+    this.drawStress(v);
     this.viewer.invalidate();
     return true;
   }
@@ -496,6 +588,7 @@ export class BuiltScene {
       if (v.morphs.length > 0) {
         v.modes = [];
         this.drawModes(v);
+        this.drawStress(v);
       }
     }
     for (const rec of this.beams.values()) {
@@ -556,6 +649,15 @@ function morphManagers(root: TransformNode): MorphTargetManager[] {
     if (!out.includes(m)) out.push(m);
   }
   return out;
+}
+
+/**
+ * The meshes of a GLB visual that a stress table of `vertices` vertices belongs to: those with exactly that
+ * many vertices (the FEM reduction writes one mesh with one primitive; the glTF loader keeps the order of
+ * its POSITION accessor, so table vertex v is mesh vertex v).
+ */
+function stressMeshesOf(root: TransformNode, vertices: number): Mesh[] {
+  return root.getChildMeshes(false).filter((m): m is Mesh => m instanceof Mesh && m.getTotalVertices() === vertices);
 }
 
 /** Sets a plain node (not in the kinematic maps) to a rigid transform. */
@@ -661,14 +763,15 @@ export async function buildScene(viewer: ViewerScene, resolved: ResolvedScene, o
     pending.push(
       (async () => {
         try {
-          const { root, container } = await glbMesh(viewer, v, await loadOnce(v.geometry.kind === "mesh" ? v.geometry.uri : ""));
+          const bytes = await loadOnce(v.geometry.kind === "mesh" ? v.geometry.uri : "");
+          const { root, container } = await glbMesh(viewer, v, bytes);
           if (built.isDisposed || options.signal?.aborted) {
             container.dispose();
             root.dispose();
             return;
           }
           built.keepContainer(container);
-          built.attachVisual(v, root, container.materials);
+          built.attachVisual(v, root, container.materials, readStressTable(bytes));
         } catch (e) {
           const why = e instanceof Error ? e.message : String(e);
           const uri = v.geometry.kind === "mesh" ? v.geometry.uri : "";
