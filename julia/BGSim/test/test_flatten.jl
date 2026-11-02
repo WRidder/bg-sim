@@ -729,20 +729,11 @@ end
             ("A/c2.e", "A/c2.f", "B/c2.e", "B/c2.f"))
         @test !any(v -> v.id == "c2.e", fmt.variables)
 
-        # A J-J bond from a root junction to a junction inside a component (RigidBody2D's
-        # port resolves to its internal junction): both ends name one pair (the shared
-        # diagram path, here the root), so the planar cart pendulum stays balanced.
-        cart_path = joinpath(@__DIR__, "..", "..", "..", "examples", "pendulum-double-cart-lab",
-            "models", "pendulum-double-cart-lab-free.bgmodel.json")
-        if isfile(cart_path)
-            cart_doc = JSON3.read(read(cart_path, String), Dict{String,Any})
-            fmc = Compile.flatten(IR.parse_model(cart_doc);
-                project_dir = joinpath(dirname(cart_path), ".."))
-            @test isempty(_errors(fmc))
-        end
-        @test BGSim.Compile._shared_dir("Body1/j", "N1") == ""
-        @test BGSim.Compile._shared_dir("A/J1", "A/Body1/j") == "A/"
-        @test BGSim.Compile._shared_dir("A/J1", "A/J2") == "A/"
+        # A root junction bonded to a junction inside a component (the double-cart plant:
+        # root 1-junctions against the RigidBody2D junctions): both ends name one pair.
+        cart = flat_file(joinpath(_REPO, "examples", "pendulum-double-cart-lab", "models",
+            "pendulum-double-cart-lab-plant.bgmodel.json"))
+        @test isempty(_errors(cart))
 
         # A junction with no bonds is E101 on the junction node (it can never be solved).
         lonely = _model("Lonely", Any[

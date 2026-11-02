@@ -138,7 +138,9 @@ the junction sign is `into ? +1 : -1`. `flip` is `true` when the attached **port
 the connection's `from` end: then the bond flow `f_b` is `-port.f` (plan 5.5: `X.f = -f_b`),
 so the junction emitter negates the flow expression. For a junction-to-junction bond
 `port === nothing`, `flip` is `false` and `eids`/`fids` are the virtual bond variables of
-that connection."""
+that connection. `diagram` is the path of the (sub)diagram the connection belongs to ("" at
+the root): connection ids are unique only within one diagram, so the virtual variables of a
+junction-to-junction bond are qualified with it."""
 struct JunctionBond
     connection::String
     node::String
@@ -148,7 +150,11 @@ struct JunctionBond
     flip::Bool
     eids::Vector{String}
     fids::Vector{String}
+    diagram::String
 end
+
+JunctionBond(connection, node, path, port, into, flip, eids, fids) =
+    JunctionBond(connection, node, path, port, into, flip, eids, fids, "")
 
 """    JunctionInfo(node, path, kind, bonds)
 
