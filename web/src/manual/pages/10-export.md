@@ -34,6 +34,12 @@ The **racecar-sim** and **buggy-sim** models of the cars example do the same for
 - the outputs are the chassis and wheel poses, the tyre and suspension states, the motor speeds, torques and powers, the battery's state of charge, voltage and current, and the aerodynamic downforce and drag (the host's live telemetry panel plots them);
 - the start position, heading and charge are globals whose expressions set the start state, and the motor and brake limits are block parameters kept tunable, all with ranges.
 
+The **cessna-sim** model of the cessna example is the FMU of a flight simulator that starts on the runway (`apps/cessna-sim`):
+
+- the yoke, the pedals, the throttle, the mixture, the flap detent, the trim, the two toe brakes, the autopilot modes, the heading bug, the altitude to hold and the wind come in through 16 `ExportInputPass` markers;
+- 38 `ExportOutput` markers carry the pose, the six-pack instruments, the engine, the surfaces and the three wheel loads;
+- the start state is 20 globals kept tunable with ranges: the pose, the momenta, the crankshaft's momentum, the manifold pressure, the flap angle and the strut compressions. The host sets them together from the runway equilibrium or a trim.
+
 For a subsystem export, the power ports of the subsystem are part of the interface too. For each one, choose whether the host imposes the **effort** or the **flow**.
 
 If the export has nothing to publish, you get warning W209.

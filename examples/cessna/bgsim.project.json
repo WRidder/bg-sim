@@ -1,0 +1,11 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "cessna",
+  "models": [
+    "cessna-open-loop",
+    "cessna-sim"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}
