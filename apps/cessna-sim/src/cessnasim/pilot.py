@@ -238,18 +238,18 @@ SCRIPTS = {
     # 30 s of take-off roll, rotation and lift-off: the headless smoke test
     "smoke": Script("smoke", [Leg(0, 40.0, {"phase": "roll"}, views=[(0.0, "chase"), (20.0, "cockpit")])]),
     # the full left-hand circuit of runway 36 at 700 ft, the autopilot on downwind, the landing
-    # (touchdown at about 415 s)
+    # (touchdown at about 340 s)
     "circuit": Script("circuit", [Leg(0, 440.0, {"phase": "roll"}, views=[(0.0, "chase")])]),
     # the approach from 2 nm and the landing (touchdown at about 106 s)
     "landing": Script("landing", [Leg(2, 125.0, {"phase": "final"})]),
     # the video: take-off, climb and a turn; then (a new start) the final approach and the landing
     "demo": Script("demo", [
         Leg(0, 115.0, {"phase": "roll", "turn_after": 80.0, "turn_hdg": 300.0},
-            views=[(0.0, "chase"), (14.0, "tower"), (40.0, "chase"), (62.0, "cockpit"), (80.0, "chase")],
+            views=[(0.0, "chase"), (8.0, "tower"), (26.0, "chase"), (45.0, "cockpit"), (80.0, "chase")],
             captions=[(0.0, 5.0, "cessna-sim FMU: Cessna 172P on runway 36, full power, flaps 10"),
-                      (14.0, 40.0, "tower view: the take-off roll, rotation at 50 KIAS"),
-                      (40.0, 62.0, "lift-off at 55 KIAS, climb-out at full power"),
-                      (62.0, 80.0, "cockpit view: the six-pack in the climb"),
+                      (8.0, 26.0, "tower view: the take-off roll, rotation at 50 KIAS, lift-off"),
+                      (26.0, 45.0, "climb-out at full power"),
+                      (45.0, 80.0, "cockpit view: the six-pack in the climb"),
                       (80.0, 115.0, "a climbing left turn to 300, flaps up at 300 ft")]),
         Leg(2, 125.0, {"phase": "final"},
             views=[(0.0, "chase"), (35.0, "cockpit"), (75.0, "chase"), (92.0, "tower"), (112.0, "chase")],

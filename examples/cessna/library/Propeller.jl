@@ -7,6 +7,10 @@
     # gravity and the aerodynamic torque -tau about the shaft, which the airframe does not get
     # from the crankshaft: the rotor's reaction there is the net torque tau_e - tau).
     #
+    # The defaults of ct_tab and cp_tab are the prop_75in2f tables. The Cessna models pass the
+    # POH-fitted tables of design/c172_data.py instead (PROP_FIT: C_T raised and C_P lowered at
+    # low advance ratio, unchanged from J = J1 up; a fit to the POH, not JSBSim data).
+    #
     #   n = w / 2 pi,  J = u / (D sqrt(n^2 + n_floor^2)),  tip Mach M = sqrt((pi D n)^2 + u^2) / a
     #   thrust = CT(J) CT_M(M) rho n^2 D^4,   tau = CP(J) CP_M(M) rho n^2 D^5 / (2 pi)
     #   induced velocity vi = (-u + sgn(s) sqrt|s|) / 2,  s = u |u| + 2 thrust / (rho A)
@@ -40,9 +44,9 @@
         rz::Real = 0.0, [unit = "m", description = "Hub from the CG, body z"]
         n_floor::Real = 0.1, [unit = "1/s", min = 1.0e-9, description = "Rotation-rate floor of the advance ratio"]
         j_ct::Vec{NT} = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 5.0], [description = "Advance ratios of the thrust table"]
-        ct_tab::Vec{NT} = [0.073, 0.073, 0.072, 0.071, 0.069, 0.066, 0.062, 0.055, 0.045, 0.034, 0.024, 0.013, -0.006, -0.013, -0.024, -0.034, -0.045, -0.055, -0.062, -0.066, -0.069, -0.071, -0.072, -0.073, -0.073], [description = "Thrust coefficient (prop_75in2f)"]
+        ct_tab::Vec{NT} = [0.073, 0.073, 0.072, 0.071, 0.069, 0.066, 0.062, 0.055, 0.045, 0.034, 0.024, 0.013, -0.006, -0.013, -0.024, -0.034, -0.045, -0.055, -0.062, -0.066, -0.069, -0.071, -0.072, -0.073, -0.073], [description = "Thrust coefficient (default prop_75in2f; the models pass the POH fit)"]
         j_cp::Vec{NP} = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 5.0], [description = "Advance ratios of the power table"]
-        cp_tab::Vec{NP} = [0.066, 0.07, 0.07, 0.066, 0.06, 0.053, 0.0501, 0.0469, 0.0426, 0.036, 0.0282, 0.0191, 0.0155, 0.0191, 0.0282, 0.036, 0.0426, 0.0469, 0.0501, 0.0516, 0.0525, 0.0525, 0.0522, 0.0511, 0.0504, 0.0493], [description = "Power coefficient (prop_75in2f)"]
+        cp_tab::Vec{NP} = [0.066, 0.07, 0.07, 0.066, 0.06, 0.053, 0.0501, 0.0469, 0.0426, 0.036, 0.0282, 0.0191, 0.0155, 0.0191, 0.0282, 0.036, 0.0426, 0.0469, 0.0501, 0.0516, 0.0525, 0.0525, 0.0522, 0.0511, 0.0504, 0.0493], [description = "Power coefficient (default prop_75in2f; the models pass the POH fit)"]
         m_ct::Vec{NTM} = [0.85, 1.05], [description = "Tip Mach of the thrust factor"]
         f_ct::Vec{NTM} = [1.0, 0.8], [description = "Thrust factor"]
         m_cp::Vec{NPM} = [0.85, 1.05, 2.0], [description = "Tip Mach of the power factor"]

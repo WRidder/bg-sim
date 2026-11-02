@@ -100,7 +100,17 @@
     "models": [
       "cessna-open-loop",
       "cessna-sim"
-    ]
+    ],
+    "capture": {
+      "model": "cessna-sim",
+      "run": true,
+      "time": 30,
+      "zoom": 9,
+      "orbit": [
+        0,
+        -60
+      ]
+    }
   },
   "cube-3d": {
     "title": "Cube 3d",

@@ -822,13 +822,13 @@ def expected_sim() -> dict:
     checks = [{"kind": "scene_bindings"}, NO_DIAG,
               {"kind": "cursor_value", "signal": "C172/Air/h", "t": 0.0, "value": SIMD["runway"]["h_cg"], "abs": 1e-4,
                "note": "the runway start is the static equilibrium on the gear (CG 1.25 m above the runway)"},
-              {"kind": "max_abs_le", "signal": "C172/Air/h", "to_t": 20.0, "value": SIMD["runway"]["h_cg"] + 0.05,
-               "note": "the take-off roll: on the runway until rotation"},
+              {"kind": "max_abs_le", "signal": "C172/Air/h", "to_t": 14.0, "value": SIMD["runway"]["h_cg"] + 0.05,
+               "note": "the take-off roll: on the runway until rotation (45 KCAS at about 15 s)"},
               {"kind": "zero_crossing", "signal": "Status/agl_ft", "direction": "up", "level": 50.0, "n": 1,
                "value": ms["t_50ft"], "abs": 1.0,
                "note": f"{ref}: 50 ft above the runway at {ms['t_50ft']:.1f} s, {ms['x_50ft'] / 0.3048:.0f} ft from brake "
-                       f"release (POH Fig. 5-5: {poh_p['takeoff_50ft_ft'][0]:.0f} ft; see the README for the weak c172p "
-                       f"static thrust)"},
+                       f"release (POH Fig. 5-5: {poh_p['takeoff_50ft_ft'][0]:.0f} ft, flown by the demo pilot rather "
+                       f"than the POH's short-field technique; see the README)"},
               {"kind": "max_abs_le", "signal": "Status/phi_deg", "value": 22.0,
                "note": "the turn: the demo pilot banks at most 20 deg"}]
     for t, tol in ((20.0, 0.3), (40.0, 0.5), (60.0, 1.0), (90.0, 2.0), (120.0, 3.0)):
@@ -836,7 +836,7 @@ def expected_sim() -> dict:
     for t in (20.0, 60.0, 100.0):
         checks.append(_cursor("Status/kias", run, "cas", t, 0.5, None, scale=1.0 / KT))
     checks.append(_cursor("C172/Air/psi", run, "psi", 120.0, 0.02, "the turn to the east (90 deg)"))
-    checks.append(_cursor("C172/Air/x", run, "x", 30.0, 2.0, "the ground roll: distance from brake release"))
+    checks.append(_cursor("C172/Air/x", run, "x", 15.0, 2.0, "the ground roll: distance from brake release"))
     export = {"inputs": {"yoke_pitch": {"min": -0.1, "max": 0.1}, "yoke_roll": {"min": -0.1, "max": 0.1},
                          "pedals": {"min": -0.1, "max": 0.1}, "throttle": {"min": 0.0, "max": 0.3},
                          "brake_l": {"min": 0.0, "max": 0.5}, "brake_r": {"min": 0.0, "max": 0.5},
@@ -865,8 +865,9 @@ def expected_sim() -> dict:
            "abs": 5.0, "note": f"trimmed full-throttle climb at 300 m, at the model's best-rate speed {kc:.0f} KCAS: "
                                f"{roc:.0f} ft/min (POH Fig. 5-6: {poh_p['roc_sl_fpm'][0]:.0f} ft/min at sea level, "
                                f"76 KIAS; see the README)"},
-          {"kind": "cursor_value", "signal": "Status/vs_fpm", "t": 10.0, "value": poh_p["roc_sl_fpm"][0], "rtol": 0.2,
-           "note": "POH best rate of climb (sea level, 15 C), within 20 % (the c172p climbs about 15 % slower)"},
+          {"kind": "cursor_value", "signal": "Status/vs_fpm", "t": 10.0, "value": poh_p["roc_sl_fpm"][0], "rtol": 0.05,
+           "note": "POH best rate of climb (sea level, 15 C), within 5 % (the propeller tables are fitted to it, "
+                   "c172_data.PROP_FIT)"},
           _cursor("Status/kias", cl["run"], "cas", 15.0, 0.3, None, scale=1.0 / KT)]
     out["cessna-sim-climb"] = sim_entry("climb", cl["t_end"], trimmed_overrides(cl), ch)
     cr = SIMD["cruise"]
@@ -883,7 +884,7 @@ def expected_sim() -> dict:
 
 def expected() -> dict:
     return {"project": "cessna",
-            "description": "Cessna 172P (JSBSim c172p data): the open-loop rigid-body modes and the flyable cessna-sim with "
+            "description": "Cessna 172P (JSBSim c172p data, the propeller fitted to the POH): the open-loop rigid-body modes and the flyable cessna-sim with "
                            "its landing gear and power train as bond graphs. Numbers come from design/design.json (an "
                            "independent scipy implementation of the same physics).",
             "models": {"cessna-open-loop": {"checks": expected_open_loop()}, **expected_sim()}}
