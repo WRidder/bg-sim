@@ -15,6 +15,7 @@ import type { Diagnostic } from "../contracts/diagnostic";
 import type { ModelConnection, ModelNode } from "../contracts/model";
 import { BlockHelpButton } from "../app/BlockHelp";
 import { requestPlotsTab } from "../app/dockBus";
+import { requestSource } from "../code/codeSession";
 import { DashboardOverrideBadge } from "../dashboard/OverrideBadge";
 import { ExplainButton } from "../debug/explain/ExplainButton";
 import { SignalContextMenu } from "../debug/panels/SignalMenu";
@@ -604,8 +605,18 @@ export function NodeInspector({
   const constantDecls = block === undefined ? [] : editableConstants(ref, block.constants);
   const inlineSource = "inline" in node.block ? node.block.inline.source : null;
   const source = block?.source ?? inlineSource;
-  const sourcePath = block?.path ?? (inlineSource !== null ? "inline source" : null);
-  const [sourceOpen, setSourceOpen] = useState(false);
+  const openSource = () => {
+    if (source === null) {
+      return;
+    }
+    // The Code tab shows the block with its own editor (long generated lines scroll there,
+    // and a project block can be edited); an inline node opens as `inline:<id>`.
+    const target =
+      block !== undefined
+        ? { kind: block.ref.startsWith("stdlib:") ? ("stdlib" as const) : ("project" as const), ref: block.ref }
+        : { kind: "inline" as const, ref: `inline:${node.id}` };
+    requestSource({ ...target, line: 1, col: 1 }, { reveal: true });
+  };
   const [copy, setCopy] = useState<CopyState>({ status: "idle", message: null });
   const [saveDialog, setSaveDialog] = useState(false);
   const isInline = "inline" in node.block;
@@ -918,12 +929,11 @@ export function NodeInspector({
             type="button"
             className="button inspector-button"
             data-testid="inspector-open-source"
-            aria-expanded={sourceOpen}
             disabled={source === null}
-            title={source === null ? "This element has no source." : "Show the block source"}
-            onClick={() => setSourceOpen((open) => !open)}
+            title={source === null ? "This element has no source." : "Open the block source in the Code tab"}
+            onClick={openSource}
           >
-            {sourceOpen ? "Hide source" : "Open source"}
+            Open source
           </button>
           {isInline ? (
             <button
@@ -965,25 +975,6 @@ export function NodeInspector({
           >
             {copy.message}
           </p>
-        ) : null}
-        {sourceOpen && source !== null ? (
-          <div className="inspector-source" data-testid="inspector-source">
-            <div className="inspector-source__head">
-              <span className="inspector-source__path">{sourcePath}</span>
-              <button
-                type="button"
-                className="inspector-reset"
-                aria-label="Close the source"
-                title="Close the source"
-                onClick={() => setSourceOpen(false)}
-              >
-                ×
-              </button>
-            </div>
-            <pre className="inspector-source__text" data-testid="inspector-source-text">
-              {source}
-            </pre>
-          </div>
         ) : null}
       </section>
     </div>

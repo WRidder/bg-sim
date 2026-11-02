@@ -5,6 +5,7 @@
 Every block is defined in the BG-Sim modeling language, a small subset of Julia syntax. The **Code** tab shows and edits the source of one block at a time.
 
 - **Choose a source…** opens a block: an inline block of this model, a block of the project library, or a standard library block (read-only).
+- **Open source** in the inspector's Library section opens the selected block here.
 - **+ Equation** and **+ Discrete** add a new inline code block to the diagram. Double-click an inline code block on the canvas to open its source.
 - **+ Library block** creates a reusable block in the project library (see below).
 - Inline blocks are saved with the model. Project library blocks save automatically a moment after you stop typing.

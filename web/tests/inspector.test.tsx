@@ -7,6 +7,7 @@
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
+import { useCodeSessionStore } from "../src/code/codeSession";
 
 import catalogJson from "../../contracts/fixtures/catalog/valid/catalog.min.json";
 import type { Catalog, CatalogBlock } from "../src/contracts/catalog";
@@ -25,6 +26,7 @@ import {
   createConnection,
   createEmptyModel,
   createNodeFromBlock,
+  nodeRef,
 } from "../src/state/modelFactory";
 
 const catalog = catalogJson as unknown as Catalog;
@@ -447,24 +449,19 @@ describe("inspector fields", () => {
     expect(screen.queryByTestId("inspector-diagnostic-E102")).toBeNull();
   });
 
-  it("opens the catalog source read-only", () => {
+  it("opens the block source in the Code tab", () => {
     const motor = node("DCMotor", "n1", "Motor1");
     open([motor]);
     useDocumentStore.getState().setSelection(["n1"], []);
+    useCodeSessionStore.setState({ request: null });
     render(<Inspector />);
 
-    const button = screen.getByTestId("inspector-open-source");
-    expect(button.getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(button);
-    expect(button.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByTestId("inspector-source-text").textContent).toContain(
-      "@block DCMotor begin",
-    );
-    expect(screen.getByTestId("inspector-source").textContent).toContain(
-      "stdlib/converters/DCMotor.jl",
-    );
-    fireEvent.click(button);
+    fireEvent.click(screen.getByTestId("inspector-open-source"));
+    // No inline copy below the button: a generated block's 50k-character lines would
+    // widen the inspector column. The Code tab gets the request instead.
     expect(screen.queryByTestId("inspector-source")).toBeNull();
+    const request = useCodeSessionStore.getState().request;
+    expect(request?.detail).toEqual({ kind: "stdlib", ref: nodeRef(motor), line: 1, col: 1 });
   });
 
   it("inspects and edits the selected node of an entered subsystem", () => {
