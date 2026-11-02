@@ -1,0 +1,43 @@
+{
+  "format": "bgsim.robustness-test",
+  "version": 1,
+  "description": "The shared robustness test of the double-cart lab rig: the C5 comparison of plan/ROBUST_CLASSICAL_PLAN.md and step R1 of plan/RL_PLAN.md. Every controller (nominal classical, robust classical, pure RL, RL with an imitation warm start, the hybrid) runs the same draws and scenarios on the same truth model: the twin of design/lablib.py `setup` with every effect of realism.json switched on (link parts, Coulomb friction on the joints, the carriage and the motor, cable springs and drag, the motor constants, commutation ripple and cogging, 14-bit joint encoders with noise, the motor encoder through the belt, the whole-sample loop delay, the armature lag). The controller sees only the sensors (joint and motor encoder counts, the previous command) and returns the motor voltage; it may run its own estimator (filtered differences, an EKF, an observation history) at its own rate. The harness that runs it is design/robustness.py.",
+  "truth_model": {"module": "design/lablib.py", "function": "setup", "effects": "all", "substeps_per_ms": 8},
+  "draws": {
+    "nominal": true,
+    "monte_carlo": {"n": 64, "sampler": "lablib.sample", "seed0": 3000, "note": "uniform over the min/max of realism.json; seeds 3000-3063, apart from the realism screen's 2000-2047"}
+  },
+  "scenarios": {
+    "swingup": {
+      "description": "Hanging at rest (both links down, small seeded noise), the controller's swing-up, run to the end.",
+      "start": {"hanging": true, "noise_deg": 2.0, "noise_rate": 0.05, "seeded_by_draw": true},
+      "t_end": 10.0,
+      "scored": true
+    },
+    "balance_push": {
+      "description": "Upright with a 2 deg lean of both links, a 0.45 N, 40 ms horizontal push at the tip of link 2 at 2 s (the realism screen's balance case).",
+      "start": {"lean_deg": [2.0, 2.0]},
+      "push": {"t": 2.0, "amp_N": 0.45, "dur_s": 0.04},
+      "t_end": 7.0,
+      "scored": true
+    },
+    "knockdown_recover": {
+      "description": "Swing-up as above, then a 1.5 N, 100 ms tip push at 7 s that knocks the pendulum out of the catch region; the controller must catch it again by the end. A timed swing-up is expected to fail; this is the case for the state-driven (energy-based) swing-up and the learned controllers.",
+      "start": {"hanging": true, "noise_deg": 2.0, "noise_rate": 0.05, "seeded_by_draw": true},
+      "push": {"t": 7.0, "amp_N": 1.5, "dur_s": 0.1},
+      "t_end": 20.0,
+      "scored": false
+    }
+  },
+  "pass": {
+    "rail_m": 0.95,
+    "tail_s": 2.0,
+    "upright_deg": 2.0,
+    "rule": "the run finishes, |x| < rail_m throughout, and both links stay within upright_deg of upright over the last tail_s seconds"
+  },
+  "report": {
+    "per_scenario": ["success rate (pass rule)", "success rate with upright_deg = 5.7 (0.1 rad, the RL step-0 criterion)", "catch time (first time both links enter upright_deg and stay)", "peak |V|", "peak |i_m|", "peak |x|", "rms V over the tail"],
+    "output": "design/robustness_results.json: one entry per controller, keyed by its name, with the per-draw results and the summary",
+    "controllers": ["nominal (the design.json firmware: TVLQR swing-up and discrete LQR, filtered differences and EKF)", "robust classical (C1 balance, C2 swing-up, C3 energy-based swing-up)", "pure RL", "RL with an imitation warm start", "hybrid (RL swing-up, LQR balance)"]
+  }
+}

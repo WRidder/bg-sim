@@ -45,7 +45,11 @@ Status and progress: the tracking table at the end. Update it in the same commit
    re-arming after a drop.
 
 Each item is evaluated with the same robustness test as the RL controllers: Monte Carlo over the parameter box and the
-non-idealities, plus pushes. Success rate, catch time, peak actuator and travel are reported.
+non-idealities, plus pushes. Success rate, catch time, peak actuator and travel are reported. The test is defined in
+`examples/pendulum-double-cart-lab/design/robustness_test.json` (truth model `lablib.setup` with every effect, the
+nominal draw plus 64 Monte Carlo draws, seeds 3000-3063; scenarios `swingup`, `balance_push` and the unscored
+`knockdown_recover`); the harness `design/robustness.py` runs any controller on it and writes
+`design/robustness_results.json`.
 
 ## Comparison
 
@@ -61,8 +65,8 @@ One table (double-cart lab rig) compares five controllers:
 | # | item | rig | status | notes |
 | --- | --- | --- | --- | --- |
 | C0 | lab rig: the example, its classical redesign, `design/realism.json` and a twin realism screen | double-cart lab rig | done | `examples/pendulum-double-cart-lab`: links 0.248 / 0.200 kg (COM 0.229 / 0.176 m), unstable poles 4.55 and 8.92 /s, swing-up energy 3.2 J. Design T_s 3.0 s: catch 4.0 s, peak 15.0 V (63 %), 6.0 A, travel 0.39 m; largest push 0.90 N (0.87 N with 2 ms delay); robust to masses ±5 %, lengths ±1 %, friction ×3, 1–2 ms delay, quantised encoders. Screen (`design/screen_results.json`): feasible with margin with an EKF (48/48 Monte Carlo); filtered differences marginal (36/48); joint Coulomb budget ~1e-3 N m (joint 2), ~5e-3 N m (joint 1). |
-| C1 | robust balance: multi-model LQR, structured H∞, μ-synthesis, loop shaping; μ-analysis of all balance controllers | double-cart lab rig | todo | after C0 |
-| C2 | worst-case swing-up plan | double-cart lab rig | todo | |
-| C3 | energy-based swing-up with re-arm | double-cart lab rig | todo | |
+| C1 | robust balance: multi-model LQR, structured H∞, μ-synthesis, loop shaping; μ-analysis of all balance controllers | double-cart lab rig | in progress | started 2026-11-02; first the shared harness `design/robustness.py` |
+| C2 | worst-case swing-up plan | double-cart lab rig | in progress | started 2026-11-02 |
+| C3 | energy-based swing-up with re-arm | double-cart lab rig | in progress | started 2026-11-02 |
 | C4 | items 1 to 3 on the quad cart, then the rotary rigs | quad cart, rotary | deferred | only after the 2-link workflow proves viable |
 | C5 | comparison table: classical vs robust classical vs RL vs hybrid | double-cart lab rig | todo | with RL step R1 |
