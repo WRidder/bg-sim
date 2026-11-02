@@ -1,0 +1,7 @@
+# Round root section with a Cd of 0.50
+# Made by Jason Jonkman
+# note that this file uses Marshall Buhl's new input file processing; start all comment lines with !
+# alpha_deg,cl,cd
+-180,0,0.5
+0,0,0.5
+180,0,0.5
