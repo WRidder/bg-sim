@@ -12,6 +12,7 @@ import { LibraryBrowser } from "../src/library/LibraryBrowser";
 import { LibrarySettings } from "../src/library/LibrarySettings";
 import { LibraryViewToggle } from "../src/library/LibraryViewToggle";
 import { resetHelpStore, useHelpStore } from "../src/app/helpStore";
+import { useCodeSessionStore } from "../src/code/codeSession";
 import {
   EXPANDED_KEY,
   HIDDEN_KEY,
@@ -409,11 +410,31 @@ describe("library list and grid views", () => {
     expect(button.getAttribute("aria-expanded")).toBeNull();
     expect(motor.querySelector(".library-item__summary, .library-item__details")).toBeNull();
 
+    // A left click no longer opens the help; the right-click menu does (Info), next to Show source.
     fireEvent.click(button);
     expect(motor.querySelector(".library-item__details")).toBeNull();
+    expect(useHelpStore.getState().blockRef).toBeNull();
+    fireEvent.contextMenu(motor, { clientX: 20, clientY: 30 });
+    const menu = screen.getByTestId("library-menu");
+    useCodeSessionStore.setState({ request: null });
+    fireEvent.click(within(menu).getByTestId("library-menu-source"));
+    expect(screen.queryByTestId("library-menu")).toBeNull();
+    expect(useCodeSessionStore.getState().request?.detail).toEqual({
+      kind: "stdlib",
+      ref: motor.getAttribute("data-ref"),
+      line: 1,
+      col: 1,
+    });
+    fireEvent.contextMenu(motor, { clientX: 20, clientY: 30 });
+    fireEvent.click(screen.getByTestId("library-menu-info"));
     expect(useHelpStore.getState().blockRef).toBe(motor.getAttribute("data-ref"));
 
     const junction = screen.getByTestId("library-item-junction-0");
+    // A junction has no source: its menu offers Info only.
+    fireEvent.contextMenu(junction, { clientX: 20, clientY: 30 });
+    expect(screen.queryByTestId("library-menu-source")).toBeNull();
+    fireEvent.keyDown(screen.getByTestId("library-menu"), { key: "Escape" });
+    expect(screen.queryByTestId("library-menu")).toBeNull();
     expect(junction.querySelector(".library-item__label")?.textContent).toBe("Junction 0");
     expect(junction.querySelector(".library-item__summary")).toBeNull();
     expect(junction.getAttribute("title")).toMatch(/equal efforts/);
