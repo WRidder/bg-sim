@@ -1392,7 +1392,10 @@ export const useDocumentStore = create<DocumentStore>()((set, get) => {
     },
 
     setBindings: (bindings) => {
-      const copy = structuredClone(bindings) as Binding[];
+      // a binding already in the document is kept as it is (it is frozen): an edit of one row of a long
+      // binding table then leaves the other rows' objects, their validation and their rendering alone
+      const kept = new Set<Binding>(get().doc?.bindings ?? []);
+      const copy = bindings.map((b) => (kept.has(b) ? b : structuredClone(b)));
       commit((draft) => {
         if (copy.length === 0) {
           delete draft.bindings;

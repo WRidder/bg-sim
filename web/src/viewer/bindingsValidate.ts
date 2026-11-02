@@ -272,12 +272,44 @@ export function validateBindings(bindings: readonly Binding[], scene: SceneLooku
   return validateBindingRows(bindings, scene, signals).flat();
 }
 
-/** The diagnostics of each binding, in order (the binding table shows them under their row). */
-export function validateBindingRows(bindings: readonly Binding[], scene: SceneLookup, signals: SignalUnits | null): Diagnostic[][] {
-  return bindings.map((binding, index) => validateOne(binding, scene, signals, bindings.slice(0, index)));
+/**
+ * Diagnostics of bindings already validated against one scene and one signal list (the binding table
+ * keeps one per scene and signal list): a binding object that is unchanged keeps its result, and so
+ * its row need not render again.
+ */
+export type RowDiagnosticsCache = WeakMap<Binding, Diagnostic[]>;
+
+/** Deformation and mode-shapes bindings are also checked against the bindings before them (one per visual and family). */
+function readsEarlier(binding: Binding): boolean {
+  return binding.property === "deformation" || binding.property === "mode-shapes";
 }
 
-function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits | null, earlier: readonly Binding[]): Diagnostic[] {
+function sameDiagnostics(a: readonly Diagnostic[], b: readonly Diagnostic[]): boolean {
+  return a.length === b.length && a.every((d, k) => {
+    const e = b[k];
+    return e !== undefined && d.code === e.code && d.message === e.message && d.hint === e.hint && d.path === e.path && d.severity === e.severity;
+  });
+}
+
+/**
+ * The diagnostics of each binding, in order (the binding table shows them under their row). With a
+ * `cache` (valid for this scene and signal list only) an unchanged binding is not validated again, and
+ * a row that reads the bindings before it keeps its previous result object while that is unchanged.
+ */
+export function validateBindingRows(bindings: readonly Binding[], scene: SceneLookup, signals: SignalUnits | null, cache?: RowDiagnosticsCache): Diagnostic[][] {
+  return bindings.map((binding, index) => {
+    const hit = cache?.get(binding);
+    if (hit !== undefined && !readsEarlier(binding)) return hit;
+    const fresh = validateOne(binding, scene, signals, bindings, index);
+    if (hit !== undefined && sameDiagnostics(hit, fresh)) return hit;
+    cache?.set(binding, fresh);
+    return fresh;
+  });
+}
+
+/** `binding` is `all[index]`; the bindings before it matter for deformation and mode-shapes bindings. */
+function validateOne(binding: Binding, scene: SceneLookup, signals: SignalUnits | null, all: readonly Binding[], index: number): Diagnostic[] {
+  const earlier = readsEarlier(binding) ? all.slice(0, index) : [];
   const out: Diagnostic[] = [];
   const target = typeof binding.target === "string" ? binding.target : "";
   const property: string = binding.property;

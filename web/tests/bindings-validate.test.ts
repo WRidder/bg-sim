@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Binding } from "../src/contracts/model";
-import { validateBindings, type SceneLookup, type SignalUnits } from "../src/viewer/bindingsValidate";
+import { validateBindingRows, validateBindings, type RowDiagnosticsCache, type SceneLookup, type SignalUnits } from "../src/viewer/bindingsValidate";
 
 const scene: SceneLookup = {
   has: (ref) => ["joint:shoulder", "joint:slide", "joint:weld", "link:cart", "frame:tool", "visual:body"].includes(ref),
@@ -106,5 +106,36 @@ describe("validateBindings", () => {
   it("skips the signal checks while the signals are unknown, but still checks targets and counts", () => {
     expect(codes([{ target: "joint:shoulder", property: "position", signal: "P/anything" }], null)).toEqual([]);
     expect(codes([{ target: "joint:elbow", property: "position", signal: "P/anything" }], null)).toEqual(["E301"]);
+  });
+});
+
+describe("validateBindingRows with a cache", () => {
+  it("keeps the result of every unchanged row, so only an edited row renders again", () => {
+    const cache: RowDiagnosticsCache = new WeakMap();
+    const a: Binding = { target: "joint:shoulder", property: "position", signal: "P/phi" };
+    const b: Binding = { target: "joint:elbow", property: "position", signal: "P/phi" };
+    const c: Binding = { target: "link:cart", property: "visible", signal: "P/nope" };
+    const first = validateBindingRows([a, b, c], scene, signals, cache);
+    expect(first.map((d) => d.map((x) => x.code))).toEqual([[], ["E301"], ["E302"]]);
+    const edited: Binding = { ...b, target: "joint:slide", signal: "P/x" };
+    const second = validateBindingRows([a, edited, c], scene, signals, cache);
+    expect(second[0]).toBe(first[0]);
+    expect(second[2]).toBe(first[2]);
+    expect(second[1]).toEqual([]);
+    // the same results as without a cache
+    expect(second).toEqual(validateBindingRows([a, edited, c], scene, signals));
+  });
+
+  it("checks a deformation binding against the bindings before it again, keeping an equal result", () => {
+    const cache: RowDiagnosticsCache = new WeakMap();
+    const bend: Binding = { target: "visual:body", property: "deformation", family: "bending-y", basis: "clamped-free", beam: { axis: "+x" }, signal: ["P/x"] };
+    const twin: Binding = { ...bend };
+    const alone = validateBindingRows([bend], scene, signals, cache);
+    expect(alone).toEqual([[]]);
+    expect(validateBindingRows([bend], scene, signals, cache)[0]).toBe(alone[0]);
+    // a second binding of one family on the visual: the first stays clean, the second is E301
+    const both = validateBindingRows([bend, twin], scene, signals, cache);
+    expect(both[0]).toBe(alone[0]);
+    expect(both[1]?.map((d) => d.code)).toEqual(["E301"]);
   });
 });

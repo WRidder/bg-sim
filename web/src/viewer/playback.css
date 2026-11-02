@@ -163,6 +163,11 @@
   box-shadow: inset 2px 0 0 var(--color-error);
 }
 
+/* stands in for the rows of a long table that are out of view */
+.bindings__table .bindings__gap td {
+  padding: 0;
+}
+
 .bindings__problem {
   color: var(--color-error-text);
 }
@@ -178,6 +183,72 @@
 .bindings__signal {
   min-width: 10rem;
   max-width: 16rem;
+}
+
+.bindings__target {
+  min-width: 10rem;
+  max-width: 16rem;
+}
+
+/* Searchable field (Combobox.tsx): an input, and while open a windowed list of fixed-height rows. */
+.combo {
+  position: relative;
+  display: inline-block;
+}
+
+.combo__input {
+  box-sizing: border-box;
+  width: 100%;
+  text-overflow: ellipsis;
+}
+
+.combo__list {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 20;
+  box-sizing: border-box;
+  min-width: max(100%, 18rem);
+  max-width: 32rem;
+  overflow-y: auto;
+  border: var(--border-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-panel);
+}
+
+/* the height is OPTION_HEIGHT in Combobox.tsx */
+.combo__option {
+  position: absolute;
+  right: 0;
+  left: 0;
+  box-sizing: border-box;
+  height: 24px;
+  padding: 0 var(--space-2);
+  overflow: hidden;
+  line-height: 24px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.combo__option[aria-selected="true"] {
+  background: var(--color-surface);
+  color: var(--color-accent-hover);
+}
+
+.combo__option[data-current="true"] {
+  font-weight: var(--font-weight-semibold);
+}
+
+.combo__option--note {
+  color: var(--color-text-muted);
+}
+
+.combo__empty {
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text-muted);
 }
 
 .bindings__pose {

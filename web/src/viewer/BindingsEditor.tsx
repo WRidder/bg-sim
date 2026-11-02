@@ -1,5 +1,6 @@
-import { Fragment, useMemo, useState, type ReactElement } from "react";
+import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactElement } from "react";
 
+import type { Diagnostic } from "../contracts/diagnostic";
 import type {
   BeamMapping, Binding, Colormap, DeformationBasis, DeformationBinding, DeformationFamily, ModeShapeBinding, SegmentBinding,
   SegmentBrokenStyle, SegmentPlane, ShapeAxis,
@@ -12,7 +13,8 @@ import { useDocumentStore } from "../state/documentStore";
 import { maxModes } from "./beamModes";
 import { COLORMAPS, colormapGradient } from "./bindingsColormaps";
 import { allowedKinds, MAX_MESH_MODES, signalsOf, validateBindingRows, type SignalUnits } from "./bindingsValidate";
-import { modalBlocks, modalSignals } from "./modalBlocks";
+import { Combobox, comboChoices, NO_CHOICES, type ComboChoices } from "./Combobox";
+import { modalBlocks, modalSignals, type ModalBlock } from "./modalBlocks";
 
 export interface BindingsEditorProps {
   readonly built: BuiltScene | null;
@@ -157,26 +159,42 @@ function OptionalNumberField({ value, placeholder, label, testId, signed = false
   );
 }
 
-function SignalSelect({ value, signals, label, testId, onChange }: { value: string; signals: SignalUnits | null; label: string; testId: string; onChange: (v: string) => void }): ReactElement {
-  if (signals === null) {
+/** The signals to pick from as combobox choices (`id [unit]`), built once per signal list; null: none listed yet. */
+function signalChoices(signals: SignalUnits | null): ComboChoices | null {
+  if (signals === null) return null;
+  const ids = [...signals.keys()];
+  return comboChoices(
+    ids,
+    ids.map((id) => {
+      const unit = signals.get(id);
+      return unit !== undefined && unit !== null && unit !== "" ? `${id} [${unit}]` : id;
+    }),
+  );
+}
+
+/**
+ * A signal of a binding: a searchable field over the model's signals (the list is built only while it
+ * is open), or a plain text field while no check or run has listed them. `optional`: empty means none
+ * (a segment's failure flag); otherwise an empty field asks to choose a signal.
+ */
+function SignalField({ value, choices, label, testId, optional = false, onChange }: { value: string; choices: ComboChoices | null; label: string; testId: string; optional?: boolean; onChange: (v: string) => void }): ReactElement {
+  if (choices === null) {
     return (
-      <input type="text" className="bindings__signal" aria-label={label} data-testid={testId} value={value} placeholder="Plant/Arm/phi1" onChange={(e) => { onChange(e.target.value); }} />
+      <input type="text" className="bindings__signal" aria-label={label} data-testid={testId} value={value} placeholder={optional ? "none" : "Plant/Arm/phi1"} onChange={(e) => { onChange(e.target.value); }} />
     );
   }
-  const ids = [...signals.keys()];
   return (
-    <select className="bindings__signal" aria-label={label} data-testid={testId} value={value} onChange={(e) => { onChange(e.target.value); }}>
-      {value === "" ? <option value="">Choose a signal</option> : null}
-      {value !== "" && !signals.has(value) ? <option value={value}>{`${value} (unknown)`}</option> : null}
-      {ids.map((id) => {
-        const unit = signals.get(id);
-        return (
-          <option key={id} value={id}>
-            {unit !== undefined && unit !== null && unit !== "" ? `${id} [${unit}]` : id}
-          </option>
-        );
-      })}
-    </select>
+    <Combobox
+      className="bindings__signal"
+      value={value}
+      choices={choices}
+      label={label}
+      testId={testId}
+      noneLabel={optional ? "none" : undefined}
+      placeholder={optional ? undefined : "Choose a signal"}
+      unknownNote="unknown"
+      onChange={onChange}
+    />
   );
 }
 
@@ -194,8 +212,7 @@ function Choose<T extends string>({ value, options, label, testId, onChange }: {
  * Fills the modal coordinates of a mode-shapes binding from a block that records `<Block>/eta[1..n]`: all
  * of them, but no more than `limit` (the mesh's morph targets when known).
  */
-function ModalFill({ signals, limit, label, testId, onFill }: { signals: SignalUnits | null; limit: number; label: string; testId: string; onFill: (next: string[]) => void }): ReactElement | null {
-  const blocks = useMemo(() => modalBlocks(signals), [signals]);
+function ModalFill({ blocks, limit, label, testId, onFill }: { blocks: readonly ModalBlock[]; limit: number; label: string; testId: string; onFill: (next: string[]) => void }): ReactElement | null {
   if (blocks.length === 0) return null;
   return (
     <select
@@ -216,15 +233,15 @@ function ModalFill({ signals, limit, label, testId, onFill }: { signals: SignalU
 }
 
 /** The modal coordinates of a deformation or mode-shapes binding: one signal per mode, with buttons to add and remove a mode. */
-function ModeSignals({ names, signals, label, testId, max, fillLimit, onChange }: { names: readonly string[]; signals: SignalUnits | null; label: string; testId: string; max: number; fillLimit?: number; onChange: (next: string[]) => void }): ReactElement {
+function ModeSignals({ names, choices, blocks, label, testId, max, fillLimit, onChange }: { names: readonly string[]; choices: ComboChoices | null; blocks: readonly ModalBlock[]; label: string; testId: string; max: number; fillLimit?: number; onChange: (next: string[]) => void }): ReactElement {
   return (
     <div className="bindings__modes">
-      {fillLimit !== undefined ? <ModalFill signals={signals} limit={fillLimit} label={label} testId={testId} onFill={onChange} /> : null}
+      {fillLimit !== undefined ? <ModalFill blocks={blocks} limit={fillLimit} label={label} testId={testId} onFill={onChange} /> : null}
       {names.map((name, k) => (
-        <SignalSelect
+        <SignalField
           key={k}
           value={name}
-          signals={signals}
+          choices={choices}
           label={`Mode ${String(k + 1)} signal of ${label}`}
           testId={`${testId}-${String(k)}`}
           onChange={(v) => { onChange(names.map((s, j) => (j === k ? v : s))); }}
@@ -349,24 +366,8 @@ function DeformationSettings({ binding, index, onChange }: { binding: Deformatio
   );
 }
 
-/** An optional signal: empty means none (the segment's failure flag). */
-function OptionalSignalSelect({ value, signals, label, testId, onChange }: { value: string; signals: SignalUnits | null; label: string; testId: string; onChange: (v: string) => void }): ReactElement {
-  if (signals === null) {
-    return <input type="text" className="bindings__signal" aria-label={label} data-testid={testId} value={value} placeholder="none" onChange={(e) => { onChange(e.target.value); }} />;
-  }
-  return (
-    <select className="bindings__signal" aria-label={label} data-testid={testId} value={value} onChange={(e) => { onChange(e.target.value); }}>
-      <option value="">none</option>
-      {value !== "" && !signals.has(value) ? <option value={value}>{`${value} (unknown)`}</option> : null}
-      {[...signals.keys()].map((id) => (
-        <option key={id} value={id}>{id}</option>
-      ))}
-    </select>
-  );
-}
-
 /** Plane and depth (planar end points), stretch axis, failure flag and broken style of a segment binding row. */
-function SegmentSettings({ binding, index, signals, onChange }: { binding: SegmentBinding; index: number; signals: SignalUnits | null; onChange: (next: SegmentBinding) => void }): ReactElement {
+function SegmentSettings({ binding, index, choices, onChange }: { binding: SegmentBinding; index: number; choices: ComboChoices | null; onChange: (next: SegmentBinding) => void }): ReactElement {
   const i = String(index);
   const n = String(index + 1);
   const planar = binding.signal.length === 4;
@@ -411,9 +412,10 @@ function SegmentSettings({ binding, index, signals, onChange }: { binding: Segme
       </label>
       <label className="bindings__inline">
         <span>broken</span>
-        <OptionalSignalSelect
+        <SignalField
+          optional
           value={binding.broken ?? ""}
-          signals={signals}
+          choices={choices}
           label={`Failure flag of binding ${n}`}
           testId={`binding-broken-${i}`}
           onChange={(v) => { onChange(v === "" ? withoutBroken() : { ...binding, broken: v }); }}
@@ -524,6 +526,225 @@ function partLabels(property: string, n: number): readonly string[] {
   return property === "pose" ? POSE_PARTS : property === "segment" ? segmentParts(n) : ["signal"];
 }
 
+const NO_PROBLEMS: readonly Diagnostic[] = [];
+
+/** A table with more rows than this renders only the rows in and near view (an empty row of the same height stands in for the others). */
+export const WINDOW_ROWS = 150;
+/** Rows within this distance of the view (px) are rendered too, so scrolling and Tab find them ready. */
+const OVERSCAN_PX = 600;
+/** The view height while it cannot be measured (px). */
+const FALLBACK_VIEW_PX = 800;
+
+const NO_MEASURE = (): void => undefined;
+/** How long the mouse rests on a row before its target is outlined, ms. */
+const HOVER_DELAY_MS = 60;
+
+/** The height of a row before it was measured, px. */
+function estimatedHeight(b: Binding, problems: number): number {
+  const base = b.property === "pose" || b.property === "segment" ? 64 : b.property === "deformation" || b.property === "mode-shapes" ? 100 : 34;
+  return base + (problems > 0 ? 8 + 20 * problems : 0);
+}
+
+/** A run of rows to render, or the height of the rows left out between them. */
+type Slice = { readonly kind: "row"; readonly index: number } | { readonly kind: "gap"; readonly key: string; readonly height: number };
+
+/**
+ * The rows of a long table to render: those within `OVERSCAN_PX` of the view `[top, top + height)` and the
+ * row with the focus, with the heights of the rows in between.
+ */
+export function windowRows(heights: readonly number[], top: number, height: number, keep: number | null): Slice[] {
+  const lo = top - OVERSCAN_PX;
+  const hi = top + height + OVERSCAN_PX;
+  const shown: number[] = [];
+  let y = 0;
+  heights.forEach((h, i) => {
+    if ((y + h >= lo && y <= hi) || i === keep) shown.push(i);
+    y += h;
+  });
+  const out: Slice[] = [];
+  let next = 0;
+  const gap = (from: number, to: number): void => {
+    if (to <= from) return;
+    let sum = 0;
+    for (let k = from; k < to; k++) sum += heights[k] ?? 0;
+    out.push({ kind: "gap", key: `gap-${String(from)}`, height: sum });
+  };
+  for (const i of shown) {
+    gap(next, i);
+    out.push({ kind: "row", index: i });
+    next = i + 1;
+  }
+  gap(next, heights.length);
+  return out;
+}
+
+interface BindingRowProps {
+  readonly binding: Binding;
+  readonly index: number;
+  readonly problems: readonly Diagnostic[];
+  /** The scene entities the binding's property can drive. */
+  readonly targets: ComboChoices;
+  readonly signals: ComboChoices | null;
+  readonly blocks: readonly ModalBlock[];
+  readonly built: BuiltScene | null;
+  readonly onReplace: (index: number, next: Binding) => void;
+  readonly onRemove: (index: number) => void;
+  /** Outline the row's target in 3D now (focus). */
+  readonly onHover: (target: string | null) => void;
+  /** Outline it once the mouse rests on the row (`HOVER_DELAY_MS`). */
+  readonly onPointHover: (target: string | null) => void;
+  /** The row holds the focus (index) or lost it (null): a long table keeps that row rendered. */
+  readonly onFocusRow: (index: number | null) => void;
+  /** The rendered height of the row and its problems, px (a long table places the rows out of view by it). */
+  readonly onMeasure: (binding: Binding, height: number) => void;
+}
+
+/**
+ * One binding of the table (and its problems below it). Memoised: an edit replaces one binding, so only
+ * that row renders again; the shared lists (targets, signals, modal blocks) keep their identity.
+ */
+const BindingRow = memo(function BindingRow({ binding: b, index: i, problems, targets, signals, blocks, built, onReplace, onRemove, onHover, onPointHover, onFocusRow, onMeasure }: BindingRowProps): ReactElement {
+  const names = signalsOf(b);
+  const n = String(i + 1);
+  const replace = onReplace;
+  const rowRef = useRef<HTMLTableRowElement>(null);
+  const problemRef = useRef<HTMLTableRowElement>(null);
+  useLayoutEffect(() => {
+    if (onMeasure !== NO_MEASURE) onMeasure(b, (rowRef.current?.offsetHeight ?? 0) + (problemRef.current?.offsetHeight ?? 0));
+  });
+  return (
+    <>
+      <tr
+        ref={rowRef}
+        className="bindings__row"
+        data-testid={`binding-row-${String(i)}`}
+        data-invalid={problems.length > 0 ? "true" : undefined}
+        onMouseEnter={() => { onPointHover(b.target); }}
+        onMouseLeave={() => { onPointHover(null); }}
+        onFocus={() => {
+          onHover(b.target);
+          onFocusRow(i);
+        }}
+        onBlur={() => {
+          onHover(null);
+          onFocusRow(null);
+        }}
+      >
+        <td>
+          <Combobox
+            className="bindings__target"
+            value={b.target}
+            choices={targets}
+            label={`Target of binding ${n}`}
+            testId={`binding-target-${String(i)}`}
+            unknownNote="not in scene"
+            onChange={(v) => { replace(i, { ...b, target: v } as Binding); }}
+          />
+        </td>
+        <td data-testid={`binding-property-${String(i)}`}>{b.property}</td>
+        <td>
+          {b.property === "deformation" ? (
+            <ModeSignals
+              names={names}
+              choices={signals}
+              blocks={blocks}
+              label={`binding ${n}`}
+              testId={`binding-signal-${String(i)}`}
+              max={maxModes(b.basis)}
+              onChange={(next) => { replace(i, { ...b, signal: next as DeformationBinding["signal"] }); }}
+            />
+          ) : b.property === "mode-shapes" ? (
+            <ModeSignals
+              names={names}
+              choices={signals}
+              blocks={blocks}
+              label={`binding ${n}`}
+              testId={`binding-signal-${String(i)}`}
+              max={meshModeLimit(built, b.target)}
+              fillLimit={meshModeLimit(built, b.target)}
+              onChange={(next) => { replace(i, { ...b, signal: next as ModeShapeBinding["signal"] }); }}
+            />
+          ) : (
+            <div className={b.property === "pose" || b.property === "segment" ? "bindings__pose" : undefined}>
+              {partLabels(b.property, names.length).map((part, k) => (
+                <SignalField
+                  key={part}
+                  value={names[k] ?? ""}
+                  choices={signals}
+                  label={b.property === "pose" || b.property === "segment" ? `${part} signal of binding ${n}` : `Signal of binding ${n}`}
+                  testId={`binding-signal-${String(i)}${b.property === "pose" || b.property === "segment" ? `-${String(k)}` : ""}`}
+                  onChange={(v) => {
+                    if (b.property === "pose" || b.property === "segment") {
+                      const list = [...names];
+                      list[k] = v;
+                      replace(i, { ...b, signal: list } as Binding);
+                    } else {
+                      replace(i, { ...b, signal: v } as Binding);
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </td>
+        <td>
+          <NumberField value={b.gain ?? 1} label={`Gain of binding ${n}`} testId={`binding-gain-${String(i)}`} onCommit={(v) => { replace(i, { ...b, gain: v }); }} />
+        </td>
+        <td>
+          {b.property === "deformation" || b.property === "mode-shapes" ? (
+            <span className="bindings__none" title="A deformation has no offset">—</span>
+          ) : (
+            <NumberField value={b.offset ?? 0} label={`Offset of binding ${n}`} testId={`binding-offset-${String(i)}`} onCommit={(v) => { replace(i, { ...b, offset: v }); }} />
+          )}
+        </td>
+        <td>
+          {b.property === "color" ? (
+            <div className="bindings__color">
+              <select
+                aria-label={`Colormap of binding ${n}`}
+                value={b.colormap}
+                onChange={(e) => { replace(i, { ...b, colormap: e.target.value as Colormap }); }}
+              >
+                {COLORMAPS.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <span className="bindings__swatch" style={{ background: colormapGradient(b.colormap) }} aria-hidden="true" />
+              <NumberField value={b.range[0]} label={`Range minimum of binding ${n}`} testId={`binding-min-${String(i)}`} onCommit={(v) => { replace(i, { ...b, range: [v, b.range[1]] }); }} />
+              <NumberField value={b.range[1]} label={`Range maximum of binding ${n}`} testId={`binding-max-${String(i)}`} onCommit={(v) => { replace(i, { ...b, range: [b.range[0], v] }); }} />
+            </div>
+          ) : b.property === "deformation" ? (
+            <DeformationSettings binding={b} index={i} onChange={(next) => { replace(i, next); }} />
+          ) : b.property === "mode-shapes" ? (
+            <>
+              <MeshModesNote built={built} target={b.target} testId={`binding-mesh-modes-${String(i)}`} />
+              <StressSettings binding={b} index={i} onChange={(next) => { replace(i, next); }} />
+            </>
+          ) : b.property === "segment" ? (
+            <SegmentSettings binding={b} index={i} choices={signals} onChange={(next) => { replace(i, next); }} />
+          ) : null}
+        </td>
+        <td>
+          <button type="button" className="playback__button" aria-label={`Remove binding ${n}`} data-testid={`binding-remove-${String(i)}`} onClick={() => { onRemove(i); }}>
+            <span aria-hidden="true">{"✕"}</span>
+          </button>
+        </td>
+      </tr>
+      {problems.length > 0 ? (
+        <tr ref={problemRef} className="bindings__problem-row">
+          <td className="bindings__problem" colSpan={7} data-testid={`binding-problem-${String(i)}`} role="alert">
+            {problems.map((d) => (
+              <p key={`${d.code}${d.message}`}>
+                <strong>{d.code}</strong> {d.message}. {d.hint}
+              </p>
+            ))}
+          </td>
+        </tr>
+      ) : null}
+    </>
+  );
+});
+
 /**
  * The binding table of the 3D View (plan 7.6): target from the scene tree, property, signal from the model's
  * signals, gain and offset, colormap and range for colour, family, basis, beam mapping and modes for a
@@ -531,7 +752,7 @@ function partLabels(property: string, n: number): readonly string[] {
  * one step). Every edit is one undo step of the model document. Hovering or focusing a row outlines
  * its target in 3D; a row with a problem shows its diagnostic (E301-E304) with the hint.
  */
-export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEditorProps): ReactElement {
+export const BindingsEditor = memo(function BindingsEditor({ built, bindings, signals, onHover }: BindingsEditorProps): ReactElement {
   const setBindings = useDocumentStore((s) => s.setBindings);
   const tree = built?.resolved.tree;
   const [property, setProperty] = useState<Property>("position");
@@ -542,16 +763,116 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
   const [deform, setDeform] = useState<DeformDraft>({ family: "bending-y", basis: "clamped-free", axis: "+x" });
   const [spatial, setSpatial] = useState(false);
 
-  const choices = useMemo(() => (tree === undefined ? [] : targetsFor(tree, property, built)), [tree, property, built]);
-  const rowDiagnostics = useMemo(() => (built === null ? bindings.map(() => []) : validateBindingRows(bindings, built, signals)), [bindings, built, signals]);
+  // shared by every row, computed once per scene and signal list
+  const targetsByProperty = useMemo(() => {
+    const out = new Map<string, { list: Choice[]; choices: ComboChoices }>();
+    for (const p of PROPERTIES) {
+      const list = tree === undefined ? [] : targetsFor(tree, p, built);
+      out.set(p, { list, choices: comboChoices(list.map((c) => c.ref), list.map((c) => c.label)) });
+    }
+    return out;
+  }, [tree, built]);
+  const choices = targetsByProperty.get(property)?.list ?? [];
+  const sigChoices = useMemo(() => signalChoices(signals), [signals]);
+  const blocks = useMemo(() => modalBlocks(signals), [signals]);
+  // a row's diagnostics are reused while its binding is unchanged, so only an edited row renders again
+  const diagnosticsCache = useMemo(() => new WeakMap<Binding, Diagnostic[]>(), [built, signals]);
+  const rowDiagnostics = useMemo(
+    () => (built === null ? bindings.map(() => NO_PROBLEMS) : validateBindingRows(bindings, built, signals, diagnosticsCache)),
+    [bindings, built, signals, diagnosticsCache],
+  );
 
-  const replace = (index: number, next: Binding): void => {
-    setBindings(bindings.map((b, i) => (i === index ? next : b)));
-  };
-  const remove = (index: number): void => {
-    setBindings(bindings.filter((_, i) => i !== index));
-    onHover(null);
-  };
+  // stable row callbacks: they read the bindings of the last render
+  const latest = useRef(bindings);
+  useLayoutEffect(() => {
+    latest.current = bindings;
+  }, [bindings]);
+  const replace = useCallback(
+    (index: number, next: Binding): void => {
+      setBindings(latest.current.map((b, i) => (i === index ? next : b)));
+    },
+    [setBindings],
+  );
+  // the mouse outline follows after a short pause: a wheel scroll moves many rows under the pointer,
+  // and every outline change draws the 3D view again
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverSoon = useCallback(
+    (t: string | null): void => {
+      if (hoverTimer.current !== null) clearTimeout(hoverTimer.current);
+      hoverTimer.current = setTimeout(() => {
+        hoverTimer.current = null;
+        onHover(t);
+      }, HOVER_DELAY_MS);
+    },
+    [onHover],
+  );
+  const hoverNow = useCallback(
+    (t: string | null): void => {
+      if (hoverTimer.current !== null) clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+      onHover(t);
+    },
+    [onHover],
+  );
+  useLayoutEffect(
+    () => () => {
+      if (hoverTimer.current !== null) clearTimeout(hoverTimer.current);
+    },
+    [],
+  );
+  const [focused, setFocused] = useState<number | null>(null);
+  const remove = useCallback(
+    (index: number): void => {
+      setBindings(latest.current.filter((_, i) => i !== index));
+      hoverNow(null);
+      setFocused(null);
+    },
+    [setBindings, hoverNow],
+  );
+
+  // a long table renders the rows in and near view only (WINDOW_ROWS)
+  const windowed = bindings.length > WINDOW_ROWS;
+  const scrollerRef = useRef<HTMLElement>(null);
+  const [view, setView] = useState({ top: 0, height: FALLBACK_VIEW_PX });
+  const readView = useCallback((): void => {
+    const el = scrollerRef.current;
+    if (el === null) return;
+    // in steps of a third of the overscan: the rows rendered change (and the table renders) only every few wheel notches
+    const step = OVERSCAN_PX / 3;
+    const next = { top: Math.floor(el.scrollTop / step) * step, height: el.clientHeight > 0 ? el.clientHeight + step : FALLBACK_VIEW_PX };
+    setView((v) => (v.top === next.top && v.height === next.height ? v : next));
+  }, []);
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!windowed || el === null) return;
+    readView();
+    const observer = new ResizeObserver(readView);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, [windowed, readView]);
+  const measured = useRef(new WeakMap<Binding, number>());
+  const [, setMeasures] = useState(0);
+  const remeasure = useRef<number | null>(null);
+  const onMeasure = useCallback((binding: Binding, height: number): void => {
+    if (height <= 0 || measured.current.get(binding) === height) return;
+    measured.current.set(binding, height);
+    // one re-render for all the rows measured in a frame
+    remeasure.current ??= requestAnimationFrame(() => {
+      remeasure.current = null;
+      setMeasures((k) => k + 1);
+    });
+  }, []);
+  useLayoutEffect(
+    () => () => {
+      if (remeasure.current !== null) cancelAnimationFrame(remeasure.current);
+    },
+    [],
+  );
+  const slices: Slice[] = windowed
+    ? windowRows(bindings.map((b, i) => measured.current.get(b) ?? estimatedHeight(b, rowDiagnostics[i]?.length ?? 0)), view.top, view.height, focused)
+    : bindings.map((_, i) => ({ kind: "row", index: i }));
   const pickProperty = (p: Property): void => {
     setProperty(p);
     setTarget("");
@@ -565,7 +886,7 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
   const candidate = makeBinding(property, target, signal, colormap, range, deform);
 
   return (
-    <section className="bindings" aria-label="Bindings" data-testid="bindings-editor">
+    <section ref={scrollerRef} className="bindings" aria-label="Bindings" data-testid="bindings-editor" data-windowed={windowed ? "true" : undefined} onScroll={windowed ? readView : undefined}>
       <table className="bindings__table">
         <thead>
           <tr>
@@ -579,134 +900,34 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
           </tr>
         </thead>
         <tbody>
-          {bindings.map((b, i) => {
-            const names = signalsOf(b);
-            const problems = rowDiagnostics[i] ?? [];
-            const targets = tree === undefined ? [] : targetsFor(tree, b.property as Property, built);
-            const n = String(i + 1);
-            return (
-              <Fragment key={`${b.target}|${b.property}|${String(i)}`}>
-              <tr
-                className="bindings__row"
-                data-testid={`binding-row-${String(i)}`}
-                data-invalid={problems.length > 0 ? "true" : undefined}
-                onMouseEnter={() => { onHover(b.target); }}
-                onMouseLeave={() => { onHover(null); }}
-                onFocus={() => { onHover(b.target); }}
-                onBlur={() => { onHover(null); }}
-              >
-                <td>
-                  <select
-                    aria-label={`Target of binding ${n}`}
-                    data-testid={`binding-target-${String(i)}`}
-                    value={b.target}
-                    onChange={(e) => { replace(i, { ...b, target: e.target.value } as Binding); }}
-                  >
-                    {!targets.some((t) => t.ref === b.target) ? <option value={b.target}>{`${b.target} (not in scene)`}</option> : null}
-                    {targets.map((t) => (
-                      <option key={t.ref} value={t.ref}>{t.label}</option>
-                    ))}
-                  </select>
-                </td>
-                <td data-testid={`binding-property-${String(i)}`}>{b.property}</td>
-                <td>
-                  {b.property === "deformation" ? (
-                    <ModeSignals
-                      names={names}
-                      signals={signals}
-                      label={`binding ${n}`}
-                      testId={`binding-signal-${String(i)}`}
-                      max={maxModes(b.basis)}
-                      onChange={(next) => { replace(i, { ...b, signal: next as DeformationBinding["signal"] }); }}
-                    />
-                  ) : b.property === "mode-shapes" ? (
-                    <ModeSignals
-                      names={names}
-                      signals={signals}
-                      label={`binding ${n}`}
-                      testId={`binding-signal-${String(i)}`}
-                      max={meshModeLimit(built, b.target)}
-                      fillLimit={meshModeLimit(built, b.target)}
-                      onChange={(next) => { replace(i, { ...b, signal: next as ModeShapeBinding["signal"] }); }}
-                    />
-                  ) : (
-                    <div className={b.property === "pose" || b.property === "segment" ? "bindings__pose" : undefined}>
-                      {partLabels(b.property, names.length).map((part, k) => (
-                        <SignalSelect
-                          key={part}
-                          value={names[k] ?? ""}
-                          signals={signals}
-                          label={b.property === "pose" || b.property === "segment" ? `${part} signal of binding ${n}` : `Signal of binding ${n}`}
-                          testId={`binding-signal-${String(i)}${b.property === "pose" || b.property === "segment" ? `-${String(k)}` : ""}`}
-                          onChange={(v) => {
-                            if (b.property === "pose" || b.property === "segment") {
-                              const list = [...names];
-                              list[k] = v;
-                              replace(i, { ...b, signal: list } as Binding);
-                            } else {
-                              replace(i, { ...b, signal: v } as Binding);
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </td>
-                <td>
-                  <NumberField value={b.gain ?? 1} label={`Gain of binding ${n}`} testId={`binding-gain-${String(i)}`} onCommit={(v) => { replace(i, { ...b, gain: v }); }} />
-                </td>
-                <td>
-                  {b.property === "deformation" || b.property === "mode-shapes" ? (
-                    <span className="bindings__none" title="A deformation has no offset">—</span>
-                  ) : (
-                    <NumberField value={b.offset ?? 0} label={`Offset of binding ${n}`} testId={`binding-offset-${String(i)}`} onCommit={(v) => { replace(i, { ...b, offset: v }); }} />
-                  )}
-                </td>
-                <td>
-                  {b.property === "color" ? (
-                    <div className="bindings__color">
-                      <select
-                        aria-label={`Colormap of binding ${n}`}
-                        value={b.colormap}
-                        onChange={(e) => { replace(i, { ...b, colormap: e.target.value as Colormap }); }}
-                      >
-                        {COLORMAPS.map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
-                      <span className="bindings__swatch" style={{ background: colormapGradient(b.colormap) }} aria-hidden="true" />
-                      <NumberField value={b.range[0]} label={`Range minimum of binding ${n}`} testId={`binding-min-${String(i)}`} onCommit={(v) => { replace(i, { ...b, range: [v, b.range[1]] }); }} />
-                      <NumberField value={b.range[1]} label={`Range maximum of binding ${n}`} testId={`binding-max-${String(i)}`} onCommit={(v) => { replace(i, { ...b, range: [b.range[0], v] }); }} />
-                    </div>
-                  ) : b.property === "deformation" ? (
-                    <DeformationSettings binding={b} index={i} onChange={(next) => { replace(i, next); }} />
-                  ) : b.property === "mode-shapes" ? (
-                    <>
-                      <MeshModesNote built={built} target={b.target} testId={`binding-mesh-modes-${String(i)}`} />
-                      <StressSettings binding={b} index={i} onChange={(next) => { replace(i, next); }} />
-                    </>
-                  ) : b.property === "segment" ? (
-                    <SegmentSettings binding={b} index={i} signals={signals} onChange={(next) => { replace(i, next); }} />
-                  ) : null}
-                </td>
-                <td>
-                  <button type="button" className="playback__button" aria-label={`Remove binding ${n}`} data-testid={`binding-remove-${String(i)}`} onClick={() => { remove(i); }}>
-                    <span aria-hidden="true">{"✕"}</span>
-                  </button>
-                </td>
-              </tr>
-              {problems.length > 0 ? (
-                <tr className="bindings__problem-row">
-                  <td className="bindings__problem" colSpan={7} data-testid={`binding-problem-${String(i)}`} role="alert">
-                    {problems.map((d) => (
-                      <p key={`${d.code}${d.message}`}>
-                        <strong>{d.code}</strong> {d.message}. {d.hint}
-                      </p>
-                    ))}
-                  </td>
+          {slices.map((s) => {
+            if (s.kind === "gap") {
+              return (
+                <tr key={s.key} className="bindings__gap" aria-hidden="true" style={{ height: s.height }}>
+                  <td colSpan={7} />
                 </tr>
-              ) : null}
-              </Fragment>
+              );
+            }
+            const i = s.index;
+            const b = bindings[i];
+            if (b === undefined) return null;
+            return (
+              <BindingRow
+                key={`${b.target}|${b.property}|${String(i)}`}
+                binding={b}
+                index={i}
+                problems={rowDiagnostics[i] ?? NO_PROBLEMS}
+                targets={targetsByProperty.get(b.property)?.choices ?? NO_CHOICES}
+                signals={sigChoices}
+                blocks={blocks}
+                built={built}
+                onReplace={replace}
+                onRemove={remove}
+                onHover={hoverNow}
+                onPointHover={hoverSoon}
+                onFocusRow={setFocused}
+                onMeasure={windowed ? onMeasure : NO_MEASURE}
+              />
             );
           })}
         </tbody>
@@ -765,7 +986,7 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
             </label>
             <div>
               <span className="playback__label">{deform.basis === "linear" ? "Twist (B relative to A)" : "Modal coordinates"}</span>
-              <ModeSignals names={signal} signals={signals} label="the new binding" testId="add-signal" max={maxModes(deform.basis)} onChange={setSignal} />
+              <ModeSignals names={signal} choices={sigChoices} blocks={blocks} label="the new binding" testId="add-signal" max={maxModes(deform.basis)} onChange={setSignal} />
             </div>
           </>
         ) : property === "mode-shapes" ? (
@@ -773,7 +994,8 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
             <span className="playback__label">Modal coordinates</span>
             <ModeSignals
               names={signal}
-              signals={signals}
+              choices={sigChoices}
+              blocks={blocks}
               label="the new binding"
               testId="add-signal"
               max={meshModeLimit(built, target)}
@@ -801,9 +1023,9 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
           {signal.map((value, k) => (
             <label key={k}>
               <span className="playback__label">{property === "pose" || property === "segment" ? partLabels(property, signal.length)[k] : "Signal"}</span>
-              <SignalSelect
+              <SignalField
                 value={value}
-                signals={signals}
+                choices={sigChoices}
                 label={property === "pose" || property === "segment" ? `New binding ${partLabels(property, signal.length)[k] ?? "signal"}` : "New binding signal"}
                 testId={`add-signal-${String(k)}`}
                 onChange={(v) => { setSignal(signal.map((s, j) => (j === k ? v : s))); }}
@@ -832,4 +1054,4 @@ export function BindingsEditor({ built, bindings, signals, onHover }: BindingsEd
       </form>
     </section>
   );
-}
+});
