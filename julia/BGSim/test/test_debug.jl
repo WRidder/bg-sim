@@ -802,18 +802,24 @@ end
             # Interleaved samples with a collection before each, so neither variant pays for
             # the other's garbage. The ratio of the minimums is the load-robust estimator of
             # the intrinsic cost on a shared machine (other processes only ever add time);
-            # the medians are printed for the record.
-            for _ in 1:11
-                GC.gc()
-                t0 = time_ns()
-                _dbg_normal(m)
-                push!(normal_s, (time_ns() - t0) / 1.0e9)
-                GC.gc()
-                t0 = time_ns()
-                _dbg_direct(m; ctx = DebugCtx())
-                push!(debug_s, (time_ns() - t0) / 1.0e9)
+            # the medians are printed for the record. On a loaded machine (the full suite next
+            # to the example checks) 11 pairs may not reach either minimum, so up to two more
+            # rounds of 11 are taken while the ratio is over the limit.
+            ratio = Inf
+            for _ in 1:3
+                for _ in 1:11
+                    GC.gc()
+                    t0 = time_ns()
+                    _dbg_normal(m)
+                    push!(normal_s, (time_ns() - t0) / 1.0e9)
+                    GC.gc()
+                    t0 = time_ns()
+                    _dbg_direct(m; ctx = DebugCtx())
+                    push!(debug_s, (time_ns() - t0) / 1.0e9)
+                end
+                ratio = minimum(debug_s) / minimum(normal_s)
+                ratio <= 1.3 && break
             end
-            ratio = minimum(debug_s) / minimum(normal_s)
             println("J4.1 overhead ", name, ": normal min ", round(minimum(normal_s); digits = 4),
                 " s (median ", round(median(normal_s); digits = 4), "), debug min ",
                 round(minimum(debug_s); digits = 4), " s (median ",
