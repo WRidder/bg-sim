@@ -1,0 +1,19 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Power-split hybrid",
+      "file": "pages/overview.md",
+      "children": [
+        {
+          "id": "energy",
+          "title": "Energy management",
+          "file": "pages/energy.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

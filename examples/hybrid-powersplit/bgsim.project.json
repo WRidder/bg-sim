@@ -1,0 +1,13 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "hybrid-powersplit",
+  "models": [
+    "hybrid-kinematics",
+    "hybrid-ev-mode",
+    "hybrid-rule-based",
+    "hybrid-ecms"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

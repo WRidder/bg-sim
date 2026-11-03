@@ -302,6 +302,17 @@
       "humanoid-ik"
     ]
   },
+  "hybrid-powersplit": {
+    "title": "Power-split hybrid",
+    "description": "A Toyota Prius (THS-II) on the NEDC: the planetary set as a bond graph, engine, MG1, MG2 and NiMH battery, with rule-based and ECMS energy management.",
+    "hasScene": false,
+    "models": [
+      "hybrid-kinematics",
+      "hybrid-ev-mode",
+      "hybrid-rule-based",
+      "hybrid-ecms"
+    ]
+  },
   "hydraulic-circuit": {
     "title": "Hydraulic circuit",
     "description": "A motor-driven pump with relief valve, check valve, hose and accumulator; a 4/3 proportional valve extends and retracts a loaded cylinder.",
