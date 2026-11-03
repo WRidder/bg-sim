@@ -480,6 +480,66 @@
         "port": "T"
        },
        {
+        "name": "fn_nose",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "N",
+        "node": "n56",
+        "port": "f_n"
+       },
+       {
+        "name": "fn_left",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "N",
+        "node": "n60",
+        "port": "f_n"
+       },
+       {
+        "name": "fn_right",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "N",
+        "node": "n64",
+        "port": "f_n"
+       },
+       {
+        "name": "gear_load",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": "N",
+        "node": "n53",
+        "port": "y"
+       },
+       {
+        "name": "wow",
+        "kind": "signal",
+        "direction": "output",
+        "type": "Real",
+        "size": [
+         1
+        ],
+        "unit": null,
+        "node": "n67",
+        "port": "y"
+       },
+       {
         "name": "pose",
         "kind": "signal",
         "direction": "output",
@@ -553,13 +613,13 @@
          "params": {},
          "constants": {},
          "starts": {
-          "qw": "0.998595099355186",
-          "qx": "-0.022422164209511933",
-          "qy": "0.047914391843725285",
-          "qz": "-0.003047154445409119",
-          "px": "0.0",
-          "py": "-0.0",
-          "pz": "15.0"
+          "qw": "qw0",
+          "qx": "qx0",
+          "qy": "qy0",
+          "qz": "qz0",
+          "px": "x0",
+          "py": "y0",
+          "pz": "z0"
          },
          "ui": {
           "showLabel": true,
@@ -585,7 +645,7 @@
          },
          "constants": {},
          "starts": {
-          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+          "inertia/P": "[Pwx0, Pwy0, Pwz0, Pvx0, Pvy0, Pvz0]"
          },
          "ui": {
           "showLabel": true,
@@ -871,8 +931,8 @@
          },
          "constants": {},
          "starts": {
-          "a1": "0.02576726512941662",
-          "b1": "-0.014223834620510634"
+          "a1": "a10",
+          "b1": "b10"
          },
          "ui": {
           "showLabel": true,
@@ -1386,7 +1446,7 @@
          },
          "constants": {},
          "starts": {
-          "P": "50989.32510767389"
+          "P": "Lrot0"
          },
          "ui": {
           "showLabel": true,
@@ -1665,7 +1725,7 @@
          },
          "constants": {},
          "starts": {
-          "xi": "11797.87829386876"
+          "xi": "xi0"
          },
          "ui": {
           "showLabel": true,
@@ -1686,6 +1746,418 @@
          "flipX": false,
          "params": {
           "value": "1.0"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n51",
+         "name": "Ground",
+         "block": {
+          "ref": "stdlib:contact/ContactSurface"
+         },
+         "position": {
+          "x": 850,
+          "y": 1800
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n52",
+         "name": "GearMux",
+         "block": {
+          "ref": "stdlib:continuous/Mux3"
+         },
+         "position": {
+          "x": 1650,
+          "y": 1800
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n53",
+         "name": "GearLoad",
+         "block": {
+          "ref": "stdlib:continuous/Sum"
+         },
+         "position": {
+          "x": 1800,
+          "y": 1800
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "signs": "[1.0, 1.0, 1.0]"
+         },
+         "constants": {
+          "N": "3"
+         },
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n54",
+         "name": "Wheel_nose",
+         "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+         },
+         "position": {
+          "x": 850,
+          "y": 1300
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "x": "1.9",
+          "y": "0.0",
+          "z": "-1.32"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n55",
+         "name": "WheelPose_nose",
+         "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+         },
+         "position": {
+          "x": 1050,
+          "y": 1300
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n56",
+         "name": "Tyre_nose",
+         "block": {
+          "ref": "stdlib:contact/ContactPoint"
+         },
+         "position": {
+          "x": 1250,
+          "y": 1300
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "210000.0",
+          "xref": "0.04",
+          "c": "1.5",
+          "mu": "0.7",
+          "vs": "0.02",
+          "bt": "0.0",
+          "eps": "0.001",
+          "feps": "1e-06"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n57",
+         "name": "MTyre_nose",
+         "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+         },
+         "position": {
+          "x": 1450,
+          "y": 1300
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "qw": "0.9958160286110378",
+          "qx": "0.0",
+          "qy": "0.0913807264216084",
+          "qz": "0.0",
+          "x": "-1.9",
+          "y": "-0.0",
+          "z": "1.32"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n58",
+         "name": "Wheel_left",
+         "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+         },
+         "position": {
+          "x": 850,
+          "y": 1460
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "x": "-0.8",
+          "y": "0.95",
+          "z": "-1.32"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n59",
+         "name": "WheelPose_left",
+         "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+         },
+         "position": {
+          "x": 1050,
+          "y": 1460
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n60",
+         "name": "Tyre_left",
+         "block": {
+          "ref": "stdlib:contact/ContactPoint"
+         },
+         "position": {
+          "x": 1250,
+          "y": 1460
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "210000.0",
+          "xref": "0.04",
+          "c": "1.5",
+          "mu": "0.7",
+          "vs": "0.02",
+          "bt": "0.0",
+          "eps": "0.001",
+          "feps": "1e-06"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n61",
+         "name": "MTyre_left",
+         "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+         },
+         "position": {
+          "x": 1450,
+          "y": 1460
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "qw": "0.9958160286110378",
+          "qx": "0.0",
+          "qy": "0.0913807264216084",
+          "qz": "0.0",
+          "x": "0.8",
+          "y": "-0.95",
+          "z": "1.32"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n62",
+         "name": "Wheel_right",
+         "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+         },
+         "position": {
+          "x": 850,
+          "y": 1620
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "x": "-0.8",
+          "y": "-0.95",
+          "z": "-1.32"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n63",
+         "name": "WheelPose_right",
+         "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+         },
+         "position": {
+          "x": 1050,
+          "y": 1620
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {},
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n64",
+         "name": "Tyre_right",
+         "block": {
+          "ref": "stdlib:contact/ContactPoint"
+         },
+         "position": {
+          "x": 1250,
+          "y": 1620
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "210000.0",
+          "xref": "0.04",
+          "c": "1.5",
+          "mu": "0.7",
+          "vs": "0.02",
+          "bt": "0.0",
+          "eps": "0.001",
+          "feps": "1e-06"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n65",
+         "name": "MTyre_right",
+         "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+         },
+         "position": {
+          "x": 1450,
+          "y": 1620
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "qw": "0.9958160286110378",
+          "qx": "0.0",
+          "qy": "0.0913807264216084",
+          "qz": "0.0",
+          "x": "0.8",
+          "y": "0.95",
+          "z": "1.32"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n66",
+         "name": "WowGain",
+         "block": {
+          "ref": "stdlib:continuous/Gain"
+         },
+         "position": {
+          "x": 1950,
+          "y": 1800
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "k": "0.00020811788844631593"
+         },
+         "constants": {},
+         "starts": {},
+         "ui": {
+          "showLabel": true,
+          "color": null
+         }
+        },
+        {
+         "id": "n67",
+         "name": "Wow",
+         "block": {
+          "ref": "stdlib:continuous/Saturation"
+         },
+         "position": {
+          "x": 2100,
+          "y": 1800
+         },
+         "rotation": 0,
+         "flipX": false,
+         "params": {
+          "lower": "0.0",
+          "upper": "1.0"
          },
          "constants": {},
          "starts": {},
@@ -3096,6 +3568,330 @@
           "node": "n49",
           "port": "on"
          }
+        },
+        {
+         "id": "Heli_c119",
+         "kind": "signal",
+         "from": {
+          "node": "n10",
+          "port": "gB"
+         },
+         "to": {
+          "node": "n55",
+          "port": "gp"
+         }
+        },
+        {
+         "id": "Heli_c120",
+         "kind": "signal",
+         "from": {
+          "node": "n54",
+          "port": "g"
+         },
+         "to": {
+          "node": "n55",
+          "port": "gl"
+         }
+        },
+        {
+         "id": "Heli_c121",
+         "kind": "signal",
+         "from": {
+          "node": "n55",
+          "port": "g"
+         },
+         "to": {
+          "node": "n56",
+          "port": "g"
+         }
+        },
+        {
+         "id": "Heli_c122",
+         "kind": "signal",
+         "from": {
+          "node": "n51",
+          "port": "o"
+         },
+         "to": {
+          "node": "n56",
+          "port": "o"
+         }
+        },
+        {
+         "id": "Heli_c123",
+         "kind": "signal",
+         "from": {
+          "node": "n51",
+          "port": "fr"
+         },
+         "to": {
+          "node": "n56",
+          "port": "fr"
+         }
+        },
+        {
+         "id": "Heli_c124",
+         "kind": "bond",
+         "from": {
+          "node": "n03",
+          "port": "p"
+         },
+         "to": {
+          "node": "n57",
+          "port": "b"
+         }
+        },
+        {
+         "id": "Heli_c125",
+         "kind": "bond",
+         "from": {
+          "node": "n57",
+          "port": "a"
+         },
+         "to": {
+          "node": "n56",
+          "port": "p"
+         }
+        },
+        {
+         "id": "Heli_c126",
+         "kind": "signal",
+         "from": {
+          "node": "n56",
+          "port": "f_n"
+         },
+         "to": {
+          "node": "n52",
+          "port": "u1"
+         }
+        },
+        {
+         "id": "Heli_c127",
+         "kind": "signal",
+         "from": {
+          "node": "n10",
+          "port": "gB"
+         },
+         "to": {
+          "node": "n59",
+          "port": "gp"
+         }
+        },
+        {
+         "id": "Heli_c128",
+         "kind": "signal",
+         "from": {
+          "node": "n58",
+          "port": "g"
+         },
+         "to": {
+          "node": "n59",
+          "port": "gl"
+         }
+        },
+        {
+         "id": "Heli_c129",
+         "kind": "signal",
+         "from": {
+          "node": "n59",
+          "port": "g"
+         },
+         "to": {
+          "node": "n60",
+          "port": "g"
+         }
+        },
+        {
+         "id": "Heli_c130",
+         "kind": "signal",
+         "from": {
+          "node": "n51",
+          "port": "o"
+         },
+         "to": {
+          "node": "n60",
+          "port": "o"
+         }
+        },
+        {
+         "id": "Heli_c131",
+         "kind": "signal",
+         "from": {
+          "node": "n51",
+          "port": "fr"
+         },
+         "to": {
+          "node": "n60",
+          "port": "fr"
+         }
+        },
+        {
+         "id": "Heli_c132",
+         "kind": "bond",
+         "from": {
+          "node": "n03",
+          "port": "p"
+         },
+         "to": {
+          "node": "n61",
+          "port": "b"
+         }
+        },
+        {
+         "id": "Heli_c133",
+         "kind": "bond",
+         "from": {
+          "node": "n61",
+          "port": "a"
+         },
+         "to": {
+          "node": "n60",
+          "port": "p"
+         }
+        },
+        {
+         "id": "Heli_c134",
+         "kind": "signal",
+         "from": {
+          "node": "n60",
+          "port": "f_n"
+         },
+         "to": {
+          "node": "n52",
+          "port": "u2"
+         }
+        },
+        {
+         "id": "Heli_c135",
+         "kind": "signal",
+         "from": {
+          "node": "n10",
+          "port": "gB"
+         },
+         "to": {
+          "node": "n63",
+          "port": "gp"
+         }
+        },
+        {
+         "id": "Heli_c136",
+         "kind": "signal",
+         "from": {
+          "node": "n62",
+          "port": "g"
+         },
+         "to": {
+          "node": "n63",
+          "port": "gl"
+         }
+        },
+        {
+         "id": "Heli_c137",
+         "kind": "signal",
+         "from": {
+          "node": "n63",
+          "port": "g"
+         },
+         "to": {
+          "node": "n64",
+          "port": "g"
+         }
+        },
+        {
+         "id": "Heli_c138",
+         "kind": "signal",
+         "from": {
+          "node": "n51",
+          "port": "o"
+         },
+         "to": {
+          "node": "n64",
+          "port": "o"
+         }
+        },
+        {
+         "id": "Heli_c139",
+         "kind": "signal",
+         "from": {
+          "node": "n51",
+          "port": "fr"
+         },
+         "to": {
+          "node": "n64",
+          "port": "fr"
+         }
+        },
+        {
+         "id": "Heli_c140",
+         "kind": "bond",
+         "from": {
+          "node": "n03",
+          "port": "p"
+         },
+         "to": {
+          "node": "n65",
+          "port": "b"
+         }
+        },
+        {
+         "id": "Heli_c141",
+         "kind": "bond",
+         "from": {
+          "node": "n65",
+          "port": "a"
+         },
+         "to": {
+          "node": "n64",
+          "port": "p"
+         }
+        },
+        {
+         "id": "Heli_c142",
+         "kind": "signal",
+         "from": {
+          "node": "n64",
+          "port": "f_n"
+         },
+         "to": {
+          "node": "n52",
+          "port": "u3"
+         }
+        },
+        {
+         "id": "Heli_c143",
+         "kind": "signal",
+         "from": {
+          "node": "n52",
+          "port": "y"
+         },
+         "to": {
+          "node": "n53",
+          "port": "u"
+         }
+        },
+        {
+         "id": "Heli_c144",
+         "kind": "signal",
+         "from": {
+          "node": "n53",
+          "port": "y"
+         },
+         "to": {
+          "node": "n66",
+          "port": "u"
+         }
+        },
+        {
+         "id": "Heli_c145",
+         "kind": "signal",
+         "from": {
+          "node": "n66",
+          "port": "y"
+         },
+         "to": {
+          "node": "n67",
+          "port": "u"
+         }
         }
        ],
        "annotations": [
@@ -3127,6 +3923,16 @@
          "y": 180,
          "w": 900,
          "h": 70,
+         "color": "blue"
+        },
+        {
+         "id": "a4",
+         "kind": "text",
+         "text": "**Landing gear** (a109-sim, ours). Each wheel is a ContactPoint (Hunt-Crossley normal force, regularised Coulomb friction: braked wheels) on the ground plane (ContactSurface, z = 0), mounted at its point through a FixedTransform3DNeutral like the component sources; LocalPose3D and ComposePose3D give its pose. Weight on wheels: the gear load over a fifth of the weight, saturated to 0 .. 1 (the SCAS fades out on the ground).",
+         "x": 850,
+         "y": 1180,
+         "w": 900,
+         "h": 60,
          "color": "blue"
         }
        ],
@@ -3600,6 +4406,66 @@
          "port": "T"
         },
         {
+         "name": "fn_nose",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "N",
+         "node": "n56",
+         "port": "f_n"
+        },
+        {
+         "name": "fn_left",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "N",
+         "node": "n60",
+         "port": "f_n"
+        },
+        {
+         "name": "fn_right",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "N",
+         "node": "n64",
+         "port": "f_n"
+        },
+        {
+         "name": "gear_load",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": "N",
+         "node": "n53",
+         "port": "y"
+        },
+        {
+         "name": "wow",
+         "kind": "signal",
+         "direction": "output",
+         "type": "Real",
+         "size": [
+          1
+         ],
+         "unit": null,
+         "node": "n67",
+         "port": "y"
+        },
+        {
          "name": "pose",
          "kind": "signal",
          "direction": "output",
@@ -3762,7 +4628,7 @@
     "flipX": false,
     "params": {
      "x": "[0.0, 3.0, 6.0, 9.0, 12.0, 15.19, 15.290000000000001, 18.0, 22.0, 26.0, 30.0, 36.0, 42.0, 48.0, 55.0]",
-     "table": "[4.991992728586154, 5.1902835714715945, 5.218488074171692, 5.1122181062810625, 4.895548437651803, 4.624017453159028, 4.606353540482393, 4.064911393747873, 3.6796007558089427, 3.251208496693042, 2.808265595514512, 2.153578185560462, 1.540427994766175, 0.9857628512996839, 0.4191965368856223]"
+     "table": "[4.992099811605336, 5.190383876020581, 5.218572787755512, 5.112285331533862, 4.895607126020048, 4.624146084362161, 4.6064863911768805, 4.068039227924168, 3.6796594825549667, 3.2512318211853715, 2.808278039042726, 2.1535844893150524, 1.5404320029658325, 0.9857658956498783, 0.4191990999721575]"
     },
     "constants": {
      "N": "15"
@@ -3787,7 +4653,7 @@
     "flipX": false,
     "params": {
      "x": "[0.0, 3.0, 6.0, 9.0, 12.0, 15.19, 15.290000000000001, 18.0, 22.0, 26.0, 30.0, 36.0, 42.0, 48.0, 55.0]",
-     "table": "[-2.593230062111774, -2.544432746625167, -2.425160242049673, -2.2579584174732084, -2.0766604845824816, -1.9045800263789894, -1.8996129409504856, -1.779746367897962, -1.665466539603638, -1.6152515737905435, -1.5807570980642052, -1.5888281049115764, -1.6598673767231, -1.7900104207636964, -2.0166245625857853]"
+     "table": "[-2.5932325834550647, -2.5444350470746193, -2.425162136000108, -2.257959868464782, -2.0766616786076586, -1.9045824166340617, -1.8996154012058561, -1.7797988570416734, -1.6654673742952588, -1.6152518854813012, -1.580757245321971, -1.5888281667971145, -1.6598674086350238, -1.7900104392681646, -2.0166245718860667]"
     },
     "constants": {
      "N": "15"
@@ -3812,7 +4678,7 @@
     "flipX": false,
     "params": {
      "x": "[0.0, 3.0, 6.0, 9.0, 12.0, 15.19, 15.290000000000001, 18.0, 22.0, 26.0, 30.0, 36.0, 42.0, 48.0, 55.0]",
-     "table": "[11.738264345342364, 11.629467961570068, 11.3616863765845, 10.978900712049859, 10.55402029058745, 10.140049282190969, 10.127905443071475, 9.82970078427307, 9.523337451917515, 9.329372250616418, 9.224778695459475, 9.202894683324791, 9.320442408839812, 9.56776023285623, 10.01975158647777]"
+     "table": "[11.738269278139054, 11.629472442694855, 11.361690188451313, 10.978903809786777, 10.55402303259769, 10.14005522890114, 10.127911584612269, 9.829845668218947, 9.523340094236747, 9.329373281564429, 9.22477924178795, 9.202894960210827, 9.320442584247845, 9.567760362415992, 10.01975168541347]"
     },
     "constants": {
      "N": "15"
@@ -3837,7 +4703,7 @@
     "flipX": false,
     "params": {
      "x": "[0.0, 3.0, 6.0, 9.0, 12.0, 15.19, 15.290000000000001, 18.0, 22.0, 26.0, 30.0, 36.0, 42.0, 48.0, 55.0]",
-     "table": "[-1.508960381249377, -0.7275071383294303, -0.0750894236072656, 0.47330780562416314, 0.9316221449341707, 0.561392404155949, 0.4686916828967144, -0.6742340177931099, -0.5803786084519821, -0.4760983033885421, -0.3437302971461322, -0.05044360816194211, 0.3870173567829471, 0.9851391696669105, 1.8910207615776993]"
+     "table": "[-1.5088616876084733, -0.727414423527955, -0.07501071887385881, 0.47337061303013195, 0.9316772523180207, 0.5615162310919083, 0.4688196688179923, -0.6712576074227652, -0.580322745019308, -0.47607613627286627, -0.34371849407075644, -0.050437658536115766, 0.3870211092854337, 0.9851419851749407, 1.8910230826088061]"
     },
     "constants": {
      "N": "15"
@@ -3862,7 +4728,7 @@
     "flipX": false,
     "params": {
      "x": "[0.0, 3.0, 6.0, 9.0, 12.0, 15.19, 15.290000000000001, 18.0, 22.0, 26.0, 30.0, 36.0, 42.0, 48.0, 55.0]",
-     "table": "[-0.7559002171151603, -0.7524111129682376, -0.721962812382552, -0.6718567034242356, -0.6129773148450766, -0.5539319040549904, -0.5517916632532647, -0.49834364158961625, -0.4490732919096147, -0.39000968938017566, -0.39056008615997345, -0.4175747024052444, -0.4725622920467607, -0.554350103612234, -0.6833142124722978]"
+     "table": "[-0.755904574554859, -0.7524152288446616, -0.7219663321502249, -0.671859529666846, -0.6129797986705399, -0.5539373168726234, -0.5517972499306469, -0.4984740791195207, -0.44907577053249875, -0.3900106372295643, -0.3905605855399717, -0.4175749508483921, -0.4725624467401431, -0.5543502180939288, -0.683314305130887]"
     },
     "constants": {
      "N": "15"
@@ -3887,7 +4753,7 @@
     "flipX": false,
     "params": {
      "x": "[0.0, 3.0, 6.0, 9.0, 12.0, 15.19, 15.290000000000001, 18.0, 22.0, 26.0, 30.0, 36.0, 42.0, 48.0, 55.0]",
-     "table": "[22.236889108675957, 21.910609206693728, 21.103414201368796, 19.92723171185348, 18.56876126363069, 17.167329932195795, 17.125496029467747, 16.085293164559236, 15.200435938773914, 15.593726418970808, 14.664942556911368, 13.642424730722077, 12.991347668752836, 12.64665613064753, 12.593883055294139]"
+     "table": "[22.236901739082956, 21.910620560688738, 21.103423557225156, 19.927238982065557, 18.56876737231376, 17.167342342183687, 17.12550881058889, 16.085569244669454, 15.20043842297957, 15.593728244432945, 14.664943420873604, 13.64242507785383, 12.991347832522749, 12.646656207878683, 12.593883064460764]"
     },
     "constants": {
      "N": "15"
@@ -3923,10 +4789,10 @@
      "v_tc2": "20.0",
      "a_coll": "-29.09",
      "b_coll": "7.6271",
-     "coll_h": "0.6043891598836075",
-     "lon_h": "-0.13897251440804795",
-     "lat_h": "-0.07501377183268602",
-     "ped_h": "-0.22159595152400016",
+     "coll_h": "0.6043895361129438",
+     "lon_h": "-0.13896426993606142",
+     "lat_h": "-0.07501449098453392",
+     "ped_h": "-0.22159684363490753",
      "coll_off": "coll_off",
      "lon_off": "lon_off",
      "lat_off": "lat_off",
@@ -3953,7 +4819,7 @@
     "rotation": 0,
     "flipX": false,
     "params": {
-     "value": "0.6043891598836075"
+     "value": "0.6043895361129438"
     },
     "constants": {},
     "starts": {},
@@ -4158,7 +5024,6 @@
     "rotation": 0,
     "flipX": false,
     "params": {
-     "scas": "scas",
      "k_th_stick": "15.0",
      "k_ph_stick": "30.0",
      "k_r_stick": "30.0",
@@ -4183,6 +5048,50 @@
    },
    {
     "id": "n23",
+    "name": "ScasSw",
+    "block": {
+     "ref": "stdlib:sources/Constant"
+    },
+    "position": {
+     "x": 900,
+     "y": 520
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "scas"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n24",
+    "name": "scas",
+    "block": {
+     "ref": "stdlib:converters/ExportInputPass"
+    },
+    "position": {
+     "x": 1000,
+     "y": 520
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "1.0"
+    },
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n25",
     "name": "East",
     "block": {
      "ref": "stdlib:continuous/Gain"
@@ -4204,7 +5113,7 @@
     }
    },
    {
-    "id": "n24",
+    "id": "n26",
     "name": "north_m",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4224,7 +5133,7 @@
     }
    },
    {
-    "id": "n25",
+    "id": "n27",
     "name": "east_m",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4244,7 +5153,7 @@
     }
    },
    {
-    "id": "n26",
+    "id": "n28",
     "name": "alt_m",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4264,7 +5173,7 @@
     }
    },
    {
-    "id": "n27",
+    "id": "n29",
     "name": "phi_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4284,7 +5193,7 @@
     }
    },
    {
-    "id": "n28",
+    "id": "n30",
     "name": "theta_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4304,7 +5213,7 @@
     }
    },
    {
-    "id": "n29",
+    "id": "n31",
     "name": "psi_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4324,7 +5233,7 @@
     }
    },
    {
-    "id": "n30",
+    "id": "n32",
     "name": "p_dps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4344,7 +5253,7 @@
     }
    },
    {
-    "id": "n31",
+    "id": "n33",
     "name": "q_dps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4364,7 +5273,7 @@
     }
    },
    {
-    "id": "n32",
+    "id": "n34",
     "name": "r_dps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4384,7 +5293,7 @@
     }
    },
    {
-    "id": "n33",
+    "id": "n35",
     "name": "u_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4404,7 +5313,7 @@
     }
    },
    {
-    "id": "n34",
+    "id": "n36",
     "name": "v_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4424,7 +5333,7 @@
     }
    },
    {
-    "id": "n35",
+    "id": "n37",
     "name": "w_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4444,7 +5353,7 @@
     }
    },
    {
-    "id": "n36",
+    "id": "n38",
     "name": "vs_mps",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
@@ -4464,8 +5373,48 @@
     }
    },
    {
-    "id": "n37",
+    "id": "n39",
     "name": "tas_mps",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2150,
+     "y": 820
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n40",
+    "name": "kts",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2150,
+     "y": 880
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n41",
+    "name": "beta_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4484,8 +5433,8 @@
     }
    },
    {
-    "id": "n38",
-    "name": "kts",
+    "id": "n42",
+    "name": "rotor_pct",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4504,8 +5453,8 @@
     }
    },
    {
-    "id": "n39",
-    "name": "beta_deg",
+    "id": "n43",
+    "name": "power_hp",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4524,8 +5473,8 @@
     }
    },
    {
-    "id": "n40",
-    "name": "rotor_pct",
+    "id": "n44",
+    "name": "thrust_n",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4544,8 +5493,8 @@
     }
    },
    {
-    "id": "n41",
-    "name": "power_hp",
+    "id": "n45",
+    "name": "a1_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4564,8 +5513,8 @@
     }
    },
    {
-    "id": "n42",
-    "name": "thrust_n",
+    "id": "n46",
+    "name": "b1_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4584,8 +5533,8 @@
     }
    },
    {
-    "id": "n43",
-    "name": "a1_deg",
+    "id": "n47",
+    "name": "theta0_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4604,8 +5553,8 @@
     }
    },
    {
-    "id": "n44",
-    "name": "b1_deg",
+    "id": "n48",
+    "name": "B1_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4624,8 +5573,8 @@
     }
    },
    {
-    "id": "n45",
-    "name": "theta0_deg",
+    "id": "n49",
+    "name": "A1_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4644,8 +5593,8 @@
     }
    },
    {
-    "id": "n46",
-    "name": "B1_deg",
+    "id": "n50",
+    "name": "theta_tr_deg",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4664,8 +5613,8 @@
     }
    },
    {
-    "id": "n47",
-    "name": "A1_deg",
+    "id": "n51",
+    "name": "fn_nose",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4684,8 +5633,8 @@
     }
    },
    {
-    "id": "n48",
-    "name": "theta_tr_deg",
+    "id": "n52",
+    "name": "fn_left",
     "block": {
      "ref": "stdlib:converters/ExportOutput"
     },
@@ -4704,7 +5653,47 @@
     }
    },
    {
-    "id": "n49",
+    "id": "n53",
+    "name": "fn_right",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2350,
+     "y": 760
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n54",
+    "name": "wow",
+    "block": {
+     "ref": "stdlib:converters/ExportOutput"
+    },
+    "position": {
+     "x": 2350,
+     "y": 820
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {},
+    "ui": {
+     "showLabel": true,
+     "color": null
+    }
+   },
+   {
+    "id": "n55",
     "name": "HeliView",
     "block": {
      "ref": "project:HeliView"
@@ -5152,6 +6141,42 @@
     "id": "c035",
     "kind": "signal",
     "from": {
+     "node": "n23",
+     "port": "y"
+    },
+    "to": {
+     "node": "n24",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c036",
+    "kind": "signal",
+    "from": {
+     "node": "n24",
+     "port": "y"
+    },
+    "to": {
+     "node": "n22",
+     "port": "on"
+    }
+   },
+   {
+    "id": "c037",
+    "kind": "signal",
+    "from": {
+     "node": "n01",
+     "port": "wow"
+    },
+    "to": {
+     "node": "n22",
+     "port": "wow"
+    }
+   },
+   {
+    "id": "c038",
+    "kind": "signal",
+    "from": {
      "node": "n01",
      "port": "u"
     },
@@ -5161,7 +6186,7 @@
     }
    },
    {
-    "id": "c036",
+    "id": "c039",
     "kind": "signal",
     "from": {
      "node": "n01",
@@ -5173,7 +6198,7 @@
     }
    },
    {
-    "id": "c037",
+    "id": "c040",
     "kind": "signal",
     "from": {
      "node": "n01",
@@ -5185,7 +6210,7 @@
     }
    },
    {
-    "id": "c038",
+    "id": "c041",
     "kind": "signal",
     "from": {
      "node": "n01",
@@ -5197,7 +6222,7 @@
     }
    },
    {
-    "id": "c039",
+    "id": "c042",
     "kind": "signal",
     "from": {
      "node": "n01",
@@ -5209,7 +6234,7 @@
     }
    },
    {
-    "id": "c040",
+    "id": "c043",
     "kind": "signal",
     "from": {
      "node": "n01",
@@ -5221,7 +6246,7 @@
     }
    },
    {
-    "id": "c041",
+    "id": "c044",
     "kind": "signal",
     "from": {
      "node": "n06",
@@ -5233,7 +6258,7 @@
     }
    },
    {
-    "id": "c042",
+    "id": "c045",
     "kind": "signal",
     "from": {
      "node": "n07",
@@ -5245,7 +6270,7 @@
     }
    },
    {
-    "id": "c043",
+    "id": "c046",
     "kind": "signal",
     "from": {
      "node": "n09",
@@ -5257,7 +6282,7 @@
     }
    },
    {
-    "id": "c044",
+    "id": "c047",
     "kind": "signal",
     "from": {
      "node": "n10",
@@ -5269,7 +6294,7 @@
     }
    },
    {
-    "id": "c045",
+    "id": "c048",
     "kind": "signal",
     "from": {
      "node": "n11",
@@ -5281,7 +6306,7 @@
     }
    },
    {
-    "id": "c046",
+    "id": "c049",
     "kind": "signal",
     "from": {
      "node": "n21",
@@ -5293,7 +6318,7 @@
     }
    },
    {
-    "id": "c047",
+    "id": "c050",
     "kind": "signal",
     "from": {
      "node": "n21",
@@ -5305,7 +6330,7 @@
     }
    },
    {
-    "id": "c048",
+    "id": "c051",
     "kind": "signal",
     "from": {
      "node": "n21",
@@ -5317,7 +6342,7 @@
     }
    },
    {
-    "id": "c049",
+    "id": "c052",
     "kind": "signal",
     "from": {
      "node": "n21",
@@ -5329,70 +6354,46 @@
     }
    },
    {
-    "id": "c050",
-    "kind": "signal",
-    "from": {
-     "node": "n22",
-     "port": "B1"
-    },
-    "to": {
-     "node": "n01",
-     "port": "B1"
-    }
-   },
-   {
-    "id": "c051",
-    "kind": "signal",
-    "from": {
-     "node": "n22",
-     "port": "A1"
-    },
-    "to": {
-     "node": "n01",
-     "port": "A1"
-    }
-   },
-   {
-    "id": "c052",
-    "kind": "signal",
-    "from": {
-     "node": "n22",
-     "port": "thtr"
-    },
-    "to": {
-     "node": "n01",
-     "port": "thtr"
-    }
-   },
-   {
     "id": "c053",
     "kind": "signal",
     "from": {
-     "node": "n01",
-     "port": "y"
+     "node": "n22",
+     "port": "B1"
     },
     "to": {
-     "node": "n23",
-     "port": "u"
+     "node": "n01",
+     "port": "B1"
     }
    },
    {
     "id": "c054",
     "kind": "signal",
     "from": {
-     "node": "n01",
-     "port": "x"
+     "node": "n22",
+     "port": "A1"
     },
     "to": {
-     "node": "n24",
-     "port": "u"
+     "node": "n01",
+     "port": "A1"
     }
    },
    {
     "id": "c055",
     "kind": "signal",
     "from": {
-     "node": "n23",
+     "node": "n22",
+     "port": "thtr"
+    },
+    "to": {
+     "node": "n01",
+     "port": "thtr"
+    }
+   },
+   {
+    "id": "c056",
+    "kind": "signal",
+    "from": {
+     "node": "n01",
      "port": "y"
     },
     "to": {
@@ -5401,11 +6402,11 @@
     }
    },
    {
-    "id": "c056",
+    "id": "c057",
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "h"
+     "port": "x"
     },
     "to": {
      "node": "n26",
@@ -5413,26 +6414,14 @@
     }
    },
    {
-    "id": "c057",
-    "kind": "signal",
-    "from": {
-     "node": "n01",
-     "port": "phi_deg"
-    },
-    "to": {
-     "node": "n27",
-     "port": "u"
-    }
-   },
-   {
     "id": "c058",
     "kind": "signal",
     "from": {
-     "node": "n01",
-     "port": "theta_deg"
+     "node": "n25",
+     "port": "y"
     },
     "to": {
-     "node": "n28",
+     "node": "n27",
      "port": "u"
     }
    },
@@ -5441,10 +6430,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "psi_deg"
+     "port": "h"
     },
     "to": {
-     "node": "n29",
+     "node": "n28",
      "port": "u"
     }
    },
@@ -5453,10 +6442,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "p_deg"
+     "port": "phi_deg"
     },
     "to": {
-     "node": "n30",
+     "node": "n29",
      "port": "u"
     }
    },
@@ -5465,10 +6454,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "q_deg"
+     "port": "theta_deg"
     },
     "to": {
-     "node": "n31",
+     "node": "n30",
      "port": "u"
     }
    },
@@ -5477,10 +6466,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "r_deg"
+     "port": "psi_deg"
     },
     "to": {
-     "node": "n32",
+     "node": "n31",
      "port": "u"
     }
    },
@@ -5489,10 +6478,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "ui"
+     "port": "p_deg"
     },
     "to": {
-     "node": "n33",
+     "node": "n32",
      "port": "u"
     }
    },
@@ -5501,10 +6490,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "vi"
+     "port": "q_deg"
     },
     "to": {
-     "node": "n34",
+     "node": "n33",
      "port": "u"
     }
    },
@@ -5513,10 +6502,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "wi"
+     "port": "r_deg"
     },
     "to": {
-     "node": "n35",
+     "node": "n34",
      "port": "u"
     }
    },
@@ -5525,10 +6514,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "hdot"
+     "port": "ui"
     },
     "to": {
-     "node": "n36",
+     "node": "n35",
      "port": "u"
     }
    },
@@ -5537,10 +6526,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "vt"
+     "port": "vi"
     },
     "to": {
-     "node": "n37",
+     "node": "n36",
      "port": "u"
     }
    },
@@ -5549,10 +6538,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "kts"
+     "port": "wi"
     },
     "to": {
-     "node": "n38",
+     "node": "n37",
      "port": "u"
     }
    },
@@ -5561,10 +6550,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "beta_deg"
+     "port": "hdot"
     },
     "to": {
-     "node": "n39",
+     "node": "n38",
      "port": "u"
     }
    },
@@ -5573,10 +6562,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "nr"
+     "port": "vt"
     },
     "to": {
-     "node": "n40",
+     "node": "n39",
      "port": "u"
     }
    },
@@ -5585,10 +6574,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "power_hp"
+     "port": "kts"
     },
     "to": {
-     "node": "n41",
+     "node": "n40",
      "port": "u"
     }
    },
@@ -5597,10 +6586,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "thrust"
+     "port": "beta_deg"
     },
     "to": {
-     "node": "n42",
+     "node": "n41",
      "port": "u"
     }
    },
@@ -5609,10 +6598,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "a1"
+     "port": "nr"
     },
     "to": {
-     "node": "n43",
+     "node": "n42",
      "port": "u"
     }
    },
@@ -5621,10 +6610,10 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "b1"
+     "port": "power_hp"
     },
     "to": {
-     "node": "n44",
+     "node": "n43",
      "port": "u"
     }
    },
@@ -5632,11 +6621,11 @@
     "id": "c075",
     "kind": "signal",
     "from": {
-     "node": "n21",
-     "port": "th0"
+     "node": "n01",
+     "port": "thrust"
     },
     "to": {
-     "node": "n45",
+     "node": "n44",
      "port": "u"
     }
    },
@@ -5644,11 +6633,11 @@
     "id": "c076",
     "kind": "signal",
     "from": {
-     "node": "n22",
-     "port": "B1"
+     "node": "n01",
+     "port": "a1"
     },
     "to": {
-     "node": "n46",
+     "node": "n45",
      "port": "u"
     }
    },
@@ -5656,11 +6645,11 @@
     "id": "c077",
     "kind": "signal",
     "from": {
-     "node": "n22",
-     "port": "A1"
+     "node": "n01",
+     "port": "b1"
     },
     "to": {
-     "node": "n47",
+     "node": "n46",
      "port": "u"
     }
    },
@@ -5668,11 +6657,11 @@
     "id": "c078",
     "kind": "signal",
     "from": {
-     "node": "n22",
-     "port": "thtr"
+     "node": "n21",
+     "port": "th0"
     },
     "to": {
-     "node": "n48",
+     "node": "n47",
      "port": "u"
     }
    },
@@ -5680,36 +6669,36 @@
     "id": "c079",
     "kind": "signal",
     "from": {
-     "node": "n01",
-     "port": "pose"
+     "node": "n22",
+     "port": "B1"
     },
     "to": {
-     "node": "n49",
-     "port": "g"
+     "node": "n48",
+     "port": "u"
     }
    },
    {
     "id": "c080",
     "kind": "signal",
     "from": {
-     "node": "n01",
-     "port": "pose"
+     "node": "n22",
+     "port": "A1"
     },
     "to": {
      "node": "n49",
-     "port": "g0"
+     "port": "u"
     }
    },
    {
     "id": "c081",
     "kind": "signal",
     "from": {
-     "node": "n01",
-     "port": "a1r"
+     "node": "n22",
+     "port": "thtr"
     },
     "to": {
-     "node": "n49",
-     "port": "a1"
+     "node": "n50",
+     "port": "u"
     }
    },
    {
@@ -5717,11 +6706,11 @@
     "kind": "signal",
     "from": {
      "node": "n01",
-     "port": "b1r"
+     "port": "fn_nose"
     },
     "to": {
-     "node": "n49",
-     "port": "b1"
+     "node": "n51",
+     "port": "u"
     }
    },
    {
@@ -5729,10 +6718,94 @@
     "kind": "signal",
     "from": {
      "node": "n01",
+     "port": "fn_left"
+    },
+    "to": {
+     "node": "n52",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c084",
+    "kind": "signal",
+    "from": {
+     "node": "n01",
+     "port": "fn_right"
+    },
+    "to": {
+     "node": "n53",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c085",
+    "kind": "signal",
+    "from": {
+     "node": "n01",
+     "port": "wow"
+    },
+    "to": {
+     "node": "n54",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c086",
+    "kind": "signal",
+    "from": {
+     "node": "n01",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n55",
+     "port": "g"
+    }
+   },
+   {
+    "id": "c087",
+    "kind": "signal",
+    "from": {
+     "node": "n01",
+     "port": "pose"
+    },
+    "to": {
+     "node": "n55",
+     "port": "g0"
+    }
+   },
+   {
+    "id": "c088",
+    "kind": "signal",
+    "from": {
+     "node": "n01",
+     "port": "a1r"
+    },
+    "to": {
+     "node": "n55",
+     "port": "a1"
+    }
+   },
+   {
+    "id": "c089",
+    "kind": "signal",
+    "from": {
+     "node": "n01",
+     "port": "b1r"
+    },
+    "to": {
+     "node": "n55",
+     "port": "b1"
+    }
+   },
+   {
+    "id": "c090",
+    "kind": "signal",
+    "from": {
+     "node": "n01",
      "port": "om"
     },
     "to": {
-     "node": "n49",
+     "node": "n55",
      "port": "om"
     }
    }
@@ -5845,6 +6918,15 @@
    "signals": [
     "Heli/Gov/nr",
     "Heli/Gov/power_hp"
+   ]
+  },
+  {
+   "id": "p8",
+   "title": "Wheel loads (N)",
+   "signals": [
+    "Heli/Tyre_nose/f_n",
+    "Heli/Tyre_left/f_n",
+    "Heli/Tyre_right/f_n"
    ]
   }
  ],
@@ -5989,6 +7071,108 @@
    "value": "1.0",
    "unit": null,
    "description": "time the stick offsets start (s)"
+  },
+  {
+   "name": "qw0",
+   "value": "0.9985951436322662",
+   "unit": null,
+   "description": "start pose: quaternion of the principal frame (w)"
+  },
+  {
+   "name": "qx0",
+   "value": "-0.022422183158886895",
+   "unit": null,
+   "description": "start pose quaternion (x)"
+  },
+  {
+   "name": "qy0",
+   "value": "0.047913458657059295",
+   "unit": null,
+   "description": "start pose quaternion (y)"
+  },
+  {
+   "name": "qz0",
+   "value": "-0.003047178360572847",
+   "unit": null,
+   "description": "start pose quaternion (z)"
+  },
+  {
+   "name": "x0",
+   "value": "0.0",
+   "unit": null,
+   "description": "start position north (m)"
+  },
+  {
+   "name": "y0",
+   "value": "-0.0",
+   "unit": null,
+   "description": "start position west (m)"
+  },
+  {
+   "name": "z0",
+   "value": "15.0",
+   "unit": null,
+   "description": "start height of the CG (m)"
+  },
+  {
+   "name": "Pwx0",
+   "value": "0.0",
+   "unit": null,
+   "description": "start angular momentum, principal x (N m s)"
+  },
+  {
+   "name": "Pwy0",
+   "value": "0.0",
+   "unit": null,
+   "description": "start angular momentum, principal y (N m s)"
+  },
+  {
+   "name": "Pwz0",
+   "value": "0.0",
+   "unit": null,
+   "description": "start angular momentum, principal z (N m s)"
+  },
+  {
+   "name": "Pvx0",
+   "value": "0.0",
+   "unit": null,
+   "description": "start linear momentum, principal x (kg m/s)"
+  },
+  {
+   "name": "Pvy0",
+   "value": "0.0",
+   "unit": null,
+   "description": "start linear momentum, principal y (kg m/s)"
+  },
+  {
+   "name": "Pvz0",
+   "value": "0.0",
+   "unit": null,
+   "description": "start linear momentum, principal z (kg m/s)"
+  },
+  {
+   "name": "a10",
+   "value": "0.02576554231533878",
+   "unit": null,
+   "description": "start longitudinal flapping a1 (rad)"
+  },
+  {
+   "name": "b10",
+   "value": "-0.014223841746485126",
+   "unit": null,
+   "description": "start lateral flapping b1 (rad)"
+  },
+  {
+   "name": "Lrot0",
+   "value": "50989.32510767389",
+   "unit": null,
+   "description": "start angular momentum of the rotor and drivetrain (N m s)"
+  },
+  {
+   "name": "xi0",
+   "value": "11797.888382291298",
+   "unit": null,
+   "description": "start governor integrator (N m)"
   }
  ],
  "dashboard": {

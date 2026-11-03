@@ -1,7 +1,7 @@
 @block Scas begin
     # Stability and control augmentation (ours; the report has no control system), switchable.
     #
-    # scas = 1: attitude command / attitude hold in pitch and roll, yaw-rate command / heading
+    # Engaged: attitude command / attitude hold in pitch and roll, yaw-rate command / heading
     # hold in yaw, with turn coordination fading in between v_tc1 and v_tc2 of forward airspeed:
     #
     #   theta_cmd = theta_ff(u) - k_th_stick lon        phi_cmd = phi_ff(u) + k_ph_stick lat
@@ -11,9 +11,14 @@
     #   thtr = tr_ff(u) + Kr (r - r_cmd) + xr,                    xr'  = Kir (r - r_cmd)
     #
     # with the *_ff trim feedforward from Lookup1D tables over the forward airspeed (the trim
-    # sweep of design/heli_sim.py). scas = 0: the direct angles of the rigging (B1d, A1d, trd) pass
-    # and the integrators stop. Angles in deg, rates in deg/s (FRD), speeds in m/s.
+    # sweep of design/heli_sim.py). The engagement e = on (1 - wow) blends the law with the direct
+    # angles of the rigging (B1d, A1d, trd): on = 0 (the SCAS switch off) passes the direct angles
+    # and stops the integrators; so does weight on wheels (wow = 1, the gear loaded: on the
+    # ground the attitude loops would wind up against the gear). Between, the SCAS fades in as the
+    # helicopter gets light on its wheels. Angles in deg, rates in deg/s (FRD), speeds in m/s.
     @inputs begin
+        on::Real, [description = "SCAS switch: 1 on, 0 off (direct)"]
+        wow::Real, [description = "Weight on wheels: 0 airborne .. 1 the gear loaded"]
         lon::Real
         lat::Real
         ped::Real
@@ -41,7 +46,6 @@
         r_cmd::Real
     end
     @parameters begin
-        scas::Real = 1.0, [description = "1: SCAS on (attitude hold); 0: direct"]
         k_th_stick::Real = 15.0, [description = "Pitch attitude per full stick (deg)"]
         k_ph_stick::Real = 30.0, [description = "Bank per full stick (deg)"]
         k_r_stick::Real = 30.0, [description = "Yaw rate per full pedal (deg/s)"]
@@ -61,6 +65,7 @@
         xth::Real = 0.0, [state = :prefer]
         xph::Real = 0.0, [state = :prefer]
         xr::Real = 0.0, [state = :prefer]
+        e::Real = 1.0
         sig::Real = 0.0
         eth::Real = 0.0
         eph::Real = 0.0
@@ -74,11 +79,12 @@
         eth ~ theta - th_cmd
         eph ~ ph_cmd - phi
         er ~ r - r_cmd
-        ddt(xth) ~ scas * Kith * eth
-        ddt(xph) ~ scas * Kiph * eph
-        ddt(xr) ~ scas * Kir * er
-        B1 ~ scas * (B1_ff + Kth * eth + Kq * q + xth) + (1.0 - scas) * B1d
-        A1 ~ scas * (A1_ff + Kph * eph - Kp * p + xph) + (1.0 - scas) * A1d
-        thtr ~ scas * (tr_ff + Kr * er + xr) + (1.0 - scas) * trd
+        e ~ on * (1.0 - wow)
+        ddt(xth) ~ e * Kith * eth
+        ddt(xph) ~ e * Kiph * eph
+        ddt(xr) ~ e * Kir * er
+        B1 ~ e * (B1_ff + Kth * eth + Kq * q + xth) + (1.0 - e) * B1d
+        A1 ~ e * (A1_ff + Kph * eph - Kp * p + xph) + (1.0 - e) * A1d
+        thtr ~ e * (tr_ff + Kr * er + xr) + (1.0 - e) * trd
     end
 end

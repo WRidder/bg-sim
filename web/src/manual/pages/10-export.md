@@ -46,6 +46,12 @@ The **cessna-sim** model of the cessna example is the FMU of a flight simulator 
 - 38 `ExportOutput` markers carry the pose, the six-pack instruments, the engine, the surfaces and the three wheel loads;
 - the start state is 20 globals kept tunable with ranges: the pose, the momenta, the crankshaft's momentum, the manifold pressure, the flap angle and the strut compressions. The host sets them together from the runway equilibrium or a trim.
 
+The **a109-sim** model of the a109 example is the FMU of a helicopter simulator that starts on a helipad (`apps/a109-sim`):
+
+- the collective, the cyclic (longitudinal and lateral), the pedals, the SCAS switch and the wind come in through 8 `ExportInputPass` markers;
+- 29 `ExportOutput` markers carry the pose, the rates and velocities, the air data, the rotor speed, power, thrust and flapping, the blade angles, the three wheel loads and the weight on wheels;
+- the start state is 17 globals kept tunable with ranges: the pose, the momenta, the flapping, the rotor's angular momentum and the governor's integrator. The host sets them together from the helicopter parked on its gear, a hover or a trimmed approach.
+
 For a subsystem export, the power ports of the subsystem are part of the interface too. For each one, choose whether the host imposes the **effort** or the **flow**.
 
 If the export has nothing to publish, you get warning W209.

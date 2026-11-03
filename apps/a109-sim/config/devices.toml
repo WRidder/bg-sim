@@ -1,0 +1,67 @@
+# Input devices of the a109-sim host.
+#
+# Each axis control reads one axis of one device. A device is matched by a case-insensitive part
+# of its name (see `uv run a109sim --list-devices`), or by its index when `device` is a number.
+# A control without a device (or whose device is missing) is flown from the keyboard.
+#
+#   device    name fragment ("" = the first joystick) or index
+#   axis      SDL axis number on that device
+#   invert    true flips the sign
+#   deadzone  bipolar: fraction of the travel around the centre that reads 0 (the rest is
+#             rescaled); unipolar: the fraction at the bottom of the travel that reads 0
+#   expo      0 = linear .. 1 = cubic: softer around the centre, full deflection unchanged
+#   range     "bipolar" (-1..1: cyclic, pedals) or "unipolar" (0..1: the collective; the axis'
+#             -1..1 becomes 0..1)
+#
+# The FMU's signs: cyclic_lon +1 = full forward (nose down), cyclic_lat +1 = full right,
+# pedals +1 = full right pedal (nose right), collective 0 = full down .. 1 = full up.
+
+[cyclic_lon]
+device = ""
+axis = 1
+invert = true        # SDL: stick forward is -1 on most sticks; the FMU wants +1 = forward
+deadzone = 0.03
+expo = 0.3
+
+[cyclic_lat]
+device = ""
+axis = 0
+invert = false       # +1 = stick right
+deadzone = 0.03
+expo = 0.3
+
+[pedals]
+# Rudder pedals are usually a separate device: its name fragment goes here, e.g. "rudder" or
+# "pedal". Without pedals, set the stick's twist axis (often 3 or 5) and device = "".
+device = "pedal"
+axis = 2
+invert = false       # +1 = right pedal = nose right
+deadzone = 0.04
+expo = 0.2
+
+[collective]
+# The collective lever: a throttle axis. The throttle lever of the stick (often axis 2 or 3,
+# device = "") or a throttle quadrant ("throttle"). Lever forward (or up) = collective up.
+device = ""
+axis = 2
+invert = true        # SDL: lever forward is usually -1
+range = "unipolar"
+
+[buttons]
+# Optional joystick buttons: scas (SCAS on/off), trim (force trim: the cyclic's centre moves to
+# where the stick is now), trim_release (the cyclic trim back to the centre), view (cycle the camera).
+# scas = { device = "", button = 2 }
+# trim = { device = "", button = 1 }
+# trim_release = { device = "", button = 3 }
+# view = { device = "", button = 4 }
+
+[keyboard]
+# Keyboard fallback for every control without a device: arrows (or W/S, A/D) move the cyclic and
+# spring back to its trim when released, Q/E (or Z/X) the pedals (spring back), PgUp/PgDn (or
+# +/-) the collective (stays where it is put). Space: force trim (the cyclic's centre moves to the
+# stick now), Backspace: the trim back to the centre, Home/End: longitudinal trim forward/aft.
+stick_rate = 1.2       # 1/s: how fast a held key moves the cyclic
+spring = 2.5           # 1/s: how fast a released cyclic or pedal returns to its centre
+pedal_rate = 1.5       # 1/s
+collective_rate = 0.25 # 1/s of collective travel
+trim_rate = 0.15       # 1/s of cyclic trim (Home/End)
