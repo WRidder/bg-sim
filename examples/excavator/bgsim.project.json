@@ -1,0 +1,13 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "excavator",
+  "models": [
+    "excavator-kinematics",
+    "excavator-lift",
+    "excavator-dig-cycle",
+    "excavator-no-ls"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

@@ -1,0 +1,37 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "machine",
+      "title": "The excavator front",
+      "file": "pages/machine.md",
+      "children": [
+        {
+          "id": "mechanics",
+          "title": "Mechanics and linkage",
+          "file": "pages/mechanics.md",
+          "children": []
+        },
+        {
+          "id": "hydraulics",
+          "title": "Load-sensing hydraulics",
+          "file": "pages/hydraulics.md",
+          "children": []
+        },
+        {
+          "id": "soil",
+          "title": "Soil and bucket fill",
+          "file": "pages/soil.md",
+          "children": []
+        },
+        {
+          "id": "checks",
+          "title": "Checks and limits",
+          "file": "pages/checks.md",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

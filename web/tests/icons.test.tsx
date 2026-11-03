@@ -183,6 +183,7 @@ describe("block icons", () => {
       "hyd-volume",
       "conv-fixed-pump",
       "conv-variable-pump",
+      "conv-ls-pump",
       "conv-hydraulic-motor",
       "conv-hydraulic-cylinder",
       "conv-pressure-sensor",

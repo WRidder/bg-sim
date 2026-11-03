@@ -21,6 +21,7 @@ The library is isothermal: one fluid with a constant density `rho`, viscosity `n
 | `Pipe` | `a`, `b` | lumped line: friction, fluid inertia and compressibility in `N` segments | `L`, `d`, `nu`, `beta`, `f_t`, constant `N` |
 | `FixedDisplacementPump` | `a` (suction), `b` (delivery), `shaft` | `Q = D·w` less leakage, torque `D·Δp` plus friction | `D`, `eta_v`, `eta_m` |
 | `VariableDisplacementPump` | as above, input `u` | displacement `D·u` (−1 to 1) | `D`, `eta_v`, `eta_m` |
+| `LoadSensingPump` | as above, plus `ls` (load-sensing tap); outputs `xd`, `P_in`, `P_out` | variable pump with its own LS regulator: holds the delivery `ls + dp_ls`, with a pressure cut-off and a torque (power) limiter | `D`, `dp_ls`, `dp_reg`, `p_cut`, `T_max` |
 | `HydraulicMotor` | `a` (inlet), `b` (outlet), `shaft` | `w = Q/D`, torque `D·Δp`, less losses | `D`, `eta_v`, `eta_m` |
 | `HydraulicCylinder` | `A`, `B`, `rod` | double-acting cylinder with chamber compressibility | `Ap`, `Ar`, `stroke` |
 | `PressureSensor`, `FlowSensor` | output `y` | read a pressure (no flow) or a flow (no pressure drop) | none |
@@ -46,6 +47,8 @@ which is the square-root law above the transition pressure `p_tr` (default 1 bar
 ## Pumps and motors
 
 The efficiencies apply at a nominal point (`p_nom`, `w_nom`): the leakage grows linearly with the pressure, and the friction torque is proportional to the pressure and always opposes the rotation. With `eta_v = eta_m = 1` a pump or motor is ideal: the mechanical power `T·w` equals the hydraulic power `Δp·Q`. The `P_loss` signal is the power lost to leakage and friction; it is never negative.
+
+`LoadSensingPump` sets its own displacement. Wire its `ls` port to the load-sensing line, the line that the shuttle valves (or check valves) of the valve sections feed with the highest load pressure. The port draws no flow. The displacement is full while the margin `b − ls` is below `dp_ls` and falls to zero over `dp_reg` above it, so the pump delivers only the flow the valves take, at a pressure `dp_ls` above the highest load. The pressure cut-off destrokes the pump above `p_cut`, and the torque limiter caps the displacement at `T_max/(D·Δp)`: a power limit `T_max·w` at a constant speed. With `ls` on the tank, the same regulator holds the delivery at `p_tank + dp_ls`, which is a constant-pressure pump. The outputs are the displacement fraction `xd`, the shaft power `P_in = T·w` and the hydraulic power `P_out = Δp·Q`. The `excavator` example uses it with pre-compensated valve sections.
 
 ## Pipes and accumulators
 
@@ -88,3 +91,5 @@ The example **suction-gripper** is a six-cup gripper that moves a carton: profil
 The example **fanuc-pick** is a pick and place of a carton by a FANUC LR-10iA/10 with a five-zone gripper (a pneumatic cylinder per zone extends its bellows cup, one ejector per zone). It compares four trajectory families and finds the shortest cycle time that keeps a holding margin, for a carton with a centred or offset centre of mass and for a carton with a loose ball or bottle inside. A waiter tilt turns the tool towards the specific force of the carton, and a free optimisation (free timing, tilt, yaw window and gripper timing) finds the highest pick rate within the robot limits; the `*-tilt-best` and `*-opt` models show the results. The cups of fanuc-pick and suction-gripper use the nonlinear bellows of `SuctionCup`. The arm is kinematic: it follows the plan exactly, and the plan is checked against the robot's datasheet limits.
 
 The example **hydraulic-circuit** (in the Example gallery) is a complete circuit: an electric motor speed drives a fixed-displacement pump with a relief valve and an accumulator, and a 4/3 valve extends and retracts a loaded cylinder.
+
+The example **excavator** is a load-sensing system: a `LoadSensingPump`, three pre-compensated valve sections (a `PressureCompensatedFlowControl` on the spool opening ahead of each `DirectionalValve43`), the LS edges of the spools and check valves as the shuttle network, and three `HydraulicCylinder`s on the planar boom, arm and bucket. The model `excavator-no-ls` puts the pump's `ls` port on the tank for comparison: a constant-pressure system that needs about 2.7 times the engine energy for the same dig cycle.

@@ -1,0 +1,334 @@
+<?xml version="1.0"?>
+<!--
+  excavator: the front of a 20-t class hydraulic excavator (boom 5.70 m, arm 2.90 m,
+  bucket 1.50 m) in the vertical X-Z plane, written by design/build_model.py.
+  Model x is SDF X, model y is SDF Z (the boom foot pin is the origin, the soil surface is
+  at Z = -1.95); the joints turn about -Y with the model's joint angles. The cylinders,
+  the rocker and the H-link are bars between two moving points (segment bindings).
+-->
+<sdf version="1.9">
+  <model name="excavator">
+    <link name="base">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="ground">
+        <pose>3 0 -2.05 0 0 0</pose>
+        <geometry><box><size>15 6 0.2</size></box></geometry>
+        <material><diffuse>0.55 0.47 0.36 1</diffuse></material>
+      </visual>
+      <visual name="dig_zone">
+        <pose>4.6 0 -1.948 0 0 0</pose>
+        <geometry><box><size>3.6 1.6 0.004</size></box></geometry>
+        <material><diffuse>0.36 0.27 0.18 1</diffuse></material>
+      </visual>
+      <visual name="track_l">
+        <pose>-1 1.2 -1.5 0 0 0</pose>
+        <geometry><box><size>4.45 0.6 0.9</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="idler_l0">
+        <pose>-2.75 1.2 -1.5 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.42</radius><length>0.62</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="idler_l1">
+        <pose>0.75 1.2 -1.5 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.42</radius><length>0.62</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="track_r">
+        <pose>-1 -1.2 -1.5 0 0 0</pose>
+        <geometry><box><size>4.45 0.6 0.9</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="idler_r0">
+        <pose>-2.75 -1.2 -1.5 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.42</radius><length>0.62</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="idler_r1">
+        <pose>0.75 -1.2 -1.5 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.42</radius><length>0.62</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="car_body">
+        <pose>-1 0 -1.2 0 0 0</pose>
+        <geometry><box><size>2.4 1.9 0.5</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="swing_ring">
+        <pose>-1 0 -0.9 0 0 0</pose>
+        <geometry><cylinder><radius>0.9</radius><length>0.12</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="upper_frame">
+        <pose>-1.25 0 -0.68 0 0 0</pose>
+        <geometry><box><size>3.6 2.6 0.3</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="engine_hood">
+        <pose>-2 -0.25 -0.18 0 0 0</pose>
+        <geometry><box><size>1.7 2.1 0.7</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="counterweight">
+        <pose>-3 0 -0.28 0 0 0</pose>
+        <geometry><box><size>0.6 2.6 0.9</size></box></geometry>
+        <material><diffuse>0.2 0.2 0.21 1</diffuse></material>
+      </visual>
+      <visual name="cab">
+        <pose>-0.45 0.85 0.27 0 0 0</pose>
+        <geometry><box><size>1.5 0.9 1.6</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="cab_glass">
+        <pose>0.31 0.85 0.37 0 0 0</pose>
+        <geometry><box><size>0.02 0.8 1.2</size></box></geometry>
+        <material><diffuse>0.35 0.55 0.7 0.6</diffuse></material>
+      </visual>
+      <visual name="boom_foot">
+        <pose>0 0 -0.265 0 0 0</pose>
+        <geometry><box><size>0.7 0.9 1.33</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="boom_cyl_foot">
+        <pose>0.104 0 -0.687 0 0 0</pose>
+        <geometry><box><size>0.35 1.05 0.514</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="pin_A1">
+        <pose>0.104 0 -0.844 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.06</radius><length>1.1</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="pin_O">
+        <pose>0 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.07</radius><length>0.95</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="boom_barrel_l">
+        <pose>0 0.42 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.095</radius><length>1</length></cylinder></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="boom_rod_l">
+        <pose>0 0.42 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.0425</radius><length>1</length></cylinder></geometry>
+        <material><diffuse>0.85 0.87 0.9 1</diffuse></material>
+      </visual>
+      <visual name="boom_barrel_r">
+        <pose>0 -0.42 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.095</radius><length>1</length></cylinder></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="boom_rod_r">
+        <pose>0 -0.42 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.0425</radius><length>1</length></cylinder></geometry>
+        <material><diffuse>0.85 0.87 0.9 1</diffuse></material>
+      </visual>
+      <visual name="arm_barrel">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.105</radius><length>1</length></cylinder></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="arm_rod">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.05</radius><length>1</length></cylinder></geometry>
+        <material><diffuse>0.85 0.87 0.9 1</diffuse></material>
+      </visual>
+      <visual name="bucket_barrel">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.095</radius><length>1</length></cylinder></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="bucket_rod">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry><cylinder><radius>0.0425</radius><length>1</length></cylinder></geometry>
+        <material><diffuse>0.85 0.87 0.9 1</diffuse></material>
+      </visual>
+      <visual name="rocker_l">
+        <pose>0 0.3 0 0 0 0</pose>
+        <geometry><box><size>1 0.06 0.14</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="rocker_r">
+        <pose>0 -0.3 0 0 0 0</pose>
+        <geometry><box><size>1 0.06 0.14</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="hlink_l">
+        <pose>0 0.3 0 0 0 0</pose>
+        <geometry><box><size>1 0.06 0.14</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="hlink_r">
+        <pose>0 -0.3 0 0 0 0</pose>
+        <geometry><box><size>1 0.06 0.14</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="boom">
+      <pose>0 0 0 0 0 0</pose>
+      <visual name="boom_lower">
+        <pose>1.4 0 0.225 0 -0.159352 0</pose>
+        <geometry><box><size>2.83593 0.55 0.62</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="boom_upper">
+        <pose>4.25 0 0.225 0 0.153945 0</pose>
+        <geometry><box><size>2.93471 0.5 0.55</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="boom_bracket_B1">
+        <pose>2.59 0 0.0615 0 -1.5708 0</pose>
+        <geometry><box><size>0.577 0.75 0.3</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="boom_bracket_A2">
+        <pose>2.75 0 0.8 0 -1.5708 0</pose>
+        <geometry><box><size>0.5 0.3 0.3</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="pin_B1">
+        <pose>2.59 0 -0.227 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.055</radius><length>1.05</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="pin_A2">
+        <pose>2.75 0 1.05 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.06</radius><length>0.4</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="pin_C">
+        <pose>5.7 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.07</radius><length>0.6</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="arm">
+      <pose>5.7 0 0 0 0 0</pose>
+      <visual name="arm_tail">
+        <pose>-0.25 0 -0.1 0 -0.380506 0</pose>
+        <geometry><box><size>1.18474 0.42 0.42</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="arm_main">
+        <pose>1.6 0 0.06 0 0.0461211 0</pose>
+        <geometry><box><size>2.60277 0.38 0.4</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="arm_bracket_A3">
+        <pose>0.277 0 0.299 0 -1.5708 0</pose>
+        <geometry><box><size>0.358 0.25 0.25</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="pin_B2">
+        <pose>-0.8 0 -0.32 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.06</radius><length>0.5</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="pin_A3">
+        <pose>0.277 0 0.478 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.055</radius><length>0.35</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="pin_R">
+        <pose>2.54 0 0.052 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.05</radius><length>0.75</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="pin_Q">
+        <pose>2.9 0 0 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.06</radius><length>0.75</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+    </link>
+    <link name="bucket">
+      <pose>8.6 0 0 0 0 0</pose>
+      <visual name="bucket_shell_0">
+        <pose>0.06 0 0.285 0 -1.32082 0</pose>
+        <geometry><box><size>0.485077 1.2 0.04</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="bucket_shell_1">
+        <pose>0.42 0 0.66 0 -0.436627 0</pose>
+        <geometry><box><size>0.662118 1.2 0.04</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="bucket_shell_2">
+        <pose>1 0 0.66 0 0.463648 0</pose>
+        <geometry><box><size>0.626099 1.2 0.04</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="bucket_shell_3">
+        <pose>1.39 0 0.26 0 1.17056 0</pose>
+        <geometry><box><size>0.564624 1.2 0.04</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="bucket_side_l">
+        <pose>0.72 0.6 0.36 0 0 0</pose>
+        <geometry><box><size>1.3 0.03 0.66</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="bucket_side_r">
+        <pose>0.72 -0.6 0.36 0 0 0</pose>
+        <geometry><box><size>1.3 0.03 0.66</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="bucket_ears">
+        <pose>0.0965 0 0.1795 0 -1.07752 0</pose>
+        <geometry><box><size>0.40759 0.5 0.12</size></box></geometry>
+        <material><diffuse>0.96 0.72 0.08 1</diffuse></material>
+      </visual>
+      <visual name="pin_P">
+        <pose>0.193 0 0.359 1.5708 0 0</pose>
+        <geometry><cylinder><radius>0.05</radius><length>0.75</length></cylinder></geometry>
+        <material><diffuse>0.62 0.64 0.67 1</diffuse></material>
+      </visual>
+      <visual name="tooth_0">
+        <pose>1.56 -0.48 0.02 0 0.25 0</pose>
+        <geometry><box><size>0.16 0.07 0.05</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="tooth_1">
+        <pose>1.56 -0.24 0.02 0 0.25 0</pose>
+        <geometry><box><size>0.16 0.07 0.05</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="tooth_2">
+        <pose>1.56 0 0.02 0 0.25 0</pose>
+        <geometry><box><size>0.16 0.07 0.05</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="tooth_3">
+        <pose>1.56 0.24 0.02 0 0.25 0</pose>
+        <geometry><box><size>0.16 0.07 0.05</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="tooth_4">
+        <pose>1.56 0.48 0.02 0 0.25 0</pose>
+        <geometry><box><size>0.16 0.07 0.05</size></box></geometry>
+        <material><diffuse>0.16 0.16 0.17 1</diffuse></material>
+      </visual>
+      <visual name="soil_load">
+        <pose>0.72 0 0.38 0 0 0</pose>
+        <geometry><box><size>1 1.12 0.62</size></box></geometry>
+        <material><diffuse>0.47 0.36 0.24 1</diffuse></material>
+      </visual>
+    </link>
+    <joint name="boom_joint" type="revolute">
+      <parent>base</parent>
+      <child>boom</child>
+      <axis><xyz>0 -1 0</xyz></axis>
+    </joint>
+    <joint name="arm_joint" type="revolute">
+      <parent>boom</parent>
+      <child>arm</child>
+      <axis><xyz>0 -1 0</xyz></axis>
+    </joint>
+    <joint name="bucket_joint" type="revolute">
+      <parent>arm</parent>
+      <child>bucket</child>
+      <axis><xyz>0 -1 0</xyz></axis>
+    </joint>
+  </model>
+</sdf>

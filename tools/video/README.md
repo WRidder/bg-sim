@@ -75,6 +75,10 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
   the `vdp-belt` model of `van-der-pol`, the dashboard next to the detached 3D viewer, in real time (frame k at t = k/fps) for
   three runs set on the dashboard sliders: mu = 0.5 growing onto the limit cycle, mu = 1.0, and mu = 0.5 shrinking from x0 = 2.5.
   The caption bar shows the simulation time. `--stills` writes only the framing stills (`camera-fit.png`, `camera.png`, segment ends).
+- `capture-excavator.mjs <out-dir> [--fps 25] [--max-frames n] [--only dig,lift,nols] [--stills] [--compose-only]`: the
+  `excavator` example, in the same layout as `capture-vdp-belt.mjs` (dashboard plus detached 3D viewer, real time), in three
+  segments: the load-sensing dig cycle (16.5 s), the 1.5 t boom lift (9 s) and the first 5 s of the constant-pressure cycle.
+  Writes `excavator.mp4` (about 30 s, 3 MB) and per segment `<id>-camera.png`, `<id>-3d-end.png`, `<id>-dashboard-end.png`.
 - `capture-suction-cup.mjs <out-dir> [--fps 30] [--zoom 6] [--zoom-at 0.5,0.55] [--orbit 0,-40] [--only a,b] [--stills] [--compose-only]`:
   the `suction-cup` example, the dashboard next to the detached 3D viewer, one segment per model (hold and release, bounce,
   steps, swing, chirp, overload, linear vs nonlinear), each in real time (frame k at t = k/fps). Every run happens off camera.

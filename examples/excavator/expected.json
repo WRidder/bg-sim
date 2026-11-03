@@ -1,0 +1,392 @@
+{
+  "project": "excavator",
+  "description": "The front of a 20-t hydraulic excavator (boom 5.7 m, arm 2.9 m, bucket 1.5 m) on planar multibond mechanics with the real cylinder linkage (bucket four-bar included), driven by a load-sensing pump and pre-compensated valve sections, digging loam with the fundamental earthmoving equation. design/design.py computes the references: forward kinematics from the cylinder lengths, static cylinder forces, the hydraulic modes, the earthmoving factors.",
+  "models": {
+    "excavator-kinematics": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "W201",
+            "W202",
+            "W206"
+          ],
+          "note": "no solver failure, no connection or causality error, no derivative causality, no algebraic loop (every valve sits between two volumes) and no event-limit stop"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[2]",
+          "t": 6.5,
+          "value": 7.383354,
+          "abs": 0.0001,
+          "note": "bucket tip x at the hold t = 6.5 s: scipy forward kinematics of the three set lengths (brentq on each cylinder length, the bucket through the four-bar), design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[3]",
+          "t": 6.5,
+          "value": 2.779696,
+          "abs": 0.0001,
+          "note": "bucket tip y at the hold t = 6.5 s: scipy forward kinematics of the three set lengths (brentq on each cylinder length, the bucket through the four-bar), design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 6.5,
+          "value": 0.9345167,
+          "abs": 1e-05,
+          "note": "boom joint angle whose cylinder length is the set length (design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoomMount/L",
+          "t": 6.5,
+          "value": 3.2269792,
+          "abs": 1e-05,
+          "note": "boom pin-to-pin length = the set length L0 + integral of the rate profile"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 6.5,
+          "value": -1.2994621,
+          "abs": 1e-05,
+          "note": "arm joint angle whose cylinder length is the set length (design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ArmMount/L",
+          "t": 6.5,
+          "value": 2.4545886,
+          "abs": 1e-05,
+          "note": "arm pin-to-pin length = the set length L0 + integral of the rate profile"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 6.5,
+          "value": -0.1740232,
+          "abs": 1e-05,
+          "note": "bucket joint angle whose cylinder length is the set length (design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BucketMount/L",
+          "t": 6.5,
+          "value": 2.3431903,
+          "abs": 1e-05,
+          "note": "bucket pin-to-pin length = the set length L0 + integral of the rate profile"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Linkage/k",
+          "t": 6.5,
+          "value": 0.6832522,
+          "abs": 1e-05,
+          "note": "four-bar velocity ratio dphi/dq3 at the hold (exc_geom.four_bar, circle intersection)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BucketMount/r",
+          "t": 6.5,
+          "value": -0.7088326,
+          "abs": 1e-05,
+          "note": "moment arm of the bucket cylinder about the rocker pivot (exc_geom.cylinders)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[2]",
+          "t": 12.5,
+          "value": 2.978149,
+          "abs": 0.0001,
+          "note": "bucket tip x at the hold t = 12.5 s: scipy forward kinematics of the three set lengths (brentq on each cylinder length, the bucket through the four-bar), design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseTip/g[3]",
+          "t": 12.5,
+          "value": -1.877105,
+          "abs": 0.0001,
+          "note": "bucket tip y at the hold t = 12.5 s: scipy forward kinematics of the three set lengths (brentq on each cylinder length, the bucket through the four-bar), design.py"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint1/qout",
+          "t": 12.5,
+          "value": -0.0407134,
+          "abs": 1e-05,
+          "note": "boom joint angle whose cylinder length is the set length (design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoomMount/L",
+          "t": 12.5,
+          "value": 2.5269792,
+          "abs": 1e-05,
+          "note": "boom pin-to-pin length = the set length L0 + integral of the rate profile"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint2/qout",
+          "t": 12.5,
+          "value": -2.0657796,
+          "abs": 1e-05,
+          "note": "arm joint angle whose cylinder length is the set length (design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ArmMount/L",
+          "t": 12.5,
+          "value": 3.0545886,
+          "abs": 1e-05,
+          "note": "arm pin-to-pin length = the set length L0 + integral of the rate profile"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Joint3/qout",
+          "t": 12.5,
+          "value": -1.6364591,
+          "abs": 1e-05,
+          "note": "bucket joint angle whose cylinder length is the set length (design.py)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BucketMount/L",
+          "t": 12.5,
+          "value": 2.8431903,
+          "abs": 1e-05,
+          "note": "bucket pin-to-pin length = the set length L0 + integral of the rate profile"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Linkage/k",
+          "t": 12.5,
+          "value": 0.4667667,
+          "abs": 1e-05,
+          "note": "four-bar velocity ratio dphi/dq3 at the hold (exc_geom.four_bar, circle intersection)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BucketMount/r",
+          "t": 12.5,
+          "value": -0.4329737,
+          "abs": 1e-05,
+          "note": "moment arm of the bucket cylinder about the rocker pivot (exc_geom.cylinders)"
+        }
+      ]
+    },
+    "excavator-lift": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "W201",
+            "W202",
+            "W206"
+          ],
+          "note": "no solver failure, no connection or causality error, no derivative causality, no algebraic loop (every valve sits between two volumes) and no event-limit stop"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoomForce/y",
+          "t": 2.9,
+          "value": 275226.8,
+          "rtol": 0.012,
+          "note": "static boom cylinder force (pA Ap - pB Ar) holding the front with 1.5 t: moment balance about the boom foot divided by the moment arm dL/dq1 (design.static_forces, 275.2 kN). Tolerance: the Coulomb band of the cylinder friction, 3 kN = 1.1 %"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "ArmForce/y",
+          "t": 2.9,
+          "value": 10415.4,
+          "abs": 2500.0,
+          "note": "static arm cylinder force (10.4 kN), within its Coulomb friction band (2 kN)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BucketForce/y",
+          "t": 2.9,
+          "value": 81130.7,
+          "abs": 2000.0,
+          "note": "static bucket cylinder force through the four-bar (81.1 kN), within its Coulomb friction band (1.5 kN)"
+        },
+        {
+          "kind": "fft_peak",
+          "signal": "BoomCyl/pA",
+          "from_t": 0.0,
+          "to_t": 2.8,
+          "value": 2.4891,
+          "rtol": 0.03,
+          "min_hz": 1.0,
+          "max_hz": 6.0,
+          "note": "after the 15 % cap-pressure sag the front rings at its lowest hydraulic mode: eig(M^-1 K) of the 3-DOF chain (mass matrix from the body Jacobians, K = diag(beta (Ap^2/VA + Ar^2/VB) r^2), all valves closed), 2.489 Hz. The single-DOF estimate sqrt(beta A^2 (1/V1 + 1/V2)/m_eq) with the arm and bucket locked gives 2.596 Hz"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Pump/margin",
+          "t": 2.9,
+          "value": 2700000.0,
+          "abs": 20000.0,
+          "note": "stand-by: no section open, the pump destrokes until only the leakage flows and the margin sits at the top of the regulation range, dp_ls + dp_reg = 2.7 MPa"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Pump/margin",
+          "from_t": 3.6,
+          "to_t": 6.0,
+          "value": 2500000.0,
+          "note": "LS margin during the boom lift: the static LS regulator holds pump - LS line between dp_ls ..."
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Pump/margin",
+          "from_t": 3.6,
+          "to_t": 6.0,
+          "value": 2700000.0,
+          "note": "... and dp_ls + dp_reg (2.5 to 2.7 MPa)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "BoomComp/Q",
+          "t": 5.0,
+          "value": 0.0025,
+          "rtol": 0.05,
+          "note": "flow regulation: the pre-compensated section passes u Q_nom = 150 l/min regardless of the load; the compensator's smooth saturation (dp a little above dp_c = 1 MPa) keeps it 3 % below the nominal"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "port-power ledger closes (Tellegen) through the wired hydraulics, the modulated transformers and the planar bodies"
+        }
+      ]
+    },
+    "excavator-dig-cycle": {
+      "checks": [
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "W201",
+            "W202",
+            "W206"
+          ],
+          "note": "no solver failure, no connection or causality error, no derivative causality, no algebraic loop (every valve sits between two volumes) and no event-limit stop"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Pump/margin",
+          "from_t": 0.5,
+          "to_t": 16.5,
+          "value": 2000000.0,
+          "note": "the LS margin stays within 0.5 MPa of the 2.5 MPa setting through the whole cycle (it dips while the LS line follows a step in load pressure) ..."
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Pump/margin",
+          "from_t": 0.5,
+          "to_t": 16.5,
+          "value": 3200000.0,
+          "note": "... and above"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Relief/Q",
+          "value": 1e-06,
+          "note": "the main relief never opens: the LS pump never delivers more than the sections take"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Soil/fillr",
+          "from_t": 6.5,
+          "to_t": 7.0,
+          "value": 0.6,
+          "note": "the bucket is filled (above 60 % of its heaped capacity) after the curl"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Soil/fillr",
+          "from_t": 15.5,
+          "to_t": 16.5,
+          "value": 0.05,
+          "note": "and empty after the dump"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Soil/depth",
+          "value": 0.6,
+          "note": "the teeth cut at most 0.6 m deep"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "port-power ledger closes (Tellegen)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Ein/y",
+          "from_t": 16.49,
+          "to_t": 16.5,
+          "value": 700000.0,
+          "note": "the LS cycle costs less than 0.7 MJ at the engine (the constant-pressure system: above 1.2 MJ)"
+        }
+      ]
+    },
+    "excavator-no-ls": {
+      "checks": [
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E901",
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "W201",
+            "W202",
+            "W206"
+          ],
+          "note": "no solver failure, no connection or causality error, no derivative causality, no algebraic loop (every valve sits between two volumes) and no event-limit stop"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Vpump/p",
+          "from_t": 0.5,
+          "to_t": 16.5,
+          "value": 19000000.0,
+          "note": "constant-pressure system: the pump line stays near 281 bar except while all sections draw together"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Ein/y",
+          "from_t": 16.49,
+          "to_t": 16.5,
+          "value": 1200000.0,
+          "note": "the cycle costs more than 1.2 MJ at the engine (the LS system: below 0.7 MJ, see excavator-dig-cycle)"
+        }
+      ]
+    }
+  }
+}
