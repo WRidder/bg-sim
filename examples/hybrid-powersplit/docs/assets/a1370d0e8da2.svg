@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 380" font-family="sans-serif" font-size="12">
+<rect width="720" height="380" fill="#ffffff"/>
+<line x1="60" y1="200" x2="660" y2="200" stroke="#999" stroke-dasharray="4 3"/>
+<text x="664" y="204" fill="#666" font-size="11">0</text>
+<line x1="100" y1="40" x2="100" y2="350" stroke="#333" stroke-width="3"/>
+<line x1="461" y1="40" x2="461" y2="350" stroke="#333" stroke-width="3"/>
+<line x1="600" y1="40" x2="600" y2="350" stroke="#333" stroke-width="3"/>
+<text x="100" y="30" text-anchor="middle" fill="#222">sun: MG1</text>
+<text x="461" y="30" text-anchor="middle" fill="#222">carrier: engine</text>
+<text x="600" y="30" text-anchor="middle" fill="#222">ring: MG2, wheels</text>
+<line x1="100" y1="368" x2="461" y2="368" stroke="#666"/>
+<line x1="461" y1="368" x2="600" y2="368" stroke="#666"/>
+<text x="280" y="363" text-anchor="middle" fill="#666" font-size="11">Zr = 78</text>
+<text x="530" y="363" text-anchor="middle" fill="#666" font-size="11">Zs = 30</text>
+<line x1="100" y1="330" x2="600" y2="150" stroke="#1b9e77" stroke-width="2.5"/>
+<circle cx="100" cy="330" r="5" fill="#1b9e77"/>
+<circle cx="461" cy="200" r="5" fill="#1b9e77"/>
+<circle cx="600" cy="150" r="5" fill="#1b9e77"/>
+<text x="112" y="334" fill="#1b9e77">EV: w_s = -2.6 w_r</text>
+<text x="470" y="222" fill="#1b9e77">engine at rest</text>
+<line x1="100" y1="84" x2="600" y2="100" stroke="#d95f02" stroke-width="2.5"/>
+<circle cx="100" cy="84" r="5" fill="#d95f02"/>
+<circle cx="461" cy="95.5" r="5" fill="#d95f02"/>
+<circle cx="600" cy="100" r="5" fill="#d95f02"/>
+<text x="112" y="74" fill="#d95f02">hybrid: engine 2000 rpm, 52 km/h</text>
+<text x="20" y="200" fill="#444" font-size="11" text-anchor="start">speed</text>
+<text x="200" y="300" fill="#444" font-size="11">108 w_c = 30 w_s + 78 w_r: the three speeds lie on one straight line</text>
+</svg>

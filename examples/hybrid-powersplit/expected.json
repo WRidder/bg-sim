@@ -1,0 +1,425 @@
+{
+  "project": "hybrid-powersplit",
+  "description": "Toyota Prius (THS-II) power-split hybrid: the planetary set as a bond graph, the engine, MG1, MG2, NiMH battery and vehicle on the NEDC with a rule-based and an ECMS energy management. Numbers from design/design.json and the published references in the README.",
+  "models": {
+    "hybrid-kinematics": {
+      "checks": [
+        {
+          "kind": "final_value",
+          "signal": "SunSpeed/y",
+          "t": 10.0,
+          "value": 333.3333333333333,
+          "rtol": 1e-06,
+          "note": "steady state: T_sun = Zs/(Zs+Zr) T_c = 16.67 N*m = b_s w_s (design.py kinematics)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "RingSpeed/y",
+          "t": 10.0,
+          "value": 108.33333333333333,
+          "rtol": 1e-06,
+          "note": "T_ring = Zr/(Zs+Zr) T_c = 43.33 N*m = b_r w_r"
+        },
+        {
+          "kind": "final_value",
+          "signal": "CarrierSpeed/y",
+          "t": 10.0,
+          "value": 170.83333333333334,
+          "rtol": 1e-06,
+          "note": "w_c = (Zs w_s + Zr w_r)/(Zs+Zr) (Willis)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "PCarrier/y",
+          "t": 10.0,
+          "value": 10250.0,
+          "rtol": 1e-06,
+          "note": "carrier power T_c w_c"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "SunSpeed/y",
+              "coeff": 30.0
+            },
+            {
+              "signal": "RingSpeed/y",
+              "coeff": 78.0
+            },
+            {
+              "signal": "CarrierSpeed/y",
+              "coeff": -108.0
+            }
+          ],
+          "scale": 10000.0,
+          "tol": 1e-10,
+          "note": "Willis equation of the planetary set, Zs w_sun + Zr w_ring - (Zs+Zr) w_carrier = 0 at every sample: the flow balance of the bond graph's mesh 0-junction"
+        },
+        {
+          "kind": "ratio",
+          "signal": "SunTorque/y",
+          "signal_b": "RingTorque/y",
+          "t": 2.0,
+          "value": 0.38461538461538464,
+          "rtol": 1e-09,
+          "note": "torque split T_sun : T_ring = Zs : Zr at every instant (the common effort of the mesh 0-junction)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "PCarrier/y",
+              "coeff": 1.0
+            },
+            {
+              "signal": "PSun/y",
+              "coeff": -1.0
+            },
+            {
+              "signal": "PRing/y",
+              "coeff": -1.0
+            }
+          ],
+          "scale": 10000.0,
+          "tol": 1e-09,
+          "note": "the planetary set is power conserving: P_carrier = P_sun + P_ring"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "RingSpeed/y",
+          "signal_b": "Ring2Speed/y",
+          "from_t": 0.0,
+          "max_abs": 1e-05,
+          "note": "the bond-graph planetary agrees with the stdlib PlanetaryGear (equation block)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "SunSpeed/y",
+          "signal_b": "Sun2Speed/y",
+          "from_t": 0.0,
+          "max_abs": 1e-05,
+          "note": "the same for the sun"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-06,
+          "note": "Tellegen over all port powers"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "E901",
+            "E006",
+            "E102"
+          ],
+          "note": "no derivative causality, no torn algebraic loop, no solver or unit error"
+        }
+      ]
+    },
+    "hybrid-ev-mode": {
+      "checks": [
+        {
+          "kind": "zero_crossing",
+          "signal": "VehicleSpeed/y",
+          "level": 8.333333333333334,
+          "direction": "up",
+          "n": 1,
+          "value": 6.854526610091917,
+          "abs": 0.05,
+          "note": "EV launch with 150 N*m of MG2 from 0.5 s: the closed form v = V tanh(t sqrt(F0 k)/m) with F0 = T FD/r - c_rr m g and the reflected ring, MG2, sun and MG1 inertias (m = 1440.0 kg) gives 30 km/h at 6.730 s; a rigid 1-DOF ODE that adds the spin and iron losses (design.py) gives 6.855 s. The model differs by the half-shaft compliance and the 10 ms stator lag: 0.05 s"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "SunSpeed/y",
+              "coeff": 30.0
+            },
+            {
+              "signal": "RingSpeed/y",
+              "coeff": 78.0
+            },
+            {
+              "signal": "CarrierSpeed/y",
+              "coeff": -108.0
+            }
+          ],
+          "scale": 100000.0,
+          "tol": 1e-08,
+          "note": "Willis equation of the planetary set, Zs w_sun + Zr w_ring - (Zs+Zr) w_carrier = 0 at every sample: the flow balance of the bond graph's mesh 0-junction"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "EngineSpeed/y",
+          "value": 5.0,
+          "note": "MG1's speed control holds the engine at rest against the reaction of the launch torque (|w_e| < 5 rad/s, 50 rpm)"
+        },
+        {
+          "kind": "ratio",
+          "signal": "SunSpeed/y",
+          "signal_b": "RingSpeed/y",
+          "t": 8.0,
+          "value": -2.6,
+          "rtol": 0.01,
+          "note": "with the carrier at rest the sun turns backwards at Zr/Zs = 2.6 times the ring speed"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "PBat/y",
+          "value": 21210.0,
+          "note": "the HCU holds the battery within its 21 kW rating (ORNL Table 2.1) from the MG2 copper-loss estimate; 1 % for the stator and DC-link transients"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-05,
+          "overrides": {
+            "SpinLoss": "dissipation",
+            "Rolling": "dissipation",
+            "EngineDrag": "dissipation"
+          },
+          "note": "Tellegen over all port powers"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "E901",
+            "E006",
+            "E102"
+          ],
+          "note": "no derivative causality, no torn algebraic loop, no solver or unit error"
+        }
+      ]
+    },
+    "hybrid-rule-based": {
+      "checks": [
+        {
+          "kind": "compare_signals",
+          "signal": "Cycle/y",
+          "signal_b": "VehicleSpeed/y",
+          "from_t": 0.0,
+          "max_abs": 0.5555555555555556,
+          "note": "the driver follows the NEDC within its +-2 km/h speed tolerance (UN ECE R83)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/Distance/y",
+          "t": 1180.0,
+          "value": 11013.194444444447,
+          "rtol": 0.003,
+          "note": "NEDC distance from the cycle definition, 11.013 km (design.py)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "SunSpeed/y",
+              "coeff": 30.0
+            },
+            {
+              "signal": "RingSpeed/y",
+              "coeff": 78.0
+            },
+            {
+              "signal": "CarrierSpeed/y",
+              "coeff": -108.0
+            }
+          ],
+          "scale": 100000.0,
+          "tol": 1e-08,
+          "note": "Willis equation of the planetary set, Zs w_sun + Zr w_ring - (Zs+Zr) w_carrier = 0 at every sample: the flow balance of the bond graph's mesh 0-junction"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Battery/soc",
+          "t": 1180.0,
+          "value": 0.6,
+          "abs": 0.03,
+          "note": "charge sustaining: the final SOC within +-3 % of the 60 % start (a +-3 % SOC swing of the 6.5 A*h pack is about 0.16 MJ, 4 g of fuel)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "BMS/y",
+          "signal_b": "Battery/soc",
+          "from_t": 0.0,
+          "max_abs": 0.0001,
+          "note": "the BMS coulomb count agrees with the battery's own SOC state"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/L100km/y",
+          "t": 1180.0,
+          "value": 4.0,
+          "abs": 0.7,
+          "note": "rule-based: published 4.3 L/100 km NEDC combined (Toyota, EU type approval of the 2004 Prius, cold start). The model starts hot and has no auxiliaries, so a lower value is expected: the band 3.3-4.7 L/100 km"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/OnTime/y",
+          "t": 1180.0,
+          "value": 468.505,
+          "abs": 431.495,
+          "note": "engine on-time between the bounds of the cycle: at least the 37 s above 101 km/h (MG1 would overspeed with the engine at rest), at most the 900 s the car moves (the engine is off at standstill)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/EBrakeDemand/y",
+          "t": 1180.0,
+          "value": 1209529.4888054405,
+          "rtol": 0.05,
+          "note": "braking energy the driver asks for at the ring, 1.210 MJ from the cycle trace with the same road loads (design.py regen_share); the PI driver's +-2 km/h tracking error: 5 %"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/RegenShare/y",
+          "t": 1180.0,
+          "value": 0.9863152587857402,
+          "abs": 0.02,
+          "note": "regenerative share of the braking energy, 1 - E_friction / E_brake = 0.986 from the cycle trace: the NEDC decelerations are mild (at most 25 kW at the ring, within the battery's charge limit), so the friction brakes only take the stops below the 6.6 km/h fade-out of the regenerative torque"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-05,
+          "overrides": {
+            "SpinLoss": "dissipation",
+            "Rolling": "dissipation",
+            "EngineDrag": "dissipation"
+          },
+          "note": "Tellegen over all port powers; the smooth Coulomb spin and rolling losses and the engine drag are modulated effort sources classified as dissipation"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "E901",
+            "E006",
+            "E102"
+          ],
+          "note": "no derivative causality, no torn algebraic loop, no solver or unit error"
+        }
+      ]
+    },
+    "hybrid-ecms": {
+      "checks": [
+        {
+          "kind": "compare_signals",
+          "signal": "Cycle/y",
+          "signal_b": "VehicleSpeed/y",
+          "from_t": 0.0,
+          "max_abs": 0.5555555555555556,
+          "note": "the driver follows the NEDC within its +-2 km/h speed tolerance (UN ECE R83)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/Distance/y",
+          "t": 1180.0,
+          "value": 11013.194444444447,
+          "rtol": 0.003,
+          "note": "NEDC distance from the cycle definition, 11.013 km (design.py)"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "SunSpeed/y",
+              "coeff": 30.0
+            },
+            {
+              "signal": "RingSpeed/y",
+              "coeff": 78.0
+            },
+            {
+              "signal": "CarrierSpeed/y",
+              "coeff": -108.0
+            }
+          ],
+          "scale": 100000.0,
+          "tol": 1e-08,
+          "note": "Willis equation of the planetary set, Zs w_sun + Zr w_ring - (Zs+Zr) w_carrier = 0 at every sample: the flow balance of the bond graph's mesh 0-junction"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Battery/soc",
+          "t": 1180.0,
+          "value": 0.6,
+          "abs": 0.03,
+          "note": "charge sustaining: the final SOC within +-3 % of the 60 % start (a +-3 % SOC swing of the 6.5 A*h pack is about 0.16 MJ, 4 g of fuel)"
+        },
+        {
+          "kind": "compare_signals",
+          "signal": "BMS/y",
+          "signal_b": "Battery/soc",
+          "from_t": 0.0,
+          "max_abs": 0.0001,
+          "note": "the BMS coulomb count agrees with the battery's own SOC state"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/L100km/y",
+          "t": 1180.0,
+          "value": 4.0,
+          "abs": 0.7,
+          "note": "ECMS: published 4.3 L/100 km NEDC combined (Toyota, EU type approval of the 2004 Prius, cold start). The model starts hot and has no auxiliaries, so a lower value is expected: the band 3.3-4.7 L/100 km"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/OnTime/y",
+          "t": 1180.0,
+          "value": 468.505,
+          "abs": 431.495,
+          "note": "engine on-time between the bounds of the cycle: at least the 37 s above 101 km/h (MG1 would overspeed with the engine at rest), at most the 900 s the car moves (the engine is off at standstill)"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/EBrakeDemand/y",
+          "t": 1180.0,
+          "value": 1209529.4888054405,
+          "rtol": 0.05,
+          "note": "braking energy the driver asks for at the ring, 1.210 MJ from the cycle trace with the same road loads (design.py regen_share); the PI driver's +-2 km/h tracking error: 5 %"
+        },
+        {
+          "kind": "final_value",
+          "signal": "Meters/RegenShare/y",
+          "t": 1180.0,
+          "value": 0.9863152587857402,
+          "abs": 0.02,
+          "note": "regenerative share of the braking energy, 1 - E_friction / E_brake = 0.986 from the cycle trace: the NEDC decelerations are mild (at most 25 kW at the ring, within the battery's charge limit), so the friction brakes only take the stops below the 6.6 km/h fade-out of the regenerative torque"
+        },
+        {
+          "kind": "energy_ledger",
+          "tol": 1e-05,
+          "overrides": {
+            "SpinLoss": "dissipation",
+            "Rolling": "dissipation",
+            "EngineDrag": "dissipation"
+          },
+          "note": "Tellegen over all port powers; the smooth Coulomb spin and rolling losses and the engine drag are modulated effort sources classified as dissipation"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "W201",
+            "W202",
+            "E106",
+            "W206",
+            "E901",
+            "E006",
+            "E102"
+          ],
+          "note": "no derivative causality, no torn algebraic loop, no solver or unit error"
+        }
+      ]
+    }
+  }
+}
