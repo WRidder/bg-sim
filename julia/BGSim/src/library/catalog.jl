@@ -455,6 +455,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Fixed-displacement hydraulic motor from inlet a and outlet b to the rotation shaft: w = Q/D and T = D*dp, less leakage and friction set by the efficiencies.",
         icon = "conv-hydraulic-motor",
     ),
+    "stdlib:converters/LoadSensingPump" => (
+        description = "Load-sensing variable-displacement pump: holds its delivery at the LS port pressure plus the LS margin, with a pressure cut-off and a torque (power) limiter.",
+        icon = "conv-ls-pump",
+    ),
     "stdlib:converters/PositionSensor" => (
         description = "Translational position sensor; integrates the velocity of its port without drawing force.",
         icon = "conv-position-sensor",

@@ -1,0 +1,2595 @@
+{
+ "format": "bgsim.model",
+ "language": "0.1.0",
+ "name": "excavator-kinematics",
+ "$comment": "The excavator front without gravity: every cylinder is a stiff length servo, and the set lengths move the boom, arm and bucket through the linkage (bucket four-bar included). The bucket tip is checked against a scipy forward kinematics.",
+ "diagram": {
+  "nodes": [
+   {
+    "id": "Ground",
+    "name": "Ground",
+    "block": {
+     "ref": "stdlib:multibond/GroundPlanar"
+    },
+    "position": {
+     "x": 1500,
+     "y": 60
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Joint1",
+    "name": "Joint1",
+    "block": {
+     "ref": "stdlib:planar/Revolute2DLimit"
+    },
+    "position": {
+     "x": 1500,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "0.0",
+     "ry": "0.0",
+     "kt": "k_pin",
+     "bt": "b_pin",
+     "lower": "-0.6981317007977318",
+     "upper": "1.0821041362364843",
+     "kL": "k_stop",
+     "bL": "b_stop",
+     "delta": "0.002",
+     "q0": "0.2617993877991494"
+    },
+    "constants": {},
+    "starts": {
+     "d": "[0.0, 0.0]"
+    }
+   },
+   {
+    "id": "Link1",
+    "name": "Link1",
+    "block": {
+     "ref": "stdlib:planar/FixedJoint2D"
+    },
+    "position": {
+     "x": 1500,
+     "y": 300
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.75",
+     "y": "0.4",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BodyJ1",
+    "name": "BodyJ1",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1500,
+     "y": 420
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Boom",
+    "name": "Boom",
+    "block": {
+     "ref": "stdlib:planar/RigidBody2D"
+    },
+    "position": {
+     "x": 1660,
+     "y": 420
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "m": "m_boom",
+     "J": "J_boom",
+     "g0": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Joint2",
+    "name": "Joint2",
+    "block": {
+     "ref": "stdlib:planar/Revolute2DLimit"
+    },
+    "position": {
+     "x": 1500,
+     "y": 560
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "2.95",
+     "ry": "-0.4",
+     "kt": "k_pin",
+     "bt": "b_pin",
+     "lower": "-2.7576202181510405",
+     "upper": "-0.9075712110370514",
+     "kL": "k_stop",
+     "bL": "b_stop",
+     "delta": "0.002",
+     "q0": "-1.8325957145940461"
+    },
+    "constants": {},
+    "starts": {
+     "d": "[0.0, 0.0]"
+    }
+   },
+   {
+    "id": "Link2",
+    "name": "Link2",
+    "block": {
+     "ref": "stdlib:planar/FixedJoint2D"
+    },
+    "position": {
+     "x": 1500,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "1.05",
+     "y": "0.08",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BodyJ2",
+    "name": "BodyJ2",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1500,
+     "y": 800
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Arm",
+    "name": "Arm",
+    "block": {
+     "ref": "stdlib:planar/RigidBody2D"
+    },
+    "position": {
+     "x": 1660,
+     "y": 800
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "m": "m_arm",
+     "J": "J_arm",
+     "g0": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Joint3",
+    "name": "Joint3",
+    "block": {
+     "ref": "stdlib:planar/Revolute2DLimit"
+    },
+    "position": {
+     "x": 1500,
+     "y": 940
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "1.8499999999999999",
+     "ry": "-0.08",
+     "kt": "k_pin",
+     "bt": "b_pin",
+     "lower": "-2.181661564992912",
+     "upper": "0.7853981633974483",
+     "kL": "k_stop",
+     "bL": "b_stop",
+     "delta": "0.002",
+     "q0": "-1.0471975511965976"
+    },
+    "constants": {},
+    "starts": {
+     "d": "[0.0, 0.0]"
+    }
+   },
+   {
+    "id": "Link3",
+    "name": "Link3",
+    "block": {
+     "ref": "stdlib:planar/FixedJoint2D"
+    },
+    "position": {
+     "x": 1500,
+     "y": 1060
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "cx_bucket",
+     "y": "cy_bucket",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BodyJ3",
+    "name": "BodyJ3",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1500,
+     "y": 1180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Bucket",
+    "name": "Bucket",
+    "block": {
+     "ref": "stdlib:planar/RigidBody2D"
+    },
+    "position": {
+     "x": 1660,
+     "y": 1180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "m": "m_bucket",
+     "J": "J_bucket",
+     "g0": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseO",
+    "name": "PoseO",
+    "block": {
+     "ref": "stdlib:planar/JointPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "0.0",
+     "ry": "0.0",
+     "theta0": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "CoM1",
+    "name": "CoM1",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 300
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.75",
+     "y": "0.4",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseB1",
+    "name": "PoseB1",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 300
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseCrel",
+    "name": "PoseCrel",
+    "block": {
+     "ref": "stdlib:planar/JointPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 560
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "2.95",
+     "ry": "-0.4",
+     "theta0": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseC",
+    "name": "PoseC",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 560
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "CoM2",
+    "name": "CoM2",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "1.05",
+     "y": "0.08",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseB2",
+    "name": "PoseB2",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseQrel",
+    "name": "PoseQrel",
+    "block": {
+     "ref": "stdlib:planar/JointPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 940
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "1.8499999999999999",
+     "ry": "-0.08",
+     "theta0": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseQ",
+    "name": "PoseQ",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 940
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "CoM3",
+    "name": "CoM3",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 1060
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "cx_bucket",
+     "y": "cy_bucket",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseB3",
+    "name": "PoseB3",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 1060
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "TipOffset",
+    "name": "TipOffset",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 1180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "1.5",
+     "y": "0.0",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseTip",
+    "name": "PoseTip",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 1180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinA1",
+    "name": "PinA1",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "0.104",
+     "y": "-0.844",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocB1",
+    "name": "LocB1",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 260
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.59",
+     "y": "-0.227",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinB1",
+    "name": "PinB1",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 260
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocA2",
+    "name": "LocA2",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 400
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.75",
+     "y": "1.05",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinA2",
+    "name": "PinA2",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 400
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocB2",
+    "name": "LocB2",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 480
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "-0.8",
+     "y": "-0.32",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinB2",
+    "name": "PinB2",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 480
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocA3",
+    "name": "LocA3",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 640
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "0.277",
+     "y": "0.478",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinA3",
+    "name": "PinA3",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 640
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocR",
+    "name": "LocR",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 720
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.54",
+     "y": "0.052",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinR",
+    "name": "PinR",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 720
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Linkage",
+    "name": "Linkage",
+    "block": {
+     "ref": "project:BucketLinkage2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 840
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Qx": "2.9",
+     "Rx": "2.54",
+     "Ry": "0.052",
+     "Px": "0.193",
+     "Py": "0.359",
+     "lr": "0.725",
+     "lc": "0.714",
+     "branch": "1"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinJ",
+    "name": "PinJ",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 840
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinP",
+    "name": "PinP",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 920
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomMount",
+    "name": "BoomMount",
+    "block": {
+     "ref": "project:CylinderMount2D"
+    },
+    "position": {
+     "x": 2660,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "L0": "1.9991752162590877",
+     "lb": "1.879",
+     "lr": "1.498"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmMount",
+    "name": "ArmMount",
+    "block": {
+     "ref": "project:CylinderMount2D"
+    },
+    "position": {
+     "x": 2660,
+     "y": 400
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "L0": "2.289886455484847",
+     "lb": "2.17",
+     "lr": "1.511"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketMount",
+    "name": "BucketMount",
+    "block": {
+     "ref": "project:CylinderMount2D"
+    },
+    "position": {
+     "x": 2660,
+     "y": 640
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "L0": "1.842839529980638",
+     "lb": "1.723",
+     "lr": "1.289"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomRod",
+    "name": "BoomRod",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 900,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomRP",
+    "name": "BoomRP",
+    "block": {
+     "ref": "stdlib:converters/RackAndPinion"
+    },
+    "position": {
+     "x": 1020,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "r": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomLever",
+    "name": "BoomLever",
+    "block": {
+     "ref": "stdlib:bondgraph/MTF"
+    },
+    "position": {
+     "x": 1140,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomRate",
+    "name": "BoomRate",
+    "block": {
+     "ref": "stdlib:sources/TimeTable"
+    },
+    "position": {
+     "x": 300,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "t_start": "0.0",
+     "sample_time": "0.5",
+     "values": "[0, 0, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0, 0, 0, 0, 0, 0, -0.2333333333333333, -0.2333333333333333, -0.2333333333333333, -0.2333333333333333, -0.2333333333333333, -0.2333333333333333, 0, 0, 0, 0, 0, 0, 0]",
+     "method": "0"
+    },
+    "constants": {
+     "N": "27"
+    },
+    "starts": {}
+   },
+   {
+    "id": "BoomServo",
+    "name": "BoomServo",
+    "block": {
+     "ref": "stdlib:translation/SpringDamper"
+    },
+    "position": {
+     "x": 700,
+     "y": 280
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "k_servo",
+     "d": "d_servo"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomDrive",
+    "name": "BoomDrive",
+    "block": {
+     "ref": "stdlib:translation/VelocitySource"
+    },
+    "position": {
+     "x": 500,
+     "y": 280
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "v": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomSetL",
+    "name": "BoomSetL",
+    "block": {
+     "ref": "stdlib:continuous/Integrator"
+    },
+    "position": {
+     "x": 500,
+     "y": 100
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {
+     "x": "2.7769792228388144"
+    }
+   },
+   {
+    "id": "ArmRod",
+    "name": "ArmRod",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 900,
+     "y": 580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmRP",
+    "name": "ArmRP",
+    "block": {
+     "ref": "stdlib:converters/RackAndPinion"
+    },
+    "position": {
+     "x": 1020,
+     "y": 580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "r": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmLever",
+    "name": "ArmLever",
+    "block": {
+     "ref": "stdlib:bondgraph/MTF"
+    },
+    "position": {
+     "x": 1140,
+     "y": 580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmRate",
+    "name": "ArmRate",
+    "block": {
+     "ref": "stdlib:sources/TimeTable"
+    },
+    "position": {
+     "x": 300,
+     "y": 580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "t_start": "0.0",
+     "sample_time": "0.5",
+     "values": "[0, 0, -0.13333333333333333, -0.13333333333333333, -0.13333333333333333, -0.13333333333333333, -0.13333333333333333, -0.13333333333333333, 0, 0, 0, 0, 0, 0, 0.19999999999999998, 0.19999999999999998, 0.19999999999999998, 0.19999999999999998, 0.19999999999999998, 0.19999999999999998, 0, 0, 0, 0, 0, 0, 0]",
+     "method": "0"
+    },
+    "constants": {
+     "N": "27"
+    },
+    "starts": {}
+   },
+   {
+    "id": "ArmServo",
+    "name": "ArmServo",
+    "block": {
+     "ref": "stdlib:translation/SpringDamper"
+    },
+    "position": {
+     "x": 700,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "k_servo",
+     "d": "d_servo"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmDrive",
+    "name": "ArmDrive",
+    "block": {
+     "ref": "stdlib:translation/VelocitySource"
+    },
+    "position": {
+     "x": 500,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "v": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmSetL",
+    "name": "ArmSetL",
+    "block": {
+     "ref": "stdlib:continuous/Integrator"
+    },
+    "position": {
+     "x": 500,
+     "y": 500
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {
+     "x": "2.854588612458126"
+    }
+   },
+   {
+    "id": "BucketRod",
+    "name": "BucketRod",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 900,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketRP",
+    "name": "BucketRP",
+    "block": {
+     "ref": "stdlib:converters/RackAndPinion"
+    },
+    "position": {
+     "x": 1020,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "r": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketLever",
+    "name": "BucketLever",
+    "block": {
+     "ref": "stdlib:bondgraph/MTF"
+    },
+    "position": {
+     "x": 1140,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "FourBar",
+    "name": "FourBar",
+    "block": {
+     "ref": "stdlib:bondgraph/MTF"
+    },
+    "position": {
+     "x": 1260,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketRate",
+    "name": "BucketRate",
+    "block": {
+     "ref": "stdlib:sources/TimeTable"
+    },
+    "position": {
+     "x": 300,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "t_start": "0.0",
+     "sample_time": "0.5",
+     "values": "[0, 0, -0.11666666666666665, -0.11666666666666665, -0.11666666666666665, -0.11666666666666665, -0.11666666666666665, -0.11666666666666665, 0, 0, 0, 0, 0, 0, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0.16666666666666666, 0, 0, 0, 0, 0, 0, 0]",
+     "method": "0"
+    },
+    "constants": {
+     "N": "27"
+    },
+    "starts": {}
+   },
+   {
+    "id": "BucketServo",
+    "name": "BucketServo",
+    "block": {
+     "ref": "stdlib:translation/SpringDamper"
+    },
+    "position": {
+     "x": 700,
+     "y": 1080
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "k_servo",
+     "d": "d_servo"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketDrive",
+    "name": "BucketDrive",
+    "block": {
+     "ref": "stdlib:translation/VelocitySource"
+    },
+    "position": {
+     "x": 500,
+     "y": 1080
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "v": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketSetL",
+    "name": "BucketSetL",
+    "block": {
+     "ref": "stdlib:continuous/Integrator"
+    },
+    "position": {
+     "x": 500,
+     "y": 900
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {
+     "x": "2.693190286176673"
+    }
+   },
+   {
+    "id": "Empty",
+    "name": "Empty",
+    "block": {
+     "ref": "stdlib:sources/Constant"
+    },
+    "position": {
+     "x": 300,
+     "y": 1500
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   }
+  ],
+  "connections": [
+   {
+    "id": "c001",
+    "kind": "bond",
+    "from": {
+     "node": "Ground",
+     "port": "p"
+    },
+    "to": {
+     "node": "Joint1",
+     "port": "parent"
+    }
+   },
+   {
+    "id": "c002",
+    "kind": "bond",
+    "from": {
+     "node": "Joint1",
+     "port": "child"
+    },
+    "to": {
+     "node": "Link1",
+     "port": "parent"
+    }
+   },
+   {
+    "id": "c003",
+    "kind": "bond",
+    "from": {
+     "node": "Link1",
+     "port": "child"
+    },
+    "to": {
+     "node": "BodyJ1"
+    }
+   },
+   {
+    "id": "c004",
+    "kind": "bond",
+    "from": {
+     "node": "Boom",
+     "port": "p"
+    },
+    "to": {
+     "node": "BodyJ1"
+    }
+   },
+   {
+    "id": "c005",
+    "kind": "bond",
+    "from": {
+     "node": "Joint2",
+     "port": "parent"
+    },
+    "to": {
+     "node": "BodyJ1"
+    }
+   },
+   {
+    "id": "c006",
+    "kind": "bond",
+    "from": {
+     "node": "Joint2",
+     "port": "child"
+    },
+    "to": {
+     "node": "Link2",
+     "port": "parent"
+    }
+   },
+   {
+    "id": "c007",
+    "kind": "bond",
+    "from": {
+     "node": "Link2",
+     "port": "child"
+    },
+    "to": {
+     "node": "BodyJ2"
+    }
+   },
+   {
+    "id": "c008",
+    "kind": "bond",
+    "from": {
+     "node": "Arm",
+     "port": "p"
+    },
+    "to": {
+     "node": "BodyJ2"
+    }
+   },
+   {
+    "id": "c009",
+    "kind": "bond",
+    "from": {
+     "node": "Joint3",
+     "port": "parent"
+    },
+    "to": {
+     "node": "BodyJ2"
+    }
+   },
+   {
+    "id": "c010",
+    "kind": "bond",
+    "from": {
+     "node": "Joint3",
+     "port": "child"
+    },
+    "to": {
+     "node": "Link3",
+     "port": "parent"
+    }
+   },
+   {
+    "id": "c011",
+    "kind": "bond",
+    "from": {
+     "node": "Link3",
+     "port": "child"
+    },
+    "to": {
+     "node": "BodyJ3"
+    }
+   },
+   {
+    "id": "c012",
+    "kind": "bond",
+    "from": {
+     "node": "Bucket",
+     "port": "p"
+    },
+    "to": {
+     "node": "BodyJ3"
+    }
+   },
+   {
+    "id": "c013",
+    "kind": "signal",
+    "from": {
+     "node": "Joint1",
+     "port": "qout"
+    },
+    "to": {
+     "node": "PoseO",
+     "port": "q"
+    }
+   },
+   {
+    "id": "c014",
+    "kind": "signal",
+    "from": {
+     "node": "PoseO",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB1",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c015",
+    "kind": "signal",
+    "from": {
+     "node": "CoM1",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB1",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c016",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB1",
+     "port": "g"
+    },
+    "to": {
+     "node": "Boom",
+     "port": "g"
+    }
+   },
+   {
+    "id": "c017",
+    "kind": "signal",
+    "from": {
+     "node": "Joint2",
+     "port": "qout"
+    },
+    "to": {
+     "node": "PoseCrel",
+     "port": "q"
+    }
+   },
+   {
+    "id": "c018",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB1",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseC",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c019",
+    "kind": "signal",
+    "from": {
+     "node": "PoseCrel",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseC",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c020",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB2",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c021",
+    "kind": "signal",
+    "from": {
+     "node": "CoM2",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB2",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c022",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB2",
+     "port": "g"
+    },
+    "to": {
+     "node": "Arm",
+     "port": "g"
+    }
+   },
+   {
+    "id": "c023",
+    "kind": "signal",
+    "from": {
+     "node": "Joint3",
+     "port": "qout"
+    },
+    "to": {
+     "node": "PoseQrel",
+     "port": "q"
+    }
+   },
+   {
+    "id": "c024",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB2",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseQ",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c025",
+    "kind": "signal",
+    "from": {
+     "node": "PoseQrel",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseQ",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c026",
+    "kind": "signal",
+    "from": {
+     "node": "PoseQ",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB3",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c027",
+    "kind": "signal",
+    "from": {
+     "node": "CoM3",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB3",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c028",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB3",
+     "port": "g"
+    },
+    "to": {
+     "node": "Bucket",
+     "port": "g"
+    }
+   },
+   {
+    "id": "c029",
+    "kind": "signal",
+    "from": {
+     "node": "PoseQ",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseTip",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c030",
+    "kind": "signal",
+    "from": {
+     "node": "TipOffset",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseTip",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c031",
+    "kind": "signal",
+    "from": {
+     "node": "PoseO",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinB1",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c032",
+    "kind": "signal",
+    "from": {
+     "node": "LocB1",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinB1",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c033",
+    "kind": "signal",
+    "from": {
+     "node": "PoseO",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinA2",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c034",
+    "kind": "signal",
+    "from": {
+     "node": "LocA2",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinA2",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c035",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinB2",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c036",
+    "kind": "signal",
+    "from": {
+     "node": "LocB2",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinB2",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c037",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinA3",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c038",
+    "kind": "signal",
+    "from": {
+     "node": "LocA3",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinA3",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c039",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinR",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c040",
+    "kind": "signal",
+    "from": {
+     "node": "LocR",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinR",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c041",
+    "kind": "signal",
+    "from": {
+     "node": "Joint3",
+     "port": "qout"
+    },
+    "to": {
+     "node": "Linkage",
+     "port": "q"
+    }
+   },
+   {
+    "id": "c042",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinJ",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c043",
+    "kind": "signal",
+    "from": {
+     "node": "Linkage",
+     "port": "gJ"
+    },
+    "to": {
+     "node": "PinJ",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c044",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinP",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c045",
+    "kind": "signal",
+    "from": {
+     "node": "Linkage",
+     "port": "gP"
+    },
+    "to": {
+     "node": "PinP",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c046",
+    "kind": "signal",
+    "from": {
+     "node": "PinA1",
+     "port": "g"
+    },
+    "to": {
+     "node": "BoomMount",
+     "port": "gA"
+    }
+   },
+   {
+    "id": "c047",
+    "kind": "signal",
+    "from": {
+     "node": "PinB1",
+     "port": "g"
+    },
+    "to": {
+     "node": "BoomMount",
+     "port": "gB"
+    }
+   },
+   {
+    "id": "c048",
+    "kind": "signal",
+    "from": {
+     "node": "PoseO",
+     "port": "g"
+    },
+    "to": {
+     "node": "BoomMount",
+     "port": "gJ"
+    }
+   },
+   {
+    "id": "c049",
+    "kind": "signal",
+    "from": {
+     "node": "PinA2",
+     "port": "g"
+    },
+    "to": {
+     "node": "ArmMount",
+     "port": "gA"
+    }
+   },
+   {
+    "id": "c050",
+    "kind": "signal",
+    "from": {
+     "node": "PinB2",
+     "port": "g"
+    },
+    "to": {
+     "node": "ArmMount",
+     "port": "gB"
+    }
+   },
+   {
+    "id": "c051",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "ArmMount",
+     "port": "gJ"
+    }
+   },
+   {
+    "id": "c052",
+    "kind": "signal",
+    "from": {
+     "node": "PinA3",
+     "port": "g"
+    },
+    "to": {
+     "node": "BucketMount",
+     "port": "gA"
+    }
+   },
+   {
+    "id": "c053",
+    "kind": "signal",
+    "from": {
+     "node": "PinJ",
+     "port": "g"
+    },
+    "to": {
+     "node": "BucketMount",
+     "port": "gB"
+    }
+   },
+   {
+    "id": "c054",
+    "kind": "signal",
+    "from": {
+     "node": "PinR",
+     "port": "g"
+    },
+    "to": {
+     "node": "BucketMount",
+     "port": "gJ"
+    }
+   },
+   {
+    "id": "c055",
+    "kind": "bond",
+    "from": {
+     "node": "BoomRP",
+     "port": "b"
+    },
+    "to": {
+     "node": "BoomRod"
+    }
+   },
+   {
+    "id": "c056",
+    "kind": "bond",
+    "from": {
+     "node": "BoomRP",
+     "port": "a"
+    },
+    "to": {
+     "node": "BoomLever",
+     "port": "p2"
+    }
+   },
+   {
+    "id": "c057",
+    "kind": "bond",
+    "from": {
+     "node": "BoomLever",
+     "port": "p1"
+    },
+    "to": {
+     "node": "Joint1",
+     "port": "drive"
+    }
+   },
+   {
+    "id": "c058",
+    "kind": "signal",
+    "from": {
+     "node": "BoomMount",
+     "port": "r"
+    },
+    "to": {
+     "node": "BoomLever",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c059",
+    "kind": "signal",
+    "from": {
+     "node": "BoomRate",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomDrive",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c060",
+    "kind": "bond",
+    "from": {
+     "node": "BoomRod"
+    },
+    "to": {
+     "node": "BoomServo",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c061",
+    "kind": "wire",
+    "from": {
+     "node": "BoomServo",
+     "port": "b"
+    },
+    "to": {
+     "node": "BoomDrive",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c062",
+    "kind": "signal",
+    "from": {
+     "node": "BoomRate",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomSetL",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c063",
+    "kind": "bond",
+    "from": {
+     "node": "ArmRP",
+     "port": "b"
+    },
+    "to": {
+     "node": "ArmRod"
+    }
+   },
+   {
+    "id": "c064",
+    "kind": "bond",
+    "from": {
+     "node": "ArmRP",
+     "port": "a"
+    },
+    "to": {
+     "node": "ArmLever",
+     "port": "p2"
+    }
+   },
+   {
+    "id": "c065",
+    "kind": "bond",
+    "from": {
+     "node": "ArmLever",
+     "port": "p1"
+    },
+    "to": {
+     "node": "Joint2",
+     "port": "drive"
+    }
+   },
+   {
+    "id": "c066",
+    "kind": "signal",
+    "from": {
+     "node": "ArmMount",
+     "port": "r"
+    },
+    "to": {
+     "node": "ArmLever",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c067",
+    "kind": "signal",
+    "from": {
+     "node": "ArmRate",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmDrive",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c068",
+    "kind": "bond",
+    "from": {
+     "node": "ArmRod"
+    },
+    "to": {
+     "node": "ArmServo",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c069",
+    "kind": "wire",
+    "from": {
+     "node": "ArmServo",
+     "port": "b"
+    },
+    "to": {
+     "node": "ArmDrive",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c070",
+    "kind": "signal",
+    "from": {
+     "node": "ArmRate",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmSetL",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c071",
+    "kind": "bond",
+    "from": {
+     "node": "BucketRP",
+     "port": "b"
+    },
+    "to": {
+     "node": "BucketRod"
+    }
+   },
+   {
+    "id": "c072",
+    "kind": "bond",
+    "from": {
+     "node": "BucketRP",
+     "port": "a"
+    },
+    "to": {
+     "node": "BucketLever",
+     "port": "p2"
+    }
+   },
+   {
+    "id": "c073",
+    "kind": "bond",
+    "from": {
+     "node": "BucketLever",
+     "port": "p1"
+    },
+    "to": {
+     "node": "FourBar",
+     "port": "p2"
+    }
+   },
+   {
+    "id": "c074",
+    "kind": "bond",
+    "from": {
+     "node": "FourBar",
+     "port": "p1"
+    },
+    "to": {
+     "node": "Joint3",
+     "port": "drive"
+    }
+   },
+   {
+    "id": "c075",
+    "kind": "signal",
+    "from": {
+     "node": "BucketMount",
+     "port": "r"
+    },
+    "to": {
+     "node": "BucketLever",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c076",
+    "kind": "signal",
+    "from": {
+     "node": "Linkage",
+     "port": "k"
+    },
+    "to": {
+     "node": "FourBar",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c077",
+    "kind": "signal",
+    "from": {
+     "node": "BucketRate",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketDrive",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c078",
+    "kind": "bond",
+    "from": {
+     "node": "BucketRod"
+    },
+    "to": {
+     "node": "BucketServo",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c079",
+    "kind": "wire",
+    "from": {
+     "node": "BucketServo",
+     "port": "b"
+    },
+    "to": {
+     "node": "BucketDrive",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c080",
+    "kind": "signal",
+    "from": {
+     "node": "BucketRate",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketSetL",
+     "port": "u"
+    }
+   }
+  ],
+  "annotations": []
+ },
+ "settings": {
+  "t_start": 0.0,
+  "t_end": 13.0,
+  "solver": "FBDF",
+  "reltol": 1e-08,
+  "abstol": 1e-09,
+  "max_step": null,
+  "output": {
+   "mode": "points",
+   "points": 1301
+  },
+  "event_limit": 10000
+ },
+ "parameters": [
+  {
+   "name": "m_boom",
+   "value": "1650",
+   "unit": "kg",
+   "description": "Boom mass (with its share of the cylinders)"
+  },
+  {
+   "name": "J_boom",
+   "value": "4600",
+   "unit": "kg*m^2",
+   "description": "Boom inertia about its centre of mass"
+  },
+  {
+   "name": "m_arm",
+   "value": "1000",
+   "unit": "kg",
+   "description": "Arm (stick) mass"
+  },
+  {
+   "name": "J_arm",
+   "value": "820",
+   "unit": "kg*m^2",
+   "description": "Arm inertia about its centre of mass"
+  },
+  {
+   "name": "m_bkt",
+   "value": "956",
+   "unit": "kg",
+   "description": "Bucket mass (with its linkage)"
+  },
+  {
+   "name": "J_bkt",
+   "value": "260",
+   "unit": "kg*m^2",
+   "description": "Bucket inertia about its centre of mass"
+  },
+  {
+   "name": "m_pay",
+   "value": "0",
+   "unit": "kg",
+   "description": "Payload rigidly carried in the bucket (lift model)"
+  },
+  {
+   "name": "m_bucket",
+   "value": "m_bkt + m_pay",
+   "unit": "kg",
+   "description": "Bucket plus payload"
+  },
+  {
+   "name": "cx_bucket",
+   "value": "(m_bkt*0.62 + m_pay*0.7)/m_bucket",
+   "unit": "m",
+   "description": "Centre of mass x in the bucket frame"
+  },
+  {
+   "name": "cy_bucket",
+   "value": "(m_bkt*0.22 + m_pay*0.25)/m_bucket",
+   "unit": "m",
+   "description": "Centre of mass y in the bucket frame"
+  },
+  {
+   "name": "J_bucket",
+   "value": "J_bkt + 150*m_pay/1500 + m_bkt*m_pay/m_bucket*(-0.07999999999999996^2 + -0.03^2)",
+   "unit": "kg*m^2",
+   "description": "Bucket plus payload inertia about their common centre of mass"
+  },
+  {
+   "name": "k_pin",
+   "value": "1.0e9",
+   "unit": "N/m",
+   "description": "Pin (pivot) translational stiffness"
+  },
+  {
+   "name": "b_pin",
+   "value": "1.0e6",
+   "unit": "N*s/m",
+   "description": "Pin translational damping"
+  },
+  {
+   "name": "k_stop",
+   "value": "2.0e7",
+   "unit": "N*m/rad",
+   "description": "End-stop stiffness at the joints (the cylinder end stops)"
+  },
+  {
+   "name": "b_stop",
+   "value": "2.0e6",
+   "unit": "N*m*s/rad",
+   "description": "End-stop damping"
+  },
+  {
+   "name": "k_servo",
+   "value": "100000000",
+   "unit": "N/m",
+   "description": "Stiffness of the length servos that replace the cylinders"
+  },
+  {
+   "name": "d_servo",
+   "value": "20000000",
+   "unit": "N*s/m",
+   "description": "Damping of the length servos"
+  }
+ ],
+ "plots": [
+  {
+   "id": "p1",
+   "title": "Cylinder lengths: set point and pin-to-pin [m]",
+   "signals": [
+    "BoomSetL/y",
+    "BoomMount/L",
+    "ArmSetL/y",
+    "ArmMount/L",
+    "BucketSetL/y",
+    "BucketMount/L"
+   ]
+  },
+  {
+   "id": "p2",
+   "title": "Bucket tip path [m]",
+   "signals": [
+    "PoseTip/g[3]"
+   ],
+   "x": "PoseTip/g[2]",
+   "equalAspect": true
+  },
+  {
+   "id": "p3",
+   "title": "Joint angles [rad]",
+   "signals": [
+    "Joint1/qout",
+    "Joint2/qout",
+    "Joint3/qout"
+   ]
+  },
+  {
+   "id": "p4",
+   "title": "Moment arms dL/dq [m] and four-bar ratio k",
+   "signals": [
+    "BoomMount/r",
+    "ArmMount/r",
+    "BucketMount/r",
+    "Linkage/k"
+   ]
+  }
+ ],
+ "scene": {
+  "file": "scenes/excavator.sdf"
+ },
+ "bindings": [
+  {
+   "target": "joint:boom_joint",
+   "property": "position",
+   "signal": "Joint1/qout"
+  },
+  {
+   "target": "joint:arm_joint",
+   "property": "position",
+   "signal": "Joint2/qout"
+  },
+  {
+   "target": "joint:bucket_joint",
+   "property": "position",
+   "signal": "Joint3/qout"
+  },
+  {
+   "target": "visual:boom_barrel_l",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.42,
+   "signal": [
+    "PinA1/g[2]",
+    "PinA1/g[3]",
+    "BoomMount/pb[1]",
+    "BoomMount/pb[2]"
+   ]
+  },
+  {
+   "target": "visual:boom_rod_l",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.42,
+   "signal": [
+    "BoomMount/pr[1]",
+    "BoomMount/pr[2]",
+    "PinB1/g[2]",
+    "PinB1/g[3]"
+   ]
+  },
+  {
+   "target": "visual:boom_barrel_r",
+   "property": "segment",
+   "plane": "xz",
+   "depth": -0.42,
+   "signal": [
+    "PinA1/g[2]",
+    "PinA1/g[3]",
+    "BoomMount/pb[1]",
+    "BoomMount/pb[2]"
+   ]
+  },
+  {
+   "target": "visual:boom_rod_r",
+   "property": "segment",
+   "plane": "xz",
+   "depth": -0.42,
+   "signal": [
+    "BoomMount/pr[1]",
+    "BoomMount/pr[2]",
+    "PinB1/g[2]",
+    "PinB1/g[3]"
+   ]
+  },
+  {
+   "target": "visual:arm_barrel",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.0,
+   "signal": [
+    "PinA2/g[2]",
+    "PinA2/g[3]",
+    "ArmMount/pb[1]",
+    "ArmMount/pb[2]"
+   ]
+  },
+  {
+   "target": "visual:arm_rod",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.0,
+   "signal": [
+    "ArmMount/pr[1]",
+    "ArmMount/pr[2]",
+    "PinB2/g[2]",
+    "PinB2/g[3]"
+   ]
+  },
+  {
+   "target": "visual:bucket_barrel",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.0,
+   "signal": [
+    "PinA3/g[2]",
+    "PinA3/g[3]",
+    "BucketMount/pb[1]",
+    "BucketMount/pb[2]"
+   ]
+  },
+  {
+   "target": "visual:bucket_rod",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.0,
+   "signal": [
+    "BucketMount/pr[1]",
+    "BucketMount/pr[2]",
+    "PinJ/g[2]",
+    "PinJ/g[3]"
+   ]
+  },
+  {
+   "target": "visual:rocker_l",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.3,
+   "signal": [
+    "PinR/g[2]",
+    "PinR/g[3]",
+    "PinJ/g[2]",
+    "PinJ/g[3]"
+   ]
+  },
+  {
+   "target": "visual:rocker_r",
+   "property": "segment",
+   "plane": "xz",
+   "depth": -0.3,
+   "signal": [
+    "PinR/g[2]",
+    "PinR/g[3]",
+    "PinJ/g[2]",
+    "PinJ/g[3]"
+   ]
+  },
+  {
+   "target": "visual:hlink_l",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.3,
+   "signal": [
+    "PinJ/g[2]",
+    "PinJ/g[3]",
+    "PinP/g[2]",
+    "PinP/g[3]"
+   ]
+  },
+  {
+   "target": "visual:hlink_r",
+   "property": "segment",
+   "plane": "xz",
+   "depth": -0.3,
+   "signal": [
+    "PinJ/g[2]",
+    "PinJ/g[3]",
+    "PinP/g[2]",
+    "PinP/g[3]"
+   ]
+  },
+  {
+   "target": "visual:soil_load",
+   "property": "scale.z",
+   "signal": "Empty/y"
+  }
+ ],
+ "dashboard": {
+  "autoRerun": false,
+  "cards": [
+   {
+    "id": "tip",
+    "kind": "plot",
+    "size": "2x2",
+    "title": "Bucket tip path [m]",
+    "signals": [
+     "PoseTip/g[3]"
+    ],
+    "x": "PoseTip/g[2]",
+    "equalAspect": true
+   },
+   {
+    "id": "len",
+    "kind": "plot",
+    "size": "2x2",
+    "title": "Cylinder lengths [m]",
+    "signals": [
+     "BoomMount/L",
+     "ArmMount/L",
+     "BucketMount/L"
+    ]
+   },
+   {
+    "id": "k",
+    "kind": "value",
+    "size": "1x1",
+    "title": "Four-bar ratio k",
+    "signals": [
+     "Linkage/k"
+    ],
+    "options": {
+     "decimals": 3,
+     "sparkline": true
+    }
+   },
+   {
+    "id": "mu",
+    "kind": "value",
+    "size": "1x1",
+    "title": "Transmission angle [rad]",
+    "signals": [
+     "Linkage/mu"
+    ],
+    "options": {
+     "decimals": 3,
+     "sparkline": true
+    }
+   },
+   {
+    "id": "ks",
+    "kind": "slider",
+    "size": "2x1",
+    "title": "Servo stiffness",
+    "parameter": "global:k_servo",
+    "options": {
+     "min": 10000000.0,
+     "max": 1000000000.0,
+     "step": 10000000.0,
+     "unit": "N/m"
+    }
+   }
+  ]
+ }
+}

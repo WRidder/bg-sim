@@ -204,6 +204,23 @@
       "drivetrain-position-open-loop"
     ]
   },
+  "excavator": {
+    "title": "Excavator",
+    "description": "The front of a 20-t excavator digs loam: cylinder linkage with bucket four-bar, load-sensing pump, pre-compensated valves, earthmoving equation.",
+    "hasScene": true,
+    "models": [
+      "excavator-kinematics",
+      "excavator-lift",
+      "excavator-dig-cycle",
+      "excavator-no-ls"
+    ],
+    "capture": {
+      "model": "excavator-dig-cycle",
+      "run": true,
+      "time": 6,
+      "zoom": 1
+    }
+  },
   "f16": {
     "title": "F-16",
     "description": "The nonlinear F-16 of Stevens & Lewis: open-loop modes, scheduled pitch FBW, envelope protection, a rate-limit PIO and a flyable three-axis FBW for a simulator FMU.",

@@ -1,0 +1,5167 @@
+{
+ "format": "bgsim.model",
+ "language": "0.1.0",
+ "name": "excavator-lift",
+ "$comment": "Load-sensing hydraulics holding a 1.5 t payload: the boom rings at its hydraulic natural frequency after a pressure sag, then lifts at half joystick with the pump holding its LS margin.",
+ "diagram": {
+  "nodes": [
+   {
+    "id": "Ground",
+    "name": "Ground",
+    "block": {
+     "ref": "stdlib:multibond/GroundPlanar"
+    },
+    "position": {
+     "x": 1500,
+     "y": 60
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Joint1",
+    "name": "Joint1",
+    "block": {
+     "ref": "stdlib:planar/Revolute2DLimit"
+    },
+    "position": {
+     "x": 1500,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "0.0",
+     "ry": "0.0",
+     "kt": "k_pin",
+     "bt": "b_pin",
+     "lower": "-0.6981317007977318",
+     "upper": "1.0821041362364843",
+     "kL": "k_stop",
+     "bL": "b_stop",
+     "delta": "0.002",
+     "q0": "0.17453292519943295"
+    },
+    "constants": {},
+    "starts": {
+     "d": "[0.0, 0.0]"
+    }
+   },
+   {
+    "id": "Link1",
+    "name": "Link1",
+    "block": {
+     "ref": "stdlib:planar/FixedJoint2D"
+    },
+    "position": {
+     "x": 1500,
+     "y": 300
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.75",
+     "y": "0.4",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BodyJ1",
+    "name": "BodyJ1",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1500,
+     "y": 420
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Boom",
+    "name": "Boom",
+    "block": {
+     "ref": "stdlib:planar/RigidBody2D"
+    },
+    "position": {
+     "x": 1660,
+     "y": 420
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "m": "m_boom",
+     "J": "J_boom",
+     "g0": "9.81"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Joint2",
+    "name": "Joint2",
+    "block": {
+     "ref": "stdlib:planar/Revolute2DLimit"
+    },
+    "position": {
+     "x": 1500,
+     "y": 560
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "2.95",
+     "ry": "-0.4",
+     "kt": "k_pin",
+     "bt": "b_pin",
+     "lower": "-2.7576202181510405",
+     "upper": "-0.9075712110370514",
+     "kL": "k_stop",
+     "bL": "b_stop",
+     "delta": "0.002",
+     "q0": "-1.6580627893946132"
+    },
+    "constants": {},
+    "starts": {
+     "d": "[0.0, 0.0]"
+    }
+   },
+   {
+    "id": "Link2",
+    "name": "Link2",
+    "block": {
+     "ref": "stdlib:planar/FixedJoint2D"
+    },
+    "position": {
+     "x": 1500,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "1.05",
+     "y": "0.08",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BodyJ2",
+    "name": "BodyJ2",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1500,
+     "y": 800
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Arm",
+    "name": "Arm",
+    "block": {
+     "ref": "stdlib:planar/RigidBody2D"
+    },
+    "position": {
+     "x": 1660,
+     "y": 800
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "m": "m_arm",
+     "J": "J_arm",
+     "g0": "9.81"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Joint3",
+    "name": "Joint3",
+    "block": {
+     "ref": "stdlib:planar/Revolute2DLimit"
+    },
+    "position": {
+     "x": 1500,
+     "y": 940
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "1.8499999999999999",
+     "ry": "-0.08",
+     "kt": "k_pin",
+     "bt": "b_pin",
+     "lower": "-2.181661564992912",
+     "upper": "0.7853981633974483",
+     "kL": "k_stop",
+     "bL": "b_stop",
+     "delta": "0.002",
+     "q0": "-1.6580627893946132"
+    },
+    "constants": {},
+    "starts": {
+     "d": "[0.0, 0.0]"
+    }
+   },
+   {
+    "id": "Link3",
+    "name": "Link3",
+    "block": {
+     "ref": "stdlib:planar/FixedJoint2D"
+    },
+    "position": {
+     "x": 1500,
+     "y": 1060
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "cx_bucket",
+     "y": "cy_bucket",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BodyJ3",
+    "name": "BodyJ3",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1500,
+     "y": 1180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Bucket",
+    "name": "Bucket",
+    "block": {
+     "ref": "stdlib:planar/RigidBody2D"
+    },
+    "position": {
+     "x": 1660,
+     "y": 1180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "m": "m_bucket",
+     "J": "J_bucket",
+     "g0": "9.81"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseO",
+    "name": "PoseO",
+    "block": {
+     "ref": "stdlib:planar/JointPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "0.0",
+     "ry": "0.0",
+     "theta0": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "CoM1",
+    "name": "CoM1",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 300
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.75",
+     "y": "0.4",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseB1",
+    "name": "PoseB1",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 300
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseCrel",
+    "name": "PoseCrel",
+    "block": {
+     "ref": "stdlib:planar/JointPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 560
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "2.95",
+     "ry": "-0.4",
+     "theta0": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseC",
+    "name": "PoseC",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 560
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "CoM2",
+    "name": "CoM2",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "1.05",
+     "y": "0.08",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseB2",
+    "name": "PoseB2",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseQrel",
+    "name": "PoseQrel",
+    "block": {
+     "ref": "stdlib:planar/JointPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 940
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "rx": "1.8499999999999999",
+     "ry": "-0.08",
+     "theta0": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseQ",
+    "name": "PoseQ",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 940
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "CoM3",
+    "name": "CoM3",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 1060
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "cx_bucket",
+     "y": "cy_bucket",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseB3",
+    "name": "PoseB3",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 1060
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "TipOffset",
+    "name": "TipOffset",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 1900,
+     "y": 1180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "1.5",
+     "y": "0.0",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PoseTip",
+    "name": "PoseTip",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2060,
+     "y": 1180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinA1",
+    "name": "PinA1",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "0.104",
+     "y": "-0.844",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocB1",
+    "name": "LocB1",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 260
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.59",
+     "y": "-0.227",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinB1",
+    "name": "PinB1",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 260
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocA2",
+    "name": "LocA2",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 400
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.75",
+     "y": "1.05",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinA2",
+    "name": "PinA2",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 400
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocB2",
+    "name": "LocB2",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 480
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "-0.8",
+     "y": "-0.32",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinB2",
+    "name": "PinB2",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 480
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocA3",
+    "name": "LocA3",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 640
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "0.277",
+     "y": "0.478",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinA3",
+    "name": "PinA3",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 640
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LocR",
+    "name": "LocR",
+    "block": {
+     "ref": "stdlib:planar/LocalPose2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 720
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "x": "2.54",
+     "y": "0.052",
+     "theta": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinR",
+    "name": "PinR",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 720
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Linkage",
+    "name": "Linkage",
+    "block": {
+     "ref": "project:BucketLinkage2D"
+    },
+    "position": {
+     "x": 2300,
+     "y": 840
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Qx": "2.9",
+     "Rx": "2.54",
+     "Ry": "0.052",
+     "Px": "0.193",
+     "Py": "0.359",
+     "lr": "0.725",
+     "lc": "0.714",
+     "branch": "1"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinJ",
+    "name": "PinJ",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 840
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "PinP",
+    "name": "PinP",
+    "block": {
+     "ref": "stdlib:multibond/ComposePose2D"
+    },
+    "position": {
+     "x": 2460,
+     "y": 920
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomMount",
+    "name": "BoomMount",
+    "block": {
+     "ref": "project:CylinderMount2D"
+    },
+    "position": {
+     "x": 2660,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "L0": "1.9991752162590877",
+     "lb": "1.879",
+     "lr": "1.498"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmMount",
+    "name": "ArmMount",
+    "block": {
+     "ref": "project:CylinderMount2D"
+    },
+    "position": {
+     "x": 2660,
+     "y": 400
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "L0": "2.289886455484847",
+     "lb": "2.17",
+     "lr": "1.511"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketMount",
+    "name": "BucketMount",
+    "block": {
+     "ref": "project:CylinderMount2D"
+    },
+    "position": {
+     "x": 2660,
+     "y": 640
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "L0": "1.842839529980638",
+     "lb": "1.723",
+     "lr": "1.289"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "EngineSpeed",
+    "name": "EngineSpeed",
+    "block": {
+     "ref": "stdlib:sources/Constant"
+    },
+    "position": {
+     "x": -900,
+     "y": 1500
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Engine",
+    "name": "Engine",
+    "block": {
+     "ref": "stdlib:rotation/SpeedSource"
+    },
+    "position": {
+     "x": -780,
+     "y": 1500
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "w": "w_engine"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Tank",
+    "name": "Tank",
+    "block": {
+     "ref": "stdlib:hydraulic/Tank"
+    },
+    "position": {
+     "x": -660,
+     "y": 1880
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p": "100000"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Pump",
+    "name": "Pump",
+    "block": {
+     "ref": "stdlib:converters/LoadSensingPump"
+    },
+    "position": {
+     "x": -600,
+     "y": 1500
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "D": "3.501408748021698e-05",
+     "eta_v": "0.95",
+     "eta_m": "0.92",
+     "p_nom": "30000000",
+     "w_nom": "w_engine",
+     "dp_ls": "dp_ls",
+     "dp_reg": "200000",
+     "p_cut": "32000000",
+     "T_max": "P_max/w_engine"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Vpump",
+    "name": "Vpump",
+    "block": {
+     "ref": "stdlib:hydraulic/Volume"
+    },
+    "position": {
+     "x": -420,
+     "y": 1380
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "V": "0.003",
+     "beta": "beta"
+    },
+    "constants": {},
+    "starts": {
+     "p": "2600000"
+    }
+   },
+   {
+    "id": "Relief",
+    "name": "Relief",
+    "block": {
+     "ref": "stdlib:hydraulic/PressureReliefValve"
+    },
+    "position": {
+     "x": -300,
+     "y": 1620
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_set": "p_relief",
+     "dp_reg": "1.0e6",
+     "A_max": "1.5e-4",
+     "A_leak": "1.0e-11",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Vls",
+    "name": "Vls",
+    "block": {
+     "ref": "stdlib:hydraulic/Volume"
+    },
+    "position": {
+     "x": -720,
+     "y": 1660
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "V": "5e-05",
+     "beta": "beta"
+    },
+    "constants": {},
+    "starts": {
+     "p": "1.0e5"
+    }
+   },
+   {
+    "id": "Bleed",
+    "name": "Bleed",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": -600,
+     "y": 1760
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "-1.0e8",
+     "dp_open": "1.0e5",
+     "A_max": "2.2e-07",
+     "A_leak": "2.2e-07",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Pmux",
+    "name": "Pmux",
+    "block": {
+     "ref": "stdlib:continuous/Mux3"
+    },
+    "position": {
+     "x": -900,
+     "y": 2020
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Pcyl",
+    "name": "Pcyl",
+    "block": {
+     "ref": "stdlib:continuous/Sum"
+    },
+    "position": {
+     "x": -780,
+     "y": 2020
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "signs": "[1.0, 1.0, 1.0]"
+    },
+    "constants": {
+     "N": "3"
+    },
+    "starts": {}
+   },
+   {
+    "id": "Ein",
+    "name": "Ein",
+    "block": {
+     "ref": "stdlib:continuous/Integrator"
+    },
+    "position": {
+     "x": -660,
+     "y": 1960
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {
+     "x": "1.0"
+    }
+   },
+   {
+    "id": "Ecyl",
+    "name": "Ecyl",
+    "block": {
+     "ref": "stdlib:continuous/Integrator"
+    },
+    "position": {
+     "x": -660,
+     "y": 2080
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Eff",
+    "name": "Eff",
+    "block": {
+     "ref": "stdlib:continuous/Divide"
+    },
+    "position": {
+     "x": -540,
+     "y": 2020
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "LiftStick",
+    "name": "LiftStick",
+    "block": {
+     "ref": "stdlib:sources/TimeTable"
+    },
+    "position": {
+     "x": 60,
+     "y": 1700
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "t_start": "0.0",
+     "sample_time": "0.5",
+     "values": "[0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0]",
+     "method": "0"
+    },
+    "constants": {
+     "N": "19"
+    },
+    "starts": {}
+   },
+   {
+    "id": "LiftCmd",
+    "name": "LiftCmd",
+    "block": {
+     "ref": "stdlib:continuous/Gain"
+    },
+    "position": {
+     "x": 180,
+     "y": 1700
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "u_lift"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "Neutral",
+    "name": "Neutral",
+    "block": {
+     "ref": "stdlib:sources/Constant"
+    },
+    "position": {
+     "x": 60,
+     "y": 300
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "value": "0.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomRod",
+    "name": "BoomRod",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1100,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomRP",
+    "name": "BoomRP",
+    "block": {
+     "ref": "stdlib:converters/RackAndPinion"
+    },
+    "position": {
+     "x": 1220,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "r": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomLever",
+    "name": "BoomLever",
+    "block": {
+     "ref": "stdlib:bondgraph/MTF"
+    },
+    "position": {
+     "x": 1340,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomCyl",
+    "name": "BoomCyl",
+    "block": {
+     "ref": "stdlib:converters/HydraulicCylinder"
+    },
+    "position": {
+     "x": 950,
+     "y": 180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Ap": "0.02261946710584651",
+     "Ar": "0.011270463644753379",
+     "V0A": "0.002",
+     "V0B": "0.002",
+     "beta": "beta",
+     "stroke": "1.2975601432718085"
+    },
+    "constants": {},
+    "starts": {
+     "x": "0.7074587893423234",
+     "pA": "10766066.739754807",
+     "pB": "1000000"
+    }
+   },
+   {
+    "id": "BoomFric",
+    "name": "BoomFric",
+    "block": {
+     "ref": "stdlib:translation/Friction"
+    },
+    "position": {
+     "x": 1070,
+     "y": 280
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Fs": "3000",
+     "Fc": "3000",
+     "Fv": "20000",
+     "v_s": "0.01",
+     "v_eps": "0.005"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomBarrel",
+    "name": "BoomBarrel",
+    "block": {
+     "ref": "stdlib:translation/Fixed"
+    },
+    "position": {
+     "x": 1190,
+     "y": 280
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomSpool",
+    "name": "BoomSpool",
+    "block": {
+     "ref": "stdlib:continuous/FirstOrder"
+    },
+    "position": {
+     "x": 300,
+     "y": 1780
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "1.0",
+     "tau": "tau_spool"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomAbs",
+    "name": "BoomAbs",
+    "block": {
+     "ref": "stdlib:continuous/Abs"
+    },
+    "position": {
+     "x": 420,
+     "y": 1720
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomComp",
+    "name": "BoomComp",
+    "block": {
+     "ref": "stdlib:hydraulic/PressureCompensatedFlowControl"
+    },
+    "position": {
+     "x": 540,
+     "y": 1720
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Q_nom": "0.005",
+     "dp_c": "dp_c",
+     "p_tr": "1.0e5"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomVin",
+    "name": "BoomVin",
+    "block": {
+     "ref": "stdlib:hydraulic/Volume"
+    },
+    "position": {
+     "x": 660,
+     "y": 1620
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "V": "0.0003",
+     "beta": "beta"
+    },
+    "constants": {},
+    "starts": {
+     "p": "1.0e5"
+    }
+   },
+   {
+    "id": "BoomValve",
+    "name": "BoomValve",
+    "block": {
+     "ref": "stdlib:hydraulic/DirectionalValve43"
+    },
+    "position": {
+     "x": 780,
+     "y": 1780
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "A_max": "0.00018805199703808095",
+     "A_leak": "1.0e-10",
+     "lap": "0.0",
+     "Cd": "0.62",
+     "rho": "870",
+     "p_tr": "1.0e5"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomMakeUpA",
+    "name": "BoomMakeUpA",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": 920,
+     "y": 1620
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "3.0e4",
+     "dp_open": "1.0e5",
+     "A_max": "2.0e-4",
+     "A_leak": "1.0e-11",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomMakeUpB",
+    "name": "BoomMakeUpB",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": 920,
+     "y": 1940
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "3.0e4",
+     "dp_open": "1.0e5",
+     "A_max": "2.0e-4",
+     "A_leak": "1.0e-11",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoompA",
+    "name": "BoompA",
+    "block": {
+     "ref": "stdlib:converters/PressureSensor"
+    },
+    "position": {
+     "x": 1060,
+     "y": 1720
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoompB",
+    "name": "BoompB",
+    "block": {
+     "ref": "stdlib:converters/PressureSensor"
+    },
+    "position": {
+     "x": 1060,
+     "y": 1840
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoompAB",
+    "name": "BoompAB",
+    "block": {
+     "ref": "stdlib:continuous/Mux2"
+    },
+    "position": {
+     "x": 1120,
+     "y": 1780
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomForce",
+    "name": "BoomForce",
+    "block": {
+     "ref": "stdlib:continuous/Sum"
+    },
+    "position": {
+     "x": 1200,
+     "y": 1780
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "signs": "[0.02261946710584651, -0.011270463644753379]"
+    },
+    "constants": {
+     "N": "2"
+    },
+    "starts": {}
+   },
+   {
+    "id": "BoomTorque",
+    "name": "BoomTorque",
+    "block": {
+     "ref": "stdlib:continuous/Product"
+    },
+    "position": {
+     "x": 1300,
+     "y": 1780
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomPower",
+    "name": "BoomPower",
+    "block": {
+     "ref": "stdlib:continuous/Product"
+    },
+    "position": {
+     "x": 1420,
+     "y": 1780
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomLSEdge",
+    "name": "BoomLSEdge",
+    "block": {
+     "ref": "stdlib:hydraulic/DirectionalValve43"
+    },
+    "position": {
+     "x": 780,
+     "y": 1940
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "A_max": "A_ls",
+     "A_leak": "1.0e-10",
+     "lap": "0.0",
+     "Cd": "0.62",
+     "rho": "870",
+     "p_tr": "1.0e5"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BoomVls",
+    "name": "BoomVls",
+    "block": {
+     "ref": "stdlib:hydraulic/Volume"
+    },
+    "position": {
+     "x": 540,
+     "y": 1940
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "V": "1e-05",
+     "beta": "beta"
+    },
+    "constants": {},
+    "starts": {
+     "p": "1.0e5"
+    }
+   },
+   {
+    "id": "BoomShuttle",
+    "name": "BoomShuttle",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": 660,
+     "y": 2040
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "0.0",
+     "dp_open": "1.0e5",
+     "A_max": "2.0e-6",
+     "A_leak": "1.0e-12",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmRod",
+    "name": "ArmRod",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1100,
+     "y": 580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmRP",
+    "name": "ArmRP",
+    "block": {
+     "ref": "stdlib:converters/RackAndPinion"
+    },
+    "position": {
+     "x": 1220,
+     "y": 580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "r": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmLever",
+    "name": "ArmLever",
+    "block": {
+     "ref": "stdlib:bondgraph/MTF"
+    },
+    "position": {
+     "x": 1340,
+     "y": 580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmCyl",
+    "name": "ArmCyl",
+    "block": {
+     "ref": "stdlib:converters/HydraulicCylinder"
+    },
+    "position": {
+     "x": 950,
+     "y": 580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Ap": "0.015393804002589988",
+     "Ar": "0.007539822368615504",
+     "V0A": "0.0012",
+     "V0B": "0.0012",
+     "beta": "beta",
+     "stroke": "1.3106751559833403"
+    },
+    "constants": {},
+    "starts": {
+     "x": "0.4204241842483878",
+     "pA": "1166391.124082878",
+     "pB": "1000000"
+    }
+   },
+   {
+    "id": "ArmFric",
+    "name": "ArmFric",
+    "block": {
+     "ref": "stdlib:translation/Friction"
+    },
+    "position": {
+     "x": 1070,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Fs": "2000",
+     "Fc": "2000",
+     "Fv": "10000",
+     "v_s": "0.01",
+     "v_eps": "0.005"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmBarrel",
+    "name": "ArmBarrel",
+    "block": {
+     "ref": "stdlib:translation/Fixed"
+    },
+    "position": {
+     "x": 1190,
+     "y": 680
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmSpool",
+    "name": "ArmSpool",
+    "block": {
+     "ref": "stdlib:continuous/FirstOrder"
+    },
+    "position": {
+     "x": 300,
+     "y": 2180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "1.0",
+     "tau": "tau_spool"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmAbs",
+    "name": "ArmAbs",
+    "block": {
+     "ref": "stdlib:continuous/Abs"
+    },
+    "position": {
+     "x": 420,
+     "y": 2120
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmComp",
+    "name": "ArmComp",
+    "block": {
+     "ref": "stdlib:hydraulic/PressureCompensatedFlowControl"
+    },
+    "position": {
+     "x": 540,
+     "y": 2120
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Q_nom": "0.004666666666666667",
+     "dp_c": "dp_c",
+     "p_tr": "1.0e5"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmVin",
+    "name": "ArmVin",
+    "block": {
+     "ref": "stdlib:hydraulic/Volume"
+    },
+    "position": {
+     "x": 660,
+     "y": 2020
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "V": "0.0003",
+     "beta": "beta"
+    },
+    "constants": {},
+    "starts": {
+     "p": "1.0e5"
+    }
+   },
+   {
+    "id": "ArmValve",
+    "name": "ArmValve",
+    "block": {
+     "ref": "stdlib:hydraulic/DirectionalValve43"
+    },
+    "position": {
+     "x": 780,
+     "y": 2180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "A_max": "0.00017551519723554225",
+     "A_leak": "1.0e-10",
+     "lap": "0.0",
+     "Cd": "0.62",
+     "rho": "870",
+     "p_tr": "1.0e5"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmMakeUpA",
+    "name": "ArmMakeUpA",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": 920,
+     "y": 2020
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "3.0e4",
+     "dp_open": "1.0e5",
+     "A_max": "2.0e-4",
+     "A_leak": "1.0e-11",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmMakeUpB",
+    "name": "ArmMakeUpB",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": 920,
+     "y": 2340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "3.0e4",
+     "dp_open": "1.0e5",
+     "A_max": "2.0e-4",
+     "A_leak": "1.0e-11",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmpA",
+    "name": "ArmpA",
+    "block": {
+     "ref": "stdlib:converters/PressureSensor"
+    },
+    "position": {
+     "x": 1060,
+     "y": 2120
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmpB",
+    "name": "ArmpB",
+    "block": {
+     "ref": "stdlib:converters/PressureSensor"
+    },
+    "position": {
+     "x": 1060,
+     "y": 2240
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmpAB",
+    "name": "ArmpAB",
+    "block": {
+     "ref": "stdlib:continuous/Mux2"
+    },
+    "position": {
+     "x": 1120,
+     "y": 2180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmForce",
+    "name": "ArmForce",
+    "block": {
+     "ref": "stdlib:continuous/Sum"
+    },
+    "position": {
+     "x": 1200,
+     "y": 2180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "signs": "[0.015393804002589988, -0.007539822368615504]"
+    },
+    "constants": {
+     "N": "2"
+    },
+    "starts": {}
+   },
+   {
+    "id": "ArmTorque",
+    "name": "ArmTorque",
+    "block": {
+     "ref": "stdlib:continuous/Product"
+    },
+    "position": {
+     "x": 1300,
+     "y": 2180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmPower",
+    "name": "ArmPower",
+    "block": {
+     "ref": "stdlib:continuous/Product"
+    },
+    "position": {
+     "x": 1420,
+     "y": 2180
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmLSEdge",
+    "name": "ArmLSEdge",
+    "block": {
+     "ref": "stdlib:hydraulic/DirectionalValve43"
+    },
+    "position": {
+     "x": 780,
+     "y": 2340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "A_max": "A_ls",
+     "A_leak": "1.0e-10",
+     "lap": "0.0",
+     "Cd": "0.62",
+     "rho": "870",
+     "p_tr": "1.0e5"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "ArmVls",
+    "name": "ArmVls",
+    "block": {
+     "ref": "stdlib:hydraulic/Volume"
+    },
+    "position": {
+     "x": 540,
+     "y": 2340
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "V": "1e-05",
+     "beta": "beta"
+    },
+    "constants": {},
+    "starts": {
+     "p": "1.0e5"
+    }
+   },
+   {
+    "id": "ArmShuttle",
+    "name": "ArmShuttle",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": 660,
+     "y": 2440
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "0.0",
+     "dp_open": "1.0e5",
+     "A_max": "2.0e-6",
+     "A_leak": "1.0e-12",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketRod",
+    "name": "BucketRod",
+    "block": {
+     "junction": "1"
+    },
+    "position": {
+     "x": 1100,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketRP",
+    "name": "BucketRP",
+    "block": {
+     "ref": "stdlib:converters/RackAndPinion"
+    },
+    "position": {
+     "x": 1220,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "r": "1.0"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketLever",
+    "name": "BucketLever",
+    "block": {
+     "ref": "stdlib:bondgraph/MTF"
+    },
+    "position": {
+     "x": 1340,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "FourBar",
+    "name": "FourBar",
+    "block": {
+     "ref": "stdlib:bondgraph/MTF"
+    },
+    "position": {
+     "x": 1460,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketCyl",
+    "name": "BucketCyl",
+    "block": {
+     "ref": "stdlib:converters/HydraulicCylinder"
+    },
+    "position": {
+     "x": 950,
+     "y": 980
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Ap": "0.011309733552923255",
+     "Ar": "0.005635231822376689",
+     "V0A": "0.001",
+     "V0B": "0.001",
+     "beta": "beta",
+     "stroke": "1.0890145577695416"
+    },
+    "constants": {},
+    "starts": {
+     "x": "1.004679294738181",
+     "pA": "7671791.679939487",
+     "pB": "1000000"
+    }
+   },
+   {
+    "id": "BucketFric",
+    "name": "BucketFric",
+    "block": {
+     "ref": "stdlib:translation/Friction"
+    },
+    "position": {
+     "x": 1070,
+     "y": 1080
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Fs": "1500",
+     "Fc": "1500",
+     "Fv": "8000",
+     "v_s": "0.01",
+     "v_eps": "0.005"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketBarrel",
+    "name": "BucketBarrel",
+    "block": {
+     "ref": "stdlib:translation/Fixed"
+    },
+    "position": {
+     "x": 1190,
+     "y": 1080
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketSpool",
+    "name": "BucketSpool",
+    "block": {
+     "ref": "stdlib:continuous/FirstOrder"
+    },
+    "position": {
+     "x": 300,
+     "y": 2580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "k": "1.0",
+     "tau": "tau_spool"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketAbs",
+    "name": "BucketAbs",
+    "block": {
+     "ref": "stdlib:continuous/Abs"
+    },
+    "position": {
+     "x": 420,
+     "y": 2520
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketComp",
+    "name": "BucketComp",
+    "block": {
+     "ref": "stdlib:hydraulic/PressureCompensatedFlowControl"
+    },
+    "position": {
+     "x": 540,
+     "y": 2520
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "Q_nom": "0.0033333333333333335",
+     "dp_c": "dp_c",
+     "p_tr": "1.0e5"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketVin",
+    "name": "BucketVin",
+    "block": {
+     "ref": "stdlib:hydraulic/Volume"
+    },
+    "position": {
+     "x": 660,
+     "y": 2420
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "V": "0.0003",
+     "beta": "beta"
+    },
+    "constants": {},
+    "starts": {
+     "p": "1.0e5"
+    }
+   },
+   {
+    "id": "BucketValve",
+    "name": "BucketValve",
+    "block": {
+     "ref": "stdlib:hydraulic/DirectionalValve43"
+    },
+    "position": {
+     "x": 780,
+     "y": 2580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "A_max": "0.00012536799802538733",
+     "A_leak": "1.0e-10",
+     "lap": "0.0",
+     "Cd": "0.62",
+     "rho": "870",
+     "p_tr": "1.0e5"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketMakeUpA",
+    "name": "BucketMakeUpA",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": 920,
+     "y": 2420
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "3.0e4",
+     "dp_open": "1.0e5",
+     "A_max": "2.0e-4",
+     "A_leak": "1.0e-11",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketMakeUpB",
+    "name": "BucketMakeUpB",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": 920,
+     "y": 2740
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "3.0e4",
+     "dp_open": "1.0e5",
+     "A_max": "2.0e-4",
+     "A_leak": "1.0e-11",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketpA",
+    "name": "BucketpA",
+    "block": {
+     "ref": "stdlib:converters/PressureSensor"
+    },
+    "position": {
+     "x": 1060,
+     "y": 2520
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketpB",
+    "name": "BucketpB",
+    "block": {
+     "ref": "stdlib:converters/PressureSensor"
+    },
+    "position": {
+     "x": 1060,
+     "y": 2640
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketpAB",
+    "name": "BucketpAB",
+    "block": {
+     "ref": "stdlib:continuous/Mux2"
+    },
+    "position": {
+     "x": 1120,
+     "y": 2580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketForce",
+    "name": "BucketForce",
+    "block": {
+     "ref": "stdlib:continuous/Sum"
+    },
+    "position": {
+     "x": 1200,
+     "y": 2580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "signs": "[0.011309733552923255, -0.005635231822376689]"
+    },
+    "constants": {
+     "N": "2"
+    },
+    "starts": {}
+   },
+   {
+    "id": "BucketTorque",
+    "name": "BucketTorque",
+    "block": {
+     "ref": "stdlib:continuous/Product"
+    },
+    "position": {
+     "x": 1300,
+     "y": 2580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketPower",
+    "name": "BucketPower",
+    "block": {
+     "ref": "stdlib:continuous/Product"
+    },
+    "position": {
+     "x": 1420,
+     "y": 2580
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {},
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketLSEdge",
+    "name": "BucketLSEdge",
+    "block": {
+     "ref": "stdlib:hydraulic/DirectionalValve43"
+    },
+    "position": {
+     "x": 780,
+     "y": 2740
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "A_max": "A_ls",
+     "A_leak": "1.0e-10",
+     "lap": "0.0",
+     "Cd": "0.62",
+     "rho": "870",
+     "p_tr": "1.0e5"
+    },
+    "constants": {},
+    "starts": {}
+   },
+   {
+    "id": "BucketVls",
+    "name": "BucketVls",
+    "block": {
+     "ref": "stdlib:hydraulic/Volume"
+    },
+    "position": {
+     "x": 540,
+     "y": 2740
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "V": "1e-05",
+     "beta": "beta"
+    },
+    "constants": {},
+    "starts": {
+     "p": "1.0e5"
+    }
+   },
+   {
+    "id": "BucketShuttle",
+    "name": "BucketShuttle",
+    "block": {
+     "ref": "stdlib:hydraulic/CheckValve"
+    },
+    "position": {
+     "x": 660,
+     "y": 2840
+    },
+    "rotation": 0,
+    "flipX": false,
+    "params": {
+     "p_crack": "0.0",
+     "dp_open": "1.0e5",
+     "A_max": "2.0e-6",
+     "A_leak": "1.0e-12",
+     "rho": "870"
+    },
+    "constants": {},
+    "starts": {}
+   }
+  ],
+  "connections": [
+   {
+    "id": "c001",
+    "kind": "bond",
+    "from": {
+     "node": "Ground",
+     "port": "p"
+    },
+    "to": {
+     "node": "Joint1",
+     "port": "parent"
+    }
+   },
+   {
+    "id": "c002",
+    "kind": "bond",
+    "from": {
+     "node": "Joint1",
+     "port": "child"
+    },
+    "to": {
+     "node": "Link1",
+     "port": "parent"
+    }
+   },
+   {
+    "id": "c003",
+    "kind": "bond",
+    "from": {
+     "node": "Link1",
+     "port": "child"
+    },
+    "to": {
+     "node": "BodyJ1"
+    }
+   },
+   {
+    "id": "c004",
+    "kind": "bond",
+    "from": {
+     "node": "Boom",
+     "port": "p"
+    },
+    "to": {
+     "node": "BodyJ1"
+    }
+   },
+   {
+    "id": "c005",
+    "kind": "bond",
+    "from": {
+     "node": "Joint2",
+     "port": "parent"
+    },
+    "to": {
+     "node": "BodyJ1"
+    }
+   },
+   {
+    "id": "c006",
+    "kind": "bond",
+    "from": {
+     "node": "Joint2",
+     "port": "child"
+    },
+    "to": {
+     "node": "Link2",
+     "port": "parent"
+    }
+   },
+   {
+    "id": "c007",
+    "kind": "bond",
+    "from": {
+     "node": "Link2",
+     "port": "child"
+    },
+    "to": {
+     "node": "BodyJ2"
+    }
+   },
+   {
+    "id": "c008",
+    "kind": "bond",
+    "from": {
+     "node": "Arm",
+     "port": "p"
+    },
+    "to": {
+     "node": "BodyJ2"
+    }
+   },
+   {
+    "id": "c009",
+    "kind": "bond",
+    "from": {
+     "node": "Joint3",
+     "port": "parent"
+    },
+    "to": {
+     "node": "BodyJ2"
+    }
+   },
+   {
+    "id": "c010",
+    "kind": "bond",
+    "from": {
+     "node": "Joint3",
+     "port": "child"
+    },
+    "to": {
+     "node": "Link3",
+     "port": "parent"
+    }
+   },
+   {
+    "id": "c011",
+    "kind": "bond",
+    "from": {
+     "node": "Link3",
+     "port": "child"
+    },
+    "to": {
+     "node": "BodyJ3"
+    }
+   },
+   {
+    "id": "c012",
+    "kind": "bond",
+    "from": {
+     "node": "Bucket",
+     "port": "p"
+    },
+    "to": {
+     "node": "BodyJ3"
+    }
+   },
+   {
+    "id": "c013",
+    "kind": "signal",
+    "from": {
+     "node": "Joint1",
+     "port": "qout"
+    },
+    "to": {
+     "node": "PoseO",
+     "port": "q"
+    }
+   },
+   {
+    "id": "c014",
+    "kind": "signal",
+    "from": {
+     "node": "PoseO",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB1",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c015",
+    "kind": "signal",
+    "from": {
+     "node": "CoM1",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB1",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c016",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB1",
+     "port": "g"
+    },
+    "to": {
+     "node": "Boom",
+     "port": "g"
+    }
+   },
+   {
+    "id": "c017",
+    "kind": "signal",
+    "from": {
+     "node": "Joint2",
+     "port": "qout"
+    },
+    "to": {
+     "node": "PoseCrel",
+     "port": "q"
+    }
+   },
+   {
+    "id": "c018",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB1",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseC",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c019",
+    "kind": "signal",
+    "from": {
+     "node": "PoseCrel",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseC",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c020",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB2",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c021",
+    "kind": "signal",
+    "from": {
+     "node": "CoM2",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB2",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c022",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB2",
+     "port": "g"
+    },
+    "to": {
+     "node": "Arm",
+     "port": "g"
+    }
+   },
+   {
+    "id": "c023",
+    "kind": "signal",
+    "from": {
+     "node": "Joint3",
+     "port": "qout"
+    },
+    "to": {
+     "node": "PoseQrel",
+     "port": "q"
+    }
+   },
+   {
+    "id": "c024",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB2",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseQ",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c025",
+    "kind": "signal",
+    "from": {
+     "node": "PoseQrel",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseQ",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c026",
+    "kind": "signal",
+    "from": {
+     "node": "PoseQ",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB3",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c027",
+    "kind": "signal",
+    "from": {
+     "node": "CoM3",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseB3",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c028",
+    "kind": "signal",
+    "from": {
+     "node": "PoseB3",
+     "port": "g"
+    },
+    "to": {
+     "node": "Bucket",
+     "port": "g"
+    }
+   },
+   {
+    "id": "c029",
+    "kind": "signal",
+    "from": {
+     "node": "PoseQ",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseTip",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c030",
+    "kind": "signal",
+    "from": {
+     "node": "TipOffset",
+     "port": "g"
+    },
+    "to": {
+     "node": "PoseTip",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c031",
+    "kind": "signal",
+    "from": {
+     "node": "PoseO",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinB1",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c032",
+    "kind": "signal",
+    "from": {
+     "node": "LocB1",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinB1",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c033",
+    "kind": "signal",
+    "from": {
+     "node": "PoseO",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinA2",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c034",
+    "kind": "signal",
+    "from": {
+     "node": "LocA2",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinA2",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c035",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinB2",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c036",
+    "kind": "signal",
+    "from": {
+     "node": "LocB2",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinB2",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c037",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinA3",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c038",
+    "kind": "signal",
+    "from": {
+     "node": "LocA3",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinA3",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c039",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinR",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c040",
+    "kind": "signal",
+    "from": {
+     "node": "LocR",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinR",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c041",
+    "kind": "signal",
+    "from": {
+     "node": "Joint3",
+     "port": "qout"
+    },
+    "to": {
+     "node": "Linkage",
+     "port": "q"
+    }
+   },
+   {
+    "id": "c042",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinJ",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c043",
+    "kind": "signal",
+    "from": {
+     "node": "Linkage",
+     "port": "gJ"
+    },
+    "to": {
+     "node": "PinJ",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c044",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "PinP",
+     "port": "gp"
+    }
+   },
+   {
+    "id": "c045",
+    "kind": "signal",
+    "from": {
+     "node": "Linkage",
+     "port": "gP"
+    },
+    "to": {
+     "node": "PinP",
+     "port": "gl"
+    }
+   },
+   {
+    "id": "c046",
+    "kind": "signal",
+    "from": {
+     "node": "PinA1",
+     "port": "g"
+    },
+    "to": {
+     "node": "BoomMount",
+     "port": "gA"
+    }
+   },
+   {
+    "id": "c047",
+    "kind": "signal",
+    "from": {
+     "node": "PinB1",
+     "port": "g"
+    },
+    "to": {
+     "node": "BoomMount",
+     "port": "gB"
+    }
+   },
+   {
+    "id": "c048",
+    "kind": "signal",
+    "from": {
+     "node": "PoseO",
+     "port": "g"
+    },
+    "to": {
+     "node": "BoomMount",
+     "port": "gJ"
+    }
+   },
+   {
+    "id": "c049",
+    "kind": "signal",
+    "from": {
+     "node": "PinA2",
+     "port": "g"
+    },
+    "to": {
+     "node": "ArmMount",
+     "port": "gA"
+    }
+   },
+   {
+    "id": "c050",
+    "kind": "signal",
+    "from": {
+     "node": "PinB2",
+     "port": "g"
+    },
+    "to": {
+     "node": "ArmMount",
+     "port": "gB"
+    }
+   },
+   {
+    "id": "c051",
+    "kind": "signal",
+    "from": {
+     "node": "PoseC",
+     "port": "g"
+    },
+    "to": {
+     "node": "ArmMount",
+     "port": "gJ"
+    }
+   },
+   {
+    "id": "c052",
+    "kind": "signal",
+    "from": {
+     "node": "PinA3",
+     "port": "g"
+    },
+    "to": {
+     "node": "BucketMount",
+     "port": "gA"
+    }
+   },
+   {
+    "id": "c053",
+    "kind": "signal",
+    "from": {
+     "node": "PinJ",
+     "port": "g"
+    },
+    "to": {
+     "node": "BucketMount",
+     "port": "gB"
+    }
+   },
+   {
+    "id": "c054",
+    "kind": "signal",
+    "from": {
+     "node": "PinR",
+     "port": "g"
+    },
+    "to": {
+     "node": "BucketMount",
+     "port": "gJ"
+    }
+   },
+   {
+    "id": "c055",
+    "kind": "signal",
+    "from": {
+     "node": "EngineSpeed",
+     "port": "y"
+    },
+    "to": {
+     "node": "Engine",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c056",
+    "kind": "wire",
+    "from": {
+     "node": "Engine",
+     "port": "a"
+    },
+    "to": {
+     "node": "Pump",
+     "port": "shaft"
+    }
+   },
+   {
+    "id": "c057",
+    "kind": "wire",
+    "from": {
+     "node": "Tank",
+     "port": "a"
+    },
+    "to": {
+     "node": "Pump",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c058",
+    "kind": "wire",
+    "from": {
+     "node": "Pump",
+     "port": "b"
+    },
+    "to": {
+     "node": "Vpump",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c059",
+    "kind": "wire",
+    "from": {
+     "node": "Vpump",
+     "port": "a"
+    },
+    "to": {
+     "node": "Relief",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c060",
+    "kind": "wire",
+    "from": {
+     "node": "Relief",
+     "port": "b"
+    },
+    "to": {
+     "node": "Tank",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c061",
+    "kind": "wire",
+    "from": {
+     "node": "Vls",
+     "port": "a"
+    },
+    "to": {
+     "node": "Pump",
+     "port": "ls"
+    }
+   },
+   {
+    "id": "c062",
+    "kind": "wire",
+    "from": {
+     "node": "Vls",
+     "port": "a"
+    },
+    "to": {
+     "node": "Bleed",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c063",
+    "kind": "wire",
+    "from": {
+     "node": "Bleed",
+     "port": "b"
+    },
+    "to": {
+     "node": "Tank",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c064",
+    "kind": "signal",
+    "from": {
+     "node": "BoomPower",
+     "port": "y"
+    },
+    "to": {
+     "node": "Pmux",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c065",
+    "kind": "signal",
+    "from": {
+     "node": "ArmPower",
+     "port": "y"
+    },
+    "to": {
+     "node": "Pmux",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c066",
+    "kind": "signal",
+    "from": {
+     "node": "BucketPower",
+     "port": "y"
+    },
+    "to": {
+     "node": "Pmux",
+     "port": "u3"
+    }
+   },
+   {
+    "id": "c067",
+    "kind": "signal",
+    "from": {
+     "node": "Pmux",
+     "port": "y"
+    },
+    "to": {
+     "node": "Pcyl",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c068",
+    "kind": "signal",
+    "from": {
+     "node": "Pump",
+     "port": "P_in"
+    },
+    "to": {
+     "node": "Ein",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c069",
+    "kind": "signal",
+    "from": {
+     "node": "Pcyl",
+     "port": "y"
+    },
+    "to": {
+     "node": "Ecyl",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c070",
+    "kind": "signal",
+    "from": {
+     "node": "Ecyl",
+     "port": "y"
+    },
+    "to": {
+     "node": "Eff",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c071",
+    "kind": "signal",
+    "from": {
+     "node": "Ein",
+     "port": "y"
+    },
+    "to": {
+     "node": "Eff",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c072",
+    "kind": "signal",
+    "from": {
+     "node": "LiftStick",
+     "port": "y"
+    },
+    "to": {
+     "node": "LiftCmd",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c073",
+    "kind": "bond",
+    "from": {
+     "node": "BoomRP",
+     "port": "b"
+    },
+    "to": {
+     "node": "BoomRod"
+    }
+   },
+   {
+    "id": "c074",
+    "kind": "bond",
+    "from": {
+     "node": "BoomRP",
+     "port": "a"
+    },
+    "to": {
+     "node": "BoomLever",
+     "port": "p2"
+    }
+   },
+   {
+    "id": "c075",
+    "kind": "bond",
+    "from": {
+     "node": "BoomLever",
+     "port": "p1"
+    },
+    "to": {
+     "node": "Joint1",
+     "port": "drive"
+    }
+   },
+   {
+    "id": "c076",
+    "kind": "signal",
+    "from": {
+     "node": "BoomMount",
+     "port": "r"
+    },
+    "to": {
+     "node": "BoomLever",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c077",
+    "kind": "bond",
+    "from": {
+     "node": "BoomRod"
+    },
+    "to": {
+     "node": "BoomCyl",
+     "port": "rod"
+    }
+   },
+   {
+    "id": "c078",
+    "kind": "bond",
+    "from": {
+     "node": "BoomRod"
+    },
+    "to": {
+     "node": "BoomFric",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c079",
+    "kind": "wire",
+    "from": {
+     "node": "BoomFric",
+     "port": "b"
+    },
+    "to": {
+     "node": "BoomBarrel",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c080",
+    "kind": "signal",
+    "from": {
+     "node": "LiftCmd",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomSpool",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c081",
+    "kind": "signal",
+    "from": {
+     "node": "BoomSpool",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomAbs",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c082",
+    "kind": "signal",
+    "from": {
+     "node": "BoomAbs",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomComp",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c083",
+    "kind": "wire",
+    "from": {
+     "node": "Vpump",
+     "port": "a"
+    },
+    "to": {
+     "node": "BoomComp",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c084",
+    "kind": "wire",
+    "from": {
+     "node": "BoomComp",
+     "port": "b"
+    },
+    "to": {
+     "node": "BoomVin",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c085",
+    "kind": "signal",
+    "from": {
+     "node": "BoomSpool",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomValve",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c086",
+    "kind": "wire",
+    "from": {
+     "node": "BoomVin",
+     "port": "a"
+    },
+    "to": {
+     "node": "BoomValve",
+     "port": "P"
+    }
+   },
+   {
+    "id": "c087",
+    "kind": "wire",
+    "from": {
+     "node": "BoomValve",
+     "port": "T"
+    },
+    "to": {
+     "node": "Tank",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c088",
+    "kind": "wire",
+    "from": {
+     "node": "BoomValve",
+     "port": "A"
+    },
+    "to": {
+     "node": "BoomCyl",
+     "port": "A"
+    }
+   },
+   {
+    "id": "c089",
+    "kind": "wire",
+    "from": {
+     "node": "BoomValve",
+     "port": "B"
+    },
+    "to": {
+     "node": "BoomCyl",
+     "port": "B"
+    }
+   },
+   {
+    "id": "c090",
+    "kind": "wire",
+    "from": {
+     "node": "Tank",
+     "port": "a"
+    },
+    "to": {
+     "node": "BoomMakeUpA",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c091",
+    "kind": "wire",
+    "from": {
+     "node": "BoomMakeUpA",
+     "port": "b"
+    },
+    "to": {
+     "node": "BoomCyl",
+     "port": "A"
+    }
+   },
+   {
+    "id": "c092",
+    "kind": "wire",
+    "from": {
+     "node": "Tank",
+     "port": "a"
+    },
+    "to": {
+     "node": "BoomMakeUpB",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c093",
+    "kind": "wire",
+    "from": {
+     "node": "BoomMakeUpB",
+     "port": "b"
+    },
+    "to": {
+     "node": "BoomCyl",
+     "port": "B"
+    }
+   },
+   {
+    "id": "c094",
+    "kind": "wire",
+    "from": {
+     "node": "BoomCyl",
+     "port": "A"
+    },
+    "to": {
+     "node": "BoompA",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c095",
+    "kind": "wire",
+    "from": {
+     "node": "BoomCyl",
+     "port": "B"
+    },
+    "to": {
+     "node": "BoompB",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c096",
+    "kind": "signal",
+    "from": {
+     "node": "BoompA",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoompAB",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c097",
+    "kind": "signal",
+    "from": {
+     "node": "BoompB",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoompAB",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c098",
+    "kind": "signal",
+    "from": {
+     "node": "BoompAB",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomForce",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c099",
+    "kind": "signal",
+    "from": {
+     "node": "BoomForce",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomTorque",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c100",
+    "kind": "signal",
+    "from": {
+     "node": "BoomMount",
+     "port": "r"
+    },
+    "to": {
+     "node": "BoomTorque",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c101",
+    "kind": "signal",
+    "from": {
+     "node": "BoomTorque",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomPower",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c102",
+    "kind": "signal",
+    "from": {
+     "node": "Joint1",
+     "port": "qdout"
+    },
+    "to": {
+     "node": "BoomPower",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c103",
+    "kind": "signal",
+    "from": {
+     "node": "BoomSpool",
+     "port": "y"
+    },
+    "to": {
+     "node": "BoomLSEdge",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c104",
+    "kind": "wire",
+    "from": {
+     "node": "BoomVls",
+     "port": "a"
+    },
+    "to": {
+     "node": "BoomLSEdge",
+     "port": "P"
+    }
+   },
+   {
+    "id": "c105",
+    "kind": "wire",
+    "from": {
+     "node": "BoomLSEdge",
+     "port": "T"
+    },
+    "to": {
+     "node": "Tank",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c106",
+    "kind": "wire",
+    "from": {
+     "node": "BoomLSEdge",
+     "port": "A"
+    },
+    "to": {
+     "node": "BoomCyl",
+     "port": "A"
+    }
+   },
+   {
+    "id": "c107",
+    "kind": "wire",
+    "from": {
+     "node": "BoomLSEdge",
+     "port": "B"
+    },
+    "to": {
+     "node": "BoomCyl",
+     "port": "B"
+    }
+   },
+   {
+    "id": "c108",
+    "kind": "wire",
+    "from": {
+     "node": "BoomVls",
+     "port": "a"
+    },
+    "to": {
+     "node": "BoomShuttle",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c109",
+    "kind": "wire",
+    "from": {
+     "node": "BoomShuttle",
+     "port": "b"
+    },
+    "to": {
+     "node": "Vls",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c110",
+    "kind": "bond",
+    "from": {
+     "node": "ArmRP",
+     "port": "b"
+    },
+    "to": {
+     "node": "ArmRod"
+    }
+   },
+   {
+    "id": "c111",
+    "kind": "bond",
+    "from": {
+     "node": "ArmRP",
+     "port": "a"
+    },
+    "to": {
+     "node": "ArmLever",
+     "port": "p2"
+    }
+   },
+   {
+    "id": "c112",
+    "kind": "bond",
+    "from": {
+     "node": "ArmLever",
+     "port": "p1"
+    },
+    "to": {
+     "node": "Joint2",
+     "port": "drive"
+    }
+   },
+   {
+    "id": "c113",
+    "kind": "signal",
+    "from": {
+     "node": "ArmMount",
+     "port": "r"
+    },
+    "to": {
+     "node": "ArmLever",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c114",
+    "kind": "bond",
+    "from": {
+     "node": "ArmRod"
+    },
+    "to": {
+     "node": "ArmCyl",
+     "port": "rod"
+    }
+   },
+   {
+    "id": "c115",
+    "kind": "bond",
+    "from": {
+     "node": "ArmRod"
+    },
+    "to": {
+     "node": "ArmFric",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c116",
+    "kind": "wire",
+    "from": {
+     "node": "ArmFric",
+     "port": "b"
+    },
+    "to": {
+     "node": "ArmBarrel",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c117",
+    "kind": "signal",
+    "from": {
+     "node": "Neutral",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmSpool",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c118",
+    "kind": "signal",
+    "from": {
+     "node": "ArmSpool",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmAbs",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c119",
+    "kind": "signal",
+    "from": {
+     "node": "ArmAbs",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmComp",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c120",
+    "kind": "wire",
+    "from": {
+     "node": "Vpump",
+     "port": "a"
+    },
+    "to": {
+     "node": "ArmComp",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c121",
+    "kind": "wire",
+    "from": {
+     "node": "ArmComp",
+     "port": "b"
+    },
+    "to": {
+     "node": "ArmVin",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c122",
+    "kind": "signal",
+    "from": {
+     "node": "ArmSpool",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmValve",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c123",
+    "kind": "wire",
+    "from": {
+     "node": "ArmVin",
+     "port": "a"
+    },
+    "to": {
+     "node": "ArmValve",
+     "port": "P"
+    }
+   },
+   {
+    "id": "c124",
+    "kind": "wire",
+    "from": {
+     "node": "ArmValve",
+     "port": "T"
+    },
+    "to": {
+     "node": "Tank",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c125",
+    "kind": "wire",
+    "from": {
+     "node": "ArmValve",
+     "port": "A"
+    },
+    "to": {
+     "node": "ArmCyl",
+     "port": "A"
+    }
+   },
+   {
+    "id": "c126",
+    "kind": "wire",
+    "from": {
+     "node": "ArmValve",
+     "port": "B"
+    },
+    "to": {
+     "node": "ArmCyl",
+     "port": "B"
+    }
+   },
+   {
+    "id": "c127",
+    "kind": "wire",
+    "from": {
+     "node": "Tank",
+     "port": "a"
+    },
+    "to": {
+     "node": "ArmMakeUpA",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c128",
+    "kind": "wire",
+    "from": {
+     "node": "ArmMakeUpA",
+     "port": "b"
+    },
+    "to": {
+     "node": "ArmCyl",
+     "port": "A"
+    }
+   },
+   {
+    "id": "c129",
+    "kind": "wire",
+    "from": {
+     "node": "Tank",
+     "port": "a"
+    },
+    "to": {
+     "node": "ArmMakeUpB",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c130",
+    "kind": "wire",
+    "from": {
+     "node": "ArmMakeUpB",
+     "port": "b"
+    },
+    "to": {
+     "node": "ArmCyl",
+     "port": "B"
+    }
+   },
+   {
+    "id": "c131",
+    "kind": "wire",
+    "from": {
+     "node": "ArmCyl",
+     "port": "A"
+    },
+    "to": {
+     "node": "ArmpA",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c132",
+    "kind": "wire",
+    "from": {
+     "node": "ArmCyl",
+     "port": "B"
+    },
+    "to": {
+     "node": "ArmpB",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c133",
+    "kind": "signal",
+    "from": {
+     "node": "ArmpA",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmpAB",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c134",
+    "kind": "signal",
+    "from": {
+     "node": "ArmpB",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmpAB",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c135",
+    "kind": "signal",
+    "from": {
+     "node": "ArmpAB",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmForce",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c136",
+    "kind": "signal",
+    "from": {
+     "node": "ArmForce",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmTorque",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c137",
+    "kind": "signal",
+    "from": {
+     "node": "ArmMount",
+     "port": "r"
+    },
+    "to": {
+     "node": "ArmTorque",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c138",
+    "kind": "signal",
+    "from": {
+     "node": "ArmTorque",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmPower",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c139",
+    "kind": "signal",
+    "from": {
+     "node": "Joint2",
+     "port": "qdout"
+    },
+    "to": {
+     "node": "ArmPower",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c140",
+    "kind": "signal",
+    "from": {
+     "node": "ArmSpool",
+     "port": "y"
+    },
+    "to": {
+     "node": "ArmLSEdge",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c141",
+    "kind": "wire",
+    "from": {
+     "node": "ArmVls",
+     "port": "a"
+    },
+    "to": {
+     "node": "ArmLSEdge",
+     "port": "P"
+    }
+   },
+   {
+    "id": "c142",
+    "kind": "wire",
+    "from": {
+     "node": "ArmLSEdge",
+     "port": "T"
+    },
+    "to": {
+     "node": "Tank",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c143",
+    "kind": "wire",
+    "from": {
+     "node": "ArmLSEdge",
+     "port": "A"
+    },
+    "to": {
+     "node": "ArmCyl",
+     "port": "A"
+    }
+   },
+   {
+    "id": "c144",
+    "kind": "wire",
+    "from": {
+     "node": "ArmLSEdge",
+     "port": "B"
+    },
+    "to": {
+     "node": "ArmCyl",
+     "port": "B"
+    }
+   },
+   {
+    "id": "c145",
+    "kind": "wire",
+    "from": {
+     "node": "ArmVls",
+     "port": "a"
+    },
+    "to": {
+     "node": "ArmShuttle",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c146",
+    "kind": "wire",
+    "from": {
+     "node": "ArmShuttle",
+     "port": "b"
+    },
+    "to": {
+     "node": "Vls",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c147",
+    "kind": "bond",
+    "from": {
+     "node": "BucketRP",
+     "port": "b"
+    },
+    "to": {
+     "node": "BucketRod"
+    }
+   },
+   {
+    "id": "c148",
+    "kind": "bond",
+    "from": {
+     "node": "BucketRP",
+     "port": "a"
+    },
+    "to": {
+     "node": "BucketLever",
+     "port": "p2"
+    }
+   },
+   {
+    "id": "c149",
+    "kind": "bond",
+    "from": {
+     "node": "BucketLever",
+     "port": "p1"
+    },
+    "to": {
+     "node": "FourBar",
+     "port": "p2"
+    }
+   },
+   {
+    "id": "c150",
+    "kind": "bond",
+    "from": {
+     "node": "FourBar",
+     "port": "p1"
+    },
+    "to": {
+     "node": "Joint3",
+     "port": "drive"
+    }
+   },
+   {
+    "id": "c151",
+    "kind": "signal",
+    "from": {
+     "node": "BucketMount",
+     "port": "r"
+    },
+    "to": {
+     "node": "BucketLever",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c152",
+    "kind": "signal",
+    "from": {
+     "node": "Linkage",
+     "port": "k"
+    },
+    "to": {
+     "node": "FourBar",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c153",
+    "kind": "bond",
+    "from": {
+     "node": "BucketRod"
+    },
+    "to": {
+     "node": "BucketCyl",
+     "port": "rod"
+    }
+   },
+   {
+    "id": "c154",
+    "kind": "bond",
+    "from": {
+     "node": "BucketRod"
+    },
+    "to": {
+     "node": "BucketFric",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c155",
+    "kind": "wire",
+    "from": {
+     "node": "BucketFric",
+     "port": "b"
+    },
+    "to": {
+     "node": "BucketBarrel",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c156",
+    "kind": "signal",
+    "from": {
+     "node": "Neutral",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketSpool",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c157",
+    "kind": "signal",
+    "from": {
+     "node": "BucketSpool",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketAbs",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c158",
+    "kind": "signal",
+    "from": {
+     "node": "BucketAbs",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketComp",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c159",
+    "kind": "wire",
+    "from": {
+     "node": "Vpump",
+     "port": "a"
+    },
+    "to": {
+     "node": "BucketComp",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c160",
+    "kind": "wire",
+    "from": {
+     "node": "BucketComp",
+     "port": "b"
+    },
+    "to": {
+     "node": "BucketVin",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c161",
+    "kind": "signal",
+    "from": {
+     "node": "BucketSpool",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketValve",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c162",
+    "kind": "wire",
+    "from": {
+     "node": "BucketVin",
+     "port": "a"
+    },
+    "to": {
+     "node": "BucketValve",
+     "port": "P"
+    }
+   },
+   {
+    "id": "c163",
+    "kind": "wire",
+    "from": {
+     "node": "BucketValve",
+     "port": "T"
+    },
+    "to": {
+     "node": "Tank",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c164",
+    "kind": "wire",
+    "from": {
+     "node": "BucketValve",
+     "port": "A"
+    },
+    "to": {
+     "node": "BucketCyl",
+     "port": "A"
+    }
+   },
+   {
+    "id": "c165",
+    "kind": "wire",
+    "from": {
+     "node": "BucketValve",
+     "port": "B"
+    },
+    "to": {
+     "node": "BucketCyl",
+     "port": "B"
+    }
+   },
+   {
+    "id": "c166",
+    "kind": "wire",
+    "from": {
+     "node": "Tank",
+     "port": "a"
+    },
+    "to": {
+     "node": "BucketMakeUpA",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c167",
+    "kind": "wire",
+    "from": {
+     "node": "BucketMakeUpA",
+     "port": "b"
+    },
+    "to": {
+     "node": "BucketCyl",
+     "port": "A"
+    }
+   },
+   {
+    "id": "c168",
+    "kind": "wire",
+    "from": {
+     "node": "Tank",
+     "port": "a"
+    },
+    "to": {
+     "node": "BucketMakeUpB",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c169",
+    "kind": "wire",
+    "from": {
+     "node": "BucketMakeUpB",
+     "port": "b"
+    },
+    "to": {
+     "node": "BucketCyl",
+     "port": "B"
+    }
+   },
+   {
+    "id": "c170",
+    "kind": "wire",
+    "from": {
+     "node": "BucketCyl",
+     "port": "A"
+    },
+    "to": {
+     "node": "BucketpA",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c171",
+    "kind": "wire",
+    "from": {
+     "node": "BucketCyl",
+     "port": "B"
+    },
+    "to": {
+     "node": "BucketpB",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c172",
+    "kind": "signal",
+    "from": {
+     "node": "BucketpA",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketpAB",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c173",
+    "kind": "signal",
+    "from": {
+     "node": "BucketpB",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketpAB",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c174",
+    "kind": "signal",
+    "from": {
+     "node": "BucketpAB",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketForce",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c175",
+    "kind": "signal",
+    "from": {
+     "node": "BucketForce",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketTorque",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c176",
+    "kind": "signal",
+    "from": {
+     "node": "BucketMount",
+     "port": "r"
+    },
+    "to": {
+     "node": "BucketTorque",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c177",
+    "kind": "signal",
+    "from": {
+     "node": "BucketTorque",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketPower",
+     "port": "u1"
+    }
+   },
+   {
+    "id": "c178",
+    "kind": "signal",
+    "from": {
+     "node": "Joint3",
+     "port": "qdout"
+    },
+    "to": {
+     "node": "BucketPower",
+     "port": "u2"
+    }
+   },
+   {
+    "id": "c179",
+    "kind": "signal",
+    "from": {
+     "node": "BucketSpool",
+     "port": "y"
+    },
+    "to": {
+     "node": "BucketLSEdge",
+     "port": "u"
+    }
+   },
+   {
+    "id": "c180",
+    "kind": "wire",
+    "from": {
+     "node": "BucketVls",
+     "port": "a"
+    },
+    "to": {
+     "node": "BucketLSEdge",
+     "port": "P"
+    }
+   },
+   {
+    "id": "c181",
+    "kind": "wire",
+    "from": {
+     "node": "BucketLSEdge",
+     "port": "T"
+    },
+    "to": {
+     "node": "Tank",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c182",
+    "kind": "wire",
+    "from": {
+     "node": "BucketLSEdge",
+     "port": "A"
+    },
+    "to": {
+     "node": "BucketCyl",
+     "port": "A"
+    }
+   },
+   {
+    "id": "c183",
+    "kind": "wire",
+    "from": {
+     "node": "BucketLSEdge",
+     "port": "B"
+    },
+    "to": {
+     "node": "BucketCyl",
+     "port": "B"
+    }
+   },
+   {
+    "id": "c184",
+    "kind": "wire",
+    "from": {
+     "node": "BucketVls",
+     "port": "a"
+    },
+    "to": {
+     "node": "BucketShuttle",
+     "port": "a"
+    }
+   },
+   {
+    "id": "c185",
+    "kind": "wire",
+    "from": {
+     "node": "BucketShuttle",
+     "port": "b"
+    },
+    "to": {
+     "node": "Vls",
+     "port": "a"
+    }
+   }
+  ],
+  "annotations": []
+ },
+ "settings": {
+  "t_start": 0.0,
+  "t_end": 9.0,
+  "solver": "FBDF",
+  "reltol": 1e-06,
+  "abstol": 1e-06,
+  "max_step": null,
+  "output": {
+   "mode": "points",
+   "points": 901
+  },
+  "event_limit": 10000
+ },
+ "parameters": [
+  {
+   "name": "m_boom",
+   "value": "1650",
+   "unit": "kg",
+   "description": "Boom mass (with its share of the cylinders)"
+  },
+  {
+   "name": "J_boom",
+   "value": "4600",
+   "unit": "kg*m^2",
+   "description": "Boom inertia about its centre of mass"
+  },
+  {
+   "name": "m_arm",
+   "value": "1000",
+   "unit": "kg",
+   "description": "Arm (stick) mass"
+  },
+  {
+   "name": "J_arm",
+   "value": "820",
+   "unit": "kg*m^2",
+   "description": "Arm inertia about its centre of mass"
+  },
+  {
+   "name": "m_bkt",
+   "value": "956",
+   "unit": "kg",
+   "description": "Bucket mass (with its linkage)"
+  },
+  {
+   "name": "J_bkt",
+   "value": "260",
+   "unit": "kg*m^2",
+   "description": "Bucket inertia about its centre of mass"
+  },
+  {
+   "name": "m_pay",
+   "value": "1500",
+   "unit": "kg",
+   "description": "Payload rigidly carried in the bucket (lift model)"
+  },
+  {
+   "name": "m_bucket",
+   "value": "m_bkt + m_pay",
+   "unit": "kg",
+   "description": "Bucket plus payload"
+  },
+  {
+   "name": "cx_bucket",
+   "value": "(m_bkt*0.62 + m_pay*0.7)/m_bucket",
+   "unit": "m",
+   "description": "Centre of mass x in the bucket frame"
+  },
+  {
+   "name": "cy_bucket",
+   "value": "(m_bkt*0.22 + m_pay*0.25)/m_bucket",
+   "unit": "m",
+   "description": "Centre of mass y in the bucket frame"
+  },
+  {
+   "name": "J_bucket",
+   "value": "J_bkt + 150*m_pay/1500 + m_bkt*m_pay/m_bucket*(-0.07999999999999996^2 + -0.03^2)",
+   "unit": "kg*m^2",
+   "description": "Bucket plus payload inertia about their common centre of mass"
+  },
+  {
+   "name": "k_pin",
+   "value": "1.0e9",
+   "unit": "N/m",
+   "description": "Pin (pivot) translational stiffness"
+  },
+  {
+   "name": "b_pin",
+   "value": "1.0e6",
+   "unit": "N*s/m",
+   "description": "Pin translational damping"
+  },
+  {
+   "name": "k_stop",
+   "value": "2.0e7",
+   "unit": "N*m/rad",
+   "description": "End-stop stiffness at the joints (the cylinder end stops)"
+  },
+  {
+   "name": "b_stop",
+   "value": "2.0e6",
+   "unit": "N*m*s/rad",
+   "description": "End-stop damping"
+  },
+  {
+   "name": "beta",
+   "value": "1200000000",
+   "unit": "Pa",
+   "description": "Effective bulk modulus of the oil (with hoses)"
+  },
+  {
+   "name": "w_engine",
+   "value": "188.49555921538757",
+   "unit": "rad/s",
+   "description": "Engine speed (1800 rpm, constant)"
+  },
+  {
+   "name": "dp_ls",
+   "value": "2500000",
+   "unit": "Pa",
+   "description": "LS margin of the pump regulator"
+  },
+  {
+   "name": "P_max",
+   "value": "100000",
+   "unit": "W",
+   "description": "Pump power limit (torque limiter at the engine speed)"
+  },
+  {
+   "name": "p_relief",
+   "value": "34300000",
+   "unit": "Pa",
+   "description": "Main relief valve setting"
+  },
+  {
+   "name": "dp_c",
+   "value": "1000000",
+   "unit": "Pa",
+   "description": "Compensator setting of the valve sections"
+  },
+  {
+   "name": "tau_spool",
+   "value": "0.08",
+   "unit": "s",
+   "description": "Spool (pilot) time constant"
+  },
+  {
+   "name": "A_ls",
+   "value": "2e-06",
+   "unit": "m^2",
+   "description": "LS edge of each spool"
+  },
+  {
+   "name": "u_lift",
+   "value": "0.5",
+   "unit": "1",
+   "description": "Boom joystick during the lift (1 = full)"
+  }
+ ],
+ "plots": [
+  {
+   "id": "p1",
+   "title": "Boom cylinder pressures [Pa]",
+   "signals": [
+    "BoomCyl/pA",
+    "BoomCyl/pB"
+   ]
+  },
+  {
+   "id": "p8",
+   "title": "Boom: rod extension [m] and joint angle [rad]",
+   "signals": [
+    "BoomCyl/x",
+    "Joint1/qout"
+   ]
+  },
+  {
+   "id": "p9",
+   "title": "Boom section: compensator flow [m^3/s]",
+   "signals": [
+    "BoomComp/Q"
+   ]
+  },
+  {
+   "id": "p2",
+   "title": "Pump line, LS line and LS margin [Pa]",
+   "signals": [
+    "Vpump/p",
+    "Pump/margin",
+    "Vls/p"
+   ]
+  },
+  {
+   "id": "p3",
+   "title": "Cylinder cap-side pressures [Pa]",
+   "signals": [
+    "BoomCyl/pA",
+    "ArmCyl/pA",
+    "BucketCyl/pA"
+   ]
+  },
+  {
+   "id": "p4",
+   "title": "Cylinder forces [N] (extending positive)",
+   "signals": [
+    "BoomForce/y",
+    "ArmForce/y",
+    "BucketForce/y"
+   ]
+  },
+  {
+   "id": "p5",
+   "title": "Pump displacement and flow",
+   "signals": [
+    "Pump/xd",
+    "Pump/Q"
+   ]
+  },
+  {
+   "id": "p6",
+   "title": "Power [W]: engine shaft, pump hydraulic, cylinders",
+   "signals": [
+    "Pump/P_in",
+    "Pump/P_out",
+    "Pcyl/y"
+   ]
+  },
+  {
+   "id": "p7",
+   "title": "Energy [J] and ratio cylinder work / engine energy",
+   "signals": [
+    "Ein/y",
+    "Ecyl/y",
+    "Eff/y"
+   ]
+  }
+ ],
+ "scene": {
+  "file": "scenes/excavator.sdf"
+ },
+ "bindings": [
+  {
+   "target": "joint:boom_joint",
+   "property": "position",
+   "signal": "Joint1/qout"
+  },
+  {
+   "target": "joint:arm_joint",
+   "property": "position",
+   "signal": "Joint2/qout"
+  },
+  {
+   "target": "joint:bucket_joint",
+   "property": "position",
+   "signal": "Joint3/qout"
+  },
+  {
+   "target": "visual:boom_barrel_l",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.42,
+   "signal": [
+    "PinA1/g[2]",
+    "PinA1/g[3]",
+    "BoomMount/pb[1]",
+    "BoomMount/pb[2]"
+   ]
+  },
+  {
+   "target": "visual:boom_rod_l",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.42,
+   "signal": [
+    "BoomMount/pr[1]",
+    "BoomMount/pr[2]",
+    "PinB1/g[2]",
+    "PinB1/g[3]"
+   ]
+  },
+  {
+   "target": "visual:boom_barrel_r",
+   "property": "segment",
+   "plane": "xz",
+   "depth": -0.42,
+   "signal": [
+    "PinA1/g[2]",
+    "PinA1/g[3]",
+    "BoomMount/pb[1]",
+    "BoomMount/pb[2]"
+   ]
+  },
+  {
+   "target": "visual:boom_rod_r",
+   "property": "segment",
+   "plane": "xz",
+   "depth": -0.42,
+   "signal": [
+    "BoomMount/pr[1]",
+    "BoomMount/pr[2]",
+    "PinB1/g[2]",
+    "PinB1/g[3]"
+   ]
+  },
+  {
+   "target": "visual:arm_barrel",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.0,
+   "signal": [
+    "PinA2/g[2]",
+    "PinA2/g[3]",
+    "ArmMount/pb[1]",
+    "ArmMount/pb[2]"
+   ]
+  },
+  {
+   "target": "visual:arm_rod",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.0,
+   "signal": [
+    "ArmMount/pr[1]",
+    "ArmMount/pr[2]",
+    "PinB2/g[2]",
+    "PinB2/g[3]"
+   ]
+  },
+  {
+   "target": "visual:bucket_barrel",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.0,
+   "signal": [
+    "PinA3/g[2]",
+    "PinA3/g[3]",
+    "BucketMount/pb[1]",
+    "BucketMount/pb[2]"
+   ]
+  },
+  {
+   "target": "visual:bucket_rod",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.0,
+   "signal": [
+    "BucketMount/pr[1]",
+    "BucketMount/pr[2]",
+    "PinJ/g[2]",
+    "PinJ/g[3]"
+   ]
+  },
+  {
+   "target": "visual:rocker_l",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.3,
+   "signal": [
+    "PinR/g[2]",
+    "PinR/g[3]",
+    "PinJ/g[2]",
+    "PinJ/g[3]"
+   ]
+  },
+  {
+   "target": "visual:rocker_r",
+   "property": "segment",
+   "plane": "xz",
+   "depth": -0.3,
+   "signal": [
+    "PinR/g[2]",
+    "PinR/g[3]",
+    "PinJ/g[2]",
+    "PinJ/g[3]"
+   ]
+  },
+  {
+   "target": "visual:hlink_l",
+   "property": "segment",
+   "plane": "xz",
+   "depth": 0.3,
+   "signal": [
+    "PinJ/g[2]",
+    "PinJ/g[3]",
+    "PinP/g[2]",
+    "PinP/g[3]"
+   ]
+  },
+  {
+   "target": "visual:hlink_r",
+   "property": "segment",
+   "plane": "xz",
+   "depth": -0.3,
+   "signal": [
+    "PinJ/g[2]",
+    "PinJ/g[3]",
+    "PinP/g[2]",
+    "PinP/g[3]"
+   ]
+  }
+ ],
+ "dashboard": {
+  "autoRerun": false,
+  "cards": [
+   {
+    "id": "pboom",
+    "kind": "plot",
+    "size": "2x2",
+    "title": "Boom cylinder pressures [Pa]",
+    "signals": [
+     "BoomCyl/pA",
+     "BoomCyl/pB"
+    ]
+   },
+   {
+    "id": "margin",
+    "kind": "gauge",
+    "size": "2x2",
+    "title": "LS margin (pump - LS line) [Pa]",
+    "signals": [
+     "Pump/margin"
+    ],
+    "options": {
+     "min": 0,
+     "max": 5000000.0,
+     "decimals": 0,
+     "unit": "Pa",
+     "zones": [
+      {
+       "from": 0,
+       "to": 2000000.0,
+       "tone": "warn"
+      },
+      {
+       "from": 2000000.0,
+       "to": 3000000.0,
+       "tone": "good"
+      },
+      {
+       "from": 3000000.0,
+       "to": 5000000.0,
+       "tone": "warn"
+      }
+     ]
+    }
+   },
+   {
+    "id": "force",
+    "kind": "value",
+    "size": "1x1",
+    "title": "Boom cylinder force",
+    "signals": [
+     "BoomForce/y"
+    ],
+    "options": {
+     "decimals": 0,
+     "unit": "N",
+     "sparkline": true
+    }
+   },
+   {
+    "id": "eff",
+    "kind": "value",
+    "size": "1x1",
+    "title": "Cylinder work / engine energy",
+    "signals": [
+     "Eff/y"
+    ],
+    "options": {
+     "decimals": 3,
+     "sparkline": true
+    }
+   },
+   {
+    "id": "pay",
+    "kind": "slider",
+    "size": "2x1",
+    "title": "Payload",
+    "parameter": "global:m_pay",
+    "options": {
+     "min": 0,
+     "max": 2500,
+     "step": 100,
+     "decimals": 0,
+     "unit": "kg"
+    }
+   },
+   {
+    "id": "ul",
+    "kind": "slider",
+    "size": "2x1",
+    "title": "Boom joystick during the lift",
+    "parameter": "global:u_lift",
+    "options": {
+     "min": 0.1,
+     "max": 1.0,
+     "step": 0.05,
+     "decimals": 2
+    }
+   },
+   {
+    "id": "dpls",
+    "kind": "slider",
+    "size": "2x1",
+    "title": "LS margin setting",
+    "parameter": "global:dp_ls",
+    "options": {
+     "min": 1000000.0,
+     "max": 4000000.0,
+     "step": 100000.0,
+     "unit": "Pa"
+    }
+   },
+   {
+    "id": "beta",
+    "kind": "slider",
+    "size": "2x1",
+    "title": "Oil bulk modulus",
+    "parameter": "global:beta",
+    "options": {
+     "min": 500000000.0,
+     "max": 1800000000.0,
+     "step": 50000000.0,
+     "unit": "Pa"
+    }
+   }
+  ]
+ }
+}

@@ -866,6 +866,15 @@ const GLYPHS: Record<string, Glyph> = {
       <path d="M6 21L18.5 6.5M18.5 6.5l-3.5 1M18.5 6.5l-.9 3.5" />
     </>
   ),
+  "conv-ls-pump": () => (
+    <>
+      <circle cx="11" cy="14" r="6.5" />
+      <path d="M11 7.7l-2.6 4h5.2z" fill="currentColor" stroke="none" />
+      <path d="M11 7.5V3M1.5 14h3M1.5 12.3h3" />
+      <path d="M5.5 21.5L17 8.5" />
+      <path d="M17.5 14H21.5V5H15.5" strokeDasharray="1.6 1.4" />
+    </>
+  ),
   "conv-hydraulic-motor": () => (
     <>
       <circle cx="12" cy="13" r="7" />

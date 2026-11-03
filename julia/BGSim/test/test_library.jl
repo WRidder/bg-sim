@@ -453,7 +453,11 @@ const TRUSS_REFS = [
     "stdlib:planar/Truss2D",
 ]
 
-const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS, EM_FIELD_REFS, FLEX_REFS, TRUSS_REFS))
+# Load sensing (the excavator example): the LS pump with its pressure cut-off and torque
+# limiter.
+const LS_REFS = ["stdlib:converters/LoadSensingPump"]
+
+const ALL_REFS = sort(vcat(M1_REFS, M2_REFS, M3_REFS, M3_PLANAR_REFS, M3_SPATIAL_REFS, M3_CONTACT_REFS, M3_DRIVES_REFS, F5_CSV_REFS, JEX9_REFS, SIGNAL_SOURCE_REFS, MOTION_REFS, THERMAL_REFS, MECH_ELEC_REFS, HYDRAULIC_REFS, SIGNAL_CONTROL_REFS, EM_FIELD_REFS, FLEX_REFS, TRUSS_REFS, LS_REFS))
 
 # ---------------------------------------------------------------------------------------
 # Small helpers: JSON3 values and named tuples to plain Dict/Vector trees, so that `==`
@@ -1716,6 +1720,21 @@ const INTERFACE_FIELDS = [
             @test [v.name for v in b.interface.variables] == ["w", "dp", "Q", "T", "P_loss"]
             @test isempty(b.interface.inputs) == (name != "VariableDisplacementPump")
         end
+    end
+
+    @testset "the load-sensing pump" begin
+        b = Dict(b.ref => b for b in load_stdlib())["stdlib:converters/LoadSensingPump"]
+        @test b.icon == "conv-ls-pump"
+        @test [(p.name, p.domain) for p in b.interface.ports] ==
+              [("a", "Hydraulic"), ("b", "Hydraulic"), ("shaft", "Rotation"), ("ls", "Hydraulic")]
+        @test isempty(b.interface.inputs)
+        @test [o.name for o in b.interface.outputs] == ["xd", "P_in", "P_out"]
+        @test [p.name for p in b.interface.parameters] ==
+              ["D", "eta_v", "eta_m", "p_nom", "w_nom", "dp_ls", "dp_reg", "p_cut", "T_max", "p_tr", "w_tr"]
+        # Smooth laws only: no switching event, so the block also runs in fixed-step export.
+        @test !occursin("ifelse", b.source)
+        @test !occursin("abs(", b.source)
+        @test !occursin("sign(", b.source)
     end
 
     @testset "the M2 converters and sensors rows (J2.7g)" begin
