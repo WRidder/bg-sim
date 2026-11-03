@@ -1,0 +1,706 @@
+{
+  "project": "ball-and-plate",
+  "description": "Ball-and-plate rig (Quanser 2 DOF Ball Balancer type): a 1 in steel ball on a 0.35 m acrylic plate on a gimbal, tilted by two SRV02-type servos through cranks and push rods, an overhead camera at 30 frames/s with one frame of latency. Open-loop checks against the rolling-sphere laws (5/7 g sin a, 3/5 for a hollow ball, the rotation-rate drift of a swinging plate, energy); closed-loop checks of the cascaded PID and the LQR + Kalman controllers against the sampled linear loops of design/design.py.",
+  "models": {
+    "ball-and-plate-free": {
+      "checks": [
+        {
+          "kind": "zero_crossing",
+          "signal": "Contact/u1",
+          "n": 1,
+          "direction": "up",
+          "value": 1.5662550428538595,
+          "abs": 0.001,
+          "note": "roll time to the centre, sqrt(2 x0 / a) with a = 5/7 g sin(1 deg) = 0.122292 m/s^2"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Contact/u1",
+          "t": 2.0,
+          "value": 0.0945830102139304,
+          "abs": 0.0002,
+          "note": "x0 + a t^2 / 2 at 2 s (the lock springs let the tilt grow by 1.6e-5 rad as the ball moves)"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Energy/Ekrot",
+          "signal_b": "Energy/Ek",
+          "t": 2.0,
+          "value": 0.2857142857142857,
+          "rtol": 0.002,
+          "note": "rolling solid sphere: (J w^2) / (m v^2 + J w^2) = (2/5) / (7/5)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Contact/slip",
+          "from_t": 0.05,
+          "value": 2e-05,
+          "note": "no-slip residual: the regularised Coulomb friction creeps at (2/7) m g sin(a) vs / (mu f_n) = 1.25e-5 m/s"
+        },
+        {
+          "kind": "invariant",
+          "terms": [
+            {
+              "signal": "Energy/Ebal",
+              "coeff": 1.0
+            }
+          ],
+          "from_t": 0.1,
+          "scale": 0.0028,
+          "tol": 1e-05,
+          "note": "E + contact loss is constant (lossless rig, crr = 0): drift below 1e-5 of the final kinetic energy 2.8e-3 J (the first 0.1 s settle the contact and joint deflections)"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "ball-and-plate-free-hollow": {
+      "model": "ball-and-plate-free",
+      "overrides": {
+        "global:k_ball": 0.6666666666666666
+      },
+      "checks": [
+        {
+          "kind": "zero_crossing",
+          "signal": "Contact/u1",
+          "n": 1,
+          "direction": "up",
+          "value": 1.7089243551152653,
+          "abs": 0.001,
+          "note": "hollow ball (k = 2/3): a = 3/5 g sin(1 deg) = 0.102725 m/s^2"
+        },
+        {
+          "kind": "ratio",
+          "signal": "Energy/Ekrot",
+          "signal_b": "Energy/Ek",
+          "t": 2.0,
+          "value": 0.4,
+          "rtol": 0.002,
+          "note": "(2/3) / (5/3)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "ball-and-plate-swing": {
+      "checks": [
+        {
+          "kind": "cursor_value",
+          "signal": "Drift/y",
+          "t": 1.0,
+          "value": 0.0033840755494965458,
+          "rtol": 0.005,
+          "abs": 2e-05,
+          "note": "full minus linearised position: design.py integrates x'' = 5/7 (g sin a + x a'^2 - (h + 2r/5) a'') against x'' = 5/7 g sin a"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Drift/y",
+          "t": 2.0,
+          "value": 0.013770174248073572,
+          "rtol": 0.005,
+          "abs": 2e-05,
+          "note": "full minus linearised position: design.py integrates x'' = 5/7 (g sin a + x a'^2 - (h + 2r/5) a'') against x'' = 5/7 g sin a"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Drift/y",
+          "t": 3.0,
+          "value": 0.031876075045807487,
+          "rtol": 0.005,
+          "abs": 2e-05,
+          "note": "full minus linearised position: design.py integrates x'' = 5/7 (g sin a + x a'^2 - (h + 2r/5) a'') against x'' = 5/7 g sin a"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Drift/y",
+          "t": 4.0,
+          "value": 0.05895306919668153,
+          "rtol": 0.005,
+          "abs": 2e-05,
+          "note": "full minus linearised position: design.py integrates x'' = 5/7 (g sin a + x a'^2 - (h + 2r/5) a'') against x'' = 5/7 g sin a"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "Contact/u1",
+          "t": 4.0,
+          "value": 0.15895306919638097,
+          "abs": 0.001,
+          "note": "absolute position; the lock spring droops by m g x / k = 7e-6 rad under the ball, worth 0.4 mm in 4 s"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Contact/slip",
+          "from_t": 0.05,
+          "value": 5e-05,
+          "note": "rolls without slip"
+        },
+        {
+          "kind": "min_ge",
+          "signal": "Contact/f_n",
+          "from_t": 0.05,
+          "value": 0.5,
+          "note": "the plate's angular acceleration (5.5 rad/s^2) changes the normal force, it never lifts off"
+        },
+        {
+          "kind": "scene_bindings"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "ball-and-plate-pid": {
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "PoseBall/g[5]",
+          "from_t": 1.0,
+          "to_t": 6.0,
+          "step_t": 1.0,
+          "value": 0.1,
+          "initial": 0.0,
+          "settle_abs": 0.002,
+          "max_rise_time": 1.3,
+          "max_overshoot": 0.05,
+          "max_settling_time": 2.5,
+          "note": "x step 0 -> 0.10 m at 1 s, band +-2 mm. design.py (PID, linear, 1 frame): rise 0.87 s, overshoot 1.9 %, 2 % settling 1.37 s; the rig adds the servo dead band, rolling resistance (the ball can rest on a 0.002 rad tilt), pixel rounding and camera noise"
+        },
+        {
+          "kind": "step_response",
+          "signal": "PoseBall/g[6]",
+          "from_t": 6.0,
+          "to_t": 11.0,
+          "step_t": 6.0,
+          "value": 0.08,
+          "initial": 0.0,
+          "settle_abs": 0.002,
+          "max_rise_time": 1.3,
+          "max_overshoot": 0.05,
+          "max_settling_time": 3.0,
+          "note": "y step 0 -> 0.08 m at 6 s (x held at 0.10 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseBall/g[5]",
+          "t": 14.9,
+          "value": 0.0,
+          "abs": 0.003,
+          "note": "both axes back at the centre before the push"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "PoseBall/g[6]",
+          "from_t": 15.0,
+          "to_t": 20.0,
+          "value": 0.08,
+          "note": "the 0.6 N, 50 ms push in y (0.019 N s) stays on the plate (PID: 61 mm, LQR: 46 mm)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseBall/g[6]",
+          "t": 20.0,
+          "value": 0.0,
+          "abs": 0.004,
+          "note": "recovered 5 s after the push"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ServoX/V",
+          "value": 10.0,
+          "note": "the voltage limit of the DAQ"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Contact/slip",
+          "from_t": 0.1,
+          "value": 0.02,
+          "note": "no gross slip: the ball rolls (creep about 1e-5 m/s); when the plate snaps (the 11 s return step with the ball 0.1 m off the axis) the ball hops for a few ms and slips up to about 1 cm/s on landing"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Contact/u1",
+          "value": 0.15,
+          "note": "the ball stays on the plate (face half-width 0.175 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Contact/u2",
+          "value": 0.15,
+          "note": "the ball stays on the plate (face half-width 0.175 m)"
+        },
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "crank_x_link",
+              "point": [
+                0.0254,
+                0,
+                0
+              ],
+              "signals": [
+                "Viz/tipx[1]",
+                "Viz/tipx[2]",
+                "Viz/tipx[3]"
+              ],
+              "tol": 1e-09
+            },
+            {
+              "link": "crank_y_link",
+              "point": [
+                0,
+                0.0254,
+                0
+              ],
+              "signals": [
+                "Viz/tipy[1]",
+                "Viz/tipy[2]",
+                "Viz/tipy[3]"
+              ],
+              "tol": 1e-09
+            }
+          ],
+          "note": "the crank joints of the scene turn the crank tips where RigViz puts the rod ends (shafts at -0.1854 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "ball-and-plate-lqr": {
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "PoseBall/g[5]",
+          "from_t": 1.0,
+          "to_t": 6.0,
+          "step_t": 1.0,
+          "value": 0.1,
+          "initial": 0.0,
+          "settle_abs": 0.002,
+          "max_rise_time": 1.3,
+          "max_overshoot": 0.05,
+          "max_settling_time": 2.5,
+          "note": "x step 0 -> 0.10 m at 1 s, band +-2 mm. design.py (LQR + Kalman, linear, 1 frame): rise 1.00 s, overshoot 1.5 %, 2 % settling 1.60 s; the rig adds the servo dead band, rolling resistance (the ball can rest on a 0.002 rad tilt), pixel rounding and camera noise"
+        },
+        {
+          "kind": "step_response",
+          "signal": "PoseBall/g[6]",
+          "from_t": 6.0,
+          "to_t": 11.0,
+          "step_t": 6.0,
+          "value": 0.08,
+          "initial": 0.0,
+          "settle_abs": 0.002,
+          "max_rise_time": 1.3,
+          "max_overshoot": 0.05,
+          "max_settling_time": 3.0,
+          "note": "y step 0 -> 0.08 m at 6 s (x held at 0.10 m)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseBall/g[5]",
+          "t": 14.9,
+          "value": 0.0,
+          "abs": 0.003,
+          "note": "both axes back at the centre before the push"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "PoseBall/g[6]",
+          "from_t": 15.0,
+          "to_t": 20.0,
+          "value": 0.06,
+          "note": "the 0.6 N, 50 ms push in y (0.019 N s) stays on the plate (PID: 61 mm, LQR: 46 mm)"
+        },
+        {
+          "kind": "cursor_value",
+          "signal": "PoseBall/g[6]",
+          "t": 20.0,
+          "value": 0.0,
+          "abs": 0.004,
+          "note": "recovered 5 s after the push"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ServoX/V",
+          "value": 10.0,
+          "note": "the voltage limit of the DAQ"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Contact/slip",
+          "from_t": 0.1,
+          "value": 0.02,
+          "note": "no gross slip: the ball rolls (creep about 1e-5 m/s); when the plate snaps (the 11 s return step with the ball 0.1 m off the axis) the ball hops for a few ms and slips up to about 1 cm/s on landing"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Contact/u1",
+          "value": 0.15,
+          "note": "the ball stays on the plate (face half-width 0.175 m)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Contact/u2",
+          "value": 0.15,
+          "note": "the ball stays on the plate (face half-width 0.175 m)"
+        },
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "crank_x_link",
+              "point": [
+                0.0254,
+                0,
+                0
+              ],
+              "signals": [
+                "Viz/tipx[1]",
+                "Viz/tipx[2]",
+                "Viz/tipx[3]"
+              ],
+              "tol": 1e-09
+            },
+            {
+              "link": "crank_y_link",
+              "point": [
+                0,
+                0.0254,
+                0
+              ],
+              "signals": [
+                "Viz/tipy[1]",
+                "Viz/tipy[2]",
+                "Viz/tipy[3]"
+              ],
+              "tol": 1e-09
+            }
+          ],
+          "note": "the crank joints of the scene turn the crank tips where RigViz puts the rod ends (shafts at -0.1854 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "ball-and-plate-lqr-smooth-steps": {
+      "model": "ball-and-plate-lqr",
+      "overrides": {
+        "Task/t_s": 1.0
+      },
+      "checks": [
+        {
+          "kind": "step_response",
+          "signal": "PoseBall/g[5]",
+          "from_t": 1.0,
+          "to_t": 6.0,
+          "step_t": 1.0,
+          "value": 0.1,
+          "initial": 0.0,
+          "settle_abs": 0.002,
+          "max_overshoot": 0.03,
+          "max_settling_time": 1.5,
+          "note": "x 0 -> 0.10 m along a 1 s quintic: the feed-forward tilts the plate ahead of the ball, so it settles faster (about 0.9 s) than after the hard step (about 2 s)"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "Contact/slip",
+          "from_t": 0.1,
+          "value": 0.005,
+          "note": "no hop at the return step (the hard-step model slips up to about 1 cm/s there)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "ball-and-plate-track": {
+      "checks": [
+        {
+          "kind": "rms_difference",
+          "signal": "PoseBall/g[5]",
+          "signal_b": "Task/xd",
+          "from_t": 10.0,
+          "to_t": 30.0,
+          "value": 0.004,
+          "note": "figure-8 tracking error, x axis, after the growth; design.py (linear, no rolling resistance): 3.34e-04 m combined; the rig's rolling resistance (0.002) needs 0.014 m/s^2 the feed-forward does not know: about 2 mm per axis"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "PoseBall/g[6]",
+          "signal_b": "Task/yd",
+          "from_t": 10.0,
+          "to_t": 30.0,
+          "value": 0.004,
+          "note": "figure-8 tracking error, y axis, after the growth; design.py (linear, no rolling resistance): 3.34e-04 m combined; the rig's rolling resistance (0.002) needs 0.014 m/s^2 the feed-forward does not know: about 2 mm per axis"
+        },
+        {
+          "kind": "max_abs_le",
+          "signal": "ServoX/V",
+          "value": 10.0,
+          "note": "voltage limit"
+        },
+        {
+          "kind": "scene_bindings",
+          "fk": [
+            {
+              "link": "crank_x_link",
+              "point": [
+                0.0254,
+                0,
+                0
+              ],
+              "signals": [
+                "Viz/tipx[1]",
+                "Viz/tipx[2]",
+                "Viz/tipx[3]"
+              ],
+              "tol": 1e-09
+            },
+            {
+              "link": "crank_y_link",
+              "point": [
+                0,
+                0.0254,
+                0
+              ],
+              "signals": [
+                "Viz/tipy[1]",
+                "Viz/tipy[2]",
+                "Viz/tipy[3]"
+              ],
+              "tol": 1e-09
+            }
+          ],
+          "note": "the crank joints of the scene turn the crank tips where RigViz puts the rod ends (shafts at -0.1854 m)"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "ball-and-plate-track-circle": {
+      "model": "ball-and-plate-track",
+      "overrides": {
+        "Task/task": 2
+      },
+      "checks": [
+        {
+          "kind": "rms_difference",
+          "signal": "PoseBall/g[5]",
+          "signal_b": "Task/xd",
+          "from_t": 10.0,
+          "to_t": 30.0,
+          "value": 0.004,
+          "note": "circle tracking error, x axis, after the growth; rig about 1.9 mm per axis"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "PoseBall/g[6]",
+          "signal_b": "Task/yd",
+          "from_t": 10.0,
+          "to_t": 30.0,
+          "value": 0.004,
+          "note": "circle tracking error, y axis, after the growth; rig about 1.9 mm per axis"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "ball-and-plate-track-circle-crr0": {
+      "model": "ball-and-plate-track",
+      "overrides": {
+        "Task/task": 2,
+        "Contact/crr": 0.0
+      },
+      "checks": [
+        {
+          "kind": "rms_difference",
+          "signal": "PoseBall/g[5]",
+          "signal_b": "Task/xd",
+          "from_t": 10.0,
+          "to_t": 30.0,
+          "value": 0.0003,
+          "note": "circle tracking error without rolling resistance, x axis, after the growth; design.py: 2.04e-04 m combined; the rig without rolling resistance about 2.0e-4 m per axis"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "PoseBall/g[6]",
+          "signal_b": "Task/yd",
+          "from_t": 10.0,
+          "to_t": 30.0,
+          "value": 0.0003,
+          "note": "circle tracking error without rolling resistance, y axis, after the growth; design.py: 2.04e-04 m combined; the rig without rolling resistance about 2.0e-4 m per axis"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    },
+    "ball-and-plate-pid-circle": {
+      "model": "ball-and-plate-pid",
+      "overrides": {
+        "Task/task": 2,
+        "Push/t_push": 1000000.0
+      },
+      "settings": {
+        "t_end": 30.0,
+        "output": {
+          "points": 3001
+        }
+      },
+      "checks": [
+        {
+          "kind": "rms_difference",
+          "signal": "PoseBall/g[5]",
+          "signal_b": "Task/xd",
+          "from_t": 10.0,
+          "to_t": 30.0,
+          "value": 0.05,
+          "note": "PID circle tracking error (no feed-forward), x axis, after the growth; design.py: 0.0542 m combined (0.0384 per axis); the PID has no feed-forward, so it lags the moving reference"
+        },
+        {
+          "kind": "rms_difference",
+          "signal": "PoseBall/g[6]",
+          "signal_b": "Task/yd",
+          "from_t": 10.0,
+          "to_t": 30.0,
+          "value": 0.05,
+          "note": "PID circle tracking error (no feed-forward), y axis, after the growth; design.py: 0.0542 m combined (0.0384 per axis); the PID has no feed-forward, so it lags the moving reference"
+        },
+        {
+          "kind": "no_diagnostics",
+          "codes": [
+            "E101",
+            "E102",
+            "E103",
+            "E106",
+            "E901",
+            "W201",
+            "W202",
+            "W205",
+            "W206"
+          ],
+          "note": "no solver failure, causal conflict, derivative-causal store, algebraic loop or event-limit stop"
+        }
+      ]
+    }
+  }
+}

@@ -203,6 +203,21 @@ on rolling resistance with the energy book, rolling down a terrain plane),
 `test/golden/contact/test_TerrainSurface.jl`; C export: `test/test_export_tyre.jl`. The
 `cars` example builds a race car and a buggy on them.
 
+`RollingSphere` is a contact between two bodies: a sphere (radius `r`, centred at the origin of
+body `b`) against a finite face fixed in body `a` (origin `o`, normal `n`, tangent `t` in body
+a's frame, half-widths `w1`, `w2` with the edge gate of `MovingPlaneContact`). Both bodies bond
+straight to the element (`a`, `b`, as for `RollingDisk`), whose port efforts are the contact
+wrenches on the bodies, so the face body feels the ball and every term of the moving face
+(rotation rate, angular acceleration) enters the ball's motion. Geometry: `h = n.(c - O)`,
+`delta = r - h`, contact point `P = c - r n`; the relative velocity of the two material points
+at `P` gives `dh/dt = n.u` exactly, so the Hunt-Crossley spring does exactly the work `d(Ec)/dt`.
+Friction is isotropic regularised Coulomb on the slip (rolling without slip up to the creep
+`vs F_t / (mu f_n)`); the rolling resistance is a regularised moment `crr r f_n` against the
+relative rolling rate, plus an optional spin damping `bsp`. Power: `a.P + b.P = dEc/dt + Pd`.
+Golden test: `test/golden/contact/test_RollingSphere.jl` (5/7 g sin(alpha) on an inclined
+face with the energy book, rolling resistance, the ball on a turntable circling at 2/7 of the
+table rate with the angular momentum balance of the table drive). Example: `examples/ball-and-plate`.
+
 ## 7. Switched pivot and impact map (v1 limits)
 
 `SwitchedPivot3D`, `ImpactInertia3D` and `ImpactBody3D` (`src/mech/impulse.jl`) model a body

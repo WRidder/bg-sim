@@ -427,6 +427,15 @@ export const MULTIBOND_GLYPHS: Record<string, Glyph> = {
       <path d="M5 21.5h9M7.2 19.3L5 21.5l2.2 2.2M11.8 19.3l2.2 2.2-2.2 2.2" />
     </>
   ),
+  "ct-rolling-sphere": () => (
+    <>
+      <path d="M2 19.5l20-5" />
+      <path d="M4 22l2-3M8 21l2-3M12 20l2-3M16 19l2-3M20 18l2-3" opacity="0.55" />
+      <circle cx="11" cy="10.5" r="6" />
+      <path d="M5.4 12.6c3.4 1.6 7.8 1.4 11.2-.8" />
+      <path d="M17.5 4.5a8.5 8.5 0 0 1 2.5 4M20 8.5l.2-2.6M20 8.5l-2.4-.9" />
+    </>
+  ),
   "ct-rolling-disk": () => (
     <>
       <path d="M2 21h20" />

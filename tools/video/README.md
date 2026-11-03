@@ -90,6 +90,10 @@ Files: `lib.mjs` (helpers), `theme.mjs` (look: dark background, amber accent, Se
 - `capture-beams.mjs <out-dir>`: stills of the `cantilever-sections` example: the settled static bend (x10 and true scale), a
   close-up at the wall, the step peak, the dashboard with load "1 · sine" selected and run, and two opposite crests of the
   round bar's resonance.
+- `capture-ball-and-plate.mjs <out-dir> [--fps 30] [--seconds 30] [--zoom 6] [--zoom-at 0.5,0.5] [--orbit 0,0] [--stills] [--compose-only]`:
+  the `ball-and-plate-track` model (LQR with a Kalman filter tracking the figure-8), the dashboard next to the detached 3D
+  viewer, in real time (frame k at t = k/fps). The run happens off camera. Writes `ball-and-plate.mp4`, `camera-fit.png`,
+  `camera.png` and the end stills; the 30 s video uses `--zoom 2 --orbit 0,-30`.
 
 ## Recorded showcases (Playwright `recordVideo`, 25 fps)
 

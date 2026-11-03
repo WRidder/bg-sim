@@ -30,11 +30,13 @@ The **Contact** category holds compliant contacts for 3D rigid bodies: a Hunt-Cr
 | --- | --- | --- | --- |
 | `ContactPoint` | `p` (spatial), inputs `g`, `o`, `fr` (from a `ContactSurface`) | a point of a body against a fixed plane | `k`, `xref`, `c`, `mu`, `vs` |
 | `MovingPlaneContact` | `p` (spatial), `j` (translation), inputs `g`, `pc`, `vc`, `xs` | a sphere of a body against a finite rectangular face that moves: a carrier translates it (`pc`, `vc`) and the port `j` slides it along an axis, for a gripper jaw pad or a pusher | `r`, face `ox..oz`, normal `nx..nz`, tangent `tx..tz`, slide axis `ax..az`, half-widths `w1`, `w2`, `we`, `k`, `xref`, `c`, `mu`, `vs` |
+| `RollingSphere` | `a`, `b` (spatial), inputs `ga`, `gb` | a ball (body `b`) rolling on a finite face fixed in another body `a` that may tilt, turn and move (a ball-and-plate plate, a turntable); the reaction goes into both bodies | `r`, face `ox..oz`, normal `nx..nz`, tangent `tx..tz`, half-widths `w1`, `w2`, `we`, `k`, `xref`, `c`, `mu`, `vs`, rolling resistance `crr`, spin damping `bsp` |
 
 Notes:
 
 - **Moving face.** The face origin is `pc + o + a·xs`: connect the jaw position (for example a `PositionSensor` on the jaw) to `xs`. The face pushes back on the jaw with `j.e = F·a`, and `Pc` is the power the carrier puts in. Outside the half-widths the normal force fades out over `we`, so a part can slide off the face and fall.
 - **Holding.** Below the friction limit a held part creeps at `s = vs·atanh(F_t/(mu·f_n))`; the output `util = F_t/(mu·f_n)` is the share of the friction limit in use (1 = slipping). `examples/gripper` sizes a parallel gripper with it.
+- **Rolling on a moving body.** Bond both bodies' ports straight to `RollingSphere` (`a` the face body, `b` the ball) and feed it both world poses. The ball rolls without slip up to a tiny creep, `slip` shows the residual; `crr` adds a rolling-resistance moment `crr·r·f_n`, so a ball rests on a tilt up to about `crr` rad. `u1`, `u2` are the ball's position on the face, `Ec` and `Pd` the stored and dissipated energy. `examples/ball-and-plate` balances a ball on a servo-tilted plate with it.
 
 ## Electrical
 

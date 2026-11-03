@@ -1317,6 +1317,10 @@ const BLOCK_METADATA = Dict{String,NamedTuple{(:description, :icon),Tuple{String
         description = "Compliant contact of a sphere (or point) on a spatial body against a finite face that moves: carried in translation by a prescribed carrier and slid along an axis by a Translation port (a gripper jaw, a pusher). ContactPoint's Hunt-Crossley normal law with an edge gate, isotropic regularised Coulomb friction, the wrench on the body and the slide force on the port.",
         icon = "ct-moving-plane-contact",
     ),
+    "stdlib:contact/RollingSphere" => (
+        description = "Compliant rolling contact between two spatial bodies: a sphere on body b against a finite face fixed in body a (a tilting plate, a turntable), with the reaction on both bodies. Hunt-Crossley normal law with an edge gate, isotropic regularised Coulomb friction (rolling without slip), a rolling-resistance moment and optional spin damping.",
+        icon = "ct-rolling-sphere",
+    ),
     "stdlib:contact/RollingDisk" => (
         description = "Compliant rolling contact of a wheel (disc, optional toroidal crown) on a ContactSurface plane: the contact point is recomputed as the lowest rim point, smooth Hunt-Crossley normal force, isotropic regularised Coulomb friction on the slip of the rim material point, optional drilling damping; slip, forces, contact point and dissipated power as outputs.",
         icon = "ct-rolling-disk",

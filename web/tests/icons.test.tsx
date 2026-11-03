@@ -123,6 +123,7 @@ describe("block icons", () => {
       "ct-impact-body-3d",
       "ct-impact-inertia-3d",
       "ct-moving-plane-contact",
+      "ct-rolling-sphere",
       "ct-switched-pivot-3d",
     ];
     const ids = new Set(svgIconIds());
