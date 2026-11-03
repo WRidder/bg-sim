@@ -161,10 +161,28 @@ COMPONENTS = [  # (name, block, position key, outputs that drive the wrench)
 ]
 
 
-def airframe(start: dict, rpm_mode="rpm_mode", ge="0.0", engine=False, wind=False, smooth="0.0") -> Diagram:
+# The landing gear of a109-sim (ours; the report has no gear): the tyre contact points of the
+# tricycle gear in the body frame (x forward, y left, z up, from the CG), the bottoms of the
+# scene's wheels (nose wheel 1.9 m ahead, main wheels 0.8 m behind and 0.95 m to each side, the
+# wheel centres 1.12 m below the CG, radius 0.2 m).
+GEAR = {"nose": (1.9, 0.0, -1.32), "left": (-0.8, 0.95, -1.32), "right": (-0.8, -0.95, -1.32)}
+# ContactPoint (Hunt-Crossley, Hertz exponent 3/2): tyre plus strut. k xref = 8.4 kN at the
+# reference deflection xref = 4 cm (about a main wheel's static load); c damps about 0.3 of
+# critical in heave. The friction (mu 0.7, regularised over vs = 2 cm/s) holds the parked
+# helicopter: the wheels are braked and the nose wheel locked, so the gear acts as a skid on the
+# pad (it creeps at a fraction of vs under the rotor's torque). eps = 1 mm: the smooth positive
+# part of the penetration, eps^2/(2 (r - d)), loses its digits in contact when eps << d (the
+# integrator then sees noise); 1 mm keeps it exact to ~1e-12 and leaves ~1e-6 N at 0.5 m.
+GEAR_CONTACT = {"k": 2.1e5, "xref": 0.04, "c": 1.5, "mu": 0.7, "vs": 0.02, "bt": 0.0, "eps": 1e-3, "feps": 1e-6}
+WOW_LOAD = 0.2       # fraction of the weight on the gear at which weight-on-wheels is complete
+
+
+def airframe(start: dict, rpm_mode="rpm_mode", ge="0.0", engine=False, wind=False, smooth="0.0", gear=False) -> Diagram:
     """One A109: inputs th0, B1, A1, thtr (deg; and `on`, the engines, with engine=True; wn, we, wd
     with wind=True). `start` holds the pose, momentum, flapping, rotor speed and governor
-    integrator start values (numbers or expressions over globals)."""
+    integrator start values (numbers or expressions over globals). gear=True adds the landing
+    gear: three ContactPoints on a ContactSurface (the ground, z = 0) and the outputs fn_nose,
+    fn_left, fn_right (the wheel loads), gear_load (their sum) and wow (weight on wheels, 0 .. 1)."""
     d = Diagram()
     q_bp = SI["q_bp"]
     pose, P = start["pose"], start["P"]
@@ -314,8 +332,48 @@ def airframe(start: dict, rpm_mode="rpm_mode", ge="0.0", engine=False, wind=Fals
            "speed + airframe yaw rate (ShaftAxis, the reaction torque on the airframe); the gearbox "
            "1-junction with the engine torque (Governor), the transmission losses and the tail-rotor gear "
            "(TF) to the tail-rotor junction and its torque.", x0 - 500, y0 - 120, 900, 70, "blue")
+    if gear:
+        x0, y0 = 1150, 1300
+        d.node("Ground", "stdlib:contact/ContactSurface", x0 - 300, y0 + 500)
+        d.node("GearMux", "stdlib:continuous/Mux3", x0 + 500, y0 + 500)
+        d.node("GearLoad", "stdlib:continuous/Sum", x0 + 650, y0 + 500, params={"signs": "[1.0, 1.0, 1.0]"},
+               constants={"N": 3})
+        for k, (leg, r) in enumerate(GEAR.items()):
+            y = y0 + 160 * k
+            d.node(f"Wheel_{leg}", "stdlib:spatial/LocalPose3D", x0 - 300, y,
+                   params={"x": num(r[0]), "y": num(r[1]), "z": num(r[2])})
+            d.node(f"WheelPose_{leg}", "stdlib:multibond/ComposePose3D", x0 - 100, y)
+            d.sig("Air", "gB", f"WheelPose_{leg}", "gp")
+            d.sig(f"Wheel_{leg}", "g", f"WheelPose_{leg}", "gl")
+            d.node(f"Tyre_{leg}", "stdlib:contact/ContactPoint", x0 + 100, y,
+                   params={name: num(v) for name, v in GEAR_CONTACT.items()})
+            d.sig(f"WheelPose_{leg}", "g", f"Tyre_{leg}", "g")
+            d.sig("Ground", "o", f"Tyre_{leg}", "o")
+            d.sig("Ground", "fr", f"Tyre_{leg}", "fr")
+            d.node(f"MTyre_{leg}", "stdlib:multibond/FixedTransform3DNeutral", x0 + 300, y,
+                   params={"qw": num(q_bp[0]), "qx": num(q_bp[1]), "qy": num(q_bp[2]), "qz": num(q_bp[3]),
+                           "x": num(-r[0]), "y": num(-r[1]), "z": num(-r[2])})
+            d.bond("Body", "p", f"MTyre_{leg}", "b")   # towards the contact (as stdlib ContactPoint expects)
+            d.bond(f"MTyre_{leg}", "a", f"Tyre_{leg}", "p")
+            d.sig(f"Tyre_{leg}", "f_n", "GearMux", f"u{k + 1}")
+        d.sig("GearMux", "y", "GearLoad", "u")
+        d.node("WowGain", "stdlib:continuous/Gain", x0 + 800, y0 + 500,
+               params={"k": num(1.0 / (WOW_LOAD * SI["m"] * SI["g0"]))})
+        d.node("Wow", "stdlib:continuous/Saturation", x0 + 950, y0 + 500, params={"lower": "0.0", "upper": "1.0"})
+        d.sig("GearLoad", "y", "WowGain", "u")
+        d.sig("WowGain", "y", "Wow", "u")
+        d.note("**Landing gear** (a109-sim, ours). Each wheel is a ContactPoint (Hunt-Crossley normal force, "
+               "regularised Coulomb friction: braked wheels) on the ground plane (ContactSurface, z = 0), mounted at "
+               "its point through a FixedTransform3DNeutral like the component sources; LocalPose3D and ComposePose3D "
+               "give its pose. Weight on wheels: the gear load over a fifth of the weight, saturated to 0 .. 1 "
+               "(the SCAS fades out on the ground).", x0 - 300, y0 - 120, 900, 60, "blue")
     for name, node, port in AIRFRAME_OUTPUTS:
         d.port(name, "output", node, port)
+    if gear:
+        for leg in GEAR:
+            d.port(f"fn_{leg}", "output", f"Tyre_{leg}", "f_n", "N")
+        d.port("gear_load", "output", "GearLoad", "y", "N")
+        d.port("wow", "output", "Wow", "y")
     d.port("pose", "output", "Air", "gB", None, size=7)
     d.port("a1r", "output", "MR", "a1r")
     d.port("b1r", "output", "MR", "b1r")
@@ -569,7 +627,17 @@ SIM_OUTPUT_SOURCES = [  # (marker, node, port)
     ("rotor_pct", "Heli", "nr"), ("power_hp", "Heli", "power_hp"), ("thrust_n", "Heli", "thrust"),
     ("a1_deg", "Heli", "a1"), ("b1_deg", "Heli", "b1"),
     ("theta0_deg", "Rig", "th0"), ("B1_deg", "Scas", "B1"), ("A1_deg", "Scas", "A1"), ("theta_tr_deg", "Scas", "thtr"),
+    ("fn_nose", "Heli", "fn_nose"), ("fn_left", "Heli", "fn_left"), ("fn_right", "Heli", "fn_right"),
+    ("wow", "Heli", "wow"),
 ]
+# the SCAS switch: an input marker after the global `scas` (in bg-sim the global, in the FMU the host's switch)
+SIM_SWITCH = ("scas", "SCAS switch, 1 on (engaged in the air), 0 off (the rigging's angles direct)")
+# The start state (globals, so that an FMU host can set them before initialisation: the hover at
+# 15 m of design/heli_sim.py by default, or the helicopter parked on its gear): the pose of the
+# principal frame (Free3D), the body momentum in it (angular, then linear), the flapping (rad),
+# the rotor's angular momentum (N m s) and the governor's integrator (N m).
+SIM_START = ("qw0", "qx0", "qy0", "qz0", "x0", "y0", "z0", "Pwx0", "Pwy0", "Pwz0", "Pvx0", "Pvy0", "Pvz0",
+             "a10", "b10", "Lrot0", "xi0")
 SIM_GLOBALS = [
     ("scas", "1.0", "1: SCAS on (attitude command / hold, yaw-rate command, turn coordination); 0: sticks direct"),
     ("demo", "1.0", "1: the demonstration pilot flies the schedule; 0: hold the hover sticks"),
@@ -583,6 +651,22 @@ SIM_GLOBALS = [
 ]
 
 
+def sim_start_globals() -> list[dict]:
+    """The start-state globals at the hover of design/heli_sim.py (SIM_START)."""
+    st = SIM["start"]
+    pose, P = st["pose"], st["P"]
+    vals = [pose["qw"], pose["qx"], pose["qy"], pose["qz"], pose["px"], pose["py"], pose["pz"], *P,
+            st["a1"], st["b1"], SI["drive"]["J"] * st["om"], st["xi"]]
+    desc = ["start pose: quaternion of the principal frame (w)", "start pose quaternion (x)", "start pose quaternion (y)",
+            "start pose quaternion (z)", "start position north (m)", "start position west (m)", "start height of the CG (m)",
+            "start angular momentum, principal x (N m s)", "start angular momentum, principal y (N m s)",
+            "start angular momentum, principal z (N m s)", "start linear momentum, principal x (kg m/s)",
+            "start linear momentum, principal y (kg m/s)", "start linear momentum, principal z (kg m/s)",
+            "start longitudinal flapping a1 (rad)", "start lateral flapping b1 (rad)",
+            "start angular momentum of the rotor and drivetrain (N m s)", "start governor integrator (N m)"]
+    return [g(n, num(v), None, dsc) for n, v, dsc in zip(SIM_START, vals, desc)]
+
+
 def lookup1d(d: Diagram, name, xs, ys, x, y):
     return d.node(name, "stdlib:continuous/Lookup1D", x, y, params={"x": vec(xs), "table": vec(ys)},
                   constants={"N": len(xs)})
@@ -590,9 +674,10 @@ def lookup1d(d: Diagram, name, xs, ys, x, y):
 
 def model_sim():
     d = Diagram()
-    st = SIM["start"]
-    start = {"pose": st["pose"], "P": st["P"], "a1": st["a1"], "b1": st["b1"], "om": st["om"], "xi": st["xi"]}
-    airframe(start, rpm_mode="1.0", ge="1.0", wind=True, smooth="smooth").subsystem(d, "Heli", 1500, 300)
+    pose_keys = ("qw", "qx", "qy", "qz", "px", "py", "pz")
+    start = {"pose": dict(zip(pose_keys, SIM_START[:7])), "P": list(SIM_START[7:13]), "a1": "a10", "b1": "b10",
+             "om_P": "Lrot0", "xi": "xi0"}
+    airframe(start, rpm_mode="1.0", ge="1.0", wind=True, smooth="smooth", gear=True).subsystem(d, "Heli", 1500, 300)
     # ---- the schedule of the demonstration (time -> speed, height, bank)
     sched = SIM["schedule"]
     d.node("Clock", "stdlib:sources/Time", 40, 40)
@@ -643,11 +728,16 @@ def model_sim():
         d.sig(marker, "y", "Rig", port)
     gains = SIM["gains"]
     d.node("Scas", "project:Scas", 1150, 40, params={
-        "scas": "scas", "k_th_stick": num(SIM["stick"]["theta"]), "k_ph_stick": num(SIM["stick"]["phi"]),
+        "k_th_stick": num(SIM["stick"]["theta"]), "k_ph_stick": num(SIM["stick"]["phi"]),
         "k_r_stick": num(SIM["stick"]["r"]), "v_tc1": num(SIM["v_tc"][0]), "v_tc2": num(SIM["v_tc"][1]),
         "g0": num(SI["g0"]), **{k: num(v) for k, v in gains.items()}})
     for marker, port in (("cyclic_lon", "lon"), ("cyclic_lat", "lat"), ("pedals", "ped")):
         d.sig(marker, "y", "Scas", port)
+    d.node("ScasSw", "stdlib:sources/Constant", 900, 520, params={"value": "scas"})
+    d.node(SIM_SWITCH[0], "stdlib:converters/ExportInputPass", 1000, 520, params={"value": "1.0"})
+    d.sig("ScasSw", "y", SIM_SWITCH[0], "u")
+    d.sig(SIM_SWITCH[0], "y", "Scas", "on")
+    d.sig("Heli", "wow", "Scas", "wow")
     for src, port in (("u", "u"), ("theta_deg", "theta"), ("phi_deg", "phi"), ("p_deg", "p"), ("q_deg", "q"),
                       ("r_deg", "r")):
         d.sig("Heli", src, "Scas", port)
@@ -667,12 +757,12 @@ def model_sim():
     d.node("East", "stdlib:continuous/Gain", 1900, 40, params={"k": "-1.0"})
     d.sig("Heli", "y", "East", "u")
     for k, (marker, node, port) in enumerate(SIM_OUTPUT_SOURCES):
-        d.node(marker, "stdlib:converters/ExportOutput", 2150 + 200 * (k // 13), 40 + 60 * (k % 13))
+        d.node(marker, "stdlib:converters/ExportOutput", 2150 + 200 * (k // 15), 40 + 60 * (k % 15))
         d.sig(node, port, marker, "u")
     bindings = view(d, ["Heli"], [(0.0, 0.0)], [0.0], 0.0, 1900, 900)
     scene = write_scene("a109-sim", [("heli", "red")],
-                        "  a109-sim: the flyable A109 (red, framed). The floor is the ground (sea level); the gear\n"
-                        "  stands 1.3 m below the CG.", [(0.0, 0.0)], -SIM["alt"] + VIEW_LIFT)
+                        "  a109-sim: the flyable A109 (red, framed). The floor is the ground (sea level); the wheels\n"
+                        "  touch it 1.32 m below the CG (the gear's ContactPoints).", [(0.0, 0.0)], -SIM["alt"] + VIEW_LIFT)
     plots = [
         {"id": "p1", "title": "Forward speed and command (m/s)", "signals": ["Heli/Air/u", "UCmd/y"]},
         {"id": "p2", "title": "Height and command (m)", "signals": ["Heli/Air/h", "HCmd/y"]},
@@ -681,8 +771,9 @@ def model_sim():
         {"id": "p5", "title": "Sticks", "signals": [f"{m}/y" for m, *_ in SIM_INPUTS]},
         {"id": "p6", "title": "Blade angles (deg)", "signals": ["Rig/th0", "Scas/B1", "Scas/A1", "Scas/thtr"]},
         {"id": "p7", "title": "Rotor speed (percent) and power (hp)", "signals": ["Heli/Gov/nr", "Heli/Gov/power_hp"]},
+        {"id": "p8", "title": "Wheel loads (N)", "signals": ["Heli/Tyre_nose/f_n", "Heli/Tyre_left/f_n", "Heli/Tyre_right/f_n"]},
     ]
-    params = [g(n, v, None, desc) for n, v, desc in SIM_GLOBALS]
+    params = [g(n, v, None, desc) for n, v, desc in SIM_GLOBALS] + sim_start_globals()
     return model_doc(
         "a109-sim",
         "The flyable A109: Heffley & Mnich's model with the drivetrain bond graph, ground effect, a switchable SCAS "
@@ -828,8 +919,9 @@ def expected() -> dict:
     export = {"inputs": {"collective": {"min": SIM["hover_sticks"][0] - 0.02, "max": SIM["hover_sticks"][0] + 0.02},
                          "cyclic_lon": {"min": -0.05, "max": 0.05}, "cyclic_lat": {"min": -0.05, "max": 0.05},
                          "pedals": {"min": -0.05, "max": 0.05}, "wind_n": {"min": -2.0, "max": 2.0},
-                         "wind_e": {"min": -2.0, "max": 2.0}, "wind_d": {"min": -1.0, "max": 1.0}},
-              "interface": {"inputs": [m for m, *_ in SIM_INPUTS] + [m for m, *_ in SIM_WIND],
+                         "wind_e": {"min": -2.0, "max": 2.0}, "wind_d": {"min": -1.0, "max": 1.0},
+                         SIM_SWITCH[0]: {"min": 1.0, "max": 1.0}},
+              "interface": {"inputs": [m for m, *_ in SIM_INPUTS] + [m for m, *_ in SIM_WIND] + [SIM_SWITCH[0]],
                             "outputs": [m for m, *_ in SIM_OUTPUT_SOURCES]},
               "note": "the FMU interface of a109-sim: the host flies the sticks (the DemoPilot is then bypassed by the markers)"}
     entries["a109-sim"] = {"checks": checks_sim, "export": export}
@@ -850,6 +942,7 @@ def expected() -> dict:
         entries[f"a109-sim-{lab}"] = {"model": "a109-sim",
                                       "settings": {"t_end": t_end, "output": {"points": int(round(t_end / 0.05)) + 1}},
                                       "overrides": ov, "checks": cks}
+    entries.update(ground_cases())
     return {"project": "a109",
             "description": "Agusta A109 (Heffley & Mnich, NASA CR-177476, Appendix D): open loop with the drivetrain bond "
                            "graph and the constant-RPM switch, and the flyable a109-sim (SCAS, demonstration pilot, FMU "
@@ -858,6 +951,61 @@ def expected() -> dict:
 
 
 DESIGN_SIM_TIMES = [float(t) for t in SIM["at"]["u"]]
+
+
+def parked_start() -> dict:
+    """Overrides of the start globals: the helicopter parked on its gear, level, heading north. The
+    CG height is the gear's (1.32 m) less the static deflection of a wheel under a third of the
+    weight (the contact law k x (x/xref)^(1/2)); the rotor at 100 %; the governor's integrator at
+    a rough flat-pitch torque (the governor settles it within a second)."""
+    weight = SI["m"] * SI["g0"]
+    k, xref = GEAR_CONTACT["k"], GEAR_CONTACT["xref"]
+    delta = (weight / 3.0 * math.sqrt(xref) / k) ** (2.0 / 3.0)
+    q = SI["q_bp"]      # the principal frame of a level body (B = P turned by eps)
+    return {"global:qw0": q[0], "global:qx0": q[1], "global:qy0": q[2], "global:qz0": q[3],
+            "global:z0": -GEAR["nose"][2] - delta, "global:a10": 0.0, "global:b10": 0.0, "global:xi0": 6000.0}
+
+
+def ground_cases() -> dict:
+    """a109-sim on its landing gear (demo = 0, from the parked start): collective full down, it
+    stays parked; the hover collective + 3 %, it lifts off and the SCAS takes over."""
+    weight = SI["m"] * SI["g0"]
+    th0, ph0 = SIM["ff"]["theta"][0], SIM["ff"]["phi"][0]
+    base = {"global:demo": 0.0, "global:t_inp": 0.0, **parked_start()}
+    parked = [
+        NO_DIAG,
+        {"kind": "min_ge", "signal": "Heli/Air/h", "value": 1.25,
+         "note": "parked, collective full down: the CG stays at the gear's height less the tyre deflection (1.28 m)"},
+        {"kind": "max_abs_le", "signal": "Heli/Air/h", "value": 1.30},
+        {"kind": "max_abs_le", "signal": "Heli/Air/theta_deg", "value": 0.5,
+         "note": "level on its three wheels (all three contact points 1.32 m below the CG)"},
+        {"kind": "max_abs_le", "signal": "Heli/Air/phi_deg", "value": 0.5},
+        {"kind": "max_abs_le", "signal": "Heli/Air/u", "from_t": 1.0, "value": 0.02,
+         "note": "the tyres' friction holds it against the flat-pitch rotor and the tail rotor (no brakes)"},
+        {"kind": "max_abs_le", "signal": "Heli/Air/v", "from_t": 1.0, "value": 0.02},
+        {"kind": "max_abs_le", "signal": "Heli/Air/r_deg", "from_t": 1.0, "value": 0.3,
+         "note": "the regularised friction creeps under the rotor's torque: about 0.13 deg/s"},
+        {"kind": "min_ge", "signal": "Heli/GearLoad/y", "from_t": 1.0, "value": 0.95 * weight,
+         "note": f"the gear carries the weight ({weight:.0f} N; the flat-pitch rotor pushes down a little)"},
+        {"kind": "min_ge", "signal": "Heli/Wow/y", "value": 0.999, "note": "weight on wheels: the SCAS is out"},
+        _cur("Heli/Gov/nr", 100.0, 10.0, 0.01, "the governor holds 100 % at flat pitch"),
+    ]
+    liftoff = [
+        NO_DIAG,
+        {"kind": "max_abs_le", "signal": "Heli/Wow/y", "from_t": 1.0, "value": 1e-3,
+         "note": "the hover collective + 3 %: it lifts off within half a second; weight off wheels, the SCAS engages"},
+        {"kind": "min_ge", "signal": "Heli/Air/h", "from_t": 10.0, "value": 15.0, "note": "and climbs"},
+        _cur("Heli/Air/theta_deg", th0, 20.0, 0.1, "the SCAS holds the hover attitude of its feedforward table "
+             "(design/heli_sim.py's trim at 15 m)"),
+        _cur("Heli/Air/phi_deg", ph0, 20.0, 0.1),
+        _cur("Heli/Gov/nr", 100.0, 20.0, 0.05),
+    ]
+    return {
+        "a109-sim-parked": {"model": "a109-sim", "settings": {"t_end": 10.0, "output": {"points": 201}},
+                            "overrides": {**base, "global:coll_off": -SIM["hover_sticks"][0]}, "checks": parked},
+        "a109-sim-liftoff": {"model": "a109-sim", "settings": {"t_end": 20.0, "output": {"points": 401}},
+                             "overrides": {**base, "global:coll_off": 0.03}, "checks": liftoff},
+    }
 
 
 def main() -> int:

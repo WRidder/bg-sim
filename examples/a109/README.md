@@ -19,7 +19,7 @@ line by line) and an SI mirror of the bg-sim blocks (`heli_si.py`).
 | model | what it shows |
 | --- | --- |
 | `a109-open-loop` | Four A109s released from trim (sea level). **Hover**: the trim holds. **Coll**: a +0.5 deg collective step in hover. The main-rotor torque grows, the reaction yaws the nose right (34 deg/s after 10 s) and the climb starts (13 m in 10 s); the rotor droops 0.25 % and the governor recovers it. **Lon**: a 0.5 deg forward cyclic pulse starts the unstable hover phugoid (+0.21 +- 0.60j 1/s). **Fwd**: a 1 deg pedal pulse at 100 kt shows the yaw-roll coupling of the Dutch roll. A dashboard switch sets the rotor speed the aerodynamics see: the drivetrain's, or the report's constant 385 rpm. |
-| `a109-sim` | The flyable A109 at 15 m with ground effect: Rigging (stick percent to blade angle), a switchable SCAS (attitude command and hold in pitch and roll, yaw-rate command and heading hold, turn coordination) and a demonstration pilot. The 120 s demonstration: hover, transition and climb to 75 kt and about 45 m, a coordinated 20 deg bank turn through 146 deg, deceleration and hover. ExportInputPass markers (collective, cyclic_lon, cyclic_lat, pedals, wind_n/e/d) and ExportOutput markers form the FMU interface. Sliders: demo, SCAS, stick offsets. |
+| `a109-sim` | The flyable A109 at 15 m with ground effect, on a tricycle gear of three stdlib `ContactPoint`s: Rigging (stick percent to blade angle), a switchable SCAS (attitude command and hold in pitch and roll, yaw-rate command and heading hold, turn coordination) that fades out with the weight on the wheels, and a demonstration pilot. The 120 s demonstration: hover, transition and climb to 75 kt and about 45 m, a coordinated 20 deg bank turn through 146 deg, deceleration and hover. ExportInputPass markers (collective, cyclic_lon, cyclic_lat, pedals, wind_n/e/d, scas) and ExportOutput markers form the FMU interface, and the start state is a set of globals an FMU host can set. The host app `apps/a109-sim` flies it. Sliders: demo, SCAS, stick offsets. |
 
 Both models have a 3D scene built from simple solids: cabin, nose and windscreen, tail cone and boom, engine fairing, fin and ventral fin, tailplane, mast and tricycle gear. The main-rotor disc (four blades and a faint disc) sits on the hub, tilted 6.3 deg forward with the shaft and tilted further with the flapping a1, b1. The blades and the two-blade tail rotor spin at a tenth of their real speed, so they do not strobe on video. As in the F-16 example, the view keeps the first helicopter framed by moving the world (block `HeliView`). The other helicopters of the open loop fly 16 m to the side or behind, and the floor stripes scroll with the ground track.
 
@@ -126,6 +126,13 @@ Constants the listing uses but does not print: g = 32.174 ft/s² and rho = 0.002
   * VTRANS ± ~1 m/s;
   * D.DW = 0 ± 0.3 m;
   * (wa/u)² = 0.09 ± 0.01.
+
+  The tailplane's downwash factor 2 (1 − D.DW/R), cut to 0 beyond D.DW = R, becomes the smooth
+  max x + sqrt(x² + 0.01²) of x = 1 − D.DW/R, so it is not a condition at all. Where the descent
+  velocity passes the induced velocity (w = vi, in a descent at about 40 kt), D.DW, which goes
+  with u/(vi − w), swings through ±10⁴ m within one step. A fixed-step FMU holds a condition over its step and
+  would evaluate 2 (1 − D.DW/R) ≈ −3600 there: a downwash of thousands of m/s on the tailplane for
+  one RK stage, and a pitch kick of 50 deg/s.
 
   The open-loop model and every trim against the report use the hard switches (smooth = 0).
 * **Numerics.**
@@ -270,10 +277,32 @@ The two hands-off variants are checked against scipy as well:
 * `a109-sim-bare`: SCAS off, 0.02 forward stick. The bare hover diverges to 21 deg nose-up within
   10 s.
 
+The landing gear is not in the scipy mirror (the demonstration never comes below 10 m). Two
+cases check it against its own statics:
+
+* `a109-sim-parked`: the helicopter on its gear, the collective down, the rotor at 100 %. It rests
+  level (pitch and bank within 0.5 deg) with the CG at 1.25 .. 1.30 m. The wheel loads carry the
+  weight, the weight-on-wheels signal is 1 and the drift stays below 2 cm/s.
+* `a109-sim-liftoff`: from the pad with the collective 0.03 above the hover's. The gear unloads
+  within 1 s, the SCAS engages and holds the hover attitude (within 0.1 deg of the feedforward),
+  and the helicopter climbs above 15 m by 10 s.
+
 ## The flyable model (a109-sim)
 
 * **Sticks.** Collective 0 .. 1 (0 = full down); cyclic and pedals −1 .. 1 (+ forward, + right).
   `Rigging` maps them to theta0, B1, A1 and theta_TR with the fits above.
+* **Landing gear** (`GEAR` in `build_model.py`). A nose wheel 1.9 m ahead of the CG and two main
+  wheels 0.8 m behind it, 0.95 m to each side, all 1.32 m below the CG. Each is a stdlib
+  `ContactPoint` on a flat `ContactSurface`, mounted on the body's bond by a
+  `FixedTransform3DNeutral`:
+  * the normal force is Hunt-Crossley: 2.1e5 N/m at the 4 cm reference deflection, growing as
+    the deflection to the power 1.5, damping c = 1.5 s/m;
+  * the friction is Coulomb, mu = 0.7, smoothed over 2 cm/s.
+
+  The contact's smoothing eps is 1 mm: the default 1e-6 m cancels in eps²/(2(r − d)) and makes the
+  solver noisy. The parked helicopter sinks 4 cm into its tyres. Its heading creeps about 0.1 deg/s,
+  which is the friction's smoothing. The wheel loads `fn_nose`, `fn_left` and `fn_right` and the
+  weight on wheels `wow` (the load over 20 % of the weight, saturated to 0 .. 1) are outputs.
 * **SCAS** (`scas`):
   * pitch and roll are attitude command, attitude hold: 15 deg of pitch and 30 deg of bank per
     full stick around the trim attitude;
@@ -284,8 +313,10 @@ The two hands-off variants are checked against scipy as well:
   * PI on the attitude and yaw-rate errors, rate damping.
 
   With the SCAS on, the closed-loop eigenvalues are stable from hover to 45 m/s, apart from the
-  near-neutral speed modes (+0.01 .. +0.02 1/s), which the pilot flies. `scas = 0` passes the rigging's angles
-  straight through.
+  near-neutral speed modes (+0.01 .. +0.02 1/s), which the pilot flies. The block's engagement is
+  e = on (1 − wow): the switch `on` (the global `scas`, through an `ExportInputPass` that an FMU
+  host drives) and the weight on the wheels. Off, or on the ground, the rigging's angles pass
+  straight through and the integrators stop, so the SCAS cannot wind up on the pad.
 * **DemoPilot** flies the schedule (time → forward speed, height, bank, as `Lookup1D` tables):
   * speed by pitch attitude;
   * height by collective, with a trim-collective feedforward;
@@ -295,10 +326,24 @@ The two hands-off variants are checked against scipy as well:
   `demo = 0` holds the hover sticks. The stick offsets `coll_off`, `lon_off`, `lat_off` and
   `ped_off` are added from `t_inp`.
 * **FMU interface.** The inputs collective, cyclic_lon, cyclic_lat and pedals pass DemoPilot's
-  sticks through, and wind_n/e/d pass a calm wind (`ExportInputPass`, start values = the hover).
-  The outputs are position (north, east, altitude), attitude, rates, body velocities, climb rate,
-  airspeed and knots, sideslip, rotor speed in %, power, thrust, flapping and the four blade
-  angles (`ExportOutput`). `expected.json` gives the input ranges of the export sweep.
+  sticks through, wind_n/e/d pass a calm wind and scas the SCAS switch (`ExportInputPass`, start
+  values = the hover). The outputs are:
+  * position (north, east, altitude), attitude, rates and body velocities;
+  * climb rate, airspeed and knots, sideslip;
+  * rotor speed in %, power, thrust and flapping;
+  * the four blade angles;
+  * the three wheel loads and the weight on wheels.
+
+  They are all `ExportOutput` markers. `expected.json` gives the input ranges of the export sweep.
+* **Start state.** The initial values are globals:
+  * the Free3D pose `qw0` .. `z0`;
+  * the body momentum `Pwx0` .. `Pvz0`;
+  * the flapping `a10` and `b10`;
+  * the rotor's angular momentum `Lrot0`;
+  * the governor's integrator `xi0`.
+
+  By default they are the 15 m hover of `heli_sim.py`. An FMU host sets them before
+  initialisation: `apps/a109-sim` starts on the pad, in a hover or in a trimmed approach this way.
 
 ## Limitations
 
@@ -307,6 +352,8 @@ The two hands-off variants are checked against scipy as well:
   collective and flares is not part of the example.
 * The lateral-axis disagreement with the report's fitted curves (see Validation) is left as the
   report's data gives it.
+* The ground is flat (z = 0). The gear has no oleo struts beyond the tyre contact and no brakes:
+  the parked helicopter is held by the tyres' friction.
 * The demonstration pilot is a simple outer loop:
   * the height lags its command by up to 8 m in the climb;
   * the SCAS holds the yaw rate, not the sideslip, so side velocity builds up: 4 m/s in straight

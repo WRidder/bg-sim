@@ -42,3 +42,6 @@ apps/car-sim/build/
 
 # cessna-sim host: the FMU and the start list are built locally (apps/cessna-sim/build_fmu.py)
 apps/cessna-sim/build/
+
+# a109-sim host: the FMU and the start list are built locally (apps/a109-sim/build_fmu.py)
+apps/a109-sim/build/

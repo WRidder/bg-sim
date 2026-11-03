@@ -53,6 +53,7 @@ GOV_ZETA = 0.8
 # the two sides over a narrow band; smooth = 0 is the report's model.
 SM_WAKE_W = 1.0              # m/s: dihedral magnification fades over VTRANS +- ~1 m/s
 SM_DW_W = 0.3                # m: the wake edge reaches the tailplane over ~ +-0.3 m
+SM_EPS_W = 0.01              # the tailplane's downwash factor 2 max(x, 0) is x + sqrt(x^2 + 0.01^2)
 SM_STALL_W = 0.01            # stall blend over (wa/u)^2 = 0.09 +- 0.01 (|wa/u| ~ 0.28 .. 0.32)
 
 
@@ -255,7 +256,11 @@ class Heli:
         edge = 1.0 if d_dw > 0 else 0.0
         if self.smooth:
             edge = self.smooth * 0.5 * (1 + math.tanh(d_dw / SM_DW_W)) + (1 - self.smooth) * edge
-        eps = edge * (2 * (1 - d_dw / R) if d_dw < R else 0.0)
+        cut = 2 * (1 - d_dw / R) if d_dw < R else 0.0
+        if self.smooth:     # the smooth max(x, 0) of block Tailplane: no condition at D.DW = R
+            x = 1 - d_dw / R
+            cut = self.smooth * (x + math.sqrt(x * x + SM_EPS_W ** 2)) + (1 - self.smooth) * cut
+        eps = edge * cut
         wa = w - eps * vi + s["D_HT"] * q
         vta = math.sqrt(u * u + v * v + wa * wa)
         sig = self.stall(wa, u)

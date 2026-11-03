@@ -13,7 +13,7 @@ Four helicopters are released from trim at sea level:
 * **Lon**: a 0.5 deg forward cyclic pulse in hover.
 * **Fwd**: a 1 deg pedal pulse at 100 kt.
 
-![The model canvas|900](assets/9bd620fd6a67.png)
+![The model canvas|900](assets/4df419679465.png)
 
 | block | role |
 | --- | --- |
@@ -31,6 +31,6 @@ Four helicopters are released from trim at sea level:
 
 Hover (red) is framed. Coll (white) flies 16 m to its right, Lon (blue) to its left and Fwd (yellow) behind; Fwd is shown relative to its 100 kt trimmed path. The rotor discs tilt with the flapping. The blades spin at a tenth of their real speed.
 
-![3D view at t = 6 s|600](assets/17fdc3ddc86c.png)
+![3D view at t = 6 s|600](assets/df1c14b5d950.png)
 
 Continue with [the structure](page:structure) and [the results](page:results).
