@@ -1,0 +1,14 @@
+{
+  "format": "bgsim.project",
+  "language": "0.1.0",
+  "name": "ball-and-plate",
+  "models": [
+    "ball-and-plate-free",
+    "ball-and-plate-swing",
+    "ball-and-plate-pid",
+    "ball-and-plate-lqr",
+    "ball-and-plate-track"
+  ],
+  "libraryDir": "library",
+  "scenesDir": "scenes"
+}

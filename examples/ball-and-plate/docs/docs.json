@@ -1,0 +1,12 @@
+{
+  "format": "bgsim.docs",
+  "version": 1,
+  "pages": [
+    {
+      "id": "rig",
+      "title": "The ball-and-plate rig",
+      "file": "pages/rig.md",
+      "children": []
+    }
+  ]
+}

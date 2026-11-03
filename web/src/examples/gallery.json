@@ -16,6 +16,24 @@
       "aerial-contact"
     ]
   },
+  "ball-and-plate": {
+    "title": "Ball and plate",
+    "description": "A 2 DOF ball-and-plate lab rig: a steel ball rolling on a servo-tilted plate, camera feedback, cascaded PID against LQR with a Kalman filter.",
+    "hasScene": true,
+    "models": [
+      "ball-and-plate-free",
+      "ball-and-plate-swing",
+      "ball-and-plate-pid",
+      "ball-and-plate-lqr",
+      "ball-and-plate-track"
+    ],
+    "capture": {
+      "model": "ball-and-plate-track",
+      "run": true,
+      "time": 12,
+      "zoom": 2
+    }
+  },
   "beaver": {
     "title": "DHC-2 Beaver",
     "description": "The nonlinear DHC-2 Beaver of the TU Delft FDC toolbox: validated modes and control steps, a bond-graph drivetrain and a flyable model with the FDC autopilot.",

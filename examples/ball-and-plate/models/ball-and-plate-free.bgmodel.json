@@ -1,0 +1,1054 @@
+{
+  "format": "bgsim.model",
+  "language": "0.1.0",
+  "name": "ball-and-plate-free",
+  "$comment": "Open loop: the plate locked at a 1 degree tilt about y (stiff C/R locks on the gimbal drives), the ball released at rest 0.15 m from the centre, no rolling resistance. Checked against x'' = 5/7 g sin(alpha) (solid sphere), the roll time to the centre, zero slip and energy conservation.",
+  "diagram": {
+    "nodes": [
+      {
+        "id": "n001",
+        "name": "World",
+        "block": {
+          "ref": "stdlib:multibond/GroundSpatial"
+        },
+        "position": {
+          "x": 80,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n002",
+        "name": "Mount",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 260,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.7071067811865475",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.16",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n003",
+        "name": "Gimbal",
+        "block": {
+          "ref": "stdlib:spatial/Universal3D"
+        },
+        "position": {
+          "x": 440,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "q10": "0.017453292519943295",
+          "q20": "0.0",
+          "br": "50.0",
+          "bt": "300.0"
+        },
+        "constants": {},
+        "starts": {
+          "dl": "[1.6122012173615885e-07, 9.236294588370905e-06, 0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n004",
+        "name": "Link",
+        "block": {
+          "ref": "stdlib:multibond/FixedTransform3DNeutral"
+        },
+        "position": {
+          "x": 620,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.7071067811865475",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n005",
+        "name": "Plate",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 800,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.8746499999999999",
+          "J": "[0.008931342699999997, 0.008931342699999997, 0.017857437499999997]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n006",
+        "name": "GimbalFrame",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 260,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "-0.7071067811865475",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.16"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n007",
+        "name": "PoseG",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 440,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n008",
+        "name": "LinkPose",
+        "block": {
+          "ref": "stdlib:spatial/LocalPose3D"
+        },
+        "position": {
+          "x": 620,
+          "y": 400
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "qw": "0.7071067811865476",
+          "qx": "0.7071067811865475",
+          "qy": "0.0",
+          "qz": "0.0",
+          "x": "0.0",
+          "y": "0.0",
+          "z": "0.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n009",
+        "name": "PosePlate",
+        "block": {
+          "ref": "stdlib:multibond/ComposePose3D"
+        },
+        "position": {
+          "x": 800,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n010",
+        "name": "Ball",
+        "block": {
+          "ref": "stdlib:spatial/RigidBody3D"
+        },
+        "position": {
+          "x": 1180,
+          "y": 120
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "m": "0.067011726305658",
+          "J": "[k_ball * 1.080832133583958e-05, k_ball * 1.080832133583958e-05, k_ball * 1.080832133583958e-05]",
+          "g0": "9.81"
+        },
+        "constants": {},
+        "starts": {
+          "inertia/P": "[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n011",
+        "name": "PoseBall",
+        "block": {
+          "ref": "stdlib:multibond/PoseIntegrator3D"
+        },
+        "position": {
+          "x": 1180,
+          "y": 300
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {
+          "qw": "1.0",
+          "qx": "0.0",
+          "qy": "0.0",
+          "qz": "0.0",
+          "px": "-0.14970343576511927",
+          "py": "0.0",
+          "pz": "0.17829918380598636"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n012",
+        "name": "Contact",
+        "block": {
+          "ref": "stdlib:contact/RollingSphere"
+        },
+        "position": {
+          "x": 990,
+          "y": 200
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "0.0127",
+          "oz": "0.003",
+          "nz": "1.0",
+          "tx": "1.0",
+          "w1": "0.175",
+          "w2": "0.175",
+          "we": "0.001",
+          "k": "100000.0",
+          "xref": "0.0001",
+          "c": "20.0",
+          "mu": "0.4",
+          "vs": "0.001",
+          "crr": "0.0",
+          "eps": "1e-07"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n013",
+        "name": "LockX",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 440,
+          "y": -160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n014",
+        "name": "SpringX",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 380,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "0.0001"
+        },
+        "constants": {},
+        "starts": {
+          "q": "9.84127983688316e-06"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n015",
+        "name": "DamperX",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 500,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "10.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n016",
+        "name": "LockY",
+        "block": {
+          "junction": "1"
+        },
+        "position": {
+          "x": 700,
+          "y": -160
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {},
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n017",
+        "name": "SpringY",
+        "block": {
+          "ref": "stdlib:bondgraph/C"
+        },
+        "position": {
+          "x": 640,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "c": "0.0001"
+        },
+        "constants": {},
+        "starts": {
+          "q": "0.0"
+        },
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n018",
+        "name": "DamperY",
+        "block": {
+          "ref": "stdlib:bondgraph/R"
+        },
+        "position": {
+          "x": 760,
+          "y": -60
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "r": "10.0"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      },
+      {
+        "id": "n019",
+        "name": "Energy",
+        "block": {
+          "ref": "project:RigEnergy"
+        },
+        "position": {
+          "x": 1180,
+          "y": 460
+        },
+        "rotation": 0,
+        "flipX": false,
+        "params": {
+          "mb": "0.067011726305658",
+          "mp": "0.8746499999999999",
+          "g0": "9.81",
+          "k_lock": "10000.0",
+          "q10": "0.017453292519943295",
+          "q20": "0.0",
+          "dq1": "9.84127983688316e-06"
+        },
+        "constants": {},
+        "starts": {},
+        "ui": {
+          "showLabel": true,
+          "color": null
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "b001",
+        "kind": "bond",
+        "from": {
+          "node": "n001",
+          "port": "p"
+        },
+        "to": {
+          "node": "n002",
+          "port": "b"
+        },
+        "label": null
+      },
+      {
+        "id": "b002",
+        "kind": "bond",
+        "from": {
+          "node": "n002",
+          "port": "a"
+        },
+        "to": {
+          "node": "n003",
+          "port": "parent"
+        },
+        "label": null
+      },
+      {
+        "id": "b003",
+        "kind": "bond",
+        "from": {
+          "node": "n003",
+          "port": "child"
+        },
+        "to": {
+          "node": "n004",
+          "port": "a"
+        },
+        "label": null
+      },
+      {
+        "id": "b004",
+        "kind": "bond",
+        "from": {
+          "node": "n004",
+          "port": "b"
+        },
+        "to": {
+          "node": "n005",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "s001",
+        "kind": "signal",
+        "from": {
+          "node": "n006",
+          "port": "g"
+        },
+        "to": {
+          "node": "n007",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "s002",
+        "kind": "signal",
+        "from": {
+          "node": "n003",
+          "port": "pose"
+        },
+        "to": {
+          "node": "n007",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "s003",
+        "kind": "signal",
+        "from": {
+          "node": "n007",
+          "port": "g"
+        },
+        "to": {
+          "node": "n009",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "s004",
+        "kind": "signal",
+        "from": {
+          "node": "n008",
+          "port": "g"
+        },
+        "to": {
+          "node": "n009",
+          "port": "gl"
+        },
+        "label": null
+      },
+      {
+        "id": "s005",
+        "kind": "signal",
+        "from": {
+          "node": "n009",
+          "port": "g"
+        },
+        "to": {
+          "node": "n005",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "s006",
+        "kind": "signal",
+        "from": {
+          "node": "n010",
+          "port": "V"
+        },
+        "to": {
+          "node": "n011",
+          "port": "tw"
+        },
+        "label": null
+      },
+      {
+        "id": "s007",
+        "kind": "signal",
+        "from": {
+          "node": "n011",
+          "port": "g"
+        },
+        "to": {
+          "node": "n010",
+          "port": "g"
+        },
+        "label": null
+      },
+      {
+        "id": "b005",
+        "kind": "bond",
+        "from": {
+          "node": "n005",
+          "port": "p"
+        },
+        "to": {
+          "node": "n012",
+          "port": "a"
+        },
+        "label": null
+      },
+      {
+        "id": "b006",
+        "kind": "bond",
+        "from": {
+          "node": "n010",
+          "port": "p"
+        },
+        "to": {
+          "node": "n012",
+          "port": "b"
+        },
+        "label": null
+      },
+      {
+        "id": "s008",
+        "kind": "signal",
+        "from": {
+          "node": "n009",
+          "port": "g"
+        },
+        "to": {
+          "node": "n012",
+          "port": "ga"
+        },
+        "label": null
+      },
+      {
+        "id": "s009",
+        "kind": "signal",
+        "from": {
+          "node": "n011",
+          "port": "g"
+        },
+        "to": {
+          "node": "n012",
+          "port": "gb"
+        },
+        "label": null
+      },
+      {
+        "id": "b007",
+        "kind": "bond",
+        "from": {
+          "node": "n003",
+          "port": "drive1"
+        },
+        "to": {
+          "node": "n013"
+        },
+        "label": null
+      },
+      {
+        "id": "b008",
+        "kind": "bond",
+        "from": {
+          "node": "n013"
+        },
+        "to": {
+          "node": "n014",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "b009",
+        "kind": "bond",
+        "from": {
+          "node": "n013"
+        },
+        "to": {
+          "node": "n015",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "b010",
+        "kind": "bond",
+        "from": {
+          "node": "n003",
+          "port": "drive2"
+        },
+        "to": {
+          "node": "n016"
+        },
+        "label": null
+      },
+      {
+        "id": "b011",
+        "kind": "bond",
+        "from": {
+          "node": "n016"
+        },
+        "to": {
+          "node": "n017",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "b012",
+        "kind": "bond",
+        "from": {
+          "node": "n016"
+        },
+        "to": {
+          "node": "n018",
+          "port": "p"
+        },
+        "label": null
+      },
+      {
+        "id": "s010",
+        "kind": "signal",
+        "from": {
+          "node": "n010",
+          "port": "P"
+        },
+        "to": {
+          "node": "n019",
+          "port": "Pb"
+        },
+        "label": null
+      },
+      {
+        "id": "s011",
+        "kind": "signal",
+        "from": {
+          "node": "n010",
+          "port": "V"
+        },
+        "to": {
+          "node": "n019",
+          "port": "Vb"
+        },
+        "label": null
+      },
+      {
+        "id": "s012",
+        "kind": "signal",
+        "from": {
+          "node": "n011",
+          "port": "g"
+        },
+        "to": {
+          "node": "n019",
+          "port": "gb"
+        },
+        "label": null
+      },
+      {
+        "id": "s013",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "P"
+        },
+        "to": {
+          "node": "n019",
+          "port": "Pp"
+        },
+        "label": null
+      },
+      {
+        "id": "s014",
+        "kind": "signal",
+        "from": {
+          "node": "n005",
+          "port": "V"
+        },
+        "to": {
+          "node": "n019",
+          "port": "Vp"
+        },
+        "label": null
+      },
+      {
+        "id": "s015",
+        "kind": "signal",
+        "from": {
+          "node": "n009",
+          "port": "g"
+        },
+        "to": {
+          "node": "n019",
+          "port": "gp"
+        },
+        "label": null
+      },
+      {
+        "id": "s016",
+        "kind": "signal",
+        "from": {
+          "node": "n012",
+          "port": "Ec"
+        },
+        "to": {
+          "node": "n019",
+          "port": "Ec"
+        },
+        "label": null
+      },
+      {
+        "id": "s017",
+        "kind": "signal",
+        "from": {
+          "node": "n012",
+          "port": "Pd"
+        },
+        "to": {
+          "node": "n019",
+          "port": "Pd"
+        },
+        "label": null
+      },
+      {
+        "id": "s018",
+        "kind": "signal",
+        "from": {
+          "node": "n003",
+          "port": "q1out"
+        },
+        "to": {
+          "node": "n019",
+          "port": "q1"
+        },
+        "label": null
+      },
+      {
+        "id": "s019",
+        "kind": "signal",
+        "from": {
+          "node": "n003",
+          "port": "q2out"
+        },
+        "to": {
+          "node": "n019",
+          "port": "q2"
+        },
+        "label": null
+      }
+    ],
+    "subsystemPorts": [],
+    "annotations": []
+  },
+  "settings": {
+    "t_start": 0.0,
+    "t_end": 2.0,
+    "solver": "Rodas5P",
+    "reltol": 1e-09,
+    "abstol": 1e-11,
+    "max_step": null,
+    "output": {
+      "mode": "points",
+      "points": 801
+    },
+    "event_limit": 100000
+  },
+  "plots": [
+    {
+      "id": "x",
+      "title": "Ball position on the plate (contact point coordinates)",
+      "signals": [
+        "Contact/u1",
+        "Contact/u2"
+      ]
+    },
+    {
+      "id": "spin",
+      "title": "Spin of the ball relative to the plate (about the plate y axis)",
+      "signals": [
+        "Contact/wr2"
+      ]
+    },
+    {
+      "id": "slip",
+      "title": "Slip speed (no-slip residual)",
+      "signals": [
+        "Contact/slip"
+      ]
+    },
+    {
+      "id": "energy",
+      "title": "Energy: stored E and E + loss",
+      "signals": [
+        "Energy/E",
+        "Energy/Ebal"
+      ]
+    },
+    {
+      "id": "kinetic",
+      "title": "Kinetic energy of the ball and its rotational part (2/7 of it)",
+      "signals": [
+        "Energy/Ek",
+        "Energy/Ekrot"
+      ]
+    }
+  ],
+  "parameters": [
+    {
+      "name": "k_ball",
+      "value": "0.4",
+      "unit": "1",
+      "description": "Ball inertia J = k_ball m r^2: 0.4 solid sphere (the rig's steel ball), 2/3 thin-walled hollow ball of the same mass and radius"
+    }
+  ],
+  "scene": {
+    "file": "scenes/ball-and-plate.sdf"
+  },
+  "bindings": [
+    {
+      "target": "link:plate",
+      "property": "pose",
+      "signal": [
+        "PosePlate/g[1]",
+        "PosePlate/g[2]",
+        "PosePlate/g[3]",
+        "PosePlate/g[4]",
+        "PosePlate/g[5]",
+        "PosePlate/g[6]",
+        "PosePlate/g[7]"
+      ]
+    },
+    {
+      "target": "link:ball",
+      "property": "pose",
+      "signal": [
+        "PoseBall/g[1]",
+        "PoseBall/g[2]",
+        "PoseBall/g[3]",
+        "PoseBall/g[4]",
+        "PoseBall/g[5]",
+        "PoseBall/g[6]",
+        "PoseBall/g[7]"
+      ]
+    }
+  ],
+  "dashboard": {
+    "autoRerun": true,
+    "cards": [
+      {
+        "id": "crr",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Rolling resistance coefficient",
+        "parameter": "Contact/crr",
+        "options": {
+          "min": 0.0,
+          "max": 0.02,
+          "step": 0.001,
+          "decimals": 3,
+          "unit": ""
+        }
+      },
+      {
+        "id": "ball",
+        "kind": "slider",
+        "size": "2x1",
+        "title": "Ball inertia k (0.4 solid, 0.667 hollow)",
+        "parameter": "global:k_ball",
+        "options": {
+          "min": 0.4,
+          "max": 0.6667,
+          "step": 0.2667,
+          "decimals": 3,
+          "unit": ""
+        }
+      },
+      {
+        "id": "xnow",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Ball x",
+        "signals": [
+          "Contact/u1"
+        ],
+        "options": {
+          "decimals": 3,
+          "unit": "m",
+          "sparkline": true
+        }
+      },
+      {
+        "id": "slip",
+        "kind": "value",
+        "size": "1x1",
+        "title": "Slip",
+        "signals": [
+          "Contact/slip"
+        ],
+        "options": {
+          "decimals": 6,
+          "unit": "m/s"
+        }
+      },
+      {
+        "id": "x",
+        "kind": "plot",
+        "size": "2x1",
+        "title": "Ball x on the plate",
+        "signals": [
+          "Contact/u1"
+        ]
+      },
+      {
+        "id": "energy",
+        "kind": "plot",
+        "size": "2x1",
+        "title": "Energy (E + loss is constant)",
+        "signals": [
+          "Energy/E",
+          "Energy/Ebal"
+        ]
+      }
+    ]
+  }
+}
