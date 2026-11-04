@@ -204,7 +204,9 @@ class AssistantIssue(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    file: str = Field(..., description='`model:<name>` or `library:<block>`.')
+    file: str = Field(
+        ..., description='`model:<name>`, `library:<block>` or `scene:<file>`.'
+    )
     severity: AssistantIssueSeverity = Field(..., title='AssistantIssueSeverity')
     code: str | None = None
     path: str | None = None
@@ -235,6 +237,7 @@ class AssistantFileKind(Enum):
     model = 'model'
     library = 'library'
     doc = 'doc'
+    scene = 'scene'
 
 
 class AssistantFileChangeKind(Enum):
@@ -4049,7 +4052,8 @@ class AssistantApplyResult(BaseModel):
         extra='forbid',
     )
     applied: list[str] = Field(
-        ..., description='`model:<name>`, `library:<block>`, `doc:<owner>/<page>`.'
+        ...,
+        description='`model:<name>`, `library:<block>`, `doc:<owner>/<page>`, `scene:<file>`.',
     )
     openModel: Model | None = Field(
         None,

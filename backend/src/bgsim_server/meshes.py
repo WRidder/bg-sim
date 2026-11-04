@@ -133,14 +133,50 @@ def _atomic_write_bytes(path: Path, data: bytes) -> None:
 # --------------------------------------------------------------------------- scenes
 
 
+def list_scenes(store: ProjectStore, project: str) -> list[str]:
+    """The scene files of a project."""
+    project_dir = _project_dir(store, project)
+    directory = _scenes_dir(store, project_dir)
+    if not directory.is_dir():
+        return []
+    return sorted(p.name for p in directory.iterdir() if p.suffix.lower() == SCENE_SUFFIX)
+
+
+def list_meshes(store: ProjectStore, project: str) -> list[str]:
+    """The stored GLB meshes of a project."""
+    directory = _meshes_dir(_project_dir(store, project))
+    if not directory.is_dir():
+        return []
+    return sorted(p.name for p in directory.iterdir() if p.suffix.lower() == GLB_SUFFIX)
+
+
+def read_scene(store: ProjectStore, project: str, file: str) -> str | None:
+    """The SDF text of one scene (LF line endings), or None when there is no such file."""
+    path = _inside(_scenes_dir(store, _project_dir(store, project)), _scene_name(file))
+    if not path.is_file():
+        return None
+    return _read_text(path).replace("\r\n", "\n").replace("\r", "\n")
+
+
+def write_scene(store: ProjectStore, project: str, file: str, text: str) -> Path:
+    """Replace or create one scene, and return its path."""
+    path = _inside(_scenes_dir(store, _project_dir(store, project)), _scene_name(file))
+    if len(text.encode("utf-8")) > MAX_SCENE_BYTES:
+        raise ProjectError(
+            413, f"the scene is larger than the limit of {MAX_SCENE_BYTES} bytes. Split the scene."
+        )
+    if not text.strip():
+        raise ProjectError(400, "the scene is empty; send the SDF document as the request body")
+    _atomic_write(path, text)
+    return path
+
+
 @router.get("/projects/{project}/scenes/{file}")
 def get_scene(project: str, file: str, store: Store) -> Response:
     """The SDF text of one scene (LF line endings)."""
-    project_dir = _project_dir(store, project)
-    path = _inside(_scenes_dir(store, project_dir), _scene_name(file))
-    if not path.is_file():
+    text = read_scene(store, project, file)
+    if text is None:
         raise ProjectError(404, f"unknown scene {file!r} in project {project!r}")
-    text = _read_text(path).replace("\r\n", "\n").replace("\r", "\n")
     return PlainTextResponse(text, media_type="application/xml")
 
 
@@ -149,7 +185,6 @@ async def put_scene(project: str, file: str, request: Request, store: Store) -> 
     """Replace (or create) one scene; the body is the SDF text."""
     project_dir = _project_dir(store, project)
     name = _scene_name(file)
-    path = _inside(_scenes_dir(store, project_dir), name)
     raw = await request.body()
     if len(raw) > MAX_SCENE_BYTES:
         raise ProjectError(
@@ -159,9 +194,7 @@ async def put_scene(project: str, file: str, request: Request, store: Store) -> 
         text = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise ProjectError(400, f"the scene is not UTF-8 text: {exc}") from exc
-    if not text.strip():
-        raise ProjectError(400, "the scene is empty; send the SDF document as the request body")
-    _atomic_write(path, text)
+    path = write_scene(store, project, name, text)
     stored = _lf(text)
     return {
         "project": project_dir.name,

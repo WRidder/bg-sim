@@ -58,6 +58,8 @@ export default defineConfig({
       ...(process.env.BGSIM_E2E_REAL === "1" ? {} : { BGSIM_FAKE_WORKER: "1" }),
       BGSIM_ASSISTANT_CLAUDE: `uv run --no-project python ${fakeClaude}`,
       FAKE_CLAUDE_MODE: "auto",
+      // Never the user's key: the hosted profiles stay unavailable, with no request to the service.
+      OPENCODE_API_KEY: "",
     },
     url: `${BASE_URL}/api/health`,
     reuseExistingServer: !process.env.CI,

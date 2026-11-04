@@ -50,6 +50,8 @@ An unbound breakpoint leaves the run at entry; a run that ends without a pause s
 - The relay endpoints need a per-session bearer token, which never reaches the audit log.
 - A hosted profile names an environment variable (`api_key_env`), never the key itself, and
   `Profile.public()` shows only the variable's name.
+  On Windows a variable set for the user after the backend started is read from the registry; a
+  variable set in the process, even empty, wins (the end-to-end tests set it empty).
 - Tool calls are read from structured `tool_calls` only, never parsed out of text.
 
 ## Hosted endpoints

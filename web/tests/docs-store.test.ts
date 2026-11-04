@@ -27,6 +27,39 @@ beforeEach(() => {
 });
 
 describe("docs store", () => {
+  it("reads the docs again after something else wrote them, on the same page", async () => {
+    await useDocsStore.getState().load("demo", "m");
+    await useDocsStore.getState().select("b");
+    const added = structuredClone(TREE);
+    added.pages.push({ id: "c", title: "C", file: "pages/c.md", children: [] });
+    api_.fetchManifest.mockResolvedValue(added);
+    api_.fetchPage.mockImplementation(async (_p, _m, id) => `new text of ${id}`);
+    await useDocsStore.getState().reload();
+    const state = useDocsStore.getState();
+    expect(state.docs?.pages.map((page) => page.id)).toEqual(["a", "c"]);
+    expect(state.selected).toBe("b");
+    expect(state.saved).toEqual({ b: "new text of b" });
+  });
+
+  it("keeps unsaved edits through a reload, and leaves a removed page", async () => {
+    await useDocsStore.getState().load("demo", "m");
+    await useDocsStore.getState().select("b");
+    useDocsStore.getState().setDraft("a", "mine");
+    api_.fetchManifest.mockResolvedValue({
+      ...TREE,
+      pages: [{ id: "a", title: "A", file: "pages/a.md", children: [] }],
+    });
+    await useDocsStore.getState().reload();
+    const state = useDocsStore.getState();
+    expect(state.selected).toBe("a");
+    expect(state.drafts).toEqual({ a: "mine" });
+  });
+
+  it("has nothing to reload before a load", async () => {
+    await useDocsStore.getState().reload();
+    expect(api_.fetchManifest).not.toHaveBeenCalled();
+  });
+
   it("loads the tree, selects the first page and reads its text", async () => {
     await useDocsStore.getState().load("demo", "m");
     const state = useDocsStore.getState();

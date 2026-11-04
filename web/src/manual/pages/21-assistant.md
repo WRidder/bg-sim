@@ -19,6 +19,10 @@ The **Proposed changes** box lists what changed, per file, with the problems fou
 | **Apply automatically** | applies by itself when a run ends with a draft that passed its checks |
 | **New chat** | starts over; it asks first if there are changes not applied |
 
+After Apply the open model, the docs, the library and the 3D View show the changes without a page reload.
+
+The chat can build a dashboard with its cards and inputs, and a 3D scene: it writes the scene file, points the model at it and binds links and joints to signals. A new scene is part of the draft like everything else.
+
 The previous versions of the files go to the project's `logs/assistant` folder. If a file changed on disk since the chat read it, Apply refuses and says which one.
 
 A draft that was not checked since its last edit can still be applied; the box says so. A draft that cannot be saved cannot be applied.
@@ -73,4 +77,4 @@ The chat uses the profiles in `assistant.toml` in the bg-sim folder, or `assista
 
 For a hosted service, `api_key_env` names the environment variable that holds the key. The key itself never goes in the file. The example file has two profiles through OpenCode Go, DeepSeek V4.1 Flash and GLM-5.3-Flash: set `OPENCODE_API_KEY` before you start the backend. DeepSeek also needs **Global** under Regions in the OpenCode console, under Settings > Privacy. With a hosted service, the chat, your models and their results go to that service.
 
-A profile that cannot be used says why in the panel.
+A profile that cannot be used is marked **(not available)** in the list. Pick it to see why, then fix it and press **Check again**. On Windows a variable you set for your user is found without restarting BG-Sim.

@@ -252,8 +252,8 @@ function Header({ onNew }: { onNew: () => void }) {
           onChange={(event) => setProfile(event.target.value)}
         >
           {profiles.profiles.map((entry) => (
-            <option key={entry.name} value={entry.name} disabled={!entry.available}>
-              {entry.name}
+            <option key={entry.name} value={entry.name}>
+              {entry.available ? entry.name : `${entry.name} (not available)`}
             </option>
           ))}
         </select>
@@ -430,7 +430,15 @@ export function AssistantPanel({ route }: AssistantPanelProps) {
       </div>
       {chosen !== null && !chosen.available && session === null ? (
         <p className="assistant-event assistant-event--error" role="alert" data-testid="assistant-unavailable">
-          The profile {chosen.name} is not available: {chosen.reason ?? "unknown reason"}
+          The profile {chosen.name} is not available: {chosen.reason ?? "unknown reason"}{" "}
+          <button
+            type="button"
+            className="assistant-button"
+            data-testid="assistant-check-profile"
+            onClick={() => void loadProfiles(true)}
+          >
+            Check again
+          </button>
         </p>
       ) : null}
       {error === null ? null : (

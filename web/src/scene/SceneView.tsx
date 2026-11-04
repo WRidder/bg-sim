@@ -8,6 +8,7 @@ import { RunActivityOverlay } from "../viewer/RunActivityOverlay";
 import { Viewer, type ViewerProps } from "../viewer/Viewer";
 import type { ViewerScene } from "../viewer/viewerScene";
 import { fetchSceneText, meshSource, SceneFetchError } from "./api";
+import { useSceneRevision } from "./sceneRevision";
 import { buildScene, type BuiltScene } from "./build";
 import { resolveScene, type TreeEntry } from "./resolve";
 import { e305, parseSdf } from "./sdf";
@@ -57,6 +58,7 @@ function describe(error: unknown): string {
 export function SceneView({ active, createEngine, onBuilt, highlight = null, onKeyDown, extras, toolbarEnd, badge }: SceneViewProps) {
   const project = useDocumentStore((state) => state.project);
   const sceneFile = useDocumentStore((state) => state.doc?.scene?.file ?? null);
+  const revision = useSceneRevision((state) => state.revision);
   const [viewer, setViewer] = useState<ViewerScene | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -102,7 +104,7 @@ export function SceneView({ active, createEngine, onBuilt, highlight = null, onK
       publish([]);
       setSelected(null);
     };
-  }, [viewer, project, sceneFile, key]);
+  }, [viewer, project, sceneFile, key, revision]);
 
   const current = outcome !== null && outcome.key === key ? outcome : null;
   const status: SceneStatus = key === null ? "none" : current === null ? "loading" : current.built === null ? "error" : "loaded";

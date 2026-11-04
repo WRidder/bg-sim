@@ -1,4 +1,4 @@
-"""The draft of one assistant session: models, library blocks and docs pages laid over the
+"""The draft of one assistant session: models, library blocks, docs pages and scenes laid over the
 saved project.
 
 A tool changes the draft and nothing else. The saved project changes only in :meth:`Draft.apply`,
@@ -18,7 +18,7 @@ from typing import Any
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from .. import docs
+from .. import docs, meshes
 from ..contracts import Model
 from ..projects import ProjectStore, _block_name, _detail_message, _validate
 from . import modelops
@@ -43,8 +43,10 @@ class Draft:
         self.models: dict[str, dict[str, Any] | None] = {}  # None: deleted
         self.library: dict[str, str | None] = {}            # None: deleted
         self.pages: dict[tuple[str | None, str], dict[str, Any]] = {}
+        self.scenes: dict[str, str] = {}
         self._base_models: dict[str, dict[str, Any] | None] = {}
         self._base_library: dict[str, str | None] = {}
+        self._base_scenes: dict[str, str | None] = {}
 
     # -- reading ------------------------------------------------------------------------------
     def _disk_model(self, name: str) -> dict[str, Any] | None:
@@ -63,6 +65,9 @@ class Draft:
                 return None
             raise
 
+    def _disk_scene(self, name: str) -> str | None:
+        return meshes.read_scene(self.store, self.project, name)
+
     def base_model(self, name: str) -> dict[str, Any] | None:
         if name not in self._base_models:
             self._base_models[name] = self._disk_model(name)
@@ -73,11 +78,19 @@ class Draft:
             self._base_library[name] = self._disk_block(name)
         return self._base_library[name]
 
+    def base_scene(self, name: str) -> str | None:
+        if name not in self._base_scenes:
+            self._base_scenes[name] = self._disk_scene(name)
+        return self._base_scenes[name]
+
     def model(self, name: str) -> dict[str, Any] | None:
         return self.models[name] if name in self.models else self.base_model(name)
 
     def block(self, name: str) -> str | None:
         return self.library[name] if name in self.library else self.base_block(name)
+
+    def scene(self, name: str) -> str | None:
+        return self.scenes[name] if name in self.scenes else self.base_scene(name)
 
     def page(self, owner: str | None, page_id: str) -> str | None:
         """The draft text of a page, or None when the draft has not touched it."""
@@ -119,22 +132,31 @@ class Draft:
     ) -> None:
         self.pages[(owner, page_id)] = {"title": title, "text": text, "parent": parent}
 
+    def put_scene(self, name: str, text: str) -> None:
+        if text == self.base_scene(name):
+            self.scenes.pop(name, None)
+        else:
+            self.scenes[name] = text
+
     def discard(self) -> None:
         self.models.clear()
         self.library.clear()
         self.pages.clear()
+        self.scenes.clear()
         self._base_models.clear()
         self._base_library.clear()
+        self._base_scenes.clear()
 
     def refresh(self) -> None:
         """Forget saved copies the draft does not depend on: the next read sees the user's edits."""
         self._base_models = {k: v for k, v in self._base_models.items() if k in self.models}
         self._base_library = {k: v for k, v in self._base_library.items() if k in self.library}
+        self._base_scenes = {k: v for k, v in self._base_scenes.items() if k in self.scenes}
 
     # -- comparing ----------------------------------------------------------------------------
     @property
     def changed(self) -> bool:
-        return bool(self.models or self.library or self.pages)
+        return bool(self.models or self.library or self.pages or self.scenes)
 
     def files(self) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []
@@ -154,6 +176,9 @@ class Draft:
                 "kind": "doc", "name": f"{owner or '@project'}/{page_id}", "change": "changed",
                 "rows": [],
             })
+        for name in sorted(self.scenes):
+            change = "added" if self.base_scene(name) is None else "changed"
+            out.append({"kind": "scene", "name": name, "change": change, "rows": []})
         return out
 
     def problems(self) -> list[tuple[str, str]]:
@@ -182,6 +207,9 @@ class Draft:
         for name in self.library:
             if self.base_block(name) != self._disk_block(name):
                 out.append(f"library:{name}")
+        for name in self.scenes:
+            if self.base_scene(name) != self._disk_scene(name):
+                out.append(f"scene:{name}")
         return out
 
     # -- applying -----------------------------------------------------------------------------
@@ -230,6 +258,13 @@ class Draft:
                 entry["parent"],
             )
             applied.append(f"doc:{owner or '@project'}/{page_id}")
+        for name, text in self.scenes.items():
+            base_scene = self.base_scene(name)
+            if base_scene is not None:
+                self._backup(folder, f"scenes/{name}", base_scene)
+                wrote_backup = True
+            meshes.write_scene(self.store, self.project, name, text)
+            applied.append(f"scene:{name}")
         if wrote_backup:
             result["backup"] = str(folder)
         self._rebase()
@@ -239,6 +274,8 @@ class Draft:
         """The applied draft is the new base: the chat goes on with an empty proposal."""
         self._base_models.update({k: copy.deepcopy(v) for k, v in self.models.items()})
         self._base_library.update(self.library)
+        self._base_scenes.update(self.scenes)
         self.models.clear()
         self.library.clear()
         self.pages.clear()
+        self.scenes.clear()

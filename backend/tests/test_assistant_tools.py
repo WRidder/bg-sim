@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 
 import pytest
 from assistant_support import Bench, make_project, tree
@@ -12,7 +13,7 @@ from fastapi.testclient import TestClient
 
 from bgsim_server import docs
 from bgsim_server.app import create_app
-from bgsim_server.assistant import tools
+from bgsim_server.assistant import modelops, tools
 
 
 @pytest.fixture
@@ -359,3 +360,123 @@ def test_events_and_audit(bench):
     time.sleep(0)
     log = bench.s.audit.path.read_text(encoding="utf-8")
     assert '"name": "describe_block"' in log and bench.s.token not in log
+
+
+SCENE = """<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="arm">
+    <link name="base">
+      <visual name="post"><geometry><box><size>0.1 0.1 1</size></box></geometry></visual>
+    </link>
+    <link name="tip">
+      <visual name="bar"><geometry><cylinder><radius>0.02</radius><length>1</length></cylinder></geometry></visual>
+    </link>
+    <joint name="shoulder" type="revolute"><parent>base</parent><child>tip</child></joint>
+  </model>
+</sdf>
+"""
+
+
+def cards(bench, *items):
+    return bench.call("set_model_field", field="dashboard", value={"cards": list(items)})
+
+
+def card(kind, **more):
+    return {"id": kind, "kind": kind, "size": "1x1", "title": kind, **more}
+
+
+def test_a_dashboard_reads_back(bench):
+    bench.tool("set_globals", set=[{"name": "k", "value": 3}])
+    result = bench.tool(
+        "set_model_field", field="dashboard",
+        value={"autoRerun": True, "cards": [
+            card("plot", signals=["Motor/w"]),
+            card("slider", parameter="global:k", options={"min": 0, "max": 10, "step": 1}),
+            card("text", options={"text": "Drag k."}),
+        ]},
+    )
+    assert result["cards"][1] == {"id": "slider", "kind": "slider", "bound": "global:k"}
+    back = bench.tool("get_model", part="dashboard")["dashboard"]
+    assert back["autoRerun"] is True
+    assert back["cards"][1]["parameter"] == "global:k"
+
+
+def test_a_card_with_the_wrong_binding_is_refused(bench):
+    bench.tool("set_globals", set=[{"name": "k", "value": 3}])
+    result, is_error = cards(bench, card("slider", signals=["Motor/w"]))
+    assert is_error
+    assert any("input cards bind through `parameter`" in p for p in result["problems"])
+    result, is_error = cards(bench, card("gauge", parameter="global:k"))
+    assert is_error
+    assert any("display cards bind through `signals`" in p for p in result["problems"])
+    result, is_error = cards(bench, card("knob"))
+    assert is_error
+    assert not bench.s.draft.changed or "dashboard" not in bench.s.draft.models.get("motor", {})
+
+
+def test_a_card_on_something_missing_is_refused(bench):
+    result, is_error = cards(bench, card("slider", parameter="global:nothing"))
+    assert is_error and any("set_globals" in p for p in result["problems"])
+    result, is_error = cards(bench, card("number", parameter="Nobody/k"))
+    assert is_error and any("Nobody" in p for p in result["problems"])
+
+
+def test_every_shipped_dashboard_passes_the_card_check():
+    examples = Path(__file__).resolve().parents[2] / "examples"
+    seen = 0
+    for path in examples.glob("*/models/*.bgmodel.json"):
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if (document.get("dashboard") or {}).get("cards"):
+            seen += 1
+            assert modelops.card_problems(document) == [], path.name
+    assert seen > 0
+
+
+def test_a_scene_goes_through_the_draft(client, bench):
+    written = bench.tool("write_scene", file="arm.sdf", text=SCENE)
+    assert written["joints"] == ["shoulder"]
+    assert written["links"] == ["base", "tip"]
+    assert not (project_dir(client) / "scenes" / "arm.sdf").exists()
+    assert bench.tool("list_scenes")["scenes"] == ["arm.sdf"]
+    assert bench.tool("read_scene", file="arm.sdf")["text"] == SCENE
+    assert bench.s.proposal()["files"][0] == {"kind": "scene", "name": "arm.sdf", "change": "added", "rows": []}
+    bench.tool("set_model_field", field="scene", value={"file": "scenes/arm.sdf"})
+    result = bench.tool(
+        "set_model_field", field="bindings",
+        value=[{"target": "joint:shoulder", "property": "position", "signal": "Motor/w"},
+               {"target": "joint:elbow", "property": "position", "signal": "Motor/w"}],
+    )
+    assert len(result["warnings"]) == 1 and "joint:elbow" in result["warnings"][0]
+    assert bench.s.draft.apply(None, "session")["applied"][-1] == "scene:arm.sdf"
+    assert (project_dir(client) / "scenes" / "arm.sdf").read_text(encoding="utf-8") == SCENE
+    assert not bench.s.draft.scenes
+
+
+def test_a_scene_field_needs_the_file(bench):
+    message = bench.refused("set_model_field", field="scene", value={"file": "scenes/none.sdf"})
+    assert "write_scene" in message
+
+
+@pytest.mark.parametrize(("text", "says"), [
+    ("<sdf><model", "well-formed"),
+    ("<scene/>", "<sdf>"),
+    ("<sdf/>", "no <model>"),
+    ('<sdf><model name="a"><link name="b"/></model></sdf>', "no <visual>"),
+    ('<!DOCTYPE x [<!ENTITY a "b">]><sdf/>', "DOCTYPE"),
+    (SCENE.replace("<box><size>0.1 0.1 1</size></box>", "<torus/>"), "<geometry>"),
+    (SCENE.replace('type="revolute"', 'type="gearbox"'), "type must be"),
+])
+def test_a_scene_the_viewer_cannot_draw_is_refused(bench, text, says):
+    assert says in bench.refused("write_scene", file="arm.sdf", text=text)
+    assert not bench.s.draft.changed
+
+
+def test_a_scene_name_cannot_leave_the_folder(bench):
+    assert "invalid scene file name" in bench.refused("write_scene", file="../arm.sdf", text=SCENE)
+    assert "invalid scene file name" in bench.refused("read_scene", file="../../secret.sdf")
+
+
+def test_a_discarded_scene_is_gone(client, bench):
+    bench.tool("write_scene", file="arm.sdf", text=SCENE)
+    bench.s.discard()
+    assert bench.tool("list_scenes")["scenes"] == []

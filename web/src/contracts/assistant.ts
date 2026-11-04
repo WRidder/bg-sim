@@ -10,7 +10,7 @@ export type AssistantFigure =
 export type AssistantChartStyle = "line" | "points" | "bar";
 export type AssistantIssueSeverity = "error" | "warning";
 export type AssistantChangeOp = "added" | "removed" | "changed";
-export type AssistantFileKind = "model" | "library" | "doc";
+export type AssistantFileKind = "model" | "library" | "doc" | "scene";
 export type AssistantFileChangeKind = "added" | "changed" | "removed";
 export type AssistantRole = "user" | "assistant";
 export type AssistantSessionState = "idle" | "running" | "closed";
@@ -464,7 +464,7 @@ export interface AssistantImageFigure {
  */
 export interface AssistantIssue {
   /**
-   * `model:<name>` or `library:<block>`.
+   * `model:<name>`, `library:<block>` or `scene:<file>`.
    */
   file: string;
   severity: AssistantIssueSeverity;
@@ -630,7 +630,7 @@ export interface AssistantApplyRequest {
 }
 export interface AssistantApplyResult {
   /**
-   * `model:<name>`, `library:<block>`, `doc:<owner>/<page>`.
+   * `model:<name>`, `library:<block>`, `doc:<owner>/<page>`, `scene:<file>`.
    */
   applied: string[];
   openModel?: Model;

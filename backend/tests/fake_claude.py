@@ -134,10 +134,16 @@ def main() -> None:
             continue
         text = str(message["message"]["content"])
         if scripted:
-            tag = re.search(r"#(ok|ask|math|figure|cell|debug|home)\b", text)
+            tag = re.search(r"#(ok|ask|math|figure|cell|debug|home|docs)\b", text)
             mode = tag.group(1) if tag else "ask" if "My answers" in text else "math"
-        if mode not in ("ok", "ask", "math", "figure", "cell", "debug", "home"):
+        if mode not in ("ok", "ask", "math", "figure", "cell", "debug", "home", "docs"):
             time.sleep(1.5)  # a bad init must be caught before this "model" acts
+        if mode == "docs":
+            call("write_doc", {"page": "agent-notes", "title": "Agent notes", "text": "Written by the chat.", "model": "hydraulic-servo"})
+            call("write_doc", {"page": "agent-project", "title": "Agent project page", "text": "For the whole project."})
+            say("Two pages.")
+            emit(result())
+            continue
         if mode == "ask":
             if asked:
                 say("You said: " + text[-80:])
