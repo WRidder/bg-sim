@@ -46,8 +46,14 @@ node tests/keys.mjs out.png                              # real key presses agai
 
 Port 8831 is the dev server the scripts expect (`GAMES_PORT` overrides it). Never 8765.
 
+## Rules the games taught us
+
+- Check every mesh with the signed volume test in `tests/aircraft.test.ts`. Three of the four games shipped inside-out parts from a first draft: a loft's winding depends on which way its sections run, and a mapping with a negative determinant mirrors what it moves.
+- A float render target clamps nothing. With MSAA a varying is read outside its triangle where a triangle is edge-on or partly covered, so a value used in `exp`, or as a blend alpha, needs a `clamp` or `centroid`. The bloom now drops any pixel that is not finite and positive, but the source still shows as a wrong pixel.
+
 ## Not done
 
 - No landing on the F-16: its FMU has no gear, and touching the ground is a crash.
 - Touch controls.
 - Device mapping beyond the standard gamepad layout: the desktop apps' per-device configuration did not carry over.
+- Real frame rates on a discrete GPU. On the Arc integrated GPU at 1600x900 and top quality the flight games take about 21 ms of GPU time a frame and the cars 14 ms; the automatic quality step was not seen to react in a headless browser.
