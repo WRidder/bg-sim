@@ -756,6 +756,7 @@ async function main(): Promise<void> {
   show("title");
   requestAnimationFrame(frame);
   announce({
+    stage,
     flight,
     rig,
     begin,

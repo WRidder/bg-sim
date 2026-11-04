@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Apex &amp; Dust</title>
+    <link rel="stylesheet" href="../src/engine/game.css" />
+    <link rel="stylesheet" href="../src/cars/cars.css" />
+  </head>
+  <body>
+    <canvas id="world"></canvas>
+    <canvas id="hud"></canvas>
+
+    <section id="loading" class="screen">
+      <h1>Apex &amp; Dust</h1>
+      <p id="loading-text">Sweeping the track…</p>
+      <div class="bar"><div></div></div>
+    </section>
+
+    <section id="title" class="screen panel-screen" hidden>
+      <header>
+        <h1>Apex <span>&amp;</span> Dust</h1>
+        <p class="lead">Two electric cars, four roads, and the clock.</p>
+      </header>
+      <div class="panel">
+        <div class="choices side" id="car" role="radiogroup" aria-label="Car">
+          <button data-value="racecar" role="radio">
+            <strong>Race car</strong>
+            <span>260 kW, slicks and wings. Circuits.</span>
+          </button>
+          <button data-value="buggy" role="radio">
+            <strong>Buggy</strong>
+            <span>A motor per axle and long travel. Dirt stages.</span>
+          </button>
+        </div>
+        <div class="choices" id="track" role="radiogroup" aria-label="Route"></div>
+        <label>Session
+          <select id="laps">
+            <option value="1">One lap</option>
+            <option value="3" selected>Three laps</option>
+            <option value="5">Five laps</option>
+            <option value="0">Until I stop</option>
+          </select>
+        </label>
+        <label>Time of day
+          <select id="time">
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
+            <option value="evening">Evening</option>
+          </select>
+        </label>
+        <label>Sky
+          <select id="sky">
+            <option value="0.1">Clear</option>
+            <option value="0.22">Scattered</option>
+            <option value="0.42">Broken</option>
+          </select>
+        </label>
+        <div class="toggles">
+          <label><input type="checkbox" id="ghost" checked /> Ghost of your best lap</label>
+          <label><input type="checkbox" id="line" /> Driving line on the road</label>
+        </div>
+        <button id="go" class="primary">Drive</button>
+        <p class="switching" id="switching" hidden>Moving the circus…</p>
+      </div>
+      <details class="keys">
+        <summary>Controls</summary>
+        <dl>
+          <dt>← → or A D</dt><dd>Steer</dd>
+          <dt>↑ or W</dt><dd>Accelerator</dd>
+          <dt>↓ or S</dt><dd>Brake</dd>
+          <dt>Space</dt><dd>Handbrake (buggy)</dd>
+          <dt>V</dt><dd>Forward, reverse (at rest)</dd>
+          <dt>C</dt><dd>Chase, cockpit, nose, trackside</dd>
+          <dt>Mouse drag, wheel</dt><dd>Look round, zoom</dd>
+          <dt>R</dt><dd>Restart</dd>
+          <dt>P or Esc</dt><dd>Pause</dd>
+          <dt>M</dt><dd>Sound</dd>
+        </dl>
+        <p class="pad" id="pad">A gamepad works too: left stick and the triggers.</p>
+      </details>
+    </section>
+
+    <section id="pause" class="screen dialog" hidden>
+      <h2>Paused</h2>
+      <button id="resume" class="primary">Resume</button>
+      <button id="restart">Restart</button>
+      <button id="quit">Back to the menu</button>
+    </section>
+
+    <section id="over" class="screen dialog" hidden>
+      <h2 id="over-title"></h2>
+      <p id="over-text"></p>
+      <ol id="over-laps" class="lap-list"></ol>
+      <button id="again" class="primary">Go again</button>
+      <button id="over-quit">Back to the menu</button>
+    </section>
+
+    <section id="failed" class="screen" hidden>
+      <h1>Apex &amp; Dust</h1>
+      <p>This game needs WebGL 2, and this browser could not start it.</p>
+    </section>
+
+    <script type="module" src="../src/cars/game.ts"></script>
+  </body>
+</html>

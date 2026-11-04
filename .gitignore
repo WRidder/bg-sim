@@ -52,4 +52,4 @@ assistant.toml
 # web games: bundles and the generated models (build_wasm.py)
 apps/web/dist/
 apps/web/dist-single/
-apps/web/src/*/model.gen.ts
+apps/web/src/*/*.gen.ts

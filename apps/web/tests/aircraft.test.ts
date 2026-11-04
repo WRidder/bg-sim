@@ -1,5 +1,7 @@
 import * as THREE from "three";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+import { buildBuggy } from "../src/cars/buggy";
+import { buildRacecar } from "../src/cars/racecar";
 import { buildAeroplane } from "../src/cessna/aircraft";
 import { buildFighter } from "../src/f16/aircraft";
 
@@ -22,9 +24,15 @@ function signedVolume(geometry: THREE.BufferGeometry): number {
   return volume;
 }
 
+// The cars paint their decals on a canvas, which no test looks at.
+const painter = new Proxy({}, { get: () => () => ({ width: 0 }), set: () => true });
+vi.stubGlobal("document", { createElement: () => ({ getContext: () => painter }) });
+
 it.each([
   ["fighter", buildFighter],
   ["aeroplane", buildAeroplane],
+  ["race car", () => ({ root: buildRacecar().body })],
+  ["buggy", () => ({ root: buildBuggy().body })],
 ])("%s faces outwards: an inside-out mesh shows its far walls and the light on the wrong side", (_, build) => {
   const inverted: string[] = [];
   build().root.traverse((object) => {
@@ -32,7 +40,9 @@ it.each([
     if (mesh.isMesh) {
       const volume = signedVolume(mesh.geometry);
       if (volume < -1e-6) {
-        inverted.push(`${mesh.geometry.getAttribute("position").count} vertices: ${volume.toFixed(3)}`);
+        mesh.geometry.computeBoundingSphere();
+        const at = mesh.geometry.boundingSphere?.center.toArray().map((x) => x.toFixed(2));
+        inverted.push(`${mesh.geometry.getAttribute("position").count} vertices at ${at}: ${volume.toFixed(3)}`);
       }
     }
   });
