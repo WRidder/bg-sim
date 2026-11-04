@@ -48,3 +48,8 @@ apps/a109-sim/build/
 
 # machine specific assistant profiles (assistant.example.toml is the committed default)
 assistant.toml
+
+# web games: bundles and the generated models (build_wasm.py)
+apps/web/dist/
+apps/web/dist-single/
+apps/web/src/*/model.gen.ts
