@@ -1,7 +1,6 @@
 /**
  * Island Sortie: the menus, the frame loop, and everything that turns the F-16's numbers into a
- * picture and a sound. Behind the title screen the aircraft flies the gate run by itself, so the
- * menu is already the game.
+ * picture and a sound. Behind the title screen the aircraft cruises round the island by itself.
  */
 
 import * as THREE from "three";
@@ -16,9 +15,9 @@ import { $, announce, BestTime, choices, clock } from "../engine/ui";
 import { Island } from "../island/source";
 import { buildGround, GateRings, groundShadow } from "../island/world";
 import { buildFighter } from "./aircraft";
-import { flyTo } from "./autopilot";
+import { flyOrbit, flyTo, type Orbit } from "./autopilot";
 import { buildCockpit } from "./cockpit";
-import { Flight, gateCourse, type Start } from "./flight";
+import { Flight, gateCourse, ORIGIN, type Start } from "./flight";
 import { Hud, type HudView, warnings } from "./hud";
 import starts from "./starts.json";
 
@@ -26,6 +25,8 @@ const q = new URLSearchParams(location.search);
 const DEMO = q.has("demo");
 /** Fast and fairly low, with the first gate straight ahead. */
 const GATE_START = starts[2] as Start;
+/** Behind the title: round the island, clockwise, so the land stays on the free side of the menu. */
+const TITLE_ORBIT: Orbit = { north: 6000, east: 1500, radius: 30000, alt: 1500 };
 
 type Phase = "title" | "flying" | "paused" | "over";
 
@@ -145,6 +146,7 @@ async function main(): Promise<void> {
       run.stop();
     }
     rings.group.visible = mode === "gates";
+    flight.origin = { ...ORIGIN };
     flight.reset(start, switches());
     flight.gusts.intensity = $<HTMLInputElement>("turbulence").checked ? 2.5 : 0;
     controls.setThrottle(start.thtl0);
@@ -152,10 +154,11 @@ async function main(): Promise<void> {
     show("flying");
   };
 
-  /** Behind the title the aircraft flies the gate run with the gates out of sight. */
+  /** The start's heading is north, so the orbit begins on its west side, already on the circle. */
   const attract = (): void => {
-    run.start(gateCourse(ground));
+    run.stop();
     rings.group.visible = false;
+    flight.origin = { north: TITLE_ORBIT.north, east: TITLE_ORBIT.east - TITLE_ORBIT.radius };
     flight.reset(GATE_START, {});
     flight.gusts.intensity = 0;
     rig.view = "chase";
@@ -259,7 +262,9 @@ async function main(): Promise<void> {
     stage.judge(interval);
     requestAnimationFrame(frame);
 
-    if (phase === "title" || DEMO) {
+    if (phase === "title") {
+      flyOrbit(flight, TITLE_ORBIT, 190, ground);
+    } else if (DEMO) {
       const gate = run.next();
       if (gate) {
         flyTo(flight, gate, 190, ground);
@@ -378,7 +383,7 @@ async function main(): Promise<void> {
         const penalty = missed ? ` with ${missed} missed (${missed * run.penalty} s added)` : ", every gate clean";
         finish(record ? "New best time" : "Run complete", `${clock(score)}${penalty}.`);
       }
-    } else if (phase === "title" && (flight.crashed || run.done !== null)) {
+    } else if (phase === "title" && flight.crashed) {
       attract();
     }
   };

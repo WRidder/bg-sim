@@ -52,6 +52,11 @@ float waves(vec2 p) {
 }
 
 void main() {
+  // The sea stops at the coast, and the land at the sea. Drawn one over the other, a far shelf a
+  // few metres down would fight the surface for the depth buffer and flicker through it.
+  float depth = -textureLod(uField, vec2(vWorld.x, -vWorld.z) / uExtent + 0.5, 0.0).r;
+  if (depth <= 0.0) discard;
+
   vec3 view = cameraPosition - vWorld;
   float distanceToEye = length(view);
   view /= distanceToEye;
@@ -63,7 +68,6 @@ void main() {
   float wz = waves(vWorld.xz + vec2(0.0, e));
   vec3 normal = normalize(vec3((w0 - wx) * near * 1.6, e * 2.2, (w0 - wz) * near * 1.6));
 
-  float depth = -textureLod(uField, vec2(vWorld.x, -vWorld.z) / uExtent + 0.5, 0.0).r;
   float shallow = smoothstep(42.0, 1.0, depth);
   vec3 deep = vec3(0.004, 0.028, 0.060);
   vec3 reef = vec3(0.025, 0.20, 0.21);

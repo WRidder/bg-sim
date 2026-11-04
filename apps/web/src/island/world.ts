@@ -74,9 +74,16 @@ function airfield(aerial: (m: THREE.Material) => THREE.Material): THREE.Group {
   const a = (AIRFIELD.heading * Math.PI) / 180;
   field.position.set(AIRFIELD.east, AIRFIELD.elevation, -AIRFIELD.north);
   field.rotation.y = -a;
-  const concrete = aerial(new THREE.MeshStandardMaterial({ color: 0x77776f, roughness: 0.95 }));
-  const asphalt = aerial(new THREE.MeshStandardMaterial({ color: 0x45464a, roughness: 0.95 }));
-  const runway = aerial(new THREE.MeshStandardMaterial({ map: runwayTexture(), roughness: 0.9 }));
+  // Paint on paint on the ground: a metre of height means nothing to the depth buffer from a few
+  // kilometres up, while an offset in its own units holds at any range.
+  const layer = (order: number): Partial<THREE.MeshStandardMaterialParameters> => ({
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -4 * order,
+  });
+  const concrete = aerial(new THREE.MeshStandardMaterial({ color: 0x77776f, roughness: 0.95, ...layer(1) }));
+  const asphalt = aerial(new THREE.MeshStandardMaterial({ color: 0x45464a, roughness: 0.95, ...layer(2) }));
+  const runway = aerial(new THREE.MeshStandardMaterial({ map: runwayTexture(), roughness: 0.9, ...layer(3) }));
   field.add(
     apron(AIRFIELD.width, AIRFIELD.length, runway, 0, 0, 1.2),
     apron(60, AIRFIELD.length + 240, asphalt, 0, 0, 1),

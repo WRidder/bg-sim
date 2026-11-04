@@ -74,6 +74,8 @@ void main() {
   vec2 xz = vWorld.xz;
   float distanceToEye = length(vWorld - cameraPosition);
   vec4 here = field(xz);
+  // Under the sea is the ocean's: see Ocean.
+  if (here.r < 0.0) discard;
   float e = uTexel * uExtent;
   float hx = field(xz + vec2(e, 0.0)).r - field(xz - vec2(e, 0.0)).r;
   float hz = field(xz + vec2(0.0, e)).r - field(xz - vec2(0.0, e)).r;

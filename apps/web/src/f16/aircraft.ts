@@ -72,7 +72,7 @@ function loft(stations: readonly Station[], rows: number, columns: number, resha
   for (let r = 0; r < rows; r += 1) {
     for (let c = 0; c < columns; c += 1) {
       const a = r * side + c;
-      indices.push(a, a + 1, a + side, a + 1, a + side + 1, a + side);
+      indices.push(a, a + side, a + 1, a + 1, a + side, a + side + 1);
     }
   }
   const geometry = new THREE.BufferGeometry();
@@ -151,9 +151,9 @@ function surface(panel: Panel, spanRows = 14, chordRows = 22): THREE.BufferGeome
       const d = a + ring;
       const e = b + ring;
       if (side > 0 === !panel.vertical) {
-        indices.push(a, b, d, b, e, d);
-      } else {
         indices.push(a, d, b, b, d, e);
+      } else {
+        indices.push(a, b, d, b, e, d);
       }
     }
   }
@@ -164,8 +164,9 @@ function surface(panel: Panel, spanRows = 14, chordRows = 22): THREE.BufferGeome
   return geometry;
 }
 
+/** Turns a profile given nose first; a lathe faces outwards when it runs the other way. */
 function revolve(profile: readonly [number, number][], segments: number): THREE.BufferGeometry {
-  return new THREE.LatheGeometry(profile.map(([r, x]) => new THREE.Vector2(r, x)), segments);
+  return new THREE.LatheGeometry(profile.map(([r, x]) => new THREE.Vector2(r, x)).reverse(), segments);
 }
 
 function along(geometry: THREE.BufferGeometry, x: number, y: number, z: number): THREE.BufferGeometry {

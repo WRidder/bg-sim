@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { flyTo } from "../src/f16/autopilot";
+import { flyOrbit, flyTo } from "../src/f16/autopilot";
 import { Flight, gateCourse, type Start } from "../src/f16/flight";
 import { islandHeight } from "../src/island/island";
 import starts from "../src/f16/starts.json";
@@ -43,6 +43,36 @@ describe("the flight", () => {
     expect(flight.crashed).toBe(true);
     expect(flight.crashReason).toBe("Water");
   });
+});
+
+describe("the title screen's flight", () => {
+  it("is a calm orbit: shallow banks, no rocking, clear of the ground", async () => {
+    const orbit = { north: 6000, east: 1500, radius: 30000, alt: 1500 };
+    const flight = await Flight.create(ground, starts[2] as Start);
+    flight.origin = { north: orbit.north, east: orbit.east - orbit.radius };
+    flight.reset();
+    let bank = 0;
+    let rate = 0;
+    let gamma = 0;
+    let lowest = Infinity;
+    for (let i = 0; i < 200 * 600 && !flight.crashed; i += 1) {
+      flyOrbit(flight, orbit, 190, ground);
+      flight.advance(flight.pacer.step);
+      // The first half minute settles from the trim's speed and height.
+      if (i > 200 * 30) {
+        bank = Math.max(bank, Math.abs(flight.get("phi_deg")));
+        rate = Math.max(rate, Math.abs(flight.get("p_dps")));
+        gamma = Math.max(gamma, Math.abs(flight.get("gamma_deg")));
+        lowest = Math.min(lowest, flight.altitudeAboveGround());
+      }
+    }
+    const outcome = `bank ${bank.toFixed(1)} rate ${rate.toFixed(1)} gamma ${gamma.toFixed(1)} lowest ${lowest.toFixed(0)}`;
+    expect(flight.crashed, outcome).toBe(false);
+    expect(bank, outcome).toBeLessThan(25);
+    expect(rate, outcome).toBeLessThan(6);
+    expect(gamma, outcome).toBeLessThan(6);
+    expect(lowest, outcome).toBeGreaterThan(250);
+  }, 30000);
 });
 
 describe("the gate run", () => {
