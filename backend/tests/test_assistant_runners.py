@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import sys
+import types
 
 import httpx
 import pytest
@@ -460,6 +461,28 @@ def test_a_hosted_profile_says_which_key_is_missing(monkeypatch):
     profile = profiles.parse(HOSTED).profiles["h"]
     result = runner_openai.probe(profile, httpx.Client(transport=httpx.MockTransport(refuse)))
     assert result["available"] is False and "BGSIM_TEST_KEY" in result["reason"]
+
+
+def test_a_key_set_for_the_windows_user_after_the_start_is_found(monkeypatch):
+    class Folder:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+    registry = types.SimpleNamespace(
+        HKEY_CURRENT_USER=1,
+        OpenKey=lambda *_: Folder(),
+        QueryValueEx=lambda _, name: ("sk-later", 1) if name == "BGSIM_TEST_KEY" else (_ for _ in ()).throw(OSError()),
+    )
+    monkeypatch.delenv("BGSIM_TEST_KEY", raising=False)
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setitem(sys.modules, "winreg", registry)
+    assert runner_openai.api_key("BGSIM_TEST_KEY") == "sk-later"
+    assert runner_openai.api_key("BGSIM_OTHER_KEY") is None
+    monkeypatch.setenv("BGSIM_TEST_KEY", "sk-process")
+    assert runner_openai.api_key("BGSIM_TEST_KEY") == "sk-process"
 
 
 def test_a_hosted_endpoint_gets_the_key_and_needs_no_model_list(monkeypatch):

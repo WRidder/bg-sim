@@ -27,7 +27,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from .. import data as data_files
-from .. import debug, docs, proxy, runs
+from .. import debug, docs, meshes, proxy, runs
 from ..contracts import Breakpoint, DebugStartOptions, Model, ParameterOverride, ParameterStep
 from ..projects import ProjectStore, _block_name, _detail_message, _model_name
 from ..proxy import WorkerRpcFailure
@@ -145,6 +145,10 @@ SIGNALS = {"type": "array", "minItems": 1, "items": STR, "description": "Signal 
 
 
 # ---------------------------------------------------------------------------- helpers
+
+
+#: The parts of a model that set_model_field writes and get_model reads back.
+MODEL_FIELDS = ("plots", "dashboard", "scene", "bindings")
 
 
 def _error_text(exc: HTTPException) -> str:
@@ -347,10 +351,15 @@ async def list_models(s: Any, a: dict[str, Any]) -> dict[str, Any]:
 
 
 @tool("Read a model: its nodes, parameters and connections by name, one diagram level at a time, "
-      "with settings, globals and plots at the top level. `raw` returns the whole JSON document.",
-      {"model": MODEL, "subsystem": PARENT, "raw": BOOL, "project": PROJECT})
+      "with settings, globals and plots at the top level. `part` returns just the dashboard, the "
+      "scene field, the bindings or the plots, as set_model_field takes them. `raw` returns the "
+      "whole JSON document.",
+      {"model": MODEL, "subsystem": PARENT, "part": {"enum": list(MODEL_FIELDS)}, "raw": BOOL,
+       "project": PROJECT})
 async def get_model(s: Any, a: dict[str, Any]) -> dict[str, Any]:
     document = _read_model(s, _model_name_of(s, a), a.get("project"))
+    if a.get("part"):
+        return {a["part"]: document.get(a["part"])}
     if a.get("raw"):
         text = json.dumps(document)
         if len(text) > MAX_TEXT:
@@ -463,6 +472,27 @@ async def read_doc(s: Any, a: dict[str, Any]) -> dict[str, Any]:
 async def list_data(s: Any, a: dict[str, Any]) -> dict[str, Any]:
     store, source, _ = _source(s, a.get("project"))
     return {"files": data_files.list_data(source, store, "all")}
+
+
+@tool("List the SDF scene files and the GLB meshes of a project (with your draft's scenes for "
+      "the current one).", {"project": PROJECT})
+async def list_scenes(s: Any, a: dict[str, Any]) -> dict[str, Any]:
+    store, source, current = _source(s, a.get("project"))
+    scenes = set(meshes.list_scenes(store, source))
+    return {
+        "scenes": sorted(scenes | set(s.draft.scenes)) if current else sorted(scenes),
+        "meshes": meshes.list_meshes(store, source),
+    }
+
+
+@tool("Read an SDF scene file, to learn from it or to change it with write_scene. For the current "
+      "project your draft's version.", {"file": STR, "project": PROJECT}, ("file",))
+async def read_scene(s: Any, a: dict[str, Any]) -> dict[str, Any]:
+    store, source, current = _source(s, a.get("project"))
+    text = s.draft.scene(a["file"]) if current else meshes.read_scene(store, source, a["file"])
+    if text is None:
+        raise ToolError(f"no scene {a['file']!r}; list_scenes shows what there is")
+    return {"file": a["file"], "text": text[:MAX_TEXT], "truncated": len(text) > MAX_TEXT}
 
 
 @tool("The header and first rows of a CSV data file.",
@@ -747,16 +777,73 @@ async def set_settings(s: Any, a: dict[str, Any]) -> dict[str, Any]:
 
 @tool("Set one part of a model that has no tool of its own, as JSON following "
       "contracts/schemas/model.schema.json: `plots` (saved plots), `dashboard` (cards), `scene`, "
-      "`bindings`. The result is validated.",
-      {"model": MODEL, "field": {"enum": ["plots", "dashboard", "scene", "bindings"]}, "value": {}},
+      "`bindings`. The result is validated, and get_model with `part` reads it back.\n"
+      "`dashboard` is {\"autoRerun\": true, \"cards\": [...]}. Every card has `id`, `kind`, `size` "
+      "(1x1, 2x1, 1x2, 2x2, 4x2) and `title`. Display cards (plot, value, gauge, bar, indicator) "
+      "bind `signals`, an array of signal ids, with display settings in `options`. Input cards "
+      "(number, slider, knob, toggle, select) bind `parameter`, one string, global:<name> or "
+      "<instance path>/<param>; the range of a slider or knob is in `options`. They never take "
+      "`target`, `binding` or `param`. They write overrides for the next run, not model edits. A "
+      "global must exist first (set_globals). autoRerun runs again after an input changes, while "
+      "the Dashboard tab is open. For example:\n"
+      '{"id":"x","kind":"plot","size":"2x2","title":"Position","signals":["Spring/q"]}\n'
+      '{"id":"v","kind":"value","size":"1x1","title":"Speed","signals":["Mass/v"],'
+      '"options":{"unit":"m/s","decimals":2}}\n'
+      '{"id":"k","kind":"slider","size":"2x1","title":"Stiffness","parameter":"global:k",'
+      '"options":{"min":100,"max":2000,"step":50}}\n'
+      '{"id":"note","kind":"text","size":"2x1","title":"Note","options":{"text":"Drag k."}}\n'
+      '{"id":"F","kind":"schedule","size":"4x2","title":"Load","schedule":{"parameters":'
+      '["Load/F"],"rows":[{"t":0,"values":[0]},{"t":1,"values":[50]}]}}\n'
+      "`scene` is {\"file\": \"scenes/<name>.sdf\"}: scenes are files, so write it with write_scene "
+      "first. `bindings` connect it to signals, for example "
+      '{"target":"joint:arm","property":"position","signal":"Arm/q"}; read an example\'s with '
+      "get_model `part`.",
+      {"model": MODEL, "field": {"enum": list(MODEL_FIELDS)}, "value": {}},
       ("field", "value"), edits=True)
 async def set_model_field(s: Any, a: dict[str, Any]) -> dict[str, Any]:
     name = _model_name_of(s, a)
     document = _working(s, name)
     document[a["field"]] = a["value"]
     _validated(s, document)
+    warnings = await _check_field(s, document, a["field"])
     s.draft.put_model(name, document)
-    return {"set": a["field"]}
+    result: dict[str, Any] = {"set": a["field"]}
+    if a["field"] == "dashboard":
+        result["cards"] = [
+            {"id": c["id"], "kind": c["kind"], "bound": c.get("parameter") or c.get("signals")}
+            for c in (a["value"] or {}).get("cards", [])
+        ]
+    return {**result, "warnings": warnings} if warnings else result
+
+
+async def _check_field(s: Any, document: dict[str, Any], field: str) -> list[str]:
+    """What the schema cannot see: a field that is valid and still does nothing. Refuses what
+    cannot work, and returns warnings for what only may not."""
+    if field == "dashboard":
+        problems = modelops.card_problems(document)
+        for bound in modelops.bound_parameters(document):
+            instance, _, parameter = bound.rpartition("/")
+            try:
+                _, node, _ = modelops.locate(document, instance)
+            except ToolError as exc:
+                problems.append(f"{bound}: {exc}")
+                continue
+            interface = await _interface(s, node)
+            known = None if interface is None else interface.get("parameters")
+            if known is not None and parameter not in {p["name"] for p in known}:
+                problems.append(f"{bound}: {instance} has no parameter {parameter!r}")
+        if problems:
+            raise ToolError("the dashboard would not work", problems=problems[:20])
+        return []
+    file = (document.get("scene") or {}).get("file")
+    if field == "scene" and file is not None and s.draft.scene(file.rpartition("/")[2]) is None:
+        raise ToolError(f"there is no {file}: write it first with write_scene")
+    if field == "bindings" and document.get("bindings"):
+        text = None if file is None else s.draft.scene(file.rpartition("/")[2])
+        if text is None:
+            return ["this model has no scene yet: nothing will move until `scene` names one"]
+        return modelops.binding_warnings(document["bindings"], modelops.scene_names(text))
+    return []
 
 
 def _validated(s: Any, document: dict[str, Any]) -> None:
@@ -776,8 +863,13 @@ async def replace_model(s: Any, a: dict[str, Any]) -> dict[str, Any]:
     problems = modelops.lint(document)
     if problems:
         raise ToolError("the document is inconsistent", problems=problems[:20])
+    before = s.draft.model(name) or {}
+    warnings = []
+    for field in MODEL_FIELDS:
+        if document.get(field) != before.get(field):
+            warnings += await _check_field(s, document, field)
     s.draft.put_model(name, document)
-    return {"replaced": name}
+    return {"replaced": name, "warnings": warnings} if warnings else {"replaced": name}
 
 
 @tool("Add a sticky note (Markdown, no images or tables) to a diagram.",
@@ -833,6 +925,27 @@ async def write_doc(s: Any, a: dict[str, Any]) -> dict[str, Any]:
         _read_model(s, _model_name(model), None)
     s.draft.put_page(model, docs._page_id(a["page"]), a["title"], a["text"], a.get("parent"))
     return {"written": a["page"]}
+
+
+@tool("Write an SDF scene file of the project in the draft, for the 3D view. A model shows it once "
+      "its `scene` field names it (set_model_field). SDF 1.9: <sdf><model name=..> with <link> "
+      "holding <visual> with <geometry> (<box><size>, <cylinder><radius><length>, <sphere><radius> "
+      "or <mesh><uri>meshes/x.glb</uri>, only meshes the project has) and <material><diffuse>, and "
+      "<joint type=revolute|continuous|prismatic|fixed> with <parent>, <child>, <axis><xyz>. "
+      "Z up, metres, <pose>x y z roll pitch yaw</pose>. Returns the link, joint and visual names "
+      "that `bindings` target; read_scene on an example shows a complete file.",
+      {"file": {"type": "string", "description": "A file name such as `arm.sdf`, no folders."},
+       "text": STR}, ("file", "text"), edits=True)
+async def write_scene(s: Any, a: dict[str, Any]) -> dict[str, Any]:
+    try:
+        meshes._scene_name(a["file"])
+    except HTTPException as exc:
+        raise ToolError(_error_text(exc)) from None
+    if len(a["text"].encode("utf-8")) > meshes.MAX_SCENE_BYTES:
+        raise ToolError(f"the scene is larger than the limit of {meshes.MAX_SCENE_BYTES} bytes")
+    names = modelops.scene_names(a["text"])
+    s.draft.put_scene(a["file"], a["text"])
+    return {"written": f"scenes/{a['file']}", **{f"{k}s": sorted(v) for k, v in names.items()}}
 
 
 # ---------------------------------------------------------------------------- checking

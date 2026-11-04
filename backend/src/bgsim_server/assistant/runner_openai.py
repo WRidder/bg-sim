@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 import time
 import uuid
 from typing import Any
@@ -39,10 +40,26 @@ class RunnerError(Exception):
     pass
 
 
+def api_key(name: str | None) -> str | None:
+    """The key from the environment. A process keeps the environment it started with, so on
+    Windows a variable set for the user later is read where Windows stores it."""
+    if not name:
+        return None
+    if name in os.environ or sys.platform != "win32":
+        return os.environ.get(name) or None
+    import winreg
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment") as folder:
+            return str(winreg.QueryValueEx(folder, name)[0]) or None
+    except OSError:
+        return None
+
+
 def _headers(profile: Profile, session: str | None = None) -> dict[str, str]:
     """A hosted endpoint wants to know the client and, for its limits, the conversation."""
     headers = {"User-Agent": USER_AGENT}
-    key = os.environ.get(profile.api_key_env) if profile.api_key_env else None
+    key = api_key(profile.api_key_env)
     if key:
         headers["Authorization"] = f"Bearer {key}"
     if session:
@@ -61,10 +78,10 @@ def _models(profile: Profile, client: httpx.Client, timeout: float = 5.0) -> lis
 
 def probe(profile: Profile, client: httpx.Client | None = None, timeout: float = 60.0) -> dict[str, Any]:
     """The endpoint answers and one tiny tool call comes back as structured ``tool_calls``."""
-    if profile.api_key_env and not os.environ.get(profile.api_key_env):
+    if profile.api_key_env and not api_key(profile.api_key_env):
         return {
             "available": False, "model": None,
-            "reason": f"set the environment variable {profile.api_key_env} and restart the backend",
+            "reason": f"the environment variable {profile.api_key_env} is not set",
         }
     own = client is None
     http = client or httpx.Client()

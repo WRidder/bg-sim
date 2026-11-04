@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
+from xml.etree import ElementTree
 
 NODE_WIDTH = 100.0
 NODE_HEIGHT = 60.0
@@ -802,6 +803,99 @@ def lint(doc: dict[str, Any]) -> list[str]:
                 if connection[side]["node"] not in ids:
                     problems.append(f"{where}: connection {connection['id']} has a dangling {side} end")
     return problems
+
+
+DISPLAY_CARDS = ("plot", "value", "gauge", "bar", "indicator")
+INPUT_CARDS = ("number", "slider", "knob", "toggle", "select")
+SDF_GEOMETRY = ("box", "cylinder", "sphere", "mesh")
+SDF_JOINTS = ("revolute", "continuous", "prismatic", "fixed")
+
+
+def card_problems(doc: dict[str, Any]) -> list[str]:
+    """Dashboard cards that pass the schema but would show nothing: the wrong binding field, or
+    none. The UI only says so on the card."""
+    problems = []
+    globals_ = {p["name"] for p in doc.get("parameters") or []}
+    for card in (doc.get("dashboard") or {}).get("cards", []):
+        where, kind = f"card {card['id']} ({card['kind']})", card["kind"]
+        if kind in DISPLAY_CARDS:
+            if "parameter" in card:
+                problems.append(f"{where}: display cards bind through `signals`, not `parameter`")
+            if not card.get("signals"):
+                problems.append(f"{where}: give `signals`, an array of signal ids")
+        elif kind in INPUT_CARDS:
+            if "signals" in card:
+                problems.append(f"{where}: input cards bind through `parameter`, not `signals`")
+            parameter = card.get("parameter")
+            if parameter is None:
+                problems.append(f"{where}: give `parameter`, global:<name> or <instance path>/<param>")
+            elif parameter.startswith("global:"):
+                name = parameter[len("global:"):]
+                if kind in ("toggle", "select"):
+                    problems.append(f"{where}: bind a block parameter; only number, slider and knob take a global")
+                if name not in globals_:
+                    problems.append(f"{where}: no global {name!r}: create it with set_globals first")
+        elif kind == "schedule" and not (card.get("schedule") or {}).get("parameters"):
+            problems.append(f"{where}: give `schedule` with `parameters` and `rows`")
+        elif kind == "text" and "text" not in (card.get("options") or {}):
+            problems.append(f"{where}: give the text as `options.text`")
+    return problems
+
+
+def bound_parameters(doc: dict[str, Any]) -> list[str]:
+    """The block parameters the dashboard's input and schedule cards name."""
+    out = []
+    for card in (doc.get("dashboard") or {}).get("cards", []):
+        parameter = card.get("parameter")
+        if parameter is not None and not parameter.startswith("global:"):
+            out.append(parameter)
+        out.extend((card.get("schedule") or {}).get("parameters", []))
+    return out
+
+
+def scene_names(text: str) -> dict[str, set[str]]:
+    """The targets an SDF scene offers to bindings. The viewer draws the supported subset of SDF
+    (web/src/scene/sdf.ts) and refuses the rest: this says so while the agent can still fix it."""
+    if "<!DOCTYPE" in text or "<!ENTITY" in text:
+        raise ToolError("the scene may not have a DOCTYPE or entities")
+    try:
+        root = ElementTree.fromstring(text)
+    except ElementTree.ParseError as exc:
+        raise ToolError(f"the scene is not well-formed XML: {exc}") from None
+    if root.tag != "sdf":
+        raise ToolError(f"the root element is <{root.tag}>, it must be <sdf>")
+    if root.find(".//model") is None:
+        raise ToolError("the scene has no <model>")
+    names: dict[str, set[str]] = {"link": set(), "visual": set(), "joint": set()}
+    for kind, found in names.items():
+        for element in root.iter(kind):
+            name = element.get("name")
+            if not name:
+                raise ToolError(f"a <{kind}> has no name")
+            if name in found:
+                raise ToolError(f"two <{kind}> elements are called {name}")
+            found.add(name)
+    if not names["visual"]:
+        raise ToolError("the scene has no <visual>: there is nothing to draw")
+    for visual in root.iter("visual"):
+        geometry = visual.find("geometry")
+        shapes = [] if geometry is None else [child.tag for child in geometry]
+        if not set(shapes) & set(SDF_GEOMETRY):
+            raise ToolError(f"visual {visual.get('name')}: <geometry> needs one of {list(SDF_GEOMETRY)}")
+    for joint in root.iter("joint"):
+        if joint.get("type") not in SDF_JOINTS:
+            raise ToolError(f"joint {joint.get('name')}: type must be one of {list(SDF_JOINTS)}")
+    return names
+
+
+def binding_warnings(bindings: list[dict[str, Any]], names: dict[str, set[str]]) -> list[str]:
+    """Bindings whose target is not in the scene: they would move nothing, without an error."""
+    out = []
+    for binding in bindings:
+        kind, _, name = str(binding.get("target", "")).partition(":")
+        if kind in names and name not in names[kind]:
+            out.append(f"{binding['target']} is not in the scene; it has {sorted(names[kind])[:30]}")
+    return out
 
 
 def _text(value: Any) -> str | None:

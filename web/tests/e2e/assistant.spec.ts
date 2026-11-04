@@ -94,6 +94,33 @@ test("a change is a proposal until applied, and Apply is one undo step", async (
   await expect(nodes).toHaveCount(before);
 });
 
+test("applied docs show in the open Docs tab without a page reload", async ({ page }) => {
+  await openChat(page);
+  await page.getByRole("tab", { name: "Docs" }).click();
+  const docs = page.getByTestId("docs-tab");
+  await expect(docs).toHaveAttribute("data-status", "ready");
+
+  await say(page, "#docs write it up");
+  await expect(page.getByTestId("assistant-proposal")).toContainText("doc hydraulic-servo/agent-notes");
+  await expect(page.getByTestId("assistant-working")).toBeHidden();
+  await expect(docs).not.toContainText("Agent notes"); // a draft until it is applied
+
+  await page.getByTestId("assistant-apply").click();
+  await expect(page.getByTestId("assistant-notice")).toContainText("Applied 2 files");
+  await expect(docs).toContainText("Agent notes");
+  await expect(page.getByTestId("assistant-proposal")).toBeHidden();
+});
+
+test("a profile that is not available can be picked, and says why", async ({ page }) => {
+  await openChat(page);
+  const profile = page.getByTestId("assistant-profile");
+  await expect(profile.locator("option", { hasText: "not available" }).first()).toBeAttached();
+  await profile.selectOption("local");
+  await expect(page.getByTestId("assistant-unavailable")).toContainText("The profile local is not available");
+  await page.getByTestId("assistant-check-profile").click();
+  await expect(page.getByTestId("assistant-unavailable")).toBeVisible();
+});
+
 test("discarding drops the draft and leaves the model alone", async ({ page }) => {
   await openChat(page);
   const nodes = page.getByTestId("diagram-node");

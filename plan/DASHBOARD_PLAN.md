@@ -35,6 +35,12 @@ end.
 | `select` | input | enumeration (`Int` with options) | 1-based options from the catalog |
 | `schedule` | input | parameter columns | table: t (s) plus one column per parameter |
 
+In the model document (`dashboard.cards`) every card has `id`, `kind`, `size` and `title`. Display
+cards hold their signal ids in `signals`, an array. Input cards hold their binding in `parameter`,
+one string. A schedule's columns are in `schedule.parameters`, and a text card's text is in
+`options.text`. Everything else about a card's look or range is in `options` (`min`, `max`, `step`,
+`decimals`, `unit`, `zones`, `threshold`, `onWhen`, `orientation`, `sparkline`).
+
 Sizes are presets `1x1`, `2x1`, `1x2`, `2x2`, `4x2` on a plain CSS grid (column count from the
 tab width, about 170 px per column). Status zones (`good`/`warn`/`bad`/`info`) always come with an
 icon and a label, never colour alone. All colours are theme tokens.

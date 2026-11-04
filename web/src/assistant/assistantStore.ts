@@ -18,10 +18,11 @@ import type {
   AssistantSessionInfo,
 } from "../contracts/assistant";
 import { keepRunBreakpoints } from "../debug/debugStore";
-import { useDocsStore } from "../docs/docsStore";
+import { useDocsIndexStore, useDocsStore, useProjectDocsStore } from "../docs/docsStore";
 import { fetchCatalog } from "../library/catalogClient";
 import { useCatalogStore } from "../library/catalogStore";
 import { useRunStore } from "../plot/runStore";
+import { useSceneRevision } from "../scene/sceneRevision";
 import { useDocumentStore } from "../state/documentStore";
 import { saveCurrentModel } from "../state/persistence";
 import {
@@ -303,6 +304,8 @@ export const useAssistantStore = create<AssistantState>()((set, get) => {
       set({ applying: true, error: null, notice: null });
       try {
         await flushEditor();
+        await useDocsStore.getState().saveAll();
+        await useProjectDocsStore.getState().saveAll();
         const editor = useDocumentStore.getState();
         const result = await applyDraft(session, editor.modelName);
         if (result.openModel !== undefined) {
@@ -314,7 +317,14 @@ export const useAssistantStore = create<AssistantState>()((set, get) => {
           useCatalogStore.getState().setCatalog(await fetchCatalog(open));
         }
         if (editor.project !== null && result.applied.some((file) => file.startsWith("doc:"))) {
-          await useDocsStore.getState().load(editor.project, editor.modelName);
+          await Promise.all([
+            useDocsStore.getState().reload(),
+            useProjectDocsStore.getState().reload(),
+            useDocsIndexStore.getState().load(editor.project, true),
+          ]);
+        }
+        if (result.applied.some((file) => file.startsWith("scene:"))) {
+          useSceneRevision.getState().bump();
         }
         set({
           notice:

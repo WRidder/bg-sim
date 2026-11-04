@@ -71,6 +71,8 @@ export interface DocsState {
 
   /** Load the docs of `model`, or the project docs when `model` is `null`. */
   load: (project: string, model: string | null) => Promise<void>;
+  /** Read the open docs again after something else wrote them; the page stays selected. */
+  reload: () => Promise<void>;
   select: (id: string | null) => Promise<void>;
   setMode: (mode: DocsMode) => void;
   setDraft: (id: string, text: string) => void;
@@ -194,6 +196,39 @@ const createDocsStore = (wiki: "model" | "project") =>
         if (first !== null) {
           await get().select(first);
         }
+      } catch (error) {
+        if (token === loadToken) {
+          set({ status: "error", error: message(error) });
+        }
+      }
+    },
+
+    reload: async () => {
+      const { project, model, selected } = get();
+      if (!opened(project, model)) {
+        return;
+      }
+      loadToken += 1;
+      const token = loadToken;
+      try {
+        const [docs, listing] = await Promise.all([
+          fetchManifest(project, model),
+          listAssets(project, model).catch(() => ({ assets: [], unused: 0 })),
+        ]);
+        if (token !== loadToken) {
+          return;
+        }
+        set((state) => ({
+          docs,
+          status: "ready",
+          error: null,
+          saved: {},
+          drafts: Object.fromEntries(dirtyPageIds(state).map((id) => [id, state.drafts[id]])),
+          assets: new Set(listing.assets.map((asset) => asset.file)),
+          unusedImages: listing.unused,
+        }));
+        const keep = selected !== null && findPage(docs.pages, selected) !== null;
+        await get().select(keep ? selected : firstPageId(docs));
       } catch (error) {
         if (token === loadToken) {
           set({ status: "error", error: message(error) });

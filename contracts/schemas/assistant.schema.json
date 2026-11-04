@@ -202,7 +202,7 @@
       "type": "object",
       "required": ["file", "severity", "message"],
       "properties": {
-        "file": { "type": "string", "description": "`model:<name>` or `library:<block>`." },
+        "file": { "type": "string", "description": "`model:<name>`, `library:<block>` or `scene:<file>`." },
         "severity": { "title": "AssistantIssueSeverity", "enum": ["error", "warning"] },
         "code": { "type": ["string", "null"] },
         "path": { "type": ["string", "null"] },
@@ -230,7 +230,7 @@
       "type": "object",
       "required": ["kind", "name", "change", "rows"],
       "properties": {
-        "kind": { "title": "AssistantFileKind", "enum": ["model", "library", "doc"] },
+        "kind": { "title": "AssistantFileKind", "enum": ["model", "library", "doc", "scene"] },
         "name": { "type": "string", "description": "Model or block name; for a doc `<model or @project>/<page id>`." },
         "change": { "title": "AssistantFileChangeKind", "enum": ["added", "changed", "removed"] },
         "rows": { "type": "array", "items": { "$ref": "#/$defs/changeRow" } },
@@ -454,7 +454,7 @@
       "type": "object",
       "required": ["applied", "backup"],
       "properties": {
-        "applied": { "type": "array", "items": { "type": "string" }, "description": "`model:<name>`, `library:<block>`, `doc:<owner>/<page>`." },
+        "applied": { "type": "array", "items": { "type": "string" }, "description": "`model:<name>`, `library:<block>`, `doc:<owner>/<page>`, `scene:<file>`." },
         "openModel": {
           "$ref": "https://bgsim.local/schemas/model.schema.json",
           "description": "The new document of the model open in the editor, when it changed."
