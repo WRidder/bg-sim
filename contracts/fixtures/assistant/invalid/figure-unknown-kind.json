@@ -1,0 +1,11 @@
+{
+  "$comment": "a figure has a known kind",
+  "seq": 9,
+  "t": 1793000001,
+  "type": "figure",
+  "figure": {
+    "id": "f",
+    "kind": "hologram",
+    "title": "x"
+  }
+}

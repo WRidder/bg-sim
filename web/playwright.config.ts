@@ -15,6 +15,8 @@ const BASE_URL = `http://127.0.0.1:${PORT}`;
 // The X1.1 acceptance spec needs the real Julia worker; the other UI specs use
 // the fixture-driven fake worker (plan 2.3). Lane x runs both passes.
 const realWorker = process.env.BGSIM_E2E_REAL === "1";
+// The assistant spec talks to a scripted `claude`, never to the real one.
+const fakeClaude = fileURLToPath(new URL("../backend/tests/fake_claude.py", import.meta.url)).replaceAll("\\", "/");
 
 export default defineConfig({
   testDir: "tests",
@@ -54,6 +56,8 @@ export default defineConfig({
     env: {
       BGSIM_PORT_HTTP: PORT,
       ...(process.env.BGSIM_E2E_REAL === "1" ? {} : { BGSIM_FAKE_WORKER: "1" }),
+      BGSIM_ASSISTANT_CLAUDE: `uv run --no-project python ${fakeClaude}`,
+      FAKE_CLAUDE_MODE: "auto",
     },
     url: `${BASE_URL}/api/health`,
     reuseExistingServer: !process.env.CI,

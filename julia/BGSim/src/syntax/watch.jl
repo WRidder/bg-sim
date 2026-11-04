@@ -61,7 +61,10 @@ end
 mutable struct _WatchBuilder
     diagnostics::Vector{Diagnostic}
     filename::String
+    cell::Bool  # a code cell (`src/sim/cells.jl`): vectors, ranges and dotted operators too
 end
+
+_WatchBuilder(diagnostics, filename) = _WatchBuilder(diagnostics, filename, false)
 
 function _watch_diag(code::AbstractString, message::AbstractString, range;
     hint = nothing)
@@ -146,8 +149,18 @@ function _watch_to_expr!(b::_WatchBuilder, node)
         end
         _werr!(b, "E001", "only the signal literal `s\"...\"` may be written like a macro", rng)
         return nothing
-    elseif k == K"call"
+    elseif k == K"call" || (b.cell && k == K"dotcall")
         return _watch_call!(b, node)
+    elseif b.cell && k == K"end"
+        return Name(:end, rng)
+    elseif b.cell && k == K":"
+        return Name(:(:), rng)
+    elseif b.cell && k == K"tuple"
+        items = _cell_exprs!(b, _children(node))
+        return items === nothing ? nothing : Call(Name(:tuple, rng), items, rng)
+    elseif b.cell && k == K"'"
+        operand = _watch_to_expr!(b, _children(node)[1])
+        return operand === nothing ? nothing : Call(Name(:transpose, rng), Expr[operand], rng)
     elseif k == K"&&" || k == K"||"
         op = k == K"&&" ? Symbol("&&") : Symbol("||")
         ops = Expr[]
@@ -169,10 +182,15 @@ function _watch_to_expr!(b::_WatchBuilder, node)
             hint = "combine two comparisons with `&&`")
         return nothing
     elseif k == K"ref" || k == K"vect" || k == K"vcat" || k == K"hcat"
+        b.cell && return _cell_array!(b, node)
         _werr!(b, "E001", "arrays and indexing are not allowed in a watch", rng;
             hint = "every signal is a scalar; write `s\"Instance/x[1]\"`")
         return nothing
     elseif k == K"string" || k == K"String"
+        b.cell && (_werr!(b, "E001", "a string in a cell is a title or text to print", rng;
+            hint = "it can be the first argument of table, plot and the like, or an argument of \
+                    print; a table column is named after its expression: `peak = maximum(y)`, \
+                    then `table(\"Title\", peak)`"); return nothing)
         _werr!(b, "E001", "strings are not allowed in a watch", rng;
             hint = "write a signal as s\"Motor1/i\"")
         return nothing
@@ -206,6 +224,14 @@ function _watch_call!(b::_WatchBuilder, node)
             rhs = _watch_to_expr!(b, ch[3])
             (lhs === nothing || rhs === nothing) && return nothing
             return Comparison(op, lhs, rhs, rng)
+        elseif b.cell && op === Symbol(":") && length(ch) == 3
+            lhs = _watch_to_expr!(b, ch[1])
+            rhs = _watch_to_expr!(b, ch[3])
+            (lhs === nothing || rhs === nothing) && return nothing
+            if lhs isa Call && lhs.fn.name === :range && length(lhs.args) == 2
+                return Call(lhs.fn, Expr[lhs.args[1], lhs.args[2], rhs], rng)
+            end
+            return Call(Name(:range, rng), Expr[lhs, rhs], rng)
         elseif op === :~ || op === Symbol("=>") || op === Symbol(":") || op === :in || op === :isa
             _werr!(b, "E001", "`$op` is not allowed in a watch expression", rng)
             return nothing
@@ -221,7 +247,8 @@ function _watch_call!(b::_WatchBuilder, node)
         for j in 3:length(ch)
             rhs = _watch_to_expr!(b, ch[j])
             rhs === nothing && return nothing
-            lhs = BinOp(op, lhs, rhs, rng)
+            lhs = b.cell && kind(node) == K"dotcall" ?
+                Call(Name(Symbol(".", op), rng), Expr[lhs, rhs], rng) : BinOp(op, lhs, rhs, rng)
         end
         return lhs
     end

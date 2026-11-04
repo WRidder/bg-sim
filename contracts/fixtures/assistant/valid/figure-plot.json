@@ -1,0 +1,14 @@
+{
+  "seq": 10,
+  "t": 1793000002,
+  "type": "figure",
+  "figure": {
+    "id": "f2",
+    "kind": "plot",
+    "title": "Step response",
+    "runId": "20261104-0001",
+    "signals": ["Load/w"],
+    "t0": 0,
+    "t1": 2
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "seq": 9,
+  "t": 1793000001,
+  "type": "figure",
+  "figure": {
+    "id": "f1",
+    "kind": "diagram",
+    "title": "motor (draft)",
+    "model": "motor",
+    "path": [],
+    "nodes": [
+      { "id": "n1", "name": "Se1", "kind": "block", "label": "Se", "x": 60, "y": 200 },
+      { "id": "n2", "name": "J1", "kind": "junction", "label": "1", "x": 260, "y": 200 }
+    ],
+    "edges": [{ "from": "n1", "to": "n2", "kind": "bond" }]
+  }
+}

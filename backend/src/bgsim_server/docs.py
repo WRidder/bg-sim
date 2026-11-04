@@ -301,14 +301,53 @@ def _require_page(store: ProjectStore, directory: Path, page_id: str) -> dict[st
     return siblings[index]
 
 
-def _get_page(
-    store: ProjectStore, project: str, model: str | None, page_id: str
-) -> PlainTextResponse:
+def read_page_text(store: ProjectStore, project: str, model: str | None, page_id: str) -> str:
+    """A page's Markdown; an existing page without a file is empty."""
     directory = _wiki_dir(store, project, model)
     _require_page(store, directory, _page_id(page_id))
     path = _sub(directory, PAGES_DIR, f"{page_id}.md")
-    text = path.read_text(encoding="utf-8") if path.is_file() else ""
-    return PlainTextResponse(text, media_type="text/markdown")
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
+
+
+def write_page_text(
+    store: ProjectStore,
+    project: str,
+    model: str | None,
+    page_id: str,
+    title: str,
+    text: str,
+    parent: str | None = None,
+) -> None:
+    """Add the page to the tree when it is new (under ``parent``) and write its Markdown."""
+    directory = _wiki_dir(store, project, model)
+    manifest = _read_manifest(store, directory)
+    found = _find(manifest["pages"], _page_id(page_id))
+    if found is not None:
+        siblings, index = found
+        siblings[index]["title"] = title
+    else:
+        pages = manifest["pages"]
+        if parent is not None:
+            above = _find(pages, _page_id(parent))
+            if above is None:
+                raise ProjectError(404, f"unknown parent page {parent!r}")
+            pages = above[0][above[1]]["children"]
+        pages.append(
+            {"id": page_id, "title": title, "file": f"{PAGES_DIR}/{page_id}.md", "children": []}
+        )
+    _check_manifest(store, manifest)
+    _inside(directory, PAGES_DIR).mkdir(parents=True, exist_ok=True)
+    _write_manifest(directory, manifest)
+    stored = text.replace("\r\n", "\n").replace("\r", "\n").encode("utf-8")
+    _atomic_write_bytes(_sub(directory, PAGES_DIR, f"{page_id}.md"), stored)
+
+
+def _get_page(
+    store: ProjectStore, project: str, model: str | None, page_id: str
+) -> PlainTextResponse:
+    return PlainTextResponse(
+        read_page_text(store, project, model, page_id), media_type="text/markdown"
+    )
 
 
 async def _put_page(

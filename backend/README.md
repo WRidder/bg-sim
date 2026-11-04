@@ -28,6 +28,11 @@ Check the health state:
 
     curl.exe -s http://127.0.0.1:8765/api/health
 
+The chat assistant reads its profiles from `assistant.toml` in the repository root, or
+`assistant.example.toml` without one (`plan/ASSISTANT_PLAN.md`). The Claude profiles use the
+`claude` CLI's own login. A hosted profile names the environment variable with its key in
+`api_key_env`, such as `OPENCODE_API_KEY`; the key never goes in the file.
+
 ## Tests
 
     uv run --directory backend pytest -q            # fake worker, no Julia needed

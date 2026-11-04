@@ -1,0 +1,59 @@
+{
+  "id": 72,
+  "result": {
+    "ok": true,
+    "output": [
+      "done"
+    ],
+    "figures": [
+      {
+        "kind": "table",
+        "title": "",
+        "columns": [
+          "a"
+        ],
+        "rows": [
+          [
+            1
+          ]
+        ],
+        "truncated": false
+      },
+      {
+        "kind": "chart",
+        "title": "",
+        "xLabel": "t",
+        "style": "line",
+        "x": [
+          0,
+          1
+        ],
+        "series": [
+          {
+            "name": "y",
+            "y": [
+              0,
+              2
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "image",
+        "title": "",
+        "rows": [
+          [
+            1,
+            2
+          ]
+        ],
+        "min": 1,
+        "max": 2
+      }
+    ],
+    "values": {
+      "x": 1.5
+    },
+    "diagnostics": []
+  }
+}

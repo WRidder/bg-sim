@@ -1,0 +1,25 @@
+{
+  "seq": 9,
+  "t": 1793000001,
+  "type": "figure",
+  "figure": {
+    "id": "f1",
+    "kind": "table",
+    "title": "Peaks",
+    "columns": [
+      "f",
+      "amp"
+    ],
+    "rows": [
+      [
+        12.5,
+        0.4
+      ],
+      [
+        25.0,
+        null
+      ]
+    ],
+    "truncated": false
+  }
+}

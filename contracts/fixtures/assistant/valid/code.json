@@ -1,0 +1,14 @@
+{
+  "seq": 8,
+  "t": 1793000000,
+  "type": "code",
+  "id": "c1",
+  "title": "Spectrum",
+  "code": "amp = abs.(fft(s\"Load/w\"))\nPlot(fftfreq(length(amp), samplerate(t)), amp)",
+  "runId": "20261104-0002",
+  "ok": true,
+  "output": [
+    "peak at 12.5 Hz"
+  ],
+  "error": null
+}

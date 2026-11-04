@@ -1,0 +1,27 @@
+{
+  "seq": 9,
+  "t": 1793000001,
+  "type": "figure",
+  "figure": {
+    "id": "f2",
+    "kind": "chart",
+    "title": "Spectrum",
+    "xLabel": "Hz",
+    "style": "line",
+    "x": [
+      0,
+      1,
+      2
+    ],
+    "series": [
+      {
+        "name": "amp",
+        "y": [
+          1,
+          null,
+          0.5
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "$comment": "a code event always reports its output, even when empty",
+  "seq": 8,
+  "t": 1793000000,
+  "type": "code",
+  "id": "c1",
+  "title": "",
+  "code": "x",
+  "runId": null,
+  "ok": false,
+  "error": "boom"
+}

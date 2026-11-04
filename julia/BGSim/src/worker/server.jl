@@ -169,6 +169,27 @@ function _model_check_result(md::IR.ModelDoc; project_dir = nothing)
     )
 end
 
+_cell_series(values) = Float64[x === nothing ? NaN : Float64(x) for x in values]
+
+function _code_run(params)
+    code = _required_string(params, :code, "code.run")
+    time = _jsonfield(params, :time, nothing)
+    signals = Dict{String,Vector{Float64}}()
+    given = _jsonfield(params, :signals, nothing)
+    if given !== nothing
+        for (id, values) in pairs(given)
+            signals[String(id)] = _cell_series(values)
+        end
+    end
+    return BGSim.cell_run(
+        code;
+        time = time === nothing ? nothing : _cell_series(time),
+        signals = signals,
+        model = _jsonfield(params, :model, nothing),
+        project_dir = _optional_string(params, :projectDir, nothing),
+    )
+end
+
 function _parse_model_document(value, method::AbstractString)
     value isa AbstractDict ||
         throw(RpcError("`$method` requires a model document object"))
@@ -337,6 +358,8 @@ function _dispatch(conn::Connection, method::AbstractString, params)
         md = _parse_model_document(value, "model.check")
         project_dir = _optional_string(params, :projectDir, nothing)
         return _model_check_result(md; project_dir = project_dir)
+    elseif method == "code.run"
+        return _code_run(params)
     elseif method == "run.start"
         return _run_start(conn, params)
     elseif method == "run.cancel"

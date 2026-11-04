@@ -35,6 +35,7 @@ export type WorkerRpc =
   | DebugSetStateRequest
   | RunReplayRequest
   | RunBranchRequest
+  | CodeRunRequest
   | ModelExplainRequest
   | DebugSetBreakpointsResponse
   | DebugPauseResponse
@@ -47,6 +48,7 @@ export type WorkerRpc =
   | DebugSetStateResponse
   | RunReplayResponse
   | RunBranchResponse
+  | CodeRunResponse
   | ModelExplainResponse
   | DebugPausedNotification
   | DebugResumedNotification;
@@ -279,6 +281,7 @@ export type StepGranularity = "statement" | "tick" | "solverStep" | "event";
 export type FrameValueType = "Real" | "Int" | "Bool";
 export type EditKind = "parameter" | "state";
 export type EditCheckpoint = "entry" | "step" | "target" | "statement";
+export type CellChartStyle = "line" | "points" | "bar";
 export type ExplainKind = "state" | "algebraic" | "observed" | "alias" | "parameter" | "discrete";
 export type PauseReason = "entry" | "breakpoint" | "step" | "pause" | "event" | "exception" | "time";
 
@@ -1659,6 +1662,25 @@ export interface RunBranchParams {
   t: number;
   $comment?: string;
 }
+export interface CodeRunRequest {
+  id: number;
+  method: "code.run";
+  params: CodeRunParams;
+  $comment?: string;
+}
+/**
+ * A code cell of the assistant: Julia syntax over the language's own interpreter, never evaluated. `time` and `signals` come from a run; `model` answers `s"Block/param"` and global names.
+ */
+export interface CodeRunParams {
+  code: string;
+  time: number[] | null;
+  signals: {
+    [k: string]: (number | null)[];
+  };
+  model: Model | null;
+  projectDir: string | null;
+  $comment?: string;
+}
 export interface ModelExplainRequest {
   id: number;
   method: "model.explain";
@@ -1796,6 +1818,54 @@ export interface RunReplayResponse {
 export interface RunBranchResponse {
   id: number;
   result: RunStartResult;
+  $comment?: string;
+}
+export interface CodeRunResponse {
+  id: number;
+  result: CodeRunResult;
+  $comment?: string;
+}
+export interface CodeRunResult {
+  ok: boolean;
+  output: string[];
+  figures: (CellTable | CellChart | CellImage)[];
+  values: {
+    [k: string]: number | null;
+  };
+  diagnostics: Diagnostic[];
+  $comment?: string;
+}
+export interface CellTable {
+  kind: "table";
+  title: string;
+  columns: string[];
+  rows: (number | boolean | null)[][];
+  truncated: boolean;
+  $comment?: string;
+}
+export interface CellChart {
+  kind: "chart";
+  title: string;
+  xLabel: string;
+  style: CellChartStyle;
+  x: number[];
+  /**
+   * @minItems 1
+   */
+  series: [CellChartSeries, ...CellChartSeries[]];
+  $comment?: string;
+}
+export interface CellChartSeries {
+  name: string;
+  y: (number | null)[];
+  $comment?: string;
+}
+export interface CellImage {
+  kind: "image";
+  title: string;
+  rows: (number | boolean | null)[][];
+  min: number;
+  max: number;
   $comment?: string;
 }
 export interface ModelExplainResponse {

@@ -45,6 +45,21 @@ body {
   min-height: 0;
 }
 
+/* The screen, and the assistant's panel beside it. */
+.app-shell__work {
+  min-height: 0;
+  display: flex;
+}
+
+.app-shell__screen {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* Panels are filled by a component that manages its own scrolling. */
 .app-shell__main,
 .app-shell__center,

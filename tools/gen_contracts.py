@@ -214,7 +214,21 @@ def generate_typescript(schemas: dict[str, dict], names: dict[tuple[str, str | N
     staged: dict[str, Path] = {}
     for base, doc in schemas.items():
         path = stage / f"{base}.schema.json"
-        write_json(path, relative_refs(doc))
+        doc = relative_refs(doc)
+        target = doc.get("$ref", "")
+        if target.startswith("#/$defs/"):
+            # A root that only points at a definition: json-schema-to-typescript emits what that
+            # definition reaches, and the API shapes no event refers to would be missing. A root
+            # object that names every definition emits them all, the pointed-at one under the
+            # root's title.
+            doc["$defs"][target.removeprefix("#/$defs/")]["title"] = doc["title"]
+            doc = {
+                "title": f"{doc['title']}Types",
+                "type": "object",
+                "properties": {name: {"$ref": f"#/$defs/{name}"} for name in doc["$defs"]},
+                "$defs": doc["$defs"],
+            }
+        write_json(path, doc)
         staged[base] = path
 
     helper = stage / "gen_ts.mjs"

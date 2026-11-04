@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
+import { useAssistantPanelStore } from "../assistant/panelStore";
 import { ExportDialog } from "../export/ExportDialog";
 import { useExportDialogStore } from "../export/exportStore";
 import { useDocumentStore } from "../state/documentStore";
@@ -47,6 +48,21 @@ function HelpIcon() {
   );
 }
 
+/** A speech bubble, drawn in the text colour. */
+function AssistantIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path
+        d="M2.5 3.5h11v7.4H7.2L4.4 13.4v-2.5H2.5z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export interface TopBarProps {
   theme: Theme;
   onToggleTheme: () => void;
@@ -76,6 +92,8 @@ export function TopBar({ theme, onToggleTheme, route: routeProp }: TopBarProps) 
   const modelName = storeModel ?? (route.kind === "editor" ? route.model : null);
   const hasDoc = useDocumentStore((state) => state.doc !== null);
   const openExport = useExportDialogStore((state) => state.openExport);
+  const assistantOpen = useAssistantPanelStore((state) => state.open);
+  const toggleAssistant = useAssistantPanelStore((state) => state.toggle);
   const [openDialog, setOpenDialog] = useState(false);
   const [modelMenu, setModelMenu] = useState(false);
   const closeOpenDialog = useCallback(() => setOpenDialog(false), []);
@@ -208,6 +226,17 @@ export function TopBar({ theme, onToggleTheme, route: routeProp }: TopBarProps) 
         <div className="top-bar__status">
           <TaskIndicator />
           <WorkerStatus />
+          <button
+            type="button"
+            className="icon-button"
+            data-testid="assistant-toggle"
+            aria-label={assistantOpen ? "Close the assistant" : "Open the assistant"}
+            aria-pressed={assistantOpen}
+            title="Assistant"
+            onClick={toggleAssistant}
+          >
+            <AssistantIcon />
+          </button>
           <button
             type="button"
             className="icon-button"

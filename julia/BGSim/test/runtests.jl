@@ -329,6 +329,7 @@ include("test_hooks.jl")
 # Work package J4.3: the watch pool, debug.evaluate/values and model.explain.
 include("test_watch.jl")
 include("test_explain.jl")
+include("test_cells.jl")
 
 # Work package J4.4: parameter and state edits, replay and branch.
 include("test_edits.jl")

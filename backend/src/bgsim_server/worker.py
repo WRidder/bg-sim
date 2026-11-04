@@ -52,6 +52,7 @@ DEFAULT_TIMEOUT = 30.0
 REQUEST_TIMEOUTS: dict[str, float | None] = {
     "block.check": 5.0,
     "model.check": 60.0,
+    "code.run": 60.0,
     "run.start": None,
     "run.cancel": 10.0,
 }
@@ -372,6 +373,8 @@ class FakeWorker:
             return self._load_fixture("catalog", "valid", "catalog.min.json")
         if method == "block.check":
             return {"diagnostics": [], "interface": None}
+        if method == "code.run":
+            return self._fake_cell(params)
         if method == "model.check":
             return {
                 "diagnostics": self._load_fixture(
@@ -415,6 +418,31 @@ class FakeWorker:
         if method == "cache.clear":
             return {"ok": True}
         raise _FakeError(f"method {method!r} is not implemented by the fake worker")
+
+    @staticmethod
+    def _fake_cell(params: dict[str, Any]) -> dict[str, Any]:
+        """Stands in for the interpreter: one line, a table and a plot of the first signal."""
+        code = str(params.get("code"))
+        if "fail" in code:
+            diagnostic = {
+                "code": "E004", "severity": "error", "message": "the cell failed: fake", "hint": None,
+                "path": None, "block": None, "scope": "watch", "source": None,
+            }
+            return {"ok": False, "output": [], "figures": [], "values": {}, "diagnostics": [diagnostic]}
+        time = params.get("time") or [0.0, 1.0]
+        signals = params.get("signals") or {}
+        name, values = next(iter(signals.items()), ("y", [0.0] * len(time)))
+        return {
+            "ok": True,
+            "output": [f"length(t) = {len(time)}"],
+            "figures": [
+                {"kind": "table", "title": "Size", "columns": ["n"], "rows": [[len(time)]], "truncated": False},
+                {"kind": "chart", "title": "Fake", "xLabel": "t", "style": "line", "x": time,
+                 "series": [{"name": name, "y": values}]},
+            ],
+            "values": {"n": len(time)},
+            "diagnostics": [],
+        }
 
     def _load_fixture(self, *parts: str) -> Any:
         path = self.settings.repo_root / "contracts" / "fixtures"
